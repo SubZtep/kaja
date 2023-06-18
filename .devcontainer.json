@@ -1,0 +1,12 @@
+{
+  "name": "wspp-dev",
+  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node",
+  "forwardPorts": [1337],
+  "portsAttributes": {
+    "1337": {
+      "label": "WebSocket server"
+    }
+  },
+  "onCreateCommand": "",
+  "postAttachCommand": ""
+}

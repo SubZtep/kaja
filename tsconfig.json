@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "rootDir": "src",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsxImportSource": "solid-js",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext",
+    ]
+  },
+  "include": ["src/**/*"]
+}
