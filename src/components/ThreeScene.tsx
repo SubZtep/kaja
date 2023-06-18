@@ -8,8 +8,7 @@ CameraControls.install({ THREE })
 const ThreeScene: Component<{
   pid?: string
   colour?: string
-  bg?: number
-  // translucent?: boolean
+  background?: THREE.Color
   lookAt?: [number, number, number, number, number, number]
   /** CSS class name */
   class?: string
@@ -40,9 +39,8 @@ const ThreeScene: Component<{
       renderer.setPixelRatio(window.devicePixelRatio)
       renderer.setSize(width, height)
 
-      if (props.bg) {
-        renderer.setClearColor(props.bg)
-        // renderer.setClearColor(parseInt(props.colour.slice(1), 16))
+      if (props.background) {
+        scene.background = props.background
       }
 
       camera = new THREE.PerspectiveCamera(60, undefined, 0.01, 100)
@@ -50,7 +48,7 @@ const ThreeScene: Component<{
       camera.updateProjectionMatrix()
 
       controls = new CameraControls(camera, renderer.domElement)
-      {/* @ts-ignore */}
+      // @ts-ignore
       controls.setLookAt(...props.lookAt, false)
 
       runForever.add(delta => {
@@ -90,11 +88,9 @@ const ThreeScene: Component<{
 
   return (
     <>
-      {/* <div style={`--colour: ${props.colour}`} class="bg-colour"></div> */}
       <canvas
         ref={canvas}
         style={`--colour: ${props.colour}`}
-        // class={`stretch${props.class ? ` ${props.class}` : ""}`}
         class={`${props.class ? ` ${props.class}` : ""}`}
       ></canvas>
       {props.children(scene)}

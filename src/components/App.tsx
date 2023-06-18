@@ -1,3 +1,4 @@
+import * as THREE from "three"
 import { For, Show, Switch, Match } from "solid-js"
 import { state, players } from "../state"
 import { HAND_ANGLES } from "../const"
@@ -39,7 +40,12 @@ export default () => {
             </For>
           </Match>
           <Match when={!state.broadcast}>
-            <ThreeScene colour="#009900" bg={0x00ff00} lookAt={[1, 0, 0, 0, 0, 0]} class="stretch bg-colour">
+            <ThreeScene
+              colour="#009900"
+              background={new THREE.Color(0x00ff00)}
+              lookAt={[1, 0, 0, 0, 0, 0]}
+              class="stretch bg-colour"
+            >
               {scene => (
                 <>
                   <HandEnvironment scene={scene} />
@@ -47,7 +53,11 @@ export default () => {
                 </>
               )}
             </ThreeScene>
-            <ThreeScene colour={state.colour} bg={parseInt(state.colour.slice(1), 16)} class="stretch bg-colour">
+            <ThreeScene
+              colour={state.colour}
+              background={new THREE.Color(parseInt(state.colour.slice(1), 16))}
+              class="stretch bg-colour"
+            >
               {scene => (
                 <>
                   <HandEnvironment scene={scene} />
@@ -55,7 +65,12 @@ export default () => {
                 </>
               )}
             </ThreeScene>
-            <ThreeScene colour="#990000" bg={0xff0000} lookAt={[0, 1, 0, 0, 0, 0]} class="stretch bg-colour">
+            <ThreeScene
+              colour="#990000"
+              background={new THREE.Color(0xff0000)}
+              lookAt={[0, 1, 0, 0, 0, 0]}
+              class="stretch bg-colour"
+            >
               {scene => (
                 <>
                   <HandEnvironment scene={scene} />
@@ -63,7 +78,12 @@ export default () => {
                 </>
               )}
             </ThreeScene>
-            <ThreeScene colour="#000099" bg={0x0000ff} lookAt={[0, 0, 1, 0, 0, 0]} class="stretch bg-colour">
+            <ThreeScene
+              colour="#000099"
+              background={new THREE.Color(0x0000ff)}
+              lookAt={[0, 0, 1, 0, 0, 0]}
+              class="stretch bg-colour"
+            >
               {scene => (
                 <>
                   <HandEnvironment scene={scene} />
