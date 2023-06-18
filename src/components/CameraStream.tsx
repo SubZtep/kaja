@@ -1,8 +1,9 @@
-import { createEffect, on } from "solid-js"
+import { createEffect, on, createSignal } from "solid-js"
 import { startHandLoop, stopHandLoop } from "../lib/loop"
 import { state } from "../state"
 
 export default () => {
+  const [noSignal, setNoSignal] = createSignal(true)
   let video: HTMLVideoElement | undefined
   let mediaStream: MediaStream | null = null
 
@@ -10,6 +11,7 @@ export default () => {
     on(
       () => state.cameraEnabled,
       async () => {
+        setNoSignal(state.cameraEnabled)
         if (state.cameraEnabled) {
           mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
           video!.srcObject = mediaStream
@@ -28,5 +30,13 @@ export default () => {
     )
   )
 
-  return <video ref={video} class="grid-col-span-2 stretch" playsinline autoplay muted></video>
+  return (
+    <video
+      ref={video}
+      class={`grid-col-span-2 stretch${noSignal() ? "" : " no-signal"}`}
+      playsinline
+      autoplay
+      muted
+    ></video>
+  )
 }

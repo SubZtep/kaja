@@ -71,17 +71,17 @@ video {
   box-shadow: var(--box-shadow-inset);
 }
 
-canvas {
+/* canvas {
   background-color: var(--colour);
   box-shadow: var(--box-shadow-inset);
-}
+} */
 
 progress {
   accent-color: var(--colour);
 }
 
 fieldset,
-canvas,
+/* canvas, */
 video {
   border-radius: var(--border-radius);
 }
@@ -89,6 +89,15 @@ video {
 fieldset > legend {
   font-weight: 745;
   font-stretch: 112%;
+}
+
+.no-signal {
+  background: url("/images/no-signal.jpg") no-repeat center center;
+  background-size: cover;
+}
+
+.bg-colour {
+  background-color: var(--colour);
 }
 
 .grid-col-span-2 {

@@ -53,7 +53,7 @@ export default () => {
             setState({ broadcast })
           }}
         />
-        Broadcast <span class="landscape">hand gesture</span>
+        Go to lobby
       </label>
     </fieldset>
   )
