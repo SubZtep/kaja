@@ -57,6 +57,7 @@ export default () => {
               colour={state.colour}
               class="bg-colour"
               rotate
+              alpha
             >
               {scene => (
                 <>

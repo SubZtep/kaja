@@ -10,13 +10,14 @@ const ThreeScene: Component<{
   pid?: string
   colour?: string
   background?: THREE.Color
+  alpha?: boolean
   lookAt?: [number, number, number, number, number, number]
   /** CSS class name */
   class?: string
   rotate?: boolean
   children: (scene: THREE.Scene) => JSX.Element
 }> = rawProps => {
-  const props = mergeProps({ colour: "#f3f6f9", lookAt: [1, 1, 1, 0, 0, 0] }, rawProps)
+  const props = mergeProps({ colour: "#f3f6f9", lookAt: [1, 1, 1, 0, 0, 0], alpha: false }, rawProps)
 
   const scene = new THREE.Scene()
   let camera: THREE.PerspectiveCamera
@@ -25,7 +26,7 @@ const ThreeScene: Component<{
   let resizer: ResizeObserver
   let wrapper: HTMLDivElement | undefined
 
-  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
+  renderer = new THREE.WebGLRenderer({ alpha: props.alpha, antialias: true })
   renderer.setPixelRatio(window.devicePixelRatio)
 
   if (props.background) {
