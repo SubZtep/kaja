@@ -56,20 +56,6 @@ const ThreeScene: Component<{
         renderer.render(scene, camera)
       })
 
-      // setTimeout(() => {
-      //   const width = canvas!.clientWidth
-      //   const height = canvas!.clientHeight
-
-      //   // console.log([width, height])
-      //   canvas!.setAttribute("width", width.toString())
-      //   canvas!.setAttribute("height", height.toString())
-      //   // const width = canvas!.clientWidth / 4
-      //   // const height = canvas!.clientHeight / 4
-      //   // renderer.setSize(width, height, false)
-      //   camera.aspect = width / height
-      //   camera.updateProjectionMatrix()
-      // }, 1000)
-
       resizer = new ResizeObserver(() => {
         const width = canvas!.clientWidth
         const height = canvas!.clientHeight
