@@ -61,7 +61,7 @@ const HandModel: Component<{ pid?: string; scene: THREE.Scene }> = props => {
     createEffect(
       on(
         () => state.lastPlayersUpdate,
-        () => updateLandmarks(players.get(props.pid!)!.landmarks)
+        () => updateLandmarks(players.get(props.pid!)?.landmarks)
       )
     )
   } else {

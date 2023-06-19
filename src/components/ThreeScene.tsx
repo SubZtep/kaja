@@ -59,7 +59,7 @@ const ThreeScene: Component<{
         renderer.setSize(w, h)
         camera.aspect = w / h
         camera.updateProjectionMatrix()
-      }, 300)
+      }, 200)
     )
 
     resizer.observe(wrapper!, { box: "content-box" })
