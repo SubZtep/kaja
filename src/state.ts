@@ -20,7 +20,6 @@ const isMobile = mobile()
 if (isMobile) {
   document.documentElement.style.setProperty("--app-cols", "1fr 1fr")
   document.documentElement.style.setProperty("--app-rows", "1fr auto")
-  document.documentElement.style.setProperty("--scenes-display", "grid")
 }
 
 export const [state, setState] = createStore({

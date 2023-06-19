@@ -42,9 +42,9 @@ export default () => {
           <Match when={!state.broadcast}>
             <ThreeScene
               colour="#009900"
-              background={new THREE.Color(0x00ff00)}
-              lookAt={[1, 0, 0, 0, 0, 0]}
-              class="stretch bg-colour"
+              background={new THREE.Color(0x00cd00)}
+              lookAt={[0, 1.2, 0, 0, 0, 0]}
+              class="bg-colour"
             >
               {scene => (
                 <>
@@ -55,21 +55,8 @@ export default () => {
             </ThreeScene>
             <ThreeScene
               colour={state.colour}
-              background={new THREE.Color(parseInt(state.colour.slice(1), 16))}
-              class="stretch bg-colour"
-            >
-              {scene => (
-                <>
-                  <HandEnvironment scene={scene} />
-                  <HandModel scene={scene} />
-                </>
-              )}
-            </ThreeScene>
-            <ThreeScene
-              colour="#990000"
-              background={new THREE.Color(0xff0000)}
-              lookAt={[0, 1, 0, 0, 0, 0]}
-              class="stretch bg-colour"
+              class="bg-colour"
+              rotate
             >
               {scene => (
                 <>
@@ -80,9 +67,22 @@ export default () => {
             </ThreeScene>
             <ThreeScene
               colour="#000099"
-              background={new THREE.Color(0x0000ff)}
-              lookAt={[0, 0, 1, 0, 0, 0]}
-              class="stretch bg-colour"
+              background={new THREE.Color(0x0000cd)}
+              lookAt={[0, 0, 1.2, 0, 0, 0]}
+              class="bg-colour"
+            >
+              {scene => (
+                <>
+                  <HandEnvironment scene={scene} />
+                  <HandModel scene={scene} />
+                </>
+              )}
+            </ThreeScene>
+            <ThreeScene
+              colour="#990000"
+              background={new THREE.Color(0xcd0000)}
+              lookAt={[1.2, 0, 0, 0, 0, 0]}
+              class="bg-colour"
             >
               {scene => (
                 <>

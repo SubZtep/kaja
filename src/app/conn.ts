@@ -30,7 +30,7 @@ socket.addEventListener("message", ({ data }) => {
       })
     )
   } else if (players.get(message.id)!.colour !== message.colour) {
-    document.querySelectorAll<HTMLCanvasElement>(`[data-pid="${message.id}"]`).forEach(el => {
+    document.querySelectorAll<HTMLElement>(`[data-pid="${message.id}"]`).forEach(el => {
       el.style.setProperty("--colour", message.colour)
     })
   }

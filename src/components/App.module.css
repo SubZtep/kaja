@@ -24,22 +24,18 @@
 .scenes {
   background-color: #123;
   box-shadow: var(--box-shadow), var(--box-shadow-inset);
-  /* border-radius: var(--border-radius); */
+  border-radius: calc(var(--border-radius) * 0.75);
   overflow: auto;
-  /* display: var(--scenes-display, flex); */
   display: grid;
-  /* flex-wrap: wrap; */
-  /* gap: 0.1rem; */
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  /* justify-items: stretch; */
+  justify-items: stretch;
+  align-items: stretch;
 }
 
-/* .scenes > * {
-  width: 100%;
-  height: 100%;
-  border-radius: calc(var(--border-radius) * 0.8);
-} */
+.scenes > * {
+  overflow: hidden;
+}
 
 .options {
   display: flex;
@@ -71,14 +67,4 @@
   left: 0;
   width: 100%;
   height: 100%;
-}
-
-@media (orientation: landscape) {
-  /* .scenes > * {
-    width: 320px;
-    height: 240px;
-  } */
-  /* .monitor {
-    height: 250px;
-  } */
 }
