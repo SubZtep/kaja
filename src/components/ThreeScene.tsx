@@ -5,19 +5,20 @@ import { type Component, type JSX, onMount, onCleanup, mergeProps } from "solid-
 import { runForever } from "../lib/loop"
 
 CameraControls.install({ THREE })
+type LookAt = [number, number, number, number, number, number]
 
 const ThreeScene: Component<{
   pid?: string
   colour?: string
   background?: THREE.Color
   alpha?: boolean
-  lookAt?: [number, number, number, number, number, number]
+  lookAt?: LookAt
   /** CSS class name */
   class?: string
   rotate?: boolean
   children: (scene: THREE.Scene) => JSX.Element
 }> = rawProps => {
-  const props = mergeProps({ colour: "#f3f6f9", lookAt: [1, 1, 1, 0, 0, 0], alpha: false }, rawProps)
+  const props = mergeProps({ colour: "#f3f6f9", lookAt: [1, 1, 1, 0, 0, 0] as LookAt, alpha: false }, rawProps)
 
   const scene = new THREE.Scene()
   let camera: THREE.PerspectiveCamera
@@ -36,13 +37,9 @@ const ThreeScene: Component<{
   camera = new THREE.PerspectiveCamera(60, undefined, 0.01, 100)
 
   onMount(() => {
-    let { clientWidth: w, clientHeight: h } = wrapper!
-    renderer.setSize(w, h)
-
     const canvas = wrapper?.appendChild(renderer.domElement)
 
     controls = new CameraControls(camera, canvas)
-    // @ts-ignore
     controls.setLookAt(...props.lookAt, false)
     if (props.rotate) {
       runForever.add(deltaTime => {
@@ -57,8 +54,8 @@ const ThreeScene: Component<{
 
     resizer = new ResizeObserver(
       throttle(() => {
-        w = wrapper!.clientWidth - 4
-        h = wrapper!.clientHeight - 4
+        const w = wrapper!.clientWidth - 4
+        const h = wrapper!.clientHeight - 4
         renderer.setSize(w, h)
         camera.aspect = w / h
         camera.updateProjectionMatrix()
