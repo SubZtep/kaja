@@ -9,6 +9,7 @@ import CameraStream from "./CameraStream"
 import OptionsFieldset from "./OptionsFieldset"
 import HandEnvironment from "./HandEnvironment"
 import HandModel from "./HandModel"
+import Lobby from "./Lobby"
 
 export default () => {
   return (
@@ -23,10 +24,15 @@ export default () => {
         </For>
       </Show>
 
-      <div class={`${styles.scenes} ${state.isDesktop ? "grid-col-span-5" : "grid-col-span-2"}`}>
+      <div
+        class={`${styles.scenes}${state.broadcast ? ` ${styles.lobby}` : ""} ${
+          state.isDesktop ? "grid-col-span-5" : "grid-col-span-2"
+        }`}
+      >
         <Switch>
           <Match when={state.broadcast}>
-            <For each={state.playerIds}>
+            <Lobby />
+            {/* <For each={state.playerIds}>
               {pid => (
                 <ThreeScene pid={pid} colour={players.get(pid)?.colour}>
                   {scene => (
@@ -37,7 +43,7 @@ export default () => {
                   )}
                 </ThreeScene>
               )}
-            </For>
+            </For> */}
           </Match>
           <Match when={!state.broadcast}>
             <ThreeScene
@@ -53,12 +59,7 @@ export default () => {
                 </>
               )}
             </ThreeScene>
-            <ThreeScene
-              colour={state.colour}
-              class="bg-colour"
-              rotate
-              alpha
-            >
+            <ThreeScene colour={state.colour} class="bg-colour" rotate alpha>
               {scene => (
                 <>
                   <HandEnvironment scene={scene} />

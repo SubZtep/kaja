@@ -37,6 +37,11 @@
   overflow: hidden;
 }
 
+.lobby {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
 .options {
   display: flex;
   flex-direction: column;
