@@ -1,7 +1,12 @@
 {
   "version": "1.0",
   "services": {
-    "web": { "port": 3001, "image": "backend" }
+    "web": { "port": 3001, "image": "backend" },
+    "geoip": {
+      "type": "cron",
+      "schedule": "0 3 * * *",
+      "command": "geoipupdate -d packages/geoip/data"
+    }
   },
   "images": {
     "backend": {

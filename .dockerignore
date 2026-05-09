@@ -4,6 +4,7 @@
 pgdata
 **/.output
 **/.tanstack
+**/data
 **/dist
 **/node_modules
 **/.env*

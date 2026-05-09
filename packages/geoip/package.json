@@ -1,0 +1,10 @@
+{
+  "name": "@kaja/geoip",
+  "description": "GeoIP service",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "@maxmind/geoip2-node": "^6.3.4"
+  }
+}

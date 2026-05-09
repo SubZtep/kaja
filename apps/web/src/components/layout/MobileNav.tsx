@@ -1,13 +1,11 @@
 import { Link } from "@tanstack/react-router"
-import { LayoutDashboard, Shield, Users } from "lucide-react"
-
-const mobileNavItems = [
-  { to: "/dashboard", label: "Dash", icon: LayoutDashboard },
-  { to: "/users", label: "Users", icon: Users },
-  { to: "/profile", label: "Profile", icon: Shield }
-] as const
+import { useUser } from "#/hooks/user"
+import { getMobileNavItems } from "./nav-items"
 
 export function MobileNav() {
+  const role = useUser()?.role
+  const mobileNavItems = getMobileNavItems(role)
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-bg border-t border-border/40 h-16 flex items-center justify-around z-50 px-6">
       {mobileNavItems.map(item => (
