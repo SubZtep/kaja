@@ -1,19 +1,15 @@
 import { cn } from "@kaja/shared"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { LayoutDashboard, LogOut, Shield, Users } from "lucide-react"
+import { LogOut } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "#/hooks/auth-client"
 import { useUser } from "#/hooks/user"
-
-const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/users", label: "Users", icon: Users },
-  { to: "/profile", label: "Profile", icon: Shield }
-] as const
+import { getSidebarItems } from "./nav-items"
 
 export function Sidebar() {
   const user = useUser()
+  const navItems = getSidebarItems(user?.role)
 
   return (
     <aside className="hidden md:flex flex-col py-8 px-4 h-screen w-64 fixed left-0 top-0 bg-bg z-50">

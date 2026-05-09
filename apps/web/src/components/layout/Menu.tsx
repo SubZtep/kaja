@@ -4,6 +4,7 @@ import { type CSSProperties, useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "#/hooks/auth-client"
 import { useUser } from "#/hooks/user"
+import { getMenuItems } from "./nav-items"
 import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
@@ -11,52 +12,17 @@ interface Props {
   className?: string
 }
 
-const menuItems: {
-  to: string
-  label: string
-  role?: string[]
-}[] = [
-  {
-    to: "/",
-    label: "Home"
-  },
-  {
-    to: "/signin",
-    label: "Sign In"
-  },
-  {
-    to: "/signup",
-    label: "Sign Up"
-  },
-  {
-    to: "/dashboard",
-    label: "Dashboard",
-    role: ["admin", "user"]
-  },
-  {
-    to: "/profile",
-    label: "Profile",
-    role: ["admin", "user"]
-  },
-  {
-    to: "/users",
-    label: "Users",
-    role: ["admin"]
-  }
-] as const
-
 export function Menu({ className }: Readonly<Props>) {
   const role = useUser()?.role
+  const items = getMenuItems(role)
 
   return (
     <nav className={cn("flex items-center gap-x-4 text-sm font-semibold w-full", className)}>
-      {menuItems
-        .filter(item => item.role === role || (role && item.role?.includes(role)))
-        .map((item, index) => (
-          <MenuItem key={item.to} to={item.to} style={{ animationDelay: `${index * 90 + 80}ms` }}>
-            {item.label}
-          </MenuItem>
-        ))}
+      {items.map((item, index) => (
+        <MenuItem key={item.to} to={item.to} style={{ animationDelay: `${index * 90 + 80}ms` }}>
+          {item.label}
+        </MenuItem>
+      ))}
       {role && (
         <div className="ml-auto">
           <LogoutButton />
