@@ -1,4 +1,4 @@
-import { LayoutDashboard, Shield, type LucideIcon, Users } from "lucide-react"
+import { LayoutDashboard, type LucideIcon, Shield, Users } from "lucide-react"
 
 type Surface = "menu" | "sidebar" | "mobile"
 type LayoutNavItem = {

@@ -1,5 +1,5 @@
 import { log } from "@clack/prompts"
-import { dimgrey, lime } from "../lib/colors"
+import { dimgrey, teal } from "../lib/colors"
 import { deleteAccessToken } from "../lib/token"
 import { version } from "../package.json"
 
@@ -45,7 +45,7 @@ Commands:
 
 export async function printLogo() {
   log.message(
-    [`${lime}▖▖   ▘  ▄▖▄▖`, `${lime}▙▘▀▌ ▌▀▌▐ ▌▌`, `${lime}▌▌█▌ ▌█▌▟▖▙▌`, `${lime}    ▙▌${dimgrey}v${version}\n`].join(
+    [`${teal}▖▖   ▘  ▄▖▄▖`, `${teal}▙▘▀▌ ▌▀▌▐ ▌▌`, `${teal}▌▌█▌ ▌█▌▟▖▙▌`, `${teal}    ▙▌${dimgrey}v${version}\n`].join(
       "\n"
     ),
     {

@@ -4,9 +4,9 @@ import { type CSSProperties, useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "#/hooks/auth-client"
 import { useUser } from "#/hooks/user"
-import { getMenuItems } from "./nav-items"
 import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
+import { getMenuItems } from "./nav-items"
 
 interface Props {
   className?: string
