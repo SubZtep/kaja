@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "bun run --hot src/core/server.ts",
     "build": "bun build src/core/server.ts --target bun --outdir dist",
-    "start": "bun run dist/core/server.js"
+    "start": "bun run dist/core/server.js",
+    "openapi:generate": "bun run scripts/generate-openapi.ts"
   },
   "dependencies": {
+    "@hono/swagger-ui": "^0.5.2",
     "@kaja/schemas": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@hono/zod-validator": "^0.8.0",
