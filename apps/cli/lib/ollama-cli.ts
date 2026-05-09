@@ -1,8 +1,8 @@
 import type { JobData } from "@kaja/schemas"
 import { $ } from "bun"
 
-/** CLI only */
-export class OllamaClient {
+/** Thin wrapper around the `ollama` shell command. */
+export class OllamaCliClient {
   async ping() {
     try {
       await $`ollama -v`.quiet()

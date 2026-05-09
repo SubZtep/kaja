@@ -10,15 +10,15 @@
   "dependencies": {
     "@kaja/schemas": "workspace:*",
     "@kaja/shared": "workspace:*",
-    "@hono/zod-validator": "^0.7.6",
+    "@hono/zod-validator": "^0.8.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
-    "better-auth": "^1.6.9",
-    "hono": "^4.12.16",
+    "better-auth": "^1.6.10",
+    "hono": "^4.12.18",
     "nodemailer": "^8.0.7",
     "pg": "^8.20.0",
     "pino": "^10.3.1",
-    "react": "^19.2.5",
+    "react": "^19.2.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -4,8 +4,9 @@ import { createAuthClient } from "better-auth/client"
 import { deviceAuthorizationClient } from "better-auth/client/plugins"
 import clipboard from "clipboardy"
 import qrcode from "qrcode-terminal"
+import { apiBaseUrl, kaja } from "../lib/clients"
+import { cyan } from "../lib/colors"
 import { getAccessToken, setAccessToken, setSessionAccessToken } from "../lib/token"
-import { apiBaseUrl, cyan, kaja } from "../lib/vars"
 
 function createDeviceAuthClient() {
   return createAuthClient({
@@ -15,10 +16,14 @@ function createDeviceAuthClient() {
   })
 }
 
+function fail(message: string) {
+  cancel(message)
+  throw new Error(message)
+}
+
 export async function authFlow() {
   if (!(await kaja.ping())) {
-    log.error(`Unable to connect to ${kaja.host()}`)
-    process.exit(1)
+    throw new Error(`Unable to connect to ${kaja.host()}`)
   }
 
   const authClient = createDeviceAuthClient()
@@ -37,8 +42,7 @@ export async function authFlow() {
     client_id: KAJA_CLI_CLIENT_ID
   })
   if (error || !data) {
-    cancel(error?.error_description ?? error?.statusText ?? "Could not start device login")
-    process.exit(1)
+    fail(error?.error_description ?? error?.statusText ?? "Could not start device login")
   }
 
   const { device_code, user_code, verification_uri, verification_uri_complete, interval = 5, expires_in = 1800 } = data
@@ -51,8 +55,7 @@ export async function authFlow() {
     log.message(`Login link: ${verification_uri}`)
     log.message(`User code: ${user_code}`)
   } else {
-    cancel("No login link found")
-    process.exit(1)
+    fail("No login link found")
   }
 
   const link = verification_uri_complete ?? verification_uri
@@ -118,8 +121,7 @@ function listenForLoginActions(link: string) {
       switch (key) {
         case "\u0003":
           cleanup()
-          cancel("Authentication cancelled")
-          process.exit()
+          fail("Authentication cancelled")
         case "o":
           openLoginLink(link)
           break
@@ -185,17 +187,13 @@ async function pollDeviceToken(
         waitMs += 5000
         continue
       case "access_denied":
-        cancel("Access denied")
-        process.exit(1)
+        fail("Access denied")
       case "expired_token":
-        cancel("Device code expired — run again")
-        process.exit(1)
+        fail("Device code expired — run again")
       default:
-        cancel(error?.error ?? "Device token error")
-        process.exit(1)
+        fail(error?.error ?? "Device token error")
     }
   }
 
-  cancel("Device authorization timed out")
-  process.exit(1)
+  fail("Device authorization timed out")
 }

@@ -1,4 +1,4 @@
-import { ACCESS_TOKEN_KEY, SERVICE_NAME } from "./vars"
+import { ACCESS_TOKEN_KEY, SERVICE_NAME } from "./constants"
 
 let sessionAccessToken: string | null = null
 

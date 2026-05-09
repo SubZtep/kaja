@@ -1,6 +1,6 @@
 import { log } from "@clack/prompts"
-import { deleteAccessToken } from "lib/token"
-import { dimgrey, lime } from "../lib/vars"
+import { dimgrey, lime } from "../lib/colors"
+import { deleteAccessToken } from "../lib/token"
 import { version } from "../package.json"
 
 declare const CLI_VERSION: string
@@ -8,7 +8,7 @@ declare const CLI_VERSION: string
 export async function helperCommands() {
   const command = process.argv[2]?.toLowerCase()
 
-  if (command?.includes("help")) {
+  if (command === "help" || command === "--help" || command === "-h") {
     console.log(`Usage:  kaja <command>
 
 Commands:
@@ -16,7 +16,7 @@ Commands:
   logout   Logout from Kaja
   help     Show help
 `)
-    process.exit()
+    return { handled: true, exitCode: 0 }
   }
 
   if (command === "version" || command === "--version" || command === "-v") {
@@ -25,14 +25,22 @@ Commands:
     } catch {
       console.log(`v${version}`)
     }
-    process.exit()
+    return { handled: true, exitCode: 0 }
   }
 
   if (command === "logout") {
-    await deleteAccessToken()
-    console.log("Logged out successfully")
-    process.exit()
+    try {
+      await deleteAccessToken()
+      console.log("Logged out successfully")
+      return { handled: true, exitCode: 0 }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(`[kaja] Logout failed: ${message}`)
+      return { handled: true, exitCode: 1 }
+    }
   }
+
+  return { handled: false, exitCode: 0 }
 }
 
 export async function printLogo() {

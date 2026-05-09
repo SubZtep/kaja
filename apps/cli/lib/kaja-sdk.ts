@@ -1,4 +1,3 @@
-import { join } from "node:path"
 import type {
   CreateJobRequest,
   CreateJobResponse,
@@ -32,13 +31,11 @@ export class KajaClient {
 
   /** Apply for jobs */
   async registerNode(payload: RegisterNodeRequest) {
-    let res: RegisterNodeResponse | undefined
     try {
-      res = await this.#apiRequest<RegisterNodeResponse>("/kaja/register-node", payload)
+      const res = await this.#apiRequest<RegisterNodeResponse>("/kaja/register-node", payload)
       this.nodeId = res.nodeId
-    } catch (error: any) {
-      console.error("error registering node", error.message)
-      process.exit(1)
+    } catch (error: unknown) {
+      throw new Error(`Error registering node: ${this.#errorMessage(error)}`)
     }
     return this.nodeId
   }
@@ -51,9 +48,8 @@ export class KajaClient {
 
     try {
       return await this.#apiRequest<GetJobResponse>("/kaja/get-job", { nodeId: this.nodeId })
-    } catch (error: any) {
-      console.error("error getting job", error.message)
-      process.exit(1)
+    } catch (error: unknown) {
+      throw new Error(`Error getting job: ${this.#errorMessage(error)}`)
     }
   }
 
@@ -62,18 +58,15 @@ export class KajaClient {
   }
 
   async heartbeat(payload: HeartbeatRequest) {
-    let beating: boolean
     try {
-      beating = (await this.#apiRequest<HeartbeatResponse>("/kaja/heartbeat", payload)).ok
-    } catch (error: any) {
-      console.error("Sending heartbeat", error.message)
-      beating = false
+      return (await this.#apiRequest<HeartbeatResponse>("/kaja/heartbeat", payload)).ok
+    } catch {
+      return false
     }
-    return beating
   }
 
   async ping() {
-    const res = await fetch(join(this.baseURL, "/health"))
+    const res = await fetch(this.#buildUrl("/health"))
     return res.ok
   }
 
@@ -85,7 +78,7 @@ export class KajaClient {
     }
   }
 
-  async #apiRequest<T = unknown>(path: string, payload?: Record<string, any>, options?: RequestInit) {
+  async #apiRequest<T = unknown>(path: string, payload?: unknown, options?: RequestInit) {
     const { headers: initHeaders, ...rest } = options ?? {}
     const headers = new Headers(initHeaders)
     headers.set("Content-Type", "application/json")
@@ -93,7 +86,7 @@ export class KajaClient {
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
     }
-    const response = await fetch(join(this.baseURL, path), {
+    const response = await fetch(this.#buildUrl(path), {
       method: "POST",
       headers,
       body: payload ? JSON.stringify(payload) : undefined,
@@ -105,5 +98,13 @@ export class KajaClient {
     }
 
     return (await response.json()) as T
+  }
+
+  #buildUrl(path: string) {
+    return new URL(path, this.baseURL).toString()
+  }
+
+  #errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error)
   }
 }

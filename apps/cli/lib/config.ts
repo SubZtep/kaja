@@ -6,7 +6,7 @@ import { z } from "zod"
 
 const CONFIG_FILE_NAME = "config.json"
 const CONFIG_VERSION = 1
-const DEFAULT_API_URL = "http://localhost:3001"
+export const DEFAULT_API_URL = "http://localhost:3001"
 
 const DEFAULT_CONFIG = {
   version: CONFIG_VERSION
@@ -41,7 +41,7 @@ const writePatchSchema = z.object({
   ollama: ollamaSchema
 })
 
-function normalizeConfig(input: unknown) {
+export function normalizeConfig(input: unknown) {
   const parsed = cliConfigSchema.safeParse(input)
   if (!parsed.success) {
     return { ...DEFAULT_CONFIG }
@@ -58,7 +58,7 @@ function normalizeConfig(input: unknown) {
 function normalizePatch(input: unknown) {
   const parsed = writePatchSchema.safeParse(input)
   if (!parsed.success) {
-    return {}
+    throw new Error(`[kaja] Invalid config patch: ${parsed.error.issues.map(issue => issue.message).join(", ")}`)
   }
 
   const ollama = parsed.data.ollama
@@ -66,6 +66,22 @@ function normalizePatch(input: unknown) {
     apiUrl: parsed.data.apiUrl,
     ollama: ollama?.host || ollama?.model ? ollama : undefined
   }
+}
+
+function validateConfig(input: unknown, source: string) {
+  const parsed = cliConfigSchema.safeParse(input)
+  if (parsed.success) {
+    return parsed.data
+  }
+
+  const details = parsed.error.issues
+    .map(issue => {
+      const path = issue.path.length > 0 ? issue.path.join(".") : "root"
+      return `${path}: ${issue.message}`
+    })
+    .join("; ")
+  console.warn(`[kaja] Invalid ${source}, using defaults (${details})`)
+  return null
 }
 
 function readRawConfigFile() {
@@ -107,7 +123,12 @@ export function getConfigPath() {
 }
 
 export function readConfig() {
-  return normalizeConfig(readRawConfigFile())
+  const raw = readRawConfigFile()
+  if (raw === null) {
+    return normalizeConfig(raw)
+  }
+  const valid = validateConfig(raw, "config file")
+  return normalizeConfig(valid)
 }
 
 export async function writeConfig(patch: {
@@ -144,10 +165,13 @@ export async function clearConfig() {
 }
 
 export function resolveApiUrl() {
-  return (
-    readArgValue("--api-url") ??
-    optionalTrimmedStringSchema.parse(process.env.API_URL) ??
-    readConfig().apiUrl ??
-    DEFAULT_API_URL
-  )
+  return pickApiUrl({
+    argApiUrl: readArgValue("--api-url"),
+    envApiUrl: optionalTrimmedStringSchema.parse(process.env.API_URL),
+    configApiUrl: readConfig().apiUrl
+  })
+}
+
+export function pickApiUrl(input: { argApiUrl?: string; envApiUrl?: string; configApiUrl?: string }) {
+  return input.argApiUrl ?? input.envApiUrl ?? input.configApiUrl ?? DEFAULT_API_URL
 }

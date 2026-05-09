@@ -3,6 +3,15 @@ import { getTimeAgo } from "@kaja/shared"
 import ollama, { type ModelResponse, Ollama } from "ollama"
 import { readConfig, writeConfig } from "./config"
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function fail(message: string) {
+  cancel(message)
+  throw new Error(message)
+}
+
 export async function configFlow() {
   const existing = readConfig()
   const configuredHost = existing.ollama?.host?.trim()
@@ -15,8 +24,8 @@ export async function configFlow() {
     try {
       const res = await new Ollama({ host: configuredHost }).list()
       models = res.models
-    } catch (error: any) {
-      log.warn(`Configured host unreachable: ${error.message}`)
+    } catch (error: unknown) {
+      log.warn(`Configured host unreachable: ${errorMessage(error)}`)
     }
   }
 
@@ -25,8 +34,8 @@ export async function configFlow() {
       const res = await ollama.list()
       models = res.models
       selectedHost = undefined
-    } catch (error: any) {
-      log.error(error.message)
+    } catch (error: unknown) {
+      log.error(errorMessage(error))
     }
   }
 
@@ -36,31 +45,28 @@ export async function configFlow() {
       placeholder: configuredHost ?? "http://localhost:11434"
     })
     if (isCancel(url)) {
-      cancel("No URL provided")
-      process.exit(1)
+      fail("No URL provided")
     }
     const trimmed = url.trim()
     if (!trimmed) {
-      cancel("Empty URL provided")
-      process.exit(1)
+      fail("Empty URL provided")
     }
     selectedHost = trimmed
     const remote = new Ollama({ host: selectedHost })
     try {
       const res = await remote.list()
       models = res.models
-    } catch (error: any) {
-      cancel(error.message)
-      process.exit(1)
+    } catch (error: unknown) {
+      fail(errorMessage(error))
     }
   }
 
-  // @ts-ignore
-  models = models?.filter(m => !m?.remote_host)?.sort((a, b) => a.name.localeCompare(b.name))
+  models = models
+    ?.filter(model => !("remote_host" in model && model.remote_host))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   if (!models || models.length === 0) {
-    cancel("No models found")
-    process.exit(1)
+    fail("No models found")
   }
 
   let model: ModelResponse | undefined
@@ -71,7 +77,7 @@ export async function configFlow() {
   }
 
   if (!model && models.length > 1) {
-    model = (await select({
+    const selected = await select({
       maxItems: 15,
       message: "Select your preferred model",
       options: models.map(model => ({
@@ -83,11 +89,12 @@ export async function configFlow() {
           getTimeAgo(new Date(model.modified_at))
         ].join(" · ")
       }))
-    })) as ModelResponse
-    if (isCancel(model)) {
-      cancel("No model selected")
-      process.exit(1)
+    })
+
+    if (isCancel(selected)) {
+      fail("No model selected")
     }
+    model = selected
   }
 
   await writeConfig({
