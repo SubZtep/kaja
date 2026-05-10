@@ -7,7 +7,7 @@
     },
     "hook:deploy:start:before": {
       "type": "command",
-      "command": "printf '%s\\0' ./apps/api/migrations/*.sql | sort -z | xargs -0 -I{} psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"{}\"",
+      "command": "sh -c 'printf \"%s\\0\" ./apps/api/migrations/*.sql | sort -z | xargs -0 -I{} psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"{}\"'",
       "image": "backend"
     }
   },
