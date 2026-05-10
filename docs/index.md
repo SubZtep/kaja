@@ -13,6 +13,11 @@ _Work In Progress 🚧_
 ## Architecture
 
 ```mermaid
+---
+config:
+  look: handDrawn
+  theme: dark
+---
 flowchart LR
   subgraph "`**User Home**`"
     U((Browser))
