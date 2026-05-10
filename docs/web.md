@@ -63,7 +63,7 @@ This project uses [TanStack Router](https://tanstack.com/router) with file-based
 
 ### Adding A Route
 
-To add a new route to your application just add a new file in the `./src/routes` directory.
+To add a new route to your application, just add a new file in the `./src/routes` directory.
 
 TanStack will automatically generate the content of the route file for you.
 

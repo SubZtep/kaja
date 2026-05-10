@@ -7,7 +7,7 @@ nav_order: 4
 
 # Send Email
 
-Set up SMTP server. Use Gmail as free SMTP server.
+Set up SMTP. You can use Gmail as a free SMTP provider.
 
 ## Use App Password
 

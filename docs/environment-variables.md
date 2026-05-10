@@ -16,14 +16,14 @@ Each monorepo workspace manages custom environment variables. The values below a
 | BETTER_AUTH_SECRET  | `qXt2Moplrpfcr0g/1IZO4paJa4qoN/BgM3kU6fK5Bf0=`         | Generate: `openssl rand -base64 32`                         |
 | BETTER_AUTH_URL     | `https://api.kaja.io`                                  | API base endpoint                                           |
 | CORS_ORIGIN         | `https://kaja.io`                                      | Website URL                                                 |
-| CROSS_PARENT_DOMAIN | `ondis.co`                                             | **Optional**, set the base domain if apps are in subdomains |
+| CROSS_PARENT_DOMAIN | `kaja.io`                                              | **Optional**, set the base domain if apps are in subdomains |
 | DATABASE_URL        | `postgresql://testuser:testpass@localhost:5433/testdb` | Postgres connection string                                  |
 | EMAIL_FROM          | `kaja[bot] <noreply@kaja.io>`                          | Sender of system messages                                   |
 | PORT                | `3001`                                                 | API port                                                    |
 | SMTP_HOST           | `smtp.gmail.com`                                       |                                                             |
 | SMTP_PASS           | `abcdefghijklmnop`                                     |                                                             |
 | SMTP_PORT           | `587`                                                  |                                                             |
-| SMTP_SECURE         |                                                        | _Usually empty_                                             |
+| SMTP_SECURE         |                                                        | _Usually empty_ (`true` for TLS)                            |
 | SMTP_USER           | `subztep@gmail.com`                                    |                                                             |
 
 ## [Web](https://github.com/SubZtep/kaja/blob/main/apps/web/.env.example)

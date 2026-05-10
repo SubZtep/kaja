@@ -8,7 +8,7 @@ nav_order: 1
 
 ## What is it all about?
 
-_They don’t think it be like it is, but it do **work In Progress 🚧**_
+_They don’t think it be like it is, ~~but it do~~ **work in progress 🚧**_
 
 ## Architecture
 

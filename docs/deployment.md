@@ -10,13 +10,12 @@ All you need is:
 - 2 containers (api+web)
 - PostgreSQL
 - SMTP
-- GeoIP [update client](https://maxmind.github.io/geoipupdate/)
 
-> [Gmail’s SMTP](/kaja/deploy/) works, free, but for no/minimal traffic.
+> [Gmail’s SMTP](/kaja/deploy/) works and is free, but only for minimal traffic.
 
 ## [Disco](https://disco.cloud/docs/) Deploy
 
-Create two **Projects** and add additional **environment variables**:
+Create two **Projects** and add **environment variables**:
 
 | Project | Variable          | Value            |
 | ------- | ----------------- | ---------------- |
