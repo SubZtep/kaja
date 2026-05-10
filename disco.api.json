@@ -7,7 +7,7 @@
     },
     "hook:deploy:start:before": {
       "type": "command",
-      "command": "for f in $(printf '%s\\n' ./apps/api/migrations/*.sql | LC_ALL=C sort); do psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"$f\"; done",
+      "command": "printf '%s\\0' ./apps/api/migrations/*.sql | sort -z | xargs -0 -I{} psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"{}\"",
       "image": "backend"
     }
   },
