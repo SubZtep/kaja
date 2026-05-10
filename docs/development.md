@@ -8,25 +8,13 @@ nav_order: 3
 
 ## Setup
 
-Bootstrap your local env files (committed `.env.example` is an example, `.env` is your gitignored copy):
-
-```sh
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-cp apps/cli/.env.example apps/cli/.env
-```
-
-Generate local secret (appends `BETTER_AUTH_SECRET` to `apps/api/.env`):
-
-```sh
-./scripts/create_local_secrets.sh
-```
-
 Start PostgreSQL and SMTP services:
 
 ```sh
 docker compose up -d db mail
 ```
+
+> Mounts the persistent PostgreSQL data in the `./pgdata` folder. The migration files run automatically on first boot.
 
 ## Available commands
 
@@ -52,7 +40,7 @@ bun run test
 
 App: [http://localhost:3000](http://localhost:3000)\
 Webmail for the SMTP: [http://localhost:1080](http://localhost:1080)\
-Better-Auth OpenAPI in dev mode: [http://localhost:3001/auth/reference](http://localhost:3001/auth/reference)
+OpenAPI in dev mode: [http://localhost:3001/reference](http://localhost:3001/reference)
 
 ## Environment Variables
 
@@ -66,3 +54,9 @@ Each app under `/apps/*/` ships two env files:
 Compose build args (`VITE_API_URL`, `VITE_APP_URL`) default to `localhost` in `compose.yaml`. To override, create a root `.env` (gitignored) with the desired values — `docker compose` auto-loads it for variable interpolation.
 
 Production: **no `.env*` files** — inject vars via the host / orchestrator (Disco, Docker `--env-file` outside the image, k8s secrets, etc.). See [Deploy](deploy.md).
+
+---
+
+Next:
+
+[Open **API App**](/api){: .btn .btn-blue }

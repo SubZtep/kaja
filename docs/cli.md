@@ -1,99 +1,16 @@
 ---
 layout: page
-title: Useful CLI Commands
+title: CLI App
 parent: Development
-nav_order: 4
+nav_order: 3
 ---
 
-```
-Usage:
-# macOS / Linux (latest release)
-curl -fsSL https://kaja.io/setup.sh | bash
-# Pin version or repo (put env after the pipe)
-curl -fsSL https://kaja.io/setup.sh | REPO=subztep/kaja VERSION=v0.0.1 bash
+# K가💋자CL🔥I
 
-# Windows (PowerShell)
-irm https://kaja.io/setup.ps1 | iex
-# e.g. fork:  $env:REPO = 'me/kaja'; irm https://kaja.io/setup.ps1 | iex
-```
+CLI client for accessing the model-pool.
 
 ---
 
-## Model info
+Next:
 
-### parameter_size: 1.7B
-
-Parameters = the "knobs" the model learned during training. More knobs = more knowledge/capability, but also more RAM and slower.
-
-| Size    | RAM Needed (rough) | Vibe                                                       |
-| ------- | ------------------ | ---------------------------------------------------------- |
-| 1B–3B   | 1–3 GB             | Tiny, fast, dumb-ish. Fine for autocomplete, simple tasks. |
-| 7B–8B   | 5–8 GB             | The "sweet spot" for laptops.                              |
-| 13B–30B | 10–25 GB           | Smarter, needs a good GPU or lots of RAM.                  |
-| 70B+    | 40+ GB             | Serious hardware territory.                                |
-| 400B+   | Data center        | GPT-4 / Claude class.                                      |
-
-So 1.7B = small and fast, runs on pretty much anything, but won't be winning any IQ contests.
-
-### quantization_level: Q8_0
-
-This is a compression trick. Originally each parameter is a 32-bit or 16-bit float (fancy decimal number). Quantization rounds them to smaller integers to save space.
-
-Think JPEG for model weights — lose a little quality, save a lot of size.
-
-Common levels (smaller number = more compressed = worse quality but faster/smaller):
-
-| Quant  | Bits/weight | Quality                 | File size (for 1.7B) |
-| ------ | ----------- | ----------------------- | -------------------- |
-| F16    | 16          | Original-ish            | ~3.4 GB              |
-| Q8_0   | 8           | Nearly identical to F16 | ~1.8 GB              |
-| Q6_K   | ~6          | Very good               | ~1.4 GB              |
-| Q5_K_M | ~5          | Good                    | ~1.2 GB              |
-| Q4_K_M | ~4          | Decent, most popular    | ~1.0 GB              |
-| Q2_K   | ~2          | Noticeably dumber       | ~0.7 GB              |
-
-Q8_0 is basically "lossless-ish" — about half the size of the original with almost no quality drop. Good default for small models where you've got the RAM to spare.
-
----
-
-# Useful CLI Commands
-
-Check for dependency updates:
-
-```sh
-bun outdated -r
-```
-
-Update depdendencies for all packages:
-
-```sh
-bunx npm-check-updates -w -u
-```
-
-Print full output with errors into a file:
-
-```sh
-bun dev > output.txt 2>&1
-```
-
-Generate Better-Auth secret:
-
-```sh
-openssl rand -base64 32
-```
-
-Find unused dependencies:
-
-```sh
-bunx knip
-```
-
-## Docker
-
-Start database only:
-
-```sh
-docker compose up -d db
-```
-
-Connect with any PostgreSQL client to port 5433.
+[Open **Deployment**](/deployment){: .btn .btn-blue }

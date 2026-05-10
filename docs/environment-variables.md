@@ -51,4 +51,4 @@ On Linux this is typically `~/.config/kaja-nodejs/config.json` with default opti
 
 Next:
 
-[Open **Location**](/location){: .btn .btn-green }
+[Open **Location**](/location){: .btn .btn-blue }

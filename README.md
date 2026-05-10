@@ -32,30 +32,6 @@ This starts:
 - API
 - Web
 
-## Local Development
-
-Copy the committed env templates into local `.env` files:
-
-```sh
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-cp apps/cli/.env.example apps/cli/.env
-```
-
-Generate a local Better Auth secret:
-
-```sh
-./scripts/create_local_secrets.sh
-```
-
-Start the database and SMTP servers:
-
-```sh
-docker compose up -d db mail
-```
-
-> Mounts the persistent PostgreSQL data in the `./pgdata` folder. The migration files run automatically on first boot.
-
 ## Terminal Commands
 
 Run these from the project root:

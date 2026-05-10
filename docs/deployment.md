@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Deploy
+title: Deployment
 nav_order: 4
 ---
 

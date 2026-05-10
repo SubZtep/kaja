@@ -31,3 +31,9 @@ Steps to generate SMTP password with Gmail:
 user: your@gmail.com
 pass: <app password>
 ```
+
+---
+
+Next:
+
+[Open **Development**](/development){: .btn .btn-blue }

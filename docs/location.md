@@ -5,10 +5,16 @@ title: Location
 nav_order: 2
 ---
 
-GeoIP
+# Geo IP Database
+
+To enable IP-based location lookup, register with MaxMind:
+
+1. Create a [MaxMind account](https://support.maxmind.com/knowledge-base/articles/create-a-maxmind-account).
+1. Generate a [license key](https://support.maxmind.com/knowledge-base/articles/generate-a-maxmind-license-key).
+2. Install the [GeoIP Update](https://maxmind.github.io/geoipupdate/) program and fetch the **GeoLite2-City** binary database.
 
 ---
 
 Next:
 
-[Open **Development**](/development){: .btn .btn-green }
+[Open **Model**](/model){: .btn .btn-blue }

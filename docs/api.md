@@ -34,4 +34,10 @@ Typical structure:
 
 ## OpenAPI
 
-Better Auth endpoint reference: http://localhost:3001/api/auth/reference
+Endpoint reference: http://localhost:3001/reference.
+
+---
+
+Next:
+
+[Open **Web App**](/web){: .btn .btn-blue }
