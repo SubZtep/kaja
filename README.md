@@ -8,7 +8,7 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-This project is a Bun TypeScript monorepo that implements pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local CLI. See the [documentation page](https://docs.kaja.io) for details.
+This project is a Bun TypeScript monorepo that implements pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local CLI.
 
 ## What is in here?
 
@@ -32,27 +32,6 @@ This starts:
 - API
 - Web
 
-## Terminal Commands
-
-Run these from the project root:
-
-```sh
-bun dev          # Run the API and web app
-bun dev:cli      # Run the CLI app
-bun lint         # Check formatting and lint rules
-bun lint:fix     # Apply formatter and unsafe lint fixes
-```
-
-## Local URLs
-
-- Web: [http://localhost:3000](http://localhost:3000)
-- API: [http://localhost:3001](http://localhost:3001)
-- Email inbox: [http://localhost:1080](http://localhost:1080)
-- API reference: [http://localhost:3001/reference](http://localhost:3001/reference)
-
 ## Documentation
 
-- [Development](./docs/dev.md)
-- [Configuration](./docs/config.md)
-- [Deployment](./docs/deploy.md)
-- [**GitHub Pages**](https://docs.kaja.io)
+See [GitHub Pages](https://docs.kaja.io) for more details.

@@ -21,11 +21,16 @@ docker compose up -d db mail
 Run from your project root in a ***nix** system:
 
 ```sh
-# Run API and Web
+# Run the API and web app
 bun dev
 
-# Run linter and code formatter
+# Run the CLI app
+bun dev:cli
+
+# Check formatting and lint rules
 bun lint
+
+# Apply formatter and unsafe lint fixes
 bun lint:fix
 
 # Run test
@@ -38,9 +43,13 @@ bun run test
 ./scripts/mass_user_create.ts [number]
 ```
 
-App: [http://localhost:3000](http://localhost:3000)\
-Webmail for the SMTP: [http://localhost:1080](http://localhost:1080)\
-OpenAPI in dev mode: [http://localhost:3001/reference](http://localhost:3001/reference)
+## Local URLs
+
+
+- Web: [http://localhost:3000](http://localhost:3000)
+- API: [http://localhost:3001](http://localhost:3001)
+- Email inbox: [http://localhost:1080](http://localhost:1080)
+- API reference (dev mode only): [http://localhost:3001/reference](http://localhost:3001/reference)
 
 ## Environment Variables
 
