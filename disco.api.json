@@ -7,7 +7,7 @@
     },
     "hook:deploy:start:before": {
       "type": "command",
-      "command": "bash ./scripts/db_migration.sh",
+      "command": "./scripts/db_migration.sh",
       "image": "backend"
     }
   },
