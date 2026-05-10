@@ -6,9 +6,9 @@ nav_order: 1
 
 # Welcome to our documentation 🦋
 
-## What is Kaja?
+## What is it all about?
 
-_Work In Progress 🚧_
+_They don’t think it be like it is, but it do **work In Progress 🚧**_
 
 ## Architecture
 
