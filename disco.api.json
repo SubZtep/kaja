@@ -1,7 +1,14 @@
 {
   "version": "1.0",
   "services": {
-    "web": { "port": 3001, "image": "backend" }
+    "web": {
+      "port": 3001,
+      "image": "backend"
+    },
+    "hook:deploy:start:before": {
+      "type": "command",
+      "command": "./scripts/db_migration.sh"
+    }
   },
   "images": {
     "backend": {

@@ -47,8 +47,6 @@ flowchart LR
   A -- SMTP --> E
 ```
 
----
-
 ## Legal
 
 - [Privacy Policy](/privacy)

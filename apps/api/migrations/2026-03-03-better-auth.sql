@@ -1,64 +1,64 @@
-create table "user" (
-  "id" uuid default uuidv7() not null primary key,
-  "name" text not null,
-  "email" text not null unique,
-  "emailVerified" boolean not null,
-  "image" text,
-  "role" text,
-  "banned" boolean,
-  "banReason" text,
-  "banExpires" timestamptz,
-  "createdAt" timestamptz default CURRENT_TIMESTAMP not null,
-  "updatedAt" timestamptz default CURRENT_TIMESTAMP not null
+CREATE TABLE IF NOT EXISTS "user" (
+  "id" UUID DEFAULT uuidv7() NOT NULL PRIMARY KEY,
+  "name" TEXT NOT NULL,
+  "email" TEXT NOT NULL UNIQUE,
+  "emailVerified" BOOLEAN NOT NULL,
+  "image" TEXT,
+  "role" TEXT,
+  "banned" BOOLEAN,
+  "banReason" TEXT,
+  "banExpires" TIMESTAMPTZ,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-create table "session" (
-  "id" uuid default uuidv7() not null primary key,
-  "expiresAt" timestamptz not null,
-  "token" text not null unique,
-  "ipAddress" text,
-  "userAgent" text,
-  "impersonatedBy" uuid,
-  "userId" uuid not null references "user" ("id") on delete cascade,
-  "createdAt" timestamptz default CURRENT_TIMESTAMP not null,
-  "updatedAt" timestamptz default CURRENT_TIMESTAMP not null
+CREATE TABLE IF NOT EXISTS "session" (
+  "id" UUID DEFAULT uuidv7() NOT NULL PRIMARY KEY,
+  "expiresAt" TIMESTAMPTZ NOT NULL,
+  "token" TEXT NOT NULL UNIQUE,
+  "ipAddress" TEXT,
+  "userAgent" TEXT,
+  "impersonatedBy" UUID,
+  "userId" UUID NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-create table "account" (
-  "id" uuid default uuidv7() not null primary key,
-  "accountId" text not null,
-  "providerId" text not null,
-  "userId" uuid not null references "user" ("id") on delete cascade,
-  "accessToken" text,
-  "refreshToken" text,
-  "idToken" text,
-  "accessTokenExpiresAt" timestamptz,
-  "refreshTokenExpiresAt" timestamptz,
-  "scope" text,
-  "password" text,
-  "createdAt" timestamptz default CURRENT_TIMESTAMP not null,
-  "updatedAt" timestamptz default CURRENT_TIMESTAMP not null
+CREATE TABLE IF NOT EXISTS "account" (
+  "id" UUID DEFAULT uuidv7() NOT NULL PRIMARY KEY,
+  "accountId" TEXT NOT NULL,
+  "providerId" TEXT NOT NULL,
+  "userId" UUID NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+  "accessToken" TEXT,
+  "refreshToken" TEXT,
+  "idToken" TEXT,
+  "accessTokenExpiresAt" TIMESTAMPTZ,
+  "refreshTokenExpiresAt" TIMESTAMPTZ,
+  "scope" TEXT,
+  "password" TEXT,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-create table "verification" (
-  "id" uuid default uuidv7() not null primary key,
-  "identifier" text not null,
-  "value" text not null,
-  "expiresAt" timestamptz not null,
-  "createdAt" timestamptz default CURRENT_TIMESTAMP not null,
-  "updatedAt" timestamptz default CURRENT_TIMESTAMP not null
+CREATE TABLE IF NOT EXISTS "verification" (
+  "id" UUID DEFAULT uuidv7() NOT NULL PRIMARY KEY,
+  "identifier" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  "expiresAt" TIMESTAMPTZ NOT NULL,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-create table "deviceCode" (
-  "id" uuid default uuidv7() not null primary key,
-  "deviceCode" text not null unique,
-  "userCode" text not null unique,
-  "userId" uuid references "user" ("id") on delete cascade,
-  "clientId" text,
-  "scope" text,
-  "status" text not null,
-  "expiresAt" timestamptz not null,
-  "lastPolledAt" timestamptz,
-  "pollingInterval" integer
+CREATE TABLE IF NOT EXISTS "deviceCode" (
+  "id" UUID DEFAULT uuidv7() NOT NULL PRIMARY KEY,
+  "deviceCode" TEXT NOT NULL UNIQUE,
+  "userCode" TEXT NOT NULL UNIQUE,
+  "userId" UUID REFERENCES "user" ("id") ON DELETE CASCADE,
+  "clientId" TEXT,
+  "scope" TEXT,
+  "status" TEXT NOT NULL,
+  "expiresAt" TIMESTAMPTZ NOT NULL,
+  "lastPolledAt" TIMESTAMPTZ,
+  "pollingInterval" INTEGER
 );
-create index "session_userId_idx" on "session" ("userId");
-create index "account_userId_idx" on "account" ("userId");
-create index "verification_identifier_idx" on "verification" ("identifier");
-create index "deviceCode_userId_idx" on "deviceCode" ("userId");
-create index "deviceCode_expiresAt_idx" on "deviceCode" ("expiresAt");
+CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "session" ("userId");
+CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account" ("userId");
+CREATE INDEX IF NOT EXISTS "verification_identifier_idx" ON "verification" ("identifier");
+CREATE INDEX IF NOT EXISTS "deviceCode_userId_idx" ON "deviceCode" ("userId");
+CREATE INDEX IF NOT EXISTS "deviceCode_expiresAt_idx" ON "deviceCode" ("expiresAt");
