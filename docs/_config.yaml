@@ -3,6 +3,7 @@ description: Kaja is a free account-based web service for AI agents.
 repository: SubZtep/kaja
 permalink: pretty
 heading_anchors: false
+enable_copy_code_button: true
 
 aux_links:
   "Source on GitHub":

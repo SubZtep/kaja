@@ -8,7 +8,7 @@ nav_order: 3
 
 ## Setup
 
-Bootstrap your local env files (committed `.env.example` is the source of truth, `.env` is your gitignored copy):
+Bootstrap your local env files (committed `.env.example` is an example, `.env` is your gitignored copy):
 
 ```sh
 cp apps/api/.env.example apps/api/.env
