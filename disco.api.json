@@ -7,7 +7,9 @@
     },
     "hook:deploy:start:before": {
       "type": "command",
-      "command": "bash ./scripts/db_migration.sh"
+      "command": "bash ./scripts/db_migration.sh",
+      "dockerfile": "apps/api/Dockerfile",
+      "context": "."
     }
   },
   "images": {
