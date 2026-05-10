@@ -1,13 +1,13 @@
 ---
 layout: page
-title: SMTP
+title: Send Email
 parent: Configuration
 nav_order: 4
 ---
 
-# Set SMTP server
+# Send Email
 
-Use Gmail as free SMTP server.
+Set up SMTP server. Use Gmail as free SMTP server.
 
 ## Use App Password
 

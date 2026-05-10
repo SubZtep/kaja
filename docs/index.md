@@ -19,22 +19,18 @@ config:
   theme: dark
 ---
 flowchart LR
-  subgraph "`**User Home**`"
-    U((Browser))
-    UW((Terminal))
-    O["🦞 OpenClaw"]
-  end
+  U((Browser))
+  UW((Terminal))
+  O@{ shape: manual-file, label: "OpenClaw<br><big>🦞</big>" }
 
-  subgraph "`**Server**`"
-    D[(PostgreSQL)]
-    E{{Emails}}
-  end
+  D[(PostgreSQL)]
+  E@{ shape: docs, label: "Emails"}
 
-  subgraph "`**This monorepo**`"
-    A["📁 apps/api<br/>Hono API<br/>Better Auth"]
-    W["📁 apps/web<br/>TanStack Start<br/>React + SSR"]
-    P["📁 packages/*<br/>Zod schemas<br/>shared utilities"]
-    WW["📁 apps/cli<br/>CLI to drive OpenClaw"]
+  subgraph "`**monorepo**`"
+    A["📁 <strong><u>apps/api</u></strong><br/>Hono API<br/>Better Auth"]
+    W["📁 <strong><u>apps/web</u></strong><br/>TanStack Start<br/>React + SSR"]
+    P["📁 <strong><u>packages/*</u></strong><br/>Zod schemas<br/>shared utilities<br>GEO tools"]
+    WW["📁 <strong><u>apps/cli</u></strong><br/>CLI to drive OpenClaw"]
   end
 
   P -.-> A
@@ -43,17 +39,17 @@ flowchart LR
 
   U -- Web --- W
   UW -- HTTP --- A
-  UW <--> O
+  UW <==> O
   WW -.-> UW
 
   W -- HTTP --- A
-  A <--> D
+  A <==> D
   A -- SMTP --> E
 ```
 
 ---
 
-## [Kaja.io Legal](#legal)
+## Kaja.io Legal {: #legal }
 
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
