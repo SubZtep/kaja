@@ -49,7 +49,7 @@ flowchart LR
 
 ---
 
-## Kaja.io Legal {: #legal }
+## Legal
 
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
