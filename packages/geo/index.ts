@@ -41,6 +41,11 @@ function getReader() {
   }
 }
 
+/**
+ * Get the geo location of the given IP address. Safe to use in the **api** app.
+ * @param ip - The IP address to get the geo location of.
+ * @returns The geo location of the given IP address or undefined if the IP address is not found.
+ */
 export function getGeoLocation(ip: string): GeoLocation | undefined {
   try {
     const city = getReader()?.city(ip)

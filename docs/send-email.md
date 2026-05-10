@@ -11,7 +11,7 @@ Set up SMTP. You can use Gmail as a free SMTP provider.
 
 ## Use App Password
 
-Steps to generate SMTP password with Gmail:
+Steps to generate an SMTP password with Gmail:
 
 1. Go to your [Google Account security page](https://myaccount.google.com/security).
 2. Enable **2-Step Verification** if it is not enabled.

@@ -35,16 +35,16 @@ geoipupdate -d packages/geo/data
 
 ## GeoName ID
 
-Best flow:
-
-IP geolocate user (lat/lon, country)
-Call GeoNames findNearbyPlaceNameJSON (lat/lon)
-Store geonameId + country_code (+ optional cached city label)
-GeoNames endpoints you’ll use most:
-
-findNearbyPlaceNameJSON (from coordinates)
-searchJSON (from city text + country)
-hierarchyJSON (optional admin hierarchy)
+>  Best flow:
+>
+>  IP geolocate user (lat/lon, country)
+>  Call GeoNames findNearbyPlaceNameJSON (lat/lon)
+>  Store geonameId + country_code (+ optional cached city label)
+>  GeoNames endpoints you’ll use most:
+>
+>  findNearbyPlaceNameJSON (from coordinates)
+>  searchJSON (from city text + country)
+>  hierarchyJSON (optional admin hierarchy)
 
 ---
 

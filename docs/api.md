@@ -15,7 +15,7 @@ bun x auth@latest migrate
 
 ## Load env files
 
-To overwrite the default [`.env`](.env) values just create one of the following files:
+To overwrite the default [`.env`](.env) values, just create one of the following files:
 
 ```
 .env.local

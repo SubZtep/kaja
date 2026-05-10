@@ -18,7 +18,7 @@ docker compose up -d db mail
 
 ## Available commands
 
-Run from your project root in a ***nix** system:
+From your project root, run in a terminal:
 
 ```sh
 # Run the API and web app

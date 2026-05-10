@@ -17,7 +17,7 @@ Each monorepo workspace manages custom environment variables. The values below a
 | BETTER_AUTH_URL     | `https://api.kaja.io`                                  | API base endpoint                                           |
 | CORS_ORIGIN         | `https://kaja.io`                                      | Website URL                                                 |
 | CROSS_PARENT_DOMAIN | `kaja.io`                                              | **Optional**, set the base domain if apps are in subdomains |
-| DATABASE_URL        | `postgresql://testuser:testpass@localhost:5433/testdb` | Postgres connection string                                  |
+| DATABASE_URL        | `postgresql://testuser:testpass@localhost:5433/testdb` | PostgreSQL connection string                                |
 | EMAIL_FROM          | `kaja[bot] <noreply@kaja.io>`                          | Sender of system messages                                   |
 | PORT                | `3001`                                                 | API port                                                    |
 | SMTP_HOST           | `smtp.gmail.com`                                       |                                                             |
@@ -28,11 +28,11 @@ Each monorepo workspace manages custom environment variables. The values below a
 
 ## [Web](https://github.com/SubZtep/kaja/blob/main/apps/web/.env.example)
 
-| **Name**     | Value                 | Description                                                |
-| ------------ | --------------------- | ---------------------------------------------------------- |
-| API_URL      | `https://api.kaja.io` | **Optional**, server-only (used by SSR / server functions) |
-| VITE_API_URL | `https://api.kaja.io` | Client-exposed; baked into bundle at build time            |
-| VITE_APP_URL | `https://kaja.io`     | Client-exposed                                             |
+| **Name**     | Value                 | Description                                                                                  |
+| ------------ | --------------------- | -------------------------------------------------------------------------------------------- |
+| API_URL      | `https://api.kaja.io` | **Optional**, server-side fetch target (SSR / server functions). Defaults to `VITE_API_URL`. |
+| VITE_API_URL | `https://api.kaja.io` | Client-exposed; baked into bundle at build time                                              |
+| VITE_APP_URL | `https://kaja.io`     | Client-exposed                                                                               |
 
 ## [CLI](https://github.com/SubZtep/kaja/blob/main/apps/cli/.env.example)
 

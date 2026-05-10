@@ -8,9 +8,9 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-This project is a Bun TypeScript monorepo that implements pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local CLI.
+This project is built with Bun and TypeScript, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local CLI.
 
-## What is in here?
+## What’s in the Monorepo?
 
 - **Apps**
   - [`api`](./apps/api/) – Rest API, authentication, database migrations, and email delivery.
@@ -29,7 +29,7 @@ Working defaults are provided in the [Docker Compose config](compose.yaml) and a
 docker compose up -d
 ```
 
-This starts:
+This command starts:
 
 - PostgreSQL
 - MailDev SMTP

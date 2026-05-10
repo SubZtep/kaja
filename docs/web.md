@@ -9,7 +9,7 @@ Welcome to your new TanStack Start app!
 
 ## Install
 
-Create `.env` file:
+Create a `.env` file:
 
 ```ini
 API_URL=http://localhost:3001
