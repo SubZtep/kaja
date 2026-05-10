@@ -40,4 +40,4 @@ Endpoint reference: http://localhost:3001/reference.
 
 Next:
 
-[Open the **web app** page](/web){: .btn .btn-blue .fs-5 }
+[Open the **web app** page](/web){: .btn .btn-green .fs-5 }

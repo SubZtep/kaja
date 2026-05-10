@@ -6,10 +6,9 @@ nav_order: 2
 
 # Configuration
 
-This section describe all the different configuration settings. Understand the different workspace's environments crutial for local development or deploy online.
+This section describes all the different configuration settings. Each monorepo workspace has its own environment variables.
 
 ## Local
-
 
 Bootstrap your local env files (committed `.env.example` is an example, `.env` is your gitignored copy):
 
@@ -29,8 +28,10 @@ Generate local secret (appends `BETTER_AUTH_SECRET` to `apps/api/.env`):
 
 Docker builds omit `.env` files. Set the environment variables on the server.
 
+If you are using Disco Deploy, don’t forget to set an additional `DISCO_JSON_PATH` environment variable for both the **API** (value: `disco.api.json`) and **web** (value: `disco.web.json`).
+
 ---
 
 Next:
 
-[Open the **environment variables** page](/environment-variables){: .btn .btn-blue .fs-5 }
+[Open the **environment variables** page](/environment-variables){: .btn .btn-green .fs-5 }

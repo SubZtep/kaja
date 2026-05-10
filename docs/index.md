@@ -56,4 +56,4 @@ flowchart LR
 
 Next:
 
-[Open the **configuration** page](/configuration){: .btn .btn-blue .fs-5 }
+[Open the **configuration** page](/configuration){: .btn .btn-green .fs-5 }

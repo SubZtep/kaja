@@ -5,40 +5,40 @@ title: Environment Variables
 nav_order: 1
 ---
 
-## Secrets and endpoints (for each app in the monorepo)
+# Environment Variables
 
-Each app has a committed `.env.example` with developer defaults. To override defaults, copy it to `.env` (gitignored) and fill it in, or set the variables as host environment variables in production.`
+Each monorepo workspace manages custom environment variables. The values below are good examples, but are not yet finalised.
 
-### [Web](https://github.com/SubZtep/kaja/blob/main/apps/web/.env.example)
+## [API](https://github.com/SubZtep/kaja/blob/main/apps/api/.env.example)
 
-| Variable Name | Value                 | Description                                                |
-| ------------- | --------------------- | ---------------------------------------------------------- |
-| API_URL       | http://localhost:3001 | **Optional**, server-only (used by SSR / server functions) |
-| VITE_API_URL  | http://localhost:3001 | Client-exposed; baked into bundle at build time            |
-| VITE_APP_URL  | http://localhost:3000 | Client-exposed                                             |
+| Variable Name       | Value                                                  | Description                                                 |
+| ------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| BETTER_AUTH_SECRET  | `qXt2Moplrpfcr0g/1IZO4paJa4qoN/BgM3kU6fK5Bf0=`         | Generate: `openssl rand -base64 32`                         |
+| BETTER_AUTH_URL     | `https://api.kaja.io`                                  | API base endpoint                                           |
+| CORS_ORIGIN         | `https://kaja.io`                                      | Website URL                                                 |
+| CROSS_PARENT_DOMAIN | `ondis.co`                                             | **Optional**, set the base domain if apps are in subdomains |
+| DATABASE_URL        | `postgresql://testuser:testpass@localhost:5433/testdb` | Postgres connection string                                  |
+| EMAIL_FROM          | `kaja[bot] <noreply@kaja.io>`                          | Sender of system messages                                   |
+| PORT                | `3001`                                                 | API port                                                    |
+| SMTP_HOST           | `smtp.gmail.com`                                       |                                                             |
+| SMTP_PASS           | `abcdefghijklmnop`                                     |                                                             |
+| SMTP_PORT           | `587`                                                  |                                                             |
+| SMTP_SECURE         |                                                        | _Usually empty_                                             |
+| SMTP_USER           | `subztep@gmail.com`                                    |                                                             |
 
-### [API](https://github.com/SubZtep/kaja/blob/main/apps/api/.env.example)
+## [Web](https://github.com/SubZtep/kaja/blob/main/apps/web/.env.example)
 
-| Variable Name       | Value                                              | Description                                                 |
-| ------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
-| PORT                | 3001                                               |                                                             |
-| CORS_ORIGIN         | http://localhost:3000                              | Website URL                                                 |
-| CROSS_PARENT_DOMAIN | ondis.co                                           | **Optional**, set the base domain if apps are in subdomains |
-| DATABASE_URL        | postgresql://testuser:testpass@localhost:5433/test | Postgres connection string                                  |
-| BETTER_AUTH_URL     | http://localhost:3001                              | API URL                                                     |
-| EMAIL_FROM          | `kaja[bot] <noreply@kaja.io>`                      |                                                             |
-| SMTP_HOST           | localhost                                          |                                                             |
-| SMTP_PORT           | 1025                                               |                                                             |
-| SMTP_SECURE         |                                                    | _Usually empty_                                             |
-| SMTP_USER           |                                                    |                                                             |
-| SMTP_PASS           |                                                    |                                                             |
-| BETTER_AUTH_SECRET  |                                                    | Generate: `openssl rand -base64 32`                         |
+| **Name**     | Value                 | Description                                                |
+| ------------ | --------------------- | ---------------------------------------------------------- |
+| API_URL      | `https://api.kaja.io` | **Optional**, server-only (used by SSR / server functions) |
+| VITE_API_URL | `https://api.kaja.io` | Client-exposed; baked into bundle at build time            |
+| VITE_APP_URL | `https://kaja.io`     | Client-exposed                                             |
 
-### [CLI](https://github.com/SubZtep/kaja/blob/main/apps/cli/.env.example)
+## [CLI](https://github.com/SubZtep/kaja/blob/main/apps/cli/.env.example)
 
-| Variable Name | Value                 | Description |
-| ------------- | --------------------- | ----------- |
-| API_URL       | http://localhost:3001 | API URL     |
+| Variable Name | Value                 | Description       |
+| ------------- | --------------------- | ----------------- |
+| API_URL       | `https://api.kaja.io` | API base endpoint |
 
 CLI also supports a non-secret local config file resolved by [`env-paths`](https://www.npmjs.com/package/env-paths).
 On Linux this is typically `~/.config/kaja-nodejs/config.json` with default options.
@@ -51,4 +51,4 @@ On Linux this is typically `~/.config/kaja-nodejs/config.json` with default opti
 
 Next:
 
-[Open the **location** page](/location){: .btn .btn-blue .fs-5 }
+[Open the **location** page](/location){: .btn .btn-green .fs-5 }

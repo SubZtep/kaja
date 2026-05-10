@@ -38,4 +38,4 @@ pass: <app password>
 
 Next:
 
-[Open the **development** page](/development){: .btn .btn-blue .fs-5 }
+[Open the **development** page](/development){: .btn .btn-green .fs-5 }

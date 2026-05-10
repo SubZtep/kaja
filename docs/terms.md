@@ -39,7 +39,7 @@ Kaja may refuse, suspend, or terminate accounts that violate these Terms, create
 
 You must not use Kaja to:
 
-- break the law or violate anyone's rights;
+- break the law or violate anyone’s rights;
 - send spam, phishing, malware, or abusive content;
 - attempt unauthorized access to accounts, systems, or data;
 - probe, scan, or attack the service except through responsible security research;
@@ -57,11 +57,11 @@ Do not submit data you do not have the right to use.
 
 ## Privacy
 
-Kaja's handling of personal data is described in the [Privacy Policy](privacy.md).
+Kaja’s handling of personal data is described in the [Privacy Policy](privacy.md).
 
 ## Security Research
 
-Good-faith security reports are welcome. Do not access, modify, delete, or disclose other users' data. Do not perform destructive testing or denial-of-service testing.
+Good-faith security reports are welcome. Do not access, modify, delete, or disclose other users’ data. Do not perform destructive testing or denial-of-service testing.
 
 Report issues to subztep@gmail.com.
 
@@ -71,7 +71,7 @@ Kaja, including its software, design, documentation, names, and branding, is own
 
 Open-source parts of Kaja remain governed by their applicable open-source licenses.
 
-These Terms do not give you ownership of Kaja's software, branding, or documentation.
+These Terms do not give you ownership of Kaja’s software, branding, or documentation.
 
 ## Third-Party Services
 
@@ -92,7 +92,7 @@ To the maximum extent permitted by law, Kaja disclaims all warranties, whether e
 
 To the maximum extent permitted by law, Kaja and its operator will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, data, goodwill, or business opportunities.
 
-Kaja's total liability for any claim relating to the service is limited to GBP 0.
+Kaja’s total liability for any claim relating to the service is limited to GBP 0.
 
 Some jurisdictions do not allow certain limits, so parts of this section may not apply to you.
 
