@@ -4,11 +4,6 @@
     "web": {
       "port": 3001,
       "image": "backend"
-    },
-    "hook:deploy:start:before": {
-      "type": "command",
-      "command": "sh -c 'printf \"%s\\0\" ./apps/api/migrations/*.sql | sort -z | xargs -0 -I{} psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"{}\"'",
-      "image": "backend"
     }
   },
   "images": {
