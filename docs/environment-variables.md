@@ -51,4 +51,4 @@ On Linux this is typically `~/.config/kaja-nodejs/config.json` with default opti
 
 Next:
 
-[Open the **location** page](/location){: .btn .btn-green .fs-5 }
+[Open the **Geo** page](/geo){: .btn .btn-green .fs-5 }

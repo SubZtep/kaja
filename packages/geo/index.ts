@@ -2,6 +2,27 @@ import fs from "node:fs"
 import path from "node:path"
 import { Reader } from "@maxmind/geoip2-node"
 
+interface GeoLocation {
+  continent: {
+    geonameId: number
+    name: string
+  }
+  country: {
+    geonameId: number
+    name: string
+  }
+  city: {
+    geonameId: number
+    name: string
+  }
+  location: {
+    accuracyRadius: number
+    latitude: number
+    longitude: number
+    timeZone: string
+  }
+}
+
 const mmdbPath = path.join(__dirname, "data", "GeoLite2-City.mmdb")
 let reader: ReturnType<typeof Reader.openBuffer> | undefined
 let triedInit = false
@@ -20,11 +41,11 @@ function getReader() {
   }
 }
 
-export function getCity(ip: string) {
+export function getGeoLocation(ip: string): GeoLocation | undefined {
   try {
     const city = getReader()?.city(ip)
     console.log(city)
-    return city
+    // return city
   } catch {
     return undefined
   }

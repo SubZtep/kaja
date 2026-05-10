@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: testuser
       POSTGRES_PASSWORD: testpass
-      POSTGRES_DB: test
+      POSTGRES_DB: testdb
     volumes:
       - ./pgdata:/var/lib/postgresql
       - ./apps/api/migrations:/docker-entrypoint-initdb.d
@@ -52,7 +52,7 @@ services:
       - path: apps/api/.env
         required: false
     environment:
-      DATABASE_URL: postgresql://testuser:testpass@db:5432/test
+      DATABASE_URL: postgresql://testuser:testpass@db:5432/testdb
       SMTP_HOST: mail
 
   web:

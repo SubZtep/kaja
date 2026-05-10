@@ -19,9 +19,11 @@ config:
   theme: dark
 ---
 flowchart LR
-  U((Browser))
-  UW((Terminal))
+  U@{ shape: curv-trap, label: "👤 Browser" }
+  UW@{ shape: notch-rect, label: "👤 Terminal" }
   O@{ shape: manual-file, label: "OpenClaw<br><big>🦞</big>" }
+  L@{ shape: manual-file, label: "Ollama<br><big>🦙</big>" }
+  B@{ shape: bolt }
 
   D[(PostgreSQL)]
   E@{ shape: docs, label: "Emails"}
@@ -40,7 +42,9 @@ flowchart LR
   U -- Web --- W
   UW -- HTTP --- A
   UW <==> O
+  UW <==> L
   WW -.-> UW
+  UW <===> B
 
   W -- HTTP --- A
   A <==> D

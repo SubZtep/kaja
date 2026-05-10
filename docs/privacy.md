@@ -23,6 +23,13 @@ When you create or use an account, Kaja may collect:
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
 - email data needed to send account emails, such as verification, password reset, and email change messages.
 
+IP address handling details:
+
+- Kaja processes IP addresses temporarily for authentication and session security.
+- Better Auth may keep IP data temporarily as part of active session/authentication records.
+- Kaja may use IP-based geolocation (MaxMind) to derive approximate location data.
+- Kaja does not store raw IP addresses long-term in its own application data; only derived location data (for example city) may be retained.
+
 Kaja does not intentionally collect payment data because accounts are currently free.
 
 ## How We Use Data

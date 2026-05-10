@@ -1,6 +1,7 @@
 import { apiBaseUrl } from "./lib/clients"
 import * as auth from "./ui/auth"
 import * as init from "./ui/init"
+import * as node from "./ui/node"
 
 process.env.API_URL = apiBaseUrl
 
@@ -9,8 +10,11 @@ void (async () => {
   if (helperResult.handled) {
     process.exit(helperResult.exitCode)
   }
+
   await init.printLogo()
-  await auth.authFlow()
+  await auth.initUserSession()
+  await node.spawnNode()
+
   process.exit(0)
 })().catch(error => {
   const message = error instanceof Error ? error.message : String(error)

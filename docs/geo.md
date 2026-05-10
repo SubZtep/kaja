@@ -5,11 +5,13 @@ title: Location
 nav_order: 2
 ---
 
-# Geo IP Database
+# Geo
+
+## IP to Location
 
 To enable IP-based location lookup, register with MaxMind.
 
-## Setup
+### Setup
 
 Run these steps on localhost and on the server.
 
@@ -25,11 +27,24 @@ Run these steps on localhost and on the server.
    EditionIDs GeoLite2-City
    ```
 
-## Update Database
+### Update Database
 
 ```sh
-geoipupdate -d packages/location/data
+geoipupdate -d packages/geo/data
 ```
+
+## GeoName ID
+
+Best flow:
+
+IP geolocate user (lat/lon, country)
+Call GeoNames findNearbyPlaceNameJSON (lat/lon)
+Store geonameId + country_code (+ optional cached city label)
+GeoNames endpoints you’ll use most:
+
+findNearbyPlaceNameJSON (from coordinates)
+searchJSON (from city text + country)
+hierarchyJSON (optional admin hierarchy)
 
 ---
 

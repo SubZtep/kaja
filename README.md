@@ -12,10 +12,14 @@ This project is a Bun TypeScript monorepo that implements pieces of **Better Aut
 
 ## What is in here?
 
-- [`apps/api`](./apps/api/) - Rest API, authentication, database migrations, and email delivery.
-- [`apps/web`](./apps/web/) - Public web and admin portal.
-- [`apps/cli`](./apps/cli/) - Installable CLI app for orchestration tasks.
-- [`packages/*`](./packages/) - Shared schemas and utilities.
+- **Apps**
+  - [`api`](./apps/api/) – Rest API, authentication, database migrations, and email delivery.
+  - [`web`](./apps/web/) – Public web and admin portal.
+  - [`cli`](./apps/cli/) – Installable CLI app for orchestration tasks.
+- **Packages**
+  - [`geo`](./packages/geo/) – Geolocation services.
+  - [`schemas`](./packages/schemas/) – Payload and data schemas across the workspaces.
+  - [`shared`](./packages/shared/) – Shared utilities (pure functions).
 
 ## Quick Start
 
@@ -31,6 +35,12 @@ This starts:
 - MailDev SMTP
 - API
 - Web
+
+This is all the CLI needs to connect:
+
+```sh
+bun dev:cli
+```
 
 ## Documentation
 

@@ -21,7 +21,7 @@ function fail(message: string) {
   throw new Error(message)
 }
 
-export async function authFlow() {
+export async function initUserSession() {
   if (!(await kaja.ping())) {
     throw new Error(`Unable to connect to ${kaja.host()}`)
   }
@@ -45,7 +45,7 @@ export async function authFlow() {
     fail(error?.error_description ?? error?.statusText ?? "Could not start device login")
   }
 
-  const { device_code, user_code, verification_uri, verification_uri_complete, interval = 5, expires_in = 1800 } = data
+  const { device_code, user_code, verification_uri, verification_uri_complete, interval = 5, expires_in = 1800 } = data!
 
   // MARK: Authentication
 
@@ -63,7 +63,10 @@ export async function authFlow() {
   let token: string
 
   try {
-    token = await pollDeviceToken(authClient, device_code, interval, Date.now() + expires_in * 1000)
+    token = (await pollDeviceToken(authClient, device_code, interval, Date.now() + expires_in * 1000)) ?? ""
+    if (!token) {
+      fail("No token found")
+    }
   } finally {
     cleanupLoginActions()
   }

@@ -1,8 +1,7 @@
 CREATE TABLE IF NOT EXISTS "node" (
   "id" uuid default uuidv7() not null primary key,
   "name" text not null,
-  "ip" inet,
-  "geo" jsonb,
+  "geo_location" jsonb,
   "status" text not null default 'idle',
   "last_seen" timestamptz default CURRENT_TIMESTAMP not null,
   "created_at" timestamptz default CURRENT_TIMESTAMP not null,
