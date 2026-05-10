@@ -8,6 +8,8 @@ nav_order: 1
 
 _Work In Progress 🚧_
 
+[Open **kaja.io**](https://kaja.io/){: .btn .btn-green }
+
 ## Architecture
 
 ```mermaid
@@ -46,7 +48,7 @@ flowchart LR
 
 ---
 
-## [Kaja.io legal](#legal)
+## [Kaja.io Legal](#legal)
 
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)

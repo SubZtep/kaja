@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Deploy
-nav_order: 5
+nav_order: 4
 ---
 
 # Deploy
@@ -25,7 +25,7 @@ Create two **Projects** and add additional **environment variables**:
 
 ## Production environment variables
 
-**No `.env*` files are baked into images** — all values must be injected by the host / orchestrator at the right phase (build vs runtime). Refer to [Configuration](config.md) for descriptions and dev defaults.
+**No `.env*` files are baked into images** — all values must be injected by the host / orchestrator at the right phase (build vs runtime). Refer to [Configuration](configuration.md) for descriptions and dev defaults.
 
 ### Web (`@kaja/web`)
 
