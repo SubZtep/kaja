@@ -4,12 +4,12 @@ import { DEFAULT_API_URL, normalizeConfig, pickApiUrl } from "./config"
 describe("pickApiUrl", () => {
   it("prefers argv over env and config", () => {
     const resolved = pickApiUrl({
-      argApiUrl: "http://arg.local",
-      envApiUrl: "http://env.local",
-      configApiUrl: "http://config.local"
+      argApiUrl: "https://arg.local",
+      envApiUrl: "https://env.local",
+      configApiUrl: "https://config.local"
     })
 
-    expect(resolved).toBe("http://arg.local")
+    expect(resolved).toBe("https://arg.local")
   })
 
   it("falls back to default", () => {
