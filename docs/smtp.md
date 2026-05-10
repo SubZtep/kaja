@@ -1,11 +1,13 @@
 ---
 layout: page
-title: Gmail as free SMTP server
-parent: Development
-nav_order: 5
+title: SMTP
+parent: Configuration
+nav_order: 4
 ---
 
-# Gmail as free SMTP server
+# Set SMTP server
+
+Use Gmail as free SMTP server.
 
 ## Use App Password
 
@@ -36,4 +38,4 @@ pass: <app password>
 
 Next:
 
-[Open **Development**](/development){: .btn .btn-blue }
+[Open the **development** page](/development){: .btn .btn-blue }

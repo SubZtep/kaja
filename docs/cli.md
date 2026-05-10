@@ -13,4 +13,4 @@ CLI client for accessing the model-pool.
 
 Next:
 
-[Open **Deployment**](/deployment){: .btn .btn-blue }
+[Open the **deployment** page](/deployment){: .btn .btn-blue }

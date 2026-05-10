@@ -17,4 +17,4 @@ To enable IP-based location lookup, register with MaxMind:
 
 Next:
 
-[Open **Model**](/model){: .btn .btn-blue }
+[Open the **model** page](/model){: .btn .btn-blue }

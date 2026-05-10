@@ -59,4 +59,4 @@ Production: **no `.env*` files** — inject vars via the host / orchestrator (Di
 
 Next:
 
-[Open **API App**](/api){: .btn .btn-blue }
+[Open the **API app** page](/api){: .btn .btn-blue }

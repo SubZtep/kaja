@@ -48,4 +48,4 @@ Q8_0 is basically "lossless-ish" — about half the size of the original with al
 
 Next:
 
-[Open **SMTP**](/smtp){: .btn .btn-blue }
+[Open the **SMTP** page](/smtp){: .btn .btn-blue }
