@@ -53,4 +53,8 @@ flowchart LR
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
 
+---
+
+Next:
+
 [Open **Configuration**](/configuration){: .btn .btn-green }

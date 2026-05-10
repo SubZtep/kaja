@@ -7,41 +7,38 @@ nav_order: 1
 
 ## Secrets and endpoints (for each app in the monorepo)
 
-Each app has a committed `.env.example` listing every variable. Copy to `.env` (gitignored) and fill in, or inject as host env in production.
+Each app has a committed `.env.example` with developer defaults. To override defaults, copy it to `.env` (gitignored) and fill it in, or set the variables as host environment variables in production.`
 
-Default developer values:
+### [Web](https://github.com/SubZtep/kaja/blob/main/apps/web/.env.example)
 
-### `/apps/web/.env.example` -> `/apps/web/.env`
+| Variable Name | Value                 | Description                                                |
+| ------------- | --------------------- | ---------------------------------------------------------- |
+| API_URL       | http://localhost:3001 | **Optional**, server-only (used by SSR / server functions) |
+| VITE_API_URL  | http://localhost:3001 | Client-exposed; baked into bundle at build time            |
+| VITE_APP_URL  | http://localhost:3000 | Client-exposed                                             |
 
-| Variable Name | Secret? | Value                 | Description                                                |
-| ------------- | ------- | --------------------- | ---------------------------------------------------------- |
-| API_URL       | no      | http://localhost:3001 | **Optional**, server-only (used by SSR / server functions) |
-| VITE_API_URL  | no      | http://localhost:3001 | Client-exposed; baked into bundle at build time            |
-| VITE_APP_URL  | no      | http://localhost:3000 | Client-exposed                                             |
+### [API](https://github.com/SubZtep/kaja/blob/main/apps/api/.env.example)
 
+| Variable Name       | Value                                              | Description                                                 |
+| ------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
+| PORT                | 3001                                               |                                                             |
+| CORS_ORIGIN         | http://localhost:3000                              | Website URL                                                 |
+| CROSS_PARENT_DOMAIN | ondis.co                                           | **Optional**, set the base domain if apps are in subdomains |
+| DATABASE_URL        | postgresql://testuser:testpass@localhost:5433/test | Postgres connection string                                  |
+| BETTER_AUTH_URL     | http://localhost:3001                              | API URL                                                     |
+| EMAIL_FROM          | `kaja[bot] <noreply@kaja.io>`                      |                                                             |
+| SMTP_HOST           | localhost                                          |                                                             |
+| SMTP_PORT           | 1025                                               |                                                             |
+| SMTP_SECURE         |                                                    | _Usually empty_                                             |
+| SMTP_USER           |                                                    |                                                             |
+| SMTP_PASS           |                                                    |                                                             |
+| BETTER_AUTH_SECRET  |                                                    | Generate: `openssl rand -base64 32`                         |
 
-### `/apps/api/.env.example` -> `/apps/api/.env`
+### [CLI](https://github.com/SubZtep/kaja/blob/main/apps/cli/.env.example)
 
-| Variable Name       | Secret? | Value                                              | Description                                                 |
-| ------------------- | ------- | -------------------------------------------------- | ----------------------------------------------------------- |
-| PORT                | no      | 3001                                               |                                                             |
-| CORS_ORIGIN         | no      | http://localhost:3000                              | Website URL                                                 |
-| CROSS_PARENT_DOMAIN | no      | ondis.co                                           | **Optional**, set the base domain if apps are in subdomains |
-| DATABASE_URL        | yes     | postgresql://testuser:testpass@localhost:5433/test | Postgres connection string                                  |
-| BETTER_AUTH_URL     | no      | http://localhost:3001                              | API URL                                                     |
-| EMAIL_FROM          | no      | `"Admin Starter <noreply@test.com>"`               |                                                             |
-| SMTP_HOST           | no      | localhost                                          |                                                             |
-| SMTP_PORT           | no      | 1025                                               |                                                             |
-| SMTP_SECURE         | no      |                                                    | _Usually empty_                                             |
-| SMTP_USER           | yes     |                                                    |                                                             |
-| SMTP_PASS           | yes     |                                                    |                                                             |
-| BETTER_AUTH_SECRET  | yes     |                                                    | Generate: `openssl rand -base64 32`                         |
-
-### `/apps/cli/.env.example` -> `/apps/cli/.env`
-
-| Variable Name | Secret? | Value                 | Description |
-| ------------- | ------- | --------------------- | ----------- |
-| API_URL       | no      | http://localhost:3001 | API URL     |
+| Variable Name | Value                 | Description |
+| ------------- | --------------------- | ----------- |
+| API_URL       | http://localhost:3001 | API URL     |
 
 CLI also supports a non-secret local config file resolved by [`env-paths`](https://www.npmjs.com/package/env-paths).
 On Linux this is typically `~/.config/kaja-nodejs/config.json` with default options.
@@ -52,4 +49,6 @@ On Linux this is typically `~/.config/kaja-nodejs/config.json` with default opti
 
 ---
 
-[Open **Location**](/environment-variables){: .btn .btn-green }
+Next:
+
+[Open **Location**](/location){: .btn .btn-green }
