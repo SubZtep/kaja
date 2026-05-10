@@ -3,7 +3,6 @@ description: Kaja is a free account-based web service for AI agents.
 repository: SubZtep/kaja
 permalink: pretty
 heading_anchors: false
-gh_edit_link: true
 
 aux_links:
   "Source on GitHub":
@@ -22,3 +21,13 @@ mermaid:
 
 color_scheme: dark
 favicon_ico: /images/favicon.ico
+
+last_edit_timestamp: true
+last_edit_time_format: "%b %e %Y at %I:%M %p"
+
+gh_edit_link: true
+gh_edit_link_text: "Edit this page on GitHub."
+gh_edit_repository: "https://github.com/SubZtep/kaja"
+gh_edit_branch: "main"
+gh_edit_source: "docs"
+gh_edit_view_mode: "edit"
