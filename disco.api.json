@@ -4,6 +4,10 @@
     "web": {
       "port": 3001,
       "image": "backend"
+    },
+    "hook:deploy:start:before": {
+      "type": "command",
+      "command": "bash ./scripts/db_migration.sh"
     }
   },
   "images": {
