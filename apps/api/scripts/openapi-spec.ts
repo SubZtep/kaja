@@ -1,21 +1,21 @@
 export const openApiSpec = {
-  openapi: "3.0.3",
+  openapi: "3.1.1",
   info: {
     title: "Kaja.io API",
-    version: "1.0.0",
-    description:
-      "Simple manual OpenAPI reference for Kaja.io. For auth endpoints open the Swagger UI at /auth/reference."
+    version: "0.0.1",
+    description: "Custom endpoints without [auth reference](/auth/reference)."
   },
   components: {
     securitySchemes: {
       bearerAuth: {
         type: "http",
         scheme: "bearer",
-        bearerFormat: "JWT"
+        bearerFormat: "JWT",
+        description: "Get value from `kaja.session_token` cookie."
       }
     }
   },
-  tags: [{ name: "System" }, { name: "Auth" }, { name: "Users" }, { name: "Kaja Nodes" }],
+  tags: [{ name: "System" }, { name: "Users" }, { name: "Kaja Nodes" }],
   paths: {
     "/health": {
       get: {

@@ -5,6 +5,16 @@
     "version": "0.0.1",
     "description": "Custom endpoints without [auth reference](/auth/reference)."
   },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Get value from `kaja.session_token` cookie."
+      }
+    }
+  },
   "tags": [
     {
       "name": "System"

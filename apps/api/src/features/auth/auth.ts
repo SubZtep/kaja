@@ -6,8 +6,6 @@ import { logger } from "#/core/logger"
 import { sendEmail } from "#/emails"
 import type { EmailPayload } from "#/emails/template"
 
-const isDevMode = process.env.NODE_ENV === "development"
-
 function deviceVerificationUrl() {
   const fromEnv = [process.env.WEB_PUBLIC_URL, process.env.CORS_ORIGIN].map(s => s?.trim()).find(Boolean)
   const base = (fromEnv ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000")).replace(/\/$/, "")
@@ -46,13 +44,14 @@ const plugins: BetterAuthPlugin[] = [
   })
 ]
 
-if (isDevMode) {
+if (process.env.NODE_ENV === "development") {
   plugins.push(openAPI())
 }
 
 export const auth = betterAuth({
   trustedOrigins: [process.env.CORS_ORIGIN],
   advanced: {
+    cookiePrefix: "kaja",
     database: {
       generateId: () => Bun.randomUUIDv7(),
       defaultFindManyLimit: 1000
