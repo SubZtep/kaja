@@ -1,34 +1,19 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.1",
   "info": {
     "title": "Kaja.io API",
-    "version": "1.0.0",
-    "description": "Simple manual OpenAPI reference for Kaja.io. For auth endpoints open the Swagger UI at /auth/reference."
-  },
-  "components": {
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
-    }
+    "version": "0.0.1",
+    "description": "Custom endpoints without [auth reference](/auth/reference)."
   },
   "tags": [
     {
       "name": "System"
     },
     {
-      "name": "Auth"
-    },
-    {
       "name": "Users"
     },
     {
       "name": "Kaja Nodes"
-    },
-    {
-      "name": "Kaja Jobs"
     }
   ],
   "paths": {
@@ -91,54 +76,6 @@
           },
           "404": {
             "description": "Unknown node"
-          }
-        }
-      }
-    },
-    "/kaja/create-job": {
-      "post": {
-        "summary": "Create job",
-        "tags": [
-          "Kaja Jobs"
-        ],
-        "responses": {
-          "200": {
-            "description": "Job created"
-          }
-        }
-      }
-    },
-    "/kaja/get-job": {
-      "post": {
-        "summary": "Claim next job",
-        "tags": [
-          "Kaja Jobs"
-        ],
-        "responses": {
-          "200": {
-            "description": "Job payload"
-          },
-          "204": {
-            "description": "No job available"
-          },
-          "404": {
-            "description": "Unknown node"
-          }
-        }
-      }
-    },
-    "/kaja/submit-result": {
-      "post": {
-        "summary": "Submit job result",
-        "tags": [
-          "Kaja Jobs"
-        ],
-        "responses": {
-          "200": {
-            "description": "Result accepted"
-          },
-          "404": {
-            "description": "Job not found"
           }
         }
       }

@@ -15,7 +15,7 @@ export const openApiSpec = {
       }
     }
   },
-  tags: [{ name: "System" }, { name: "Auth" }, { name: "Users" }, { name: "Kaja Nodes" }, { name: "Kaja Jobs" }],
+  tags: [{ name: "System" }, { name: "Auth" }, { name: "Users" }, { name: "Kaja Nodes" }],
   paths: {
     "/health": {
       get: {
@@ -49,34 +49,6 @@ export const openApiSpec = {
         responses: {
           200: { description: "Heartbeat accepted" },
           404: { description: "Unknown node" }
-        }
-      }
-    },
-    "/kaja/create-job": {
-      post: {
-        summary: "Create job",
-        tags: ["Kaja Jobs"],
-        responses: { 200: { description: "Job created" } }
-      }
-    },
-    "/kaja/get-job": {
-      post: {
-        summary: "Claim next job",
-        tags: ["Kaja Jobs"],
-        responses: {
-          200: { description: "Job payload" },
-          204: { description: "No job available" },
-          404: { description: "Unknown node" }
-        }
-      }
-    },
-    "/kaja/submit-result": {
-      post: {
-        summary: "Submit job result",
-        tags: ["Kaja Jobs"],
-        responses: {
-          200: { description: "Result accepted" },
-          404: { description: "Job not found" }
         }
       }
     }

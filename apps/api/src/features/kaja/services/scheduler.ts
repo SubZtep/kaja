@@ -1,16 +1,13 @@
 import type { Pool } from "pg"
 import { logger } from "#/core/logger"
 import { NodeService } from "./node"
-import { QueueService } from "./queue"
 
 export class SchedulerService {
-  readonly #queueService: QueueService
   readonly #nodeService: NodeService
   #intervalId?: Timer
   #isRunning = false
 
   constructor(db: Pool) {
-    this.#queueService = new QueueService(db)
     this.#nodeService = new NodeService(db)
   }
 
@@ -44,9 +41,6 @@ export class SchedulerService {
   async #runTasks() {
     try {
       logger.debug("running scheduler tasks")
-
-      // Requeue stale jobs (assigned but not completed within 60 seconds)
-      await this.#queueService.requeueStaleJobs(60)
 
       // Mark inactive nodes (no heartbeat for 5 minutes)
       await this.#nodeService.markInactiveNodes(300)

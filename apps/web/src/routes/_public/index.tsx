@@ -61,7 +61,7 @@ function App() {
         <div>© 2026</div>
         <div>•</div>
         <a href="https://docs.kaja.io#legal" target="_blank" rel="noreferrer" className="text-gray-500 underline">
-          legal
+          Privacy &amp; Terms
         </a>
         <GitHub />
       </div>

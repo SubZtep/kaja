@@ -10,6 +10,7 @@ All you need is:
 - 2 containers (api+web)
 - PostgreSQL
 - SMTP
+- GeoIP [update client](https://maxmind.github.io/geoipupdate/)
 
 > [Gmail’s SMTP](/kaja/deploy/) works, free, but for no/minimal traffic.
 

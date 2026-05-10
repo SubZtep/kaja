@@ -4,14 +4,8 @@ import { logger } from "#/core/logger"
 export interface Node {
   id: string
   name: string
-  capabilities?: {
-    models: string[]
-    gpu: boolean
-    memoryGb: number
-  }
   lastSeen: Date
   status: "idle" | "busy" | "inactive"
-  currentJobId?: string
 }
 
 export class NodeService {
@@ -24,33 +18,31 @@ export class NodeService {
   async registerNode(node: Omit<Node, "lastSeen" | "status">): Promise<Node> {
     const result = await this.#db.query(
       `
-      INSERT INTO nodes (id, name, capabilities, last_seen, status)
-      VALUES ($1, $2, $3, NOW(), 'idle')
+      INSERT INTO node (id, name, last_seen, status)
+      VALUES ($1, $2, NOW(), 'idle')
       ON CONFLICT (id)
       DO UPDATE SET
         name = EXCLUDED.name,
-        capabilities = EXCLUDED.capabilities,
         last_seen = NOW(),
         status = 'idle'
       RETURNING *
       `,
-      [node.id, node.name, JSON.stringify(node.capabilities || {})]
+      [node.id, node.name]
     )
 
     logger.info({ node: result.rows[0] }, "registered node")
     return this.#rowToNode(result.rows[0])
   }
 
-  async heartbeat(nodeId: string, status: "idle" | "busy", currentJobId?: string): Promise<boolean> {
+  async heartbeat(nodeId: string, status: "idle" | "busy"): Promise<boolean> {
     const { rowCount } = await this.#db.query(
       `
-      UPDATE nodes
+      UPDATE node
       SET last_seen = NOW(),
-          status = $2,
-          current_job_id = $3
+          status = $2
       WHERE id = $1
       `,
-      [nodeId, status, currentJobId || null]
+      [nodeId, status]
     )
 
     return rowCount !== null && rowCount > 0
@@ -59,9 +51,8 @@ export class NodeService {
   async markInactiveNodes(timeoutSeconds = 300): Promise<number> {
     const { rowCount } = await this.#db.query(
       `
-      UPDATE nodes
+      UPDATE node
       SET status = 'inactive',
-          current_job_id = NULL,
           updated_at = NOW()
       WHERE status != 'inactive'
         AND last_seen < NOW() - INTERVAL '${timeoutSeconds} seconds'
@@ -78,7 +69,7 @@ export class NodeService {
   async getNode(nodeId: string): Promise<Node | null> {
     const { rows } = await this.#db.query(
       `
-      SELECT * FROM nodes WHERE id = $1
+      SELECT * FROM node WHERE id = $1
       `,
       [nodeId]
     )
@@ -89,7 +80,7 @@ export class NodeService {
   async getActiveNodes(): Promise<Node[]> {
     const { rows } = await this.#db.query(
       `
-      SELECT * FROM nodes WHERE status != 'inactive' ORDER BY last_seen DESC
+      SELECT * FROM node WHERE status != 'inactive' ORDER BY last_seen DESC
       `
     )
 
@@ -97,37 +88,11 @@ export class NodeService {
   }
 
   #rowToNode(row: any): Node {
-    let capabilities: Node["capabilities"]
-
-    if (row.capabilities) {
-      // Handle both JSONB object and string representations
-      if (typeof row.capabilities === "string") {
-        try {
-          capabilities = JSON.parse(row.capabilities)
-        } catch {
-          capabilities = undefined
-        }
-      } else if (typeof row.capabilities === "object") {
-        // PostgreSQL JSONB returns as object directly
-        const caps = row.capabilities
-        // Check if it's not an empty object
-        if (Object.keys(caps).length > 0) {
-          capabilities = {
-            models: caps.models || [],
-            gpu: caps.gpu || false,
-            memoryGb: caps.memoryGb || 0
-          }
-        }
-      }
-    }
-
     return {
       id: row.id,
       name: row.name,
-      capabilities,
       lastSeen: new Date(row.last_seen),
-      status: row.status,
-      currentJobId: row.current_job_id
+      status: row.status
     }
   }
 }

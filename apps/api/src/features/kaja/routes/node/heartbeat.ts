@@ -7,7 +7,7 @@ export function registerHeartbeat(app: RouteRegProps) {
     const body = c.req.valid("json")
     const nodeService = c.get("nodeService")
 
-    const success = await nodeService.heartbeat(body.nodeId, body.status, body.currentJobId)
+    const success = await nodeService.heartbeat(body.nodeId, body.status)
 
     if (!success) {
       return c.json({ error: "unknown node" }, 404)

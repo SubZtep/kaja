@@ -11,8 +11,7 @@ export function registerRegisterNode(app: RouteRegProps) {
 
     await nodeService.registerNode({
       id: nodeId,
-      name: body.name,
-      capabilities: body.capabilities
+      name: body.name
     })
 
     return c.json(

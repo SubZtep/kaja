@@ -1,8 +1,5 @@
 # 가자⛲
 
-⤕ [kaja.io](https://kaja.io)\
-⬺ [docs.kaja.io](https://docs.kaja.io)
-
 > [!IMPORTANT]
 > Kaja is still evolving, but the current focus is authentication, admin workflows, and local orchestration.
 
@@ -11,7 +8,8 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-Kaja is a Bun TypeScript monorepo implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local CLI.
+This project is a Bun TypeScript monorepo implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local CLI.\
+More info: [docs.kaja.io](https://docs.kaja.io).
 
 ## What is in here?
 
@@ -75,7 +73,7 @@ bun lint:fix     # Apply formatter and unsafe lint fixes
 - Web: [http://localhost:3000](http://localhost:3000)
 - API: [http://localhost:3001](http://localhost:3001)
 - Email inbox: [http://localhost:1080](http://localhost:1080)
-- Better Auth reference: [http://localhost:3001/auth/reference](http://localhost:3001/auth/reference)
+- API reference: [http://localhost:3001/reference](http://localhost:3001/reference)
 
 ## Documentation
 

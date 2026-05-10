@@ -6,7 +6,7 @@ import { logger } from "./logger"
 const port = Number(process.env.PORT ?? 3001)
 logger.info({ port }, "API is running")
 
-// Start the scheduler for stale jobs and inactive nodes
+// Start the scheduler for inactive nodes
 const scheduler = new SchedulerService(pool)
 scheduler.start()
 
