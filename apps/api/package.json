@@ -9,7 +9,7 @@
     "openapi:generate": "bun run scripts/generate-openapi.ts"
   },
   "dependencies": {
-    "@hono/swagger-ui": "^0.5.2",
+    "@hono/swagger-ui": "^0.6.1",
     "@kaja/schemas": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@hono/zod-validator": "^0.8.0",

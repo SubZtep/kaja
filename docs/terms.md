@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Terms of Service
-nav_order: 21
+nav_exclude: true
 ---
 
 # Terms of Service
