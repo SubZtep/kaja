@@ -1,15 +1,14 @@
 import { describe, expect, it } from "bun:test"
-import { getCity } from "./index"
+import { getGeoLocation } from "./index"
 
-describe.skip("getCity", () => {
+describe.skip("getGeoLocation", () => {
   let ip = Array.from({ length: 4 })
     .map(() => 8)
     .join(".")
 
   it(`looks up ${ip}`, () => {
-    const city = getCity(ip)
+    const city = getGeoLocation(ip)
     expect(city).toBeDefined()
-    expect(city?.traits.ipAddress).toBe(ip)
   })
 
   ip = Array.from({ length: 4 })
@@ -17,7 +16,7 @@ describe.skip("getCity", () => {
     .join(".")
 
   it(`looks up ${ip}`, () => {
-    const city = getCity(ip)
+    const city = getGeoLocation(ip)
     expect(city).toBeUndefined()
   })
 })

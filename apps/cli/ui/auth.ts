@@ -23,7 +23,7 @@ function fail(message: string) {
 
 export async function initUserSession() {
   if (!(await kaja.ping())) {
-    throw new Error(`Unable to connect to ${kaja.host()}`)
+    throw new Error(`Unable to connect to ${kaja.host}`)
   }
 
   const authClient = createDeviceAuthClient()

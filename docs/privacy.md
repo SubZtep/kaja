@@ -10,7 +10,7 @@ Effective date: 12 June 2024
 
 Kaja is operated by Andras Serfozo as an individual project. This policy explains what personal data Kaja collects, why it is used, and what choices you have.
 
-Contact: {{ 'subztep@gmail.com' | encode_email }}
+Contact: subztep@gmail.com
 
 <!-- TODO: This is a practical first draft, not legal advice. Review it before public launch. -->
 
@@ -83,7 +83,7 @@ Server logs are kept for 30-90 days unless needed longer for security or inciden
 
 Kaja uses reasonable technical and organizational measures to protect personal data, including authentication controls, protected session cookies, and limited access to production systems.
 
-No online service can guarantee perfect security. If you believe you found a security issue, contact {{ 'subztep@gmail.com' | encode_email }}.
+No online service can guarantee perfect security. If you believe you found a security issue, contact subztep@gmail.com.
 
 ## Your Rights
 
@@ -96,7 +96,7 @@ Depending on where you live, you may have rights to:
 - receive a copy of your data;
 - complain to a data protection authority.
 
-To make a request, contact {{ 'subztep@gmail.com' | encode_email }}. Kaja may need to verify your identity before acting on a request.
+To make a request, contact subztep@gmail.com. Kaja may need to verify your identity before acting on a request.
 
 ## International Transfers
 

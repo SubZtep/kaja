@@ -1,6 +1,7 @@
 import type { Pool } from "pg"
 import { logger } from "#/core/logger"
 
+/** A Kaja CLI node. */
 export interface Node {
   id: string
   name: string
@@ -15,7 +16,8 @@ export class NodeService {
     this.#db = db
   }
 
-  async registerNode(node: Omit<Node, "lastSeen" | "status">): Promise<Node> {
+  /** Create or update a node. */
+  async spawnNode(node: Omit<Node, "lastSeen" | "status">): Promise<Node> {
     const result = await this.#db.query(
       `
       INSERT INTO node (id, name, last_seen, status)
@@ -30,7 +32,7 @@ export class NodeService {
       [node.id, node.name]
     )
 
-    logger.info({ node: result.rows[0] }, "registered node")
+    logger.info({ node: result.rows[0] }, "node spawned")
     return this.#rowToNode(result.rows[0])
   }
 

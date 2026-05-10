@@ -13,8 +13,6 @@ aux_links_new_tab: true
 plugins:
   - jekyll-remote-theme
   - jekyll-seo-tag
-  - jekyll-email-protect
-  - jekyll-target-blank
 
 remote_theme: just-the-docs/just-the-docs
 

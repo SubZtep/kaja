@@ -1,13 +1,4 @@
-import type {
-  CreateJobRequest,
-  CreateJobResponse,
-  GetJobResponse,
-  HeartbeatRequest,
-  HeartbeatResponse,
-  RegisterNodeRequest,
-  RegisterNodeResponse,
-  SubmitResultRequest
-} from "@kaja/schemas"
+import type { HeartbeatRequest, HeartbeatResponse, SpawnNodeRequest, SpawnNodeResponse } from "@kaja/schemas"
 import { resolveApiUrl } from "./config"
 import { getAccessToken } from "./token"
 
@@ -25,36 +16,15 @@ export class KajaClient {
     this.nodeId = options?.nodeId
   }
 
-  async createJob(payload: CreateJobRequest) {
-    return await this.#apiRequest<CreateJobResponse>("/kaja/create-job", payload)
-  }
-
   /** Apply for jobs */
-  async registerNode(payload: RegisterNodeRequest) {
+  async spawnNode(payload: SpawnNodeRequest) {
     try {
-      const res = await this.#apiRequest<RegisterNodeResponse>("/kaja/register-node", payload)
+      const res = await this.#apiRequest<SpawnNodeResponse>("/kaja/spawn-node", payload)
       this.nodeId = res.nodeId
     } catch (error: unknown) {
-      throw new Error(`Error registering node: ${this.#errorMessage(error)}`)
+      throw new Error(`Error spawning node: ${this.#errorMessage(error)}`)
     }
     return this.nodeId
-  }
-
-  /** @returns The first available job from the queue. */
-  async getJob() {
-    if (!this.nodeId) {
-      throw new Error("Node ID is required to get a job")
-    }
-
-    try {
-      return await this.#apiRequest<GetJobResponse>("/kaja/get-job", { nodeId: this.nodeId })
-    } catch (error: unknown) {
-      throw new Error(`Error getting job: ${this.#errorMessage(error)}`)
-    }
-  }
-
-  async submitResult(payload: SubmitResultRequest) {
-    return await this.#apiRequest("/kaja/submit-result", payload)
   }
 
   async heartbeat(payload: HeartbeatRequest) {
@@ -70,11 +40,11 @@ export class KajaClient {
     return res.ok
   }
 
-  host() {
+  get host() {
     try {
       return new URL(this.baseURL).host
-    } catch {
-      return "N/A 😱"
+    } catch (error: unknown) {
+      throw new Error(`Error getting host: ${this.#errorMessage(error)}`)
     }
   }
 

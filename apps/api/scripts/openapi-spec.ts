@@ -35,11 +35,11 @@ export const openApiSpec = {
         }
       }
     },
-    "/kaja/register-node": {
+    "/kaja/spawn-node": {
       post: {
-        summary: "Register worker node",
+        summary: "Spawn a new CLI node",
         tags: ["Kaja Nodes"],
-        responses: { 200: { description: "Node registered" } }
+        responses: { 200: { description: "Node spawned" } }
       }
     },
     "/kaja/heartbeat": {

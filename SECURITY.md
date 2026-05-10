@@ -8,7 +8,7 @@ If you discover a security vulnerability, please report it responsibly:
 
 - Do NOT open a public issue
 - Use GitHub private vulnerability reporting (Security tab → "Report a vulnerability")
-- Or email: {{ 'subztep@gmail.com' | encode_email }}
+- Or email: subztep@gmail.com
 
 Please include:
 - Description of the issue
