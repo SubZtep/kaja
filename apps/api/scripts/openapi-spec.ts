@@ -11,7 +11,7 @@ export const openApiSpec = {
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT",
-        description: "Get value from `kaja.session_token` cookie."
+        description: "Retrieve the value from the `kaja.session_token` cookie."
       }
     }
   },
