@@ -49,3 +49,7 @@ On Linux this is typically `~/.config/kaja-nodejs/config.json` with default opti
 - Used for local preferences (for example Ollama host/model).
 - Never store auth tokens here; tokens stay in the system secret store.
 - Precedence is: `--api-url` -> `API_URL` -> `config.json(apiUrl)` -> built-in default.
+
+---
+
+[Open **Location**](/environment-variables){: .btn .btn-green }

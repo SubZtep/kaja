@@ -6,9 +6,9 @@ nav_order: 1
 
 # Welcome to our documentation 🦋
 
-_Work In Progress 🚧_
+## What is Kaja?
 
-[Open **kaja.io**](https://kaja.io/){: .btn .btn-green }
+_Work In Progress 🚧_
 
 ## Architecture
 
@@ -52,3 +52,5 @@ flowchart LR
 
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
+
+[Open **Configuration**](/configuration){: .btn .btn-green }

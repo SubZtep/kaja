@@ -1,7 +1,8 @@
 ---
 layout: page
 parent: Configuration
-title: Location service
+title: Location
 nav_order: 2
 ---
 
+GeoIP
