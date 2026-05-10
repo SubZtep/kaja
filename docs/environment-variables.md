@@ -24,7 +24,7 @@ Each monorepo workspace manages custom environment variables. The values below a
 | SMTP_PASS           | `abcdefghijklmnop`                                     |                                                             |
 | SMTP_PORT           | `587`                                                  |                                                             |
 | SMTP_SECURE         |                                                        | _Usually empty_ (`true` for TLS)                            |
-| SMTP_USER           | `subztep@gmail.com`                                    |                                                             |
+| SMTP_USER           | `noname@gmail.com`                                     |                                                             |
 
 ## [Web](https://github.com/SubZtep/kaja/blob/main/apps/web/.env.example)
 

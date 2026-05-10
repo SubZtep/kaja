@@ -13,11 +13,16 @@ aux_links_new_tab: true
 plugins:
   - jekyll-remote-theme
   - jekyll-seo-tag
+  - jekyll-email-protect
+  - jekyll-target-blank
 
 remote_theme: just-the-docs/just-the-docs
 
 mermaid:
   version: "11.14.0"
+
+target-blank:
+  noopener: false
 
 color_scheme: dark
 favicon_ico: /images/favicon.ico

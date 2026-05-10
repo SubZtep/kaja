@@ -10,7 +10,7 @@ Effective date: 3 May 2024
 
 These Terms govern your use of Kaja, a free account-based web service operated by Andras Serfozo as an individual project.
 
-Contact: subztep@gmail.com
+Contact: {{ 'subztep@gmail.com' | encode_email }}
 
 <!-- TODO: This is a practical first draft, not legal advice. Review it before public launch. -->
 
@@ -63,7 +63,7 @@ Kaja’s handling of personal data is described in the [Privacy Policy](privacy.
 
 Good-faith security reports are welcome. Do not access, modify, delete, or disclose other users’ data. Do not perform destructive testing or denial-of-service testing.
 
-Report issues to subztep@gmail.com.
+Report issues to {{ 'subztep@gmail.com' | encode_email }}.
 
 ## Intellectual Property
 
