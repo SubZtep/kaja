@@ -10,10 +10,6 @@ nav_order: 1
 
 _Work In Progress 🚧_
 
-<span class="fs-8">
-[Visit **kaja.io**](https://kaja.io){: .btn .btn-green }
-</span>
-
 ## Architecture
 
 ```mermaid
@@ -61,4 +57,4 @@ flowchart LR
 
 Next:
 
-[Open the **configuration** page](/configuration){: .btn .btn-blue }
+[Open the **configuration** page](/configuration){: .btn .btn-blue .fs-5 }

@@ -33,4 +33,4 @@ Docker builds omit `.env` files. Set the environment variables on the server.
 
 Next:
 
-[Open the **environment variables** page](/environment-variables){: .btn .btn-blue }
+[Open the **environment variables** page](/environment-variables){: .btn .btn-blue .fs-5 }

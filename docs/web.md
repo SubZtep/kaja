@@ -209,4 +209,4 @@ For TanStack Start specific documentation, visit [TanStack Start](https://tansta
 
 Next:
 
-[Open the **CLI app** page](/cli){: .btn .btn-blue }
+[Open the **CLI app** page](/cli){: .btn .btn-blue .fs-5 }
