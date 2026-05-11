@@ -12,7 +12,7 @@ export const configSchema = z.object({
 
 export const heartbeatRequestSchema = z.object({
   nodeId: z.uuidv7(),
-  status: z.enum(["idle", "busy", "inactive"]),
+  status: z.enum(["idle", "busy"]),
   currentJobId: z.uuidv7().optional()
 })
 

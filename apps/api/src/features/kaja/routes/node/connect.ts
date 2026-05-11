@@ -4,6 +4,9 @@ import type { RouteRegProps } from "#/types"
 
 export function registerConnect(app: RouteRegProps) {
   app.post("/connect", zValidator("json", connectNodeRequestSchema), async c => {
+    const user = c.get("user")
+    if (!user) return c.json({ error: "Unauthorized" }, 401)
+
     const body = c.req.valid("json")
     const nodeService = c.get("nodeService")
 
@@ -11,6 +14,7 @@ export function registerConnect(app: RouteRegProps) {
 
     await nodeService.connectNode({
       id: nodeId,
+      userId: user.id,
       name: body.name
     })
 

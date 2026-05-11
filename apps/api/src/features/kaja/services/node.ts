@@ -4,6 +4,7 @@ import { logger } from "#/core/logger"
 /** A Kaja CLI node. */
 export interface Node {
   id: string
+  userId: string
   name: string
   lastSeen: Date
   status: "idle" | "busy" | "inactive"
@@ -20,31 +21,33 @@ export class NodeService {
   async connectNode(node: Omit<Node, "lastSeen" | "status">): Promise<Node> {
     const result = await this.#db.query(
       `
-      INSERT INTO node (id, name, last_seen, status)
-      VALUES ($1, $2, NOW(), 'idle')
+      INSERT INTO node (id, user_id, name, last_seen, status)
+      VALUES ($1, $2, $3, NOW(), 'idle')
       ON CONFLICT (id)
       DO UPDATE SET
+        user_id = EXCLUDED.user_id,
         name = EXCLUDED.name,
         last_seen = NOW(),
         status = 'idle'
       RETURNING *
       `,
-      [node.id, node.name]
+      [node.id, node.userId, node.name]
     )
 
     logger.info({ node: result.rows[0] }, "node connected")
     return this.#rowToNode(result.rows[0])
   }
 
-  async heartbeat(nodeId: string, status: Omit<Node["status"], "inactive">): Promise<boolean> {
+  async heartbeat(nodeId: string, userId: string, status: Exclude<Node["status"], "inactive">): Promise<boolean> {
     const { rowCount } = await this.#db.query(
       `
       UPDATE node
       SET last_seen = NOW(),
           status = $2
       WHERE id = $1
+        AND user_id = $3
       `,
-      [nodeId, status]
+      [nodeId, status, userId]
     )
 
     return rowCount !== null && rowCount > 0
@@ -68,18 +71,29 @@ export class NodeService {
     return rowCount || 0
   }
 
-  async getNode(nodeId: string): Promise<Node | null> {
+  async getNode(nodeId: string, userId: string): Promise<Node | null> {
     const { rows } = await this.#db.query(
       `
-      SELECT * FROM node WHERE id = $1
+      SELECT * FROM node WHERE id = $1 AND user_id = $2
       `,
-      [nodeId]
+      [nodeId, userId]
     )
 
     return rows[0] ? this.#rowToNode(rows[0]) : null
   }
 
-  async getActiveNodes(): Promise<Node[]> {
+  async getActiveNodes(userId: string): Promise<Node[]> {
+    const { rows } = await this.#db.query(
+      `
+      SELECT * FROM node WHERE user_id = $1 AND status != 'inactive' ORDER BY last_seen DESC
+      `,
+      [userId]
+    )
+
+    return rows.map(row => this.#rowToNode(row))
+  }
+
+  async getAllActiveNodes(): Promise<Node[]> {
     const { rows } = await this.#db.query(
       `
       SELECT * FROM node WHERE status != 'inactive' ORDER BY last_seen DESC
@@ -92,6 +106,7 @@ export class NodeService {
   #rowToNode(row: any): Node {
     return {
       id: row.id,
+      userId: row.user_id,
       name: row.name,
       lastSeen: new Date(row.last_seen),
       status: row.status
