@@ -4,7 +4,7 @@ title: Home
 nav_order: 1
 ---
 
-# Welcome to our documentation 🦋
+# Welcome to our Documentation 🦋
 
 ## What is it all about?
 

@@ -51,4 +51,4 @@ On Linux this is typically `~/.config/kaja/config.toml` with default options.
 
 Next:
 
-[Open the **Geo** page](/geo){: .btn .btn-green .fs-5 }
+[Open the **geo** page](/geo){: .btn .btn-green .fs-5 }
