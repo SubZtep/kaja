@@ -16,7 +16,7 @@ _They don’t think it be like it is, ~~but it do~~ **work in progress 🚧**_
 ---
 config:
   look: handDrawn
-  theme: dark
+  theme: neo-dark
 ---
 flowchart LR
   U@{ shape: curv-trap, label: "👤 Browser" }
@@ -26,7 +26,7 @@ flowchart LR
   B@{ shape: bolt }
 
   D[(PostgreSQL)]
-  E@{ shape: docs, label: "Emails"}
+  E@{ shape: docs, label: "👤 Emails"}
 
   subgraph "`**monorepo**`"
     A["📁 <strong><u>apps/api</u></strong><br/>Hono API<br/>Better Auth"]
@@ -50,11 +50,6 @@ flowchart LR
   A <==> D
   A -- SMTP --> E
 ```
-
-## Legal
-
-- [Privacy Policy](/privacy)
-- [Terms of Service](/terms)
 
 ---
 

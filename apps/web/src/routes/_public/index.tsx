@@ -60,8 +60,24 @@ function App() {
       <div className="flex justify-end text-sm gap-1 items-center text-gray-500">
         <div>© 2026</div>
         <div>•</div>
-        <a href="https://docs.kaja.io#legal" target="_blank" rel="noreferrer" className="text-gray-500 underline">
-          Privacy &amp; Terms
+        <a
+          href="https://docs.kaja.io/privacy"
+          title="Privacy Policy"
+          target="_blank"
+          rel="noreferrer"
+          className="text-gray-500 underline"
+        >
+          Privacy
+        </a>
+        <div className="scale-140 translate-y-0.5">&amp;</div>
+        <a
+          href="https://docs.kaja.io/terms"
+          title="Terms of Service"
+          target="_blank"
+          rel="noreferrer"
+          className="text-gray-500 underline"
+        >
+          Terms
         </a>
         <GitHub />
       </div>
