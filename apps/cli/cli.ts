@@ -13,7 +13,7 @@ void (async () => {
 
   await init.printLogo()
   await auth.initUserSession()
-  await node.spawnNode()
+  await node.doStuff()
 
   process.exit(0)
 })().catch(error => {

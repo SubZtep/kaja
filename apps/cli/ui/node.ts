@@ -1,13 +1,25 @@
-import { getCurrentIp } from "@kaja/geo"
+import { cancel, isCancel, text } from "@clack/prompts"
 import { kaja } from "../lib/clients"
 
 /** Register the CLI app with the API. */
-export async function spawnNode() {
-  const ip = await getCurrentIp()
-  console.log("spawning node on", [kaja.host, ip])
+export async function doStuff() {
+  if (!kaja.config.id) {
+    const name = await text({
+      message: "What is your node’s name?",
+      placeholder: kaja.config.name,
+      validate: value => {
+        if (!value || value.length < 2) return "Name must be at least 2 characters"
+        return undefined
+      }
+    })
 
-  // kaja.spawnNode({
-  //   // nodeId: Bun.randomUUIDv7(),
-  //   name: "cli"
-  // })
+    if (isCancel(name)) {
+      cancel("No name provided")
+      process.exit(1)
+    }
+
+    kaja.setConfig({ name })
+  }
+
+  await kaja.spawnNode()
 }

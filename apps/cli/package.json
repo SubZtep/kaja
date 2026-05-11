@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.3.0",
+    "@iarna/toml": "^2.2.5",
     "@kaja/geo": "workspace:*",
     "@kaja/schemas": "workspace:*",
     "@kaja/shared": "workspace:*",

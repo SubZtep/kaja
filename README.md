@@ -8,12 +8,12 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-This project is built with Bun and TypeScript, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local CLI.
+This project is built with **Bun** and **TypeScript**, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local _CLI_.
 
 ## What’s in the Monorepo?
 
 - **Apps**
-  - [`api`](./apps/api/) – Rest API, authentication, database migrations, and email delivery.
+  - [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery.
   - [`web`](./apps/web/) – Public web and admin portal.
   - [`cli`](./apps/cli/) – Installable CLI app for orchestration tasks.
 - **Packages**

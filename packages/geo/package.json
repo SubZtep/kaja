@@ -1,9 +1,19 @@
 {
   "name": "@kaja/geo",
-  "description": "Geolocation service",
   "version": "0.0.1",
   "private": true,
-  "main": "index.ts",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./types": {
+      "types": "./types.ts",
+      "default": "./types.ts"
+    }
+  },
   "dependencies": {
     "@maxmind/geoip2-node": "^6.3.4"
   }

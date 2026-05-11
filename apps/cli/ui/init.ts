@@ -1,5 +1,6 @@
 import { log } from "@clack/prompts"
 import { dimgrey, teal } from "../lib/colors"
+import { deleteConfig } from "../lib/kaja-sdk"
 import { deleteAccessToken } from "../lib/token"
 import { version } from "../package.json"
 
@@ -14,7 +15,7 @@ export async function helperCommands() {
 Commands:
   version  Show version
   logout   Logout from Kaja
-  help     Show help
+  help     Show help ♡
 `)
     return { handled: true, exitCode: 0 }
   }
@@ -32,6 +33,8 @@ Commands:
     try {
       await deleteAccessToken()
       console.log("Logged out successfully")
+      await deleteConfig()
+      console.log("Config deleted successfully")
       return { handled: true, exitCode: 0 }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
