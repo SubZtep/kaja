@@ -4,8 +4,7 @@ data
 dist
 node_modules
 pgdata
-.env
-.env.*
+.env*
 !.env.example
 
 # ...

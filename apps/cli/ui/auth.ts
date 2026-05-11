@@ -17,7 +17,7 @@ function createDeviceAuthClient() {
 }
 
 function fail(message: string) {
-  cancel(message)
+  cancel(message, { withGuide: true })
   throw new Error(message)
 }
 
@@ -36,7 +36,7 @@ export async function initUserSession() {
     return
   }
 
-  intro("Authentication")
+  intro("Authentication", { withGuide: true })
 
   const { data, error } = await authClient.device.code({
     client_id: KAJA_CLI_CLIENT_ID
@@ -50,10 +50,10 @@ export async function initUserSession() {
   // MARK: Authentication
 
   if (verification_uri_complete) {
-    log.message(`Login link: ${verification_uri_complete}`)
+    log.message(`Login link: ${verification_uri_complete}`, { withGuide: true })
   } else if (verification_uri) {
-    log.message(`Login link: ${verification_uri}`)
-    log.message(`User code: ${user_code}`)
+    log.message(`Login link: ${verification_uri}`, { withGuide: true })
+    log.message(`User code: ${user_code}`, { withGuide: true })
   } else {
     fail("No login link found")
   }
@@ -76,7 +76,8 @@ export async function initUserSession() {
   } catch (err) {
     setSessionAccessToken(token)
     log.error(
-      `Could not save the token to the system secret store (${err instanceof Error ? err.message : String(err)}). You stay signed in for this CLI run only — next time, fix the store or sign in again.`
+      `Could not save the token to the system secret store (${err instanceof Error ? err.message : String(err)}). You stay signed in for this CLI run only — next time, fix the store or sign in again.`,
+      { withGuide: true }
     )
   }
 
@@ -86,8 +87,8 @@ export async function initUserSession() {
     }
   })
 
-  note(`${cyan}Welcome aboard, ${session?.user?.name ?? session?.user?.email ?? "user"}!`, "👋")
-  outro("Authentication successful")
+  note(`${cyan}Welcome aboard, ${session?.user?.name ?? session?.user?.email ?? "user"}!`, "👋", { withGuide: true })
+  outro("Authentication successful", { withGuide: true })
 }
 
 function listenForLoginActions(link: string) {
@@ -95,7 +96,7 @@ function listenForLoginActions(link: string) {
   const canReadKeys = stdin.isTTY && typeof stdin.setRawMode === "function"
 
   if (!canReadKeys) {
-    log.message("Waiting for browser approval...")
+    log.message("Waiting for browser approval...", { withGuide: true })
     return () => {}
   }
 
@@ -138,7 +139,7 @@ function listenForLoginActions(link: string) {
     }
   }
 
-  log.message("Waiting for approval... Press o to open, c to copy, q for QR, or Ctrl+C to cancel.")
+  log.message("Waiting for approval... Press o to open, c to copy, q for QR, or Ctrl+C to cancel.", { withGuide: true })
   stdin.setRawMode(true)
   stdin.resume()
   stdin.on("data", onData)
@@ -151,16 +152,19 @@ async function openLoginLink(link: string) {
     const { default: open } = await import("open")
     await open(link)
   } catch {
-    log.error("Could not open a browser. Please open the link manually, then approve the login.")
+    log.error("Could not open a browser. Please open the link manually, then approve the login.", { withGuide: true })
   }
 }
 
 async function copyLoginLink(link: string) {
   try {
     await clipboard.write(link)
-    log.success("Link copied to clipboard. Paste it into your browser, then approve the login.")
+    log.success("Link copied to clipboard. Paste it into your browser, then approve the login.", { withGuide: true })
   } catch {
-    log.error("Could not copy to clipboard. Please paste the link manually into your browser, then approve the login.")
+    log.error(
+      "Could not copy to clipboard. Please paste the link manually into your browser, then approve the login.",
+      { withGuide: true }
+    )
   }
 }
 

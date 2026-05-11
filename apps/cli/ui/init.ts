@@ -50,9 +50,6 @@ export async function printLogo() {
   log.message(
     [`${teal}▖▖   ▘  ▄▖▄▖`, `${teal}▙▘▀▌ ▌▀▌▐ ▌▌`, `${teal}▌▌█▌ ▌█▌▟▖▙▌`, `${teal}    ▙▌${dimgrey}v${version}\n`].join(
       "\n"
-    ),
-    {
-      withGuide: false
-    }
+    )
   )
 }
