@@ -16,8 +16,8 @@ export class NodeService {
     this.#db = db
   }
 
-  /** Create or update a node. */
-  async spawnNode(node: Omit<Node, "lastSeen" | "status">): Promise<Node> {
+  /** Create or update an active node. */
+  async connectNode(node: Omit<Node, "lastSeen" | "status">): Promise<Node> {
     const result = await this.#db.query(
       `
       INSERT INTO node (id, name, last_seen, status)
@@ -32,11 +32,11 @@ export class NodeService {
       [node.id, node.name]
     )
 
-    logger.info({ node: result.rows[0] }, "node spawned")
+    logger.info({ node: result.rows[0] }, "node connected")
     return this.#rowToNode(result.rows[0])
   }
 
-  async heartbeat(nodeId: string, status: "idle" | "busy"): Promise<boolean> {
+  async heartbeat(nodeId: string, status: Omit<Node["status"], "inactive">): Promise<boolean> {
     const { rowCount } = await this.#db.query(
       `
       UPDATE node

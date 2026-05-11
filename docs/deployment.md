@@ -28,8 +28,9 @@ Create two **Projects** and add this additional **environment variable** to the 
 
 Install and attach the **PostgreSQL addon** to the API project.
 
-{: .important }
-> {: .warning }
+{: .warning }
+> Warning
+> 
 > Database migration is not yet resolved.
 
 ### 🫪

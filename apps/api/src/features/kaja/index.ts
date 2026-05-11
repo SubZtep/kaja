@@ -1,8 +1,8 @@
 import { Hono } from "hono"
 import { pool } from "#/core/db"
 import type { RouteProps } from "#/types"
+import { registerConnect } from "./routes/node/connect"
 import { registerHeartbeat } from "./routes/node/heartbeat"
-import { registerSpawnNode } from "./routes/node/register"
 import { NodeService } from "./services/node"
 
 export const nodeService = new NodeService(pool)
@@ -16,4 +16,4 @@ kajaRoutes.use("*", async (c, next) => {
 })
 
 registerHeartbeat(kajaRoutes)
-registerSpawnNode(kajaRoutes)
+registerConnect(kajaRoutes)

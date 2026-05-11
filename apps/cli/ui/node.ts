@@ -1,7 +1,7 @@
 import { cancel, isCancel, text } from "@clack/prompts"
 import { kaja } from "../lib/clients"
 
-/** Register the CLI app with the API. */
+/** Connect the CLI node with the API. */
 export async function doStuff() {
   if (!kaja.config.id) {
     const name = await text({
@@ -21,5 +21,5 @@ export async function doStuff() {
     kaja.setConfig({ name })
   }
 
-  await kaja.spawnNode()
+  await kaja.connectNode()
 }

@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { stringify as tomlStringify } from "@iarna/toml"
 import { getCurrentIp } from "@kaja/geo"
-import type { HeartbeatRequest, HeartbeatResponse, SpawnNodeRequest, SpawnNodeResponse } from "@kaja/schemas"
+import type { ConnectNodeRequest, ConnectNodeResponse, HeartbeatRequest, HeartbeatResponse } from "@kaja/schemas"
 import { type Config, configSchema } from "@kaja/schemas"
 import envPaths from "env-paths"
 import { DEFAULT_NODE_NAME } from "./constants"
@@ -20,15 +20,15 @@ export class KajaClient {
     getCurrentIp().then(ip => (this.ip = ip))
   }
 
-  async spawnNode(payload?: SpawnNodeRequest) {
+  async connectNode(payload?: ConnectNodeRequest) {
     try {
-      const res = await this.#apiRequest<SpawnNodeResponse>("/kaja/spawn-node", {
+      const res = await this.#apiRequest<ConnectNodeResponse>("/kaja/connect", {
         ...(payload ?? this.config),
         ip: this.ip
       })
       this.nodeId = res.nodeId
     } catch (error: unknown) {
-      throw new Error(`Error spawning node: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`Error connecting node: ${error instanceof Error ? error.message : String(error)}`)
     }
     return this.nodeId
   }

@@ -4,8 +4,8 @@ import { app } from "../../src/app"
 describe("kaja cli client flow", () => {
   let nodeId: string
 
-  test("spawn node", async () => {
-    const res = await app.request("/kaja/spawn-node", {
+  test("connect node", async () => {
+    const res = await app.request("/kaja/connect", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "test-node" })

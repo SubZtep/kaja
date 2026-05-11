@@ -20,7 +20,7 @@ export const heartbeatResponseSchema = z.object({
   ok: z.boolean()
 })
 
-export const spawnNodeRequestSchema = z.object({
+export const connectNodeRequestSchema = z.object({
   nodeId: z.uuidv7().optional(),
   /** @example "andras-macbook" */
   name: z.string(),
@@ -28,7 +28,7 @@ export const spawnNodeRequestSchema = z.object({
   ip: z.ipv4().optional()
 })
 
-export const spawnNodeResponseSchema = z.object({
+export const connectNodeResponseSchema = z.object({
   /** server generated or confirmed id */
   nodeId: z.uuidv7(),
   /** @example 2000 */
@@ -38,5 +38,5 @@ export const spawnNodeResponseSchema = z.object({
 export type Config = z.infer<typeof configSchema>
 export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>
 export type HeartbeatResponse = z.infer<typeof heartbeatResponseSchema>
-export type SpawnNodeRequest = z.infer<typeof spawnNodeRequestSchema>
-export type SpawnNodeResponse = z.infer<typeof spawnNodeResponseSchema>
+export type ConnectNodeRequest = z.infer<typeof connectNodeRequestSchema>
+export type ConnectNodeResponse = z.infer<typeof connectNodeResponseSchema>
