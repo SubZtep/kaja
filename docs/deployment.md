@@ -6,7 +6,7 @@ nav_order: 4
 
 # Deployment
 
-These are snippets of how [kaja.io](https://kaja.io) is deployed to its current environment. The brilliant [Disco](https://disco.cloud) handles most deployment work — you push to `main` and the pipeline runs.
+These are snippets of how [kaja.io](https://kaja.io) is deployed to its current environment. [Disco](https://disco.cloud) handles most deployment work — you push to `main` and the pipeline runs.
 
 ## Prerequisites
 

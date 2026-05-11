@@ -28,8 +28,6 @@ Generate local secret (appends `BETTER_AUTH_SECRET` to `apps/api/.env`):
 
 Docker builds omit `.env` files. Set the environment variables on the server.
 
-If you are using Disco Deploy, don’t forget to set an additional `DISCO_JSON_PATH` environment variable for both the **API** (value: `disco.api.json`) and **web** (value: `disco.web.json`).
-
 ---
 
 Next:

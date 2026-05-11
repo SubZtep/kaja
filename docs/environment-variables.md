@@ -40,12 +40,12 @@ Each monorepo workspace manages custom environment variables. The values below a
 | ------------- | --------------------- | ----------------- |
 | API_URL       | `https://api.kaja.io` | API base endpoint |
 
-CLI also supports a non-secret local config file resolved by [`env-paths`](https://www.npmjs.com/package/env-paths).
-On Linux this is typically `~/.config/kaja-nodejs/config.json` with default options.
+CLI also supports a non-secret local config file.
+On Linux this is typically `~/.config/kaja/config.toml` with default options.
 
 - Used for local preferences (for example Ollama host/model).
 - Never store auth tokens here; tokens stay in the system secret store.
-- Precedence is: `--api-url` -> `API_URL` -> `config.json(apiUrl)` -> built-in default.
+<!-- - Precedence is: `--api-url` -> `API_URL` -> `config.json(apiUrl)` -> built-in default. -->
 
 ---
 
