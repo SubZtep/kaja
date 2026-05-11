@@ -21,7 +21,7 @@ cp apps/cli/.env.example apps/cli/.env
 Generate local secret (appends `BETTER_AUTH_SECRET` to `apps/api/.env`):
 
 ```sh
-./scripts/create_local_secrets.sh
+./apps/api/scripts/create_local_secrets.sh
 ```
 
 ## Server

@@ -37,10 +37,10 @@ bun lint:fix
 bun run test
 
 # Post multiple random jobs locally (10 or given)
-./scripts/mass_post_jobs.ts [number]
+bun run ./apps/api/scripts/mass_post_jobs.ts [number]
 
 # Create multiple random users locally (10 or given)
-./scripts/mass_user_create.ts [number]
+bun run ./apps/api/scripts/mass_user_create.ts [number]
 ```
 
 ## Local URLs

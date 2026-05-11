@@ -7,7 +7,6 @@
       "apps/**/*.tsx",
       "!apps/web/**/routeTree.gen.ts",
       "packages/**/*.ts",
-      "scripts/**/*.ts",
       "*.json",
       "*.jsonc",
       "!pgdata"
