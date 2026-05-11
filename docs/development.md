@@ -62,10 +62,10 @@ Each app under `/apps/*/` ships two env files:
 
 Compose build args (`VITE_API_URL`, `VITE_APP_URL`) default to `localhost` in `compose.yaml`. To override, create a root `.env` (gitignored) with the desired values — `docker compose` auto-loads it for variable interpolation.
 
-Production: **no `.env*` files** — inject vars via the host / orchestrator (Disco, Docker `--env-file` outside the image, k8s secrets, etc.). See [Deploy](deploy.md).
+Production: **no `.env*` files** — inject vars via the host / orchestrator (Disco, Docker `--env-file` outside the image, k8s secrets, etc.).
 
 ---
 
 Next:
 
-[Open the **API app** page](/api){: .btn .btn-green .fs-5 }
+[Open the **deployment** page](/deployment){: .btn .btn-green .fs-5 }
