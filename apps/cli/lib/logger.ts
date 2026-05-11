@@ -1,7 +1,7 @@
 import { createNodeLogger } from "@kaja/logger/node"
 
 export const logger = createNodeLogger({
-  app: "api",
+  app: "cli",
   env: process.env.NODE_ENV,
-  level: "trace"
+  level: "info"
 })

@@ -10,6 +10,7 @@ import { Section } from "#/components/ui/Section"
 import { ForgotPassword } from "#/components/user/ForgotPassword"
 import { useAuthClient } from "#/hooks/auth-client"
 import { useAppForm } from "#/lib/form"
+import { logger } from "#/lib/logger"
 
 const signinSearchSchema = z.object({
   redirect: z.string().optional()
@@ -35,9 +36,11 @@ function SignIn() {
       onSubmit: loginSchema
     },
     onSubmit: async ({ value }) => {
+      logger.info({ value }, "Sign in form submitted")
       const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
         toast.error(parsed.error?.message ?? "Invalid data")
+        logger.error({ error: parsed.error }, "Sign in form validation failed")
         return
       }
 
@@ -49,9 +52,11 @@ function SignIn() {
         })
         if (error) {
           toast.error(error.message ?? error.statusText)
+          logger.error({ error }, "Sign in failed")
         }
       } catch (error: any) {
         toast.error(error.message)
+        logger.error({ error }, "Sign in fail catched")
       } finally {
         setLoading(false)
       }

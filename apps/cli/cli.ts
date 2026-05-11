@@ -1,5 +1,6 @@
 import { updateSettings } from "@clack/prompts"
 import { apiBaseUrl } from "./lib/clients"
+import { logger } from "./lib/logger"
 import * as auth from "./ui/auth"
 import * as init from "./ui/init"
 import * as node from "./ui/node"
@@ -20,6 +21,6 @@ void (async () => {
   process.exit(0)
 })().catch(error => {
   const message = error instanceof Error ? error.message : String(error)
-  console.error(`[kaja] ${message}`)
+  logger.error({ error }, message)
   process.exit(1)
 })

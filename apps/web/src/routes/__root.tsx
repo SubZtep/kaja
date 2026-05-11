@@ -1,6 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, ErrorComponent, HeadContent, Scripts } from "@tanstack/react-router"
+import { useEffect } from "react"
 import { Providers } from "#/components/Providers"
+import { logger } from "#/lib/logger"
 import { getSession } from "../lib/session"
 import appCss from "../styles.css?url"
 
@@ -97,6 +99,10 @@ function NotFound() {
 }
 
 function DefaultError({ error }: Readonly<{ error: Error }>) {
+  useEffect(() => {
+    logger.error({ error }, error.message)
+  }, [error])
+
   return (
     <div className="flex flex-col items-center py-24">
       <ErrorComponent error={error} />

@@ -1,0 +1,29 @@
+{
+  "name": "@kaja/logger",
+  "description": "Shared logger utilities",
+  "version": "0.0.1",
+  "private": true,
+  "sideEffects": false,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./node": {
+      "types": "./node.ts",
+      "default": "./node.ts"
+    },
+    "./browser": {
+      "types": "./browser.ts",
+      "default": "./browser.ts"
+    }
+  },
+  "dependencies": {
+    "pino": "^10.3.1"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.1.3"
+  }
+}
