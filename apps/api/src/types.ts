@@ -1,4 +1,5 @@
 import type { Hono } from "hono"
+import type { CommandService } from "#/features/kaja/services/command"
 import type { NodeService } from "#/features/kaja/services/node"
 
 declare module "bun" {
@@ -33,6 +34,7 @@ export type AuthSessionUser = {
 export type RouteVariables = {
   user: AuthSessionUser | null
   nodeService: NodeService
+  commandService: CommandService
 }
 
 /** common route properties. */
