@@ -3,6 +3,7 @@ import { pool } from "#/core/db"
 import type { RouteProps } from "#/types"
 import { registerConnect } from "./routes/node/connect"
 import { registerHeartbeat } from "./routes/node/heartbeat"
+import { registerList } from "./routes/node/list"
 import { NodeService } from "./services/node"
 
 export const nodeService = new NodeService(pool)
@@ -17,3 +18,4 @@ kajaRoutes.use("*", async (c, next) => {
 
 registerHeartbeat(kajaRoutes)
 registerConnect(kajaRoutes)
+registerList(kajaRoutes)

@@ -1,4 +1,4 @@
-import { LayoutDashboard, type LucideIcon, Shield, Users } from "lucide-react"
+import { LayoutDashboard, type LucideIcon, Server, Shield, Users } from "lucide-react"
 
 type Surface = "menu" | "sidebar" | "mobile"
 type LayoutNavItem = {
@@ -32,6 +32,13 @@ const layoutNavItems: LayoutNavItem[] = [
     mobileLabel: "Dash",
     roles: ["admin", "user"],
     icon: LayoutDashboard,
+    surfaces: ["menu", "sidebar", "mobile"]
+  },
+  {
+    to: "/nodes",
+    label: "Nodes",
+    roles: ["admin", "user"],
+    icon: Server,
     surfaces: ["menu", "sidebar", "mobile"]
   },
   {

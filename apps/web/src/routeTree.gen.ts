@@ -13,6 +13,7 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
+import { Route as AdminNodesRouteImport } from './routes/_admin/nodes'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
 import { Route as PublicauthSignupRouteImport } from './routes/_public/(auth)/signup'
@@ -39,6 +40,11 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNodesRoute = AdminNodesRouteImport.update({
+  id: '/nodes',
+  path: '/nodes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
@@ -90,6 +96,7 @@ const PublicauthDeviceApproveRoute = PublicauthDeviceApproveRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/nodes': typeof AdminNodesRoute
   '/profile': typeof AdminProfileRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device': typeof PublicauthDeviceRouteWithChildren
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/nodes': typeof AdminNodesRoute
   '/profile': typeof AdminProfileRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/reset-password': typeof PublicauthResetPasswordRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRoute
+  '/_admin/nodes': typeof AdminNodesRoute
   '/_admin/profile': typeof AdminProfileRoute
   '/_public/': typeof PublicIndexRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/nodes'
     | '/profile'
     | '/users/$userId'
     | '/device'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/nodes'
     | '/profile'
     | '/users/$userId'
     | '/reset-password'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/_admin'
     | '/_public'
     | '/_admin/dashboard'
+    | '/_admin/nodes'
     | '/_admin/profile'
     | '/_public/'
     | '/_admin/users/$userId'
@@ -204,6 +216,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AdminProfileRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/nodes': {
+      id: '/_admin/nodes'
+      path: '/nodes'
+      fullPath: '/nodes'
+      preLoaderRoute: typeof AdminNodesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/dashboard': {
@@ -274,6 +293,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminNodesRoute: typeof AdminNodesRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
@@ -281,6 +301,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminNodesRoute: AdminNodesRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
