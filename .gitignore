@@ -10,4 +10,7 @@ pgdata
 # ...
 .DS_Store
 .agents
+.claude
+.cursor
+.playwright-mcp
 skills-lock.json

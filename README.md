@@ -18,6 +18,7 @@ This project is built with **Bun** and **TypeScript**, implementing pieces of **
   - [`cli`](./apps/cli/) – Installable CLI app for orchestration tasks.
 - **Packages**
   - [`geo`](./packages/geo/) – Geolocation services.
+  - [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.
   - [`schemas`](./packages/schemas/) – Payload and data schemas across the workspaces.
   - [`shared`](./packages/shared/) – Shared utilities (pure functions).
 

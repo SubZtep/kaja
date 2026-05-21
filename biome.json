@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/latest/schema.json",
   "files": {
     "ignoreUnknown": true,
     "includes": [
@@ -8,7 +8,6 @@
       "!apps/web/**/routeTree.gen.ts",
       "packages/**/*.ts",
       "*.json",
-      "*.jsonc",
       "!pgdata"
     ]
   },

@@ -4,6 +4,7 @@ COPY package.json bun.lock tsconfig.json ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/schemas/package.json ./packages/schemas/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/logger/package.json ./packages/logger/
 RUN bun install
 
 COPY apps/api ./apps/api

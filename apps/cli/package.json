@@ -9,13 +9,13 @@
     "build:release": "bun build ./cli.ts --compile --minify --sourcemap --bytecode --outfile kaja --env=API_*"
   },
   "dependencies": {
-    "@clack/prompts": "^1.3.0",
+    "@clack/prompts": "^1.4.0",
     "@iarna/toml": "^2.2.5",
     "@kaja/geo": "workspace:*",
     "@kaja/logger": "workspace:*",
     "@kaja/schemas": "workspace:*",
     "@kaja/shared": "workspace:*",
-    "better-auth": "^1.6.10",
+    "better-auth": "^1.6.11",
     "clipboardy": "^5.3.1",
     "env-paths": "^4.0.0",
     "ollama": "^0.6.3",
