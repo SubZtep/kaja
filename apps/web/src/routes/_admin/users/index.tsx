@@ -1,20 +1,13 @@
 import { capitalized, getTimeAgo } from "@kaja/shared"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import {
-  type ColumnFiltersState,
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable
-} from "@tanstack/react-table"
+import { createColumnHelper } from "@tanstack/react-table"
 import type { UserWithRole } from "better-auth/client/plugins"
-import { ArrowDown, ArrowUp, Eye, Search, X } from "lucide-react"
+import { Eye, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
 import { Loader } from "#/components/ui/Loader"
+import { Table } from "#/components/ui/Table"
 import { useAuthClient } from "#/hooks/auth-client"
 import { userRequired } from "#/lib/loaders"
 
@@ -57,7 +50,19 @@ function UserList() {
     if (data && Array.isArray(data)) setUsers(data)
   }, [data])
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  // Filter users based on search and role filter
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch =
+        !searchQuery ||
+        (user.name ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.email ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesRole = !roleFilter || (user.role ?? "user") === roleFilter
+
+      return matchesSearch && matchesRole
+    })
+  }, [users, searchQuery, roleFilter])
 
   const columns = useMemo(
     () => [
@@ -94,8 +99,7 @@ function UserList() {
           const role = info.getValue() ?? "user"
           const style = ROLE_STYLES[role] ?? ROLE_STYLES.user
           return <span className={`text-xs font-medium px-3 py-1 rounded ${style}`}>{capitalized(role)}</span>
-        },
-        enableColumnFilter: false
+        }
       }),
       columnHelper.accessor("emailVerified", {
         header: "Status",
@@ -142,42 +146,9 @@ function UserList() {
     []
   )
 
-  const table = useReactTable({
-    columns,
-    data: users,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    initialState: {
-      sorting: [{ id: "createdAt", desc: true }]
-    },
-    state: { columnFilters },
-    onColumnFiltersChange: setColumnFilters,
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const search = filterValue.toLowerCase()
-      const name = (row.original.name ?? "").toLowerCase()
-      const email = (row.original.email ?? "").toLowerCase()
-      const role = (row.original.role ?? "").toLowerCase()
-      return name.includes(search) || email.includes(search) || role.includes(search)
-    }
-  })
-
-  useEffect(() => {
-    table.setGlobalFilter(searchQuery)
-  }, [searchQuery, table])
-
-  useEffect(() => {
-    if (roleFilter) {
-      setColumnFilters([{ id: "role", value: roleFilter }])
-    } else {
-      setColumnFilters([])
-    }
-  }, [roleFilter])
-
   if (isLoading) return <Loader />
   if (!users || users.length === 0) return null
 
-  const filteredCount = table.getRowModel().rows.length
   const activeCount = users.filter(u => u.emailVerified).length
 
   return (
@@ -256,51 +227,10 @@ function UserList() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id} className="bg-bg text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
-                  {headerGroup.headers.map(header => (
-                    <th
-                      key={header.id}
-                      className={`px-8 py-4 ${header.id === "createdAt" ? "text-right" : ""}`}
-                      onClick={() =>
-                        header.column.getCanSort() && header.column.toggleSorting(header.column.getIsSorted() === "asc")
-                      }
-                      style={{ cursor: header.column.getCanSort() ? "pointer" : "default" }}
-                    >
-                      <span className="flex items-center gap-1">
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                        {{ asc: <ArrowUp size={10} />, desc: <ArrowDown size={10} /> }[
-                          header.column.getIsSorted() as string
-                        ] ?? null}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {table.getRowModel().rows.map(row => (
-                <tr key={row.id} className="group cursor-pointer transition-colors duration-150 hover:bg-surface-2">
-                  {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} className={`px-8 py-5 ${cell.column.id === "createdAt" ? "text-right" : ""}`}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="px-6 pb-6">
+          <Table columns={columns} data={filteredUsers} showFilters={false} />
         </div>
       </section>
-
-      <footer className="mt-12 flex flex-col items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted sm:flex-row sm:justify-between">
-        <div>
-          Showing {filteredCount} of {users.length} users
-        </div>
-      </footer>
     </>
   )
 }

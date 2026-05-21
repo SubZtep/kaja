@@ -5,13 +5,13 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   type RowData,
   useReactTable
 } from "@tanstack/react-table"
-import { useVirtualizer } from "@tanstack/react-virtual"
-import { ArrowDown, ArrowUp } from "lucide-react"
-import { useRef, useState } from "react"
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { useState } from "react"
 import { DebouncedText } from "../form/primitives/Text"
 
 declare module "@tanstack/react-table" {
@@ -24,7 +24,13 @@ type PeriodFilter = [Date | undefined, Date | undefined]
 
 const USER_ROLES = ["admin", "user"] as const
 
-export function Table({ columns, data }: Readonly<{ columns: any[]; data: any[] }>) {
+const PAGE_SIZES = [10, 25, 50, 100]
+
+export function Table({
+  columns,
+  data,
+  showFilters = true
+}: Readonly<{ columns: any[]; data: any[]; showFilters?: boolean }>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
   const table = useReactTable({
@@ -33,13 +39,18 @@ export function Table({ columns, data }: Readonly<{ columns: any[]; data: any[] 
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       sorting: [
         {
           id: "createdAt",
           desc: true
         }
-      ]
+      ],
+      pagination: {
+        pageIndex: 0,
+        pageSize: 25
+      }
     },
     state: {
       columnFilters
@@ -53,37 +64,25 @@ export function Table({ columns, data }: Readonly<{ columns: any[]; data: any[] 
   }
 
   const { rows } = table.getRowModel()
-  const parentRef = useRef<HTMLDivElement>(null)
-
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 58,
-    overscan: 20
-  })
 
   return (
-    <div
-      ref={parentRef}
-      style={{
-        height: `600px`,
-        overflow: "auto" // Make it scroll!
-      }}
-    >
-      <div className="sticky top-0 flex gap-1 z-1">
-        {table.getHeaderGroups().map(headerGroup =>
-          headerGroup.headers.map(header =>
-            header.column.getCanFilter() ? (
-              <div key={header.id} className="flex flex-row gap-4 mt-1 bg-surface/90 px-4 py-2 items-center rounded-md">
-                {flexRender(header.column.columnDef.header, header.getContext())}:
-                <Filter column={header.column} />
-              </div>
-            ) : null
-          )
-        )}
-      </div>
+    <div className="flex flex-col gap-4">
+      {showFilters && (
+        <div className="flex gap-1 flex-wrap">
+          {table.getHeaderGroups().map(headerGroup =>
+            headerGroup.headers.map(header =>
+              header.column.getCanFilter() ? (
+                <div key={header.id} className="flex flex-row gap-4 bg-surface/90 px-4 py-2 items-center rounded-md">
+                  {flexRender(header.column.columnDef.header, header.getContext())}:
+                  <Filter column={header.column} />
+                </div>
+              ) : null
+            )
+          )}
+        </div>
+      )}
 
-      <div style={{ height: `${virtualizer.getTotalSize()}px` }}>
+      <div className="overflow-x-auto">
         <table className="w-full table-auto">
           <thead>
             {table.getHeaderGroups().map(headerGroup => (
@@ -114,28 +113,159 @@ export function Table({ columns, data }: Readonly<{ columns: any[]; data: any[] 
             ))}
           </thead>
           <tbody>
-            {virtualizer.getVirtualItems().map((virtualRow, index) => {
-              const row = rows[virtualRow.index]
-              return (
-                <tr
-                  key={row.id}
-                  style={{
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start - index * virtualRow.size}px)`
-                  }}
-                >
-                  {row.getVisibleCells().map(cell => {
-                    return (
-                      <td key={cell.id} className="p-4 border-b border-border/40">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    )
-                  })}
-                </tr>
-              )
-            })}
+            {rows.map(row => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map(cell => (
+                  <td key={cell.id} className="p-4 border-b border-border/40">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
+      </div>
+
+      <Pagination table={table} />
+    </div>
+  )
+}
+
+function Pagination({ table }: Readonly<{ table: any }>) {
+  const pageIndex = table.getState().pagination.pageIndex
+  const pageCount = table.getPageCount()
+  const pageSize = table.getState().pagination.pageSize
+  const totalRows = table.getFilteredRowModel().rows.length
+
+  const getPageNumbers = () => {
+    const pages: Array<{ type: "page" | "ellipsis"; value: number | string; key: string }> = []
+    const maxVisible = 7
+
+    if (pageCount <= maxVisible) {
+      for (let i = 0; i < pageCount; i++) {
+        pages.push({ type: "page", value: i, key: `page-${i}` })
+      }
+    } else {
+      if (pageIndex < 3) {
+        for (let i = 0; i < 5; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
+        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-end" })
+        pages.push({ type: "page", value: pageCount - 1, key: `page-${pageCount - 1}` })
+      } else if (pageIndex > pageCount - 4) {
+        pages.push({ type: "page", value: 0, key: "page-0" })
+        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-start" })
+        for (let i = pageCount - 5; i < pageCount; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
+      } else {
+        pages.push({ type: "page", value: 0, key: "page-0" })
+        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-start" })
+        for (let i = pageIndex - 1; i <= pageIndex + 1; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
+        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-end" })
+        pages.push({ type: "page", value: pageCount - 1, key: `page-${pageCount - 1}` })
+      }
+    }
+    return pages
+  }
+
+  const startRow = pageIndex * pageSize + 1
+  const endRow = Math.min((pageIndex + 1) * pageSize, totalRows)
+
+  if (totalRows === 0) return null
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+      <div className="flex items-center gap-2 text-sm text-muted">
+        <span>
+          Showing {startRow} to {endRow} of {totalRows} entries
+        </span>
+        <select
+          value={pageSize}
+          onChange={e => table.setPageSize(Number(e.target.value))}
+          aria-label="Select page size"
+          className="ml-2 rounded-lg bg-surface-2 px-3 py-1 text-fg outline-none transition-all focus:ring-1 focus:ring-neon"
+        >
+          {PAGE_SIZES.map(size => (
+            <option key={size} value={size}>
+              {size} per page
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => table.setPageIndex(0)}
+          disabled={!table.getCanPreviousPage()}
+          aria-label="Go to first page"
+          className={cn(
+            "p-2 rounded-lg transition-all",
+            table.getCanPreviousPage()
+              ? "text-fg hover:bg-surface-2 hover:text-neon"
+              : "text-muted/50 cursor-not-allowed"
+          )}
+        >
+          <ChevronsLeft size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+          aria-label="Go to previous page"
+          className={cn(
+            "p-2 rounded-lg transition-all",
+            table.getCanPreviousPage()
+              ? "text-fg hover:bg-surface-2 hover:text-neon"
+              : "text-muted/50 cursor-not-allowed"
+          )}
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        {getPageNumbers().map(item =>
+          item.type === "page" ? (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => table.setPageIndex(item.value as number)}
+              className={cn(
+                "min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                pageIndex === item.value
+                  ? "bg-neon text-bg shadow-[0_0_12px_rgba(255,63,181,0.5)]"
+                  : "text-fg hover:bg-surface-2 hover:text-neon"
+              )}
+            >
+              {(item.value as number) + 1}
+            </button>
+          ) : (
+            <span key={item.key} className="px-2 text-muted">
+              {item.value}
+            </span>
+          )
+        )}
+
+        <button
+          type="button"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+          aria-label="Go to next page"
+          className={cn(
+            "p-2 rounded-lg transition-all",
+            table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
+          )}
+        >
+          <ChevronRight size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+          disabled={!table.getCanNextPage()}
+          aria-label="Go to last page"
+          className={cn(
+            "p-2 rounded-lg transition-all",
+            table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
+          )}
+        >
+          <ChevronsRight size={18} />
+        </button>
       </div>
     </div>
   )
