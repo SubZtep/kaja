@@ -60,7 +60,10 @@ export function registerConnect(app: RouteRegProps) {
 
     const clientIp = getClientIp(c)
     if (clientIp) {
-      geoipQueue.add({ ip: clientIp, nodeId })
+      logger.info({ ip: clientIp, nodeId }, "Queueing GeoIP lookup")
+      geoipQueue.add({ ip: clientIp, nodeId }).catch(error => {
+        logger.error({ error, nodeId, ip: clientIp }, "Failed to queue GeoIP lookup")
+      })
       logger.info({ ip: clientIp, nodeId }, "Queued GeoIP lookup")
     } else {
       logger.warn({ nodeId }, "Could not get public IP address for GeoIP lookup")

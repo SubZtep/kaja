@@ -16,10 +16,18 @@ export const geoipQueue = {
 
     await queue.add(async () => {
       try {
+        logger.info({ nodeId: data.nodeId, ip: data.ip }, "Starting GeoIP lookup")
         const location = getGeoLocation(data.ip)
+        logger.info({ nodeId: data.nodeId, location }, "Got location data")
+
         if (location) {
-          await nodeService.updateGeoLocation(data.nodeId, location)
+          logger.info({ nodeId: data.nodeId }, "Calling nodeService.updateGeoLocation")
+          const result = await nodeService.updateGeoLocation(data.nodeId, location)
+          logger.info({ nodeId: data.nodeId, result }, "Database update result")
+        } else {
+          logger.warn({ nodeId: data.nodeId, ip: data.ip }, "No location data returned")
         }
+
         logger.info({ nodeId: data.nodeId, location }, "GeoIP job completed")
       } catch (error) {
         logger.error({ error, nodeId: data.nodeId }, "GeoIP job failed")

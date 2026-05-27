@@ -119,6 +119,8 @@ export class NodeService {
   }
 
   async updateGeoLocation(nodeId: string, geoLocation: unknown): Promise<boolean> {
+    logger.info({ nodeId, geoLocation }, "Updating node geo_location")
+
     const { rowCount } = await this.#db.query(
       `
       UPDATE node
@@ -128,6 +130,8 @@ export class NodeService {
       `,
       [nodeId, geoLocation]
     )
+
+    logger.info({ nodeId, rowCount, updated: rowCount !== null && rowCount > 0 }, "Geo location update result")
 
     return rowCount !== null && rowCount > 0
   }
