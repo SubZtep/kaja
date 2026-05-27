@@ -5,7 +5,6 @@
   "private": true,
   "scripts": {
     "dev": "bun run cli.tsx",
-    "build": "bun build ./cli.tsx --compile --target=bun --format=esm --minify --sourcemap --bytecode --external react-devtools-core --outfile kaja",
     "build:release": "bun build ./cli.tsx --compile --target=bun --format=esm --minify --sourcemap --bytecode --external react-devtools-core --outfile kaja --env=API_*"
   },
   "dependencies": {

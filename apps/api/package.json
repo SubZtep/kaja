@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "bun run --hot src/core/server.ts",
-    "build": "bun build src/core/server.ts --target bun --outdir dist",
-    "start": "bun run dist/core/server.js"
+    "build": "bun build src/core/server.ts --target bun --outfile dist/server.js",
+    "start": "bun run dist/server.js"
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.6.1",

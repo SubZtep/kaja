@@ -31,7 +31,7 @@ if (process.env.NODE_ENV === "development") {
       version: "0.0.1",
       description: "Custom endpoints without [auth reference](/auth/reference)."
     }
-  })  
+  })
 }
 
 // Run server
