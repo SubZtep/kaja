@@ -46,14 +46,15 @@ bun test              # Runs tests with both .env.example and .env
 ```bash
 # API
 bun run --filter @kaja/api dev          # Hot-reload server
-bun run --filter @kaja/api openapi:generate
+bun run --filter @kaja/api build        # Build to dist/server.js
 
 # Web
 bun run --filter @kaja/web dev          # Vite dev server on :3000
 bun run --filter @kaja/web build
 
 # CLI
-bun run --env-file=apps/cli/.env apps/cli/cli.ts
+bun run --env-file=apps/cli/.env apps/cli/cli.tsx
+bun run --filter @kaja/cli build:release  # Build standalone executable
 ```
 
 ## Architecture
@@ -83,12 +84,12 @@ bun run --env-file=apps/cli/.env apps/cli/cli.ts
 - Components organized: layout/, form/, ui/
 
 ### CLI Structure (`apps/cli/`)
-- Entry: `cli.ts` - initializes auth session and node operations
+- Entry: `cli.tsx` - initializes auth session and node operations
 - `lib/kaja-sdk.ts` - API client for node heartbeat and status
 - `lib/config.ts` - Configuration management using env-paths
 - `lib/token.ts` - Token storage and retrieval
-- `ui/` - Clack prompts for auth and node interactions
-- Build creates standalone executable with API_URL baked in
+- `ui/` - React Ink components for interactive CLI
+- Build creates standalone executable with API_URL baked in via `build:release`
 
 ### Packages
 - **@kaja/schemas**: Zod schemas shared across workspaces (includes KAJA_CLI_CLIENT_ID)

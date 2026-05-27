@@ -10,14 +10,32 @@ export const configSchema = z.object({
   name: z.string()
 })
 
+export const commandResultSchema = z.object({
+  commandId: z.uuidv7(),
+  status: z.enum(["completed", "failed", "timeout"]),
+  result: z.unknown().optional(),
+  error: z.string().optional(),
+  exitCode: z.number().int().optional()
+})
+
 export const heartbeatRequestSchema = z.object({
   nodeId: z.uuidv7(),
   status: z.enum(["idle", "busy"]),
-  currentJobId: z.uuidv7().optional()
+  currentJobId: z.uuidv7().optional(),
+  commandResults: z.array(commandResultSchema).optional()
+})
+
+export const pendingCommandSchema = z.object({
+  commandId: z.uuidv7(),
+  command: z.string(),
+  args: z.record(z.string(), z.unknown()).optional(),
+  timeoutSeconds: z.number().int().default(300)
 })
 
 export const heartbeatResponseSchema = z.object({
-  ok: z.boolean()
+  ok: z.boolean(),
+  pollIntervalMs: z.number().int().optional(),
+  commands: z.array(pendingCommandSchema).optional()
 })
 
 export const connectNodeRequestSchema = z.object({
@@ -35,8 +53,34 @@ export const connectNodeResponseSchema = z.object({
   pollIntervalMs: z.number().int()
 })
 
+export const createCommandRequestSchema = z.object({
+  command: z.string().min(1),
+  args: z.record(z.string(), z.unknown()).optional(),
+  timeoutSeconds: z.number().int().min(1).max(3600).default(300)
+})
+
+export const commandSchema = z.object({
+  id: z.uuidv7(),
+  nodeId: z.uuidv7(),
+  command: z.string(),
+  args: z.record(z.string(), z.unknown()).optional(),
+  timeoutSeconds: z.number().int(),
+  status: z.enum(["pending", "executing", "completed", "failed", "timeout"]),
+  createdAt: z.coerce.date(),
+  startedAt: z.coerce.date().optional(),
+  completedAt: z.coerce.date().optional(),
+  result: z.unknown().optional(),
+  error: z.string().optional(),
+  exitCode: z.number().int().optional(),
+  createdBy: z.uuidv7().optional()
+})
+
 export type Config = z.infer<typeof configSchema>
 export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>
 export type HeartbeatResponse = z.infer<typeof heartbeatResponseSchema>
 export type ConnectNodeRequest = z.infer<typeof connectNodeRequestSchema>
 export type ConnectNodeResponse = z.infer<typeof connectNodeResponseSchema>
+export type CommandResult = z.infer<typeof commandResultSchema>
+export type PendingCommand = z.infer<typeof pendingCommandSchema>
+export type CreateCommandRequest = z.infer<typeof createCommandRequestSchema>
+export type Command = z.infer<typeof commandSchema>

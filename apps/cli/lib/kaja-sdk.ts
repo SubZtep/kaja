@@ -33,11 +33,13 @@ export class KajaClient {
     return this.nodeId
   }
 
-  async heartbeat(payload: HeartbeatRequest) {
+  async heartbeat(payload: HeartbeatRequest): Promise<HeartbeatResponse | null> {
     try {
-      return (await this.#apiRequest<HeartbeatResponse>("/kaja/heartbeat", payload)).ok
-    } catch {
-      return false
+      return await this.#apiRequest<HeartbeatResponse>("/kaja/heartbeat", payload)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(`Heartbeat failed: ${message}`)
+      return null
     }
   }
 

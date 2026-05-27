@@ -1,4 +1,5 @@
-import type { Hono } from "hono"
+import type { OpenAPIHono } from "@hono/zod-openapi"
+import type { CommandService } from "#/features/kaja/services/command"
 import type { NodeService } from "#/features/kaja/services/node"
 
 declare module "bun" {
@@ -33,10 +34,11 @@ export type AuthSessionUser = {
 export type RouteVariables = {
   user: AuthSessionUser | null
   nodeService: NodeService
+  commandService: CommandService
 }
 
 /** common route properties. */
 export type RouteProps = { Variables: RouteVariables }
 
 /** Register functions properties for route register helpers. */
-export type RouteRegProps = Hono<RouteProps>
+export type RouteRegProps = OpenAPIHono<RouteProps>

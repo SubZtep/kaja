@@ -6,6 +6,7 @@
     "strict": true,
     "jsx": "react-jsx",
     "noEmit": true,
+    "noImplicitAny": false,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true

@@ -1,7 +1,7 @@
 # 가자⛲
 
 > [!IMPORTANT]
-> Kaja is still evolving, but the current focus is authentication, admin workflows, and local orchestration.
+> Kaja is still evolving :speaker::godmode::loudspeaker:
 
 ![Continuous integration](https://github.com/SubZtep/kaja/actions/workflows/ci.yaml/badge.svg)
 ![Build CLI](https://github.com/SubZtep/kaja/actions/workflows/build-cli.yaml/badge.svg)

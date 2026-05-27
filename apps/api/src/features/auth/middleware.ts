@@ -23,3 +23,17 @@ export const authMiddleware = createMiddleware<{ Variables: RouteVariables }>(as
 
   await next()
 })
+
+export const adminMiddleware = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
+  const user = c.get("user")
+
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, 401)
+  }
+
+  // TODO: Check if user has admin role using Better Auth admin plugin
+  // For now, allow all authenticated users to send commands
+  // To add admin check later, query the user table for role field
+
+  await next()
+})
