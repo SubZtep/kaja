@@ -59,9 +59,9 @@ export function registerConnect(app: RouteRegProps) {
     })
 
     const info = getConnInfo(c)
-    if (info.remote.addressType === "IPv4" && info.remote.address) {
-      geoipQueue.add("welcome", { ip: info.remote.address, nodeId })
-      logger.info({ ip: info.remote.address, nodeId }, "Node data")
+    if (info.remote.address) {
+      geoipQueue.add("connect", { ip: info.remote.address, nodeId })
+      logger.info({ address: info.remote, nodeId }, "Address for GeoIP lookup")
     } else {
       logger.warn({ info, user }, "Could not get remote IP address for GeoIP lookup")
     }

@@ -11,6 +11,7 @@
     "@hono/zod-openapi": "^1.4.0",
     "@hono/zod-validator": "^0.8.0",
     "@kaja/logger": "workspace:*",
+    "@kaja/geo": "workspace:*",
     "@kaja/schemas": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@react-email/components": "^1.0.12",

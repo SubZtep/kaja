@@ -1,7 +1,6 @@
 import { version } from "../package.json"
 import { apiBaseUrl } from "./lib/clients"
 import { deleteConfig } from "./lib/local-store"
-// import { deleteConfig } from "./lib/kaja-sdk"
 import { logger } from "./lib/logger"
 import { deleteAccessToken } from "./lib/token"
 

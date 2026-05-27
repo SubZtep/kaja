@@ -22,10 +22,12 @@ try {
   process.on("SIGINT", cleanup)
   process.on("SIGTERM", cleanup)
 
-  waitUntilExit().catch(error => {
-    logger.error({ error }, "App exited with error")
-    process.exit(1)
-  })
+  waitUntilExit()
+    .then(() => process.exit())
+    .catch(error => {
+      logger.error({ error }, "App exited with error")
+      process.exit(1)
+    })
 } catch (error) {
   logger.error({ error }, "Failed to start CLI")
   process.exit(1)

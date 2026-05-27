@@ -52,7 +52,7 @@ export default function NodeRunner() {
         )
 
         await Promise.race([disconnectNodeRequest({ nodeId }), timeoutPromise])
-      } catch (_error) {
+      } catch {
         // Suppress errors during shutdown - we're exiting anyway
         // The node will be marked as inactive by the scheduler after timeout
       }
@@ -75,7 +75,6 @@ export default function NodeRunner() {
       clearInterval(interval)
       intervalRef.current = null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
