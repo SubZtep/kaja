@@ -118,6 +118,20 @@ export class NodeService {
     return rows.map(row => this.#rowToNode(row))
   }
 
+  async updateGeoLocation(nodeId: string, geoLocation: unknown): Promise<boolean> {
+    const { rowCount } = await this.#db.query(
+      `
+      UPDATE node
+      SET geo_location = $2,
+          updated_at = NOW()
+      WHERE id = $1
+      `,
+      [nodeId, geoLocation]
+    )
+
+    return rowCount !== null && rowCount > 0
+  }
+
   #rowToNode(row: any): Node {
     return {
       id: row.id,

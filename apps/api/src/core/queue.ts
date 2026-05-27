@@ -1,5 +1,6 @@
 import { getGeoLocation } from "@kaja/geo"
-import { Bunqueue, Queue, shutdownManager, Worker } from "bunqueue/client"
+import { Queue, shutdownManager, Worker } from "bunqueue/client"
+import { nodeService } from "#/features/kaja"
 import { logger } from "./logger"
 
 interface GeoIPJob {
@@ -7,21 +8,17 @@ interface GeoIPJob {
   ip: string
 }
 
-export const geoipQueue = new Bunqueue<GeoIPJob>("geoips", {
-  embedded: true,
-  processor: async job => {
-    logger.info({ job }, "Processing GeoIP job")
-    await job.updateProgress(100)
-    return { sent: true }
-  }
+export const geoipQueue = new Queue<GeoIPJob>("geoips", {
+  embedded: true
 })
 
 const worker = new Worker<GeoIPJob>(
   "geoips",
   async job => {
-    logger.info({ job: job.data }, "Processing IP")
     const location = getGeoLocation(job.data.ip)
-    logger.info({ job: job.data, location }, "GeoIP result")
+    await job.updateProgress(50)
+    logger.trace({ nodeId: job.data.nodeId, location }, "GeoIP result")
+    await nodeService.updateGeoLocation(job.data.nodeId, location)
     await job.updateProgress(100)
     return { sent: true }
   },
@@ -32,7 +29,6 @@ worker.on("completed", job => {
   logger.info({ job }, "GeoIP job completed")
 })
 
-// Graceful shutdown
 process.on("SIGINT", async () => {
   await worker.close()
   shutdownManager()
