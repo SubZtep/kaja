@@ -1,7 +1,7 @@
-import { swaggerUI } from "@hono/swagger-ui"
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { cors } from "hono/cors"
 import { healthRoutes } from "#/core/routes/health"
+import { referenceRoutes, setupApiDocs } from "#/core/routes/reference"
 import { userRoutes } from "#/core/routes/user"
 import { authMiddleware, authRoutes } from "#/features/auth"
 import { kajaRoutes } from "#/features/kaja"
@@ -23,15 +23,8 @@ app.route("/users", userRoutes)
 
 // API documentation
 if (process.env.NODE_ENV === "development") {
-  app.get("/reference", swaggerUI({ url: "/openapi.json" }))
-  app.doc("/openapi.json", {
-    openapi: "3.1.1",
-    info: {
-      title: "Kaja.io API",
-      version: "0.0.1",
-      description: "Custom endpoints without [auth reference](/auth/reference)."
-    }
-  })
+  setupApiDocs(app)
+  app.route("/reference", referenceRoutes)
 }
 
 // Run server
