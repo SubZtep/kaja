@@ -3,7 +3,14 @@
   "services": {
     "web": {
       "port": 3001,
-      "image": "backend"
+      "image": "backend",
+      "volumes": [
+        {
+          "source": "/usr/share/GeoIP",
+          "target": "/usr/share/GeoIP",
+          "readOnly": true
+        }
+      ]
     }
   },
   "images": {

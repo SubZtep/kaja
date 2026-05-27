@@ -29,30 +29,29 @@ COPY <<'EOF' /entrypoint.sh
 #!/bin/sh
 set -e
 
-if [ -n "$GEOIP_ACCOUNT_ID" ] && [ -n "$GEOIP_LICENSE_KEY" ]; then
-  if [ ! -f /usr/share/GeoIP/GeoLite2-City.mmdb ]; then
-    echo "Downloading GeoIP database..."
+# Check if GeoIP database already exists (mounted via volume)
+if [ -f /usr/share/GeoIP/GeoLite2-City.mmdb ]; then
+  echo "GeoIP database found (volume mount)"
+elif [ -n "$GEOIP_ACCOUNT_ID" ] && [ -n "$GEOIP_LICENSE_KEY" ]; then
+  echo "Downloading GeoIP database..."
 
-    # Download the tarball from MaxMind
-    curl -L -u "${GEOIP_ACCOUNT_ID}:${GEOIP_LICENSE_KEY}" \
-      "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz" \
-      -o /tmp/GeoLite2-City.tar.gz
+  # Download the tarball from MaxMind
+  curl -L -u "${GEOIP_ACCOUNT_ID}:${GEOIP_LICENSE_KEY}" \
+    "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz" \
+    -o /tmp/GeoLite2-City.tar.gz
 
-    if [ $? -eq 0 ]; then
-      # Extract the .mmdb file
-      tar -xzf /tmp/GeoLite2-City.tar.gz -C /tmp
-      find /tmp -name "GeoLite2-City.mmdb" -exec mv {} /usr/share/GeoIP/GeoLite2-City.mmdb \;
-      chmod 644 /usr/share/GeoIP/GeoLite2-City.mmdb
-      rm -rf /tmp/GeoLite2-City.tar.gz /tmp/GeoLite2-City_*
-      echo "GeoIP database ready"
-    else
-      echo "Warning: GeoIP download failed"
-    fi
+  if [ $? -eq 0 ]; then
+    # Extract the .mmdb file
+    tar -xzf /tmp/GeoLite2-City.tar.gz -C /tmp
+    find /tmp -name "GeoLite2-City.mmdb" -exec mv {} /usr/share/GeoIP/GeoLite2-City.mmdb \;
+    chmod 644 /usr/share/GeoIP/GeoLite2-City.mmdb
+    rm -rf /tmp/GeoLite2-City.tar.gz /tmp/GeoLite2-City_*
+    echo "GeoIP database ready"
   else
-    echo "GeoIP database already exists"
+    echo "Warning: GeoIP download failed"
   fi
 else
-  echo "Warning: GEOIP_ACCOUNT_ID or GEOIP_LICENSE_KEY not set"
+  echo "Warning: No GeoIP database found and GEOIP_ACCOUNT_ID/GEOIP_LICENSE_KEY not set"
 fi
 
 # Drop to bun user and exec
