@@ -10,7 +10,6 @@ import { NodeService } from "./services/node"
 
 export const nodeService = new NodeService(pool)
 export const commandService = new CommandService(pool)
-
 export const kajaRoutes = new OpenAPIHono<RouteProps>()
 
 // Middleware to attach services to context

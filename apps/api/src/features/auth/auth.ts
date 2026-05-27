@@ -45,7 +45,7 @@ const plugins: BetterAuthPlugin[] = [
 ]
 
 if (process.env.NODE_ENV === "development") {
-  plugins.push(openAPI())
+  plugins.push(openAPI({ theme: "solarized" }))
 }
 
 export const auth = betterAuth({

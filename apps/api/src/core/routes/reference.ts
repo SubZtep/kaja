@@ -10,7 +10,7 @@ referenceRoutes.get(
   "/",
   Scalar({
     url: "/reference/openapi.json",
-    pageTitle: "Kaja API Reference",
+    pageTitle: "Kaja.io API Reference",
     theme: "solarized",
     darkMode: true,
     hiddenClients: true,
@@ -20,6 +20,8 @@ referenceRoutes.get(
     hideTestRequestButton: true,
     documentDownloadType: "none",
     showDeveloperTools: "never",
+    favicon: "https://kaja.io/favicon.ico",
+    withDefaultFonts: false,
     persistAuth: true,
     telemetry: false,
     agent: {
@@ -34,11 +36,37 @@ referenceRoutes.get(
 /** Setup OpenAPI documentation schema on the main app. */
 export function setupApiDocs(app: OpenAPIHono<RouteProps>) {
   app.doc("/reference/openapi.json", {
-    openapi: "3.1.1",
+    openapi: "3.2.0",
+    tags: [
+      {
+        name: "Nodes",
+        description: "Managing CLI nodes connected to the API."
+      },
+      {
+        name: "Users",
+        description: "User related random stuff."
+      },
+      {
+        name: "Admin",
+        description: "Web interface related endpoints."
+      },
+      {
+        name: "System",
+        description: "Health check."
+      }
+    ],
+    externalDocs: {
+      description: "Auth Endpoints",
+      url: "/auth/reference"
+    },
     info: {
-      title: "Kaja.io API",
+      title: "API Reference",
       version,
-      description: "Custom endpoints reference. [Click here](/auth/reference) for auth endpoints."
+      description: `
+Custom endpoints reference for _Kaja.io_.
+
+_wip_
+`
     }
   })
 }

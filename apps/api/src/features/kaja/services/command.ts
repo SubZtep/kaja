@@ -81,7 +81,7 @@ export class CommandService {
     try {
       // Wrap result in JSON object if it's a string, otherwise pass as-is
       // PostgreSQL driver expects plain JS object, not stringified JSON
-      let resultJson = null
+      let resultJson: any = null
       if (commandResult.result !== undefined && commandResult.result !== null) {
         if (typeof commandResult.result === "string") {
           resultJson = { output: commandResult.result }

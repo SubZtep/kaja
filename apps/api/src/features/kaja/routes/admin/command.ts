@@ -151,7 +151,9 @@ export function registerAdminCommands(app: RouteRegProps) {
   // List all commands for a node
   app.openapi(listNodeCommandsRoute, async c => {
     const user = c.get("user")
-    if (!user) return c.json({ error: "Unauthorized" }, 401)
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401) as any
+    }
 
     const { nodeId } = c.req.valid("param")
     const commandService = c.get("commandService")
@@ -164,7 +166,9 @@ export function registerAdminCommands(app: RouteRegProps) {
   // Get a specific command by ID
   app.openapi(getCommandRoute, async c => {
     const user = c.get("user")
-    if (!user) return c.json({ error: "Unauthorized" }, 401)
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401) as any
+    }
 
     const { commandId } = c.req.valid("param")
     const commandService = c.get("commandService")

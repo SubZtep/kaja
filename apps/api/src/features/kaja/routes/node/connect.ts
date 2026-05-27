@@ -5,7 +5,7 @@ import type { RouteRegProps } from "#/types"
 const connectRoute = createRoute({
   method: "post",
   path: "/connect",
-  tags: ["Kaja Nodes"],
+  tags: ["Nodes"],
   summary: "Connect a CLI node",
   description: "Register or reconnect a CLI node to the API",
   security: [{ bearerAuth: [] }],
@@ -41,8 +41,9 @@ const connectRoute = createRoute({
 export function registerConnect(app: RouteRegProps) {
   app.openapi(connectRoute, async c => {
     const user = c.get("user")
-    if (!user) return c.json({ error: "Unauthorized" }, 401)
-
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401) as any
+    }
     const body = c.req.valid("json")
     const nodeService = c.get("nodeService")
 

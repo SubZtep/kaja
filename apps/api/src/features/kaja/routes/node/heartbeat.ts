@@ -8,7 +8,7 @@ const FAST_POLL_INTERVAL = 5000 // 5 seconds
 const heartbeatRoute = createRoute({
   method: "post",
   path: "/heartbeat",
-  tags: ["Kaja Nodes"],
+  tags: ["Nodes"],
   summary: "Update node heartbeat",
   description: "Send heartbeat with node status and optionally receive pending commands",
   security: [{ bearerAuth: [] }],
@@ -52,7 +52,9 @@ const heartbeatRoute = createRoute({
 export function registerHeartbeat(app: RouteRegProps) {
   app.openapi(heartbeatRoute, async c => {
     const user = c.get("user")
-    if (!user) return c.json({ error: "Unauthorized" }, 401)
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401)
+    }
 
     const body = c.req.valid("json")
     const nodeService = c.get("nodeService")
@@ -62,7 +64,7 @@ export function registerHeartbeat(app: RouteRegProps) {
     const success = await nodeService.heartbeat(body.nodeId, user.id, body.status)
 
     if (!success) {
-      return c.json({ error: "unknown node" }, 404)
+      return c.json({ error: "unknown node" }, 404) as any
     }
 
     // Process command results from CLI

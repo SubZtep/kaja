@@ -4,7 +4,7 @@ import type { RouteRegProps } from "#/types"
 const listNodesRoute = createRoute({
   method: "get",
   path: "/nodes",
-  tags: ["Kaja Nodes"],
+  tags: ["Nodes"],
   summary: "List active nodes",
   description: "Get all active nodes for the authenticated user",
   security: [{ bearerAuth: [] }],
@@ -41,7 +41,7 @@ export function registerList(app: RouteRegProps) {
   app.openapi(listNodesRoute, async c => {
     const user = c.get("user")
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401)
+      return c.json({ error: "Unauthorized" }, 401) as any
     }
 
     const nodeService = c.get("nodeService")
