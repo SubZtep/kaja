@@ -3,7 +3,14 @@ import path from "node:path"
 import { Reader } from "@maxmind/geoip2-node"
 import type { GeoLocation } from "./types"
 
-const mmdbPath = path.join(__dirname, "data", "GeoLite2-City.mmdb")
+// Check multiple paths for the GeoIP database
+const possiblePaths = [
+  process.env.GEOIP_DB_PATH, // Custom path from environment
+  "/usr/share/GeoIP/GeoLite2-City.mmdb", // System-wide location (geoipupdate default)
+  path.join(__dirname, "data", "GeoLite2-City.mmdb") // Bundled with app
+].filter((p): p is string => typeof p === "string")
+
+const mmdbPath = possiblePaths.find(p => fs.existsSync(p))
 let reader: ReturnType<typeof Reader.openBuffer> | undefined
 let triedInit = false
 
@@ -12,11 +19,18 @@ function getReader() {
   triedInit = true
 
   try {
-    if (!fs.existsSync(mmdbPath)) return undefined
+    if (!mmdbPath || !fs.existsSync(mmdbPath)) {
+      console.warn(
+        `GeoIP database not found. Checked paths: ${possiblePaths.join(", ")}. Set GEOIP_DB_PATH environment variable or install geoipupdate.`
+      )
+      return undefined
+    }
     const dbBuffer = fs.readFileSync(mmdbPath)
     reader = Reader.openBuffer(dbBuffer)
+    console.info(`GeoIP database loaded from: ${mmdbPath}`)
     return reader
-  } catch {
+  } catch (error) {
+    console.error(`Failed to load GeoIP database: ${error instanceof Error ? error.message : String(error)}`)
     return undefined
   }
 }

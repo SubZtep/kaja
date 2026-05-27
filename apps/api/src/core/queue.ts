@@ -25,7 +25,7 @@ export const geoipQueue = {
           const result = await nodeService.updateGeoLocation(data.nodeId, location)
           logger.info({ nodeId: data.nodeId, result }, "Database update result")
         } else {
-          logger.warn({ nodeId: data.nodeId, ip: data.ip }, "No location data returned")
+          logger.warn({ nodeId: data.nodeId, ip: data.ip }, "No location data returned - GeoIP database may be missing")
         }
 
         logger.info({ nodeId: data.nodeId, location }, "GeoIP job completed")
