@@ -1,5 +1,8 @@
 FROM oven/bun:1-alpine AS builder
 
+# Set NODE_ENV during build so loggers are configured correctly
+ENV NODE_ENV=production
+
 COPY package.json bun.lock tsconfig.json ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/geo/package.json ./packages/geo/
@@ -17,6 +20,9 @@ ENV NODE_ENV=production
 
 # Install curl and su-exec for downloading database and dropping privileges
 RUN apk add --no-cache curl su-exec tar gzip
+
+# Note: Container starts as root to download GeoIP database if needed,
+# then drops to 'bun' user via su-exec in entrypoint.sh (see line 58)
 
 COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/apps/api/dist ./dist
 COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/node_modules ./node_modules

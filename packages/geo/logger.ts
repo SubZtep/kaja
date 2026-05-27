@@ -2,6 +2,6 @@ import { createNodeLogger } from "@kaja/logger/node"
 
 export const logger = createNodeLogger({
   app: "geo",
-  env: process.env.NODE_ENV,
+  env: process.env.NODE_ENV || "production",
   level: "trace"
 })
