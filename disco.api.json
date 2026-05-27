@@ -11,7 +11,14 @@
           "readOnly": true
         }
       ]
-    }
+    },
+    "cron": [
+      {
+        "schedule": "0 2 * * 3,6",
+        "command": "geoipupdate -f /etc/GeoIP.conf",
+        "description": "Update GeoIP database twice weekly (Wed/Sat at 2 AM)"
+      }
+    ]
   },
   "images": {
     "backend": {
