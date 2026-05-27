@@ -6,6 +6,7 @@ import { registerConnect } from "./routes/node/connect"
 import { registerDisconnect } from "./routes/node/disconnect"
 import { registerHeartbeat } from "./routes/node/heartbeat"
 import { registerList } from "./routes/node/list"
+import { registerStream } from "./routes/node/stream"
 import { CommandService } from "./services/command"
 import { NodeService } from "./services/node"
 
@@ -25,6 +26,7 @@ registerHeartbeat(kajaRoutes)
 registerConnect(kajaRoutes)
 registerDisconnect(kajaRoutes)
 registerList(kajaRoutes)
+registerStream(kajaRoutes)
 
 // Admin routes (TODO: add adminMiddleware when implemented)
 registerAdminCommands(kajaRoutes)
