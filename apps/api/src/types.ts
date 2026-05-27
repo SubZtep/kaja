@@ -1,4 +1,4 @@
-import type { Hono } from "hono"
+import type { OpenAPIHono } from "@hono/zod-openapi"
 import type { CommandService } from "#/features/kaja/services/command"
 import type { NodeService } from "#/features/kaja/services/node"
 
@@ -41,4 +41,4 @@ export type RouteVariables = {
 export type RouteProps = { Variables: RouteVariables }
 
 /** Register functions properties for route register helpers. */
-export type RouteRegProps = Hono<RouteProps>
+export type RouteRegProps = OpenAPIHono<RouteProps>

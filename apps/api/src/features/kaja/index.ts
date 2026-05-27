@@ -1,4 +1,4 @@
-import { Hono } from "hono"
+import { OpenAPIHono } from "@hono/zod-openapi"
 import { pool } from "#/core/db"
 import type { RouteProps } from "#/types"
 import { registerAdminCommands } from "./routes/admin/command"
@@ -11,7 +11,7 @@ import { NodeService } from "./services/node"
 export const nodeService = new NodeService(pool)
 export const commandService = new CommandService(pool)
 
-export const kajaRoutes = new Hono<RouteProps>()
+export const kajaRoutes = new OpenAPIHono<RouteProps>()
 
 // Middleware to attach services to context
 kajaRoutes.use("*", async (c, next) => {

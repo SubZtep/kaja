@@ -1,0 +1,7 @@
+telemetry = false
+
+[run]
+bun = true
+noOrphans = true
+elide-lines = 0
+silent = true
