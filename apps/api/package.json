@@ -7,7 +7,6 @@
     "start": "bun run dist/server.js"
   },
   "dependencies": {
-    "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-openapi": "^1.4.0",
     "@hono/zod-validator": "^0.8.0",
     "@kaja/logger": "workspace:*",
@@ -15,6 +14,7 @@
     "@kaja/shared": "workspace:*",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
+    "@scalar/hono-api-reference": "^0.10.19",
     "better-auth": "^1.6.11",
     "hono": "^4.12.23",
     "nodemailer": "^8.0.9",
