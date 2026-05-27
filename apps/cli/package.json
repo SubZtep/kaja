@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@types/qrcode-terminal": "^0.12.2",
-    "@types/react": "^19.2.15"
+    "@types/react": "^19.2.15",
+    "react-devtools-core": "^7.0.1"
   }
 }
