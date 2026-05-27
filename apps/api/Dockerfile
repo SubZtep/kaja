@@ -15,8 +15,8 @@ RUN bun run --filter @kaja/api build
 FROM oven/bun:1-alpine AS runner
 ENV NODE_ENV=production
 
-# Install geoipupdate and su-exec for dropping privileges
-RUN apk add --no-cache geoipupdate su-exec
+# Install curl and su-exec for downloading database and dropping privileges
+RUN apk add --no-cache curl su-exec tar gzip
 
 COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/apps/api/dist ./dist
 COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/node_modules ./node_modules
@@ -30,20 +30,26 @@ COPY <<'EOF' /entrypoint.sh
 set -e
 
 if [ -n "$GEOIP_ACCOUNT_ID" ] && [ -n "$GEOIP_LICENSE_KEY" ]; then
-  echo "Configuring GeoIP updates..."
-  cat > /etc/GeoIP.conf <<GEOIP_EOF
-AccountID $GEOIP_ACCOUNT_ID
-LicenseKey $GEOIP_LICENSE_KEY
-EditionIDs GeoLite2-City
-DatabaseDirectory /usr/share/GeoIP
-GEOIP_EOF
+  if [ ! -f /usr/share/GeoIP/GeoLite2-City.mmdb ]; then
+    echo "Downloading GeoIP database..."
 
-  echo "Downloading GeoIP database..."
-  if geoipupdate; then
-    chmod 644 /usr/share/GeoIP/GeoLite2-City.mmdb 2>/dev/null || true
-    echo "GeoIP database ready"
+    # Download the tarball from MaxMind
+    curl -L -u "${GEOIP_ACCOUNT_ID}:${GEOIP_LICENSE_KEY}" \
+      "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz" \
+      -o /tmp/GeoLite2-City.tar.gz
+
+    if [ $? -eq 0 ]; then
+      # Extract the .mmdb file
+      tar -xzf /tmp/GeoLite2-City.tar.gz -C /tmp
+      find /tmp -name "GeoLite2-City.mmdb" -exec mv {} /usr/share/GeoIP/GeoLite2-City.mmdb \;
+      chmod 644 /usr/share/GeoIP/GeoLite2-City.mmdb
+      rm -rf /tmp/GeoLite2-City.tar.gz /tmp/GeoLite2-City_*
+      echo "GeoIP database ready"
+    else
+      echo "Warning: GeoIP download failed"
+    fi
   else
-    echo "Warning: GeoIP update failed"
+    echo "GeoIP database already exists"
   fi
 else
   echo "Warning: GEOIP_ACCOUNT_ID or GEOIP_LICENSE_KEY not set"
