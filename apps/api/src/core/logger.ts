@@ -5,3 +5,8 @@ export const logger = createNodeLogger({
   env: process.env.NODE_ENV,
   level: "trace"
 })
+
+/** Logs HTTP request and response information. */
+export function trafficLogger(message: string, ...rest: string[]) {
+  logger.trace({ rest }, message)
+}

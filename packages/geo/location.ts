@@ -59,7 +59,7 @@ export function getGeoLocation(ip: string): GeoLocation | undefined {
           : undefined
       }
     }
-  } catch (error: unknown) {
+  } catch (error) {
     console.error(`Error getting geo location: ${error instanceof Error ? error.message : String(error)}`)
   }
   return undefined

@@ -167,7 +167,8 @@ export async function clearConfig() {
 export function resolveApiUrl() {
   return pickApiUrl({
     argApiUrl: readArgValue("--api-url"),
-    envApiUrl: optionalTrimmedStringSchema.parse(process.env.API_URL),
+    // envApiUrl: optionalTrimmedStringSchema.parse(process.env.API_URL),
+    envApiUrl: process.env.API_URL,
     configApiUrl: readConfig().apiUrl
   })
 }

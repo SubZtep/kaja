@@ -1,14 +1,16 @@
+// import { hostname } from "node:os"
 import { join } from "node:path"
-import { stringify as tomlStringify } from "@iarna/toml"
 import { getCurrentIp } from "@kaja/geo"
 import type { ConnectNodeRequest, ConnectNodeResponse, HeartbeatRequest, HeartbeatResponse } from "@kaja/schemas"
 import { type Config, configSchema } from "@kaja/schemas"
 import envPaths from "env-paths"
-import { DEFAULT_NODE_NAME } from "./constants"
+import { logger } from "./logger"
 import { getAccessToken } from "./token"
 
+// const DEFAULT_NODE_NAME = hostname()
+
 export class KajaClient {
-  config: Config = { name: DEFAULT_NODE_NAME }
+  // config: Config = { name: DEFAULT_NODE_NAME }
   readonly baseURL: string
   nodeId?: string
   ip?: string
@@ -16,7 +18,7 @@ export class KajaClient {
   constructor(options: { baseURL: string; nodeId?: string }) {
     this.baseURL = options.baseURL
     this.nodeId = options.nodeId
-    getConfig().then(config => (this.config = config))
+    // getConfig().then(config => (this.config = config))
     getCurrentIp().then(ip => (this.ip = ip))
   }
 
@@ -27,7 +29,7 @@ export class KajaClient {
         ip: this.ip
       })
       this.nodeId = res.nodeId
-    } catch (error: unknown) {
+    } catch (error) {
       throw new Error(`Error connecting node: ${error instanceof Error ? error.message : String(error)}`)
     }
     return this.nodeId
@@ -60,13 +62,13 @@ export class KajaClient {
     return true
   }
 
-  get host() {
-    try {
-      return new URL(this.baseURL).host
-    } catch (error: unknown) {
-      throw new Error(`Error getting host: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
+  // get host() {
+  //   try {
+  //     return new URL(this.baseURL).host
+  //   } catch (error: unknown) {
+  //     throw new Error(`Error getting host: ${error instanceof Error ? error.message : String(error)}`)
+  //   }
+  // }
 
   // MARK: Request
 
@@ -88,7 +90,7 @@ export class KajaClient {
     })
 
     if (!response.ok) {
-      console.error(path, response)
+      logger.error({ path, response }, "API request failed")
       throw new Error(response.statusText)
     }
 
@@ -98,62 +100,52 @@ export class KajaClient {
 
 // MARK: Config
 
-function getConfigPath() {
+export function getConfigFullPath() {
   const paths = envPaths("kaja", { suffix: "" })
-  return join(paths.config, "config.toml")
+  return join(paths.config, "config.json")
 }
 
-export async function getConfig(): Promise<Config> {
-  const path = getConfigPath()
-  const f = Bun.file(path)
+// export async function getConfig(): Promise<Config> {
+//   const EMPTY_CONFIG = { id: undefined, name: "" } as const
+//   const path = getConfigFullPath()
+//   const f = Bun.file(path)
 
-  if (!(await f.exists())) {
-    return {
-      id: undefined,
-      name: DEFAULT_NODE_NAME
-    }
-  }
+//   if (!(await f.exists())) {
+//     return EMPTY_CONFIG
+//   }
 
-  try {
-    const toml = await f.text()
-    const res = Bun.TOML.parse(toml)
-    return configSchema.parse(res)
-  } catch (error: any) {
-    console.log(`Config file is invalid: ${error.message}`)
-    return {
-      id: undefined,
-      name: DEFAULT_NODE_NAME
-    }
-  }
-}
+//   try {
+//     const conf = await f.text()
+//     return configSchema.parse(JSON.parse(conf))
+//   } catch (error: unknown) {
+//     logger.error({ error, path }, "Invalid config file")
+//     return EMPTY_CONFIG
+//   }
+// }
 
-export async function setConfig(config: Config) {
-  const { success, error } = configSchema.safeParse(config)
-  if (!success) {
-    console.log(`Config is invalid: ${error.message}`)
-    return false
-  }
+// export async function setConfig(config: Config) {
+//   const { success, error } = configSchema.safeParse(config)
+//   if (!success) {
+//     logger.error({ error, config }, "Config is invalid")
+//     return false
+//   }
+//   const fullPath = getConfigFullPath()
+//   try {
+//     await Bun.write(fullPath, JSON.stringify(config, null, 2))
+//   } catch (error: unknown) {
+//     logger.error({ error, fullPath, config }, "Failed to write config file")
+//     return false
+//   }
+//   return true
+// }
 
-  const toml = tomlStringify(config)
-  const path = getConfigPath()
-
-  try {
-    await Bun.write(path, toml)
-  } catch (error: any) {
-    console.log(`Failed to write config file: ${error.message}`)
-    return false
-  }
-
-  return true
-}
-
-export async function deleteConfig() {
-  const path = getConfigPath()
-  try {
-    await Bun.file(path).delete()
-  } catch (error: any) {
-    console.log(`Failed to delete config file: ${error.message}`)
-    return false
-  }
-  return true
-}
+// export async function deleteConfig() {
+//   const fullPath = getConfigFullPath()
+//   try {
+//     await Bun.file(fullPath).delete()
+//   } catch (error: unknown) {
+//     logger.error({ error, fullPath }, "Failed to delete config file")
+//     return false
+//   }
+//   return true
+// }

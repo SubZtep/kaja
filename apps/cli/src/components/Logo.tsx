@@ -1,8 +1,9 @@
-import { Text } from "ink"
-import { dimgrey, teal } from "../lib/colors"
-import { version } from "../package.json"
+import { Box, Text } from "ink"
+import { version } from "../../package.json"
 
 export function Logo() {
+  const teal = Bun.color("#008080", "ansi")
+  const dimgrey = Bun.color("#6969", "ansi")
   const logo = [
     `${teal}▖▖   ▘  ▄▖▄▖`,
     `${teal}▙▘▀▌ ▌▀▌▐ ▌▌`,
@@ -11,9 +12,8 @@ export function Logo() {
   ].join("\n")
 
   return (
-    <>
+    <Box marginY={1}>
       <Text>{logo}</Text>
-      <Text>{"\n"}</Text>
-    </>
+    </Box>
   )
 }

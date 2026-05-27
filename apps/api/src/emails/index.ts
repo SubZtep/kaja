@@ -50,7 +50,7 @@ export async function sendEmail({ type, payload }: Readonly<SendEmailArgs>) {
 
   try {
     await transporter.sendMail({ from, to, subject, html })
-  } catch (error: unknown) {
+  } catch (error) {
     if (error instanceof Error) {
       logger.error({ error: error.message }, "Email sending error")
       throw error

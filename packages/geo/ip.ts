@@ -8,7 +8,7 @@ export async function getCurrentIp() {
       const payload = await response.json()
       const ip = payload?.ip
       if (typeof ip === "string" && ip.length > 0) return ip
-    } catch (error: unknown) {
+    } catch (error) {
       console.error(`Error getting current IP: ${error instanceof Error ? error.message : String(error)}`)
       // Try next provider.
     }

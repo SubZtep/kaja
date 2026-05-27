@@ -47,7 +47,7 @@ export function registerConnect(app: RouteRegProps) {
     const body = c.req.valid("json")
     const nodeService = c.get("nodeService")
 
-    const nodeId = body.nodeId || Bun.randomUUIDv7()
+    const nodeId = Bun.randomUUIDv7()
 
     await nodeService.connectNode({
       id: nodeId,

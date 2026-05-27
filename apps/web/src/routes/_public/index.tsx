@@ -19,7 +19,7 @@ function App() {
         magna aliqua.
       </p>
 
-      <p>
+      <p className="blur-xs">
         <span className="text-blue-500 mr-2 text-lg">🛈</span>
         <Link to="/signup" className="text-neon hover:text-neon-hi underline">
           Create

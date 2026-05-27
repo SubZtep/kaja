@@ -1,5 +1,5 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "#/components/form/primitives/Button"
@@ -17,27 +17,28 @@ function formatUserCode(raw?: string) {
 
 export const Route = createFileRoute("/_public/(auth)/device/")({
   validateSearch: deviceCodeSearchSchema,
-  beforeLoad: async ({ search }) => {
-    const formatted = formatUserCode(search.user_code)
-    if (formatted.length < 4) return
-    const res = await fetch(`${process.env.API_URL}/auth/device?user_code=${encodeURIComponent(formatted)}`, {
-      headers: { "Cache-Control": "no-store" }
-    })
-    if (!res.ok) return
-    const body: { status?: string } = await res.json()
-    if (body.status !== "pending") return
-    throw redirect({
-      to: "/device/approve",
-      search: { user_code: formatted }
-    })
-  },
+  // beforeLoad: async ({ search }) => {
+  //   const formatted = formatUserCode(search.user_code)
+  //   if (formatted.length < 4) return
+  //   const res = await fetch(`${process.env.API_URL}/auth/device?user_code=${encodeURIComponent(formatted)}`, {
+  //     headers: { "Cache-Control": "no-store" }
+  //   })
+  //   if (!res.ok) return
+  //   const body: { status?: string } = await res.json()
+  //   if (body.status !== "pending") return
+  //   throw redirect({
+  //     to: "/device/approve",
+  //     search: { user_code: formatted }
+  //   })
+  // },
   component: DeviceCodePage
 })
 
 function DeviceCodePage() {
   const authClient = useAuthClient()
   const navigate = useNavigate()
-  const [userCode, setUserCode] = useState("")
+  const { user_code } = Route.useSearch()
+  const [userCode, setUserCode] = useState(formatUserCode(user_code))
   const [loading, setLoading] = useState(false)
 
   async function login(code: string) {
@@ -67,6 +68,13 @@ function DeviceCodePage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const formatted = formatUserCode(user_code)
+    if (formatted.length >= 4) {
+      login(formatted)
+    }
+  }, [])
 
   return (
     <Main>

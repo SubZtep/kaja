@@ -2,7 +2,7 @@ import { z } from "zod"
 
 /**
  * Config schema for the CLI.\
- * Location: `/home/user/.config/kaja/config.toml`
+ * Location: `/home/user/.config/kaja/config.json`
  */
 export const configSchema = z.object({
   id: z.uuidv7().optional(),
@@ -39,11 +39,11 @@ export const heartbeatResponseSchema = z.object({
 })
 
 export const connectNodeRequestSchema = z.object({
-  nodeId: z.uuidv7().optional(),
+  // nodeId: z.uuidv7().optional(),
   /** @example "andras-macbook" */
-  name: z.string(),
-  /** For node geo location tracking. */
-  ip: z.ipv4().optional()
+  name: z.string()
+  // /** For node geo location tracking. */
+  // ip: z.ipv4().optional()
 })
 
 export const connectNodeResponseSchema = z.object({
@@ -51,6 +51,10 @@ export const connectNodeResponseSchema = z.object({
   nodeId: z.uuidv7(),
   /** @example 2000 */
   pollIntervalMs: z.number().int()
+})
+
+export const disconnectNodeRequestSchema = z.object({
+  nodeId: z.uuidv7().optional()
 })
 
 export const createCommandRequestSchema = z.object({
@@ -80,6 +84,7 @@ export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>
 export type HeartbeatResponse = z.infer<typeof heartbeatResponseSchema>
 export type ConnectNodeRequest = z.infer<typeof connectNodeRequestSchema>
 export type ConnectNodeResponse = z.infer<typeof connectNodeResponseSchema>
+export type DisconnectNodeRequest = z.infer<typeof disconnectNodeRequestSchema>
 export type CommandResult = z.infer<typeof commandResultSchema>
 export type PendingCommand = z.infer<typeof pendingCommandSchema>
 export type CreateCommandRequest = z.infer<typeof createCommandRequestSchema>

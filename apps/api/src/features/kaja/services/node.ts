@@ -38,6 +38,21 @@ export class NodeService {
     return this.#rowToNode(result.rows[0])
   }
 
+  async disconnectNode(nodeId: string, userId: string) {
+    const { rowCount } = await this.#db.query(
+      `
+      UPDATE node
+      SET status = 'inactive',
+          updated_at = NOW()
+      WHERE id = $1
+        AND user_id = $2
+      `,
+      [nodeId, userId]
+    )
+
+    return rowCount !== null && rowCount > 0
+  }
+
   async heartbeat(nodeId: string, userId: string, status: Exclude<Node["status"], "inactive">): Promise<boolean> {
     const { rowCount } = await this.#db.query(
       `

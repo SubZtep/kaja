@@ -3,6 +3,7 @@ import { pool } from "#/core/db"
 import type { RouteProps } from "#/types"
 import { registerAdminCommands } from "./routes/admin/command"
 import { registerConnect } from "./routes/node/connect"
+import { registerDisconnect } from "./routes/node/disconnect"
 import { registerHeartbeat } from "./routes/node/heartbeat"
 import { registerList } from "./routes/node/list"
 import { CommandService } from "./services/command"
@@ -22,6 +23,7 @@ kajaRoutes.use("*", async (c, next) => {
 // Node routes (authenticated)
 registerHeartbeat(kajaRoutes)
 registerConnect(kajaRoutes)
+registerDisconnect(kajaRoutes)
 registerList(kajaRoutes)
 
 // Admin routes (TODO: add adminMiddleware when implemented)
