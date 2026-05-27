@@ -28,12 +28,6 @@ bun dev:cli
 # Development (excludes CLI)
 bun dev
 
-# Build web app
-bun build
-
-# Build CLI (with environment variables baked in)
-bun build:cli
-
 # Linting
 bun lint              # Check code
 bun lint:fix          # Fix issues (includes unsafe fixes)
@@ -89,7 +83,6 @@ bun run --filter @kaja/cli build:release  # Build standalone executable
 - `lib/config.ts` - Configuration management using env-paths
 - `lib/token.ts` - Token storage and retrieval
 - `ui/` - React Ink components for interactive CLI
-- Build creates standalone executable with API_URL baked in via `build:release`
 
 ### Packages
 - **@kaja/schemas**: Zod schemas shared across workspaces (includes KAJA_CLI_CLIENT_ID)
@@ -121,7 +114,6 @@ bun run --filter @kaja/cli build:release  # Build standalone executable
 
 ### CLI (.env.example)
 - API_URL - resolution order: --api-url flag > API_URL env > config.json > default
-- Baked into binary with `--env=API_*` flag during build:release
 
 ### Docker Compose Defaults
 - PostgreSQL: localhost:5433 (testuser/testpass/testdb)

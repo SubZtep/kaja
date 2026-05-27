@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "bun run --filter '!@kaja/cli' dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.tsx",
-    "build": "bun run --filter @kaja/web build",
-    "build:cli": "bun run --env-file=apps/cli/.env --filter @kaja/cli build:release",
     "lint": "biome check .",
     "lint:fix": "biome check . --write --unsafe",
     "test": "bun --env-file=apps/api/.env.example --env-file=apps/api/.env test"

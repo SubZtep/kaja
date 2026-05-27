@@ -68,7 +68,7 @@ jobs:
             exit 1
           fi
           cd apps/cli
-          bun build ./cli.tsx --compile --format=esm --minify --sourcemap --outfile kaja --external react-devtools-core --env=API_* --define CLI_VERSION="\"${VERSION}\"" --target="${{ matrix.bun_target }}"
+          bun build ./cli.tsx --compile --format=esm --minify --sourcemap --outfile kaja --env=API_* --define CLI_VERSION="\"${VERSION}\"" --target="${{ matrix.bun_target }}"
 
       - name: Rename artifact
         shell: bash

@@ -4,8 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run cli.tsx",
-    "build:release": "bun build ./cli.tsx --compile --target=bun --format=esm --minify --sourcemap --bytecode --external react-devtools-core --outfile kaja --env=API_*"
+    "dev": "bun run cli.tsx"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
