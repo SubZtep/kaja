@@ -27,10 +27,10 @@ RUN apk add --no-cache curl su-exec tar gzip
 COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/apps/api/dist ./dist
 COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/node_modules ./node_modules
 
-# Create directory and set permissions
-RUN mkdir -p /usr/share/GeoIP && chown bun:bun /usr/share/GeoIP
+# Create directory and set permissions (writable by bun user)
+RUN mkdir -p /usr/share/GeoIP && chown -R bun:bun /usr/share/GeoIP
 
-# Create entrypoint script
+# Create entrypoint script that runs as bun user
 COPY <<'EOF' /entrypoint.sh
 #!/bin/sh
 set -e
@@ -60,11 +60,13 @@ else
   echo "Warning: No GeoIP database found and GEOIP_ACCOUNT_ID/GEOIP_LICENSE_KEY not set"
 fi
 
-# Drop to bun user and exec
-exec su-exec bun "$@"
+exec "$@"
 EOF
 
 RUN chmod +x /entrypoint.sh
+
+# Run as non-root user for security
+USER bun
 
 EXPOSE 3001
 ENTRYPOINT ["/entrypoint.sh"]
