@@ -15,6 +15,7 @@
     }
   },
   "dependencies": {
-    "@maxmind/geoip2-node": "^6.3.4"
+    "@maxmind/geoip2-node": "^6.3.4",
+    "hono": "^4.12.23"
   }
 }

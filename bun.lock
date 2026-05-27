@@ -108,6 +108,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@maxmind/geoip2-node": "^6.3.4",
+        "hono": "^4.12.23",
       },
     },
     "packages/logger": {

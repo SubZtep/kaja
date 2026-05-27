@@ -1,6 +1,6 @@
 import { createRoute } from "@hono/zod-openapi"
+import { getClientIp } from "@kaja/geo"
 import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schemas"
-import { getConnInfo } from "hono/bun"
 import { logger } from "#/core/logger"
 import { geoipQueue } from "#/core/queue"
 import type { RouteRegProps } from "#/types"
@@ -58,12 +58,12 @@ export function registerConnect(app: RouteRegProps) {
       name: body.name
     })
 
-    const info = getConnInfo(c)
-    if (info.remote.address) {
-      geoipQueue.add("connect", { ip: info.remote.address, nodeId })
-      logger.info({ address: info.remote, nodeId }, "Address for GeoIP lookup")
+    const clientIp = getClientIp(c)
+    if (clientIp) {
+      geoipQueue.add("connect", { ip: clientIp, nodeId })
+      logger.info({ ip: clientIp, nodeId }, "Queued GeoIP lookup")
     } else {
-      logger.warn({ info, user }, "Could not get remote IP address for GeoIP lookup")
+      logger.warn({ nodeId }, "Could not get public IP address for GeoIP lookup")
     }
 
     return c.json(
