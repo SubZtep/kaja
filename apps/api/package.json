@@ -17,8 +17,8 @@
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
     "better-auth": "^1.6.11",
-    "hono": "^4.12.21",
-    "nodemailer": "^8.0.7",
+    "hono": "^4.12.23",
+    "nodemailer": "^8.0.9",
     "pg": "^8.21.0",
     "react": "^19.2.6",
     "zod": "^4.4.3"
