@@ -18,6 +18,26 @@ function getReader() {
     path.join(__dirname, "data", "GeoLite2-City.mmdb") // Bundled with app
   ].filter((p): p is string => typeof p === "string")
 
+  // Debug: check each path and log why it fails
+  const pathChecks = possiblePaths.map(p => {
+    const exists = fs.existsSync(p)
+    let accessible = false
+    let error: string | undefined
+
+    if (exists) {
+      try {
+        fs.accessSync(p, fs.constants.R_OK)
+        accessible = true
+      } catch (e) {
+        error = e instanceof Error ? e.message : String(e)
+      }
+    }
+
+    return { path: p, exists, accessible, error }
+  })
+
+  logger.info({ pathChecks }, "GeoIP path check results")
+
   const mmdbPath = possiblePaths.find(p => fs.existsSync(p))
 
   try {
