@@ -17,6 +17,15 @@ services:
       start_period: 3s
       interval: 3s
 
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+
   mail:
     image: maildev/maildev
     restart: unless-stopped
@@ -43,6 +52,8 @@ services:
       - "3001:3001"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       mail:
         condition: service_healthy

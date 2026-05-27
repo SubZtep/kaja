@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "services": {
+    "web": {
+      "image": "redis:8-alpine",
+      "port": 6379,
+      "exposedInternally": true,
+      "volumes": [
+        {
+          "name": "redis_data",
+          "destinationPath": "/root/redis_data"
+        }
+      ]
+    }
+  }
+}
