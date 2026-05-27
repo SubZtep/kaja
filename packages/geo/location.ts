@@ -4,14 +4,6 @@ import { Reader } from "@maxmind/geoip2-node"
 import { logger } from "./logger"
 import type { GeoLocation } from "./types"
 
-// Check multiple paths for the GeoIP database
-const possiblePaths = [
-  process.env.GEOIP_DB_PATH, // Custom path from environment
-  "/usr/share/GeoIP/GeoLite2-City.mmdb", // System-wide location (geoipupdate default)
-  path.join(__dirname, "data", "GeoLite2-City.mmdb") // Bundled with app
-].filter((p): p is string => typeof p === "string")
-
-const mmdbPath = possiblePaths.find(p => fs.existsSync(p))
 let reader: ReturnType<typeof Reader.openBuffer> | undefined
 let triedInit = false
 
@@ -19,10 +11,20 @@ function getReader() {
   if (triedInit) return reader
   triedInit = true
 
+  // Check paths at runtime, not at module load time (important for bundled builds)
+  const possiblePaths = [
+    process.env.GEOIP_DB_PATH, // Custom path from environment
+    "/usr/share/GeoIP/GeoLite2-City.mmdb", // System-wide location (geoipupdate default)
+    path.join(__dirname, "data", "GeoLite2-City.mmdb") // Bundled with app
+  ].filter((p): p is string => typeof p === "string")
+
+  const mmdbPath = possiblePaths.find(p => fs.existsSync(p))
+
   try {
-    if (!mmdbPath || !fs.existsSync(mmdbPath)) {
+    if (!mmdbPath) {
       logger.warn(
-        `GeoIP database not found. Checked paths: ${possiblePaths.join(", ")}. Set GEOIP_DB_PATH environment variable or install geoipupdate.`
+        { possiblePaths },
+        "GeoIP database not found. Set GEOIP_DB_PATH environment variable or install geoipupdate."
       )
       return undefined
     }
