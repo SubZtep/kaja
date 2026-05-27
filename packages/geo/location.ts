@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { Reader } from "@maxmind/geoip2-node"
+import { logger } from "./logger"
 import type { GeoLocation } from "./types"
 
 // Check multiple paths for the GeoIP database
@@ -20,17 +21,17 @@ function getReader() {
 
   try {
     if (!mmdbPath || !fs.existsSync(mmdbPath)) {
-      console.warn(
+      logger.warn(
         `GeoIP database not found. Checked paths: ${possiblePaths.join(", ")}. Set GEOIP_DB_PATH environment variable or install geoipupdate.`
       )
       return undefined
     }
     const dbBuffer = fs.readFileSync(mmdbPath)
     reader = Reader.openBuffer(dbBuffer)
-    console.info(`GeoIP database loaded from: ${mmdbPath}`)
+    logger.info({ mmdbPath }, "GeoIP database loaded")
     return reader
   } catch (error) {
-    console.error(`Failed to load GeoIP database: ${error instanceof Error ? error.message : String(error)}`)
+    logger.error({ error }, "Failed to load GeoIP database")
     return undefined
   }
 }
