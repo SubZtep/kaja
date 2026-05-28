@@ -1,5 +1,4 @@
 FROM oven/bun:1-alpine AS builder
-ENV NODE_ENV=production
 USER bun
 
 COPY package.json bun.lock tsconfig.json ./
@@ -13,6 +12,7 @@ RUN bun install --frozen-lockfile
 COPY apps/api ./apps/api
 COPY packages ./packages
 RUN bun run --filter @kaja/api build
+RUN bun install --frozen-lockfile --production
 
 FROM oven/bun:1-alpine AS runner
 ENV NODE_ENV=production

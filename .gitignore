@@ -3,6 +3,7 @@
 .tanstack
 data
 dist
+test-build
 node_modules
 pgdata
 .env*
