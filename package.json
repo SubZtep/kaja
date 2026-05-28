@@ -9,7 +9,7 @@
   "packageManager": "bun@1.3.11",
   "private": true,
   "scripts": {
-    "dev": "bun run --filter '!@kaja/cli' --filter '!@kaja/mobile' dev",
+    "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/src/cli.tsx",
     "lint": "biome check .",
     "lint:fix": "biome check . --write --unsafe",

@@ -13,6 +13,16 @@ Kaja is a TypeScript monorepo built with Bun, featuring:
 
 The project uses device authorization flow allowing CLI nodes to connect to the API after user approval via web interface.
 
+## Key File Locations
+
+When looking for configuration files, check these locations first:
+- **Docker Compose**: `compose.yaml` (NOT `docker-compose.yml` or `docker-compose.yaml`)
+- **Biome Config**: `biome.jsonc`
+- **TypeScript Config**: Root `tsconfig.json` with per-app configs in `apps/*/tsconfig.json`
+- **Package Manager**: `bun.lockb` (Bun's lockfile)
+- **Environment Files**: `.env.example` files in `apps/api/`, `apps/web/`, and `apps/cli/`
+- **Migrations**: `apps/api/migrations/` (auto-run on PostgreSQL container init)
+
 ## Development Commands
 
 ### Quick Start
