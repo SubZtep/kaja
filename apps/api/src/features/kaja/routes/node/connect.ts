@@ -4,6 +4,7 @@ import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schem
 import { logger } from "#/core/logger"
 import { geoipQueue } from "#/core/queue"
 import type { RouteRegProps } from "#/types"
+import { unauthorized } from "#/types/errors"
 
 const connectRoute = createRoute({
   method: "post",
@@ -45,7 +46,7 @@ export function registerConnect(app: RouteRegProps) {
   app.openapi(connectRoute, async c => {
     const user = c.get("user")
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401) as any
+      return unauthorized(c)
     }
     const body = c.req.valid("json")
     const nodeService = c.get("nodeService")

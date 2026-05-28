@@ -3,12 +3,13 @@ FROM oven/bun:1-alpine AS builder
 # Set NODE_ENV during build so loggers are configured correctly
 ENV NODE_ENV=production
 
-COPY package.json bun.lock tsconfig.json ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/geo/package.json ./packages/geo/
-COPY packages/logger/package.json ./packages/logger/
-COPY packages/schemas/package.json ./packages/schemas/
-COPY packages/shared/package.json ./packages/shared/
+# COPY package.json bun.lock tsconfig.json ./
+# COPY apps/api/package.json ./apps/api/
+# COPY packages/geo/package.json ./packages/geo/
+# COPY packages/logger/package.json ./packages/logger/
+# COPY packages/schemas/package.json ./packages/schemas/
+# COPY packages/shared/package.json ./packages/shared/
+COPY . .
 RUN bun install
 
 COPY apps/api ./apps/api

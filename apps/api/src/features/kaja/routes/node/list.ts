@@ -1,5 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import type { RouteRegProps } from "#/types"
+import { unauthorized } from "#/types/errors"
 
 const listNodesRoute = createRoute({
   method: "get",
@@ -41,7 +42,7 @@ export function registerList(app: RouteRegProps) {
   app.openapi(listNodesRoute, async c => {
     const user = c.get("user")
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401) as any
+      return unauthorized(c)
     }
 
     const nodeService = c.get("nodeService")

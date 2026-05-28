@@ -67,4 +67,71 @@ describe("kaja cli client flow", () => {
     const data = await res.json()
     expect(data.ok).toBeTrue()
   })
+
+  test("create command for node - should fail with non-allowlisted command", async () => {
+    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ command: "rm", args: {} })
+    })
+    expect(res.status).toBe(400)
+    const data = await res.json()
+    expect(data.error).toContain("not permitted")
+  })
+
+  test("create command for node - should succeed with allowlisted command", async () => {
+    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ command: "echo", args: { message: "hello" } })
+    })
+    expect(res.status).toBe(201)
+    const data = await res.json()
+    expect(data.command).toBe("echo")
+    expect(data.status).toBe("pending")
+  })
+
+  test("create command with shell injection attempt - should fail", async () => {
+    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ command: "echo", args: { message: "hello; rm -rf /" } })
+    })
+    expect(res.status).toBe(400)
+    const data = await res.json()
+    expect(data.error).toContain("dangerous characters")
+  })
+
+  test("heartbeat with unknown node - should return 404", async () => {
+    const fakeNodeId = "01945678-1234-7abc-9def-0123456789ab"
+    const res = await app.request("/kaja/heartbeat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ nodeId: fakeNodeId, status: "idle" })
+    })
+    expect(res.status).toBe(404)
+    const data = await res.json()
+    expect(data.error).toContain("Unknown node")
+  })
+
+  test("disconnect node", async () => {
+    const res = await app.request("/kaja/disconnect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ nodeId })
+    })
+    expect(res.ok).toBeTrue()
+    expect(res.status).toBe(200)
+  })
+
+  test("create command for inactive node - should fail", async () => {
+    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ command: "echo", args: {} })
+    })
+    expect(res.status).toBe(400)
+    const data = await res.json()
+    expect(data.error).toContain("inactive")
+  })
 })

@@ -1,6 +1,8 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { commandSchema, createCommandRequestSchema } from "@kaja/schemas"
+import { validateCommand } from "#/features/kaja/services/command-validator"
 import type { RouteRegProps } from "#/types"
+import { badRequest, internalError, notFound, unauthorized } from "#/types/errors"
 
 const createCommandRoute = createRoute({
   method: "post",
@@ -133,16 +135,33 @@ export function registerAdminCommands(app: RouteRegProps) {
   // Create a new command for a node
   app.openapi(createCommandRoute, async c => {
     const user = c.get("user")
-    if (!user) return c.json({ error: "Unauthorized" }, 401)
+    if (!user) return unauthorized(c)
 
     const { nodeId } = c.req.valid("param")
     const body = c.req.valid("json")
     const commandService = c.get("commandService")
+    const nodeService = c.get("nodeService")
+
+    // Validate command for security
+    const validationError = validateCommand(body)
+    if (validationError) {
+      return badRequest(c, validationError)
+    }
+
+    // Verify node exists and is active
+    const node = await nodeService.getNode(nodeId, user.id)
+    if (!node) {
+      return notFound(c, "Node not found")
+    }
+
+    if (node.status === "inactive") {
+      return badRequest(c, "Cannot send command to inactive node")
+    }
 
     const command = await commandService.createCommand(nodeId, body, user.id)
 
     if (!command) {
-      return c.json({ error: "Failed to create command" }, 500)
+      return internalError(c, "Failed to create command")
     }
 
     return c.json(command, 201)
@@ -152,7 +171,7 @@ export function registerAdminCommands(app: RouteRegProps) {
   app.openapi(listNodeCommandsRoute, async c => {
     const user = c.get("user")
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401) as any
+      return unauthorized(c)
     }
 
     const { nodeId } = c.req.valid("param")
@@ -167,7 +186,7 @@ export function registerAdminCommands(app: RouteRegProps) {
   app.openapi(getCommandRoute, async c => {
     const user = c.get("user")
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401) as any
+      return unauthorized(c)
     }
 
     const { commandId } = c.req.valid("param")
@@ -176,7 +195,7 @@ export function registerAdminCommands(app: RouteRegProps) {
     const command = await commandService.getCommand(commandId)
 
     if (!command) {
-      return c.json({ error: "Command not found" }, 404)
+      return notFound(c, "Command not found")
     }
 
     return c.json(command)

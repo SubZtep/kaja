@@ -1,6 +1,7 @@
 import { createRoute } from "@hono/zod-openapi"
 import { disconnectNodeRequestSchema } from "@kaja/schemas"
 import type { RouteRegProps } from "#/types"
+import { unauthorized } from "#/types/errors"
 
 const disconnectRoute = createRoute({
   method: "post",
@@ -37,7 +38,7 @@ export function registerDisconnect(app: RouteRegProps) {
   app.openapi(disconnectRoute, async c => {
     const user = c.get("user")
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401) as any
+      return unauthorized(c)
     }
     const body = c.req.valid("json")
     const nodeService = c.get("nodeService")

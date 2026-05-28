@@ -118,9 +118,10 @@ export class NodeService {
       SET status = 'inactive',
           updated_at = NOW()
       WHERE status != 'inactive'
-        AND last_seen < NOW() - INTERVAL '${timeoutSeconds} seconds'
+        AND last_seen < NOW() - ($1 || ' seconds')::INTERVAL
       RETURNING *
-      `
+      `,
+      [timeoutSeconds]
     )
 
     if (result.rowCount && result.rowCount > 0) {

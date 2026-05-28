@@ -188,6 +188,56 @@ export class CommandService {
     }
   }
 
+  /**
+   * Cancel all executing commands for inactive nodes
+   * Called when a node goes inactive (crash, network drop, etc.)
+   */
+  async cancelExecutingCommandsForNode(nodeId: string): Promise<number> {
+    try {
+      const result = await this.#db.query(
+        `UPDATE command
+         SET status = 'failed',
+             completed_at = NOW(),
+             error = 'Node became inactive while command was executing'
+         WHERE node_id = $1
+           AND status = 'executing'`,
+        [nodeId]
+      )
+
+      if (result.rowCount && result.rowCount > 0) {
+        logger.info({ nodeId, count: result.rowCount }, "cancelled executing commands for inactive node")
+      }
+
+      return result.rowCount ?? 0
+    } catch (error) {
+      logger.error({ error, nodeId }, "failed to cancel executing commands")
+      return 0
+    }
+  }
+
+  /**
+   * Cancel all pending commands for a node
+   * Useful when user wants to clear the queue
+   */
+  async cancelPendingCommandsForNode(nodeId: string): Promise<number> {
+    try {
+      const result = await this.#db.query(
+        `UPDATE command
+         SET status = 'failed',
+             completed_at = NOW(),
+             error = 'Command cancelled'
+         WHERE node_id = $1
+           AND status = 'pending'`,
+        [nodeId]
+      )
+
+      return result.rowCount ?? 0
+    } catch (error) {
+      logger.error({ error, nodeId }, "failed to cancel pending commands")
+      return 0
+    }
+  }
+
   #mapCommand(row: any): Command {
     return {
       id: row.id,

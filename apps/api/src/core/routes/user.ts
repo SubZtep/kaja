@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import type { RouteVariables } from "#/types"
+import { unauthorized } from "#/types/errors"
 
 export const userRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 
@@ -37,7 +38,7 @@ const getMeRoute = createRoute({
 userRoutes.openapi(getMeRoute, c => {
   const user = c.get("user")
   if (!user) {
-    return c.json({ error: "Unauthorized" }, 401) as any
+    return unauthorized(c)
   }
 
   return c.json({ id: user.id, email: user.email })

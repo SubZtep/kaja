@@ -13,11 +13,20 @@ export function getClientIp(c: Context): string | undefined {
   // Get real client IP from proxy headers, fallback to direct connection
   const forwardedFor = c.req.header("x-forwarded-for")
   const realIp = c.req.header("x-real-ip")
-  const info = getConnInfo(c)
+
+  // In test environment, getConnInfo may fail, so we handle it gracefully
+  let connInfo
+  try {
+    connInfo = getConnInfo(c)
+  } catch {
+    // In tests or when not using Bun server, fall back to headers only
+    connInfo = null
+  }
+  const info = connInfo
 
   // X-Forwarded-For can contain multiple IPs (client, proxy1, proxy2...)
   // Take the first one which is the original client
-  const clientIp = forwardedFor?.split(",")[0]?.trim() || realIp || info.remote.address
+  const clientIp = forwardedFor?.split(",")[0]?.trim() || realIp || info?.remote?.address
 
   if (!clientIp) return undefined
 

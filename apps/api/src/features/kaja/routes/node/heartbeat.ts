@@ -1,6 +1,7 @@
 import { createRoute } from "@hono/zod-openapi"
 import { heartbeatRequestSchema, heartbeatResponseSchema } from "@kaja/schemas"
 import type { RouteRegProps } from "#/types"
+import { notFound, unauthorized } from "#/types/errors"
 
 const NORMAL_POLL_INTERVAL = 60000 // 60 seconds
 const FAST_POLL_INTERVAL = 5000 // 5 seconds
@@ -53,7 +54,7 @@ export function registerHeartbeat(app: RouteRegProps) {
   app.openapi(heartbeatRoute, async c => {
     const user = c.get("user")
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401)
+      return unauthorized(c)
     }
 
     const body = c.req.valid("json")
@@ -64,7 +65,7 @@ export function registerHeartbeat(app: RouteRegProps) {
     const success = await nodeService.heartbeat(body.nodeId, user.id, body.status)
 
     if (!success) {
-      return c.json({ error: "unknown node" }, 404) as any
+      return notFound(c, "Unknown node")
     }
 
     // Process command results from CLI
