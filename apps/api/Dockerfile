@@ -3,32 +3,24 @@ FROM oven/bun:1-alpine AS builder
 # Set NODE_ENV during build so loggers are configured correctly
 ENV NODE_ENV=production
 
-# COPY package.json bun.lock tsconfig.json ./
-# COPY apps/api/package.json ./apps/api/
-# COPY packages/geo/package.json ./packages/geo/
-# COPY packages/logger/package.json ./packages/logger/
-# COPY packages/schemas/package.json ./packages/schemas/
-# COPY packages/shared/package.json ./packages/shared/
+# Copy entire monorepo (packages/geo/data is gitignored, will be empty)
 COPY . .
 RUN bun install
 
-COPY apps/api ./apps/api
-COPY packages ./packages
+# Build the API - geo package will be bundled without the .mmdb file
+# The code handles missing database gracefully at runtime
 RUN bun run --filter @kaja/api build
 
 FROM oven/bun:1-alpine AS runner
 ENV NODE_ENV=production
 
-# Install curl and su-exec for downloading database and dropping privileges
-RUN apk add --no-cache curl su-exec tar gzip
+# Install curl for downloading database
+RUN apk add --no-cache curl tar gzip
 
-# Note: Container starts as root to download GeoIP database if needed,
-# then drops to 'bun' user via su-exec in entrypoint.sh (see line 58)
+COPY --chown=bun:bun --chmod=755 --from=builder /home/bun/app/apps/api/dist ./dist
+COPY --chown=bun:bun --chmod=755 --from=builder /home/bun/app/node_modules ./node_modules
 
-COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/apps/api/dist ./dist
-COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/node_modules ./node_modules
-
-# Create directory and set permissions (writable by bun user)
+# Create GeoIP directory (writable by bun user since container runs as bun)
 RUN mkdir -p /usr/share/GeoIP && chown -R bun:bun /usr/share/GeoIP
 
 # Create entrypoint script that runs as bun user

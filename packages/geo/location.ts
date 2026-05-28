@@ -14,8 +14,9 @@ function getReader() {
   // Check paths at runtime, not at module load time (important for bundled builds)
   const possiblePaths = [
     process.env.GEOIP_DB_PATH, // Custom path from environment
-    "/usr/share/GeoIP/GeoLite2-City.mmdb", // System-wide location (geoipupdate default)
-    path.join(__dirname, "data", "GeoLite2-City.mmdb") // Bundled with app
+    "/usr/share/GeoIP/GeoLite2-City.mmdb", // System-wide location (geoipupdate default, Docker entrypoint)
+    path.join(__dirname, "data", "GeoLite2-City.mmdb"), // Bundled with app (dev only)
+    path.join(process.cwd(), "packages/geo/data/GeoLite2-City.mmdb") // Dev monorepo
   ].filter((p): p is string => typeof p === "string")
 
   // Debug: check each path and log why it fails
