@@ -57,7 +57,6 @@ To use the pre-configured [MCP servers](.mcp.json) locally with **Claude Code**,
 ```ini
 CONTEXT7_API_KEY=ctx7sk-13-420-69-X
 GITHUB_PAT=github_pat_80o8135
-NODE_ENV=development
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 ```
 
