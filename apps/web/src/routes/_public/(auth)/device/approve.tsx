@@ -3,37 +3,56 @@ import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "#/components/form/primitives/Button"
-import { Main } from "#/components/ui/Main"
-import { Section } from "#/components/ui/Section"
+import { MainMessageDialog } from "#/components/ui/MainMessageDialog"
 import { useAuthClient } from "#/hooks/auth-client"
 
 export const Route = createFileRoute("/_public/(auth)/device/approve")({
   validateSearch: z.object({
-    user_code: z.string().min(1)
+    user_code: z.string().optional()
   }),
   component: DeviceApprovePage
 })
 
 function DeviceApprovePage() {
-  const { user_code } = useSearch({ from: "/_public/(auth)/device/approve" })
+  const params = useSearch({ from: "/_public/(auth)/device/approve" })
   const { session } = useLoaderData({ from: "__root__" })
   const authClient = useAuthClient()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!session?.user) {
-      const redirect = `/device/approve?user_code=${encodeURIComponent(user_code)}`
+    if (!session?.user && params.user_code) {
       navigate({
         to: "/signin",
-        search: { redirect }
+        search: {
+          redirect: `/device/approve?user_code=${encodeURIComponent(params.user_code)}`
+        }
       })
     }
-  }, [session?.user, user_code, navigate])
+  }, [session?.user, params.user_code])
 
   if (!session?.user) {
     return null
   }
+
+  if (!params.user_code || params.user_code.length < 4) {
+    return (
+      <MainMessageDialog>
+        <h1 className="text-orange-600/80">{params.user_code ? "Invalid" : "Missing"} user code</h1>
+        <p>
+          Please check the code or the link, and try again.
+          <br />
+          So close to connect.
+        </p>
+        <Button onClick={() => navigate({ to: "/nodes" })} variant="primary" size="md">
+          View Your Placeholder
+        </Button>
+      </MainMessageDialog>
+    )
+  }
+
+  // TypeScript now knows user_code is a non-empty string here
+  const user_code: string = params.user_code
 
   async function approve() {
     setLoading(true)
@@ -44,7 +63,7 @@ function DeviceApprovePage() {
         return
       }
       toast.success("Device approved — you can return to the CLI.")
-      await navigate({ to: "/dashboard" })
+      await navigate({ to: "/nodes" })
     } finally {
       setLoading(false)
     }
@@ -66,21 +85,20 @@ function DeviceApprovePage() {
   }
 
   return (
-    <Main>
-      <Section className="max-w-lg">
-        <h1 className="mb-4">Approve device</h1>
-        <p className="text-muted-foreground mb-4">
-          A CLI or device asked to use your account. Code: <strong className="text-foreground">{user_code}</strong>
-        </p>
-        <div className="flex gap-2 flex-wrap">
-          <Button type="button" loading={loading} onClick={approve}>
-            Approve
-          </Button>
-          <Button type="button" variant="oval" disabled={loading} onClick={deny}>
-            Deny
-          </Button>
-        </div>
-      </Section>
-    </Main>
+    <MainMessageDialog>
+      <h1>Approve a new Node</h1>
+      <p>A piece of device asked to be accessable by your account.</p>
+      <p>
+        Code: <div className="text-2xl text-foreground tracking-widest font-semibold">{user_code}</div>
+      </p>
+      <div className="flex gap-2 flex-wrap">
+        <Button type="button" loading={loading} onClick={approve} autoFocus>
+          Approve
+        </Button>
+        <Button type="button" variant="oval" disabled={loading} onClick={deny}>
+          Deny
+        </Button>
+      </div>
+    </MainMessageDialog>
   )
 }

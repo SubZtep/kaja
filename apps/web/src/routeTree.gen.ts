@@ -13,9 +13,9 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
-import { Route as AdminNodesRouteImport } from './routes/_admin/nodes'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
+import { Route as AdminNodesIndexRouteImport } from './routes/_admin/nodes/index'
 import { Route as PublicauthSignupRouteImport } from './routes/_public/(auth)/signup'
 import { Route as PublicauthSigninRouteImport } from './routes/_public/(auth)/signin'
 import { Route as PublicauthResetPasswordRouteImport } from './routes/_public/(auth)/reset-password'
@@ -42,11 +42,6 @@ const AdminProfileRoute = AdminProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminNodesRoute = AdminNodesRouteImport.update({
-  id: '/nodes',
-  path: '/nodes',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -55,6 +50,11 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNodesIndexRoute = AdminNodesIndexRouteImport.update({
+  id: '/nodes/',
+  path: '/nodes/',
   getParentRoute: () => AdminRoute,
 } as any)
 const PublicauthSignupRoute = PublicauthSignupRouteImport.update({
@@ -96,13 +96,13 @@ const PublicauthDeviceApproveRoute = PublicauthDeviceApproveRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
-  '/nodes': typeof AdminNodesRoute
   '/profile': typeof AdminProfileRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device': typeof PublicauthDeviceRouteWithChildren
   '/reset-password': typeof PublicauthResetPasswordRoute
   '/signin': typeof PublicauthSigninRoute
   '/signup': typeof PublicauthSignupRoute
+  '/nodes/': typeof AdminNodesIndexRoute
   '/users/': typeof AdminUsersIndexRoute
   '/device/approve': typeof PublicauthDeviceApproveRoute
   '/device/': typeof PublicauthDeviceIndexRoute
@@ -110,12 +110,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
-  '/nodes': typeof AdminNodesRoute
   '/profile': typeof AdminProfileRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/reset-password': typeof PublicauthResetPasswordRoute
   '/signin': typeof PublicauthSigninRoute
   '/signup': typeof PublicauthSignupRoute
+  '/nodes': typeof AdminNodesIndexRoute
   '/users': typeof AdminUsersIndexRoute
   '/device/approve': typeof PublicauthDeviceApproveRoute
   '/device': typeof PublicauthDeviceIndexRoute
@@ -125,7 +125,6 @@ export interface FileRoutesById {
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRoute
-  '/_admin/nodes': typeof AdminNodesRoute
   '/_admin/profile': typeof AdminProfileRoute
   '/_public/': typeof PublicIndexRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
@@ -133,6 +132,7 @@ export interface FileRoutesById {
   '/_public/(auth)/reset-password': typeof PublicauthResetPasswordRoute
   '/_public/(auth)/signin': typeof PublicauthSigninRoute
   '/_public/(auth)/signup': typeof PublicauthSignupRoute
+  '/_admin/nodes/': typeof AdminNodesIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
   '/_public/(auth)/device/approve': typeof PublicauthDeviceApproveRoute
   '/_public/(auth)/device/': typeof PublicauthDeviceIndexRoute
@@ -142,13 +142,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
-    | '/nodes'
     | '/profile'
     | '/users/$userId'
     | '/device'
     | '/reset-password'
     | '/signin'
     | '/signup'
+    | '/nodes/'
     | '/users/'
     | '/device/approve'
     | '/device/'
@@ -156,12 +156,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
-    | '/nodes'
     | '/profile'
     | '/users/$userId'
     | '/reset-password'
     | '/signin'
     | '/signup'
+    | '/nodes'
     | '/users'
     | '/device/approve'
     | '/device'
@@ -170,7 +170,6 @@ export interface FileRouteTypes {
     | '/_admin'
     | '/_public'
     | '/_admin/dashboard'
-    | '/_admin/nodes'
     | '/_admin/profile'
     | '/_public/'
     | '/_admin/users/$userId'
@@ -178,6 +177,7 @@ export interface FileRouteTypes {
     | '/_public/(auth)/reset-password'
     | '/_public/(auth)/signin'
     | '/_public/(auth)/signup'
+    | '/_admin/nodes/'
     | '/_admin/users/'
     | '/_public/(auth)/device/approve'
     | '/_public/(auth)/device/'
@@ -218,13 +218,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProfileRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/nodes': {
-      id: '/_admin/nodes'
-      path: '/nodes'
-      fullPath: '/nodes'
-      preLoaderRoute: typeof AdminNodesRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_admin/dashboard': {
       id: '/_admin/dashboard'
       path: '/dashboard'
@@ -237,6 +230,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users/'
       preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/nodes/': {
+      id: '/_admin/nodes/'
+      path: '/nodes'
+      fullPath: '/nodes/'
+      preLoaderRoute: typeof AdminNodesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_public/(auth)/signup': {
@@ -293,17 +293,17 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
-  AdminNodesRoute: typeof AdminNodesRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
+  AdminNodesIndexRoute: typeof AdminNodesIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
-  AdminNodesRoute: AdminNodesRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
+  AdminNodesIndexRoute: AdminNodesIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 

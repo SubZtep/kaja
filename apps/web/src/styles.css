@@ -104,7 +104,7 @@
   }
 
   h1 {
-    @apply text-2xl font-extrabold mb-3 tracking-tight font-headline;
+    @apply text-2xl font-extrabold mb-3 font-headline;
   }
 
   h2 {

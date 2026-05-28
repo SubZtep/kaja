@@ -11,7 +11,7 @@ export function Providers({ children }: Readonly<{ children: React.ReactNode }>)
     <TanStackQueryProvider>
       {children}
 
-      <ToastContainer theme="colored" />
+      <ToastContainer theme="colored" position="top-center" />
       <TanStackDevtools
         config={{
           position: "bottom-right"

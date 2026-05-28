@@ -7,19 +7,12 @@
     "docker": {
       "type": "stdio",
       "command": "bunx",
-      "args": [
-        "-y",
-        "mcp-server-docker"
-      ]
+      "args": ["-y", "mcp-server-docker"]
     },
     "filesystem": {
       "type": "stdio",
       "command": "bunx",
-      "args": [
-        "--bun",
-        "@modelcontextprotocol/server-filesystem",
-        "."
-      ]
+      "args": ["--bun", "@modelcontextprotocol/server-filesystem", "."]
     },
     "github": {
       "type": "http",
@@ -31,10 +24,7 @@
     "playwright": {
       "type": "stdio",
       "command": "bunx",
-      "args": [
-        "--bun",
-        "@playwright/mcp@latest"
-      ]
+      "args": ["--bun", "@playwright/mcp@latest"]
     },
     "postgres": {
       "type": "stdio",

@@ -7,7 +7,7 @@ import { toast } from "react-toastify"
 import { Loader } from "#/components/ui/Loader"
 import { userRequired } from "#/lib/loaders"
 
-export const Route = createFileRoute("/_admin/nodes")({
+export const Route = createFileRoute("/_admin/nodes/")({
   component: NodesPage,
   loader: () => userRequired()
 })
@@ -127,6 +127,7 @@ function useNodeSSE(apiUrl: string, setIsLive?: (live: boolean) => void) {
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
       }
     }
   }, [apiUrl, queryClient, setIsLive])
