@@ -8,7 +8,7 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-This project is built with **Bun** and **TypeScript**, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, an **Expo** mobile app, and a ~~swarm of decentralised~~ local **Ink** terminal app.
+Stack sandbox with **Bun** and **TypeScript**, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, an **Expo** mobile app, and a ~~swarm of decentralised~~ local **Ink** terminal app.
 
 ## What’s in the Monorepo?
 
