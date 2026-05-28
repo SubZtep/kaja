@@ -8,7 +8,7 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-This project is built with **Bun** and **TypeScript**, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, and a local _CLI_.
+This project is built with **Bun** and **TypeScript**, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, an **Expo** mobile app, and a ~~swarm of decentralised~~ local **Ink** terminal app.
 
 ## What’s in the Monorepo?
 
@@ -34,20 +34,31 @@ docker compose up -d
 This command starts:
 
 - **PostgreSQL**\
-  Connection string: `postgresql://testuser:testpass@localhost:5433/testdb`
+  Connection: `postgresql://testuser:testpass@localhost:5433/testdb`
 - **MailDev**\
   SMTP: `localhost:1025`\
-  Inbox page: [`http://localhost:1080`](http://localhost:1080)
+  Inbox: [`http://localhost:1080`](http://localhost:1080)
 - **API**\
-  Base endpoint: `http://localhost:3001`\
+  Endpoint: `http://localhost:3001`\
   Reference: [`http://localhost:3001/reference`](http://localhost:3001/reference)
 - **Web**\
-  Page: [`http://localhost:3000`](http://localhost:3000)
+  Portal: [`http://localhost:3000`](http://localhost:3000)
 
 This is all the CLI needs to connect:
 
 ```sh
 bun dev:cli
+```
+
+## Configuration
+
+To use the pre-configured [MCP servers](.mcp.json) locally with **Claude Code**, export the following environment variables with valid values.
+
+```ini
+CONTEXT7_API_KEY=ctx7sk-13-420-69-X
+GITHUB_PAT=github_pat_80o8135
+NODE_ENV=development
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 ```
 
 ## Documentation
