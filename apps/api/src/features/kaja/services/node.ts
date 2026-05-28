@@ -1,3 +1,4 @@
+import type { GeoLocation } from "@kaja/geo"
 import type { Pool } from "pg"
 import { logger } from "#/core/logger"
 import { emitNodeEvent } from "./events"
@@ -171,7 +172,7 @@ export class NodeService {
     return rows.map(row => this.#rowToNode(row))
   }
 
-  async updateGeoLocation(nodeId: string, geoLocation: unknown): Promise<boolean> {
+  async updateGeoLocation(nodeId: string, geoLocation: GeoLocation): Promise<boolean> {
     logger.info({ nodeId, geoLocation }, "Updating node geo_location")
 
     const { rowCount } = await this.#db.query(
