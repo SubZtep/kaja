@@ -15,7 +15,7 @@
     "cron": [
       {
         "schedule": "0 2 * * 3,6",
-        "command": "geoipupdate -f /etc/GeoIP.conf",
+        "command": "geoipupdate -f /etc/GeoIP.conf -d /usr/share/GeoIP/",
         "description": "Update GeoIP database twice weekly (Wed/Sat at 2 AM)"
       }
     ]

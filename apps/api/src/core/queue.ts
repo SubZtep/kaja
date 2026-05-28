@@ -17,7 +17,7 @@ export const geoipQueue = {
     await queue.add(async () => {
       try {
         logger.info({ nodeId: data.nodeId, ip: data.ip }, "Starting GeoIP lookup")
-        const location = getGeoLocation(data.ip)
+        const location = await getGeoLocation(data.ip)
         logger.info({ nodeId: data.nodeId, location }, "Got location data")
 
         if (location) {
