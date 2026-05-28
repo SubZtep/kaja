@@ -1,9 +1,10 @@
+import type { User } from "better-auth"
 import { createMiddleware } from "hono/factory"
 import type { RouteVariables } from "#/types"
 import { auth } from "./auth"
 
 export const authMiddleware = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
-  let user = null
+  let user: User | null = null
 
   // Bearer token from Authorization header
   const authHeader = c.req.header("authorization")

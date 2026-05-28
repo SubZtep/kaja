@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Run type checker
+        run: bun run typecheck
+
       - name: Apply SQL migrations
         run: |
           printf '%s\n' apps/api/migrations/*.sql | LC_ALL=C sort | while read -r f; do

@@ -54,7 +54,7 @@ function StatCard({
     <div className={`rounded-xl border-t-2 bg-surface p-6 ${borderClass}`}>
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted">{label}</p>
-        <Icon size={16} className={valueClass} />
+        <Icon size={16} /*className={valueClass}*/ />
       </div>
       <p className={`text-3xl font-bold font-headline neon-glow ${valueClass}`}>{value}</p>
     </div>

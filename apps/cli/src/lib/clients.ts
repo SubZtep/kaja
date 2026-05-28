@@ -1,7 +1,4 @@
 import { z } from "zod"
-import { KajaClient } from "./kaja-sdk"
-
-// import { resolveApiUrl } from "./config"
 
 declare module "bun" {
   interface Env {
@@ -11,8 +8,6 @@ declare module "bun" {
 }
 
 export const apiBaseUrl = resolveApiUrl()
-
-export const kaja = new KajaClient({ baseURL: apiBaseUrl })
 
 ///////
 

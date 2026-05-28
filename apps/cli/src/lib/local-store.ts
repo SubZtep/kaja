@@ -1,11 +1,17 @@
 import fs from "node:fs/promises"
-import path from "node:path"
+import path, { join } from "node:path"
+import envPaths from "env-paths"
 import type { StateStorage } from "zustand/middleware/persist"
-import { getConfigFullPath } from "./kaja-sdk"
 
 const configFullPath = path.resolve(getConfigFullPath())
 
-// Helper to ensure the JSON file exists so read operations don't crash
+/** App config file path with filename. */
+export function getConfigFullPath() {
+  const paths = envPaths("kaja", { suffix: "" })
+  return join(paths.config, "config.json")
+}
+
+/** Helper to ensure the JSON file exists so read operations don't crash */
 async function ensureFile() {
   try {
     await fs.access(configFullPath)
