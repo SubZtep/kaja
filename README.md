@@ -14,8 +14,9 @@ This project is built with **Bun** and **TypeScript**, implementing pieces of **
 
 - **Apps**
   - [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery.
-  - [`web`](./apps/web/) – Public web and admin portal.
   - [`cli`](./apps/cli/) – Installable CLI app for orchestration tasks.
+  - [`mobile`](./apps/mobile/) – Mobile app for mobility.
+  - [`web`](./apps/web/) – Public web and admin portal.
 - **Packages**
   - [`geo`](./packages/geo/) – Geolocation services.
   - [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.

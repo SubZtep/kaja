@@ -5,6 +5,7 @@
     "includes": [
       "apps/**/*.ts",
       "apps/**/*.tsx",
+      "!apps/mobile/.expo",
       "!apps/web/**/routeTree.gen.ts",
       "packages/**/*.ts",
       "*.json",

@@ -1,7 +1,8 @@
 {
   "recommendations": [
     "biomejs.biome",
-    "bradlc.vscode-tailwindcss"
+    "bradlc.vscode-tailwindcss",
+    "expo.vscode-expo-tools"
   ],
   "unwantedRecommendations": [
     "dbaeumer.vscode-eslint",

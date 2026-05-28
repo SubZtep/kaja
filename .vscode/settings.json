@@ -1,7 +1,8 @@
 {
   "editor.codeActionsOnSave": {
     "source.fixAll.biome": "explicit",
-    "source.organizeImports.biome": "explicit"
+    "source.organizeImports.biome": "explicit",
+    "source.sortMembers.biome": "explicit"
   },
   "editor.formatOnSave": true,
   "files.associations": {
@@ -16,6 +17,7 @@
   "search.exclude": {
     "**/routeTree.gen.ts": true,
     "**/apps/api/dist": true,
+    "**/apps/mobile/.expo": true,
     "**/apps/web/.output": true,
     "**/apps/web/.tanstack": true
   }
