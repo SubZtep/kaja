@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import type { RouteVariables } from "#/types"
-import { unauthorized } from "#/types/errors"
+import type { RouteVariables } from "../../types"
+import { unauthorized } from "../../types/errors"
 
 export const userRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 

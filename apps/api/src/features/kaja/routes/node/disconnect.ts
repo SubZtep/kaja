@@ -1,7 +1,7 @@
 import { createRoute } from "@hono/zod-openapi"
 import { disconnectNodeRequestSchema } from "@kaja/schemas"
-import type { RouteRegProps } from "#/types"
-import { unauthorized } from "#/types/errors"
+import type { RouteRegProps } from "../../../../types"
+import { unauthorized } from "../../../../types/errors"
 
 const disconnectRoute = createRoute({
   method: "post",

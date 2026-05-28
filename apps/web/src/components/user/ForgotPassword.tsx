@@ -2,8 +2,8 @@ import { loginSchema } from "@kaja/schemas"
 import { CheckCircle, LoaderCircle } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { ConfirmDialog } from "#/components/ui/ConfirmDialog"
-import { useAuthClient } from "#/hooks/auth-client"
+import { useAuthClient } from "../../hooks/auth-client"
+import { ConfirmDialog } from "../ui/ConfirmDialog"
 
 export function ForgotPassword({
   getEmail,

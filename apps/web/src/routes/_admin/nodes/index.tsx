@@ -4,8 +4,8 @@ import { createFileRoute, useLoaderData } from "@tanstack/react-router"
 import { Server } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "react-toastify"
-import { Loader } from "#/components/ui/Loader"
-import { userRequired } from "#/lib/loaders"
+import { Loader } from "../../../components/ui/Loader"
+import { userRequired } from "../../../lib/loaders"
 
 export const Route = createFileRoute("/_admin/nodes/")({
   component: NodesPage,

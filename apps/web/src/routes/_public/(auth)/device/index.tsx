@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
-import { Button } from "#/components/form/primitives/Button"
-import { MainMessageDialog } from "#/components/ui/MainMessageDialog"
-import { useAuthClient } from "#/hooks/auth-client"
-import { logger } from "#/lib/logger"
+import { Button } from "../../../../components/form/primitives/Button"
+import { MainMessageDialog } from "../../../../components/ui/MainMessageDialog"
+import { useAuthClient } from "../../../../hooks/auth-client"
+import { logger } from "../../../../lib/logger"
 
 export const Route = createFileRoute("/_public/(auth)/device/")({
   validateSearch: z.object({

@@ -1,13 +1,13 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
-import { healthRoutes } from "#/core/routes/health"
-import { referenceRoutes, setupApiDocs } from "#/core/routes/reference"
-import { userRoutes } from "#/core/routes/user"
-import { authMiddleware, authRoutes } from "#/features/auth"
-import { kajaRoutes } from "#/features/kaja"
-import type { RouteProps } from "#/types"
 import { trafficLogger } from "./core/logger"
+import { healthRoutes } from "./core/routes/health"
+import { referenceRoutes, setupApiDocs } from "./core/routes/reference"
+import { userRoutes } from "./core/routes/user"
+import { authMiddleware, authRoutes } from "./features/auth"
+import { kajaRoutes } from "./features/kaja"
+import type { RouteProps } from "./types"
 
 export const app = new OpenAPIHono<RouteProps>()
 

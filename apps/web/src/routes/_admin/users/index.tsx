@@ -6,10 +6,10 @@ import type { UserWithRole } from "better-auth/client/plugins"
 import { Eye, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
-import { Loader } from "#/components/ui/Loader"
-import { Table } from "#/components/ui/Table"
-import { useAuthClient } from "#/hooks/auth-client"
-import { userRequired } from "#/lib/loaders"
+import { Loader } from "../../../components/ui/Loader"
+import { Table } from "../../../components/ui/Table"
+import { useAuthClient } from "../../../hooks/auth-client"
+import { userRequired } from "../../../lib/loaders"
 
 export const Route = createFileRoute("/_admin/users/")({
   component: UserList,

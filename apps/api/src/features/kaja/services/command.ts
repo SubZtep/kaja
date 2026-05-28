@@ -1,6 +1,6 @@
 import type { Command, CommandResult, CreateCommandRequest, PendingCommand } from "@kaja/schemas"
 import type { Pool } from "pg"
-import { logger } from "#/core/logger"
+import { logger } from "../../../core/logger"
 
 export class CommandService {
   readonly #db: Pool

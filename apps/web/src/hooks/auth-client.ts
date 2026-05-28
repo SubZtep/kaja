@@ -1,5 +1,5 @@
 import { useLoaderData } from "@tanstack/react-router"
-import { createAuthClientWithUrl } from "#/lib/auth"
+import { createAuthClientWithUrl } from "../lib/auth"
 
 let authClient: ReturnType<typeof createAuthClientWithUrl> | null = null
 

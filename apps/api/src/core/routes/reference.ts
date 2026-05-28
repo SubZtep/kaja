@@ -1,7 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { Scalar } from "@scalar/hono-api-reference"
-import type { RouteProps } from "#/types"
 import { version } from "../../../package.json"
+import type { RouteProps } from "../../types"
 
 export const referenceRoutes = new OpenAPIHono<RouteProps>()
 

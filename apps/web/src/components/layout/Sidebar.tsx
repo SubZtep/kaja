@@ -3,8 +3,8 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { LogOut } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { useAuthClient } from "#/hooks/auth-client"
-import { useUser } from "#/hooks/user"
+import { useAuthClient } from "../../hooks/auth-client"
+import { useUser } from "../../hooks/user"
 import { getSidebarItems } from "./nav-items"
 
 export function Sidebar() {

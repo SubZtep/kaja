@@ -1,5 +1,5 @@
-import { Main } from "#/components/ui/Main"
-import { Section } from "#/components/ui/Section"
+import { Main } from "./Main"
+import { Section } from "./Section"
 
 export function MainMessageDialog({ children }: { children: React.ReactNode }) {
   return (

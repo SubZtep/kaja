@@ -47,7 +47,7 @@ bun lint:fix          # Fix issues (includes unsafe fixes)
 bun typecheck         # Run TypeScript compiler checks across all apps
 
 # Testing
-bun test              # Runs tests with both .env.example and .env
+bun run test              # Runs tests with both .env.example and .env
 ```
 
 ### Per-Workspace Commands
@@ -182,7 +182,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 
 ## Testing & CI
 
-- Tests run with `bun test` using both .env.example and .env
+- Tests run with `bun run test` using both .env.example and .env
 - CI workflow (`.github/workflows/ci.yaml`):
   - Runs Biome lint/format checks
   - Runs tests with PostgreSQL service

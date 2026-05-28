@@ -2,12 +2,12 @@ import { registerSchema } from "@kaja/schemas"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { Button } from "#/components/form/primitives/Button"
-import { Menu } from "#/components/layout/Menu"
-import { Main } from "#/components/ui/Main"
-import { Section } from "#/components/ui/Section"
-import { useAuthClient } from "#/hooks/auth-client"
-import { useAppForm } from "#/lib/form"
+import { Button } from "../../../components/form/primitives/Button"
+import { Menu } from "../../../components/layout/Menu"
+import { Main } from "../../../components/ui/Main"
+import { Section } from "../../../components/ui/Section"
+import { useAuthClient } from "../../../hooks/auth-client"
+import { useAppForm } from "../../../lib/form"
 
 export const Route = createFileRoute("/_public/(auth)/signup")({
   component: SignUp

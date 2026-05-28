@@ -1,6 +1,6 @@
 import { streamSSE } from "hono/streaming"
-import { logger } from "#/core/logger"
-import type { RouteRegProps } from "#/types"
+import { logger } from "../../../../core/logger"
+import type { RouteRegProps } from "../../../../types"
 import type { NodeEvent } from "../../services/events"
 import { nodeEvents } from "../../services/events"
 

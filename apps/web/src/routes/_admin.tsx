@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
-import { MobileNav } from "#/components/layout/MobileNav"
-import { Sidebar } from "#/components/layout/Sidebar"
-import { userRequired } from "#/lib/loaders"
+import { MobileNav } from "../components/layout/MobileNav"
+import { Sidebar } from "../components/layout/Sidebar"
+import { userRequired } from "../lib/loaders"
 
 export const Route = createFileRoute("/_admin")({
   component: AdminLayoutRoute,

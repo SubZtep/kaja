@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi"
-import type { RouteRegProps } from "#/types"
-import { unauthorized } from "#/types/errors"
+import type { RouteRegProps } from "../../../../types"
+import { unauthorized } from "../../../../types/errors"
 
 const listNodesRoute = createRoute({
   method: "get",

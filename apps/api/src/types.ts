@@ -1,6 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi"
-import type { CommandService } from "#/features/kaja/services/command"
-import type { NodeService } from "#/features/kaja/services/node"
+import type { CommandService } from "./features/kaja/services/command"
+import type { NodeService } from "./features/kaja/services/node"
 
 declare module "bun" {
   interface Env {

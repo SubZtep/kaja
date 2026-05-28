@@ -1,5 +1,5 @@
-import { SchedulerService } from "#/features/kaja/services/scheduler"
 import { app } from "../app"
+import { SchedulerService } from "../features/kaja/services/scheduler"
 import { pool } from "./db"
 import { logger } from "./logger"
 

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { useUser } from "#/hooks/user"
+import { useUser } from "../../hooks/user"
 import { getMobileNavItems } from "./nav-items"
 
 export function MobileNav() {

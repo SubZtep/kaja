@@ -2,9 +2,9 @@ import { createFileRoute, useLoaderData, useNavigate, useSearch } from "@tanstac
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
-import { Button } from "#/components/form/primitives/Button"
-import { MainMessageDialog } from "#/components/ui/MainMessageDialog"
-import { useAuthClient } from "#/hooks/auth-client"
+import { Button } from "../../../../components/form/primitives/Button"
+import { MainMessageDialog } from "../../../../components/ui/MainMessageDialog"
+import { useAuthClient } from "../../../../hooks/auth-client"
 
 export const Route = createFileRoute("/_public/(auth)/device/approve")({
   validateSearch: z.object({

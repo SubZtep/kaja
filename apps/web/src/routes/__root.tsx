@@ -1,8 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, ErrorComponent, HeadContent, Scripts } from "@tanstack/react-router"
 import { useEffect } from "react"
-import { Providers } from "#/components/Providers"
-import { logger } from "#/lib/logger"
+import { Providers } from "../components/Providers"
+import { logger } from "../lib/logger"
 import { getSession } from "../lib/session"
 import appCss from "../styles.css?url"
 

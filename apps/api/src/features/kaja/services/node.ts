@@ -1,6 +1,6 @@
 import type { GeoLocation } from "@kaja/geo"
 import type { Pool } from "pg"
-import { logger } from "#/core/logger"
+import { logger } from "../../../core/logger"
 import { emitNodeEvent } from "./events"
 
 /** A Kaja CLI node. */

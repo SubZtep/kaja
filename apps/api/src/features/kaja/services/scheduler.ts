@@ -1,5 +1,5 @@
 import type { Pool } from "pg"
-import { logger } from "#/core/logger"
+import { logger } from "../../../core/logger"
 import { CommandService } from "./command"
 import { NodeService } from "./node"
 

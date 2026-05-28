@@ -10,7 +10,7 @@ Prepare the codebase for deployment. Perform these checks in order:
 ## 1. Code Quality Gates
 - Run `bun lint:fix` to auto-fix formatting issues
 - Run `bun typecheck` and ensure 0 errors
-- Verify all tests pass with `bun test`
+- Verify all tests pass with `bun run test`
 
 ## 2. Build Verification
 - Test API build: `bun run --filter @kaja/api build`

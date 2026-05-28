@@ -1,10 +1,10 @@
 import { KAJA_CLI_CLIENT_ID } from "@kaja/schemas"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
-import { pool } from "#/core/db"
-import { logger } from "#/core/logger"
-import { sendEmail } from "#/emails"
-import type { EmailPayload } from "#/emails/template"
+import { pool } from "../../core/db"
+import { logger } from "../../core/logger"
+import { sendEmail } from "../../emails"
+import type { EmailPayload } from "../../emails/template"
 
 function deviceVerificationUrl() {
   const fromEnv = [process.env.WEB_PUBLIC_URL, process.env.CORS_ORIGIN].map(s => s?.trim()).find(Boolean)

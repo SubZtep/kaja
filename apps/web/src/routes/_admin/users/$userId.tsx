@@ -4,10 +4,10 @@ import type { UserWithRole } from "better-auth/plugins"
 import { ArrowLeft, Calendar, CheckCircle2, Clock, Mail, Shield } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
-import { Loader } from "#/components/ui/Loader"
-import { UserSessions } from "#/components/user/UserSessions"
-import { useAuthClient } from "#/hooks/auth-client"
-import { userRequired } from "#/lib/loaders"
+import { Loader } from "../../../components/ui/Loader"
+import { UserSessions } from "../../../components/user/UserSessions"
+import { useAuthClient } from "../../../hooks/auth-client"
+import { userRequired } from "../../../lib/loaders"
 
 export const Route = createFileRoute("/_admin/users/$userId")({
   component: UserPageComponent,

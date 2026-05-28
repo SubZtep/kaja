@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { pool } from "#/core/db"
-import type { RouteProps } from "#/types"
+import { pool } from "../../core/db"
+import type { RouteProps } from "../../types"
 import { registerAdminCommands } from "./routes/admin/command"
 import { registerConnect } from "./routes/node/connect"
 import { registerDisconnect } from "./routes/node/disconnect"

@@ -3,10 +3,10 @@ import { createFileRoute } from "@tanstack/react-router"
 import type { User } from "better-auth"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { Button } from "#/components/form/primitives/Button"
-import { useAuthClient } from "#/hooks/auth-client"
-import { useAppForm } from "#/lib/form"
-import { userRequired } from "#/lib/loaders"
+import { Button } from "../../components/form/primitives/Button"
+import { useAuthClient } from "../../hooks/auth-client"
+import { useAppForm } from "../../lib/form"
+import { userRequired } from "../../lib/loaders"
 
 export const Route = createFileRoute("/_admin/profile")({
   component: Profile,

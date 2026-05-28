@@ -1,8 +1,8 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { commandSchema, createCommandRequestSchema } from "@kaja/schemas"
-import { validateCommand } from "#/features/kaja/services/command-validator"
-import type { RouteRegProps } from "#/types"
-import { badRequest, internalError, notFound, unauthorized } from "#/types/errors"
+import type { RouteRegProps } from "../../../../types"
+import { badRequest, internalError, notFound, unauthorized } from "../../../../types/errors"
+import { validateCommand } from "../../services/command-validator"
 
 const createCommandRoute = createRoute({
   method: "post",

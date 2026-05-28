@@ -1,7 +1,7 @@
 import { createRoute } from "@hono/zod-openapi"
 import { heartbeatRequestSchema, heartbeatResponseSchema } from "@kaja/schemas"
-import type { RouteRegProps } from "#/types"
-import { notFound, unauthorized } from "#/types/errors"
+import type { RouteRegProps } from "../../../../types"
+import { notFound, unauthorized } from "../../../../types/errors"
 
 const NORMAL_POLL_INTERVAL = 60000 // 60 seconds
 const FAST_POLL_INTERVAL = 5000 // 5 seconds

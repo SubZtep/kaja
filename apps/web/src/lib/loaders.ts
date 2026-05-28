@@ -1,4 +1,4 @@
-import { getSession } from "#/lib/session"
+import { getSession } from "./session"
 
 /** Use the loader to require a session. */
 export const userRequired = async (role?: "user" | "admin") => {

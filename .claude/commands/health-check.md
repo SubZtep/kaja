@@ -18,7 +18,7 @@ Perform a comprehensive health check of the Kaja codebase. Check the following a
 - Verify workspace dependencies are properly linked
 
 ## 3. Tests
-- Run `bun test` and report pass/fail ratio
+- Run `bun run test` and report pass/fail ratio
 - Check test coverage if available
 - Identify untested critical paths
 

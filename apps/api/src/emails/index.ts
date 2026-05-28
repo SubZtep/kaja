@@ -1,6 +1,6 @@
 import { isItTrue } from "@kaja/shared"
 import nodemailer from "nodemailer"
-import { logger } from "#/core/logger"
+import { logger } from "../core/logger"
 import { getChangeEmailHtml } from "./ChangeEmail"
 import { getResetPasswordHtml } from "./ResetPassword"
 import type { SendEmailArgs } from "./template"

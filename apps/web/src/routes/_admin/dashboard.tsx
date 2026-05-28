@@ -1,7 +1,7 @@
 import { getFirstName } from "@kaja/shared"
 import { createFileRoute } from "@tanstack/react-router"
 import { Activity, TrendingUp, UserCheck, Users } from "lucide-react"
-import { useUser } from "#/hooks/user"
+import { useUser } from "../../hooks/user"
 
 export const Route = createFileRoute("/_admin/dashboard")({
   component: DashboardPage
