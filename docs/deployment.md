@@ -12,7 +12,8 @@ These are snippets of how [kaja.io](https://kaja.io) is deployed to its current 
 
 - [GitHub + Ubuntu 24.04](https://disco.cloud/docs/#prerequisites) — the publish webhook triggers deployment on the fully managed box. Even the smallest [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) is more than enough to host several services and a database, as long as traffic stays reasonable.
 - **SMTP server** is required for authentication. [Gmail’s SMTP](/send-email) works well for the traffic this host can handle.
-- [MaxMind account](https://support.maxmind.com/knowledge-base/articles/create-a-maxmind-account#sign-up-for-geolite) for *GeoLite City* data to enable proper node routing.
+- [MaxMind account](https://support.maxmind.com/knowledge-base/articles/create-a-maxmind-account#sign-up-for-geolite) for *GeoLite City* data to enable proper node routing.\
+Add to crontab: `46 20 * * 6,4 /usr/local/bin/geoipupdate`
 - Ⱥį?
 
 ## Deploy
