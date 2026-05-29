@@ -18,7 +18,7 @@ Each monorepo workspace manages custom environment variables. The values below a
 | CORS_ORIGIN         | `https://kaja.io`                                      | Website URL                                                 |
 | CROSS_PARENT_DOMAIN | `kaja.io`                                              | **Optional**, set the base domain if apps are in subdomains |
 | DATABASE_URL        | `postgresql://testuser:testpass@localhost:5433/testdb` | PostgreSQL connection string                                |
-| EMAIL_FROM          | `kaja[bot] <noreply@kaja.io>`                          | Sender of system messages                                   |
+system messages                                   |
 | PORT                | `3001`                                                 | API port                                                    |
 | SMTP_HOST           | `smtp.gmail.com`                                       |                                                             |
 | SMTP_PASS           | `abcdefghijklmnop`                                     |                                                             |

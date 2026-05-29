@@ -54,6 +54,16 @@ services:
     environment:
       DATABASE_URL: postgresql://testuser:testpass@db:5432/testdb
       SMTP_HOST: mail
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Uncomment for read-only root filesystem (requires tmpfs mounts)
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+    #   - /home/bun/.bun
 
   web:
     build:

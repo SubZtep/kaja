@@ -4,7 +4,8 @@ import type { NodeService } from "./features/kaja/services/node"
 
 declare module "bun" {
   interface Env {
-    PORT: string
+    /** @default 3001 */
+    PORT?: string
     CORS_ORIGIN: string
     /** Public web URL for device-auth verification (defaults to CORS_ORIGIN) */
     WEB_PUBLIC_URL?: string
@@ -13,7 +14,6 @@ declare module "bun" {
     DATABASE_URL: string
     BETTER_AUTH_URL: string
     BETTER_AUTH_SECRET: string
-    EMAIL_FROM: string
     SMTP_HOST: string
     SMTP_PORT: string
     /** Set to `true`, `1`, or any value interpreted as boolean true. */

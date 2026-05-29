@@ -28,7 +28,7 @@ if (!process.env.CI) {
 }
 
 export async function sendEmail({ type, payload }: Readonly<SendEmailArgs>) {
-  const from = process.env.EMAIL_FROM
+  const from = "kaja[bot] <noreply@kaja.io>"
   const to = payload.user.email
   let subject: string
   let html: string
