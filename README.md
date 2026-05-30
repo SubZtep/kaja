@@ -50,10 +50,6 @@ This is all the CLI needs to connect:
 bun dev:cli
 ```
 
-## Configuration
-
-To use the pre-configured [MCP servers](.mcp.json) locally with **Claude Code**, export `CONTEXT7_API_KEY` and `GITHUB_PAT` environment variables with valid values.
-
 ## Documentation
 
 See [GitHub Pages](https://docs.kaja.io) for more details.

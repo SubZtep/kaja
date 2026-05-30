@@ -45,7 +45,6 @@ bun run ./apps/api/scripts/mass_user_create.ts [number]
 
 ## Local URLs
 
-
 - Web: [http://localhost:3000](http://localhost:3000)
 - API: [http://localhost:3001](http://localhost:3001)
 - Email inbox: [http://localhost:1080](http://localhost:1080)
@@ -63,6 +62,8 @@ Each app under `/apps/*/` ships two env files:
 Compose build args (`VITE_API_URL`, `VITE_APP_URL`) default to `localhost` in `compose.yaml`. To override, create a root `.env` (gitignored) with the desired values — `docker compose` auto-loads it for variable interpolation.
 
 Production: **no `.env*` files** — inject vars via the host / orchestrator (Disco, Docker `--env-file` outside the image, k8s secrets, etc.).
+
+To use the pre-configured [MCP servers](.mcp.json) locally with **Claude Code**, export `CONTEXT7_API_KEY` and `GITHUB_PAT` environment variables with valid values.
 
 ---
 
