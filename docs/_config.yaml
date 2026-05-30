@@ -17,17 +17,10 @@ plugins:
 remote_theme: just-the-docs/just-the-docs
 
 mermaid:
-  version: "11.14.0"
+  version: "11.15.0"
 
 target-blank:
   noopener: false
 
 color_scheme: dark
 favicon_ico: /images/favicon.ico
-
-gh_edit_link: true
-gh_edit_link_text: "Edit this page on GitHub"
-gh_edit_repository: "https://github.com/SubZtep/kaja"
-gh_edit_branch: "main"
-gh_edit_source: "docs"
-gh_edit_view_mode: "edit"

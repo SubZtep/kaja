@@ -1,5 +1,5 @@
-FROM oven/bun:1-alpine AS builder
-
+FROM oven/bun:1.3.14 AS builder
+WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/api/package.json ./apps/api/package.json
@@ -16,7 +16,7 @@ ENV VITE_APP_URL=$VITE_APP_URL
 ENV VITE_API_URL=$VITE_API_URL
 RUN bun run --filter @kaja/web build
 
-FROM oven/bun:1-alpine AS runner
+FROM oven/bun:1.3.14-slim AS runner
 ARG VITE_API_URL
 ARG VITE_APP_URL
 ENV NODE_ENV=production
@@ -26,9 +26,10 @@ ENV HOST=0.0.0.0
 ENV API_URL=$VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_APP_URL=$VITE_APP_URL
-
-COPY --chown=root:root --chmod=755 --from=builder /home/bun/app/apps/web/.output ./
+WORKDIR /home/bun/app
 USER bun
+
+COPY --chown=bun:bun --chmod=755 --from=builder /home/bun/app/apps/web/.output ./
 
 EXPOSE 3000
 CMD ["bun", "run", "server/index.mjs"]
