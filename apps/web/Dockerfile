@@ -29,7 +29,7 @@ ENV VITE_APP_URL=$VITE_APP_URL
 WORKDIR /home/bun/app
 USER bun
 
-COPY --chown=bun:bun --chmod=755 --from=builder /home/bun/app/apps/web/.output ./
+COPY --chown=bun:bun --chmod=0555 --from=builder /home/bun/app/apps/web/.output ./
 
 EXPOSE 3000
 CMD ["bun", "run", "server/index.mjs"]
