@@ -6,19 +6,21 @@ WORKDIR /home/bun/app
 # Copy dependency files (builder runs as root for compatibility)
 COPY package.json bun.lock tsconfig.json ./
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+COPY apps/cli/package.json ./apps/cli/package.json
 COPY packages ./packages
 
 # Install dependencies
 # Note: Use --frozen-lockfile in production for reproducible builds
 # Requires running 'bun install' locally first to update lockfile
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # Copy application code
 COPY apps/api ./apps/api
 
 # Build application and install production dependencies
 RUN bun run --filter @kaja/api build
-RUN bun install --production
+RUN bun install --production --frozen-lockfile
 
 # Final stage - minimal alpine image
 FROM oven/bun:1.3.11-alpine AS runner

@@ -30,7 +30,7 @@ Run these steps on localhost and on the server.
 ### Update Database
 
 ```sh
-geoipupdate -d packages/geo/data
+geoipupdate -f /etc/GeoIP.conf -d /usr/share/GeoIP/
 ```
 
 ## GeoName ID

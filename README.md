@@ -15,7 +15,7 @@ Stack sandbox with **Bun** and **TypeScript**, implementing pieces of **Better A
 - **Apps**
   - [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery.
   - [`cli`](./apps/cli/) – Installable CLI app for orchestration tasks.
-  - [`mobile`](./apps/mobile/) – Mobile app for mobility.
+  <!-- - [`mobile`](./apps/mobile/) – Mobile app for mobility. -->
   - [`web`](./apps/web/) – Public web and admin portal.
 - **Packages**
   - [`geo`](./packages/geo/) – Geolocation services.
@@ -52,13 +52,7 @@ bun dev:cli
 
 ## Configuration
 
-To use the pre-configured [MCP servers](.mcp.json) locally with **Claude Code**, export the following environment variables with valid values.
-
-```ini
-CONTEXT7_API_KEY=ctx7sk-13-420-69-X
-GITHUB_PAT=github_pat_80o8135
-PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
-```
+To use the pre-configured [MCP servers](.mcp.json) locally with **Claude Code**, export `CONTEXT7_API_KEY` and `GITHUB_PAT` environment variables with valid values.
 
 ## Documentation
 

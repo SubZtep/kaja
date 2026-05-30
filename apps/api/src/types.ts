@@ -4,22 +4,26 @@ import type { NodeService } from "./features/kaja/services/node"
 
 declare module "bun" {
   interface Env {
+    /** Generate: `openssl rand -base64 32` */
+    BETTER_AUTH_SECRET?: string
+    /** This API’s base URL. */
+    BETTER_AUTH_URL: string
     /** @default 3001 */
     PORT?: string
     CORS_ORIGIN: string
-    /** Public web URL for device-auth verification (defaults to CORS_ORIGIN) */
-    WEB_PUBLIC_URL?: string
     /** Set base domain when apps live on subdomains (e.g. ondis.co) */
     CROSS_PARENT_DOMAIN?: string
     DATABASE_URL: string
-    BETTER_AUTH_URL: string
-    BETTER_AUTH_SECRET: string
+    /** @default /usr/share/GeoIP/GeoLite2-City.mmdb */
+    GEOIP_DB_PATH?: string
     SMTP_HOST: string
     SMTP_PORT: string
     /** Set to `true`, `1`, or any value interpreted as boolean true. */
-    SMTP_SECURE: string
-    SMTP_USER: string
-    SMTP_PASS: string
+    SMTP_SECURE?: string
+    SMTP_USER?: string
+    SMTP_PASS?: string
+    /** Public web URL for device-auth verification (defaults to CORS_ORIGIN) */
+    WEB_PUBLIC_URL?: string
   }
 }
 

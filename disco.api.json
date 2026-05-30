@@ -3,7 +3,13 @@
   "services": {
     "web": {
       "port": 3001,
-      "image": "backend"
+      "image": "backend",
+      "volumes": [
+        {
+          "name": "geoip-data",
+          "destinationPath": "/usr/share/GeoIP"
+        }
+      ]
     }
   },
   "images": {

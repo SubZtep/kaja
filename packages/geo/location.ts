@@ -9,13 +9,9 @@ async function getReader() {
   if (triedInit) return reader
   triedInit = true
 
-  const mmdbPath = process.env.GEOIP_DB_PATH
+  const mmdbPath = process.env.GEOIP_DB_PATH || "/usr/share/GeoIP/GeoLite2-City.mmdb"
 
   try {
-    if (!mmdbPath) {
-      logger.warn("GeoIP database not found. Set GEOIP_DB_PATH environment variable or install geoipupdate.")
-      return undefined
-    }
     const dbBuffer = await Bun.file(mmdbPath).arrayBuffer()
     reader = Reader.openBuffer(Buffer.from(dbBuffer))
     logger.trace({ mmdbPath }, "GeoIP database loaded")
