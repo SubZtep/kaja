@@ -6,10 +6,8 @@ COPY apps/api/package.json ./apps/api/package.json
 COPY apps/cli/package.json ./apps/cli/package.json
 COPY packages ./packages
 RUN bun install --frozen-lockfile
-
 COPY apps/web ./apps/web
 COPY packages ./packages
-
 ARG VITE_APP_URL
 ARG VITE_API_URL
 ENV VITE_APP_URL=$VITE_APP_URL
@@ -28,7 +26,6 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_APP_URL=$VITE_APP_URL
 WORKDIR /home/bun/app
 USER bun
-
 COPY --chown=bun:bun --chmod=555 --from=builder /home/bun/app/apps/web/.output ./
 
 EXPOSE 3000
