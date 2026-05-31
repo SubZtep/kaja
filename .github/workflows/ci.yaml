@@ -21,12 +21,12 @@ jobs:
         run: biome ci .
 
   test:
+    needs: lint
     permissions:
       contents: read
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://testuser:testpass@127.0.0.1:5432/testdb
-      # Dummy secrets — only used to satisfy startup validation during tests.
       BETTER_AUTH_SECRET: ci_better_auth_secret_at_least_32_chars_long
     services:
       postgres:
@@ -38,7 +38,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-cmd pg_isready --health-start-period 3s
           --health-retries 5
     steps:
       - name: Checkout Repo
