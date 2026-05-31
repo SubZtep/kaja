@@ -23,10 +23,18 @@ function getLogger() {
   const isNode = typeof process !== "undefined" && process.versions?.node
 
   // Get app name from environment (fallback to "unknown")
-  const app = (isNode ? process.env.KAJA_APP_NAME : undefined) ?? "unknown"
+  const app = (isNode
+    ? process.env.KAJA_APP_NAME
+    : typeof import.meta.env !== "undefined"
+      ? import.meta.env.KAJA_APP_NAME
+      : undefined) ?? "unknown"
 
   // Get log level from environment (fallback to "warn")
-  const level = (isNode ? process.env.KAJA_LOG_LEVEL : undefined) ?? "warn"
+  const level = (isNode
+    ? process.env.KAJA_LOG_LEVEL
+    : typeof import.meta.env !== "undefined"
+      ? import.meta.env.KAJA_LOG_LEVEL
+      : undefined) ?? "warn"
 
   // Get environment mode
   const env = isNode

@@ -9,6 +9,7 @@ const config = defineConfig({
   resolve: {
     tsconfigPaths: true
   },
+  envPrefix: ["VITE_", "KAJA_"],
   plugins: [
     devtools(),
     nitro({ preset: "bun" }),
