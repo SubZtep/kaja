@@ -30,19 +30,24 @@ export function registerStream(app: RouteRegProps) {
       const eventHandler = async (event: NodeEvent) => {
         // Only send events for nodes owned by this user
         if (event.userId === userId) {
-          await stream.writeSSE({
-            data: JSON.stringify({
-              type: event.type,
-              node: {
-                id: event.node.id,
-                userId: event.node.userId,
-                name: event.node.name,
-                lastSeen: event.node.lastSeen.toISOString(),
-                status: event.node.status
-              }
-            }),
-            event: "node-update"
-          })
+          try {
+            await stream.writeSSE({
+              data: JSON.stringify({
+                type: event.type,
+                node: {
+                  id: event.node.id,
+                  userId: event.node.userId,
+                  name: event.node.name,
+                  lastSeen: event.node.lastSeen.toISOString(),
+                  geoLocation: event.node.geoLocation,
+                  status: event.node.status
+                }
+              }),
+              event: "node-update"
+            })
+          } catch (err) {
+            info("Failed to send SSE event", { error: err, eventType: event.type, nodeId: event.node.id })
+          }
         }
       }
 

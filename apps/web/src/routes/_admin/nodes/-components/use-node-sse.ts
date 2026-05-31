@@ -11,7 +11,7 @@ const ConnectedEventSchema = z.object({
 })
 
 const NodeUpdateEventSchema = z.object({
-  type: z.enum(["connected", "heartbeat", "disconnect", "status-change"]),
+  type: z.enum(["connected", "heartbeat", "disconnected", "inactive"]),
   node: nodeSchema
 })
 
@@ -115,6 +115,8 @@ export function useNodeSSE(apiUrl: string, setIsLive?: (live: boolean) => void) 
         setIsLiveRef.current?.(true)
         // Reset retry count on successful connection
         retryCountRef.current = 0
+        // Invalidate query to ensure we have the latest data
+        queryClient.invalidateQueries({ queryKey: ["nodes"] })
       })
 
       eventSource.onerror = err => {
