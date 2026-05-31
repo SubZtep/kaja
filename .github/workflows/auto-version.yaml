@@ -19,6 +19,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
       - name: Check changed workspaces
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d
@@ -53,8 +56,9 @@ jobs:
 
           echo "Determined bump type for API: $BUMP_TYPE"
 
-          npm version $BUMP_TYPE --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
+          # Use Bun's native package manager command to bump without tagging natively
+          bun pm version $BUMP_TYPE --no-git-tag-version
+          NEW_VERSION=$(bun -e "console.log(require('./package.json').version)")
 
           # Commit back with [skip ci] to prevent infinite loops
           git add package.json
@@ -81,8 +85,8 @@ jobs:
 
           echo "Determined bump type for CLI: $BUMP_TYPE"
 
-          npm version $BUMP_TYPE --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
+          bun pm version $BUMP_TYPE --no-git-tag-version
+          NEW_VERSION=$(bun -e "console.log(require('./package.json').version)")
 
           git add package.json
           git commit -m "chore(cli): auto $BUMP_TYPE bump to $NEW_VERSION [skip ci]"
@@ -107,12 +111,12 @@ jobs:
 
           echo "Determined bump type for Web: $BUMP_TYPE"
 
-          npm version $BUMP_TYPE --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
+          bun pm version $BUMP_TYPE --no-git-tag-version
+          NEW_VERSION=$(bun -e "console.log(require('./package.json').version)")
 
           git add package.json
           git commit -m "chore(web): auto $BUMP_TYPE bump to $NEW_VERSION [skip ci]"
-          git tag "cli@$NEW_VERSION"
+          git tag "web@$NEW_VERSION"
 
           git pull origin main --rebase
           git push origin main --tags
