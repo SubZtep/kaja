@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, useLoaderData } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Server } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { Loader } from "../../../components/ui/Loader"
 import { ValueBox } from "../../../components/ui/ValueBox"
+import { useApiSdk } from "../../../hooks/use-api-sdk"
 import { userRequired } from "../../../lib/loaders"
 import { NodeCard } from "./-components/NodeCard"
 import { NodesHeader } from "./-components/NodesHeader"
@@ -15,18 +16,8 @@ export const Route = createFileRoute("/_admin/nodes/")({
   loader: () => userRequired()
 })
 
-export type NodeStatus = "idle" | "busy" | "inactive"
-
-export interface Node {
-  id: string
-  userId: string
-  name: string
-  lastSeen: string
-  status: NodeStatus
-}
-
 function NodesPage() {
-  const { apiUrl } = useLoaderData({ from: "__root__" })
+  const sdk = useApiSdk()
   const [isLive, setIsLive] = useState(false)
 
   // Wrap setIsLive in useCallback to prevent unnecessary SSE reconnections
@@ -36,22 +27,11 @@ function NodesPage() {
 
   const { data, error, isLoading } = useQuery({
     queryKey: ["nodes"],
-    queryFn: async () => {
-      const response = await fetch(`${apiUrl}/nodes`, {
-        credentials: "include"
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch nodes")
-      }
-
-      const result = await response.json()
-      return result.nodes as Node[]
-    }
+    queryFn: () => sdk.nodes.list()
   })
 
   // Connect to SSE for real-time updates
-  useNodeSSE(apiUrl, handleSetIsLive)
+  useNodeSSE(sdk.baseUrl, handleSetIsLive)
 
   useEffect(() => {
     if (error) toast.error(error.message)

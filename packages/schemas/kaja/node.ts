@@ -79,6 +79,18 @@ export const commandSchema = z.object({
   createdBy: z.uuidv7().optional()
 })
 
+export const nodeStatusSchema = z.enum(["idle", "busy", "inactive"])
+
+export const nodeSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string(),
+  status: nodeStatusSchema,
+  lastSeen: z.string()
+})
+
+export const listNodesResponseSchema = z.array(nodeSchema)
+
 export type Config = z.infer<typeof configSchema>
 export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>
 export type HeartbeatResponse = z.infer<typeof heartbeatResponseSchema>
@@ -89,3 +101,6 @@ export type CommandResult = z.infer<typeof commandResultSchema>
 export type PendingCommand = z.infer<typeof pendingCommandSchema>
 export type CreateCommandRequest = z.infer<typeof createCommandRequestSchema>
 export type Command = z.infer<typeof commandSchema>
+export type NodeStatus = z.infer<typeof nodeStatusSchema>
+export type Node = z.infer<typeof nodeSchema>
+export type ListNodesResponse = z.infer<typeof listNodesResponseSchema>

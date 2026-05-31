@@ -106,13 +106,16 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - Two route layouts: `_public.tsx` and `_admin.tsx`
 - Uses `#/*` import alias for src/
 - Auth client from Better Auth in `hooks/auth-client.ts`
+- SDK instance initialized in `components/Providers.tsx` with Better Auth session token
+- Access SDK via `useApiSdk()` hook from `hooks/use-api-sdk.ts`
 - Components organized: layout/, form/, ui/
 
 ### CLI Structure (`apps/cli/`)
 - Entry: `src/cli.tsx` - initializes auth session and node operations
-- `lib/kaja-sdk.ts` - API client for node heartbeat and status
+- `lib/sdk.ts` - SDK instance using @kaja/sdk with Bun.secrets token storage
+- `lib/auth-client.ts` - Better Auth client for device authorization flow
 - `lib/config.ts` - Configuration management using env-paths
-- `lib/token.ts` - Token storage and retrieval
+- `lib/token.ts` - Token storage and retrieval via Bun.secrets
 - `ui/` - React Ink components for interactive CLI
 
 ### Mobile Structure (`apps/mobile/`)
@@ -124,10 +127,35 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - See `apps/mobile/AGENTS.md` for Expo-specific guidance
 
 ### Packages
+- **@kaja/sdk**: Type-safe API client with automatic response validation using Zod schemas
 - **@kaja/schemas**: Zod schemas shared across workspaces (includes KAJA_CLI_CLIENT_ID)
 - **@kaja/shared**: Pure utility functions (clsx, tailwind-merge)
 - **@kaja/geo**: Geolocation services using MaxMind
 - **@kaja/logger**: Pino logger with node/browser exports
+
+### SDK Architecture
+
+The `@kaja/sdk` package provides a centralized, type-safe API client used by both web and CLI applications:
+
+**Features:**
+- Typed methods for all API endpoints (e.g., `nodes.list()`, `nodes.connect()`, `nodes.heartbeat()`)
+- Automatic response validation using Zod schemas from `@kaja/schemas`
+- Proper TypeScript types for requests and responses
+- Centralized error handling
+
+**Token Management:**
+- **Web**: Uses Better Auth client session (`authClient.getSession()`) to get current access token
+- **CLI**: Uses Bun.secrets for persistent token storage across sessions
+
+**Usage:**
+- **Web**: SDK instance created in `components/Providers.tsx`, accessed via `useApiSdk()` hook
+- **CLI**: SDK instance in `lib/sdk.ts`, imported directly where needed
+
+**Benefits:**
+- No code duplication between web and CLI
+- Single source of truth for API client logic
+- Type safety across all API interactions
+- Automatic validation ensures response integrity
 
 ### Database
 - PostgreSQL migrations in `apps/api/migrations/`
@@ -201,3 +229,4 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - **Zod v4**: Schema validation
 - **Biome**: Linting and formatting
 - **Pino**: Structured logging
+- Lockfile is bun.lock (not bun.lockb)

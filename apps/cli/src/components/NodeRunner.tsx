@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query"
 import { Box, Text, useApp, useInput } from "ink"
 import { useEffect, useRef, useState } from "react"
-import { disconnectNodeRequest, sendHeartbeat } from "../lib/api"
 import { logger } from "../lib/logger"
+import { sdk } from "../lib/sdk"
 import { useStore } from "../store"
 
 export default function NodeRunner() {
@@ -15,7 +15,7 @@ export default function NodeRunner() {
   const isShuttingDown = useRef(false)
 
   const heartbeatMutation = useMutation({
-    mutationFn: () => sendHeartbeat({ nodeId, status: "idle" }, abortControllerRef.current.signal),
+    mutationFn: () => sdk.nodes.heartbeat({ nodeId, status: "idle" }, { signal: abortControllerRef.current.signal }),
     onError: error => {
       // Only log heartbeat errors if we're not shutting down
       if (!isShuttingDown.current) {
@@ -51,7 +51,7 @@ export default function NodeRunner() {
           setTimeout(() => reject(new Error("Disconnect timeout")), 3000)
         )
 
-        await Promise.race([disconnectNodeRequest({ nodeId }), timeoutPromise])
+        await Promise.race([sdk.nodes.disconnect({ nodeId }), timeoutPromise])
       } catch {
         // Suppress errors during shutdown - we're exiting anyway
         // The node will be marked as inactive by the scheduler after timeout

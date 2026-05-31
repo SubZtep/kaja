@@ -21,6 +21,7 @@ Stack sandbox with **Bun** and **TypeScript**, implementing pieces of **Better A
   - [`geo`](./packages/geo/) – Geolocation services.
   - [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.
   - [`schemas`](./packages/schemas/) – Payload and data schemas across the workspaces.
+  - [`sdk`](./packages/sdk/) – API SDK for app clients.
   - [`shared`](./packages/shared/) – Shared utilities (pure functions).
 
 ## Quick Start

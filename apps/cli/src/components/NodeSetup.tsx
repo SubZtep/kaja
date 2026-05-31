@@ -2,8 +2,8 @@ import { useMutation } from "@tanstack/react-query"
 import { Box, Text } from "ink"
 import TextInput from "ink-text-input"
 import { useEffect } from "react"
-import { connectNodeRequest } from "../lib/api"
 import { logger } from "../lib/logger"
+import { sdk } from "../lib/sdk"
 import { useStore } from "../store"
 
 export function NodeSetup() {
@@ -12,7 +12,7 @@ export function NodeSetup() {
   const setNodeName = useStore(state => state.setNodeName)
 
   const { mutate: connectNode, isPending } = useMutation({
-    mutationFn: () => connectNodeRequest({ name: nodeName }),
+    mutationFn: () => sdk.nodes.connect({ name: nodeName }),
     onMutate: () => logger.trace({ name: nodeName }, "Connecting"),
     onSuccess: res => {
       logger.info(res, "Connected with node ID")
@@ -39,13 +39,13 @@ export function NodeSetup() {
 
   return (
     <Box flexDirection="column" gap={1}>
-      <Text>What is your node’s name?</Text>
+      <Text>What is your node's name?</Text>
       <Box>
         <Text dimColor>› </Text>
         {isPending ? (
           <Text>{nodeName}</Text>
         ) : (
-          <TextInput value={nodeName} onChange={setNodeName} onSubmit={registerNode} placeholder="Machine’s name" />
+          <TextInput value={nodeName} onChange={setNodeName} onSubmit={registerNode} placeholder="Machine's name" />
         )}
       </Box>
       <Box>

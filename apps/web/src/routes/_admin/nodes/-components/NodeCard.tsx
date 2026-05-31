@@ -1,7 +1,7 @@
+import type { Node, NodeStatus } from "@kaja/schemas"
 import { getTimeAgo } from "@kaja/shared"
 import { Server } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import type { Node, NodeStatus } from ".."
 
 const STATUS_CONFIG: Record<NodeStatus, { label: string; color: string; dotColor: string }> = {
   idle: {

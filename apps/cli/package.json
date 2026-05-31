@@ -10,6 +10,7 @@
     "@kaja/geo": "workspace:*",
     "@kaja/logger": "workspace:*",
     "@kaja/schemas": "workspace:*",
+    "@kaja/sdk": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@tanstack/react-query": "^5.100.14",
     "better-auth": "^1.6.11",

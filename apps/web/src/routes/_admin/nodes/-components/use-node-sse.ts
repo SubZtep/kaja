@@ -1,16 +1,8 @@
+import type { Node } from "@kaja/schemas"
+import { nodeSchema } from "@kaja/schemas"
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 import { z } from "zod"
-import type { Node } from ".."
-
-// Zod schemas for SSE event validation
-const NodeDataSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  name: z.string(),
-  lastSeen: z.string(),
-  status: z.enum(["idle", "busy", "inactive"])
-})
 
 const PingEventSchema = z.object({
   type: z.literal("ping")
@@ -18,12 +10,12 @@ const PingEventSchema = z.object({
 
 const ConnectedEventSchema = z.object({
   type: z.literal("connected"),
-  node: NodeDataSchema.optional()
+  node: nodeSchema.optional()
 })
 
 const NodeUpdateEventSchema = z.object({
   type: z.enum(["connected", "heartbeat", "disconnect", "status-change"]),
-  node: NodeDataSchema
+  node: nodeSchema
 })
 
 const SSEEventSchema = z.union([PingEventSchema, ConnectedEventSchema, NodeUpdateEventSchema])

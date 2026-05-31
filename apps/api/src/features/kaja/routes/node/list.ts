@@ -1,4 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi"
+import { listNodesResponseSchema } from "@kaja/schemas"
 import type { RouteRegProps } from "../../../../types"
 import { unauthorized } from "../../../../types/errors"
 
@@ -14,16 +15,7 @@ const listNodesRoute = createRoute({
       description: "List of active nodes",
       content: {
         "application/json": {
-          schema: z.object({
-            nodes: z.array(
-              z.object({
-                id: z.string(),
-                name: z.string(),
-                status: z.enum(["idle", "busy", "inactive"]),
-                lastSeen: z.string()
-              })
-            )
-          })
+          schema: listNodesResponseSchema
         }
       }
     },
@@ -48,6 +40,6 @@ export function registerList(app: RouteRegProps) {
     const nodeService = c.get("nodeService")
     const nodes = await nodeService.getActiveNodes(user.id)
 
-    return c.json({ nodes })
+    return c.json(nodes)
   })
 }
