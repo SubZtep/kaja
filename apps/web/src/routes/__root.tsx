@@ -10,7 +10,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   loader: async () => {
     const session = await getSession()
     return {
-      apiUrl: process.env.VITE_API_URL!,
+      apiUrl: process.env.VITE_API_URL,
       session
     }
   },

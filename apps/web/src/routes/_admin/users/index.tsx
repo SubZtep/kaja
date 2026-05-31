@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
 import { Loader } from "../../../components/ui/Loader"
 import { Table } from "../../../components/ui/Table"
+import { ValueBox } from "../../../components/ui/ValueBox"
 import { useAuthClient } from "../../../hooks/auth-client"
 import { userRequired } from "../../../lib/loaders"
 
@@ -149,6 +150,7 @@ function UserList() {
   if (isLoading) return <Loader />
   if (!users || users.length === 0) return null
 
+  const userCount = users.length
   const activeCount = users.filter(u => u.emailVerified).length
 
   return (
@@ -161,14 +163,10 @@ function UserList() {
           </p>
         </div>
         <div className="flex gap-4">
-          <div className="min-w-[160px] rounded-xl border-t-2 border-neon bg-surface p-6">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Total Users</p>
-            <p className="text-3xl font-headline font-bold text-neon neon-glow">{users.length.toLocaleString()}</p>
-          </div>
-          <div className="min-w-[160px] rounded-xl border-t-2 border-ice bg-surface p-6">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Verified</p>
-            <p className="text-3xl font-headline font-bold text-ice neon-glow">{activeCount}</p>
-          </div>
+          <ValueBox label="Total Users" variant="neon">
+            {userCount.toLocaleString()}
+          </ValueBox>
+          <ValueBox label="Verified">{activeCount}</ValueBox>
         </div>
       </header>
 
