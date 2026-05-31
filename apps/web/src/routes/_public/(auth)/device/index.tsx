@@ -3,7 +3,6 @@ import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../../../components/form/primitives/Button"
-import { MainMessageDialog } from "../../../../components/ui/MainMessageDialog"
 import { useAuthClient } from "../../../../hooks/auth-client"
 import { logger } from "../../../../lib/logger"
 
@@ -56,7 +55,7 @@ function DeviceCodePage() {
   }, [])
 
   return (
-    <MainMessageDialog>
+    <>
       <h1>Connect a device</h1>
       <p>Enter the code shown in your terminal.</p>
       <form
@@ -79,6 +78,6 @@ function DeviceCodePage() {
           Continue
         </Button>
       </form>
-    </MainMessageDialog>
+    </>
   )
 }

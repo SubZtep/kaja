@@ -3,7 +3,6 @@ import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../../../components/form/primitives/Button"
-import { MainMessageDialog } from "../../../../components/ui/MainMessageDialog"
 import { useAuthClient } from "../../../../hooks/auth-client"
 
 export const Route = createFileRoute("/_public/(auth)/device/approve")({
@@ -37,7 +36,7 @@ function DeviceApprovePage() {
 
   if (!params.user_code || params.user_code.length < 4) {
     return (
-      <MainMessageDialog>
+      <>
         <h1 className="text-orange-600/80">{params.user_code ? "Invalid" : "Missing"} user code</h1>
         <p>
           Please check the code or the link, and try again.
@@ -47,7 +46,7 @@ function DeviceApprovePage() {
         <Button onClick={() => navigate({ to: "/nodes" })} variant="primary" size="md">
           View Your Placeholder
         </Button>
-      </MainMessageDialog>
+      </>
     )
   }
 
@@ -85,7 +84,7 @@ function DeviceApprovePage() {
   }
 
   return (
-    <MainMessageDialog>
+    <>
       <h1>Approve a new Node</h1>
       <p>A piece of device asked to be accessable by your account.</p>
       <p>
@@ -99,6 +98,6 @@ function DeviceApprovePage() {
           Deny
         </Button>
       </div>
-    </MainMessageDialog>
+    </>
   )
 }
