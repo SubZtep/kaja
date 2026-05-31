@@ -10,10 +10,6 @@
           "destinationPath": "/usr/share/GeoIP"
         }
       ]
-    },
-    "hook:deploy:start:before": {
-      "type": "command",
-      "command": "bun run --filter @kaja/api db:push"
     }
   },
   "images": {
