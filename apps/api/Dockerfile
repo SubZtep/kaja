@@ -36,8 +36,8 @@ ENV NODE_ENV=production
 USER bun
 
 # Copy only necessary files from builder with read-only permissions
-COPY --chown=bun:bun --chmod=0555 --from=builder /home/bun/app/apps/api/dist ./dist
-COPY --chown=bun:bun --chmod=0555 --from=builder /home/bun/app/node_modules ./node_modules
+COPY --chown=bun:bun --chmod=555 --from=builder /home/bun/app/apps/api/dist ./dist
+COPY --chown=bun:bun --chmod=555 --from=builder /home/bun/app/node_modules ./node_modules
 
 # Expose application port
 EXPOSE 3001
