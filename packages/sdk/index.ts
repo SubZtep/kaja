@@ -65,8 +65,7 @@ export class KajaAPI {
     })
 
     if (!response.ok) {
-      console.error("API requiest failed", { path, response })
-      // logger.error({ path, response }, "API request failed")
+      error("API requiest failed", { path, response })
       throw new Error(response.statusText)
     }
 

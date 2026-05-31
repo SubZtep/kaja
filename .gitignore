@@ -1,7 +1,6 @@
 .output
 .playwright-mcp
 .tanstack
-data
 dist
 test-build
 node_modules
