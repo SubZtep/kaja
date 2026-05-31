@@ -13,7 +13,7 @@
     },
     "hook:deploy:start:before": {
       "type": "command",
-      "image": "backend",
+      "image": "migration",
       "command": "bun run --filter @kaja/api db:push -- --force"
     }
   },
@@ -21,6 +21,11 @@
     "backend": {
       "dockerfile": "apps/api/Dockerfile",
       "context": "."
+    },
+    "migration": {
+      "dockerfile": "apps/api/Dockerfile",
+      "context": ".",
+      "target": "builder"
     }
   }
 }
