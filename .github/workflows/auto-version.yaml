@@ -25,11 +25,11 @@ jobs:
         with:
           filters: |
             api:
-              - 'packages/api/**'
+              - 'apps/api/**'
             cli:
-              - 'packages/cli/**'
+              - 'apps/cli/**'
             web:
-              - 'packages/web/**'
+              - 'apps/web/**'
 
       - name: Setup Git
         run: |
@@ -39,7 +39,7 @@ jobs:
       - name: Smart Bump API
         if: steps.filter.outputs.api == 'true'
         run: |
-          cd packages/api
+          cd apps/api
 
           # Scan all commit messages in this specific push
           COMMIT_MSGS=$(git log origin/main..HEAD --pretty=%B)
