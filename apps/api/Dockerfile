@@ -15,9 +15,18 @@ RUN bun install --production --frozen-lockfile
 FROM oven/bun:1.3.14-slim AS runner
 WORKDIR /home/bun/app
 ENV NODE_ENV=production
+
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends geoipupdate && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /usr/share/GeoIP && \
+    chown bun:bun /usr/share/GeoIP
+
 USER bun
 COPY --chown=bun:bun --chmod=555 --from=prod-deps /home/bun/app/apps/api/dist ./dist
 COPY --chown=bun:bun --chmod=555 --from=prod-deps /home/bun/app/node_modules ./node_modules
 
 EXPOSE 3001
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["bun", "run", "dist/server.js"]

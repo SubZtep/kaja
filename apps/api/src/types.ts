@@ -14,6 +14,8 @@ declare module "bun" {
     /** Set base domain when apps live on subdomains (e.g. ondis.co) */
     CROSS_PARENT_DOMAIN?: string
     DATABASE_URL: string
+    GEOIP_ACCOUNT_ID: string
+    GEOIP_LICENSE_KEY: string
     /** @default /usr/share/GeoIP/GeoLite2-City.mmdb */
     GEOIP_DB_PATH?: string
     SMTP_HOST: string
