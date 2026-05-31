@@ -14,7 +14,7 @@
     "hook:deploy:start:before": {
       "type": "command",
       "image": "migration",
-      "command": "sh -c 'ls -la && pwd && find . -name drizzle.config.ts'"
+      "command": "bun run db:push -- --force"
     }
   },
   "images": {
@@ -23,9 +23,8 @@
       "context": "."
     },
     "migration": {
-      "dockerfile": "apps/api/Dockerfile",
-      "context": ".",
-      "target": "builder"
+      "dockerfile": "apps/api/Dockerfile.migrate",
+      "context": "."
     }
   }
 }
