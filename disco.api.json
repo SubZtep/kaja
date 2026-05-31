@@ -14,7 +14,7 @@
     "hook:deploy:start:before": {
       "type": "command",
       "image": "migration",
-      "command": "sh -c 'cd /home/bun/app/apps/api && bun run db:push -- --force'"
+      "command": "sh -c 'ls -la && pwd && find . -name drizzle.config.ts'"
     }
   },
   "images": {
