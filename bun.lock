@@ -12,7 +12,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "dependencies": {
         "@hono/zod-openapi": "^1.4.0",
         "@hono/zod-validator": "^0.8.0",
@@ -27,6 +27,7 @@
         "drizzle-orm": "^0.45.2",
         "hono": "^4.12.23",
         "hono-rate-limiter": "^0.5.3",
+        "kysely": "<0.29.0",
         "nodemailer": "^8.0.9",
         "p-queue": "^9.3.0",
         "react": "^19.2.6",
@@ -42,7 +43,7 @@
     },
     "apps/cli": {
       "name": "@kaja/cli",
-      "version": "0.0.30",
+      "version": "0.0.31",
       "dependencies": {
         "@kaja/geo": "workspace:*",
         "@kaja/logger": "workspace:*",
@@ -69,7 +70,7 @@
     },
     "apps/web": {
       "name": "@kaja/web",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "@base-ui/react": "^1.5.0",
         "@fontsource-variable/inter": "^5.2.8",
@@ -895,7 +896,7 @@
 
     "json5": ["json5@2.2.3", "", { "bin": { "json5": "lib/cli.js" } }, "sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg=="],
 
-    "kysely": ["kysely@0.29.2", "", {}, "sha512-s6WVJyEZrbm6jhBpiKHsGHyePMrVQKJ85wZCFCr9W4QHv6WTjWIrdvTmO9hDEA3bNK0xkrE2DqrHsXMLWuZpQg=="],
+    "kysely": ["kysely@0.28.17", "", {}, "sha512-nbD8lB9EB3wNdMhOCdx5Li8DxnLbvKByylRLcJ1h+4SkrowVeECAyZlyiKMThF7xFdRz0jSQ2MoJr+wXux2y0Q=="],
 
     "launch-editor": ["launch-editor@2.14.0", "", { "dependencies": { "picocolors": "^1.1.1", "shell-quote": "^1.8.4" } }, "sha512-Pj3ZOx9dD1BClS7YcSQx0An1PCF9wz4JpvbEmKvDxQtm0jxlkk5NhW8x0SBAKA/acHBKZaqdd5FFOWlXo500JA=="],
 
