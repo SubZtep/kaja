@@ -1,4 +1,4 @@
-import { error, info } from "@kaja/logger"
+import { error, trace } from "@kaja/logger"
 import { loginSchema } from "@kaja/schemas"
 import { createFileRoute, useSearch } from "@tanstack/react-router"
 import { useState } from "react"
@@ -33,7 +33,7 @@ function SignIn() {
       onSubmit: loginSchema
     },
     onSubmit: async ({ value }) => {
-      info("Sign in form submitted", { value })
+      trace("Sign in form submitted", { value })
       const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
         toast.error(parsed.error?.message ?? "Invalid data")
@@ -51,8 +51,8 @@ function SignIn() {
           toast.error(authError.message ?? authError.statusText)
           error("Sign in failed", { error: authError })
         }
-      } catch (err: any) {
-        toast.error(err.message)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Something went wrong")
         error("Sign in fail catched", { error: err })
       } finally {
         setLoading(false)
