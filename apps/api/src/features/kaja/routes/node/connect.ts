@@ -1,5 +1,8 @@
 import { createRoute } from "@hono/zod-openapi"
+import { getClientIp } from "@kaja/geo"
 import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schemas"
+import { logger } from "../../../../core/logger"
+import { geoipQueue } from "../../../../core/queue"
 import type { RouteRegProps } from "../../../../types"
 import { unauthorized } from "../../../../types/errors"
 
@@ -56,16 +59,16 @@ export function registerConnect(app: RouteRegProps) {
       name: body.name
     })
 
-    // const clientIp = getClientIp(c)
-    // if (clientIp) {
-    //   logger.info({ ip: clientIp, nodeId }, "Queueing GeoIP lookup")
-    //   geoipQueue.add({ ip: clientIp, nodeId }).catch(error => {
-    //     logger.error({ error, nodeId, ip: clientIp }, "Failed to queue GeoIP lookup")
-    //   })
-    //   logger.info({ ip: clientIp, nodeId }, "Queued GeoIP lookup")
-    // } else {
-    //   logger.warn({ nodeId }, "Could not get public IP address for GeoIP lookup")
-    // }
+    const clientIp = getClientIp(c)
+    if (clientIp) {
+      logger.info({ ip: clientIp, nodeId }, "Queueing GeoIP lookup")
+      geoipQueue.add({ ip: clientIp, nodeId }).catch(error => {
+        logger.error({ error, nodeId, ip: clientIp }, "Failed to queue GeoIP lookup")
+      })
+      logger.info({ ip: clientIp, nodeId }, "Queued GeoIP lookup")
+    } else {
+      logger.warn({ nodeId }, "Could not get public IP address for GeoIP lookup")
+    }
 
     return c.json(
       connectNodeResponseSchema.parse({
