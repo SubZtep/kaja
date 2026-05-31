@@ -17,5 +17,7 @@ cron.start()
 
 export default {
   port,
-  fetch: app.fetch
+  fetch: app.fetch,
+  // SSE connections need longer timeout (max 255 seconds ~4 minutes)
+  idleTimeout: 255
 }
