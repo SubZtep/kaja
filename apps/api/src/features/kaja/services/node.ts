@@ -1,6 +1,6 @@
 import type { GeoLocation } from "@kaja/geo"
 import { and, desc, eq, lt, ne } from "drizzle-orm"
-import type { BunSQLDatabase } from "drizzle-orm/bun-sql"
+import type { Database } from "../../../core/db"
 import { logger } from "../../../core/logger"
 import { type Node as DbNode, node as nodeTable } from "../../../db/schema"
 import { emitNodeEvent } from "./events"
@@ -15,9 +15,9 @@ export interface Node {
 }
 
 export class NodeService {
-  readonly #db: BunSQLDatabase
+  readonly #db: Database
 
-  constructor(db: BunSQLDatabase) {
+  constructor(db: Database) {
     this.#db = db
   }
 
@@ -181,10 +181,11 @@ export class NodeService {
         updatedAt: new Date()
       })
       .where(eq(nodeTable.id, nodeId as any))
+      .returning()
 
-    const updated = result.rowCount !== null && result.rowCount > 0
+    const updated = result.length > 0
 
-    logger.info({ nodeId, rowCount: result.rowCount, updated }, "Geo location update result")
+    logger.info({ nodeId, rowCount: result.length, updated }, "Geo location update result")
 
     return updated
   }

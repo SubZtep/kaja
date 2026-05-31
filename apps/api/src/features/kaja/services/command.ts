@@ -1,13 +1,13 @@
 import type { CommandResult, CreateCommandRequest, PendingCommand, Command as SchemaCommand } from "@kaja/schemas"
 import { and, desc, eq, sql } from "drizzle-orm"
-import type { BunSQLDatabase } from "drizzle-orm/bun-sql"
+import type { Database } from "../../../core/db"
 import { logger } from "../../../core/logger"
 import { command as commandTable, type Command as DbCommand } from "../../../db/schema"
 
 export class CommandService {
-  readonly #db: BunSQLDatabase
+  readonly #db: Database
 
-  constructor(db: BunSQLDatabase) {
+  constructor(db: Database) {
     this.#db = db
   }
 
@@ -80,8 +80,9 @@ export class CommandService {
           startedAt: new Date()
         })
         .where(and(eq(commandTable.id, commandId as any), eq(commandTable.status, "pending")))
+        .returning()
 
-      return result.rowCount !== null && result.rowCount > 0
+      return result.length > 0
     } catch (error) {
       logger.error({ error, commandId }, "failed to mark command as executing")
       return false
@@ -113,8 +114,9 @@ export class CommandService {
           exitCode: commandResult.exitCode ?? null
         })
         .where(eq(commandTable.id, commandId as any))
+        .returning()
 
-      return result.rowCount !== null && result.rowCount > 0
+      return result.length > 0
     } catch (error) {
       logger.error({ error, commandId }, "failed to update command result")
       return false
@@ -138,8 +140,9 @@ export class CommandService {
             sql`${commandTable.startedAt} < NOW() - (${commandTable.timeoutSeconds} || ' seconds')::INTERVAL`
           )
         )
+        .returning()
 
-      return result.rowCount ?? 0
+      return result.length
     } catch (error) {
       logger.error({ error }, "failed to mark timeout commands")
       return 0
@@ -217,8 +220,9 @@ export class CommandService {
           error: "Node became inactive while command was executing"
         })
         .where(and(eq(commandTable.nodeId, nodeId as any), eq(commandTable.status, "executing")))
+        .returning()
 
-      const count = result.rowCount ?? 0
+      const count = result.length
 
       if (count > 0) {
         logger.info({ nodeId, count }, "cancelled executing commands for inactive node")
@@ -245,8 +249,9 @@ export class CommandService {
           error: "Command cancelled"
         })
         .where(and(eq(commandTable.nodeId, nodeId as any), eq(commandTable.status, "pending")))
+        .returning()
 
-      return result.rowCount ?? 0
+      return result.length
     } catch (error) {
       logger.error({ error, nodeId }, "failed to cancel pending commands")
       return 0

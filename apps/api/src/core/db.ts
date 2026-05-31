@@ -4,3 +4,5 @@ import * as schema from "../db/schema"
 
 const client = new SQL(process.env.DATABASE_URL)
 export const db = drizzle({ client, schema })
+
+export type Database = typeof db

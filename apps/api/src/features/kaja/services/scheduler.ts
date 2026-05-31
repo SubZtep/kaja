@@ -1,4 +1,4 @@
-import type { BunSQLDatabase } from "drizzle-orm/bun-sql"
+import type { Database } from "../../../core/db"
 import { logger } from "../../../core/logger"
 import { CommandService } from "./command"
 import { NodeService } from "./node"
@@ -9,7 +9,7 @@ export class SchedulerService {
   #intervalId?: Timer
   #isRunning = false
 
-  constructor(db: BunSQLDatabase) {
+  constructor(db: Database) {
     this.#nodeService = new NodeService(db)
     this.#commandService = new CommandService(db)
   }
