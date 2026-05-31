@@ -1,8 +1,8 @@
+import { error, info, trace } from "@kaja/logger"
 import { useMutation } from "@tanstack/react-query"
 import { Box, Text } from "ink"
 import TextInput from "ink-text-input"
 import { useEffect } from "react"
-import { logger } from "../lib/logger"
 import { sdk } from "../lib/sdk"
 import { useStore } from "../store"
 
@@ -13,12 +13,12 @@ export function NodeSetup() {
 
   const { mutate: connectNode, isPending } = useMutation({
     mutationFn: () => sdk.nodes.connect({ name: nodeName }),
-    onMutate: () => logger.trace({ name: nodeName }, "Connecting"),
+    onMutate: () => trace("Connecting", { name: nodeName }),
     onSuccess: res => {
-      logger.info(res, "Connected with node ID")
+      info("Connected with node ID", res)
       setNodeId(res.nodeId)
     },
-    onError: error => logger.error({ error }, "Node setup failed")
+    onError: err => error("Node setup failed", { error: err })
   })
 
   const registerNode = async () => {

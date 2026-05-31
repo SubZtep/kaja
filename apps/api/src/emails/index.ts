@@ -1,6 +1,6 @@
+import { error, info, warn } from "@kaja/logger"
 import { isItTrue } from "@kaja/shared"
 import nodemailer from "nodemailer"
-import { logger } from "../core/logger"
 import { getChangeEmailHtml } from "./ChangeEmail"
 import { getResetPasswordHtml } from "./ResetPassword"
 import type { SendEmailArgs } from "./template"
@@ -20,9 +20,9 @@ if (!process.env.CI) {
   void (async () => {
     try {
       const verified = await transporter.verify()
-      logger.info({ verified }, "SMTP server is ready to take our messages")
-    } catch (error) {
-      logger.warn({ error }, "SMTP verification failed")
+      info("SMTP server is ready to take our messages", { verified })
+    } catch (err) {
+      warn("SMTP verification failed", { error: err })
     }
   })()
 }
@@ -50,12 +50,12 @@ export async function sendEmail({ type, payload }: Readonly<SendEmailArgs>) {
 
   try {
     await transporter.sendMail({ from, to, subject, html })
-  } catch (error) {
-    if (error instanceof Error) {
-      logger.error({ error: error.message }, "Email sending error")
-      throw error
+  } catch (err) {
+    if (err instanceof Error) {
+      error("Email sending error", { error: err.message })
+      throw err
     }
-    logger.error({ error: "Unknown error" }, "Email sending error")
+    error("Email sending error", { error: "Unknown error" })
     throw new Error("Unknown error")
   }
 }

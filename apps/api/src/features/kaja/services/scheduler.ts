@@ -1,5 +1,5 @@
+import { debug, error, info, warn } from "@kaja/logger"
 import type { Database } from "../../../core/db"
-import { logger } from "../../../core/logger"
 import { CommandService } from "./command"
 import { NodeService } from "./node"
 
@@ -16,12 +16,12 @@ export class SchedulerService {
 
   start(intervalMs = 60000) {
     if (this.#isRunning) {
-      logger.warn("scheduler already running")
+      warn("scheduler already running")
       return
     }
 
     this.#isRunning = true
-    logger.info({ intervalMs }, "starting scheduler")
+    info("starting scheduler", { intervalMs })
 
     // Run immediately on start
     this.#runTasks()
@@ -38,12 +38,12 @@ export class SchedulerService {
       this.#intervalId = undefined
     }
     this.#isRunning = false
-    logger.info("scheduler stopped")
+    info("scheduler stopped")
   }
 
   async #runTasks() {
     try {
-      logger.debug("running scheduler tasks")
+      debug("running scheduler tasks")
 
       // Get all active nodes before marking them inactive
       const activeNodes = await this.#nodeService.getAllActiveNodes()
@@ -65,16 +65,16 @@ export class SchedulerService {
       }
 
       if (markedInactive > 0) {
-        logger.info({ count: markedInactive, cancelledFor: becameInactiveIds.length }, "marked nodes as inactive")
+        info("marked nodes as inactive", { count: markedInactive, cancelledFor: becameInactiveIds.length })
       }
 
       // Mark commands as timeout if they've exceeded their timeout duration
       const timedOut = await this.#commandService.markTimeoutCommands()
       if (timedOut > 0) {
-        logger.info({ count: timedOut }, "marked commands as timeout")
+        info("marked commands as timeout", { count: timedOut })
       }
-    } catch (error) {
-      logger.error({ error }, "scheduler task failed")
+    } catch (err) {
+      error("scheduler task failed", { error: err })
     }
   }
 }

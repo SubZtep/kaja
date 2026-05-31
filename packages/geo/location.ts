@@ -1,5 +1,5 @@
+import { error, trace } from "@kaja/logger"
 import { Reader } from "@maxmind/geoip2-node"
-import { logger } from "./logger"
 import type { GeoLocation } from "./types"
 
 let reader: ReturnType<typeof Reader.openBuffer> | undefined
@@ -14,10 +14,10 @@ async function getReader() {
   try {
     const dbBuffer = await Bun.file(mmdbPath).arrayBuffer()
     reader = Reader.openBuffer(Buffer.from(dbBuffer))
-    logger.trace({ mmdbPath }, "GeoIP database loaded")
+    trace("GeoIP database loaded", { mmdbPath })
     return reader
-  } catch (error) {
-    logger.error({ error }, "Failed to load GeoIP database")
+  } catch (err) {
+    error("Failed to load GeoIP database", { error: err })
     return undefined
   }
 }

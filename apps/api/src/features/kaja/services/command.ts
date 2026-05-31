@@ -1,7 +1,7 @@
+import { error, info } from "@kaja/logger"
 import type { CommandResult, CreateCommandRequest, PendingCommand, Command as SchemaCommand } from "@kaja/schemas"
 import { and, desc, eq, sql } from "drizzle-orm"
 import type { Database } from "../../../core/db"
-import { logger } from "../../../core/logger"
 import { command as commandTable, type Command as DbCommand } from "../../../db/schema"
 
 export class CommandService {
@@ -34,8 +34,8 @@ export class CommandService {
       if (!result) return null
 
       return this.#mapCommand(result)
-    } catch (error) {
-      logger.error({ error, nodeId, command: request.command }, "failed to create command")
+    } catch (err) {
+      error("failed to create command", { error: err, nodeId, command: request.command })
       return null
     }
   }
@@ -62,8 +62,8 @@ export class CommandService {
         args: row.args as any,
         timeoutSeconds: row.timeoutSeconds ?? 300
       }))
-    } catch (error) {
-      logger.error({ error, nodeId }, "failed to get pending commands")
+    } catch (err) {
+      error("failed to get pending commands", { error: err, nodeId })
       return []
     }
   }
@@ -83,8 +83,8 @@ export class CommandService {
         .returning()
 
       return result.length > 0
-    } catch (error) {
-      logger.error({ error, commandId }, "failed to mark command as executing")
+    } catch (err) {
+      error("failed to mark command as executing", { error: err, commandId })
       return false
     }
   }
@@ -117,8 +117,8 @@ export class CommandService {
         .returning()
 
       return result.length > 0
-    } catch (error) {
-      logger.error({ error, commandId }, "failed to update command result")
+    } catch (err) {
+      error("failed to update command result", { error: err, commandId })
       return false
     }
   }
@@ -143,8 +143,8 @@ export class CommandService {
         .returning()
 
       return result.length
-    } catch (error) {
-      logger.error({ error }, "failed to mark timeout commands")
+    } catch (err) {
+      error("failed to mark timeout commands", { error: err })
       return 0
     }
   }
@@ -162,8 +162,8 @@ export class CommandService {
         .limit(limit)
 
       return result.map(this.#mapCommand)
-    } catch (error) {
-      logger.error({ error, nodeId }, "failed to get node commands")
+    } catch (err) {
+      error("failed to get node commands", { error: err, nodeId })
       return []
     }
   }
@@ -182,8 +182,8 @@ export class CommandService {
       if (result.length === 0) return null
 
       return this.#mapCommand(result[0])
-    } catch (error) {
-      logger.error({ error, commandId }, "failed to get command")
+    } catch (err) {
+      error("failed to get command", { error: err, commandId })
       return null
     }
   }
@@ -200,8 +200,8 @@ export class CommandService {
         .limit(1)
 
       return result.length > 0
-    } catch (error) {
-      logger.error({ error, nodeId }, "failed to check pending commands")
+    } catch (err) {
+      error("failed to check pending commands", { error: err, nodeId })
       return false
     }
   }
@@ -225,12 +225,12 @@ export class CommandService {
       const count = result.length
 
       if (count > 0) {
-        logger.info({ nodeId, count }, "cancelled executing commands for inactive node")
+        info("cancelled executing commands for inactive node", { nodeId, count })
       }
 
       return count
-    } catch (error) {
-      logger.error({ error, nodeId }, "failed to cancel executing commands")
+    } catch (err) {
+      error("failed to cancel executing commands", { error: err, nodeId })
       return 0
     }
   }
@@ -252,8 +252,8 @@ export class CommandService {
         .returning()
 
       return result.length
-    } catch (error) {
-      logger.error({ error, nodeId }, "failed to cancel pending commands")
+    } catch (err) {
+      error("failed to cancel pending commands", { error: err, nodeId })
       return 0
     }
   }

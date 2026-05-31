@@ -1,7 +1,7 @@
 import { getGeoLocation } from "@kaja/geo"
+import { error, info, trace, warn } from "@kaja/logger"
 import PQueue from "p-queue"
 import { nodeService } from "../features/kaja"
-import { logger } from "./logger"
 
 interface GeoIPJob {
   nodeId: string
@@ -12,26 +12,26 @@ const queue = new PQueue({ concurrency: 2 })
 
 export const geoipQueue = {
   async add(data: GeoIPJob) {
-    logger.trace({ data }, "Adding GeoIP job to queue")
+    trace("Adding GeoIP job to queue", { data })
 
     await queue.add(async () => {
       try {
-        logger.info({ nodeId: data.nodeId, ip: data.ip }, "Starting GeoIP lookup")
+        info("Starting GeoIP lookup", { nodeId: data.nodeId, ip: data.ip })
         const location = await getGeoLocation(data.ip)
-        logger.info({ nodeId: data.nodeId, location }, "Got location data")
+        info("Got location data", { nodeId: data.nodeId, location })
 
         if (location) {
-          logger.info({ nodeId: data.nodeId }, "Calling nodeService.updateGeoLocation")
+          info("Calling nodeService.updateGeoLocation", { nodeId: data.nodeId })
           const result = await nodeService.updateGeoLocation(data.nodeId, location)
-          logger.info({ nodeId: data.nodeId, result }, "Database update result")
+          info("Database update result", { nodeId: data.nodeId, result })
         } else {
-          logger.warn({ nodeId: data.nodeId, ip: data.ip }, "No location data returned - GeoIP database may be missing")
+          warn("No location data returned - GeoIP database may be missing", { nodeId: data.nodeId, ip: data.ip })
         }
 
-        logger.info({ nodeId: data.nodeId, location }, "GeoIP job completed")
-      } catch (error) {
-        logger.error({ error, nodeId: data.nodeId }, "GeoIP job failed")
-        throw error
+        info("GeoIP job completed", { nodeId: data.nodeId, location })
+      } catch (err) {
+        error("GeoIP job failed", { error: err, nodeId: data.nodeId })
+        throw err
       }
     })
   }
@@ -39,7 +39,7 @@ export const geoipQueue = {
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
-  logger.info("Waiting for GeoIP queue to finish...")
+  info("Waiting for GeoIP queue to finish...")
   await queue.onIdle()
   process.exit(0)
 })

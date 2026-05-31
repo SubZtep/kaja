@@ -1,5 +1,5 @@
+import { error, info, warn } from "@kaja/logger"
 import type { CommandResult, PendingCommand } from "@kaja/schemas"
-import { logger } from "./logger"
 
 export interface ExecutedCommand extends CommandResult {
   commandId: string
@@ -12,7 +12,7 @@ export async function executeCommand(cmd: PendingCommand): Promise<ExecutedComma
   const startTime = Date.now()
 
   try {
-    logger.info({ commandId: cmd.commandId, command: cmd.command }, "executing command")
+    info("executing command", { commandId: cmd.commandId, command: cmd.command })
 
     const proc = Bun.spawn(["sh", "-c", cmd.command], {
       stdout: "pipe",
@@ -36,16 +36,13 @@ export async function executeCommand(cmd: PendingCommand): Promise<ExecutedComma
     const duration = Date.now() - startTime
 
     if (result !== 0) {
-      logger.warn(
-        {
-          commandId: cmd.commandId,
-          command: cmd.command,
-          exitCode: result,
-          duration,
-          stderr
-        },
-        "command failed"
-      )
+      warn("command failed", {
+        commandId: cmd.commandId,
+        command: cmd.command,
+        exitCode: result,
+        duration,
+        stderr
+      })
 
       return {
         commandId: cmd.commandId,
@@ -56,15 +53,12 @@ export async function executeCommand(cmd: PendingCommand): Promise<ExecutedComma
       }
     }
 
-    logger.info(
-      {
-        commandId: cmd.commandId,
-        command: cmd.command,
-        exitCode: result,
-        duration
-      },
-      "command completed"
-    )
+    info("command completed", {
+      commandId: cmd.commandId,
+      command: cmd.command,
+      exitCode: result,
+      duration
+    })
 
     return {
       commandId: cmd.commandId,
@@ -72,19 +66,16 @@ export async function executeCommand(cmd: PendingCommand): Promise<ExecutedComma
       exitCode: result,
       result: stdout
     }
-  } catch (error) {
+  } catch (err) {
     const duration = Date.now() - startTime
-    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorMessage = err instanceof Error ? err.message : String(err)
 
-    logger.error(
-      {
-        error,
-        commandId: cmd.commandId,
-        command: cmd.command,
-        duration
-      },
-      "command execution error"
-    )
+    error("command execution error", {
+      error: err,
+      commandId: cmd.commandId,
+      command: cmd.command,
+      duration
+    })
 
     // Check if it's a timeout
     if (errorMessage.includes("timeout")) {

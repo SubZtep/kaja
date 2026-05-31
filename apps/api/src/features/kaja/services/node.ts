@@ -1,7 +1,7 @@
 import type { GeoLocation } from "@kaja/geo"
+import { info } from "@kaja/logger"
 import { and, desc, eq, lt, ne } from "drizzle-orm"
 import type { Database } from "../../../core/db"
-import { logger } from "../../../core/logger"
 import { type Node as DbNode, node as nodeTable } from "../../../db/schema"
 import { emitNodeEvent } from "./events"
 
@@ -43,7 +43,7 @@ export class NodeService {
       })
       .returning()
 
-    logger.info({ node: result }, "node connected")
+    info("node connected", { node: result })
     const connectedNode = this.#rowToNode(result)
 
     emitNodeEvent({
@@ -125,7 +125,7 @@ export class NodeService {
       .returning()
 
     if (result.length > 0) {
-      logger.info({ count: result.length }, "marked nodes as inactive")
+      info("marked nodes as inactive", { count: result.length })
 
       // Emit event for each node that became inactive
       for (const row of result) {
@@ -172,7 +172,7 @@ export class NodeService {
   }
 
   async updateGeoLocation(nodeId: string, geoLocation: GeoLocation): Promise<boolean> {
-    logger.info({ nodeId, geoLocation }, "Updating node geo_location")
+    info("Updating node geo_location", { nodeId, geoLocation })
 
     const result = await this.#db
       .update(nodeTable)
@@ -185,7 +185,7 @@ export class NodeService {
 
     const updated = result.length > 0
 
-    logger.info({ nodeId, rowCount: result.length, updated }, "Geo location update result")
+    info("Geo location update result", { nodeId, rowCount: result.length, updated })
 
     return updated
   }

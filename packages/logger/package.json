@@ -10,14 +10,6 @@
     ".": {
       "types": "./index.ts",
       "default": "./index.ts"
-    },
-    "./node": {
-      "types": "./node.ts",
-      "default": "./node.ts"
-    },
-    "./browser": {
-      "types": "./browser.ts",
-      "default": "./browser.ts"
     }
   },
   "dependencies": {

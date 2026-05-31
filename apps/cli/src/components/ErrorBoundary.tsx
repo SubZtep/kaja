@@ -1,6 +1,6 @@
+import { error } from "@kaja/logger"
 import { Text } from "ink"
 import { Component } from "react"
-import { logger } from "../lib/logger"
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
@@ -19,8 +19,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { error }
   }
 
-  componentDidCatch(error: Error) {
-    logger.error({ error }, "ErrorBoundary caught error")
+  componentDidCatch(err: Error) {
+    error("ErrorBoundary caught error", { error: err })
   }
 
   render() {

@@ -1,3 +1,4 @@
+import { error, info } from "@kaja/logger"
 import { loginSchema } from "@kaja/schemas"
 import { createFileRoute, useSearch } from "@tanstack/react-router"
 import { useState } from "react"
@@ -7,7 +8,6 @@ import { Button } from "../../../../components/form/primitives/Button"
 import { ForgotPassword } from "../../../../components/user/ForgotPassword"
 import { useAuthClient } from "../../../../hooks/auth-client"
 import { useAppForm } from "../../../../lib/form"
-import { logger } from "../../../../lib/logger"
 
 const signinSearchSchema = z.object({
   redirect: z.string().optional()
@@ -33,27 +33,27 @@ function SignIn() {
       onSubmit: loginSchema
     },
     onSubmit: async ({ value }) => {
-      logger.info({ value }, "Sign in form submitted")
+      info("Sign in form submitted", { value })
       const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
         toast.error(parsed.error?.message ?? "Invalid data")
-        logger.error({ error: parsed.error }, "Sign in form validation failed")
+        error("Sign in form validation failed", { error: parsed.error })
         return
       }
 
       try {
         setLoading(true)
-        const { error } = await authClient.signIn.email({
+        const { error: authError } = await authClient.signIn.email({
           ...parsed.data,
           callbackURL: redirect ?? "/dashboard"
         })
-        if (error) {
-          toast.error(error.message ?? error.statusText)
-          logger.error({ error }, "Sign in failed")
+        if (authError) {
+          toast.error(authError.message ?? authError.statusText)
+          error("Sign in failed", { error: authError })
         }
-      } catch (error: any) {
-        toast.error(error.message)
-        logger.error({ error }, "Sign in fail catched")
+      } catch (err: any) {
+        toast.error(err.message)
+        error("Sign in fail catched", { error: err })
       } finally {
         setLoading(false)
       }

@@ -1,5 +1,5 @@
+import { info } from "@kaja/logger"
 import { streamSSE } from "hono/streaming"
-import { logger } from "../../../../core/logger"
 import type { RouteRegProps } from "../../../../types"
 import type { NodeEvent } from "../../services/events"
 import { nodeEvents } from "../../services/events"
@@ -18,7 +18,7 @@ export function registerStream(app: RouteRegProps) {
     const userId = user.id
 
     return streamSSE(c, async stream => {
-      logger.info({ userId }, "SSE client connected")
+      info("SSE client connected", { userId })
 
       // Send initial connection event
       await stream.writeSSE({
@@ -58,7 +58,7 @@ export function registerStream(app: RouteRegProps) {
 
       // Cleanup on disconnect
       stream.onAbort(() => {
-        logger.info({ userId }, "SSE client disconnected")
+        info("SSE client disconnected", { userId })
         nodeEvents.off("node-update", eventHandler)
         clearInterval(pingInterval)
       })

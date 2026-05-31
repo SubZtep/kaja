@@ -1,8 +1,8 @@
+import { error } from "@kaja/logger"
 import type { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, ErrorComponent, HeadContent, Scripts } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { Providers } from "../components/Providers"
-import { logger } from "../lib/logger"
 import { getSession } from "../lib/session"
 import appCss from "../styles.css?url"
 
@@ -98,14 +98,14 @@ function NotFound() {
   return <p className="text-center my-28 text-red-500 text-xl font-bold">Sorry, this page doesn't exist.</p>
 }
 
-function DefaultError({ error }: Readonly<{ error: Error }>) {
+function DefaultError({ error: err }: Readonly<{ error: Error }>) {
   useEffect(() => {
-    logger.error({ error }, error.message)
-  }, [error])
+    error(err.message, { error: err })
+  }, [err])
 
   return (
     <div className="flex flex-col items-center py-24">
-      <ErrorComponent error={error} />
+      <ErrorComponent error={err} />
     </div>
   )
 }

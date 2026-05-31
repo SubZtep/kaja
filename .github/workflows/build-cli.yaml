@@ -62,13 +62,16 @@ jobs:
         shell: bash
         env:
           API_URL: ${{ vars.API_URL }}
+          KAJA_APP_NAME: cli
+          KAJA_LOG_LEVEL: warn
+          NODE_ENV: production
         run: |
           if [ -z "${API_URL}" ]; then
             echo "Set the API_URL repository variable (Settings → Secrets and variables → Actions → Variables)."
             exit 1
           fi
           cd apps/cli
-          bun build src/cli.tsx --compile --format=esm --minify --sourcemap --outfile kaja --env=API_* --define CLI_VERSION="\"${VERSION}\"" --target="${{ matrix.bun_target }}"
+          bun build src/cli.tsx --compile --format=esm --minify --sourcemap --outfile kaja --env=API_*,KAJA_*,NODE_ENV --define CLI_VERSION="\"${VERSION}\"" --target="${{ matrix.bun_target }}"
 
       - name: Rename artifact
         shell: bash

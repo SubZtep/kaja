@@ -1,7 +1,7 @@
+import { error, trace } from "@kaja/logger"
 import { version } from "../package.json"
 import { apiBaseUrl } from "./lib/clients"
 import { deleteConfig } from "./lib/local-store"
-import { logger } from "./lib/logger"
 import { deleteAccessToken } from "./lib/token"
 
 declare const CLI_VERSION: string
@@ -37,15 +37,15 @@ Commands:
   if (command === "logout") {
     deleteAccessToken()
       .then(() => {
-        logger.trace("Logged out successfully")
+        trace("Logged out successfully")
         return deleteConfig()
       })
       .then(() => {
-        logger.trace("Config deleted successfully")
+        trace("Config deleted successfully")
         process.exit(0)
       })
-      .catch(error => {
-        logger.error({ error }, "Failed to logout")
+      .catch(err => {
+        error("Failed to logout", { error: err })
         process.exit(1)
       })
   }

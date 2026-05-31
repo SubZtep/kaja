@@ -1,10 +1,10 @@
+import { error } from "@kaja/logger"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../../../components/form/primitives/Button"
 import { useAuthClient } from "../../../../hooks/auth-client"
-import { logger } from "../../../../lib/logger"
 
 export const Route = createFileRoute("/_public/(auth)/device/")({
   validateSearch: z.object({
@@ -39,9 +39,9 @@ function DeviceCodePage() {
           toast.error("This code has already been used")
         }
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong")
-      logger.error({ error }, "Device code login error")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong")
+      error("Device code login error", { error: err })
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,4 @@
-import { logger } from "./logger"
+import { error, info, warn } from "@kaja/logger"
 
 export class CronService {
   #jobs: Bun.CronJob[] = []
@@ -6,17 +6,17 @@ export class CronService {
 
   start() {
     if (this.#isRunning) {
-      logger.warn("cron service already running")
+      warn("cron service already running")
       return
     }
 
     this.#isRunning = true
-    logger.info("starting cron service")
+    info("starting cron service")
 
     // Run geoipupdate at 20:46 on Thursdays and Saturdays
     const geoipUpdateJob = Bun.cron("46 20 * * 4,6", async () => {
       try {
-        logger.info("running geoipupdate cron job")
+        info("running geoipupdate cron job")
         const proc = Bun.spawn(["geoipupdate"], {
           stdout: "pipe",
           stderr: "pipe"
@@ -27,22 +27,22 @@ export class CronService {
         const stderr = await new Response(proc.stderr).text()
 
         if (exitCode === 0) {
-          logger.info({ stdout: stdout.trim() }, "geoipupdate completed successfully")
+          info("geoipupdate completed successfully", { stdout: stdout.trim() })
         } else {
-          logger.error({ exitCode, stdout: stdout.trim(), stderr: stderr.trim() }, "geoipupdate failed")
+          error("geoipupdate failed", { exitCode, stdout: stdout.trim(), stderr: stderr.trim() })
         }
-      } catch (error) {
-        logger.error({ error }, "geoipupdate cron job failed")
+      } catch (err) {
+        error("geoipupdate cron job failed", { error: err })
       }
     })
 
     this.#jobs.push(geoipUpdateJob)
-    logger.info({ jobCount: this.#jobs.length }, "cron jobs scheduled")
+    info("cron jobs scheduled", { jobCount: this.#jobs.length })
   }
 
   stop() {
     this.#jobs = []
     this.#isRunning = false
-    logger.info("cron service stopped")
+    info("cron service stopped")
   }
 }

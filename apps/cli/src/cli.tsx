@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
+import { error } from "@kaja/logger"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { render } from "ink"
 import { handleArgs } from "./args"
 import { App } from "./components/App"
 import { ErrorBoundary } from "./components/ErrorBoundary"
-import { logger } from "./lib/logger"
 import { queryClient } from "./lib/query-client"
 
 handleArgs()
@@ -24,11 +24,11 @@ try {
 
   waitUntilExit()
     .then(() => process.exit())
-    .catch(error => {
-      logger.error({ error }, "App exited with error")
+    .catch(err => {
+      error("App exited with error", { error: err })
       process.exit(1)
     })
-} catch (error) {
-  logger.error({ error }, "Failed to start CLI")
+} catch (err) {
+  error("Failed to start CLI", { error: err })
   process.exit(1)
 }

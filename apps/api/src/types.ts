@@ -13,6 +13,7 @@ declare module "bun" {
     CORS_ORIGIN: string
     /** Set base domain when apps live on subdomains (e.g. ondis.co) */
     CROSS_PARENT_DOMAIN?: string
+    /** PostgreSQL connection string. */
     DATABASE_URL: string
     GEOIP_ACCOUNT_ID: string
     GEOIP_LICENSE_KEY: string

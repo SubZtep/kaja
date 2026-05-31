@@ -182,14 +182,43 @@ The `@kaja/sdk` package provides a centralized, type-safe API client used by bot
 ## Environment Configuration
 
 ### API (.env.example)
-- PORT, CORS_ORIGIN, DATABASE_URL, BETTER_AUTH_URL
-- SMTP settings for MailDev (or real SMTP)
-- BETTER_AUTH_SECRET (generate with `openssl rand -base64 32`)
-- Rate limiting (optional): RATE_LIMIT_MAX, AUTH_RATE_LIMIT_MAX, window settings
-- Optional: WEB_PUBLIC_URL, CROSS_PARENT_DOMAIN for subdomain cookies
+Required for development and production:
+- `CORS_ORIGIN` - Allowed origin for CORS (e.g., `http://localhost:3000` or `https://kaja.io`)
+- `DATABASE_URL` - PostgreSQL connection string
+- `BETTER_AUTH_URL` - API base URL for Better Auth callbacks (e.g., `http://localhost:3001`)
+- `BETTER_AUTH_SECRET` - Secret for session encryption (generate with `openssl rand -base64 32`)
+- `SMTP_HOST`, `SMTP_PORT` - SMTP server for emails
+- `KAJA_APP_NAME=api` - App identifier for logging
+- `KAJA_LOG_LEVEL` - Log level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`)
+- `NODE_ENV` - Environment mode (`development`, `production`)
+
+Optional:
+- `WEB_PUBLIC_URL` - Public URL for device authorization flow
+- `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX` - Global rate limiting config
+- `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX` - Auth endpoint rate limiting
+
+**Production Requirements:**
+- Set `NODE_ENV=production` (disables pino-pretty, uses JSON logs)
+- Set `KAJA_LOG_LEVEL=info` or `warn` (reduce log verbosity)
+- Set `BETTER_AUTH_SECRET` to a strong random value
+- Use real SMTP credentials (not MailDev)
+- Configure `CORS_ORIGIN` to match your production domain
+
+### Web (.env.example)
+Required:
+- `VITE_API_URL` - API base URL (e.g., `http://localhost:3001` or `https://api.kaja.io`)
+- `VITE_APP_URL` - Web app URL (e.g., `http://localhost:3000`)
+- `KAJA_APP_NAME=web` - App identifier for logging
+- `KAJA_LOG_LEVEL=debug` - Log level for browser console
+
+**Note:** Web uses Vite's `import.meta.env.MODE` instead of `NODE_ENV` for environment detection
 
 ### CLI (.env.example)
-- API_URL - resolution order: --api-url flag > API_URL env > config.json > default
+Required:
+- `API_URL` - API base URL (resolution order: `--api-url` flag > `API_URL` env > config.json > default)
+- `KAJA_APP_NAME=cli` - App identifier for logging
+- `KAJA_LOG_LEVEL=info` - Log level for CLI
+- `NODE_ENV=development` - Environment mode
 
 ### Compose File
 - Located at `compose.yaml` (not docker-compose.yaml)

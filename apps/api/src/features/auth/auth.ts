@@ -1,9 +1,9 @@
+import { debug, error, fatal, info, warn } from "@kaja/logger"
 import { KAJA_CLI_CLIENT_ID } from "@kaja/schemas"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { db } from "../../core/db"
-import { logger } from "../../core/logger"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
 
@@ -18,17 +18,14 @@ function deviceVerificationUrl() {
 
 function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
   // FIXME: Avoid awaiting the email sending to prevent timing attacks. (from Better-Auth doc)
-  void sendEmail(args).catch(error => {
+  void sendEmail(args).catch(err => {
     // TODO: notify user somehow
-    logger.error(
-      {
-        error,
-        type: args.type,
-        userId: args.payload.user.id,
-        email: args.payload.user.email
-      },
-      "Failed to send auth email"
-    )
+    error("Failed to send auth email", {
+      error: err,
+      type: args.type,
+      userId: args.payload.user.id,
+      email: args.payload.user.email
+    })
   })
 }
 
@@ -40,7 +37,7 @@ const plugins: BetterAuthPlugin[] = [
     verificationUri: deviceVerificationUrl(),
     validateClient: clientId => clientId === KAJA_CLI_CLIENT_ID,
     onDeviceAuthRequest: (clientId, scope) => {
-      logger.debug({ clientId, scope }, "Device authorization requested")
+      debug("Device authorization requested", { clientId, scope })
     }
   })
 ]
@@ -83,7 +80,11 @@ export const auth = betterAuth({
   plugins,
   logger: {
     log: (level, message, args) => {
-      logger[level](args, message)
+      // Map Better Auth's logger calls to our new logger API
+      const logFn = { trace: debug, debug, info, warn, error, fatal }[level]
+      if (logFn) {
+        logFn(message, args)
+      }
     }
   },
   emailAndPassword: {

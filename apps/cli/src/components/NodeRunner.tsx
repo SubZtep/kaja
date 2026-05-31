@@ -1,7 +1,7 @@
+import { error } from "@kaja/logger"
 import { useMutation } from "@tanstack/react-query"
 import { Box, Text, useApp, useInput } from "ink"
 import { useEffect, useRef, useState } from "react"
-import { logger } from "../lib/logger"
 import { sdk } from "../lib/sdk"
 import { useStore } from "../store"
 
@@ -16,10 +16,10 @@ export default function NodeRunner() {
 
   const heartbeatMutation = useMutation({
     mutationFn: () => sdk.nodes.heartbeat({ nodeId, status: "idle" }, { signal: abortControllerRef.current.signal }),
-    onError: error => {
+    onError: err => {
       // Only log heartbeat errors if we're not shutting down
       if (!isShuttingDown.current) {
-        logger.error({ error }, "Heartbeat failed")
+        error("Heartbeat failed", { error: err })
       }
     }
   })
