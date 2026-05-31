@@ -15,11 +15,6 @@
       "type": "command",
       "image": "migration",
       "command": "bun run db:push -- --force"
-    },
-    "geoipupdate-job": {
-      "type": "cron",
-      "schedule": "geoipupdate",
-      "command": "46 20 * * 6,4"
     }
   },
   "images": {
