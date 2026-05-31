@@ -13,6 +13,7 @@
     },
     "hook:deploy:start:before": {
       "type": "command",
+      "image": "backend",
       "command": "bun run --filter @kaja/api db:push -- --force"
     }
   },
