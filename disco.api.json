@@ -14,7 +14,7 @@
     "hook:deploy:start:before": {
       "type": "command",
       "image": "migration",
-      "command": "bun run --filter @kaja/api db:push -- --force"
+      "command": "cd apps/api && bun run db:push -- --force"
     }
   },
   "images": {
