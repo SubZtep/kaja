@@ -5,5 +5,5 @@
     "types": ["vite/client", "bun"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", ".output", ".tanstack"]
+  "exclude": ["node_modules", ".output", ".tanstack"]
 }
