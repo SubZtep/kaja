@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events"
-import type { Node } from "./node"
+import type { Node } from "./types"
 
 export interface NodeEvent {
   type: "connected" | "heartbeat" | "disconnected" | "inactive"

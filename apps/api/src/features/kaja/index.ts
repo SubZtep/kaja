@@ -1,5 +1,4 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { db } from "../../core/db"
 import type { RouteProps } from "../../types"
 import { registerAdminCommands } from "./routes/admin/command"
 import { registerConnect } from "./routes/node/connect"
@@ -7,11 +6,9 @@ import { registerDisconnect } from "./routes/node/disconnect"
 import { registerHeartbeat } from "./routes/node/heartbeat"
 import { registerList } from "./routes/node/list"
 import { registerStream } from "./routes/node/stream"
-import { CommandService } from "./services/command"
-import { NodeService } from "./services/node"
+import { commandService, nodeService } from "./services"
 
-export const nodeService = new NodeService(db)
-export const commandService = new CommandService(db)
+export { commandService, nodeService }
 
 // Middleware factory to attach services to context
 const attachServices = async (c: any, next: any) => {

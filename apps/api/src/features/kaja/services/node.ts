@@ -4,15 +4,9 @@ import { and, desc, eq, lt, ne } from "drizzle-orm"
 import type { Database } from "../../../core/db"
 import { type Node as DbNode, node as nodeTable } from "../../../db/schema"
 import { emitNodeEvent } from "./events"
+import type { Node } from "./types"
 
-/** A Kaja CLI node. */
-export interface Node {
-  id: string
-  userId: string
-  name: string
-  lastSeen: Date
-  status: "idle" | "busy" | "inactive"
-}
+export type { Node }
 
 export class NodeService {
   readonly #db: Database

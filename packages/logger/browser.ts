@@ -1,4 +1,4 @@
-import { createLogger } from "./index"
+import { createLogger } from "./core"
 
 type BrowserLoggerOptions = {
   app: string

@@ -1,5 +1,5 @@
 import pino from "pino"
-import { createLogger } from "./index"
+import { createLogger } from "./core"
 
 type NodeLoggerOptions = {
   app: string
