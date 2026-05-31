@@ -62,6 +62,7 @@ jobs:
             echo "applying $f"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
+          bun run --filter @kaja/api db:push -- --force
 
       - name: Run tests
         run: bun run test

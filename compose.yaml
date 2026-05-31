@@ -11,6 +11,7 @@ services:
       POSTGRES_DB: testdb
     volumes:
       - ./pgdata:/var/lib/postgresql
+      - ./apps/api/src/db/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "testuser", "-d", "postgres"]
       start_period: 3s
