@@ -1,7 +1,7 @@
 import { logger } from "./logger"
 
 export class CronService {
-  #jobs: ReturnType<typeof Bun.cron>[] = []
+  #jobs: Bun.CronJob[] = []
   #isRunning = false
 
   start() {
@@ -13,8 +13,8 @@ export class CronService {
     this.#isRunning = true
     logger.info("starting cron service")
 
-    // Run geoipupdate at 20:46 on Saturdays and Thursdays
-    const geoipUpdateJob = Bun.cron("46 20 * * 6,4", async () => {
+    // Run geoipupdate at 20:46 on Thursdays and Saturdays
+    const geoipUpdateJob = Bun.cron("46 20 * * 4,6", async () => {
       try {
         logger.info("running geoipupdate cron job")
         const proc = Bun.spawn(["geoipupdate"], {
