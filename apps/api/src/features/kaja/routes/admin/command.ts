@@ -6,7 +6,7 @@ import { validateCommand } from "../../services/command-validator"
 
 const createCommandRoute = createRoute({
   method: "post",
-  path: "/admin/nodes/{nodeId}/commands",
+  path: "/nodes/{nodeId}/commands",
   tags: ["Admin"],
   summary: "Create a command for a node",
   description: "Queue a new command to be executed by the specified node",
@@ -55,7 +55,7 @@ const createCommandRoute = createRoute({
 
 const listNodeCommandsRoute = createRoute({
   method: "get",
-  path: "/admin/nodes/{nodeId}/commands",
+  path: "/nodes/{nodeId}/commands",
   tags: ["Admin"],
   summary: "List all commands for a node",
   description: "Retrieve all commands associated with a specific node",
@@ -91,7 +91,7 @@ const listNodeCommandsRoute = createRoute({
 
 const getCommandRoute = createRoute({
   method: "get",
-  path: "/admin/commands/{commandId}",
+  path: "/commands/{commandId}",
   tags: ["Admin"],
   summary: "Get a specific command by ID",
   description: "Retrieve detailed information about a specific command",

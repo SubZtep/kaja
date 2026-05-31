@@ -4,7 +4,7 @@ import { unauthorized } from "../../../../types/errors"
 
 const listNodesRoute = createRoute({
   method: "get",
-  path: "/nodes",
+  path: "/",
   tags: ["Nodes"],
   summary: "List active nodes",
   description: "Get all active nodes for the authenticated user",

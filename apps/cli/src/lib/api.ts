@@ -12,7 +12,7 @@ import { getAccessToken } from "./token"
 
 export async function connectNodeRequest(payload: ConnectNodeRequest) {
   try {
-    const res = await request<ConnectNodeResponse>("/kaja/connect", payload)
+    const res = await request<ConnectNodeResponse>("/nodes/connect", payload)
     return connectNodeResponseSchema.parse(res)
   } catch (error) {
     logger.error({ error }, "Error connecting node")
@@ -22,7 +22,7 @@ export async function connectNodeRequest(payload: ConnectNodeRequest) {
 
 export async function disconnectNodeRequest(payload: DisconnectNodeRequest) {
   try {
-    const res = await request<{ success: boolean }>("/kaja/disconnect", payload)
+    const res = await request<{ success: boolean }>("/nodes/disconnect", payload)
     return res
   } catch (error) {
     logger.error({ error }, "Error disconnecting node")
@@ -32,7 +32,7 @@ export async function disconnectNodeRequest(payload: DisconnectNodeRequest) {
 
 export async function sendHeartbeat(payload: HeartbeatRequest, signal?: AbortSignal) {
   try {
-    const res = await request<HeartbeatResponse>("/kaja/heartbeat", payload, { signal })
+    const res = await request<HeartbeatResponse>("/nodes/heartbeat", payload, { signal })
     return heartbeatResponseSchema.parse(res)
   } catch (error) {
     throw new Error(`Error sending heartbeat: ${error instanceof Error ? error.message : String(error)}`)

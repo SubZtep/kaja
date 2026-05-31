@@ -55,7 +55,7 @@ function useNodeSSE(apiUrl: string, setIsLive?: (live: boolean) => void) {
       if (!isSubscribed) return
 
       // Create SSE connection
-      const eventSource = new EventSource(`${apiUrl}/kaja/nodes/stream`, {
+      const eventSource = new EventSource(`${apiUrl}/nodes/stream`, {
         withCredentials: true
       })
       eventSourceRef.current = eventSource
@@ -140,7 +140,7 @@ function NodesPage() {
   const { data, error, isLoading } = useQuery({
     queryKey: ["nodes"],
     queryFn: async () => {
-      const response = await fetch(`${apiUrl}/kaja/nodes`, {
+      const response = await fetch(`${apiUrl}/nodes`, {
         credentials: "include"
       })
 

@@ -9,7 +9,7 @@ import { nodeEvents } from "../../services/events"
  * Streams updates only for nodes owned by the authenticated user.
  */
 export function registerStream(app: RouteRegProps) {
-  app.get("/nodes/stream", async c => {
+  app.get("/stream", async c => {
     const user = c.get("user")
     if (!user) {
       return c.json({ error: "Unauthorized" }, 401)

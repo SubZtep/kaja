@@ -6,7 +6,7 @@ import { healthRoutes } from "./core/routes/health"
 import { referenceRoutes, setupApiDocs } from "./core/routes/reference"
 import { userRoutes } from "./core/routes/user"
 import { authMiddleware, authRoutes } from "./features/auth"
-import { kajaRoutes } from "./features/kaja"
+import { adminRoutes, nodeRoutes } from "./features/kaja"
 import type { RouteProps } from "./types"
 
 export const app = new OpenAPIHono<RouteProps>()
@@ -19,7 +19,8 @@ app.use("*", authMiddleware)
 // Mount routes
 app.route("/health", healthRoutes)
 app.route("/auth", authRoutes)
-app.route("/kaja", kajaRoutes)
+app.route("/nodes", nodeRoutes)
+app.route("/admin", adminRoutes)
 app.route("/users", userRoutes)
 
 // API documentation
