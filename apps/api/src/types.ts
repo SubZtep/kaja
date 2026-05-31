@@ -4,7 +4,7 @@ import type { NodeService } from "./features/kaja/services/node"
 
 declare module "bun" {
   interface Env {
-    /** Generate: `openssl rand -base64 32` */
+    /** Mandatory in production. Generate: `openssl rand -base64 32` */
     BETTER_AUTH_SECRET?: string
     /** This API’s base URL. */
     BETTER_AUTH_URL: string

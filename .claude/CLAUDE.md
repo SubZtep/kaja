@@ -83,6 +83,12 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 ### API Structure (`apps/api/src/`)
 - **Entry**: `core/server.ts` starts Hono app and SchedulerService
 - **App**: `app.ts` defines routes and middleware
+- **Core**:
+  - `core/db.ts` - PostgreSQL connection pool
+  - `core/logger.ts` - Pino structured logging
+  - `core/rate-limit.ts` - Rate limiting middleware (hono-rate-limiter)
+    - Global: 100 req/15min per IP
+    - Auth endpoints: 50 req/15min per IP
 - **Features**:
   - `features/auth/` - Better Auth configuration and routes
   - `features/kaja/routes/node/` - Node management endpoints:
@@ -98,7 +104,6 @@ bun run --filter @kaja/mobile ios         # Run on iOS
     - `command.ts` - Command queuing and execution
     - `events.ts` - Server-sent event management
     - `node.ts` - Node operations and queries
-- **Core**: `core/db.ts` (PostgreSQL pool), `core/logger.ts` (Pino)
 - **Emails**: React Email templates sent via nodemailer
 
 ### Web Structure (`apps/web/src/`)
@@ -180,6 +185,7 @@ The `@kaja/sdk` package provides a centralized, type-safe API client used by bot
 - PORT, CORS_ORIGIN, DATABASE_URL, BETTER_AUTH_URL
 - SMTP settings for MailDev (or real SMTP)
 - BETTER_AUTH_SECRET (generate with `openssl rand -base64 32`)
+- Rate limiting (optional): RATE_LIMIT_MAX, AUTH_RATE_LIMIT_MAX, window settings
 - Optional: WEB_PUBLIC_URL, CROSS_PARENT_DOMAIN for subdomain cookies
 
 ### CLI (.env.example)
