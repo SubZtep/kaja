@@ -58,7 +58,7 @@ jobs:
 
       - name: Apply SQL migrations
         run: |
-          printf '%s\n' apps/api/migrations/*.sql | LC_ALL=C sort | while read -r f; do
+          printf '%s\n' apps/api/src/db/migrations/*.sql | LC_ALL=C sort | while read -r f; do
             echo "applying $f"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
