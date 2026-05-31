@@ -16,6 +16,9 @@ Notes.
 
 Attaching PostgreSQL instance to the API project in Disco automatically creates the `DATABASE_URL` env var.
 
+On the server, first run `2026-03-01-uuidv7.sql` manually.
+
+
 <!-- # Configuration
 
 This section describes all the different configuration settings. Each monorepo workspace has its own environment variables.
