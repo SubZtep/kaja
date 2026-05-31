@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { pool } from "../../core/db"
+import { db } from "../../core/db"
 import type { RouteProps } from "../../types"
 import { registerAdminCommands } from "./routes/admin/command"
 import { registerConnect } from "./routes/node/connect"
@@ -10,8 +10,8 @@ import { registerStream } from "./routes/node/stream"
 import { CommandService } from "./services/command"
 import { NodeService } from "./services/node"
 
-export const nodeService = new NodeService(pool)
-export const commandService = new CommandService(pool)
+export const nodeService = new NodeService(db)
+export const commandService = new CommandService(db)
 export const kajaRoutes = new OpenAPIHono<RouteProps>()
 
 // Middleware to attach services to context

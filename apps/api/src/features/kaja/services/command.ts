@@ -1,29 +1,39 @@
-import type { Command, CommandResult, CreateCommandRequest, PendingCommand } from "@kaja/schemas"
-import type { Pool } from "pg"
+import type { CommandResult, CreateCommandRequest, PendingCommand, Command as SchemaCommand } from "@kaja/schemas"
+import { and, desc, eq, sql } from "drizzle-orm"
+import type { BunSQLDatabase } from "drizzle-orm/bun-sql"
 import { logger } from "../../../core/logger"
+import { command as commandTable, type Command as DbCommand } from "../../../db/schema"
 
 export class CommandService {
-  readonly #db: Pool
+  readonly #db: BunSQLDatabase
 
-  constructor(db: Pool) {
+  constructor(db: BunSQLDatabase) {
     this.#db = db
   }
 
   /**
    * Create a new command for a node
    */
-  async createCommand(nodeId: string, request: CreateCommandRequest, createdBy?: string): Promise<Command | null> {
+  async createCommand(
+    nodeId: string,
+    request: CreateCommandRequest,
+    createdBy?: string
+  ): Promise<SchemaCommand | null> {
     try {
-      const result = await this.#db.query<Command>(
-        `INSERT INTO command (node_id, command, args, timeout_seconds, created_by)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [nodeId, request.command, request.args ?? {}, request.timeoutSeconds ?? 300, createdBy ?? null]
-      )
+      const [result] = await this.#db
+        .insert(commandTable)
+        .values({
+          nodeId: nodeId as any,
+          command: request.command,
+          args: (request.args ?? {}) as any,
+          timeoutSeconds: request.timeoutSeconds ?? 300,
+          createdBy: (createdBy ?? null) as any
+        })
+        .returning()
 
-      if (result.rows.length === 0) return null
+      if (!result) return null
 
-      return this.#mapCommand(result.rows[0])
+      return this.#mapCommand(result)
     } catch (error) {
       logger.error({ error, nodeId, command: request.command }, "failed to create command")
       return null
@@ -35,19 +45,22 @@ export class CommandService {
    */
   async getPendingCommands(nodeId: string): Promise<PendingCommand[]> {
     try {
-      const result = await this.#db.query(
-        `SELECT id, command, args, timeout_seconds
-         FROM command
-         WHERE node_id = $1 AND status = 'pending'
-         ORDER BY created_at ASC`,
-        [nodeId]
-      )
+      const result = await this.#db
+        .select({
+          id: commandTable.id,
+          command: commandTable.command,
+          args: commandTable.args,
+          timeoutSeconds: commandTable.timeoutSeconds
+        })
+        .from(commandTable)
+        .where(and(eq(commandTable.nodeId, nodeId as any), eq(commandTable.status, "pending")))
+        .orderBy(commandTable.createdAt)
 
-      return result.rows.map(row => ({
+      return result.map(row => ({
         commandId: row.id,
         command: row.command,
-        args: row.args,
-        timeoutSeconds: row.timeout_seconds
+        args: row.args as any,
+        timeoutSeconds: row.timeoutSeconds ?? 300
       }))
     } catch (error) {
       logger.error({ error, nodeId }, "failed to get pending commands")
@@ -60,12 +73,13 @@ export class CommandService {
    */
   async markCommandExecuting(commandId: string): Promise<boolean> {
     try {
-      const result = await this.#db.query(
-        `UPDATE command
-         SET status = 'executing', started_at = NOW()
-         WHERE id = $1 AND status = 'pending'`,
-        [commandId]
-      )
+      const result = await this.#db
+        .update(commandTable)
+        .set({
+          status: "executing",
+          startedAt: new Date()
+        })
+        .where(and(eq(commandTable.id, commandId as any), eq(commandTable.status, "pending")))
 
       return result.rowCount !== null && result.rowCount > 0
     } catch (error) {
@@ -80,7 +94,6 @@ export class CommandService {
   async updateCommandResult(commandId: string, commandResult: CommandResult): Promise<boolean> {
     try {
       // Wrap result in JSON object if it's a string, otherwise pass as-is
-      // PostgreSQL driver expects plain JS object, not stringified JSON
       let resultJson: any = null
       if (commandResult.result !== undefined && commandResult.result !== null) {
         if (typeof commandResult.result === "string") {
@@ -90,22 +103,16 @@ export class CommandService {
         }
       }
 
-      const result = await this.#db.query(
-        `UPDATE command
-         SET status = $2,
-             completed_at = NOW(),
-             result = $3::jsonb,
-             error = $4,
-             exit_code = $5
-         WHERE id = $1`,
-        [
-          commandId,
-          commandResult.status,
-          resultJson ? JSON.stringify(resultJson) : null,
-          commandResult.error ?? null,
-          commandResult.exitCode ?? null
-        ]
-      )
+      const result = await this.#db
+        .update(commandTable)
+        .set({
+          status: commandResult.status as any,
+          completedAt: new Date(),
+          result: resultJson,
+          error: commandResult.error ?? null,
+          exitCode: commandResult.exitCode ?? null
+        })
+        .where(eq(commandTable.id, commandId as any))
 
       return result.rowCount !== null && result.rowCount > 0
     } catch (error) {
@@ -119,12 +126,18 @@ export class CommandService {
    */
   async markTimeoutCommands(): Promise<number> {
     try {
-      const result = await this.#db.query(
-        `UPDATE command
-         SET status = 'timeout', completed_at = NOW()
-         WHERE status = 'executing'
-           AND started_at < NOW() - (timeout_seconds || ' seconds')::INTERVAL`
-      )
+      const result = await this.#db
+        .update(commandTable)
+        .set({
+          status: "timeout",
+          completedAt: new Date()
+        })
+        .where(
+          and(
+            eq(commandTable.status, "executing"),
+            sql`${commandTable.startedAt} < NOW() - (${commandTable.timeoutSeconds} || ' seconds')::INTERVAL`
+          )
+        )
 
       return result.rowCount ?? 0
     } catch (error) {
@@ -136,17 +149,16 @@ export class CommandService {
   /**
    * Get all commands for a node
    */
-  async getNodeCommands(nodeId: string, limit = 50): Promise<Command[]> {
+  async getNodeCommands(nodeId: string, limit = 50): Promise<SchemaCommand[]> {
     try {
-      const result = await this.#db.query<Command>(
-        `SELECT * FROM command
-         WHERE node_id = $1
-         ORDER BY created_at DESC
-         LIMIT $2`,
-        [nodeId, limit]
-      )
+      const result = await this.#db
+        .select()
+        .from(commandTable)
+        .where(eq(commandTable.nodeId, nodeId as any))
+        .orderBy(desc(commandTable.createdAt))
+        .limit(limit)
 
-      return result.rows.map(this.#mapCommand)
+      return result.map(this.#mapCommand)
     } catch (error) {
       logger.error({ error, nodeId }, "failed to get node commands")
       return []
@@ -156,13 +168,17 @@ export class CommandService {
   /**
    * Get command by ID
    */
-  async getCommand(commandId: string): Promise<Command | null> {
+  async getCommand(commandId: string): Promise<SchemaCommand | null> {
     try {
-      const result = await this.#db.query<Command>(`SELECT * FROM command WHERE id = $1`, [commandId])
+      const result = await this.#db
+        .select()
+        .from(commandTable)
+        .where(eq(commandTable.id, commandId as any))
+        .limit(1)
 
-      if (result.rows.length === 0) return null
+      if (result.length === 0) return null
 
-      return this.#mapCommand(result.rows[0])
+      return this.#mapCommand(result[0])
     } catch (error) {
       logger.error({ error, commandId }, "failed to get command")
       return null
@@ -174,14 +190,13 @@ export class CommandService {
    */
   async hasPendingCommands(nodeId: string): Promise<boolean> {
     try {
-      const result = await this.#db.query(
-        `SELECT 1 FROM command
-         WHERE node_id = $1 AND status = 'pending'
-         LIMIT 1`,
-        [nodeId]
-      )
+      const result = await this.#db
+        .select({ id: commandTable.id })
+        .from(commandTable)
+        .where(and(eq(commandTable.nodeId, nodeId as any), eq(commandTable.status, "pending")))
+        .limit(1)
 
-      return result.rows.length > 0
+      return result.length > 0
     } catch (error) {
       logger.error({ error, nodeId }, "failed to check pending commands")
       return false
@@ -194,21 +209,22 @@ export class CommandService {
    */
   async cancelExecutingCommandsForNode(nodeId: string): Promise<number> {
     try {
-      const result = await this.#db.query(
-        `UPDATE command
-         SET status = 'failed',
-             completed_at = NOW(),
-             error = 'Node became inactive while command was executing'
-         WHERE node_id = $1
-           AND status = 'executing'`,
-        [nodeId]
-      )
+      const result = await this.#db
+        .update(commandTable)
+        .set({
+          status: "failed",
+          completedAt: new Date(),
+          error: "Node became inactive while command was executing"
+        })
+        .where(and(eq(commandTable.nodeId, nodeId as any), eq(commandTable.status, "executing")))
 
-      if (result.rowCount && result.rowCount > 0) {
-        logger.info({ nodeId, count: result.rowCount }, "cancelled executing commands for inactive node")
+      const count = result.rowCount ?? 0
+
+      if (count > 0) {
+        logger.info({ nodeId, count }, "cancelled executing commands for inactive node")
       }
 
-      return result.rowCount ?? 0
+      return count
     } catch (error) {
       logger.error({ error, nodeId }, "failed to cancel executing commands")
       return 0
@@ -221,15 +237,14 @@ export class CommandService {
    */
   async cancelPendingCommandsForNode(nodeId: string): Promise<number> {
     try {
-      const result = await this.#db.query(
-        `UPDATE command
-         SET status = 'failed',
-             completed_at = NOW(),
-             error = 'Command cancelled'
-         WHERE node_id = $1
-           AND status = 'pending'`,
-        [nodeId]
-      )
+      const result = await this.#db
+        .update(commandTable)
+        .set({
+          status: "failed",
+          completedAt: new Date(),
+          error: "Command cancelled"
+        })
+        .where(and(eq(commandTable.nodeId, nodeId as any), eq(commandTable.status, "pending")))
 
       return result.rowCount ?? 0
     } catch (error) {
@@ -238,21 +253,21 @@ export class CommandService {
     }
   }
 
-  #mapCommand(row: any): Command {
+  #mapCommand(row: DbCommand): SchemaCommand {
     return {
       id: row.id,
-      nodeId: row.node_id,
+      nodeId: row.nodeId,
       command: row.command,
-      args: row.args,
-      timeoutSeconds: row.timeout_seconds,
+      args: row.args as any,
+      timeoutSeconds: row.timeoutSeconds ?? 300,
       status: row.status,
-      createdAt: row.created_at,
-      startedAt: row.started_at,
-      completedAt: row.completed_at,
-      result: row.result,
-      error: row.error,
-      exitCode: row.exit_code,
-      createdBy: row.created_by
+      createdAt: row.createdAt,
+      startedAt: row.startedAt ?? undefined,
+      completedAt: row.completedAt ?? undefined,
+      result: row.result as any,
+      error: row.error ?? undefined,
+      exitCode: row.exitCode ?? undefined,
+      createdBy: row.createdBy ?? undefined
     }
   }
 }

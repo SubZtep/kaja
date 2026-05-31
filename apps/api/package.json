@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "bun run --hot src/core/server.ts",
     "build": "bun build src/core/server.ts --target bun --outfile dist/server.js",
-    "start": "bun run dist/server.js"
+    "start": "bun run dist/server.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.4.0",
@@ -18,17 +22,19 @@
     "@react-email/render": "^2.0.8",
     "@scalar/hono-api-reference": "^0.10.19",
     "better-auth": "^1.6.11",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.12.23",
+    "kysely": "<0.29.0",
     "nodemailer": "^8.0.9",
     "p-queue": "^9.3.0",
-    "pg": "^8.21.0",
     "react": "^19.2.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
     "@types/nodemailer": "^8.0.0",
-    "@types/pg": "^8.20.0",
-    "@types/react": "^19.2.15"
+    "@types/react": "^19.2.15",
+    "drizzle-kit": "^0.31.10",
+    "postgres": "^3.4.9"
   }
 }

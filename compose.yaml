@@ -11,7 +11,6 @@ services:
       POSTGRES_DB: testdb
     volumes:
       - ./pgdata:/var/lib/postgresql
-      - ./apps/api/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "testuser", "-d", "postgres"]
       start_period: 3s
@@ -33,6 +32,23 @@ services:
           "http://localhost:1080",
         ]
 
+  migration:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: builder
+    command: bun run --filter @kaja/api db:push -- --force
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: apps/api/.env.example
+        required: true
+      - path: apps/api/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://testuser:testpass@db:5432/testdb
+
   api:
     build:
       context: .
@@ -42,6 +58,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migration:
+        condition: service_completed_successfully
       mail:
         condition: service_healthy
     env_file:
