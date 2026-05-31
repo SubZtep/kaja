@@ -14,7 +14,7 @@
     "hook:deploy:start:before": {
       "type": "command",
       "image": "migration",
-      "command": "cd apps/api && bun run db:push -- --force"
+      "command": "sh -c 'cd apps/api && bun run db:push -- --force'"
     }
   },
   "images": {
