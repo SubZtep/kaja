@@ -45,10 +45,16 @@ bun run ./apps/api/scripts/mass_user_create.ts [number]
 
 ## Local URLs
 
-- Web: [http://localhost:3000](http://localhost:3000)
-- API: [http://localhost:3001](http://localhost:3001)
-- Email inbox: [http://localhost:1080](http://localhost:1080)
-- API reference (dev mode only): [http://localhost:3001/reference](http://localhost:3001/reference)
+- **PostgreSQL**\
+  Connection: `postgresql://testuser:testpass@localhost:5433/testdb`
+- **MailDev**\
+  SMTP: `localhost:1025`\
+  Inbox: [`http://localhost:1080`](http://localhost:1080)
+- **API**\
+  Endpoint: `http://localhost:3001`\
+  Reference: [`http://localhost:3001/reference`](http://localhost:3001/reference)
+- **Web**\
+  Portal: [`http://localhost:3000`](http://localhost:3000)
 
 ## Environment Variables
 

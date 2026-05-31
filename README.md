@@ -33,16 +33,10 @@ docker compose up -d
 
 This command starts:
 
-- **PostgreSQL**\
-  Connection: `postgresql://testuser:testpass@localhost:5433/testdb`
-- **MailDev**\
-  SMTP: `localhost:1025`\
-  Inbox: [`http://localhost:1080`](http://localhost:1080)
-- **API**\
-  Endpoint: `http://localhost:3001`\
-  Reference: [`http://localhost:3001/reference`](http://localhost:3001/reference)
-- **Web**\
-  Portal: [`http://localhost:3000`](http://localhost:3000)
+- PostgreSQL
+- MailDev
+- API
+- Web
 
 This is all the CLI needs to connect:
 
