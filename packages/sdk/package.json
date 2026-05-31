@@ -6,7 +6,7 @@
   "main": "index.ts",
   "dependencies": {
     "@kaja/logger": "workspace:*",
-    "@kaja/schemas": "workspace:*",
+    "@kaja/schema": "workspace:*",
     "zod": "^4.4.3"
   }
 }

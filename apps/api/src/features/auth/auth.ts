@@ -1,5 +1,5 @@
 import { debug, error, fatal, info, warn } from "@kaja/logger"
-import { KAJA_CLI_CLIENT_ID } from "@kaja/schemas"
+import { KAJA_CLI_CLIENT_ID } from "@kaja/schema"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"

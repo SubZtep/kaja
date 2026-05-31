@@ -1,6 +1,6 @@
 import { error, trace } from "@kaja/logger"
-import type { Node } from "@kaja/schemas"
-import { nodeSchema } from "@kaja/schemas"
+import type { Node } from "@kaja/schema"
+import { nodeSchema } from "@kaja/schema"
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 import { z } from "zod"

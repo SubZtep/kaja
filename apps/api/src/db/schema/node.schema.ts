@@ -1,3 +1,4 @@
+import type { GeoLocation } from "@kaja/schema"
 import { sql } from "drizzle-orm"
 import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 import { user } from "./auth.schema"
@@ -12,7 +13,7 @@ export const node = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    geoLocation: jsonb("geo_location"),
+    geoLocation: jsonb("geo_location").$type<GeoLocation | null>(),
     status: text("status", { enum: nodeStatusEnum }).notNull().default("idle"),
     lastSeen: timestamp("last_seen", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -25,5 +26,5 @@ export const node = pgTable(
   ]
 )
 
-export type Node = typeof node.$inferSelect
-export type NewNode = typeof node.$inferInsert
+export type NodeRow = typeof node.$inferSelect
+export type InsertNode = typeof node.$inferInsert

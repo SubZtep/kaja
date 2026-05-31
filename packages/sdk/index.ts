@@ -6,8 +6,8 @@ import type {
   HeartbeatRequest,
   HeartbeatResponse,
   ListNodesResponse
-} from "@kaja/schemas"
-import { connectNodeResponseSchema, heartbeatResponseSchema, listNodesResponseSchema } from "@kaja/schemas"
+} from "@kaja/schema"
+import { connectNodeResponseSchema, heartbeatResponseSchema, listNodesResponseSchema } from "@kaja/schema"
 
 export class KajaAPI {
   /** API base URL. */

@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { GeoLocationSchema } from "./geo"
 
 /**
  * Config schema for the CLI.\
@@ -85,8 +86,9 @@ export const nodeSchema = z.object({
   id: z.string(),
   userId: z.string(),
   name: z.string(),
-  status: nodeStatusSchema,
-  lastSeen: z.string()
+  lastSeen: z.coerce.date(),
+  geoLocation: GeoLocationSchema.nullable(),
+  status: nodeStatusSchema
 })
 
 export const listNodesResponseSchema = z.array(nodeSchema)

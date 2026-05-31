@@ -1,12 +1,9 @@
-import type { GeoLocation } from "@kaja/geo"
 import { info } from "@kaja/logger"
+import type { GeoLocation, Node } from "@kaja/schema"
 import { and, desc, eq, lt, ne } from "drizzle-orm"
 import type { Database } from "../../../core/db"
-import { type Node as DbNode, node as nodeTable } from "../../../db/schema"
+import { type NodeRow, node as nodeTable } from "../../../db/schema"
 import { emitNodeEvent } from "./events"
-import type { Node } from "./types"
-
-export type { Node }
 
 export class NodeService {
   readonly #db: Database
@@ -16,12 +13,12 @@ export class NodeService {
   }
 
   /** Create or update an active node. */
-  async connectNode(node: Omit<Node, "lastSeen" | "status">): Promise<Node> {
+  async connectNode(node: Pick<Node, "id" | "userId" | "name">): Promise<Node> {
     const [result] = await this.#db
       .insert(nodeTable)
       .values({
-        id: node.id as any,
-        userId: node.userId as any,
+        id: node.id,
+        userId: node.userId,
         name: node.name,
         lastSeen: new Date(),
         status: "idle"
@@ -29,7 +26,7 @@ export class NodeService {
       .onConflictDoUpdate({
         target: nodeTable.id,
         set: {
-          userId: node.userId as any,
+          userId: node.userId,
           name: node.name,
           lastSeen: new Date(),
           status: "idle"
@@ -56,7 +53,7 @@ export class NodeService {
         status: "inactive",
         updatedAt: new Date()
       })
-      .where(and(eq(nodeTable.id, nodeId as any), eq(nodeTable.userId, userId as any)))
+      .where(and(eq(nodeTable.id, nodeId), eq(nodeTable.userId, userId)))
       .returning()
 
     if (result[0]) {
@@ -86,7 +83,7 @@ export class NodeService {
         lastSeen: new Date(),
         status
       })
-      .where(and(eq(nodeTable.id, nodeId as any), eq(nodeTable.userId, userId as any)))
+      .where(and(eq(nodeTable.id, nodeId), eq(nodeTable.userId, userId)))
       .returning()
 
     if (result[0]) {
@@ -139,7 +136,7 @@ export class NodeService {
     const result = await this.#db
       .select()
       .from(nodeTable)
-      .where(and(eq(nodeTable.id, nodeId as any), eq(nodeTable.userId, userId as any)))
+      .where(and(eq(nodeTable.id, nodeId), eq(nodeTable.userId, userId)))
       .limit(1)
 
     return result[0] ? this.#rowToNode(result[0]) : null
@@ -149,7 +146,7 @@ export class NodeService {
     const result = await this.#db
       .select()
       .from(nodeTable)
-      .where(and(eq(nodeTable.userId, userId as any), ne(nodeTable.status, "inactive")))
+      .where(and(eq(nodeTable.userId, userId), ne(nodeTable.status, "inactive")))
       .orderBy(desc(nodeTable.lastSeen))
 
     return result.map(row => this.#rowToNode(row))
@@ -184,12 +181,14 @@ export class NodeService {
     return updated
   }
 
-  #rowToNode(row: DbNode): Node {
+  #rowToNode(row: NodeRow): Node {
     return {
       id: row.id,
       userId: row.userId,
       name: row.name,
-      lastSeen: new Date(row.lastSeen),
+      lastSeen: row.lastSeen,
+      // lastSeen: new Date(row.lastSeen),
+      geoLocation: row.geoLocation,
       status: row.status
     }
   }

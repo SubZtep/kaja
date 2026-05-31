@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi"
-import { heartbeatRequestSchema, heartbeatResponseSchema } from "@kaja/schemas"
+import { heartbeatRequestSchema, heartbeatResponseSchema } from "@kaja/schema"
 import type { RouteRegProps } from "../../../../types"
 import { notFound, unauthorized } from "../../../../types/errors"
 

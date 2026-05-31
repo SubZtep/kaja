@@ -1,5 +1,5 @@
 import { error, trace } from "@kaja/logger"
-import { loginSchema } from "@kaja/schemas"
+import { loginSchema } from "@kaja/schema"
 import { createFileRoute, useSearch } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"

@@ -1,7 +1,7 @@
 import { createRoute } from "@hono/zod-openapi"
 import { getClientIp } from "@kaja/geo"
 import { error, info, warn } from "@kaja/logger"
-import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schemas"
+import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schema"
 import { geoipQueue } from "../../../../core/queue"
 import type { RouteRegProps } from "../../../../types"
 import { unauthorized } from "../../../../types/errors"

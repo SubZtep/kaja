@@ -1,4 +1,4 @@
-import { KAJA_CLI_CLIENT_ID } from "@kaja/schemas"
+import { KAJA_CLI_CLIENT_ID } from "@kaja/schema"
 import { Box, Text } from "ink"
 import QRCode from "qrcode"
 import { useEffect, useState } from "react"

@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi"
-import { commandSchema, createCommandRequestSchema } from "@kaja/schemas"
+import { commandSchema, createCommandRequestSchema } from "@kaja/schema"
 import type { RouteRegProps } from "../../../../types"
 import { badRequest, internalError, notFound, unauthorized } from "../../../../types/errors"
 import { validateCommand } from "../../services/command-validator"

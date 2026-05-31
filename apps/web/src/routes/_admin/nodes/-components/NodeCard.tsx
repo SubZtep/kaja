@@ -1,4 +1,4 @@
-import type { Node, NodeStatus } from "@kaja/schemas"
+import type { Node, NodeStatus } from "@kaja/schema"
 import { getTimeAgo } from "@kaja/shared"
 import { Server } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -76,6 +76,13 @@ export function NodeCard({ node }: Readonly<{ node: Node }>) {
             <div className={`h-1.5 w-1.5 rounded-full ${statusConfig.dotColor}`} />
             <span className={`text-sm font-semibold ${statusConfig.color}`}>{statusConfig.label}</span>
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 pt-3 border-t border-border/20">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted">Location</span>
+          <span className="font-mono text-xs text-muted">{node.geoLocation?.country?.name ?? "N/A"}</span>
         </div>
 
         <div className="flex items-center justify-between">

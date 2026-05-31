@@ -9,7 +9,7 @@
   "dependencies": {
     "@kaja/geo": "workspace:*",
     "@kaja/logger": "workspace:*",
-    "@kaja/schemas": "workspace:*",
+    "@kaja/schema": "workspace:*",
     "@kaja/sdk": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@tanstack/react-query": "^5.100.14",

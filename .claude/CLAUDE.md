@@ -19,9 +19,10 @@ When looking for configuration files, check these locations first:
 - **Docker Compose**: `compose.yaml` (NOT `docker-compose.yml` or `docker-compose.yaml`)
 - **Biome Config**: `biome.jsonc`
 - **TypeScript Config**: Root `tsconfig.json` with per-app configs in `apps/*/tsconfig.json`
-- **Package Manager**: `bun.lockb` (Bun's lockfile)
+- **Package Manager**: `bun.lock` (Bun's lockfile)
 - **Environment Files**: `.env.example` files in `apps/api/`, `apps/web/`, and `apps/cli/`
-- **Migrations**: `apps/api/migrations/` (auto-run on PostgreSQL container init)
+- **Database Schema**: `apps/api/src/db/schema/*.schema.ts` (Drizzle schemas)
+- **Bootstrap SQL**: `apps/api/src/db/migrations/000-uuidv7.sql` (UUIDv7 function only)
 
 ## Development Commands
 
@@ -74,7 +75,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 
 ### Authentication Flow
 - Uses Better Auth with device authorization plugin
-- CLI initiates device auth flow with KAJA_CLI_CLIENT_ID constant (from @kaja/schemas)
+- CLI initiates device auth flow with KAJA_CLI_CLIENT_ID constant (from @kaja/schema)
 - User approves device via web `/device` route
 - CLI polls API for token approval
 - Supports email/password, email verification, password reset, and admin roles
@@ -133,7 +134,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 
 ### Packages
 - **@kaja/sdk**: Type-safe API client with automatic response validation using Zod schemas
-- **@kaja/schemas**: Zod schemas shared across workspaces (includes KAJA_CLI_CLIENT_ID)
+- **@kaja/schema**: Zod schemas for API contracts (auth.ts, geo.ts, node.ts) - single source of truth for types (includes KAJA_CLI_CLIENT_ID)
 - **@kaja/shared**: Pure utility functions (clsx, tailwind-merge)
 - **@kaja/geo**: Geolocation services using MaxMind
 - **@kaja/logger**: Pino logger with node/browser exports
@@ -144,7 +145,7 @@ The `@kaja/sdk` package provides a centralized, type-safe API client used by bot
 
 **Features:**
 - Typed methods for all API endpoints (e.g., `nodes.list()`, `nodes.connect()`, `nodes.heartbeat()`)
-- Automatic response validation using Zod schemas from `@kaja/schemas`
+- Automatic response validation using Zod schemas from `@kaja/schema`
 - Proper TypeScript types for requests and responses
 - Centralized error handling
 
@@ -162,11 +163,46 @@ The `@kaja/sdk` package provides a centralized, type-safe API client used by bot
 - Type safety across all API interactions
 - Automatic validation ensures response integrity
 
+### Type Architecture
+
+The codebase follows a **single source of truth** pattern for types:
+
+**API Contract Types** (`@kaja/schema`):
+- `Node`, `Command` - Public API types exposed to clients
+- All Zod schemas for request/response validation
+- Exported from `@kaja/schema` package
+- Used by SDK, web app, CLI, and API routes
+
+**Database Row Types** (`apps/api/src/db/schema/*.schema.ts`):
+- `NodeRow`, `CommandRow` - Internal database representation
+- `InsertNode`, `InsertCommand` - Types for inserting into database
+- Derived from Drizzle schema using `typeof table.$inferSelect`
+- **Never exported** outside of API codebase
+
+**Mapping Pattern:**
+- Services use mapper functions (e.g., `#rowToNode(row: NodeRow): Node`)
+- Database rows → API types for responses
+- API types → Database inserts for requests
+- Keeps database schema decoupled from API contract
+
+**Key Rules:**
+- ✅ Import `Node`, `Command` from `@kaja/schema` for API interactions
+- ✅ Use `NodeRow`, `CommandRow` only within API service layer
+- ✅ Never export database types from `apps/api/src/db/schema`
+- ✅ Date fields use `z.coerce.date()` for JSON serialization compatibility
+
 ### Database
-- PostgreSQL migrations in `apps/api/migrations/`
-- Runs migrations on container init via docker-entrypoint-initdb.d
-- Uses UUIDv7 for IDs (custom function)
-- Better Auth tables + custom "node" table
+- **Schema Management**: Drizzle ORM with push-based workflow (not traditional migrations)
+  - Local: `migration` service in `compose.yaml` runs `bun run db:push -- --force`
+  - Production: `hook:deploy:start:before` in `disco.api.json` runs `bun run db:push -- --force`
+- **Bootstrap SQL**: Single file in `apps/api/src/db/migrations/000-uuidv7.sql` creates UUIDv7 function
+  - Runs on PostgreSQL init via docker-entrypoint-initdb.d volume mount
+  - Only contains the custom UUIDv7() function definition
+- **Schema Definitions**: Drizzle schemas in `apps/api/src/db/schema/`
+  - `auth.schema.ts` - Better Auth tables
+  - `node.schema.ts` - Node tracking table
+  - `command.schema.ts` - Command queue table
+- Uses UUIDv7 for all primary keys
 - Node statuses: idle, busy, inactive
 - Scheduler marks nodes inactive after timeout
 

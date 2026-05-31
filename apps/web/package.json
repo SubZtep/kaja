@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@kaja/logger": "workspace:*",
-    "@kaja/schemas": "workspace:*",
+    "@kaja/schema": "workspace:*",
     "@kaja/sdk": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@rsbuild/core": "^2.0.8",

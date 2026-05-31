@@ -1,6 +1,6 @@
 import { error, trace } from "@kaja/logger"
+import type { GeoLocation } from "@kaja/schema"
 import { Reader } from "@maxmind/geoip2-node"
-import type { GeoLocation } from "./types"
 
 let reader: ReturnType<typeof Reader.openBuffer> | undefined
 let triedInit = false

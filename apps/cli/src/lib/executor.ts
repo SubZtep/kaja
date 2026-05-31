@@ -1,5 +1,5 @@
 import { error, info, warn } from "@kaja/logger"
-import type { CommandResult, PendingCommand } from "@kaja/schemas"
+import type { CommandResult, PendingCommand } from "@kaja/schema"
 
 export interface ExecutedCommand extends CommandResult {
   commandId: string

@@ -31,5 +31,5 @@ export const command = pgTable(
   ]
 )
 
-export type Command = typeof command.$inferSelect
-export type NewCommand = typeof command.$inferInsert
+export type CommandRow = typeof command.$inferSelect
+export type InsertCommand = typeof command.$inferInsert

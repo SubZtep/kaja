@@ -1,8 +1,8 @@
 import { error, info } from "@kaja/logger"
-import type { CommandResult, CreateCommandRequest, PendingCommand, Command as SchemaCommand } from "@kaja/schemas"
+import type { CommandResult, CreateCommandRequest, PendingCommand, Command as SchemaCommand } from "@kaja/schema"
 import { and, desc, eq, sql } from "drizzle-orm"
 import type { Database } from "../../../core/db"
-import { command as commandTable, type Command as DbCommand } from "../../../db/schema"
+import { type CommandRow, command as commandTable } from "../../../db/schema"
 
 export class CommandService {
   readonly #db: Database
@@ -258,7 +258,7 @@ export class CommandService {
     }
   }
 
-  #mapCommand(row: DbCommand): SchemaCommand {
+  #mapCommand(row: CommandRow): SchemaCommand {
     return {
       id: row.id,
       nodeId: row.nodeId,

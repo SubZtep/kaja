@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events"
-import type { Node } from "./types"
+import type { Node } from "@kaja/schema"
 
 export interface NodeEvent {
   type: "connected" | "heartbeat" | "disconnected" | "inactive"
