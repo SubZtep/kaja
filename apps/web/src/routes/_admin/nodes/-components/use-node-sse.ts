@@ -1,12 +1,9 @@
+import { error, trace } from "@kaja/logger"
 import type { Node } from "@kaja/schemas"
 import { nodeSchema } from "@kaja/schemas"
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 import { z } from "zod"
-
-const PingEventSchema = z.object({
-  type: z.literal("ping")
-})
 
 const ConnectedEventSchema = z.object({
   type: z.literal("connected"),
@@ -18,7 +15,7 @@ const NodeUpdateEventSchema = z.object({
   node: nodeSchema
 })
 
-const SSEEventSchema = z.union([PingEventSchema, ConnectedEventSchema, NodeUpdateEventSchema])
+const SSEEventSchema = z.union([ConnectedEventSchema, NodeUpdateEventSchema])
 
 /**
  * Hook to listen for real-time node updates via SSE
@@ -27,6 +24,7 @@ export function useNodeSSE(apiUrl: string, setIsLive?: (live: boolean) => void) 
   const queryClient = useQueryClient()
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
+  const retryCountRef = useRef(0)
   const setIsLiveRef = useRef(setIsLive)
 
   // Keep setIsLive ref updated
@@ -63,22 +61,21 @@ export function useNodeSSE(apiUrl: string, setIsLive?: (live: boolean) => void) 
         let rawData: unknown
         try {
           rawData = JSON.parse(event.data)
-        } catch (error) {
-          console.error("Failed to parse SSE event data:", error)
+        } catch (err) {
+          error("Failed to parse SSE event data:", { error: err })
           return
         }
 
         // Fix #7: Validate data with Zod schema
         const parseResult = SSEEventSchema.safeParse(rawData)
         if (!parseResult.success) {
-          console.error("Invalid SSE event data:", parseResult.error.issues)
+          error("Invalid SSE event data:", { issues: parseResult.error.issues })
           return
         }
 
         const data = parseResult.data
 
-        // Ignore ping and initial connection events (not node events)
-        if (data.type === "ping") return
+        // Ignore initial connection events without node data
         if (data.type === "connected" && !data.node) return
 
         // Update the nodes query cache
@@ -116,29 +113,37 @@ export function useNodeSSE(apiUrl: string, setIsLive?: (live: boolean) => void) 
       eventSource.addEventListener("open", () => {
         // Fix #4: Use ref instead of direct call
         setIsLiveRef.current?.(true)
+        // Reset retry count on successful connection
+        retryCountRef.current = 0
       })
 
-      eventSource.onerror = error => {
-        console.error("SSE connection error:", error)
+      eventSource.onerror = err => {
+        error("SSE connection error:", { error: err })
         // Fix #4: Use ref instead of direct call
         setIsLiveRef.current?.(false)
 
         // EventSource automatically reconnects, but we log the error
         if (eventSource.readyState === EventSource.CLOSED) {
-          console.log("SSE connection closed, attempting manual reconnect in 5s...")
+          // Fix #6: Implement exponential backoff
+          // Formula: min(2000 * 2^retryCount, 30000)
+          // Results: 2s -> 4s -> 8s -> 16s -> 30s (capped)
+          const delay = Math.min(2000 * 2 ** retryCountRef.current, 30000)
+          retryCountRef.current++
+
+          trace(`SSE connection closed, attempting reconnect #${retryCountRef.current} in ${delay}ms...`)
 
           // Fix #2: Clear before setting new timeout (already done above in connect(), but good practice)
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current)
           }
 
-          // Attempt manual reconnect after a delay
+          // Attempt manual reconnect after exponential backoff delay
           reconnectTimeoutRef.current = window.setTimeout(() => {
             if (isSubscribed) {
-              console.log("Reconnecting SSE...")
+              trace("Reconnecting SSE...")
               connect()
             }
-          }, 5000)
+          }, delay)
         }
       }
     }

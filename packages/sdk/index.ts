@@ -1,3 +1,4 @@
+import { error } from "@kaja/logger"
 import type {
   ConnectNodeRequest,
   ConnectNodeResponse,
@@ -50,8 +51,8 @@ export class KajaAPI {
     if (payload) {
       try {
         body = JSON.stringify(payload)
-      } catch (error) {
-        console.log("API request error", error)
+      } catch (err) {
+        error("API request error", { error: err })
       }
     }
 

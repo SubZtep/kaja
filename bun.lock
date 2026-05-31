@@ -138,6 +138,7 @@
       "name": "@kaja/sdk",
       "version": "0.0.1",
       "dependencies": {
+        "@kaja/logger": "workspace:*",
         "@kaja/schemas": "workspace:*",
         "zod": "^4.4.3",
       },
