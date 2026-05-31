@@ -29,7 +29,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("connect node", async () => {
-    const res = await app.request("/kaja/connect", {
+    const res = await app.request("/nodes/connect", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name: "test-node" })
@@ -42,7 +42,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("send heartbeat", async () => {
-    const res = await app.request("/kaja/heartbeat", {
+    const res = await app.request("/nodes/heartbeat", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ nodeId, status: "idle" })
@@ -54,7 +54,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("send heartbeat busy", async () => {
-    const res = await app.request("/kaja/heartbeat", {
+    const res = await app.request("/nodes/heartbeat", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -69,7 +69,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("create command for node - should fail with non-allowlisted command", async () => {
-    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+    const res = await app.request(`/admin/nodes/${nodeId}/commands`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ command: "rm", args: {} })
@@ -80,7 +80,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("create command for node - should succeed with allowlisted command", async () => {
-    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+    const res = await app.request(`/admin/nodes/${nodeId}/commands`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ command: "echo", args: { message: "hello" } })
@@ -92,7 +92,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("create command with shell injection attempt - should fail", async () => {
-    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+    const res = await app.request(`/admin/nodes/${nodeId}/commands`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ command: "echo", args: { message: "hello; rm -rf /" } })
@@ -104,7 +104,7 @@ describe("kaja cli client flow", () => {
 
   test("heartbeat with unknown node - should return 404", async () => {
     const fakeNodeId = "01945678-1234-7abc-9def-0123456789ab"
-    const res = await app.request("/kaja/heartbeat", {
+    const res = await app.request("/nodes/heartbeat", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ nodeId: fakeNodeId, status: "idle" })
@@ -115,7 +115,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("disconnect node", async () => {
-    const res = await app.request("/kaja/disconnect", {
+    const res = await app.request("/nodes/disconnect", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ nodeId })
@@ -125,7 +125,7 @@ describe("kaja cli client flow", () => {
   })
 
   test("create command for inactive node - should fail", async () => {
-    const res = await app.request(`/kaja/admin/nodes/${nodeId}/commands`, {
+    const res = await app.request(`/admin/nodes/${nodeId}/commands`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ command: "echo", args: {} })
