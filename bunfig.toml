@@ -8,6 +8,3 @@ bun = true
 noOrphans = true
 elide-lines = 0
 silent = true
-
-[test]
-preload = ["./test-setup.ts"]
