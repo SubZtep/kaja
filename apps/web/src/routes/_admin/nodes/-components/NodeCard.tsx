@@ -1,7 +1,8 @@
 import type { Node, NodeStatus } from "@kaja/schema"
 import { getTimeAgo } from "@kaja/shared"
-import { Server } from "lucide-react"
+import { ChevronDown, ChevronUp, Server } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { CommandExecutor } from "./CommandExecutor"
 
 const STATUS_CONFIG: Record<NodeStatus, { label: string; color: string; dotColor: string }> = {
   idle: {
@@ -31,6 +32,9 @@ export function NodeCard({ node }: Readonly<{ node: Node }>) {
   // Track status changes for visual feedback
   const [isUpdating, setIsUpdating] = useState(false)
   const prevStatusRef = useRef(node.status)
+
+  // Expandable command executor
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     // Update current time every second for smooth "X seconds ago" display
@@ -89,6 +93,24 @@ export function NodeCard({ node }: Readonly<{ node: Node }>) {
           <span className="text-xs font-bold uppercase tracking-widest text-muted">Last Seen</span>
           <span className="font-mono text-xs text-muted">{getTimeAgo(lastSeenDate, currentTime)}</span>
         </div>
+      </div>
+
+      {/* Expandable Command Executor */}
+      <div className="pt-3 border-t border-border/20">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-surface-2 transition-colors"
+        >
+          <span className="text-xs font-bold uppercase tracking-widest text-muted">Execute Command</span>
+          {isExpanded ? <ChevronUp size={16} className="text-muted" /> : <ChevronDown size={16} className="text-muted" />}
+        </button>
+
+        {isExpanded && (
+          <div className="mt-3 pt-3 border-t border-border/10">
+            <CommandExecutor node={node} />
+          </div>
+        )}
       </div>
     </div>
   )

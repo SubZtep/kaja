@@ -15,7 +15,7 @@ export const app = new OpenAPIHono<RouteProps>()
 // Global middlewares
 app.use(logger(trafficLogger))
 app.use("*", cors({ origin: process.env.CORS_ORIGIN, credentials: true }))
-app.use("*", globalRateLimiter)
+// app.use("*", globalRateLimiter)
 app.use("*", authMiddleware)
 
 // Mount routes

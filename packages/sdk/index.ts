@@ -1,13 +1,21 @@
 import { error } from "@kaja/logger"
 import type {
+  Command,
   ConnectNodeRequest,
   ConnectNodeResponse,
+  CreateCommandRequest,
   DisconnectNodeRequest,
   HeartbeatRequest,
   HeartbeatResponse,
   ListNodesResponse
 } from "@kaja/schema"
-import { connectNodeResponseSchema, heartbeatResponseSchema, listNodesResponseSchema } from "@kaja/schema"
+import {
+  commandSchema,
+  connectNodeResponseSchema,
+  heartbeatResponseSchema,
+  listNodesResponseSchema
+} from "@kaja/schema"
+import { z } from "zod"
 
 export class KajaAPI {
   /** API base URL. */
@@ -34,6 +42,21 @@ export class KajaAPI {
     heartbeat: async (payload: HeartbeatRequest, options?: RequestInit): Promise<HeartbeatResponse> => {
       const response = await this.#request("/nodes/heartbeat", payload, options)
       return heartbeatResponseSchema.parse(response)
+    }
+  }
+
+  commands = {
+    create: async (nodeId: string, payload: CreateCommandRequest): Promise<Command> => {
+      const response = await this.#request(`/admin/nodes/${nodeId}/commands`, payload)
+      return commandSchema.parse(response)
+    },
+    list: async (nodeId: string): Promise<Command[]> => {
+      const response = await this.#request<{ commands: Command[] }>(`/admin/nodes/${nodeId}/commands`)
+      return z.array(commandSchema).parse(response.commands)
+    },
+    cancel: async (commandId: string): Promise<Command> => {
+      const response = await this.#request(`/admin/commands/${commandId}/cancel`, {})
+      return commandSchema.parse(response)
     }
   }
 

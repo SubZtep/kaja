@@ -1,4 +1,5 @@
-import { ACCESS_TOKEN_KEY, SERVICE_NAME } from "./constants"
+export const SERVICE_NAME = "io.kaja"
+export const ACCESS_TOKEN_KEY = "access_token"
 
 let sessionAccessToken: string | null = null
 

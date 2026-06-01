@@ -17,7 +17,6 @@ export default function NodeRunner() {
   const heartbeatMutation = useMutation({
     mutationFn: () => sdk.nodes.heartbeat({ nodeId, status: "idle" }, { signal: abortControllerRef.current.signal }),
     onError: err => {
-      // Only log heartbeat errors if we're not shutting down
       if (!isShuttingDown.current) {
         error("Heartbeat failed", { error: err })
       }

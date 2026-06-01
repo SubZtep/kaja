@@ -258,6 +258,37 @@ export class CommandService {
     }
   }
 
+  /**
+   * Cancel a specific command by ID
+   * Can cancel commands in pending or executing status
+   */
+  async cancelCommand(commandId: string): Promise<SchemaCommand | null> {
+    try {
+      const [result] = await this.#db
+        .update(commandTable)
+        .set({
+          status: "failed",
+          completedAt: new Date(),
+          error: "Command cancelled by user"
+        })
+        .where(
+          and(
+            eq(commandTable.id, commandId as any),
+            sql`${commandTable.status} IN ('pending', 'executing')`
+          )
+        )
+        .returning()
+
+      if (!result) return null
+
+      info("command cancelled", { commandId })
+      return this.#mapCommand(result)
+    } catch (err) {
+      error("failed to cancel command", { error: err, commandId })
+      return null
+    }
+  }
+
   #mapCommand(row: CommandRow): SchemaCommand {
     return {
       id: row.id,
