@@ -4,6 +4,7 @@ import { Box, Text, useApp, useInput } from "ink"
 import { useEffect, useRef, useState } from "react"
 import { sdk } from "../lib/sdk"
 import { useStore } from "../store"
+import { CommandExecutor } from "./CommandExecutor"
 
 export default function NodeRunner() {
   const { exit } = useApp()
@@ -82,6 +83,7 @@ export default function NodeRunner() {
         Node is running: {nodeName} (ticks: {tickCount})
       </Text>
       <Text dimColor>Press 'q' or Ctrl+C to quit</Text>
+      <CommandExecutor nodeId={nodeId} />
     </Box>
   )
 }

@@ -3,6 +3,7 @@ import type { CommandResult, CreateCommandRequest, PendingCommand, Command as Sc
 import { and, desc, eq, sql } from "drizzle-orm"
 import type { Database } from "../../../core/db"
 import { type CommandRow, command as commandTable } from "../../../db/schema"
+import { emitCommandEvent } from "./events"
 
 export class CommandService {
   readonly #db: Database
@@ -33,7 +34,16 @@ export class CommandService {
 
       if (!result) return null
 
-      return this.#mapCommand(result)
+      const command = this.#mapCommand(result)
+
+      // Emit event so CLI can receive command via SSE
+      emitCommandEvent({
+        type: "created",
+        command,
+        nodeId
+      })
+
+      return command
     } catch (err) {
       error("failed to create command", { error: err, nodeId, command: request.command })
       return null
@@ -285,6 +295,110 @@ export class CommandService {
       return this.#mapCommand(result)
     } catch (err) {
       error("failed to cancel command", { error: err, commandId })
+      return null
+    }
+  }
+
+  /**
+   * Mark command as started (called by CLI when it begins execution)
+   */
+  async startCommand(commandId: string): Promise<SchemaCommand | null> {
+    try {
+      const [result] = await this.#db
+        .update(commandTable)
+        .set({
+          status: "executing",
+          startedAt: new Date()
+        })
+        .where(and(eq(commandTable.id, commandId as any), eq(commandTable.status, "pending")))
+        .returning()
+
+      if (!result) return null
+
+      const command = this.#mapCommand(result)
+
+      emitCommandEvent({
+        type: "started",
+        command,
+        nodeId: command.nodeId
+      })
+
+      info("command started", { commandId })
+      return command
+    } catch (err) {
+      error("failed to start command", { error: err, commandId })
+      return null
+    }
+  }
+
+  /**
+   * Mark command as completed (called by CLI when execution finishes)
+   */
+  async completeCommand(
+    commandId: string,
+    result: unknown,
+    exitCode?: number
+  ): Promise<SchemaCommand | null> {
+    try {
+      const [row] = await this.#db
+        .update(commandTable)
+        .set({
+          status: "completed",
+          completedAt: new Date(),
+          result: result as any,
+          exitCode: exitCode ?? null
+        })
+        .where(and(eq(commandTable.id, commandId as any), eq(commandTable.status, "executing")))
+        .returning()
+
+      if (!row) return null
+
+      const command = this.#mapCommand(row)
+
+      emitCommandEvent({
+        type: "completed",
+        command,
+        nodeId: command.nodeId
+      })
+
+      info("command completed", { commandId, exitCode })
+      return command
+    } catch (err) {
+      error("failed to complete command", { error: err, commandId })
+      return null
+    }
+  }
+
+  /**
+   * Mark command as failed (called by CLI when execution fails)
+   */
+  async failCommand(commandId: string, errorMessage: string, exitCode?: number): Promise<SchemaCommand | null> {
+    try {
+      const [row] = await this.#db
+        .update(commandTable)
+        .set({
+          status: "failed",
+          completedAt: new Date(),
+          error: errorMessage,
+          exitCode: exitCode ?? null
+        })
+        .where(and(eq(commandTable.id, commandId as any), eq(commandTable.status, "executing")))
+        .returning()
+
+      if (!row) return null
+
+      const command = this.#mapCommand(row)
+
+      emitCommandEvent({
+        type: "failed",
+        command,
+        nodeId: command.nodeId
+      })
+
+      info("command failed", { commandId, error: errorMessage, exitCode })
+      return command
+    } catch (err) {
+      error("failed to mark command as failed", { error: err, commandId })
       return null
     }
   }

@@ -27,6 +27,11 @@ export class KajaAPI {
     this.#getAccessToken = getAccessToken
   }
 
+  /** Get access token (for CLI EventSource connections) */
+  async getToken(): Promise<string | null> {
+    return this.#getAccessToken()
+  }
+
   nodes = {
     list: async (): Promise<ListNodesResponse> => {
       const response = await this.#request("/nodes")
@@ -42,6 +47,20 @@ export class KajaAPI {
     heartbeat: async (payload: HeartbeatRequest, options?: RequestInit): Promise<HeartbeatResponse> => {
       const response = await this.#request("/nodes/heartbeat", payload, options)
       return heartbeatResponseSchema.parse(response)
+    },
+    commands: {
+      start: async (nodeId: string, commandId: string): Promise<Command> => {
+        const response = await this.#request(`/nodes/${nodeId}/commands/${commandId}/start`, {})
+        return commandSchema.parse(response)
+      },
+      complete: async (nodeId: string, commandId: string, result: unknown, exitCode?: number): Promise<Command> => {
+        const response = await this.#request(`/nodes/${nodeId}/commands/${commandId}/complete`, { result, exitCode })
+        return commandSchema.parse(response)
+      },
+      fail: async (nodeId: string, commandId: string, error: string, exitCode?: number): Promise<Command> => {
+        const response = await this.#request(`/nodes/${nodeId}/commands/${commandId}/fail`, { error, exitCode })
+        return commandSchema.parse(response)
+      }
     }
   }
 

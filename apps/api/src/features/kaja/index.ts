@@ -1,6 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import type { RouteProps } from "../../types"
 import { registerAdminCommands } from "./routes/admin/command"
+import { registerCommandLifecycle } from "./routes/node/command"
+import { registerCommandStream } from "./routes/node/command-stream"
 import { registerConnect } from "./routes/node/connect"
 import { registerDisconnect } from "./routes/node/disconnect"
 import { registerHeartbeat } from "./routes/node/heartbeat"
@@ -25,6 +27,8 @@ registerConnect(nodeRoutes)
 registerDisconnect(nodeRoutes)
 registerList(nodeRoutes)
 registerStream(nodeRoutes)
+registerCommandStream(nodeRoutes)
+registerCommandLifecycle(nodeRoutes)
 
 // Admin routes (TODO: add adminMiddleware when implemented)
 export const adminRoutes = new OpenAPIHono<RouteProps>()
