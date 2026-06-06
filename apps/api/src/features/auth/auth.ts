@@ -1,9 +1,8 @@
 import { debug, error, fatal, info, warn } from "@kaja/logger"
 import { KAJA_CLI_CLIENT_ID } from "@kaja/schema"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
-import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
-import { db } from "../../core/db"
+import { pool } from "../../core/db"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
 
@@ -73,9 +72,7 @@ export const auth = betterAuth({
         }
       : {})
   },
-  database: drizzleAdapter(db, {
-    provider: "pg"
-  }),
+  database: pool,
   basePath: "/auth",
   plugins,
   logger: {

@@ -1,5 +1,5 @@
 import { debug, error, info, warn } from "@kaja/logger"
-import type { Database } from "../../../core/db"
+import type { Pool } from "pg"
 import { CommandService } from "./command"
 import { NodeService } from "./node"
 
@@ -9,7 +9,7 @@ export class SchedulerService {
   #intervalId?: Timer
   #isRunning = false
 
-  constructor(db: Database) {
+  constructor(db: Pool) {
     this.#nodeService = new NodeService(db)
     this.#commandService = new CommandService(db)
   }

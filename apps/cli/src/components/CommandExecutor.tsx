@@ -31,6 +31,7 @@ export function CommandExecutor({ nodeId }: CommandExecutorProps) {
 
       const url = `${sdk.baseUrl}/nodes/${nodeId}/commands/stream`
       eventSource = new EventSource(url, {
+        // @ts-ignore - EventSource package supports headers (unlike browser EventSource)
         headers: {
           Authorization: `Bearer ${token}`
         }

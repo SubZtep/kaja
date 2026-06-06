@@ -10,20 +10,11 @@
           "destinationPath": "/usr/share/GeoIP"
         }
       ]
-    },
-    "hook:deploy:start:before": {
-      "type": "command",
-      "image": "migration",
-      "command": "bun run db:push -- --force"
     }
   },
   "images": {
     "backend": {
       "dockerfile": "apps/api/Dockerfile",
-      "context": "."
-    },
-    "migration": {
-      "dockerfile": "apps/api/Dockerfile.migrate",
       "context": "."
     }
   }

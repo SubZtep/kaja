@@ -103,7 +103,11 @@ export function NodeCard({ node }: Readonly<{ node: Node }>) {
           className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-surface-2 transition-colors"
         >
           <span className="text-xs font-bold uppercase tracking-widest text-muted">Execute Command</span>
-          {isExpanded ? <ChevronUp size={16} className="text-muted" /> : <ChevronDown size={16} className="text-muted" />}
+          {isExpanded ? (
+            <ChevronUp size={16} className="text-muted" />
+          ) : (
+            <ChevronDown size={16} className="text-muted" />
+          )}
         </button>
 
         {isExpanded && (

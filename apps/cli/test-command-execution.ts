@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
-import { KajaAPI } from "@kaja/sdk"
-import { EventSource } from "eventsource"
 import { exec } from "node:child_process"
 import { promisify } from "node:util"
+import { KajaAPI } from "@kaja/sdk"
+import { EventSource } from "eventsource"
 
 const execAsync = promisify(exec)
 

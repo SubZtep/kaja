@@ -126,9 +126,7 @@ export function CommandExecutor({ node }: CommandExecutorProps) {
           <div className="p-4 font-mono text-sm max-h-96 overflow-auto">
             {latestCommand.status === "pending" && <div className="text-muted italic">Waiting for node...</div>}
 
-            {latestCommand.status === "executing" && (
-              <div className="text-ice animate-pulse">Executing command...</div>
-            )}
+            {latestCommand.status === "executing" && <div className="text-ice animate-pulse">Executing command...</div>}
 
             {latestCommand.status === "completed" && latestCommand.result !== undefined && (
               <pre className="text-fg whitespace-pre-wrap">

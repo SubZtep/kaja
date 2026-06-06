@@ -21,8 +21,8 @@ When looking for configuration files, check these locations first:
 - **TypeScript Config**: Root `tsconfig.json` with per-app configs in `apps/*/tsconfig.json`
 - **Package Manager**: `bun.lock` (Bun's lockfile)
 - **Environment Files**: `.env.example` files in `apps/api/`, `apps/web/`, and `apps/cli/`
-- **Database Schema**: `apps/api/src/db/schema/*.schema.ts` (Drizzle schemas)
-- **Bootstrap SQL**: `apps/api/src/db/migrations/000-uuidv7.sql` (UUIDv7 function only)
+- **Database Migrations**: `apps/api/migrations/*.sql` (Raw SQL migration files)
+- **Migration Script**: `apps/api/scripts/db_migration.sh` (Manual migration runner)
 
 ## Development Commands
 
@@ -85,13 +85,13 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - **Entry**: `core/server.ts` starts Hono app and SchedulerService
 - **App**: `app.ts` defines routes and middleware
 - **Core**:
-  - `core/db.ts` - PostgreSQL connection pool
+  - `core/db.ts` - PostgreSQL connection pool using `pg` library
   - `core/logger.ts` - Pino structured logging
   - `core/rate-limit.ts` - Rate limiting middleware (hono-rate-limiter)
     - Global: 100 req/15min per IP
     - Auth endpoints: 50 req/15min per IP
 - **Features**:
-  - `features/auth/` - Better Auth configuration and routes
+  - `features/auth/` - Better Auth configuration and routes (uses pg Pool directly)
   - `features/kaja/routes/node/` - Node management endpoints:
     - `connect.ts` - Register/connect new nodes
     - `heartbeat.ts` - Update node heartbeat
@@ -100,7 +100,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
     - `stream.ts` - Server-sent events for real-time updates
   - `features/kaja/routes/admin/` - Admin endpoints:
     - `command.ts` - Send commands to nodes
-  - `features/kaja/services/` - Business logic:
+  - `features/kaja/services/` - Business logic using raw SQL queries:
     - `scheduler.ts` - Marks inactive nodes based on heartbeat timeout
     - `command.ts` - Command queuing and execution
     - `events.ts` - Server-sent event management
@@ -173,35 +173,38 @@ The codebase follows a **single source of truth** pattern for types:
 - Exported from `@kaja/schema` package
 - Used by SDK, web app, CLI, and API routes
 
-**Database Row Types** (`apps/api/src/db/schema/*.schema.ts`):
-- `NodeRow`, `CommandRow` - Internal database representation
-- `InsertNode`, `InsertCommand` - Types for inserting into database
-- Derived from Drizzle schema using `typeof table.$inferSelect`
-- **Never exported** outside of API codebase
+**Database Row Types** (Internal to services):
+- Internal representations defined inline in service classes
+- Not exported or shared outside the service layer
+- Row types from `pg` query results (e.g., `QueryResult.rows[0]`)
 
 **Mapping Pattern:**
-- Services use mapper functions (e.g., `#rowToNode(row: NodeRow): Node`)
-- Database rows → API types for responses
-- API types → Database inserts for requests
+- Services use private mapper functions (e.g., `#rowToNode(row: any): Node`)
+- Database rows → API types for responses via mapper functions
+- Raw SQL queries handle inserts and updates
 - Keeps database schema decoupled from API contract
 
 **Key Rules:**
 - ✅ Import `Node`, `Command` from `@kaja/schema` for API interactions
-- ✅ Use `NodeRow`, `CommandRow` only within API service layer
-- ✅ Never export database types from `apps/api/src/db/schema`
+- ✅ Use raw SQL queries in service methods with pg Pool
+- ✅ Map database rows to API types using private mapper functions
 - ✅ Date fields use `z.coerce.date()` for JSON serialization compatibility
 
 ### Database
-- **Schema Management**: Drizzle ORM with push-based workflow (not traditional migrations)
-  - Local: `migration` service in `compose.yaml` runs `bun run db:push -- --force`
-  - Production: `hook:deploy:start:before` in `disco.api.json` runs `bun run db:push -- --force`
-- **Bootstrap SQL**: Single file in `apps/api/src/db/migrations/000-uuidv7.sql` creates UUIDv7 function
-  - Runs on PostgreSQL init via docker-entrypoint-initdb.d volume mount
-  - Only contains the custom UUIDv7() function definition
-- **Schema Definitions**: Drizzle schemas in `apps/api/src/db/schema/`
-  - `auth.schema.ts` - Better Auth tables
-  - `node.schema.ts` - Node tracking table
-  - `command.schema.ts` - Command queue table
+- **Schema Management**: Raw SQL migrations in `apps/api/migrations/`
+  - Migrations run automatically on PostgreSQL container initialization via docker-entrypoint-initdb.d
+  - For manual migration runs: `apps/api/scripts/db_migration.sh`
+  - Production: Migrations applied once during initial database setup
+- **Migration Files** (applied in lexicographic order):
+  - `2026-03-01-uuidv7.sql` - Creates UUIDv7() function using pgcrypto
+  - `2026-03-03-better-auth.sql` - Better Auth tables (user, session, account, verification, deviceCode)
+  - `2026-03-27-kaja.sql` - Node tracking table
+  - `2026-05-22-create_command_table.sql` - Command queue table
+  - `2026-05-28-optimize-indexes.sql` - Index optimizations
+- **Database Client**: Uses `pg` Pool for connection pooling
+  - Configured in `apps/api/src/core/db.ts`
+  - Services use raw SQL queries with parameterized statements
+  - Better Auth uses pg Pool directly (no adapter needed)
 - Uses UUIDv7 for all primary keys
 - Node statuses: idle, busy, inactive
 - Scheduler marks nodes inactive after timeout

@@ -1,8 +1,21 @@
-import { SQL } from "bun"
-import { drizzle } from "drizzle-orm/bun-sql"
-import * as schema from "../db/schema"
+import { error } from "@kaja/logger"
+import { Pool } from "pg"
 
-const client = new SQL(process.env.DATABASE_URL)
-export const db = drizzle({ client, schema })
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 2_000,
+  maxLifetimeSeconds: 60,
+  allowExitOnIdle: true,
+  onConnect: async client => {
+    await client.query("SET TIME ZONE 'UTC'")
+  }
+})
 
-export type Database = typeof db
+pool.on("error", err => {
+  error("Database error", { error: err })
+})
+
+export const db = {
+  query: async (text: string, params: unknown[]) => pool.query(text, params)
+}

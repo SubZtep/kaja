@@ -1,41 +1,34 @@
 import { info } from "@kaja/logger"
 import type { GeoLocation, Node } from "@kaja/schema"
-import { and, desc, eq, lt, ne } from "drizzle-orm"
-import type { Database } from "../../../core/db"
-import { type NodeRow, node as nodeTable } from "../../../db/schema"
+import type { Pool } from "pg"
 import { emitNodeEvent } from "./events"
 
 export class NodeService {
-  readonly #db: Database
+  readonly #db: Pool
 
-  constructor(db: Database) {
+  constructor(db: Pool) {
     this.#db = db
   }
 
   /** Create or update an active node. */
   async connectNode(node: Pick<Node, "id" | "userId" | "name">): Promise<Node> {
-    const [result] = await this.#db
-      .insert(nodeTable)
-      .values({
-        id: node.id,
-        userId: node.userId,
-        name: node.name,
-        lastSeen: new Date(),
-        status: "idle"
-      })
-      .onConflictDoUpdate({
-        target: nodeTable.id,
-        set: {
-          userId: node.userId,
-          name: node.name,
-          lastSeen: new Date(),
-          status: "idle"
-        }
-      })
-      .returning()
+    const result = await this.#db.query(
+      `
+      INSERT INTO node (id, user_id, name, last_seen, status)
+      VALUES ($1, $2, $3, NOW(), 'idle')
+      ON CONFLICT (id)
+      DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        name = EXCLUDED.name,
+        last_seen = NOW(),
+        status = 'idle'
+      RETURNING *
+      `,
+      [node.id, node.userId, node.name]
+    )
 
-    info("node connected", { node: result })
-    const connectedNode = this.#rowToNode(result)
+    info("node connected", { node: result.rows[0] })
+    const connectedNode = this.#rowToNode(result.rows[0])
 
     emitNodeEvent({
       type: "connected",
@@ -47,17 +40,20 @@ export class NodeService {
   }
 
   async disconnectNode(nodeId: string, userId: string) {
-    const result = await this.#db
-      .update(nodeTable)
-      .set({
-        status: "inactive",
-        updatedAt: new Date()
-      })
-      .where(and(eq(nodeTable.id, nodeId), eq(nodeTable.userId, userId)))
-      .returning()
+    const result = await this.#db.query(
+      `
+      UPDATE node
+      SET status = 'inactive',
+          updated_at = NOW()
+      WHERE id = $1
+        AND user_id = $2
+      RETURNING *
+      `,
+      [nodeId, userId]
+    )
 
-    if (result[0]) {
-      const disconnectedNode = this.#rowToNode(result[0])
+    if (result.rows[0]) {
+      const disconnectedNode = this.#rowToNode(result.rows[0])
       emitNodeEvent({
         type: "disconnected",
         node: disconnectedNode,
@@ -65,7 +61,7 @@ export class NodeService {
       })
     }
 
-    return result.length > 0
+    return result.rowCount !== null && result.rowCount > 0
   }
 
   async heartbeat(nodeId: string, userId: string, status: Exclude<Node["status"], "inactive">): Promise<boolean> {
@@ -77,17 +73,20 @@ export class NodeService {
     }
 
     // Update the node
-    const result = await this.#db
-      .update(nodeTable)
-      .set({
-        lastSeen: new Date(),
-        status
-      })
-      .where(and(eq(nodeTable.id, nodeId), eq(nodeTable.userId, userId)))
-      .returning()
+    const result = await this.#db.query(
+      `
+      UPDATE node
+      SET last_seen = NOW(),
+          status = $2
+      WHERE id = $1
+        AND user_id = $3
+      RETURNING *
+      `,
+      [nodeId, status, userId]
+    )
 
-    if (result[0]) {
-      const updatedNode = this.#rowToNode(result[0])
+    if (result.rows[0]) {
+      const updatedNode = this.#rowToNode(result.rows[0])
 
       // Only emit event if status actually changed
       // This prevents unnecessary SSE traffic for heartbeats that only update lastSeen
@@ -100,26 +99,27 @@ export class NodeService {
       }
     }
 
-    return result.length > 0
+    return result.rowCount !== null && result.rowCount > 0
   }
 
   async markInactiveNodes(timeoutSeconds = 300): Promise<number> {
-    const cutoffTime = new Date(Date.now() - timeoutSeconds * 1000)
+    const result = await this.#db.query(
+      `
+      UPDATE node
+      SET status = 'inactive',
+          updated_at = NOW()
+      WHERE status != 'inactive'
+        AND last_seen < NOW() - ($1 || ' seconds')::INTERVAL
+      RETURNING *
+      `,
+      [timeoutSeconds]
+    )
 
-    const result = await this.#db
-      .update(nodeTable)
-      .set({
-        status: "inactive",
-        updatedAt: new Date()
-      })
-      .where(and(ne(nodeTable.status, "inactive"), lt(nodeTable.lastSeen, cutoffTime)))
-      .returning()
-
-    if (result.length > 0) {
-      info("marked nodes as inactive", { count: result.length })
+    if (result.rowCount && result.rowCount > 0) {
+      info("marked nodes as inactive", { count: result.rowCount })
 
       // Emit event for each node that became inactive
-      for (const row of result) {
+      for (const row of result.rows) {
         const inactiveNode = this.#rowToNode(row)
         emitNodeEvent({
           type: "inactive",
@@ -129,66 +129,66 @@ export class NodeService {
       }
     }
 
-    return result.length
+    return result.rowCount || 0
   }
 
   async getNode(nodeId: string, userId: string): Promise<Node | null> {
-    const result = await this.#db
-      .select()
-      .from(nodeTable)
-      .where(and(eq(nodeTable.id, nodeId), eq(nodeTable.userId, userId)))
-      .limit(1)
+    const { rows } = await this.#db.query(
+      `
+      SELECT * FROM node WHERE id = $1 AND user_id = $2
+      `,
+      [nodeId, userId]
+    )
 
-    return result[0] ? this.#rowToNode(result[0]) : null
+    return rows[0] ? this.#rowToNode(rows[0]) : null
   }
 
   async getActiveNodes(userId: string): Promise<Node[]> {
-    const result = await this.#db
-      .select()
-      .from(nodeTable)
-      .where(and(eq(nodeTable.userId, userId), ne(nodeTable.status, "inactive")))
-      .orderBy(desc(nodeTable.lastSeen))
+    const { rows } = await this.#db.query(
+      `
+      SELECT * FROM node WHERE user_id = $1 AND status != 'inactive' ORDER BY last_seen DESC
+      `,
+      [userId]
+    )
 
-    return result.map(row => this.#rowToNode(row))
+    return rows.map(row => this.#rowToNode(row))
   }
 
   async getAllActiveNodes(): Promise<Node[]> {
-    const result = await this.#db
-      .select()
-      .from(nodeTable)
-      .where(ne(nodeTable.status, "inactive"))
-      .orderBy(desc(nodeTable.lastSeen))
+    const { rows } = await this.#db.query(
+      `
+      SELECT * FROM node WHERE status != 'inactive' ORDER BY last_seen DESC
+      `
+    )
 
-    return result.map(row => this.#rowToNode(row))
+    return rows.map(row => this.#rowToNode(row))
   }
 
   async updateGeoLocation(nodeId: string, geoLocation: GeoLocation): Promise<boolean> {
     info("Updating node geo_location", { nodeId, geoLocation })
 
-    const result = await this.#db
-      .update(nodeTable)
-      .set({
-        geoLocation: geoLocation as any,
-        updatedAt: new Date()
-      })
-      .where(eq(nodeTable.id, nodeId as any))
-      .returning()
+    const { rowCount } = await this.#db.query(
+      `
+      UPDATE node
+      SET geo_location = $2,
+          updated_at = NOW()
+      WHERE id = $1
+      `,
+      [nodeId, geoLocation]
+    )
 
-    const updated = result.length > 0
+    info("Geo location update result", { nodeId, rowCount, updated: rowCount !== null && rowCount > 0 })
 
-    info("Geo location update result", { nodeId, rowCount: result.length, updated })
-
-    return updated
+    return rowCount !== null && rowCount > 0
   }
 
-  #rowToNode(row: NodeRow): Node {
+  #rowToNode(row: any): Node {
     return {
       id: row.id,
-      userId: row.userId,
+      userId: row.user_id,
       name: row.name,
-      lastSeen: row.lastSeen,
-      // lastSeen: new Date(row.lastSeen),
-      geoLocation: row.geoLocation,
+      lastSeen: new Date(row.last_seen),
+      geoLocation: row.geo_location ?? null,
       status: row.status
     }
   }
