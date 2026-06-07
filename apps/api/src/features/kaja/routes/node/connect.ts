@@ -51,7 +51,6 @@ export function registerConnect(app: RouteRegProps) {
     const nodeService = c.get("nodeService")
 
     const nodeId = Bun.randomUUIDv7()
-
     await nodeService.connectNode({
       id: nodeId,
       userId: user.id,
@@ -60,25 +59,21 @@ export function registerConnect(app: RouteRegProps) {
 
     const clientIp = getClientIp(c)
     if (clientIp) {
-      // Call geo-service directly (it handles queueing internally)
-      // Run async without blocking the response
-      ;(async () => {
+      void (async () => {
         try {
           info("Starting GeoIP lookup", { ip: clientIp, nodeId })
           const location = await getGeoLocation(clientIp)
-          info("Got location data", { nodeId, location })
 
           if (location) {
-            info("Updating node geo_location", { nodeId })
             const result = await nodeService.updateGeoLocation(nodeId, location)
-            info("Database update result", { nodeId, result })
-          } else {
-            warn("No location data returned - GeoIP database may be missing", { nodeId, ip: clientIp })
+            if (!result) {
+              error("Database update failed", { nodeId, location, result })
+            }
           }
 
           info("GeoIP job completed", { nodeId, location })
         } catch (err) {
-          error("GeoIP job failed", { error: err, nodeId, ip: clientIp })
+          error("GeoIP job failed", { error: err, nodeId })
         }
       })()
     } else {
