@@ -23,11 +23,18 @@ export async function getGeoLocation(ip: string): Promise<GeoLocation | undefine
   try {
     trace("Calling geo-service", { url: `${geoServiceUrl}/lookup/${ip}` })
 
+    // Create AbortController with 120-second timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 seconds
+
     const response = await fetch(`${geoServiceUrl}/lookup/${ip}`, {
       headers: {
         "X-API-Key": geoServiceApiKey
-      }
+      },
+      signal: controller.signal
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       if (response.status === 404) {

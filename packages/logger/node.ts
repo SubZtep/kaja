@@ -9,29 +9,10 @@ type NodeLoggerOptions = {
 }
 
 function createNodeTransport(env: string) {
-  if (env !== "development") return undefined
-
-  try {
-    return pino.transport({
-      targets: [
-        {
-          target: "pino-pretty",
-          level: "trace",
-          options: {
-            ignore: "pid,hostname",
-            translateTime: "SYS:HH:MM",
-            levelFirst: true,
-            singleLine: true,
-            colorize: true,
-            destination: 1 // 1 is stdout, all logs (including error) go to stdout
-          }
-        }
-      ]
-    })
-  } catch {
-    // If pino-pretty can't be resolved in some runtime images, fallback to JSON logs.
-    return undefined
-  }
+  // Never use pino.transport() - it uses thread-stream which can't be bundled by Bun
+  // In production, use JSON logs. In development (local), use default pino output.
+  // pino-pretty is excluded to avoid bundling issues
+  return undefined
 }
 
 export function createNodeLogger({

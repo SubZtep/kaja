@@ -15,7 +15,7 @@ Notes.
 
 Attaching PostgreSQL instance to the API project in Disco automatically creates the `DATABASE_URL` env var.
 
-After server init, run scripts from `apps/api/src/db/migrations`.
+After server init, run scripts from `apps/api/migrations`.
 
 <!-- # Configuration
 

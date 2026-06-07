@@ -1,8 +1,7 @@
 import { createRoute } from "@hono/zod-openapi"
 import { error, info, warn } from "@kaja/logger"
 import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schema"
-import { geoipQueue } from "../../../../core/queue"
-import { getClientIp } from "../../../../lib/geo-client"
+import { getClientIp, getGeoLocation } from "../../../../lib/geo-client"
 import type { RouteRegProps } from "../../../../types"
 import { unauthorized } from "../../../../types/errors"
 
@@ -52,7 +51,6 @@ export function registerConnect(app: RouteRegProps) {
     const nodeService = c.get("nodeService")
 
     const nodeId = Bun.randomUUIDv7()
-
     await nodeService.connectNode({
       id: nodeId,
       userId: user.id,
@@ -61,11 +59,23 @@ export function registerConnect(app: RouteRegProps) {
 
     const clientIp = getClientIp(c)
     if (clientIp) {
-      info("Queueing GeoIP lookup", { ip: clientIp, nodeId })
-      geoipQueue.add({ ip: clientIp, nodeId }).catch(err => {
-        error("Failed to queue GeoIP lookup", { error: err, nodeId, ip: clientIp })
-      })
-      info("Queued GeoIP lookup", { ip: clientIp, nodeId })
+      void (async () => {
+        try {
+          info("Starting GeoIP lookup", { ip: clientIp, nodeId })
+          const location = await getGeoLocation(clientIp)
+
+          if (location) {
+            const result = await nodeService.updateGeoLocation(nodeId, location)
+            if (!result) {
+              error("Database update failed", { nodeId, location, result })
+            }
+          }
+
+          info("GeoIP job completed", { nodeId, location })
+        } catch (err) {
+          error("GeoIP job failed", { error: err, nodeId })
+        }
+      })()
     } else {
       warn("Could not get public IP address for GeoIP lookup", { nodeId })
     }
