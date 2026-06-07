@@ -12,7 +12,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "dependencies": {
         "@hono/zod-openapi": "^1.4.0",
         "@hono/zod-validator": "^0.8.0",
