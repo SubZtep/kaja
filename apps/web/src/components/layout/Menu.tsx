@@ -8,11 +8,7 @@ import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 import { getMenuItems } from "./nav-items"
 
-interface Props {
-  className?: string
-}
-
-export function Menu({ className }: Readonly<Props>) {
+export function Menu({ className }: Readonly<{ className?: string }>) {
   const role = useUser()?.role
   const items = getMenuItems(role)
 
@@ -69,7 +65,7 @@ function LogoutButton() {
         setLoading(false)
       }}
     >
-      <Button variant="oval" size="sm" loading={loading}>
+      <Button variant="oval" size="sm" className="cursor-crosshair" loading={loading}>
         Sign Out
       </Button>
     </ConfirmDialog>

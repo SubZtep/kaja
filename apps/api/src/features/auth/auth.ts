@@ -42,7 +42,7 @@ const plugins: BetterAuthPlugin[] = [
 ]
 
 if (process.env.NODE_ENV === "development") {
-  plugins.push(openAPI({ theme: "solarized" }))
+  plugins.push(openAPI({ theme: "purple" }))
 }
 
 export const auth = betterAuth({
@@ -81,6 +81,8 @@ export const auth = betterAuth({
       const logFn = { trace: debug, debug, info, warn, error, fatal }[level]
       if (logFn) {
         logFn(message, args)
+      } else {
+        console[level]?.(message, args)
       }
     }
   },

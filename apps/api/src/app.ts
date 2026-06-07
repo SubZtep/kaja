@@ -2,7 +2,7 @@ import { OpenAPIHono } from "@hono/zod-openapi"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
 import { trafficLogger } from "./core/logger"
-import { authRateLimiter } from "./core/rate-limit"
+// import { authRateLimiter } from "./core/rate-limit"
 import { healthRoutes } from "./core/routes/health"
 import { referenceRoutes, setupApiDocs } from "./core/routes/reference"
 import { userRoutes } from "./core/routes/user"
@@ -20,7 +20,7 @@ app.use("*", authMiddleware)
 
 // Mount routes
 app.route("/health", healthRoutes)
-app.use("/auth/*", authRateLimiter) // Stricter rate limit for auth endpoints
+// app.use("/auth/*", authRateLimiter) // Stricter rate limit for auth endpoints
 app.route("/auth", authRoutes)
 app.route("/nodes", nodeRoutes)
 app.route("/admin", adminRoutes)

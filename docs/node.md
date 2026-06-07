@@ -31,7 +31,7 @@ graph TB
 - **EventEmitter**: Node.js in-memory event bus (single process only)
 - **SSE**: Server-Sent Events for real-time updates (filtered by userId)
 - **Web UI**: React app with TanStack Query + SSE hooks
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: PostgreSQL
 
 ## Node Lifecycle
 

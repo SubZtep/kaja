@@ -25,7 +25,7 @@ function App() {
         <a
           href="https://openclaw.ai/"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="text-neon hover:text-neon-hi underline"
         >
           OpenClaw
@@ -34,7 +34,7 @@ function App() {
         <a
           href="https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="text-neon hover:text-neon-hi underline"
         >
           Cloudflare Tunnel
@@ -61,7 +61,7 @@ function App() {
           href="https://docs.kaja.io/privacy"
           title="Privacy Policy"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="text-gray-500 underline"
         >
           Privacy
@@ -71,7 +71,7 @@ function App() {
           href="https://docs.kaja.io/terms"
           title="Terms of Service"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="text-gray-500 underline"
         >
           Terms
@@ -87,7 +87,7 @@ function GitHub() {
     <a
       href="https://github.com/SubZtep/kaja"
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       className="rounded-xl p-2 text-inherit transition hover:bg-surface"
       title="Go to GitHub project"
     >
