@@ -22,7 +22,11 @@ jobs:
             platform: linux-arm64
             bun_target: bun-linux-arm64
             artifact: kaja-linux-arm64
-          - os: ubuntu-latest
+          - os: windows-latest
+            platform: windows/arm64
+            bun_target: bun-windows/arm64
+            artifact: kaja-windows/arm64.exe
+          - os: windows-latest
             platform: windows-x64
             bun_target: bun-windows-x64
             artifact: kaja-windows-x64.exe

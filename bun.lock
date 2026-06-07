@@ -39,7 +39,7 @@
     },
     "apps/cli": {
       "name": "@kaja/cli",
-      "version": "0.0.33",
+      "version": "0.0.34",
       "dependencies": {
         "@kaja/logger": "workspace:*",
         "@kaja/schema": "workspace:*",
