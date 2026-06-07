@@ -14,8 +14,8 @@ WORKDIR /home/bun/app
 ENV NODE_ENV=production
 
 USER bun
-# Copy the self-contained bundle (includes all dependencies)
-COPY --chown=bun:bun --chmod=555 --from=builder /home/bun/app/apps/api/dist ./dist
+# Copy the self-contained bundle (all dependencies bundled, no node_modules needed)
+COPY --chown=bun:bun --chmod=555 --from=builder /home/bun/app/apps/api/dist/server.js ./server.js
 
 EXPOSE 3001
-CMD ["bun", "run", "dist/server.js"]
+CMD ["bun", "run", "server.js"]
