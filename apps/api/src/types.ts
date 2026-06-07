@@ -15,10 +15,6 @@ declare module "bun" {
     CROSS_PARENT_DOMAIN?: string
     /** PostgreSQL connection string. */
     DATABASE_URL: string
-    GEOIP_ACCOUNT_ID: string
-    GEOIP_LICENSE_KEY: string
-    /** @default /usr/share/GeoIP/GeoLite2-City.mmdb */
-    GEOIP_DB_PATH?: string
     SMTP_HOST: string
     SMTP_PORT: string
     /** Set to `true`, `1`, or any value interpreted as boolean true. */

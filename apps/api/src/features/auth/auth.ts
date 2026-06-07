@@ -53,6 +53,14 @@ export const auth = betterAuth({
       generateId: () => Bun.randomUUIDv7(),
       defaultFindManyLimit: 1000
     },
+    ipAddress: {
+      ipv6Subnet: 56
+    },
+    rateLimit: {
+      enabled: true, // enable in dev mode too
+      window: 60, // time window in seconds
+      max: 100 // max requests in the window
+    },
     ...(process.env.CROSS_PARENT_DOMAIN
       ? {
           crossSubDomainCookies: {

@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: testuser
       POSTGRES_PASSWORD: testpass
-      POSTGRES_DB: testdb
+      POSTGRES_DB: kaja
     volumes:
       - ./pgdata:/var/lib/postgresql
       - ./apps/api/migrations:/docker-entrypoint-initdb.d
@@ -17,7 +17,7 @@ services:
       start_period: 3s
 
   mail:
-    image: maildev/maildev
+    image: maildev/maildev:2.2.1
     restart: unless-stopped
     ports:
       - "1080:1080"
@@ -50,7 +50,7 @@ services:
       - path: apps/api/.env
         required: false
     environment:
-      DATABASE_URL: postgresql://testuser:testpass@db:5432/testdb
+      DATABASE_URL: postgresql://testuser:testpass@db:5432/kaja
       SMTP_HOST: mail
 
   web:

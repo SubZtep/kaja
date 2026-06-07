@@ -11,8 +11,7 @@ Notes.
 
 - [**GitHub + Ubuntu** 24.04](https://disco.cloud/docs/#prerequisites) — the publish webhook triggers deployment on the fully managed box. Even the smallest [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) is more than enough to host several services and a database, as long as traffic stays reasonable.
 - **SMTP server** is required for authentication emails.
-- MaxMind’s [**GeoLite City**](https://support.maxmind.com/knowledge-base/articles/create-a-maxmind-account#sign-up-for-geolite) database.
-  > 💡 Install [`geoipupdate`](https://github.com/maxmind/geoipupdate) on the server.
+- **Geo-service** endpoint for IP geolocation (see [Geo configuration](/geo) for setup details).
 
 Attaching PostgreSQL instance to the API project in Disco automatically creates the `DATABASE_URL` env var.
 

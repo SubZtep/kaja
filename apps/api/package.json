@@ -4,13 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "bun run --hot src/core/server.ts",
-    "build": "bun build src/core/server.ts --target bun --outfile dist/server.js",
+    "build": "bun build --minify --target bun --outfile dist/server.js src/core/server.ts",
     "start": "bun run dist/server.js"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.4.0",
     "@hono/zod-validator": "^0.8.0",
-    "@kaja/geo": "workspace:*",
     "@kaja/logger": "workspace:*",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",

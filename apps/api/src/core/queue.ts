@@ -1,7 +1,7 @@
-import { getGeoLocation } from "@kaja/geo"
 import { error, info, trace, warn } from "@kaja/logger"
 import PQueue from "p-queue"
 import { nodeService } from "../features/kaja/services"
+import { getGeoLocation } from "../lib/geo-client"
 
 interface GeoIPJob {
   nodeId: string

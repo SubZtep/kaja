@@ -7,7 +7,6 @@
     "dev": "bun run src/cli.tsx"
   },
   "dependencies": {
-    "@kaja/geo": "workspace:*",
     "@kaja/logger": "workspace:*",
     "@kaja/schema": "workspace:*",
     "@kaja/sdk": "workspace:*",

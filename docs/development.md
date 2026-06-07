@@ -46,7 +46,7 @@ bun run ./apps/api/scripts/mass_user_create.ts [number]
 ## Local URLs
 
 - **PostgreSQL**\
-  Connection: `postgresql://testuser:testpass@localhost:5433/testdb`
+  Connection: `postgresql://testuser:testpass@localhost:5433/kaja`
 - **MailDev**\
   SMTP: `localhost:1025`\
   Inbox: [`http://localhost:1080`](http://localhost:1080)

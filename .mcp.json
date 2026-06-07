@@ -32,7 +32,7 @@
       "args": [
         "--bun",
         "@modelcontextprotocol/server-postgres",
-        "postgresql://testuser:testpass@localhost:5433/testdb"
+        "postgresql://testuser:testpass@localhost:5433/kaja"
       ]
     }
   }

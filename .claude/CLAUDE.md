@@ -1,10 +1,11 @@
-# CLAUDE.md
+# [CLAUDE.md](http://CLAUDE.md)
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
 Kaja is a TypeScript monorepo built with Bun, featuring:
+
 - **API**: Hono-based REST API with Better Auth authentication
 - **Web**: TanStack Start frontend with admin portal
 - **CLI**: Installable device authorization CLI for node orchestration
@@ -16,6 +17,7 @@ The project uses device authorization flow allowing CLI nodes to connect to the 
 ## Key File Locations
 
 When looking for configuration files, check these locations first:
+
 - **Docker Compose**: `compose.yaml` (NOT `docker-compose.yml` or `docker-compose.yaml`)
 - **Biome Config**: `biome.jsonc`
 - **TypeScript Config**: Root `tsconfig.json` with per-app configs in `apps/*/tsconfig.json`
@@ -27,6 +29,7 @@ When looking for configuration files, check these locations first:
 ## Development Commands
 
 ### Quick Start
+
 ```bash
 # Start all services (PostgreSQL, MailDev, API, Web)
 docker compose up -d
@@ -36,6 +39,7 @@ bun dev:cli
 ```
 
 ### Common Commands
+
 ```bash
 # Development (excludes CLI and Mobile)
 bun dev
@@ -52,6 +56,7 @@ bun run test              # Runs tests with both .env.example and .env
 ```
 
 ### Per-Workspace Commands
+
 ```bash
 # API
 bun run --filter @kaja/api dev          # Hot-reload server
@@ -74,6 +79,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 ## Architecture
 
 ### Authentication Flow
+
 - Uses Better Auth with device authorization plugin
 - CLI initiates device auth flow with KAJA_CLI_CLIENT_ID constant (from @kaja/schema)
 - User approves device via web `/device` route
@@ -82,6 +88,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - Session cookies prefixed with "kaja"
 
 ### API Structure (`apps/api/src/`)
+
 - **Entry**: `core/server.ts` starts Hono app and SchedulerService
 - **App**: `app.ts` defines routes and middleware
 - **Core**:
@@ -90,6 +97,11 @@ bun run --filter @kaja/mobile ios         # Run on iOS
   - `core/rate-limit.ts` - Rate limiting middleware (hono-rate-limiter)
     - Global: 100 req/15min per IP
     - Auth endpoints: 50 req/15min per IP
+  - `core/queue.ts` - Background job queue for GeoIP lookups using p-queue
+- **Lib**:
+  - `lib/geo-client.ts` - HTTP client for external geo-service API
+    - `getGeoLocation(ip)` - Calls geo-service to lookup IP location
+    - `getClientIp(c)` - Extracts client IP from Hono context
 - **Features**:
   - `features/auth/` - Better Auth configuration and routes (uses pg Pool directly)
   - `features/kaja/routes/node/` - Node management endpoints:
@@ -108,6 +120,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - **Emails**: React Email templates sent via nodemailer
 
 ### Web Structure (`apps/web/src/`)
+
 - TanStack Router with file-based routing
 - Two route layouts: `_public.tsx` and `_admin.tsx`
 - Uses `#/*` import alias for src/
@@ -117,6 +130,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - Components organized: layout/, form/, ui/
 
 ### CLI Structure (`apps/cli/`)
+
 - Entry: `src/cli.tsx` - initializes auth session and node operations
 - `lib/sdk.ts` - SDK instance using @kaja/sdk with Bun.secrets token storage
 - `lib/auth-client.ts` - Better Auth client for device authorization flow
@@ -125,6 +139,7 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - `ui/` - React Ink components for interactive CLI
 
 ### Mobile Structure (`apps/mobile/`)
+
 - Expo SDK v56 with React Native 0.85
 - File-based routing via expo-router
 - Uses Expo UI and Expo Glass Effect for native UI components
@@ -133,10 +148,10 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 - See `apps/mobile/AGENTS.md` for Expo-specific guidance
 
 ### Packages
+
 - **@kaja/sdk**: Type-safe API client with automatic response validation using Zod schemas
 - **@kaja/schema**: Zod schemas for API contracts (auth.ts, geo.ts, node.ts) - single source of truth for types (includes KAJA_CLI_CLIENT_ID)
 - **@kaja/shared**: Pure utility functions (clsx, tailwind-merge)
-- **@kaja/geo**: Geolocation services using MaxMind
 - **@kaja/logger**: Pino logger with node/browser exports
 
 ### SDK Architecture
@@ -144,20 +159,24 @@ bun run --filter @kaja/mobile ios         # Run on iOS
 The `@kaja/sdk` package provides a centralized, type-safe API client used by both web and CLI applications:
 
 **Features:**
+
 - Typed methods for all API endpoints (e.g., `nodes.list()`, `nodes.connect()`, `nodes.heartbeat()`)
 - Automatic response validation using Zod schemas from `@kaja/schema`
 - Proper TypeScript types for requests and responses
 - Centralized error handling
 
 **Token Management:**
+
 - **Web**: Uses Better Auth client session (`authClient.getSession()`) to get current access token
 - **CLI**: Uses Bun.secrets for persistent token storage across sessions
 
 **Usage:**
+
 - **Web**: SDK instance created in `components/Providers.tsx`, accessed via `useApiSdk()` hook
 - **CLI**: SDK instance in `lib/sdk.ts`, imported directly where needed
 
 **Benefits:**
+
 - No code duplication between web and CLI
 - Single source of truth for API client logic
 - Type safety across all API interactions
@@ -168,29 +187,34 @@ The `@kaja/sdk` package provides a centralized, type-safe API client used by bot
 The codebase follows a **single source of truth** pattern for types:
 
 **API Contract Types** (`@kaja/schema`):
+
 - `Node`, `Command` - Public API types exposed to clients
 - All Zod schemas for request/response validation
 - Exported from `@kaja/schema` package
 - Used by SDK, web app, CLI, and API routes
 
 **Database Row Types** (Internal to services):
+
 - Internal representations defined inline in service classes
 - Not exported or shared outside the service layer
 - Row types from `pg` query results (e.g., `QueryResult.rows[0]`)
 
 **Mapping Pattern:**
+
 - Services use private mapper functions (e.g., `#rowToNode(row: any): Node`)
 - Database rows → API types for responses via mapper functions
 - Raw SQL queries handle inserts and updates
 - Keeps database schema decoupled from API contract
 
 **Key Rules:**
+
 - ✅ Import `Node`, `Command` from `@kaja/schema` for API interactions
 - ✅ Use raw SQL queries in service methods with pg Pool
 - ✅ Map database rows to API types using private mapper functions
 - ✅ Date fields use `z.coerce.date()` for JSON serialization compatibility
 
 ### Database
+
 - **Schema Management**: Raw SQL migrations in `apps/api/migrations/`
   - Migrations run automatically on PostgreSQL container initialization via docker-entrypoint-initdb.d
   - For manual migration runs: `apps/api/scripts/db_migration.sh`
@@ -210,6 +234,7 @@ The codebase follows a **single source of truth** pattern for types:
 - Scheduler marks nodes inactive after timeout
 
 ### Node Orchestration
+
 - CLI connects as a "node" with user_id association via `/kaja/nodes/connect`
 - Sends heartbeats via `/kaja/nodes/:id/heartbeat` to maintain active status
 - Can gracefully disconnect via `/kaja/nodes/:id/disconnect`
@@ -221,7 +246,9 @@ The codebase follows a **single source of truth** pattern for types:
 ## Environment Configuration
 
 ### API (.env.example)
+
 Required for development and production:
+
 - `CORS_ORIGIN` - Allowed origin for CORS (e.g., `http://localhost:3000` or `https://kaja.io`)
 - `DATABASE_URL` - PostgreSQL connection string
 - `BETTER_AUTH_URL` - API base URL for Better Auth callbacks (e.g., `http://localhost:3001`)
@@ -230,13 +257,17 @@ Required for development and production:
 - `KAJA_APP_NAME=api` - App identifier for logging
 - `KAJA_LOG_LEVEL` - Log level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`)
 - `NODE_ENV` - Environment mode (`development`, `production`)
+- `GEO_SERVICE_URL` - External geo-service API URL (e.g., `https://few-booklet-31770.ondis.co`)
+- `GEO_SERVICE_API_KEY` - API key for geo-service authentication
 
 Optional:
+
 - `WEB_PUBLIC_URL` - Public URL for device authorization flow
 - `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX` - Global rate limiting config
 - `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX` - Auth endpoint rate limiting
 
 **Production Requirements:**
+
 - Set `NODE_ENV=production` (disables pino-pretty, uses JSON logs)
 - Set `KAJA_LOG_LEVEL=info` or `warn` (reduce log verbosity)
 - Set `BETTER_AUTH_SECRET` to a strong random value
@@ -244,7 +275,9 @@ Optional:
 - Configure `CORS_ORIGIN` to match your production domain
 
 ### Web (.env.example)
+
 Required:
+
 - `VITE_API_URL` - API base URL (e.g., `http://localhost:3001` or `https://api.kaja.io`)
 - `VITE_APP_URL` - Web app URL (e.g., `http://localhost:3000`)
 - `KAJA_APP_NAME=web` - App identifier for logging
@@ -253,16 +286,19 @@ Required:
 **Note:** Web uses Vite's `import.meta.env.MODE` instead of `NODE_ENV` for environment detection
 
 ### CLI (.env.example)
+
 Required:
+
 - `API_URL` - API base URL (resolution order: `--api-url` flag > `API_URL` env > config.json > default)
 - `KAJA_APP_NAME=cli` - App identifier for logging
 - `KAJA_LOG_LEVEL=info` - Log level for CLI
 - `NODE_ENV=development` - Environment mode
 
 ### Compose File
+
 - Located at `compose.yaml` (not docker-compose.yaml)
 - Services: PostgreSQL, MailDev, API, Web
-- PostgreSQL: localhost:5433 (testuser/testpass/testdb)
+- PostgreSQL: localhost:5433 (testuser/testpass/kaja)
 - MailDev: localhost:1080 (web), 1025 (SMTP)
 - API: localhost:3001
 - Web: localhost:3000
@@ -270,6 +306,7 @@ Required:
 ## Code Style
 
 ### Biome Configuration
+
 - Line width: 120
 - Double quotes, semicolons "asNeeded", arrow parens "asNeeded"
 - No trailing commas, space indentation
@@ -277,10 +314,11 @@ Required:
 - Located: `biome.jsonc`
 
 ### TypeScript
+
 - ESNext target with bundler module resolution
 - Strict mode enabled
 - JSX: react-jsx
-- Monorepo uses workspace protocol (workspace:*)
+- Monorepo uses workspace protocol (workspace:\*)
 
 ## Testing & CI
 
@@ -291,11 +329,13 @@ Required:
 - Additional workflow for CLI builds
 
 ## Import Aliases
+
 - API: `#/*` maps to `src/`
 - Web: `#/*` maps to `src/`
 - All packages export from their root index.ts
 
 ## Key Dependencies
+
 - **Bun**: Runtime and package manager (v1.3.11+)
 - **Hono**: API framework
 - **Better Auth**: Authentication with device flow

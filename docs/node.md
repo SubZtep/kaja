@@ -304,7 +304,7 @@ const NodeUpdateEventSchema = z.object({
 ```mermaid
 sequenceDiagram
     participant API
-    participant GeoIP
+    participant GeoService
     participant DB
 
     Note over API: After node.connect()
@@ -312,8 +312,8 @@ sequenceDiagram
     API->>API: Extract public IP<br/>from request headers
 
     alt Public IP found
-        API->>GeoIP: Lookup IP in MaxMind DB
-        GeoIP-->>API: {country, city, location}
+        API->>GeoService: HTTP GET /location/{ip}
+        GeoService-->>API: {country, city, location}
 
         API->>DB: UPDATE node<br/>geoLocation={...}
         Note over DB: geoLocation stored as JSONB
@@ -350,8 +350,9 @@ sequenceDiagram
 
 ### Code References
 
-- **GeoIP Service**: `packages/geo/index.ts`
-- **Connect Route**: `apps/api/src/features/kaja/routes/node/connect.ts:39-48`
+- **Geo Client**: `apps/api/src/lib/geo-client.ts`
+- **Geo Queue**: `apps/api/src/core/queue.ts`
+- **Connect Route**: `apps/api/src/features/kaja/routes/node/connect.ts`
 
 ## Architecture Details
 

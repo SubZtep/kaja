@@ -29,7 +29,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: postgresql://testuser:testpass@127.0.0.1:5432/testdb
+      DATABASE_URL: postgresql://testuser:testpass@127.0.0.1:5432/kaja
       BETTER_AUTH_SECRET: ci_better_auth_secret_at_least_32_chars_long
     services:
       postgres:
@@ -37,7 +37,7 @@ jobs:
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
+          POSTGRES_DB: kaja
         ports:
           - 5432:5432
         options: >-
