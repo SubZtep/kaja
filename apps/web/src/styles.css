@@ -48,105 +48,102 @@
 }
 
 @layer base {
-	html,
-	body {
-		@apply min-h-full;
-	}
+  html,
+  body {
+    @apply min-h-full;
+  }
 
-	body {
-		-webkit-font-smoothing: antialiased;
-		-moz-osx-font-smoothing: grayscale;
-		@apply relative m-0 bg-bg font-body text-base text-fg antialiased wrap-anywhere selection:bg-neon/40;
-		background-image: radial-gradient(
-			circle at 50% 50%,
-			rgba(10, 4, 20, 0) 0%,
-			rgba(10, 4, 20, 0.72) 48%,
-			rgba(10, 4, 20, 0.98) 100%
-		);
-		background-attachment: fixed;
-		background-repeat: no-repeat;
-	}
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply relative m-0 bg-surface-2 font-body text-base text-fg antialiased wrap-anywhere selection:bg-neon/40;
+  }
 
-	body::before {
-		content: "";
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		width: 220vmax;
-		height: 220vmax;
-		margin: -110vmax 0 0 -110vmax;
-		z-index: -1;
-		pointer-events: none;
-		opacity: 0.72;
-		background-image:
-			radial-gradient(
-				circle at 22% 26%,
-				color-mix(in srgb, var(--color-neon) 42%, transparent) 0 8%,
-				transparent 26%
-			),
-			radial-gradient(
-				circle at 72% 18%,
-				color-mix(in srgb, var(--color-ice) 34%, transparent) 0 7%,
-				transparent 24%
-			),
-			radial-gradient(
-				circle at 62% 74%,
-				color-mix(in srgb, var(--color-neon-hi) 36%, transparent) 0 10%,
-				transparent 30%
-			),
-			radial-gradient(
-				circle at 28% 76%,
-				color-mix(in srgb, var(--color-border) 55%, transparent) 0 12%,
-				transparent 34%
-			),
-			conic-gradient(
-				from 35deg,
-				color-mix(in srgb, var(--color-surface-2) 78%, transparent),
-				color-mix(in srgb, var(--color-neon) 28%, transparent),
-				color-mix(in srgb, var(--color-border) 66%, transparent),
-				color-mix(in srgb, var(--color-ice) 24%, transparent),
-				color-mix(in srgb, var(--color-surface) 82%, transparent),
-				color-mix(in srgb, var(--color-neon-hi) 24%, transparent),
-				color-mix(in srgb, var(--color-surface-2) 78%, transparent)
-			);
-		animation: bg-drift 24s ease-in-out infinite;
-		will-change: transform;
-	}
+  body.anim {
+    background-attachment: fixed;
+    background-repeat: no-repeat;
 
-	@media (prefers-reduced-motion: reduce) {
-		body::before {
-			animation: none;
-		}
-	}
+    &::before {
+      content: "";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 220vmax;
+      height: 220vmax;
+      margin: -110vmax 0 0 -110vmax;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.72;
+      background-image:
+        radial-gradient(
+          circle at 22% 26%,
+          color-mix(in srgb, var(--color-neon) 42%, transparent) 0 8%,
+          transparent 26%
+        ),
+        radial-gradient(
+          circle at 72% 18%,
+          color-mix(in srgb, var(--color-ice) 34%, transparent) 0 7%,
+          transparent 24%
+        ),
+        radial-gradient(
+          circle at 62% 74%,
+          color-mix(in srgb, var(--color-neon-hi) 36%, transparent) 0 10%,
+          transparent 30%
+        ),
+        radial-gradient(
+          circle at 28% 76%,
+          color-mix(in srgb, var(--color-border) 55%, transparent) 0 12%,
+          transparent 34%
+        ),
+        conic-gradient(
+          from 35deg,
+          color-mix(in srgb, var(--color-surface-2) 78%, transparent),
+          color-mix(in srgb, var(--color-neon) 28%, transparent),
+          color-mix(in srgb, var(--color-border) 66%, transparent),
+          color-mix(in srgb, var(--color-ice) 24%, transparent),
+          color-mix(in srgb, var(--color-surface) 82%, transparent),
+          color-mix(in srgb, var(--color-neon-hi) 24%, transparent),
+          color-mix(in srgb, var(--color-surface-2) 78%, transparent)
+        );
+      animation: bg-drift 24s ease-in-out infinite;
+      will-change: transform;
+    }
+  
+    @media (prefers-reduced-motion: reduce) {
+      &::before {
+        animation: none;
+      }
+    }
+  }
 
-	h1 {
-		@apply text-2xl font-extrabold mb-3 font-headline;
-	}
+  h1 {
+    @apply text-2xl font-extrabold mb-3 font-headline;
+  }
 
-	h2 {
-		@apply text-xl font-bold my-1 font-headline first:mt-0;
-	}
+  h2 {
+    @apply text-xl font-bold my-1 font-headline first:mt-0;
+  }
 
-	a {
-		@apply text-fg;
-		text-decoration: none;
-		&:hover {
-			@apply text-neon;
-		}
-	}
+  a {
+    @apply text-fg;
+    text-decoration: none;
+    &:hover {
+      @apply text-neon;
+    }
+  }
 
-	::-webkit-scrollbar {
-		width: 4px;
-	}
-	::-webkit-scrollbar-track {
-		@apply bg-bg;
-	}
-	::-webkit-scrollbar-thumb {
-		@apply rounded-[10px] bg-neon/40;
-	}
-	::-webkit-scrollbar-thumb:hover {
-		@apply bg-neon/70;
-	}
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-bg;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-[10px] bg-neon/40;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-neon/70;
+  }
 }
 
 @utility container {
@@ -199,20 +196,20 @@
 }
 
 pre {
-	width: fit-content;
-	text-align: left;
-	background-color: #0008;
-	font-size: 10px;
-	color: #ff0c;
-	padding: 4px;
-	border: 3px double #ff07;
-	&[data-top] {
-		opacity: 0.9;
-		top: 0;
-		right: 0;
-		z-index: 10000;
-		position: fixed;
-		max-height: 100%;
-		pointer-events: none;
-	}
+  width: fit-content;
+  text-align: left;
+  background-color: #0008;
+  font-size: 10px;
+  color: #ff0c;
+  padding: 4px;
+  border: 3px double #ff07;
+  &[data-top] {
+    opacity: 0.9;
+    top: 0;
+    right: 0;
+    z-index: 10000;
+    position: fixed;
+    max-height: 100%;
+    pointer-events: none;
+  }
 }

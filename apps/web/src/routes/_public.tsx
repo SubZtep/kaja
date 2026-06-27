@@ -15,9 +15,15 @@ const ICONS = [
 
 function PublicLayout() {
   const [i, setI] = useState(0)
+
   useEffect(() => {
     const id = setInterval(() => setI(v => (v + 1) % ICONS.length), 666_69)
-    return () => clearInterval(id)
+    document.body.classList.add("anim")
+
+    return () => {
+      clearInterval(id)
+      document.body.classList.remove("anim")
+    }
   }, [])
 
   const c = ICONS[i]
