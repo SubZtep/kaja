@@ -8,7 +8,7 @@ type NodeLoggerOptions = {
   bindings?: Record<string, unknown>
 }
 
-function createNodeTransport(env: string) {
+function createNodeTransport(_env: string) {
   // Never use pino.transport() - it uses thread-stream which can't be bundled by Bun
   // In production, use JSON logs. In development (local), use default pino output.
   // pino-pretty is excluded to avoid bundling issues

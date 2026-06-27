@@ -2,7 +2,6 @@ import { Text } from "ink"
 import { useAuth } from "../hooks/use-auth"
 import { useStore } from "../store"
 import { Auth } from "./Auth"
-import { Logo } from "./Logo"
 import NodeRunner from "./NodeRunner"
 import { NodeSetup } from "./NodeSetup"
 
@@ -12,7 +11,9 @@ export function App() {
 
   return (
     <>
-      <Logo />
+      {/* <Gradient name="rainbow">
+        <BigText font="slick" text="kaja.io" />
+      </Gradient> */}
 
       {isLoading ? (
         <Text>Loading...</Text>

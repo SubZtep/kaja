@@ -14,7 +14,7 @@ WORKDIR /home/bun/app
 ENV NODE_ENV=production
 
 USER bun
-COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/server.js ./server.js
+COPY --chown=bun:bun --chmod=444 --from=builder /home/bun/app/apps/api/dist/server.js ./server.js
 
 EXPOSE 3001
 CMD ["bun", "run", "server.js"]
