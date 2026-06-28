@@ -34,7 +34,7 @@
     "@xyflow/react": "^12.11.1",
     "better-auth": "^1.6.22",
     "lucide-react": "^1.22.0",
-    "nitro": "npm:nitro-nightly@3.0.1-20260626-071224-83acc441",
+    "nitro": "npm:nitro-nightly@3.0.1-20260628-090458-3df69609",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-toastify": "^11.1.0",

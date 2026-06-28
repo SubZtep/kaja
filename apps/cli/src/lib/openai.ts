@@ -1,12 +1,16 @@
 import readline from "node:readline"
-import { Ollama } from "ollama"
+import OpenAI from "openai"
 import { z } from "zod"
 
-const ollama = new Ollama({ host: "http://localhost:11434/" })
+const client = new OpenAI({
+  adminAPIKey: null,
+  apiKey: process.env.FIREWORKS_API_KEY ?? "",
+  baseURL: "https://api.fireworks.ai/inference/v1"
+})
 
-const MODEL = "qwen3.5:9b"
+const MODEL = "accounts/fireworks/models/kimi-k2p6"
 const MAX_TURNS = 10
-const CHAT_OPTIONS = { temperature: 0, top_p: 0.9, repeat_penalty: 1.1, num_predict: 200 } as const
+const CHAT_OPTIONS = { temperature: 0, top_p: 0.9, max_tokens: 1024 } as const
 
 async function run(cmd: string): Promise<string> {
   const proc = Bun.spawn(["bash", "-c", cmd], { stdout: "pipe", stderr: "pipe" })
@@ -31,11 +35,9 @@ async function detectEnvironment(): Promise<string> {
 
   const displayServer = waylandDisplay ? "Wayland" : xDisplay ? "X11" : "unknown"
 
-  // Detect window manager / desktop
   const wm =
     xdgDesktop || ((await which("hyprctl")) ? "Hyprland" : "") || ((await which("sway")) ? "Sway" : "") || "unknown"
 
-  // Detect notification daemon
   const notifTool = (await which("dunstify"))
     ? "dunstify"
     : (await which("notify-send"))
@@ -44,7 +46,6 @@ async function detectEnvironment(): Promise<string> {
         ? "makoctl"
         : "unknown"
 
-  // Detect package manager
   const pkgManager = (await which("pacman"))
     ? "pacman"
     : (await which("apt"))
@@ -55,13 +56,65 @@ async function detectEnvironment(): Promise<string> {
           ? "zypper"
           : "unknown"
 
+  const audioServer =
+    (await run("systemctl --user is-active pipewire 2>/dev/null").catch(() => "")).trim() === "active"
+      ? "PipeWire"
+      : (await run("systemctl --user is-active pulseaudio 2>/dev/null").catch(() => "")).trim() === "active"
+        ? "PulseAudio"
+        : (await which("jackd"))
+          ? "JACK"
+          : (await which("aplay"))
+            ? "ALSA"
+            : "unknown"
+
+  const audioTools =
+    (
+      await Promise.all([
+        which("pactl").then(ok => (ok ? "pactl" : "")),
+        which("pw-cli").then(ok => (ok ? "pw-cli" : "")),
+        which("aplay").then(ok => (ok ? "aplay" : "")),
+        which("ffplay").then(ok => (ok ? "ffplay" : "")),
+        which("mpv").then(ok => (ok ? "mpv" : "")),
+        which("sox").then(ok => (ok ? "sox" : ""))
+      ])
+    )
+      .filter(Boolean)
+      .join(", ") || "none"
+
+  const browserDesktop = (await run("xdg-settings get default-web-browser 2>/dev/null").catch(() => "")).trim()
+  const browserExec = browserDesktop
+    ? (
+      await run(
+        `grep -m1 "^Exec=" /usr/share/applications/${browserDesktop} /usr/local/share/applications/${browserDesktop} ~/.local/share/applications/${browserDesktop} 2>/dev/null | head -1 | sed 's/^Exec=//;s/ .*//'`
+      ).catch(() => "")
+    ).trim()
+    : ""
+  const browser = browserExec || "xdg-open"
+
+  const clipboard = (await which("wl-copy"))
+    ? "wl-copy / wl-paste"
+    : (await which("xclip"))
+      ? "xclip"
+      : (await which("xsel"))
+        ? "xsel"
+        : "unknown"
+
+  const urlEncoder = (await which("jq"))
+    ? "jq -rn --arg q \"...\" '$q|@uri'"
+    : "python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))'"
+
   const lines = [
     `- OS: ${distroName || "Linux"}`,
     `- Shell: ${shell || "bash"}`,
     `- Display server: ${displayServer}`,
     `- Desktop/WM: ${wm}`,
     `- Notification tool: ${notifTool}`,
-    `- Package manager: ${pkgManager}`
+    `- Package manager: ${pkgManager}`,
+    `- Audio server: ${audioServer}`,
+    `- Audio tools: ${audioTools}`,
+    `- Default browser: ${browser}`,
+    `- Clipboard tool: ${clipboard}`,
+    `- URL encoding tool: ${urlEncoder}`
   ]
 
   return lines.join("\n")
@@ -69,15 +122,18 @@ async function detectEnvironment(): Promise<string> {
 
 function buildSystemPrompt(envContext: string): string {
   return `\
-You are a Bash command generator. Your ONLY output is a single JSON object — nothing else.
+You are a Linux assistant. Your ONLY output is a single JSON object — nothing else.
 
-If you have enough information:
+If the request maps to a shell command:
 {"type":"command","command":"<bash command>"}
 
-If you need one piece of information:
+If you need one piece of information to continue:
 {"type":"question","question":"<one short question>"}
 
-If the request is impossible or dangerous to fulfill as a Bash command:
+If the request is a question, explanation, or doesn't map to a shell command:
+{"type":"answer","text":"<concise plain-text answer>"}
+
+If the request is impossible or dangerous:
 {"type":"error","message":"<short reason>"}
 
 System environment (ground truth — use these facts, do not ask about them):
@@ -89,23 +145,37 @@ Rules:
 - Home directory is ~.
 - Ask at most one question per turn.
 - If the user answers your question, use that answer to produce a command immediately.
-- If the request is clear enough to generate a reasonable command, do so — do not ask.
-- To fetch a webpage and read its content, use curl -sL (silent, follow redirects).
-- To open a URL in the default browser, use xdg-open.`
+- If the request is clear enough to generate a command, do so — do not ask.
+- Always use curl -sL -A "Mozilla/5.0" when fetching URLs.
+- URL-encode query strings using the URL encoding tool from the environment.
+- To open a URL in the browser, use the default browser from the environment (not xdg-open unless it's the only option).
+- Quote all user-supplied values with printf '%q' or use shell arrays to prevent injection.`
 }
 
 export const LLMResponseSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("command"), command: z.string().min(1) }),
   z.object({ type: z.literal("question"), question: z.string().min(1) }),
+  z.object({ type: z.literal("answer"), text: z.string().min(1) }),
   z.object({ type: z.literal("error"), message: z.string().min(1) })
 ])
 
 type LLMResponse = z.infer<typeof LLMResponseSchema>
 
+function extractJson(raw: string): string {
+  const stripped = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+  const start = stripped.indexOf("{")
+  const end = stripped.lastIndexOf("}")
+  if (start !== -1 && end !== -1) return stripped.slice(start, end + 1)
+  return stripped
+}
+
 function parseModelResponse(raw: string): LLMResponse {
   let parsed: unknown
   try {
-    parsed = JSON.parse(raw.trim())
+    parsed = JSON.parse(extractJson(raw))
   } catch {
     throw new Error(`Model returned non-JSON: ${raw}`)
   }
@@ -120,35 +190,34 @@ function askUser(rl: readline.Interface, question: string): Promise<string> {
   return new Promise(resolve => rl.question(question, resolve))
 }
 
-export async function generateCommand(userRequest: string, systemPrompt?: string): Promise<string> {
+export async function generateCommand(userRequest: string, systemPrompt?: string): Promise<string | null> {
   const prompt = systemPrompt ?? buildSystemPrompt(await detectEnvironment())
-  const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+  const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: prompt },
     { role: "user", content: userRequest }
   ]
 
   let rl: readline.Interface | null = null
+  let parseRetries = 0
 
   try {
     for (let turn = 0; turn < MAX_TURNS; turn++) {
-      // process.stdout.write(`\n\nTurn ${turn + 1}.\n\n`)
-      // process.stdout.write(JSON.stringify(messages, null, 2))
-
-      const response = await ollama.chat({
+      const response = await client.chat.completions.create({
         model: MODEL,
-        think: false,
-        options: CHAT_OPTIONS,
         messages,
+        ...CHAT_OPTIONS,
         stream: false
       })
 
-      const raw = response.message.content
+      const raw = response.choices[0].message.content ?? ""
       let parsed: LLMResponse
 
       try {
         parsed = parseModelResponse(raw)
+        parseRetries = 0
       } catch {
-        // Single retry on bad JSON
+        if (parseRetries >= 2) throw new Error(`Model repeatedly returned non-JSON: ${raw}`)
+        parseRetries++
         messages.push({ role: "assistant", content: raw })
         messages.push({
           role: "user",
@@ -159,7 +228,13 @@ export async function generateCommand(userRequest: string, systemPrompt?: string
       }
 
       if (parsed.type === "command") {
+        process.stdout.write(`${turn + 1} turn(s)\n`)
         return parsed.command
+      }
+
+      if (parsed.type === "answer") {
+        process.stdout.write(`${parsed.text}\n`)
+        return null
       }
 
       if (parsed.type === "error") {
@@ -186,17 +261,21 @@ if (import.meta.main) {
   const startTime = Date.now()
   const userRequest = process.argv.slice(2).join(" ").trim()
   if (!userRequest) {
-    process.stderr.write("Usage: bun src/lib/ollama.ts <your request>\n")
+    process.stderr.write("Usage: bun src/lib/openai.ts <your request>\n")
     process.exit(1)
   }
   const envContext = await detectEnvironment()
   const systemPrompt = buildSystemPrompt(envContext)
   const command = await generateCommand(userRequest, systemPrompt)
-  process.stdout.write(`${command}\n`)
-  const result = Bun.spawnSync(["bash", "-c", command], { stdout: "inherit", stderr: "inherit" })
+  if (command) {
+    process.stdout.write(`${command}\n`)
+    const result = Bun.spawnSync(["bash", "-c", command], { stdout: "inherit", stderr: "inherit" })
+    const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(3)
+    process.stdout.write(`Elapsed time: ${elapsedSeconds}s\n`)
+    process.exit(result.exitCode ?? 0)
+  }
   const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(3)
   process.stdout.write(`Elapsed time: ${elapsedSeconds}s\n`)
-  process.exit(result.exitCode ?? 0)
 }
 
-process.exit(1)
+process.exit(0)
