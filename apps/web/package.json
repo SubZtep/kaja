@@ -33,7 +33,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@xyflow/react": "^12.11.1",
     "better-auth": "^1.6.22",
-    "lucide-react": "^1.21.0",
+    "lucide-react": "^1.22.0",
     "nitro": "npm:nitro-nightly@3.0.1-20260626-071224-83acc441",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
