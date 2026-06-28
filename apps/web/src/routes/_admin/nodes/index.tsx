@@ -47,7 +47,7 @@ function NodesPage() {
   const busyCount = nodes.filter(n => n.status === "busy").length
 
   return (
-    <>
+    <div className="p-4">
       <NodesHeader isLive={isLive}>
         <ValueBox label="Active Nodes" variant="neon">
           {activeCount}
@@ -76,6 +76,6 @@ function NodesPage() {
           )}
         </>
       )}
-    </>
+    </div>
   )
 }

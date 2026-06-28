@@ -35,6 +35,13 @@ const layoutNavItems: LayoutNavItem[] = [
     surfaces: ["menu", "sidebar", "mobile"]
   },
   {
+    to: "/flow",
+    label: "Flow",
+    roles: ["admin", "user"],
+    icon: Server,
+    surfaces: ["menu", "sidebar", "mobile"]
+  },
+  {
     to: "/nodes",
     label: "Nodes",
     roles: ["admin", "user"],

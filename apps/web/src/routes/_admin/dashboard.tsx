@@ -11,7 +11,7 @@ function DashboardPage() {
   const user = useUser()
 
   return (
-    <>
+    <div className="p-4">
       <header className="mb-12">
         <h2 className="my-0 mb-4 text-5xl font-headline font-bold tracking-tighter text-neon neon-glow">
           Welcome back{user ? `, ${getFirstName(user.name)}` : ""}
@@ -32,7 +32,7 @@ function DashboardPage() {
           Navigate to the User Directory to manage users, or check your Profile settings.
         </p>
       </section> */}
-    </>
+    </div>
   )
 }
 

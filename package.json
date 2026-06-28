@@ -9,6 +9,7 @@
   "packageManager": "bun@1.3.14",
   "private": true,
   "scripts": {
+    "make": "cd ./apps/cli/ && bash ./create_model.sh",
     "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/src/cli.tsx",
     "lint": "biome check --config-path=.",

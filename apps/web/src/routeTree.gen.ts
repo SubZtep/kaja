@@ -17,6 +17,7 @@ import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as PublicLandingIndexRouteImport } from './routes/_public/_landing/index'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
 import { Route as AdminNodesIndexRouteImport } from './routes/_admin/nodes/index'
+import { Route as AdminFlowIndexRouteImport } from './routes/_admin/flow/index'
 import { Route as PublicauthResetPasswordRouteImport } from './routes/_public/(auth)/reset-password'
 import { Route as PublicauthDeviceRouteImport } from './routes/_public/(auth)/device'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
@@ -62,6 +63,11 @@ const AdminNodesIndexRoute = AdminNodesIndexRouteImport.update({
   path: '/nodes/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFlowIndexRoute = AdminFlowIndexRouteImport.update({
+  id: '/flow/',
+  path: '/flow/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const PublicauthResetPasswordRoute = PublicauthResetPasswordRouteImport.update({
   id: '/(auth)/reset-password',
   path: '/reset-password',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device': typeof PublicauthDeviceRouteWithChildren
   '/reset-password': typeof PublicauthResetPasswordRoute
+  '/flow/': typeof AdminFlowIndexRoute
   '/nodes/': typeof AdminNodesIndexRoute
   '/users/': typeof AdminUsersIndexRoute
   '/device/approve': typeof PublicauthDeviceApproveRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AdminProfileRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/reset-password': typeof PublicauthResetPasswordRoute
+  '/flow': typeof AdminFlowIndexRoute
   '/nodes': typeof AdminNodesIndexRoute
   '/users': typeof AdminUsersIndexRoute
   '/device/approve': typeof PublicauthDeviceApproveRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
   '/_public/(auth)/device': typeof PublicauthDeviceRouteWithChildren
   '/_public/(auth)/reset-password': typeof PublicauthResetPasswordRoute
+  '/_admin/flow/': typeof AdminFlowIndexRoute
   '/_admin/nodes/': typeof AdminNodesIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
   '/_public/_landing/': typeof PublicLandingIndexRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/users/$userId'
     | '/device'
     | '/reset-password'
+    | '/flow/'
     | '/nodes/'
     | '/users/'
     | '/device/approve'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/users/$userId'
     | '/reset-password'
+    | '/flow'
     | '/nodes'
     | '/users'
     | '/device/approve'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/_admin/users/$userId'
     | '/_public/(auth)/device'
     | '/_public/(auth)/reset-password'
+    | '/_admin/flow/'
     | '/_admin/nodes/'
     | '/_admin/users/'
     | '/_public/_landing/'
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNodesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/flow/': {
+      id: '/_admin/flow/'
+      path: '/flow'
+      fullPath: '/flow/'
+      preLoaderRoute: typeof AdminFlowIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_public/(auth)/reset-password': {
       id: '/_public/(auth)/reset-password'
       path: '/reset-password'
@@ -309,6 +328,7 @@ interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
+  AdminFlowIndexRoute: typeof AdminFlowIndexRoute
   AdminNodesIndexRoute: typeof AdminNodesIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
@@ -317,6 +337,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
+  AdminFlowIndexRoute: AdminFlowIndexRoute,
   AdminNodesIndexRoute: AdminNodesIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }

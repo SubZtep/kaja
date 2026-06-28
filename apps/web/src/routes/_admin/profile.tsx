@@ -17,7 +17,7 @@ function Profile() {
   const user = Route.useLoaderData()
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-4">
       <div className="space-y-1">
         <h2 className="my-0 text-3xl font-headline font-extrabold tracking-tight text-fg">Profile</h2>
         <p className="text-sm text-muted">

@@ -13,7 +13,7 @@ export function Menu({ className }: Readonly<{ className?: string }>) {
   const items = getMenuItems(role)
 
   return (
-    <nav className={cn("flex items-center gap-x-4 text-sm font-semibold w-full", className)}>
+    <nav className={cn("flex items-center gap-x-4 text-sm font-semibold w-full h-(--menu-height) px-4", className)}>
       {items.map((item, index) => (
         <MenuItem key={item.to} to={item.to} style={{ animationDelay: `${index * 90 + 80}ms` }}>
           {item.label}

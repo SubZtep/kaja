@@ -22,8 +22,8 @@ function LandingLayout() {
     >
       <Menu
         className={cn(
-          "pb-2 opacity-60 hover:opacity-100 transition-opacity ease-in-out duration-150",
-          !isHomepage && "mb-2"
+          "p-0 pb-2 h-auto opacity-60 hover:opacity-100 transition-opacity ease-in-out duration-150",
+          !isHomepage && "mb-4"
         )}
       />
       <Outlet />

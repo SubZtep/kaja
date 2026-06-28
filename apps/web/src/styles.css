@@ -1,6 +1,12 @@
+@import "@xyflow/react/dist/style.css" layer(base);
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/manrope";
+
+:root {
+  --menu-height: 64px;
+  color-scheme: dark;
+}
 
 @theme {
   --radius-DEFAULT: 0.125rem;
