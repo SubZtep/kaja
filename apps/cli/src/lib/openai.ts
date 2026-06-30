@@ -10,7 +10,14 @@ const client = new OpenAI({
 
 const MODEL = "accounts/fireworks/models/kimi-k2p6"
 const MAX_TURNS = 10
-const CHAT_OPTIONS = { temperature: 0, top_p: 0.9, max_tokens: 1024 } as const
+const CHAT_OPTIONS = {
+  temperature: 0,
+  top_p: 0.9,
+  max_tokens: 24576,
+  top_k: 40,
+  presence_penalty: 0,
+  frequency_penalty: 0
+} as const
 
 async function run(cmd: string): Promise<string> {
   const proc = Bun.spawn(["bash", "-c", cmd], { stdout: "pipe", stderr: "pipe" })
