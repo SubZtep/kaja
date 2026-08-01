@@ -8,9 +8,9 @@ import { createContext, type ReactNode } from "react"
 import { ToastContainer } from "react-toastify"
 import { getAuthClient } from "../hooks/auth-client"
 
-export function Providers({ children }: Readonly<{ children: React.ReactNode }>) {
+export function Providers({ apiUrl, children }: Readonly<{ apiUrl: string; children: React.ReactNode }>) {
   return (
-    <SDKProvider>
+    <SDKProvider apiUrl={apiUrl}>
       <TanStackQueryProvider>
         {children}
 
@@ -70,12 +70,12 @@ function TanStackQueryProvider({ children }: Readonly<{ children: ReactNode }>) 
 
 export const SDKContext = createContext<KajaAPI | null>(null)
 
-function SDKProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const authClient = getAuthClient(import.meta.env.VITE_API_URL!)
+function SDKProvider({ apiUrl, children }: Readonly<{ apiUrl: string; children: ReactNode }>) {
+  const authClient = getAuthClient(apiUrl)
 
   // Create SDK instance with a function that retrieves the current access token
   const sdkInstance = new KajaAPI({
-    baseUrl: import.meta.env.VITE_API_URL!,
+    baseUrl: apiUrl,
     getAccessToken: async () => {
       const session = await authClient.getSession()
       return session.data?.session?.token ?? null
