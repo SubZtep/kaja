@@ -25,6 +25,7 @@ import { getConfigPath, saveConfig } from "../lib/config"
 import { getLanguage, type Language, setLanguage, t } from "../lib/i18n"
 import { getModelsPath, resolveModels } from "../lib/models"
 import {
+  KajaApiSchema,
   type KajaConfig,
   KajaEmbeddingSchema,
   KajaImageGenSchema,
@@ -61,8 +62,9 @@ type FieldName =
   | "imageGenBaseUrl"
   | "imageGenApiKey"
   | "imageGenModel"
+  | "apiBaseUrl"
 
-type GroupName = "llm" | "embedding" | "rerank" | "stt" | "tts" | "location" | "webSearch" | "imageGen"
+type GroupName = "llm" | "embedding" | "rerank" | "stt" | "tts" | "location" | "webSearch" | "imageGen" | "api"
 
 // Each group's fields, its zod shape for per-field validation, whether the
 // whole group can be omitted when every field is left blank, and an optional
@@ -125,6 +127,13 @@ const GROUPS: {
     nameKey: "wizard.groupImageGen",
     optional: true,
     fields: ["imageGenBaseUrl", "imageGenApiKey", "imageGenModel"]
+  },
+  {
+    name: "api",
+    nameKey: "wizard.groupApi",
+    optional: true,
+    descriptionKey: "wizard.groupApiHint",
+    fields: ["apiBaseUrl"]
   }
 ]
 
@@ -160,7 +169,8 @@ const FIELD_SCHEMAS: Record<FieldName, z.ZodType<string>> = {
   rerankApiKey: KajaRerankSchema.shape.apiKey.unwrap(),
   imageGenBaseUrl: KajaImageGenSchema.shape.baseUrl,
   imageGenApiKey: KajaImageGenSchema.shape.apiKey,
-  imageGenModel: KajaImageGenSchema.shape.model.unwrap()
+  imageGenModel: KajaImageGenSchema.shape.model.unwrap(),
+  apiBaseUrl: KajaApiSchema.shape.baseUrl
 }
 
 // Labels come from the dictionary (t(`wizard.${field}`)); placeholders are
@@ -192,7 +202,8 @@ const FIELDS: Record<FieldName, { placeholder: string }> = {
   imageGenApiKey: { placeholder: "xai-..." },
   imageGenModel: {
     placeholder: "grok-imagine-image-quality (provider default)"
-  }
+  },
+  apiBaseUrl: { placeholder: "https://api.kaja.io (used by: kaja config fetch)" }
 }
 
 // Own-language names on purpose: the picker must be readable before the
@@ -288,7 +299,8 @@ function valuesFromConfig(config: Partial<KajaConfig>): Values {
     rerankApiKey: config.rerank?.apiKey ?? "",
     imageGenBaseUrl: config.imageGen?.baseUrl ?? "",
     imageGenApiKey: config.imageGen?.apiKey ?? "",
-    imageGenModel: config.imageGen?.model ?? ""
+    imageGenModel: config.imageGen?.model ?? "",
+    apiBaseUrl: config.api?.baseUrl ?? ""
   }
 }
 
@@ -567,6 +579,7 @@ function ConfigWizard({ initial, onFinish }: { initial: Partial<KajaConfig>; onF
             ...(values.imageGenModel && { model: values.imageGenModel })
           }
         : undefined
+    const api = values.apiBaseUrl ? { baseUrl: values.apiBaseUrl } : undefined
 
     await saveConfig({
       llm: {
@@ -581,6 +594,7 @@ function ConfigWizard({ initial, onFinish }: { initial: Partial<KajaConfig>; onF
       webSearch,
       rerank,
       imageGen,
+      api,
       settings: { ...(settings.success ? settings.data : {}), language: lang }
     })
 

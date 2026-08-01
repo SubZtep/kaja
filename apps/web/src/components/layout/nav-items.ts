@@ -1,4 +1,4 @@
-import { LayoutDashboard, type LucideIcon, Server, Shield, Users } from "lucide-react"
+import { LayoutDashboard, type LucideIcon, Plug, Server, Shield, Users } from "lucide-react"
 
 type Surface = "menu" | "sidebar" | "mobile"
 type LayoutNavItem = {
@@ -53,6 +53,14 @@ const layoutNavItems: LayoutNavItem[] = [
     label: "Users",
     roles: ["admin"],
     icon: Users,
+    surfaces: ["menu", "sidebar", "mobile"]
+  },
+  {
+    to: "/mcp-servers",
+    label: "MCP Servers",
+    mobileLabel: "MCP",
+    roles: ["admin"],
+    icon: Plug,
     surfaces: ["menu", "sidebar", "mobile"]
   }
 ]

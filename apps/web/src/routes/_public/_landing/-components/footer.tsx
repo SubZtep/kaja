@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 export function Footer() {
   return (
     <section style={{ borderTop: "1px solid #21262d" }}>
@@ -19,6 +21,13 @@ export function Footer() {
           </div>
           <div style={{ fontSize: 13, color: "#6e7681" }}>
             MIT License &middot; built with Bun + TypeScript &middot;{" "}
+            Sign{" "}
+            <Link to="/signin" style={{ color: "#c9d1d9bb" }}>
+              In
+            </Link>/
+            <Link to="/signup" style={{ color: "#c9d1d9bb" }}>
+              Up
+            </Link> &middot;{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener">
               SubZtep
             </a>

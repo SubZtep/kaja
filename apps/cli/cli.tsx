@@ -120,6 +120,17 @@ if (cli.flags.continue) {
 const promptHistory = await loadPromptHistory()
 
 const currentConfig = await config()
+
+// Config subcommand: after the config guard (it needs config.api.baseUrl)
+// but before tools/MCP connections are set up — `kaja config fetch` doesn't
+// need a running MCP client, just the config for the API base URL.
+if (cli.input[0] === "config") {
+  const { runConfigCli } = await import("./lib/config-cli")
+  const { code, text } = await runConfigCli(cli.input.slice(1), currentConfig)
+  console.log(text)
+  process.exit(code)
+}
+
 const { settings, llm } = currentConfig
 const models = [...(await loadModels()), ...resolveConfigModels(currentConfig)]
 const personas = await loadPersonas(models)

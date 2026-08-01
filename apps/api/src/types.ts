@@ -1,5 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi"
 import type { CommandService } from "./services/command"
+import type { McpServerService } from "./services/mcp-server"
 import type { NodeService } from "./services/node"
 
 declare module "bun" {
@@ -40,6 +41,7 @@ export type RouteVariables = {
   user: AuthSessionUser | null
   nodeService: NodeService
   commandService: CommandService
+  mcpServerService: McpServerService
 }
 
 /** common route properties. */

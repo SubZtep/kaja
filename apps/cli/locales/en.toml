@@ -7,6 +7,7 @@ bye = "Bye, bye!"
 help = """
 Usage
   $ kaja
+  $ kaja config fetch
   $ kaja memory <list|forget <key-or-glob>|export>
   $ kaja session <list|diagram <id>>
   $ kaja telegram
@@ -56,6 +57,14 @@ notFound = "Session not found: {id}"
 [config]
 invalidAt = "Invalid config file at {path}: {message}"
 notExists = "Config file not exists: {path}"
+usage = """
+Usage
+  $ kaja config fetch   Regenerate mcp.toml from the Kaja API
+"""
+apiUrlMissing = "Set api.baseUrl in config.json first (see: kaja --config)"
+fetchFailed = "Failed to fetch mcp.toml (HTTP {status})"
+fetched = "Wrote {path}"
+fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
 
 [models]
 invalidAt = "Invalid models file at {path}: {message}"
@@ -87,6 +96,8 @@ groupWebSearch = "Web search tool (optional)"
 groupRerank = "Rerank tool (optional)"
 groupRerankHint = "Reorders search/retrieval results by relevance to a query using a dedicated reranker model — used after embedding-based search to filter down to the most relevant passages. Leave blank to skip this feature."
 groupImageGen = "Image generation tool (optional)"
+groupApi = "Kaja API (optional)"
+groupApiHint = "Base URL of a Kaja server — used by `kaja config fetch` to regenerate mcp.toml. Leave blank to skip."
 groupOptionalHint = "Optional — leave every field blank to skip this feature."
 llmBaseUrl = "OpenAI-compatible base URL"
 llmApiKey = "API key"
@@ -109,6 +120,7 @@ rerankApiKey = "Rerank API key"
 imageGenBaseUrl = "Image generation base URL"
 imageGenApiKey = "Image generation API key"
 imageGenModel = "Image generation model id"
+apiBaseUrl = "Kaja API base URL"
 reviewHint = "Enter: save and start · Esc: back"
 footer = "Enter next · Tab switch field · Esc back/cancel"
 

@@ -83,6 +83,12 @@ export const KajaTelegramSchema = z.object({
   allowedUserIds: z.array(z.number().int()).min(1)
 })
 
+// Optional: only needed by commands that talk to the Kaja backend (e.g.
+// `kaja config fetch`), unlike llm/stt/tts which are local-provider blocks.
+export const KajaApiSchema = z.object({
+  baseUrl: z.url()
+})
+
 export const KajaConfigSchema = z.object({
   llm: KajaLlmSchema,
   stt: KajaSttSchema.optional(),
@@ -94,6 +100,7 @@ export const KajaConfigSchema = z.object({
   memory: KajaMemorySchema.optional(),
   imageGen: KajaImageGenSchema.optional(),
   telegram: KajaTelegramSchema.optional(),
+  api: KajaApiSchema.optional(),
   // In-app preferences (slash menu); optional so existing configs stay valid.
   settings: KajaSettingsSchema.optional()
 })
@@ -110,3 +117,4 @@ export type KajaEmbedding = z.infer<typeof KajaEmbeddingSchema>
 export type KajaMemory = z.infer<typeof KajaMemorySchema>
 export type KajaImageGen = z.infer<typeof KajaImageGenSchema>
 export type KajaTelegram = z.infer<typeof KajaTelegramSchema>
+export type KajaApi = z.infer<typeof KajaApiSchema>

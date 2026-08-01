@@ -7,6 +7,7 @@ bye = "Pá, pá!"
 help = """
 Használat
   $ kaja
+  $ kaja config fetch
   $ kaja memory <list|forget <kulcs-vagy-glob>|export>
   $ kaja session <list|diagram <id>>
   $ kaja telegram
@@ -56,6 +57,14 @@ notFound = "Nincs ilyen munkamenet: {id}"
 [config]
 invalidAt = "Érvénytelen konfigurációs fájl ({path}): {message}"
 notExists = "Nem létezik a konfigurációs fájl: {path}"
+usage = """
+Használat
+  $ kaja config fetch   Újragenerálja az mcp.toml-t a Kaja API-ból
+"""
+apiUrlMissing = "Állítsd be az api.baseUrl-t a config.json-ban (lásd: kaja --config)"
+fetchFailed = "Nem sikerült letölteni az mcp.toml-t (HTTP {status})"
+fetched = "{path} elmentve"
+fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
 
 [models]
 invalidAt = "Érvénytelen modell fájl ({path}): {message}"
@@ -87,6 +96,8 @@ groupWebSearch = "Webkereső eszköz (opcionális)"
 groupRerank = "Rangsoroló eszköz (opcionális)"
 groupRerankHint = "Egy dedikált rangsoroló modell segítségével relevancia szerint rendezi újra a kereső/visszakereső találatokat — a beágyazás-alapú keresés után használatos, hogy a legrelevánsabb részletekre szűrjön. Hagyd üresen a funkció kihagyásához."
 groupImageGen = "Képgenerálás eszköz (opcionális)"
+groupApi = "Kaja API (opcionális)"
+groupApiHint = "Egy Kaja szerver alap URL-je — a `kaja config fetch` használja az mcp.toml újragenerálásához. Hagyd üresen a kihagyáshoz."
 groupOptionalHint = "Opcionális — hagyj üresen minden mezőt a funkció kihagyásához."
 llmBaseUrl = "OpenAI-kompatibilis alap URL"
 llmApiKey = "API kulcs"
@@ -109,6 +120,7 @@ rerankApiKey = "Rangsoroló API kulcs"
 imageGenBaseUrl = "Képgenerálás alap URL"
 imageGenApiKey = "Képgenerálás API kulcs"
 imageGenModel = "Képgenerálás modell azonosító"
+apiBaseUrl = "Kaja API alap URL"
 reviewHint = "Enter: mentés és indítás · Esc: vissza"
 footer = "Enter tovább · Tab mezőváltás · Esc vissza/mégse"
 

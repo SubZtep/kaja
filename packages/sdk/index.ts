@@ -4,16 +4,21 @@ import type {
   ConnectNodeRequest,
   ConnectNodeResponse,
   CreateCommandRequest,
+  CreateMcpServerRequest,
   DisconnectNodeRequest,
   HeartbeatRequest,
   HeartbeatResponse,
-  ListNodesResponse
+  ListMcpServersResponse,
+  ListNodesResponse,
+  McpServer,
+  UpdateMcpServerRequest
 } from "@kaja/schema"
 import {
   commandSchema,
   connectNodeResponseSchema,
   heartbeatResponseSchema,
-  listNodesResponseSchema
+  listNodesResponseSchema,
+  mcpServerSchema
 } from "@kaja/schema"
 import { z } from "zod"
 
@@ -76,6 +81,24 @@ export class KajaAPI {
     cancel: async (commandId: string): Promise<Command> => {
       const response = await this.#request(`/admin/commands/${commandId}/cancel`, {})
       return commandSchema.parse(response)
+    }
+  }
+
+  mcpServers = {
+    list: async (): Promise<McpServer[]> => {
+      const response = await this.#request<ListMcpServersResponse>("/admin/mcp-servers")
+      return z.array(mcpServerSchema).parse(response.mcpServers)
+    },
+    create: async (payload: CreateMcpServerRequest): Promise<McpServer> => {
+      const response = await this.#request("/admin/mcp-servers", payload)
+      return mcpServerSchema.parse(response)
+    },
+    update: async (id: string, payload: UpdateMcpServerRequest): Promise<McpServer> => {
+      const response = await this.#request(`/admin/mcp-servers/${id}`, payload, { method: "PATCH" })
+      return mcpServerSchema.parse(response)
+    },
+    delete: async (id: string): Promise<{ success: boolean }> => {
+      return this.#request(`/admin/mcp-servers/${id}`, undefined, { method: "DELETE" })
     }
   }
 

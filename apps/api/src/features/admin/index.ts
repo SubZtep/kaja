@@ -1,18 +1,20 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { commandService, nodeService } from "../../services"
+import { commandService, mcpServerService, nodeService } from "../../services"
 import type { RouteProps } from "../../types"
 import { adminMiddleware, requireAuthMiddleware } from "../auth"
 import { registerAdminCommands } from "./command"
+import { registerAdminMcpServers } from "./mcp-server"
 
 const attachServices = async (c: any, next: any) => {
   c.set("nodeService", nodeService)
   c.set("commandService", commandService)
+  c.set("mcpServerService", mcpServerService)
   await next()
 }
 
 /**
  * Node command management: signed-in (non-banned) users; handlers enforce node ownership.
- * Platform-admin-only: GET /admin/nodes/all (registered before parameterized routes).
+ * Platform-admin-only: GET /admin/nodes/all, /admin/mcp-servers/* (registered before parameterized routes).
  */
 export const adminRoutes = new OpenAPIHono<RouteProps>()
 adminRoutes.use("*", requireAuthMiddleware)
@@ -23,5 +25,8 @@ adminRoutes.get("/nodes/all", async c => {
   const nodes = await nodeService.getAllActiveNodes()
   return c.json({ nodes })
 })
+
+adminRoutes.use("/mcp-servers/*", adminMiddleware)
+registerAdminMcpServers(adminRoutes)
 
 registerAdminCommands(adminRoutes)

@@ -1,28 +1,14 @@
-import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
+import { OpenAPIHono } from "@hono/zod-openapi"
+import { mcpServerService } from "../../services"
 import type { RouteProps } from "../../types"
+import { registerMcpToml } from "./mcp-toml-route"
 
-/** Config routes (stub — add endpoints here). */
+const attachServices = async (c: any, next: any) => {
+  c.set("mcpServerService", mcpServerService)
+  await next()
+}
+
+/** Config routes (unauthenticated: served the same way for everyone). */
 export const configRoutes = new OpenAPIHono<RouteProps>()
-
-const testRoute = createRoute({
-  method: "get",
-  path: "/test",
-  tags: ["Config"],
-  summary: "Config test route",
-  responses: {
-    200: {
-      description: "OK",
-      content: {
-        "application/json": {
-          schema: z.object({
-            message: z.string().openapi({ example: "Config test route is working!" })
-          })
-        }
-      }
-    }
-  }
-})
-
-configRoutes.openapi(testRoute, c => {
-  return c.json({ message: "Config test route is working!" })
-})
+configRoutes.use("*", attachServices)
+registerMcpToml(configRoutes)
