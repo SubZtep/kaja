@@ -90,7 +90,7 @@ export type WheelDirection = "up" | "down"
 export function parseWheelDirection(input: string): WheelDirection | null {
   const s = stripEsc(input)
   // useInput usually strips ESC, so we see `[<64;col;rowM`
-  const sgr = s.match(/^\[<(\d+);\d+;\d+[Mm]$/)
+  const sgr = /^\[<(\d+);\d+;\d+[Mm]$/.exec(s)
   if (sgr) {
     const btn = Number(sgr[1])
     // 64/65 base; low bits may carry modifiers on some terminals
@@ -100,9 +100,9 @@ export function parseWheelDirection(input: string): WheelDirection | null {
     return null
   }
   // X10: button byte is first of the three chars after M, encoded as value+32
-  const x10 = s.match(/^\[M(.)..$/)
+  const x10 = /^\[M(.)..$/.exec(s)
   if (x10) {
-    const btn = (x10[1]!.charCodeAt(0) - 32) & 0x7f
+    const btn = (x10[1].charCodeAt(0) - 32) & 0x7f
     if (btn === 64) return "up"
     if (btn === 65) return "down"
   }

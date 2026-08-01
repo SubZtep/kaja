@@ -22,11 +22,11 @@ export function Activity({
   pending,
   partial,
   thinking
-}: {
+}: Readonly<{
   pending: boolean
   partial: PartialMessage | null
   thinking: boolean
-}) {
+}>) {
   const [tick, setTick] = useState(0)
   useEffect(() => {
     if (!pending) return

@@ -59,7 +59,7 @@ export async function services(): Promise<ServicesFile> {
 }
 
 function tomlString(s: string): string {
-  return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+  return `"${s.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`
 }
 
 /** Renders a ServicesFile back to TOML text — flat sections, no arrays except allowedUserIds. */

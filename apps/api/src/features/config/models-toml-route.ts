@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import type { RouteRegProps } from "../../types"
-import { renderModelsToml } from "./models-toml"
+import { renderModelsToml } from "./render-toml"
 
 const modelsTomlRoute = createRoute({
   method: "get",

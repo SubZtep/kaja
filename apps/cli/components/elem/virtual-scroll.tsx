@@ -84,7 +84,7 @@ export function VirtualScroll({
   flexGrow,
   flexShrink,
   width
-}: {
+}: Readonly<{
   ref: Ref<VirtualScrollRef>
   children: ReactNode
   onScroll?: (offset: number) => void
@@ -93,7 +93,7 @@ export function VirtualScroll({
   flexGrow?: number
   flexShrink?: number
   width?: number | string
-}) {
+}>) {
   const [, force] = useReducer((x: number) => x + 1, 0)
   const containerRef = useRef<DOMElement>(null)
   const offsetRef = useRef(0)

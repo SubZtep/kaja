@@ -13,7 +13,7 @@ const telegramMarked = new Marked()
 
 /** Telegram's HTML parse mode only requires escaping these three characters. */
 function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
 }
 
 /** Same three, plus the quote that would otherwise close an attribute early. */

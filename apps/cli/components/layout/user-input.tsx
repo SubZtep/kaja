@@ -42,7 +42,7 @@ export function UserInput({
   menuItems,
   onMenuSelect,
   onMenuClose
-}: {
+}: Readonly<{
   pending: boolean
   /** The agent's voice is audibly playing — mute the mic so it isn't heard. */
   speaking: boolean
@@ -54,7 +54,7 @@ export function UserInput({
   // biome-ignore lint/suspicious/noConfusingVoidType: most handlers naturally return nothing; only a literal `true` is meaningful
   onMenuSelect: (index: number) => boolean | void
   onMenuClose?: () => void
-}) {
+}>) {
   const [input, setInput] = useState("")
   const [idle, setIdle] = useState(0)
   const [mic, setMic] = useState(false)
@@ -157,7 +157,7 @@ export function UserInput({
   )
 }
 
-function Border({ children, variant = "solid" }: { children: React.ReactNode; variant?: "solid" | "power" }) {
+function Border({ children, variant = "solid" }: Readonly<{ children: React.ReactNode; variant?: "solid" | "power" }>) {
   const isPower = variant === "power"
 
   const boxProps: any = {

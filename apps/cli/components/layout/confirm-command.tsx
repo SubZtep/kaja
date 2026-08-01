@@ -22,12 +22,12 @@ export function ConfirmCommand({
   description,
   running,
   onResolve
-}: {
+}: Readonly<{
   command: string
   description: string
   running: boolean
   onResolve: (approved: boolean) => void
-}) {
+}>) {
   const dangerous = isDangerousCommand(command)
   const color = dangerous ? "red" : "yellow"
   const lines = command.split("\n")

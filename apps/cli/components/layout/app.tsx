@@ -30,7 +30,7 @@ export default function App({
   sessionCount = 0,
   memoryNoteCount = 0,
   brainPath
-}: {
+}: Readonly<{
   initialSettings?: KajaSettings
   models?: ResolvedModel[]
   personas: Persona[]
@@ -48,7 +48,7 @@ export default function App({
   memoryNoteCount?: number
   /** Path to the memory database, shown in the startup stats panel. */
   brainPath: string
-}) {
+}>) {
   const {
     model,
     switchModel,

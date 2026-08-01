@@ -48,7 +48,7 @@ export function ChatViewport({
   pending,
   bottomChromeKey,
   startupPanel
-}: {
+}: Readonly<{
   events: TimelineEvent[]
   thinking: boolean
   partial: PartialMessageData | null
@@ -59,7 +59,7 @@ export function ChatViewport({
   bottomChromeKey?: string | number
   /** Shown in place of the empty timeline before the first message. */
   startupPanel?: ReactNode
-}) {
+}>) {
   const scrollRef = useRef<VirtualScrollRef>(null)
   const stickRef = useRef(true)
   const topPadRef = useRef(0)

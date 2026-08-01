@@ -269,7 +269,7 @@ export function TextInput({
   maxVisibleLines,
   prefix = "",
   prefixCols = 0
-}: TextInputProps) {
+}: Readonly<TextInputProps>) {
   const [state, setState] = useState({
     cursorOffset: originalValue.length,
     cursorWidth: 0,

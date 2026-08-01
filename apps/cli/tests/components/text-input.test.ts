@@ -163,11 +163,11 @@ test("plain insert and paste advance the cursor", () => {
 
 test("Ctrl combinations that are not bindings do not insert", () => {
   // Ctrl+T (dictation toggle) must not type "t"
-  expect(edit(state("hi", 2), { ctrl: true, input: "t" })).toBe(null)
-  expect(edit(state("hi", 2), { ctrl: true, input: "c" })).toBe(null)
+  expect(edit(state("hi", 2), { ctrl: true, input: "t" })).toBeNull()
+  expect(edit(state("hi", 2), { ctrl: true, input: "c" })).toBeNull()
   // Ctrl+A/E are intentionally unbound (no secondary line-start/end keys)
-  expect(edit(state("ab\ncd", 4), { ctrl: true, input: "a" })).toBe(null)
-  expect(edit(state("ab\ncd", 4), { ctrl: true, input: "e" })).toBe(null)
+  expect(edit(state("ab\ncd", 4), { ctrl: true, input: "a" })).toBeNull()
+  expect(edit(state("ab\ncd", 4), { ctrl: true, input: "e" })).toBeNull()
 })
 
 test("mouse wheel / kitty protocol noise do not insert text", () => {

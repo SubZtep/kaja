@@ -158,7 +158,7 @@ export async function loadPromptHistory(limit = 100): Promise<string[]> {
   const prompts: string[] = []
   for (const row of rows) {
     if (typeof row.text !== "string" || row.text.length === 0) continue
-    if (prompts[prompts.length - 1] === row.text) continue
+    if (prompts.at(-1) === row.text) continue
     prompts.push(row.text)
   }
   return prompts

@@ -31,8 +31,14 @@ log.trace("Startup")
 {
   const argv = process.argv.slice(2)
   const i = argv.findIndex(a => a === "--config-dir" || a.startsWith("--config-dir="))
-  const value =
-    i === -1 ? undefined : argv[i].startsWith("--config-dir=") ? argv[i].slice("--config-dir=".length) : argv[i + 1]
+  let value: string | undefined
+  if (i === -1) {
+    value = undefined
+  } else if (argv[i].startsWith("--config-dir=")) {
+    value = argv[i].slice("--config-dir=".length)
+  } else {
+    value = argv[i + 1]
+  }
   if (value) setConfigDirOverride(resolve(value))
 }
 

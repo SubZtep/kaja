@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import type { RouteRegProps } from "../../types"
-import { renderMcpToml } from "./mcp-toml"
+import { renderMcpToml } from "./render-toml"
 
 const mcpTomlRoute = createRoute({
   method: "get",

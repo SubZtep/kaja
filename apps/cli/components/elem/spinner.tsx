@@ -17,7 +17,7 @@ type Props = {
  * Spinner.
  * @link https://github.com/vadimdemedes/ink-spinner
  */
-export function Spinner({ type = "dots" }: Props) {
+export function Spinner({ type = "dots" }: Readonly<Props>) {
   const [frame, setFrame] = useState(0)
   const spinner = spinners[type]
 

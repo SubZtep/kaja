@@ -11,11 +11,11 @@ export function Menu({
   items,
   onSelect,
   onClose
-}: {
+}: Readonly<{
   items: string[]
   onSelect: (index: number) => void
   onClose: () => void
-}) {
+}>) {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   useInput((_input, key) => {

@@ -141,7 +141,7 @@ export function createLocalSink(): AudioSink {
   let ffplay: Bun.Subprocess<"pipe", "ignore", "ignore"> | undefined
 
   function getFfplay() {
-    if (!ffplay || ffplay.exitCode !== null) {
+    if (!ffplay?.exitCode) {
       ffplay = Bun.spawn(
         [
           "ffplay",

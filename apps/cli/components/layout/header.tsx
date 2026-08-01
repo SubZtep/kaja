@@ -13,12 +13,12 @@ export function Header({
   model,
   promptTokens,
   currentTool
-}: {
+}: Readonly<{
   persona: string
   model: string
   promptTokens: number | null
   currentTool?: { name: string; arguments: string }
-}) {
+}>) {
   return (
     <Box flexShrink={0} justifyContent="space-between" paddingX={1}>
       <Box gap={1}>

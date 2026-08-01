@@ -25,7 +25,7 @@ const ANIMATIONS = {
 type MonsterAnimation = keyof typeof ANIMATIONS
 type MonsterFrame = (typeof ANIMATIONS)[MonsterAnimation][number][0]
 
-export function Monster({ eventName, onDone }: { eventName: MonsterAnimation | null; onDone: () => void }) {
+export function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnimation | null; onDone: () => void }>) {
   const [frame, setFrame] = useState<MonsterFrame>(IDLE)
 
   useEffect(() => {

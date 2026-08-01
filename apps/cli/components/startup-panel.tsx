@@ -70,7 +70,7 @@ export function StartupPanel({
   sessionCount,
   memoryNoteCount,
   toolCount
-}: {
+}: Readonly<{
   persona: string
   models: ResolvedModel[]
   /** Id of the chat model actually in use right now. Among chat-task models, only this one gets a live reachability check — the rest stay at their default "pending" icon. Non-chat tasks (tts, stt, embedding, image-generation) are always checked, since there's no notion of an "active" one among them. */
@@ -81,7 +81,7 @@ export function StartupPanel({
   sessionCount: number
   memoryNoteCount: number
   toolCount: number
-}) {
+}>) {
   const [status, setStatus] = useState<Record<number, Availability>>({})
 
   useEffect(() => {
