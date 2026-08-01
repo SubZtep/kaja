@@ -24,7 +24,7 @@ export function ForgotPassword({
       setLoading(true)
       const { data, error } = await authClient.requestPasswordReset({
         email: parsed.data.email,
-        redirectTo: `${import.meta.env.VITE_APP_URL}/reset-password`
+        redirectTo: `${window.location.origin}/reset-password`
       })
       if (error) {
         toast.error(error.message ?? error.statusText)

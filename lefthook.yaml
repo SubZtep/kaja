@@ -1,5 +1,0 @@
-pre-commit:
-  parallel: true
-  jobs:
-    - run: bun lint:fix
-    - run: bun typecheck

@@ -1,0 +1,9 @@
+[pre-commit]
+
+parallel = true
+
+[[pre-commit.jobs]]
+run = "bun lint:fix"
+
+[[pre-commit.jobs]]
+run = "bun typecheck"
