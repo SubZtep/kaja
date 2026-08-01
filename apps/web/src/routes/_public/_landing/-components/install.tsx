@@ -1,7 +1,13 @@
-const INSTALL_CMD =
-  process.platform === "win32" ? "irm https://kaja.io/setup.ps1 | iex" : "curl -fsSL https://kaja.io/setup.sh | bash"
+import { useEffect, useState } from "react"
+import { getInstallCmd } from "../../../../lib/vars"
 
 export function Install() {
+  const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/setup.sh | bash")
+
+  useEffect(() => {
+    setInstallCmd(getInstallCmd())
+  }, [])
+
   return (
     <section>
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: "72px 24px" }}>
@@ -12,7 +18,7 @@ export function Install() {
         </p>
         <div style={{ background: "#0d1117", border: "1px solid #30363d", borderRadius: 10, padding: "20px 22px" }}>
           <code className="font-mono" style={{ fontSize: 13.5, color: "#e6edf3", display: "block" }}>
-            {INSTALL_CMD}
+            {installCmd}
           </code>
         </div>
         <p style={{ fontSize: 13, color: "#6e7681", margin: "12px 0 0" }}>

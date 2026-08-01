@@ -83,7 +83,6 @@ bun run --filter @kaja/cli test
 ### Web (`apps/web/src/`)
 
 - TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, nodes, users, profile)
-- Import alias `#/*` → `src/`
 - SDK via `useApiSdk()`; auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 
@@ -157,7 +156,6 @@ Applied on first Postgres init via compose volume `apps/api/migrations` → `doc
 
 ## Import Aliases
 
-- API / Web: `#/*` → `src/` where configured
 - Packages: import by package name (`@kaja/schema`, etc.); each package exports from its root `index.ts`
 
 ## Key Dependencies

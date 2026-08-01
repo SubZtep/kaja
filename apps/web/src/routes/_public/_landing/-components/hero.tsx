@@ -1,13 +1,16 @@
-import { useState } from "react"
-
-const INSTALL_CMD =
-  process.platform === "win32" ? "irm https://kaja.io/setup.ps1 | iex" : "curl -fsSL https://kaja.io/setup.sh | bash"
+import { useEffect, useState } from "react"
+import { getInstallCmd } from "../../../../lib/vars"
 
 export function Hero() {
   const [copied, setCopied] = useState(false)
+  const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/setup.sh | bash")
+
+  useEffect(() => {
+    setInstallCmd(getInstallCmd())
+  }, [])
 
   const copyInstall = () => {
-    navigator.clipboard?.writeText(INSTALL_CMD)
+    navigator.clipboard?.writeText(installCmd)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -132,7 +135,7 @@ export function Hero() {
                 whiteSpace: "nowrap"
               }}
             >
-              {INSTALL_CMD}
+              {installCmd}
             </code>
             <button
               type="button"
