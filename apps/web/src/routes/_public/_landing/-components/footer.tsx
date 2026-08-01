@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router"
 
 export function Footer() {
   return (
@@ -20,14 +20,15 @@ export function Footer() {
             &gt; kaja
           </div>
           <div style={{ fontSize: 13, color: "#6e7681" }}>
-            MIT License &middot; built with Bun + TypeScript &middot;{" "}
-            Sign{" "}
+            MIT License &middot; built with Bun + TypeScript &middot; Sign{" "}
             <Link to="/signin" style={{ color: "#c9d1d9bb" }}>
               In
-            </Link>/
+            </Link>
+            /
             <Link to="/signup" style={{ color: "#c9d1d9bb" }}>
               Up
-            </Link> &middot;{" "}
+            </Link>{" "}
+            &middot;{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener">
               SubZtep
             </a>
@@ -36,6 +37,7 @@ export function Footer() {
         <a
           href="https://github.com/SubZtep/kaja/stargazers"
           target="_blank"
+          rel="noopener"
           style={{
             fontSize: 13,
             display: "inline-flex",
@@ -47,7 +49,6 @@ export function Footer() {
             padding: "8px 16px",
             borderRadius: 6
           }}
-          rel="noopener"
         >
           ★ Star on GitHub
         </a>
