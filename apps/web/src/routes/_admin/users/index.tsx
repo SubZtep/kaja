@@ -172,7 +172,7 @@ function UserList() {
 
       <section className="overflow-hidden rounded-2xl bg-surface shadow-2xl">
         <div className="flex flex-wrap items-center gap-4 bg-surface px-6 py-6">
-          <div className="flex-1 min-w-[280px] relative">
+          <div className="flex-1 min-w-70 relative">
             <Search size={18} className="absolute top-1/2 left-4 -translate-y-1/2 text-muted" />
             <input
               type="text"

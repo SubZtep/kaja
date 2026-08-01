@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as UDotjsRouteImport } from './routes/u[.]js'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
 import { Route as PublicLandingRouteImport } from './routes/_public/_landing'
+import { Route as ApiSendRouteImport } from './routes/api/send'
 import { Route as AdminNodesIndexRouteImport } from './routes/_admin/nodes/index'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
@@ -34,6 +36,11 @@ const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UDotjsRoute = UDotjsRouteImport.update({
+  id: '/u.js',
+  path: '/u.js',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -47,6 +54,11 @@ const AdminProfileRoute = AdminProfileRouteImport.update({
 const PublicLandingRoute = PublicLandingRouteImport.update({
   id: '/_landing',
   getParentRoute: () => PublicRoute,
+} as any)
+const ApiSendRoute = ApiSendRouteImport.update({
+  id: '/api/send',
+  path: '/api/send',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminNodesIndexRoute = AdminNodesIndexRouteImport.update({
   id: '/nodes/',
@@ -107,8 +119,10 @@ const PublicLandingauthSignupRoute = PublicLandingauthSignupRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicLandingIndexRoute
+  '/u.js': typeof UDotjsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
+  '/api/send': typeof ApiSendRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device': typeof PublicauthDeviceRouteWithChildren
   '/reset-password': typeof PublicauthResetPasswordRoute
@@ -122,8 +136,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicLandingIndexRoute
+  '/u.js': typeof UDotjsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
+  '/api/send': typeof ApiSendRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/reset-password': typeof PublicauthResetPasswordRoute
   '/architecture': typeof PublicLandingArchitectureRoute
@@ -138,9 +154,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/u.js': typeof UDotjsRoute
   '/_admin/dashboard': typeof AdminDashboardRoute
   '/_admin/profile': typeof AdminProfileRoute
   '/_public/_landing': typeof PublicLandingRouteWithChildren
+  '/api/send': typeof ApiSendRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
   '/_public/(auth)/device': typeof PublicauthDeviceRouteWithChildren
   '/_public/(auth)/reset-password': typeof PublicauthResetPasswordRoute
@@ -157,8 +175,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/u.js'
     | '/dashboard'
     | '/profile'
+    | '/api/send'
     | '/users/$userId'
     | '/device'
     | '/reset-password'
@@ -172,8 +192,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/u.js'
     | '/dashboard'
     | '/profile'
+    | '/api/send'
     | '/users/$userId'
     | '/reset-password'
     | '/architecture'
@@ -187,9 +209,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_admin'
     | '/_public'
+    | '/u.js'
     | '/_admin/dashboard'
     | '/_admin/profile'
     | '/_public/_landing'
+    | '/api/send'
     | '/_admin/users/$userId'
     | '/_public/(auth)/device'
     | '/_public/(auth)/reset-password'
@@ -206,6 +230,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
+  UDotjsRoute: typeof UDotjsRoute
+  ApiSendRoute: typeof ApiSendRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -222,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u.js': {
+      id: '/u.js'
+      path: '/u.js'
+      fullPath: '/u.js'
+      preLoaderRoute: typeof UDotjsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_admin/dashboard': {
@@ -244,6 +277,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof PublicLandingRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/api/send': {
+      id: '/api/send'
+      path: '/api/send'
+      fullPath: '/api/send'
+      preLoaderRoute: typeof ApiSendRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_admin/nodes/': {
       id: '/_admin/nodes/'
@@ -392,6 +432,8 @@ const PublicRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
+  UDotjsRoute: UDotjsRoute,
+  ApiSendRoute: ApiSendRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

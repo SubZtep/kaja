@@ -86,11 +86,7 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
       <head>
         <HeadContent />
         {process.env.VITE_UMAMI_WEBSITE_ID && (
-          <script
-            defer
-            src="https://cloud.umami.is/script.js"
-            data-website-id={process.env.VITE_UMAMI_WEBSITE_ID}
-          ></script>
+          <script defer src="/u.js" data-website-id={process.env.VITE_UMAMI_WEBSITE_ID} data-host-url="/"></script>
         )}
       </head>
       <body>
