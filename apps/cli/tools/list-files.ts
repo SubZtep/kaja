@@ -32,6 +32,6 @@ export const listFilesTool = tool<{ path: string; pattern?: string }>({
     for await (const match of glob.scan({ cwd: args.path, dot: false })) {
       matches.push(match)
     }
-    return matches.length > 0 ? matches.sort().join("\n") : "(no matches)"
+    return matches.length > 0 ? matches.sort((a, b) => a.localeCompare(b)).join("\n") : "(no matches)"
   }
 })

@@ -63,7 +63,7 @@ export async function loadPersonas(models: ResolvedModel[]): Promise<Persona[]> 
   }
   const modelIds = new Set(models.map(m => m.id))
   const personas: Persona[] = []
-  for (const entry of entries.sort()) {
+  for (const entry of entries.sort((a, b) => a.localeCompare(b))) {
     const path = join(dir, entry)
     const id = basename(entry, ".toml")
     try {

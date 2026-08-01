@@ -110,7 +110,7 @@ test("a failed synthesis does not wedge the queue", async () => {
   }
 
   const { speak } = createTts(sink)
-  expect(speak("fails")).rejects.toThrow("TTS failed: 500")
+  await expect(speak("fails")).rejects.toThrow("TTS failed: 500")
   await speak("works")
   expect(playedChunks).toBeGreaterThan(0)
 })

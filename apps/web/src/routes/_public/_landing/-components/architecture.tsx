@@ -58,7 +58,7 @@ export function Architecture() {
 
     async function render() {
       const { default: mermaid } = await import("mermaid")
-      if (document.fonts?.ready) await document.fonts.ready
+      if (document.fonts) await document.fonts.ready
       if (cancelled || !diagramRef.current) return
 
       mermaid.initialize({

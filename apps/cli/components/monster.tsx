@@ -64,7 +64,7 @@ export function MonsterMate() {
 
   /** Weighted: mostly blinks, occasional personality */
   const pick = () => {
-    const r = Math.random()
+    const r = Math.random() // NOSONAR: animation flavor, not security-sensitive
     if (r < 0.75) return "blink"
     if (r < 0.9) return "smile"
     return "wink"
@@ -75,7 +75,7 @@ export function MonsterMate() {
 
     const scheduleNext = () => {
       /** 4s - 10s */
-      const delay = 4000 + Math.random() * 6000
+      const delay = 4000 + Math.random() * 6000 // NOSONAR: animation flavor, not security-sensitive
       timer = setTimeout(() => setEventName(pick()), delay)
     }
 

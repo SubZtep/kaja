@@ -35,7 +35,7 @@ export async function loadPluginTools(): Promise<Tool<any>[]> {
   } catch {
     return tools
   }
-  for (const entry of entries.sort()) {
+  for (const entry of entries.sort((a, b) => a.localeCompare(b))) {
     const path = join(dir, entry)
     try {
       const exports: Record<string, unknown> = await import(path)
