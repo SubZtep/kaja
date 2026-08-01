@@ -187,17 +187,20 @@ export function Hero() {
             <div style={{ color: "#8b949e" }}>
               $ <span style={{ color: "#e6edf3" }}>kaja</span>
             </div>
-            <div style={{ color: "#c9d1d9" }}>&gt; explain the auth flow in this repo</div>
-            <div style={{ color: "#8b949e" }}>⋮ reading project &hellip;</div>
+            <div style={{ color: "#c9d1d9" }}>&gt; how can i watch one night in paris tonight in the uk?</div>
             <div style={{ color: "#8b949e" }}>⋮ calling web_search &hellip;</div>
-            <div style={{ color: "#3fb950" }}>✓ found 3 relevant files</div>
+            <div style={{ color: "#3fb950" }}>✓ found 2 relevant films</div>
             <div style={{ color: "#c9d1d9", marginTop: 10 }}>
-              Auth runs through <span style={{ color: "#58a6ff" }}>lib/session.ts</span> &mdash;
+              There are actually <span style={{ color: "#58a6ff" }}>a couple of films</span> with a similar name. Just
+              to check — are you referring to:
               <br />
-              tokens are verified on every request&hellip;
+              1. <strong>One Night in Paris (2021)</strong> – a French stand-up comedy special on Netflix featuring top
+              French comics
+              <br />
+              2. &hellip;
             </div>
             <div style={{ color: "#8b949e", marginTop: 10 }}>
-              *&nbsp; <span style={{ animation: "blink 1s step-end infinite" }}>█</span>
+              *&nbsp;nevermind<span style={{ animation: "blink 1s step-end infinite" }}>█</span>
             </div>
           </div>
         </div>
