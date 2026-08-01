@@ -35,88 +35,84 @@ jobs:
               - 'apps/web/**'
 
       - name: Setup Git
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Smart Bump API
-        if: steps.filter.outputs.api == 'true'
+      - name: Bump, commit, tag, and push once
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true'
+        env:
+          FILTER_API: ${{ steps.filter.outputs.api }}
+          FILTER_CLI: ${{ steps.filter.outputs.cli }}
+          FILTER_WEB: ${{ steps.filter.outputs.web }}
+          BEFORE_SHA: ${{ github.event.before }}
         run: |
-          cd apps/api
+          set -euo pipefail
 
-          # Scan all commit messages in this specific push
-          COMMIT_MSGS=$(git log origin/main..HEAD --pretty=%B)
-          BUMP_TYPE="patch" # Default fallback
-
-          if [[ "$COMMIT_MSGS" == *"BREAKING CHANGE"* || "$COMMIT_MSGS" == *"\!"* ]]; then
-            BUMP_TYPE="major"
-          elif [[ "$COMMIT_MSGS" == *"feat"* ]]; then
-            BUMP_TYPE="minor"
+          # Commit messages for this push (not origin/main..HEAD, which is empty after checkout)
+          if [[ -n "${BEFORE_SHA}" && "${BEFORE_SHA}" != "0000000000000000000000000000000000000000" ]]; then
+            COMMIT_MSGS=$(git log "${BEFORE_SHA}..HEAD" --pretty=%B)
+          else
+            COMMIT_MSGS=$(git log -1 --pretty=%B)
           fi
 
-          echo "Determined bump type for API: $BUMP_TYPE"
+          bump_type() {
+            local msgs="$1"
+            if [[ "$msgs" == *"BREAKING CHANGE"* || "$msgs" == *"!"* ]]; then
+              echo "major"
+            elif [[ "$msgs" == *"feat"* ]]; then
+              echo "minor"
+            else
+              echo "patch"
+            fi
+          }
 
-          # Use Bun's native package manager command to bump without tagging natively
-          bun pm version $BUMP_TYPE --no-git-tag-version
-          NEW_VERSION=$(bun -e "console.log(require('./package.json').version)")
+          BUMP_TYPE=$(bump_type "$COMMIT_MSGS")
+          echo "Determined bump type: $BUMP_TYPE"
+          echo "Commit messages:"
+          echo "$COMMIT_MSGS"
 
-          # Commit back with [skip ci] to prevent infinite loops
-          git add package.json
-          git commit -m "chore(api): auto $BUMP_TYPE bump to $NEW_VERSION [skip ci]"
-          git tag "api@$NEW_VERSION"
+          SUMMARY_PARTS=()
+          TAGS=()
 
-          # Pull latest changes to avoid conflicts, then push code and tag
-          git pull origin main --rebase
-          git push origin main --tags
+          bump_workspace() {
+            local name="$1"
+            local dir="$2"
+            (
+              cd "$dir"
+              bun pm version "$BUMP_TYPE" --no-git-tag-version
+            )
+            local version
+            version=$(bun -e "console.log(require('./${dir}/package.json').version)")
+            git add "${dir}/package.json"
+            SUMMARY_PARTS+=("${name}@${version} (${BUMP_TYPE})")
+            TAGS+=("${name}@${version}")
+            echo "Bumped ${name} → ${version} (${BUMP_TYPE})"
+          }
 
-      - name: Smart Bump CLI
-        if: steps.filter.outputs.cli == 'true'
-        run: |
-          cd apps/cli
-
-          COMMIT_MSGS=$(git log origin/main..HEAD --pretty=%B)
-          BUMP_TYPE="patch"
-
-          if [[ "$COMMIT_MSGS" == *"BREAKING CHANGE"* || "$COMMIT_MSGS" == *"\!"* ]]; then
-            BUMP_TYPE="major"
-          elif [[ "$COMMIT_MSGS" == *"feat"* ]]; then
-            BUMP_TYPE="minor"
+          if [[ "$FILTER_API" == "true" ]]; then
+            bump_workspace "api" "apps/api"
+          fi
+          if [[ "$FILTER_CLI" == "true" ]]; then
+            bump_workspace "cli" "apps/cli"
+          fi
+          if [[ "$FILTER_WEB" == "true" ]]; then
+            bump_workspace "web" "apps/web"
           fi
 
-          echo "Determined bump type for CLI: $BUMP_TYPE"
-
-          bun pm version $BUMP_TYPE --no-git-tag-version
-          NEW_VERSION=$(bun -e "console.log(require('./package.json').version)")
-
-          git add package.json
-          git commit -m "chore(cli): auto $BUMP_TYPE bump to $NEW_VERSION [skip ci]"
-          git tag "cli@$NEW_VERSION"
-
-          git pull origin main --rebase
-          git push origin main --tags
-
-      - name: Smart Bump Web
-        if: steps.filter.outputs.web == 'true'
-        run: |
-          cd apps/web
-
-          COMMIT_MSGS=$(git log origin/main..HEAD --pretty=%B)
-          BUMP_TYPE="patch"
-
-          if [[ "$COMMIT_MSGS" == *"BREAKING CHANGE"* || "$COMMIT_MSGS" == *"\!"* ]]; then
-            BUMP_TYPE="major"
-          elif [[ "$COMMIT_MSGS" == *"feat"* ]]; then
-            BUMP_TYPE="minor"
+          if [[ ${#SUMMARY_PARTS[@]} -eq 0 ]]; then
+            echo "No workspaces to bump"
+            exit 0
           fi
 
-          echo "Determined bump type for Web: $BUMP_TYPE"
+          SUMMARY=$(IFS=", "; echo "${SUMMARY_PARTS[*]}")
+          git commit -m "chore: auto bump ${SUMMARY} [skip ci]"
 
-          bun pm version $BUMP_TYPE --no-git-tag-version
-          NEW_VERSION=$(bun -e "console.log(require('./package.json').version)")
-
-          git add package.json
-          git commit -m "chore(web): auto $BUMP_TYPE bump to $NEW_VERSION [skip ci]"
-          git tag "web@$NEW_VERSION"
+          for tag in "${TAGS[@]}"; do
+            git tag "$tag"
+            echo "Created tag ${tag}"
+          done
 
           git pull origin main --rebase
           git push origin main --tags
