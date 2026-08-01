@@ -8,14 +8,18 @@ export const Route = createFileRoute("/_public/_landing")({
 })
 
 function LandingLayout() {
-  const router = useRouterState()
-  const isHomepage = router.location.pathname === "/"
+  const _router = useRouterState()
+  const isSkipLayout = true // router.location.pathname === "/" || router.location.pathname === "/architecture"
+
+  if (isSkipLayout) {
+    return <Outlet />
+  }
 
   return (
     <Section
       className={cn(
         "transition-max-width duration-150",
-        isHomepage
+        isSkipLayout
           ? "m-4 max-w-md group flex flex-col gap-4 opacity-80 hover:opacity-100 transform-[perspective(900px)_rotateY(10deg)_rotateX(4deg)] hover:transform-none hover:shadow-purple-800/69"
           : "max-w-lg"
       )}
@@ -23,7 +27,7 @@ function LandingLayout() {
       <Menu
         className={cn(
           "pb-2 opacity-60 hover:opacity-100 transition-opacity ease-in-out duration-150",
-          !isHomepage && "mb-2"
+          !isSkipLayout && "mb-2"
         )}
       />
       <Outlet />

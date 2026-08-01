@@ -5,6 +5,12 @@ type LogFunction = (message: string, payload?: Record<string, unknown>) => void
 
 export { createLogger, type Logger, type LogSink } from "./core"
 
+/** Vite injects `import.meta.env`; plain TS has no such field — read via cast. */
+function viteEnv(key: "KAJA_APP_NAME" | "KAJA_LOG_LEVEL" | "MODE"): string | undefined {
+  const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
+  return env?.[key]
+}
+
 // Cache the logger instance
 let cachedLogger: {
   trace: LogFunction
@@ -23,27 +29,13 @@ function getLogger() {
   const isNode = typeof process !== "undefined" && process.versions?.node
 
   // Get app name from environment (fallback to "unknown")
-  const app =
-    (isNode
-      ? process.env.KAJA_APP_NAME
-      : typeof import.meta.env !== "undefined"
-        ? import.meta.env.KAJA_APP_NAME
-        : undefined) ?? "unknown"
+  const app = (isNode ? process.env.KAJA_APP_NAME : viteEnv("KAJA_APP_NAME")) ?? "unknown"
 
   // Get log level from environment (fallback to "warn")
-  const level =
-    (isNode
-      ? process.env.KAJA_LOG_LEVEL
-      : typeof import.meta.env !== "undefined"
-        ? import.meta.env.KAJA_LOG_LEVEL
-        : undefined) ?? "warn"
+  const level = (isNode ? process.env.KAJA_LOG_LEVEL : viteEnv("KAJA_LOG_LEVEL")) ?? "warn"
 
   // Get environment mode
-  const env = isNode
-    ? (process.env.NODE_ENV ?? "development")
-    : typeof import.meta.env !== "undefined"
-      ? import.meta.env.MODE
-      : "production"
+  const env = isNode ? (process.env.NODE_ENV ?? "development") : (viteEnv("MODE") ?? "production")
 
   if (isBrowser) {
     const browserLogger = createBrowserLogger({ app, env })

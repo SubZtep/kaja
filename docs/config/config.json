@@ -1,0 +1,9 @@
+{
+  "settings": {
+    "thinking": false,
+    "sounds": true,
+    "voice": false,
+    "language": "en",
+    "persona": "default"
+  }
+}

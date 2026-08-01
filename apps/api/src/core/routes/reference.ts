@@ -14,7 +14,6 @@ referenceRoutes.get(
     theme: "purple",
     darkMode: true,
     forceDarkModeState: "dark",
-    isLoading: true,
     hiddenClients: true,
     hideSearch: true,
     hideClientButton: true,

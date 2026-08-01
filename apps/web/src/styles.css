@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 @import "@fontsource-variable/manrope";
 
 @theme {
@@ -10,6 +11,7 @@
 
   --font-headline: "Manrope Variable", "Manrope", sans-serif;
   --font-body: "Inter Variable", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
 
   --color-bg: #0a0414;
   --color-surface: #15092a;
@@ -47,6 +49,44 @@
   }
 }
 
+@utility nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  @apply text-muted;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    width: 100%;
+    height: 2px;
+    transform: scaleX(0);
+    transform-origin: left;
+    @apply bg-ice;
+    box-shadow: 0 0 8px var(--color-ice);
+    transition: transform 170ms ease;
+  }
+
+  &:hover,
+  &.is-active {
+    @apply text-fg;
+  }
+
+  &:hover::after,
+  &.is-active::after {
+    transform: scaleX(1);
+  }
+
+  @media (max-width: 640px) {
+    &::after {
+      bottom: -4px;
+    }
+  }
+}
+
 @layer base {
   html,
   body {
@@ -67,7 +107,7 @@
     background-repeat: no-repeat;
   }
 
-  body::before {
+  body.bg-drift::before {
     content: "";
     position: fixed;
     top: 50%;
@@ -79,10 +119,26 @@
     pointer-events: none;
     opacity: 0.72;
     background-image:
-      radial-gradient(circle at 22% 26%, color-mix(in srgb, var(--color-neon) 42%, transparent) 0 8%, transparent 26%),
-      radial-gradient(circle at 72% 18%, color-mix(in srgb, var(--color-ice) 34%, transparent) 0 7%, transparent 24%),
-      radial-gradient(circle at 62% 74%, color-mix(in srgb, var(--color-neon-hi) 36%, transparent) 0 10%, transparent 30%),
-      radial-gradient(circle at 28% 76%, color-mix(in srgb, var(--color-border) 55%, transparent) 0 12%, transparent 34%),
+      radial-gradient(
+        circle at 22% 26%,
+        color-mix(in srgb, var(--color-neon) 42%, transparent) 0 8%,
+        transparent 26%
+      ),
+      radial-gradient(
+        circle at 72% 18%,
+        color-mix(in srgb, var(--color-ice) 34%, transparent) 0 7%,
+        transparent 24%
+      ),
+      radial-gradient(
+        circle at 62% 74%,
+        color-mix(in srgb, var(--color-neon-hi) 36%, transparent) 0 10%,
+        transparent 30%
+      ),
+      radial-gradient(
+        circle at 28% 76%,
+        color-mix(in srgb, var(--color-border) 55%, transparent) 0 12%,
+        transparent 34%
+      ),
       conic-gradient(
         from 35deg,
         color-mix(in srgb, var(--color-surface-2) 78%, transparent),
@@ -98,7 +154,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    body::before {
+    body.bg-drift::before {
       animation: none;
     }
   }
@@ -142,44 +198,6 @@
   text-shadow:
     0 0 6px currentColor,
     0 0 18px currentColor;
-}
-
-@utility nav-link {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-  @apply text-muted;
-
-  &::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -6px;
-    width: 100%;
-    height: 2px;
-    transform: scaleX(0);
-    transform-origin: left;
-    @apply bg-ice;
-    box-shadow: 0 0 8px var(--color-ice);
-    transition: transform 170ms ease;
-  }
-
-  &:hover,
-  &.is-active {
-    @apply text-fg;
-  }
-
-  &:hover::after,
-  &.is-active::after {
-    transform: scaleX(1);
-  }
-
-  @media (max-width: 640px) {
-    &::after {
-      bottom: -4px;
-    }
-  }
 }
 
 pre {

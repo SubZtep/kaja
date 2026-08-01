@@ -1,10 +1,13 @@
 telemetry = false
 
 [console]
-depth = 3
+depth = 6
 
 [run]
 bun = true
 noOrphans = true
 elide-lines = 0
 silent = true
+
+[test]
+preload = ["./scripts/load-test-env.ts"]
