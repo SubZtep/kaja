@@ -19,7 +19,6 @@ export function resolveModels(data: KajaModelsFile): ResolvedModel[] {
     const provider = data.providers[model.provider ?? "default"]!
     return {
       id: model.id,
-      label: model.label,
       task: model.task,
       baseUrl: provider.base_url,
       apiKey: provider.api_key

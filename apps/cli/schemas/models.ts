@@ -10,7 +10,6 @@ const TaskSchema = z.enum(["chat", "text-to-speech", "speech-to-text", "embeddin
 
 const ModelSchema = z.object({
   id: z.string().min(1),
-  label: z.string().min(1).optional(),
   task: TaskSchema,
   // Which [providers.*] table holds the credentials; omitted means "default".
   provider: z.string().min(1).optional()
@@ -43,7 +42,6 @@ export type ResolvedModelTask = ModelTask
 /** A model entry flattened with its provider's credentials. */
 export type ResolvedModel = {
   id: string
-  label?: string
   task: ResolvedModelTask
   baseUrl: string
   apiKey?: string

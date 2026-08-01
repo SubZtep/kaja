@@ -145,7 +145,7 @@ export function StartupPanel({
                   return (
                     <Text key={index}>
                       {"  "}
-                      <Text color={STATUS_COLOR[state]}>{STATUS_ICON[state]}</Text> {model.label ?? model.id}
+                      <Text color={STATUS_COLOR[state]}>{STATUS_ICON[state]}</Text> {model.id}
                     </Text>
                   )
                 })}

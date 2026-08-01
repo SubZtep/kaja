@@ -91,7 +91,6 @@ export default function App({
   const { columns, rows } = useWindowSize()
 
   const chatModels = models.filter(m => m.task === "chat")
-  const modelLabel = chatModels.find(m => m.id === model)?.label ?? model
   const [menuMode, setMenuMode] = useState<"main" | "model" | "persona">("main")
 
   // Slash menu (opened by typing "/" in the input): label + action together.
@@ -142,7 +141,7 @@ export default function App({
             }
           }))
         : chatModels.map(chatModel => ({
-            label: `${chatModel.label ?? chatModel.id}${chatModel.id === model ? " ✓" : ""}`,
+            label: `${chatModel.id}${chatModel.id === model ? " ✓" : ""}`,
             run: () => {
               switchModel(chatModel)
             }
@@ -150,7 +149,7 @@ export default function App({
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>
-      <Header persona={persona.label} model={modelLabel} promptTokens={promptTokens} currentTool={currentTool} />
+      <Header persona={persona.label} model={model} promptTokens={promptTokens} currentTool={currentTool} />
       <ChatViewport
         events={events}
         thinking={thinking}

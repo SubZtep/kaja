@@ -50,8 +50,8 @@ test("shows persona, grouped models with availability, and stats", async () => {
       <StartupPanel
         persona="Kaja"
         models={[
-          { id: "up-model", label: "Up Model", task: "chat", baseUrl },
-          { id: "down-model", label: "Down Model", task: "chat", baseUrl },
+          { id: "up-model", task: "chat", baseUrl },
+          { id: "down-model", task: "chat", baseUrl },
           { id: "tts-model", task: "text-to-speech", baseUrl }
         ]}
         activeModelId="up-model"
@@ -71,8 +71,8 @@ test("shows persona, grouped models with availability, and stats", async () => {
   // Among chat models, only the active one gets a live check and stays
   // "up"; a non-active chat model stays at its default "pending" icon.
   // Non-chat tasks (tts here) are still checked as before.
-  expect(frame).toContain("✓ Up Model")
-  expect(frame).toContain("○ Down Model")
+  expect(frame).toContain("✓ up-model")
+  expect(frame).toContain("○ down-model")
   expect(frame).toContain("✓ tts-model")
   expect(frame).toContain("/data/kaja/memory.sqlite")
   expect(frame).toContain("/home/kaja/project")
@@ -92,7 +92,6 @@ test("retries a failed check and settles on available once it succeeds", async (
         models={[
           {
             id: "flaky-model",
-            label: "Flaky Model",
             task: "chat",
             baseUrl
           }
@@ -109,10 +108,10 @@ test("retries a failed check and settles on available once it succeeds", async (
   await t.tick()
 
   // First attempt fails; stays pending (not "down") while a retry is queued.
-  expect(t.lastFrame()).toContain("○ Flaky Model")
+  expect(t.lastFrame()).toContain("○ flaky-model")
   // The retry (RETRY_DELAY_MS later) succeeds.
   await Bun.sleep(4500)
-  expect(t.lastFrame()).toContain("✓ Flaky Model")
+  expect(t.lastFrame()).toContain("✓ flaky-model")
 
   t.unmount()
   await t.waitUntilExit()

@@ -15,7 +15,6 @@ base_url = "http://localhost:8000"
 
 [[models]]
 id = "accounts/fireworks/models/deepseek"
-label = "DeepSeek fast"
 task = "chat"
 
 [[models]]
@@ -29,14 +28,12 @@ test("valid file parses and resolves provider credentials", () => {
   expect(models).toEqual([
     {
       id: "accounts/fireworks/models/deepseek",
-      label: "DeepSeek fast",
       task: "chat",
       baseUrl: "https://api.fireworks.ai/inference/v1",
       apiKey: "fw-test"
     },
     {
       id: "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16",
-      label: undefined,
       task: "text-to-speech",
       baseUrl: "http://localhost:8000",
       apiKey: undefined

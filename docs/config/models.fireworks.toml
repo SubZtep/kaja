@@ -15,32 +15,26 @@ api_key = "xai-YourSecretTwitterKey"
 
 [[models]]
 id = "accounts/fireworks/models/minimax-m3"
-label = "MiniMax M3"
 task = "chat"
 
 [[models]]
 id = "accounts/fireworks/models/deepseek-v4-pro"
-label = "DeepSeek pro"
 task = "chat"
 
 [[models]]
 id = "accounts/fireworks/models/kimi-k2p6"
-label = "Kimi K2.6"
 task = "chat"
 
 [[models]]
 id = "accounts/fireworks/models/qwen3-embedding-8b"
-label = "Qwen3 embedding"
 task = "embedding"
 
 [[models]]
 id = "accounts/fireworks/models/qwen3-reranker-8b"
-label = "Qwen3 reranker"
 task = "rerank"
 
 [[models]]
 id = "grok-imagine-image"
-label = "Grok image"
 task = "image-generation"
 provider = "xai"
 
