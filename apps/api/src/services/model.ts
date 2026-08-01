@@ -58,11 +58,11 @@ export class ModelService {
   async createModel(input: CreateModelRequest): Promise<Model> {
     const result = await this.#db.query(
       `
-      INSERT INTO model (provider_id, model_id, task, enabled)
+      INSERT INTO model (provider_id, model_id, tasks, enabled)
       VALUES ($1, $2, $3, $4)
       RETURNING *
       `,
-      [input.providerId, input.modelId, input.task, input.enabled]
+      [input.providerId, input.modelId, input.tasks, input.enabled]
     )
 
     return this.#rowToModel(result.rows[0])
@@ -74,13 +74,13 @@ export class ModelService {
       UPDATE model
       SET provider_id = COALESCE($2, provider_id),
           model_id = COALESCE($3, model_id),
-          task = COALESCE($4, task),
+          tasks = COALESCE($4, tasks),
           enabled = COALESCE($5, enabled),
           updated_at = NOW()
       WHERE id = $1
       RETURNING *
       `,
-      [id, input.providerId ?? null, input.modelId ?? null, input.task ?? null, input.enabled ?? null]
+      [id, input.providerId ?? null, input.modelId ?? null, input.tasks ?? null, input.enabled ?? null]
     )
 
     return result.rows[0] ? this.#rowToModel(result.rows[0]) : null
@@ -129,7 +129,7 @@ export class ModelService {
       id: row.id,
       providerId: row.provider_id,
       modelId: row.model_id,
-      task: row.task,
+      tasks: row.tasks,
       enabled: row.enabled,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)

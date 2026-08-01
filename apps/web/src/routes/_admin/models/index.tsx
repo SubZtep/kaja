@@ -1,3 +1,5 @@
+import { CheckboxGroup } from "@base-ui/react/checkbox-group"
+import { Field } from "@base-ui/react/field"
 import type { Model, ModelTask, Provider } from "@kaja/schema"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -32,7 +34,7 @@ const providerFormSchema = z.object({
 const modelFormSchema = z.object({
   providerId: z.string().min(1, "Required"),
   modelId: z.string().min(1, "Required"),
-  task: z.string().min(1, "Required")
+  tasks: z.array(z.string()).min(1, "Select at least one task")
 })
 
 const providerColumnHelper = createColumnHelper<Provider>()
@@ -75,7 +77,7 @@ function ModelsPage() {
   })
 
   const createModel = useMutation({
-    mutationFn: (payload: { providerId: string; modelId: string; task: ModelTask }) =>
+    mutationFn: (payload: { providerId: string; modelId: string; tasks: ModelTask[] }) =>
       sdk.models.create({ ...payload, enabled: true }),
     onSuccess: () => {
       invalidateModels()
@@ -115,13 +117,13 @@ function ModelsPage() {
   const providers = providersQuery.data ?? []
 
   const modelForm = useAppForm({
-    defaultValues: { providerId: providers[0]?.id ?? "", modelId: "", task: "chat" },
+    defaultValues: { providerId: providers[0]?.id ?? "", modelId: "", tasks: ["chat"] as string[] },
     validators: { onSubmit: modelFormSchema },
     onSubmit: async ({ value, formApi }) => {
       await createModel.mutateAsync({
         providerId: value.providerId,
         modelId: value.modelId,
-        task: value.task as ModelTask
+        tasks: value.tasks as ModelTask[]
       })
       formApi.reset()
     }
@@ -174,9 +176,10 @@ function ModelsPage() {
       header: "Model ID",
       cell: info => <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
     }),
-    modelColumnHelper.accessor("task", {
-      header: "Task",
-      cell: info => <span className="text-xs text-muted">{info.getValue()}</span>
+    modelColumnHelper.accessor("tasks", {
+      header: "Tasks",
+      cell: info => <span className="text-xs text-muted">{info.getValue().join(", ")}</span>,
+      enableColumnFilter: false
     }),
     modelColumnHelper.accessor("providerId", {
       header: "Provider",
@@ -303,9 +306,25 @@ function ModelsPage() {
             <modelForm.AppField name="modelId">
               {field => <field.TextField label="Model ID" placeholder="accounts/fireworks/models/minimax-m3" />}
             </modelForm.AppField>
-            <modelForm.AppField name="task">
+            <modelForm.AppField name="tasks">
               {field => (
-                <field.SelectField label="Task" options={MODEL_TASKS.map(task => ({ value: task, label: task }))} />
+                <div className="md:flex sm:col-span-3">
+                  <span className="flex w-48 align-middle items-center justify-between">Tasks:</span>
+                  <CheckboxGroup
+                    value={field.state.value}
+                    onValueChange={value => field.handleChange(value)}
+                    className="flex flex-wrap gap-x-4 gap-y-2"
+                  >
+                    {MODEL_TASKS.map(task => (
+                      <Field.Root key={task} name={task} className="flex items-center gap-2 text-sm text-fg">
+                        <Field.Label className="flex items-center gap-2">
+                          <Checkbox name={task} />
+                          {task}
+                        </Field.Label>
+                      </Field.Root>
+                    ))}
+                  </CheckboxGroup>
+                </div>
               )}
             </modelForm.AppField>
             <Button type="submit" className="sm:col-span-3 justify-self-start" loading={createModel.isPending}>

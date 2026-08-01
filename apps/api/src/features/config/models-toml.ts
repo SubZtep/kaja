@@ -4,7 +4,12 @@ function tomlString(s: string): string {
   return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
 }
 
-/** Renders providers+models into the `[providers.*]` / `[[models]]` shape apps/cli/schemas/models.ts expects. */
+/**
+ * Renders providers+models into the `[providers.*]` / `[[models]]` shape
+ * apps/cli/schemas/models.ts expects. That format has no notion of a model
+ * with multiple tasks, so a model with N tasks becomes N `[[models]]`
+ * blocks sharing the same id/provider — one per task.
+ */
 export function renderModelsToml(providers: Provider[], models: Model[]): string {
   const providerById = new Map(providers.map(p => [p.id, p]))
 
@@ -14,11 +19,13 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
     return lines.join("\n")
   })
 
-  const modelBlocks = models.map(m => {
+  const modelBlocks = models.flatMap(m => {
     const provider = providerById.get(m.providerId)
-    const lines = ["[[models]]", `id = ${tomlString(m.modelId)}`, `task = ${tomlString(m.task)}`]
-    if (provider && provider.name !== "default") lines.push(`provider = ${tomlString(provider.name)}`)
-    return lines.join("\n")
+    return m.tasks.map(task => {
+      const lines = ["[[models]]", `id = ${tomlString(m.modelId)}`, `task = ${tomlString(task)}`]
+      if (provider && provider.name !== "default") lines.push(`provider = ${tomlString(provider.name)}`)
+      return lines.join("\n")
+    })
   })
 
   return [...providerBlocks, ...modelBlocks].join("\n\n")
