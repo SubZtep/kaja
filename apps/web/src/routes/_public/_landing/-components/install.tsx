@@ -22,7 +22,10 @@ export function Install() {
           </code>
         </div>
         <p style={{ fontSize: 13, color: "#6e7681", margin: "12px 0 0" }}>
-          Prefer a plain binary? <a href="https://github.com/SubZtep/barkochba/releases">Grab one from Releases</a>{" "}
+          Prefer a plain binary?{" "}
+          <a href="https://github.com/SubZtep/kaja/releases" target="_blank" rel="noopener">
+            Grab one from Releases
+          </a>{" "}
           &mdash; Linux, macOS, and Windows, x64 and arm64.
         </p>
       </div>
