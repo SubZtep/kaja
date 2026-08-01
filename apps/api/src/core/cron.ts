@@ -13,7 +13,8 @@ export class CronService {
     this.#isRunning = true
     info("starting cron service")
 
-    // Add cron jobs here as needed
+    // Intentionally empty: GeoIP is an external service; node inactivity is handled by SchedulerService.
+    // Register Bun.CronJob entries here when a periodic API job is needed.
 
     info("cron jobs scheduled", { jobCount: this.#jobs.length })
   }

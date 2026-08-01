@@ -26,8 +26,8 @@ src/
     server.ts            # process entry: scheduler + cron + export default
     db.ts                # pg Pool
     logger.ts            # traffic logger for hono/logger
-    rate-limit.ts        # limiters (currently unused from app.ts)
-    cron.ts              # Bun.CronJob shell (no jobs registered yet)
+    rate-limit.ts        # global + auth limiters (off under bun test)
+    cron.ts              # Bun.CronJob shell (intentionally no jobs)
     routes/              # health, OpenAPI reference, /users
   features/
     auth/                # Better Auth config + routes + middleware
@@ -58,7 +58,9 @@ tests/integration/       # auth, kaja node flow, SSE
 - Commands: allowlist + shell-injection rejection in `command-validator.ts`
 - SSE: longer `idleTimeout` on the Bun server export (255s)
 - OpenAPI UI only when `NODE_ENV === "development"` (`/reference`)
-- Rate limit middleware is implemented but **commented out** in `app.ts`
+- Rate limit middleware is mounted (global + `/auth/*`); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
+- `/admin/*` requires a signed-in non-banned user; command handlers enforce node ownership (platform admins can access any node)
+- `GET /admin/nodes/all` requires Better Auth `admin` role
 
 ## Env
 
@@ -66,7 +68,7 @@ See `.env.example`.
 
 **Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `GEO_SERVICE_URL`, `GEO_SERVICE_API_KEY`, `NODE_ENV`.
 
-**Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX` (limiters exist in `rate-limit.ts` but are not mounted in `app.ts`).
+**Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`.
 
 **Production:** `NODE_ENV=production` (JSON logs, no pino-pretty), quieter log level, strong secret, real SMTP, `CORS_ORIGIN` matching the public web origin.
 
@@ -79,5 +81,4 @@ See `.env.example`.
 ## Boundaries
 
 - Prefer surgical changes; do not reintroduce ORM layers
-- Do not enable rate limiting or cron jobs without an explicit request
 - Keep migrations additive and lexicographically ordered

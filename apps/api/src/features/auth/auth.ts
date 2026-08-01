@@ -15,15 +15,19 @@ function deviceVerificationUrl() {
   return new URL("/device", base).toString()
 }
 
+/**
+ * Fire-and-forget email send (Better Auth: do not await — avoids timing leaks).
+ * Failures are logged for ops; the user already got a success response from the auth action.
+ * Re-delivery / in-app banners can be layered on later without blocking the request path.
+ */
 function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
-  // FIXME: Avoid awaiting the email sending to prevent timing attacks. (from Better-Auth doc)
   void sendEmail(args).catch(err => {
-    // TODO: notify user somehow
     error("Failed to send auth email", {
-      error: err,
+      error: err instanceof Error ? err.message : err,
       type: args.type,
       userId: args.payload.user.id,
-      email: args.payload.user.email
+      email: args.payload.user.email,
+      notify: "ops-log" // structured signal for log shippers / alerts
     })
   })
 }

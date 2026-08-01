@@ -26,11 +26,13 @@ declare module "bun" {
   }
 }
 
-// user type from better-auth session
+// user type from better-auth session (admin plugin adds role / ban fields)
 export type AuthSessionUser = {
   id: string
   email: string
   name?: string
+  role?: string | null
+  banned?: boolean | null
 }
 
 // context variables for Hono

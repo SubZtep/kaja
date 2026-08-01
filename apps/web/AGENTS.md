@@ -31,8 +31,6 @@ src/
 public/                           # favicons, install scripts, PWA bits
 ```
 
-Import alias: `#/*` → `./src/*`
-
 ## Conventions
 
 - **Data**: React Query + `@kaja/sdk` via `useApiSdk()` from Providers (SDK token from Better Auth session)

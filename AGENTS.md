@@ -75,7 +75,7 @@ bun run --filter @kaja/cli test
 
 - **Entry**: `core/server.ts` — Hono app, `SchedulerService`, `CronService`
 - **App**: `app.ts` — middleware, route mounts
-- **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (middleware present but **commented out** in `app.ts`), `cron.ts`
+- **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (no jobs registered)
 - **Features**: `features/auth/`, `features/kaja/` (nodes, admin commands, SSE)
 - **Lib**: `lib/geo-client.ts` — external GeoIP service (no local job queue)
 - Raw SQL + private row→API mappers; UUIDv7 PKs
@@ -143,8 +143,8 @@ Applied on first Postgres init via compose volume `apps/api/migrations` → `doc
 ## Notes
 
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
-- Rate limiting middleware exists in `apps/api` but is currently commented out in `app.ts`.
-- Cron service is present but has no registered jobs yet.
+- Rate limiting is enabled in the API (global + stricter `/auth/*`); disabled when `BUN_TEST` is set or `RATE_LIMIT_ENABLED=false`.
+- Cron service shell is present but intentionally has no registered jobs (node idle handled by SchedulerService).
 
 ## Testing & CI
 

@@ -17,7 +17,8 @@ const getMeRoute = createRoute({
         "application/json": {
           schema: z.object({
             id: z.string().openapi({ example: "01945678-1234-7abc-9def-0123456789ab" }),
-            email: z.string().email().openapi({ example: "user@example.com" })
+            email: z.string().email().openapi({ example: "user@example.com" }),
+            role: z.string().openapi({ example: "user" })
           })
         }
       }
@@ -41,5 +42,9 @@ userRoutes.openapi(getMeRoute, c => {
     return unauthorized(c)
   }
 
-  return c.json({ id: user.id, email: user.email })
+  return c.json({
+    id: user.id,
+    email: user.email,
+    role: user.role ?? "user"
+  })
 })

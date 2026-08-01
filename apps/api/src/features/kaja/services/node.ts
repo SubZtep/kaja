@@ -143,6 +143,12 @@ export class NodeService {
     return rows[0] ? this.#rowToNode(rows[0]) : null
   }
 
+  /** Lookup by id only (platform admin or post-ownership checks). */
+  async getNodeById(nodeId: string): Promise<Node | null> {
+    const { rows } = await this.#db.query(`SELECT * FROM node WHERE id = $1`, [nodeId])
+    return rows[0] ? this.#rowToNode(rows[0]) : null
+  }
+
   async getActiveNodes(userId: string): Promise<Node[]> {
     const { rows } = await this.#db.query(
       `

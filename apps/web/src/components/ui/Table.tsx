@@ -96,7 +96,7 @@ export function Table({
                           "flex gap-2 items-center",
                           header.column.getCanSort() && "cursor-pointer",
                           header.column.getIsSorted() && "select-none",
-                          header.column.getCanSort() && !header.column.getIsSorted() && "mr-[29px]"
+                          header.column.getCanSort() && !header.column.getIsSorted() && "mr-7.25"
                         )}
                         onClick={() => header.column.getCanSort() && toggleSorting(header.column.id)}
                       >
@@ -227,7 +227,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
               type="button"
               onClick={() => table.setPageIndex(item.value as number)}
               className={cn(
-                "min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                "min-w-10 px-3 py-2 rounded-lg text-sm font-medium transition-all",
                 pageIndex === item.value
                   ? "bg-neon text-bg shadow-[0_0_12px_rgba(255,63,181,0.5)]"
                   : "text-fg hover:bg-surface-2 hover:text-neon"
@@ -297,7 +297,8 @@ function Filter({ column }: Readonly<{ column: Column<any, unknown> }>) {
 
     case "period": {
       const values = (columnFilterValue ? (columnFilterValue as PeriodFilter) : [undefined, undefined]).map(
-        v => (typeof v === "object" ? v.toISOString().split("T")[0] : undefined) // FIXME: check with timezones
+        // Date inputs are calendar days in UTC (API stores timestamps in UTC)
+        (v: any) => (typeof v === "object" ? v.toISOString().slice(0, 10) : undefined)
       )
       return (
         <div className="flex flex-col gap-0.5">

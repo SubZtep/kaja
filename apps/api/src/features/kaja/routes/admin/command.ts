@@ -1,8 +1,18 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { commandSchema, createCommandRequestSchema } from "@kaja/schema"
-import type { RouteRegProps } from "../../../../types"
-import { badRequest, internalError, notFound, unauthorized } from "../../../../types/errors"
+import type { AuthSessionUser, RouteRegProps } from "../../../../types"
+import { badRequest, forbidden, internalError, notFound, unauthorized } from "../../../../types/errors"
+import { userHasRole } from "../../../auth"
 import { validateCommand } from "../../services/command-validator"
+import type { NodeService } from "../../services/node"
+
+/** Node owners or platform admins may manage commands for a node. */
+async function resolveAccessibleNode(nodeService: NodeService, nodeId: string, user: AuthSessionUser) {
+  if (userHasRole(user, "admin")) {
+    return nodeService.getNodeById(nodeId)
+  }
+  return nodeService.getNode(nodeId, user.id)
+}
 
 const createCommandRoute = createRoute({
   method: "post",
@@ -36,6 +46,22 @@ const createCommandRoute = createRoute({
     },
     401: {
       description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    404: {
+      description: "Node not found",
       content: {
         "application/json": {
           schema: z.object({ error: z.string() })
@@ -178,6 +204,7 @@ export function registerAdminCommands(app: RouteRegProps) {
   app.openapi(createCommandRoute, async c => {
     const user = c.get("user")
     if (!user) return unauthorized(c)
+    if (user.banned) return forbidden(c)
 
     const { nodeId } = c.req.valid("param")
     const body = c.req.valid("json")
@@ -190,8 +217,8 @@ export function registerAdminCommands(app: RouteRegProps) {
       return badRequest(c, validationError)
     }
 
-    // Verify node exists and is active
-    const node = await nodeService.getNode(nodeId, user.id)
+    // Verify node is accessible (owner or platform admin) and active
+    const node = await resolveAccessibleNode(nodeService, nodeId, user)
     if (!node) {
       return notFound(c, "Node not found")
     }
@@ -212,12 +239,17 @@ export function registerAdminCommands(app: RouteRegProps) {
   // List all commands for a node
   app.openapi(listNodeCommandsRoute, async c => {
     const user = c.get("user")
-    if (!user) {
-      return unauthorized(c)
-    }
+    if (!user) return unauthorized(c)
+    if (user.banned) return forbidden(c)
 
     const { nodeId } = c.req.valid("param")
     const commandService = c.get("commandService")
+    const nodeService = c.get("nodeService")
+
+    const node = await resolveAccessibleNode(nodeService, nodeId, user)
+    if (!node) {
+      return notFound(c, "Node not found")
+    }
 
     const commands = await commandService.getNodeCommands(nodeId)
 
@@ -227,16 +259,20 @@ export function registerAdminCommands(app: RouteRegProps) {
   // Get a specific command by ID
   app.openapi(getCommandRoute, async c => {
     const user = c.get("user")
-    if (!user) {
-      return unauthorized(c)
-    }
+    if (!user) return unauthorized(c)
+    if (user.banned) return forbidden(c)
 
     const { commandId } = c.req.valid("param")
     const commandService = c.get("commandService")
+    const nodeService = c.get("nodeService")
 
     const command = await commandService.getCommand(commandId)
-
     if (!command) {
+      return notFound(c, "Command not found")
+    }
+
+    const node = await resolveAccessibleNode(nodeService, command.nodeId, user)
+    if (!node) {
       return notFound(c, "Command not found")
     }
 
@@ -246,12 +282,22 @@ export function registerAdminCommands(app: RouteRegProps) {
   // Cancel a command
   app.openapi(cancelCommandRoute, async c => {
     const user = c.get("user")
-    if (!user) {
-      return unauthorized(c)
-    }
+    if (!user) return unauthorized(c)
+    if (user.banned) return forbidden(c)
 
     const { commandId } = c.req.valid("param")
     const commandService = c.get("commandService")
+    const nodeService = c.get("nodeService")
+
+    const existing = await commandService.getCommand(commandId)
+    if (!existing) {
+      return notFound(c, "Command not found or cannot be cancelled (already completed/failed/timeout)")
+    }
+
+    const node = await resolveAccessibleNode(nodeService, existing.nodeId, user)
+    if (!node) {
+      return notFound(c, "Command not found or cannot be cancelled (already completed/failed/timeout)")
+    }
 
     const command = await commandService.cancelCommand(commandId)
 

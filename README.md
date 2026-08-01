@@ -11,14 +11,13 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-Stack sandbox with **Bun** and **TypeScript**, implementing pieces of **Better Auth** in a **Hono API**, a **TanStack Start** web app, an **Expo** mobile app, and a ~~swarm of decentralised~~ local **Ink** terminal app.
+Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**, a **TanStack Start** web app, and a local **Ink** terminal agent (**CLI**). There is no mobile app in this monorepo.
 
 ## What’s in the Monorepo?
 
 * **Apps** 
   + [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery.
-  + [`cli`](./apps/cli/) – Installable CLI app for orchestration tasks.
-  <!-- - [ `mobile` ](./apps/mobile/) – Mobile app for mobility. -->
+  + [`cli`](./apps/cli/) – Installable CLI agent (personas, tools, MCP, Telegram).
   + [`web`](./apps/web/) – Public web and admin portal.
 * **Packages** 
   + [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.
