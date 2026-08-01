@@ -12,8 +12,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     try {
       session = await getSession()
     } catch (err) {
-      const err2 = err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : err
-      error("DIAGNOSTIC: getSession failed in root loader", { error: err2 })
+      error("Failed to fetch session in root loader", { error: err instanceof Error ? err.message : err })
     }
     return {
       apiUrl: process.env.VITE_API_URL,

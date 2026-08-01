@@ -11,10 +11,14 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
 
   const headers = getRequestHeaders()
   const cookie = headers.get("cookie") ?? ""
+  const forwardedFor = headers.get("x-forwarded-for") ?? headers.get("x-real-ip")
 
   const res = await fetch(`${apiUrl}/auth/get-session`, {
     method: "GET",
-    headers: cookie ? { cookie } : undefined,
+    headers: {
+      ...(cookie ? { cookie } : {}),
+      ...(forwardedFor ? { "x-forwarded-for": forwardedFor } : {})
+    },
     credentials: "include"
   })
 
