@@ -17,6 +17,7 @@ import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
 import { Route as PublicLandingRouteImport } from './routes/_public/_landing'
 import { Route as ApiSendRouteImport } from './routes/api/send'
 import { Route as AdminMcpServersIndexRouteImport } from './routes/_admin/mcp-servers/index'
+import { Route as AdminModelsIndexRouteImport } from './routes/_admin/models/index'
 import { Route as AdminNodesIndexRouteImport } from './routes/_admin/nodes/index'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
@@ -64,6 +65,11 @@ const ApiSendRoute = ApiSendRouteImport.update({
 const AdminMcpServersIndexRoute = AdminMcpServersIndexRouteImport.update({
   id: '/mcp-servers/',
   path: '/mcp-servers/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminModelsIndexRoute = AdminModelsIndexRouteImport.update({
+  id: '/models/',
+  path: '/models/',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminNodesIndexRoute = AdminNodesIndexRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof PublicauthResetPasswordRoute
   '/architecture': typeof PublicLandingArchitectureRoute
   '/mcp-servers/': typeof AdminMcpServersIndexRoute
+  '/models/': typeof AdminModelsIndexRoute
   '/nodes/': typeof AdminNodesIndexRoute
   '/users/': typeof AdminUsersIndexRoute
   '/device/approve': typeof PublicauthDeviceApproveRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof PublicauthResetPasswordRoute
   '/architecture': typeof PublicLandingArchitectureRoute
   '/mcp-servers': typeof AdminMcpServersIndexRoute
+  '/models': typeof AdminModelsIndexRoute
   '/nodes': typeof AdminNodesIndexRoute
   '/users': typeof AdminUsersIndexRoute
   '/device/approve': typeof PublicauthDeviceApproveRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/_public/(auth)/reset-password': typeof PublicauthResetPasswordRoute
   '/_public/_landing/architecture': typeof PublicLandingArchitectureRoute
   '/_admin/mcp-servers/': typeof AdminMcpServersIndexRoute
+  '/_admin/models/': typeof AdminModelsIndexRoute
   '/_admin/nodes/': typeof AdminNodesIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
   '/_public/_landing/': typeof PublicLandingIndexRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/architecture'
     | '/mcp-servers/'
+    | '/models/'
     | '/nodes/'
     | '/users/'
     | '/device/approve'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/architecture'
     | '/mcp-servers'
+    | '/models'
     | '/nodes'
     | '/users'
     | '/device/approve'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/_public/(auth)/reset-password'
     | '/_public/_landing/architecture'
     | '/_admin/mcp-servers/'
+    | '/_admin/models/'
     | '/_admin/nodes/'
     | '/_admin/users/'
     | '/_public/_landing/'
@@ -302,6 +314,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp-servers'
       fullPath: '/mcp-servers/'
       preLoaderRoute: typeof AdminMcpServersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/models/': {
+      id: '/_admin/models/'
+      path: '/models'
+      fullPath: '/models/'
+      preLoaderRoute: typeof AdminModelsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/nodes/': {
@@ -389,6 +408,7 @@ interface AdminRouteChildren {
   AdminProfileRoute: typeof AdminProfileRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminMcpServersIndexRoute: typeof AdminMcpServersIndexRoute
+  AdminModelsIndexRoute: typeof AdminModelsIndexRoute
   AdminNodesIndexRoute: typeof AdminNodesIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
@@ -398,6 +418,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminProfileRoute: AdminProfileRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminMcpServersIndexRoute: AdminMcpServersIndexRoute,
+  AdminModelsIndexRoute: AdminModelsIndexRoute,
   AdminNodesIndexRoute: AdminNodesIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }

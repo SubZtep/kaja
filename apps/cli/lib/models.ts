@@ -6,10 +6,21 @@ import TEMPLATE from "../../../docs/config/models.fireworks.toml" with { type: "
 import type { KajaConfig } from "../schemas/config"
 import { type KajaModelsFile, ModelsFileSchema, type ResolvedModel } from "../schemas/models"
 import { getConfigDir } from "./config"
+import { fetchTomlConfig } from "./config-fetch"
 import { t } from "./i18n"
 
 export function getModelsPath() {
   return join(getConfigDir(), "models.toml")
+}
+
+/**
+ * The `kaja config fetch` subcommand: downloads the server-rendered
+ * models.toml from the Kaja API and writes it to the local config dir. An
+ * existing file is renamed to .bak (.bak2, .bak3, ...) rather than
+ * overwritten in place, so a bad fetch is always recoverable.
+ */
+export async function fetchModelsToml(apiBaseUrl: string): Promise<{ path: string; backedUpTo?: string }> {
+  return fetchTomlConfig(apiBaseUrl, "/config/models.toml", getModelsPath())
 }
 
 /** Flatten each model entry with its provider's credentials. */

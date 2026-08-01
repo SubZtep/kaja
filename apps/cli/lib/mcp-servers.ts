@@ -6,24 +6,11 @@ import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../docs/config/mcp.toml" with { type: "text" }
 import { type KajaMcpFile, McpFileSchema } from "../schemas/mcp"
 import { getConfigDir } from "./config"
+import { fetchTomlConfig } from "./config-fetch"
 import { t } from "./i18n"
 
 export function getMcpPath() {
   return join(getConfigDir(), "mcp.toml")
-}
-
-/**
- * First non-existent path among mcp.toml.bak, mcp.toml.bak2, mcp.toml.bak3,
- * ... so `kaja config fetch` never clobbers a previous backup.
- */
-async function nextBackupPath(mcpPath: string): Promise<string> {
-  let suffix = ""
-  let n = 1
-  while (await file(`${mcpPath}.bak${suffix}`).exists()) {
-    n += 1
-    suffix = String(n)
-  }
-  return `${mcpPath}.bak${suffix}`
 }
 
 /**
@@ -33,20 +20,7 @@ async function nextBackupPath(mcpPath: string): Promise<string> {
  * overwritten in place, so a bad fetch is always recoverable.
  */
 export async function fetchMcpToml(apiBaseUrl: string): Promise<{ path: string; backedUpTo?: string }> {
-  const url = new URL("/config/mcp.toml", apiBaseUrl)
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(t("config.fetchFailed", { status: String(res.status) }))
-  const toml = await res.text()
-
-  const mcpPath = getMcpPath()
-  const f = file(mcpPath)
-  let backedUpTo: string | undefined
-  if (await f.exists()) {
-    backedUpTo = await nextBackupPath(mcpPath)
-    await write(backedUpTo, f)
-  }
-  await write(mcpPath, toml)
-  return { path: mcpPath, backedUpTo }
+  return fetchTomlConfig(apiBaseUrl, "/config/mcp.toml", getMcpPath())
 }
 
 /**

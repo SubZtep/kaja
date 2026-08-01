@@ -5,20 +5,30 @@ import type {
   ConnectNodeResponse,
   CreateCommandRequest,
   CreateMcpServerRequest,
+  CreateModelRequest,
+  CreateProviderRequest,
   DisconnectNodeRequest,
   HeartbeatRequest,
   HeartbeatResponse,
   ListMcpServersResponse,
+  ListModelsResponse,
   ListNodesResponse,
+  ListProvidersResponse,
   McpServer,
-  UpdateMcpServerRequest
+  Model,
+  Provider,
+  UpdateMcpServerRequest,
+  UpdateModelRequest,
+  UpdateProviderRequest
 } from "@kaja/schema"
 import {
   commandSchema,
   connectNodeResponseSchema,
   heartbeatResponseSchema,
   listNodesResponseSchema,
-  mcpServerSchema
+  mcpServerSchema,
+  modelSchema,
+  providerSchema
 } from "@kaja/schema"
 import { z } from "zod"
 
@@ -99,6 +109,42 @@ export class KajaAPI {
     },
     delete: async (id: string): Promise<{ success: boolean }> => {
       return this.#request(`/admin/mcp-servers/${id}`, undefined, { method: "DELETE" })
+    }
+  }
+
+  providers = {
+    list: async (): Promise<Provider[]> => {
+      const response = await this.#request<ListProvidersResponse>("/admin/providers")
+      return z.array(providerSchema).parse(response.providers)
+    },
+    create: async (payload: CreateProviderRequest): Promise<Provider> => {
+      const response = await this.#request("/admin/providers", payload)
+      return providerSchema.parse(response)
+    },
+    update: async (id: string, payload: UpdateProviderRequest): Promise<Provider> => {
+      const response = await this.#request(`/admin/providers/${id}`, payload, { method: "PATCH" })
+      return providerSchema.parse(response)
+    },
+    delete: async (id: string): Promise<{ success: boolean }> => {
+      return this.#request(`/admin/providers/${id}`, undefined, { method: "DELETE" })
+    }
+  }
+
+  models = {
+    list: async (): Promise<Model[]> => {
+      const response = await this.#request<ListModelsResponse>("/admin/models")
+      return z.array(modelSchema).parse(response.models)
+    },
+    create: async (payload: CreateModelRequest): Promise<Model> => {
+      const response = await this.#request("/admin/models", payload)
+      return modelSchema.parse(response)
+    },
+    update: async (id: string, payload: UpdateModelRequest): Promise<Model> => {
+      const response = await this.#request(`/admin/models/${id}`, payload, { method: "PATCH" })
+      return modelSchema.parse(response)
+    },
+    delete: async (id: string): Promise<{ success: boolean }> => {
+      return this.#request(`/admin/models/${id}`, undefined, { method: "DELETE" })
     }
   }
 
