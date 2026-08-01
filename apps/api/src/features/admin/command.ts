@@ -1,10 +1,10 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { commandSchema, createCommandRequestSchema } from "@kaja/schema"
-import type { AuthSessionUser, RouteRegProps } from "../../../../types"
-import { badRequest, forbidden, internalError, notFound, unauthorized } from "../../../../types/errors"
-import { userHasRole } from "../../../auth"
 import { validateCommand } from "../../services/command-validator"
 import type { NodeService } from "../../services/node"
+import type { AuthSessionUser, RouteRegProps } from "../../types"
+import { badRequest, forbidden, internalError, notFound, unauthorized } from "../../types/errors"
+import { userHasRole } from "../auth"
 
 /** Node owners or platform admins may manage commands for a node. */
 async function resolveAccessibleNode(nodeService: NodeService, nodeId: string, user: AuthSessionUser) {

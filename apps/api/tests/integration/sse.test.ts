@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { db } from "../../src/core/db"
-import type { NodeEvent } from "../../src/features/kaja/services/events"
-import { nodeEvents } from "../../src/features/kaja/services/events"
-import { NodeService } from "../../src/features/kaja/services/node"
+import type { NodeEvent } from "../../src/services/events"
+import { nodeEvents } from "../../src/services/events"
+import { NodeService } from "../../src/services/node"
 
 describe("SSE Event Emission", () => {
   const firstName = faker.person.firstName()

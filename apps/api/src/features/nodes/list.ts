@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { listNodesResponseSchema } from "@kaja/schema"
-import type { RouteRegProps } from "../../../../types"
-import { unauthorized } from "../../../../types/errors"
+import type { RouteRegProps } from "../../types"
+import { unauthorized } from "../../types/errors"
 
 const listNodesRoute = createRoute({
   method: "get",

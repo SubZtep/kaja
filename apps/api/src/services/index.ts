@@ -1,4 +1,4 @@
-import { pool } from "../../../core/db"
+import { pool } from "../core/db"
 import { CommandService } from "./command"
 import { NodeService } from "./node"
 

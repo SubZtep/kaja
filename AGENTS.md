@@ -76,7 +76,7 @@ bun run --filter @kaja/cli test
 - **Entry**: `core/server.ts` — Hono app, `SchedulerService`, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (no jobs registered)
-- **Features**: `features/auth/`, `features/kaja/` (nodes, admin commands, SSE)
+- **Features**: `features/auth/`, `features/nodes/`, `features/admin/` (plus health, users, config, reference); shared logic in `services/`
 - **Lib**: `lib/geo-client.ts` — external GeoIP service (no local job queue)
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 

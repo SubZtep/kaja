@@ -1,6 +1,6 @@
 import { info } from "@kaja/logger"
 import { app } from "../app"
-import { SchedulerService } from "../features/kaja/services/scheduler"
+import { SchedulerService } from "../services/scheduler"
 import { CronService } from "./cron"
 import { pool } from "./db"
 

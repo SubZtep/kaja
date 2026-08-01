@@ -70,7 +70,6 @@ jobs:
           cd apps/cli
           bun build cli.tsx \
             --compile \
-            --format=esm \
             --minify \
             --outfile kaja \
             --target="${{ matrix.bun_target }}" \

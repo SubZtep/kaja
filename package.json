@@ -10,6 +10,7 @@
   "private": true,
   "scripts": {
     "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' dev",
+    "dev:api": "bun run --filter @kaja/api dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.tsx",
     "lint": "biome check --config-path=.",
     "lint:fix": "biome check --config-path=. --write --unsafe",

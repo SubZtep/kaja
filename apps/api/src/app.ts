@@ -3,11 +3,13 @@ import { cors } from "hono/cors"
 import { logger } from "hono/logger"
 import { trafficLogger } from "./core/logger"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
-import { healthRoutes } from "./core/routes/health"
-import { referenceRoutes, setupApiDocs } from "./core/routes/reference"
-import { userRoutes } from "./core/routes/user"
+import { adminRoutes } from "./features/admin"
 import { authMiddleware, authRoutes } from "./features/auth"
-import { adminRoutes, nodeRoutes } from "./features/kaja"
+import { configRoutes } from "./features/config"
+import { healthRoutes } from "./features/health"
+import { nodeRoutes } from "./features/nodes"
+import { referenceRoutes, setupApiDocs } from "./features/reference"
+import { userRoutes } from "./features/users"
 import type { RouteProps } from "./types"
 
 export const app = new OpenAPIHono<RouteProps>()
@@ -19,11 +21,12 @@ app.use("*", globalRateLimiter)
 app.use("*", authMiddleware)
 
 // Mount routes
-app.route("/health", healthRoutes)
 app.use("/auth/*", authRateLimiter)
-app.route("/auth", authRoutes)
-app.route("/nodes", nodeRoutes)
 app.route("/admin", adminRoutes)
+app.route("/auth", authRoutes)
+app.route("/config", configRoutes)
+app.route("/health", healthRoutes)
+app.route("/nodes", nodeRoutes)
 app.route("/users", userRoutes)
 
 // API documentation

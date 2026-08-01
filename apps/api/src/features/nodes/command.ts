@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { commandSchema } from "@kaja/schema"
-import type { RouteRegProps } from "../../../../types"
+import type { RouteRegProps } from "../../types"
 
 const startCommandRoute = createRoute({
   method: "post",

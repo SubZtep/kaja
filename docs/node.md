@@ -94,10 +94,10 @@ sequenceDiagram
 ### Code References
 
 - **CLI**: `apps/cli/src/cli.tsx` - Connection logic
-- **API Route**: `apps/api/src/features/kaja/routes/node/connect.ts`
-- **Service**: `apps/api/src/features/kaja/services/node.ts:16` - `connectNode()`
-- **Event Emission**: `apps/api/src/features/kaja/services/node.ts:40-44`
-- **SSE Endpoint**: `apps/api/src/features/kaja/routes/node/stream.ts:30-46`
+- **API Route**: `apps/api/src/features/nodes/connect.ts`
+- **Service**: `apps/api/src/services/node.ts:16` - `connectNode()`
+- **Event Emission**: `apps/api/src/services/node.ts:40-44`
+- **SSE Endpoint**: `apps/api/src/features/nodes/stream.ts:30-46`
 - **Web Hook**: `apps/web/src/routes/_admin/nodes/-components/use-node-sse.ts:59-110`
 
 ## 2. CLI Heartbeat Flow
@@ -142,9 +142,9 @@ sequenceDiagram
 ### Code References
 
 - **CLI**: `apps/cli/src/cli.tsx` - Heartbeat loop
-- **API Route**: `apps/api/src/features/kaja/routes/node/heartbeat.ts`
-- **Service**: `apps/api/src/features/kaja/services/node.ts:71-104` - `heartbeat()`
-- **Status Change Check**: `apps/api/src/features/kaja/services/node.ts:94`
+- **API Route**: `apps/api/src/features/nodes/heartbeat.ts`
+- **Service**: `apps/api/src/services/node.ts:71-104` - `heartbeat()`
+- **Status Change Check**: `apps/api/src/services/node.ts:94`
 
 ## 3. CLI Disconnect Flow
 
@@ -178,8 +178,8 @@ sequenceDiagram
 ### Code References
 
 - **CLI**: `apps/cli/src/cli.tsx` - Cleanup on exit
-- **API Route**: `apps/api/src/features/kaja/routes/node/disconnect.ts`
-- **Service**: `apps/api/src/features/kaja/services/node.ts:49-69` - `disconnectNode()`
+- **API Route**: `apps/api/src/features/nodes/disconnect.ts`
+- **Service**: `apps/api/src/services/node.ts:49-69` - `disconnectNode()`
 
 ## 4. Scheduler Timeout Flow
 
@@ -222,8 +222,8 @@ If a node doesn't send a heartbeat for 5 minutes, it's marked inactive on the ne
 
 ### Code References
 
-- **Scheduler Service**: `apps/api/src/features/kaja/services/scheduler.ts:44-79` - `#runTasks()`
-- **Mark Inactive**: `apps/api/src/features/kaja/services/node.ts:106-133` - `markInactiveNodes()`
+- **Scheduler Service**: `apps/api/src/services/scheduler.ts:44-79` - `#runTasks()`
+- **Mark Inactive**: `apps/api/src/services/node.ts:106-133` - `markInactiveNodes()`
 
 ## 5. Web SSE Connection Flow
 
@@ -294,8 +294,8 @@ const NodeUpdateEventSchema = z.object({
 ### Code References
 
 - **Web Hook**: `apps/web/src/routes/_admin/nodes/-components/use-node-sse.ts`
-- **SSE Server**: `apps/api/src/features/kaja/routes/node/stream.ts`
-- **Event Emitter**: `apps/api/src/features/kaja/services/events.ts`
+- **SSE Server**: `apps/api/src/features/nodes/stream.ts`
+- **Event Emitter**: `apps/api/src/services/events.ts`
 
 ## 6. GeoIP Lookup Flow
 
@@ -352,7 +352,7 @@ sequenceDiagram
 
 - **Geo Client**: `apps/api/src/lib/geo-client.ts`
 - **Geo Queue**: `apps/api/src/core/queue.ts`
-- **Connect Route**: `apps/api/src/features/kaja/routes/node/connect.ts`
+- **Connect Route**: `apps/api/src/features/nodes/connect.ts`
 
 ## Architecture Details
 

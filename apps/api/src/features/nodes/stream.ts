@@ -1,8 +1,8 @@
 import { info } from "@kaja/logger"
 import { streamSSE } from "hono/streaming"
-import type { RouteRegProps } from "../../../../types"
 import type { NodeEvent } from "../../services/events"
 import { nodeEvents } from "../../services/events"
+import type { RouteRegProps } from "../../types"
 
 /**
  * SSE endpoint for real-time node status updates.

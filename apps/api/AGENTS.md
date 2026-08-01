@@ -22,25 +22,33 @@ Manual migrations: `scripts/db_migration.sh`
 ```
 src/
   app.ts                 # OpenAPIHono app, CORS, route mounts
-  core/
+  core/                  # process infrastructure only
     server.ts            # process entry: scheduler + cron + export default
     db.ts                # pg Pool
     logger.ts            # traffic logger for hono/logger
     rate-limit.ts        # global + auth limiters (off under bun test)
     cron.ts              # Bun.CronJob shell (intentionally no jobs)
-    routes/              # health, OpenAPI reference, /users
-  features/
+  features/              # one folder per URL mount prefix
     auth/                # Better Auth config + routes + middleware
-    kaja/
-      routes/node/       # connect, heartbeat, disconnect, list, stream, commands
-      routes/admin/      # create/list/cancel commands
-      services/          # node, command, events, scheduler, command-validator
+    nodes/               # /nodes — connect, heartbeat, disconnect, list, stream, commands
+    admin/               # /admin — create/list/cancel commands, list all nodes
+    config/              # /config (stub)
+    users/               # /users
+    health/              # /health
+    reference/           # /reference (dev OpenAPI UI)
+  services/              # shared domain logic (node, command, events, scheduler, validator)
   emails/                # React Email templates
   lib/geo-client.ts      # external GEO_SERVICE_URL client
   types.ts / types/      # Hono env types, error helpers
 migrations/              # raw SQL, applied on first Postgres boot via compose
-tests/integration/       # auth, kaja node flow, SSE
+tests/integration/       # auth, node flow, SSE
 ```
+
+### Adding an endpoint
+
+1. Add a route file under the matching `features/<prefix>/` (or create a new feature + `app.route(...)`).
+2. Register it from that feature’s `index.ts`.
+3. Put shared DB/business logic in `services/`.
 
 ## Conventions
 
