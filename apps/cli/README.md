@@ -30,65 +30,64 @@ kaja
 
 ## Config
 
-```bash
-kaja --wizard
-```
+No wizard — edit the files directly. First run writes template copies into
+`~/.config/kaja/`:
 
-Runs automatically on first launch or if the config is invalid. Pick a
-provider preset (Fireworks AI or Ollama) to prefill credentials and models,
-or start empty and fill in everything yourself.
-
-Prefer editing files directly? Config lives in `~/.config/kaja/`:
-
-* [`config.json`](docs/config/config.json) — One required group ( `llm` ) and
-  several optional ones ( `embedding` , `rerank` , `imageGen` , `stt` , `tts` ,
-  `location` , `webSearch` , `telegram` ). Leaving a group out just disables
-  that feature.
-* [`mcp.toml`](docs/config/mcp.toml) — Model Context Protocol servers for the agent.
-* [`models.toml`](docs/config/models.fireworks.toml) — Every chat/embedding/
-  rerank/image-generation model your provider offers, so you can switch
-  `llm.model` (or `embedding` / `rerank` / `imageGen` ) without re-entering
-  credentials. A template matching your wizard preset is written on first run
-  ([Fireworks](docs/config/models.fireworks.toml) /
+* [`config.json`](docs/config/config.json) — `models` maps each task ( `chat`
+  mandatory; `embedding` / `rerank` / `image-generation` / `text-to-speech` /
+  `speech-to-text` optional) to a `models.toml` entry's `id`. Also holds
+  `stt` / `tts` 's non-model settings (`speachesUrl`, `language`, `voice`),
+  `memory.dbPath`, and in-app UI preferences under `settings`.
+* [`models.toml`](docs/config/models.fireworks.toml) — Providers (credentials)
+  and models (name + task + which provider). `config.json`'s `models.<task>`
+  picks one by `id`. Fetch a server-managed copy with `kaja config fetch`, or
+  edit by hand ([Fireworks](docs/config/models.fireworks.toml) /
   [Ollama](docs/config/models.ollama.toml) examples).
+* [`services.toml`](docs/config/services.toml) — External service
+  credentials: `[api]` (Kaja backend, used by `kaja config fetch`),
+  `[location]` , `[webSearch]` , `[telegram]` . Every section is optional;
+  leaving one out just disables that feature.
+* [`mcp.toml`](docs/config/mcp.toml) — Model Context Protocol servers for the agent.
 * [`personas/`](docs/config/personas) — Preconfigured agent behaviours, one
   `.toml` file per persona (filename minus extension is the persona id, e.g.
   `barkochba.toml` -> `barkochba`). Give a persona a `when` clause and Kaja
   switches to it on its own when the conversation calls for it.
 
-<details>
-<summary>How the wizard and models.toml fit together</summary>
+### `kaja config fetch`
 
-```mermaid
-flowchart LR
-    A[kaja --wizard] --> B{Pick preset}
-    B -->|Fireworks / Ollama| C[models.toml]
-    B -->|start empty| D[fill in manually]
-    C --> E["llm / embedding / rerank / imageGen<br/>(config.json)"]
-    D --> E
-    E --> F["stt / tts / location / webSearch<br/>(config.json only)"]
+Downloads `mcp.toml` and `models.toml` from a Kaja server, backing up any
+existing files first:
+
+```bash
+kaja config fetch --api-url http://localhost:3001
 ```
 
-`models.toml` is the catalog; the wizard copies your preset's credentials and
-first matching model into `config.json`'s `llm`/`embedding`/`rerank`/
-`imageGen` groups. Everything else ( `stt` / `tts` / `location` / `webSearch` )
-has no models.toml equivalent — enter it directly in the wizard or by hand.
-
-</details>
+`--api-url` is only needed the first time — it's saved into
+`services.toml` 's `[api]` section. On a fresh install, the fetched
+`models.toml` 's first `chat`-task model is also auto-filled into
+`config.json` 's `models.chat` , so a single fetch is enough to leave a fresh
+install bootable (a chat model you've deliberately chosen is never
+overwritten by a later fetch).
 
 ### Where to get credentials?
 
-* **OpenAI API** (`llm`) : any compatible LLM (e.g. MiniMax M3) with REST API works (e.g. Ollama, Fireworks AI).
-* **Web search** (`webSearch`) : get a free key from [Brave's website](https://brave.com/search/api/).
-* **Location** (`location`) : the example URL and API key work for a while.
+* **Chat model** (`models.chat`) : any OpenAI-compatible provider works (e.g. Ollama, Fireworks AI) — add it to `models.toml`.
+* **Web search** (`services.toml` 's `[webSearch]`) : get a free key from [Brave's website](https://brave.com/search/api/).
+* **Location** (`services.toml` 's `[location]`) : the example URL and API key work for a while.
 
 ### Language
 
-English or Magyar, covering the UI and the assistant's replies. The setup wizard ( `kaja --wizard` ) starts with a language picker, saved as `settings.language` and read once at startup; without a saved choice the system locale decides (a Hungarian locale → Magyar, anything else → English).
+English or Magyar, covering the UI and the assistant's replies, saved as
+`settings.language` in `config.json` and read once at startup; without a
+saved choice the system locale decides (a Hungarian locale → Magyar, anything
+else → English).
 
-Voice caveat for Hungarian: dictation needs the multilingual whisper model on the STT server (the English default is an English-only model; 
-
-set `stt.model` / `stt.language` in the config file to override), and spoken replies stay with the configured Kokoro voice (no Hungarian voice) unless `tts.model` / `tts.voice` point somewhere Hungarian-capable.
+Voice caveat for Hungarian: dictation needs the multilingual whisper model on
+the STT server (the English default is an English-only model — point
+`models.speech-to-text` at a multilingual entry in `models.toml`, and set
+`stt.language` in `config.json` to override), and spoken replies stay with
+the configured Kokoro voice (no Hungarian voice) unless `models.text-to-speech`
+points at something Hungarian-capable.
 
 ## Personas
 
@@ -116,7 +115,10 @@ otherwise the current one is kept.
 
 ## Voice & dictation
 
-Voice features (the optional `stt` / `tts` config groups) need [speaches](https://speaches.ai) for STT/TTS and `ffmpeg` / `ffplay` for mic and playback.
+Voice features (`models.text-to-speech` / `models.speech-to-text` in
+`config.json`, plus the optional `stt` / `tts` groups for non-model settings)
+need [speaches](https://speaches.ai) for STT/TTS and `ffmpeg` / `ffplay` for
+mic and playback.
 
 ## Telegram
 
@@ -127,14 +129,13 @@ personas, tools and models:
 kaja telegram
 ```
 
-Runs a long-polling bot until you stop it (Ctrl+C). The wizard doesn't cover
-this — add a `telegram` group to `config.json` by hand:
+Runs a long-polling bot until you stop it (Ctrl+C). Add a `[telegram]`
+section to `services.toml` by hand:
 
-```json
-"telegram": {
-  "botToken": "123456789:AAH...",
-  "allowedUserIds": [YOUR_NUMERIC_ID]
-}
+```toml
+[telegram]
+botToken = "123456789:AAH..."
+allowedUserIds = [YOUR_NUMERIC_ID]
 ```
 
 Get `botToken` from [@BotFather](https://t.me/BotFather) ( `/newbot` ) and your

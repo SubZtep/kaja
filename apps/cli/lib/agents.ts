@@ -15,6 +15,7 @@ import { loadMemory } from "./memory-store"
 import { client } from "./openai"
 import { samplingOf } from "./personas"
 import { runShellCommand } from "./run-command"
+import { readServicesLoose } from "./services"
 
 /** Identifies who's talking to a {@link Tool}'s `execute` — `null` for a terminal session, `"telegram:<id>"` for a Telegram user (same convention as the sessions table's `owner` column). Supplied by {@link run}, never by the model. */
 export type ToolContext = { owner: string | null }
@@ -469,7 +470,7 @@ export async function buildSystemPrompt(agent: Agent): Promise<string | undefine
           .join("\n")}`
       : undefined
 
-  const { location, settings } = await readConfigLoose()
+  const [{ settings }, { location }] = await Promise.all([readConfigLoose(), readServicesLoose()])
   const locationBlock = location ? locationInstructions(await lookupMyLocation()) : undefined
 
   const replyLanguageBlock = settings?.language ? t("agent.replyLanguage") : undefined

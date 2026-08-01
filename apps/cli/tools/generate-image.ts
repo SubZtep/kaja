@@ -5,6 +5,7 @@ import { write } from "bun"
 import OpenAI from "openai"
 import { ToolError, tool } from "../lib/agents"
 import { config } from "../lib/config"
+import { loadModelsFile, resolveModelById } from "../lib/models"
 import { getPaths } from "../lib/paths"
 
 /**
@@ -29,15 +30,17 @@ export const generateImageTool = tool<{ prompt: string }>({
     required: ["prompt"]
   },
   execute: async args => {
-    const { imageGen } = await config()
+    const { models } = await config()
+    if (!models["image-generation"]) return "Image generation is not configured."
+    const imageGen = resolveModelById(await loadModelsFile(), models["image-generation"])
     if (!imageGen) return "Image generation is not configured."
 
     const client = new OpenAI({
-      apiKey: imageGen.apiKey,
+      apiKey: imageGen.apiKey ?? "",
       baseURL: imageGen.baseUrl
     })
     const response = await client.images.generate({
-      ...(imageGen.model ? { model: imageGen.model } : {}),
+      model: imageGen.id,
       prompt: args.prompt
     })
     const url = response.data?.[0]?.url

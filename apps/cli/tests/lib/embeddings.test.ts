@@ -3,16 +3,31 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-embeddings`
 
 const { saveConfig } = await import("../../lib/config")
+const { getModelsPath } = await import("../../lib/models")
 await saveConfig({
-  llm: {
-    baseUrl: "http://localhost/v1",
-    apiKey: "llm-key",
-    model: "test-model"
-  },
-  embedding: {
-    model: "test-embedding-model"
+  models: {
+    chat: "chat-default",
+    embedding: "embedding-default"
   }
 })
+await Bun.write(
+  getModelsPath(),
+  `
+[providers.default]
+base_url = "http://localhost/v1"
+api_key = "llm-key"
+
+[[models]]
+id = "chat-default"
+model = "test-model"
+task = "chat"
+
+[[models]]
+id = "embedding-default"
+model = "test-embedding-model"
+task = "embedding"
+`
+)
 
 const { embed, cosineSimilarity } = await import("../../lib/embeddings")
 
@@ -79,19 +94,30 @@ test("embed batches multiple inputs into one request", async () => {
   ])
 })
 
-test("embedding config overrides take precedence over llm config", async () => {
-  await saveConfig({
-    llm: {
-      baseUrl: "http://localhost/v1",
-      apiKey: "llm-key",
-      model: "test-model"
-    },
-    embedding: {
-      baseUrl: "http://embedding-host/v1",
-      apiKey: "embedding-key",
-      model: "custom-embedder"
-    }
-  })
+test("embedding model resolves via its own provider, independent of chat", async () => {
+  await Bun.write(
+    getModelsPath(),
+    `
+[providers.default]
+base_url = "http://localhost/v1"
+api_key = "llm-key"
+
+[providers.embed-host]
+base_url = "http://embedding-host/v1"
+api_key = "embedding-key"
+
+[[models]]
+id = "chat-default"
+model = "test-model"
+task = "chat"
+
+[[models]]
+id = "embedding-default"
+model = "custom-embedder"
+task = "embedding"
+provider = "embed-host"
+`
+  )
   await embed("hello")
   expect(lastRequest?.url).toBe("http://embedding-host/v1/embeddings")
   const body = JSON.parse(lastRequest!.init.body as string)

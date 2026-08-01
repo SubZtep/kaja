@@ -1,4 +1,37 @@
 import { expect, mock, test } from "bun:test"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+
+// telegram-bot.ts -> telegram-driver.ts -> lib/agents.ts -> lib/openai.ts,
+// which reads config() at module load — config() hard-exits the process if
+// config.json is missing or its chat model doesn't resolve in models.toml,
+// so this isolated config dir needs both (same fixture as
+// tests/lib/agents.test.ts). Set before the dynamic import below so it's in
+// place before lib/openai.ts is ever evaluated.
+const configDir = `${tmpdir()}/kaja-test-xdg-config-telegram-bot`
+process.env.XDG_CONFIG_HOME = configDir
+const configKajaDir = join(configDir, "kaja")
+mkdirSync(configKajaDir, { recursive: true })
+writeFileSync(
+  join(configKajaDir, "config.json"),
+  JSON.stringify({
+    models: { chat: "chat-default" }
+  })
+)
+writeFileSync(
+  join(configKajaDir, "models.toml"),
+  `
+[providers.default]
+base_url = "http://localhost"
+api_key = "x"
+
+[[models]]
+id = "chat-default"
+model = "x"
+task = "chat"
+`
+)
 
 // telegram-bot.ts is the one grammy-aware module, so its own test mocks
 // grammy's Bot rather than hitting the real Telegram API — mirrors how

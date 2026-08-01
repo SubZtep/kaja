@@ -12,15 +12,28 @@ process.env.XDG_CONFIG_HOME = configDir
 
 // tools/memory.ts pulls in lib/agents.ts -> lib/openai.ts, which reads
 // config() at module load — config() hard-exits the process if config.json
-// is missing, so this isolated config dir needs a minimal valid file (same
-// fixture as tests/lib/agents.test.ts).
+// is missing or its chat model doesn't resolve in models.toml, so this
+// isolated config dir needs both (same fixture as tests/lib/agents.test.ts).
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
   join(configKajaDir, "config.json"),
   JSON.stringify({
-    llm: { baseUrl: "http://localhost", apiKey: "x", model: "x" }
+    models: { chat: "chat-default" }
   })
+)
+writeFileSync(
+  join(configKajaDir, "models.toml"),
+  `
+[providers.default]
+base_url = "http://localhost"
+api_key = "x"
+
+[[models]]
+id = "chat-default"
+model = "x"
+task = "chat"
+`
 )
 
 const { saveMemory } = await import("../../lib/memory-store")

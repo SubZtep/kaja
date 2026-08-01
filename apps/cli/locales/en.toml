@@ -1,5 +1,4 @@
 [cli]
-notSaved = "Config not saved. Bye!"
 invalidConfig = "Invalid config file: {path}"
 bye = "Bye, bye!"
 
@@ -7,7 +6,7 @@ bye = "Bye, bye!"
 help = """
 Usage
   $ kaja
-  $ kaja config fetch
+  $ kaja config fetch [--api-url <url>]
   $ kaja memory <list|forget <key-or-glob>|export>
   $ kaja session <list|diagram <id>>
   $ kaja telegram
@@ -17,7 +16,7 @@ Options
   --help          Print this help
   --config        Print the config file location and copy it to the clipboard
   --config-dir    Read config.json from this directory instead of the default
-  --wizard        Review and edit the configuration in the setup wizard
+  --api-url       Kaja API base URL for `kaja config fetch` (saved into services.toml after)
   --version       Print the installed app version
   --continue, -c  Resume the most recent session
   --session, -s   Resume a session by id (see: kaja session list)
@@ -26,6 +25,7 @@ Options
 Examples
   $ kaja --config
   /home/dcr/.config/kaja/config.json
+  $ kaja config fetch --api-url http://localhost:3001
   $ kaja memory list
   $ kaja memory forget "test:*"
   $ kaja --continue
@@ -61,7 +61,7 @@ usage = """
 Usage
   $ kaja config fetch   Regenerate mcp.toml from the Kaja API
 """
-apiUrlMissing = "Set api.baseUrl in config.json first (see: kaja --config)"
+apiUrlMissing = "Set [api] baseUrl in services.toml first, or pass --api-url"
 fetchFailed = "Failed to fetch mcp.toml (HTTP {status})"
 fetched = "Wrote {path}"
 fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
@@ -75,54 +75,8 @@ invalidAt = "Invalid personas file at {path}: {message}"
 [mcp]
 invalidAt = "Invalid MCP servers file at {path}: {message}"
 
-[wizard]
-title = "Kaja CLI setup"
-stepPreset = "Starting point"
-stepLanguage = "Language"
-stepOf = "Step {current} of {total}"
-presetHint = "Prefill the setup with a provider, or start from scratch."
-presetFireworks = "Fireworks AI"
-presetOllama = "Ollama (local)"
-presetEmpty = "Start empty"
-review = "Review"
-invalid = "Invalid"
-groupLlm = "LLM"
-groupEmbedding = "Embedding model (optional)"
-groupEmbeddingHint = "Turns text into vectors for semantic search — used by memory recall and the like-or-not game to find similar items. Leave blank to use the LLM provider's own embedding model."
-groupStt = "Speech-to-text (optional)"
-groupTts = "Text-to-speech (optional)"
-groupLocation = "Location tool (optional)"
-groupWebSearch = "Web search tool (optional)"
-groupRerank = "Rerank tool (optional)"
-groupRerankHint = "Reorders search/retrieval results by relevance to a query using a dedicated reranker model — used after embedding-based search to filter down to the most relevant passages. Leave blank to skip this feature."
-groupImageGen = "Image generation tool (optional)"
-groupApi = "Kaja API (optional)"
-groupApiHint = "Base URL of a Kaja server — used by `kaja config fetch` to regenerate mcp.toml. Leave blank to skip."
-groupOptionalHint = "Optional — leave every field blank to skip this feature."
-llmBaseUrl = "OpenAI-compatible base URL"
-llmApiKey = "API key"
-llmModel = "Model id"
-embeddingBaseUrl = "Embedding base URL"
-embeddingApiKey = "Embedding API key"
-embeddingModel = "Embedding model id"
-sttSpeachesUrl = "Speaches server URL"
-sttModel = "STT model"
-sttLanguage = "STT language"
-ttsSpeachesUrl = "Speaches server URL"
-ttsModel = "TTS model"
-ttsVoice = "TTS voice"
-locationServiceUrl = "Geo service URL"
-locationApiKey = "Geo service API key"
-webSearchApiKey = "Brave Search API key"
-rerankModel = "Rerank model id"
-rerankBaseUrl = "Rerank base URL"
-rerankApiKey = "Rerank API key"
-imageGenBaseUrl = "Image generation base URL"
-imageGenApiKey = "Image generation API key"
-imageGenModel = "Image generation model id"
-apiBaseUrl = "Kaja API base URL"
-reviewHint = "Enter: save and start · Esc: back"
-footer = "Enter next · Tab switch field · Esc back/cancel"
+[services]
+invalidAt = "Invalid services file at {path}: {message}"
 
 [header]
 na = "N/A"

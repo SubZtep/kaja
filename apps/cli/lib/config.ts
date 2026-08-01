@@ -1,19 +1,16 @@
 import { join } from "node:path"
 import { file, write } from "bun"
-// Written on first run: a minimal config with no llm block (provider
-// choice/credentials come from the setup wizard's preset step, which
-// derives llm/embedding/imageGen from repo docs/config/models*.toml and
-// overwrites this file before the app proceeds). Missing llm fails
-// KajaConfigSchema validation, so cli.tsx forces the setup wizard on every
-// first run regardless of validation. TS's built-in resolveJsonModule typing
-// wins over the `text` attribute, so the raw import is typed as the parsed
-// object rather than a string.
+// Written on first run: a template config.json with placeholder model ids —
+// the user edits it (and models.toml) directly, there's no setup wizard.
+// TS's built-in resolveJsonModule typing wins over the `text` attribute, so
+// the raw import is typed as the parsed object rather than a string.
 import rawTemplate from "../../../docs/config/config.json" with { type: "text" }
 import { type KajaConfig, KajaConfigSchema, type KajaSettings } from "../schemas/config"
 import { t } from "./i18n"
 import { getPaths } from "./paths"
 
 const TEMPLATE = rawTemplate as unknown as string
+const TEMPLATE_JSON = JSON.parse(TEMPLATE)
 
 // Set once at startup from the --config-dir flag, pre-scanned from argv in
 // cli.tsx before the first config read; only config.json moves — data paths
@@ -108,6 +105,30 @@ export async function saveSettings(settings: KajaSettings) {
   // Merge into the existing block: callers persist only the keys they manage
   // (thinking/sounds/voice) and must not drop others like language.
   await write(f, JSON.stringify({ ...current, settings: { ...current.settings, ...settings } }, null, 2))
+  cached = undefined
+}
+
+/**
+ * Seeds config.json's models.chat from a freshly fetched models.toml,
+ * without requiring the rest of the file to be schema-valid first — unlike
+ * saveConfig/saveSettings, this must work even on a fresh install before
+ * models.chat resolves (see lib/config-cli.ts). Only writes when the file
+ * on disk doesn't already have a real chat id — the template's own
+ * placeholder doesn't count, so it never blocks the real fetched one from
+ * being seeded.
+ */
+export async function saveFetchedChatModel(chatModelId: string) {
+  const current = await readConfigLoose()
+  const templateChatId = (TEMPLATE_JSON as Partial<KajaConfig>).models?.chat
+  const hasRealChat = !!current.models?.chat && current.models.chat !== templateChatId
+  if (hasRealChat) return
+  const merged: Partial<KajaConfig> = {
+    ...(TEMPLATE_JSON as Partial<KajaConfig>),
+    ...current,
+    models: { ...current.models, chat: chatModelId }
+  }
+  const f = file(getConfigPath(), { type: "application/json" })
+  await write(f, JSON.stringify(merged, null, 2))
   cached = undefined
 }
 

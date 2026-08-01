@@ -3,6 +3,7 @@ import { config } from "../lib/config"
 import { connectMcpServer } from "../lib/mcp-client"
 import { loadMcpServers } from "../lib/mcp-servers"
 import { loadPluginTools } from "../lib/plugin-tools"
+import { services } from "../lib/services"
 import { currentTimeTool } from "./current-time"
 import { datasetInfoTool } from "./dataset-info"
 import { fetchUrlTool } from "./fetch-url"
@@ -30,7 +31,8 @@ import { webSearchTool } from "./web-search"
  * exit.
  */
 export async function getDefaultTools() {
-  const { webSearch, imageGen } = await config()
+  const { models } = await config()
+  const { webSearch } = await services()
   const [mcpServers, pluginTools] = await Promise.all([loadMcpServers(), loadPluginTools()])
   const mcpConnections = await Promise.all(mcpServers.map(server => connectMcpServer(server)))
   return {
@@ -51,7 +53,7 @@ export async function getDefaultTools() {
       listNotesTool,
       datasetInfoTool,
       ...(webSearch ? [webSearchTool] : []),
-      ...(imageGen ? [generateImageTool] : []),
+      ...(models["image-generation"] ? [generateImageTool] : []),
       ...mcpConnections.flatMap(connection => connection.tools),
       ...pluginTools
     ],

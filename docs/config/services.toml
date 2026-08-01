@@ -1,0 +1,23 @@
+# External service credentials — each section is independently optional;
+# omit one entirely to leave that feature unavailable.
+
+# Base URL of a Kaja server, used by `kaja config fetch` to regenerate
+# mcp.toml/models.toml. Also settable via `kaja config fetch --api-url <url>`,
+# which writes it here for you.
+# [api]
+# baseUrl = "https://api.kaja.io"
+
+# Geo lookup for the location tool.
+# [location]
+# serviceUrl = "https://ip2geo.demo.land/"
+# apiKey = "kaja"
+
+# Brave Search API key for the web_search tool.
+# [webSearch]
+# apiKey = "BSA..."
+
+# Telegram bot: message it to chat with Kaja outside the terminal.
+# allowedUserIds gates who the bot will respond to and must be non-empty.
+# [telegram]
+# botToken = "123456:ABC-DEF..."
+# allowedUserIds = [123456789]

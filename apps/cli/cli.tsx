@@ -13,8 +13,9 @@ import { InkPictureProvider } from "ink-picture"
 import { config, create, getConfigPath, isExists, readConfigLoose, setConfigDirOverride, validate } from "./lib/config"
 import { detectLanguage, setLanguage, t } from "./lib/i18n"
 import { log } from "./lib/logger"
-import { loadModels, resolveConfigModels } from "./lib/models"
+import { loadModels } from "./lib/models"
 import { loadPersonas } from "./lib/personas"
+import { readServicesLoose } from "./lib/services"
 
 // The TUI owns the terminal: unless the user asked for a level explicitly,
 // silence pino's info chatter (stt/tts progress lines go to stderr and would
@@ -72,24 +73,28 @@ if (cli.input[0] === "web") {
   process.exit(await runWebCli({ port: cli.flags.port }))
 }
 
-// Missing or invalid config (or --wizard): run the setup wizard instead of
-// exiting, then fall through to the normal boot with the freshly written
-// file. The first-run template ships placeholder credentials that validate
-// as well-formed, so first-run must force the wizard explicitly rather than
-// relying on validation to fail.
-const firstRun = !(await isExists())
-if (firstRun) await create()
-if (firstRun || cli.flags.wizard || !(await validate(true))) {
-  const { runConfigWizard } = await import("./components/config-wizard")
-  const outcome = await runConfigWizard(loose)
-  if (outcome !== "saved") {
-    console.log(t("cli.notSaved"))
-    process.exit(0)
-  }
-  if (!(await validate())) {
-    console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
-    process.exit(1)
-  }
+// Config subcommand: same deal — `kaja config fetch` is how a fresh install
+// (or a broken one) gets real config.json/models.toml/services.toml files in
+// the first place, so it must work without any of them already in place.
+// --api-url substitutes for services.toml's [api] baseUrl until fetch
+// persists it.
+if (cli.input[0] === "config") {
+  const { runConfigCli } = await import("./lib/config-cli")
+  const looseServices = await readServicesLoose()
+  const { code, text } = await runConfigCli(cli.input.slice(1), looseServices, { apiUrl: cli.flags.apiUrl })
+  console.log(text)
+  process.exit(code)
+}
+
+// First run: write the template so there's a concrete file to edit, rather
+// than starting from nothing. Missing or invalid config (including a
+// freshly written template, which needs real models.toml entries to
+// resolve) always exits pointing at the path to edit — there's no wizard to
+// fall through to.
+if (!(await isExists())) await create()
+if (!(await validate(true))) {
+  console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
+  process.exit(1)
 }
 
 // Imported after the config guard: lib/openai.ts reads the config at module
@@ -99,6 +104,7 @@ const { default: App } = await import("./components/layout/app")
 const { getDefaultTools } = await import("./tools")
 const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("./lib/session-store")
 const { loadMemory, resolveMemoryDbPath } = await import("./lib/memory-store")
+const { chatModelId } = await import("./lib/openai")
 
 // --continue resumes the most recent session, --session <id> a specific
 // one; either way the restored conversation is handed to App as a prop.
@@ -121,18 +127,8 @@ const promptHistory = await loadPromptHistory()
 
 const currentConfig = await config()
 
-// Config subcommand: after the config guard (it needs config.api.baseUrl)
-// but before tools/MCP connections are set up — `kaja config fetch` doesn't
-// need a running MCP client, just the config for the API base URL.
-if (cli.input[0] === "config") {
-  const { runConfigCli } = await import("./lib/config-cli")
-  const { code, text } = await runConfigCli(cli.input.slice(1), currentConfig)
-  console.log(text)
-  process.exit(code)
-}
-
-const { settings, llm } = currentConfig
-const models = [...(await loadModels()), ...resolveConfigModels(currentConfig)]
+const { settings } = currentConfig
+const models = await loadModels()
 const personas = await loadPersonas(models)
 const { tools, mcpServers, closeTools } = await getDefaultTools()
 const sessionCount = (await listSessions()).length
@@ -164,8 +160,9 @@ process.on("SIGTERM", async () => {
 // wired above.
 if (cli.input[0] === "telegram") {
   const { runTelegramCli } = await import("./lib/telegram-cli")
+  const { services } = await import("./lib/services")
   const code = await runTelegramCli({
-    config: currentConfig,
+    services: await services(),
     tools,
     personas,
     models
@@ -184,7 +181,7 @@ const { waitUntilExit } = render(
       initialSettings={settings}
       models={models}
       personas={personas}
-      openaiApiModel={llm.model}
+      openaiApiModel={chatModelId}
       tools={tools}
       mcpServers={mcpServers}
       initialSession={initialSession}

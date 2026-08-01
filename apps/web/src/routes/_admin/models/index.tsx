@@ -33,7 +33,7 @@ const providerFormSchema = z.object({
 
 const modelFormSchema = z.object({
   providerId: z.string().min(1, "Required"),
-  modelId: z.string().min(1, "Required"),
+  model: z.string().min(1, "Required"),
   tasks: z.array(z.string()).min(1, "Select at least one task")
 })
 
@@ -77,7 +77,7 @@ function ModelsPage() {
   })
 
   const createModel = useMutation({
-    mutationFn: (payload: { providerId: string; modelId: string; tasks: ModelTask[] }) =>
+    mutationFn: (payload: { providerId: string; model: string; tasks: ModelTask[] }) =>
       sdk.models.create({ ...payload, enabled: true }),
     onSuccess: () => {
       invalidateModels()
@@ -117,12 +117,12 @@ function ModelsPage() {
   const providers = providersQuery.data ?? []
 
   const modelForm = useAppForm({
-    defaultValues: { providerId: providers[0]?.id ?? "", modelId: "", tasks: ["chat"] as string[] },
+    defaultValues: { providerId: providers[0]?.id ?? "", model: "", tasks: ["chat"] as string[] },
     validators: { onSubmit: modelFormSchema },
     onSubmit: async ({ value, formApi }) => {
       await createModel.mutateAsync({
         providerId: value.providerId,
-        modelId: value.modelId,
+        model: value.model,
         tasks: value.tasks as ModelTask[]
       })
       formApi.reset()
@@ -172,8 +172,8 @@ function ModelsPage() {
   ]
 
   const modelColumns = [
-    modelColumnHelper.accessor("modelId", {
-      header: "Model ID",
+    modelColumnHelper.accessor("model", {
+      header: "Model",
       cell: info => <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
     }),
     modelColumnHelper.accessor("tasks", {
@@ -214,7 +214,7 @@ function ModelsPage() {
         <div className="text-right">
           <ConfirmDialog
             title="Delete model?"
-            description={`This will remove "${info.row.original.modelId}" from the generated models.toml.`}
+            description={`This will remove "${info.row.original.model}" from the generated models.toml.`}
             confirm="Delete"
             onConfirm={() => deleteModel.mutate(info.row.original.id)}
           >
@@ -303,8 +303,8 @@ function ModelsPage() {
                 <field.SelectField label="Provider" options={providers.map(p => ({ value: p.id, label: p.name }))} />
               )}
             </modelForm.AppField>
-            <modelForm.AppField name="modelId">
-              {field => <field.TextField label="Model ID" placeholder="accounts/fireworks/models/minimax-m3" />}
+            <modelForm.AppField name="model">
+              {field => <field.TextField label="Model" placeholder="accounts/fireworks/models/minimax-m3" />}
             </modelForm.AppField>
             <modelForm.AppField name="tasks">
               {field => (

@@ -1,5 +1,5 @@
-import type { KajaConfig } from "../schemas/config"
 import type { ResolvedModel } from "../schemas/models"
+import type { ServicesFile } from "../schemas/services"
 import type { Tool } from "./agents"
 import { t } from "./i18n"
 import type { Persona } from "./personas"
@@ -15,12 +15,12 @@ import type { Persona } from "./personas"
  * until killed" shape of the command.
  */
 export async function runTelegramCli(deps: {
-  config: KajaConfig
+  services: Pick<ServicesFile, "telegram">
   tools: Tool<any>[]
   personas: Persona[]
   models: ResolvedModel[]
 }): Promise<number> {
-  const { telegram } = deps.config
+  const { telegram } = deps.services
   if (!telegram) {
     console.log(t("telegram.notConfigured"))
     return 1
@@ -28,10 +28,11 @@ export async function runTelegramCli(deps: {
 
   const { createTelegramBot } = await import("./telegram-bot")
   const { config: readConfig } = await import("./config")
+  const { chatModelId } = await import("./openai")
   const bot = createTelegramBot({
     ...telegram,
     agentConfig: {
-      model: deps.config.llm.model,
+      model: chatModelId,
       tools: deps.tools,
       personas: deps.personas,
       models: deps.models

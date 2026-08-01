@@ -12,16 +12,23 @@ import { createAsyncQueue, SAMPLE_RATE } from "./audio"
 import { config } from "./config"
 import { getLanguage } from "./i18n"
 import { log } from "./logger"
+import { loadModelsFile, resolveModelById } from "./models"
 
 async function resolveSttSettings() {
-  const { stt } = await config()
-  if (!stt?.model) {
-    throw new Error("No STT model configured — set stt.model in config.json")
+  const { stt, models } = await config()
+  if (!models["speech-to-text"]) {
+    throw new Error("No STT model configured — set models.speech-to-text in config.json")
+  }
+  const resolved = resolveModelById(await loadModelsFile(), models["speech-to-text"])
+  if (!resolved) {
+    throw new Error(
+      `No model in models.toml matches config.json's models.speech-to-text ("${models["speech-to-text"]}")`
+    )
   }
   return {
-    model: stt.model,
-    language: stt.language ?? getLanguage(),
-    base: stt.speachesUrl ?? "ws://localhost:8000"
+    model: resolved.id,
+    language: stt?.language ?? getLanguage(),
+    base: stt?.speachesUrl ?? "ws://localhost:8000"
   }
 }
 

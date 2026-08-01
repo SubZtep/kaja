@@ -22,16 +22,30 @@ process.env.XDG_DATA_HOME = dataDir
 process.env.XDG_CONFIG_HOME = configDir
 process.env.NODE_ENV = "test"
 
-// config() hard-exits the process if config.json is missing, so this
-// isolated config dir needs a minimal valid file — no `location` block, so
-// run() never attempts a real network geo lookup.
+// config() hard-exits the process if config.json is missing (or its chat
+// model doesn't resolve in models.toml), so this isolated config dir needs
+// both — no `location` block, so run() never attempts a real network geo
+// lookup.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
   join(configKajaDir, "config.json"),
   JSON.stringify({
-    llm: { baseUrl: "http://localhost", apiKey: "x", model: "x" }
+    models: { chat: "chat-default" }
   })
+)
+writeFileSync(
+  join(configKajaDir, "models.toml"),
+  `
+[providers.default]
+base_url = "http://localhost"
+api_key = "x"
+
+[[models]]
+id = "chat-default"
+model = "x"
+task = "chat"
+`
 )
 
 const { invalidateConfigCache } = await import("../../lib/config")

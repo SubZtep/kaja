@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS "provider" (
 CREATE TABLE IF NOT EXISTS "model" (
   "id" uuid default uuidv7 () not null primary key,
   "provider_id" uuid not null references "provider" ("id") on delete cascade,
-  "model_id" text not null,
+  "model" text not null,
   "tasks" text[] not null default '{}',
   "enabled" boolean not null default true,
   "created_at" timestamptz default CURRENT_TIMESTAMP not null,

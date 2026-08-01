@@ -96,6 +96,8 @@ function deleteForm(action: string, hidden: Record<string, string>): string {
 export function configPage(data: {
   config: unknown
   configPath: string
+  services: unknown
+  servicesPath: string
   dbPath: string
   counts: Record<string, number>
 }): string {
@@ -107,8 +109,10 @@ export function configPage(data: {
     "/",
     `<h1>Config</h1>
 <p class="meta">config: <code>${escapeHtml(data.configPath)}</code><br>
+services: <code>${escapeHtml(data.servicesPath)}</code><br>
 memory db: <code>${escapeHtml(data.dbPath)}</code></p>
 <pre><code>${escapeHtml(JSON.stringify(maskSecrets(data.config), null, 2))}</code></pre>
+<pre><code>${escapeHtml(JSON.stringify(maskSecrets(data.services), null, 2))}</code></pre>
 <h2>Tables</h2>
 <table><thead><tr><th>Table</th><th>Rows</th></tr></thead><tbody>${counts}</tbody></table>`
   )

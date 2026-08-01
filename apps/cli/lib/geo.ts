@@ -1,4 +1,4 @@
-import { config } from "./config"
+import { services } from "./services"
 
 export interface GeoLocation {
   continent: { geonameId: number; name: string; code: string }
@@ -30,7 +30,7 @@ let myLocation: GeoLocation | null = null
 export async function lookupMyLocation(): Promise<GeoLocation> {
   if (myLocation) return myLocation
 
-  const { location } = await config()
+  const { location } = await services()
   if (!location) throw new Error("Location feature not configured")
 
   const ipRes = await fetch("https://api.ipify.org")

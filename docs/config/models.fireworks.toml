@@ -1,6 +1,8 @@
 # Kaja models — credentials live in named [providers.*] tables so they are
 # never repeated per model. A model picks one with `provider = "<name>"`;
-# models that don't name one use [providers.default].
+# models that don't name one use [providers.default]. `id` is the stable
+# slug config.json's models.<task> points at; `model` is the name sent to
+# the provider's API.
 
 [providers.default]
 base_url = "https://api.fireworks.ai/inference/v1"
@@ -14,31 +16,38 @@ base_url = "https://api.x.ai/v1"
 api_key = "xai-YourSecretTwitterKey"
 
 [[models]]
-id = "accounts/fireworks/models/minimax-m3"
+id = "chat-default"
+model = "accounts/fireworks/models/minimax-m3"
 task = "chat"
 
 [[models]]
-id = "accounts/fireworks/models/deepseek-v4-pro"
+id = "chat-deepseek"
+model = "accounts/fireworks/models/deepseek-v4-pro"
 task = "chat"
 
 [[models]]
-id = "accounts/fireworks/models/kimi-k2p6"
+id = "chat-kimi"
+model = "accounts/fireworks/models/kimi-k2p6"
 task = "chat"
 
 [[models]]
-id = "accounts/fireworks/models/qwen3-embedding-8b"
+id = "embedding-default"
+model = "accounts/fireworks/models/qwen3-embedding-8b"
 task = "embedding"
 
 [[models]]
-id = "accounts/fireworks/models/qwen3-reranker-8b"
+id = "rerank-default"
+model = "accounts/fireworks/models/qwen3-reranker-8b"
 task = "rerank"
 
 [[models]]
-id = "grok-imagine-image"
+id = "image-generation-default"
+model = "grok-imagine-image"
 task = "image-generation"
 provider = "xai"
 
 [[models]]
-id = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
+id = "text-to-speech-default"
+model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
 task = "text-to-speech"
 provider = "speaches"

@@ -1,6 +1,6 @@
 import { ToolError, type ToolResult, tool } from "../lib/agents"
-import { config } from "../lib/config"
 import { tryLookupMyLocation } from "../lib/geo"
+import { services } from "../lib/services"
 
 /**
  * Searches the web via Brave Search API.
@@ -72,7 +72,7 @@ async function braveSearch(query: string, freshness?: string, search_lang?: stri
   })
   const res = await fetch(`https://api.search.brave.com/res/v1/llm/context?${params.toString()}`, {
     headers: {
-      "X-Subscription-Token": (await config()).webSearch?.apiKey ?? ""
+      "X-Subscription-Token": (await services()).webSearch?.apiKey ?? ""
     }
   })
   if (!res.ok) throw new ToolError("web_search", `Brave search failed: ${res.status} ${await res.text()}`)

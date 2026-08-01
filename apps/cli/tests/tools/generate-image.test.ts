@@ -3,18 +3,33 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-generate-image`
 
 const { saveConfig } = await import("../../lib/config")
+const { getModelsPath } = await import("../../lib/models")
+
+const MODELS_TOML = `
+[providers.default]
+base_url = "http://localhost/v1"
+api_key = "llm-key"
+
+[providers.xai]
+base_url = "https://api.x.ai/v1"
+api_key = "xai-key"
+
+[[models]]
+id = "chat-default"
+model = "test-model"
+task = "chat"
+
+[[models]]
+id = "image-generation-default"
+model = "grok-imagine-image-quality"
+task = "image-generation"
+provider = "xai"
+`
+
 await saveConfig({
-  llm: {
-    baseUrl: "http://localhost/v1",
-    apiKey: "llm-key",
-    model: "test-model"
-  },
-  imageGen: {
-    baseUrl: "https://api.x.ai/v1",
-    apiKey: "xai-key",
-    model: "grok-imagine-image-quality"
-  }
+  models: { chat: "chat-default", "image-generation": "image-generation-default" }
 })
+await Bun.write(getModelsPath(), MODELS_TOML)
 
 const { generateImageTool } = await import("../../tools/generate-image")
 
@@ -61,32 +76,14 @@ test("generate_image posts the configured model and prompt, then saves the image
   expect(await Bun.file(toolResult.images![0]!.path).exists()).toBe(true)
 })
 
-test("generate_image omits model from the request when not configured", async () => {
-  await saveConfig({
-    llm: {
-      baseUrl: "http://localhost/v1",
-      apiKey: "llm-key",
-      model: "test-model"
-    },
-    imageGen: { baseUrl: "https://api.x.ai/v1", apiKey: "xai-key" }
-  })
-
-  await generateImageTool.execute({ prompt: "a blue fox" })
-
-  const genRequest = requests.find(r => r.url.includes("/images/generations"))
-  const body = JSON.parse(genRequest!.init.body as string)
-  expect(body.model).toBeUndefined()
-})
-
 test("generate_image reports when not configured", async () => {
-  await saveConfig({
-    llm: {
-      baseUrl: "http://localhost/v1",
-      apiKey: "llm-key",
-      model: "test-model"
-    }
-  })
+  await saveConfig({ models: { chat: "chat-default" } })
 
   const result = await generateImageTool.execute({ prompt: "a red fox" })
   expect(result).toBe("Image generation is not configured.")
+
+  // Restore for any test files that run after this one in the same process.
+  await saveConfig({
+    models: { chat: "chat-default", "image-generation": "image-generation-default" }
+  })
 })

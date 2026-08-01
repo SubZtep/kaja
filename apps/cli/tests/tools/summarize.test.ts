@@ -3,12 +3,8 @@ import { tmpdir } from "node:os"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-summarize`
 
-const { saveConfig } = await import("../../lib/config")
-await saveConfig({
-  llm: { baseUrl: "http://localhost", apiKey: "test", model: "test-model" }
-})
-
 mock.module("../../lib/openai", () => ({
+  chatModelId: "test-model",
   client: {
     chat: {
       completions: {

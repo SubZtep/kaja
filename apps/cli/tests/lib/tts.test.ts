@@ -5,20 +5,35 @@
 import { afterEach, expect, test } from "bun:test"
 import type { AudioSink } from "../../lib/audio"
 
-// tts.model/tts.voice are mandatory config now (no code-side default), so
-// this file needs its own isolated config with them set — same pattern as
-// tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
+// models.text-to-speech/tts.voice are mandatory config now (no code-side
+// default), so this file needs its own isolated config with them set — same
+// pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-tts`
 
 const { saveConfig } = await import("../../lib/config")
+const { getModelsPath } = await import("../../lib/models")
 await saveConfig({
-  llm: {
-    baseUrl: "http://localhost/v1",
-    apiKey: "llm-key",
-    model: "test-model"
-  },
-  tts: { model: "test-tts-model", voice: "test-voice" }
+  models: { chat: "chat-default", "text-to-speech": "text-to-speech-default" },
+  tts: { voice: "test-voice" }
 })
+await Bun.write(
+  getModelsPath(),
+  `
+[providers.default]
+base_url = "http://localhost/v1"
+api_key = "llm-key"
+
+[[models]]
+id = "chat-default"
+model = "test-model"
+task = "chat"
+
+[[models]]
+id = "text-to-speech-default"
+model = "test-tts-model"
+task = "text-to-speech"
+`
+)
 
 const { createTts } = await import("../../lib/tts")
 

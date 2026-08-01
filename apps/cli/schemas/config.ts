@@ -10,54 +10,33 @@ export const KajaSettingsSchema = z.object({
   persona: z.string().min(1).optional()
 })
 
-// Feature groups: each is a self-contained block of config for one feature.
-// llm is mandatory (this is a chat app; no meaningful mode without it).
-// stt/tts/location/webSearch are optional — when a group is absent, that
-// feature is simply unavailable rather than crashing the app. Fields within
-// an optional group still validate as a whole (no half-filled groups),
-// except stt/tts fields which stay optional since they have code-side
-// fallback defaults.
-export const KajaLlmSchema = z.object({
-  baseUrl: z.url(),
-  apiKey: z.string().min(1),
-  model: z.string().min(1)
+// Every task (chat, embedding, rerank, image-generation, text-to-speech,
+// speech-to-text) resolves through models.toml the same way: the value here
+// is a models.toml `id`, looked up for its provider credentials + model
+// name (see lib/models.ts resolveModelById). chat is mandatory — this is a
+// chat app, no meaningful mode without it; every other task is opt-in.
+export const KajaModelsSchema = z.object({
+  chat: z.string().min(1),
+  embedding: z.string().min(1).optional(),
+  rerank: z.string().min(1).optional(),
+  "image-generation": z.string().min(1).optional(),
+  "text-to-speech": z.string().min(1).optional(),
+  "speech-to-text": z.string().min(1).optional()
 })
 
+// Feature groups: each is a self-contained block of config for one feature.
+// stt/tts/location/webSearch are optional — when a group is absent, that
+// feature is simply unavailable rather than crashing the app. Only the
+// non-model settings live here now — the model itself comes from
+// models.<task> above.
 export const KajaSttSchema = z.object({
   speachesUrl: z.url().optional(),
-  model: z.string().min(1).optional(),
   language: z.string().min(1).optional()
 })
 
 export const KajaTtsSchema = z.object({
   speachesUrl: z.url().optional(),
-  model: z.string().min(1).optional(),
   voice: z.string().min(1).optional()
-})
-
-export const KajaLocationSchema = z.object({
-  serviceUrl: z.url(),
-  apiKey: z.string().min(1)
-})
-
-export const KajaWebSearchSchema = z.object({
-  apiKey: z.string().min(1)
-})
-
-// All fields optional: falls back to llm.baseUrl/llm.apiKey and the built-in
-// default model (see tools/rerank.ts) when unset.
-export const KajaRerankSchema = z.object({
-  baseUrl: z.url().optional(),
-  apiKey: z.string().min(1).optional(),
-  model: z.string().min(1).optional()
-})
-
-// All fields optional: falls back to llm.baseUrl/llm.apiKey and the
-// built-in default model when unset (see lib/embeddings.ts).
-export const KajaEmbeddingSchema = z.object({
-  baseUrl: z.url().optional(),
-  apiKey: z.string().min(1).optional(),
-  model: z.string().min(1).optional()
 })
 
 export const KajaMemorySchema = z.object({
@@ -66,55 +45,21 @@ export const KajaMemorySchema = z.object({
   dbPath: z.string().min(1).optional()
 })
 
-// baseUrl/apiKey are mandatory (xAI's Images API, not the main llm
-// provider); model is optional — the tool only sends `model` to the API
-// when it's set here, otherwise the provider's own default is used.
-export const KajaImageGenSchema = z.object({
-  baseUrl: z.url(),
-  apiKey: z.string().min(1),
-  model: z.string().min(1).optional()
-})
-
-// botToken has no fallback (mandatory); allowedUserIds must be non-empty —
-// an empty allowlist would make the bot silently unusable, and this group
-// gates shell-command execution to whoever can message the bot.
-export const KajaTelegramSchema = z.object({
-  botToken: z.string().min(1),
-  allowedUserIds: z.array(z.number().int()).min(1)
-})
-
-// Optional: only needed by commands that talk to the Kaja backend (e.g.
-// `kaja config fetch`), unlike llm/stt/tts which are local-provider blocks.
-export const KajaApiSchema = z.object({
-  baseUrl: z.url()
-})
-
+// location/webSearch/telegram/api (external service credentials) live in
+// services.toml instead (see schemas/services.ts) — config.json stays
+// local UI/model config.
 export const KajaConfigSchema = z.object({
-  llm: KajaLlmSchema,
+  models: KajaModelsSchema,
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
-  location: KajaLocationSchema.optional(),
-  webSearch: KajaWebSearchSchema.optional(),
-  rerank: KajaRerankSchema.optional(),
-  embedding: KajaEmbeddingSchema.optional(),
   memory: KajaMemorySchema.optional(),
-  imageGen: KajaImageGenSchema.optional(),
-  telegram: KajaTelegramSchema.optional(),
-  api: KajaApiSchema.optional(),
   // In-app preferences (slash menu); optional so existing configs stay valid.
   settings: KajaSettingsSchema.optional()
 })
 
 export type KajaConfig = z.infer<typeof KajaConfigSchema>
 export type KajaSettings = z.infer<typeof KajaSettingsSchema>
-export type KajaLlm = z.infer<typeof KajaLlmSchema>
+export type KajaModels = z.infer<typeof KajaModelsSchema>
 export type KajaStt = z.infer<typeof KajaSttSchema>
 export type KajaTts = z.infer<typeof KajaTtsSchema>
-export type KajaLocation = z.infer<typeof KajaLocationSchema>
-export type KajaWebSearch = z.infer<typeof KajaWebSearchSchema>
-export type KajaRerank = z.infer<typeof KajaRerankSchema>
-export type KajaEmbedding = z.infer<typeof KajaEmbeddingSchema>
 export type KajaMemory = z.infer<typeof KajaMemorySchema>
-export type KajaImageGen = z.infer<typeof KajaImageGenSchema>
-export type KajaTelegram = z.infer<typeof KajaTelegramSchema>
-export type KajaApi = z.infer<typeof KajaApiSchema>

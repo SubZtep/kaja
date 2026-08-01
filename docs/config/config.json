@@ -1,4 +1,7 @@
 {
+  "models": {
+    "chat": "chat-default"
+  },
   "settings": {
     "thinking": false,
     "sounds": true,

@@ -3,16 +3,29 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-rerank`
 
 const { saveConfig } = await import("../../lib/config")
+const { getModelsPath } = await import("../../lib/models")
+
 await saveConfig({
-  llm: {
-    baseUrl: "http://localhost/v1",
-    apiKey: "llm-key",
-    model: "test-model"
-  },
-  rerank: {
-    model: "accounts/fireworks/models/qwen3-reranker-8b"
-  }
+  models: { chat: "chat-default", rerank: "rerank-default" }
 })
+await Bun.write(
+  getModelsPath(),
+  `
+[providers.default]
+base_url = "http://localhost/v1"
+api_key = "llm-key"
+
+[[models]]
+id = "chat-default"
+model = "test-model"
+task = "chat"
+
+[[models]]
+id = "rerank-default"
+model = "accounts/fireworks/models/qwen3-reranker-8b"
+task = "rerank"
+`
+)
 
 const { rerankTool } = await import("../../tools/rerank")
 
@@ -69,19 +82,30 @@ test("rerank passes top_n through when given", async () => {
   expect(body.top_n).toBe(1)
 })
 
-test("rerank config overrides take precedence over llm config", async () => {
-  await saveConfig({
-    llm: {
-      baseUrl: "http://localhost/v1",
-      apiKey: "llm-key",
-      model: "test-model"
-    },
-    rerank: {
-      baseUrl: "http://rerank-host/v1",
-      apiKey: "rerank-key",
-      model: "custom-reranker"
-    }
-  })
+test("rerank model resolves via its own provider, independent of chat", async () => {
+  await Bun.write(
+    getModelsPath(),
+    `
+[providers.default]
+base_url = "http://localhost/v1"
+api_key = "llm-key"
+
+[providers.rerank-host]
+base_url = "http://rerank-host/v1"
+api_key = "rerank-key"
+
+[[models]]
+id = "chat-default"
+model = "test-model"
+task = "chat"
+
+[[models]]
+id = "rerank-default"
+model = "custom-reranker"
+task = "rerank"
+provider = "rerank-host"
+`
+  )
   await rerankTool.execute({ query: "q", documents: ["a"] })
   expect(lastRequest?.url).toBe("http://rerank-host/v1/rerank")
   const body = JSON.parse(lastRequest!.init.body as string)

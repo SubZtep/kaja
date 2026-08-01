@@ -15,8 +15,21 @@ mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
   join(configKajaDir, "config.json"),
   JSON.stringify({
-    llm: { baseUrl: "http://localhost", apiKey: "x", model: "x" }
+    models: { chat: "chat-default" }
   })
+)
+writeFileSync(
+  join(configKajaDir, "models.toml"),
+  `
+[providers.default]
+base_url = "http://localhost"
+api_key = "x"
+
+[[models]]
+id = "chat-default"
+model = "x"
+task = "chat"
+`
 )
 
 const datasetsDir = join(configKajaDir, "datasets")

@@ -1,6 +1,5 @@
 import { tool } from "../lib/agents"
-import { config } from "../lib/config"
-import { client } from "../lib/openai"
+import { chatModelId, client } from "../lib/openai"
 
 /**
  * Summarizes a piece of text using the LLM.
@@ -36,9 +35,8 @@ export const summarizeTool = tool<{
     required: ["text"]
   },
   execute: async args => {
-    const { llm } = await config()
     const completion = await client.chat.completions.create({
-      model: llm.model,
+      model: chatModelId,
       messages: [
         {
           role: "system",

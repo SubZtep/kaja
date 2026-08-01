@@ -22,7 +22,12 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
   const modelBlocks = models.flatMap(m => {
     const provider = providerById.get(m.providerId)
     return m.tasks.map(task => {
-      const lines = ["[[models]]", `id = ${tomlString(m.modelId)}`, `task = ${tomlString(task)}`]
+      const lines = [
+        "[[models]]",
+        `id = ${tomlString(m.id)}`,
+        `model = ${tomlString(m.model)}`,
+        `task = ${tomlString(task)}`
+      ]
       if (provider && provider.name !== "default") lines.push(`provider = ${tomlString(provider.name)}`)
       return lines.join("\n")
     })

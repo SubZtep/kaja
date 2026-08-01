@@ -6,10 +6,21 @@ const ProviderSchema = z.object({
   api_key: z.string().min(1).optional()
 })
 
-const TaskSchema = z.enum(["chat", "text-to-speech", "speech-to-text", "embedding", "image-generation", "rerank"])
+export const TaskSchema = z.enum([
+  "chat",
+  "text-to-speech",
+  "speech-to-text",
+  "embedding",
+  "image-generation",
+  "rerank"
+])
 
 const ModelSchema = z.object({
+  // Stable slug this model is looked up by (config.json's models.<task> value);
+  // a DB uuid for server-fetched files, any unique string for local templates.
   id: z.string().min(1),
+  // The name sent to the provider's API, e.g. "accounts/fireworks/models/minimax-m3".
+  model: z.string().min(1),
   task: TaskSchema,
   // Which [providers.*] table holds the credentials; omitted means "default".
   provider: z.string().min(1).optional()

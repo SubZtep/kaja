@@ -1,10 +1,10 @@
 import { ToolError, tool } from "../lib/agents"
 import { config } from "../lib/config"
+import { loadModelsFile, resolveModelById } from "../lib/models"
 
 /**
- * Reranks a list of documents by relevance to a query, using a dedicated
- * reranker model. Falls back to the main llm provider's baseUrl/apiKey when
- * config.rerank doesn't override them.
+ * Reranks a list of documents by relevance to a query, using the model
+ * configured at models.rerank (resolved through models.toml).
  *
  * @param args.query - The search query to rank documents against.
  * @param args.documents - The documents to rank, most relevant first in the result.
@@ -54,13 +54,15 @@ interface RerankResponse {
 }
 
 async function rerank(args: { query: string; documents: string[]; top_n?: number }) {
-  const { llm, rerank } = await config()
-  if (!rerank?.model) {
-    throw new ToolError("rerank", "No rerank model configured — run `kaja --wizard` or set rerank.model in config.json")
+  const { models } = await config()
+  if (!models.rerank) {
+    throw new ToolError("rerank", "No rerank model configured — set models.rerank in config.json")
   }
-  const baseUrl = rerank.baseUrl ?? llm.baseUrl
-  const apiKey = rerank.apiKey ?? llm.apiKey
-  const model = rerank.model
+  const resolved = resolveModelById(await loadModelsFile(), models.rerank)
+  if (!resolved) {
+    throw new ToolError("rerank", `No model in models.toml matches config.json's models.rerank ("${models.rerank}")`)
+  }
+  const { baseUrl, apiKey, id: model } = resolved
 
   const res = await fetch(`${baseUrl.replace(/\/$/, "")}/rerank`, {
     method: "POST",

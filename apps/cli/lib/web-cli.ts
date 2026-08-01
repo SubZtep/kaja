@@ -9,8 +9,9 @@ import {
   resolveMemoryDbPath,
   saveMemory
 } from "./memory-store"
-import { loadModels, resolveConfigModels } from "./models"
+import { loadModels } from "./models"
 import { loadPersonas } from "./personas"
+import { getServicesPath, readServicesLoose } from "./services"
 import { deleteSessionRow, listSessions, loadSessionRow } from "./session-store"
 import {
   configPage,
@@ -55,8 +56,9 @@ export function startWebServer(port: number) {
     hostname: "127.0.0.1",
     routes: {
       "/": async () => {
-        const [config, store, sessions, answers, versions, dbPath] = await Promise.all([
+        const [config, services, store, sessions, answers, versions, dbPath] = await Promise.all([
           readConfigLoose(),
+          readServicesLoose(),
           loadMemory(),
           listSessions(),
           listAllDatasetAnswers(),
@@ -67,6 +69,8 @@ export function startWebServer(port: number) {
           configPage({
             config,
             configPath: getConfigPath(),
+            services,
+            servicesPath: getServicesPath(),
             dbPath,
             counts: {
               notes: Object.keys(store).length,
@@ -102,8 +106,7 @@ export function startWebServer(port: number) {
           listNotesTool,
           datasetInfoTool
         ]
-        const config = await readConfigLoose()
-        const models = [...(await loadModels()), ...resolveConfigModels(config)]
+        const models = await loadModels()
         const personas = await loadPersonas(models)
         const entries = await Promise.all(
           personas.map(async persona => ({

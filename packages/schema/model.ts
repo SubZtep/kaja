@@ -37,7 +37,7 @@ export const listProvidersResponseSchema = z.object({
 export const modelSchema = z.object({
   id: z.string(),
   providerId: z.string(),
-  modelId: z.string().min(1),
+  model: z.string().min(1),
   tasks: z.array(modelTaskSchema).min(1),
   enabled: z.boolean(),
   createdAt: z.coerce.date(),
@@ -46,14 +46,14 @@ export const modelSchema = z.object({
 
 export const createModelRequestSchema = z.object({
   providerId: z.string().min(1),
-  modelId: z.string().min(1),
+  model: z.string().min(1),
   tasks: z.array(modelTaskSchema).min(1),
   enabled: z.boolean().default(true)
 })
 
 export const updateModelRequestSchema = z.object({
   providerId: z.string().min(1).optional(),
-  modelId: z.string().min(1).optional(),
+  model: z.string().min(1).optional(),
   tasks: z.array(modelTaskSchema).min(1).optional(),
   enabled: z.boolean().optional()
 })

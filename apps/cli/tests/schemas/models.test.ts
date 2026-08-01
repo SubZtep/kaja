@@ -14,11 +14,13 @@ api_key = "fw-test"
 base_url = "http://localhost:8000"
 
 [[models]]
-id = "accounts/fireworks/models/deepseek"
+id = "chat-deepseek"
+model = "accounts/fireworks/models/deepseek"
 task = "chat"
 
 [[models]]
-id = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
+id = "tts-kokoro"
+model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
 task = "text-to-speech"
 provider = "speaches"
 `
@@ -51,7 +53,8 @@ test("unknown provider reference is rejected", () => {
 base_url = "https://api.example.test/v1"
 
 [[models]]
-id = "some/model"
+id = "some-model"
+model = "some/model"
 task = "chat"
 provider = "nope"
 `
@@ -64,7 +67,8 @@ test("model without provider requires providers.default", () => {
 base_url = "http://localhost:8000"
 
 [[models]]
-id = "some/model"
+id = "some-model"
+model = "some/model"
 task = "chat"
 `
   expect(() => parse(toml)).toThrow("[providers.default] is missing")
@@ -76,7 +80,8 @@ test("unknown task is rejected", () => {
 base_url = "https://api.example.test/v1"
 
 [[models]]
-id = "some/model"
+id = "some-model"
+model = "some/model"
 task = "juggling"
 `
   expect(() => parse(toml)).toThrow()

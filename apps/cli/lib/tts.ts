@@ -16,14 +16,21 @@
 import type { AudioSink } from "./audio"
 import { config } from "./config"
 import { log } from "./logger"
+import { loadModelsFile, resolveModelById } from "./models"
 
 async function resolveTtsSettings() {
-  const { tts } = await config()
-  if (!tts?.model || !tts.voice) {
-    throw new Error("No TTS model/voice configured — set tts.model and tts.voice in config.json")
+  const { tts, models } = await config()
+  if (!models["text-to-speech"] || !tts?.voice) {
+    throw new Error("No TTS model/voice configured — set models.text-to-speech and tts.voice in config.json")
+  }
+  const resolved = resolveModelById(await loadModelsFile(), models["text-to-speech"])
+  if (!resolved) {
+    throw new Error(
+      `No model in models.toml matches config.json's models.text-to-speech ("${models["text-to-speech"]}")`
+    )
   }
   return {
-    model: tts.model,
+    model: resolved.id,
     voice: tts.voice,
     // speachesUrl is a ws:// URL (matching the speaches realtime API); TTS uses plain HTTP.
     base: (tts.speachesUrl ?? "ws://localhost:8000").replace(/^ws/, "http")

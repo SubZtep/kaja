@@ -1,4 +1,4 @@
-You already have a working dev config with llm set up — you just need to add a telegram block. Here's the full setup:
+You already have a working dev config with a chat model set up — you just need to add a telegram section. Here's the full setup:
 
 1. Create a bot and get a token
 - In Telegram, message @BotFather, send /newbot, follow the prompts (name + unique username ending in bot).
@@ -7,14 +7,13 @@ You already have a working dev config with llm set up — you just need to add a
 2. Get your numeric Telegram user ID
 - Message @userinfobot (or @RawDataBot) — it replies with your numeric id. That's what goes in allowedUserIds, not your @username.
 
-3. Add the telegram block to your config
+3. Add the telegram section to services.toml
 
-That file is at /home/dcr/.config/kaja/config.json (shown above). Add:
+That file is at /home/dcr/.config/kaja/services.toml. Add:
 
-"telegram": {
-  "botToken": "123456789:AAH...",
-  "allowedUserIds": [YOUR_NUMERIC_ID]
-}
+[telegram]
+botToken = "123456789:AAH..."
+allowedUserIds = [YOUR_NUMERIC_ID]
 
 4. Run it
 

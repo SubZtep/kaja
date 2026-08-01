@@ -1,5 +1,4 @@
 [cli]
-notSaved = "A konfiguráció nincs elmentve. Szia!"
 invalidConfig = "Érvénytelen konfigurációs fájl: {path}"
 bye = "Pá, pá!"
 
@@ -7,7 +6,7 @@ bye = "Pá, pá!"
 help = """
 Használat
   $ kaja
-  $ kaja config fetch
+  $ kaja config fetch [--api-url <url>]
   $ kaja memory <list|forget <kulcs-vagy-glob>|export>
   $ kaja session <list|diagram <id>>
   $ kaja telegram
@@ -17,7 +16,7 @@ Kapcsolók
   --help          Kiírja ezt a súgót
   --config        Kiírja a konfigurációs fájl helyét és a vágólapra másolja
   --config-dir    A config.json-t ebből a könyvtárból olvassa az alapértelmezett helyett
-  --wizard        A konfiguráció áttekintése és szerkesztése a varázslóban
+  --api-url       Kaja API alap URL a `kaja config fetch`-hez (utána elmentve a services.toml-ba)
   --version       Kiírja a telepített verziót
   --continue, -c  A legutóbbi munkamenet folytatása
   --session, -s   Munkamenet folytatása azonosító alapján (lásd: kaja session list)
@@ -26,6 +25,7 @@ Kapcsolók
 Példák
   $ kaja --config
   /home/dcr/.config/kaja/config.json
+  $ kaja config fetch --api-url http://localhost:3001
   $ kaja memory list
   $ kaja memory forget "test:*"
   $ kaja --continue
@@ -61,7 +61,7 @@ usage = """
 Használat
   $ kaja config fetch   Újragenerálja az mcp.toml-t a Kaja API-ból
 """
-apiUrlMissing = "Állítsd be az api.baseUrl-t a config.json-ban (lásd: kaja --config)"
+apiUrlMissing = "Állítsd be az [api] baseUrl-t a services.toml-ban, vagy add meg a --api-url kapcsolót"
 fetchFailed = "Nem sikerült letölteni az mcp.toml-t (HTTP {status})"
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
@@ -75,54 +75,8 @@ invalidAt = "Érvénytelen persona fájl ({path}): {message}"
 [mcp]
 invalidAt = "Érvénytelen MCP szerver fájl ({path}): {message}"
 
-[wizard]
-title = "Kaja CLI beállítások"
-stepPreset = "Kiindulás"
-stepLanguage = "Nyelv"
-stepOf = "{current}. lépés / {total}"
-presetHint = "Előre kitöltheted a beállítást egy szolgáltatóval, vagy kezdheted üresen."
-presetFireworks = "Fireworks AI"
-presetOllama = "Ollama (helyi)"
-presetEmpty = "Üres kezdés"
-review = "Áttekintés"
-invalid = "Érvénytelen"
-groupLlm = "LLM"
-groupEmbedding = "Beágyazási modell (opcionális)"
-groupEmbeddingHint = "Szöveget vektorokká alakít a szemantikus kereséshez — a memória-visszakeresés és a like-or-not játék használja hasonló elemek megtalálásához. Hagyd üresen, hogy az LLM szolgáltató saját beágyazási modelljét használja."
-groupStt = "Beszédfelismerés (opcionális)"
-groupTts = "Szövegfelolvasás (opcionális)"
-groupLocation = "Helymeghatározó eszköz (opcionális)"
-groupWebSearch = "Webkereső eszköz (opcionális)"
-groupRerank = "Rangsoroló eszköz (opcionális)"
-groupRerankHint = "Egy dedikált rangsoroló modell segítségével relevancia szerint rendezi újra a kereső/visszakereső találatokat — a beágyazás-alapú keresés után használatos, hogy a legrelevánsabb részletekre szűrjön. Hagyd üresen a funkció kihagyásához."
-groupImageGen = "Képgenerálás eszköz (opcionális)"
-groupApi = "Kaja API (opcionális)"
-groupApiHint = "Egy Kaja szerver alap URL-je — a `kaja config fetch` használja az mcp.toml újragenerálásához. Hagyd üresen a kihagyáshoz."
-groupOptionalHint = "Opcionális — hagyj üresen minden mezőt a funkció kihagyásához."
-llmBaseUrl = "OpenAI-kompatibilis alap URL"
-llmApiKey = "API kulcs"
-llmModel = "Modell azonosító"
-embeddingBaseUrl = "Beágyazó modell alap URL"
-embeddingApiKey = "Beágyazó modell API kulcs"
-embeddingModel = "Beágyazó modell azonosító"
-sttSpeachesUrl = "Speaches szerver URL"
-sttModel = "STT modell"
-sttLanguage = "STT nyelv"
-ttsSpeachesUrl = "Speaches szerver URL"
-ttsModel = "TTS modell"
-ttsVoice = "TTS hang"
-locationServiceUrl = "Geo szolgáltatás URL"
-locationApiKey = "Geo szolgáltatás API kulcs"
-webSearchApiKey = "Brave keresés API kulcs"
-rerankModel = "Rangsoroló modell azonosító"
-rerankBaseUrl = "Rangsoroló alap URL"
-rerankApiKey = "Rangsoroló API kulcs"
-imageGenBaseUrl = "Képgenerálás alap URL"
-imageGenApiKey = "Képgenerálás API kulcs"
-imageGenModel = "Képgenerálás modell azonosító"
-apiBaseUrl = "Kaja API alap URL"
-reviewHint = "Enter: mentés és indítás · Esc: vissza"
-footer = "Enter tovább · Tab mezőváltás · Esc vissza/mégse"
+[services]
+invalidAt = "Érvénytelen services fájl ({path}): {message}"
 
 [header]
 na = "N/A"

@@ -20,9 +20,9 @@ test("unknown key falls back to the key itself", () => {
 })
 
 test("setLanguage switches the dictionary", () => {
-  expect(t("wizard.review")).toBe("Review")
+  expect(t("startup.persona")).toBe("Persona: ")
   setLanguage("hu")
-  expect(t("wizard.review")).toBe("Áttekintés")
+  expect(t("startup.persona")).toBe("Személyiség: ")
 })
 
 test("detectLanguage maps Hungarian locales to hu, others to en", () => {

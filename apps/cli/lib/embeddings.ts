@@ -1,22 +1,27 @@
 import OpenAI from "openai"
 import { config } from "./config"
+import { loadModelsFile, resolveModelById } from "./models"
 
 /**
- * Generates embeddings via the configured (or llm-fallback) provider, same
- * cascade pattern as tools/rerank.ts: config.embedding overrides config.llm.
- * Batches multiple inputs into one request.
+ * Generates embeddings via the model configured at models.embedding
+ * (resolved through models.toml, same as the chat model). Batches multiple
+ * inputs into one request.
  */
 export async function embed(input: string | string[]): Promise<number[][]> {
-  const { llm, embedding } = await config()
-  if (!embedding?.model) {
-    throw new Error("No embedding model configured — run `kaja --wizard` or set embedding.model in config.json")
+  const { models } = await config()
+  if (!models.embedding) {
+    throw new Error("No embedding model configured — set models.embedding in config.json")
+  }
+  const embedding = resolveModelById(await loadModelsFile(), models.embedding)
+  if (!embedding) {
+    throw new Error(`No model in models.toml matches config.json's models.embedding ("${models.embedding}")`)
   }
   const client = new OpenAI({
-    baseURL: embedding.baseUrl ?? llm.baseUrl,
-    apiKey: embedding.apiKey ?? llm.apiKey
+    baseURL: embedding.baseUrl,
+    apiKey: embedding.apiKey
   })
   const res = await client.embeddings.create({
-    model: embedding.model,
+    model: embedding.id,
     input,
     // Without this, the SDK defaults to requesting base64-encoded vectors
     // and decodes them client-side — explicit "float" gets plain JSON

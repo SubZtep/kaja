@@ -1,13 +1,13 @@
 import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
-import type { KajaTelegram } from "../schemas/config"
 import type { ResolvedModel } from "../schemas/models"
+import type { ServicesTelegram } from "../schemas/services"
 import type { Agent } from "./agents"
 import { t } from "./i18n"
 import { log } from "./logger"
 import type { Persona } from "./personas"
 import { createTelegramDriver, type InlineKeyboardLike, TelegramRateLimitError } from "./telegram-driver"
 
-export type CreateTelegramBotConfig = KajaTelegram & {
+export type CreateTelegramBotConfig = ServicesTelegram & {
   agentConfig: ConstructorParameters<typeof Agent>[0]
   personas: Persona[]
   models: ResolvedModel[]

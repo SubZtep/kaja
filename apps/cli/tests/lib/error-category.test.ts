@@ -8,13 +8,21 @@ import { categorizeError } from "../../lib/error-category"
 // files leave XDG_CONFIG_HOME pointing at when this module first loads.
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-error-category`
 const { saveConfig } = await import("../../lib/config")
-await saveConfig({
-  llm: {
-    baseUrl: "http://localhost/v1",
-    apiKey: "llm-key",
-    model: "test-model"
-  }
-})
+const { getModelsPath } = await import("../../lib/models")
+await saveConfig({ models: { chat: "chat-default" } })
+await Bun.write(
+  getModelsPath(),
+  `
+[providers.default]
+base_url = "http://localhost/v1"
+api_key = "llm-key"
+
+[[models]]
+id = "chat-default"
+model = "test-model"
+task = "chat"
+`
+)
 
 const { ToolError } = await import("../../lib/agents")
 
