@@ -72,6 +72,7 @@ jobs:
             --compile \
             --format=esm \
             --minify \
+            --sourcemap \
             --outfile kaja \
             --target="${{ matrix.bun_target }}" \
             --define CLI_VERSION="\"${VERSION}\"" \
