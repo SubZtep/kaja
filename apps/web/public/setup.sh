@@ -5,7 +5,7 @@ REPO="${REPO:-subztep/kaja}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 usage() {
-  cat << 'EOF'
+  cat <<'EOF'
 Usage:
   curl -fsSL https://kaja.io/setup.sh | bash
 
@@ -27,21 +27,30 @@ detect_platform() {
   arch="$(uname -m)"
 
   case "$os" in
-    linux)
-      case "$arch" in
-        x86_64|amd64)   platform="linux-x64" ;;
-        aarch64|arm64)  platform="linux-arm64" ;;
-        *)              echo "Unsupported arch: $arch" >&2; exit 1 ;;
-      esac
+  linux)
+    case "$arch" in
+    x86_64 | amd64) platform="linux-x64" ;;
+    aarch64 | arm64) platform="linux-arm64" ;;
+    *)
+      echo "Unsupported arch: $arch" >&2
+      exit 1
       ;;
-    darwin)
-      case "$arch" in
-        arm64)  platform="macos-arm64" ;;
-        x86_64) platform="macos-x64" ;;
-        *)      echo "Unsupported arch: $arch" >&2; exit 1 ;;
-      esac
+    esac
+    ;;
+  darwin)
+    case "$arch" in
+    arm64) platform="macos-arm64" ;;
+    x86_64) platform="macos-x64" ;;
+    *)
+      echo "Unsupported arch: $arch" >&2
+      exit 1
       ;;
-    *)      echo "Unsupported OS: $os" >&2; exit 1 ;;
+    esac
+    ;;
+  *)
+    echo "Unsupported OS: $os" >&2
+    exit 1
+    ;;
   esac
   echo "$platform"
   return
@@ -104,7 +113,7 @@ install() {
     manifest_url="https://github.com/${REPO}/releases/latest/download/manifest.json"
   fi
 
-  manifest=$(curl -fsSL "$manifest_url")
+  manifest=$(curl -fsSL --proto '=https' "$manifest_url")
 
   {
     read -r version
@@ -147,12 +156,15 @@ install() {
     echo "IMPORTANT: Add ${INSTALL_DIR} to your PATH if not already present."
     echo ""
     case "${SHELL:-}" in
-      */zsh)
-        echo "  echo 'export PATH=${INSTALL_DIR}:\$PATH' >> ~/.zshrc" ;;
-      */bash)
-        echo "  echo 'export PATH=${INSTALL_DIR}:\$PATH' >> ~/.bashrc" ;;
-      *)
-        echo "  Add ${INSTALL_DIR} to your PATH" ;;
+    */zsh)
+      echo "  echo 'export PATH=${INSTALL_DIR}:\$PATH' >> ~/.zshrc"
+      ;;
+    */bash)
+      echo "  echo 'export PATH=${INSTALL_DIR}:\$PATH' >> ~/.bashrc"
+      ;;
+    *)
+      echo "  Add ${INSTALL_DIR} to your PATH"
+      ;;
     esac
     echo ""
     echo "Then restart your shell or run: source ~/.bashrc (or ~/.zshrc)"
