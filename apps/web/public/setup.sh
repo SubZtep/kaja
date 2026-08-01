@@ -104,7 +104,7 @@ install() {
     manifest_url="https://github.com/${REPO}/releases/latest/download/manifest.json"
   fi
 
-  manifest=$(curl -fsSL "$manifest_url")
+  manifest=$(curl -fsSL --proto '=https' "$manifest_url")
 
   {
     read -r version
