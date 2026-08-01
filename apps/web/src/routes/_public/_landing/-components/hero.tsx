@@ -81,6 +81,8 @@ export function Hero() {
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>
             <a
               href="https://github.com/SubZtep/kaja/stargazers"
+              target="_blank"
+              rel="noopener"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -98,6 +100,8 @@ export function Hero() {
             </a>
             <a
               href="https://docs.kaja.io"
+              target="_blank"
+              rel="noopener"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
