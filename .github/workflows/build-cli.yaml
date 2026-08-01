@@ -3,7 +3,9 @@ name: Build and release CLI
 on:
   push:
     tags:
-      - "v*"
+      - "cli@*"
+    paths:
+      - "apps/cli/**"
   workflow_dispatch:
 
 jobs:
@@ -51,12 +53,12 @@ jobs:
         shell: bash
         run: |
           PACKAGE_VERSION="$(jq -r .version apps/cli/package.json)"
-          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v${PACKAGE_VERSION}" ]]; then
-            echo "Tag ${GITHUB_REF_NAME} does not match apps/cli/package.json version v${PACKAGE_VERSION}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "cli@${PACKAGE_VERSION}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match apps/cli/package.json version cli@${PACKAGE_VERSION}"
             exit 1
           fi
-          echo "VERSION=v${PACKAGE_VERSION}" >> "$GITHUB_ENV"
-          echo "version=v${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "VERSION=cli@${PACKAGE_VERSION}" >> "$GITHUB_ENV"
+          echo "version=cli@${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Build CLI for ${{ matrix.platform }}
         shell: bash
@@ -130,12 +132,12 @@ jobs:
         shell: bash
         run: |
           PACKAGE_VERSION="$(jq -r .version apps/cli/package.json)"
-          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v${PACKAGE_VERSION}" ]]; then
-            echo "Tag ${GITHUB_REF_NAME} does not match apps/cli/package.json version v${PACKAGE_VERSION}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "cli@${PACKAGE_VERSION}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match apps/cli/package.json version cli@${PACKAGE_VERSION}"
             exit 1
           fi
-          echo "VERSION=v${PACKAGE_VERSION}" >> "$GITHUB_ENV"
-          echo "version=v${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "VERSION=cli@${PACKAGE_VERSION}" >> "$GITHUB_ENV"
+          echo "version=cli@${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create manifest.json
         shell: bash

@@ -6,11 +6,15 @@ on:
       release_api:
         description: "Release API"
         type: boolean
+        default: false
+      release_cli:
+        description: "Release CLI"
+        type: boolean
         default: true
       release_web:
         description: "Release Web"
         type: boolean
-        default: true
+        default: false
 
 jobs:
   api-docker:
@@ -31,12 +35,38 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release API
-        uses: SubZtep/dockerhub-action@835780a315df2df58f93f656aeb397c8f64e7900
+        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
         with:
           dockerhub_repository: ${{ vars.DOCKER_IMAGE_API }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: ./apps/api/Dockerfile
+          version: ${{ steps.version.outputs.version }}
+
+  cli-docker:
+    name: CLI Build and Push
+    if: ${{ inputs.release_cli }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Get CLI version
+        id: version
+        run: |
+          VERSION=$(jq -r .version ./apps/cli/package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Release CLI
+        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
+        with:
+          dockerhub_repository: ${{ vars.DOCKER_IMAGE_CLI }}
+          dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+          dockerfile: ./apps/cli/Dockerfile
           version: ${{ steps.version.outputs.version }}
 
   web-docker:
@@ -57,7 +87,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Release Web
-        uses: SubZtep/dockerhub-action@835780a315df2df58f93f656aeb397c8f64e7900
+        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
         with:
           dockerhub_repository: ${{ vars.DOCKER_IMAGE_WEB }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
