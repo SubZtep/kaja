@@ -8,7 +8,12 @@ import appCss from "../styles.css?url"
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
-    const session = await getSession()
+    let session: Awaited<ReturnType<typeof getSession>> | null = null
+    try {
+      session = await getSession()
+    } catch (err) {
+      error("DIAGNOSTIC: getSession failed in root loader", { error: err })
+    }
     return {
       apiUrl: process.env.VITE_API_URL,
       session
