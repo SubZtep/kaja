@@ -85,6 +85,13 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <HeadContent />
+        {import.meta.env.VITE_UMAMI_WEBSITE_ID && (
+          <script
+            defer
+            src="https://cloud.umami.is/script.js"
+            data-website-id={import.meta.env.VITE_UMAMI_WEBSITE_ID}
+          ></script>
+        )}
       </head>
       <body>
         <Providers>{children}</Providers>

@@ -6,5 +6,7 @@ declare module "bun" {
     VITE_API_URL: string
     /** This website’s URL. */
     VITE_APP_URL: string
+    /** Umami Analytics ID */
+    VITE_UMAMI_WEBSITE_ID?: string
   }
 }
