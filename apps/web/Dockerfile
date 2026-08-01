@@ -11,8 +11,10 @@ COPY apps/web ./apps/web
 COPY packages ./packages
 ARG VITE_APP_URL
 ARG VITE_API_URL
+ARG VITE_UMAMI_WEBSITE_ID
 ENV VITE_APP_URL=$VITE_APP_URL
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_UMAMI_WEBSITE_ID=$VITE_UMAMI_WEBSITE_ID
 RUN bun run --filter @kaja/web build
 
 FROM oven/bun:1.3.14-slim AS runner

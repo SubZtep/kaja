@@ -67,3 +67,4 @@ jobs:
           build_args: |
             VITE_API_URL=${{ vars.VITE_API_URL }}
             VITE_APP_URL=${{ vars.VITE_APP_URL }}
+            VITE_UMAMI_WEBSITE_ID=${{ vars.VITE_UMAMI_WEBSITE_ID }}
