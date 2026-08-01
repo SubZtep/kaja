@@ -1,23 +1,20 @@
 # 가자⛲
 
-> [! IMPORTANT]
-> Kaja is still evolving :speaker::godmode::loudspeaker:
-
 ![Continuous integration](https://github.com/SubZtep/kaja/actions/workflows/ci.yaml/badge.svg)
-
 ![Build CLI](https://github.com/SubZtep/kaja/actions/workflows/build-cli.yaml/badge.svg)
-
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
-
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**, a **TanStack Start** web app, and a local **Ink** terminal agent (**CLI**). There is no mobile app in this monorepo.
+> [!IMPORTANT]
+> Kaja is still evolving :speaker::godmode::loudspeaker:
+
+Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**, a **TanStack Start** web app, and a local **Ink** terminal agent (**CLI**) with Telegram support.
 
 ## What’s in the Monorepo?
 
 * **Apps** 
   + [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery.
-  + [`cli`](./apps/cli/) – Installable CLI agent (personas, tools, MCP, Telegram).
+  + [`cli`](./apps/cli/) – Terminal based agentic AI (personas, tools, MCP, Telegram).
   + [`web`](./apps/web/) – Public web and admin portal.
 * **Packages** 
   + [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.

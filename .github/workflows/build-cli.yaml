@@ -72,13 +72,11 @@ jobs:
             --compile \
             --format=esm \
             --minify \
-            --sourcemap \
             --outfile kaja \
             --target="${{ matrix.bun_target }}" \
             --define CLI_VERSION="\"${VERSION}\"" \
             --define process.env.KAJA_APP_NAME="\"cli\"" \
             --define process.env.KAJA_LOG_LEVEL="\"warn\"" \
-            --define process.env.NODE_ENV="\"production\"" \
             --define process.env.API_URL="\"${API_URL}\""
 
       - name: Rename artifact
