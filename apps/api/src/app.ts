@@ -21,6 +21,7 @@ app.use("*", globalRateLimiter)
 app.use("*", authMiddleware)
 
 // Mount routes
+app.get("/favicon.ico", (c) => c.body(null, 204))
 app.use("/auth/*", authRateLimiter)
 app.route("/admin", adminRoutes)
 app.route("/auth", authRoutes)
