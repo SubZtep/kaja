@@ -68,7 +68,7 @@ jobs:
             exit 1
           fi
           cd apps/cli
-          bun build src/cli.tsx \
+          bun build cli.tsx \
             --compile \
             --format=esm \
             --minify \
