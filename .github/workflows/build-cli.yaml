@@ -22,22 +22,18 @@ jobs:
             platform: linux-arm64
             bun_target: bun-linux-arm64
             artifact: kaja-linux-arm64
-          - os: windows-latest
-            platform: windows/arm64
-            bun_target: bun-windows/arm64
-            artifact: kaja-windows/arm64.exe
-          - os: windows-latest
-            platform: windows-x64
-            bun_target: bun-windows-x64
-            artifact: kaja-windows-x64.exe
-          - os: macos-latest
-            platform: macos-arm64
-            bun_target: bun-darwin-arm64
-            artifact: kaja-macos-arm64
           - os: macos-latest
             platform: macos-x64
             bun_target: bun-darwin-x64
             artifact: kaja-macos-x64
+          - os: macos-latest
+            platform: macos-arm64
+            bun_target: bun-darwin-arm64
+            artifact: kaja-macos-arm64
+          - os: windows-latest
+            platform: windows-x64
+            bun_target: bun-windows-x64
+            artifact: kaja-windows-x64.exe
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -76,7 +72,6 @@ jobs:
             --compile \
             --format=esm \
             --minify \
-            --sourcemap \
             --outfile kaja \
             --target="${{ matrix.bun_target }}" \
             --define CLI_VERSION="\"${VERSION}\"" \

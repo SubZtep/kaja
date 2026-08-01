@@ -2,7 +2,7 @@ import { join } from "node:path"
 import { file, TOML, write } from "bun"
 // Written on first run: an example provider/model catalog, sourced from the
 // same file that documents models.toml on the docs site.
-import TEMPLATE from "../docs/config/models.fireworks.toml" with { type: "text" }
+import TEMPLATE from "../../../docs/config/models.fireworks.toml" with { type: "text" }
 import type { KajaConfig } from "../schemas/config"
 import { type KajaModelsFile, ModelsFileSchema, type ResolvedModel } from "../schemas/models"
 import { getConfigDir } from "./config"

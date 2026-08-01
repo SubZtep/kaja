@@ -8,3 +8,6 @@ bun = true
 noOrphans = true
 elide-lines = 0
 silent = true
+
+[test]
+preload = ["./scripts/load-test-env.ts"]

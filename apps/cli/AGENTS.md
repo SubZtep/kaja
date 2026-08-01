@@ -1,60 +1,85 @@
-Terminal chat with personas, tools, optional mic dictation, and optional TTS.
+# @kaja/cli
 
-This project uses Bun toolkit.
+Terminal chat with personas, tools, optional mic dictation, optional TTS, MCP, and Telegram.
+
+This package uses Bun. Entry point is **`cli.tsx`** at the package root (not `src/`).
 
 ## Commands
 
-* Run: `bun start`
-* Lint with autofix: `bun lint`
-* Test: `bun test`
+```bash
+bun start                 # from apps/cli
+bun test                  # package tests
+# From monorepo root:
+bun run --filter @kaja/cli start
+bun run --filter @kaja/cli test
+```
 
-## CLI
+From monorepo root you can also run `bun dev:cli`.
 
-* Entry point: `cli.tsx` (Ink TUI).
-* Flags: `--wizard` (config wizard), `--config` (print config path), `-c`/`--continue`, `-s`/`--session <id>`.
-* Subcommands: `memory`, `session`, `telegram` — handled in `lib/memory-cli.ts`, `lib/session-cli.ts`, `lib/telegram-cli.ts`. Memory and session run before the config guard on purpose, so they work without a valid LLM config.
+## CLI surface
 
-## Boundaries
+- Flags: `--wizard`, `--config`, `--config-dir`, `-c`/`--continue`, `-s`/`--session <id>`
+- Subcommands (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
+- Handlers: `lib/memory-cli.ts`, `lib/session-cli.ts`, `lib/telegram-cli.ts`, `lib/web-cli.ts`
 
-### Always do
+## Layout
 
-* Download documentation for the project version of dependencies with Context7 MCP.
-* Run lint before Git commit.
+```
+cli.tsx                 # entry
+components/             # Ink UI (layout, inputs, timeline, wizard, …)
+hooks/                  # agent, settings, voice, dictation, sounds, …
+lib/                    # agents, config, models, personas, MCP, telegram, tools glue, …
+schemas/                # Zod for config, personas, models, sessions, MCP, datasets
+tools/                  # LLM tools (files, web, memory, image, summarize, …)
+locales/                # en.toml, hu.toml
+assets/                 # sounds, datasets
+tests/                  # mirrors source tree
+```
+
+### Shared monorepo docs
+
+Default config **templates** (first-run / wizard) live at **repo root** `docs/config/`:
+
+- `docs/config/config.json`
+- `docs/config/models.fireworks.toml`, `models.ollama.toml`
+- `docs/config/mcp.toml`
+- `docs/config/personas/*.toml`
+- `docs/config/datasets/`
+
+CLI source imports them as `../../../docs/config/...` from `lib/` and `components/`.  
+GitHub Pages content is also under monorepo `docs/`.
+
+## Conventions
+
+### Always
+
+- Fetch current docs for dependency versions (Context7) when using libraries
+- Run lint before commit (monorepo `bun lint` or package biome if configured)
+- User-facing strings go through `t()` from `lib/i18n` with keys in **both** `locales/en.toml` and `locales/hu.toml`
+- Write short, explicit TSDoc on non-obvious exports
 
 ### Ask first
 
-* When anything is ambiguous.
-* Refactor a code with multiple references.
-* Any git mutation
+- Ambiguous product behavior
+- Refactors with many call sites
+- Any git mutation
+- New tools, personas, or provider presets
 
-### Never do
+### Never
 
-* Extend feature without discussion.
+- Ship feature expansions without discussion
+- Commit real API keys or bot tokens
 
-### Project Structure
+### Code style
 
-Root folders:
-* `assets`: Sound effect files (wav or mp3)
-* `components`: Custom React (Ink) components for layout and elements
-* `docs`: GitHub Pages site: install script, landing page, Telegram setup guide
-* `hooks`: Custom React hooks
-* `lib`: Custom code library
-* `locales`: i18n language files in TOML format (en, hu)
-* `patches`: Patch files for Bun `patchedDependencies`
-* `schemas`: Various project specific Zod schemas
-* `tests`: Unit and integration tests
-* `tools`: Tools for LLM agents
-
-### Code Style
-
-* Biome automatically formatting and linting source files.
-* Write short but explicit TSDoc.
-* User-facing strings go through `t()` from `lib/i18n`, with keys in `locales/*.toml` (both languages).
+- Biome formatting (double quotes, etc. via monorepo config)
+- Prefer small focused modules under `lib/`
+- Dangerous shell commands: gate via `lib/command-risk.ts` / confirm UX
 
 ### Testing
 
-* Tests live in `tests/`, mirroring the source folders (`components`, `lib`, `schemas`, `tools`); shared helpers in `tests/test-utils.tsx`.
+- Tests under `tests/`, mirroring `components/`, `lib/`, `schemas/`, `tools/`
+- Shared helpers: `tests/test-utils.tsx`
+## Git
 
-### Git Workflow
-
-* Usually everything goes to `main` branch.
+- This monorepo may use feature branches (e.g. `barkochba`); do not assume everything lands on `main` without checking

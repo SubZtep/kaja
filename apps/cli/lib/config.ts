@@ -2,13 +2,13 @@ import { join } from "node:path"
 import { file, write } from "bun"
 // Written on first run: a minimal config with no llm block (provider
 // choice/credentials come from the setup wizard's preset step, which
-// derives llm/embedding/imageGen from docs/config/models*.toml and
+// derives llm/embedding/imageGen from repo docs/config/models*.toml and
 // overwrites this file before the app proceeds). Missing llm fails
 // KajaConfigSchema validation, so cli.tsx forces the setup wizard on every
 // first run regardless of validation. TS's built-in resolveJsonModule typing
 // wins over the `text` attribute, so the raw import is typed as the parsed
 // object rather than a string.
-import rawTemplate from "../docs/config/config.json" with { type: "text" }
+import rawTemplate from "../../../docs/config/config.json" with { type: "text" }
 import { type KajaConfig, KajaConfigSchema, type KajaSettings } from "../schemas/config"
 import { t } from "./i18n"
 import { getPaths } from "./paths"

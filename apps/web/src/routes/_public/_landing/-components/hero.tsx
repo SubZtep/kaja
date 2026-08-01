@@ -124,12 +124,11 @@ export function Hero() {
             }}
           >
             <code
-              className="font-mono"
+              className="font-mono overflow-x-hidden"
               style={{
                 fontSize: 13,
                 color: "#e6edf3",
                 flex: 1,
-                overflowX: "auto",
                 whiteSpace: "nowrap"
               }}
             >

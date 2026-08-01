@@ -11,7 +11,7 @@ export type CreateTelegramBotConfig = KajaTelegram & {
   agentConfig: ConstructorParameters<typeof Agent>[0]
   personas: Persona[]
   models: ResolvedModel[]
-  getInitialPersona?: () => Persona | undefined
+  getInitialPersona?: () => Persona | undefined | Promise<Persona | undefined>
 }
 
 function buildKeyboard(keyboard: InlineKeyboardLike | undefined) {

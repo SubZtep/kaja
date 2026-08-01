@@ -10,11 +10,10 @@
   "private": true,
   "scripts": {
     "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' dev",
-    "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/src/cli.tsx",
+    "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.tsx",
     "lint": "biome check --config-path=.",
     "lint:fix": "biome check --config-path=. --write --unsafe",
-    "typecheck": "for pkg in apps/*; do cd $pkg && bunx tsc --noEmit; cd ~-; done",
-    "test": "bun --env-file=apps/api/.env.example --env-file=apps/api/.env test"
+    "typecheck": "set -e; for pkg in apps/* packages/*; do [ -f \"$pkg/tsconfig.json\" ] || continue; (cd \"$pkg\" && bunx tsc --noEmit); done"
   },
   "workspaces": [
     "apps/*",

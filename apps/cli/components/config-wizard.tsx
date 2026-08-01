@@ -19,8 +19,8 @@ import { file, TOML, write } from "bun"
 import { Box, render, Text, useInput } from "ink"
 import { useState } from "react"
 import type * as z from "zod"
-import fireworksModelsTemplate from "../docs/config/models.fireworks.toml" with { type: "text" }
-import ollamaModelsTemplate from "../docs/config/models.ollama.toml" with { type: "text" }
+import fireworksModelsTemplate from "../../../docs/config/models.fireworks.toml" with { type: "text" }
+import ollamaModelsTemplate from "../../../docs/config/models.ollama.toml" with { type: "text" }
 import { getConfigPath, saveConfig } from "../lib/config"
 import { getLanguage, type Language, setLanguage, t } from "../lib/i18n"
 import { getModelsPath, resolveModels } from "../lib/models"

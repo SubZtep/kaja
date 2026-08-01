@@ -64,4 +64,4 @@ jobs:
           done
 
       - name: Run tests
-        run: bun run test
+        run: bun test

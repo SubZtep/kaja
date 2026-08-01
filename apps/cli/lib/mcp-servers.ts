@@ -3,7 +3,7 @@ import { file, TOML, write } from "bun"
 // Written on first run: a ready-to-use example server (Playwright) plus
 // commented-out alternatives, sourced from the same file that documents
 // mcp.toml on the docs site.
-import TEMPLATE from "../docs/config/mcp.toml" with { type: "text" }
+import TEMPLATE from "../../../docs/config/mcp.toml" with { type: "text" }
 import { type KajaMcpFile, McpFileSchema } from "../schemas/mcp"
 import { getConfigDir } from "./config"
 import { t } from "./i18n"
