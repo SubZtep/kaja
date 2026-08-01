@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 
 export const Route = createFileRoute("/_public")({
@@ -14,6 +14,10 @@ const ICONS = [
 ] as const
 
 function PublicLayout() {
+  const router = useRouterState()
+  console.log("router.location.pathname", router.location.pathname)
+  const isSkipLayout = true // router.location.pathname === "/" || router.location.pathname === "/architecture"
+
   const [i, setI] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setI(v => (v + 1) % ICONS.length), 666_69)
@@ -21,6 +25,10 @@ function PublicLayout() {
   }, [])
 
   const c = ICONS[i]
+
+  if (isSkipLayout) {
+    return <Outlet />
+  }
 
   return (
     <div

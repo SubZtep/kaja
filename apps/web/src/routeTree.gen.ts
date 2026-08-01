@@ -8,186 +8,198 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as PublicRouteImport } from './routes/_public'
-import { Route as AdminRouteImport } from './routes/_admin'
-import { Route as PublicLandingRouteImport } from './routes/_public/_landing'
-import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
-import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
-import { Route as PublicLandingIndexRouteImport } from './routes/_public/_landing/index'
-import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
-import { Route as AdminNodesIndexRouteImport } from './routes/_admin/nodes/index'
-import { Route as PublicauthResetPasswordRouteImport } from './routes/_public/(auth)/reset-password'
-import { Route as PublicauthDeviceRouteImport } from './routes/_public/(auth)/device'
-import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
-import { Route as PublicauthDeviceIndexRouteImport } from './routes/_public/(auth)/device/index'
-import { Route as PublicLandingauthSignupRouteImport } from './routes/_public/_landing/(auth)/signup'
-import { Route as PublicLandingauthSigninRouteImport } from './routes/_public/_landing/(auth)/signin'
-import { Route as PublicauthDeviceApproveRouteImport } from './routes/_public/(auth)/device/approve'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as AdminRouteImport } from "./routes/_admin"
+import { Route as AdminDashboardRouteImport } from "./routes/_admin/dashboard"
+import { Route as AdminNodesIndexRouteImport } from "./routes/_admin/nodes/index"
+import { Route as AdminProfileRouteImport } from "./routes/_admin/profile"
+import { Route as AdminUsersUserIdRouteImport } from "./routes/_admin/users/$userId"
+import { Route as AdminUsersIndexRouteImport } from "./routes/_admin/users/index"
+import { Route as PublicRouteImport } from "./routes/_public"
+import { Route as PublicLandingRouteImport } from "./routes/_public/_landing"
+import { Route as PublicLandingauthSigninRouteImport } from "./routes/_public/_landing/(auth)/signin"
+import { Route as PublicLandingauthSignupRouteImport } from "./routes/_public/_landing/(auth)/signup"
+import { Route as PublicLandingArchitectureRouteImport } from "./routes/_public/_landing/architecture"
+import { Route as PublicLandingIndexRouteImport } from "./routes/_public/_landing/index"
+import { Route as PublicauthDeviceRouteImport } from "./routes/_public/(auth)/device"
+import { Route as PublicauthDeviceApproveRouteImport } from "./routes/_public/(auth)/device/approve"
+import { Route as PublicauthDeviceIndexRouteImport } from "./routes/_public/(auth)/device/index"
+import { Route as PublicauthResetPasswordRouteImport } from "./routes/_public/(auth)/reset-password"
 
-const PublicRoute = PublicRouteImport.update({
-  id: '/_public',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
-  id: '/_admin',
-  getParentRoute: () => rootRouteImport,
+  id: "/_admin",
+  getParentRoute: () => rootRouteImport
 } as any)
-const PublicLandingRoute = PublicLandingRouteImport.update({
-  id: '/_landing',
-  getParentRoute: () => PublicRoute,
-} as any)
-const AdminProfileRoute = AdminProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AdminRoute,
+const PublicRoute = PublicRouteImport.update({
+  id: "/_public",
+  getParentRoute: () => rootRouteImport
 } as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AdminRoute,
+  id: "/dashboard",
+  path: "/dashboard",
+  getParentRoute: () => AdminRoute
 } as any)
-const PublicLandingIndexRoute = PublicLandingIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PublicLandingRoute,
+const AdminProfileRoute = AdminProfileRouteImport.update({
+  id: "/profile",
+  path: "/profile",
+  getParentRoute: () => AdminRoute
 } as any)
-const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
-  id: '/users/',
-  path: '/users/',
-  getParentRoute: () => AdminRoute,
+const PublicLandingRoute = PublicLandingRouteImport.update({
+  id: "/_landing",
+  getParentRoute: () => PublicRoute
 } as any)
 const AdminNodesIndexRoute = AdminNodesIndexRouteImport.update({
-  id: '/nodes/',
-  path: '/nodes/',
-  getParentRoute: () => AdminRoute,
+  id: "/nodes/",
+  path: "/nodes/",
+  getParentRoute: () => AdminRoute
 } as any)
-const PublicauthResetPasswordRoute = PublicauthResetPasswordRouteImport.update({
-  id: '/(auth)/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => PublicRoute,
-} as any)
-const PublicauthDeviceRoute = PublicauthDeviceRouteImport.update({
-  id: '/(auth)/device',
-  path: '/device',
-  getParentRoute: () => PublicRoute,
+const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
+  id: "/users/",
+  path: "/users/",
+  getParentRoute: () => AdminRoute
 } as any)
 const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
-  id: '/users/$userId',
-  path: '/users/$userId',
-  getParentRoute: () => AdminRoute,
+  id: "/users/$userId",
+  path: "/users/$userId",
+  getParentRoute: () => AdminRoute
+} as any)
+const PublicauthDeviceRoute = PublicauthDeviceRouteImport.update({
+  id: "/(auth)/device",
+  path: "/device",
+  getParentRoute: () => PublicRoute
+} as any)
+const PublicauthResetPasswordRoute = PublicauthResetPasswordRouteImport.update({
+  id: "/(auth)/reset-password",
+  path: "/reset-password",
+  getParentRoute: () => PublicRoute
+} as any)
+const PublicLandingIndexRoute = PublicLandingIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => PublicLandingRoute
+} as any)
+const PublicLandingArchitectureRoute = PublicLandingArchitectureRouteImport.update({
+  id: "/architecture",
+  path: "/architecture",
+  getParentRoute: () => PublicLandingRoute
 } as any)
 const PublicauthDeviceIndexRoute = PublicauthDeviceIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PublicauthDeviceRoute,
-} as any)
-const PublicLandingauthSignupRoute = PublicLandingauthSignupRouteImport.update({
-  id: '/(auth)/signup',
-  path: '/signup',
-  getParentRoute: () => PublicLandingRoute,
-} as any)
-const PublicLandingauthSigninRoute = PublicLandingauthSigninRouteImport.update({
-  id: '/(auth)/signin',
-  path: '/signin',
-  getParentRoute: () => PublicLandingRoute,
+  id: "/",
+  path: "/",
+  getParentRoute: () => PublicauthDeviceRoute
 } as any)
 const PublicauthDeviceApproveRoute = PublicauthDeviceApproveRouteImport.update({
-  id: '/approve',
-  path: '/approve',
-  getParentRoute: () => PublicauthDeviceRoute,
+  id: "/approve",
+  path: "/approve",
+  getParentRoute: () => PublicauthDeviceRoute
+} as any)
+const PublicLandingauthSigninRoute = PublicLandingauthSigninRouteImport.update({
+  id: "/(auth)/signin",
+  path: "/signin",
+  getParentRoute: () => PublicLandingRoute
+} as any)
+const PublicLandingauthSignupRoute = PublicLandingauthSignupRouteImport.update({
+  id: "/(auth)/signup",
+  path: "/signup",
+  getParentRoute: () => PublicLandingRoute
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof PublicLandingIndexRoute
-  '/dashboard': typeof AdminDashboardRoute
-  '/profile': typeof AdminProfileRoute
-  '/users/$userId': typeof AdminUsersUserIdRoute
-  '/device': typeof PublicauthDeviceRouteWithChildren
-  '/reset-password': typeof PublicauthResetPasswordRoute
-  '/nodes/': typeof AdminNodesIndexRoute
-  '/users/': typeof AdminUsersIndexRoute
-  '/device/approve': typeof PublicauthDeviceApproveRoute
-  '/signin': typeof PublicLandingauthSigninRoute
-  '/signup': typeof PublicLandingauthSignupRoute
-  '/device/': typeof PublicauthDeviceIndexRoute
+  "/": typeof PublicLandingIndexRoute
+  "/dashboard": typeof AdminDashboardRoute
+  "/profile": typeof AdminProfileRoute
+  "/users/$userId": typeof AdminUsersUserIdRoute
+  "/device": typeof PublicauthDeviceRouteWithChildren
+  "/reset-password": typeof PublicauthResetPasswordRoute
+  "/architecture": typeof PublicLandingArchitectureRoute
+  "/nodes/": typeof AdminNodesIndexRoute
+  "/users/": typeof AdminUsersIndexRoute
+  "/device/approve": typeof PublicauthDeviceApproveRoute
+  "/signin": typeof PublicLandingauthSigninRoute
+  "/signup": typeof PublicLandingauthSignupRoute
+  "/device/": typeof PublicauthDeviceIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof PublicLandingIndexRoute
-  '/dashboard': typeof AdminDashboardRoute
-  '/profile': typeof AdminProfileRoute
-  '/users/$userId': typeof AdminUsersUserIdRoute
-  '/reset-password': typeof PublicauthResetPasswordRoute
-  '/nodes': typeof AdminNodesIndexRoute
-  '/users': typeof AdminUsersIndexRoute
-  '/device/approve': typeof PublicauthDeviceApproveRoute
-  '/signin': typeof PublicLandingauthSigninRoute
-  '/signup': typeof PublicLandingauthSignupRoute
-  '/device': typeof PublicauthDeviceIndexRoute
+  "/": typeof PublicLandingIndexRoute
+  "/dashboard": typeof AdminDashboardRoute
+  "/profile": typeof AdminProfileRoute
+  "/users/$userId": typeof AdminUsersUserIdRoute
+  "/reset-password": typeof PublicauthResetPasswordRoute
+  "/architecture": typeof PublicLandingArchitectureRoute
+  "/nodes": typeof AdminNodesIndexRoute
+  "/users": typeof AdminUsersIndexRoute
+  "/device/approve": typeof PublicauthDeviceApproveRoute
+  "/signin": typeof PublicLandingauthSigninRoute
+  "/signup": typeof PublicLandingauthSignupRoute
+  "/device": typeof PublicauthDeviceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_admin': typeof AdminRouteWithChildren
-  '/_public': typeof PublicRouteWithChildren
-  '/_admin/dashboard': typeof AdminDashboardRoute
-  '/_admin/profile': typeof AdminProfileRoute
-  '/_public/_landing': typeof PublicLandingRouteWithChildren
-  '/_admin/users/$userId': typeof AdminUsersUserIdRoute
-  '/_public/(auth)/device': typeof PublicauthDeviceRouteWithChildren
-  '/_public/(auth)/reset-password': typeof PublicauthResetPasswordRoute
-  '/_admin/nodes/': typeof AdminNodesIndexRoute
-  '/_admin/users/': typeof AdminUsersIndexRoute
-  '/_public/_landing/': typeof PublicLandingIndexRoute
-  '/_public/(auth)/device/approve': typeof PublicauthDeviceApproveRoute
-  '/_public/_landing/(auth)/signin': typeof PublicLandingauthSigninRoute
-  '/_public/_landing/(auth)/signup': typeof PublicLandingauthSignupRoute
-  '/_public/(auth)/device/': typeof PublicauthDeviceIndexRoute
+  "/_admin": typeof AdminRouteWithChildren
+  "/_public": typeof PublicRouteWithChildren
+  "/_admin/dashboard": typeof AdminDashboardRoute
+  "/_admin/profile": typeof AdminProfileRoute
+  "/_public/_landing": typeof PublicLandingRouteWithChildren
+  "/_admin/users/$userId": typeof AdminUsersUserIdRoute
+  "/_public/(auth)/device": typeof PublicauthDeviceRouteWithChildren
+  "/_public/(auth)/reset-password": typeof PublicauthResetPasswordRoute
+  "/_public/_landing/architecture": typeof PublicLandingArchitectureRoute
+  "/_admin/nodes/": typeof AdminNodesIndexRoute
+  "/_admin/users/": typeof AdminUsersIndexRoute
+  "/_public/_landing/": typeof PublicLandingIndexRoute
+  "/_public/(auth)/device/approve": typeof PublicauthDeviceApproveRoute
+  "/_public/_landing/(auth)/signin": typeof PublicLandingauthSigninRoute
+  "/_public/_landing/(auth)/signup": typeof PublicLandingauthSignupRoute
+  "/_public/(auth)/device/": typeof PublicauthDeviceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/dashboard'
-    | '/profile'
-    | '/users/$userId'
-    | '/device'
-    | '/reset-password'
-    | '/nodes/'
-    | '/users/'
-    | '/device/approve'
-    | '/signin'
-    | '/signup'
-    | '/device/'
+    | "/"
+    | "/dashboard"
+    | "/profile"
+    | "/users/$userId"
+    | "/device"
+    | "/reset-password"
+    | "/architecture"
+    | "/nodes/"
+    | "/users/"
+    | "/device/approve"
+    | "/signin"
+    | "/signup"
+    | "/device/"
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/dashboard'
-    | '/profile'
-    | '/users/$userId'
-    | '/reset-password'
-    | '/nodes'
-    | '/users'
-    | '/device/approve'
-    | '/signin'
-    | '/signup'
-    | '/device'
+    | "/"
+    | "/dashboard"
+    | "/profile"
+    | "/users/$userId"
+    | "/reset-password"
+    | "/architecture"
+    | "/nodes"
+    | "/users"
+    | "/device/approve"
+    | "/signin"
+    | "/signup"
+    | "/device"
   id:
-    | '__root__'
-    | '/_admin'
-    | '/_public'
-    | '/_admin/dashboard'
-    | '/_admin/profile'
-    | '/_public/_landing'
-    | '/_admin/users/$userId'
-    | '/_public/(auth)/device'
-    | '/_public/(auth)/reset-password'
-    | '/_admin/nodes/'
-    | '/_admin/users/'
-    | '/_public/_landing/'
-    | '/_public/(auth)/device/approve'
-    | '/_public/_landing/(auth)/signin'
-    | '/_public/_landing/(auth)/signup'
-    | '/_public/(auth)/device/'
+    | "__root__"
+    | "/_admin"
+    | "/_public"
+    | "/_admin/dashboard"
+    | "/_admin/profile"
+    | "/_public/_landing"
+    | "/_admin/users/$userId"
+    | "/_public/(auth)/device"
+    | "/_public/(auth)/reset-password"
+    | "/_public/_landing/architecture"
+    | "/_admin/nodes/"
+    | "/_admin/users/"
+    | "/_public/_landing/"
+    | "/_public/(auth)/device/approve"
+    | "/_public/_landing/(auth)/signin"
+    | "/_public/_landing/(auth)/signup"
+    | "/_public/(auth)/device/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -195,112 +207,119 @@ export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/_public': {
-      id: '/_public'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PublicRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_admin': {
-      id: '/_admin'
-      path: ''
-      fullPath: '/'
+    "/_admin": {
+      id: "/_admin"
+      path: ""
+      fullPath: "/"
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_public/_landing': {
-      id: '/_public/_landing'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PublicLandingRouteImport
-      parentRoute: typeof PublicRoute
+    "/_public": {
+      id: "/_public"
+      path: ""
+      fullPath: "/"
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_admin/profile': {
-      id: '/_admin/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AdminProfileRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/dashboard': {
-      id: '/_admin/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
+    "/_admin/dashboard": {
+      id: "/_admin/dashboard"
+      path: "/dashboard"
+      fullPath: "/dashboard"
       preLoaderRoute: typeof AdminDashboardRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_public/_landing/': {
-      id: '/_public/_landing/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof PublicLandingIndexRouteImport
-      parentRoute: typeof PublicLandingRoute
-    }
-    '/_admin/users/': {
-      id: '/_admin/users/'
-      path: '/users'
-      fullPath: '/users/'
-      preLoaderRoute: typeof AdminUsersIndexRouteImport
+    "/_admin/profile": {
+      id: "/_admin/profile"
+      path: "/profile"
+      fullPath: "/profile"
+      preLoaderRoute: typeof AdminProfileRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/nodes/': {
-      id: '/_admin/nodes/'
-      path: '/nodes'
-      fullPath: '/nodes/'
+    "/_public/_landing": {
+      id: "/_public/_landing"
+      path: ""
+      fullPath: "/"
+      preLoaderRoute: typeof PublicLandingRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    "/_admin/nodes/": {
+      id: "/_admin/nodes/"
+      path: "/nodes"
+      fullPath: "/nodes/"
       preLoaderRoute: typeof AdminNodesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_public/(auth)/reset-password': {
-      id: '/_public/(auth)/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof PublicauthResetPasswordRouteImport
-      parentRoute: typeof PublicRoute
+    "/_admin/users/": {
+      id: "/_admin/users/"
+      path: "/users"
+      fullPath: "/users/"
+      preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/_public/(auth)/device': {
-      id: '/_public/(auth)/device'
-      path: '/device'
-      fullPath: '/device'
-      preLoaderRoute: typeof PublicauthDeviceRouteImport
-      parentRoute: typeof PublicRoute
-    }
-    '/_admin/users/$userId': {
-      id: '/_admin/users/$userId'
-      path: '/users/$userId'
-      fullPath: '/users/$userId'
+    "/_admin/users/$userId": {
+      id: "/_admin/users/$userId"
+      path: "/users/$userId"
+      fullPath: "/users/$userId"
       preLoaderRoute: typeof AdminUsersUserIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_public/(auth)/device/': {
-      id: '/_public/(auth)/device/'
-      path: '/'
-      fullPath: '/device/'
+    "/_public/(auth)/device": {
+      id: "/_public/(auth)/device"
+      path: "/device"
+      fullPath: "/device"
+      preLoaderRoute: typeof PublicauthDeviceRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    "/_public/(auth)/reset-password": {
+      id: "/_public/(auth)/reset-password"
+      path: "/reset-password"
+      fullPath: "/reset-password"
+      preLoaderRoute: typeof PublicauthResetPasswordRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    "/_public/_landing/": {
+      id: "/_public/_landing/"
+      path: "/"
+      fullPath: "/"
+      preLoaderRoute: typeof PublicLandingIndexRouteImport
+      parentRoute: typeof PublicLandingRoute
+    }
+    "/_public/_landing/architecture": {
+      id: "/_public/_landing/architecture"
+      path: "/architecture"
+      fullPath: "/architecture"
+      preLoaderRoute: typeof PublicLandingArchitectureRouteImport
+      parentRoute: typeof PublicLandingRoute
+    }
+    "/_public/(auth)/device/": {
+      id: "/_public/(auth)/device/"
+      path: "/"
+      fullPath: "/device/"
       preLoaderRoute: typeof PublicauthDeviceIndexRouteImport
       parentRoute: typeof PublicauthDeviceRoute
     }
-    '/_public/_landing/(auth)/signup': {
-      id: '/_public/_landing/(auth)/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof PublicLandingauthSignupRouteImport
-      parentRoute: typeof PublicLandingRoute
+    "/_public/(auth)/device/approve": {
+      id: "/_public/(auth)/device/approve"
+      path: "/approve"
+      fullPath: "/device/approve"
+      preLoaderRoute: typeof PublicauthDeviceApproveRouteImport
+      parentRoute: typeof PublicauthDeviceRoute
     }
-    '/_public/_landing/(auth)/signin': {
-      id: '/_public/_landing/(auth)/signin'
-      path: '/signin'
-      fullPath: '/signin'
+    "/_public/_landing/(auth)/signin": {
+      id: "/_public/_landing/(auth)/signin"
+      path: "/signin"
+      fullPath: "/signin"
       preLoaderRoute: typeof PublicLandingauthSigninRouteImport
       parentRoute: typeof PublicLandingRoute
     }
-    '/_public/(auth)/device/approve': {
-      id: '/_public/(auth)/device/approve'
-      path: '/approve'
-      fullPath: '/device/approve'
-      preLoaderRoute: typeof PublicauthDeviceApproveRouteImport
-      parentRoute: typeof PublicauthDeviceRoute
+    "/_public/_landing/(auth)/signup": {
+      id: "/_public/_landing/(auth)/signup"
+      path: "/signup"
+      fullPath: "/signup"
+      preLoaderRoute: typeof PublicLandingauthSignupRouteImport
+      parentRoute: typeof PublicLandingRoute
     }
   }
 }
@@ -318,26 +337,26 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminProfileRoute: AdminProfileRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminNodesIndexRoute: AdminNodesIndexRoute,
-  AdminUsersIndexRoute: AdminUsersIndexRoute,
+  AdminUsersIndexRoute: AdminUsersIndexRoute
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface PublicLandingRouteChildren {
+  PublicLandingArchitectureRoute: typeof PublicLandingArchitectureRoute
   PublicLandingIndexRoute: typeof PublicLandingIndexRoute
   PublicLandingauthSigninRoute: typeof PublicLandingauthSigninRoute
   PublicLandingauthSignupRoute: typeof PublicLandingauthSignupRoute
 }
 
 const PublicLandingRouteChildren: PublicLandingRouteChildren = {
+  PublicLandingArchitectureRoute: PublicLandingArchitectureRoute,
   PublicLandingIndexRoute: PublicLandingIndexRoute,
   PublicLandingauthSigninRoute: PublicLandingauthSigninRoute,
-  PublicLandingauthSignupRoute: PublicLandingauthSignupRoute,
+  PublicLandingauthSignupRoute: PublicLandingauthSignupRoute
 }
 
-const PublicLandingRouteWithChildren = PublicLandingRoute._addFileChildren(
-  PublicLandingRouteChildren,
-)
+const PublicLandingRouteWithChildren = PublicLandingRoute._addFileChildren(PublicLandingRouteChildren)
 
 interface PublicauthDeviceRouteChildren {
   PublicauthDeviceApproveRoute: typeof PublicauthDeviceApproveRoute
@@ -346,11 +365,10 @@ interface PublicauthDeviceRouteChildren {
 
 const PublicauthDeviceRouteChildren: PublicauthDeviceRouteChildren = {
   PublicauthDeviceApproveRoute: PublicauthDeviceApproveRoute,
-  PublicauthDeviceIndexRoute: PublicauthDeviceIndexRoute,
+  PublicauthDeviceIndexRoute: PublicauthDeviceIndexRoute
 }
 
-const PublicauthDeviceRouteWithChildren =
-  PublicauthDeviceRoute._addFileChildren(PublicauthDeviceRouteChildren)
+const PublicauthDeviceRouteWithChildren = PublicauthDeviceRoute._addFileChildren(PublicauthDeviceRouteChildren)
 
 interface PublicRouteChildren {
   PublicLandingRoute: typeof PublicLandingRouteWithChildren
@@ -361,23 +379,20 @@ interface PublicRouteChildren {
 const PublicRouteChildren: PublicRouteChildren = {
   PublicLandingRoute: PublicLandingRouteWithChildren,
   PublicauthDeviceRoute: PublicauthDeviceRouteWithChildren,
-  PublicauthResetPasswordRoute: PublicauthResetPasswordRoute,
+  PublicauthResetPasswordRoute: PublicauthResetPasswordRoute
 }
 
-const PublicRouteWithChildren =
-  PublicRoute._addFileChildren(PublicRouteChildren)
+const PublicRouteWithChildren = PublicRoute._addFileChildren(PublicRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
-  PublicRoute: PublicRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren
 }
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./router.tsx"
+
+declare module "@tanstack/react-start" {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>

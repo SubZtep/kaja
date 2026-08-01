@@ -1,11 +1,13 @@
 .claude
+.config
 .output
 .playwright-mcp
 .tanstack
+.tmp-test-xdg-config-*/
+apps/cli/assets/datasets/
 dist
-test-build
 node_modules
 pgdata
+*.local.*
 .env*
 !.env.example
-*.local.*

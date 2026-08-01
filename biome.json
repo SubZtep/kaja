@@ -1,16 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/latest/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "ignoreUnknown": true,
-    "includes": [
-      "apps/**/*.ts",
-      "apps/**/*.tsx",
-      "!apps/mobile/.expo",
-      "!apps/web/**/routeTree.gen.ts",
-      "packages/**/*.ts",
-      "*.json",
-      "!pgdata"
-    ]
+    "includes": ["**", "!apps/weeb/**/routeTree.gen.ts", "!docs", "!pgdata"]
   },
   "formatter": {
     "useEditorconfig": true
@@ -24,7 +21,6 @@
   },
   "linter": {
     "rules": {
-      "recommended": true,
       "complexity": {
         "noUselessUndefinedInitialization": "off",
         "noUselessSwitchCase": "off"
@@ -46,6 +42,11 @@
       "style": {
         "noNonNullAssertion": "off"
       }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "javascript": {
