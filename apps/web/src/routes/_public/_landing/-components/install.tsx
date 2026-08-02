@@ -10,18 +10,16 @@ export function Install() {
 
   return (
     <section>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "72px 24px" }}>
-        <h2 style={{ fontSize: 26, fontWeight: 700, color: "#f0f6fc", margin: "0 0 8px" }}>Install</h2>
-        <p style={{ fontSize: 14.5, color: "#8b949e", margin: "0 0 28px" }}>
+      <div className="mx-auto max-w-280 px-6 py-18">
+        <h2 className="mb-2 font-bold text-fg text-[26px]">Install</h2>
+        <p className="mb-7 text-[14.5px] text-muted">
           Only tested on Linux. A setup wizard walks you through config on first launch (or anytime config is
           missing/invalid) &mdash; no separate step needed.
         </p>
-        <div style={{ background: "#0d1117", border: "1px solid #30363d", borderRadius: 10, padding: "20px 22px" }}>
-          <code className="font-mono" style={{ fontSize: 13.5, color: "#e6edf3", display: "block" }}>
-            {installCmd}
-          </code>
+        <div className="rounded-xl border border-border bg-surface px-5.5 py-5">
+          <code className="block font-mono text-fg text-[13.5px]">{installCmd}</code>
         </div>
-        <p style={{ fontSize: 13, color: "#6e7681", margin: "12px 0 0" }}>
+        <p className="mt-3 text-[#6e7681] text-sm">
           Prefer a plain binary?{" "}
           <a href="https://github.com/SubZtep/kaja/releases" target="_blank" rel="noopener">
             Grab one from Releases

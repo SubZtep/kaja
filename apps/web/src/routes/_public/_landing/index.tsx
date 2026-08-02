@@ -12,15 +12,7 @@ export const Route = createFileRoute("/_public/_landing/")({ component: App })
 
 function App() {
   return (
-    <div
-      style={{
-        background: "#0a0d12",
-        color: "#c9d1d9",
-        fontFamily: "'Inter', system-ui, sans-serif",
-        minHeight: "100vh",
-        lineHeight: 1.5
-      }}
-    >
+    <div className="min-h-screen bg-bg font-body leading-normal text-muted">
       <style>{`
         @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
       `}</style>

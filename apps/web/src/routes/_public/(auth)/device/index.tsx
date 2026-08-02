@@ -66,7 +66,7 @@ function DeviceCodePage() {
         }}
       >
         <input
-          className="border border-input rounded-md px-3 py-2 bg-background"
+          className="border border-border rounded-md px-3 py-2 bg-surface"
           value={userCode}
           onChange={ev => setUserCode(ev.target.value)}
           placeholder="e.g. ABCD1234"

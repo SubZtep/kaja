@@ -2,21 +2,21 @@ import { Link } from "@tanstack/react-router"
 
 export function Footer() {
   return (
-    <section className="border-t border-[#21262d]">
-      <div className="max-w-280 mx-auto px-6 py-14 flex items-center justify-between flex-wrap gap-4">
+    <section className="border-border border-t">
+      <div className="mx-auto flex max-w-280 flex-wrap items-center justify-between gap-4 px-6 py-14">
         <div>
-          <div className="font-mono text-[15px] font-semibold text-[#e6edf3] mb-1">&gt; kaja</div>
-          <div className="text-[13px] text-[#6e7681]">
+          <div className="mb-1 font-mono font-semibold text-fg text-[15px]">&gt; kaja</div>
+          <div className="text-[#6e7681] text-[13px]">
             MIT License &middot; built with Bun + TypeScript &middot; Sign{" "}
-            <Link to="/signin" className="text-[#c9d1d9bb]">
+            <Link to="/signin" className="text-muted">
               In
             </Link>
             /
-            <Link to="/signup" className="text-[#c9d1d9bb]">
+            <Link to="/signup" className="text-muted">
               Up
             </Link>{" "}
             &middot; by{" "}
-            <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-[#c9d1d9cc]">
+            <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-muted">
               SubZtep
             </a>{" "}
             &middot; {new Date().getFullYear()}
@@ -26,7 +26,7 @@ export function Footer() {
           href="https://github.com/SubZtep/kaja/stargazers"
           target="_blank"
           rel="noopener"
-          className="inline-flex items-center gap-1.5 bg-[#161b22] border border-[#30363d] text-[#e6edf3] text-[13px] px-4 py-2 rounded-md"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-4 py-2 text-fg text-[13px]"
         >
           ★ Star on GitHub
         </a>

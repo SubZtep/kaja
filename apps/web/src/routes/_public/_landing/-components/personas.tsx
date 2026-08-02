@@ -16,64 +16,26 @@ const PERSONAS = [
 export function Personas() {
   return (
     <section>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "72px 24px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            marginBottom: 8,
-            flexWrap: "wrap",
-            gap: 8
-          }}
-        >
-          <h2 style={{ fontSize: 26, fontWeight: 700, color: "#f0f6fc", margin: 0 }}>Personas</h2>
-          <span className="font-mono" style={{ fontSize: 12, color: "#6e7681" }}>
-            ~/.config/kaja/personas/*.toml
-          </span>
+      <div className="mx-auto max-w-280 px-6 py-18">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="m-0 font-bold text-fg text-[26px]">Personas</h2>
+          <span className="font-mono text-[#6e7681] text-xs">~/.config/kaja/personas/*.toml</span>
         </div>
-        <p style={{ fontSize: 14.5, color: "#8b949e", margin: "0 0 28px", maxWidth: 640 }}>
-          Each persona is a{" "}
-          <code
-            className="font-mono"
-            style={{ color: "#c9d1d9", background: "#161b22", padding: "2px 6px", borderRadius: 4 }}
-          >
-            .toml
-          </code>{" "}
-          file: a label, its system-prompt instructions, and an optional{" "}
-          <code
-            className="font-mono"
-            style={{ color: "#c9d1d9", background: "#161b22", padding: "2px 6px", borderRadius: 4 }}
-          >
-            when
-          </code>{" "}
-          clause. Kaja reads the room and switches personas mid-conversation on its own &mdash; no command needed.
+        <p className="mb-7 max-w-160 text-[14.5px] text-muted">
+          Each persona is a <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">.toml</code> file: a
+          label, its system-prompt instructions, and an optional{" "}
+          <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">when</code> clause. Kaja reads the
+          room and switches personas mid-conversation on its own &mdash; no command needed.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
+        <div className="grid grid-cols-2 gap-4">
           {PERSONAS.map(p => (
-            <div
-              key={p.id}
-              style={{ padding: "20px 22px", background: "#161b22", border: "1px solid #21262d", borderRadius: 10 }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#e6edf3" }}>{p.label}</div>
-                <span className="font-mono" style={{ fontSize: 11, color: "#6e7681" }}>
-                  {p.id}.toml
-                </span>
+            <div key={p.id} className="rounded-xl border border-border bg-surface px-5.5 py-5">
+              <div className="mb-2.5 flex items-center justify-between">
+                <div className="font-semibold text-fg text-[15px]">{p.label}</div>
+                <span className="font-mono text-[#6e7681] text-[11px]">{p.id}.toml</span>
               </div>
-              <div
-                className="font-mono"
-                style={{
-                  fontSize: 12.5,
-                  color: "#8b949e",
-                  background: "#0d1117",
-                  border: "1px solid #21262d",
-                  borderRadius: 6,
-                  padding: "10px 12px",
-                  lineHeight: 1.6
-                }}
-              >
-                when = <span style={{ color: "#a5d6ff" }}>"{p.when}"</span>
+              <div className="rounded-md border border-border bg-surface-2 px-3 py-2.5 font-mono text-[12.5px] text-muted leading-relaxed">
+                when = <span className="text-neon-hi">"{p.when}"</span>
               </div>
             </div>
           ))}

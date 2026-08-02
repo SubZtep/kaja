@@ -13,49 +13,20 @@ const FEATURES = [
 
 export function WhyKaja() {
   return (
-    <section style={{ background: "#0d1117", borderTop: "1px solid #21262d", borderBottom: "1px solid #21262d" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "64px 24px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            marginBottom: 28,
-            flexWrap: "wrap",
-            gap: 8
-          }}
-        >
-          <h2 style={{ fontSize: 26, fontWeight: 700, color: "#f0f6fc", margin: 0 }}>Why Kaja</h2>
-          <span className="font-mono" style={{ fontSize: 12, color: "#6e7681" }}>
-            built with Bun + TypeScript
-          </span>
+    <section className="border-border border-y bg-surface-2">
+      <div className="mx-auto max-w-280 px-6 py-16">
+        <div className="mb-7 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="m-0 font-bold text-fg text-[26px]">Why Kaja</h2>
+          <span className="font-mono text-[#6e7681] text-xs">built with Bun + TypeScript</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+        <div className="grid grid-cols-3 gap-4">
           {FEATURES.map(f => (
-            <div
-              key={f.title}
-              style={{ padding: 22, background: "#161b22", border: "1px solid #21262d", borderRadius: 10 }}
-            >
-              <div
-                className="font-mono"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 7,
-                  background: "#1f6feb22",
-                  border: "1px solid #1f6feb44",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 15,
-                  color: "#58a6ff",
-                  marginBottom: 14
-                }}
-              >
+            <div key={f.title} className="rounded-xl border border-border bg-surface p-5.5">
+              <div className="mb-3.5 flex size-8 items-center justify-center rounded-md border border-neon/25 bg-neon/15 font-mono text-neon text-base">
                 {f.glyph}
               </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#e6edf3", marginBottom: 6 }}>{f.title}</div>
-              <div style={{ fontSize: 13.5, color: "#8b949e" }}>{f.desc}</div>
+              <div className="mb-1.5 font-semibold text-fg text-[15px]">{f.title}</div>
+              <div className="text-[13.5px] text-muted">{f.desc}</div>
             </div>
           ))}
         </div>

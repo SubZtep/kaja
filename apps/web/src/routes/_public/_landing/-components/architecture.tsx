@@ -88,23 +88,15 @@ export function Architecture() {
   }, [])
 
   return (
-    <section style={{ background: "#0d1117", borderTop: "1px solid #21262d", borderBottom: "1px solid #21262d" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "72px 24px" }}>
-        <h2 style={{ fontSize: 26, fontWeight: 700, color: "#f0f6fc", margin: "0 0 8px" }}>Architecture</h2>
-        <p style={{ fontSize: 14.5, color: "#8b949e", margin: "0 0 32px", maxWidth: 640 }}>
+    <section className="border-border border-y bg-surface-2">
+      <div className="mx-auto max-w-280 px-6 py-18">
+        <h2 className="mb-2 font-bold text-fg text-[26px]">Architecture</h2>
+        <p className="mb-8 max-w-160 text-[14.5px] text-muted">
           One agent core, two front doors. The terminal and Telegram both drive the same persona, tools, and model
           config.
         </p>
-        <div
-          style={{
-            background: "#0d1117",
-            border: "1px solid #21262d",
-            borderRadius: 10,
-            padding: 32,
-            overflowX: "auto"
-          }}
-        >
-          <div ref={diagramRef} style={{ width: "100%", minWidth: 700, maxWidth: 920, margin: "0 auto" }} />
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface-2 p-8">
+          <div ref={diagramRef} className="mx-auto w-full min-w-175 max-w-230" />
         </div>
       </div>
     </section>

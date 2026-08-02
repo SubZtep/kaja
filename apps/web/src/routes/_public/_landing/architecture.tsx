@@ -7,15 +7,7 @@ export const Route = createFileRoute("/_public/_landing/architecture")({ compone
 
 function ArchitecturePage() {
   return (
-    <div
-      style={{
-        background: "#0a0d12",
-        color: "#c9d1d9",
-        fontFamily: "'Inter', system-ui, sans-serif",
-        minHeight: "100vh",
-        lineHeight: 1.5
-      }}
-    >
+    <div className="min-h-screen bg-bg font-body leading-normal text-muted">
       <Header />
       <Architecture />
       <Footer />

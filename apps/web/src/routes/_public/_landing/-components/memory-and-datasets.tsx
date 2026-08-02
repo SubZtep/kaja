@@ -1,23 +1,23 @@
 export function MemoryAndDatasets() {
   return (
-    <section style={{ background: "#0d1117", borderTop: "1px solid #21262d", borderBottom: "1px solid #21262d" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "72px 24px" }}>
-        <h2 style={{ fontSize: 26, fontWeight: 700, color: "#f0f6fc", margin: "0 0 8px" }}>Memory &amp; datasets</h2>
-        <p style={{ fontSize: 14.5, color: "#8b949e", margin: "0 0 28px", maxWidth: 640 }}>
+    <section className="border-border border-y bg-surface-2">
+      <div className="mx-auto max-w-280 px-6 py-18">
+        <h2 className="mb-2 font-bold text-fg text-[26px]">Memory &amp; datasets</h2>
+        <p className="mb-7 max-w-160 text-[14.5px] text-muted">
           Two ways Kaja carries context across a conversation &mdash; and across sessions.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div style={{ background: "#161b22", border: "1px solid #30363d", borderRadius: 10, padding: 22 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#e6edf3", marginBottom: 8 }}>Persistent memory</div>
-            <p style={{ fontSize: 13.5, color: "#8b949e", margin: 0 }}>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-xl border border-border bg-surface p-5.5">
+            <div className="mb-2 font-semibold text-fg text-[15px]">Persistent memory</div>
+            <p className="text-[13.5px] text-muted">
               Kaja remembers durable facts about you or your project across sessions, and quietly recalls them later.
               The important ones are marked sticky, so they ride along in every conversation without you having to
               repeat yourself.
             </p>
           </div>
-          <div style={{ background: "#161b22", border: "1px solid #30363d", borderRadius: 10, padding: 22 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#e6edf3", marginBottom: 8 }}>Dataset collection</div>
-            <p style={{ fontSize: 13.5, color: "#8b949e", margin: 0 }}>
+          <div className="rounded-xl border border-border bg-surface p-5.5">
+            <div className="mb-2 font-semibold text-fg text-[15px]">Dataset collection</div>
+            <p className="text-[13.5px] text-muted">
               Some personas gently gather a set of facts over the course of a conversation &mdash; the onboarding
               assistant, for example, gets to know a new user one question at a time.
             </p>
