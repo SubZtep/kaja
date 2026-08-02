@@ -10,9 +10,22 @@ const config = defineConfig({
     tsconfigPaths: true
   },
   envPrefix: ["VITE_", "KAJA_"],
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: assetInfo =>
+          assetInfo.names?.some(name => name.endsWith(".css")) ? "assets/styles.css" : "assets/[name]-[hash][extname]"
+      }
+    }
+  },
   plugins: [
     devtools(),
-    nitro({ preset: "bun" }),
+    nitro({
+      preset: "bun",
+      routeRules: {
+        "/assets/styles.css": { headers: { "cache-control": "public, max-age=3600, must-revalidate" } }
+      }
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact()

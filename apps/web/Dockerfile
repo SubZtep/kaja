@@ -9,6 +9,7 @@ COPY patches ./patches
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY apps/web ./apps/web
 COPY packages ./packages
+ENV NODE_ENV=production
 RUN bun run --filter @kaja/web build
 
 FROM oven/bun:1.3.14-slim AS runner
