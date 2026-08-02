@@ -68,3 +68,19 @@ services:
         required: false
     environment:
       API_URL: http://api:3001
+
+  openai:
+    build:
+      context: .
+      dockerfile: apps/openai/Dockerfile
+    ports:
+      - "6669:6669"
+    env_file:
+      - path: apps/openai/.env.example
+        required: true
+      - path: apps/openai/.env
+        required: false
+    environment:
+      OPENAI_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

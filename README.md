@@ -14,6 +14,7 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 * **Apps** 
   + [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery.
   + [`cli`](./apps/cli/) – Terminal based agentic AI (personas, tools, MCP, Telegram).
+  + [`openai`](./apps/openai/) – AI proxy
   + [`web`](./apps/web/) – Public web and admin portal.
 * **Packages** 
   + [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.
