@@ -46,3 +46,38 @@ id = "broken"
 `
   expect(() => parse(toml)).toThrow()
 })
+
+test("remote server parses with url and headers", () => {
+  const toml = `
+[[servers]]
+id = "geo-service"
+url = "https://geo.example.com/mcp"
+headers = { Authorization = "Bearer secret" }
+`
+  expect(parse(toml)).toEqual({
+    servers: [
+      {
+        id: "geo-service",
+        url: "https://geo.example.com/mcp",
+        headers: { Authorization: "Bearer secret" }
+      }
+    ]
+  })
+})
+
+test("remote server without headers defaults to empty object", () => {
+  const toml = `
+[[servers]]
+id = "geo-service"
+url = "https://geo.example.com/mcp"
+`
+  expect(parse(toml)).toEqual({
+    servers: [
+      {
+        id: "geo-service",
+        url: "https://geo.example.com/mcp",
+        headers: {}
+      }
+    ]
+  })
+})

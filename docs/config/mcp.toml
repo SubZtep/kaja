@@ -1,6 +1,8 @@
-# MCP servers available to Kaja, one [[servers]] entry each. Every server
-# listed here is spawned over stdio and its tools are folded into the agent's
-# toolset automatically — just add an entry, no code changes needed.
+# MCP servers available to Kaja, one [[servers]] entry each. Its tools are
+# folded into the agent's toolset automatically — just add an entry, no code
+# changes needed. Two server styles:
+#   - local: spawned over stdio, needs `command` (+ optional `args`/`env`)
+#   - remote: reached over Streamable HTTP, needs `url` (+ optional `headers`)
 
 [[servers]]
 id = "playwright"
@@ -17,3 +19,8 @@ args = ["@playwright/mcp@latest", "--isolated", "--headless"]
 # command = "npx"
 # args = ["-y", "some-mcp-server"]
 # env = { API_KEY = "..." }
+
+# [[servers]]
+# id = "geo-service"
+# url = "https://your-geo-service-host/mcp"
+# headers = { Authorization = "Bearer your-secret-api-key" }

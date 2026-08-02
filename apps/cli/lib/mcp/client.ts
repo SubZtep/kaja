@@ -3,31 +3,36 @@ import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { write } from "bun"
 import type { McpServerEntry } from "../../schemas/mcp"
 import { type Tool, type ToolResult, tool } from "../agent/agents"
 import { getPaths } from "../paths"
 
 /**
- * Spawns an MCP server over stdio (as configured in mcp.toml, see
- * lib/mcp-servers.ts) and adapts each of its tools into a Kaja {@link Tool},
+ * Connects to an MCP server (as configured in mcp.toml, see
+ * lib/mcp-servers.ts) — spawned over stdio, or reached over Streamable HTTP
+ * for remote servers — and adapts each of its tools into a Kaja {@link Tool},
  * so the agent loop can call it exactly like any built-in tool.
  *
- * @returns The adapted tools, and `close()` to shut down the connection and
- * let the spawned subprocess exit — callers must call this on app shutdown
- * to avoid leaving it orphaned.
+ * @returns The adapted tools, and `close()` to shut down the connection (and,
+ * for stdio, let the spawned subprocess exit) — callers must call this on
+ * app shutdown to avoid leaving it orphaned.
  */
 export async function connectMcpServer(
   server: McpServerEntry
 ): Promise<{ tools: Tool<any>[]; close: () => Promise<void> }> {
-  const transport = new StdioClientTransport({
-    command: server.command,
-    args: server.args,
-    env: { ...process.env, ...server.env } as Record<string, string>,
-    // Default "inherit" would let the subprocess write straight to the
-    // parent's stderr, corrupting Kaja's Ink terminal rendering.
-    stderr: "ignore"
-  })
+  const transport =
+    "url" in server
+      ? new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: server.headers } })
+      : new StdioClientTransport({
+          command: server.command,
+          args: server.args,
+          env: { ...process.env, ...server.env } as Record<string, string>,
+          // Default "inherit" would let the subprocess write straight to the
+          // parent's stderr, corrupting Kaja's Ink terminal rendering.
+          stderr: "ignore"
+        })
 
   const client = new Client({ name: "kaja", version: "1.0.0" })
   await client.connect(transport)
