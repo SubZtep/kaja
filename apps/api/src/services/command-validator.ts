@@ -23,6 +23,30 @@ const ALLOWED_COMMANDS = new Set([
 ])
 
 /**
+ * Validate args for dangerous shell injection patterns
+ *
+ * @param args The args object to validate
+ * @returns Error message if invalid, null if valid
+ */
+function validateArgs(args: NonNullable<CreateCommandRequest["args"]>): string | null {
+  if (typeof args !== "object" || Array.isArray(args)) {
+    return "Args must be a plain object"
+  }
+
+  for (const [key, value] of Object.entries(args)) {
+    if (typeof value !== "string") continue
+
+    // Check for shell injection attempts
+    if (value.includes(";") || value.includes("|") || value.includes("&") || value.includes("`")) {
+      warn("Rejected command with shell injection attempt", { key, value })
+      return `Argument '${key}' contains potentially dangerous characters`
+    }
+  }
+
+  return null
+}
+
+/**
  * Validate a command request for security
  *
  * @param request The command request to validate
@@ -36,28 +60,13 @@ export function validateCommand(request: CreateCommandRequest): string | null {
   }
 
   // Validate timeout
-  if (request.timeoutSeconds !== undefined) {
-    if (request.timeoutSeconds < 1 || request.timeoutSeconds > 3600) {
-      return "Timeout must be between 1 and 3600 seconds"
-    }
+  if (request.timeoutSeconds !== undefined && (request.timeoutSeconds < 1 || request.timeoutSeconds > 3600)) {
+    return "Timeout must be between 1 and 3600 seconds"
   }
 
   // Validate args if present
   if (request.args) {
-    if (typeof request.args !== "object" || Array.isArray(request.args)) {
-      return "Args must be a plain object"
-    }
-
-    // Check for dangerous patterns in args values
-    for (const [key, value] of Object.entries(request.args)) {
-      if (typeof value === "string") {
-        // Check for shell injection attempts
-        if (value.includes(";") || value.includes("|") || value.includes("&") || value.includes("`")) {
-          warn("Rejected command with shell injection attempt", { key, value })
-          return `Argument '${key}' contains potentially dangerous characters`
-        }
-      }
-    }
+    return validateArgs(request.args)
   }
 
   return null

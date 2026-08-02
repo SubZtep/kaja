@@ -112,25 +112,112 @@ function clampCursor(offset: number, length: number): number {
   return offset
 }
 
+type EditKey = Pick<
+  Key,
+  | "upArrow"
+  | "downArrow"
+  | "leftArrow"
+  | "rightArrow"
+  | "home"
+  | "end"
+  | "return"
+  | "ctrl"
+  | "shift"
+  | "tab"
+  | "backspace"
+  | "delete"
+  | "meta"
+>
+
+/** Keys the viewport/host consumes: Ctrl/Meta+↑/↓ scroll, tab is unused, Ctrl+C interrupts. */
+function isReservedKey(input: string, key: EditKey): boolean {
+  return (
+    ((key.upArrow || key.downArrow) && (key.ctrl || key.meta)) ||
+    (key.ctrl && input === "c") ||
+    key.tab ||
+    (key.shift && key.tab)
+  )
+}
+
+function isInsertNewline(input: string, key: EditKey): boolean {
+  return (
+    (key.return && (key.shift || key.meta || key.ctrl)) ||
+    (key.ctrl && (input === "j" || input === "J")) ||
+    (!key.return && input === "\n")
+  )
+}
+
+/** Result of a cursor-moving or text-mutating key, before final clamping. */
+type EditResult = {
+  nextValue: string
+  nextCursor: number
+  nextCursorWidth: number
+}
+
+/** Handles Home/End/word-jump/arrow/backspace/delete/insert; null means "no-op". */
+function applyKeyToText(
+  value: string,
+  cursorOffset: number,
+  input: string,
+  key: EditKey,
+  showCursor: boolean,
+  columns: number | undefined
+): EditResult | null {
+  if (key.home) {
+    const nextCursor = showCursor ? lineStartOffset(value, cursorOffset, columns) : cursorOffset
+    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
+  }
+  if (key.end) {
+    const nextCursor = showCursor ? lineEndOffset(value, cursorOffset, columns) : cursorOffset
+    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
+  }
+  if (key.leftArrow && (key.ctrl || key.meta)) {
+    const nextCursor = showCursor ? prevWordBoundary(value, cursorOffset) : cursorOffset
+    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
+  }
+  if (key.rightArrow && (key.ctrl || key.meta)) {
+    const nextCursor = showCursor ? nextWordBoundary(value, cursorOffset) : cursorOffset
+    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
+  }
+  if (key.leftArrow) {
+    const nextCursor = showCursor ? cursorOffset - 1 : cursorOffset
+    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
+  }
+  if (key.rightArrow) {
+    const nextCursor = showCursor ? cursorOffset + 1 : cursorOffset
+    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
+  }
+  if (key.backspace) {
+    if (cursorOffset <= 0) return { nextValue: value, nextCursor: cursorOffset, nextCursorWidth: 0 }
+    return {
+      nextValue: value.slice(0, cursorOffset - 1) + value.slice(cursorOffset),
+      nextCursor: cursorOffset - 1,
+      nextCursorWidth: 0
+    }
+  }
+  if (key.delete) {
+    if (cursorOffset >= value.length) return { nextValue: value, nextCursor: cursorOffset, nextCursorWidth: 0 }
+    return {
+      nextValue: value.slice(0, cursorOffset) + value.slice(cursorOffset + 1),
+      nextCursor: cursorOffset,
+      nextCursorWidth: 0
+    }
+  }
+  if (key.ctrl || key.meta) return null
+  if (input) {
+    return {
+      nextValue: value.slice(0, cursorOffset) + input + value.slice(cursorOffset),
+      nextCursor: cursorOffset + input.length,
+      nextCursorWidth: input.length > 1 ? input.length : 0
+    }
+  }
+  return null
+}
+
 export function applyTextEdit(
   state: TextEditState,
   input: string,
-  key: Pick<
-    Key,
-    | "upArrow"
-    | "downArrow"
-    | "leftArrow"
-    | "rightArrow"
-    | "home"
-    | "end"
-    | "return"
-    | "ctrl"
-    | "shift"
-    | "tab"
-    | "backspace"
-    | "delete"
-    | "meta"
-  >,
+  key: EditKey,
   options: {
     showCursor: boolean
     /** Soft-wrap column budget; omit for hard-newline layout only. */
@@ -138,26 +225,12 @@ export function applyTextEdit(
   } = { showCursor: true }
 ): TextEditState | "submit" | null {
   if (isIgnoredTerminalInput(input)) return null
-
-  // Viewport owns Ctrl/Meta+↑/↓; tab is unused here.
-  if (
-    ((key.upArrow || key.downArrow) && (key.ctrl || key.meta)) ||
-    (key.ctrl && input === "c") ||
-    key.tab ||
-    (key.shift && key.tab)
-  ) {
-    return null
-  }
+  if (isReservedKey(input, key)) return null
 
   const { value, cursorOffset, preferredColumn } = state
   const columns = options.columns
 
-  const insertNewline =
-    (key.return && (key.shift || key.meta || key.ctrl)) ||
-    (key.ctrl && (input === "j" || input === "J")) ||
-    (!key.return && input === "\n")
-
-  if (insertNewline) {
+  if (isInsertNewline(input, key)) {
     return {
       value: `${value.slice(0, cursorOffset)}\n${value.slice(cursorOffset)}`,
       cursorOffset: cursorOffset + 1,
@@ -168,10 +241,6 @@ export function applyTextEdit(
   if (key.return) return "submit"
 
   const showCursor = options.showCursor
-  let nextCursor = cursorOffset
-  let nextValue = value
-  let nextCursorWidth = 0
-  const nextPreferred: number | null = null
 
   if (key.upArrow || key.downArrow) {
     if (!showCursor) return null
@@ -184,43 +253,14 @@ export function applyTextEdit(
     }
   }
 
-  if (key.home) {
-    if (showCursor) nextCursor = lineStartOffset(value, cursorOffset, columns)
-  } else if (key.end) {
-    if (showCursor) nextCursor = lineEndOffset(value, cursorOffset, columns)
-  } else if (key.leftArrow && (key.ctrl || key.meta)) {
-    if (showCursor) nextCursor = prevWordBoundary(value, cursorOffset)
-  } else if (key.rightArrow && (key.ctrl || key.meta)) {
-    if (showCursor) nextCursor = nextWordBoundary(value, cursorOffset)
-  } else if (key.leftArrow) {
-    if (showCursor) nextCursor = cursorOffset - 1
-  } else if (key.rightArrow) {
-    if (showCursor) nextCursor = cursorOffset + 1
-  } else if (key.backspace) {
-    if (cursorOffset > 0) {
-      nextValue = value.slice(0, cursorOffset - 1) + value.slice(cursorOffset)
-      nextCursor = cursorOffset - 1
-    }
-  } else if (key.delete) {
-    if (cursorOffset < value.length) {
-      nextValue = value.slice(0, cursorOffset) + value.slice(cursorOffset + 1)
-    }
-  } else if (key.ctrl || key.meta) {
-    return null
-  } else if (input) {
-    nextValue = value.slice(0, cursorOffset) + input + value.slice(cursorOffset)
-    nextCursor = cursorOffset + input.length
-    if (input.length > 1) nextCursorWidth = input.length
-  } else {
-    return null
-  }
+  const applied = applyKeyToText(value, cursorOffset, input, key, showCursor, columns)
+  if (!applied) return null
 
-  nextCursor = clampCursor(nextCursor, nextValue.length)
   return {
-    value: nextValue,
-    cursorOffset: nextCursor,
-    cursorWidth: nextCursorWidth,
-    preferredColumn: nextPreferred
+    value: applied.nextValue,
+    cursorOffset: clampCursor(applied.nextCursor, applied.nextValue.length),
+    cursorWidth: applied.nextCursorWidth,
+    preferredColumn: null
   }
 }
 
