@@ -1,8 +1,21 @@
-import { Box, Text } from "ink"
+import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
+import { Box, Text, type TextProps } from "ink"
 import Gradient from "ink-gradient"
 import { describeToolCall } from "../../lib/agent/tool-labels"
-import { Spinner } from "../elem/spinner"
 import { MonsterMate } from "../monster"
+
+const customTheme = extendTheme(defaultTheme, {
+  components: {
+    Spinner: {
+      styles: {
+        label: (): TextProps => ({
+          color: "green",
+          dimColor: true
+        })
+      }
+    }
+  }
+})
 
 /**
  * Live top bar: current persona, and the right-hand slot which shows
@@ -31,10 +44,9 @@ export function Header({
       </Box>
       {currentTool ? (
         <Box flexShrink={1} gap={1} overflow="hidden">
-          <Text color="green" dimColor wrap="truncate-end">
-            <Spinner type="boxBounce" />
-            {` ${describeToolCall(currentTool.name, currentTool.arguments)}`}
-          </Text>
+          <ThemeProvider theme={customTheme}>
+            <Spinner type="boxBounce" label={describeToolCall(currentTool.name, currentTool.arguments)} />
+          </ThemeProvider>
         </Box>
       ) : (
         <Box flexShrink={0}>

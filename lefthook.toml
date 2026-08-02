@@ -23,4 +23,7 @@ parallel = true
 run = "bun lint"
 
 [[pre-push.jobs]]
+run = "bun typecheck"
+
+[[pre-push.jobs]]
 run = "bun test"

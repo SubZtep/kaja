@@ -22,7 +22,6 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@mozilla/readability": "^0.6.0",
     "chalk": "^6.0.0",
-    "cli-spinners": "^3.4.0",
     "dedent": "^1.7.2",
     "env-paths": "^4.0.0",
     "grammy": "^1.45.1",

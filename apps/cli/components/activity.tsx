@@ -1,10 +1,23 @@
-import { Text } from "ink"
+import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
+import type { TextProps } from "ink"
 import { useEffect, useState } from "react"
 import type { PartialMessage } from "../hooks/use-agent"
 import { t } from "../lib/i18n"
-import { Spinner } from "./elem/spinner"
 
 const TICK_MS = 120
+
+const customTheme = extendTheme(defaultTheme, {
+  components: {
+    Spinner: {
+      styles: {
+        label: (): TextProps => ({
+          color: "magenta",
+          dimColor: true
+        })
+      }
+    }
+  }
+})
 
 /** Rough token estimate from streamed text (~4 characters per token). */
 function estimateTokens(partial: PartialMessage | null) {
@@ -43,9 +56,8 @@ export function Activity({
   const tokens = estimateTokens(partial)
 
   return (
-    <Text color="magenta" dimColor>
-      <Spinner />
-      {` ${t("activity.thinking", { seconds })}${tokens ? t("activity.tokens", { tokens }) : ""}`}
-    </Text>
+    <ThemeProvider theme={customTheme}>
+      <Spinner label={`${t("activity.thinking", { seconds })}${tokens ? t("activity.tokens", { tokens }) : ""}`} />
+    </ThemeProvider>
   )
 }
