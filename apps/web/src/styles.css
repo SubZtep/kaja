@@ -90,7 +90,7 @@
 @layer base {
   html,
   body {
-    @apply min-h-full;
+    @apply min-h-full bg-bg;
   }
 
   body {
