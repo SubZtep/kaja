@@ -75,6 +75,65 @@ function buildMainMenu({
   ]
 }
 
+function buildCommands({
+  menuMode,
+  thinking,
+  sounds,
+  voice,
+  toggleThinking,
+  toggleSounds,
+  toggleVoice,
+  chatModels,
+  setMenuMode,
+  personas,
+  persona,
+  switchPersona,
+  model,
+  switchModel
+}: {
+  menuMode: MenuMode
+  thinking: boolean
+  sounds: boolean
+  voice: boolean
+  toggleThinking: () => void
+  toggleSounds: () => void
+  toggleVoice: () => void
+  chatModels: ResolvedModel[]
+  setMenuMode: (mode: MenuMode) => void
+  personas: Persona[]
+  persona: Persona
+  switchPersona: (next: Persona) => void
+  model: string
+  switchModel: (next: ResolvedModel) => void
+}): MenuCommand[] {
+  if (menuMode === "main") {
+    return buildMainMenu({
+      thinking,
+      sounds,
+      voice,
+      toggleThinking,
+      toggleSounds,
+      toggleVoice,
+      chatModels,
+      setMenuMode
+    })
+  }
+  if (menuMode === "persona") {
+    return personas.map(p => ({
+      label: `${p.label}${p.id === persona.id ? " ✓" : ""}`,
+      run: () => {
+        switchPersona(p)
+      }
+    }))
+  }
+  return chatModels.map(chatModel => ({
+    label: `${chatModel.id}${chatModel.id === model ? " ✓" : ""}`,
+    run: () => {
+      switchModel(chatModel)
+    }
+  }))
+}
+
 export default function App({
   initialSettings,
   models = [],
@@ -150,22 +209,22 @@ export default function App({
   const chatModels = models.filter(m => m.task === "chat")
   const [menuMode, setMenuMode] = useState<MenuMode>("main")
 
-  const commands: MenuCommand[] =
-    menuMode === "main"
-      ? buildMainMenu({ thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice, chatModels, setMenuMode })
-      : menuMode === "persona"
-        ? personas.map(p => ({
-            label: `${p.label}${p.id === persona.id ? " ✓" : ""}`,
-            run: () => {
-              switchPersona(p)
-            }
-          }))
-        : chatModels.map(chatModel => ({
-            label: `${chatModel.id}${chatModel.id === model ? " ✓" : ""}`,
-            run: () => {
-              switchModel(chatModel)
-            }
-          }))
+  const commands = buildCommands({
+    menuMode,
+    thinking,
+    sounds,
+    voice,
+    toggleThinking,
+    toggleSounds,
+    toggleVoice,
+    chatModels,
+    setMenuMode,
+    personas,
+    persona,
+    switchPersona,
+    model,
+    switchModel
+  })
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>

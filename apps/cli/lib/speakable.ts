@@ -11,8 +11,14 @@ export function toSpeakable(markdown: string): string {
       // [text](url) and bare urls
       .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
       .replace(/https?:\/\/\S+/g, " ")
-      // emphasis and strikethrough markers around words
-      .replace(/(\*\*|__|\*|_|~~)(.+?)\1/g, "$2")
+      // emphasis and strikethrough markers around words — matched one marker
+      // at a time (rather than a single alternation-with-backreference
+      // pattern) to avoid catastrophic backtracking on pathological input
+      .replace(/\*\*([^*]+?)\*\*/g, "$1")
+      .replace(/__([^_]+?)__/g, "$1")
+      .replace(/~~([^~]+?)~~/g, "$1")
+      .replace(/\*([^*]+?)\*/g, "$1")
+      .replace(/_([^_]+?)_/g, "$1")
       // heading/blockquote/list prefixes at line starts
       .replace(/^[ \t]*(#{1,6}[ \t]+|>[ \t]?|[-*+][ \t]+)/gm, "")
       // emoji and pictographs

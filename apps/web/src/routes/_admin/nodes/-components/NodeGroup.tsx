@@ -4,11 +4,11 @@ export function NodeGroup({
   title,
   className,
   children
-}: {
+}: Readonly<{
   title: string
   className?: string
   children: React.ReactNode
-}) {
+}>) {
   return (
     <section className="mb-8">
       <h3 className="text-sm font-bold uppercase tracking-widest text-muted mb-4">{title}</h3>

@@ -7,11 +7,7 @@ import { Button } from "../../../../components/form/primitives/Button"
 import { Text } from "../../../../components/form/primitives/Text"
 import { useApiSdk } from "../../../../hooks/use-api-sdk"
 
-interface CommandExecutorProps {
-  node: Node
-}
-
-export function CommandExecutor({ node }: CommandExecutorProps) {
+export function CommandExecutor({ node }: Readonly<{ node: Node }>) {
   const sdk = useApiSdk()
   const queryClient = useQueryClient()
   const [command, setCommand] = useState("")
@@ -183,7 +179,7 @@ export function CommandExecutor({ node }: CommandExecutorProps) {
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: Readonly<{ status: string }>) {
   const config = {
     pending: { label: "Pending", color: "bg-yellow-500/20 text-yellow-400" },
     executing: { label: "Executing", color: "bg-ice/20 text-ice" },

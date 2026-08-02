@@ -18,7 +18,7 @@ function escapeHtml(text: string): string {
 
 /** Same three, plus the quote that would otherwise close an attribute early. */
 function escapeAttr(text: string): string {
-  return escapeHtml(text).replace(/"/g, "&quot;")
+  return escapeHtml(text).replaceAll('"', "&quot;")
 }
 
 function renderInlineTokens(tokens: Token[] | undefined): string {

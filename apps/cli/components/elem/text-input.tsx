@@ -154,39 +154,29 @@ type EditResult = {
   nextCursorWidth: number
 }
 
-/** Handles Home/End/word-jump/arrow/backspace/delete/insert; null means "no-op". */
-function applyKeyToText(
+/** Cursor-only move: Home/End/word-jump/arrow. Returns the new offset, or null if the key doesn't match. */
+function moveCursorForKey(
   value: string,
   cursorOffset: number,
-  input: string,
   key: EditKey,
   showCursor: boolean,
   columns: number | undefined
-): EditResult | null {
-  if (key.home) {
-    const nextCursor = showCursor ? lineStartOffset(value, cursorOffset, columns) : cursorOffset
-    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
+): number | null {
+  if (!showCursor) {
+    if (key.home || key.end || key.leftArrow || key.rightArrow) return cursorOffset
+    return null
   }
-  if (key.end) {
-    const nextCursor = showCursor ? lineEndOffset(value, cursorOffset, columns) : cursorOffset
-    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
-  }
-  if (key.leftArrow && (key.ctrl || key.meta)) {
-    const nextCursor = showCursor ? prevWordBoundary(value, cursorOffset) : cursorOffset
-    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
-  }
-  if (key.rightArrow && (key.ctrl || key.meta)) {
-    const nextCursor = showCursor ? nextWordBoundary(value, cursorOffset) : cursorOffset
-    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
-  }
-  if (key.leftArrow) {
-    const nextCursor = showCursor ? cursorOffset - 1 : cursorOffset
-    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
-  }
-  if (key.rightArrow) {
-    const nextCursor = showCursor ? cursorOffset + 1 : cursorOffset
-    return { nextValue: value, nextCursor, nextCursorWidth: 0 }
-  }
+  if (key.home) return lineStartOffset(value, cursorOffset, columns)
+  if (key.end) return lineEndOffset(value, cursorOffset, columns)
+  if (key.leftArrow && (key.ctrl || key.meta)) return prevWordBoundary(value, cursorOffset)
+  if (key.rightArrow && (key.ctrl || key.meta)) return nextWordBoundary(value, cursorOffset)
+  if (key.leftArrow) return cursorOffset - 1
+  if (key.rightArrow) return cursorOffset + 1
+  return null
+}
+
+/** Text-mutating edit: backspace/delete/insert. Returns the new text + cursor, or null if the key doesn't match. */
+function mutateTextForKey(value: string, cursorOffset: number, input: string, key: EditKey): EditResult | null {
   if (key.backspace) {
     if (cursorOffset <= 0) return { nextValue: value, nextCursor: cursorOffset, nextCursorWidth: 0 }
     return {
@@ -214,21 +204,38 @@ function applyKeyToText(
   return null
 }
 
+/** Handles Home/End/word-jump/arrow/backspace/delete/insert; null means "no-op". */
+function applyKeyToText(
+  value: string,
+  cursorOffset: number,
+  input: string,
+  key: EditKey,
+  showCursor: boolean,
+  columns: number | undefined
+): EditResult | null {
+  const movedCursor = moveCursorForKey(value, cursorOffset, key, showCursor, columns)
+  if (movedCursor !== null) return { nextValue: value, nextCursor: movedCursor, nextCursorWidth: 0 }
+
+  return mutateTextForKey(value, cursorOffset, input, key)
+}
+
+export type ApplyTextEditOptions = {
+  showCursor: boolean
+  /** Soft-wrap column budget; omit for hard-newline layout only. */
+  columns?: number
+}
+
 export function applyTextEdit(
   state: TextEditState,
   input: string,
   key: EditKey,
-  options: {
-    showCursor: boolean
-    /** Soft-wrap column budget; omit for hard-newline layout only. */
-    columns?: number
-  } = { showCursor: true }
+  options?: ApplyTextEditOptions
 ): TextEditState | "submit" | null {
   if (isIgnoredTerminalInput(input)) return null
   if (isReservedKey(input, key)) return null
 
   const { value, cursorOffset, preferredColumn } = state
-  const columns = options.columns
+  const columns = options?.columns
 
   if (isInsertNewline(input, key)) {
     return {
@@ -240,7 +247,7 @@ export function applyTextEdit(
   }
   if (key.return) return "submit"
 
-  const showCursor = options.showCursor
+  const showCursor = options?.showCursor ?? true
 
   if (key.upArrow || key.downArrow) {
     if (!showCursor) return null
@@ -292,6 +299,95 @@ export function paintLineWithCursor(
     out += chalk.inverse(" ")
   }
   return out
+}
+
+/** Windowed multi-line render: soft-wrapped lines sliced to the visible window. */
+function renderWindowed(
+  lines: VisualLine[],
+  windowStart: number,
+  maxVis: number,
+  display: string,
+  placeholder: string,
+  firstLead: string,
+  contLead: string,
+  cursorOffset: number,
+  pasteWidth: number,
+  active: boolean
+) {
+  const start = clampWindowStart(cursorLineIndex(lines, cursorOffset), windowStart, maxVis, lines.length)
+  const visible = lines.slice(start, start + maxVis)
+
+  if (display.length === 0 && placeholder) {
+    const head = active
+      ? chalk.inverse(placeholder[0] ?? " ") + chalk.dim(placeholder.slice(1))
+      : chalk.dim(placeholder)
+    return <Text>{firstLead + head}</Text>
+  }
+
+  const painted = visible
+    .map((line, vi) => {
+      const absLine = start + vi
+      const isLast = absLine === lines.length - 1
+      const body = paintLineWithCursor(line, isLast, cursorOffset, pasteWidth, active)
+      return (absLine === 0 ? firstLead : contLead) + body
+    })
+    .join("\n")
+
+  return <Text>{painted}</Text>
+}
+
+/** Single-line render with a live cursor (focused, showCursor). */
+function renderActiveSingleLine(
+  display: string,
+  placeholder: string,
+  firstLead: string,
+  cursorVisible: boolean,
+  cursorOffset: number,
+  pasteWidth: number
+) {
+  if (display.length === 0 && placeholder) {
+    return (
+      <Text>
+        {firstLead}
+        {cursorVisible
+          ? chalk.inverse(placeholder[0] ?? " ") + chalk.dim(placeholder.slice(1))
+          : chalk.dim(placeholder)}
+      </Text>
+    )
+  }
+  if (display.length === 0) {
+    return (
+      <Text>
+        {firstLead}
+        {cursorVisible ? chalk.inverse(" ") : " "}
+      </Text>
+    )
+  }
+  const line: VisualLine = { start: 0, end: display.length, text: display }
+  return (
+    <Text>
+      {firstLead}
+      {paintLineWithCursor(line, true, cursorOffset, pasteWidth, cursorVisible)}
+    </Text>
+  )
+}
+
+/** Static (no cursor) single-line render: placeholder or plain text. */
+function renderStatic(display: string, placeholder: string, firstLead: string) {
+  if (display.length === 0 && placeholder) {
+    return (
+      <Text dimColor>
+        {firstLead}
+        {placeholder}
+      </Text>
+    )
+  }
+  return (
+    <Text>
+      {firstLead}
+      {display}
+    </Text>
+  )
 }
 
 export function TextInput({
@@ -398,75 +494,26 @@ export function TextInput({
   }, [lines, cursorOffset, maxVis])
 
   if (lines && maxVis) {
-    const start = clampWindowStart(cursorLineIndex(lines, cursorOffset), windowStart, maxVis, lines.length)
-    const visible = lines.slice(start, start + maxVis)
     const active = showCursor && cursorVisible && focus
-
-    if (display.length === 0 && placeholder) {
-      const head = active
-        ? chalk.inverse(placeholder[0] ?? " ") + chalk.dim(placeholder.slice(1))
-        : chalk.dim(placeholder)
-      return <Text>{firstLead + head}</Text>
-    }
-
-    const painted = visible
-      .map((line, vi) => {
-        const absLine = start + vi
-        const isLast = absLine === lines.length - 1
-        const body = paintLineWithCursor(line, isLast, cursorOffset, pasteWidth, active)
-        return (absLine === 0 ? firstLead : contLead) + body
-      })
-      .join("\n")
-
-    return <Text>{painted}</Text>
+    return renderWindowed(
+      lines,
+      windowStart,
+      maxVis,
+      display,
+      placeholder,
+      firstLead,
+      contLead,
+      cursorOffset,
+      pasteWidth,
+      active
+    )
   }
 
   if (showCursor && focus) {
-    if (display.length === 0 && placeholder) {
-      return (
-        <Text>
-          {firstLead}
-          {cursorVisible
-            ? chalk.inverse(placeholder[0] ?? " ") + chalk.dim(placeholder.slice(1))
-            : chalk.dim(placeholder)}
-        </Text>
-      )
-    }
-    if (display.length === 0) {
-      return (
-        <Text>
-          {firstLead}
-          {cursorVisible ? chalk.inverse(" ") : " "}
-        </Text>
-      )
-    }
-    const line: VisualLine = {
-      start: 0,
-      end: display.length,
-      text: display
-    }
-    return (
-      <Text>
-        {firstLead}
-        {paintLineWithCursor(line, true, cursorOffset, pasteWidth, cursorVisible)}
-      </Text>
-    )
+    return renderActiveSingleLine(display, placeholder, firstLead, cursorVisible, cursorOffset, pasteWidth)
   }
 
-  if (display.length === 0 && placeholder) {
-    return (
-      <Text dimColor>
-        {firstLead}
-        {placeholder}
-      </Text>
-    )
-  }
-  return (
-    <Text>
-      {firstLead}
-      {display}
-    </Text>
-  )
+  return renderStatic(display, placeholder, firstLead)
 }
 
 export default TextInput

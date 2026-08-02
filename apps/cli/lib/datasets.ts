@@ -26,7 +26,7 @@ export async function loadDatasets(): Promise<Map<string, Dataset>> {
   } catch {
     return datasets
   }
-  for (const entry of entries.sort((a, b) => a.localeCompare(b))) {
+  for (const entry of entries.toSorted((a, b) => a.localeCompare(b))) {
     const path = join(dir, entry)
     const topic = basename(entry, ".json")
     try {

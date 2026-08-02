@@ -174,6 +174,30 @@ export function useAgent(
       .catch(error => log.warn({ error }, "Failed to save session"))
   }, [agent])
 
+  // Mirrors a persona_switch event into React state — run() already mutated
+  // the agent via applyPersona, so header/menu and the session row's persona
+  // column just need to follow.
+  const applyPersonaSwitch = useCallback(
+    (personaId: string) => {
+      const next = personas.find(p => p.id === personaId)
+      if (next) {
+        personaRef.current = next
+        setPersona(next)
+      }
+      setModel(agent.model)
+    },
+    [agent, personas]
+  )
+
+  const handleFinalizedEvent = useCallback(
+    (event: Exclude<FinalizedAgentEvent, { type: "usage" | "delta" }>) => {
+      if (event.type === "persona_switch") applyPersonaSwitch(event.personaId)
+      setPartial(null)
+      pushEvent(event)
+    },
+    [applyPersonaSwitch, pushEvent]
+  )
+
   // showUserEvent is false when the "prompt" isn't something the human
   // typed (e.g. resolveCommand feeding back a shell command's result) — it
   // still drives run() as the next turn, but shouldn't render as if the
@@ -206,19 +230,7 @@ export function useAgent(
           } else if (event.type === "usage") {
             setPromptTokens(event.promptTokens)
           } else {
-            if (event.type === "persona_switch") {
-              // run() already mutated the agent via applyPersona — mirror
-              // it into React state so the header/menu and the session
-              // row's persona column follow.
-              const next = personas.find(p => p.id === event.personaId)
-              if (next) {
-                personaRef.current = next
-                setPersona(next)
-              }
-              setModel(agent.model)
-            }
-            setPartial(null)
-            pushEvent(event)
+            handleFinalizedEvent(event)
           }
         }
       } catch (error) {
@@ -231,7 +243,7 @@ export function useAgent(
         persistSession()
       }
     },
-    [agent, pushEvent, persistSession, personas]
+    [agent, pushEvent, persistSession, handleFinalizedEvent]
   )
 
   // Resolves a pending confirm_command event: runs the command on approval

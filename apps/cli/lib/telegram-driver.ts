@@ -335,6 +335,60 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
   }
 
+  /**
+   * Handles one finalized (non-delta, non-usage) event within a turn's loop.
+   * Returns `true` once the event has ended the turn (confirm_command,
+   * ask_user, final) so {@link runTurn} knows to stop iterating.
+   */
+  async function handleFinalizedEvent(
+    chatId: number,
+    state: UserState,
+    accumulated: { content: string },
+    throttle: EditThrottle,
+    editIfChanged: (text: string) => Promise<void>,
+    event: Exclude<TimelineEvent, { type: "user" | "error" }>
+  ): Promise<boolean> {
+    if (event.type === "persona_switch") {
+      // run() already mutated the agent via applyPersona — mirror it into
+      // UserState so persistSession writes the new persona id.
+      const next = personas.find(p => p.id === event.personaId)
+      if (next) state.persona = next
+      return false
+    }
+
+    if (event.type === "tool_image") {
+      await sendPhotoSafely(chatId, { path: event.path })
+      return false
+    }
+
+    if (event.type === "display_image") {
+      await sendPhotoSafely(chatId, { url: event.url }, event.alt)
+      return false
+    }
+
+    if (event.type === "confirm_command") {
+      throttle.cancel()
+      if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
+      await sendConfirmCommand(chatId, state, event)
+      return true
+    }
+
+    if (event.type === "ask_user") {
+      throttle.cancel()
+      const text = accumulated.content.trim() ? `${accumulated.content}\n\n${event.question}` : event.question
+      await finalizeMessage(editIfChanged, chatId, text)
+      return true
+    }
+
+    if (event.type === "final") {
+      throttle.cancel()
+      await finalizeMessage(editIfChanged, chatId, event.content ?? "")
+      return true
+    }
+
+    return false
+  }
+
   async function runTurn(userId: number, chatId: number, state: UserState, prompt: string, showUserEvent: boolean) {
     state.busy = true
     if (showUserEvent) state.events.push({ type: "user", text: prompt })
@@ -370,43 +424,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
         state.events.push(event)
 
-        if (event.type === "persona_switch") {
-          // run() already mutated the agent via applyPersona — mirror it
-          // into UserState so persistSession writes the new persona id.
-          const next = personas.find(p => p.id === event.personaId)
-          if (next) state.persona = next
-          continue
-        }
-
-        if (event.type === "tool_image") {
-          await sendPhotoSafely(chatId, { path: event.path })
-          continue
-        }
-
-        if (event.type === "display_image") {
-          await sendPhotoSafely(chatId, { url: event.url }, event.alt)
-          continue
-        }
-
-        if (event.type === "confirm_command") {
-          throttle.cancel()
-          if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
-          await sendConfirmCommand(chatId, state, event)
-          return
-        }
-
-        if (event.type === "ask_user") {
-          throttle.cancel()
-          const text = accumulated.content.trim() ? `${accumulated.content}\n\n${event.question}` : event.question
-          await finalizeMessage(editIfChanged, chatId, text)
-          return
-        }
-
-        if (event.type === "final") {
-          throttle.cancel()
-          await finalizeMessage(editIfChanged, chatId, event.content ?? "")
-          return
-        }
+        const done = await handleFinalizedEvent(chatId, state, accumulated, throttle, editIfChanged, event)
+        if (done) return
       }
     } catch (error) {
       log.warn({ error }, "Telegram agent run failed")
@@ -480,12 +499,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const { command, body, messageId: pendingMessageId } = state.pendingCommand
     state.pendingCommand = undefined
     const approved = action === "approve"
-    await editSafely(
-      chatId,
-      pendingMessageId,
-      `${body}\n\n${approved ? `✅ ${t("telegram.approved")}` : `❌ ${t("telegram.declined")}`}`,
-      { replyMarkup: [] }
-    )
+    const statusLine = approved ? `✅ ${t("telegram.approved")}` : `❌ ${t("telegram.declined")}`
+    await editSafely(chatId, pendingMessageId, `${body}\n\n${statusLine}`, { replyMarkup: [] })
 
     const result = approved ? await runShellCommand(command) : "User declined to run this command."
     // showUserEvent = false: the synthesized shell result isn't something

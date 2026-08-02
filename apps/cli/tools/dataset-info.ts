@@ -86,6 +86,69 @@ function formatStatus(
   return lines.join("\n")
 }
 
+async function handleListDatasets(): Promise<string> {
+  const datasets = await loadDatasets()
+  if (datasets.size === 0) return "(no datasets configured)"
+  return [...datasets.entries()]
+    .map(([topic, dataset]) => `${topic}: ${dataset.label} (${dataset.fields.length} fields)`)
+    .join("\n")
+}
+
+async function handleGetStatus(datasetId: string, owner: string | null): Promise<string> {
+  const dataset = await loadDataset(datasetId)
+  if (!dataset) return `Unknown dataset: ${datasetId}`
+  const { version, justStarted, answers } = await resolveActiveVersion(
+    datasetId,
+    owner,
+    dataset.revalidateAfterDays,
+    dataset.fields.length
+  )
+  return formatStatus(dataset, version, answers, justStarted)
+}
+
+async function handleAnswer(args: Extract<Args, { action: "answer" }>, owner: string | null): Promise<string> {
+  if (!args.field) return "Error: 'field' is required for answer."
+  if (args.value === undefined) return "Error: 'value' is required for answer."
+  const dataset = await loadDataset(args.dataset)
+  if (!dataset) return `Unknown dataset: ${args.dataset}`
+  const field = dataset.fields.find(f => f.name === args.field)
+  if (!field) return `Unknown field: ${args.field}`
+
+  if (field.accepted) {
+    const normalized = normalizeAnswer(args.value)
+    const matched = field.accepted.some(accepted => normalizeAnswer(accepted) === normalized)
+    if (!matched)
+      return (
+        `"${args.value}" isn't an accepted answer for ${field.name}. ` +
+        `Accepted answers: ${field.accepted.toSorted().join(", ")}.`
+      )
+  }
+
+  const { version, answers } = await resolveActiveVersion(
+    args.dataset,
+    owner,
+    dataset.revalidateAfterDays,
+    dataset.fields.length
+  )
+  await saveDatasetAnswer(args.dataset, owner, version, field.name, args.value)
+
+  const updatedAnswers = [
+    ...answers.filter(a => a.field !== field.name),
+    { field: field.name, value: args.value, answeredAt: "" }
+  ]
+  if (updatedAnswers.length >= dataset.fields.length) await markDatasetVersionComplete(args.dataset, owner, version)
+
+  return formatStatus(dataset, version, updatedAnswers, false)
+}
+
+async function handleStartNewVersion(datasetId: string, owner: string | null): Promise<string> {
+  const dataset = await loadDataset(datasetId)
+  if (!dataset) return `Unknown dataset: ${datasetId}`
+  const latest = await latestDatasetVersion(datasetId, owner)
+  const version = latest + 1
+  return formatStatus(dataset, version, [], true)
+}
+
 /**
  * Collects a dataset's fields from a user conversationally, one at a time,
  * persisting answers across sessions and supporting versioned re-collection.
@@ -145,71 +208,15 @@ export const datasetInfoTool = tool<Args>({
     required: ["action"]
   },
   execute: async (args, ctx = LOCAL_OWNER_CTX) => {
-    if (args.action === "list_datasets") {
-      const datasets = await loadDatasets()
-      if (datasets.size === 0) return "(no datasets configured)"
-      return [...datasets.entries()]
-        .map(([topic, dataset]) => `${topic}: ${dataset.label} (${dataset.fields.length} fields)`)
-        .join("\n")
-    }
-
     switch (args.action) {
-      case "get_status": {
-        const dataset = await loadDataset(args.dataset)
-        if (!dataset) return `Unknown dataset: ${args.dataset}`
-        const { version, justStarted, answers } = await resolveActiveVersion(
-          args.dataset,
-          ctx.owner,
-          dataset.revalidateAfterDays,
-          dataset.fields.length
-        )
-        return formatStatus(dataset, version, answers, justStarted)
-      }
-
-      case "answer": {
-        if (!args.field) return "Error: 'field' is required for answer."
-        if (args.value === undefined) return "Error: 'value' is required for answer."
-        const dataset = await loadDataset(args.dataset)
-        if (!dataset) return `Unknown dataset: ${args.dataset}`
-        const field = dataset.fields.find(f => f.name === args.field)
-        if (!field) return `Unknown field: ${args.field}`
-
-        if (field.accepted) {
-          const normalized = normalizeAnswer(args.value)
-          const match = field.accepted.find(accepted => normalizeAnswer(accepted) === normalized)
-          if (!match)
-            return (
-              `"${args.value}" isn't an accepted answer for ${field.name}. ` +
-              `Accepted answers: ${field.accepted.toSorted().join(", ")}.`
-            )
-        }
-
-        const { version, answers } = await resolveActiveVersion(
-          args.dataset,
-          ctx.owner,
-          dataset.revalidateAfterDays,
-          dataset.fields.length
-        )
-        await saveDatasetAnswer(args.dataset, ctx.owner, version, field.name, args.value)
-
-        const updatedAnswers = [
-          ...answers.filter(a => a.field !== field.name),
-          { field: field.name, value: args.value, answeredAt: "" }
-        ]
-        if (updatedAnswers.length >= dataset.fields.length)
-          await markDatasetVersionComplete(args.dataset, ctx.owner, version)
-
-        return formatStatus(dataset, version, updatedAnswers, false)
-      }
-
-      case "start_new_version": {
-        const dataset = await loadDataset(args.dataset)
-        if (!dataset) return `Unknown dataset: ${args.dataset}`
-        const latest = await latestDatasetVersion(args.dataset, ctx.owner)
-        const version = latest + 1
-        return formatStatus(dataset, version, [], true)
-      }
-
+      case "list_datasets":
+        return handleListDatasets()
+      case "get_status":
+        return handleGetStatus(args.dataset, ctx.owner)
+      case "answer":
+        return handleAnswer(args, ctx.owner)
+      case "start_new_version":
+        return handleStartNewVersion(args.dataset, ctx.owner)
       default:
         return `Unknown action: ${(args as { action: string }).action}`
     }

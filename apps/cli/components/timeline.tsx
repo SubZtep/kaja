@@ -65,8 +65,10 @@ function renderItem(item: TimelineEvent, thinking: boolean) {
       return <Text color="yellow">{`$ ${item.command}`}</Text>
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
-    case "error":
-      return <Text color="red">{`${ERROR_ICON[item.category]} ${t(`error.${item.category}`)}: ${item.text}`}</Text>
+    case "error": {
+      const errorLabel = t(`error.${item.category}`)
+      return <Text color="red">{`${ERROR_ICON[item.category]} ${errorLabel}: ${item.text}`}</Text>
+    }
     case "final":
       return <Markdown>{item.content ?? "N/A"}</Markdown>
   }

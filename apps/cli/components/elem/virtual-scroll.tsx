@@ -47,12 +47,11 @@ const MeasuredItem = memo(function MeasuredItem({
   children: ReactNode
 }) {
   const ref = useRef<DOMElement>(null)
+
   useLayoutEffect(() => {
     if (ref.current) onMeasure(id, measureElement(ref.current).height)
-  })
-  // epoch is a dependency via the render itself: a new epoch re-renders this
-  // component (prop change), which re-runs the measuring effect above.
-  void epoch
+  }, [epoch, id, onMeasure, children])
+
   return (
     <Box ref={ref} flexDirection="column" flexShrink={0} width="100%">
       {children}
@@ -148,12 +147,14 @@ export function VirtualScroll({
   useLayoutEffect(() => {
     const el = containerRef.current
     if (!el) return
+
     const { width: w, height } = measureElement(el)
     if (height > 0 && height !== viewportRef.current) {
       viewportRef.current = height
       onViewportSizeChange?.(height)
       force()
     }
+
     if (w > 0 && w !== widthRef.current) {
       if (widthRef.current > 0) {
         heightsRef.current.clear()

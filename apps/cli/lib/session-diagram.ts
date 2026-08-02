@@ -25,6 +25,31 @@ function participant(name: string): string {
   return name.replace(/\W/g, "_")
 }
 
+/** Renders one timeline event as a mermaid sequence line, or `undefined` if it has no visual representation. */
+function eventLine(event: PersistedSession["events"][number]): string | undefined {
+  switch (event.type) {
+    case "user":
+      return `  User->>Kaja: ${label(event.text)}`
+    case "reasoning":
+      return "  Note over Kaja: thinking…"
+    case "tool_call":
+      return typeof event.name === "string"
+        ? `  Kaja->>${participant(event.name)}: ${label(event.arguments)}`
+        : undefined
+    case "ask_user":
+      return `  Kaja-->>User: ${label(event.question)}`
+    case "confirm_command":
+      return `  Kaja-->>User: $ ${label(event.command)}`
+    case "message":
+    case "final":
+      return typeof event.content === "string" && event.content ? `  Kaja-->>User: ${label(event.content)}` : undefined
+    case "error":
+      return `  Kaja--xUser: ${label(event.text)}`
+    default:
+      return undefined
+  }
+}
+
 export function sessionToMermaid(session: PersistedSession): string {
   const events = session.events
 
@@ -40,30 +65,8 @@ export function sessionToMermaid(session: PersistedSession): string {
   lines.push("")
 
   for (const event of events) {
-    switch (event.type) {
-      case "user":
-        lines.push(`  User->>Kaja: ${label(event.text)}`)
-        break
-      case "reasoning":
-        lines.push("  Note over Kaja: thinking…")
-        break
-      case "tool_call":
-        if (typeof event.name === "string") lines.push(`  Kaja->>${participant(event.name)}: ${label(event.arguments)}`)
-        break
-      case "ask_user":
-        lines.push(`  Kaja-->>User: ${label(event.question)}`)
-        break
-      case "confirm_command":
-        lines.push(`  Kaja-->>User: $ ${label(event.command)}`)
-        break
-      case "message":
-      case "final":
-        if (typeof event.content === "string" && event.content) lines.push(`  Kaja-->>User: ${label(event.content)}`)
-        break
-      case "error":
-        lines.push(`  Kaja--xUser: ${label(event.text)}`)
-        break
-    }
+    const line = eventLine(event)
+    if (line !== undefined) lines.push(line)
   }
 
   return lines.join("\n")

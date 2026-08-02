@@ -65,33 +65,7 @@ function noteParams(key: string, note: MemoryNote) {
   }
 }
 
-let db: Database | undefined
-let dbPathInUse: string | undefined
-
-/**
- * Opens (creating if needed) the memory database. Cached module-wide
- * (SQLite wants a persistent connection), but keyed by
- * the resolved path: if `resolveMemoryDbPath()` returns something different
- * from the cached connection's path, that connection is closed and a fresh
- * one opened. In a real run the resolved path never changes mid-process, so
- * this never fires — it only matters for tests, which run many logically
- * separate "sessions" (each with its own XDG_DATA_HOME/config.memory.dbPath)
- * in one shared `bun test` process.
- *
- * Exported as the shared seam for lib/session-store.ts, which lives in the
- * same database file — this module stays the single owner of the schema.
- */
-export async function getDb(): Promise<Database> {
-  const dbPath = await resolveMemoryDbPath()
-  if (db && dbPathInUse === dbPath) return db
-
-  db?.close()
-  mkdirSync(dirname(dbPath), { recursive: true })
-  db = new Database(dbPath, { create: true })
-  dbPathInUse = dbPath
-  db.exec("PRAGMA journal_mode = WAL")
-  db.exec("PRAGMA synchronous = NORMAL") // safe pairing w/ WAL, faster than FULL
-  db.exec("PRAGMA busy_timeout = 5000") // wait up to 5s on lock instead of throwing
+function createSchema(db: Database) {
   db.exec("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)")
   db.exec(`
     CREATE TABLE IF NOT EXISTS notes (
@@ -143,40 +117,78 @@ export async function getDb(): Promise<Database> {
       PRIMARY KEY (topic, owner, version)
     )
   `)
+}
+
+/**
+ * Migrates an existing database from `fromVersion` up to {@link SCHEMA_VERSION}.
+ * See the inline comments for what each version bump does.
+ */
+function migrateSchema(db: Database, fromVersion: number) {
+  // v1 → v2 added the sessions table; v2 → v3 added game_results and
+  // game_rounds; v3 → v4 added game_results.rating; v4 → v5 added
+  // game_results.embedding — all purely additive, and (since those columns
+  // were only ever added to the CREATE TABLE IF NOT EXISTS DDL above) only
+  // actually took effect on a brand-new database file, not on an existing
+  // one being upgraded across versions. v5 → v6 is the first migration
+  // that must actually alter an existing table: sessions gains `owner`
+  // (NULL = terminal session) so Telegram users each resume their own last
+  // session instead of whichever is globally latest. SQLite has no ADD
+  // COLUMN IF NOT EXISTS, so guard with try/catch in case this file was
+  // already altered but schema_version is stale for some reason.
+  if (fromVersion < 6) {
+    try {
+      db.exec("ALTER TABLE sessions ADD COLUMN owner TEXT")
+    } catch {}
+  }
+  // v6 → v7 replaces the like-or-not game (game_results, game_rounds) with
+  // the dataset info collector (dataset_answers, dataset_versions) — the
+  // old tables are dropped outright since this is a full feature
+  // replacement, not an additive migration.
+  if (fromVersion < 7) {
+    try {
+      db.exec("DROP TABLE IF EXISTS game_results")
+    } catch {}
+    try {
+      db.exec("DROP TABLE IF EXISTS game_rounds")
+    } catch {}
+  }
+  db.query("UPDATE schema_version SET version = ?").run(SCHEMA_VERSION)
+}
+
+let db: Database | undefined
+let dbPathInUse: string | undefined
+
+/**
+ * Opens (creating if needed) the memory database. Cached module-wide
+ * (SQLite wants a persistent connection), but keyed by
+ * the resolved path: if `resolveMemoryDbPath()` returns something different
+ * from the cached connection's path, that connection is closed and a fresh
+ * one opened. In a real run the resolved path never changes mid-process, so
+ * this never fires — it only matters for tests, which run many logically
+ * separate "sessions" (each with its own XDG_DATA_HOME/config.memory.dbPath)
+ * in one shared `bun test` process.
+ *
+ * Exported as the shared seam for lib/session-store.ts, which lives in the
+ * same database file — this module stays the single owner of the schema.
+ */
+export async function getDb(): Promise<Database> {
+  const dbPath = await resolveMemoryDbPath()
+  if (db && dbPathInUse === dbPath) return db
+
+  db?.close()
+  mkdirSync(dirname(dbPath), { recursive: true })
+  db = new Database(dbPath, { create: true })
+  dbPathInUse = dbPath
+  db.exec("PRAGMA journal_mode = WAL")
+  db.exec("PRAGMA synchronous = NORMAL") // safe pairing w/ WAL, faster than FULL
+  db.exec("PRAGMA busy_timeout = 5000") // wait up to 5s on lock instead of throwing
+  createSchema(db)
 
   const hasVersion = db.query("SELECT version FROM schema_version LIMIT 1").get() as { version: number } | null
   if (!hasVersion) {
     db.query("INSERT INTO schema_version (version) VALUES (?)").run(SCHEMA_VERSION)
   } else if (hasVersion.version < SCHEMA_VERSION) {
-    // v1 → v2 added the sessions table; v2 → v3 added game_results and
-    // game_rounds; v3 → v4 added game_results.rating; v4 → v5 added
-    // game_results.embedding — all purely additive, and (since those columns
-    // were only ever added to the CREATE TABLE IF NOT EXISTS DDL above) only
-    // actually took effect on a brand-new database file, not on an existing
-    // one being upgraded across versions. v5 → v6 is the first migration
-    // that must actually alter an existing table: sessions gains `owner`
-    // (NULL = terminal session) so Telegram users each resume their own last
-    // session instead of whichever is globally latest. SQLite has no ADD
-    // COLUMN IF NOT EXISTS, so guard with try/catch in case this file was
-    // already altered but schema_version is stale for some reason.
-    if (hasVersion.version < 6) {
-      try {
-        db.exec("ALTER TABLE sessions ADD COLUMN owner TEXT")
-      } catch {}
-    }
-    // v6 → v7 replaces the like-or-not game (game_results, game_rounds) with
-    // the dataset info collector (dataset_answers, dataset_versions) — the
-    // old tables are dropped outright since this is a full feature
-    // replacement, not an additive migration.
-    if (hasVersion.version < 7) {
-      try {
-        db.exec("DROP TABLE IF EXISTS game_results")
-      } catch {}
-      try {
-        db.exec("DROP TABLE IF EXISTS game_rounds")
-      } catch {}
-    }
-    db.query("UPDATE schema_version SET version = ?").run(SCHEMA_VERSION)
+    migrateSchema(db, hasVersion.version)
   }
 
   // Only persist the path back to config.json once we know it works — the

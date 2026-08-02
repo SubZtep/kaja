@@ -20,7 +20,7 @@ function PublicLayout() {
 
   const [i, setI] = useState(0)
   useEffect(() => {
-    const id = setInterval(() => setI(v => (v + 1) % ICONS.length), 666_69)
+    const id = setInterval(() => setI(v => (v + 1) % ICONS.length), 66669)
     return () => clearInterval(id)
   }, [])
 

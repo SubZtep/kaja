@@ -1,7 +1,11 @@
 import { homedir } from "node:os"
 import { file } from "bun"
 import OpenAI from "openai"
-import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions"
+import type {
+  ChatCompletionMessageParam,
+  ChatCompletionMessageToolCall,
+  ChatCompletionTool
+} from "openai/resources/chat/completions"
 import type { ResolvedModel } from "../schemas/models"
 import type { Persona, SamplingParams } from "../schemas/personas"
 import { LOCAL_OWNER } from "../schemas/session"
@@ -176,8 +180,20 @@ const ASK_USER_INSTRUCTIONS =
   `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
   `just state the result and stop.`
 
+function osName() {
+  if (process.platform === "win32") return "Windows"
+  if (process.platform === "darwin") return "macOS"
+  return "Linux"
+}
+
 /** Grounds the model in the host OS and home directory so path-related tools (list_files, read_file) get correct conventions instead of guessing (e.g. assuming /root). */
-const PLATFORM_INSTRUCTIONS = `You are running on ${process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux"}. Use ${process.platform === "win32" ? "backslash" : "forward-slash"} paths accordingly. The user's home directory is ${homedir()}.`
+const PLATFORM_INSTRUCTIONS = `You are running on ${osName()}. Use ${process.platform === "win32" ? "backslash" : "forward-slash"} paths accordingly. The user's home directory is ${homedir()}.`
+
+/** One line of the persona roster in {@link buildSystemPrompt}'s personas block. */
+function personaListItem(p: Persona) {
+  const when = p.when ? `: use when ${p.when}` : ""
+  return `- ${p.id} (${p.label})${when}`
+}
 
 /** Grounds the model in the user's resolved location, so it doesn't have to guess a city/timezone from a bare UTC offset or ask before defaulting web_search / current_time. */
 function locationInstructions(loc: GeoLocation) {
@@ -481,7 +497,7 @@ export async function buildSystemPrompt(agent: Agent): Promise<string | undefine
         `${SWITCH_PERSONA_TOOL} when the topic clearly matches another ` +
         `persona's purpose. Current persona: "${agent.personaId ?? "unknown"}". ` +
         `Available personas:\n` +
-        agent.personas.map(p => `- ${p.id} (${p.label})${p.when ? `: use when ${p.when}` : ""}`).join("\n") +
+        agent.personas.map(personaListItem).join("\n") +
         `\nSwitch only when the fit is clear — when unsure, stay put. ` +
         `Don't announce the mechanics of switching; just continue naturally.`
       : undefined
@@ -516,6 +532,145 @@ export async function buildSystemPrompt(agent: Agent): Promise<string | undefine
       .filter(Boolean)
       .join("\n\n") || undefined
   )
+}
+
+type FunctionToolCall = {
+  type: "function"
+  id: string
+  function: { name: string; arguments: string }
+}
+
+/** Handles one `run_command` tool call: auto-runs read-only commands and pushes their result, otherwise reports back a pending confirmation for the caller to resolve. */
+async function handleRunCommandCall(
+  messages: ChatCompletionMessageParam[],
+  call: FunctionToolCall
+): Promise<{ id: string; command: string; description: string } | undefined> {
+  const args = JSON.parse(call.function.arguments)
+  const autoApprove = args.mutates === false && !isDangerousCommand(args.command)
+  if (autoApprove) {
+    const result = await runShellCommand(args.command)
+    messages.push({ role: "tool", tool_call_id: call.id, content: result })
+    return undefined
+  }
+  return { id: call.id, command: args.command, description: args.description }
+}
+
+/** Handles one `switch_persona` tool call: applies the persona, refreshes the system prompt, and pushes the tool response. Yields the `tool_call` and (on an actual switch) `persona_switch` events. */
+async function* handleSwitchPersonaCall(
+  agent: Agent,
+  messages: ChatCompletionMessageParam[],
+  call: FunctionToolCall
+): AsyncGenerator<AgentEvent, void, void> {
+  yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
+  const args = JSON.parse(call.function.arguments)
+  const target = agent.personas.find(p => p.id === args.persona)
+  let content: string
+  if (!target) {
+    content = `Unknown persona "${args.persona}". Available: ` + `${agent.personas.map(p => p.id).join(", ")}.`
+  } else if (target.id === agent.personaId) {
+    content = `Already using persona "${target.id}".`
+  } else {
+    applyPersona(agent, target)
+    const system = await buildSystemPrompt(agent)
+    if (system) {
+      if (messages[0]?.role === "system") messages[0].content = system
+      else messages.unshift({ role: "system", content: system })
+    }
+    yield { type: "persona_switch", personaId: target.id, label: target.label }
+    content =
+      `Persona switched to "${target.label}" (${target.id}). Your ` +
+      `system instructions have been updated — continue in this persona.`
+  }
+  messages.push({ role: "tool", tool_call_id: call.id, content })
+}
+
+/** Handles one regular (non-intercepted) tool call: yields `tool_call`, executes it, and pushes its result — plus any images — back into the message history. */
+async function* handleToolCall(
+  toolsByName: Map<string, Tool<any>>,
+  messages: ChatCompletionMessageParam[],
+  owner: string | null,
+  call: FunctionToolCall
+): AsyncGenerator<AgentEvent, void, void> {
+  yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
+  const t = toolsByName.get(call.function.name)
+  if (!t) throw new Error(`Unknown tool: ${call.function.name}`)
+  const args = JSON.parse(call.function.arguments)
+  const result = await t.execute(args, { owner })
+
+  if (typeof result === "string") {
+    messages.push({ role: "tool", tool_call_id: call.id, content: result })
+    return
+  }
+
+  messages.push({ role: "tool", tool_call_id: call.id, content: result.text })
+  if (result.displayImage) yield { type: "display_image", ...result.displayImage }
+  for (const image of result.images ?? []) {
+    yield { type: "tool_image", path: image.path }
+    const data = await file(image.path).arrayBuffer()
+    const base64 = Buffer.from(data).toString("base64")
+    messages.push({
+      role: "user",
+      content: [{ type: "image_url", image_url: { url: `data:${image.mimeType};base64,${base64}` } }]
+    })
+  }
+}
+
+/** One assistant message rebuilt from a streamed completion — see the comment at its push site in {@link run} for why it's rebuilt rather than reused as-is. */
+type StreamedRound = {
+  message: {
+    role: "assistant"
+    content: string | null
+    tool_calls?: ChatCompletionMessageToolCall[]
+    reasoning_content?: string
+  }
+  thinking: string
+  usage?: { promptTokens: number }
+}
+
+/** Streams one completion round, yielding `delta` events as chunks arrive, and returns the finalized assistant message plus usage. */
+async function* streamRound(
+  agent: Agent,
+  messages: ChatCompletionMessageParam[],
+  definitions: ChatCompletionTool[]
+): AsyncGenerator<AgentEvent, StreamedRound, void> {
+  const stream = agent.client.chat.completions.stream({
+    model: agent.model,
+    messages,
+    tools: definitions,
+    stream_options: { include_usage: true },
+    ...agent.sampling
+  })
+
+  let thinking = ""
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta as { reasoning_content?: string; content?: string } | undefined
+    if (delta?.reasoning_content) {
+      thinking += delta.reasoning_content
+      yield { type: "delta", channel: "reasoning", text: delta.reasoning_content }
+    }
+    if (delta?.content) yield { type: "delta", channel: "content", text: delta.content }
+  }
+
+  const completion = await stream.finalChatCompletion()
+  const raw = completion.choices[0]!.message
+  // Don't push the stream helper's reconstructed message into the history
+  // as-is: it carries extra fields (`parsed`, `refusal: null`) that
+  // Fireworks rejects on the next request, and its `reasoning_content`
+  // holds only the last delta fragment instead of the full text. Rebuild a
+  // clean message so the history matches what the non-streaming API
+  // returned before.
+  const message = {
+    role: "assistant" as const,
+    content: raw.content,
+    ...(raw.tool_calls?.length ? { tool_calls: raw.tool_calls } : {}),
+    ...(thinking ? { reasoning_content: thinking } : {})
+  }
+
+  return {
+    message,
+    thinking,
+    usage: completion.usage ? { promptTokens: completion.usage.prompt_tokens } : undefined
+  }
 }
 
 /**
@@ -576,53 +731,12 @@ export async function* run(
   }
 
   while (true) {
-    const stream = agent.client.chat.completions.stream({
-      model: agent.model,
-      messages,
-      tools: definitions,
-      stream_options: { include_usage: true },
-      ...agent.sampling
-    })
-
-    let thinking = ""
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta as { reasoning_content?: string; content?: string } | undefined
-      if (delta?.reasoning_content) {
-        thinking += delta.reasoning_content
-        yield {
-          type: "delta",
-          channel: "reasoning",
-          text: delta.reasoning_content
-        }
-      }
-      if (delta?.content) yield { type: "delta", channel: "content", text: delta.content }
-    }
-
-    const completion = await stream.finalChatCompletion()
-    const raw = completion.choices[0]!.message
-    // Don't push the stream helper's reconstructed message into the history
-    // as-is: it carries extra fields (`parsed`, `refusal: null`) that
-    // Fireworks rejects on the next request, and its `reasoning_content`
-    // holds only the last delta fragment instead of the full text. Rebuild a
-    // clean message so the history matches what the non-streaming API
-    // returned before.
-    const message = {
-      role: "assistant" as const,
-      content: raw.content,
-      ...(raw.tool_calls?.length ? { tool_calls: raw.tool_calls } : {}),
-      ...(thinking ? { reasoning_content: thinking } : {})
-    }
+    const { message, thinking, usage } = yield* streamRound(agent, messages, definitions)
     messages.push(message)
 
-    if (completion.usage) {
-      yield { type: "usage", promptTokens: completion.usage.prompt_tokens }
-    }
+    if (usage) yield { type: "usage", promptTokens: usage.promptTokens }
 
-    if (thinking)
-      yield {
-        type: "reasoning",
-        text: thinking
-      }
+    if (thinking) yield { type: "reasoning", text: thinking }
 
     // Finished? Despite the system instructions the model occasionally still
     // ends with a plain-text question ("Want to play another round?"), so as
@@ -658,101 +772,21 @@ export async function* run(
       if (call.type !== "function") continue
 
       if (call.function.name === ASK_USER_TOOL) {
-        ask = {
-          id: call.id,
-          question: JSON.parse(call.function.arguments).question
-        }
+        ask = { id: call.id, question: JSON.parse(call.function.arguments).question }
         continue
       }
 
       if (call.function.name === RUN_COMMAND_TOOL) {
-        const args = JSON.parse(call.function.arguments)
-        const autoApprove = args.mutates === false && !isDangerousCommand(args.command)
-        if (autoApprove) {
-          const result = await runShellCommand(args.command)
-          messages.push({
-            role: "tool",
-            tool_call_id: call.id,
-            content: result
-          })
-          continue
-        }
-        confirm = {
-          id: call.id,
-          command: args.command,
-          description: args.description
-        }
+        confirm = await handleRunCommandCall(messages, call)
         continue
       }
 
       if (call.function.name === SWITCH_PERSONA_TOOL) {
-        yield {
-          type: "tool_call",
-          name: call.function.name,
-          arguments: call.function.arguments
-        }
-        const args = JSON.parse(call.function.arguments)
-        const target = agent.personas.find(p => p.id === args.persona)
-        let content: string
-        if (!target) {
-          content = `Unknown persona "${args.persona}". Available: ` + `${agent.personas.map(p => p.id).join(", ")}.`
-        } else if (target.id === agent.personaId) {
-          content = `Already using persona "${target.id}".`
-        } else {
-          applyPersona(agent, target)
-          const system = await buildSystemPrompt(agent)
-          if (system) {
-            if (messages[0]?.role === "system") messages[0].content = system
-            else messages.unshift({ role: "system", content: system })
-          }
-          yield {
-            type: "persona_switch",
-            personaId: target.id,
-            label: target.label
-          }
-          content =
-            `Persona switched to "${target.label}" (${target.id}). Your ` +
-            `system instructions have been updated — continue in this persona.`
-        }
-        messages.push({ role: "tool", tool_call_id: call.id, content })
+        yield* handleSwitchPersonaCall(agent, messages, call)
         continue
       }
 
-      yield {
-        type: "tool_call",
-        name: call.function.name,
-        arguments: call.function.arguments
-      }
-      const t = toolsByName.get(call.function.name)
-      if (!t) throw new Error(`Unknown tool: ${call.function.name}`)
-      const args = JSON.parse(call.function.arguments)
-      const result = await t.execute(args, { owner })
-
-      if (typeof result === "string") {
-        messages.push({ role: "tool", tool_call_id: call.id, content: result })
-        continue
-      }
-
-      messages.push({
-        role: "tool",
-        tool_call_id: call.id,
-        content: result.text
-      })
-      if (result.displayImage) yield { type: "display_image", ...result.displayImage }
-      for (const image of result.images ?? []) {
-        yield { type: "tool_image", path: image.path }
-        const data = await file(image.path).arrayBuffer()
-        const base64 = Buffer.from(data).toString("base64")
-        messages.push({
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: { url: `data:${image.mimeType};base64,${base64}` }
-            }
-          ]
-        })
-      }
+      yield* handleToolCall(toolsByName, messages, owner, call)
     }
 
     if (ask) {

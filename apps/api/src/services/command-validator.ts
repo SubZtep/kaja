@@ -22,6 +22,23 @@ const ALLOWED_COMMANDS = new Set([
   "ps"
 ])
 
+const SHELL_INJECTION_CHARS = [";", "|", "&", "`"]
+
+/**
+ * Check a single arg value for dangerous shell injection characters
+ *
+ * @returns Error message if invalid, null if valid
+ */
+function validateArgValue(key: string, value: unknown): string | null {
+  if (typeof value !== "string") return null
+
+  const hasInjectionChar = SHELL_INJECTION_CHARS.some(char => value.includes(char))
+  if (!hasInjectionChar) return null
+
+  warn("Rejected command with shell injection attempt", { key, value })
+  return `Argument '${key}' contains potentially dangerous characters`
+}
+
 /**
  * Validate args for dangerous shell injection patterns
  *
@@ -34,16 +51,35 @@ function validateArgs(args: NonNullable<CreateCommandRequest["args"]>): string |
   }
 
   for (const [key, value] of Object.entries(args)) {
-    if (typeof value !== "string") continue
-
-    // Check for shell injection attempts
-    if (value.includes(";") || value.includes("|") || value.includes("&") || value.includes("`")) {
-      warn("Rejected command with shell injection attempt", { key, value })
-      return `Argument '${key}' contains potentially dangerous characters`
-    }
+    const error = validateArgValue(key, value)
+    if (error) return error
   }
 
   return null
+}
+
+/**
+ * Validate that the command is in the allowlist
+ *
+ * @returns Error message if invalid, null if valid
+ */
+function validateAllowlist(command: string): string | null {
+  if (ALLOWED_COMMANDS.has(command)) return null
+
+  warn("Rejected non-allowlisted command", { command })
+  return `Command '${command}' is not permitted. Allowed commands: ${Array.from(ALLOWED_COMMANDS).join(", ")}`
+}
+
+/**
+ * Validate that the timeout is within the permitted range
+ *
+ * @returns Error message if invalid, null if valid
+ */
+function validateTimeout(timeoutSeconds: number | undefined): string | null {
+  if (timeoutSeconds === undefined) return null
+  if (timeoutSeconds >= 1 && timeoutSeconds <= 3600) return null
+
+  return "Timeout must be between 1 and 3600 seconds"
 }
 
 /**
@@ -53,21 +89,9 @@ function validateArgs(args: NonNullable<CreateCommandRequest["args"]>): string |
  * @returns Error message if invalid, null if valid
  */
 export function validateCommand(request: CreateCommandRequest): string | null {
-  // Check if command is in allowlist
-  if (!ALLOWED_COMMANDS.has(request.command)) {
-    warn("Rejected non-allowlisted command", { command: request.command })
-    return `Command '${request.command}' is not permitted. Allowed commands: ${Array.from(ALLOWED_COMMANDS).join(", ")}`
-  }
-
-  // Validate timeout
-  if (request.timeoutSeconds !== undefined && (request.timeoutSeconds < 1 || request.timeoutSeconds > 3600)) {
-    return "Timeout must be between 1 and 3600 seconds"
-  }
-
-  // Validate args if present
-  if (request.args) {
-    return validateArgs(request.args)
-  }
-
-  return null
+  return (
+    validateAllowlist(request.command) ??
+    validateTimeout(request.timeoutSeconds) ??
+    (request.args ? validateArgs(request.args) : null)
+  )
 }

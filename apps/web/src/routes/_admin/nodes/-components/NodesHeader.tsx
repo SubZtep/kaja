@@ -1,6 +1,6 @@
 import { LiveBanner } from "./LiveBanner"
 
-export function NodesHeader({ isLive, children }: { isLive: boolean; children: React.ReactNode }) {
+export function NodesHeader({ isLive, children }: Readonly<{ isLive: boolean; children: React.ReactNode }>) {
   return (
     <header className="mb-12 flex flex-col lg:flex-row justify-between lg:items-end gap-8">
       <div className="max-w-2xl">

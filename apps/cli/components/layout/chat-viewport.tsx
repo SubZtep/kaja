@@ -12,6 +12,21 @@ import { TimelineItem } from "../timeline"
 
 const WHEEL_LINES = 3
 
+// Stable per-event identity for list keys: events are only ever appended or
+// the whole array is reset (see useAgent), never reordered or spliced, so a
+// monotonic id assigned the first time an event object is seen is stable
+// across re-renders without needing an id field on TimelineEvent itself.
+const eventIds = new WeakMap<TimelineEvent, number>()
+let nextEventId = 0
+function idFor(event: TimelineEvent) {
+  let id = eventIds.get(event)
+  if (id === undefined) {
+    id = nextEventId++
+    eventIds.set(event, id)
+  }
+  return id
+}
+
 /**
  * Clamp to the real bottom offset (VirtualScroll clamps internally too;
  * kept here so the input handlers stay self-evidently safe).
@@ -222,7 +237,7 @@ export function ChatViewport({
       events
         .filter(item => item.type !== "tool_call")
         .map((item, i) => (
-          <Box key={`e-${i}`} marginTop={i > 0 && item.type === "user" ? 1 : 0}>
+          <Box key={idFor(item)} marginTop={i > 0 && item.type === "user" ? 1 : 0}>
             <TimelineItem item={item} thinking={thinking} />
           </Box>
         )),

@@ -48,12 +48,11 @@ export const ModelsFileSchema = z
 
 export type KajaModelsFile = z.infer<typeof ModelsFileSchema>
 export type ModelTask = z.infer<typeof TaskSchema>
-export type ResolvedModelTask = ModelTask
 
 /** A model entry flattened with its provider's credentials. */
 export type ResolvedModel = {
   id: string
-  task: ResolvedModelTask
+  task: ModelTask
   baseUrl: string
   apiKey?: string
 }
