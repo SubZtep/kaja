@@ -44,6 +44,7 @@
       "type": "object",
       "properties": {
         "speachesUrl": {
+          "description": "Speaches AI server endpoint (speech-to-text)",
           "type": "string",
           "format": "uri"
         },
@@ -59,6 +60,7 @@
       "type": "object",
       "properties": {
         "speachesUrl": {
+          "description": "Speaches AI server endpoint (text-to-speech)",
           "type": "string",
           "format": "uri"
         },
@@ -82,18 +84,23 @@
       "additionalProperties": false
     },
     "settings": {
+      "description": "In-app preferences (slash menu)",
       "type": "object",
       "properties": {
         "thinking": {
+          "description": "Show thinking indicator when the model is generating a response",
           "type": "boolean"
         },
         "sounds": {
+          "description": "Enable sound effects",
           "type": "boolean"
         },
         "voice": {
+          "description": "Enable voice output (text-to-speech)",
           "type": "boolean"
         },
         "language": {
+          "description": "Language for the chat and application",
           "type": "string",
           "enum": [
             "en",

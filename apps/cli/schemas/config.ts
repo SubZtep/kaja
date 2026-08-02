@@ -1,10 +1,10 @@
 import * as z from "zod"
 
 export const KajaSettingsSchema = z.object({
-  thinking: z.boolean().optional(),
-  sounds: z.boolean().optional(),
-  voice: z.boolean().optional(),
-  language: z.enum(["en", "hu"]).optional(),
+  thinking: z.boolean().optional().describe("Show thinking indicator when the model is generating a response"),
+  sounds: z.boolean().optional().describe("Enable sound effects"),
+  voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
+  language: z.enum(["en", "hu"]).optional().describe("Language for the chat and application"),
   // Id of the last-selected persona (see schemas/personas.ts), so the app
   // reopens with it instead of always defaulting to the first one.
   persona: z.string().min(1).optional().describe("Id of the persona to open with (see personas.toml)")
@@ -30,18 +30,16 @@ export const KajaModelsSchema = z.object({
 // non-model settings live here now — the model itself comes from
 // models.<task> above.
 export const KajaSttSchema = z.object({
-  speachesUrl: z.url().optional(),
+  speachesUrl: z.url().optional().describe("Speaches AI server endpoint (speech-to-text)"),
   language: z.string().min(1).optional().describe("Language hint for speech-to-text, e.g. 'en'")
 })
 
 export const KajaTtsSchema = z.object({
-  speachesUrl: z.url().optional(),
+  speachesUrl: z.url().optional().describe("Speaches AI server endpoint (text-to-speech)"),
   voice: z.string().min(1).optional().describe("Voice name to use for text-to-speech")
 })
 
 export const KajaMemorySchema = z.object({
-  // Absolute path to the SQLite database file. Omit to use the default XDG
-  // data location (see lib/memory-store.ts).
   dbPath: z
     .string()
     .min(1)
@@ -49,9 +47,7 @@ export const KajaMemorySchema = z.object({
     .describe("Absolute path to the SQLite memory database; omit to use the default XDG data location")
 })
 
-// location/webSearch/telegram/api (external service credentials) live in
-// services.toml instead (see schemas/services.ts) — config.json stays
-// local UI/model config.
+/** location/webSearch/telegram/api (external service credentials) live in services.toml */
 export const KajaConfigSchema = z.object({
   // Editor tooling (e.g. VS Code's JSON language server) uses this to
   // validate/autocomplete config.json; not consumed by the CLI itself.
@@ -60,8 +56,7 @@ export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
   memory: KajaMemorySchema.optional(),
-  // In-app preferences (slash menu); optional so existing configs stay valid.
-  settings: KajaSettingsSchema.optional()
+  settings: KajaSettingsSchema.optional().describe("In-app preferences (slash menu)")
 })
 
 export type KajaConfig = z.infer<typeof KajaConfigSchema>

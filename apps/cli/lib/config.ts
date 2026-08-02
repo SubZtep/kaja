@@ -137,6 +137,7 @@ export async function saveFetchedChatModel(chatModelId: string) {
   const hasRealChat = !!current.models?.chat && current.models.chat !== templateChatId
   if (hasRealChat) return
   const merged: Partial<KajaConfig> = {
+    $schema: getSchemaUrl(),
     ...(TEMPLATE_JSON as Partial<KajaConfig>),
     ...current,
     models: { ...current.models, chat: chatModelId }
