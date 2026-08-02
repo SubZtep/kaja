@@ -92,12 +92,40 @@ if (cli.input[0] === "config") {
   process.exit(code)
 }
 
-// First run: write the template so there's a concrete file to edit, rather
-// than starting from nothing. Missing or invalid config (including a
-// freshly written template, which needs real models.toml entries to
-// resolve) always exits pointing at the path to edit — there's no wizard to
-// fall through to.
-if (!(await isExists())) await create()
+// First run: interactively ask free hosted chat vs. own provider, so a new
+// user isn't left with a template pointing at a models.toml id that doesn't
+// exist yet. Non-interactive stdin (scripts, CI) can't answer a prompt, so
+// it falls back to writing the template untouched — same as before this
+// prompt existed.
+if (!(await isExists())) {
+  if (process.stdin.isTTY) {
+    const { FirstRunSetup } = await import("./components/first-run-setup")
+    const { writeModelsTemplate } = await import("./lib/models")
+    const choice = await new Promise<import("./components/first-run-setup").FirstRunChoice | undefined>(resolve => {
+      const { unmount } = render(
+        <FirstRunSetup
+          onDone={c => {
+            unmount()
+            resolve(c)
+          }}
+          onCancel={() => {
+            unmount()
+            resolve(undefined)
+          }}
+        />
+      )
+    })
+    if (!choice) process.exit(0)
+    if (choice.chatModelId === "kaja-free-chat") {
+      await create(choice.chatModelId)
+    } else {
+      await create()
+      if (choice.template) await writeModelsTemplate(choice.template)
+    }
+  } else {
+    await create()
+  }
+}
 if (!(await validate(true))) {
   console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
   process.exit(1)

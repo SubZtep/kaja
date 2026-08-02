@@ -10,17 +10,22 @@ This package uses Bun. Entry point is **`cli.tsx`** at the package root (not `sr
 bun start                 # from apps/cli
 bun test                  # package tests
 # From monorepo root:
-bun run --filter @kaja/cli start
+bun dev:cli               # interactive — attaches your real TTY, use this one
 bun run --filter @kaja/cli test
 ```
 
-From monorepo root you can also run `bun dev:cli`.
+`bun run --filter @kaja/cli start` also works but runs through Bun's workspace script
+runner, which does not pass your terminal's TTY through to the child process — Ink then
+sees `process.stdin.isTTY` as falsy (skips the first-run prompt, and the main app crashes
+with "Raw mode is not supported"). Always use `bun dev:cli` (or `cd apps/cli && bun run
+cli.tsx` directly) for interactive use.
 
 ## CLI surface
 
-- Flags: `--wizard`, `--config`, `--config-dir`, `-c`/`--continue`, `-s`/`--session <id>`
+- Flags: `--config`, `--config-dir`, `-c`/`--continue`, `-s`/`--session <id>`
 - Subcommands (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
 - Handlers: `lib/memory-cli.ts`, `lib/session-cli.ts`, `lib/telegram-cli.ts`, `lib/web-cli.ts`
+- First run (no `config.json` yet, interactive TTY only): `components/first-run-setup.tsx` asks free hosted chat vs. own provider. Free hosted chat sets `models.chat` to the sentinel `kaja-free-chat`, resolved directly in `lib/openai.ts` (base URL `https://openai.kaja.io`, api key `"kaja"`) without touching `models.toml`. Own provider optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`. Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed.
 
 ## Layout
 

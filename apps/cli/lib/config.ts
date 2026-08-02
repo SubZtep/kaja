@@ -1,9 +1,10 @@
 import { join } from "node:path"
 import { file, write } from "bun"
-// Written on first run: a template config.json with placeholder model ids —
-// the user edits it (and models.toml) directly, there's no setup wizard.
-// TS's built-in resolveJsonModule typing wins over the `text` attribute, so
-// the raw import is typed as the parsed object rather than a string.
+// Written on first run: a template config.json with placeholder model ids,
+// or with models.chat overridden by the first-run prompt (see cli.tsx /
+// components/first-run-setup.tsx). TS's built-in resolveJsonModule typing
+// wins over the `text` attribute, so the raw import is typed as the parsed
+// object rather than a string.
 import rawTemplate from "../../../docs/config/config.json" with { type: "text" }
 import pkg from "../package.json" with { type: "json" }
 import { type KajaConfig, KajaConfigSchema, type KajaSettings } from "../schemas/config"
@@ -147,8 +148,10 @@ export async function saveFetchedChatModel(chatModelId: string) {
   cached = undefined
 }
 
-export async function create() {
+/** @param chatModelId Overrides the template's placeholder models.chat, e.g. for the free hosted tier. */
+export async function create(chatModelId?: string) {
   const f = file(getConfigPath(), { type: "application/json" })
   const withSchema = { $schema: getSchemaUrl(), ...TEMPLATE_JSON }
+  if (chatModelId) withSchema.models = { ...withSchema.models, chat: chatModelId }
   await write(f, JSON.stringify(withSchema, null, 2))
 }

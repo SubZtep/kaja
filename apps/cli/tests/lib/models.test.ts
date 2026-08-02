@@ -1,6 +1,12 @@
-import { expect, test } from "bun:test"
-import { resolveModelById } from "../../lib/models"
+import { afterEach, expect, test } from "bun:test"
+import { tmpdir } from "node:os"
+import { write } from "bun"
 import type { KajaModelsFile } from "../../schemas/models"
+
+process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-models`
+
+const { setConfigDirOverride, getConfigPath } = await import("../../lib/config")
+const { loadModelsFile, resolveModelById, getModelsPath } = await import("../../lib/models")
 
 const DATA: KajaModelsFile = {
   providers: {
@@ -33,4 +39,27 @@ test("resolves a model on a named provider", () => {
 
 test("unknown id resolves to undefined", () => {
   expect(resolveModelById(DATA, "nope")).toBeUndefined()
+})
+
+afterEach(() => {
+  setConfigDirOverride(undefined)
+})
+
+test("free hosted chat with no other task configured: loads an empty file without writing models.toml", async () => {
+  const dir = `${tmpdir()}/kaja-test-models-free-only-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(getConfigPath(), JSON.stringify({ models: { chat: "kaja-free-chat" } }))
+
+  const data = await loadModelsFile()
+  expect(data).toEqual({ providers: {}, models: [] })
+  expect(await Bun.file(getModelsPath()).exists()).toBe(false)
+})
+
+test("free hosted chat plus another configured task: still writes the example template", async () => {
+  const dir = `${tmpdir()}/kaja-test-models-free-plus-task-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(getConfigPath(), JSON.stringify({ models: { chat: "kaja-free-chat", embedding: "embedding-default" } }))
+
+  await loadModelsFile()
+  expect(await Bun.file(getModelsPath()).exists()).toBe(true)
 })

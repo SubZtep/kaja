@@ -2,6 +2,14 @@
 invalidConfig = "Érvénytelen konfigurációs fájl: {path}"
 bye = "Pá, pá!"
 
+[firstRun]
+intro = "Üdv a Kajában! Hogyan szeretnél csevegni?"
+useFree = "Az ingyenes Kaja chat szolgáltatás használata (a Kaja szerverein keresztül)"
+useOwn = "Saját szolgáltató beállítása"
+templateFireworks = "Fireworks (felhő, API kulcs szükséges)"
+templateOllama = "Ollama (helyi, ezen a gépen fut)"
+templateSkip = "Kihagyás — magam állítom be a models.toml fájlt"
+
 [args]
 help = """
 Használat

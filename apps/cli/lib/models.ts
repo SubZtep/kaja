@@ -3,13 +3,24 @@ import { file, TOML, write } from "bun"
 // Written on first run: an example provider/model catalog, sourced from the
 // same file that documents models.toml on the docs site.
 import TEMPLATE from "../../../docs/config/models.fireworks.toml" with { type: "text" }
+import OLLAMA_TEMPLATE from "../../../docs/config/models.ollama.toml" with { type: "text" }
 import { type KajaModelsFile, ModelsFileSchema, type ResolvedModel } from "../schemas/models"
-import { getConfigDir } from "./config"
+import { config, getConfigDir } from "./config"
 import { fetchTomlConfig } from "./config-fetch"
 import { t } from "./i18n"
 
+// Mirrors lib/openai.ts's FREE_CHAT_MODEL_ID — duplicated rather than
+// imported to avoid a cycle (openai.ts imports from this module and runs
+// top-level client setup on import).
+const FREE_CHAT_MODEL_ID = "kaja-free-chat"
+
 export function getModelsPath() {
   return join(getConfigDir(), "models.toml")
+}
+
+/** Writes the chosen example template, for the "configure my own provider" first-run choice. */
+export async function writeModelsTemplate(which: "fireworks" | "ollama") {
+  await write(file(getModelsPath()), which === "ollama" ? OLLAMA_TEMPLATE : TEMPLATE)
 }
 
 /**
@@ -55,17 +66,27 @@ export function resolveModelById(data: KajaModelsFile, id: string): ResolvedMode
 }
 
 /**
- * Load and parse the models file. Missing file: writes the example template
- * and parses that instead. Invalid file: prints the error and exits, same
- * policy as {@link config}.
+ * Load and parse the models file. Missing file: on the free hosted chat
+ * tier (models.chat === FREE_CHAT_MODEL_ID and no other task configured)
+ * there's nothing to look up, so this returns an empty file rather than
+ * writing the Fireworks example template — that free-mode installs stay
+ * free of a models.toml pointing at placeholder credentials. Any other
+ * setup still gets the example template written and parsed. Invalid file:
+ * prints the error and exits, same policy as {@link config}.
  */
 export async function loadModelsFile(): Promise<KajaModelsFile> {
   const modelsPath = getModelsPath()
   const f = file(modelsPath)
+  const exists = await f.exists()
+  if (!exists) {
+    const { models } = await config()
+    const { chat, ...otherTasks } = models
+    const isFreeChatOnly = chat === FREE_CHAT_MODEL_ID && Object.values(otherTasks).every(id => !id)
+    if (isFreeChatOnly) return ModelsFileSchema.parse({})
+    await write(f, TEMPLATE)
+  }
   // Parse TEMPLATE directly rather than reading it back: a freshly written
   // BunFile can report stale (empty) content on an immediate re-read.
-  const exists = await f.exists()
-  if (!exists) await write(f, TEMPLATE)
   const text = exists ? await f.text() : TEMPLATE
   try {
     return ModelsFileSchema.parse(TOML.parse(text))
