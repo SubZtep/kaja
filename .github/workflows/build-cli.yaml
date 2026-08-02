@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "cli@*"
-    paths:
-      - "apps/cli/**"
   workflow_dispatch:
 
 jobs:
