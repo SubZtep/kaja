@@ -2,7 +2,7 @@
   "recommendations": [
     "biomejs.biome",
     "bradlc.vscode-tailwindcss",
-    "expo.vscode-expo-tools"
+    "editorconfig.editorconfig"
   ],
   "unwantedRecommendations": [
     "dbaeumer.vscode-eslint",
