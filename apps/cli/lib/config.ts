@@ -5,12 +5,26 @@ import { file, write } from "bun"
 // TS's built-in resolveJsonModule typing wins over the `text` attribute, so
 // the raw import is typed as the parsed object rather than a string.
 import rawTemplate from "../../../docs/config/config.json" with { type: "text" }
+import pkg from "../package.json" with { type: "json" }
 import { type KajaConfig, KajaConfigSchema, type KajaSettings } from "../schemas/config"
 import { t } from "./i18n"
 import { getPaths } from "./paths"
 
 const TEMPLATE = rawTemplate as unknown as string
 const TEMPLATE_JSON = JSON.parse(TEMPLATE)
+
+// Injected at compile time by CI via `bun build --define CLI_VERSION=...`;
+// undefined when running from source (see lib/args.ts for the same pattern).
+declare const CLI_VERSION: string | undefined
+
+// Pinned to the release tag (auto-version.yaml tags releases as
+// `cli@X.Y.Z`), so the schema always matches the shape this installed CLI
+// version actually validates, even after the schema changes in later
+// releases.
+function getSchemaUrl() {
+  const version = typeof CLI_VERSION === "string" ? CLI_VERSION : pkg.version
+  return `https://raw.githubusercontent.com/SubZtep/kaja/cli@${version}/docs/config/config.schema.json`
+}
 
 // Set once at startup from the --config-dir flag, pre-scanned from argv in
 // cli.tsx before the first config read; only config.json moves — data paths
@@ -134,5 +148,6 @@ export async function saveFetchedChatModel(chatModelId: string) {
 
 export async function create() {
   const f = file(getConfigPath(), { type: "application/json" })
-  await write(f, TEMPLATE)
+  const withSchema = { $schema: getSchemaUrl(), ...TEMPLATE_JSON }
+  await write(f, JSON.stringify(withSchema, null, 2))
 }

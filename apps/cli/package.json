@@ -9,7 +9,8 @@
   "scripts": {
     "start": "bun run cli.tsx",
     "build": "tsc",
-    "test": "bun test"
+    "test": "bun test",
+    "gen-schema": "bun run scripts/gen-schema.ts"
   },
   "//": [
     "marked is pinned to ^15 (not latest) because marked-terminal@7 requires marked >=1 <16",

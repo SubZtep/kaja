@@ -7,7 +7,7 @@ export const KajaSettingsSchema = z.object({
   language: z.enum(["en", "hu"]).optional(),
   // Id of the last-selected persona (see schemas/personas.ts), so the app
   // reopens with it instead of always defaulting to the first one.
-  persona: z.string().min(1).optional()
+  persona: z.string().min(1).optional().describe("Id of the persona to open with (see personas.toml)")
 })
 
 // Every task (chat, embedding, rerank, image-generation, text-to-speech,
@@ -16,7 +16,7 @@ export const KajaSettingsSchema = z.object({
 // name (see lib/models.ts resolveModelById). chat is mandatory — this is a
 // chat app, no meaningful mode without it; every other task is opt-in.
 export const KajaModelsSchema = z.object({
-  chat: z.string().min(1),
+  chat: z.string().min(1).describe("models.toml id to use for chat; the only mandatory model"),
   embedding: z.string().min(1).optional(),
   rerank: z.string().min(1).optional(),
   "image-generation": z.string().min(1).optional(),
@@ -31,24 +31,31 @@ export const KajaModelsSchema = z.object({
 // models.<task> above.
 export const KajaSttSchema = z.object({
   speachesUrl: z.url().optional(),
-  language: z.string().min(1).optional()
+  language: z.string().min(1).optional().describe("Language hint for speech-to-text, e.g. 'en'")
 })
 
 export const KajaTtsSchema = z.object({
   speachesUrl: z.url().optional(),
-  voice: z.string().min(1).optional()
+  voice: z.string().min(1).optional().describe("Voice name to use for text-to-speech")
 })
 
 export const KajaMemorySchema = z.object({
   // Absolute path to the SQLite database file. Omit to use the default XDG
   // data location (see lib/memory-store.ts).
-  dbPath: z.string().min(1).optional()
+  dbPath: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("Absolute path to the SQLite memory database; omit to use the default XDG data location")
 })
 
 // location/webSearch/telegram/api (external service credentials) live in
 // services.toml instead (see schemas/services.ts) — config.json stays
 // local UI/model config.
 export const KajaConfigSchema = z.object({
+  // Editor tooling (e.g. VS Code's JSON language server) uses this to
+  // validate/autocomplete config.json; not consumed by the CLI itself.
+  $schema: z.url().optional(),
   models: KajaModelsSchema,
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),

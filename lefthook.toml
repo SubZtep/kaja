@@ -9,6 +9,11 @@ run = "bun lint:fix"
 stage_fixed = true
 
 [[pre-commit.jobs]]
+run = "bun run --filter @kaja/cli gen-schema"
+glob = ["apps/cli/schemas/config.ts"]
+stage_fixed = true
+
+[[pre-commit.jobs]]
 run = "bun typecheck"
 
 [pre-push]

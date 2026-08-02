@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "models": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "type": "string",
+          "minLength": 1,
+          "description": "models.toml id to use for chat; the only mandatory model"
+        },
+        "embedding": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rerank": {
+          "type": "string",
+          "minLength": 1
+        },
+        "image-generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text-to-speech": {
+          "type": "string",
+          "minLength": 1
+        },
+        "speech-to-text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "chat"
+      ],
+      "additionalProperties": false
+    },
+    "stt": {
+      "type": "object",
+      "properties": {
+        "speachesUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "language": {
+          "description": "Language hint for speech-to-text, e.g. 'en'",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "tts": {
+      "type": "object",
+      "properties": {
+        "speachesUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "voice": {
+          "description": "Voice name to use for text-to-speech",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "memory": {
+      "type": "object",
+      "properties": {
+        "dbPath": {
+          "description": "Absolute path to the SQLite memory database; omit to use the default XDG data location",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "thinking": {
+          "type": "boolean"
+        },
+        "sounds": {
+          "type": "boolean"
+        },
+        "voice": {
+          "type": "boolean"
+        },
+        "language": {
+          "type": "string",
+          "enum": [
+            "en",
+            "hu"
+          ]
+        },
+        "persona": {
+          "description": "Id of the persona to open with (see personas.toml)",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "models"
+  ],
+  "additionalProperties": false
+}
