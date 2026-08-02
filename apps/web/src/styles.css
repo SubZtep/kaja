@@ -3,6 +3,10 @@
 @import "@fontsource-variable/jetbrains-mono";
 @import "@fontsource-variable/manrope";
 
+:root {
+  color-scheme: dark;
+}
+
 @theme {
   --radius-DEFAULT: 0.125rem;
   --radius-lg: 0.25rem;

@@ -129,6 +129,40 @@ export class ModelService {
     }
   }
 
+  /** A random enabled model with its resolved provider, for callers that don't care which model they get. */
+  async getRandomModelWithProvider(): Promise<{ model: Model; provider: Provider } | null> {
+    const { rows } = await this.#db.query(
+      `
+      SELECT m.*,
+             p.name AS provider_name,
+             p.base_url AS provider_base_url,
+             p.api_key AS provider_api_key,
+             p.created_at AS provider_created_at,
+             p.updated_at AS provider_updated_at
+      FROM model m
+      JOIN provider p ON p.id = m.provider_id
+      WHERE m.enabled
+      ORDER BY random()
+      LIMIT 1
+      `
+    )
+
+    const row = rows[0]
+    if (!row) return null
+
+    return {
+      model: this.#rowToModel(row),
+      provider: this.#rowToProvider({
+        id: row.provider_id,
+        name: row.provider_name,
+        base_url: row.provider_base_url,
+        api_key: row.provider_api_key,
+        created_at: row.provider_created_at,
+        updated_at: row.provider_updated_at
+      })
+    }
+  }
+
   /** Enabled models with their provider, for rendering models.toml. */
   async listEnabledWithProviders(): Promise<{ providers: Provider[]; models: Model[] }> {
     const { rows: providerRows } = await this.#db.query(

@@ -17,5 +17,10 @@ stage_fixed = true
 run = "bun typecheck"
 
 [pre-push]
+parallel = true
+
+[[pre-push.jobs]]
+run = "bun lint"
+
 [[pre-push.jobs]]
 run = "bun test"

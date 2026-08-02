@@ -22,6 +22,8 @@ app.use("*", authMiddleware)
 
 // Mount routes
 app.get("/favicon.ico", c => c.body(null, 204))
+app.get("/", c => c.text("Hello, World!", 200))
+app.get("/robots.txt", c => c.text("User-agent: *\nDisallow: /", 200))
 app.use("/auth/*", authRateLimiter)
 app.route("/admin", adminRoutes)
 app.route("/auth", authRoutes)

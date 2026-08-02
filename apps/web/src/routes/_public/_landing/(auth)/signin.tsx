@@ -57,6 +57,8 @@ function SignIn() {
       } finally {
         setLoading(false)
       }
+
+      document.body.classList.add("bg-drift")
     }
   })
 

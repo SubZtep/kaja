@@ -1,0 +1,14 @@
+{
+  "name": "@kaja/openai",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --hot index.ts",
+    "build": "bun build --minify --target bun --outfile dist/index.js index.ts",
+    "start": "bun run dist/index.js"
+  },
+  "dependencies": {
+    "@kaja/logger": "workspace:*"
+  }
+}

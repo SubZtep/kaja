@@ -1,17 +1,8 @@
-const KAJA_API_URL = process.env.KAJA_API_URL
-const MODEL_ID = process.env.MODEL_ID
-const AUTH_TOKEN = process.env.AUTH_TOKEN ?? "kaja"
-const PORT = process.env.PORT ?? 6669
+import { info } from "@kaja/logger"
 
-if (!KAJA_API_URL) {
-  console.error("Missing KAJA_API_URL environment variable")
-  process.exit(1)
-}
-
-if (!MODEL_ID) {
-  console.error("Missing MODEL_ID environment variable")
-  process.exit(1)
-}
+const KAJA_API_URL = process.env.KAJA_API_URL ?? "https://api.kaja.io"
+const CONFIG_API_TOKEN = process.env.CONFIG_API_TOKEN
+const PORT = 6669
 
 type ResolvedModel = {
   id: string
@@ -21,25 +12,35 @@ type ResolvedModel = {
   apiKey: string | null
 }
 
-async function resolveModel(): Promise<ResolvedModel> {
-  const res = await fetch(`${KAJA_API_URL}/config/models/${MODEL_ID}`)
+async function resolveRandomModel(): Promise<ResolvedModel> {
+  const res = await fetch(`${KAJA_API_URL}/config/models`, {
+    headers: { authorization: `Bearer ${CONFIG_API_TOKEN}` }
+  })
   if (!res.ok) {
-    throw new Error(`Failed to resolve model ${MODEL_ID}: ${res.status} ${await res.text()}`)
+    throw new Error(`Failed to resolve a random model: ${res.status} ${await res.text()}`)
   }
   return res.json()
 }
 
-const { baseUrl, apiKey } = await resolveModel()
-
-Bun.serve({
+export default {
   port: PORT,
-  async fetch(req) {
-    if (req.headers.get("authorization") !== `Bearer ${AUTH_TOKEN}`) {
+  idleTimeout: 30,
+  async fetch(req: Request) {
+    if (req.headers.get("authorization") !== `Bearer ${CONFIG_API_TOKEN}`) {
       return new Response("Unauthorized", { status: 401 })
     }
 
+    const { baseUrl, apiKey, model } = await resolveRandomModel()
+    info("Forwarding request to model", { model, baseUrl })
+
     const url = new URL(req.url)
     const target = baseUrl + url.pathname + url.search
+
+    let body: RequestInit["body"] = undefined
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      const reqBody = await req.json()
+      body = JSON.stringify({ ...reqBody, model })
+    }
 
     // forward request as-is (method, headers, body), stream response straight through
     const upstream = await fetch(target, {
@@ -48,7 +49,7 @@ Bun.serve({
         "content-type": req.headers.get("content-type") || "application/json",
         ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {})
       },
-      body: req.method === "GET" || req.method === "HEAD" ? undefined : req.body,
+      body,
       // @ts-expect-error bun supports duplex for streaming request bodies
       duplex: "half"
     })
@@ -60,6 +61,4 @@ Bun.serve({
       headers: upstream.headers
     })
   }
-})
-
-console.log(`Proxy listening on :${PORT} -> ${baseUrl}`)
+}
