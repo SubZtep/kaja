@@ -1,7 +1,6 @@
 import { join } from "node:path"
+import { tomlString } from "@kaja/shared"
 import { file, TOML, write } from "bun"
-// Written on first run: every field commented out, so the file is valid TOML
-// (parses to `{}`) but documents each section without a wizard.
 import TEMPLATE from "../../../docs/config/services.toml" with { type: "text" }
 import { type ServicesFile, ServicesFileSchema } from "../schemas/services"
 import { getConfigDir } from "./config"
@@ -58,12 +57,12 @@ export async function services(): Promise<ServicesFile> {
   return cached
 }
 
-function tomlString(s: string): string {
-  return `"${s.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`
-}
+// export function tomlString(s: string) {
+//   return String.raw`"${s.replaceAll('"', '\\"')}"`
+// }
 
 /** Renders a ServicesFile back to TOML text — flat sections, no arrays except allowedUserIds. */
-function renderServicesToml(data: ServicesFile): string {
+function renderServicesToml(data: ServicesFile) {
   const sections: string[] = []
   if (data.api) sections.push(`[api]\nbaseUrl = ${tomlString(data.api.baseUrl)}`)
   if (data.location)

@@ -51,6 +51,19 @@ function deferred() {
   return { promise, resolve }
 }
 
+/**
+ * Polls instead of sleeping a guessed duration: under load (full suite, CI)\
+ * a fixed sleep is not long enough to guarantee the awaited microtask chain\
+ * (fetch -> stream drain -> consumed) has actually run.
+ */
+async function waitFor(condition: () => boolean, timeoutMs = 2000) {
+  const start = Date.now()
+  while (!condition()) {
+    if (Date.now() - start > timeoutMs) throw new Error("waitFor: condition never became true")
+    await Bun.sleep(1)
+  }
+}
+
 test("pipelining: next synthesis starts before previous playback finishes", async () => {
   const fetched: string[] = []
   globalThis.fetch = (async (_url: string, init: { body: string }) => {
@@ -83,7 +96,7 @@ test("pipelining: next synthesis starts before previous playback finishes", asyn
 
   // With the first utterance consumed but still audibly playing (gate closed),
   // the second must already have been fetched and handed to the sink.
-  await Bun.sleep(10)
+  await waitFor(() => fetched.length >= 2 && played.length >= 2)
   expect(fetched).toEqual(["one", "two"])
   expect(played).toEqual(["one", "two"])
 

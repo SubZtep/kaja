@@ -1,7 +1,7 @@
 # 가자⛲
 
-![Continuous integration](https://github.com/SubZtep/kaja/actions/workflows/ci.yaml/badge.svg)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
+![Continuous integration](https://github.com/SubZtep/kaja/actions/workflows/ci.yaml/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
 > [!IMPORTANT]

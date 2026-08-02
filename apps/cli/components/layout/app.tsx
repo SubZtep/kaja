@@ -18,6 +18,63 @@ import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
 import { UserInput } from "./user-input"
 
+type MenuMode = "main" | "model" | "persona"
+
+// Slash menu (opened by typing "/" in the input): label + action together.
+// An action returning true keeps the menu open (it swapped in a submenu).
+// biome-ignore lint/suspicious/noConfusingVoidType: matches UserInput's onMenuSelect contract
+type MenuCommand = { label: string; run: () => boolean | void }
+
+function buildMainMenu({
+  thinking,
+  sounds,
+  voice,
+  toggleThinking,
+  toggleSounds,
+  toggleVoice,
+  chatModels,
+  setMenuMode
+}: {
+  thinking: boolean
+  sounds: boolean
+  voice: boolean
+  toggleThinking: () => void
+  toggleSounds: () => void
+  toggleVoice: () => void
+  chatModels: ResolvedModel[]
+  setMenuMode: (mode: MenuMode) => void
+}): MenuCommand[] {
+  return [
+    {
+      label: t("menu.toggleThinking", { state: t(thinking ? "menu.on" : "menu.off") }),
+      run: toggleThinking
+    },
+    {
+      label: t("menu.toggleSounds", { state: t(sounds ? "menu.on" : "menu.off") }),
+      run: toggleSounds
+    },
+    {
+      label: t("menu.toggleVoice", { state: t(voice ? "menu.on" : "menu.off") }),
+      run: toggleVoice
+    },
+    {
+      label: t("menu.changeModel"),
+      run: () => {
+        if (chatModels.length === 0) return
+        setMenuMode("model")
+        return true
+      }
+    },
+    {
+      label: t("menu.changePersona"),
+      run: () => {
+        setMenuMode("persona")
+        return true
+      }
+    }
+  ]
+}
+
 export default function App({
   initialSettings,
   models = [],
@@ -91,48 +148,11 @@ export default function App({
   const { columns, rows } = useWindowSize()
 
   const chatModels = models.filter(m => m.task === "chat")
-  const [menuMode, setMenuMode] = useState<"main" | "model" | "persona">("main")
+  const [menuMode, setMenuMode] = useState<MenuMode>("main")
 
-  // Slash menu (opened by typing "/" in the input): label + action together.
-  // An action returning true keeps the menu open (it swapped in a submenu).
-  // biome-ignore lint/suspicious/noConfusingVoidType: matches UserInput's onMenuSelect contract
-  const commands: { label: string; run: () => boolean | void }[] =
+  const commands: MenuCommand[] =
     menuMode === "main"
-      ? [
-          {
-            label: t("menu.toggleThinking", {
-              state: t(thinking ? "menu.on" : "menu.off")
-            }),
-            run: toggleThinking
-          },
-          {
-            label: t("menu.toggleSounds", {
-              state: t(sounds ? "menu.on" : "menu.off")
-            }),
-            run: toggleSounds
-          },
-          {
-            label: t("menu.toggleVoice", {
-              state: t(voice ? "menu.on" : "menu.off")
-            }),
-            run: toggleVoice
-          },
-          {
-            label: t("menu.changeModel"),
-            run: () => {
-              if (chatModels.length === 0) return
-              setMenuMode("model")
-              return true
-            }
-          },
-          {
-            label: t("menu.changePersona"),
-            run: () => {
-              setMenuMode("persona")
-              return true
-            }
-          }
-        ]
+      ? buildMainMenu({ thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice, chatModels, setMenuMode })
       : menuMode === "persona"
         ? personas.map(p => ({
             label: `${p.label}${p.id === persona.id ? " ✓" : ""}`,

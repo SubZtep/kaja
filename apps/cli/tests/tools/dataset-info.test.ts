@@ -86,7 +86,7 @@ test("get_status on a fresh dataset lists all fields unanswered", async () => {
   expect(result).toContain("Version 1.")
   expect(result).toContain("favorite_color")
   expect(result).toContain("notification_pref")
-  expect(result).toContain("accepted answers: email, push, none")
+  expect(result).toContain("accepted answers: email, none, push")
   expect(result).not.toContain("Already answered")
 })
 
@@ -102,7 +102,7 @@ test("answer rejects a value not in the field's accepted list, without persistin
     { owner }
   )
   expect(result).toContain("isn't an accepted answer")
-  expect(result).toContain("email, push, none")
+  expect(result).toContain("email, none, push")
 
   const status = await datasetInfoTool.execute({ action: "get_status", dataset: "onboarding" }, { owner })
   expect(status).not.toContain("Already answered")

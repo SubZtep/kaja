@@ -77,7 +77,7 @@ function formatStatus(
       "Still need:",
       ...unanswered.map(f =>
         f.accepted
-          ? `- ${f.name}: "${f.prompt}" (accepted answers: ${f.accepted.join(", ")})`
+          ? `- ${f.name}: "${f.prompt}" (accepted answers: ${f.accepted.toSorted().join(", ")})`
           : `- ${f.name}: "${f.prompt}"`
       )
     )
@@ -180,7 +180,7 @@ export const datasetInfoTool = tool<Args>({
           if (!match)
             return (
               `"${args.value}" isn't an accepted answer for ${field.name}. ` +
-              `Accepted answers: ${field.accepted.join(", ")}.`
+              `Accepted answers: ${field.accepted.toSorted().join(", ")}.`
             )
         }
 

@@ -171,18 +171,18 @@ test("Ctrl combinations that are not bindings do not insert", () => {
 })
 
 test("mouse wheel / kitty protocol noise do not insert text", () => {
-  expect(edit(state("hi", 2), { input: "[<64;10;5M" })).toBe(null)
-  expect(edit(state("hi", 2), { input: "[<65;1;1m" })).toBe(null)
+  expect(edit(state("hi", 2), { input: "[<64;10;5M" })).toBeNull()
+  expect(edit(state("hi", 2), { input: "[<65;1;1m" })).toBeNull()
   // leftover CSI ? flags u from kitty keyboard enable (was prefilling the prompt)
-  expect(edit(state("", 0), { input: "[?0u" })).toBe(null)
+  expect(edit(state("", 0), { input: "[?0u" })).toBeNull()
 })
 
 test("return submits; tab/Ctrl+arrows out are ignored", () => {
   expect(edit(state("hi", 2), { return: true })).toBe("submit")
-  expect(edit(state("hi", 2), { tab: true })).toBe(null)
+  expect(edit(state("hi", 2), { tab: true })).toBeNull()
   // viewport owns Ctrl/Meta+↑/↓ scrolling
-  expect(edit(state("hi", 2), { upArrow: true, ctrl: true })).toBe(null)
-  expect(edit(state("hi", 2), { downArrow: true, meta: true })).toBe(null)
+  expect(edit(state("hi", 2), { upArrow: true, ctrl: true })).toBeNull()
+  expect(edit(state("hi", 2), { downArrow: true, meta: true })).toBeNull()
 })
 
 test("newline via Shift/Alt/Ctrl+Enter, Ctrl+J, or bare LF", () => {
@@ -226,28 +226,28 @@ test("historyDirection: single-line and empty input recall both ways", () => {
 test("historyDirection: multiline recalls only where the cursor can't move", () => {
   const v = "a\nb\nc"
   // middle line: both directions are cursor movement
-  expect(historyDirection(v, 2, arrow(true))).toBe(null)
-  expect(historyDirection(v, 2, arrow(false))).toBe(null)
+  expect(historyDirection(v, 2, arrow(true))).toBeNull()
+  expect(historyDirection(v, 2, arrow(false))).toBeNull()
   // first line: up recalls, down moves
   expect(historyDirection(v, 0, arrow(true))).toBe(-1)
-  expect(historyDirection(v, 0, arrow(false))).toBe(null)
+  expect(historyDirection(v, 0, arrow(false))).toBeNull()
   // last line: down recalls, up moves
   expect(historyDirection(v, 4, arrow(false))).toBe(1)
-  expect(historyDirection(v, 4, arrow(true))).toBe(null)
+  expect(historyDirection(v, 4, arrow(true))).toBeNull()
 })
 
 test("historyDirection: soft-wrapped lines count as lines", () => {
   // "aaaa bbbb" at width 4 wraps to "aaaa" / "bbbb"
   const v = "aaaa bbbb"
-  expect(historyDirection(v, 7, arrow(true), 4)).toBe(null)
+  expect(historyDirection(v, 7, arrow(true), 4)).toBeNull()
   expect(historyDirection(v, 7, arrow(false), 4)).toBe(1)
   expect(historyDirection(v, 1, arrow(true), 4)).toBe(-1)
-  expect(historyDirection(v, 1, arrow(false), 4)).toBe(null)
+  expect(historyDirection(v, 1, arrow(false), 4)).toBeNull()
 })
 
 test("historyDirection: Ctrl/Meta combos and non-vertical keys stay null", () => {
-  expect(historyDirection("hi", 1, arrow(true, { ctrl: true }))).toBe(null)
-  expect(historyDirection("hi", 1, arrow(false, { meta: true }))).toBe(null)
+  expect(historyDirection("hi", 1, arrow(true, { ctrl: true }))).toBeNull()
+  expect(historyDirection("hi", 1, arrow(false, { meta: true }))).toBeNull()
   expect(
     historyDirection("hi", 1, {
       upArrow: false,
@@ -255,5 +255,5 @@ test("historyDirection: Ctrl/Meta combos and non-vertical keys stay null", () =>
       ctrl: false,
       meta: false
     })
-  ).toBe(null)
+  ).toBeNull()
 })

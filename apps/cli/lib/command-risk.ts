@@ -5,19 +5,30 @@
  * advisory cue, not a sandbox.
  */
 const DANGEROUS_PATTERNS = [
-  /\brm\s+(-\w*r\w*f|-\w*f\w*r|--recursive.*--force|--force.*--recursive)\b/i,
-  /\bgit\s+push\b.*(--force|-f)\b/i,
+  /\brm\s+(-\w*r\w*f|-\w*f\w*r)\b/i,
   /\bgit\s+reset\s+--hard\b/i,
   /\bdrop\s+(table|database)\b/i,
   /\bsudo\b/i,
   /:\(\)\s*\{\s*:\|:&\s*\};:/, // fork bomb
   /\bmkfs(\.\w+)?\b/i,
   />\s*\/dev\/sd\w*/,
-  /\bchmod\s+-R\s+\d*\s*\/(\s|$)/,
-  /\bchown\s+-R\b.*\s\/(\s|$)/
+  /\bchmod\s+-R\s+\d*\s*\/(\s|$)/
 ] as const
+
+function isDangerousRm(command: string): boolean {
+  return /\brm\b/i.test(command) && /--recursive\b/i.test(command) && /--force\b/i.test(command)
+}
+
+function isForcePush(command: string): boolean {
+  return /\bgit\s+push\b/i.test(command) && /(--force\b|\B-f\b)/i.test(command)
+}
+
+function isRecursiveChownOnRoot(command: string): boolean {
+  return /\bchown\s+-R\b/i.test(command) && /\s\/(\s|$)/.test(command)
+}
 
 /** Whether a shell command matches a known-risky pattern (rm -rf, force push, sudo, ...). */
 export function isDangerousCommand(command: string): boolean {
-  return DANGEROUS_PATTERNS.some(pattern => pattern.test(command))
+  if (DANGEROUS_PATTERNS.some(pattern => pattern.test(command))) return true
+  return isDangerousRm(command) || isForcePush(command) || isRecursiveChownOnRoot(command)
 }

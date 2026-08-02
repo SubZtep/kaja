@@ -1,8 +1,5 @@
 import type { McpServer, Model, Provider } from "@kaja/schema"
-
-function tomlString(s: string): string {
-  return `"${s.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`
-}
+import { tomlString } from "@kaja/shared"
 
 export function renderMcpToml(servers: McpServer[]): string {
   return servers

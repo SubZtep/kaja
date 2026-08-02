@@ -26,10 +26,7 @@ Examples
   $ kaja --config
   /home/dcr/.config/kaja/config.json
   $ kaja config fetch --api-url http://localhost:3001
-  $ kaja memory list
-  $ kaja memory forget "test:*"
   $ kaja --continue
-  $ kaja session list
 """
 clipboardFailed = "Clipboard tool failed"
 
@@ -165,4 +162,3 @@ listening = "Kaja web UI: {url} (Ctrl+C to stop)"
 
 [agent]
 replyLanguage = "The user speaks English. Always reply in English, including questions asked through the ask_user tool."
-

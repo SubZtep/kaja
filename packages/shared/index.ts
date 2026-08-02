@@ -68,3 +68,8 @@ export function isItTrue(value = "") {
   const normalized = value.trim().toLowerCase()
   return normalized === "true" || normalized === "1" || normalized === "on" || normalized.startsWith("y")
 }
+
+/** Escape a string for TOML encoding. */
+export function tomlString(s: string) {
+  return `"${s.replaceAll('"', '\\"')}"`
+}

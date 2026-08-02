@@ -157,6 +157,46 @@ export function ChatViewport({
     return () => clearTimeout(timer)
   }, [events, partial, pending, thinking, topPad, bottomChromeKey])
 
+  // Un-stick, run a scroll action, then resync stick/affordance state. No-op
+  // when there's nothing to scroll, so it never creates empty overscroll.
+  const scrollIfPossible = (maxScroll: number, run: () => void) => {
+    if (maxScroll <= 0) return
+    setStick(false)
+    run()
+    updateStickFromView()
+  }
+
+  const handleWheelInput = (view: VirtualScrollRef, input: string, maxScroll: number) => {
+    const wheel = parseWheelDirection(input)
+    if (wheel === "up") scrollIfPossible(maxScroll, () => scrollByClamped(view, -WHEEL_LINES))
+    else if (wheel === "down") scrollIfPossible(maxScroll, () => scrollByClamped(view, WHEEL_LINES))
+  }
+
+  const handleKeyInput = (
+    view: VirtualScrollRef,
+    key: Parameters<Parameters<typeof useInput>[0]>[1],
+    maxScroll: number
+  ) => {
+    if (key.ctrl && key.end) {
+      setStick(true)
+      view.scrollToBottom()
+      updateStickFromView()
+      return
+    }
+    const page = Math.max(1, (view.getViewportHeight() || 10) - 1)
+    if (key.pageUp) {
+      scrollIfPossible(maxScroll, () => scrollByClamped(view, -page))
+    } else if (key.pageDown) {
+      scrollIfPossible(maxScroll, () => scrollByClamped(view, page))
+    } else if (key.ctrl && key.upArrow) {
+      scrollIfPossible(maxScroll, () => scrollByClamped(view, -3))
+    } else if (key.ctrl && key.downArrow) {
+      scrollIfPossible(maxScroll, () => scrollByClamped(view, 3))
+    } else if (key.ctrl && key.home) {
+      scrollIfPossible(maxScroll, () => clampScrollTo(view, 0))
+    }
+  }
+
   useInput((input, key) => {
     const view = scrollRef.current
     if (!view) return
@@ -165,60 +205,11 @@ export function ChatViewport({
     const maxScroll = view.getBottomOffset()
 
     if (isTerminalMouseSequence(input)) {
-      const wheel = parseWheelDirection(input)
-      if (wheel === "up") {
-        if (maxScroll <= 0) return
-        setStick(false)
-        scrollByClamped(view, -WHEEL_LINES)
-        updateStickFromView()
-      } else if (wheel === "down") {
-        if (maxScroll <= 0) return
-        scrollByClamped(view, WHEEL_LINES)
-        updateStickFromView()
-      }
+      handleWheelInput(view, input, maxScroll)
       return
     }
 
-    const page = Math.max(1, (view.getViewportHeight() || 10) - 1)
-
-    if (key.pageUp) {
-      if (maxScroll <= 0) return
-      setStick(false)
-      scrollByClamped(view, -page)
-      updateStickFromView()
-      return
-    }
-    if (key.pageDown) {
-      if (maxScroll <= 0) return
-      scrollByClamped(view, page)
-      updateStickFromView()
-      return
-    }
-    if (key.ctrl && key.upArrow) {
-      if (maxScroll <= 0) return
-      setStick(false)
-      scrollByClamped(view, -3)
-      updateStickFromView()
-      return
-    }
-    if (key.ctrl && key.downArrow) {
-      if (maxScroll <= 0) return
-      scrollByClamped(view, 3)
-      updateStickFromView()
-      return
-    }
-    if (key.ctrl && key.home) {
-      if (maxScroll <= 0) return
-      setStick(false)
-      clampScrollTo(view, 0)
-      updateStickFromView()
-      return
-    }
-    if (key.ctrl && key.end) {
-      setStick(true)
-      view.scrollToBottom()
-      updateStickFromView()
-    }
+    handleKeyInput(view, key, maxScroll)
   })
 
   const showAffordance = canScroll && !stuckToBottom
