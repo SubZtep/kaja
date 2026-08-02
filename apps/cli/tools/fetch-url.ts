@@ -1,6 +1,6 @@
 import { Readability } from "@mozilla/readability"
 import { parseHTML } from "linkedom"
-import { ToolError, tool } from "../lib/agents"
+import { ToolError, tool } from "../lib/agent/agents"
 
 /**
  * Fetches a URL and returns its content as plain text.

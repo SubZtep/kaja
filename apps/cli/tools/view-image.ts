@@ -1,5 +1,5 @@
 import { file } from "bun"
-import { tool } from "../lib/agents"
+import { tool } from "../lib/agent/agents"
 
 /**
  * Lets the agent view an image file by returning it as a vision content

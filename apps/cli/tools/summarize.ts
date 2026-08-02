@@ -1,5 +1,5 @@
-import { tool } from "../lib/agents"
-import { chatModelId, client } from "../lib/openai"
+import { tool } from "../lib/agent/agents"
+import { chatModelId, client } from "../lib/models/openai"
 
 /**
  * Summarizes a piece of text using the LLM.

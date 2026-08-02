@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { TOML } from "bun"
-import { resolveModels } from "../../lib/models"
+import { resolveModels } from "../../lib/models/models"
 import { ModelsFileSchema } from "../../schemas/models"
 
 const parse = (toml: string) => ModelsFileSchema.parse(TOML.parse(toml))

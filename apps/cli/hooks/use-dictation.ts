@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import { createLocalSource } from "../lib/audio"
-import { createStt, type Stt, type SttState } from "../lib/stt"
+import { createLocalSource } from "../lib/audio/audio"
+import { createStt, type Stt, type SttState } from "../lib/audio/stt"
 
 /**
  * Dictation for the text input: while `listening`, spoken phrases are

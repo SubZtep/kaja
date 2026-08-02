@@ -3,9 +3,9 @@ import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import { write } from "bun"
 import OpenAI from "openai"
-import { ToolError, tool } from "../lib/agents"
-import { config } from "../lib/config"
-import { loadModelsFile, resolveModelById } from "../lib/models"
+import { ToolError, tool } from "../lib/agent/agents"
+import { config } from "../lib/config/config"
+import { loadModelsFile, resolveModelById } from "../lib/models/models"
 import { getPaths } from "../lib/paths"
 
 /**

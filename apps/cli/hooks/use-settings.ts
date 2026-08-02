@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { saveSettings } from "../lib/config"
+import { saveSettings } from "../lib/config/config"
 import { log } from "../lib/logger"
 import type { KajaSettings } from "../schemas/config"
 

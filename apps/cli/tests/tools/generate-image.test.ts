@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-generate-image`
 
-const { saveConfig } = await import("../../lib/config")
-const { getModelsPath } = await import("../../lib/models")
+const { saveConfig } = await import("../../lib/config/config")
+const { getModelsPath } = await import("../../lib/models/models")
 
 const MODELS_TOML = `
 [providers.default]

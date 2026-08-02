@@ -1,4 +1,4 @@
-import { tool } from "../lib/agents"
+import { tool } from "../lib/agent/agents"
 
 /**
  * Gets the current date and time in a given timezone, formatted as an

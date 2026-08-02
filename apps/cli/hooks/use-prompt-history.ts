@@ -1,5 +1,5 @@
 import { useMemo, useRef } from "react"
-import { commit, createPromptHistory, markEdited, type PromptHistory, recall } from "../lib/prompt-history"
+import { commit, createPromptHistory, markEdited, type PromptHistory, recall } from "../lib/session/prompt-history"
 
 /**
  * Holds a {@link PromptHistory} in a ref — recall never re-renders by

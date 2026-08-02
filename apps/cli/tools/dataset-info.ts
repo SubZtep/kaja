@@ -1,12 +1,12 @@
-import { DATASET_INFO_TOOL, LOCAL_OWNER_CTX, tool } from "../lib/agents"
-import { loadDataset, loadDatasets } from "../lib/datasets"
+import { DATASET_INFO_TOOL, LOCAL_OWNER_CTX, tool } from "../lib/agent/agents"
 import {
   latestDatasetVersion,
   loadDatasetAnswers,
   loadDatasetVersionCompletedAt,
   markDatasetVersionComplete,
   saveDatasetAnswer
-} from "../lib/memory-store"
+} from "../lib/memory/store"
+import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 import { normalizeAnswer } from "../schemas/datasets"
 
 type Args =

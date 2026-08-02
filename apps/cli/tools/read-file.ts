@@ -1,4 +1,4 @@
-import { tool } from "../lib/agents"
+import { tool } from "../lib/agent/agents"
 
 /**
  * Reads a text file from disk.

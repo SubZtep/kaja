@@ -1,131 +1,32 @@
-// supports-hyperlinks (used by marked-terminal for clickable links) only
-// recognizes a narrow allowlist of terminals via TERM_PROGRAM/VTE_VERSION;
-// it misses terminals like Alacritty unless TERM is literally "alacritty",
-// so links silently render as "text (url)" instead of OSC 8 hyperlinks.
-// Force it on: it must be set before marked-terminal's first import
-// anywhere, since supports-hyperlinks reads process.env once at module load.
-if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
-
-import { resolve } from "node:path"
 import { color } from "bun"
 import { render } from "ink"
 import { InkPictureProvider } from "ink-picture"
-import { config, create, getConfigPath, isExists, readConfigLoose, setConfigDirOverride, validate } from "./lib/config"
-import { detectLanguage, setLanguage, t } from "./lib/i18n"
+import { applyConfigDirOverride, detectAndSetLanguage } from "./lib/cli/bootstrap"
+import { dispatchEarlySubcommands, dispatchTelegram } from "./lib/cli/dispatch"
+import { runFirstRunIfNeeded } from "./lib/cli/first-run"
+import { config, getConfigPath, validate } from "./lib/config/config"
+import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
-import { loadModels } from "./lib/models"
-import { loadPersonas } from "./lib/personas"
-import { readServicesLoose } from "./lib/services"
-
-// The TUI owns the terminal: unless the user asked for a level explicitly,
-// silence pino's info chatter (stt/tts progress lines go to stderr and would
-// scribble over the Ink UI).
-if (!process.env.LOG_LEVEL) log.level = "warn"
+import { loadModels } from "./lib/models/models"
+import { loadPersonas } from "./lib/personas/personas"
 
 log.trace("Startup")
 
-// --config-dir is pre-scanned from argv instead of read from meow: it must
-// take effect before the language-detecting config read just below, and the
-// args import has to come after that read (meow builds --help at module
-// load). The flag is still declared in lib/args.ts so --help documents it.
-{
-  const argv = process.argv.slice(2)
-  const i = argv.findIndex(a => a === "--config-dir" || a.startsWith("--config-dir="))
-  let value: string | undefined
-  if (i === -1) {
-    value = undefined
-  } else if (argv[i].startsWith("--config-dir=")) {
-    value = argv[i].slice("--config-dir=".length)
-  } else {
-    value = argv[i + 1]
-  }
-  if (value) setConfigDirOverride(resolve(value))
-}
-
-// i18n first: meow builds --help at module load, so the language must be set
-// before the args import. Config wins; without one (or on first run) the
-// system locale decides.
-const loose = await readConfigLoose()
-const lang = loose.settings?.language
-setLanguage(lang === "hu" || lang === "en" ? lang : detectLanguage())
+// --config-dir must take effect before the language-detecting config read
+// just below, and the args import has to come after that read (meow builds
+// --help at module load).
+applyConfigDirOverride(process.argv.slice(2))
+await detectAndSetLanguage()
 
 // Meow runs at module load (exits on --help/--version/--config). Before the
 // config guard on purpose, so those flags work even with a missing or
 // invalid config.
-const { cli } = await import("./lib/args")
+const { cli } = await import("./lib/cli/args")
 
-// Memory subcommand: before the config guard on purpose — browsing and
-// managing memory must work even with a missing or invalid LLM config.
-if (cli.input[0] === "memory") {
-  const { runMemoryCli } = await import("./lib/memory-cli")
-  const { code, text } = await runMemoryCli(cli.input.slice(1))
-  console.log(text)
-  process.exit(code)
-}
+await dispatchEarlySubcommands(cli)
 
-// Session subcommand: same deal — browsing past sessions must work even
-// with a missing or invalid LLM config.
-if (cli.input[0] === "session") {
-  const { runSessionCli } = await import("./lib/session-cli")
-  const { code, text } = await runSessionCli(cli.input.slice(1))
-  console.log(text)
-  process.exit(code)
-}
+await runFirstRunIfNeeded()
 
-// Web subcommand: same deal — the config/memory browser is most useful
-// exactly when the setup is broken, so it must run without a valid config.
-if (cli.input[0] === "web") {
-  const { runWebCli } = await import("./lib/web-cli")
-  process.exit(await runWebCli({ port: cli.flags.port }))
-}
-
-// Config subcommand: same deal — `kaja config fetch` is how a fresh install
-// (or a broken one) gets real config.json/models.toml/services.toml files in
-// the first place, so it must work without any of them already in place.
-// --api-url substitutes for services.toml's [api] baseUrl until fetch
-// persists it.
-if (cli.input[0] === "config") {
-  const { runConfigCli } = await import("./lib/config-cli")
-  const looseServices = await readServicesLoose()
-  const { code, text } = await runConfigCli(cli.input.slice(1), looseServices, { apiUrl: cli.flags.apiUrl })
-  console.log(text)
-  process.exit(code)
-}
-
-// First run: interactively ask free hosted chat vs. own provider, so a new
-// user isn't left with a template pointing at a models.toml id that doesn't
-// exist yet. Non-interactive stdin (scripts, CI) can't answer a prompt, so
-// it falls back to writing the template untouched — same as before this
-// prompt existed.
-if (!(await isExists())) {
-  if (process.stdin.isTTY) {
-    const { FirstRunSetup } = await import("./components/first-run-setup")
-    const { writeModelsTemplate } = await import("./lib/models")
-    const choice = await new Promise<import("./components/first-run-setup").FirstRunChoice | undefined>(resolve => {
-      const { unmount } = render(
-        <FirstRunSetup
-          onDone={c => {
-            unmount()
-            resolve(c)
-          }}
-          onCancel={() => {
-            unmount()
-            resolve(undefined)
-          }}
-        />
-      )
-    })
-    if (!choice) process.exit(0)
-    if (choice.chatModelId === "kaja-free-chat") {
-      await create(choice.chatModelId)
-    } else {
-      await create()
-      if (choice.template) await writeModelsTemplate(choice.template)
-    }
-  } else {
-    await create()
-  }
-}
 if (!(await validate(true))) {
   console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
   process.exit(1)
@@ -136,9 +37,9 @@ if (!(await validate(true))) {
 // before the first-run flow above.
 const { default: App } = await import("./components/layout/app")
 const { getDefaultTools } = await import("./tools")
-const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("./lib/session-store")
-const { loadMemory, resolveMemoryDbPath } = await import("./lib/memory-store")
-const { chatModelId } = await import("./lib/openai")
+const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("./lib/session/store")
+const { loadMemory, resolveMemoryDbPath } = await import("./lib/memory/store")
+const { chatModelId } = await import("./lib/models/openai")
 
 // --continue resumes the most recent session, --session <id> a specific
 // one; either way the restored conversation is handed to App as a prop.
@@ -192,18 +93,7 @@ process.on("SIGTERM", async () => {
 // since this path never touches the terminal UI at all. Runs until killed
 // (Ctrl+C/SIGTERM), reusing the shutdown()/closeTools() cleanup already
 // wired above.
-if (cli.input[0] === "telegram") {
-  const { runTelegramCli } = await import("./lib/telegram-cli")
-  const { services } = await import("./lib/services")
-  const code = await runTelegramCli({
-    services: await services(),
-    tools,
-    personas,
-    models
-  })
-  await shutdown()
-  process.exit(code)
-}
+await dispatchTelegram(cli, { tools, personas, models, shutdown })
 
 // Alternate screen: full-viewport app (header / chat / input). Restores the
 // primary buffer on exit; no terminal scrollback while running.

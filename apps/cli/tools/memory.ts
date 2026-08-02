@@ -1,5 +1,5 @@
-import { REMEMBER_NOTE_TOOL, tool } from "../lib/agents"
-import { forgetNotes, loadMemory, noteHeader, saveMemory } from "../lib/memory-store"
+import { REMEMBER_NOTE_TOOL, tool } from "../lib/agent/agents"
+import { forgetNotes, loadMemory, noteHeader, saveMemory } from "../lib/memory/store"
 import type { MemoryImportance } from "../schemas/memory"
 
 const IMPORTANCE_WEIGHT: Record<MemoryImportance, number> = {

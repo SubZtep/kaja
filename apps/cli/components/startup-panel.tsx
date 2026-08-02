@@ -1,7 +1,7 @@
 import { Box, Text } from "ink"
 import { useEffect, useState } from "react"
 import { t } from "../lib/i18n"
-import { checkModelAvailability } from "../lib/model-check"
+import { checkModelAvailability } from "../lib/models/check"
 import type { ResolvedModel } from "../schemas/models"
 
 type Availability = "pending" | "up" | "down"

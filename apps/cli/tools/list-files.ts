@@ -1,4 +1,4 @@
-import { tool } from "../lib/agents"
+import { tool } from "../lib/agent/agents"
 
 /**
  * Lists files under a directory, optionally by glob pattern.

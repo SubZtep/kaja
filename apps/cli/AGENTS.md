@@ -24,8 +24,8 @@ cli.tsx` directly) for interactive use.
 
 - Flags: `--config`, `--config-dir`, `-c`/`--continue`, `-s`/`--session <id>`
 - Subcommands (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
-- Handlers: `lib/memory-cli.ts`, `lib/session-cli.ts`, `lib/telegram-cli.ts`, `lib/web-cli.ts`
-- First run (no `config.json` yet, interactive TTY only): `components/first-run-setup.tsx` asks free hosted chat vs. own provider. Free hosted chat sets `models.chat` to the sentinel `kaja-free-chat`, resolved directly in `lib/openai.ts` (base URL `https://openai.kaja.io`, api key `"kaja"`) without touching `models.toml`. Own provider optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`. Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed.
+- Handlers: `lib/memory/cli.ts`, `lib/session/cli.ts`, `lib/telegram/cli.ts`, `lib/web/cli.ts`
+- First run (no `config.json` yet, interactive TTY only): `components/first-run-setup.tsx` asks free hosted chat vs. own provider. Free hosted chat sets `models.chat` to the sentinel `kaja-free-chat`, resolved directly in `lib/models/openai.ts` (base URL `https://openai.kaja.io`, api key `"kaja"`) without touching `models.toml`. Own provider optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`. Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed. Dispatch glue for all of this lives in `lib/cli/` (`args.ts`, `bootstrap.ts`, `dispatch.ts`, `first-run.tsx`).
 
 ## Layout
 
@@ -33,7 +33,8 @@ cli.tsx` directly) for interactive use.
 cli.tsx                 # entry
 components/             # Ink UI (layout, inputs, timeline, wizard, …)
 hooks/                  # agent, settings, voice, dictation, sounds, …
-lib/                    # agents, config, models, personas, MCP, telegram, tools glue, …
+lib/                    # domain subfolders: cli, agent, config, models, personas, memory,
+                        # session, telegram, audio, mcp, web; cross-cutting utils at lib/ root
 schemas/                # Zod for config, personas, models, sessions, MCP, datasets
 tools/                  # LLM tools (files, web, memory, image, summarize, …)
 locales/                # en.toml, hu.toml
@@ -51,7 +52,7 @@ Default config **templates** (first-run / wizard) live at **repo root** `docs/co
 - `docs/config/personas/*.toml`
 - `docs/config/datasets/`
 
-CLI source imports them as `../../../docs/config/...` from `lib/` and `components/`.  
+CLI source imports them as `../../../../docs/config/...` from `lib/<domain>/*.ts`.  
 GitHub Pages content is also under monorepo `docs/`.
 
 ## Conventions
@@ -60,7 +61,7 @@ GitHub Pages content is also under monorepo `docs/`.
 
 - Fetch current docs for dependency versions (Context7) when using libraries
 - Run lint before commit (monorepo `bun lint` or package biome if configured)
-- User-facing strings go through `t()` from `lib/i18n` with keys in **both** `locales/en.toml` and `locales/hu.toml`
+- User-facing strings go through `t()` from `lib/i18n.ts` with keys in **both** `locales/en.toml` and `locales/hu.toml`
 - Write short, explicit TSDoc on non-obvious exports
 
 ### Ask first
@@ -78,8 +79,8 @@ GitHub Pages content is also under monorepo `docs/`.
 ### Code style
 
 - Biome formatting (double quotes, etc. via monorepo config)
-- Prefer small focused modules under `lib/`
-- Dangerous shell commands: gate via `lib/command-risk.ts` / confirm UX
+- Prefer small focused modules under `lib/`, grouped into the domain subfolder they belong to
+- Dangerous shell commands: gate via `lib/agent/command-risk.ts` / confirm UX
 
 ### Testing
 

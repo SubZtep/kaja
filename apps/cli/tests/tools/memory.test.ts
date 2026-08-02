@@ -36,7 +36,7 @@ task = "chat"
 `
 )
 
-const { saveMemory } = await import("../../lib/memory-store")
+const { saveMemory } = await import("../../lib/memory/store")
 const { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool } = await import("../../tools/memory")
 
 afterEach(async () => {
@@ -61,7 +61,7 @@ test("remember_note upserts by key, preserving createdAt", async () => {
     content: "Andras",
     importance: "low"
   })
-  const first = (await import("../../lib/memory-store")).loadMemory
+  const first = (await import("../../lib/memory/store")).loadMemory
   const before = await first()
   const createdAt = before["user:name"]!.createdAt
 

@@ -1,6 +1,6 @@
-import { ToolError, type ToolResult, tool } from "../lib/agents"
-import { tryLookupMyLocation } from "../lib/geo"
-import { services } from "../lib/services"
+import { ToolError, type ToolResult, tool } from "../lib/agent/agents"
+import { tryLookupMyLocation } from "../lib/agent/geo"
+import { services } from "../lib/config/services"
 
 /**
  * Searches the web via Brave Search API.

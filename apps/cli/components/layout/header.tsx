@@ -1,6 +1,6 @@
 import { Box, Text } from "ink"
 import Gradient from "ink-gradient"
-import { describeToolCall } from "../../lib/tool-labels"
+import { describeToolCall } from "../../lib/agent/tool-labels"
 import { Spinner } from "../elem/spinner"
 import { MonsterMate } from "../monster"
 

@@ -1,6 +1,6 @@
-import { ToolError, tool } from "../lib/agents"
-import { config } from "../lib/config"
-import { loadModelsFile, resolveModelById } from "../lib/models"
+import { ToolError, tool } from "../lib/agent/agents"
+import { config } from "../lib/config/config"
+import { loadModelsFile, resolveModelById } from "../lib/models/models"
 
 /**
  * Reranks a list of documents by relevance to a query, using the model

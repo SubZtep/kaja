@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-summarize`
 
-mock.module("../../lib/openai", () => ({
+mock.module("../../lib/models/openai", () => ({
   chatModelId: "test-model",
   client: {
     chat: {

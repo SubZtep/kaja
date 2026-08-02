@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react"
-import { createLocalSink } from "../lib/audio"
+import { createLocalSink } from "../lib/audio/audio"
+import { toSpeakable } from "../lib/audio/speakable"
+import { createTts, warmupTts } from "../lib/audio/tts"
 import { log } from "../lib/logger"
-import { toSpeakable } from "../lib/speakable"
-import { createTts, warmupTts } from "../lib/tts"
 import type { TimelineEvent } from "./use-agent"
 
 /** The text an event "says" out loud, or null for silent event types. */

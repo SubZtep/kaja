@@ -57,7 +57,7 @@ writeFileSync(
   })
 )
 
-const { saveMemory } = await import("../../lib/memory-store")
+const { saveMemory } = await import("../../lib/memory/store")
 const { datasetInfoTool } = await import("../../tools/dataset-info")
 
 afterEach(async () => {
