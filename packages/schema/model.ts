@@ -62,6 +62,14 @@ export const listModelsResponseSchema = z.object({
   models: z.array(modelSchema)
 })
 
+export const resolvedModelSchema = z.object({
+  id: z.string(),
+  model: z.string(),
+  tasks: z.array(modelTaskSchema),
+  baseUrl: z.url(),
+  apiKey: z.string().nullable()
+})
+
 export type ModelTask = z.infer<typeof modelTaskSchema>
 export type Provider = z.infer<typeof providerSchema>
 export type CreateProviderRequest = z.infer<typeof createProviderRequestSchema>
@@ -71,3 +79,4 @@ export type Model = z.infer<typeof modelSchema>
 export type CreateModelRequest = z.infer<typeof createModelRequestSchema>
 export type UpdateModelRequest = z.infer<typeof updateModelRequestSchema>
 export type ListModelsResponse = z.infer<typeof listModelsResponseSchema>
+export type ResolvedModel = z.infer<typeof resolvedModelSchema>

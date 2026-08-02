@@ -1,11 +1,35 @@
-const OPENAI_URL = process.env.OPENAI_URL
+const KAJA_API_URL = process.env.KAJA_API_URL
+const MODEL_ID = process.env.MODEL_ID
 const AUTH_TOKEN = process.env.AUTH_TOKEN ?? "kaja"
 const PORT = process.env.PORT ?? 6669
 
-if (!OPENAI_URL) {
-  console.error("Missing OPENAI_URL environment variables")
+if (!KAJA_API_URL) {
+  console.error("Missing KAJA_API_URL environment variable")
   process.exit(1)
 }
+
+if (!MODEL_ID) {
+  console.error("Missing MODEL_ID environment variable")
+  process.exit(1)
+}
+
+type ResolvedModel = {
+  id: string
+  model: string
+  tasks: string[]
+  baseUrl: string
+  apiKey: string | null
+}
+
+async function resolveModel(): Promise<ResolvedModel> {
+  const res = await fetch(`${KAJA_API_URL}/config/models/${MODEL_ID}`)
+  if (!res.ok) {
+    throw new Error(`Failed to resolve model ${MODEL_ID}: ${res.status} ${await res.text()}`)
+  }
+  return res.json()
+}
+
+const { baseUrl, apiKey } = await resolveModel()
 
 Bun.serve({
   port: PORT,
@@ -15,13 +39,14 @@ Bun.serve({
     }
 
     const url = new URL(req.url)
-    const target = OPENAI_URL + url.pathname + url.search
+    const target = baseUrl + url.pathname + url.search
 
     // forward request as-is (method, headers, body), stream response straight through
     const upstream = await fetch(target, {
       method: req.method,
       headers: {
-        "content-type": req.headers.get("content-type") || "application/json"
+        "content-type": req.headers.get("content-type") || "application/json",
+        ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {})
       },
       body: req.method === "GET" || req.method === "HEAD" ? undefined : req.body,
       // @ts-expect-error bun supports duplex for streaming request bodies
@@ -37,4 +62,4 @@ Bun.serve({
   }
 })
 
-console.log(`Proxy listening on :${PORT} -> ${OPENAI_URL}`)
+console.log(`Proxy listening on :${PORT} -> ${baseUrl}`)
