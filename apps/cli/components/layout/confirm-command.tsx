@@ -1,7 +1,7 @@
 import { Box, Text } from "ink"
 import { isDangerousCommand } from "../../lib/command-risk"
 import { t } from "../../lib/i18n"
-import { Menu } from "../menu"
+import { SelectMenu } from "../select-menu"
 
 const MAX_COMMAND_LINES = 6
 
@@ -42,7 +42,7 @@ export function ConfirmCommand({
       {running ? (
         <Text dimColor>{t("confirmCommand.running")}</Text>
       ) : (
-        <Menu
+        <SelectMenu
           items={[t("confirmCommand.yes"), t("confirmCommand.no")]}
           onSelect={index => onResolve(index === 0)}
           onClose={() => onResolve(false)}

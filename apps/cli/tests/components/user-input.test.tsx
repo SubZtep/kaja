@@ -24,7 +24,7 @@ test("slash menu: open, navigate, select, dismiss", async () => {
 
   // down arrow moves the selection
   await t.press("\x1b[B")
-  expect(t.lastFrame()).toContain("> Toggle sounds")
+  expect(t.lastFrame()).toContain("❯ Toggle sounds")
 
   // return fires onMenuSelect with the highlighted index and closes the menu
   await t.press("\r")
@@ -33,7 +33,7 @@ test("slash menu: open, navigate, select, dismiss", async () => {
 
   // reopening starts from the first item again
   await t.press("/")
-  expect(t.lastFrame()).toContain("> Toggle thinking")
+  expect(t.lastFrame()).toContain("❯ Toggle thinking")
 
   // escape dismisses without selecting
   await t.press("\x1b")
@@ -183,11 +183,11 @@ test("submenu: keep-open swaps items, selection resets, close reported", async (
   // open the menu and move to "Change model"
   await t.press("/")
   await t.press("\x1b[B")
-  expect(t.lastFrame()).toContain("> Change model")
+  expect(t.lastFrame()).toContain("❯ Change model")
 
   // selecting it keeps the menu open with the swapped items, selection reset
   await t.press("\r")
-  expect(t.lastFrame()).toContain("> DeepSeek fast")
+  expect(t.lastFrame()).toContain("❯ DeepSeek fast")
   expect(t.lastFrame()).not.toContain("Change model")
   expect(log).toEqual([])
 
@@ -199,7 +199,7 @@ test("submenu: keep-open swaps items, selection resets, close reported", async (
 
   // reopening starts back at the main menu
   await t.press("/")
-  expect(t.lastFrame()).toContain("> Toggle thinking")
+  expect(t.lastFrame()).toContain("❯ Toggle thinking")
 
   // escape from the menu also reports the close
   await t.press("\x1b")

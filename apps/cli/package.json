@@ -17,6 +17,7 @@
     "react-devtools-core is ink's optional devtools peer; it must be installed for `bun build --compile` to bundle ink (inert at runtime unless DEV=true)"
   ],
   "dependencies": {
+    "@inkjs/ui": "^2.0.0",
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@mozilla/readability": "^0.6.0",
@@ -28,7 +29,6 @@
     "ink": "^7.1.1",
     "ink-gradient": "^4.0.1",
     "ink-picture": "^2.1.0",
-    "ink-scroll-list": "^0.4.1",
     "linkedom": "^0.18.13",
     "marked": "^18.0.7",
     "marked-terminal": "^7.3.0",

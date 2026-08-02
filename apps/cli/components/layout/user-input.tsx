@@ -5,7 +5,7 @@ import { useDictation } from "../../hooks/use-dictation"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
 import { t } from "../../lib/i18n"
 import { TextInput } from "../elem/text-input"
-import { Menu } from "../menu"
+import { SelectMenu } from "../select-menu"
 
 /**
  * Outer box max rows (padding/border included). Content lines for the field
@@ -121,7 +121,7 @@ export function UserInput({
     <Box flexDirection="column" flexShrink={0}>
       {menuOpen && (
         <Box flexShrink={0}>
-          <Menu
+          <SelectMenu
             // Remount when the items change (main menu <-> submenu), so the
             // selection starts fresh instead of inheriting the previous one.
             key={menuItems.join("\n")}

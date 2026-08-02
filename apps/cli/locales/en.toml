@@ -6,9 +6,9 @@ bye = "Bye, bye!"
 intro = "Welcome to Kaja! How would you like to chat?"
 useFree = "Use the free Kaja chat service (goes through Kaja's servers)"
 useOwn = "Configure my own provider"
-templateFireworks = "Fireworks (cloud, needs an API key)"
-templateOllama = "Ollama (local, runs on this machine)"
-templateSkip = "Skip — I'll set up models.toml myself"
+providerFireworks = "Fireworks (cloud, needs an API key)"
+providerOllama = "Ollama (local, runs on this machine)"
+providerSkip = "Skip — I'll set up models.toml myself"
 
 [args]
 help = """
