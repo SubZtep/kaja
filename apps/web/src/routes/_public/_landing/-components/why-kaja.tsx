@@ -19,7 +19,7 @@ export function WhyKaja() {
           <h2 className="m-0 font-bold text-fg text-[26px]">Why Kaja</h2>
           <span className="font-mono text-[#6e7681] text-xs">built with Bun + TypeScript</span>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(f => (
             <div key={f.title} className="rounded-xl border border-border bg-surface p-5.5">
               <div className="mb-3.5 flex size-8 items-center justify-center rounded-md border border-neon/25 bg-neon/15 font-mono text-neon text-base">

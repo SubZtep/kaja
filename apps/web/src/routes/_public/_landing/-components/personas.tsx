@@ -27,7 +27,7 @@ export function Personas() {
           <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">when</code> clause. Kaja reads the
           room and switches personas mid-conversation on its own &mdash; no command needed.
         </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {PERSONAS.map(p => (
             <div key={p.id} className="rounded-xl border border-border bg-surface px-5.5 py-5">
               <div className="mb-2.5 flex items-center justify-between">

@@ -49,14 +49,14 @@ export function Configuration() {
           <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">kaja --wizard</code> write them for
           you.
         </p>
-        <div className="mb-5 rounded-xl border border-border bg-surface px-5.5 py-5">
-          <code className="block whitespace-pre font-mono text-fg text-sm">
+        <div className="mb-5 overflow-x-auto rounded-xl border border-border bg-surface px-5.5 py-5">
+          <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
             {
               "~/.config/kaja/\n├─ config.json     one required group (llm), rest optional\n├─ models.toml     model catalog per provider\n├─ mcp.toml        Model Context Protocol tool servers\n├─ personas/*.toml one behaviour per file\n└─ datasets/*.json custom fields for personas to collect"
             }
           </code>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {ITEMS.map(item => (
             <div key={item.title} className="rounded-xl border border-border bg-surface px-5 py-4.5">
               <div className="mb-1.5 font-semibold text-fg text-sm">{item.title}</div>

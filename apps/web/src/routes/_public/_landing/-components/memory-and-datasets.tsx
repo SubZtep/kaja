@@ -6,7 +6,7 @@ export function MemoryAndDatasets() {
         <p className="mb-7 max-w-160 text-[14.5px] text-muted">
           Two ways Kaja carries context across a conversation &mdash; and across sessions.
         </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-surface p-5.5">
             <div className="mb-2 font-semibold text-fg text-[15px]">Persistent memory</div>
             <p className="text-[13.5px] text-muted">

@@ -24,12 +24,12 @@ export function Hero() {
             "radial-gradient(closest-side,color-mix(in srgb, var(--color-neon) 20%, transparent),transparent 70%)"
         }}
       />
-      <div className="relative mx-auto grid max-w-280 grid-cols-[1.1fr_1fr] items-center gap-14 px-6 pt-24 pb-10">
+      <div className="relative mx-auto grid max-w-280 grid-cols-1 items-center gap-14 px-6 pt-24 pb-10 md:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 font-mono text-muted text-xs">
             <span className="size-1.5 rounded-full bg-ice" /> open source &middot; MIT &middot; WIP
           </div>
-          <h1 className="mb-5 font-extrabold text-fg text-[52px] leading-[1.08] tracking-[-0.02em]">
+          <h1 className="mb-5 font-extrabold text-fg text-[36px] leading-[1.08] tracking-[-0.02em] md:text-[52px]">
             Your terminal
             <br />
             can talk now.
