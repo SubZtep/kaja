@@ -2,7 +2,7 @@ import type { McpServer } from "@kaja/schema"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { createColumnHelper } from "@tanstack/react-table"
+import { type CellContext, createColumnHelper } from "@tanstack/react-table"
 import { Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
@@ -47,6 +47,56 @@ function parseEnv(input: string): Record<string, string> {
 }
 
 const columnHelper = createColumnHelper<McpServer>()
+
+function ServerIdCell(info: CellContext<McpServer, string>) {
+  return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+}
+
+function CommandCell(info: CellContext<McpServer, string>) {
+  const server = info.row.original
+  return (
+    <span className="font-mono text-xs text-muted">
+      {info.getValue()} {server.args.join(" ")}
+    </span>
+  )
+}
+
+function EnvCell(info: CellContext<McpServer, Record<string, string>>) {
+  const env = info.getValue()
+  const keys = Object.keys(env)
+  if (keys.length === 0) return <span className="text-xs text-muted">—</span>
+  return <span className="font-mono text-xs text-muted">{keys.join(", ")}</span>
+}
+
+function makeEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
+  return function EnabledCell(info: CellContext<McpServer, boolean>) {
+    const server = info.row.original
+    return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: server.id, enabled })} />
+  }
+}
+
+function CreatedAtCell(info: CellContext<McpServer, Date>) {
+  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+}
+
+function makeActionsCell(onDelete: (id: string) => void) {
+  return function ActionsCell(info: { row: { original: McpServer } }) {
+    return (
+      <div className="text-right">
+        <ConfirmDialog
+          title="Delete MCP server?"
+          description={`This will remove "${info.row.original.serverId}" from the generated mcp.toml.`}
+          confirm="Delete"
+          onConfirm={() => onDelete(info.row.original.id)}
+        >
+          <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
+            <Trash2 size={18} />
+          </button>
+        </ConfirmDialog>
+      </div>
+    )
+  }
+}
 
 function McpServersPage() {
   const sdk = useApiSdk()
@@ -108,67 +158,31 @@ function McpServersPage() {
   const columns = [
     columnHelper.accessor("serverId", {
       header: "Server ID",
-      cell: info => <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+      cell: ServerIdCell
     }),
     columnHelper.accessor("command", {
       header: "Command",
-      cell: info => {
-        const server = info.row.original
-        return (
-          <span className="font-mono text-xs text-muted">
-            {info.getValue()} {server.args.join(" ")}
-          </span>
-        )
-      }
+      cell: CommandCell
     }),
     columnHelper.accessor("env", {
       header: "Env",
-      cell: info => {
-        const env = info.getValue()
-        const keys = Object.keys(env)
-        if (keys.length === 0) return <span className="text-xs text-muted">—</span>
-        return <span className="font-mono text-xs text-muted">{keys.join(", ")}</span>
-      },
+      cell: EnvCell,
       enableColumnFilter: false
     }),
     columnHelper.accessor("enabled", {
       header: "Enabled",
-      cell: info => {
-        const server = info.row.original
-        return (
-          <Checkbox
-            checked={info.getValue()}
-            onCheckedChange={enabled => toggleEnabled.mutate({ id: server.id, enabled })}
-          />
-        )
-      },
+      cell: makeEnabledCell(args => toggleEnabled.mutate(args)),
       enableColumnFilter: false
     }),
     columnHelper.accessor("createdAt", {
       header: "Created",
-      cell: info => <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>,
+      cell: CreatedAtCell,
       enableColumnFilter: false
     }),
     {
       id: "actions",
       header: "",
-      cell: (info: { row: { original: McpServer } }) => (
-        <div className="text-right">
-          <ConfirmDialog
-            title="Delete MCP server?"
-            description={`This will remove "${info.row.original.serverId}" from the generated mcp.toml.`}
-            confirm="Delete"
-            onConfirm={() => deleteMcpServer.mutate(info.row.original.id)}
-          >
-            <button
-              type="button"
-              className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10"
-            >
-              <Trash2 size={18} />
-            </button>
-          </ConfirmDialog>
-        </div>
-      )
+      cell: makeActionsCell(id => deleteMcpServer.mutate(id))
     }
   ]
 

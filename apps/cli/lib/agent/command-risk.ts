@@ -11,7 +11,7 @@ const DANGEROUS_PATTERNS = [
   /:\(\)\s*\{\s*:\|:&\s*\};:/, // fork bomb
   /\bmkfs(\.\w+)?\b/i,
   />\s*\/dev\/sd\w*/,
-  /\bchmod\s+-R\s+\d*\s*\/(\s|$)/
+  /\bchmod\s+-R\s+\d*\/(\s|$)/
 ] as const
 
 /** Whether a `-...` flag cluster contains both of the given letters (in any order, possibly mixed with other flags), e.g. `-rf`, `-fr`, `-Rfv` for letters "r"/"f". */

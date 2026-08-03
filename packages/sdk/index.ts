@@ -35,7 +35,7 @@ import { z } from "zod"
 export class KajaAPI {
   /** API base URL. */
   readonly baseUrl: string
-  #getAccessToken: () => Promise<string | null>
+  readonly #getAccessToken: () => Promise<string | null>
 
   constructor({ baseUrl, getAccessToken }: { baseUrl: string; getAccessToken: () => Promise<string | null> }) {
     this.baseUrl = baseUrl

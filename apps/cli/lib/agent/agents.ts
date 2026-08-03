@@ -694,6 +694,64 @@ async function* streamRound(
  * {@link ToolContext}; defaults to {@link LOCAL_OWNER} for callers that don't
  * distinguish users.
  */
+/** Appends the incoming turn's `prompt` to `session.messages`, threading it as a tool response if the previous turn is still awaiting one. */
+function pushPromptToMessages(session: Session, prompt: string): void {
+  if (session.pendingAskUserId) {
+    session.messages.push({
+      role: "tool",
+      tool_call_id: session.pendingAskUserId,
+      content: prompt
+    })
+    session.pendingAskUserId = undefined
+  } else if (session.pendingRunCommandId) {
+    session.messages.push({
+      role: "tool",
+      tool_call_id: session.pendingRunCommandId,
+      content: prompt
+    })
+    session.pendingRunCommandId = undefined
+  } else {
+    session.messages.push({ role: "user", content: prompt })
+  }
+}
+
+/** Dispatches one round's tool calls, deferring ask_user/run_command until every other call has a tool response pushed. */
+async function* handleToolCalls(
+  agent: Agent,
+  messages: ChatCompletionMessageParam[],
+  owner: string | null,
+  toolsByName: Map<string, Tool<any>>,
+  toolCalls: ChatCompletionMessageToolCall[]
+): AsyncGenerator<
+  AgentEvent,
+  { ask?: { id: string; question: string }; confirm?: { id: string; command: string; description: string } },
+  void
+> {
+  let ask: { id: string; question: string } | undefined
+  let confirm: { id: string; command: string; description: string } | undefined
+  for (const call of toolCalls) {
+    if (call.type !== "function") continue
+
+    if (call.function.name === ASK_USER_TOOL) {
+      ask = { id: call.id, question: JSON.parse(call.function.arguments).question }
+      continue
+    }
+
+    if (call.function.name === RUN_COMMAND_TOOL) {
+      confirm = await handleRunCommandCall(messages, call)
+      continue
+    }
+
+    if (call.function.name === SWITCH_PERSONA_TOOL) {
+      yield* handleSwitchPersonaCall(agent, messages, call)
+      continue
+    }
+
+    yield* handleToolCall(toolsByName, messages, owner, call)
+  }
+  return { ask, confirm }
+}
+
 export async function* run(
   agent: Agent,
   prompt: string,
@@ -712,23 +770,7 @@ export async function* run(
     if (system) messages.push({ role: "system", content: system })
   }
 
-  if (session.pendingAskUserId) {
-    messages.push({
-      role: "tool",
-      tool_call_id: session.pendingAskUserId,
-      content: prompt
-    })
-    session.pendingAskUserId = undefined
-  } else if (session.pendingRunCommandId) {
-    messages.push({
-      role: "tool",
-      tool_call_id: session.pendingRunCommandId,
-      content: prompt
-    })
-    session.pendingRunCommandId = undefined
-  } else {
-    messages.push({ role: "user", content: prompt })
-  }
+  pushPromptToMessages(session, prompt)
 
   while (true) {
     const { message, thinking, usage } = yield* streamRound(agent, messages, definitions)
@@ -766,28 +808,7 @@ export async function* run(
     // every other tool_call_id in this message still gets a matching tool
     // response pushed before we stop for the human (their own tool response
     // is pushed on the next run() call, once the human has answered).
-    let ask: { id: string; question: string } | undefined
-    let confirm: { id: string; command: string; description: string } | undefined
-    for (const call of message.tool_calls) {
-      if (call.type !== "function") continue
-
-      if (call.function.name === ASK_USER_TOOL) {
-        ask = { id: call.id, question: JSON.parse(call.function.arguments).question }
-        continue
-      }
-
-      if (call.function.name === RUN_COMMAND_TOOL) {
-        confirm = await handleRunCommandCall(messages, call)
-        continue
-      }
-
-      if (call.function.name === SWITCH_PERSONA_TOOL) {
-        yield* handleSwitchPersonaCall(agent, messages, call)
-        continue
-      }
-
-      yield* handleToolCall(toolsByName, messages, owner, call)
-    }
+    const { ask, confirm } = yield* handleToolCalls(agent, messages, owner, toolsByName, message.tool_calls)
 
     if (ask) {
       session.pendingAskUserId = ask.id

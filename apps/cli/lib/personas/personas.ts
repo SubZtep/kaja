@@ -65,7 +65,8 @@ export async function loadPersonas(models: ResolvedModel[]): Promise<Persona[]> 
   const personas: Persona[] = []
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" })
-  for (const entry of entries.sort(collator.compare)) {
+  entries.sort(collator.compare)
+  for (const entry of entries) {
     const path = join(dir, entry)
     const id = basename(entry, ".toml")
     try {

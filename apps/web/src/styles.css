@@ -53,7 +53,7 @@
   }
 }
 
-@utility nav-link {
+.nav-link {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -170,15 +170,13 @@
   h2 {
     @apply text-xl font-bold my-1 font-headline first:mt-0;
   }
-
   a {
     @apply text-fg;
     text-decoration: none;
-    &:hover {
-      @apply text-neon;
-    }
   }
-
+  a:hover {
+    @apply text-neon;
+  }
   ::-webkit-scrollbar {
     width: 4px;
   }

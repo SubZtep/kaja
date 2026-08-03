@@ -58,7 +58,7 @@ function stripHtml(html: string): string {
     .replace(/<script[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
     .replace(/<style[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/<[^>]+>/g, " ")
+    .replace(/<[^<>]+>/g, " ")
     .replace(/&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;/g, entity => htmlEntities[entity] ?? entity)
     .replace(/[ \t]+/g, " ")
     .replace(/\n\s*\n+/g, "\n\n")

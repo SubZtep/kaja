@@ -1,7 +1,7 @@
 import { capitalized, getTimeAgo } from "@kaja/shared"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { createColumnHelper } from "@tanstack/react-table"
+import { type CellContext, createColumnHelper } from "@tanstack/react-table"
 import type { UserWithRole } from "better-auth/client/plugins"
 import { Eye, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
@@ -26,6 +26,73 @@ const ROLE_STYLES: Record<string, string> = {
   user: "bg-surface/60 text-muted",
   editor: "bg-surface/60 text-muted",
   viewer: "bg-surface/60 text-muted"
+}
+
+function IdentityCell(info: CellContext<UsersColumns, string>) {
+  const user = info.row.original
+  const initials = (user.name ?? "?")
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+  return (
+    <div className="flex items-center gap-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-2">
+        {user.image ? (
+          <img alt={user.name ?? ""} className="w-full h-full object-cover rounded-lg" src={user.image} />
+        ) : (
+          <span className="text-sm font-bold text-neon">{initials}</span>
+        )}
+      </div>
+      <div>
+        <div className="text-sm font-bold text-fg">{info.getValue()}</div>
+        <div className="text-xs text-muted">{user.email}</div>
+      </div>
+    </div>
+  )
+}
+
+function AccessLevelCell(info: CellContext<UsersColumns, string | undefined>) {
+  const role = info.getValue() ?? "user"
+  const style = ROLE_STYLES[role] ?? ROLE_STYLES.user
+  return <span className={`text-xs font-medium px-3 py-1 rounded ${style}`}>{capitalized(role)}</span>
+}
+
+function StatusCell(info: CellContext<UsersColumns, boolean>) {
+  const verified = info.getValue()
+  if (verified) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 w-1.5 rounded-full bg-neon shadow-[0_0_8px_rgba(255,63,181,0.7)]" />
+        <span className="text-xs text-muted">Authenticated</span>
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 w-1.5 rounded-full bg-surface-2" />
+      <span className="text-xs text-muted">Pending</span>
+    </div>
+  )
+}
+
+function LastSyncCell(info: CellContext<UsersColumns, Date>) {
+  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+}
+
+function ActionsCell(info: { row: { original: { id: string } } }) {
+  return (
+    <div className="text-right">
+      <Link
+        to="/users/$userId"
+        params={{ userId: info.row.original.id }}
+        className="inline-flex rounded-lg p-2 text-neon transition-all hover:bg-neon/10"
+      >
+        <Eye size={18} />
+      </Link>
+    </div>
+  )
 }
 
 function UserList() {
@@ -69,79 +136,26 @@ function UserList() {
     () => [
       columnHelper.accessor("name", {
         header: "User Identity",
-        cell: info => {
-          const user = info.row.original
-          const initials = (user.name ?? "?")
-            .split(" ")
-            .map(n => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2)
-          return (
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-2">
-                {user.image ? (
-                  <img alt={user.name ?? ""} className="w-full h-full object-cover rounded-lg" src={user.image} />
-                ) : (
-                  <span className="text-sm font-bold text-neon">{initials}</span>
-                )}
-              </div>
-              <div>
-                <div className="text-sm font-bold text-fg">{info.getValue()}</div>
-                <div className="text-xs text-muted">{user.email}</div>
-              </div>
-            </div>
-          )
-        }
+        cell: IdentityCell
       }),
       columnHelper.accessor("role", {
         header: "Access Level",
-        cell: info => {
-          const role = info.getValue() ?? "user"
-          const style = ROLE_STYLES[role] ?? ROLE_STYLES.user
-          return <span className={`text-xs font-medium px-3 py-1 rounded ${style}`}>{capitalized(role)}</span>
-        }
+        cell: AccessLevelCell
       }),
       columnHelper.accessor("emailVerified", {
         header: "Status",
-        cell: info => {
-          const verified = info.getValue()
-          if (verified) {
-            return (
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-neon shadow-[0_0_8px_rgba(255,63,181,0.7)]" />
-                <span className="text-xs text-muted">Authenticated</span>
-              </div>
-            )
-          }
-          return (
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-surface-2" />
-              <span className="text-xs text-muted">Pending</span>
-            </div>
-          )
-        },
+        cell: StatusCell,
         enableColumnFilter: false
       }),
       columnHelper.accessor("createdAt", {
         header: "Last Sync",
-        cell: info => <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>,
+        cell: LastSyncCell,
         enableColumnFilter: false
       }),
       {
         id: "actions",
         header: "",
-        cell: (info: { row: { original: { id: string } } }) => (
-          <div className="text-right">
-            <Link
-              to="/users/$userId"
-              params={{ userId: info.row.original.id }}
-              className="inline-flex rounded-lg p-2 text-neon transition-all hover:bg-neon/10"
-            >
-              <Eye size={18} />
-            </Link>
-          </div>
-        )
+        cell: ActionsCell
       }
     ],
     []

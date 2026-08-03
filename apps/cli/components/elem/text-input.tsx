@@ -302,18 +302,20 @@ export function paintLineWithCursor(
 }
 
 /** Windowed multi-line render: soft-wrapped lines sliced to the visible window. */
-function renderWindowed(
-  lines: VisualLine[],
-  windowStart: number,
-  maxVis: number,
-  display: string,
-  placeholder: string,
-  firstLead: string,
-  contLead: string,
-  cursorOffset: number,
-  pasteWidth: number,
+function renderWindowed(opts: {
+  lines: VisualLine[]
+  windowStart: number
+  maxVis: number
+  display: string
+  placeholder: string
+  firstLead: string
+  contLead: string
+  cursorOffset: number
+  pasteWidth: number
   active: boolean
-) {
+}) {
+  const { lines, windowStart, maxVis, display, placeholder, firstLead, contLead, cursorOffset, pasteWidth, active } =
+    opts
   const start = clampWindowStart(cursorLineIndex(lines, cursorOffset), windowStart, maxVis, lines.length)
   const visible = lines.slice(start, start + maxVis)
 
@@ -495,7 +497,7 @@ export function TextInput({
 
   if (lines && maxVis) {
     const active = showCursor && cursorVisible && focus
-    return renderWindowed(
+    return renderWindowed({
       lines,
       windowStart,
       maxVis,
@@ -506,7 +508,7 @@ export function TextInput({
       cursorOffset,
       pasteWidth,
       active
-    )
+    })
   }
 
   if (showCursor && focus) {

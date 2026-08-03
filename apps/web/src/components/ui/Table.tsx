@@ -145,22 +145,22 @@ function Pagination({ table }: Readonly<{ table: any }>) {
       for (let i = 0; i < pageCount; i++) {
         pages.push({ type: "page", value: i, key: `page-${i}` })
       }
+    } else if (pageIndex < 3) {
+      for (let i = 0; i < 5; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
+      pages.push(
+        { type: "ellipsis", value: "...", key: "ellipsis-end" },
+        { type: "page", value: pageCount - 1, key: `page-${pageCount - 1}` }
+      )
+    } else if (pageIndex > pageCount - 4) {
+      pages.push({ type: "page", value: 0, key: "page-0" }, { type: "ellipsis", value: "...", key: "ellipsis-start" })
+      for (let i = pageCount - 5; i < pageCount; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
     } else {
-      if (pageIndex < 3) {
-        for (let i = 0; i < 5; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
-        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-end" })
-        pages.push({ type: "page", value: pageCount - 1, key: `page-${pageCount - 1}` })
-      } else if (pageIndex > pageCount - 4) {
-        pages.push({ type: "page", value: 0, key: "page-0" })
-        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-start" })
-        for (let i = pageCount - 5; i < pageCount; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
-      } else {
-        pages.push({ type: "page", value: 0, key: "page-0" })
-        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-start" })
-        for (let i = pageIndex - 1; i <= pageIndex + 1; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
-        pages.push({ type: "ellipsis", value: "...", key: "ellipsis-end" })
-        pages.push({ type: "page", value: pageCount - 1, key: `page-${pageCount - 1}` })
-      }
+      pages.push({ type: "page", value: 0, key: "page-0" }, { type: "ellipsis", value: "...", key: "ellipsis-start" })
+      for (let i = pageIndex - 1; i <= pageIndex + 1; i++) pages.push({ type: "page", value: i, key: `page-${i}` })
+      pages.push(
+        { type: "ellipsis", value: "...", key: "ellipsis-end" },
+        { type: "page", value: pageCount - 1, key: `page-${pageCount - 1}` }
+      )
     }
     return pages
   }

@@ -48,59 +48,29 @@ afterAll(() => {
   server.stop()
 })
 
-test("chat model: available when the completion request succeeds", async () => {
-  const ok = await checkModelAvailability({
-    id: "known-model",
-    task: "chat",
-    baseUrl
-  })
-  expect(ok).toBe(true)
-})
+test.each(["chat", "embedding", "speech-to-text"] as const)(
+  "%s model: available when the provider request succeeds",
+  async task => {
+    const ok = await checkModelAvailability({
+      id: "known-model",
+      task,
+      baseUrl
+    })
+    expect(ok).toBe(true)
+  }
+)
 
-test("chat model: not available when the provider rejects the model id (even if absent from /models)", async () => {
-  const ok = await checkModelAvailability({
-    id: "unlisted-but-should-still-be-tested",
-    task: "chat",
-    baseUrl
-  })
-  expect(ok).toBe(false)
-})
-
-test("embedding model: available when the embeddings request succeeds", async () => {
-  const ok = await checkModelAvailability({
-    id: "known-model",
-    task: "embedding",
-    baseUrl
-  })
-  expect(ok).toBe(true)
-})
-
-test("embedding model: not available when the provider rejects the model id (even if absent from /models)", async () => {
-  const ok = await checkModelAvailability({
-    id: "unlisted-but-should-still-be-tested",
-    task: "embedding",
-    baseUrl
-  })
-  expect(ok).toBe(false)
-})
-
-test("speech-to-text model: available when the load request succeeds", async () => {
-  const ok = await checkModelAvailability({
-    id: "known-model",
-    task: "speech-to-text",
-    baseUrl
-  })
-  expect(ok).toBe(true)
-})
-
-test("speech-to-text model: not available when the provider rejects the model id (even if absent from /models)", async () => {
-  const ok = await checkModelAvailability({
-    id: "unlisted-but-should-still-be-tested",
-    task: "speech-to-text",
-    baseUrl
-  })
-  expect(ok).toBe(false)
-})
+test.each(["chat", "embedding", "speech-to-text"] as const)(
+  "%s model: not available when the provider rejects the model id (even if absent from /models)",
+  async task => {
+    const ok = await checkModelAvailability({
+      id: "unlisted-but-should-still-be-tested",
+      task,
+      baseUrl
+    })
+    expect(ok).toBe(false)
+  }
+)
 
 test("tts model: falls back to the /models list", async () => {
   const ok = await checkModelAvailability({

@@ -4,7 +4,7 @@ import { FormDevtoolsPanel } from "@tanstack/react-form-devtools"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
-import { createContext, type ReactNode } from "react"
+import { createContext, type ReactNode, useMemo } from "react"
 import { ToastContainer } from "react-toastify"
 import { getAuthClient } from "../hooks/auth-client"
 
@@ -74,13 +74,17 @@ function SDKProvider({ apiUrl, children }: Readonly<{ apiUrl: string; children: 
   const authClient = getAuthClient(apiUrl)
 
   // Create SDK instance with a function that retrieves the current access token
-  const sdkInstance = new KajaAPI({
-    baseUrl: apiUrl,
-    getAccessToken: async () => {
-      const session = await authClient.getSession()
-      return session.data?.session?.token ?? null
-    }
-  })
+  const sdkInstance = useMemo(
+    () =>
+      new KajaAPI({
+        baseUrl: apiUrl,
+        getAccessToken: async () => {
+          const session = await authClient.getSession()
+          return session.data?.session?.token ?? null
+        }
+      }),
+    [apiUrl, authClient]
+  )
 
   return <SDKContext.Provider value={sdkInstance}>{children}</SDKContext.Provider>
 }

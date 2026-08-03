@@ -4,7 +4,7 @@ import type { Model, ModelTask, Provider } from "@kaja/schema"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { createColumnHelper } from "@tanstack/react-table"
+import { type CellContext, createColumnHelper } from "@tanstack/react-table"
 import { Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
@@ -39,6 +39,86 @@ const modelFormSchema = z.object({
 
 const providerColumnHelper = createColumnHelper<Provider>()
 const modelColumnHelper = createColumnHelper<Model>()
+
+function ProviderNameCell(info: CellContext<Provider, string>) {
+  return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+}
+
+function ProviderBaseUrlCell(info: CellContext<Provider, string>) {
+  return <span className="font-mono text-xs text-muted">{info.getValue()}</span>
+}
+
+function ProviderApiKeyCell(info: CellContext<Provider, string>) {
+  return <span className="text-xs text-muted">{info.getValue() ? "•••• set" : "—"}</span>
+}
+
+function ProviderCreatedAtCell(info: CellContext<Provider, Date>) {
+  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+}
+
+function makeProviderActionsCell(onDelete: (id: string) => void) {
+  return function ProviderActionsCell(info: { row: { original: Provider } }) {
+    return (
+      <div className="text-right">
+        <ConfirmDialog
+          title="Delete provider?"
+          description={`This will remove "${info.row.original.name}" and any models using it from the generated models.toml.`}
+          confirm="Delete"
+          onConfirm={() => onDelete(info.row.original.id)}
+        >
+          <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
+            <Trash2 size={18} />
+          </button>
+        </ConfirmDialog>
+      </div>
+    )
+  }
+}
+
+function ModelNameCell(info: CellContext<Model, string>) {
+  return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+}
+
+function ModelTasksCell(info: CellContext<Model, ModelTask[]>) {
+  return <span className="text-xs text-muted">{info.getValue().join(", ")}</span>
+}
+
+function makeModelProviderCell(providers: Provider[]) {
+  return function ModelProviderCell(info: CellContext<Model, string>) {
+    const provider = providers.find(p => p.id === info.getValue())
+    return <span className="font-mono text-xs text-muted">{provider?.name ?? "—"}</span>
+  }
+}
+
+function makeModelEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
+  return function ModelEnabledCell(info: CellContext<Model, boolean>) {
+    const model = info.row.original
+    return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: model.id, enabled })} />
+  }
+}
+
+function ModelCreatedAtCell(info: CellContext<Model, Date>) {
+  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+}
+
+function makeModelActionsCell(onDelete: (id: string) => void) {
+  return function ModelActionsCell(info: { row: { original: Model } }) {
+    return (
+      <div className="text-right">
+        <ConfirmDialog
+          title="Delete model?"
+          description={`This will remove "${info.row.original.model}" from the generated models.toml.`}
+          confirm="Delete"
+          onConfirm={() => onDelete(info.row.original.id)}
+        >
+          <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
+            <Trash2 size={18} />
+          </button>
+        </ConfirmDialog>
+      </div>
+    )
+  }
+}
 
 function ModelsPage() {
   const sdk = useApiSdk()
@@ -132,101 +212,58 @@ function ModelsPage() {
   const providerColumns = [
     providerColumnHelper.accessor("name", {
       header: "Name",
-      cell: info => <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+      cell: ProviderNameCell
     }),
     providerColumnHelper.accessor("baseUrl", {
       header: "Base URL",
-      cell: info => <span className="font-mono text-xs text-muted">{info.getValue()}</span>
+      cell: ProviderBaseUrlCell
     }),
     providerColumnHelper.accessor("apiKey", {
       header: "API Key",
-      cell: info => <span className="text-xs text-muted">{info.getValue() ? "•••• set" : "—"}</span>,
+      cell: ProviderApiKeyCell,
       enableColumnFilter: false
     }),
     providerColumnHelper.accessor("createdAt", {
       header: "Created",
-      cell: info => <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>,
+      cell: ProviderCreatedAtCell,
       enableColumnFilter: false
     }),
     {
       id: "actions",
       header: "",
-      cell: (info: { row: { original: Provider } }) => (
-        <div className="text-right">
-          <ConfirmDialog
-            title="Delete provider?"
-            description={`This will remove "${info.row.original.name}" and any models using it from the generated models.toml.`}
-            confirm="Delete"
-            onConfirm={() => deleteProvider.mutate(info.row.original.id)}
-          >
-            <button
-              type="button"
-              className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10"
-            >
-              <Trash2 size={18} />
-            </button>
-          </ConfirmDialog>
-        </div>
-      )
+      cell: makeProviderActionsCell(id => deleteProvider.mutate(id))
     }
   ]
 
   const modelColumns = [
     modelColumnHelper.accessor("model", {
       header: "Model",
-      cell: info => <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+      cell: ModelNameCell
     }),
     modelColumnHelper.accessor("tasks", {
       header: "Tasks",
-      cell: info => <span className="text-xs text-muted">{info.getValue().join(", ")}</span>,
+      cell: ModelTasksCell,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("providerId", {
       header: "Provider",
-      cell: info => {
-        const provider = providers.find(p => p.id === info.getValue())
-        return <span className="font-mono text-xs text-muted">{provider?.name ?? "—"}</span>
-      },
+      cell: makeModelProviderCell(providers),
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("enabled", {
       header: "Enabled",
-      cell: info => {
-        const model = info.row.original
-        return (
-          <Checkbox
-            checked={info.getValue()}
-            onCheckedChange={enabled => toggleModelEnabled.mutate({ id: model.id, enabled })}
-          />
-        )
-      },
+      cell: makeModelEnabledCell(args => toggleModelEnabled.mutate(args)),
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("createdAt", {
       header: "Created",
-      cell: info => <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>,
+      cell: ModelCreatedAtCell,
       enableColumnFilter: false
     }),
     {
       id: "actions",
       header: "",
-      cell: (info: { row: { original: Model } }) => (
-        <div className="text-right">
-          <ConfirmDialog
-            title="Delete model?"
-            description={`This will remove "${info.row.original.model}" from the generated models.toml.`}
-            confirm="Delete"
-            onConfirm={() => deleteModel.mutate(info.row.original.id)}
-          >
-            <button
-              type="button"
-              className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10"
-            >
-              <Trash2 size={18} />
-            </button>
-          </ConfirmDialog>
-        </div>
-      )
+      cell: makeModelActionsCell(id => deleteModel.mutate(id))
     }
   ]
 

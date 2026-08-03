@@ -17,6 +17,25 @@ const NodeUpdateEventSchema = z.object({
 
 const SSEEventSchema = z.union([ConnectedEventSchema, NodeUpdateEventSchema])
 
+/** Merges one parsed SSE event into the cached node list: updates an existing node in place, appends a new one on connect/heartbeat, or leaves the cache untouched. */
+function updateNodesCache(oldData: Node[] | undefined, data: z.infer<typeof SSEEventSchema>): Node[] | undefined {
+  if (!("node" in data) || !data.node) return oldData
+
+  const { node, type } = data
+  const currentData = oldData ?? []
+  const existingIndex = currentData.findIndex(n => n.id === node.id)
+
+  if (existingIndex >= 0) {
+    const newData = [...currentData]
+    newData[existingIndex] = node
+    return newData
+  }
+
+  if (type === "connected" || type === "heartbeat") return [...currentData, node]
+
+  return currentData
+}
+
 /**
  * Hook to listen for real-time node updates via SSE
  */
@@ -79,35 +98,7 @@ export function useNodeSSE(apiUrl: string, setIsLive?: (live: boolean) => void) 
         if (data.type === "connected" && !data.node) return
 
         // Update the nodes query cache
-        queryClient.setQueryData(["nodes"], (oldData: Node[] | undefined) => {
-          // At this point, data is either NodeUpdateEventSchema or ConnectedEventSchema with a node
-          // Type guard: ensure we have a node to work with
-          if (!("node" in data) || !data.node) {
-            return oldData
-          }
-
-          const { node, type } = data
-
-          // Initialize with empty array if cache is not yet populated
-          const currentData = oldData ?? []
-
-          // Update or add the node in the list
-          const existingIndex = currentData.findIndex(n => n.id === node.id)
-
-          if (existingIndex >= 0) {
-            // Update existing node (handles reconnects: inactive → idle)
-            const newData = [...currentData]
-            newData[existingIndex] = node
-            return newData
-          }
-
-          // Add new node (for connected, heartbeat events on new nodes)
-          if (type === "connected" || type === "heartbeat") {
-            return [...currentData, node]
-          }
-
-          return currentData
-        })
+        queryClient.setQueryData(["nodes"], (oldData: Node[] | undefined) => updateNodesCache(oldData, data))
       })
 
       eventSource.addEventListener("open", () => {

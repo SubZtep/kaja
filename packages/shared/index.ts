@@ -71,5 +71,5 @@ export function isItTrue(value = "") {
 
 /** Escape a string for TOML encoding. */
 export function tomlString(s: string) {
-  return `"${s.replaceAll('"', '\\"')}"`
+  return `"${s.replaceAll('"', String.raw`\"`)}"`
 }

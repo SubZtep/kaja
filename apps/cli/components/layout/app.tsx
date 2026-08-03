@@ -234,7 +234,7 @@ export default function App({
         thinking={thinking}
         partial={partial}
         pending={pending}
-        bottomChromeKey={pendingCommand ? (runningCommand ? "running" : "confirm") : "input"}
+        bottomChromeKey={!pendingCommand ? "input" : runningCommand ? "running" : "confirm"}
         startupPanel={
           <StartupPanel
             persona={persona.label}
