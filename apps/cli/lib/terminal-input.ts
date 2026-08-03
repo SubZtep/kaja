@@ -102,7 +102,7 @@ export function parseWheelDirection(input: string): WheelDirection | null {
   // X10: button byte is first of the three chars after M, encoded as value+32
   const x10 = /^\[M(.)..$/.exec(s)
   if (x10) {
-    const btn = (x10[1].charCodeAt(0) - 32) & 0x7f
+    const btn = (x10[1]!.charCodeAt(0) - 32) & 0x7f
     if (btn === 64) return "up"
     if (btn === 65) return "down"
   }

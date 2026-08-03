@@ -36,8 +36,7 @@
         "noExplicitAny": "off",
         "noImplicitAnyLet": "off",
         "noTsIgnore": "off",
-        "useIterableCallbackReturn": "off",
-        "noFallthroughSwitchClause": "off"
+        "useIterableCallbackReturn": "off"
       },
       "style": {
         "noNonNullAssertion": "off"

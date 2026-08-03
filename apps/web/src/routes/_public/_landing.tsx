@@ -1,5 +1,5 @@
 import { cn } from "@kaja/shared"
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
+import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { Menu } from "../../components/layout/Menu"
 import { Section } from "../../components/ui/Section"
 
@@ -8,7 +8,6 @@ export const Route = createFileRoute("/_public/_landing")({
 })
 
 function LandingLayout() {
-  const _router = useRouterState()
   const isSkipLayout = true // router.location.pathname === "/" || router.location.pathname === "/architecture"
 
   if (isSkipLayout) {

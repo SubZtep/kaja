@@ -27,8 +27,8 @@ export function applyConfigDirOverride(argv: string[]) {
   let value: string | undefined
   if (i === -1) {
     value = undefined
-  } else if (argv[i].startsWith("--config-dir=")) {
-    value = argv[i].slice("--config-dir=".length)
+  } else if (argv[i]!.startsWith("--config-dir=")) {
+    value = argv[i]!.slice("--config-dir=".length)
   } else {
     value = argv[i + 1]
   }

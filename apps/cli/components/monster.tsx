@@ -36,7 +36,7 @@ export function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnim
     let timer: NodeJS.Timeout
 
     const advance = () => {
-      const [f, hold] = sequence[step]
+      const [f, hold] = sequence[step]!
       setFrame(f)
       step += 1
       if (step < sequence.length) {

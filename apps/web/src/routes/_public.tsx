@@ -24,7 +24,7 @@ function PublicLayout() {
     return () => clearInterval(id)
   }, [])
 
-  const c = ICONS[i]
+  const c = ICONS[i] ?? ICONS[0]
 
   if (isSkipLayout) {
     return <Outlet />
