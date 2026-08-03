@@ -55,8 +55,8 @@ const htmlEntities: Record<string, string> = {
 
 function stripHtml(html: string): string {
   return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
-    .replace(/<style[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
+    .replace(/<script[^>]*>[\s\S]*?<\/script[^>]*>/gi, " ")
+    .replace(/<style[^>]*>[\s\S]*?<\/style[^>]*>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<[^<>]+>/g, " ")
     .replace(/&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;/g, entity => htmlEntities[entity] ?? entity)

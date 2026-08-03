@@ -752,6 +752,17 @@ async function* handleToolCalls(
   return { ask, confirm }
 }
 
+// Finished? Despite the system instructions the model occasionally still
+// ends with a plain-text question ("Want to play another round?"), so as
+// a backstop treat a final ending in "?" as ask_user — the next run() call
+// threads the reply as a regular user message.
+function finalEventFor(message: StreamedRound["message"]): AgentEvent {
+  const content = typeof message.content === "string" ? message.content : null
+  return content?.trimEnd().endsWith("?")
+    ? { type: "ask_user", question: content }
+    : { type: "final", content: message.content }
+}
+
 export async function* run(
   agent: Agent,
   prompt: string,
@@ -780,20 +791,8 @@ export async function* run(
 
     if (thinking) yield { type: "reasoning", text: thinking }
 
-    // Finished? Despite the system instructions the model occasionally still
-    // ends with a plain-text question ("Want to play another round?"), so as
-    // a backstop treat a final ending in "?" as ask_user — the next run()
-    // call threads the reply as a regular user message.
     if (!message.tool_calls?.length) {
-      const content = typeof message.content === "string" ? message.content : null
-      if (content?.trimEnd().endsWith("?")) {
-        yield { type: "ask_user", question: content }
-        return
-      }
-      yield {
-        type: "final",
-        content: message.content
-      }
+      yield finalEventFor(message)
       return
     }
 

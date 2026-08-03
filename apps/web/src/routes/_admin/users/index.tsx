@@ -81,7 +81,7 @@ function LastSyncCell(info: CellContext<UsersColumns, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
-function ActionsCell(info: { row: { original: { id: string } } }) {
+function ActionsCell(info: { readonly row: { readonly original: { readonly id: string } } }) {
   return (
     <div className="text-right">
       <Link

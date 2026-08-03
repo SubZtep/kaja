@@ -226,6 +226,9 @@ export default function App({
     switchModel
   })
 
+  let bottomChromeKey: "input" | "running" | "confirm" = "input"
+  if (pendingCommand) bottomChromeKey = runningCommand ? "running" : "confirm"
+
   return (
     <Box flexDirection="column" width={columns} height={rows}>
       <Header persona={persona.label} model={model} promptTokens={promptTokens} currentTool={currentTool} />
@@ -234,7 +237,7 @@ export default function App({
         thinking={thinking}
         partial={partial}
         pending={pending}
-        bottomChromeKey={!pendingCommand ? "input" : runningCommand ? "running" : "confirm"}
+        bottomChromeKey={bottomChromeKey}
         startupPanel={
           <StartupPanel
             persona={persona.label}
