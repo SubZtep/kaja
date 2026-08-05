@@ -1,7 +1,7 @@
 {
   "name": "@kaja/shared",
   "description": "Shared types and utilities",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "main": "index.ts",
   "dependencies": {
