@@ -1,6 +1,7 @@
 ---
 layout: page
 title: Vision
+parent: Development
 nav_order: 2
 ---
 

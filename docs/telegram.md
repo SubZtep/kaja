@@ -1,27 +1,40 @@
-You already have a working dev config with a chat model set up — you just need to add a telegram section. Here's the full setup:
+---
+layout: page
+title: Telegram
+nav_order: 6
+---
 
-1. Create a bot and get a token
-- In Telegram, message @BotFather, send /newbot, follow the prompts (name + unique username ending in bot).
-- BotFather replies with an API token like 123456789:AAH....
+# Telegram
 
-2. Get your numeric Telegram user ID
-- Message @userinfobot (or @RawDataBot) — it replies with your numeric id. That's what goes in allowedUserIds, not your @username.
+`kaja telegram` runs a bot that uses the same personas, tools, and models as the terminal
+chat — including the shell-command approve/decline flow, shown as an inline keyboard.
 
-3. Add the telegram section to services.toml
+## Setup
 
-That file is at /home/dcr/.config/kaja/services.toml. Add:
+1. **Create a bot and get a token.** In Telegram, message [@BotFather](https://t.me/BotFather),
+   send `/newbot`, and follow the prompts (name + a unique username ending in `bot`).
+   BotFather replies with an API token like `123456789:AAH...`.
 
-[telegram]
-botToken = "123456789:AAH..."
-allowedUserIds = [YOUR_NUMERIC_ID]
+2. **Get your numeric Telegram user id.** Message [@userinfobot](https://t.me/userinfobot) (or
+   [@RawDataBot](https://t.me/RawDataBot)) — it replies with your numeric id. That's what goes
+   in `allowedUserIds`, not your `@username`.
 
-4. Run it
+3. **Add a `[telegram]` section to `~/.config/kaja/services.toml`:**
 
-bun cli.tsx telegram
+   ```toml
+   [telegram]
+   botToken = "123456789:AAH..."
+   allowedUserIds = [YOUR_NUMERIC_ID]
+   ```
 
-It preflights with getMe() — if the token's bad you get an immediate one-line error, no stack trace. On success it logs "ready" and starts long-polling.
+4. **Run it:**
 
-5. Test in Telegram
-- Open a DM with your bot (search its username) and send /start or any message.
-- Try something that triggers a shell command (if you have that tool enabled) to exercise the inline-keyboard approve/decline flow.
-- If you have a second Telegram account, message from a non-allowlisted user ID — the bot should silently ignore it (per handleMessage's allowedUserIds.has(userId) check).
+   ```sh
+   kaja telegram
+   ```
+
+   The bot preflights with `getMe()` — an invalid token fails immediately with a one-line
+   error, no stack trace. On success it logs "ready" and starts long-polling.
+
+Then open a DM with your bot and send anything. Messages from accounts not in `allowedUserIds`
+are silently ignored — it must be non-empty, there's no "open to everyone" mode.
