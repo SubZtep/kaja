@@ -18,7 +18,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div
-        className="pointer-events-none absolute top-[-180px] left-1/2 h-[500px] w-[900px] -translate-x-1/2"
+        className="pointer-events-none absolute -top-45 left-1/2 h-125 w-225 -translate-x-1/2"
         style={{
           background:
             "radial-gradient(closest-side,color-mix(in srgb, var(--color-neon) 20%, transparent),transparent 70%)"
@@ -56,7 +56,7 @@ export function Hero() {
               Read the docs
             </a>
           </div>
-          <div className="flex max-w-105 items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
+          <div className="flex max-w-116 items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
             <code className="flex-1 overflow-x-hidden whitespace-nowrap font-mono text-fg text-sm">{installCmd}</code>
             <button
               type="button"

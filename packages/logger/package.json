@@ -1,7 +1,7 @@
 {
   "name": "@kaja/logger",
   "description": "Shared logger utilities",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "sideEffects": false,
   "main": "./index.ts",
@@ -13,9 +13,7 @@
     }
   },
   "dependencies": {
-    "pino": "^10.3.1"
-  },
-  "devDependencies": {
+    "pino": "^10.3.1",
     "pino-pretty": "^13.1.3"
   }
 }

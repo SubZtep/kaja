@@ -1,30 +1,33 @@
 import pino from "pino"
-import { createLogger } from "./core"
+import PinoPretty from "pino-pretty"
+import { createLogger, type LogSink } from "./core"
+
+type LogLevel = keyof LogSink
 
 type NodeLoggerOptions = {
   app: string
   env?: string
-  level?: string
+  level?: LogLevel
   bindings?: Record<string, unknown>
 }
 
-function createNodeTransport(_env: string) {
-  // Never use pino.transport() - it uses thread-stream which can't be bundled by Bun
-  // In production, use JSON logs. In development (local), use default pino output.
-  // pino-pretty is excluded to avoid bundling issues
-  return undefined
+function createNodeDestination() {
+  // Never use pino.transport() - it uses thread-stream which can't be bundled by Bun.
+  // pino-pretty is used directly as a synchronous stream instead.
+  const logFile = process.env.KAJA_LOG_FILE
+  if (logFile) {
+    return pino.destination({ dest: logFile, append: true, mkdir: true })
+  }
+
+  return PinoPretty({ colorize: true })
 }
 
-export function createNodeLogger({
-  app,
-  env = process.env.NODE_ENV ?? "development",
-  level = "trace",
-  bindings = {}
-}: NodeLoggerOptions) {
-  const transport = createNodeTransport(env)
-  const pinoLogger = pino({ level, base: null }, transport)
+export function createNodeLogger({ app, env, level, bindings = {} }: NodeLoggerOptions) {
+  // No KAJA_LOG_LEVEL set means no logging at all; otherwise Pino's own level filtering applies.
+  const destination = level ? createNodeDestination() : { write: () => {} }
+  const pinoLogger = pino({ level: level ?? "silent", base: null }, destination)
 
-  const logger = createLogger({
+  return createLogger({
     app,
     env,
     bindings,
@@ -37,6 +40,4 @@ export function createNodeLogger({
       fatal: (object, message) => pinoLogger.fatal(object, message)
     }
   })
-
-  return logger
 }

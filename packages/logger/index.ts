@@ -1,7 +1,15 @@
 import { createBrowserLogger } from "./browser"
+import type { LogSink } from "./core"
 import { createNodeLogger } from "./node"
 
 type LogFunction = (message: string, payload?: Record<string, unknown>) => void
+type LogLevel = keyof LogSink
+
+const LOG_LEVELS = new Set<string>(["trace", "debug", "info", "warn", "error", "fatal"])
+
+function toLogLevel(value: string | undefined): LogLevel | undefined {
+  return value && LOG_LEVELS.has(value) ? (value as LogLevel) : undefined
+}
 
 export { createLogger, type Logger, type LogSink } from "./core"
 
@@ -31,14 +39,14 @@ function getLogger() {
   // Get app name from environment (fallback to "unknown")
   const app = (isNode ? process.env.KAJA_APP_NAME : viteEnv("KAJA_APP_NAME")) ?? "unknown"
 
-  // Get log level from environment (fallback to "warn")
-  const level = (isNode ? process.env.KAJA_LOG_LEVEL : viteEnv("KAJA_LOG_LEVEL")) ?? "warn"
+  // Get log level from environment; unset means no logging at all
+  const level = toLogLevel(isNode ? process.env.KAJA_LOG_LEVEL : viteEnv("KAJA_LOG_LEVEL"))
 
   // Get environment mode
   const env = isNode ? (process.env.NODE_ENV ?? "development") : (viteEnv("MODE") ?? "production")
 
   if (isBrowser) {
-    const browserLogger = createBrowserLogger({ app, env })
+    const browserLogger = createBrowserLogger({ app, env, level })
 
     // Convert to new API signature: log(message, payload) instead of log(payload, message)
     cachedLogger = {
@@ -91,5 +99,5 @@ export function fatal(message: string, payload?: Record<string, unknown>) {
   getLogger().fatal(message, payload)
 }
 
-// Convenience alias
-export const log = info
+// Default export: callable as log(message, payload) (alias for info), with log.trace/debug/warn/error/fatal
+export default Object.assign(info, { trace, debug, info, warn, error, fatal })
