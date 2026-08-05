@@ -9,6 +9,7 @@
     "start": "bun run dist/index.js"
   },
   "dependencies": {
-    "@kaja/logger": "workspace:*"
+    "@kaja/logger": "workspace:*",
+    "@kaja/shared": "workspace:*"
   }
 }

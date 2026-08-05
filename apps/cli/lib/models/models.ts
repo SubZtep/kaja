@@ -29,8 +29,11 @@ export async function writeModelsTemplate(which: "fireworks" | "ollama") {
  * existing file is renamed to .bak (.bak2, .bak3, ...) rather than
  * overwritten in place, so a bad fetch is always recoverable.
  */
-export async function fetchModelsToml(apiBaseUrl: string): Promise<{ path: string; backedUpTo?: string }> {
-  return fetchTomlConfig(apiBaseUrl, "/config/models.toml", getModelsPath())
+export async function fetchModelsToml(
+  apiBaseUrl: string,
+  token?: string
+): Promise<{ path: string; backedUpTo?: string }> {
+  return fetchTomlConfig(apiBaseUrl, "/config/models.toml", getModelsPath(), token)
 }
 
 /** Flatten each model entry with its provider's credentials. */

@@ -20,6 +20,18 @@ function stubFetch(bodies: Record<string, string>, status: number) {
   }) as typeof fetch
 }
 
+/** Like stubFetch, but records Authorization headers from each request. */
+function stubFetchCaptureAuth(bodies: Record<string, string>, status: number) {
+  const authHeaders: (string | null)[] = []
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    const path = new URL(url instanceof Request ? url.url : url).pathname
+    const headers = new Headers(init?.headers)
+    authHeaders.push(headers.get("authorization"))
+    return new Response(bodies[path] ?? "", { status })
+  }) as typeof fetch
+  return authHeaders
+}
+
 afterEach(async () => {
   globalThis.fetch = originalFetch
   const { $ } = await import("bun")
@@ -32,6 +44,20 @@ test("fetch without api.baseUrl configured exits 1", async () => {
   const { code, text } = await runConfigCli(["fetch"], {})
   expect(code).toBe(1)
   expect(text).toContain("baseUrl")
+})
+
+test("fetch sends Bearer token from services.api.token", async () => {
+  const authHeaders = stubFetchCaptureAuth(
+    { "/config/mcp.toml": '[[servers]]\nid = "x"\n', "/config/models.toml": '[[models]]\nid = "y"\n' },
+    200
+  )
+  const services: Partial<ServicesFile> = {
+    api: { baseUrl: "http://api.test", token: "shared-secret" }
+  }
+  const { code } = await runConfigCli(["fetch"], services)
+  expect(code).toBe(0)
+  expect(authHeaders.length).toBe(2)
+  expect(authHeaders.every(h => h === "Bearer shared-secret")).toBe(true)
 })
 
 test("fetch writes mcp.toml and models.toml on success", async () => {

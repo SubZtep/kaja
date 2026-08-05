@@ -22,7 +22,8 @@ const ALLOWED_COMMANDS = new Set([
   "ps"
 ])
 
-const SHELL_INJECTION_CHARS = [";", "|", "&", "`"]
+/** Characters / sequences that enable shell metacharacter abuse if args are interpolated. */
+const SHELL_INJECTION_CHARS = [";", "|", "&", "`", "$", "(", ")", "<", ">", "\n", "\r", "\0"] as const
 
 /**
  * Check a single arg value for dangerous shell injection characters

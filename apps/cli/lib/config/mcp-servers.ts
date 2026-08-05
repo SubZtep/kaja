@@ -19,8 +19,8 @@ export function getMcpPath() {
  * existing file is renamed to .bak (.bak2, .bak3, ...) rather than
  * overwritten in place, so a bad fetch is always recoverable.
  */
-export async function fetchMcpToml(apiBaseUrl: string): Promise<{ path: string; backedUpTo?: string }> {
-  return fetchTomlConfig(apiBaseUrl, "/config/mcp.toml", getMcpPath())
+export async function fetchMcpToml(apiBaseUrl: string, token?: string): Promise<{ path: string; backedUpTo?: string }> {
+  return fetchTomlConfig(apiBaseUrl, "/config/mcp.toml", getMcpPath(), token)
 }
 
 /**

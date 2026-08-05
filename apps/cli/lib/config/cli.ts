@@ -28,8 +28,10 @@ export async function runConfigCli(
   if (command === "fetch") {
     const apiUrl = flags.apiUrl ?? services.api?.baseUrl
     if (!apiUrl) return { code: 1, text: t("config.apiUrlMissing") }
+    // Prefer services.toml [api].token; fall back to env for local/dev.
+    const token = services.api?.token ?? process.env.CONFIG_API_TOKEN
     try {
-      const results = await Promise.all([fetchMcpToml(apiUrl), fetchModelsToml(apiUrl)])
+      const results = await Promise.all([fetchMcpToml(apiUrl, token), fetchModelsToml(apiUrl, token)])
       if (flags.apiUrl) await saveFetchedApiBaseUrl(flags.apiUrl)
       // Best-effort: an unparseable models.toml just means no chat model
       // gets auto-selected — still report the fetch itself as successful,

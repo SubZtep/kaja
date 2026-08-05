@@ -19,14 +19,20 @@ async function nextBackupPath(path: string): Promise<string> {
  * Downloads a text config file from the Kaja API and writes it to `path`. An
  * existing file is renamed to .bak (.bak2, .bak3, ...) rather than
  * overwritten in place, so a bad fetch is always recoverable.
+ *
+ * `token` is the API CONFIG_API_TOKEN (Bearer); required on servers that enforce
+ * fail-closed config auth.
  */
 export async function fetchTomlConfig(
   apiBaseUrl: string,
   route: string,
-  path: string
+  path: string,
+  token?: string
 ): Promise<{ path: string; backedUpTo?: string }> {
   const url = new URL(route, apiBaseUrl)
-  const res = await fetch(url)
+  const headers: HeadersInit = {}
+  if (token) headers.authorization = `Bearer ${token}`
+  const res = await fetch(url, { headers })
   if (!res.ok) throw new Error(t("config.fetchFailed", { status: String(res.status) }))
   const toml = await res.text()
 

@@ -19,8 +19,10 @@ export const ServicesTelegramSchema = z.object({
 
 // Only needed by commands that talk to the Kaja backend (e.g.
 // `kaja config fetch`), unlike models.toml which is a local-provider file.
+// `token` is the API's CONFIG_API_TOKEN (Bearer) for /config/* routes.
 export const ServicesApiSchema = z.object({
-  baseUrl: z.url()
+  baseUrl: z.url(),
+  token: z.string().min(1).optional()
 })
 
 // External service credentials: each group is independently optional — when

@@ -36,6 +36,18 @@ test("api group requires a valid baseUrl", () => {
   expect(() => ServicesFileSchema.parse({ api: { baseUrl: "not-a-url" } })).toThrow()
 })
 
+test("api group accepts optional config token", () => {
+  const parsed = ServicesFileSchema.parse({
+    api: { baseUrl: "https://api.kaja.io", token: "shared-secret" }
+  })
+  expect(parsed.api).toEqual({ baseUrl: "https://api.kaja.io", token: "shared-secret" })
+  expect(() =>
+    ServicesFileSchema.parse({
+      api: { baseUrl: "https://api.kaja.io", token: "" }
+    })
+  ).toThrow()
+})
+
 test("telegram group with valid botToken and allowedUserIds validates", () => {
   const parsed = ServicesFileSchema.parse({
     telegram: { botToken: "123:abc", allowedUserIds: [42, 7] }

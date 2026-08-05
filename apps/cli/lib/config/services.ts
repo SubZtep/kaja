@@ -64,7 +64,11 @@ export async function services(): Promise<ServicesFile> {
 /** Renders a ServicesFile back to TOML text — flat sections, no arrays except allowedUserIds. */
 function renderServicesToml(data: ServicesFile) {
   const sections: string[] = []
-  if (data.api) sections.push(`[api]\nbaseUrl = ${tomlString(data.api.baseUrl)}`)
+  if (data.api) {
+    const lines = [`[api]`, `baseUrl = ${tomlString(data.api.baseUrl)}`]
+    if (data.api.token) lines.push(`token = ${tomlString(data.api.token)}`)
+    sections.push(lines.join("\n"))
+  }
   if (data.location)
     sections.push(
       `[location]\nserviceUrl = ${tomlString(data.location.serviceUrl)}\napiKey = ${tomlString(data.location.apiKey)}`

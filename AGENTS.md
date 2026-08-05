@@ -7,6 +7,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **API** (`apps/api`): Hono REST API with Better Auth, node orchestration, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **CLI** (`apps/cli`): Ink TUI agent chat (personas, tools, MCP, Telegram, optional STT/TTS)
+- **OpenAI proxy** (`apps/openai`): OpenAI-compatible forwarder; picks a random model from db (wip)
 - **Packages**: `@kaja/schema`, `@kaja/sdk`, `@kaja/logger`, `@kaja/shared`
 
 There is **no mobile app** in this monorepo.
@@ -114,8 +115,9 @@ bun run --filter @kaja/cli test
 1. `2026-03-01-uuidv7.sql` — UUIDv7() via pgcrypto
 2. `2026-03-03-better-auth.sql` — Better Auth tables
 3. `2026-03-27-node.sql` — `node` + `command` tables and indexes
+4. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 
-Applied on first Postgres init via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Manual: `apps/api/scripts/db_migration.sh`.
+Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `apps/api/scripts/db_migration.sh` (or apply SQL manually).
 
 ### Node orchestration
 
@@ -126,7 +128,7 @@ Applied on first Postgres init via compose volume `apps/api/migrations` → `doc
 
 ## Environment (summary)
 
-**API** (see `apps/api/.env.example`): `CORS_ORIGIN`, `DATABASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, SMTP, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `GEO_SERVICE_URL`, `GEO_SERVICE_API_KEY`. Optional: `WEB_PUBLIC_URL`, rate-limit window/max vars.
+**API** (see `apps/api/.env.example`): `CORS_ORIGIN`, `DATABASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, SMTP, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `GEO_SERVICE_URL`, `GEO_SERVICE_API_KEY`, `CONFIG_API_TOKEN` (required for `/config/*`; fail-closed). Optional: `WEB_PUBLIC_URL`, rate-limit window/max vars.
 
 **Web** (see `apps/web/.env.example`): `VITE_API_URL`, `VITE_APP_URL`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`. Browser env uses Vite `import.meta.env.MODE` (not `NODE_ENV`).
 

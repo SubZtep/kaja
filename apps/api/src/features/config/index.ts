@@ -12,12 +12,20 @@ const attachServices = async (c: any, next: any) => {
   await next()
 }
 
-/** Same shared-secret token for everyone (no per-user auth); blocks casual/bot scraping of provider API keys. */
+/**
+ * Shared-secret bearer for /config/* (no per-user auth).
+ * Fail-closed: missing/empty CONFIG_API_TOKEN denies every request so provider
+ * API keys in models.toml / model JSON cannot be scraped when misconfigured.
+ */
+export function isValidConfigToken(authHeader: string | undefined | null, token: string | undefined | null): boolean {
+  if (!token) return false
+  return authHeader === `Bearer ${token}`
+}
+
 const configTokenAuth = async (c: any, next: any) => {
   const token = process.env.CONFIG_API_TOKEN
-  if (token) {
-    const authHeader = c.req.header("authorization")
-    if (authHeader !== `Bearer ${token}`) return unauthorized(c)
+  if (!isValidConfigToken(c.req.header("authorization"), token)) {
+    return unauthorized(c)
   }
   await next()
 }

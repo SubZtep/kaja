@@ -32,7 +32,7 @@ src/
     auth/                # Better Auth config + routes + middleware
     nodes/               # /nodes — connect, heartbeat, disconnect, list, stream, commands
     admin/               # /admin — create/list/cancel commands, list all nodes
-    config/              # /config (stub)
+    config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
     users/               # /users
     health/              # /health
     reference/           # /reference (dev OpenAPI UI)
@@ -64,6 +64,7 @@ tests/integration/       # auth, node flow, SSE
 - Node statuses: `idle` | `busy` | `inactive`
 - `SchedulerService` marks inactive nodes on heartbeat timeout
 - Commands: allowlist + shell-injection rejection in `command-validator.ts`
+- `/config/*` is fail-closed: requires non-empty `CONFIG_API_TOKEN` Bearer match (leaks provider API keys otherwise)
 - SSE: longer `idleTimeout` on the Bun server export (255s)
 - OpenAPI UI only when `NODE_ENV === "development"` (`/reference`)
 - Rate limit middleware is mounted (global + `/auth/*`); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
@@ -74,7 +75,7 @@ tests/integration/       # auth, node flow, SSE
 
 See `.env.example`.
 
-**Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `GEO_SERVICE_URL`, `GEO_SERVICE_API_KEY`, `NODE_ENV`.
+**Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `GEO_SERVICE_URL`, `GEO_SERVICE_API_KEY`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`.
 
 **Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`.
 
