@@ -10,7 +10,13 @@ import path from "node:path"
 const OSC8_LINK = "]8;;https://example.comclick me]8;;"
 const PLAIN_FALLBACK = "click me (https://example.com)"
 
-const repoRoot = path.resolve(import.meta.dir, "../..")
+// SGR colour codes (`ESC [ ... m`). Built from a string so the ESC byte isn't
+// a literal control character in a regex.
+const SGR = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g")
+
+// apps/cli - marked-terminal is a CLI-workspace dep and does not resolve from
+// the monorepo root.
+const cliRoot = path.resolve(import.meta.dir, "../..")
 
 // A TERM value that supports-hyperlinks' allowlist does not recognize (this
 // is what Alacritty reports unless TERM is literally "alacritty"), and no
@@ -34,14 +40,17 @@ async function renderLinkInSubprocess(env: Record<string, string>) {
     process.stdout.write(marked.parse("[click me](https://example.com)"))
   `
   const proc = Bun.spawn(["bun", "-e", script], {
-    cwd: repoRoot,
+    cwd: cliRoot,
     env,
     stdout: "pipe",
     stderr: "pipe"
   })
   const out = await new Response(proc.stdout).text()
   await proc.exited
-  return out
+  // marked-terminal colours links, so the OSC 8 sequences arrive interleaved
+  // with SGR codes. Strip only SGR (`ESC [ ... m`) - that leaves the OSC 8
+  // sequences under test untouched.
+  return out.replace(SGR, "")
 }
 
 test("links render as clickable OSC 8 hyperlinks even under a terminal supports-hyperlinks doesn't recognize", async () => {
