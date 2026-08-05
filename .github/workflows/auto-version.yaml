@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - "apps/**"
-      - "packages/**"
   workflow_dispatch:
 
 permissions:
@@ -35,31 +34,19 @@ jobs:
               - 'apps/cli/**'
             web:
               - 'apps/web/**'
-            shared:
-              - 'packages/shared/**'
-            logger:
-              - 'packages/logger/**'
-            sdk:
-              - 'packages/sdk/**'
-            schema:
-              - 'packages/schema/**'
 
       - name: Setup Git
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.sdk == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump, commit, tag, and push once
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.sdk == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true'
         env:
           FILTER_API: ${{ steps.filter.outputs.api }}
           FILTER_CLI: ${{ steps.filter.outputs.cli }}
           FILTER_WEB: ${{ steps.filter.outputs.web }}
-          FILTER_SHARED: ${{ steps.filter.outputs.shared }}
-          FILTER_LOGGER: ${{ steps.filter.outputs.logger }}
-          FILTER_SDK: ${{ steps.filter.outputs.sdk }}
-          FILTER_SCHEMA: ${{ steps.filter.outputs.schema }}
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
@@ -113,18 +100,6 @@ jobs:
           fi
           if [[ "$FILTER_WEB" == "true" ]]; then
             bump_workspace "web" "apps/web"
-          fi
-          if [[ "$FILTER_SHARED" == "true" ]]; then
-            bump_workspace "shared" "packages/shared"
-          fi
-          if [[ "$FILTER_LOGGER" == "true" ]]; then
-            bump_workspace "logger" "packages/logger"
-          fi
-          if [[ "$FILTER_SDK" == "true" ]]; then
-            bump_workspace "sdk" "packages/sdk"
-          fi
-          if [[ "$FILTER_SCHEMA" == "true" ]]; then
-            bump_workspace "schema" "packages/schema"
           fi
 
           if [[ ${#SUMMARY_PARTS[@]} -eq 0 ]]; then

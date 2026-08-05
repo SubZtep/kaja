@@ -6,8 +6,6 @@
 .tmp-test-xdg-config-*/
 apps/cli/assets/datasets/
 dist
-packages/sdk/vendor
-packages/sdk/.build-entry.ts
 node_modules
 pgdata
 *.local.*
