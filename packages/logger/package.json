@@ -9,6 +9,7 @@
   "exports": {
     ".": {
       "types": "./index.ts",
+      "browser": "./index.browser.ts",
       "default": "./index.ts"
     }
   },
