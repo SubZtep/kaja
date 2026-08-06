@@ -24,10 +24,10 @@ const getRandomModelRoute = createRoute({
   method: "get",
   path: "/models",
   tags: ["Config"],
-  summary: "Resolve a random enabled model to its provider credentials",
+  summary: "Resolve a random free+enabled model to its provider credentials",
   responses: {
     200: { description: "OK", content: { "application/json": { schema: resolvedModelSchema } } },
-    404: { description: "No enabled models", content: { "application/json": { schema: errorSchema } } }
+    404: { description: "No free enabled models", content: { "application/json": { schema: errorSchema } } }
   }
 })
 
@@ -51,7 +51,7 @@ export function registerGetModel(app: RouteRegProps) {
   app.openapi(getRandomModelRoute, async c => {
     const modelService = c.get("modelService")
     const result = await modelService.getRandomModelWithProvider()
-    if (!result) return notFound(c, "No enabled models")
+    if (!result) return notFound(c, "No free enabled models")
 
     const { model, provider } = result
     return c.json({

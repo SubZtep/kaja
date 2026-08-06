@@ -36,7 +36,8 @@ const providerFormSchema = z.object({
 const modelFormSchema = z.object({
   providerId: z.string().min(1, "Required"),
   model: z.string().min(1, "Required"),
-  tasks: z.array(z.string()).min(1, "Select at least one task")
+  tasks: z.array(z.string()).min(1, "Select at least one task"),
+  free: z.boolean()
 })
 
 const providerColumnHelper = createColumnHelper<Provider>()
@@ -96,6 +97,13 @@ function makeModelEnabledCell(onToggle: (args: { id: string; enabled: boolean })
   return function ModelEnabledCell(info: CellContext<Model, boolean>) {
     const model = info.row.original
     return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: model.id, enabled })} />
+  }
+}
+
+function makeModelFreeCell(onToggle: (args: { id: string; free: boolean }) => void) {
+  return function ModelFreeCell(info: CellContext<Model, boolean>) {
+    const model = info.row.original
+    return <Checkbox checked={info.getValue()} onCheckedChange={free => onToggle({ id: model.id, free })} />
   }
 }
 
@@ -159,7 +167,7 @@ function ModelsPage() {
   })
 
   const createModel = useMutation({
-    mutationFn: (payload: { providerId: string; model: string; tasks: ModelTask[] }) =>
+    mutationFn: (payload: { providerId: string; model: string; tasks: ModelTask[]; free: boolean }) =>
       sdk.models.create({ ...payload, enabled: true }),
     onSuccess: () => {
       invalidateModels()
@@ -170,6 +178,12 @@ function ModelsPage() {
 
   const toggleModelEnabled = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => sdk.models.update(id, { enabled }),
+    onSuccess: invalidateModels,
+    onError: (err: Error) => toast.error(err.message || "Failed to update model")
+  })
+
+  const toggleModelFree = useMutation({
+    mutationFn: ({ id, free }: { id: string; free: boolean }) => sdk.models.update(id, { free }),
     onSuccess: invalidateModels,
     onError: (err: Error) => toast.error(err.message || "Failed to update model")
   })
@@ -199,13 +213,19 @@ function ModelsPage() {
   const providers = providersQuery.data ?? []
 
   const modelForm = useAppForm({
-    defaultValues: { providerId: providers[0]?.id ?? "", model: "", tasks: ["chat"] as string[] },
+    defaultValues: {
+      providerId: providers[0]?.id ?? "",
+      model: "",
+      tasks: ["chat"] as string[],
+      free: false
+    },
     validators: { onSubmit: modelFormSchema },
     onSubmit: async ({ value, formApi }) => {
       await createModel.mutateAsync({
         providerId: value.providerId,
         model: value.model,
-        tasks: value.tasks as ModelTask[]
+        tasks: value.tasks as ModelTask[],
+        free: value.free
       })
       formApi.reset()
     }
@@ -257,6 +277,11 @@ function ModelsPage() {
       cell: makeModelEnabledCell(args => toggleModelEnabled.mutate(args)),
       enableColumnFilter: false
     }),
+    modelColumnHelper.accessor("free", {
+      header: "Free",
+      cell: makeModelFreeCell(args => toggleModelFree.mutate(args)),
+      enableColumnFilter: false
+    }),
     modelColumnHelper.accessor("createdAt", {
       header: "Created",
       cell: ModelCreatedAtCell,
@@ -273,6 +298,7 @@ function ModelsPage() {
 
   const models = modelsQuery.data ?? []
   const enabledCount = models.filter(m => m.enabled).length
+  const freeCount = models.filter(m => m.free).length
 
   return (
     <>
@@ -281,6 +307,7 @@ function ModelsPage() {
         description={
           <>
             Manage the providers and models published in the generated <code className="text-fg">models.toml</code>.
+            Free models are exposed via <code className="text-fg">GET /config/models</code>.
           </>
         }
         meta="models.toml"
@@ -290,6 +317,7 @@ function ModelsPage() {
         </ValueBox>
         <ValueBox label="Models">{models.length}</ValueBox>
         <ValueBox label="Enabled">{enabledCount}</ValueBox>
+        <ValueBox label="Free">{freeCount}</ValueBox>
       </PageHeader>
 
       {providersQuery.error && <p className="mb-6 text-red-400 text-sm">{providersQuery.error.message}</p>}
@@ -365,6 +393,9 @@ function ModelsPage() {
                   </CheckboxGroup>
                 </div>
               )}
+            </modelForm.AppField>
+            <modelForm.AppField name="free">
+              {field => <field.CheckboxField label="Free (exposed on /config/models)" className="sm:col-span-3" />}
             </modelForm.AppField>
             <Button type="submit" className="justify-self-start sm:col-span-3" loading={createModel.isPending}>
               Add Model

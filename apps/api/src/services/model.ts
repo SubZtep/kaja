@@ -58,11 +58,11 @@ export class ModelService {
   async createModel(input: CreateModelRequest): Promise<Model> {
     const result = await this.#db.query(
       `
-      INSERT INTO model (provider_id, model, tasks, enabled)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO model (provider_id, model, tasks, enabled, free)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
       `,
-      [input.providerId, input.model, input.tasks, input.enabled]
+      [input.providerId, input.model, input.tasks, input.enabled, input.free]
     )
 
     return this.#rowToModel(result.rows[0])
@@ -76,11 +76,19 @@ export class ModelService {
           model = COALESCE($3, model),
           tasks = COALESCE($4, tasks),
           enabled = COALESCE($5, enabled),
+          free = COALESCE($6, free),
           updated_at = NOW()
       WHERE id = $1
       RETURNING *
       `,
-      [id, input.providerId ?? null, input.model ?? null, input.tasks ?? null, input.enabled ?? null]
+      [
+        id,
+        input.providerId ?? null,
+        input.model ?? null,
+        input.tasks ?? null,
+        input.enabled ?? null,
+        input.free ?? null
+      ]
     )
 
     return result.rows[0] ? this.#rowToModel(result.rows[0]) : null
@@ -129,7 +137,7 @@ export class ModelService {
     }
   }
 
-  /** A random enabled model with its resolved provider, for callers that don't care which model they get. */
+  /** A random free+enabled model with its resolved provider (GET /config/models). */
   async getRandomModelWithProvider(): Promise<{ model: Model; provider: Provider } | null> {
     const { rows } = await this.#db.query(
       `
@@ -141,7 +149,7 @@ export class ModelService {
              p.updated_at AS provider_updated_at
       FROM model m
       JOIN provider p ON p.id = m.provider_id
-      WHERE m.enabled
+      WHERE m.enabled AND m.free
       ORDER BY random()
       LIMIT 1
       `
@@ -198,6 +206,7 @@ export class ModelService {
       model: row.model,
       tasks: row.tasks,
       enabled: row.enabled,
+      free: row.free,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     }

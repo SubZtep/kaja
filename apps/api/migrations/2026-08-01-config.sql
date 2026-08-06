@@ -32,9 +32,11 @@ CREATE TABLE IF NOT EXISTS "model" (
   "model" text not null,
   "tasks" text[] not null default '{}',
   "enabled" boolean not null default true,
+  "free" boolean not null default false,
   "created_at" timestamptz default CURRENT_TIMESTAMP not null,
   "updated_at" timestamptz default CURRENT_TIMESTAMP not null
 );
 
 CREATE INDEX IF NOT EXISTS "model_enabled_idx" ON "model" ("enabled");
+CREATE INDEX IF NOT EXISTS "model_free_idx" ON "model" ("free");
 CREATE INDEX IF NOT EXISTS "model_provider_id_idx" ON "model" ("provider_id");
