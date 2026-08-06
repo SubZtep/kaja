@@ -1,3 +1,6 @@
+import { LandingSection, LandingSectionTitle } from "../../../components/ui/LandingSection"
+import { Section } from "../../../components/ui/Section"
+
 const FEATURES = [
   {
     glyph: "~/",
@@ -13,24 +16,19 @@ const FEATURES = [
 
 export function WhyKaja() {
   return (
-    <section className="border-border border-y bg-surface-2">
-      <div className="mx-auto max-w-280 px-6 py-16">
-        <div className="mb-7 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="m-0 font-bold text-fg text-[26px]">Why Kaja</h2>
-          <span className="font-mono text-[#6e7681] text-xs">built with Bun + TypeScript</span>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map(f => (
-            <div key={f.title} className="rounded-xl border border-border bg-surface p-5.5">
-              <div className="mb-3.5 flex size-8 items-center justify-center rounded-md border border-neon/25 bg-neon/15 font-mono text-neon text-base">
-                {f.glyph}
-              </div>
-              <div className="mb-1.5 font-semibold text-fg text-[15px]">{f.title}</div>
-              <div className="text-[13.5px] text-muted">{f.desc}</div>
+    <LandingSection alt contentClassName="py-16">
+      <LandingSectionTitle title="Why Kaja" meta="built with Bun + TypeScript" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {FEATURES.map(f => (
+          <Section key={f.title}>
+            <div className="mb-3.5 flex size-8 items-center justify-center rounded-md border border-neon/25 bg-neon/15 font-mono text-base text-neon">
+              {f.glyph}
             </div>
-          ))}
-        </div>
+            <div className="mb-1.5 font-semibold text-fg text-[15px]">{f.title}</div>
+            <div className="text-[13.5px] text-muted">{f.desc}</div>
+          </Section>
+        ))}
       </div>
-    </section>
+    </LandingSection>
   )
 }

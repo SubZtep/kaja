@@ -4,6 +4,8 @@ import type { User } from "better-auth"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
+import { PageHeader } from "../../components/ui/PageHeader"
+import { Section } from "../../components/ui/Section"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { userRequired } from "../../lib/loaders"
@@ -17,28 +19,31 @@ function Profile() {
   const user = Route.useLoaderData()
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <h2 className="my-0 text-3xl font-headline font-extrabold tracking-tight text-fg">Profile</h2>
-        <p className="text-sm text-muted">
-          Logged in with the {user.emailVerified ? "verified" : "unverified"}{" "}
-          <strong className="text-fg">{user.email}</strong> as <strong className="text-neon">{user.role}</strong>.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Profile"
+        description={
+          <>
+            Logged in with the {user.emailVerified ? "verified" : "unverified"}{" "}
+            <strong className="text-fg">{user.email}</strong> as <strong className="text-neon">{user.role}</strong>.
+          </>
+        }
+        meta="account"
+      />
 
-      <div className="grid sm:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-border/40 bg-surface p-6 sm:row-span-2">
-          <h3 className="mb-4 font-headline font-bold text-fg">Edit Personal Data</h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Section className="sm:row-span-2">
+          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Edit Personal Data</h2>
           <EditUser user={user} />
-        </div>
-        <div className="rounded-xl border border-border/40 bg-surface p-6">
-          <h3 className="mb-4 font-headline font-bold text-fg">Change Email</h3>
+        </Section>
+        <Section>
+          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Change Email</h2>
           <ChangeEmail />
-        </div>
-        <div className="rounded-xl border border-border/40 bg-surface p-6">
-          <h3 className="mb-4 font-headline font-bold text-fg">Change Password</h3>
+        </Section>
+        <Section>
+          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Change Password</h2>
           <ChangePassword />
-        </div>
+        </Section>
       </div>
     </div>
   )
@@ -195,7 +200,7 @@ function ChangePassword() {
 
       <form.AppField name="revokeOtherSessions">
         {field => (
-          <field.CheckboxField label="Revoke other sessions" className="flex justify-end [&>label]:w-auto! mt-1" />
+          <field.CheckboxField label="Revoke other sessions" className="mt-1 flex justify-end [&>label]:w-auto!" />
         )}
       </form.AppField>
 

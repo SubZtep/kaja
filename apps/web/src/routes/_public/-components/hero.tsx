@@ -1,5 +1,6 @@
 import { Star } from "lucide-react"
 import { useEffect, useState } from "react"
+import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { getInstallCmd } from "../../../lib/vars"
 
 export function Hero() {
@@ -25,7 +26,7 @@ export function Hero() {
             "radial-gradient(closest-side,color-mix(in srgb, var(--color-neon) 20%, transparent),transparent 70%)"
         }}
       />
-      <div className="relative mx-auto grid max-w-280 grid-cols-1 items-center gap-14 px-6 pt-24 pb-10 md:grid-cols-[1.1fr_1fr]">
+      <ContentWidth className="relative grid grid-cols-1 items-center gap-14 pt-24 pb-10 md:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 font-mono text-muted text-xs">
             <span className="size-1.5 rounded-full bg-ice" /> open source &middot; MIT &middot; WIP
@@ -98,7 +99,7 @@ export function Hero() {
             </div>
           </div>
         </div>
-      </div>
+      </ContentWidth>
     </section>
   )
 }

@@ -1,3 +1,6 @@
+import { LandingSection, LandingSectionTitle } from "../../../components/ui/LandingSection"
+import { Section } from "../../../components/ui/Section"
+
 const ITEMS = [
   {
     title: "config.json",
@@ -38,33 +41,33 @@ const ITEMS = [
 
 export function Configuration() {
   return (
-    <section className="border-border border-y bg-surface-2">
-      <div className="mx-auto max-w-280 px-6 py-18">
-        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="m-0 font-bold text-fg text-[26px]">Configuration</h2>
-          <span className="font-mono text-[#6e7681] text-xs">~/.config/kaja/</span>
-        </div>
-        <p className="mb-7 max-w-160 text-[14.5px] text-muted">
-          Everything lives in plain files. Edit them by hand, or let{" "}
-          <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">kaja --wizard</code> write them for
-          you.
-        </p>
-        <div className="mb-5 overflow-x-auto rounded-xl border border-border bg-surface px-5.5 py-5">
-          <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
-            {
-              "~/.config/kaja/\n├─ config.json     one required group (llm), rest optional\n├─ models.toml     model catalog per provider\n├─ mcp.toml        Model Context Protocol tool servers\n├─ personas/*.toml one behaviour per file\n└─ datasets/*.json custom fields for personas to collect"
-            }
-          </code>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {ITEMS.map(item => (
-            <div key={item.title} className="rounded-xl border border-border bg-surface px-5 py-4.5">
-              <div className="mb-1.5 font-semibold text-fg text-sm">{item.title}</div>
-              <div className="text-muted text-sm">{item.desc}</div>
-            </div>
-          ))}
-        </div>
+    <LandingSection alt>
+      <LandingSectionTitle
+        title="Configuration"
+        meta="~/.config/kaja/"
+        description={
+          <>
+            Everything lives in plain files. Edit them by hand, or let{" "}
+            <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">kaja --wizard</code> write them for
+            you.
+          </>
+        }
+      />
+      <Section className="mb-5 overflow-x-auto">
+        <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
+          {
+            "~/.config/kaja/\n├─ config.json     one required group (llm), rest optional\n├─ models.toml     model catalog per provider\n├─ mcp.toml        Model Context Protocol tool servers\n├─ personas/*.toml one behaviour per file\n└─ datasets/*.json custom fields for personas to collect"
+          }
+        </code>
+      </Section>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {ITEMS.map(item => (
+          <Section key={item.title}>
+            <div className="mb-1.5 font-semibold text-fg text-sm">{item.title}</div>
+            <div className="text-muted text-sm">{item.desc}</div>
+          </Section>
+        ))}
       </div>
-    </section>
+    </LandingSection>
   )
 }

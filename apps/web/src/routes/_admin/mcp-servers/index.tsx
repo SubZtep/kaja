@@ -10,6 +10,8 @@ import { Button } from "../../../components/form/primitives/Button"
 import { Checkbox } from "../../../components/form/primitives/Checkbox"
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog"
 import { Loader } from "../../../components/ui/Loader"
+import { PageHeader } from "../../../components/ui/PageHeader"
+import { Section } from "../../../components/ui/Section"
 import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
 import { useApiSdk } from "../../../hooks/use-api-sdk"
@@ -193,25 +195,25 @@ function McpServersPage() {
 
   return (
     <>
-      <header className="mb-12 flex flex-col lg:flex-row justify-between lg:items-end gap-8">
-        <div className="max-w-2xl">
-          <h2 className="my-0 mb-4 text-5xl font-headline font-bold tracking-tighter text-fg">MCP Servers</h2>
-          <p className="max-w-lg text-lg leading-relaxed text-muted">
+      <PageHeader
+        title="MCP Servers"
+        description={
+          <>
             Manage the MCP servers published in the generated <code className="text-fg">mcp.toml</code>.
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <ValueBox label="Total" variant="neon">
-            {mcpServers.length}
-          </ValueBox>
-          <ValueBox label="Enabled">{enabledCount}</ValueBox>
-        </div>
-      </header>
+          </>
+        }
+        meta="mcp.toml"
+      >
+        <ValueBox label="Total" variant="neon">
+          {mcpServers.length}
+        </ValueBox>
+        <ValueBox label="Enabled">{enabledCount}</ValueBox>
+      </PageHeader>
 
-      {error && <p className="mb-6 text-sm text-red-400">{error.message}</p>}
+      {error && <p className="mb-6 text-red-400 text-sm">{error.message}</p>}
 
-      <section className="mb-8 rounded-2xl bg-surface p-6 shadow-2xl">
-        <h3 className="mb-4 font-headline font-bold text-fg">Add MCP Server</h3>
+      <Section className="mb-4">
+        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Add MCP Server</h2>
         <form
           onSubmit={e => {
             e.preventDefault()
@@ -231,17 +233,17 @@ function McpServersPage() {
           <form.AppField name="env">
             {field => <field.TextField label="Env" placeholder="KEY=value, OTHER=value" />}
           </form.AppField>
-          <Button type="submit" className="sm:col-span-2 justify-self-start" loading={createMcpServer.isPending}>
+          <Button type="submit" className="justify-self-start sm:col-span-2" loading={createMcpServer.isPending}>
             Add Server
           </Button>
         </form>
-      </section>
+      </Section>
 
-      <section className="overflow-hidden rounded-2xl bg-surface shadow-2xl">
-        <div className="px-6 pb-6 pt-6">
+      <Section padded={false}>
+        <div className="px-5.5 py-5 sm:px-6">
           <Table columns={columns} data={mcpServers} showFilters={false} />
         </div>
-      </section>
+      </Section>
     </>
   )
 }

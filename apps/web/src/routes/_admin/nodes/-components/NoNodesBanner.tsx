@@ -1,17 +1,18 @@
 import { Server } from "lucide-react"
+import { Section } from "../../../../components/ui/Section"
 
 export function NoNodesBanner() {
   return (
-    <section className="rounded-2xl bg-surface p-12 shadow-2xl text-center">
-      <div className="flex justify-center mb-4">
-        <div className="rounded-full bg-surface-2 p-4">
-          <Server size={32} className="text-muted" />
+    <Section className="py-12 text-center">
+      <div className="mb-4 flex justify-center">
+        <div className="flex size-12 items-center justify-center rounded-md border border-border bg-surface-2">
+          <Server size={24} className="text-muted" />
         </div>
       </div>
-      <h3 className="mb-2 text-xl font-headline font-bold text-fg">No nodes connected</h3>
-      <p className="max-w-md mx-auto leading-relaxed text-muted">
+      <h2 className="m-0 mb-2 font-semibold text-fg text-[15px]">No nodes connected</h2>
+      <p className="mx-auto m-0 max-w-md text-[13.5px] text-muted">
         Connect a CLI node to start seeing your orchestrated nodes here.
       </p>
-    </section>
+    </Section>
   )
 }

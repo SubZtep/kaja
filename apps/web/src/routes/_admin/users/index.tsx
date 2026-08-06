@@ -7,6 +7,8 @@ import { Eye, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
 import { Loader } from "../../../components/ui/Loader"
+import { PageHeader } from "../../../components/ui/PageHeader"
+import { Section } from "../../../components/ui/Section"
 import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
 import { useAuthClient } from "../../../hooks/auth-client"
@@ -38,16 +40,16 @@ function IdentityCell(info: CellContext<UsersColumns, string>) {
     .slice(0, 2)
   return (
     <div className="flex items-center gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-2">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-surface-2">
         {user.image ? (
-          <img alt={user.name ?? ""} className="w-full h-full object-cover rounded-lg" src={user.image} />
+          <img alt={user.name ?? ""} className="h-full w-full object-cover" src={user.image} />
         ) : (
-          <span className="text-sm font-bold text-neon">{initials}</span>
+          <span className="font-mono text-neon text-xs font-semibold">{initials}</span>
         )}
       </div>
       <div>
-        <div className="text-sm font-bold text-fg">{info.getValue()}</div>
-        <div className="text-xs text-muted">{user.email}</div>
+        <div className="font-medium text-fg text-sm">{info.getValue()}</div>
+        <div className="text-muted text-xs">{user.email}</div>
       </div>
     </div>
   )
@@ -56,7 +58,7 @@ function IdentityCell(info: CellContext<UsersColumns, string>) {
 function AccessLevelCell(info: CellContext<UsersColumns, string | undefined>) {
   const role = info.getValue() ?? "user"
   const style = ROLE_STYLES[role] ?? ROLE_STYLES.user
-  return <span className={`text-xs font-medium px-3 py-1 rounded ${style}`}>{capitalized(role)}</span>
+  return <span className={`rounded-md px-2.5 py-1 font-mono text-xs ${style}`}>{capitalized(role)}</span>
 }
 
 function StatusCell(info: CellContext<UsersColumns, boolean>) {
@@ -64,8 +66,8 @@ function StatusCell(info: CellContext<UsersColumns, boolean>) {
   if (verified) {
     return (
       <div className="flex items-center gap-2">
-        <div className="h-1.5 w-1.5 rounded-full bg-neon shadow-[0_0_8px_rgba(255,63,181,0.7)]" />
-        <span className="text-xs text-muted">Authenticated</span>
+        <div className="h-1.5 w-1.5 rounded-full bg-neon" />
+        <span className="text-muted text-xs">Authenticated</span>
       </div>
     )
   }
@@ -87,7 +89,7 @@ function ActionsCell(info: { readonly row: { readonly original: { readonly id: s
       <Link
         to="/users/$userId"
         params={{ userId: info.row.original.id }}
-        className="inline-flex rounded-lg p-2 text-neon transition-all hover:bg-neon/10"
+        className="inline-flex rounded-md p-2 text-neon transition-colors hover:bg-neon/10"
       >
         <Eye size={18} />
       </Link>
@@ -169,40 +171,36 @@ function UserList() {
 
   return (
     <>
-      <header className="mb-12 flex flex-col lg:flex-row justify-between lg:items-end gap-8">
-        <div className="max-w-2xl">
-          <h2 className="my-0 mb-4 text-5xl font-headline font-bold tracking-tighter text-fg">User Directory</h2>
-          <p className="max-w-lg text-lg leading-relaxed text-muted">
-            Manage your organization's digital identity hierarchy and access controls.
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <ValueBox label="Total Users" variant="neon">
-            {userCount.toLocaleString()}
-          </ValueBox>
-          <ValueBox label="Verified">{activeCount}</ValueBox>
-        </div>
-      </header>
+      <PageHeader
+        title="Users"
+        description="Manage your organization's identity hierarchy and access controls."
+        meta="directory"
+      >
+        <ValueBox label="Total Users" variant="neon">
+          {userCount.toLocaleString()}
+        </ValueBox>
+        <ValueBox label="Verified">{activeCount}</ValueBox>
+      </PageHeader>
 
-      <section className="overflow-hidden rounded-2xl bg-surface shadow-2xl">
-        <div className="flex flex-wrap items-center gap-4 bg-surface px-6 py-6">
-          <div className="flex-1 min-w-70 relative">
-            <Search size={18} className="absolute top-1/2 left-4 -translate-y-1/2 text-muted" />
+      <Section padded={false}>
+        <div className="flex flex-wrap items-center gap-4 border-border border-b px-5.5 py-5 sm:px-6">
+          <div className="relative min-w-70 flex-1">
+            <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
             <input
               type="text"
               placeholder="Search by name, email, or role..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg bg-surface-2 py-3 pr-4 pl-12 text-fg outline-none transition-all placeholder:text-muted/70 focus:ring-1 focus:ring-neon"
+              className="w-full rounded-md border border-border bg-surface-2 py-2.5 pr-3 pl-10 text-fg text-sm outline-none transition-colors placeholder:text-muted/70 focus:border-neon/50"
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="mr-2 text-sm font-bold uppercase tracking-tighter text-muted">Filters:</span>
+            <span className="mr-1 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider">Filters</span>
             {roleFilter ? (
               <button
                 type="button"
                 onClick={() => setRoleFilter("")}
-                className="flex items-center gap-2 rounded-full bg-surface-2 px-4 py-2 text-xs font-semibold text-fg transition-all hover:brightness-110"
+                className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-fg text-xs transition-colors hover:border-neon/40"
               >
                 Role: {capitalized(roleFilter)} <X size={12} />
               </button>
@@ -211,14 +209,14 @@ function UserList() {
                 <button
                   type="button"
                   onClick={() => setRoleFilter("admin")}
-                  className="flex items-center gap-2 rounded-full bg-surface-2 px-4 py-2 text-xs font-semibold text-muted transition-all hover:text-fg"
+                  className="rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-muted text-xs transition-colors hover:text-fg"
                 >
                   Admin
                 </button>
                 <button
                   type="button"
                   onClick={() => setRoleFilter("user")}
-                  className="flex items-center gap-2 rounded-full bg-surface-2 px-4 py-2 text-xs font-semibold text-muted transition-all hover:text-fg"
+                  className="rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-muted text-xs transition-colors hover:text-fg"
                 >
                   User
                 </button>
@@ -231,18 +229,18 @@ function UserList() {
                   setSearchQuery("")
                   setRoleFilter("")
                 }}
-                className="ml-2 text-xs font-bold uppercase tracking-widest text-neon hover:underline"
+                className="ml-1 font-mono text-neon text-[11px] uppercase tracking-wider hover:text-neon-hi"
               >
-                Clear All
+                Clear
               </button>
             )}
           </div>
         </div>
 
-        <div className="px-6 pb-6">
+        <div className="px-5.5 py-5 sm:px-6">
           <Table columns={columns} data={filteredUsers} showFilters={false} />
         </div>
-      </section>
+      </Section>
     </>
   )
 }

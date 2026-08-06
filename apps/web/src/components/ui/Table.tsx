@@ -88,7 +88,10 @@ export function Table({
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
-                  <th key={header.id} className="p-4 text-left border-b border-border/40 align-top">
+                  <th
+                    key={header.id}
+                    className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
+                  >
                     {header.isPlaceholder ? null : (
                       <button
                         type="button"
@@ -116,7 +119,7 @@ export function Table({
             {rows.map(row => (
               <tr key={row.id}>
                 {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="p-4 border-b border-border/40">
+                  <td key={cell.id} className="border-border border-b p-3">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -228,9 +231,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
               onClick={() => table.setPageIndex(item.value as number)}
               className={cn(
                 "min-w-10 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                pageIndex === item.value
-                  ? "bg-neon text-bg shadow-[0_0_12px_rgba(255,63,181,0.5)]"
-                  : "text-fg hover:bg-surface-2 hover:text-neon"
+                pageIndex === item.value ? "bg-neon text-bg" : "text-fg hover:bg-surface-2 hover:text-neon"
               )}
             >
               {(item.value as number) + 1}

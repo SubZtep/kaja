@@ -1,24 +1,28 @@
 import { cn } from "@kaja/shared"
-import type { CSSProperties } from "react"
+import type { CSSProperties, ReactNode } from "react"
 
+/** Card surface shared by landing tiles and admin panels. Renders a div so it nests cleanly inside page sections. */
 export function Section({
   className,
   style,
-  children
+  children,
+  padded = true
 }: Readonly<{
   className?: string
   style?: CSSProperties
-  children: React.ReactNode
+  children: ReactNode
+  padded?: boolean
 }>) {
   return (
-    <section
+    <div
       className={cn(
-        "cursor-default mx-auto rounded-2xl sm:border sm:border-border/40 sm:bg-surface sm:px-5 sm:py-4 sm:shadow-md",
+        "overflow-hidden rounded-xl border border-border bg-surface",
+        padded && "px-5.5 py-5 sm:px-6 sm:py-6",
         className
       )}
       style={style}
     >
       {children}
-    </section>
+    </div>
   )
 }

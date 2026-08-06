@@ -1,11 +1,15 @@
 import { Star } from "lucide-react"
+import { BrandMark } from "../../../components/layout/BrandMark"
+import { ContentWidth } from "../../../components/layout/ContentWidth"
 
 export function Footer() {
   return (
     <section className="border-border border-t">
-      <div className="mx-auto flex max-w-280 flex-wrap items-center justify-between gap-4 px-6 py-14">
+      <ContentWidth className="flex flex-wrap items-center justify-between gap-4 py-14">
         <div>
-          <div className="mb-1 font-mono font-semibold text-fg text-[15px]">&gt; kaja</div>
+          <div className="mb-1">
+            <BrandMark className="text-[15px] font-semibold" />
+          </div>
           <div className="text-[#6e7681] text-[13px]">
             MIT License &middot; built with Bun + TypeScript &middot; by{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-muted">
@@ -23,7 +27,7 @@ export function Footer() {
           <Star fill="white" size={9} />
           Star on GitHub
         </a>
-      </div>
+      </ContentWidth>
     </section>
   )
 }

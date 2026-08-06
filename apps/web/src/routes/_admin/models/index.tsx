@@ -12,6 +12,8 @@ import { Button } from "../../../components/form/primitives/Button"
 import { Checkbox } from "../../../components/form/primitives/Checkbox"
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog"
 import { Loader } from "../../../components/ui/Loader"
+import { PageHeader } from "../../../components/ui/PageHeader"
+import { Section } from "../../../components/ui/Section"
 import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
 import { useApiSdk } from "../../../hooks/use-api-sdk"
@@ -274,27 +276,27 @@ function ModelsPage() {
 
   return (
     <>
-      <header className="mb-12 flex flex-col lg:flex-row justify-between lg:items-end gap-8">
-        <div className="max-w-2xl">
-          <h2 className="my-0 mb-4 text-5xl font-headline font-bold tracking-tighter text-fg">Models</h2>
-          <p className="max-w-lg text-lg leading-relaxed text-muted">
+      <PageHeader
+        title="Models"
+        description={
+          <>
             Manage the providers and models published in the generated <code className="text-fg">models.toml</code>.
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <ValueBox label="Providers" variant="neon">
-            {providers.length}
-          </ValueBox>
-          <ValueBox label="Models">{models.length}</ValueBox>
-          <ValueBox label="Enabled">{enabledCount}</ValueBox>
-        </div>
-      </header>
+          </>
+        }
+        meta="models.toml"
+      >
+        <ValueBox label="Providers" variant="neon">
+          {providers.length}
+        </ValueBox>
+        <ValueBox label="Models">{models.length}</ValueBox>
+        <ValueBox label="Enabled">{enabledCount}</ValueBox>
+      </PageHeader>
 
-      {providersQuery.error && <p className="mb-6 text-sm text-red-400">{providersQuery.error.message}</p>}
-      {modelsQuery.error && <p className="mb-6 text-sm text-red-400">{modelsQuery.error.message}</p>}
+      {providersQuery.error && <p className="mb-6 text-red-400 text-sm">{providersQuery.error.message}</p>}
+      {modelsQuery.error && <p className="mb-6 text-red-400 text-sm">{modelsQuery.error.message}</p>}
 
-      <section className="mb-8 rounded-2xl bg-surface p-6 shadow-2xl">
-        <h3 className="mb-4 font-headline font-bold text-fg">Add Provider</h3>
+      <Section className="mb-4">
+        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Add Provider</h2>
         <form
           onSubmit={e => {
             e.preventDefault()
@@ -311,22 +313,22 @@ function ModelsPage() {
           <providerForm.AppField name="apiKey">
             {field => <field.TextField label="API Key" placeholder="fw_YourSecretKey" />}
           </providerForm.AppField>
-          <Button type="submit" className="sm:col-span-3 justify-self-start" loading={createProvider.isPending}>
+          <Button type="submit" className="justify-self-start sm:col-span-3" loading={createProvider.isPending}>
             Add Provider
           </Button>
         </form>
-      </section>
+      </Section>
 
-      <section className="mb-8 overflow-hidden rounded-2xl bg-surface shadow-2xl">
-        <div className="px-6 pb-6 pt-6">
+      <Section className="mb-4" padded={false}>
+        <div className="px-5.5 py-5 sm:px-6">
           <Table columns={providerColumns} data={providers} showFilters={false} />
         </div>
-      </section>
+      </Section>
 
-      <section className="mb-8 rounded-2xl bg-surface p-6 shadow-2xl">
-        <h3 className="mb-4 font-headline font-bold text-fg">Add Model</h3>
+      <Section className="mb-4">
+        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Add Model</h2>
         {providers.length === 0 ? (
-          <p className="text-sm text-muted">Add a provider first.</p>
+          <p className="text-muted text-sm">Add a provider first.</p>
         ) : (
           <form
             onSubmit={e => {
@@ -345,15 +347,15 @@ function ModelsPage() {
             </modelForm.AppField>
             <modelForm.AppField name="tasks">
               {field => (
-                <div className="md:flex sm:col-span-3">
-                  <span className="flex w-48 align-middle items-center justify-between">Tasks:</span>
+                <div className="sm:col-span-3 md:flex">
+                  <span className="flex w-48 items-center justify-between align-middle">Tasks:</span>
                   <CheckboxGroup
                     value={field.state.value}
                     onValueChange={value => field.handleChange(value)}
                     className="flex flex-wrap gap-x-4 gap-y-2"
                   >
                     {MODEL_TASKS.map(task => (
-                      <Field.Root key={task} name={task} className="flex items-center gap-2 text-sm text-fg">
+                      <Field.Root key={task} name={task} className="flex items-center gap-2 text-fg text-sm">
                         <Field.Label className="flex items-center gap-2">
                           <Checkbox name={task} />
                           {task}
@@ -364,18 +366,18 @@ function ModelsPage() {
                 </div>
               )}
             </modelForm.AppField>
-            <Button type="submit" className="sm:col-span-3 justify-self-start" loading={createModel.isPending}>
+            <Button type="submit" className="justify-self-start sm:col-span-3" loading={createModel.isPending}>
               Add Model
             </Button>
           </form>
         )}
-      </section>
+      </Section>
 
-      <section className="overflow-hidden rounded-2xl bg-surface shadow-2xl">
-        <div className="px-6 pb-6 pt-6">
+      <Section padded={false}>
+        <div className="px-5.5 py-5 sm:px-6">
           <Table columns={modelColumns} data={models} showFilters={false} />
         </div>
-      </section>
+      </Section>
     </>
   )
 }

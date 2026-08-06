@@ -11,8 +11,8 @@ export function NodeGroup({
 }>) {
   return (
     <section className="mb-8">
-      <h3 className="text-sm font-bold uppercase tracking-widest text-muted mb-4">{title}</h3>
-      <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", className)}>{children}</div>
+      <h2 className="m-0 mb-4 font-mono text-[#6e7681] text-xs uppercase tracking-wider">{title}</h2>
+      <div className={cn("grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3", className)}>{children}</div>
     </section>
   )
 }

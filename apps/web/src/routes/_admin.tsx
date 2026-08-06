@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
-import { Menu } from "../components/layout/Menu"
+import { ContentWidth } from "../components/layout/ContentWidth"
+import { SiteShell } from "../components/layout/SiteShell"
 import { userRequired } from "../lib/loaders"
+import { AdminHeader } from "./_admin/-components/header"
 
 export const Route = createFileRoute("/_admin")({
   component: AdminLayoutRoute,
@@ -9,9 +11,10 @@ export const Route = createFileRoute("/_admin")({
 
 function AdminLayoutRoute() {
   return (
-    <main className="min-h-screen p-6 pb-24 md:ml-64 md:p-10 md:pb-10">
-      <Menu className="mb-4" />
-      <Outlet />
-    </main>
+    <SiteShell header={<AdminHeader />}>
+      <ContentWidth as="main" className="flex-1 py-10 md:py-14">
+        <Outlet />
+      </ContentWidth>
+    </SiteShell>
   )
 }

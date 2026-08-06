@@ -6,7 +6,7 @@ const VARIANTS = {
   "3d": "border border-border/50 bg-surface hover:bg-surface-2",
   link: "mx-auto inline-block size-fit p-0! text-neon underline hover:text-neon-hi hover:outline-0",
   oval: "rounded-full border border-border/60 text-muted hover:text-fg",
-  primary: "bg-neon text-bg font-bold hover:bg-neon-hi shadow-[0_0_14px_rgba(255,63,181,0.6)]"
+  primary: "bg-neon text-bg font-bold hover:bg-neon-hi"
 } as const
 
 const SIZES = {

@@ -25,14 +25,20 @@ src/
       signin|signup|reset-password
       device/                     # device code approval
       -components/                # landing sections + auth chrome
-    _admin.tsx                    # admin shell (auth-gated)
-    _admin/dashboard|nodes|users|profile
-  components/                     # layout, form, ui, Providers
-  hooks/                          # auth-client, use-api-sdk, user
-  lib/                            # query client, loaders, session, form helpers
-  styles.css
-public/                           # favicons, install scripts, PWA bits
+    _admin.tsx                    # private shell (auth-gated; same max-w-280 + sticky header pattern)
+    _admin/
+      -components/header.tsx      # admin nav (mirrors public Header)
+      dashboard|nodes|users|profile|models|mcp-servers
+  components/
+    layout/  SiteShell, SiteHeader, ContentWidth, BrandMark, SignOutButton, nav-items
+    ui/      Section, PageHeader, LandingSection, Table, ValueBox, ...
+    form/ Providers
+  hooks/ lib/ styles.css
+public/      favicons, install scripts, PWA bits
 ```
+
+Shared layout primitives: `SiteShell` + `SiteHeader` + `BrandMark` + `ContentWidth`.
+Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).
 
 ## Conventions
 

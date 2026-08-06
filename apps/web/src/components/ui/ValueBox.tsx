@@ -1,3 +1,5 @@
+import { cn } from "@kaja/shared"
+
 export function ValueBox({
   label,
   variant = "ice",
@@ -7,13 +9,17 @@ export function ValueBox({
   variant?: "ice" | "neon"
   children: React.ReactNode
 }>) {
-  const borderColor = variant === "neon" ? "border-neon" : "border-ice"
-  const textColor = variant === "neon" ? "text-neon" : "text-ice"
-
   return (
-    <div className={`min-w-40 rounded-xl border-t-2 ${borderColor} bg-surface p-6`}>
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted">{label}</p>
-      <p className={`text-3xl font-headline font-bold ${textColor} neon-glow`}>{children}</p>
+    <div
+      className={cn(
+        "min-w-28 rounded-xl border border-border border-t-2 bg-surface px-4 py-3.5 sm:min-w-36",
+        variant === "neon" ? "border-t-neon" : "border-t-ice"
+      )}
+    >
+      <p className="mb-1 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider">{label}</p>
+      <p className={cn("font-mono font-semibold text-2xl", variant === "neon" ? "text-neon" : "text-ice")}>
+        {children}
+      </p>
     </div>
   )
 }

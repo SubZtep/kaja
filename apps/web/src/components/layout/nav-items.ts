@@ -1,99 +1,61 @@
 import { Cpu, LayoutDashboard, type LucideIcon, Plug, Server, Shield, Users } from "lucide-react"
 
-type Surface = "menu" | "sidebar" | "mobile"
-type LayoutNavItem = {
+export type NavItem = {
   to: string
   label: string
-  surfaces: Surface[]
-  roles?: string[]
-  icon?: LucideIcon
-  mobileLabel?: string
+  description: string
+  roles: string[]
+  icon: LucideIcon
 }
 
-const layoutNavItems: LayoutNavItem[] = [
-  {
-    to: "/",
-    label: "Home",
-    surfaces: ["menu"]
-  },
-  {
-    to: "/signin",
-    label: "Sign In",
-    surfaces: ["menu"]
-  },
-  {
-    to: "/signup",
-    label: "Sign Up",
-    surfaces: ["menu"]
-  },
+const navItems: NavItem[] = [
   {
     to: "/dashboard",
     label: "Dashboard",
-    mobileLabel: "Dash",
+    description: "Overview and shortcuts",
     roles: ["admin", "user"],
-    icon: LayoutDashboard,
-    surfaces: ["menu", "sidebar", "mobile"]
+    icon: LayoutDashboard
   },
   {
     to: "/nodes",
     label: "Nodes",
+    description: "Connected CLI nodes and heartbeats",
     roles: ["admin", "user"],
-    icon: Server,
-    surfaces: ["menu", "sidebar", "mobile"]
+    icon: Server
   },
   {
     to: "/profile",
     label: "Profile",
+    description: "Account, email, and password",
     roles: ["admin", "user"],
-    icon: Shield,
-    surfaces: ["menu", "sidebar", "mobile"]
+    icon: Shield
   },
   {
     to: "/users",
     label: "Users",
+    description: "Directory and access controls",
     roles: ["admin"],
-    icon: Users,
-    surfaces: ["menu", "sidebar", "mobile"]
+    icon: Users
   },
   {
     to: "/mcp-servers",
     label: "MCP Servers",
-    mobileLabel: "MCP",
+    description: "Published mcp.toml servers",
     roles: ["admin"],
-    icon: Plug,
-    surfaces: ["menu", "sidebar", "mobile"]
+    icon: Plug
   },
   {
     to: "/models",
     label: "Models",
+    description: "Providers and models.toml",
     roles: ["admin"],
-    icon: Cpu,
-    surfaces: ["menu", "sidebar", "mobile"]
+    icon: Cpu
   }
 ]
-type IconNavItem = LayoutNavItem & { icon: LucideIcon }
 
-const canAccess = (item: LayoutNavItem, role: string | null | undefined) => {
-  if (!item.roles) return !role
-  return Boolean(role && item.roles.includes(role))
-}
+export const getNavItems = (role: string | null | undefined) =>
+  navItems.filter(item => Boolean(role && item.roles.includes(role)))
 
-const isOnSurface = (item: LayoutNavItem, surface: Surface) => item.surfaces.includes(surface)
-
-const hasIcon = (item: LayoutNavItem): item is IconNavItem => "icon" in item
-
-export const getMenuItems = (role: string | null | undefined) =>
-  layoutNavItems.filter(item => isOnSurface(item, "menu") && canAccess(item, role))
-
-export const getSidebarItems = (role: string | null | undefined) =>
-  layoutNavItems.filter(item => isOnSurface(item, "sidebar") && canAccess(item, role)).filter(hasIcon) as IconNavItem[]
-
-export const getMobileNavItems = (role: string | null | undefined) =>
-  layoutNavItems
-    .filter(item => isOnSurface(item, "mobile") && canAccess(item, role))
-    .filter(hasIcon)
-    .map(item => ({
-      to: item.to,
-      label: item.mobileLabel ?? item.label,
-      icon: item.icon
-    }))
+/** Dashboard shortcuts omit the dashboard route itself. */
+export const getDashboardLinks = (role: string | null | undefined) =>
+  getNavItems(role).filter(item => item.to !== "/dashboard")
