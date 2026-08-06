@@ -18,9 +18,18 @@ const customTheme = extendTheme(defaultTheme, {
 })
 
 /**
+ * Shorten path-style model ids for the top bar (`org/team/name` → `name`)
+ * so free-chat / Fireworks-style ids stay readable. Plain ids are unchanged.
+ */
+export function shortModelLabel(model: string): string {
+  const slash = model.lastIndexOf("/")
+  return slash >= 0 ? model.slice(slash + 1) : model
+}
+
+/**
  * Live top bar: current persona, and the right-hand slot which shows
  * in-flight tool activity, falling back to the active model name while idle
- * (provider-reported id from the last completion when available).
+ * (request model, or free-chat's x-kaja-model once a reply has landed).
  */
 export function Header({
   persona,
@@ -33,9 +42,10 @@ export function Header({
   promptTokens: number | null
   currentTool?: { name: string; arguments: string }
 }>) {
+  const modelLabel = shortModelLabel(model)
   return (
     <Box flexShrink={0} justifyContent="space-between" paddingX={1}>
-      <Box gap={1}>
+      <Box gap={1} flexShrink={1} overflow="hidden">
         <MonsterMate />
         <Box overflow="hidden">
           <Gradient name="rainbow">
@@ -52,7 +62,7 @@ export function Header({
       ) : (
         <Box flexShrink={0}>
           <Text color="grey" dimColor wrap="truncate-end">
-            {model}
+            {modelLabel}
             {promptTokens != null ? ` · ${promptTokens.toLocaleString()} tokens` : ""}
           </Text>
         </Box>
