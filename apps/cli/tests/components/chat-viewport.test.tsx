@@ -13,7 +13,7 @@ const many: TimelineEvent[] = Array.from({ length: 40 }, (_, i) => ({
 test("shows recent history and page-up reveals older lines", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={many} thinking={false} partial={null} pending={false} />
+      <ChatViewport events={many} thinking={false} partial={null} pending={false} sounds={false} />
     </Box>
   )
   await t.tick()
@@ -48,7 +48,7 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   const parseSpy = spyOn(marked, "parse")
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
-      <ChatViewport events={mdEvents} thinking={false} partial={null} pending={false} />
+      <ChatViewport events={mdEvents} thinking={false} partial={null} pending={false} sounds={false} />
     </Box>
   )
   await t.tick()

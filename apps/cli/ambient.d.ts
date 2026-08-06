@@ -10,6 +10,11 @@ declare module "*.mp3" {
   export default path
 }
 
+declare module "*.ogg" {
+  const path: string
+  export default path
+}
+
 declare module "*.toml" {
   const content: string
   export default content

@@ -252,6 +252,7 @@ export default function App({
         thinking={thinking}
         partial={partial}
         pending={pending}
+        sounds={sounds}
         bottomChromeKey={bottomChromeKey}
         startupPanel={
           <StartupPanel

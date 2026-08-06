@@ -1,8 +1,11 @@
 import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
+import { playSound } from "../../lib/audio/sounds"
 import { t } from "../../lib/i18n"
+import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { isTerminalMouseSequence, parseWheelDirection } from "../../lib/terminal-input"
 import { Activity } from "../activity"
@@ -25,6 +28,31 @@ function idFor(event: TimelineEvent) {
     eventIds.set(event, id)
   }
   return id
+}
+
+/** Timeline event types whose text is worth copying to the clipboard. */
+function copyableText(event: TimelineEvent): string | null {
+  switch (event.type) {
+    case "user":
+      return event.text
+    case "message":
+      return event.content
+    case "final":
+      return event.content
+    case "ask_user":
+      return event.question
+    default:
+      return null
+  }
+}
+
+/** Most recent message with copyable text, searching from the end of the timeline. */
+function lastCopyableText(events: TimelineEvent[]): string | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const text = copyableText(events[i]!)
+    if (text) return text
+  }
+  return null
 }
 
 /**
@@ -53,6 +81,7 @@ function scrollByClamped(view: VirtualScrollRef, delta: number) {
  *   PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport
  *   ↑/↓, ←/→, Home/End (no ctrl), Ctrl+←/→ → TextInput cursor
  *   Ctrl+T → mic, `/` at start → menu
+ *   Alt+C → copy the most recent message to the clipboard
  *
  * Stick-to-bottom uses a small slop so streaming near the end stays pinned.
  */
@@ -61,6 +90,7 @@ export function ChatViewport({
   thinking,
   partial,
   pending,
+  sounds,
   bottomChromeKey,
   startupPanel
 }: Readonly<{
@@ -68,6 +98,7 @@ export function ChatViewport({
   thinking: boolean
   partial: PartialMessageData | null
   pending: boolean
+  sounds: boolean
   /** Changes whenever the sibling below (input / confirm prompt) swaps to a
    * differently-sized layout, so the viewport remeasures even though none of
    * the other props changed. */
@@ -213,6 +244,18 @@ export function ChatViewport({
   }
 
   useInput((input, key) => {
+    if (key.meta && input === "c") {
+      const text = lastCopyableText(events)
+      if (text) {
+        writeText(text)
+          .then(() => {
+            if (sounds) playSound("keyboard")
+          })
+          .catch(error => log.warn({ error }, "Copy to clipboard failed"))
+      }
+      return
+    }
+
     const view = scrollRef.current
     if (!view) return
 
