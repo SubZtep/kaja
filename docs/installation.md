@@ -1,12 +1,14 @@
 ---
 layout: page
-title: Getting Started
+title: Installation
 nav_order: 2
 ---
 
-# Getting Started
+<!-- # Getting Started -->
 
-## Install
+# Installation
+
+Run:
 
 ```sh
 curl -fsSL https://kaja.io/setup.sh | bash
@@ -28,9 +30,9 @@ Run `kaja`. If no config exists yet, a one-time setup wizard asks how you want t
 - **Free hosted chat** — nothing else to configure, works immediately.
 - **Bring your own provider** — writes a starter `models.toml` for either Fireworks AI or a
   local Ollama install, which you then fill in with your own credentials/models (see
-  [Configuration](/configuration#modelstoml)).
+  [Configuration](/configuration#models)).
 
-Running in a non-interactive shell (scripts, CI) skips the wizard and writes the default
+> Running in a non-interactive shell (scripts, CI) skips the wizard and writes the default
 template untouched.
 
 ## Where config lives

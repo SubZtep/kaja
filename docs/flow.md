@@ -1,10 +1,10 @@
 ---
 layout: page
-title: Architecture
+title: Flow
 nav_order: 3
 ---
 
-# Architecture
+# Flow
 
 One agent core, two front doors. The terminal and Telegram both drive the same persona, tools,
 and model config.

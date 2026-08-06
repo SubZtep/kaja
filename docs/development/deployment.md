@@ -17,7 +17,7 @@ These are snippets of how [kaja.io](https://kaja.io) is deployed to its current 
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) is more than enough to host
   several services and a database, as long as traffic stays reasonable.
 - **SMTP server** is required for authentication emails.
-- **Geo-service** endpoint for IP geolocation (see [Configuration](/configuration#servicestoml)
+- **Geo-service** endpoint for IP geolocation (see [Configuration](/configuration#services)
   for setup details).
 
 ## Local environment files
