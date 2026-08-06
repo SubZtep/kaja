@@ -14,13 +14,6 @@ Kaja is an open-source terminal chat assistant. It runs in your terminal (or as 
 bot), talks to any OpenAI-compatible model — local or hosted — and comes with personas, tool
 use, MCP support, and optional voice input/output.
 
-```sh
-curl -fsSL https://kaja.io/setup.sh | bash
-```
-
-A setup wizard walks you through configuration the first time you run `kaja` — see
-[Getting Started](/getting-started) for other install options.
-
 ## What you get
 
 - **Any model** — local Ollama, a hosted provider, or the free hosted chat.
@@ -29,4 +22,8 @@ A setup wizard walks you through configuration the first time you run `kaja` —
 - **Voice** — mic dictation (`Ctrl+T`) and spoken replies.
 - **[Telegram](/telegram)** — the same setup, as a bot.
 
-[Get started](/getting-started){: .btn .btn-green .fs-5 }
+---
+
+Next:
+
+[Installation](/installation){: .btn .btn-green .fs-5 }

@@ -75,4 +75,4 @@ To use the pre-configured [MCP servers](.mcp.json) locally with **Claude Code**,
 
 Next:
 
-[Open the **deployment** page](/development/deployment){: .btn .btn-green .fs-5 }
+[Deployment](/development/deployment){: .btn .btn-green .fs-5 }

@@ -24,24 +24,35 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 
 ## Quick Start
 
-Working defaults are provided in the [Docker Compose config](compose.yaml) and app `.env.example` files.
+### Release Run
 
-```sh
-docker compose up -d db mail
+Install:
+
+```bash
+curl -fsSL https://kaja.io/setup.sh | bash
+```
+
+Execute:
+
+```bash
+kaja
+```
+
+### Source Run
+
+Download source and run with [working defaults](compose.yaml):
+
+```bash
+docker compose up -d
 ```
 
 This command starts:
 
-* PostgreSQL
-* MailDev
-* ~~API~~ 
-* ~~Web~~ 
-
-Start API and web:
-
-```sh
-bun dev
-```
+- PostgreSQL
+- MailDev SMTP
+- API
+- Web
+- ~~OpenAI~~
 
 This is all the CLI needs to connect:
 

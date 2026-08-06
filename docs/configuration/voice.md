@@ -1,6 +1,7 @@
 ---
 layout: page
 title: Voice
+parent: Configuration
 nav_order: 4.4
 ---
 

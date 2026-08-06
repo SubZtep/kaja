@@ -1,6 +1,7 @@
 ---
 layout: page
 title: Services
+parent: Configuration
 nav_order: 4.3
 ---
 
