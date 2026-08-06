@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Telegram
-nav_order: 6
+nav_order: 7
 ---
 
 # Telegram

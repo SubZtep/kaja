@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { getInstallCmd } from "../../../../lib/vars"
+import { getInstallCmd } from "../../../lib/vars"
 
 export function Install() {
   const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/setup.sh | bash")

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router"
 import { Star } from "lucide-react"
 
 export function Footer() {
@@ -8,15 +7,7 @@ export function Footer() {
         <div>
           <div className="mb-1 font-mono font-semibold text-fg text-[15px]">&gt; kaja</div>
           <div className="text-[#6e7681] text-[13px]">
-            MIT License &middot; built with Bun + TypeScript &middot; Sign{" "}
-            <Link to="/signin" className="text-muted">
-              In
-            </Link>
-            /
-            <Link to="/signup" className="text-muted">
-              Up
-            </Link>{" "}
-            &middot; by{" "}
+            MIT License &middot; built with Bun + TypeScript &middot; by{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-muted">
               SubZtep
             </a>{" "}

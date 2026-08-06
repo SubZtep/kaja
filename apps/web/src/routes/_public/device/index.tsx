@@ -3,10 +3,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
-import { Button } from "../../../../components/form/primitives/Button"
-import { useAuthClient } from "../../../../hooks/auth-client"
+import { Button } from "../../../components/form/primitives/Button"
+import { useAuthClient } from "../../../hooks/auth-client"
 
-export const Route = createFileRoute("/_public/(auth)/device/")({
+export const Route = createFileRoute("/_public/device/")({
   validateSearch: z.object({
     user_code: z.string().optional()
   }),

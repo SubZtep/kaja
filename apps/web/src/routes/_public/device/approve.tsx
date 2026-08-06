@@ -2,10 +2,10 @@ import { createFileRoute, useLoaderData, useNavigate, useSearch } from "@tanstac
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
-import { Button } from "../../../../components/form/primitives/Button"
-import { useAuthClient } from "../../../../hooks/auth-client"
+import { Button } from "../../../components/form/primitives/Button"
+import { useAuthClient } from "../../../hooks/auth-client"
 
-export const Route = createFileRoute("/_public/(auth)/device/approve")({
+export const Route = createFileRoute("/_public/device/approve")({
   validateSearch: z.object({
     user_code: z.string().optional()
   }),
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_public/(auth)/device/approve")({
 })
 
 function DeviceApprovePage() {
-  const params = useSearch({ from: "/_public/(auth)/device/approve" })
+  const params = useSearch({ from: "/_public/device/approve" })
   const { session } = useLoaderData({ from: "__root__" })
   const authClient = useAuthClient()
   const navigate = useNavigate()

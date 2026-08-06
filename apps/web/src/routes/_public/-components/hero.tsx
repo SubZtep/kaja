@@ -1,6 +1,6 @@
 import { Star } from "lucide-react"
 import { useEffect, useState } from "react"
-import { getInstallCmd } from "../../../../lib/vars"
+import { getInstallCmd } from "../../../lib/vars"
 
 export function Hero() {
   const [copied, setCopied] = useState(false)

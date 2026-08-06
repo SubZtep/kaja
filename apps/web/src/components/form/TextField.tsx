@@ -1,10 +1,16 @@
 import { Field } from "@base-ui/react/field"
+import { cn } from "@kaja/shared"
 import { useFieldContext } from "../../lib/form-contexts"
 import { FieldErrors } from "./FieldErrors"
 import { Text } from "./primitives/Text"
 
-export function TextField({ label, ...props }: Readonly<{ label: string } & React.ComponentProps<"input">>) {
+export function TextField({
+  label,
+  layout = "horizontal",
+  ...props
+}: Readonly<{ label: string; layout?: "horizontal" | "stack" } & React.ComponentProps<"input">>) {
   const field = useFieldContext<string>()
+  const isStack = layout === "stack"
 
   return (
     <Field.Root
@@ -13,8 +19,14 @@ export function TextField({ label, ...props }: Readonly<{ label: string } & Reac
       dirty={field.state.meta.isDirty}
       touched={field.state.meta.isTouched}
     >
-      <div className="md:flex">
-        <Field.Label className="flex w-48 align-middle items-center justify-between">{label}:</Field.Label>
+      <div className={cn(isStack ? "flex flex-col gap-1.5" : "md:flex")}>
+        <Field.Label
+          className={cn(
+            isStack ? "font-medium text-[13px] text-muted" : "flex w-48 align-middle items-center justify-between"
+          )}
+        >
+          {isStack ? label : `${label}:`}
+        </Field.Label>
         <Text
           variant="3d"
           name={field.name}

@@ -19,9 +19,12 @@ src/
   router.tsx / routeTree.gen.ts   # TanStack Router (gen file is auto-updated)
   routes/
     __root.tsx
-    _public.tsx                   # public shell
-    _public/_landing/             # marketing pages + signin/signup
-    _public/(auth)/               # device auth, reset-password
+    _public.tsx                   # public shell (Header + Footer)
+    _public/
+      index.tsx                   # landing (/)
+      signin|signup|reset-password
+      device/                     # device code approval
+      -components/                # landing sections + auth chrome
     _admin.tsx                    # admin shell (auth-gated)
     _admin/dashboard|nodes|users|profile
   components/                     # layout, form, ui, Providers
