@@ -80,7 +80,7 @@ type FakeMessage = {
  * pops the next scripted message, replays its content as a single delta
  * chunk, and returns it whole from `finalChatCompletion()`.
  */
-function fakeClient(script: FakeMessage[], opts?: { model?: string; usage?: { prompt_tokens: number } }) {
+function fakeClient(script: FakeMessage[], opts?: { usage?: { prompt_tokens: number } }) {
   let i = 0
   return {
     chat: {
@@ -94,7 +94,6 @@ function fakeClient(script: FakeMessage[], opts?: { model?: string; usage?: { pr
             },
             finalChatCompletion: async () => ({
               choices: [{ message: { role: "assistant", ...message } }],
-              ...(opts?.model ? { model: opts.model } : {}),
               ...(opts?.usage ? { usage: opts.usage } : {})
             })
           }
@@ -107,7 +106,7 @@ function fakeClient(script: FakeMessage[], opts?: { model?: string; usage?: { pr
 function fakeAgent(
   script: FakeMessage[],
   extraTools: Agent["tools"] = [],
-  opts?: { model?: string; usage?: { prompt_tokens: number } }
+  opts?: { usage?: { prompt_tokens: number } }
 ): Agent {
   return {
     name: "Tester",
@@ -198,18 +197,18 @@ test("content without tool calls still arrives as final only", async () => {
   expect(finalized).toEqual([{ type: "final", content: "The answer was a platypus." }])
 })
 
-test("run() yields usage with the provider-reported model from the completion", async () => {
-  const agent = fakeAgent([{ content: "hi" }], [], {
-    model: "accounts/fireworks/models/actual-served",
-    usage: { prompt_tokens: 42 }
-  })
+test("run() yields usage with the free-chat proxy's served model when present", async () => {
+  const { noteServedModel, takeLastServedModel } = await import("../../../lib/models/openai")
+  takeLastServedModel() // clear leftover from other tests
+  noteServedModel("nemotron-3-ultra-free")
 
+  const agent = fakeAgent([{ content: "hi" }], [], { usage: { prompt_tokens: 42 } })
   const events = await collect(agent)
   const usage = events.find(e => e.type === "usage")
   expect(usage).toEqual({
     type: "usage",
     promptTokens: 42,
-    model: "accounts/fireworks/models/actual-served"
+    model: "nemotron-3-ultra-free"
   })
 })
 

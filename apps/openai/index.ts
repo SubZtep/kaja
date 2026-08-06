@@ -6,6 +6,13 @@ const KAJA_API_URL = process.env.KAJA_API_URL ?? "https://api.kaja.io"
 const CONFIG_API_TOKEN = process.env.CONFIG_API_TOKEN?.trim() || undefined
 const PORT = 6669
 
+/**
+ * Response header carrying the model this proxy resolved and put in the
+ * upstream request body. Clients (CLI) read this instead of scraping the
+ * completion stream — same name, no body rewriting.
+ */
+export const KAJA_MODEL_HEADER = "x-kaja-model"
+
 type ResolvedModel = {
   id: string
   model: string
@@ -34,6 +41,13 @@ async function resolveRandomModel(): Promise<ResolvedModel> {
     throw new Error(`Failed to resolve a random model: ${res.status} ${await res.text()}`)
   }
   return res.json()
+}
+
+/** Attach the resolved request model on the way back out (body untouched). */
+export function withModelHeader(headers: Headers, model: string): Headers {
+  const next = new Headers(headers)
+  next.set(KAJA_MODEL_HEADER, model)
+  return next
 }
 
 export default {
@@ -67,13 +81,13 @@ export default {
     if (req.method !== "GET" && req.method !== "HEAD") {
       try {
         const reqBody = await req.json()
+        // Same `model` the free-chat CLI asked us to pick — we already know it.
         body = JSON.stringify({ ...reqBody, model })
       } catch {
         return new Response("Bad Request", { status: 400 })
       }
     }
 
-    // forward request (method, selected headers, body), stream response straight through
     let upstream: Response
     try {
       upstream = await fetch(target, {
@@ -91,11 +105,10 @@ export default {
       return new Response("Bad Gateway", { status: 502 })
     }
 
-    // pass through upstream body/headers/status untouched — streaming works because
-    // we never buffer, just hand back the same ReadableStream
+    // Stream the body through unchanged; tell the client which model we used.
     return new Response(upstream.body, {
       status: upstream.status,
-      headers: upstream.headers
+      headers: withModelHeader(upstream.headers, model)
     })
   }
 }

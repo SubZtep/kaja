@@ -1,6 +1,6 @@
 import { homedir } from "node:os"
 import { file } from "bun"
-import OpenAI from "openai"
+import type OpenAI from "openai"
 import type {
   ChatCompletionMessageParam,
   ChatCompletionMessageToolCall,
@@ -13,7 +13,7 @@ import { readConfigLoose } from "../config/config"
 import { readServicesLoose } from "../config/services"
 import { t } from "../i18n"
 import { loadMemory } from "../memory/store"
-import { client } from "../models/openai"
+import { client, createOpenAIClient, takeLastServedModel } from "../models/openai"
 import { loadDataset } from "../personas/datasets"
 import { samplingOf } from "../personas/personas"
 import { isDangerousCommand } from "./command-risk"
@@ -144,9 +144,9 @@ export class Agent {
   /** Point the agent at another model, swapping the client to its provider. */
   setModel(model: ResolvedModel) {
     this.model = model.id
-    this.client = new OpenAI({
+    // Local providers ignore the key, but the SDK insists on having one.
+    this.client = createOpenAIClient({
       baseURL: model.baseUrl,
-      // Local providers ignore the key, but the SDK insists on having one.
       apiKey: model.apiKey ?? "unused"
     })
   }
@@ -669,14 +669,16 @@ async function* streamRound(
     ...(thinking ? { reasoning_content: thinking } : {})
   }
 
+  // Free-chat proxy sets x-kaja-model to the same id it put in the upstream
+  // request body — the model we already knew at resolve time, not something
+  // scraped from the completion JSON.
+  const servedModel = takeLastServedModel()
+
   return {
     message,
     thinking,
     usage: completion.usage ? { promptTokens: completion.usage.prompt_tokens } : undefined,
-    // OpenAI-compatible APIs put the served model on the completion; proxies
-    // that rewrite the request model (e.g. free hosted chat) surface the real
-    // upstream id here.
-    model: completion.model || undefined
+    model: servedModel || undefined
   }
 }
 
