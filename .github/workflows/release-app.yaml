@@ -1,0 +1,54 @@
+name: Release api/web
+
+# Creates a changelog-only GitHub Release (no build artifacts — api/web are
+# deployed services, not distributables) for a tag auto-version.yaml created.
+#
+# Triggered via workflow_dispatch from auto-version.yaml, not by the tag push
+# itself — the bump commit carries [skip ci], which suppresses tag-push
+# triggers too (see build-cli.yaml for the same workaround).
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Workspace name (api or web)"
+        required: true
+      tag:
+        description: "Tag to release, e.g. api@1.2.3"
+        required: true
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        shell: bash
+        env:
+          APP_NAME: ${{ inputs.app }}
+          APP_DIR: apps/${{ inputs.app }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          PREV_TAG=$(git tag --list "${APP_NAME}@*" --sort=-v:refname | grep -v "^${TAG}\$" | head -n1)
+          {
+            echo "## Changes"
+            if [[ -n "$PREV_TAG" ]]; then
+              git log "${PREV_TAG}..${TAG}" --pretty='- %s (%h)' -- "$APP_DIR"
+            else
+              git log "${TAG}" --pretty='- %s (%h)' -- "$APP_DIR"
+            fi
+          } > changelog.md
+          cat changelog.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228
+        with:
+          tag_name: ${{ inputs.tag }}
+          draft: false
+          body_path: changelog.md

@@ -69,6 +69,8 @@ jobs:
           set -euo pipefail
 
           echo "cli_bumped=false" >> "$GITHUB_OUTPUT"
+          echo "api_tag=" >> "$GITHUB_OUTPUT"
+          echo "web_tag=" >> "$GITHUB_OUTPUT"
 
           # Commit messages for this push (not origin/main..HEAD, which is empty after checkout)
           if [[ -n "${BEFORE_SHA}" && "${BEFORE_SHA}" != "0000000000000000000000000000000000000000" ]]; then
@@ -121,6 +123,15 @@ jobs:
           if [[ "$FILTER_WEB" == "true" ]]; then
             bump_workspace "web" "apps/web"
           fi
+
+          if [[ "$FILTER_API" == "true" ]]; then
+            API_VERSION=$(bun -e "console.log(require('./apps/api/package.json').version)")
+            echo "api_tag=api@${API_VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ "$FILTER_WEB" == "true" ]]; then
+            WEB_VERSION=$(bun -e "console.log(require('./apps/web/package.json').version)")
+            echo "web_tag=web@${WEB_VERSION}" >> "$GITHUB_OUTPUT"
+          fi
           if [[ "$FILTER_SHARED" == "true" ]]; then
             bump_workspace "shared" "packages/shared"
           fi
@@ -163,3 +174,21 @@ jobs:
           set -euo pipefail
           echo "CLI was bumped — dispatching Build and release CLI on main"
           gh workflow run "Build and release CLI" --ref main
+
+      - name: Trigger api release
+        if: steps.bump.outputs.api_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "api was bumped — dispatching Release api/web for ${{ steps.bump.outputs.api_tag }}"
+          gh workflow run "Release api/web" --ref main -f app=api -f "tag=${{ steps.bump.outputs.api_tag }}"
+
+      - name: Trigger web release
+        if: steps.bump.outputs.web_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "web was bumped — dispatching Release api/web for ${{ steps.bump.outputs.web_tag }}"
+          gh workflow run "Release api/web" --ref main -f app=web -f "tag=${{ steps.bump.outputs.web_tag }}"

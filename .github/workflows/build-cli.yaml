@@ -122,6 +122,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
 
       - name: Download all artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -139,6 +141,21 @@ jobs:
           fi
           echo "VERSION=cli@${PACKAGE_VERSION}" >> "$GITHUB_ENV"
           echo "version=cli@${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        id: changelog
+        shell: bash
+        run: |
+          PREV_TAG=$(git tag --list 'cli@*' --sort=-v:refname | grep -v "^${VERSION}\$" | head -n1)
+          {
+            echo "## Changes"
+            if [[ -n "$PREV_TAG" ]]; then
+              git log "${PREV_TAG}..${VERSION}" --pretty='- %s (%h)' -- apps/cli
+            else
+              git log "${VERSION}" --pretty='- %s (%h)' -- apps/cli
+            fi
+          } > changelog.md
+          cat changelog.md
 
       - name: Create manifest.json
         shell: bash
@@ -216,7 +233,7 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.version }}
           draft: false
-          generate_release_notes: true
+          body_path: changelog.md
           files: |
             artifacts/*/kaja-*
             artifacts/manifest.json
