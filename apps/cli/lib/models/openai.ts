@@ -1,5 +1,6 @@
 import OpenAI from "openai"
 import { config } from "../config/config"
+import { services } from "../config/services"
 import { loadModelsFile, resolveModelById } from "./models"
 
 // Sentinel models.chat value for the free hosted chat tier: resolved here
@@ -12,7 +13,11 @@ const FREE_CHAT_API_KEY = "kaja"
 /** Free-chat proxy sets this to the model it resolved and put in the request. */
 export const KAJA_MODEL_HEADER = "x-kaja-model"
 
+/** Forwarded to the free-chat proxy: use this key instead of its DB-sourced provider key. */
+const KAJA_ZEN_KEY_HEADER = "x-kaja-zen-key"
+
 const { models } = await config()
+const { zen } = await services()
 const chatModel =
   models.chat === FREE_CHAT_MODEL_ID
     ? { id: models.chat, task: "chat" as const, baseUrl: FREE_CHAT_BASE_URL, apiKey: FREE_CHAT_API_KEY }
@@ -46,12 +51,17 @@ export function takeLastServedModel(): string | undefined {
  * OpenAI client that records `x-kaja-model` from free-chat proxy responses.
  * Used for the default chat client and for mid-session model switches.
  */
-export function createOpenAIClient(opts: { baseURL: string; apiKey: string }): OpenAI {
+export function createOpenAIClient(opts: {
+  baseURL: string
+  apiKey: string
+  headers?: Record<string, string>
+}): OpenAI {
   return new OpenAI({
     apiKey: opts.apiKey,
     baseURL: opts.baseURL,
     fetch: async (input, init) => {
-      const res = await fetch(input, init)
+      const headers = opts.headers ? { ...init?.headers, ...opts.headers } : init?.headers
+      const res = await fetch(input, { ...init, headers })
       const served = res.headers.get(KAJA_MODEL_HEADER)
       if (served) noteServedModel(served)
       return res
@@ -61,5 +71,6 @@ export function createOpenAIClient(opts: { baseURL: string; apiKey: string }): O
 
 export const client = createOpenAIClient({
   apiKey: chatModel.apiKey ?? "unused",
-  baseURL: chatModel.baseUrl
+  baseURL: chatModel.baseUrl,
+  headers: models.chat === FREE_CHAT_MODEL_ID && zen?.apiKey ? { [KAJA_ZEN_KEY_HEADER]: zen.apiKey } : undefined
 })

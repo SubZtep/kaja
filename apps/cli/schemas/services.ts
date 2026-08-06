@@ -9,6 +9,13 @@ export const ServicesWebSearchSchema = z.object({
   apiKey: z.string().min(1)
 })
 
+// OpenCode Zen free models (https://opencode.ai/zen). When set, the CLI's
+// free-chat path forwards this key so requests use it instead of the
+// server's DB-sourced provider key.
+export const ServicesZenSchema = z.object({
+  apiKey: z.string().min(1)
+})
+
 // botToken has no fallback (mandatory); allowedUserIds must be non-empty —
 // an empty allowlist would make the bot silently unusable, and this group
 // gates shell-command execution to whoever can message the bot.
@@ -34,7 +41,8 @@ export const ServicesFileSchema = z.object({
   location: ServicesLocationSchema.optional(),
   webSearch: ServicesWebSearchSchema.optional(),
   telegram: ServicesTelegramSchema.optional(),
-  api: ServicesApiSchema.optional()
+  api: ServicesApiSchema.optional(),
+  zen: ServicesZenSchema.optional()
 })
 
 export type ServicesFile = z.infer<typeof ServicesFileSchema>
@@ -42,3 +50,4 @@ export type ServicesLocation = z.infer<typeof ServicesLocationSchema>
 export type ServicesWebSearch = z.infer<typeof ServicesWebSearchSchema>
 export type ServicesTelegram = z.infer<typeof ServicesTelegramSchema>
 export type ServicesApi = z.infer<typeof ServicesApiSchema>
+export type ServicesZen = z.infer<typeof ServicesZenSchema>

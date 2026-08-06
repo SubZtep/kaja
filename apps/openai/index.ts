@@ -13,6 +13,9 @@ const PORT = 6669
  */
 export const KAJA_MODEL_HEADER = "x-kaja-model"
 
+/** Caller-supplied key (e.g. an OpenCode Zen key): used instead of the DB-resolved provider key when set. */
+const KAJA_ZEN_KEY_HEADER = "x-kaja-zen-key"
+
 type ResolvedModel = {
   id: string
   model: string
@@ -50,6 +53,12 @@ export function withModelHeader(headers: Headers, model: string): Headers {
   return next
 }
 
+/** A caller-forwarded zen key takes priority over the DB-resolved provider key. */
+export function resolveApiKey(req: Request, resolved: Pick<ResolvedModel, "apiKey">): string | null {
+  const zenKey = req.headers.get(KAJA_ZEN_KEY_HEADER)?.trim() || undefined
+  return zenKey ?? resolved.apiKey
+}
+
 export default {
   port: PORT,
   idleTimeout: 30,
@@ -66,7 +75,8 @@ export default {
       return new Response("Bad Gateway", { status: 502 })
     }
 
-    const { baseUrl, apiKey, model } = resolved
+    const { baseUrl, model } = resolved
+    const apiKey = resolveApiKey(req, resolved)
     if (!isPublicHttpUrl(baseUrl)) {
       error("Rejected unsafe model baseUrl", { baseUrl, model })
       return new Response("Bad Gateway", { status: 502 })

@@ -7,6 +7,7 @@ test("empty file validates: every section is optional", () => {
   expect(parsed.webSearch).toBeUndefined()
   expect(parsed.telegram).toBeUndefined()
   expect(parsed.api).toBeUndefined()
+  expect(parsed.zen).toBeUndefined()
 })
 
 test("location group requires both fields together", () => {
@@ -28,6 +29,12 @@ test("webSearch group requires apiKey", () => {
   const parsed = ServicesFileSchema.parse({ webSearch: { apiKey: "key" } })
   expect(parsed.webSearch).toEqual({ apiKey: "key" })
   expect(() => ServicesFileSchema.parse({ webSearch: {} })).toThrow()
+})
+
+test("zen group requires apiKey", () => {
+  const parsed = ServicesFileSchema.parse({ zen: { apiKey: "sk-zen" } })
+  expect(parsed.zen).toEqual({ apiKey: "sk-zen" })
+  expect(() => ServicesFileSchema.parse({ zen: {} })).toThrow()
 })
 
 test("api group requires a valid baseUrl", () => {

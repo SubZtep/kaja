@@ -24,3 +24,7 @@
 # [telegram]
 # botToken = "123456:ABC-DEF..."
 # allowedUserIds = [123456789]
+
+# OpenCode Zen free models - https://opencode.ai/zen
+# [zen]
+# apiKey = "sk-..."
