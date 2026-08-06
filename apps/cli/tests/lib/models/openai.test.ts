@@ -9,16 +9,19 @@ import { expect, test } from "bun:test"
 // instead of relying on that load-order-sensitive singleton.
 const { createOpenAIClient } = await import("../../../lib/models/openai")
 
-test("createOpenAIClient merges custom headers into outgoing requests", async () => {
+test("createOpenAIClient merges custom headers into outgoing requests without dropping the SDK's own headers", async () => {
   let seenHeaders: Headers | undefined
   const openai = createOpenAIClient({
     baseURL: "http://localhost/v1",
-    apiKey: "unused",
+    apiKey: "sk-sdk-auth",
     headers: { "x-kaja-zen-key": "sk-custom" }
   })
   const originalFetch = globalThis.fetch
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-    seenHeaders = new Headers(init?.headers)
+    // The SDK passes a real Headers instance here, not a plain object — the
+    // fake fetch below mirrors that so a spread-based merge bug (which
+    // silently drops entries from a Headers instance) is caught.
+    seenHeaders = init?.headers instanceof Headers ? init.headers : new Headers(init?.headers)
     return new Response("{}", { status: 200 })
   }) as typeof fetch
   try {
@@ -27,6 +30,7 @@ test("createOpenAIClient merges custom headers into outgoing requests", async ()
     globalThis.fetch = originalFetch
   }
   expect(seenHeaders?.get("x-kaja-zen-key")).toBe("sk-custom")
+  expect(seenHeaders?.get("authorization")).toBe("Bearer sk-sdk-auth")
 })
 
 test("createOpenAIClient without headers leaves outgoing requests unchanged", async () => {

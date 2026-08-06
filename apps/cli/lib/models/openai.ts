@@ -60,7 +60,8 @@ export function createOpenAIClient(opts: {
     apiKey: opts.apiKey,
     baseURL: opts.baseURL,
     fetch: async (input, init) => {
-      const headers = opts.headers ? { ...init?.headers, ...opts.headers } : init?.headers
+      const headers = new Headers(init?.headers)
+      for (const [key, value] of Object.entries(opts.headers ?? {})) headers.set(key, value)
       const res = await fetch(input, { ...init, headers })
       const served = res.headers.get(KAJA_MODEL_HEADER)
       if (served) noteServedModel(served)
