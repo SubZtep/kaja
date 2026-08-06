@@ -80,7 +80,7 @@ type FakeMessage = {
  * pops the next scripted message, replays its content as a single delta
  * chunk, and returns it whole from `finalChatCompletion()`.
  */
-function fakeClient(script: FakeMessage[]) {
+function fakeClient(script: FakeMessage[], opts?: { model?: string; usage?: { prompt_tokens: number } }) {
   let i = 0
   return {
     chat: {
@@ -93,7 +93,9 @@ function fakeClient(script: FakeMessage[]) {
               if (message.content) yield { choices: [{ delta: { content: message.content } }] }
             },
             finalChatCompletion: async () => ({
-              choices: [{ message: { role: "assistant", ...message } }]
+              choices: [{ message: { role: "assistant", ...message } }],
+              ...(opts?.model ? { model: opts.model } : {}),
+              ...(opts?.usage ? { usage: opts.usage } : {})
             })
           }
         }
@@ -102,12 +104,16 @@ function fakeClient(script: FakeMessage[]) {
   }
 }
 
-function fakeAgent(script: FakeMessage[], extraTools: Agent["tools"] = []): Agent {
+function fakeAgent(
+  script: FakeMessage[],
+  extraTools: Agent["tools"] = [],
+  opts?: { model?: string; usage?: { prompt_tokens: number } }
+): Agent {
   return {
     name: "Tester",
     model: "fake-model",
     tools: [askUserTool, runCommandTool, ...extraTools],
-    client: fakeClient(script)
+    client: fakeClient(script, opts)
   } as unknown as Agent
 }
 
@@ -190,6 +196,21 @@ test("content without tool calls still arrives as final only", async () => {
   const events = await collect(agent)
   const finalized = events.filter(e => e.type !== "delta")
   expect(finalized).toEqual([{ type: "final", content: "The answer was a platypus." }])
+})
+
+test("run() yields usage with the provider-reported model from the completion", async () => {
+  const agent = fakeAgent([{ content: "hi" }], [], {
+    model: "accounts/fireworks/models/actual-served",
+    usage: { prompt_tokens: 42 }
+  })
+
+  const events = await collect(agent)
+  const usage = events.find(e => e.type === "usage")
+  expect(usage).toEqual({
+    type: "usage",
+    promptTokens: 42,
+    model: "accounts/fireworks/models/actual-served"
+  })
 })
 
 test("run_command call is intercepted and yielded as confirm_command", async () => {

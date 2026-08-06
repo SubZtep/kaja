@@ -83,12 +83,16 @@ export function useAgent(
   // first save (empty sessions are never recorded).
   const sessionRowIdRef = useRef<number | undefined>(resume?.session.id)
 
-  // React-state mirror of agent.model, so consumers rerender on switch.
+  // React-state mirror of agent.model (the configured/request model id), so
+  // consumers rerender on switch. Distinct from `responseModel`, which is the
+  // provider-reported id from the last completion (e.g. free-chat proxy).
   const [model, setModel] = useState(agent.model)
+  const [responseModel, setResponseModel] = useState<string | null>(null)
   const switchModel = useCallback(
     (next: ResolvedModel) => {
       agent.setModel(next)
       setModel(next.id)
+      setResponseModel(null)
     },
     [agent]
   )
@@ -133,6 +137,7 @@ export function useAgent(
       // still switch models manually afterward via switchModel.
       applyPersona(agent, next)
       setModel(agent.model)
+      setResponseModel(null)
       sessionRef.current = createSession()
       sessionRowIdRef.current = undefined
       eventsRef.current = []
@@ -185,6 +190,9 @@ export function useAgent(
         setPersona(next)
       }
       setModel(agent.model)
+      // Persona may pin a different request model; clear until the next
+      // completion reports what the provider actually served.
+      setResponseModel(null)
     },
     [agent, personas]
   )
@@ -228,7 +236,8 @@ export function useAgent(
               flush()
             }
           } else if (event.type === "usage") {
-            setPromptTokens(event.promptTokens)
+            if (event.promptTokens != null) setPromptTokens(event.promptTokens)
+            if (event.model) setResponseModel(event.model)
           } else {
             handleFinalizedEvent(event)
           }
@@ -267,6 +276,8 @@ export function useAgent(
   return {
     agent,
     model,
+    /** Provider-reported model from the last completion; falls back to the request model when none yet. */
+    displayModel: responseModel ?? model,
     switchModel,
     persona,
     switchPersona,

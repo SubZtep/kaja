@@ -19,7 +19,8 @@ const customTheme = extendTheme(defaultTheme, {
 
 /**
  * Live top bar: current persona, and the right-hand slot which shows
- * in-flight tool activity, falling back to the active model name while idle.
+ * in-flight tool activity, falling back to the active model name while idle
+ * (provider-reported id from the last completion when available).
  */
 export function Header({
   persona,

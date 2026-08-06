@@ -167,6 +167,7 @@ export default function App({
 }>) {
   const {
     model,
+    displayModel,
     switchModel,
     persona,
     switchPersona: switchPersonaAgent,
@@ -231,7 +232,7 @@ export default function App({
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>
-      <Header persona={persona.label} model={model} promptTokens={promptTokens} currentTool={currentTool} />
+      <Header persona={persona.label} model={displayModel} promptTokens={promptTokens} currentTool={currentTool} />
       <ChatViewport
         events={events}
         thinking={thinking}

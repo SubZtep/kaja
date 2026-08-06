@@ -434,7 +434,8 @@ export type AgentEvent =
   | { type: "confirm_command"; command: string; description: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "final"; content: string | null }
-  | { type: "usage"; promptTokens: number }
+  /** Token usage and/or the model id the provider reports for this round. */
+  | { type: "usage"; promptTokens?: number; model?: string }
 
 /**
  * {@link AgentEvent} minus the ephemeral {@link AgentDelta} fragments — the
@@ -625,6 +626,8 @@ type StreamedRound = {
   }
   thinking: string
   usage?: { promptTokens: number }
+  /** Provider-reported model id from the completion (may differ from the request, e.g. free-chat proxy). */
+  model?: string
 }
 
 /** Streams one completion round, yielding `delta` events as chunks arrive, and returns the finalized assistant message plus usage. */
@@ -669,7 +672,11 @@ async function* streamRound(
   return {
     message,
     thinking,
-    usage: completion.usage ? { promptTokens: completion.usage.prompt_tokens } : undefined
+    usage: completion.usage ? { promptTokens: completion.usage.prompt_tokens } : undefined,
+    // OpenAI-compatible APIs put the served model on the completion; proxies
+    // that rewrite the request model (e.g. free hosted chat) surface the real
+    // upstream id here.
+    model: completion.model || undefined
   }
 }
 
@@ -784,10 +791,10 @@ export async function* run(
   pushPromptToMessages(session, prompt)
 
   while (true) {
-    const { message, thinking, usage } = yield* streamRound(agent, messages, definitions)
+    const { message, thinking, usage, model } = yield* streamRound(agent, messages, definitions)
     messages.push(message)
 
-    if (usage) yield { type: "usage", promptTokens: usage.promptTokens }
+    if (usage || model) yield { type: "usage", promptTokens: usage?.promptTokens, model }
 
     if (thinking) yield { type: "reasoning", text: thinking }
 
