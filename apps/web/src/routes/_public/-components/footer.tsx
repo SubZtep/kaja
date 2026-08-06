@@ -5,7 +5,7 @@ import { ContentWidth } from "../../../components/layout/ContentWidth"
 export function Footer() {
   return (
     <section className="border-border border-t">
-      <ContentWidth className="flex flex-wrap items-center justify-between gap-4 py-14">
+      <ContentWidth className="flex flex-wrap items-center justify-between gap-4 py-8 sm:py-14">
         <div>
           <div className="mb-1">
             <BrandMark className="text-[15px] font-semibold" />

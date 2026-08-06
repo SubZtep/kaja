@@ -16,7 +16,7 @@ export function LandingSection({
 }>) {
   return (
     <section className={cn(alt && "border-border border-y bg-surface-2", className)}>
-      <ContentWidth className={cn("py-18", contentClassName)}>{children}</ContentWidth>
+      <ContentWidth className={cn("py-10 sm:py-18", contentClassName)}>{children}</ContentWidth>
     </section>
   )
 }

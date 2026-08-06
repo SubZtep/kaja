@@ -26,7 +26,7 @@ export function Hero() {
             "radial-gradient(closest-side,color-mix(in srgb, var(--color-neon) 20%, transparent),transparent 70%)"
         }}
       />
-      <ContentWidth className="relative grid grid-cols-1 items-center gap-14 pt-24 pb-10 md:grid-cols-[1.1fr_1fr]">
+      <ContentWidth className="relative grid grid-cols-1 items-center gap-14 pt-14 pb-8 md:pt-24 md:pb-10 md:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 font-mono text-muted text-xs">
             <span className="size-1.5 rounded-full bg-ice" /> open source &middot; MIT &middot; WIP
@@ -37,8 +37,8 @@ export function Hero() {
             can talk now.
           </h1>
           <p className="mb-8 max-w-115 text-lg text-muted">
-            Kaja CLI is an open-source terminal chat assistant &mdash; personas, tool use, mic dictation, and
-            text-to-speech, running on the model you choose.
+            Kaja CLI is an open-source terminal chat assistant featuring personas, tools, and speech, running on the
+            model you choose in the language you like.
           </p>
           <div className="mb-7 flex flex-wrap gap-3">
             <a

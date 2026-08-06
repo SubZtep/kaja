@@ -11,5 +11,5 @@ export function ContentWidth({
   className?: string
   children: ReactNode
 }>) {
-  return <Tag className={cn("mx-auto w-full max-w-280 px-6", className)}>{children}</Tag>
+  return <Tag className={cn("mx-auto w-full max-w-280 px-4 sm:px-6", className)}>{children}</Tag>
 }

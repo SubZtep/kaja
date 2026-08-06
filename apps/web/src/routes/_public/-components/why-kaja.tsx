@@ -16,7 +16,7 @@ const FEATURES = [
 
 export function WhyKaja() {
   return (
-    <LandingSection alt contentClassName="py-16">
+    <LandingSection alt contentClassName="py-10 sm:py-16">
       <LandingSectionTitle title="Why Kaja" meta="built with Bun + TypeScript" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map(f => (

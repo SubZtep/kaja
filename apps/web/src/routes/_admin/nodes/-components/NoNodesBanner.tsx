@@ -3,7 +3,7 @@ import { Section } from "../../../../components/ui/Section"
 
 export function NoNodesBanner() {
   return (
-    <Section className="py-12 text-center">
+    <Section className="py-8 sm:py-12 text-center">
       <div className="mb-4 flex justify-center">
         <div className="flex size-12 items-center justify-center rounded-md border border-border bg-surface-2">
           <Server size={24} className="text-muted" />
