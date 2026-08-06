@@ -17,18 +17,18 @@ if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
 if (!process.env.LOG_LEVEL) log.level = "warn"
 
 /**
- * --config-dir is pre-scanned from argv instead of read from meow: it must
+ * --config is pre-scanned from argv instead of read from meow: it must
  * take effect before the language-detecting config read, and the args
  * import has to come after that read (meow builds --help at module load).
  * The flag is still declared in lib/args.ts so --help documents it.
  */
 export function applyConfigDirOverride(argv: string[]) {
-  const i = argv.findIndex(a => a === "--config-dir" || a.startsWith("--config-dir="))
+  const i = argv.findIndex(a => a === "--config" || a.startsWith("--config="))
   let value: string | undefined
   if (i === -1) {
     value = undefined
-  } else if (argv[i]!.startsWith("--config-dir=")) {
-    value = argv[i]!.slice("--config-dir=".length)
+  } else if (argv[i]!.startsWith("--config=")) {
+    value = argv[i]!.slice("--config=".length)
   } else {
     value = argv[i + 1]
   }

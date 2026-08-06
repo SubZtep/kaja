@@ -3,6 +3,7 @@ invalidConfig = "Érvénytelen konfigurációs fájl: {path}"
 bye = "Pá, pá!"
 
 [firstRun]
+paths = "A Kaja ezeket az elérési utakat fogja használni:"
 intro = "Üdv a Kajában! Hogyan szeretnél csevegni?"
 useFree = "Az ingyenes modellek használata a Kaja szerverein keresztül"
 useOwn = "Saját szolgáltató beállítása"
@@ -23,8 +24,8 @@ Használat
 
 Kapcsolók
   --help          Kiírja ezt a súgót
-  --config        Kiírja a konfigurációs fájl helyét és a vágólapra másolja
-  --config-dir    A config.json-t ebből a könyvtárból olvassa az alapértelmezett helyett
+  --config        A config.json-t ebből a könyvtárból olvassa az alapértelmezett helyett
+  --paths         Kiírja az összes elérési utat, amit a Kaja használ
   --api-url       Kaja API alap URL a `kaja config fetch`-hez (utána elmentve a services.toml-ba)
   --version       Kiírja a telepített verziót
   --continue, -c  A legutóbbi munkamenet folytatása
@@ -32,12 +33,10 @@ Kapcsolók
   --port          A kaja web portja (alapértelmezés: 4880)
 
 Példák
-  $ kaja --config
-  /home/dcr/.config/kaja/config.json
+  $ kaja -c
+  $ kaja --paths
   $ kaja config fetch --api-url http://localhost:3001
-  $ kaja --continue
 """
-clipboardFailed = "A vágólapkezelő hibázott"
 
 [memory]
 usage = """
@@ -154,7 +153,7 @@ mcpServerToolCount = "({count} eszköz)"
 stats = "{brainPath} · {sessionCount} munkamenet · {memoryNoteCount} memória jegyzet · {toolCount} eszköz"
 
 [telegram]
-notConfigured = "Adj hozzá egy `telegram` blokkot a konfigurációhoz (a fájl helyéért lásd: `kaja --config`) `botToken` és `allowedUserIds` mezőkkel, hogy használhasd ezt a parancsot."
+notConfigured = "Adj hozzá egy `telegram` blokkot a konfigurációhoz (a fájl helyéért lásd: `kaja --paths`) `botToken` és `allowedUserIds` mezőkkel, hogy használhasd ezt a parancsot."
 invalidToken = "Érvénytelen Telegram bot token — ellenőrizd a config.telegram.botToken értékét."
 starting = "Telegram bot indítása…"
 ready = "Telegram bot kész, üzenetekre vár."

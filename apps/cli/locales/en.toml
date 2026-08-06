@@ -3,6 +3,7 @@ invalidConfig = "Invalid config file: {path}"
 bye = "Bye, bye!"
 
 [firstRun]
+paths = "Kaja will use these paths:"
 intro = "Welcome to Kaja! How would you like to chat?"
 useFree = "Use the free models through Kaja's servers"
 useOwn = "Configure my own provider"
@@ -23,8 +24,8 @@ Usage
 
 Options
   --help          Print this help
-  --config        Print the config file location and copy it to the clipboard
-  --config-dir    Read config.json from this directory instead of the default
+  --config        Read config.json from this directory instead of the default
+  --paths         Print every path Kaja reads or writes
   --api-url       Kaja API base URL for `kaja config fetch` (saved into services.toml after)
   --version       Print the installed app version
   --continue, -c  Resume the most recent session
@@ -32,12 +33,10 @@ Options
   --port          Port for kaja web (default: 4880)
 
 Examples
-  $ kaja --config
-  /home/dcr/.config/kaja/config.json
+  $ kaja -c
+  $ kaja --paths
   $ kaja config fetch --api-url http://localhost:3001
-  $ kaja --continue
 """
-clipboardFailed = "Clipboard tool failed"
 
 [memory]
 usage = """
@@ -154,7 +153,7 @@ mcpServerToolCount = "({count} tools)"
 stats = "{brainPath} · Sessions: {sessionCount} · Memory notes: {memoryNoteCount} · Tools: {toolCount}"
 
 [telegram]
-notConfigured = "Add a `telegram` block to your config (see `kaja --config` for the file path) with `botToken` and `allowedUserIds` to use this command."
+notConfigured = "Add a `telegram` block to your config (see `kaja --paths` for the file path) with `botToken` and `allowedUserIds` to use this command."
 invalidToken = "Invalid Telegram bot token — check config.telegram.botToken."
 starting = "Starting Telegram bot…"
 ready = "Telegram bot ready, long-polling for messages."

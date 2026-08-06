@@ -12,7 +12,7 @@ import { loadPersonas } from "./lib/personas/personas"
 
 log.trace("Startup")
 
-// --config-dir must take effect before the language-detecting config read
+// --config must take effect before the language-detecting config read
 // just below, and the args import has to come after that read (meow builds
 // --help at module load).
 applyConfigDirOverride(process.argv.slice(2))

@@ -1,6 +1,7 @@
 import { Box, Text } from "ink"
 import { useState } from "react"
 import { t } from "../lib/i18n"
+import { listPaths } from "../lib/paths"
 import { SelectMenu } from "./select-menu"
 
 export type FirstRunChoice = { useFree: true } | { useFree: false; template?: "fireworks" | "ollama" }
@@ -20,6 +21,15 @@ export function FirstRunSetup({
 
   return (
     <Box flexDirection="column" gap={1}>
+      <Box flexDirection="column">
+        <Text dimColor>{t("firstRun.paths")}</Text>
+        {listPaths().map(({ label, path }) => (
+          <Text key={path} dimColor>
+            {"  "}
+            {label}: {path}
+          </Text>
+        ))}
+      </Box>
       <Text>{t("firstRun.intro")}</Text>
       {step === "chat" && (
         <SelectMenu

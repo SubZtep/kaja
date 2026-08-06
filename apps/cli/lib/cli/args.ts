@@ -1,7 +1,7 @@
 import meow from "meow"
-import { writeText } from "tinyclip"
-import { getConfigPath } from "../config/config"
+import { getConfigDir } from "../config/config"
 import { t } from "../i18n"
+import { listPaths } from "../paths"
 
 // Injected at compile time by CI via `bun build --define CLI_VERSION=...`
 // with the package.json version; undefined when running from source, where
@@ -12,13 +12,13 @@ export const cli = meow(t("args.help"), {
   importMeta: import.meta,
   ...(typeof CLI_VERSION === "string" ? { version: CLI_VERSION } : {}),
   flags: {
-    config: {
-      type: "boolean"
-    },
     // Consumed by the argv pre-scan in cli.tsx before this module loads;
     // declared here so meow's --help lists it and parsing accepts it.
-    configDir: {
+    config: {
       type: "string"
+    },
+    paths: {
+      type: "boolean"
     },
     continue: {
       type: "boolean",
@@ -42,13 +42,7 @@ export const cli = meow(t("args.help"), {
   }
 })
 
-if (cli.flags.config) {
-  const configPath = getConfigPath()
-  console.log(configPath)
-  try {
-    await writeText(configPath)
-  } catch (error: any) {
-    console.error(error?.message ?? t("args.clipboardFailed"))
-  }
+if (cli.flags.paths) {
+  for (const { label, path } of listPaths(true, getConfigDir())) console.log(`${label}: ${path}`)
   process.exit(0)
 }

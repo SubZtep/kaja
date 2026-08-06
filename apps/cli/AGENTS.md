@@ -22,7 +22,7 @@ cli.tsx` directly) for interactive use.
 
 ## CLI surface
 
-- Flags: `--config`, `--config-dir`, `-c`/`--continue`, `-s`/`--session <id>`
+- Flags: `--config <dir>`, `--paths`, `-c`/`--continue`, `-s`/`--session <id>`
 - Subcommands (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
 - Handlers: `lib/memory/cli.ts`, `lib/session/cli.ts`, `lib/telegram/cli.ts`, `lib/web/cli.ts`
 - First run (no `config.json` yet, interactive TTY only): `components/first-run-setup.tsx` asks free hosted chat vs. own provider. Free hosted chat omits `models.chat` entirely; `lib/models/openai.ts` treats a missing `models.chat` as the free tier and resolves it directly (base URL `https://openai.kaja.io`, api key `"kaja"`) without touching `models.toml`. If `services.toml` has `[zen].apiKey` set, that key is forwarded to the proxy via the `x-kaja-zen-key` header and used upstream instead of the proxy's DB-sourced provider key (see `apps/openai/index.ts`). Own provider optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`. Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed. Dispatch glue for all of this lives in `lib/cli/` (`args.ts`, `bootstrap.ts`, `dispatch.ts`, `first-run.tsx`).
