@@ -21,12 +21,12 @@ import type { AudioSink } from "./audio"
 async function resolveTtsSettings() {
   const { tts, models } = await config()
   if (!models["text-to-speech"] || !tts?.voice) {
-    throw new Error("No TTS model/voice configured — set models.text-to-speech and tts.voice in config.json")
+    throw new Error("No TTS model/voice configured — set models.text-to-speech and tts.voice in settings.json")
   }
   const resolved = resolveModelById(await loadModelsFile(), models["text-to-speech"])
   if (!resolved) {
     throw new Error(
-      `No model in models.toml matches config.json's models.text-to-speech ("${models["text-to-speech"]}")`
+      `No model in models.toml matches settings.json's models.text-to-speech ("${models["text-to-speech"]}")`
     )
   }
   return {

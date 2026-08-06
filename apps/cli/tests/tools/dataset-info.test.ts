@@ -13,7 +13,7 @@ process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "config.json"),
+  join(configKajaDir, "settings.json"),
   JSON.stringify({
     models: { chat: "chat-default" }
   })

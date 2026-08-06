@@ -1,5 +1,5 @@
 // Static i18n: both dictionaries load at import, the active language is set
-// once at startup (cli.tsx, from settings.language). No live switching — a
+// once at startup (cli.tsx, from preferences.language). No live switching — a
 // language change takes effect on the next launch.
 
 import * as z from "zod"

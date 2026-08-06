@@ -16,7 +16,7 @@ export const TaskSchema = z.enum([
 ])
 
 const ModelSchema = z.object({
-  // Stable slug this model is looked up by (config.json's models.<task> value);
+  // Stable slug this model is looked up by (settings.json's models.<task> value);
   // a DB uuid for server-fetched files, any unique string for local templates.
   id: z.string().min(1),
   // The name sent to the provider's API, e.g. "accounts/fireworks/models/minimax-m3".

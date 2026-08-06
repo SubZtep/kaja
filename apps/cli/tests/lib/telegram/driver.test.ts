@@ -7,7 +7,7 @@ import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/d
 import type { Persona } from "../../../schemas/personas"
 
 // Same isolation/dynamic-import discipline as tests/lib/agents.test.ts: env
-// vars and a minimal config.json fixture must be in place before
+// vars and a minimal settings.json fixture must be in place before
 // lib/agents.ts (transitively pulled in by lib/telegram-driver.ts) is ever
 // evaluated, since lib/openai.ts reads config() at its own module top level.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data-telegram-driver`
@@ -19,7 +19,7 @@ process.env.NODE_ENV = "test"
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "config.json"),
+  join(configKajaDir, "settings.json"),
   JSON.stringify({
     models: { chat: "chat-default" }
   })

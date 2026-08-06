@@ -21,7 +21,7 @@ test("setConfigDirOverride redirects getConfigDir and getConfigPath", () => {
   const dir = `${tmpdir()}/kaja-test-config-override`
   setConfigDirOverride(dir)
   expect(getConfigDir()).toBe(dir)
-  expect(getConfigPath()).toBe(join(dir, "config.json"))
+  expect(getConfigPath()).toBe(join(dir, "settings.json"))
 
   setConfigDirOverride(undefined)
   expect(getConfigDir()).toBe(`${tmpdir()}/kaja-test-xdg-config-config/kaja`)
@@ -29,7 +29,7 @@ test("setConfigDirOverride redirects getConfigDir and getConfigPath", () => {
 
 test("config reads come from the overridden directory", async () => {
   const dir = `${tmpdir()}/kaja-test-config-override-read`
-  await write(join(dir, "config.json"), JSON.stringify({ settings: {} }))
+  await write(join(dir, "settings.json"), JSON.stringify({ preferences: {} }))
   setConfigDirOverride(dir)
-  expect(await readConfigLoose()).toEqual({ settings: {} })
+  expect(await readConfigLoose()).toEqual({ preferences: {} })
 })

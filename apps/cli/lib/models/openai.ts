@@ -3,7 +3,7 @@ import { config } from "../config/config"
 import { services } from "../config/services"
 import { loadModelsFile, resolveModelById } from "./models"
 
-// Free hosted chat tier: used when config.json's models.chat is omitted,
+// Free hosted chat tier: used when settings.json's models.chat is omitted,
 // resolved here directly instead of via models.toml, since it has no
 // per-user provider config to look up — just a shared public endpoint. The
 // proxy picks the actual model server-side, so this id is just a
@@ -20,13 +20,13 @@ const KAJA_ZEN_KEY_HEADER = "x-kaja-zen-key"
 
 const { models } = await config()
 const { zen } = await services()
-/** True when config.json's models.chat is omitted, i.e. the free hosted (OpenCode Zen) tier is in use. */
+/** True when settings.json's models.chat is omitted, i.e. the free hosted (OpenCode Zen) tier is in use. */
 export const isFreeChat = !models.chat
 const chatModel = isFreeChat
   ? { id: FREE_CHAT_MODEL_ID, task: "chat" as const, baseUrl: FREE_CHAT_BASE_URL, apiKey: FREE_CHAT_API_KEY }
   : resolveModelById(await loadModelsFile(), models.chat!)
 if (!chatModel) {
-  throw new Error(`No model in models.toml matches config.json's models.chat ("${models.chat}")`)
+  throw new Error(`No model in models.toml matches settings.json's models.chat ("${models.chat}")`)
 }
 
 /** The resolved chat model name, as sent to the provider's API. */

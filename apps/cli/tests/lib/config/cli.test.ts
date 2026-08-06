@@ -106,7 +106,7 @@ test("wipe backs up the whole config dir to .bak", async () => {
   expect(code).toBe(0)
   expect(text).toContain(`${getConfigDir()}.bak`)
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
-  expect(await Bun.file(`${getConfigDir()}.bak/config.json`).text()).toContain("world")
+  expect(await Bun.file(`${getConfigDir()}.bak/settings.json`).text()).toContain("world")
 })
 
 test("a second wipe uses .bak2", async () => {
@@ -116,8 +116,8 @@ test("a second wipe uses .bak2", async () => {
   const { code, text } = await runConfigCli(["wipe"], {})
   expect(code).toBe(0)
   expect(text).toContain(`${getConfigDir()}.bak2`)
-  expect(await Bun.file(`${getConfigDir()}.bak/config.json`).text()).toContain('"run":1')
-  expect(await Bun.file(`${getConfigDir()}.bak2/config.json`).text()).toContain('"run":2')
+  expect(await Bun.file(`${getConfigDir()}.bak/settings.json`).text()).toContain('"run":1')
+  expect(await Bun.file(`${getConfigDir()}.bak2/settings.json`).text()).toContain('"run":2')
 })
 
 test("wipe with no existing config dir is a no-op", async () => {
@@ -152,7 +152,7 @@ test("--api-url takes precedence over an existing services [api] baseUrl", async
 })
 
 test("a fresh install's models.chat is auto-filled from the first fetched chat model", async () => {
-  // No config.json on disk yet — same as right after a fresh `create()`.
+  // No settings.json on disk yet — same as right after a fresh `create()`.
   const modelsToml = `
 [providers.default]
 base_url = "https://api.example.test/v1"

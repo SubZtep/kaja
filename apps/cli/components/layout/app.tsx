@@ -1,15 +1,15 @@
 import { Box, useWindowSize } from "ink"
 import { useState } from "react"
 import { useAgent } from "../../hooks/use-agent"
-import { useSettings } from "../../hooks/use-settings"
+import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
-import { saveSettings } from "../../lib/config/config"
+import { savePreferences } from "../../lib/config/config"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import type { Persona } from "../../lib/personas/personas"
-import type { KajaSettings } from "../../schemas/config"
+import type { KajaPreferences } from "../../schemas/config"
 import type { ResolvedModel } from "../../schemas/models"
 import type { PersistedSession } from "../../schemas/session"
 import { StartupPanel } from "../startup-panel"
@@ -135,7 +135,7 @@ function buildCommands({
 }
 
 export default function App({
-  initialSettings,
+  initialPreferences,
   models = [],
   personas,
   openaiApiModel,
@@ -148,7 +148,7 @@ export default function App({
   memoryNoteCount = 0,
   brainPath
 }: Readonly<{
-  initialSettings?: KajaSettings
+  initialPreferences?: KajaPreferences
   models?: ResolvedModel[]
   personas: Persona[]
   openaiApiModel: string
@@ -189,7 +189,7 @@ export default function App({
     models,
     // A stored persona/model that no longer exists resolves to undefined and
     // the resume proceeds with defaults — messages restore verbatim anyway.
-    initialPersona: personas.find(p => p.id === initialSettings?.persona),
+    initialPersona: personas.find(p => p.id === initialPreferences?.persona),
     resume: initialSession && {
       session: initialSession,
       persona: personas.find(p => p.id === initialSession.persona),
@@ -199,13 +199,13 @@ export default function App({
   const switchPersona = (next: Persona) => {
     if (pending) return
     switchPersonaAgent(next)
-    saveSettings({ persona: next.id }).catch(error => {
-      log.warn({ error }, "Failed to save settings")
+    savePreferences({ persona: next.id }).catch(error => {
+      log.warn({ error }, "Failed to save preferences")
     })
   }
   const lastEvent = events.at(-1)
   const pendingCommand = !pending && lastEvent?.type === "confirm_command" ? lastEvent : undefined
-  const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = useSettings(initialSettings)
+  const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = usePreferences(initialPreferences)
   useSound(events, sounds)
   const speaking = useVoice(events, voice)
   const { columns, rows } = useWindowSize()

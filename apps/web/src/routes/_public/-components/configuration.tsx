@@ -3,7 +3,7 @@ import { Section } from "../../../components/ui/Section"
 
 const ITEMS = [
   {
-    title: "config.json",
+    title: "settings.json",
     desc: (
       <>
         The only required group is <code className="font-mono text-muted">llm</code>. Add{" "}
@@ -56,7 +56,7 @@ export function Configuration() {
       <Section className="mb-5 overflow-x-auto">
         <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
           {
-            "~/.config/kaja/\n├─ config.json     one required group (llm), rest optional\n├─ models.toml     model catalog per provider\n├─ mcp.toml        Model Context Protocol tool servers\n├─ personas/*.toml one behaviour per file\n└─ datasets/*.json custom fields for personas to collect"
+            "~/.config/kaja/\n├─ settings.json   one required group (llm), rest optional\n├─ models.toml     model catalog per provider\n├─ mcp.toml        Model Context Protocol tool servers\n├─ personas/*.toml one behaviour per file\n└─ datasets/*.json custom fields for personas to collect"
           }
         </code>
       </Section>

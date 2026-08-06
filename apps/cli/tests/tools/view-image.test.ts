@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 // tools/view-image.ts pulls in lib/agents.ts -> lib/openai.ts, which reads
-// config() at module load — config() hard-exits the process if config.json
+// config() at module load — config() hard-exits the process if settings.json
 // is missing or its chat model doesn't resolve in models.toml, so this
 // isolated config dir needs both (same fixture as tests/lib/agents.test.ts).
 const configDir = `${tmpdir()}/kaja-test-xdg-config-view-image`
@@ -12,7 +12,7 @@ process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "config.json"),
+  join(configKajaDir, "settings.json"),
   JSON.stringify({
     models: { chat: "chat-default" }
   })

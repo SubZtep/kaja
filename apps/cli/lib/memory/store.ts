@@ -18,7 +18,7 @@ export function getDefaultMemoryDbPath() {
  * otherwise the default XDG data location. Uses {@link readConfigLoose},
  * not {@link import("../config/config").config}, because managing memory (the
  * `kaja memory` CLI, and this module in general) must keep working even
- * with a missing or invalid config.json.
+ * with a missing or invalid settings.json.
  */
 export async function resolveMemoryDbPath(): Promise<string> {
   const loose = await readConfigLoose()
@@ -27,9 +27,9 @@ export async function resolveMemoryDbPath(): Promise<string> {
 
 /**
  * After a database has been opened successfully at `dbPath` (proving that
- * path works), writes it into config.json's `memory.dbPath` if that key
+ * path works), writes it into settings.json's `memory.dbPath` if that key
  * wasn't already set there — so the effective path becomes explicit and
- * user-editable instead of implicit. Never touches config.json if it
+ * user-editable instead of implicit. Never touches settings.json if it
  * doesn't exist yet (fresh install with no config) or already has
  * `memory.dbPath` set. Best-effort: a write failure here must not break
  * memory itself, so errors are swallowed.
@@ -191,7 +191,7 @@ export async function getDb(): Promise<Database> {
     migrateSchema(db, hasVersion.version)
   }
 
-  // Only persist the path back to config.json once we know it works — the
+  // Only persist the path back to settings.json once we know it works — the
   // database above opened and initialized without throwing.
   await persistDbPathIfMissing(dbPath)
 

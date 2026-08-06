@@ -15,12 +15,12 @@ process.env.XDG_CONFIG_HOME = configDir
 
 // /personas dynamically imports lib/agents.ts (see web-cli.ts), which pulls
 // in lib/openai.ts's top-level `await config()` — that hard-exits without a
-// config.json (and a models.toml whose chat model resolves), so both must
+// settings.json (and a models.toml whose chat model resolves), so both must
 // exist before that route is ever hit.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "config.json"),
+  join(configKajaDir, "settings.json"),
   JSON.stringify({
     models: { chat: "chat-default" }
   })

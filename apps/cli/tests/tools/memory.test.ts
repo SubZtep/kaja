@@ -4,20 +4,20 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 // XDG_CONFIG_HOME is isolated too, since memory-store.ts can write
-// config.memory.dbPath back into config.json on first successful open.
+// config.memory.dbPath back into settings.json on first successful open.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data-tools`
 const configDir = `${tmpdir()}/kaja-test-xdg-config-tools`
 process.env.XDG_DATA_HOME = dataDir
 process.env.XDG_CONFIG_HOME = configDir
 
 // tools/memory.ts pulls in lib/agents.ts -> lib/openai.ts, which reads
-// config() at module load — config() hard-exits the process if config.json
+// config() at module load — config() hard-exits the process if settings.json
 // is missing or its chat model doesn't resolve in models.toml, so this
 // isolated config dir needs both (same fixture as tests/lib/agents.test.ts).
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "config.json"),
+  join(configKajaDir, "settings.json"),
   JSON.stringify({
     models: { chat: "chat-default" }
   })

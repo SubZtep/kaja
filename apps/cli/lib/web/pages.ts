@@ -168,7 +168,7 @@ export function unconfiguredPersonasPage(): string {
     "Personas",
     "/personas",
     `<h1>Personas</h1>
-<p class="empty">No config.json yet — run the setup wizard (or \`kaja\`) once, then reload this page.</p>`
+<p class="empty">No settings.json yet — run the setup wizard (or \`kaja\`) once, then reload this page.</p>`
   )
 }
 

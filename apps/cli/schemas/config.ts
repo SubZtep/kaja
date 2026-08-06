@@ -1,6 +1,6 @@
 import * as z from "zod"
 
-export const KajaSettingsSchema = z.object({
+export const KajaPreferencesSchema = z.object({
   thinking: z.boolean().optional().describe("Show thinking indicator when the model is generating a response"),
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
@@ -50,17 +50,17 @@ export const KajaMemorySchema = z.object({
 /** location/webSearch/telegram/api (external service credentials) live in services.toml */
 export const KajaConfigSchema = z.object({
   // Editor tooling (e.g. VS Code's JSON language server) uses this to
-  // validate/autocomplete config.json; not consumed by the CLI itself.
+  // validate/autocomplete settings.json; not consumed by the CLI itself.
   $schema: z.url().optional(),
   models: KajaModelsSchema,
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
   memory: KajaMemorySchema.optional(),
-  settings: KajaSettingsSchema.optional().describe("In-app preferences (slash menu)")
+  preferences: KajaPreferencesSchema.optional().describe("In-app preferences (slash menu)")
 })
 
 export type KajaConfig = z.infer<typeof KajaConfigSchema>
-export type KajaSettings = z.infer<typeof KajaSettingsSchema>
+export type KajaPreferences = z.infer<typeof KajaPreferencesSchema>
 export type KajaModels = z.infer<typeof KajaModelsSchema>
 export type KajaStt = z.infer<typeof KajaSttSchema>
 export type KajaTts = z.infer<typeof KajaTtsSchema>

@@ -5,7 +5,7 @@ import { join } from "node:path"
 
 // telegram-bot.ts -> telegram-driver.ts -> lib/agents.ts -> lib/openai.ts,
 // which reads config() at module load — config() hard-exits the process if
-// config.json is missing or its chat model doesn't resolve in models.toml,
+// settings.json is missing or its chat model doesn't resolve in models.toml,
 // so this isolated config dir needs both (same fixture as
 // tests/lib/agents.test.ts). Set before the dynamic import below so it's in
 // place before lib/openai.ts is ever evaluated.
@@ -14,7 +14,7 @@ process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "config.json"),
+  join(configKajaDir, "settings.json"),
   JSON.stringify({
     models: { chat: "chat-default" }
   })

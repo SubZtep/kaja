@@ -487,10 +487,10 @@ export async function buildSystemPrompt(agent: Agent): Promise<string | undefine
           .join("\n")}`
       : undefined
 
-  const [{ settings }, { location }] = await Promise.all([readConfigLoose(), readServicesLoose()])
+  const [{ preferences }, { location }] = await Promise.all([readConfigLoose(), readServicesLoose()])
   const locationBlock = location ? locationInstructions(await lookupMyLocation()) : undefined
 
-  const replyLanguageBlock = settings?.language ? t("agent.replyLanguage") : undefined
+  const replyLanguageBlock = preferences?.language ? t("agent.replyLanguage") : undefined
 
   const personasBlock =
     toolNames.has(SWITCH_PERSONA_TOOL) && agent.personas.length > 1

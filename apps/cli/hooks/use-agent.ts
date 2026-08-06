@@ -150,7 +150,7 @@ export function useAgent(
   )
 
   // Saves the conversation after each turn, fire-and-forget like
-  // saveSettings — but serialized through a promise chain so a fast next
+  // savePreferences — but serialized through a promise chain so a fast next
   // turn can't race the row-id assignment into a duplicate INSERT.
   const persistChainRef = useRef(Promise.resolve())
   const persistSession = useCallback(() => {

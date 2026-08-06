@@ -24,7 +24,7 @@ flowchart TD
     Voice -.-> Term
     Term --> Session
     Tele --> Session
-    Config["⚙️ config.json + models.toml\n+ mcp.toml"] --> Core
+    Config["⚙️ settings.json + models.toml\n+ mcp.toml"] --> Core
 
     Session["🔗 Session"] --> Core
     Core["🧠 Agent core"] --> Agent

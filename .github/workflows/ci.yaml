@@ -59,7 +59,7 @@ jobs:
       - name: Check CLI config schema is up to date
         run: |
           bun run --filter @kaja/cli gen-schema
-          git diff --exit-code -- docs/config/config.schema.json
+          git diff --exit-code -- docs/config/settings.schema.json
 
       - name: Apply SQL migrations
         run: |

@@ -10,11 +10,11 @@ import { loadModelsFile, resolveModelById } from "./models"
 export async function embed(input: string | string[]): Promise<number[][]> {
   const { models } = await config()
   if (!models.embedding) {
-    throw new Error("No embedding model configured — set models.embedding in config.json")
+    throw new Error("No embedding model configured — set models.embedding in settings.json")
   }
   const embedding = resolveModelById(await loadModelsFile(), models.embedding)
   if (!embedding) {
-    throw new Error(`No model in models.toml matches config.json's models.embedding ("${models.embedding}")`)
+    throw new Error(`No model in models.toml matches settings.json's models.embedding ("${models.embedding}")`)
   }
   const client = new OpenAI({
     baseURL: embedding.baseUrl,

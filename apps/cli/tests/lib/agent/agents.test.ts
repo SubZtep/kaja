@@ -14,7 +14,7 @@ import type { Persona } from "../../../schemas/personas"
 // at its own module top level (transitively reached from lib/agents.ts), so
 // a *static* import of lib/agents.ts here would resolve before this file's
 // own body — including these env vars — ever ran. Dynamic imports below
-// keep the sequencing: env vars and the config.json fixture are in place
+// keep the sequencing: env vars and the settings.json fixture are in place
 // before lib/agents.ts (and everything it pulls in) is ever evaluated.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data-agents`
 const configDir = `${tmpdir()}/kaja-test-xdg-config-agents`
@@ -22,14 +22,14 @@ process.env.XDG_DATA_HOME = dataDir
 process.env.XDG_CONFIG_HOME = configDir
 process.env.NODE_ENV = "test"
 
-// config() hard-exits the process if config.json is missing (or its chat
+// config() hard-exits the process if settings.json is missing (or its chat
 // model doesn't resolve in models.toml), so this isolated config dir needs
 // both — no `location` block, so run() never attempts a real network geo
 // lookup.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "config.json"),
+  join(configKajaDir, "settings.json"),
   JSON.stringify({
     models: { chat: "chat-default" }
   })

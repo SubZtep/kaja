@@ -23,7 +23,7 @@ export function listPaths(all = false, configDir = getPaths().config) {
   const paths = getPaths()
 
   const items = [
-    { label: "config", path: join(configDir, "config.json") },
+    { label: "settings", path: join(configDir, "settings.json") },
     { label: "memory & sessions", path: join(paths.data, "memory.sqlite") }
   ]
 

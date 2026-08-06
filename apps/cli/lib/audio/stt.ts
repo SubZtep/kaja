@@ -4,7 +4,7 @@
 //   const stt = await createStt({ source: createLocalSource() })
 //   for await (const text of stt.utterances) console.log(text)
 //
-// Requires the speaches container running on speachesUrl (config.json, default localhost:8000).
+// Requires the speaches container running on speachesUrl (settings.json, default localhost:8000).
 // LOG_LEVEL=debug logs every server event.
 
 import { config } from "../config/config"
@@ -17,12 +17,12 @@ import { createAsyncQueue, SAMPLE_RATE } from "./audio"
 async function resolveSttSettings() {
   const { stt, models } = await config()
   if (!models["speech-to-text"]) {
-    throw new Error("No STT model configured — set models.speech-to-text in config.json")
+    throw new Error("No STT model configured — set models.speech-to-text in settings.json")
   }
   const resolved = resolveModelById(await loadModelsFile(), models["speech-to-text"])
   if (!resolved) {
     throw new Error(
-      `No model in models.toml matches config.json's models.speech-to-text ("${models["speech-to-text"]}")`
+      `No model in models.toml matches settings.json's models.speech-to-text ("${models["speech-to-text"]}")`
     )
   }
   return {

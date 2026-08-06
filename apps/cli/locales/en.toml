@@ -24,7 +24,7 @@ Usage
 
 Options
   --help          Print this help
-  --config        Read config.json from this directory instead of the default
+  --config        Read settings.json from this directory instead of the default
   --paths         Print every path Kaja reads or writes
   --api-url       Kaja API base URL for `kaja config fetch` (saved into services.toml after)
   --version       Print the installed app version

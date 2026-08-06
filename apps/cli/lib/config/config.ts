@@ -1,13 +1,13 @@
 import { join } from "node:path"
 import { file, write } from "bun"
-// Written on first run: a template config.json with placeholder model ids,
+// Written on first run: a template settings.json with placeholder model ids,
 // or with models.chat overridden by the first-run prompt (see cli.tsx /
 // components/first-run-setup.tsx). TS's built-in resolveJsonModule typing
 // wins over the `text` attribute, so the raw import is typed as the parsed
 // object rather than a string.
-import rawTemplate from "../../../../docs/config/config.json" with { type: "text" }
+import rawTemplate from "../../../../docs/config/settings.json" with { type: "text" }
 import pkg from "../../package.json" with { type: "json" }
-import { type KajaConfig, KajaConfigSchema, type KajaSettings } from "../../schemas/config"
+import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "../../schemas/config"
 import { t } from "../i18n"
 import { getPaths } from "../paths"
 
@@ -24,11 +24,11 @@ declare const CLI_VERSION: string | undefined
 // releases.
 function getSchemaUrl() {
   const version = typeof CLI_VERSION === "string" ? CLI_VERSION : pkg.version
-  return `https://raw.githubusercontent.com/SubZtep/kaja/cli@${version}/docs/config/config.schema.json`
+  return `https://cdn.jsdelivr.net/gh/SubZtep/kaja@cli@${version}/docs/config/settings.schema.json`
 }
 
 // Set once at startup from the --config-dir flag, pre-scanned from argv in
-// cli.tsx before the first config read; only config.json moves — data paths
+// cli.tsx before the first config read; only settings.json moves — data paths
 // (sessions, memory, logs) stay on their env-paths defaults.
 let configDirOverride: string | undefined
 
@@ -46,7 +46,7 @@ export function getConfigDir() {
 }
 
 export function getConfigPath() {
-  return join(getConfigDir(), "config.json")
+  return join(getConfigDir(), "settings.json")
 }
 
 export async function isExists() {
@@ -80,12 +80,12 @@ export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
 }
 
 // Cached after the first read: the file only changes via saveConfig/
-// saveSettings below (and invalidateConfigCache, for writers outside this
+// savePreferences below (and invalidateConfigCache, for writers outside this
 // module), so every other reader (stt/tts/geo, called often and
 // per-utterance) doesn't hit disk each time.
 let cached: KajaConfig | undefined
 
-/** Clears the config() cache after a write made outside saveConfig/saveSettings — e.g. lib/memory-store.ts persisting a resolved default path into config.json. */
+/** Clears the config() cache after a write made outside saveConfig/savePreferences — e.g. lib/memory-store.ts persisting a resolved default path into settings.json. */
 export function invalidateConfigCache() {
   cached = undefined
 }
@@ -114,19 +114,19 @@ export async function saveConfig(data: KajaConfig) {
   cached = undefined
 }
 
-export async function saveSettings(settings: KajaSettings) {
+export async function savePreferences(preferences: KajaPreferences) {
   const current = await config()
   const f = file(getConfigPath(), { type: "application/json" })
   // Merge into the existing block: callers persist only the keys they manage
   // (thinking/sounds/voice) and must not drop others like language.
-  await write(f, JSON.stringify({ ...current, settings: { ...current.settings, ...settings } }, null, 2))
+  await write(f, JSON.stringify({ ...current, preferences: { ...current.preferences, ...preferences } }, null, 2))
   cached = undefined
 }
 
 /**
- * Seeds config.json's models.chat from a freshly fetched models.toml,
+ * Seeds settings.json's models.chat from a freshly fetched models.toml,
  * without requiring the rest of the file to be schema-valid first — unlike
- * saveConfig/saveSettings, this must work even on a fresh install before
+ * saveConfig/savePreferences, this must work even on a fresh install before
  * models.chat resolves (see lib/config-cli.ts). Only writes when the file
  * on disk doesn't already have a real chat id — the template's own
  * placeholder doesn't count, so it never blocks the real fetched one from

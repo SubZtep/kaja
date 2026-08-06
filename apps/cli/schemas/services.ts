@@ -34,7 +34,7 @@ export const ServicesApiSchema = z.object({
 
 // External service credentials: each group is independently optional — when
 // absent, that feature is simply unavailable rather than crashing the app.
-// Kept out of config.json (which stays local UI/model config) since these
+// Kept out of settings.json (which stays local UI/model config) since these
 // are the fields most likely to hold real secrets a user pastes in once and
 // otherwise leaves alone.
 export const ServicesFileSchema = z.object({

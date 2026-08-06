@@ -2,7 +2,7 @@
   "models": {
     "chat": "chat-default"
   },
-  "settings": {
+  "preferences": {
     "thinking": false,
     "sounds": true,
     "voice": false,

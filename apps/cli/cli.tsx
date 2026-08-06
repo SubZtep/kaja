@@ -62,7 +62,7 @@ const promptHistory = await loadPromptHistory()
 
 const currentConfig = await config()
 
-const { settings } = currentConfig
+const { preferences } = currentConfig
 const models = await loadModels()
 const personas = await loadPersonas(models)
 const { tools, mcpServers, closeTools } = await getDefaultTools()
@@ -102,7 +102,7 @@ await dispatchTelegram(cli, { tools, personas, models, shutdown })
 const { waitUntilExit } = render(
   <InkPictureProvider>
     <App
-      initialSettings={settings}
+      initialPreferences={preferences}
       models={models}
       personas={personas}
       openaiApiModel={chatModelId}

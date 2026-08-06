@@ -48,7 +48,7 @@ export function resolveModels(data: KajaModelsFile): ResolvedModel[] {
 }
 
 /**
- * Looks up one `[[models]]` entry by its models.toml `id` (config.json's
+ * Looks up one `[[models]]` entry by its models.toml `id` (settings.json's
  * models.<task> value), resolved with its provider's credentials. Returns
  * undefined if the id isn't in the file — callers report their own
  * "not configured" error since the message differs per feature.

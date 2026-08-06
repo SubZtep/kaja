@@ -1,7 +1,7 @@
 # Kaja models — credentials live in named [providers.*] tables so they are
 # never repeated per model. A model picks one with `provider = "<name>"`;
 # models that don't name one use [providers.default]. `id` is the stable
-# slug config.json's models.<task> points at; `model` is the name sent to
+# slug settings.json's models.<task> points at; `model` is the name sent to
 # the provider's API.
 
 [providers.default]

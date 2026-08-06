@@ -7,34 +7,34 @@ const base = {
   }
 }
 
-test("config without settings still validates", () => {
+test("config without preferences still validates", () => {
   const parsed = KajaConfigSchema.parse(base)
-  expect(parsed.settings).toBeUndefined()
+  expect(parsed.preferences).toBeUndefined()
 })
 
-test("config with settings round-trips", () => {
+test("config with preferences round-trips", () => {
   const parsed = KajaConfigSchema.parse({
     ...base,
-    settings: { thinking: false, sounds: true }
+    preferences: { thinking: false, sounds: true }
   })
-  expect(parsed.settings).toEqual({ thinking: false, sounds: true })
+  expect(parsed.preferences).toEqual({ thinking: false, sounds: true })
 })
 
-test("partial settings are allowed", () => {
+test("partial preferences are allowed", () => {
   const parsed = KajaConfigSchema.parse({
     ...base,
-    settings: { sounds: false }
+    preferences: { sounds: false }
   })
-  expect(parsed.settings).toEqual({ sounds: false })
+  expect(parsed.preferences).toEqual({ sounds: false })
 })
 
-test("settings language accepts en and hu only", () => {
+test("preferences language accepts en and hu only", () => {
   const parsed = KajaConfigSchema.parse({
     ...base,
-    settings: { language: "hu" }
+    preferences: { language: "hu" }
   })
-  expect(parsed.settings).toEqual({ language: "hu" })
-  expect(() => KajaConfigSchema.parse({ ...base, settings: { language: "de" } })).toThrow()
+  expect(parsed.preferences).toEqual({ language: "hu" })
+  expect(() => KajaConfigSchema.parse({ ...base, preferences: { language: "de" } })).toThrow()
 })
 
 test("models.chat is optional; models itself is required", () => {

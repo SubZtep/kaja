@@ -80,7 +80,7 @@
       },
       "additionalProperties": false
     },
-    "settings": {
+    "preferences": {
       "description": "In-app preferences (slash menu)",
       "type": "object",
       "properties": {

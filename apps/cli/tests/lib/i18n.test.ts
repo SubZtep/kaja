@@ -8,7 +8,7 @@ test("en and hu dictionaries have the same keys", () => {
 })
 
 test("interpolates params", () => {
-  expect(t("cli.invalidConfig", { path: "/x/config.json" })).toBe("Invalid config file: /x/config.json")
+  expect(t("cli.invalidConfig", { path: "/x/settings.json" })).toBe("Invalid config file: /x/settings.json")
 })
 
 test("leaves unknown placeholders alone", () => {

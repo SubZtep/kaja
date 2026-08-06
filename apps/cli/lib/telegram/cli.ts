@@ -40,11 +40,11 @@ export async function runTelegramCli(deps: {
     personas: deps.personas,
     models: deps.models,
     // Re-reads config on every call (readConfig() is cache-invalidated by
-    // saveSettings) so /new picks up a persona switched in the terminal
+    // savePreferences) so /new picks up a persona switched in the terminal
     // after this bot process started, without needing a restart.
     getInitialPersona: async () => {
       const current = await readConfig()
-      return deps.personas.find(p => p.id === current?.settings?.persona)
+      return deps.personas.find(p => p.id === current?.preferences?.persona)
     }
   })
 

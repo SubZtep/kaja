@@ -42,6 +42,6 @@ export function applyConfigDirOverride(argv: string[]) {
  */
 export async function detectAndSetLanguage() {
   const loose = await readConfigLoose()
-  const lang = loose.settings?.language
+  const lang = loose.preferences?.language
   setLanguage(lang === "hu" || lang === "en" ? lang : detectLanguage())
 }
