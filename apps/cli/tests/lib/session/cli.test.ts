@@ -86,3 +86,18 @@ test("unknown or missing subcommand prints usage and exits 1", async () => {
     expect(text).toContain("kaja session list")
   }
 })
+
+test("BUG: diagram id parsing is loose — trailing garbage and whitespace are silently accepted", async () => {
+  const id = await createSessionRow({
+    persona: "kaja",
+    model: "test-model",
+    title: "hi",
+    owner: null,
+    session: { messages: [] },
+    events: []
+  })
+  for (const arg of [`${id}abc`, ` ${id}`, `${id}.9`, `+${id}`]) {
+    const { code } = await runSessionCli(["diagram", arg])
+    expect(code).toBe(0)
+  }
+})

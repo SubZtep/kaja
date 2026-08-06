@@ -16,14 +16,15 @@ if (!process.env.LOG_LEVEL) log.level = "warn"
  * The flag is still declared in lib/args.ts so --help documents it.
  */
 export function applyConfigDirOverride(argv: string[]) {
-  const i = argv.findIndex(a => a === "--config" || a.startsWith("--config="))
   let value: string | undefined
-  if (i === -1) {
-    value = undefined
-  } else if (argv[i]!.startsWith("--config=")) {
-    value = argv[i]!.slice("--config=".length)
-  } else {
-    value = argv[i + 1]
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]!
+    if (arg.startsWith("--config=")) {
+      value = arg.slice("--config=".length)
+    } else if (arg === "--config") {
+      const next = argv[i + 1]
+      value = next && !next.startsWith("-") ? next : undefined
+    }
   }
   if (value) setConfigDirOverride(resolve(value))
 }
