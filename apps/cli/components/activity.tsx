@@ -2,33 +2,10 @@ import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
 import type { TextProps } from "ink"
 import { useEffect, useState } from "react"
 import type { PartialMessage } from "../hooks/use-agent"
+import { useRandomSpinner } from "../hooks/use-random-spinner"
 import { t } from "../lib/i18n"
 
 const TICK_MS = 120
-
-/** From `cli-spinners`'s SpinnerName */
-const DOTS_SPINNERS = [
-  "dots",
-  "dots2",
-  "dots3",
-  "dots4",
-  "dots5",
-  "dots6",
-  "dots7",
-  "dots8",
-  "dots9",
-  "dots10",
-  "dots11",
-  "dots12",
-  "dots13",
-  "dots14",
-  "dots8Bit",
-  "dotsCircle"
-] as const
-
-function randomDotsSpinner() {
-  return DOTS_SPINNERS[Math.floor(Math.random() * DOTS_SPINNERS.length)]
-}
 
 const customTheme = extendTheme(defaultTheme, {
   components: {
@@ -65,11 +42,10 @@ export function Activity({
   thinking: boolean
 }>) {
   const [tick, setTick] = useState(0)
-  const [spinnerType, setSpinnerType] = useState(randomDotsSpinner)
+  const spinnerType = useRandomSpinner(pending, "dots")
   useEffect(() => {
     if (!pending) return
     setTick(0)
-    setSpinnerType(randomDotsSpinner())
     const timer = setInterval(() => setTick(t => t + 1), TICK_MS)
     return () => clearInterval(timer)
   }, [pending])

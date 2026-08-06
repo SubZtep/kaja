@@ -1,6 +1,7 @@
 import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
 import { Box, Text, type TextProps } from "ink"
 import Gradient from "ink-gradient"
+import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
 import { MonsterMate } from "../monster"
 
@@ -62,6 +63,7 @@ export function Header({
   const modelLabel = titleCase(shortModelLabel(model))
   const providerLabel = provider ? titleCase(provider) : undefined
   const tokensSuffix = promptTokens != null ? ` · ${promptTokens.toLocaleString()} tokens` : ""
+  const spinnerType = useRandomSpinner(!!currentTool, "block")
 
   return (
     <Box width={width} flexShrink={0} justifyContent="space-between" paddingX={1} gap={1}>
@@ -76,7 +78,7 @@ export function Header({
       {currentTool ? (
         <Box flexShrink={1} flexGrow={0} gap={1} overflow="hidden" minWidth={0}>
           <ThemeProvider theme={customTheme}>
-            <Spinner type="boxBounce" label={describeToolCall(currentTool.name, currentTool.arguments)} />
+            <Spinner type={spinnerType} label={describeToolCall(currentTool.name, currentTool.arguments)} />
           </ThemeProvider>
         </Box>
       ) : (
