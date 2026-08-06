@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
+import { SignOutButton } from "../../../components/layout/SignOutButton"
 import { SiteHeader } from "../../../components/layout/SiteHeader"
+import { useUser } from "../../../hooks/user"
 
 type HeaderMenuItem = {
   label: string
@@ -12,10 +14,18 @@ type HeaderMenuItem = {
   icon?: ReactNode
 }
 
-const menuItems: HeaderMenuItem[] = [
+const guestItems: HeaderMenuItem[] = [
   { label: "Home", to: "/", internal: true },
   { label: "Sign In", to: "/signin", internal: true },
-  { label: "Sign Up", to: "/signup", internal: true },
+  { label: "Sign Up", to: "/signup", internal: true }
+]
+
+const authedItems: HeaderMenuItem[] = [
+  { label: "Home", to: "/", internal: true },
+  { label: "Dashboard", to: "/dashboard", internal: true }
+]
+
+const sharedItems: HeaderMenuItem[] = [
   { label: "Docs", href: "https://docs.kaja.io" },
   {
     label: "GitHub",
@@ -43,15 +53,38 @@ function MenuItem({ item, onNavigate }: Readonly<{ item: HeaderMenuItem; onNavig
 }
 
 export function Header() {
+  const user = useUser()
+  const menuItems = [...(user ? authedItems : guestItems), ...sharedItems]
+
   return (
     <SiteHeader
       brandTo="/"
-      desktopNav={menuItems.map(item => <MenuItem key={item.label} item={item} />)}
-      mobileNav={close =>
-        menuItems
-          .filter(item => !item.desktopOnly)
-          .map(item => <MenuItem key={item.label} item={item} onNavigate={close} />)
+      desktopNav={
+        <>
+          {menuItems.map(item => (
+            <MenuItem key={item.label} item={item} />
+          ))}
+          {user ? <SignOutButton /> : null}
+        </>
       }
+      mobileNav={close => (
+        <>
+          {menuItems
+            .filter(item => !item.desktopOnly)
+            .map(item => (
+              <MenuItem key={item.label} item={item} onNavigate={close} />
+            ))}
+          {user ? (
+            <div className="flex items-center justify-between border-border border-t pt-4">
+              <div className="min-w-0">
+                <div className="truncate font-medium text-fg text-sm">{user.name}</div>
+                <div className="truncate text-[#6e7681] text-xs capitalize">{user.role ?? "user"}</div>
+              </div>
+              <SignOutButton />
+            </div>
+          ) : null}
+        </>
+      )}
     />
   )
 }
