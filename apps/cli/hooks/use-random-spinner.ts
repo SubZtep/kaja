@@ -45,10 +45,17 @@ const SPINNER_TEMPLATES = {
 
 export type SpinnerTemplate = keyof typeof SPINNER_TEMPLATES
 
-/** Picks a uniformly random index in [0, length) using crypto.getRandomValues. */
+/** Picks a uniformly random index in [0, length) using crypto.getRandomValues, rejecting values that would bias the modulo. */
 function randomIndex(length: number): number {
-  const buffer = crypto.getRandomValues(new Uint32Array(1))
-  return (buffer[0] ?? 0) % length
+  const max = 2 ** 32
+  const limit = max - (max % length)
+  const buffer = new Uint32Array(1)
+  let value: number
+  do {
+    crypto.getRandomValues(buffer)
+    value = buffer[0] ?? 0
+  } while (value >= limit)
+  return value % length
 }
 
 function randomSpinner<Template extends SpinnerTemplate>(
