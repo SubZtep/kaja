@@ -57,7 +57,7 @@ test("fetch sends Bearer token from services.api.token", async () => {
   }
   const { code } = await runConfigCli(["fetch"], services)
   expect(code).toBe(0)
-  expect(authHeaders.length).toBe(2)
+  expect(authHeaders).toHaveLength(2)
   expect(authHeaders.every(h => h === "Bearer shared-secret")).toBe(true)
 })
 

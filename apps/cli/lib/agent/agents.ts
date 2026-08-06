@@ -779,6 +779,31 @@ function finalEventFor(message: StreamedRound["message"]): AgentEvent {
     : { type: "final", content: message.content }
 }
 
+// Yields the ask_user/confirm_command event for a pending handoff, if any, and reports whether run() should stop.
+function* handlePendingHandoff(
+  session: Session,
+  ask: { id: string; question: string } | undefined,
+  confirm: { id: string; command: string; description: string } | undefined
+): Generator<AgentEvent, boolean, void> {
+  if (ask) {
+    session.pendingAskUserId = ask.id
+    yield { type: "ask_user", question: ask.question }
+    return true
+  }
+
+  if (confirm) {
+    session.pendingRunCommandId = confirm.id
+    yield {
+      type: "confirm_command",
+      command: confirm.command,
+      description: confirm.description
+    }
+    return true
+  }
+
+  return false
+}
+
 export async function* run(
   agent: Agent,
   prompt: string,
@@ -822,20 +847,6 @@ export async function* run(
     // is pushed on the next run() call, once the human has answered).
     const { ask, confirm } = yield* handleToolCalls(agent, messages, owner, toolsByName, message.tool_calls)
 
-    if (ask) {
-      session.pendingAskUserId = ask.id
-      yield { type: "ask_user", question: ask.question }
-      return
-    }
-
-    if (confirm) {
-      session.pendingRunCommandId = confirm.id
-      yield {
-        type: "confirm_command",
-        command: confirm.command,
-        description: confirm.description
-      }
-      return
-    }
+    if (yield* handlePendingHandoff(session, ask, confirm)) return
   }
 }

@@ -1,7 +1,15 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
-import { Agent, applyPersona, createSession, type FinalizedAgentEvent, run, type Session } from "../lib/agent/agents"
+import {
+  Agent,
+  type AgentEvent,
+  applyPersona,
+  createSession,
+  type FinalizedAgentEvent,
+  run,
+  type Session
+} from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
 import { log } from "../lib/logger"
@@ -206,6 +214,38 @@ export function useAgent(
     [applyPersonaSwitch, pushEvent]
   )
 
+  // Deltas can arrive many times a second; re-rendering (and Ink repainting
+  // the whole frame) on every single token makes long streamed responses
+  // janky — some terminals (e.g. VS Code's) visibly struggle to keep up once
+  // the content is taller than the viewport. Accumulate here and only push
+  // to state at most every DELTA_INTERVAL_MS.
+  const handleRunEvent = useCallback(
+    (
+      event: AgentEvent,
+      accumulated: PartialMessage,
+      flushState: { hasPartial: boolean; lastFlush: number },
+      flush: () => void
+    ) => {
+      if (event.type === "delta") {
+        accumulated[event.channel] += event.text
+        flushState.hasPartial = true
+        const now = Date.now()
+        if (now - flushState.lastFlush >= DELTA_INTERVAL_MS) {
+          flushState.lastFlush = now
+          flush()
+        }
+        return
+      }
+      if (event.type === "usage") {
+        if (event.promptTokens != null) setPromptTokens(event.promptTokens)
+        if (event.model) setResponseModel(event.model)
+        return
+      }
+      handleFinalizedEvent(event)
+    },
+    [handleFinalizedEvent]
+  )
+
   // showUserEvent is false when the "prompt" isn't something the human
   // typed (e.g. resolveCommand feeding back a shell command's result) — it
   // still drives run() as the next turn, but shouldn't render as if the
@@ -214,33 +254,14 @@ export function useAgent(
     async (prompt: string, showUserEvent = true) => {
       setPending(true)
       if (showUserEvent) pushEvent({ type: "user", text: prompt })
-      // Deltas can arrive many times a second; re-rendering (and Ink
-      // repainting the whole frame) on every single token makes long
-      // streamed responses janky — some terminals (e.g. VS Code's) visibly
-      // struggle to keep up once the content is taller than the viewport.
-      // Accumulate here and only push to state at most every DELTA_INTERVAL_MS.
       const accumulated: PartialMessage = { reasoning: "", content: "" }
-      let hasPartial = false
-      let lastFlush = 0
+      const flushState = { hasPartial: false, lastFlush: 0 }
       const flush = () => {
-        if (hasPartial) setPartial({ ...accumulated })
+        if (flushState.hasPartial) setPartial({ ...accumulated })
       }
       try {
         for await (const event of run(agent, prompt, sessionRef.current!)) {
-          if (event.type === "delta") {
-            accumulated[event.channel] += event.text
-            hasPartial = true
-            const now = Date.now()
-            if (now - lastFlush >= DELTA_INTERVAL_MS) {
-              lastFlush = now
-              flush()
-            }
-          } else if (event.type === "usage") {
-            if (event.promptTokens != null) setPromptTokens(event.promptTokens)
-            if (event.model) setResponseModel(event.model)
-          } else {
-            handleFinalizedEvent(event)
-          }
+          handleRunEvent(event, accumulated, flushState, flush)
         }
       } catch (error) {
         log.warn({ error }, "Agent run failed")
@@ -252,7 +273,7 @@ export function useAgent(
         persistSession()
       }
     },
-    [agent, pushEvent, persistSession, handleFinalizedEvent]
+    [agent, pushEvent, persistSession, handleRunEvent]
   )
 
   // Resolves a pending confirm_command event: runs the command on approval

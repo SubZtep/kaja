@@ -14,8 +14,7 @@ export function renderMcpToml(servers: McpServer[]): string {
           lines.push(`headers = { ${headerParts.join(", ")} }`)
         }
       } else {
-        lines.push(`command = ${tomlString(s.command ?? "")}`)
-        lines.push(`args = [${s.args.map(tomlString).join(", ")}]`)
+        lines.push(`command = ${tomlString(s.command ?? "")}`, `args = [${s.args.map(tomlString).join(", ")}]`)
         const envEntries = Object.entries(s.env)
         if (envEntries.length > 0) {
           const envParts = envEntries.map(([k, v]) => `${tomlString(k)} = ${tomlString(v)}`)
