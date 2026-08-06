@@ -10,8 +10,7 @@ import { getPaths } from "../paths"
 const TEMPLATE = rawTemplate as unknown as string
 const TEMPLATE_JSON = JSON.parse(TEMPLATE)
 
-// Injected at compile time by CI via `bun build --define CLI_VERSION=...`;
-// undefined when running from source (see lib/args.ts for the same pattern).
+// Injected at compile time by CI via `bun build --define CLI_VERSION=...`; undefined when running from source (see lib/args.ts for the same pattern).
 declare const CLI_VERSION: string | undefined
 
 // Pinned to this CLI's release tag so the schema matches what this version actually validates.
@@ -55,8 +54,7 @@ export async function validate(quiet = false) {
   return false
 }
 
-// Tolerant reader for the config wizard prefill: returns whatever is in the
-// file (possibly schema-invalid), or {} when missing/unparseable.
+/** Tolerant reader for the config wizard prefill: returns whatever is in the file (possibly schema-invalid), or {} when missing/unparseable. */
 export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
   try {
     const data = await file(getConfigPath(), {
@@ -67,10 +65,7 @@ export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
   return {}
 }
 
-// Cached after the first read: the file only changes via saveConfig/
-// savePreferences below (and invalidateConfigCache, for writers outside this
-// module), so every other reader (stt/tts/geo, called often and
-// per-utterance) doesn't hit disk each time.
+// Cached after the first read: the file only changes via saveConfig/savePreferences below (and invalidateConfigCache, for writers outside this module), so other readers (stt/tts/geo, called per-utterance) don't hit disk each time.
 let cached: KajaConfig | undefined
 
 /** Clears the config() cache after a write made outside saveConfig/savePreferences — e.g. lib/memory-store.ts persisting a resolved default path into settings.json. */
@@ -105,8 +100,7 @@ export async function saveConfig(data: KajaConfig) {
 export async function savePreferences(preferences: KajaPreferences) {
   const current = await config()
   const f = file(getConfigPath(), { type: "application/json" })
-  // Merge into the existing block: callers persist only the keys they manage
-  // (thinking/sounds/voice) and must not drop others like language.
+  // Merge into the existing block: callers persist only the keys they manage (thinking/sounds/voice) and must not drop others like language.
   await write(f, JSON.stringify({ ...current, preferences: { ...current.preferences, ...preferences } }, null, 2))
   cached = undefined
 }

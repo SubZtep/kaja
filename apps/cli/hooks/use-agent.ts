@@ -1,15 +1,7 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
-import {
-  Agent,
-  type AgentEvent,
-  applyPersona,
-  createSession,
-  type FinalizedAgentEvent,
-  run,
-  type Session
-} from "../lib/agent/agents"
+import { Agent, applyPersona, createSession, type FinalizedAgentEvent, run, type Session } from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
 import { log } from "../lib/logger"
@@ -87,13 +79,10 @@ export function useAgent(
   })
   const sessionRef = useRef<Session>(undefined)
   if (!sessionRef.current) sessionRef.current = resume ? (resume.session.session as Session) : createSession()
-  // The database row this conversation saves into; undefined until the
-  // first save (empty sessions are never recorded).
+  // The database row this conversation saves into; undefined until the first save (empty sessions are never recorded).
   const sessionRowIdRef = useRef<number | undefined>(resume?.session.id)
 
-  // React-state mirror of agent.model (the configured/request model id), so
-  // consumers rerender on switch. Distinct from `responseModel`, which is the
-  // provider-reported id from the last completion (e.g. free-chat proxy).
+  // React-state mirror of agent.model (the configured/request model id), so consumers rerender on switch. Distinct from `responseModel`, which is the provider-reported id from the last completion (e.g. free-chat proxy).
   const [model, setModel] = useState(agent.model)
   const [responseModel, setResponseModel] = useState<string | null>(null)
   const switchModel = useCallback(
@@ -108,8 +97,7 @@ export function useAgent(
   const [events, setEvents] = useState<TimelineEvent[]>(
     () => (resume?.session.events as TimelineEvent[] | undefined) ?? []
   )
-  // Ref mirror of `events` for send/persistSession, whose closures are
-  // memoized on [agent] and would otherwise read a stale array.
+  // Ref mirror of `events` for send/persistSession, whose closures are memoized on [agent] and would otherwise read a stale array.
   const eventsRef = useRef(events)
   const pushEvent = useCallback((event: TimelineEvent) => {
     eventsRef.current = [...eventsRef.current, event]
@@ -117,32 +105,21 @@ export function useAgent(
   }, [])
   const [partial, setPartial] = useState<PartialMessage | null>(null)
   const [pending, setPending] = useState(false)
-  // The in-flight tool call, if the most recent event is one and a run is
-  // still pending — there's no separate "tool finished" event, so this is
-  // derived rather than tracked: any later event naturally supersedes it.
+  // The in-flight tool call, if the most recent event is one and a run is still pending — there's no separate "tool finished" event, so this is derived rather than tracked: any later event naturally supersedes it.
   const lastEvent = events.at(-1)
   const currentTool = pending && lastEvent?.type === "tool_call" ? lastEvent : undefined
-  // True from the moment a run_command is approved until its result is fed
-  // back — separate from `pending` (which only covers the run() loop itself)
-  // so the confirm UI can hide/disable while the shell command is in flight.
+  // True from the moment a run_command is approved until its result is fed back — separate from `pending` (which only covers the run() loop itself) so the confirm UI can hide/disable while the shell command is in flight.
   const [runningCommand, setRunningCommand] = useState(false)
-  // Latest completed turn's prompt token count, for the header's usage
-  // display — not part of the visible timeline.
+  // Latest completed turn's prompt token count, for the header's usage display — not part of the visible timeline.
   const [promptTokens, setPromptTokens] = useState<number | null>(null)
 
-  // Adopting a persona from the menu swaps the agent's instructions and
-  // starts a fresh session/timeline — deliberately destructive, since the
-  // menu is also the CLI's only "new conversation" affordance. The agent
-  // can additionally switch its own persona mid-conversation via the
-  // switch_persona tool, which run() handles non-destructively by rewriting
-  // the session's system message in place (see the persona_switch event).
+  // Adopting a persona from the menu swaps the agent's instructions and starts a fresh session/timeline — deliberately destructive, since the menu is also the CLI's only "new conversation" affordance. The agent can additionally switch its own persona mid-conversation via the switch_persona tool, which run() handles non-destructively by rewriting the session's system message in place (see the persona_switch event).
   const [persona, setPersona] = useState<Persona>(resume?.persona ?? initialPersona ?? personas[0]!)
   const personaRef = useRef(persona)
   const switchPersona = useCallback(
     (next: Persona) => {
       if (pending) return
-      // Only sets the starting point for the new session — the user can
-      // still switch models manually afterward via switchModel.
+      // Only sets the starting point for the new session — the user can still switch models manually afterward via switchModel.
       applyPersona(agent, next)
       setModel(agent.model)
       setResponseModel(null)
@@ -157,9 +134,7 @@ export function useAgent(
     [agent, pending]
   )
 
-  // Saves the conversation after each turn, fire-and-forget like
-  // savePreferences — but serialized through a promise chain so a fast next
-  // turn can't race the row-id assignment into a duplicate INSERT.
+  // Saves the conversation after each turn, fire-and-forget like savePreferences — but serialized through a promise chain so a fast next turn can't race the row-id assignment into a duplicate INSERT.
   const persistChainRef = useRef(Promise.resolve())
   const persistSession = useCallback(() => {
     const session = sessionRef.current!
@@ -187,9 +162,7 @@ export function useAgent(
       .catch(error => log.warn({ error }, "Failed to save session"))
   }, [agent])
 
-  // Mirrors a persona_switch event into React state — run() already mutated
-  // the agent via applyPersona, so header/menu and the session row's persona
-  // column just need to follow.
+  // Mirrors a persona_switch event into React state — run() already mutated the agent via applyPersona, so header/menu and the session row's persona column just need to follow.
   const applyPersonaSwitch = useCallback(
     (personaId: string) => {
       const next = personas.find(p => p.id === personaId)
@@ -198,8 +171,7 @@ export function useAgent(
         setPersona(next)
       }
       setModel(agent.model)
-      // Persona may pin a different request model; clear until the next
-      // completion reports what the provider actually served.
+      // Persona may pin a different request model; clear until the next completion reports what the provider actually served.
       setResponseModel(null)
     },
     [agent, personas]
@@ -214,54 +186,34 @@ export function useAgent(
     [applyPersonaSwitch, pushEvent]
   )
 
-  // Deltas can arrive many times a second; re-rendering (and Ink repainting
-  // the whole frame) on every single token makes long streamed responses
-  // janky — some terminals (e.g. VS Code's) visibly struggle to keep up once
-  // the content is taller than the viewport. Accumulate here and only push
-  // to state at most every DELTA_INTERVAL_MS.
-  const handleRunEvent = useCallback(
-    (
-      event: AgentEvent,
-      accumulated: PartialMessage,
-      flushState: { hasPartial: boolean; lastFlush: number },
-      flush: () => void
-    ) => {
-      if (event.type === "delta") {
-        accumulated[event.channel] += event.text
-        flushState.hasPartial = true
-        const now = Date.now()
-        if (now - flushState.lastFlush >= DELTA_INTERVAL_MS) {
-          flushState.lastFlush = now
-          flush()
-        }
-        return
-      }
-      if (event.type === "usage") {
-        if (event.promptTokens != null) setPromptTokens(event.promptTokens)
-        if (event.model) setResponseModel(event.model)
-        return
-      }
-      handleFinalizedEvent(event)
-    },
-    [handleFinalizedEvent]
-  )
-
-  // showUserEvent is false when the "prompt" isn't something the human
-  // typed (e.g. resolveCommand feeding back a shell command's result) — it
-  // still drives run() as the next turn, but shouldn't render as if the
-  // human said it.
+  // showUserEvent is false when the "prompt" isn't something the human typed (e.g. resolveCommand feeding back a shell command's result) — it still drives run() as the next turn, but shouldn't render as if the human said it.
   const send = useCallback(
     async (prompt: string, showUserEvent = true) => {
       setPending(true)
       if (showUserEvent) pushEvent({ type: "user", text: prompt })
+      // Deltas can arrive many times a second; re-rendering (and Ink repainting the whole frame) on every single token makes long streamed responses janky — some terminals (e.g. VS Code's) visibly struggle to keep up once the content is taller than the viewport. Accumulate here and only push to state at most every DELTA_INTERVAL_MS.
       const accumulated: PartialMessage = { reasoning: "", content: "" }
-      const flushState = { hasPartial: false, lastFlush: 0 }
+      let hasPartial = false
+      let lastFlush = 0
       const flush = () => {
-        if (flushState.hasPartial) setPartial({ ...accumulated })
+        if (hasPartial) setPartial({ ...accumulated })
       }
       try {
         for await (const event of run(agent, prompt, sessionRef.current!)) {
-          handleRunEvent(event, accumulated, flushState, flush)
+          if (event.type === "delta") {
+            accumulated[event.channel] += event.text
+            hasPartial = true
+            const now = Date.now()
+            if (now - lastFlush >= DELTA_INTERVAL_MS) {
+              lastFlush = now
+              flush()
+            }
+          } else if (event.type === "usage") {
+            if (event.promptTokens != null) setPromptTokens(event.promptTokens)
+            if (event.model) setResponseModel(event.model)
+          } else {
+            handleFinalizedEvent(event)
+          }
         }
       } catch (error) {
         log.warn({ error }, "Agent run failed")
@@ -273,13 +225,10 @@ export function useAgent(
         persistSession()
       }
     },
-    [agent, pushEvent, persistSession, handleRunEvent]
+    [agent, pushEvent, persistSession, handleFinalizedEvent]
   )
 
-  // Resolves a pending confirm_command event: runs the command on approval
-  // (or a decline notice otherwise) and feeds the result back to run() as
-  // the next prompt — session.pendingRunCommandId routes it as the matching
-  // tool response regardless of the prompt's content.
+  // Resolves a pending confirm_command event: runs the command on approval (or a decline notice otherwise) and feeds the result back to run() as the next prompt — session.pendingRunCommandId routes it as the matching tool response regardless of the prompt's content.
   const resolveCommand = useCallback(
     async (command: string, approved: boolean) => {
       if (runningCommand) return

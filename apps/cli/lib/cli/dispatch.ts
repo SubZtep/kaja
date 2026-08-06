@@ -25,10 +25,7 @@ export async function dispatchEarlySubcommands(cli: typeof Cli) {
     process.exit(await runWebCli({ port: cli.flags.port }))
   }
 
-  // `kaja config fetch` is how a fresh install (or a broken one) gets real
-  // settings.json/models.toml files in the first place, so it must work
-  // without any of them already in place. It needs services.toml's [api]
-  // baseUrl to already be set.
+  // `kaja config fetch` is how a fresh install (or a broken one) gets real settings.json/models.toml files in the first place, so it must work without any of them already in place. It needs services.toml's [api] baseUrl to already be set.
   if (cli.input[0] === "config") {
     const { runConfigCli } = await import("../config/cli")
     const looseServices = await readServicesLoose()

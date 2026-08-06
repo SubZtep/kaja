@@ -3,8 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-// Fresh directories (not fixed names) so re-running the suite never
-// accumulates rows/config from a previous run's on-disk state.
+// Fresh directories (not fixed names) so re-running the suite never accumulates rows/config from a previous run's on-disk state.
 const dataDir = mkdtempSync(join(tmpdir(), "kaja-test-xdg-data-dataset-info-"))
 const configDir = mkdtempSync(join(tmpdir(), "kaja-test-xdg-config-dataset-info-"))
 process.env.XDG_DATA_HOME = dataDir
@@ -177,9 +176,7 @@ test("start_new_version explicitly bumps the version without waiting for stalene
   const result = await datasetInfoTool.execute({ action: "start_new_version", dataset: "never_expires" }, { owner })
   expect(result).toContain("started fresh version 2")
   const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, { owner })
-  // get_status resolves the latest version independently of start_new_version's
-  // (not-yet-persisted) bump — since no answer was saved under version 2 yet,
-  // version 1 (complete, never expiring) is still what's active.
+  // get_status resolves the latest version independently of start_new_version's (not-yet-persisted) bump — since no answer was saved under version 2 yet, version 1 (complete, never expiring) is still what's active.
   expect(status).toContain("complete, never expires")
 })
 

@@ -3,9 +3,7 @@ import { basename, join } from "node:path"
 import { type Persona, PersonaSchema, type SamplingParams } from "@kaja/schema/cli"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
-// Written on first run: one file per persona, the stock assistant plus the
-// app's former built-in personas, sourced from the same files that document
-// repo docs/config/personas/ (also published on the docs site).
+// Written on first run: one file per persona, the stock assistant plus the app's former built-in personas, sourced from the same files that document repo docs/config/personas/ (also published on the docs site).
 import BARKOCHBA_TEMPLATE from "../../../../docs/config/personas/barkochba.toml" with { type: "text" }
 import CARE_TEMPLATE from "../../../../docs/config/personas/care.toml" with { type: "text" }
 import DEFAULT_TEMPLATE from "../../../../docs/config/personas/default.toml" with { type: "text" }

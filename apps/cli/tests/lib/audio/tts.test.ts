@@ -1,13 +1,9 @@
-// Verifies createTts's pipelining contract against a fake sink: utterance N+1
-// must start synthesizing (fetching) while N is still audibly playing, and
-// utterances must reach the sink in call order.
+// Verifies createTts's pipelining contract against a fake sink: utterance N+1 must start synthesizing (fetching) while N is still audibly playing, and utterances must reach the sink in call order.
 
 import { afterEach, expect, test } from "bun:test"
 import type { AudioSink } from "../../../lib/audio/audio"
 
-// models.text-to-speech/tts.voice are mandatory config now (no code-side
-// default), so this file needs its own isolated config with them set — same
-// pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
+// models.text-to-speech/tts.voice are mandatory config now (no code-side default), so this file needs its own isolated config with them set — same pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-tts`
 
 const { saveConfig } = await import("../../../lib/config/config")
@@ -98,8 +94,7 @@ test("pipelining: next synthesis starts before previous playback finishes", asyn
   const p1 = speak("one")
   const p2 = speak("two")
 
-  // With the first utterance consumed but still audibly playing (gate closed),
-  // the second must already have been fetched and handed to the sink.
+  // With the first utterance consumed but still audibly playing (gate closed), the second must already have been fetched and handed to the sink.
   await waitFor(() => fetched.length >= 2 && played.length >= 2)
   expect(fetched).toEqual(["one", "two"])
   expect(played).toEqual(["one", "two"])

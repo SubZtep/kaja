@@ -61,15 +61,13 @@ export function UserInput({
   const { columns } = useWindowSize()
   const { exit } = useApp()
   const history = usePromptHistory(initialHistory ?? [])
-  // Human edits (typing, dictation) reset the recall position; recalled
-  // text itself goes through plain setInput so it doesn't.
+  // Human edits (typing, dictation) reset the recall position; recalled text itself goes through plain setInput so it doesn't.
   const editInput = (value: string) => {
     history.markEdited()
     setInput(value)
   }
 
-  // Typing "/" as the first character opens the menu; while it's open the
-  // text input is unfocused so arrows/return/escape drive the menu instead.
+  // Typing "/" as the first character opens the menu; while it's open the text input is unfocused so arrows/return/escape drive the menu instead.
   const menuOpen = input.startsWith("/")
 
   // Ctrl+T toggles dictation; Esc quits (menu open → Esc only closes the menu).
@@ -77,8 +75,7 @@ export function UserInput({
     if (key.ctrl && char === "t") setMic(prev => !prev)
     if (key.escape && !menuOpen) exit()
   })
-  // Half-duplex: while the agent's voice plays, the mic is paused (captured
-  // audio dropped) so it doesn't transcribe the agent talking to itself.
+  // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.
   const sttState = useDictation(mic && !speaking, text => {
     history.markEdited()
     setInput(prev => (prev ? `${prev} ${text}` : text))
@@ -122,8 +119,7 @@ export function UserInput({
       {menuOpen && (
         <Box flexShrink={0}>
           <SelectMenu
-            // Remount when the items change (main menu <-> submenu), so the
-            // selection starts fresh instead of inheriting the previous one.
+            // Remount when the items change (main menu <-> submenu), so the selection starts fresh instead of inheriting the previous one.
             key={menuItems.join("\n")}
             items={menuItems}
             onSelect={index => {

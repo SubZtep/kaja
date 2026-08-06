@@ -3,9 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { loadPluginTools } from "../../../lib/agent/plugin-tools"
 
-// getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it
-// per-test isolates each test from the real ~/.config/kaja — same pattern
-// as tests/lib/memory/store.test.ts.
+// getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it per-test isolates each test from the real ~/.config/kaja — same pattern as tests/lib/memory/store.test.ts.
 const fixtureConfigDir = join(import.meta.dir, "../../fixtures/plugin-tools")
 const emptyConfigDir = `${tmpdir()}/kaja-test-plugin-tools-empty`
 process.env.NODE_ENV = "test"

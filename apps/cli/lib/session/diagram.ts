@@ -15,8 +15,7 @@ function label(value: unknown): string {
   const text = typeof value === "string" ? value : JSON.stringify(value ?? "")
   const flat = text.replace(/\s+/g, " ").trim()
   const cut = flat.length > LABEL_MAX ? `${flat.slice(0, LABEL_MAX - 1)}…` : flat
-  // Single pass: "#" → "#35;" introduces ";", so sequential replaces
-  // would mangle their own output.
+  // Single pass: "#" → "#35;" introduces ";", so sequential replaces would mangle their own output.
   return cut.replace(/[#;]/g, char => (char === "#" ? "#35;" : "#59;"))
 }
 

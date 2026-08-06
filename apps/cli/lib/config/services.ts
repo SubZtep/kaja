@@ -20,16 +20,11 @@ export async function readServicesLoose(): Promise<Partial<ServicesFile>> {
   return {}
 }
 
-/**
- * Load and parse services.toml. Missing file: writes the commented-out
- * template and parses that (empty). Invalid file: prints the error and
- * exits, same policy as {@link import("./config").config}.
- */
+/** Loads and parses services.toml. Missing file: writes the commented-out template and parses that (empty). Invalid file: prints the error and exits, same policy as {@link import("./config").config}. */
 export async function loadServicesFile(): Promise<ServicesFile> {
   const servicesPath = getServicesPath()
   const f = file(servicesPath)
-  // Parse TEMPLATE directly rather than reading it back: a freshly written
-  // BunFile can report stale (empty) content on an immediate re-read.
+  // Parse TEMPLATE directly rather than reading it back: a freshly written BunFile can report stale (empty) content on an immediate re-read.
   const exists = await f.exists()
   if (!exists) await write(f, TEMPLATE)
   const text = exists ? await f.text() : TEMPLATE
@@ -41,8 +36,7 @@ export async function loadServicesFile(): Promise<ServicesFile> {
   }
 }
 
-// Cached after the first read: mirrors lib/config.ts's config() cache so
-// per-utterance readers (stt/tts/geo) don't hit disk each time.
+// Cached after the first read: mirrors lib/config.ts's config() cache so per-utterance readers (stt/tts/geo) don't hit disk each time.
 let cached: ServicesFile | undefined
 
 /** Clears the services() cache after a write made outside this module. */

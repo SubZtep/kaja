@@ -5,9 +5,7 @@ import { type MarkedExtension, marked } from "marked"
 import { markedTerminal } from "marked-terminal"
 import { memo } from "react"
 
-// Palette matches the app's own chat colors (timeline.tsx): pink for
-// structure (mirrors the agent's "●" prefix), cyan for emphasis/code/links
-// (mirrors the user's "> " prefix), gray for de-emphasis.
+// Palette matches the app's own chat colors (timeline.tsx): pink for structure (mirrors the agent's "●" prefix), cyan for emphasis/code/links (mirrors the user's "> " prefix), gray for de-emphasis.
 // @types/marked-terminal lags the v7 runtime API, which returns a MarkedExtension
 marked.use(
   markedTerminal({
@@ -25,12 +23,7 @@ marked.use(
   }) as unknown as MarkedExtension
 )
 
-// marked-terminal's own "text" renderer reads token.text (the raw,
-// unparsed source) instead of recursing into token.tokens, so inline
-// markdown - links, bold, ... - inside a single-line list item or table
-// cell renders as literal source instead of being parsed. Its own
-// link/del/heading renderers don't have this bug; this patches text() to
-// match them.
+// marked-terminal's own "text" renderer reads token.text (the raw, unparsed source) instead of recursing into token.tokens, so inline markdown - links, bold, ... - inside a single-line list item or table cell renders as literal source instead of being parsed. Its own link/del/heading renderers don't have this bug; this patches text() to match them.
 marked.use({
   renderer: {
     text(token: any) {

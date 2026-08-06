@@ -20,8 +20,7 @@ import { UserInput } from "./user-input"
 
 type MenuMode = "main" | "model" | "persona"
 
-// Slash menu (opened by typing "/" in the input): label + action together.
-// An action returning true keeps the menu open (it swapped in a submenu).
+// Slash menu (opened by typing "/" in the input): label + action together. An action returning true keeps the menu open (it swapped in a submenu).
 // biome-ignore lint/suspicious/noConfusingVoidType: matches UserInput's onMenuSelect contract
 type MenuCommand = { label: string; run: () => boolean | void }
 
@@ -184,8 +183,7 @@ export default function App({
     tools,
     personas,
     models,
-    // A stored persona/model that no longer exists resolves to undefined and
-    // the resume proceeds with defaults — messages restore verbatim anyway.
+    // A stored persona/model that no longer exists resolves to undefined and the resume proceeds with defaults — messages restore verbatim anyway.
     initialPersona: personas.find(p => p.id === initialPreferences?.persona),
     resume: initialSession && {
       session: initialSession,
@@ -216,9 +214,7 @@ export default function App({
 
   const chatModels = models.filter(m => m.task === "chat")
   const [menuMode, setMenuMode] = useState<MenuMode>("main")
-  // displayModel may be provider-reported (e.g. free-chat proxy) and match no
-  // configured model — on the free tier that's expected, so label it "kaja"
-  // rather than showing nothing.
+  // displayModel may be provider-reported (e.g. free-chat proxy) and match no configured model — on the free tier that's expected, so label it "kaja" rather than showing nothing.
   const provider = models.find(m => m.model === displayModel)?.provider ?? (freeChat ? FREE_CHAT_PROVIDER : undefined)
 
   const commands = buildCommands({

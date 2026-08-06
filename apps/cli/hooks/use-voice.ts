@@ -37,8 +37,7 @@ export function useVoice(events: TimelineEvent[], enabled = false): boolean {
   // Utterances queued or playing; speak() resolves when audibly finished.
   const [inFlight, setInFlight] = useState(0)
 
-  // Load the TTS model server-side when voice turns on, so the first real
-  // reply doesn't pay the model-load delay. warmupTts logs its own failures.
+  // Load the TTS model server-side when voice turns on, so the first real reply doesn't pay the model-load delay. warmupTts logs its own failures.
   useEffect(() => {
     if (enabled) void warmupTts()
   }, [enabled])

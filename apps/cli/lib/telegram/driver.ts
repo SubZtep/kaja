@@ -120,12 +120,7 @@ class EditThrottle {
   request(renderText: () => string) {
     this.pendingRender = renderText
     if (this.timer) return
-    // Always goes through setTimeout, even at 0ms delay once intervalMs has
-    // elapsed — never fires synchronously inline. That guarantees cancel()
-    // (called from the same microtask chain that follows a delta, e.g. once
-    // run() reaches its final/ask_user/confirm_command event) can always
-    // pre-empt a still-pending fire, since a macrotask timer only runs after
-    // the current microtask queue has fully drained.
+    // Always goes through setTimeout, even at 0ms delay once intervalMs has elapsed — never fires synchronously inline. That guarantees cancel() (called from the same microtask chain that follows a delta, e.g. once run() reaches its final/ask_user/confirm_command event) can always pre-empt a still-pending fire, since a macrotask timer only runs after the current microtask queue has fully drained.
     const elapsed = Date.now() - this.lastEditAt
     const delay = Math.max(0, this.intervalMs - elapsed)
     this.timer = setTimeout(() => void this.fire(), delay)
@@ -175,11 +170,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       personaId?: string
     }) => new Agent({ ...agentConfig, ...init }))
   const allowedUserIds = new Set(config.allowedUserIds)
-  // Never evicted: each allowed user's Agent + full events[] stays live in
-  // memory for the process lifetime. Accepted tradeoff for allowedUserIds'
-  // small, operator-curated allowlist (KajaTelegramSchema requires it
-  // non-empty, i.e. bounded by whoever the operator invites) — not a cache
-  // that needs an LRU/TTL at this scale.
+  // Never evicted: each allowed user's Agent + full events[] stays live in memory for the process lifetime. Accepted tradeoff for allowedUserIds' small, operator-curated allowlist (KajaTelegramSchema requires it non-empty, i.e. bounded by whoever the operator invites) — not a cache that needs an LRU/TTL at this scale.
   const users = new Map<number, UserState>()
   const creating = new Map<number, Promise<UserState>>()
 
@@ -226,11 +217,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     return promise
   }
 
-  // Unlike hooks/use-agent.ts's fire-and-forget persistSession (which must
-  // not block a React state update on a DB write), this one is awaited by
-  // runTurn before the turn is considered done — there's no UI to unblock
-  // here, and it's a fast local SQLite write, so waiting for it makes
-  // "the turn finished" mean the same thing for both Telegram and the DB.
+  // Unlike hooks/use-agent.ts's fire-and-forget persistSession (which must not block a React state update on a DB write), this one is awaited by runTurn before the turn is considered done — there's no UI to unblock here, and it's a fast local SQLite write, so waiting for it makes "the turn finished" mean the same thing for both Telegram and the DB.
   function persistSession(userId: number, state: UserState): Promise<void> {
     const first = state.events.find((e): e is Extract<TimelineEvent, { type: "user" }> => e.type === "user")
     if (!first) return Promise.resolve()
@@ -307,11 +294,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       .filter(Boolean)
       .join("\n")
 
-    // The tool_call id the model provider already minted for this call,
-    // already stored on session.pendingRunCommandId — reused as the
-    // callback_data correlator instead of generating a separate token, and
-    // short enough to fit the Bot API's 64-byte callback_data cap (unlike
-    // the command text itself).
+    // The tool_call id the model provider already minted for this call, already stored on session.pendingRunCommandId — reused as the callback_data correlator instead of generating a separate token, and short enough to fit the Bot API's 64-byte callback_data cap (unlike the command text itself).
     const token = state.session.pendingRunCommandId!
     const keyboard: InlineKeyboardLike = [
       [
@@ -349,8 +332,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     event: Exclude<TimelineEvent, { type: "user" | "error" }>
   ): Promise<boolean> {
     if (event.type === "persona_switch") {
-      // run() already mutated the agent via applyPersona — mirror it into
-      // UserState so persistSession writes the new persona id.
+      // run() already mutated the agent via applyPersona — mirror it into UserState so persistSession writes the new persona id.
       const next = personas.find(p => p.id === event.personaId)
       if (next) state.persona = next
       return false
@@ -397,9 +379,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const accumulated = { content: "" }
     const renderCurrent = () =>
       accumulated.content.trim() ? truncateForStreaming(renderTelegramHtml(accumulated.content)) : "…"
-    // Shared between the throttle and every direct edit below, so a
-    // caller-driven edit (finalize/error) that happens to match whatever
-    // the throttle already sent never re-sends the same text.
+    // Shared between the throttle and every direct edit below, so a caller-driven edit (finalize/error) that happens to match whatever the throttle already sent never re-sends the same text.
     let lastSentText: string | undefined
     async function editIfChanged(text: string) {
       if (text === lastSentText) return
@@ -411,8 +391,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     try {
       for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId))) {
         if (event.type === "delta") {
-          // Reasoning deltas are omitted from the live bubble — mirrors the
-          // terminal's optional/collapsed reasoning display.
+          // Reasoning deltas are omitted from the live bubble — mirrors the terminal's optional/collapsed reasoning display.
           if (event.channel === "content") {
             accumulated.content += event.text
             throttle.request(renderCurrent)
@@ -474,8 +453,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     data: string,
     callbackQueryId: string
   ) {
-    // Ack immediately regardless of outcome — Telegram shows a client-side
-    // spinner on the pressed button until this call resolves.
+    // Ack immediately regardless of outcome — Telegram shows a client-side spinner on the pressed button until this call resolves.
     await sender.answerCallbackQuery(callbackQueryId)
     if (!allowedUserIds.has(userId)) return
 
@@ -485,10 +463,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const token = match[2]!
 
     const state = await getUserState(userId)
-    // The pressing user's id comes from the callback source (grammy:
-    // ctx.from.id), never from the payload, so this can only ever check
-    // against *that same user's* pendingCommand — even a leaked/guessed
-    // callback_data from another user's session can't cross over.
+    // The pressing user's id comes from the callback source (grammy: ctx.from.id), never from the payload, so this can only ever check against *that same user's* pendingCommand — even a leaked/guessed callback_data from another user's session can't cross over.
     if (!state.pendingCommand || state.session.pendingRunCommandId !== token) {
       await editSafely(chatId, messageId, t("telegram.commandExpired"), {
         replyMarkup: []
@@ -503,9 +478,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     await editSafely(chatId, pendingMessageId, `${body}\n\n${statusLine}`, { replyMarkup: [] })
 
     const result = approved ? await runShellCommand(command) : "User declined to run this command."
-    // showUserEvent = false: the synthesized shell result isn't something
-    // the human typed, so it drives the next turn without rendering as if
-    // they said it — matches hooks/use-agent.ts's resolveCommand.
+    // showUserEvent = false: the synthesized shell result isn't something the human typed, so it drives the next turn without rendering as if they said it — matches hooks/use-agent.ts's resolveCommand.
     await runTurn(userId, chatId, state, result, false)
   }
 

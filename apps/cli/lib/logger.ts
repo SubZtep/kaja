@@ -14,7 +14,6 @@ mkdirSync(paths.cache, { recursive: true })
 
 export const log = pino(
   { level: isProduction ? "silent" : "trace" },
-  // Sync file destination (not a worker-thread transport: those are
-  // unreliable under Bun, and sync writes survive process.exit).
+  // Sync file destination (not a worker-thread transport: those are unreliable under Bun, and sync writes survive process.exit).
   pino.destination({ dest: logPath, sync: true })
 )

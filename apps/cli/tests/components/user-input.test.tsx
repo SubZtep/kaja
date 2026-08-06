@@ -56,9 +56,7 @@ test("mic stays deaf and shows x while the agent speaks", async () => {
   )
   await t.tick()
 
-  // Ctrl+T turns the mic on, but with the agent speaking it must show as
-  // muted — and useDictation never sees listening=true, so no ffmpeg or
-  // websocket is spawned (which also keeps this test side-effect-free).
+  // Ctrl+T turns the mic on, but with the agent speaking it must show as muted — and useDictation never sees listening=true, so no ffmpeg or websocket is spawned (which also keeps this test side-effect-free).
   await t.press("\x14")
   // ASCII status prefix: "x " = muted while agent speaks
   expect(t.lastFrame()).toContain("x ")
@@ -97,8 +95,7 @@ test("up/down recall prompt history shell-style, preserving the draft", async ()
   await t.press("\x1b[B")
   expect(t.lastFrame()).toContain("draft")
 
-  // editing a recalled entry makes it the new draft: ↑ starts from the
-  // newest entry again, ↓ brings the edited text back
+  // editing a recalled entry makes it the new draft: ↑ starts from the newest entry again, ↓ brings the edited text back
   await t.press("\x1b[A")
   expect(t.lastFrame()).toContain("second")
   await t.press("X")

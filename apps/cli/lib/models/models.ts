@@ -1,8 +1,7 @@
 import { join } from "node:path"
 import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
-// Written on first run: an example provider/model catalog, sourced from the
-// same file that documents models.toml on the docs site.
+// Written on first run: an example provider/model catalog, sourced from the same file that documents models.toml on the docs site.
 import TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
 import OLLAMA_TEMPLATE from "../../../../docs/config/models.ollama.toml" with { type: "text" }
 import { config, getConfigDir } from "../config/config"
@@ -72,8 +71,7 @@ export async function loadModelsFile(): Promise<KajaModelsFile> {
     if (isFreeChatOnly) return ModelsFileSchema.parse({})
     await write(f, TEMPLATE)
   }
-  // Parse TEMPLATE directly rather than reading it back: a freshly written
-  // BunFile can report stale (empty) content on an immediate re-read.
+  // Parse TEMPLATE directly rather than reading it back: a freshly written BunFile can report stale (empty) content on an immediate re-read.
   const text = exists ? await f.text() : TEMPLATE
   try {
     return ModelsFileSchema.parse(TOML.parse(text))

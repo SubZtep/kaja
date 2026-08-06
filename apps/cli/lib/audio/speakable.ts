@@ -11,9 +11,7 @@ export function toSpeakable(markdown: string): string {
       // [text](url) and bare urls
       .replace(/\[([^[\]]*)\]\(([^()]*)\)/g, "$1")
       .replace(/https?:\/\/\S+/g, " ")
-      // emphasis and strikethrough markers around words — matched one marker
-      // at a time (rather than a single alternation-with-backreference
-      // pattern) to avoid catastrophic backtracking on pathological input
+      // emphasis and strikethrough markers around words — matched one marker at a time (rather than a single alternation-with-backreference pattern) to avoid catastrophic backtracking on pathological input
       .replace(/\*\*([^*]+?)\*\*/g, "$1")
       .replace(/__([^_]+?)__/g, "$1")
       .replace(/~~([^~]+?)~~/g, "$1")

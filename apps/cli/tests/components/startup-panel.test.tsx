@@ -3,11 +3,7 @@ import { Box } from "ink"
 import { StartupPanel } from "../../components/startup-panel"
 import { renderForTest } from "../test-utils"
 
-// A tiny stand-in OpenAI-compatible server, same shape as
-// tests/lib/model-check.test.ts's — StartupPanel calls the real
-// checkModelAvailability, so no mock.module (it replaces modules
-// process-wide, not just for this file, and would leak into other test
-// files sharing the same bun test process).
+// A tiny stand-in OpenAI-compatible server, same shape as tests/lib/model-check.test.ts's — StartupPanel calls the real checkModelAvailability, so no mock.module (it replaces modules process-wide, not just for this file, and would leak into other test files sharing the same bun test process).
 let flakyAttempts = 0
 const server = Bun.serve({
   port: 0,
@@ -65,9 +61,7 @@ test("shows persona, grouped models with availability, and stats", async () => {
   await t.tick()
 
   const frame = t.lastFrame()
-  // Among chat models, only the active one gets a live check and stays
-  // "up"; a non-active chat model stays at its default "pending" icon.
-  // Non-chat tasks (tts here) are still checked as before.
+  // Among chat models, only the active one gets a live check and stays "up"; a non-active chat model stays at its default "pending" icon. Non-chat tasks (tts here) are still checked as before.
   expect(frame).toContain("✓ up-model")
   expect(frame).toContain("○ down-model")
   expect(frame).toContain("✓ tts-model")

@@ -645,9 +645,7 @@ async function* streamRound(
   })
 
   let thinking = ""
-  // Collect from stream chunks as we go — some gateways (OpenCode zen free
-  // models) put usage only on the final chunk; free-chat also stamps the
-  // resolved id on x-kaja-model and on each chunk's `model` field.
+  // Collect from stream chunks as we go — some gateways (OpenCode zen free models) put usage only on the final chunk; free-chat also stamps the resolved id on x-kaja-model and on each chunk's `model` field.
   let chunkModel: string | undefined
   let chunkPromptTokens: number | undefined
   for await (const chunk of stream) {
@@ -667,12 +665,7 @@ async function* streamRound(
 
   const completion = await stream.finalChatCompletion()
   const raw = completion.choices[0]!.message
-  // Don't push the stream helper's reconstructed message into the history
-  // as-is: it carries extra fields (`parsed`, `refusal: null`) that
-  // Fireworks rejects on the next request, and its `reasoning_content`
-  // holds only the last delta fragment instead of the full text. Rebuild a
-  // clean message so the history matches what the non-streaming API
-  // returned before.
+  // Don't push the stream helper's reconstructed message into the history as-is: it carries extra fields (`parsed`, `refusal: null`) that Fireworks rejects on the next request, and its `reasoning_content` holds only the last delta fragment instead of the full text. Rebuild a clean message so the history matches what the non-streaming API returned before.
   const message = {
     role: "assistant" as const,
     content: raw.content,
@@ -841,10 +834,7 @@ export async function* run(
     if (typeof message.content === "string" && message.content.trim())
       yield { type: "message", content: message.content }
 
-    // Otherwise execute tool calls. ask_user/run_command are handled last so
-    // every other tool_call_id in this message still gets a matching tool
-    // response pushed before we stop for the human (their own tool response
-    // is pushed on the next run() call, once the human has answered).
+    // Otherwise execute tool calls. ask_user/run_command are handled last so every other tool_call_id in this message still gets a matching tool response pushed before we stop for the human (their own tool response is pushed on the next run() call, once the human has answered).
     const { ask, confirm } = yield* handleToolCalls(agent, messages, owner, toolsByName, message.tool_calls)
 
     if (yield* handlePendingHandoff(session, ask, confirm)) return

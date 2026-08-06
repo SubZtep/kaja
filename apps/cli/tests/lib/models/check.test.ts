@@ -1,11 +1,7 @@
 import { afterAll, expect, test } from "bun:test"
 import { checkModelAvailability } from "../../../lib/models/check"
 
-// A tiny stand-in OpenAI-compatible server: chat completions and embeddings
-// succeed only for "known-model" (mirrors a real provider rejecting an
-// unserved model), /v1/models/:id (the speaches load-probe) succeeds only
-// for "known-model", and /models lists only "known-tts-model" (mirrors the
-// tts fallback path, which still uses the list endpoint).
+// A tiny stand-in OpenAI-compatible server: chat completions and embeddings succeed only for "known-model" (mirrors a real provider rejecting an unserved model), /v1/models/:id (the speaches load-probe) succeeds only for "known-model", and /models lists only "known-tts-model" (mirrors the tts fallback path, which still uses the list endpoint).
 const server = Bun.serve({
   port: 0,
   async fetch(req) {

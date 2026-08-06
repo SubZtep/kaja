@@ -27,8 +27,7 @@ export function softWrapLines(text: string, width: number): VisualLine[] {
 
   for (const char of text) {
     if (char === "\n") {
-      // end is exclusive and includes the newline so the cursor after `\n`
-      // lands on the following visual line.
+      // end is exclusive and includes the newline so the cursor after `\n` lands on the following visual line.
       lines.push({
         start: lineStart,
         end: i + 1,

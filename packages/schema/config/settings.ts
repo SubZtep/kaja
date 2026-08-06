@@ -5,8 +5,7 @@ export const KajaPreferencesSchema = z.object({
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
   language: z.enum(["en", "hu"]).optional().describe("Language for the chat and application"),
-  // Id of the last-selected persona (see @kaja/schema/cli's personas.ts), so the app
-  // reopens with it instead of always defaulting to the first one.
+  // Id of the last-selected persona (see @kaja/schema/cli's personas.ts), so the app reopens with it instead of always defaulting to the first one.
   persona: z.string().min(1).optional().describe("Id of the persona to open with (see personas.toml)")
 })
 
@@ -20,8 +19,7 @@ export const KajaModelRefSchema = z.object({
 })
 export type KajaModelRef = z.infer<typeof KajaModelRefSchema>
 
-// Each task resolves to a model + models.toml provider; only chat's provider
-// is optional (falls back to the free tier).
+// Each task resolves to a model + models.toml provider; only chat's provider is optional (falls back to the free tier).
 export const KajaModelsSchema = z.object({
   chat: KajaModelRefSchema.optional().describe("Chat model; omit to use the free hosted tier"),
   embedding: KajaModelRefSchema.optional(),

@@ -21,13 +21,7 @@ export function renderForTest(node: ReactNode) {
   stdin.unref = () => {}
 
   const chunks: string[] = []
-  // Bumped every time Ink writes a frame, so press() can wait for writes to
-  // go quiet instead of sleeping a fixed duration — a wall-clock guess is
-  // either wasted time on a fast repaint or, under a loaded runner (this was
-  // flaky in CI even at 300ms), not long enough and reads a stale frame. A
-  // single keypress can produce more than one write for the same state
-  // update, so this waits for the count to stop changing, not just for the
-  // first write to land.
+  // Bumped every time Ink writes a frame, so press() can wait for writes to go quiet instead of sleeping a fixed duration — a wall-clock guess is either wasted time on a fast repaint or, under a loaded runner (this was flaky in CI even at 300ms), not long enough and reads a stale frame. A single keypress can produce more than one write for the same state update, so this waits for the count to stop changing, not just for the first write to land.
   let writeCount = 0
   const stdout = new EventEmitter() as any
   stdout.isTTY = true
@@ -44,8 +38,7 @@ export function renderForTest(node: ReactNode) {
     stdin,
     exitOnCtrlC: false,
     patchConsole: false,
-    // Ink's CI autodetection (is-in-ci) would otherwise force non-interactive
-    // mode here too, which stops it painting anything but the final frame.
+    // Ink's CI autodetection (is-in-ci) would otherwise force non-interactive mode here too, which stops it painting anything but the final frame.
     interactive: true
   })
 

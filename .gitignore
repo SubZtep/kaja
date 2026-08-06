@@ -5,6 +5,7 @@
 .tanstack
 .tmp-test-xdg-config-*/
 apps/cli/assets/datasets/
+apps/cli/_config
 dist
 node_modules
 pgdata

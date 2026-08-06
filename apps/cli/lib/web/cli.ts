@@ -82,12 +82,7 @@ export function startWebServer(port: number) {
         )
       },
       "/personas": async () => {
-        // lib/agents.ts pulls in lib/openai.ts, which reads the LLM config
-        // at module load and exits the process if it's missing/invalid —
-        // fine for the normal boot path (cli.tsx only imports it after its
-        // own config guard), fatal here since this whole server exists to
-        // stay usable on a broken config. Import it dynamically, and only
-        // once we know the file is there.
+        // lib/agents.ts pulls in lib/openai.ts, which reads the LLM config at module load and exits the process if it's missing/invalid — fine for the normal boot path (cli.tsx only imports it after its own config guard), fatal here since this whole server exists to stay usable on a broken config. Import it dynamically, and only once we know the file is there.
         if (!(await configExists())) {
           return html(unconfiguredPersonasPage())
         }

@@ -12,9 +12,12 @@ s`ervices.toml` has optional external service configuration. Omit a section to d
 Examples:
 
 ```toml
-# Base URL of a Kaja server, used by `kaja config fetch`.
+# Kaja server used by `kaja config fetch` to regenerate mcp.toml/models.toml.
+# `token` is the API CONFIG_API_TOKEN (Bearer); can also be set via the
+# CONFIG_API_TOKEN env var instead.
 [api]
 baseUrl = "https://api.kaja.io"
+token = "kaja"
 
 # Geo lookup for the location tool (IP → city/country).
 [location]
@@ -29,6 +32,10 @@ apiKey = "BSA..."
 [telegram]
 botToken = "123456:ABC-DEF..."
 allowedUserIds = [123456789]
+
+# OpenCode Zen free models — see https://opencode.ai/zen.
+[zen]
+apiKey = "sk-..."
 ```
 
 Notes:
@@ -40,3 +47,4 @@ Notes:
 
 - **Web search** (`[webSearch]`): get a free key from [Brave's website](https://brave.com/search/api/).
 - **Location** (`[location]`): the example URL and API key work for a while.
+- **Zen** (`[zen]`): get a free API key from [OpenCode Zen](https://opencode.ai/zen).

@@ -15,10 +15,7 @@ import { TimelineItem } from "../timeline"
 
 const WHEEL_LINES = 3
 
-// Stable per-event identity for list keys: events are only ever appended or
-// the whole array is reset (see useAgent), never reordered or spliced, so a
-// monotonic id assigned the first time an event object is seen is stable
-// across re-renders without needing an id field on TimelineEvent itself.
+// Stable per-event identity for list keys: events are only ever appended or the whole array is reset (see useAgent), never reordered or spliced, so a monotonic id assigned the first time an event object is seen is stable across re-renders without needing an id field on TimelineEvent itself.
 const eventIds = new WeakMap<TimelineEvent, number>()
 let nextEventId = 0
 function idFor(event: TimelineEvent) {
@@ -170,8 +167,7 @@ export function ChatViewport({
     syncCanScroll()
   }
 
-  // Parent layout / terminal resize: ScrollView needs an explicit remeasure
-  // after width *and* height change (footer/header row budget shifts).
+  // Parent layout / terminal resize: ScrollView needs an explicit remeasure after width *and* height change (footer/header row budget shifts).
   useEffect(() => {
     const timer = setTimeout(remeasure, 0)
     return () => clearTimeout(timer)
@@ -203,8 +199,7 @@ export function ChatViewport({
     return () => clearTimeout(timer)
   }, [events, partial, pending, thinking, topPad, bottomChromeKey])
 
-  // Un-stick, run a scroll action, then resync stick/affordance state. No-op
-  // when there's nothing to scroll, so it never creates empty overscroll.
+  // Un-stick, run a scroll action, then resync stick/affordance state. No-op when there's nothing to scroll, so it never creates empty overscroll.
   const scrollIfPossible = (maxScroll: number, run: () => void) => {
     if (maxScroll <= 0) return
     setStick(false)
@@ -272,9 +267,7 @@ export function ChatViewport({
 
   const showAffordance = canScroll && !stuckToBottom
 
-  // Stable element identities across scroll-tick renders: TimelineItem is
-  // memo()ed, and keeping the same elements here also stops the ScrollView's
-  // per-item measurement effect (keyed on child identity) from re-running.
+  // Stable element identities across scroll-tick renders: TimelineItem is memo()ed, and keeping the same elements here also stops the ScrollView's per-item measurement effect (keyed on child identity) from re-running.
   const timelineItems = useMemo(
     () =>
       events

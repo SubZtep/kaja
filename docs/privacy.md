@@ -109,3 +109,8 @@ Kaja is not intended for children under 13. Do not create an account if you are 
 ## Changes
 
 This policy may be updated from time to time. Material changes will be posted on this page, and the effective date will be updated.
+
+---
+
+Privacy of the free models:
+https://opencode.ai/docs/zen/#privacy
