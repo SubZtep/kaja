@@ -29,18 +29,14 @@ export async function runTelegramCli(deps: {
     },
     personas: deps.personas,
     models: deps.models,
-    // Re-reads config on every call (readConfig() is cache-invalidated by
-    // savePreferences) so /new picks up a persona switched in the terminal
-    // after this bot process started, without needing a restart.
+    // Re-reads config on every call (readConfig() is cache-invalidated by savePreferences) so /new picks up a persona switched in the terminal after this bot process started, without needing a restart.
     getInitialPersona: async () => {
       const current = await readConfig()
       return deps.personas.find(p => p.id === current?.preferences?.persona)
     }
   })
 
-  // Owns its own SIGINT/SIGTERM handling for bot.stop() rather than teaching
-  // cli.tsx's shared shutdown() about grammy — those signals also still
-  // reach cli.tsx's own handlers (closeTools() etc.) unchanged.
+  // Owns its own SIGINT/SIGTERM handling for bot.stop() rather than teaching cli.tsx's shared shutdown() about grammy — those signals also still reach cli.tsx's own handlers (closeTools() etc.) unchanged.
   const onSignal = () => {
     bot.stop().catch(() => {})
   }

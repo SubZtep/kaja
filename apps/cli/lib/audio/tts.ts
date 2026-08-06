@@ -98,15 +98,13 @@ export function createTts(sink: AudioSink) {
       const { response, voice } = await fetchSpeech(text)
       const utterance = sink.play(logFirstChunk(response.body as unknown as AsyncIterable<Uint8Array>, started, voice))
       await utterance.consumed // ordering + backpressure; next synthesis may start
-      // Wrapped: returning the bare promise would make the queue await
-      // audible completion and kill synthesis/playback pipelining.
+      // Wrapped: returning the bare promise would make the queue await audible completion and kill synthesis/playback pipelining.
       return {
         done: utterance.done
       }
     })
     queue = step.catch(() => {})
-    // Resolve when the audio is audibly done, not when it was handed to the
-    // sink; the next queued utterance starts synthesizing without waiting.
+    // Resolve when the audio is audibly done, not when it was handed to the sink; the next queued utterance starts synthesizing without waiting.
     return step.then(({ done }) => done)
   }
 

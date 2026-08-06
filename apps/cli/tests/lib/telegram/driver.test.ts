@@ -6,10 +6,7 @@ import type { Persona } from "@kaja/schema/cli"
 import type { Agent, Tool } from "../../../lib/agent/agents"
 import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/driver"
 
-// Same isolation/dynamic-import discipline as tests/lib/agents.test.ts: env
-// vars and a minimal settings.json fixture must be in place before
-// lib/agents.ts (transitively pulled in by lib/telegram-driver.ts) is ever
-// evaluated, since lib/openai.ts reads config() at its own module top level.
+// Same isolation/dynamic-import discipline as tests/lib/agents.test.ts: env vars and a minimal settings.json fixture must be in place before lib/agents.ts (transitively pulled in by lib/telegram-driver.ts) is ever evaluated, since lib/openai.ts reads config() at its own module top level.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data-telegram-driver`
 const configDir = `${tmpdir()}/kaja-test-xdg-config-telegram-driver`
 process.env.XDG_DATA_HOME = dataDir
@@ -248,9 +245,7 @@ test("resuming continues a pre-seeded session, scoped to that owner only", async
   await driver.handleMessage(42, 100, "follow up")
   expect(edited.at(-1)!.text).toBe("continued reply")
 
-  // A different user's first message must not see user 42's history — with
-  // no pre-seeded row for user 43, this driver starts a fresh session for
-  // them regardless.
+  // A different user's first message must not see user 42's history — with no pre-seeded row for user 43, this driver starts a fresh session for them regardless.
   const { sender: sender43, edited: edited43 } = fakeSender()
   const driver43 = makeDriver([{ content: "fresh reply" }], sender43, [42, 43])
   await driver43.handleMessage(43, 200, "hello")
@@ -314,9 +309,7 @@ test("/new re-resolves getInitialPersona live, picking up a persona switched aft
   let saved = await loadLatestSessionRowForOwner(telegramOwner(42))
   expect(saved!.persona).toBe("kaja")
 
-  // Switch persona "in the terminal" while this same driver keeps running —
-  // /new must re-call getInitialPersona rather than reuse whatever it
-  // resolved when the driver was first constructed.
+  // Switch persona "in the terminal" while this same driver keeps running — /new must re-call getInitialPersona rather than reuse whatever it resolved when the driver was first constructed.
   currentPersonaId = grumpy.id
 
   await driver.handleMessage(42, 100, "/new")

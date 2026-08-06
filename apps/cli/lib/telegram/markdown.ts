@@ -42,10 +42,7 @@ function renderInlineToken(token: Token): string {
       return escapeHtml((token as Tokens.Escape).text)
     case "text": {
       const text = token as Tokens.Text
-      // Some inline text tokens (e.g. inside a single-line list item) carry
-      // their own nested tokens instead of plain .text — recurse into those
-      // when present, same fix components/elem/markdown.tsx applies for
-      // marked-terminal's renderer.
+      // Some inline text tokens (e.g. inside a single-line list item) carry their own nested tokens instead of plain .text — recurse into those when present, same fix components/elem/markdown.tsx applies for marked-terminal's renderer.
       return text.tokens ? renderInlineTokens(text.tokens) : escapeHtml(text.text)
     }
     default:

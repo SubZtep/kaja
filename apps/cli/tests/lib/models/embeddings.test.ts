@@ -47,10 +47,7 @@ function cannedResponse(vectors: number[][]) {
       })),
       usage: { prompt_tokens: 1, total_tokens: 1 }
     }),
-    // The openai SDK client (unlike rerank.ts's raw fetch + res.json()) only
-    // parses the body as JSON when the Content-Type header says so —
-    // without it, .create() resolves to the raw response string instead of
-    // the parsed object.
+    // The openai SDK client (unlike rerank.ts's raw fetch + res.json()) only parses the body as JSON when the Content-Type header says so — without it, .create() resolves to the raw response string instead of the parsed object.
     { status: 200, headers: { "content-type": "application/json" } }
   )
 }

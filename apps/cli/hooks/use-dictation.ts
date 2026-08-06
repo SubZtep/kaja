@@ -27,8 +27,7 @@ export function useDictation(listening: boolean, onUtterance: (text: string) => 
       stt.current.resume()
       return
     }
-    // Guards against listening being toggled off again before createStt
-    // resolves: the stale instance is stopped instead of taking over.
+    // Guards against listening being toggled off again before createStt resolves: the stale instance is stopped instead of taking over.
     let cancelled = false
     createStt({
       source: createLocalSource(),
@@ -40,9 +39,7 @@ export function useDictation(listening: boolean, onUtterance: (text: string) => 
       }
       stt.current = instance
       for await (const text of instance.utterances) deliver.current(text)
-      // The stream only ends when the stt stopped (server dropped the
-      // connection, or an error) — forget it so the next toggle starts fresh
-      // instead of resuming a dead instance.
+      // The stream only ends when the stt stopped (server dropped the connection, or an error) — forget it so the next toggle starts fresh instead of resuming a dead instance.
       if (stt.current === instance) stt.current = undefined
       setState("listening")
     })

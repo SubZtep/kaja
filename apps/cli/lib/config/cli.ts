@@ -8,18 +8,7 @@ import { getConfigDir, saveFetchedChatModel } from "./config"
 import { nextBackupPath } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
 
-/**
- * Handles the `kaja config <fetch|wipe>` subcommand. Returns the text to
- * print and the exit code instead of printing/exiting itself, so tests can
- * call it directly. Runs before the config guard (like memory/session/web): a
- * fresh install has no valid settings.json yet, and fetching a real
- * models.toml/config is exactly how you'd fix that — so it must work
- * without one. It reads services.toml's [api] baseUrl, which the user sets
- * by hand; models.chat in settings.json gets seeded from the first fetched
- * chat model, so a single fetch is enough to leave a fresh install fully
- * bootable. `wipe` is the inverse: it backs up and clears the whole config
- * dir so the next run starts fresh.
- */
+/** Handles `kaja config <fetch|wipe>`; returns { code, text } instead of printing/exiting so tests can call it directly. Runs before the config guard since a fresh install has no settings.json yet. */
 export async function runConfigCli(
   argv: string[],
   services: Partial<ServicesFile>
@@ -33,9 +22,7 @@ export async function runConfigCli(
     const token = services.api?.token ?? process.env.CONFIG_API_TOKEN
     try {
       const results = await Promise.all([fetchMcpToml(apiUrl, token), fetchModelsToml(apiUrl, token)])
-      // Best-effort: an unparseable models.toml just means no chat model
-      // gets auto-selected — still report the fetch itself as successful,
-      // since both files were written.
+      // Best-effort: an unparseable models.toml still counts as a successful fetch, just without an auto-selected chat model.
       try {
         const modelsFile = ModelsFileSchema.parse(TOML.parse(await file(getModelsPath()).text()))
         const chatEntry = modelsFile.models.find(m => m.task === "chat")

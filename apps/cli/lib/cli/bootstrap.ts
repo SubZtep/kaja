@@ -3,17 +3,10 @@ import { readConfigLoose, setConfigDirOverride } from "../config/config"
 import { detectLanguage, setLanguage } from "../i18n"
 import { log } from "../logger"
 
-// supports-hyperlinks (used by marked-terminal for clickable links) only
-// recognizes a narrow allowlist of terminals via TERM_PROGRAM/VTE_VERSION;
-// it misses terminals like Alacritty unless TERM is literally "alacritty",
-// so links silently render as "text (url)" instead of OSC 8 hyperlinks.
-// Force it on: it must be set before marked-terminal's first import
-// anywhere, since supports-hyperlinks reads process.env once at module load.
+// supports-hyperlinks (used by marked-terminal for clickable links) only recognizes a narrow allowlist of terminals via TERM_PROGRAM/VTE_VERSION; it misses terminals like Alacritty unless TERM is literally "alacritty", so links silently render as "text (url)" instead of OSC 8 hyperlinks. Force it on: it must be set before marked-terminal's first import anywhere, since supports-hyperlinks reads process.env once at module load.
 if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
 
-// The TUI owns the terminal: unless the user asked for a level explicitly,
-// silence pino's info chatter (stt/tts progress lines go to stderr and would
-// scribble over the Ink UI).
+// The TUI owns the terminal: unless the user asked for a level explicitly, silence pino's info chatter (stt/tts progress lines go to stderr and would scribble over the Ink UI).
 if (!process.env.LOG_LEVEL) log.level = "warn"
 
 /**

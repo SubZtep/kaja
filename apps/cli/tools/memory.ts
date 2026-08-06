@@ -140,8 +140,7 @@ export const recallMemoryTool = tool<{
       })
       .map(([key, note]) => {
         const haystack = `${note.content} ${note.tags.join(" ")} ${key}`.toLowerCase()
-        // An empty query means "everything the filters allow", ranked purely
-        // by importance — one synthetic hit gives each note its weight.
+        // An empty query means "everything the filters allow", ranked purely by importance — one synthetic hit gives each note its weight.
         const hits =
           tokens.length === 0 ? 1 : tokens.reduce((count, tok) => count + (haystack.includes(tok) ? 1 : 0), 0)
         const score = hits * IMPORTANCE_WEIGHT[note.importance]
@@ -152,8 +151,7 @@ export const recallMemoryTool = tool<{
         if (b.score !== a.score) return b.score - a.score
         return b.note.createdAt.localeCompare(a.note.createdAt)
       })
-      // An empty query is the audit/bulk view: honor "returns the whole
-      // filtered set" — only an explicit limit truncates it.
+      // An empty query is the audit/bulk view: honor "returns the whole filtered set" — only an explicit limit truncates it.
       .slice(0, args.limit ?? (tokens.length === 0 ? Number.POSITIVE_INFINITY : 5))
 
     if (scored.length === 0) return "(no matching notes)"

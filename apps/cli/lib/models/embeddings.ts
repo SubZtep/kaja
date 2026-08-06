@@ -20,10 +20,7 @@ export async function embed(input: string | string[]): Promise<number[][]> {
   const res = await client.embeddings.create({
     model: embedding.model,
     input,
-    // Without this, the SDK defaults to requesting base64-encoded vectors
-    // and decodes them client-side — explicit "float" gets plain JSON
-    // number[] directly, matching what Fireworks (and this codebase's own
-    // JSON-in-TEXT storage convention) actually returns/expects.
+    // Without this, the SDK defaults to requesting base64-encoded vectors and decodes them client-side — explicit "float" gets plain JSON number[] directly, matching what Fireworks (and this codebase's own JSON-in-TEXT storage convention) actually returns/expects.
     encoding_format: "float"
   })
   return res.data.map(d => d.embedding)

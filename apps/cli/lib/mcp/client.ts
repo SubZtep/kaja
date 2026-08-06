@@ -29,8 +29,7 @@ export async function connectMcpServer(
           command: server.command,
           args: server.args,
           env: { ...process.env, ...server.env } as Record<string, string>,
-          // Default "inherit" would let the subprocess write straight to the
-          // parent's stderr, corrupting Kaja's Ink terminal rendering.
+          // Default "inherit" would let the subprocess write straight to the parent's stderr, corrupting Kaja's Ink terminal rendering.
           stderr: "ignore"
         })
 

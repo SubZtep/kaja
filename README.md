@@ -7,7 +7,7 @@
 > [!IMPORTANT]
 > Kaja is still evolving :speaker::godmode::loudspeaker:
 
-Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**, a **TanStack Start** web app, and a local **React Ink** terminal agent (**CLI**) with Telegram support.
+Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**, a **TanStack Start** web app, and a local **React Ink** terminal AI agent with Telegram support.
 
 ## What’s in the Monorepo?
 
@@ -36,6 +36,12 @@ Execute:
 
 ```bash
 kaja
+```
+
+Uninstall:
+
+```bash
+rm ~/.local/bin/kaja
 ```
 
 ### Source Run

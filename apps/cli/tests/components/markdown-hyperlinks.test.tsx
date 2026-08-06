@@ -1,20 +1,13 @@
 import { expect, test } from "bun:test"
 import path from "node:path"
 
-// marked-terminal decides whether to emit a real OSC 8 hyperlink (clickable)
-// or fall back to plain "text (url)" based on `supports-hyperlinks`, which
-// reads TERM/TERM_PROGRAM once at module load. That load-order sensitivity
-// means the only faithful way to test it is a fresh subprocess with a
-// controlled, hostile env - mimicking cli.tsx's actual startup order rather
-// than duplicating its logic inline. See cli.tsx's FORCE_HYPERLINK comment.
+// marked-terminal decides whether to emit a real OSC 8 hyperlink or fall back to plain "text (url)" based on `supports-hyperlinks`, which reads TERM/TERM_PROGRAM once at module load, so the only faithful test is a fresh subprocess with a controlled, hostile env mimicking cli.tsx's actual startup order rather than duplicating its logic inline (see cli.tsx's FORCE_HYPERLINK comment).
 const OSC8_LINK = "]8;;https://example.comclick me]8;;"
 const PLAIN_FALLBACK = "click me (https://example.com)"
 
 const repoRoot = path.resolve(import.meta.dir, "../..")
 
-// A TERM value that supports-hyperlinks' allowlist does not recognize (this
-// is what Alacritty reports unless TERM is literally "alacritty"), and no
-// TERM_PROGRAM/VTE_VERSION/WT_SESSION to hint otherwise.
+// A TERM value that supports-hyperlinks' allowlist does not recognize (this is what Alacritty reports unless TERM is literally "alacritty"), and no TERM_PROGRAM/VTE_VERSION/WT_SESSION to hint otherwise.
 const hostileEnv = {
   ...process.env,
   TERM: "xterm-256color",

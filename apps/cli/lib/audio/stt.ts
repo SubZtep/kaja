@@ -58,9 +58,7 @@ export async function createStt({ source, onState }: SttOptions): Promise<Stt> {
   const transcripts = createAsyncQueue<string>()
 
   let stopping = false
-  // Half-duplex has two mute reasons: the consumer asked (TTS is playing) and
-  // a segment is being transcribed (speech now would only queue behind the
-  // answer). Either one silences the mic.
+  // Half-duplex has two mute reasons: the consumer asked (TTS is playing) and a segment is being transcribed (speech now would only queue behind the answer). Either one silences the mic.
   let pausedByUser = false
   let transcribing = false
 
@@ -74,10 +72,7 @@ export async function createStt({ source, onState }: SttOptions): Promise<Stt> {
   }
 
   ws.onopen = async () => {
-    // Transcription-only: stop the server from generating an AI chat response
-    // after each phrase, and pick the transcription model/language.
-    // turn_detection must be sent complete — partial objects fail validation
-    // server-side and are silently dropped.
+    // Transcription-only: stop the server from generating an AI chat response after each phrase, and pick the transcription model/language. turn_detection must be sent complete — partial objects fail validation server-side and are silently dropped.
     send({
       type: "session.update",
       session: {
@@ -103,10 +98,7 @@ export async function createStt({ source, onState }: SttOptions): Promise<Stt> {
         audio: Buffer.from(chunk).toBase64()
       })
     }
-    // A live source (mic) only ends via stop(); a finite one (file) ends on
-    // its own — append trailing silence so VAD closes the last segment, then
-    // give it time to flush. 3s: the server's VAD needs well over
-    // silence_duration_ms of tail audio before it emits speech_stopped.
+    // A live source (mic) only ends via stop(); a finite one (file) ends on its own — append trailing silence so VAD closes the last segment, then give it time to flush. 3s: the server's VAD needs well over silence_duration_ms of tail audio before it emits speech_stopped.
     if (!stopping && ws.readyState === WebSocket.OPEN) {
       send({
         type: "input_audio_buffer.append",
@@ -157,9 +149,7 @@ export async function createStt({ source, onState }: SttOptions): Promise<Stt> {
         break
       case "input_audio_buffer.committed":
         transcribeStart = Date.now()
-        // Mute the mic until the transcript lands: on a slow model the user
-        // tends to repeat themselves, and those repeats would queue up as
-        // extra turns. Clear so a partly captured phrase doesn't linger.
+        // Mute the mic until the transcript lands: on a slow model the user tends to repeat themselves, and those repeats would queue up as extra turns. Clear so a partly captured phrase doesn't linger.
         transcribing = true
         send({
           type: "input_audio_buffer.clear"
@@ -170,9 +160,7 @@ export async function createStt({ source, onState }: SttOptions): Promise<Stt> {
       case "conversation.item.input_audio_transcription.completed": {
         const took_s = +((Date.now() - transcribeStart) / 1000).toFixed(1)
         const text = (ev.transcript ?? "").trim()
-        // Un-mute here rather than in resume(): consumers that never call
-        // pause() must keep hearing the mic. A pause()ing consumer reacts to
-        // the push before the next mic chunk can slip through.
+        // Un-mute here rather than in resume(): consumers that never call pause() must keep hearing the mic. A pause()ing consumer reacts to the push before the next mic chunk can slip through.
         transcribing = false
         onState?.("listening")
         // VAD can fire on ambient noise, yielding empty transcripts — skip those.
@@ -196,8 +184,7 @@ export async function createStt({ source, onState }: SttOptions): Promise<Stt> {
       }
       case "error": {
         const msg = ev.error?.message ?? JSON.stringify(ev)
-        // The server flags prefix_padding_ms as unsupported even though its own
-        // schema requires it in session.update; harmless, so don't surface it.
+        // The server flags prefix_padding_ms as unsupported even though its own schema requires it in session.update; harmless, so don't surface it.
         if (!msg.includes("prefix_padding_ms"))
           log.error(
             {

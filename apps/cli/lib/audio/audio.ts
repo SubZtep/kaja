@@ -111,8 +111,7 @@ export function createLocalSource({ inputFile }: LocalSourceOptions = {}): Audio
 
   let stopping = false
 
-  // Surface ffmpeg errors (e.g. no mic found), but drop the muxer noise it
-  // emits when Ctrl+C signals it alongside us.
+  // Surface ffmpeg errors (e.g. no mic found), but drop the muxer noise it emits when Ctrl+C signals it alongside us.
   ;(async () => {
     for await (const chunk of readStream(ffmpeg.stderr)) {
       if (stopping) continue
@@ -168,9 +167,7 @@ export function createLocalSink(): AudioSink {
     return ffplay
   }
 
-  // Wall-clock ms when the sink runs out of queued audio. Writes race ahead of
-  // playback (the pipe buffers ~1.5s), so this clock — not write completion —
-  // tells us when the speakers actually go quiet.
+  // Wall-clock ms when the sink runs out of queued audio. Writes race ahead of playback (the pipe buffers ~1.5s), so this clock — not write completion — tells us when the speakers actually go quiet.
   let audioEndsAt = 0
 
   return {

@@ -5,9 +5,7 @@ import { join } from "node:path"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { loadPersonas } from "../../../lib/personas/personas"
 
-// getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it
-// per-test isolates each test from the real ~/.config/kaja — same pattern as
-// tests/lib/personas/datasets.test.ts.
+// getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it per-test isolates each test from the real ~/.config/kaja — same pattern as tests/lib/personas/datasets.test.ts.
 const fixtureConfigDir = join(import.meta.dir, "../../fixtures/personas")
 const emptyConfigDir = join(tmpdir(), `kaja-test-personas-empty-${Date.now()}`)
 process.env.NODE_ENV = "test"

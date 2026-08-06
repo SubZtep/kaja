@@ -23,11 +23,7 @@ function taskLabel(task: CliResolvedModel["task"]) {
   }
 }
 
-// Display order for the grouped task sections, independent of the order
-// models are merged in (models.toml entries land before settings.json's stt,
-// which would otherwise put stt before tts/image-generation). rerank sits
-// right after embedding, mirroring the setup wizard's step order — the two
-// are the halves of the same retrieval pipeline.
+// Display order for the grouped task sections, independent of the order models are merged in (models.toml entries land before settings.json's stt, which would otherwise put stt before tts/image-generation). rerank sits right after embedding, mirroring the setup wizard's step order — the two are the halves of the same retrieval pipeline.
 const TASK_ORDER: CliResolvedModel["task"][] = [
   "chat",
   "embedding",
@@ -49,8 +45,7 @@ const STATUS_COLOR: Record<Availability, string> = {
   down: "red"
 }
 
-// A provider can be slow to come up (e.g. a local speaches server still
-// booting) — retry a failed check a few times before settling on "down".
+// A provider can be slow to come up (e.g. a local speaches server still booting) — retry a failed check a few times before settling on "down".
 const RETRY_DELAY_MS = 4000
 const MAX_ATTEMPTS = 3
 

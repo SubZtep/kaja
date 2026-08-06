@@ -6,17 +6,12 @@ import { loadMemory, saveMemory } from "../../../lib/memory/store"
 import { createSessionRow, loadSessionRow } from "../../../lib/session/store"
 import { startWebServer } from "../../../lib/web/cli"
 
-// Same per-file XDG isolation pattern as memory-store.test.ts: the paths are
-// read fresh on every call, so pointing the env at a temp dir before the
-// first store call keeps the whole file off the real ~/.local/share/kaja.
+// Same per-file XDG isolation pattern as memory-store.test.ts: the paths are read fresh on every call, so pointing the env at a temp dir before the first store call keeps the whole file off the real ~/.local/share/kaja.
 const configDir = `${tmpdir()}/kaja-test-web-xdg-config`
 process.env.XDG_DATA_HOME = `${tmpdir()}/kaja-test-web-xdg-data`
 process.env.XDG_CONFIG_HOME = configDir
 
-// /personas dynamically imports lib/agents.ts (see web-cli.ts), which pulls
-// in lib/openai.ts's top-level `await config()` — that hard-exits without a
-// settings.json (and a models.toml whose chat model resolves), so both must
-// exist before that route is ever hit.
+// /personas dynamically imports lib/agents.ts (see web-cli.ts), which pulls in lib/openai.ts's top-level `await config()` — that hard-exits without a settings.json (and a models.toml whose chat model resolves), so both must exist before that route is ever hit.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
@@ -83,8 +78,7 @@ test("GET pages respond 200", async () => {
 
 test("personas page shows each persona's assembled system prompt", async () => {
   const body = await (await fetch(`${base}/personas`)).text()
-  // Default template personas (docs/config/personas/), each should
-  // carry the ask_user contract since every preview agent gets that tool.
+  // Default template personas (docs/config/personas/), each should carry the ask_user contract since every preview agent gets that tool.
   expect(body).toContain("Barkochba guesser")
   expect(body).toContain("call the ask_user tool")
 })

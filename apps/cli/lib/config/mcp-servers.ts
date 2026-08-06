@@ -11,26 +11,16 @@ export function getMcpPath() {
   return join(getConfigDir(), "mcp.toml")
 }
 
-/**
- * The `kaja config fetch` subcommand: downloads the server-rendered
- * mcp.toml from the Kaja API and writes it to the local config dir. An
- * existing file is renamed to .bak (.bak2, .bak3, ...) rather than
- * overwritten in place, so a bad fetch is always recoverable.
- */
+/** The `kaja config fetch` subcommand: downloads the server-rendered mcp.toml and writes it to the local config dir, backing up any existing file first. */
 export async function fetchMcpToml(apiBaseUrl: string, token?: string): Promise<{ path: string; backedUpTo?: string }> {
   return fetchTomlConfig(apiBaseUrl, "/config/mcp.toml", getMcpPath(), token)
 }
 
-/**
- * Load the MCP servers file. Missing file: writes the example template and
- * returns its active servers. Invalid file: prints the error and exits, same
- * policy as {@link config}.
- */
+/** Loads the MCP servers file. Missing file: writes the example template and returns its active servers. Invalid file: prints the error and exits, same policy as {@link config}. */
 export async function loadMcpServers(): Promise<KajaMcpFile["servers"]> {
   const mcpPath = getMcpPath()
   const f = file(mcpPath)
-  // Parse TEMPLATE directly rather than reading it back: a freshly written
-  // BunFile can report stale (empty) content on an immediate re-read.
+  // Parse TEMPLATE directly rather than reading it back: a freshly written BunFile can report stale (empty) content on an immediate re-read.
   const exists = await f.exists()
   if (!exists) await write(f, TEMPLATE)
   const text = exists ? await f.text() : TEMPLATE

@@ -102,8 +102,7 @@ function createSchema(db: Database) {
 
 /** Migrates an existing database from `fromVersion` up to {@link SCHEMA_VERSION}. */
 function migrateSchema(db: Database, fromVersion: number) {
-  // v5 -> v6: sessions gains `owner` (NULL = terminal) so Telegram users each
-  // resume their own last session. No ADD COLUMN IF NOT EXISTS in SQLite, so guard with try/catch.
+  // v5 -> v6: sessions gains `owner` (NULL = terminal) so Telegram users each resume their own last session. No ADD COLUMN IF NOT EXISTS in SQLite, so guard with try/catch.
   if (fromVersion < 6) {
     try {
       db.exec("ALTER TABLE sessions ADD COLUMN owner TEXT")
@@ -149,8 +148,7 @@ export async function getDb(): Promise<Database> {
     migrateSchema(db, hasVersion.version)
   }
 
-  // Only persist the path back to settings.json once we know it works — the
-  // database above opened and initialized without throwing.
+  // Only persist the path back to settings.json once we know it works — the database above opened and initialized without throwing.
   await persistDbPathIfMissing(dbPath)
 
   return db
