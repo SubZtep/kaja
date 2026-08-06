@@ -148,10 +148,13 @@ export async function saveFetchedChatModel(chatModelId: string) {
   cached = undefined
 }
 
-/** @param chatModelId Overrides the template's placeholder models.chat, e.g. for the free hosted tier. */
-export async function create(chatModelId?: string) {
+/** @param freeChat Omits the template's placeholder models.chat, so it falls back to the free hosted tier. */
+export async function create(freeChat = false) {
   const f = file(getConfigPath(), { type: "application/json" })
   const withSchema = { $schema: getSchemaUrl(), ...TEMPLATE_JSON }
-  if (chatModelId) withSchema.models = { ...withSchema.models, chat: chatModelId }
+  if (freeChat) {
+    const { chat: _chat, ...otherModels } = withSchema.models
+    withSchema.models = otherModels
+  }
   await write(f, JSON.stringify(withSchema, null, 2))
 }

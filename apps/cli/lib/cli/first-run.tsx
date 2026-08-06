@@ -34,8 +34,8 @@ export async function runFirstRunIfNeeded() {
     )
   })
   if (!choice) process.exit(0)
-  if (choice.chatModelId === "kaja-free-chat") {
-    await create(choice.chatModelId)
+  if (choice.useFree) {
+    await create(true)
   } else {
     await create()
     if (choice.template) await writeModelsTemplate(choice.template)

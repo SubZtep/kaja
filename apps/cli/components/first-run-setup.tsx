@@ -3,9 +3,7 @@ import { useState } from "react"
 import { t } from "../lib/i18n"
 import { SelectMenu } from "./select-menu"
 
-export type FirstRunChoice =
-  | { chatModelId: "kaja-free-chat" }
-  | { chatModelId: "chat-default"; template?: "fireworks" | "ollama" }
+export type FirstRunChoice = { useFree: true } | { useFree: false; template?: "fireworks" | "ollama" }
 
 /**
  * One-shot first-run prompt, rendered before the main App and resolved via
@@ -26,8 +24,9 @@ export function FirstRunSetup({
       {step === "chat" && (
         <SelectMenu
           items={[t("firstRun.useFree"), t("firstRun.useOwn")]}
+          width={70}
           onSelect={index => {
-            if (index === 0) onDone({ chatModelId: "kaja-free-chat" })
+            if (index === 0) onDone({ useFree: true })
             else setStep("provider")
           }}
           onClose={onCancel}
@@ -37,9 +36,9 @@ export function FirstRunSetup({
         <SelectMenu
           items={[t("firstRun.providerFireworks"), t("firstRun.providerOllama"), t("firstRun.providerSkip")]}
           onSelect={index => {
-            if (index === 0) onDone({ chatModelId: "chat-default", template: "fireworks" })
-            else if (index === 1) onDone({ chatModelId: "chat-default", template: "ollama" })
-            else onDone({ chatModelId: "chat-default" })
+            if (index === 0) onDone({ useFree: false, template: "fireworks" })
+            else if (index === 1) onDone({ useFree: false, template: "ollama" })
+            else onDone({ useFree: false })
           }}
           onClose={onCancel}
         />

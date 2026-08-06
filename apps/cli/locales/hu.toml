@@ -4,7 +4,7 @@ bye = "Pá, pá!"
 
 [firstRun]
 intro = "Üdv a Kajában! Hogyan szeretnél csevegni?"
-useFree = "Az ingyenes Kaja chat szolgáltatás használata (a Kaja szerverein keresztül)"
+useFree = "Az ingyenes modellek használata a Kaja szerverein keresztül"
 useOwn = "Saját szolgáltató beállítása"
 providerFireworks = "Fireworks (felhő, API kulcs szükséges)"
 providerOllama = "Ollama (helyi, ezen a gépen fut)"
@@ -99,8 +99,8 @@ running = "Fut…"
 truncated = "… még {count} sor"
 
 [activity]
-thinking = "Gondolkozom… {seconds}s"
-tokens = " · ~{tokens} token"
+thinking = "Gondolkozom… {seconds}s eltelt, még mindig gondolkodom"
+tokens = " · ~{tokens} token eddig"
 
 [menu]
 on = "be"

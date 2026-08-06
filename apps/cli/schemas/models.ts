@@ -55,4 +55,6 @@ export type ResolvedModel = {
   task: ModelTask
   baseUrl: string
   apiKey?: string
+  /** The `[providers.*]` table key this model resolved to, e.g. "fireworks". */
+  provider: string
 }

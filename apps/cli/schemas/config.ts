@@ -13,10 +13,10 @@ export const KajaSettingsSchema = z.object({
 // Every task (chat, embedding, rerank, image-generation, text-to-speech,
 // speech-to-text) resolves through models.toml the same way: the value here
 // is a models.toml `id`, looked up for its provider credentials + model
-// name (see lib/models.ts resolveModelById). chat is mandatory — this is a
-// chat app, no meaningful mode without it; every other task is opt-in.
+// name (see lib/models.ts resolveModelById). chat is optional — omitting it
+// falls back to the free hosted chat tier; every other task is opt-in too.
 export const KajaModelsSchema = z.object({
-  chat: z.string().min(1).describe("models.toml id to use for chat; the only mandatory model"),
+  chat: z.string().min(1).optional().describe("models.toml id to use for chat; omit to use the free hosted tier"),
   embedding: z.string().min(1).optional(),
   rerank: z.string().min(1).optional(),
   "image-generation": z.string().min(1).optional(),

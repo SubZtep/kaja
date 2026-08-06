@@ -9,11 +9,6 @@ import { config, getConfigDir } from "../config/config"
 import { fetchTomlConfig } from "../config/fetch"
 import { t } from "../i18n"
 
-// Mirrors lib/openai.ts's FREE_CHAT_MODEL_ID — duplicated rather than
-// imported to avoid a cycle (openai.ts imports from this module and runs
-// top-level client setup on import).
-const FREE_CHAT_MODEL_ID = "kaja-free-chat"
-
 export function getModelsPath() {
   return join(getConfigDir(), "models.toml")
 }
@@ -39,13 +34,15 @@ export async function fetchModelsToml(
 /** Flatten each model entry with its provider's credentials. */
 export function resolveModels(data: KajaModelsFile): ResolvedModel[] {
   return data.models.map(model => {
+    const providerName = model.provider ?? "default"
     // The schema guarantees the referenced provider exists.
-    const provider = data.providers[model.provider ?? "default"]!
+    const provider = data.providers[providerName]!
     return {
       id: model.model,
       task: model.task,
       baseUrl: provider.base_url,
-      apiKey: provider.api_key
+      apiKey: provider.api_key,
+      provider: providerName
     }
   })
 }
@@ -59,23 +56,25 @@ export function resolveModels(data: KajaModelsFile): ResolvedModel[] {
 export function resolveModelById(data: KajaModelsFile, id: string): ResolvedModel | undefined {
   const model = data.models.find(m => m.id === id)
   if (!model) return undefined
-  const provider = data.providers[model.provider ?? "default"]!
+  const providerName = model.provider ?? "default"
+  const provider = data.providers[providerName]!
   return {
     id: model.model,
     task: model.task,
     baseUrl: provider.base_url,
-    apiKey: provider.api_key
+    apiKey: provider.api_key,
+    provider: providerName
   }
 }
 
 /**
  * Load and parse the models file. Missing file: on the free hosted chat
- * tier (models.chat === FREE_CHAT_MODEL_ID and no other task configured)
- * there's nothing to look up, so this returns an empty file rather than
- * writing the Fireworks example template — that free-mode installs stay
- * free of a models.toml pointing at placeholder credentials. Any other
- * setup still gets the example template written and parsed. Invalid file:
- * prints the error and exits, same policy as {@link config}.
+ * tier (models.chat unset and no other task configured) there's nothing to
+ * look up, so this returns an empty file rather than writing the Fireworks
+ * example template — that free-mode installs stay free of a models.toml
+ * pointing at placeholder credentials. Any other setup still gets the
+ * example template written and parsed. Invalid file: prints the error and
+ * exits, same policy as {@link config}.
  */
 export async function loadModelsFile(): Promise<KajaModelsFile> {
   const modelsPath = getModelsPath()
@@ -84,7 +83,7 @@ export async function loadModelsFile(): Promise<KajaModelsFile> {
   if (!exists) {
     const { models } = await config()
     const { chat, ...otherTasks } = models
-    const isFreeChatOnly = chat === FREE_CHAT_MODEL_ID && Object.values(otherTasks).every(id => !id)
+    const isFreeChatOnly = !chat && Object.values(otherTasks).every(id => !id)
     if (isFreeChatOnly) return ModelsFileSchema.parse({})
     await write(f, TEMPLATE)
   }

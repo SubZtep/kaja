@@ -39,7 +39,7 @@ const { default: App } = await import("./components/layout/app")
 const { getDefaultTools } = await import("./tools")
 const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("./lib/session/store")
 const { loadMemory, resolveMemoryDbPath } = await import("./lib/memory/store")
-const { chatModelId } = await import("./lib/models/openai")
+const { chatModelId, isFreeChat } = await import("./lib/models/openai")
 
 // --continue resumes the most recent session, --session <id> a specific
 // one; either way the restored conversation is handed to App as a prop.
@@ -106,6 +106,7 @@ const { waitUntilExit } = render(
       models={models}
       personas={personas}
       openaiApiModel={chatModelId}
+      freeChat={isFreeChat}
       tools={tools}
       mcpServers={mcpServers}
       initialSession={initialSession}

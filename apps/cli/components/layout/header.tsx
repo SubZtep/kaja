@@ -26,6 +26,14 @@ export function shortModelLabel(model: string): string {
   return slash >= 0 ? model.slice(slash + 1) : model
 }
 
+/** Title-cases a hyphen/underscore/space-separated label, e.g. "kimi-k2" → "Kimi K2". */
+export function titleCase(label: string): string {
+  return label
+    .split(/[-_\s]+/)
+    .map(word => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(" ")
+}
+
 /**
  * Live top bar: current persona on the left; on the right, in-flight tool
  * activity, or the active model name (+ prompt tokens when known).
@@ -37,19 +45,23 @@ export function shortModelLabel(model: string): string {
 export function Header({
   persona,
   model,
+  provider,
   promptTokens,
   currentTool,
   width
 }: Readonly<{
   persona: string
   model: string
+  /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". */
+  provider?: string
   promptTokens: number | null
   currentTool?: { name: string; arguments: string }
   /** Terminal columns (from useWindowSize). */
   width: number
 }>) {
-  const modelLabel = shortModelLabel(model)
-  const usage = promptTokens != null ? `${modelLabel} · ${promptTokens.toLocaleString()} tokens` : modelLabel
+  const modelLabel = titleCase(shortModelLabel(model))
+  const providerLabel = provider ? titleCase(provider) : undefined
+  const tokensSuffix = promptTokens != null ? ` · ${promptTokens.toLocaleString()} tokens` : ""
 
   return (
     <Box width={width} flexShrink={0} justifyContent="space-between" paddingX={1} gap={1}>
@@ -69,7 +81,11 @@ export function Header({
         </Box>
       ) : (
         <Box flexShrink={0} flexGrow={0}>
-          <Text color="gray">{usage}</Text>
+          <Text color="gray">
+            {modelLabel}
+            {providerLabel ? <Text dimColor> {providerLabel}</Text> : null}
+            {tokensSuffix}
+          </Text>
         </Box>
       )}
     </Box>

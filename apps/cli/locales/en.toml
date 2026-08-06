@@ -4,7 +4,7 @@ bye = "Bye, bye!"
 
 [firstRun]
 intro = "Welcome to Kaja! How would you like to chat?"
-useFree = "Use the free Kaja chat service (goes through Kaja's servers)"
+useFree = "Use the free models through Kaja's servers"
 useOwn = "Configure my own provider"
 providerFireworks = "Fireworks (cloud, needs an API key)"
 providerOllama = "Ollama (local, runs on this machine)"
@@ -99,8 +99,8 @@ running = "Running…"
 truncated = "… {count} more lines"
 
 [activity]
-thinking = "Thinking… {seconds}s"
-tokens = " · ~{tokens} tokens"
+thinking = "Thinking… {seconds}s elapsed, still reasoning"
+tokens = " · ~{tokens} tokens generated so far"
 
 [menu]
 on = "on"

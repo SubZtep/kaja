@@ -139,6 +139,7 @@ export default function App({
   models = [],
   personas,
   openaiApiModel,
+  freeChat = false,
   tools,
   mcpServers = [],
   initialSession,
@@ -151,6 +152,8 @@ export default function App({
   models?: ResolvedModel[]
   personas: Persona[]
   openaiApiModel: string
+  /** True when running on the free hosted (OpenCode Zen) chat tier. */
+  freeChat?: boolean
   tools: Tool<any>[]
   /** Connected MCP servers with their tool counts, shown in the startup panel. */
   mcpServers?: { id: string; toolCount: number }[]
@@ -209,6 +212,10 @@ export default function App({
 
   const chatModels = models.filter(m => m.task === "chat")
   const [menuMode, setMenuMode] = useState<MenuMode>("main")
+  // displayModel may be provider-reported (e.g. free-chat proxy) and match no
+  // configured model — on the free tier that's expected, so label it "kaja"
+  // rather than showing nothing.
+  const provider = models.find(m => m.id === displayModel)?.provider ?? (freeChat ? "kaja" : undefined)
 
   const commands = buildCommands({
     menuMode,
@@ -235,6 +242,7 @@ export default function App({
       <Header
         persona={persona.label}
         model={displayModel}
+        provider={provider}
         promptTokens={promptTokens}
         currentTool={currentTool}
         width={columns}

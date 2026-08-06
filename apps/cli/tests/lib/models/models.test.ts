@@ -24,7 +24,8 @@ test("resolves a model by its models.toml id, with its provider's credentials", 
     id: "accounts/example/models/chat",
     task: "chat",
     baseUrl: "https://api.example.test/v1",
-    apiKey: "test-key"
+    apiKey: "test-key",
+    provider: "default"
   })
 })
 
@@ -33,7 +34,8 @@ test("resolves a model on a named provider", () => {
     id: "Systran/faster-whisper",
     task: "speech-to-text",
     baseUrl: "http://localhost:8000",
-    apiKey: undefined
+    apiKey: undefined,
+    provider: "speaches"
   })
 })
 
@@ -48,7 +50,7 @@ afterEach(() => {
 test("free hosted chat with no other task configured: loads an empty file without writing models.toml", async () => {
   const dir = `${tmpdir()}/kaja-test-models-free-only-${Math.random()}`
   setConfigDirOverride(dir)
-  await write(getConfigPath(), JSON.stringify({ models: { chat: "kaja-free-chat" } }))
+  await write(getConfigPath(), JSON.stringify({ models: {} }))
 
   const data = await loadModelsFile()
   expect(data).toEqual({ providers: {}, models: [] })
@@ -58,7 +60,7 @@ test("free hosted chat with no other task configured: loads an empty file withou
 test("free hosted chat plus another configured task: still writes the example template", async () => {
   const dir = `${tmpdir()}/kaja-test-models-free-plus-task-${Math.random()}`
   setConfigDirOverride(dir)
-  await write(getConfigPath(), JSON.stringify({ models: { chat: "kaja-free-chat", embedding: "embedding-default" } }))
+  await write(getConfigPath(), JSON.stringify({ models: { embedding: "embedding-default" } }))
 
   await loadModelsFile()
   expect(await Bun.file(getModelsPath()).exists()).toBe(true)

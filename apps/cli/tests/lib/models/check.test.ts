@@ -54,7 +54,8 @@ test.each(["chat", "embedding", "speech-to-text"] as const)(
     const ok = await checkModelAvailability({
       id: "known-model",
       task,
-      baseUrl
+      baseUrl,
+      provider: "default"
     })
     expect(ok).toBe(true)
   }
@@ -66,7 +67,8 @@ test.each(["chat", "embedding", "speech-to-text"] as const)(
     const ok = await checkModelAvailability({
       id: "unlisted-but-should-still-be-tested",
       task,
-      baseUrl
+      baseUrl,
+      provider: "default"
     })
     expect(ok).toBe(false)
   }
@@ -76,7 +78,8 @@ test("tts model: falls back to the /models list", async () => {
   const ok = await checkModelAvailability({
     id: "known-tts-model",
     task: "text-to-speech",
-    baseUrl
+    baseUrl,
+    provider: "default"
   })
   expect(ok).toBe(true)
 })
@@ -85,7 +88,8 @@ test("tts model: not available when absent from /models", async () => {
   const ok = await checkModelAvailability({
     id: "missing-tts-model",
     task: "text-to-speech",
-    baseUrl
+    baseUrl,
+    provider: "default"
   })
   expect(ok).toBe(false)
 })

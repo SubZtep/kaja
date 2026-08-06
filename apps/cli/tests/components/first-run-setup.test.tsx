@@ -12,7 +12,7 @@ test("pressing return on the first option picks the free hosted chat", async () 
   expect(t.lastFrame()).toContain("Kaja")
 
   await t.press("\r")
-  expect(result).toEqual({ chatModelId: "kaja-free-chat" })
+  expect(result).toEqual({ useFree: true })
 
   t.unmount()
   await t.waitUntilExit()
@@ -29,7 +29,7 @@ test("choosing own provider then Ollama copies the ollama template", async () =>
 
   await t.press(DOWN) // move to "Ollama"
   await t.press("\r")
-  expect(result).toEqual({ chatModelId: "chat-default", template: "ollama" })
+  expect(result).toEqual({ useFree: false, template: "ollama" })
 
   t.unmount()
   await t.waitUntilExit()

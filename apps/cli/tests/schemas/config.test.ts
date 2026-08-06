@@ -37,9 +37,9 @@ test("settings language accepts en and hu only", () => {
   expect(() => KajaConfigSchema.parse({ ...base, settings: { language: "de" } })).toThrow()
 })
 
-test("models.chat is required", () => {
+test("models.chat is optional; models itself is required", () => {
   expect(() => KajaConfigSchema.parse({})).toThrow()
-  expect(() => KajaConfigSchema.parse({ models: {} })).toThrow()
+  expect(KajaConfigSchema.parse({ models: {} }).models.chat).toBeUndefined()
 })
 
 test("stt, tts are independently optional", () => {

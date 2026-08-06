@@ -9,10 +9,12 @@ import { Box, useInput } from "ink"
  */
 export function SelectMenu({
   items,
+  width = 32,
   onSelect,
   onClose
 }: Readonly<{
   items: string[]
+  width?: number
   onSelect: (index: number) => void
   onClose: () => void
 }>) {
@@ -23,7 +25,7 @@ export function SelectMenu({
   })
 
   return (
-    <Box borderStyle="round" width={32} borderColor="blue" borderDimColor>
+    <Box borderStyle="round" width={width} borderColor="blue" borderDimColor>
       <Select
         visibleOptionCount={Math.min(items.length, 5)}
         options={items.map((item, index) => ({ label: item, value: String(index) }))}

@@ -50,9 +50,9 @@ test("shows persona, grouped models with availability, and stats", async () => {
       <StartupPanel
         persona="Kaja"
         models={[
-          { id: "up-model", task: "chat", baseUrl },
-          { id: "down-model", task: "chat", baseUrl },
-          { id: "tts-model", task: "text-to-speech", baseUrl }
+          { id: "up-model", task: "chat", baseUrl, provider: "default" },
+          { id: "down-model", task: "chat", baseUrl, provider: "default" },
+          { id: "tts-model", task: "text-to-speech", baseUrl, provider: "default" }
         ]}
         activeModelId="up-model"
         brainPath="/data/kaja/memory.sqlite"
@@ -93,7 +93,8 @@ test("retries a failed check and settles on available once it succeeds", async (
           {
             id: "flaky-model",
             task: "chat",
-            baseUrl
+            baseUrl,
+            provider: "default"
           }
         ]}
         activeModelId="flaky-model"
@@ -145,9 +146,9 @@ test("groups models in a fixed task order regardless of input order", async () =
       <StartupPanel
         persona="Kaja"
         models={[
-          { id: "tts-model", task: "text-to-speech", baseUrl },
-          { id: "embed-model", task: "embedding", baseUrl },
-          { id: "chat-model", task: "chat", baseUrl }
+          { id: "tts-model", task: "text-to-speech", baseUrl, provider: "default" },
+          { id: "embed-model", task: "embedding", baseUrl, provider: "default" },
+          { id: "chat-model", task: "chat", baseUrl, provider: "default" }
         ]}
         brainPath="/data/kaja/memory.sqlite"
         cwd="/home/kaja/project"

@@ -29,7 +29,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "width=device-width, initial-scale=1"
       },
       {
-        title: "kaja.io🚧α"
+        title: "kaja.io🚧🐓"
       },
       {
         rel: "apple-touch-icon",

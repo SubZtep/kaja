@@ -10,9 +10,9 @@
       "type": "object",
       "properties": {
         "chat": {
+          "description": "models.toml id to use for chat; omit to use the free hosted tier",
           "type": "string",
-          "minLength": 1,
-          "description": "models.toml id to use for chat; the only mandatory model"
+          "minLength": 1
         },
         "embedding": {
           "type": "string",
@@ -35,9 +35,6 @@
           "minLength": 1
         }
       },
-      "required": [
-        "chat"
-      ],
       "additionalProperties": false
     },
     "stt": {

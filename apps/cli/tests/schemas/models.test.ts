@@ -32,13 +32,15 @@ test("valid file parses and resolves provider credentials", () => {
       id: "accounts/fireworks/models/deepseek",
       task: "chat",
       baseUrl: "https://api.fireworks.ai/inference/v1",
-      apiKey: "fw-test"
+      apiKey: "fw-test",
+      provider: "default"
     },
     {
       id: "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16",
       task: "text-to-speech",
       baseUrl: "http://localhost:8000",
-      apiKey: undefined
+      apiKey: undefined,
+      provider: "speaches"
     }
   ])
 })
