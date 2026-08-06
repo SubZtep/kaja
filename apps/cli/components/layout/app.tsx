@@ -145,8 +145,7 @@ export default function App({
   initialSession,
   promptHistory,
   sessionCount = 0,
-  memoryNoteCount = 0,
-  brainPath
+  memoryNoteCount = 0
 }: Readonly<{
   initialPreferences?: KajaPreferences
   models?: ResolvedModel[]
@@ -165,8 +164,6 @@ export default function App({
   sessionCount?: number
   /** Stored memory notes so far, shown in the startup stats panel. */
   memoryNoteCount?: number
-  /** Path to the memory database, shown in the startup stats panel. */
-  brainPath: string
 }>) {
   const {
     model,
@@ -256,11 +253,9 @@ export default function App({
         bottomChromeKey={bottomChromeKey}
         startupPanel={
           <StartupPanel
-            persona={persona.label}
             models={models}
             activeModelId={model}
             mcpServers={mcpServers}
-            brainPath={brainPath}
             cwd={process.cwd()}
             sessionCount={sessionCount}
             memoryNoteCount={memoryNoteCount}

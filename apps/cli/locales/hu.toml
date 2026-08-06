@@ -150,7 +150,7 @@ taskRerank = "Rangsorolás"
 taskImageGen = "Képgenerálás"
 mcpServers = "MCP szerverek"
 mcpServerToolCount = "({count} eszköz)"
-stats = "{brainPath} · {sessionCount} munkamenet · {memoryNoteCount} memória jegyzet · {toolCount} eszköz"
+stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet · {toolCount} eszköz"
 
 [telegram]
 notConfigured = "Adj hozzá egy `telegram` blokkot a konfigurációhoz (a fájl helyéért lásd: `kaja --paths`) `botToken` és `allowedUserIds` mezőkkel, hogy használhasd ezt a parancsot."

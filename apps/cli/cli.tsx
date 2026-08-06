@@ -38,7 +38,7 @@ if (!(await validate(true))) {
 const { default: App } = await import("./components/layout/app")
 const { getDefaultTools } = await import("./tools")
 const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("./lib/session/store")
-const { loadMemory, resolveMemoryDbPath } = await import("./lib/memory/store")
+const { loadMemory } = await import("./lib/memory/store")
 const { chatModelId, isFreeChat } = await import("./lib/models/openai")
 
 // --continue resumes the most recent session, --session <id> a specific
@@ -68,7 +68,6 @@ const personas = await loadPersonas(models)
 const { tools, mcpServers, closeTools } = await getDefaultTools()
 const sessionCount = (await listSessions()).length
 const memoryNoteCount = Object.keys(await loadMemory()).length
-const brainPath = await resolveMemoryDbPath()
 // Closes any long-lived tool connection (e.g. the Playwright MCP subprocess)
 // so it isn't left orphaned; guarded so SIGINT and the normal exit path
 // below can't both try to close it.
@@ -113,7 +112,6 @@ const { waitUntilExit } = render(
       promptHistory={promptHistory}
       sessionCount={sessionCount}
       memoryNoteCount={memoryNoteCount}
-      brainPath={brainPath}
     />
   </InkPictureProvider>,
   {

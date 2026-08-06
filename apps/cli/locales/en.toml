@@ -150,7 +150,7 @@ taskRerank = "Rerank"
 taskImageGen = "Image generation"
 mcpServers = "MCP servers"
 mcpServerToolCount = "({count} tools)"
-stats = "{brainPath} · Sessions: {sessionCount} · Memory notes: {memoryNoteCount} · Tools: {toolCount}"
+stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount} · Tools: {toolCount}"
 
 [telegram]
 notConfigured = "Add a `telegram` block to your config (see `kaja --paths` for the file path) with `botToken` and `allowedUserIds` to use this command."

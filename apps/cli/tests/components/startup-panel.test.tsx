@@ -48,14 +48,12 @@ test("shows persona, grouped models with availability, and stats", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={20}>
       <StartupPanel
-        persona="Kaja"
         models={[
           { id: "up-model", task: "chat", baseUrl, provider: "default" },
           { id: "down-model", task: "chat", baseUrl, provider: "default" },
           { id: "tts-model", task: "text-to-speech", baseUrl, provider: "default" }
         ]}
         activeModelId="up-model"
-        brainPath="/data/kaja/memory.sqlite"
         cwd="/home/kaja/project"
         sessionCount={3}
         memoryNoteCount={5}
@@ -67,14 +65,12 @@ test("shows persona, grouped models with availability, and stats", async () => {
   await t.tick()
 
   const frame = t.lastFrame()
-  expect(frame).toContain("Kaja")
   // Among chat models, only the active one gets a live check and stays
   // "up"; a non-active chat model stays at its default "pending" icon.
   // Non-chat tasks (tts here) are still checked as before.
   expect(frame).toContain("✓ up-model")
   expect(frame).toContain("○ down-model")
   expect(frame).toContain("✓ tts-model")
-  expect(frame).toContain("/data/kaja/memory.sqlite")
   expect(frame).toContain("/home/kaja/project")
   expect(frame).toContain("3")
   expect(frame).toContain("5")
@@ -88,7 +84,6 @@ test("retries a failed check and settles on available once it succeeds", async (
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={10}>
       <StartupPanel
-        persona="Kaja"
         models={[
           {
             id: "flaky-model",
@@ -98,7 +93,6 @@ test("retries a failed check and settles on available once it succeeds", async (
           }
         ]}
         activeModelId="flaky-model"
-        brainPath="/data/kaja/memory.sqlite"
         cwd="/home/kaja/project"
         sessionCount={0}
         memoryNoteCount={0}
@@ -121,15 +115,7 @@ test("retries a failed check and settles on available once it succeeds", async (
 test("shows a placeholder when no models are configured", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={10}>
-      <StartupPanel
-        persona="Kaja"
-        models={[]}
-        brainPath="/data/kaja/memory.sqlite"
-        cwd="/home/kaja/project"
-        sessionCount={0}
-        memoryNoteCount={0}
-        toolCount={0}
-      />
+      <StartupPanel models={[]} cwd="/home/kaja/project" sessionCount={0} memoryNoteCount={0} toolCount={0} />
     </Box>
   )
   await t.tick()
@@ -144,13 +130,11 @@ test("groups models in a fixed task order regardless of input order", async () =
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={20}>
       <StartupPanel
-        persona="Kaja"
         models={[
           { id: "tts-model", task: "text-to-speech", baseUrl, provider: "default" },
           { id: "embed-model", task: "embedding", baseUrl, provider: "default" },
           { id: "chat-model", task: "chat", baseUrl, provider: "default" }
         ]}
-        brainPath="/data/kaja/memory.sqlite"
         cwd="/home/kaja/project"
         sessionCount={0}
         memoryNoteCount={0}
@@ -176,13 +160,11 @@ test("lists connected MCP servers with their tool counts", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={20}>
       <StartupPanel
-        persona="Kaja"
         models={[]}
         mcpServers={[
           { id: "playwright", toolCount: 5 },
           { id: "chrome-devtools", toolCount: 12 }
         ]}
-        brainPath="/data/kaja/memory.sqlite"
         cwd="/home/kaja/project"
         sessionCount={0}
         memoryNoteCount={0}
@@ -206,15 +188,7 @@ test("lists connected MCP servers with their tool counts", async () => {
 test("omits the MCP servers section when none are connected", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={10}>
-      <StartupPanel
-        persona="Kaja"
-        models={[]}
-        brainPath="/data/kaja/memory.sqlite"
-        cwd="/home/kaja/project"
-        sessionCount={0}
-        memoryNoteCount={0}
-        toolCount={0}
-      />
+      <StartupPanel models={[]} cwd="/home/kaja/project" sessionCount={0} memoryNoteCount={0} toolCount={0} />
     </Box>
   )
   await t.tick()

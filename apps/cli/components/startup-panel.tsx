@@ -61,22 +61,18 @@ const MAX_ATTEMPTS = 3
  * normal timeline as soon as the conversation starts.
  */
 export function StartupPanel({
-  persona,
   models,
   activeModelId,
   mcpServers = [],
-  brainPath,
   cwd,
   sessionCount,
   memoryNoteCount,
   toolCount
 }: Readonly<{
-  persona: string
   models: ResolvedModel[]
   /** Id of the chat model actually in use right now. Among chat-task models, only this one gets a live reachability check — the rest stay at their default "pending" icon. Non-chat tasks (tts, stt, embedding, image-generation) are always checked, since there's no notion of an "active" one among them. */
   activeModelId?: string
   mcpServers?: { id: string; toolCount: number }[]
-  brainPath: string
   cwd: string
   sessionCount: number
   memoryNoteCount: number
@@ -122,28 +118,32 @@ export function StartupPanel({
 
   return (
     <Box flexDirection="column" gap={1}>
-      <Text>
-        {t("startup.persona")}
-        <Text bold>{persona}</Text>
-      </Text>
-      <Text dimColor>
-        {t("startup.cwd")}
-        <Text bold>{cwd}</Text>
-      </Text>
+      <Box>
+        <Text color="blackBright" dimColor>
+          {t("startup.cwd")}
+        </Text>
+        <Text color="grey" dimColor bold>
+          {cwd}
+        </Text>
+      </Box>
       {models.length === 0 ? (
-        <Text dimColor>{t("startup.noModels")}</Text>
+        <Text color="blackBright" dimColor>
+          {t("startup.noModels")}
+        </Text>
       ) : (
         <Box flexDirection="column">
           {[...grouped.entries()]
             .sort(([a], [b]) => TASK_ORDER.indexOf(a) - TASK_ORDER.indexOf(b))
             .map(([task, indices]) => (
               <Box key={task} flexDirection="column">
-                <Text dimColor>{taskLabel(task)}</Text>
+                <Text color="blackBright" dimColor>
+                  {taskLabel(task)}
+                </Text>
                 {indices.map(index => {
                   const model = models[index]!
                   const state = status[index] ?? "pending"
                   return (
-                    <Text key={index}>
+                    <Text color="gray" dimColor key={index}>
                       {"  "}
                       <Text color={STATUS_COLOR[state]}>{STATUS_ICON[state]}</Text> {model.id}
                     </Text>
@@ -155,18 +155,22 @@ export function StartupPanel({
       )}
       {mcpServers.length > 0 && (
         <Box flexDirection="column">
-          <Text dimColor>{t("startup.mcpServers")}</Text>
+          <Text color="blackBright" dimColor>
+            {t("startup.mcpServers")}
+          </Text>
           {mcpServers.map(server => (
-            <Text key={server.id}>
+            <Text color="gray" dimColor key={server.id}>
               {"  "}
-              {server.id} <Text dimColor>{t("startup.mcpServerToolCount", { count: server.toolCount })}</Text>
+              {server.id}{" "}
+              <Text color="blackBright" dimColor italic>
+                {t("startup.mcpServerToolCount", { count: server.toolCount })}
+              </Text>
             </Text>
           ))}
         </Box>
       )}
-      <Text dimColor>
+      <Text color="gray" dimColor>
         {t("startup.stats", {
-          brainPath,
           sessionCount,
           memoryNoteCount,
           toolCount
