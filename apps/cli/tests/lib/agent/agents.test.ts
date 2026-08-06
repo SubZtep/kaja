@@ -80,7 +80,10 @@ type FakeMessage = {
  * pops the next scripted message, replays its content as a single delta
  * chunk, and returns it whole from `finalChatCompletion()`.
  */
-function fakeClient(script: FakeMessage[], opts?: { usage?: { prompt_tokens: number } }) {
+function fakeClient(
+  script: FakeMessage[],
+  opts?: { usage?: { prompt_tokens: number }; model?: string; usageOnChunkOnly?: boolean }
+) {
   let i = 0
   return {
     chat: {
@@ -90,11 +93,25 @@ function fakeClient(script: FakeMessage[], opts?: { usage?: { prompt_tokens: num
           if (!message) throw new Error("fake script exhausted")
           return {
             async *[Symbol.asyncIterator]() {
-              if (message.content) yield { choices: [{ delta: { content: message.content } }] }
+              if (message.content) {
+                yield {
+                  ...(opts?.model ? { model: opts.model } : {}),
+                  choices: [{ delta: { content: message.content } }]
+                }
+              }
+              // Some gateways only attach usage on a trailing chunk (not on finalChatCompletion).
+              if (opts?.usageOnChunkOnly && opts.usage) {
+                yield {
+                  ...(opts.model ? { model: opts.model } : {}),
+                  choices: [],
+                  usage: opts.usage
+                }
+              }
             },
             finalChatCompletion: async () => ({
               choices: [{ message: { role: "assistant", ...message } }],
-              ...(opts?.usage ? { usage: opts.usage } : {})
+              ...(opts?.model ? { model: opts.model } : {}),
+              ...(opts?.usage && !opts.usageOnChunkOnly ? { usage: opts.usage } : {})
             })
           }
         }
@@ -106,7 +123,7 @@ function fakeClient(script: FakeMessage[], opts?: { usage?: { prompt_tokens: num
 function fakeAgent(
   script: FakeMessage[],
   extraTools: Agent["tools"] = [],
-  opts?: { usage?: { prompt_tokens: number } }
+  opts?: { usage?: { prompt_tokens: number }; model?: string; usageOnChunkOnly?: boolean }
 ): Agent {
   return {
     name: "Tester",
@@ -209,6 +226,23 @@ test("run() yields usage with the free-chat proxy's served model when present", 
     type: "usage",
     promptTokens: 42,
     model: "nemotron-3-ultra-free"
+  })
+})
+
+test("run() picks model and tokens from stream chunks when final omits them", async () => {
+  const { takeLastServedModel } = await import("../../../lib/models/openai")
+  takeLastServedModel()
+
+  const agent = fakeAgent([{ content: "hi" }], [], {
+    model: "mimo-v2.5-free",
+    usage: { prompt_tokens: 99 },
+    usageOnChunkOnly: true
+  })
+  const events = await collect(agent)
+  expect(events.find(e => e.type === "usage")).toEqual({
+    type: "usage",
+    promptTokens: 99,
+    model: "mimo-v2.5-free"
   })
 })
 

@@ -645,11 +645,22 @@ async function* streamRound(
   })
 
   let thinking = ""
+  // Collect from stream chunks as we go — some gateways (OpenCode zen free
+  // models) put usage only on the final chunk; free-chat also stamps the
+  // resolved id on x-kaja-model and on each chunk's `model` field.
+  let chunkModel: string | undefined
+  let chunkPromptTokens: number | undefined
   for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta as { reasoning_content?: string; content?: string } | undefined
-    if (delta?.reasoning_content) {
-      thinking += delta.reasoning_content
-      yield { type: "delta", channel: "reasoning", text: delta.reasoning_content }
+    if (chunk.model) chunkModel = chunk.model
+    if (chunk.usage?.prompt_tokens != null) chunkPromptTokens = chunk.usage.prompt_tokens
+    const delta = chunk.choices[0]?.delta as
+      | { reasoning_content?: string; reasoning?: string; content?: string }
+      | undefined
+    // OpenAI-style reasoning_content, plus OpenCode zen's `reasoning` field.
+    const reasoning = delta?.reasoning_content ?? delta?.reasoning
+    if (reasoning) {
+      thinking += reasoning
+      yield { type: "delta", channel: "reasoning", text: reasoning }
     }
     if (delta?.content) yield { type: "delta", channel: "content", text: delta.content }
   }
@@ -669,16 +680,15 @@ async function* streamRound(
     ...(thinking ? { reasoning_content: thinking } : {})
   }
 
-  // Free-chat proxy sets x-kaja-model to the same id it put in the upstream
-  // request body — the model we already knew at resolve time, not something
-  // scraped from the completion JSON.
-  const servedModel = takeLastServedModel()
+  // Preference: free-chat proxy header → stream chunks → final completion.
+  const servedModel = takeLastServedModel() || chunkModel || completion.model || undefined
+  const promptTokens = chunkPromptTokens ?? completion.usage?.prompt_tokens
 
   return {
     message,
     thinking,
-    usage: completion.usage ? { promptTokens: completion.usage.prompt_tokens } : undefined,
-    model: servedModel || undefined
+    usage: promptTokens != null ? { promptTokens } : undefined,
+    model: servedModel
   }
 }
 

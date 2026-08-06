@@ -232,7 +232,13 @@ export default function App({
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>
-      <Header persona={persona.label} model={displayModel} promptTokens={promptTokens} currentTool={currentTool} />
+      <Header
+        persona={persona.label}
+        model={displayModel}
+        promptTokens={promptTokens}
+        currentTool={currentTool}
+        width={columns}
+      />
       <ChatViewport
         events={events}
         thinking={thinking}
