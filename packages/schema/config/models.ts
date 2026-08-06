@@ -3,7 +3,10 @@ import * as z from "zod"
 // Credentials for one API endpoint, shared by every model that names it.
 const ProviderSchema = z.object({
   base_url: z.url(),
-  api_key: z.string().min(1).optional()
+  api_key: z.string().min(1).optional(),
+  // Marks this table as the fallback for models that omit `provider`. If
+  // several providers set this, the first one (table order) wins.
+  default: z.boolean().optional()
 })
 
 export const TaskSchema = z.enum([
@@ -19,7 +22,8 @@ const ModelSchema = z.object({
   // The name sent to the provider's API, e.g. "accounts/fireworks/models/minimax-m3".
   model: z.string().min(1),
   task: TaskSchema,
-  // Which [providers.*] table holds the credentials; omitted means "default".
+  // Which [providers.*] table holds the credentials; omitted means "whichever
+  // provider has default = true" (see ProviderSchema).
   provider: z.string().min(1).optional()
 })
 
@@ -29,15 +33,21 @@ export const ModelsFileSchema = z
     models: z.array(ModelSchema).default([])
   })
   .superRefine((data, ctx) => {
+    const hasDefaultProvider = Object.values(data.providers).some(p => p.default)
     data.models.forEach((model, index) => {
-      const name = model.provider ?? "default"
-      if (!data.providers[name]) {
+      if (model.provider) {
+        if (!data.providers[model.provider]) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["models", index, "provider"],
+            message: `Unknown provider "${model.provider}"`
+          })
+        }
+      } else if (!hasDefaultProvider) {
         ctx.addIssue({
           code: "custom",
           path: ["models", index, "provider"],
-          message: model.provider
-            ? `Unknown provider "${name}"`
-            : `Model "${model.model}" names no provider and [providers.default] is missing`
+          message: `Model "${model.model}" names no provider and no [providers.*] table has default = true`
         })
       }
     })

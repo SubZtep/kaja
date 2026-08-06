@@ -12,7 +12,7 @@ const { loadModelsFile, resolveModelFromConfig, resolveModels, getModelsPath } =
 
 const DATA: KajaModelsFile = {
   providers: {
-    default: { base_url: "https://api.example.test/v1", api_key: "test-key" },
+    default: { base_url: "https://api.example.test/v1", api_key: "test-key", default: true },
     speaches: { base_url: "http://localhost:8000" }
   },
   models: [

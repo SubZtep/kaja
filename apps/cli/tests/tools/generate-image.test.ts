@@ -7,6 +7,7 @@ const { getModelsPath } = await import("../../lib/models/models")
 
 const MODELS_TOML = `
 [providers.default]
+default = true
 base_url = "http://localhost/v1"
 api_key = "llm-key"
 

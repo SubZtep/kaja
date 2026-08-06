@@ -42,7 +42,10 @@ export async function runConfigCli(
       try {
         const modelsFile = ModelsFileSchema.parse(TOML.parse(await file(getModelsPath()).text()))
         const chatEntry = modelsFile.models.find(m => m.task === "chat")
-        if (chatEntry) await saveFetchedChatModel({ model: chatEntry.model, provider: chatEntry.provider ?? "default" })
+        const defaultProviderName = Object.entries(modelsFile.providers).find(([, p]) => p.default)?.[0]
+        if (chatEntry) {
+          await saveFetchedChatModel({ model: chatEntry.model, provider: chatEntry.provider ?? defaultProviderName })
+        }
       } catch {}
       const lines = results.map(({ path, backedUpTo }) =>
         backedUpTo ? t("config.fetchedWithBackup", { path, backup: backedUpTo }) : t("config.fetched", { path })

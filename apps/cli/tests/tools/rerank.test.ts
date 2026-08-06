@@ -15,6 +15,7 @@ await Bun.write(
   getModelsPath(),
   `
 [providers.default]
+default = true
 base_url = "http://localhost/v1"
 api_key = "llm-key"
 
@@ -90,6 +91,7 @@ test("rerank model resolves via its own provider, independent of chat", async ()
     getModelsPath(),
     `
 [providers.default]
+default = true
 base_url = "http://localhost/v1"
 api_key = "llm-key"
 

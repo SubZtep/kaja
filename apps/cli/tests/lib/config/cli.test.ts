@@ -155,6 +155,7 @@ test("a fresh install's models.chat is auto-filled from the first fetched chat m
   // No settings.json on disk yet — same as right after a fresh `create()`.
   const modelsToml = `
 [providers.default]
+default = true
 base_url = "https://api.example.test/v1"
 api_key = "key"
 

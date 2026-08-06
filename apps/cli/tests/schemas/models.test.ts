@@ -6,7 +6,8 @@ import { resolveModels } from "../../lib/models/models"
 const parse = (toml: string) => ModelsFileSchema.parse(TOML.parse(toml))
 
 const VALID = `
-[providers.default]
+[providers.fireworks]
+default = true
 base_url = "https://api.fireworks.ai/inference/v1"
 api_key = "fw-test"
 
@@ -31,7 +32,7 @@ test("valid file parses and resolves provider credentials", () => {
       task: "chat",
       baseUrl: "https://api.fireworks.ai/inference/v1",
       apiKey: "fw-test",
-      provider: "default"
+      provider: "fireworks"
     },
     {
       model: "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16",
@@ -49,7 +50,8 @@ test("empty file parses to no providers and no models", () => {
 
 test("unknown provider reference is rejected", () => {
   const toml = `
-[providers.default]
+[providers.fireworks]
+default = true
 base_url = "https://api.example.test/v1"
 
 [[models]]
@@ -60,7 +62,7 @@ provider = "nope"
   expect(() => parse(toml)).toThrow("Unknown provider")
 })
 
-test("model without provider requires providers.default", () => {
+test("model without provider requires a provider with default = true", () => {
   const toml = `
 [providers.speaches]
 base_url = "http://localhost:8000"
@@ -69,12 +71,39 @@ base_url = "http://localhost:8000"
 model = "some/model"
 task = "chat"
 `
-  expect(() => parse(toml)).toThrow("[providers.default] is missing")
+  expect(() => parse(toml)).toThrow("no [providers.*] table has default = true")
+})
+
+test("model without provider resolves to the default = true provider", () => {
+  const toml = `
+[providers.speaches]
+base_url = "http://localhost:8000"
+
+[providers.fireworks]
+default = true
+base_url = "https://api.example.test/v1"
+api_key = "fw-test"
+
+[[models]]
+model = "some/model"
+task = "chat"
+`
+  const models = resolveModels(parse(toml))
+  expect(models).toEqual([
+    {
+      model: "some/model",
+      task: "chat",
+      baseUrl: "https://api.example.test/v1",
+      apiKey: "fw-test",
+      provider: "fireworks"
+    }
+  ])
 })
 
 test("unknown task is rejected", () => {
   const toml = `
-[providers.default]
+[providers.fireworks]
+default = true
 base_url = "https://api.example.test/v1"
 
 [[models]]
