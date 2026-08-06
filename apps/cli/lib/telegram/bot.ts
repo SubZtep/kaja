@@ -1,6 +1,5 @@
+import type { CliResolvedModel, ServicesTelegram } from "@kaja/schema/config"
 import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
-import type { ResolvedModel } from "../../schemas/models"
-import type { ServicesTelegram } from "../../schemas/services"
 import type { Agent } from "../agent/agents"
 import { t } from "../i18n"
 import { log } from "../logger"
@@ -10,7 +9,7 @@ import { createTelegramDriver, type InlineKeyboardLike, TelegramRateLimitError }
 export type CreateTelegramBotConfig = ServicesTelegram & {
   agentConfig: ConstructorParameters<typeof Agent>[0]
   personas: Persona[]
-  models: ResolvedModel[]
+  models: CliResolvedModel[]
   getInitialPersona?: () => Persona | undefined | Promise<Persona | undefined>
 }
 

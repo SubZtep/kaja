@@ -1,10 +1,10 @@
 import { join } from "node:path"
+import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 // Written on first run: an example provider/model catalog, sourced from the
 // same file that documents models.toml on the docs site.
 import TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
 import OLLAMA_TEMPLATE from "../../../../docs/config/models.ollama.toml" with { type: "text" }
-import { type KajaModelsFile, ModelsFileSchema, type ResolvedModel } from "../../schemas/models"
 import { config, getConfigDir } from "../config/config"
 import { fetchTomlConfig } from "../config/fetch"
 import { t } from "../i18n"
@@ -32,13 +32,13 @@ export async function fetchModelsToml(
 }
 
 /** Flatten each model entry with its provider's credentials. */
-export function resolveModels(data: KajaModelsFile): ResolvedModel[] {
+export function resolveModels(data: KajaModelsFile): CliResolvedModel[] {
   return data.models.map(model => {
     const providerName = model.provider ?? "default"
     // The schema guarantees the referenced provider exists.
     const provider = data.providers[providerName]!
     return {
-      id: model.model,
+      model: model.model,
       task: model.task,
       baseUrl: provider.base_url,
       apiKey: provider.api_key,
@@ -48,23 +48,23 @@ export function resolveModels(data: KajaModelsFile): ResolvedModel[] {
 }
 
 /**
- * Looks up one `[[models]]` entry by its models.toml `id` (settings.json's
- * models.<task> value), resolved with its provider's credentials. Returns
- * undefined if the id isn't in the file — callers report their own
- * "not configured" error since the message differs per feature.
+ * Resolves a settings.json models.<task> entry to its provider's
+ * credentials, by looking up ref.provider in models.toml's [providers.*]
+ * table. Returns undefined only when ref.provider is unset (the
+ * free-tier-fallback case — callers build their own free-tier CliResolvedModel
+ * instead of calling this). Throws when ref.provider is set but names no
+ * [providers.*] table — a real misconfiguration, distinct from "fall back
+ * to free tier".
  */
-export function resolveModelById(data: KajaModelsFile, id: string): ResolvedModel | undefined {
-  const model = data.models.find(m => m.id === id)
-  if (!model) return undefined
-  const providerName = model.provider ?? "default"
-  const provider = data.providers[providerName]!
-  return {
-    id: model.model,
-    task: model.task,
-    baseUrl: provider.base_url,
-    apiKey: provider.api_key,
-    provider: providerName
-  }
+export function resolveModelFromConfig(
+  data: KajaModelsFile,
+  ref: { model: string; provider?: string },
+  task: ModelTask
+): CliResolvedModel | undefined {
+  if (!ref.provider) return undefined
+  const provider = data.providers[ref.provider]
+  if (!provider) throw new Error(`models.toml has no [providers.${ref.provider}] table (named by settings.json)`)
+  return { model: ref.model, task, baseUrl: provider.base_url, apiKey: provider.api_key, provider: ref.provider }
 }
 
 /**
@@ -99,6 +99,6 @@ export async function loadModelsFile(): Promise<KajaModelsFile> {
 }
 
 /** {@link loadModelsFile}, flattened into every model with its provider's credentials. */
-export async function loadModels(): Promise<ResolvedModel[]> {
+export async function loadModels(): Promise<CliResolvedModel[]> {
   return resolveModels(await loadModelsFile())
 }

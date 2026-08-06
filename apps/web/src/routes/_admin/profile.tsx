@@ -1,4 +1,4 @@
-import { changePasswordSchema, type EditEmailInput, editEmailSchema, editSchema } from "@kaja/schema"
+import { changePasswordSchema, type EditEmailInput, editEmailSchema, editSchema } from "@kaja/schema/api"
 import { createFileRoute } from "@tanstack/react-router"
 import type { User } from "better-auth"
 import { useState } from "react"

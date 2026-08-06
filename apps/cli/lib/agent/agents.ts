@@ -1,4 +1,7 @@
 import { homedir } from "node:os"
+import type { Persona, SamplingParams } from "@kaja/schema/cli"
+import type { CliResolvedModel } from "@kaja/schema/config"
+import { LOCAL_OWNER } from "@kaja/schema/store"
 import { file } from "bun"
 import type OpenAI from "openai"
 import type {
@@ -6,9 +9,6 @@ import type {
   ChatCompletionMessageToolCall,
   ChatCompletionTool
 } from "openai/resources/chat/completions"
-import type { ResolvedModel } from "../../schemas/models"
-import type { Persona, SamplingParams } from "../../schemas/personas"
-import { LOCAL_OWNER } from "../../schemas/session"
 import { readConfigLoose } from "../config/config"
 import { readServicesLoose } from "../config/services"
 import { t } from "../i18n"
@@ -109,12 +109,12 @@ export class Agent {
   tools: Tool<any>[]
   instructions?: string
   sampling?: SamplingParams
-  /** Topic id of the dataset (schemas/datasets.ts) this agent's persona is bound to collecting, if any — see the `dataset` field on PersonaSchema. */
+  /** Topic id of the dataset (@kaja/schema/cli's datasets.ts) this agent's persona is bound to collecting, if any — see the `dataset` field on PersonaSchema. */
   dataset?: string
   /** Full persona roster, so the model can switch mid-conversation via {@link switchPersonaTool}; empty disables the ## Personas block. */
   personas: Persona[]
   /** Resolved models, so a persona swap can honor the target's pinned `model` via setModel. */
-  models: ResolvedModel[]
+  models: CliResolvedModel[]
   /** Id of the currently adopted persona, if any — kept in sync by {@link applyPersona}. */
   personaId?: string
 
@@ -126,7 +126,7 @@ export class Agent {
     sampling?: SamplingParams
     dataset?: string
     personas?: Persona[]
-    models?: ResolvedModel[]
+    models?: CliResolvedModel[]
     personaId?: string
   }) {
     this.name = config.name ?? "Assistant"
@@ -142,8 +142,8 @@ export class Agent {
   }
 
   /** Point the agent at another model, swapping the client to its provider. */
-  setModel(model: ResolvedModel) {
-    this.model = model.id
+  setModel(model: CliResolvedModel) {
+    this.model = model.model
     // Local providers ignore the key, but the SDK insists on having one.
     this.client = createOpenAIClient({
       baseURL: model.baseUrl,
@@ -374,7 +374,7 @@ export function applyPersona(agent: Agent, persona: Persona) {
   agent.sampling = samplingOf(persona)
   agent.dataset = persona.dataset
   if (persona.model) {
-    const model = agent.models.find(m => m.id === persona.model)
+    const model = agent.models.find(m => m.model === persona.model)
     if (model) agent.setModel(model)
   }
 }

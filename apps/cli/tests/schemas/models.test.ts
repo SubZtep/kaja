@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
+import { ModelsFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
 import { resolveModels } from "../../lib/models/models"
-import { ModelsFileSchema } from "../../schemas/models"
 
 const parse = (toml: string) => ModelsFileSchema.parse(TOML.parse(toml))
 
@@ -14,12 +14,10 @@ api_key = "fw-test"
 base_url = "http://localhost:8000"
 
 [[models]]
-id = "chat-deepseek"
 model = "accounts/fireworks/models/deepseek"
 task = "chat"
 
 [[models]]
-id = "tts-kokoro"
 model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
 task = "text-to-speech"
 provider = "speaches"
@@ -29,14 +27,14 @@ test("valid file parses and resolves provider credentials", () => {
   const models = resolveModels(parse(VALID))
   expect(models).toEqual([
     {
-      id: "accounts/fireworks/models/deepseek",
+      model: "accounts/fireworks/models/deepseek",
       task: "chat",
       baseUrl: "https://api.fireworks.ai/inference/v1",
       apiKey: "fw-test",
       provider: "default"
     },
     {
-      id: "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16",
+      model: "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16",
       task: "text-to-speech",
       baseUrl: "http://localhost:8000",
       apiKey: undefined,
@@ -55,7 +53,6 @@ test("unknown provider reference is rejected", () => {
 base_url = "https://api.example.test/v1"
 
 [[models]]
-id = "some-model"
 model = "some/model"
 task = "chat"
 provider = "nope"
@@ -69,7 +66,6 @@ test("model without provider requires providers.default", () => {
 base_url = "http://localhost:8000"
 
 [[models]]
-id = "some-model"
 model = "some/model"
 task = "chat"
 `
@@ -82,7 +78,6 @@ test("unknown task is rejected", () => {
 base_url = "https://api.example.test/v1"
 
 [[models]]
-id = "some-model"
 model = "some/model"
 task = "juggling"
 `

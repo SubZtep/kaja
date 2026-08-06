@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
+import type { PersistedSession } from "@kaja/schema/store"
 import { sessionToMermaid } from "../../../lib/session/diagram"
-import type { PersistedSession } from "../../../schemas/session"
 
 function fixture(events: { type: string; [k: string]: unknown }[]) {
   return {

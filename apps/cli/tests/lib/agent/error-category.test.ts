@@ -9,7 +9,7 @@ import { categorizeError } from "../../../lib/agent/error-category"
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-error-category`
 const { saveConfig } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
-await saveConfig({ models: { chat: "chat-default" } })
+await saveConfig({ models: { chat: { model: "test-model", provider: "default" } } })
 await Bun.write(
   getModelsPath(),
   `

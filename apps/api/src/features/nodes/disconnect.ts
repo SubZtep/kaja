@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi"
-import { disconnectNodeRequestSchema } from "@kaja/schema"
+import { disconnectNodeRequestSchema } from "@kaja/schema/api"
 import type { RouteRegProps } from "../../types"
 import { unauthorized } from "../../types/errors"
 

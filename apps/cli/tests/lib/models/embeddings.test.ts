@@ -6,8 +6,8 @@ const { saveConfig } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
 await saveConfig({
   models: {
-    chat: "chat-default",
-    embedding: "embedding-default"
+    chat: { model: "test-model", provider: "default" },
+    embedding: { model: "test-embedding-model", provider: "default" }
   }
 })
 await Bun.write(
@@ -118,6 +118,12 @@ task = "embedding"
 provider = "embed-host"
 `
   )
+  await saveConfig({
+    models: {
+      chat: { model: "test-model", provider: "default" },
+      embedding: { model: "custom-embedder", provider: "embed-host" }
+    }
+  })
   await embed("hello")
   expect(lastRequest?.url).toBe("http://embedding-host/v1/embeddings")
   const body = JSON.parse(lastRequest!.init.body as string)

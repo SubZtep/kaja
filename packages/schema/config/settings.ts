@@ -5,23 +5,35 @@ export const KajaPreferencesSchema = z.object({
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
   language: z.enum(["en", "hu"]).optional().describe("Language for the chat and application"),
-  // Id of the last-selected persona (see schemas/personas.ts), so the app
+  // Id of the last-selected persona (see @kaja/schema/cli's personas.ts), so the app
   // reopens with it instead of always defaulting to the first one.
   persona: z.string().min(1).optional().describe("Id of the persona to open with (see personas.toml)")
 })
 
+export const KajaModelRefSchema = z.object({
+  model: z.string().min(1).describe("Provider-facing model name, sent as-is to the API"),
+  provider: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("models.toml [providers.*] table to use; omit to fall back to the free hosted tier")
+})
+export type KajaModelRef = z.infer<typeof KajaModelRefSchema>
+
 // Every task (chat, embedding, rerank, image-generation, text-to-speech,
-// speech-to-text) resolves through models.toml the same way: the value here
-// is a models.toml `id`, looked up for its provider credentials + model
-// name (see lib/models.ts resolveModelById). chat is optional — omitting it
-// falls back to the free hosted chat tier; every other task is opt-in too.
+// speech-to-text) resolves the same way: model is the literal provider-facing
+// name sent straight to the API, provider names a models.toml [providers.*]
+// table for its credentials (see lib/models/models.ts resolveModelFromConfig).
+// chat's provider is optional — omitting it falls back to the free hosted
+// chat tier (using the given model name); every other task requires a
+// provider, since there's no free tier for them.
 export const KajaModelsSchema = z.object({
-  chat: z.string().min(1).optional().describe("models.toml id to use for chat; omit to use the free hosted tier"),
-  embedding: z.string().min(1).optional(),
-  rerank: z.string().min(1).optional(),
-  "image-generation": z.string().min(1).optional(),
-  "text-to-speech": z.string().min(1).optional(),
-  "speech-to-text": z.string().min(1).optional()
+  chat: KajaModelRefSchema.optional().describe("Chat model; omit to use the free hosted tier"),
+  embedding: KajaModelRefSchema.optional(),
+  rerank: KajaModelRefSchema.optional(),
+  "image-generation": KajaModelRefSchema.optional(),
+  "text-to-speech": KajaModelRefSchema.optional(),
+  "speech-to-text": KajaModelRefSchema.optional()
 })
 
 // Feature groups: each is a self-contained block of config for one feature.

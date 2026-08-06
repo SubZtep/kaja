@@ -1,4 +1,4 @@
-import type { McpServer, Model, Provider } from "@kaja/schema"
+import type { McpServer, Model, Provider } from "@kaja/schema/api"
 import { tomlString } from "@kaja/shared"
 
 export function renderMcpToml(servers: McpServer[]): string {
@@ -30,7 +30,7 @@ export function renderMcpToml(servers: McpServer[]): string {
 
 /**
  * Renders providers+models into the `[providers.*]` / `[[models]]` shape
- * apps/cli/schemas/models.ts expects. That format has no notion of a model
+ * @kaja/schema/config's models.ts expects. That format has no notion of a model
  * with multiple tasks, so a model with N tasks becomes N `[[models]]`
  * blocks sharing the same id/provider — one per task.
  */

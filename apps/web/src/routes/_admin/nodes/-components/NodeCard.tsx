@@ -1,4 +1,4 @@
-import type { Node, NodeStatus } from "@kaja/schema"
+import type { Node, NodeStatus } from "@kaja/schema/api"
 import { cn, getTimeAgo } from "@kaja/shared"
 import { ChevronDown, ChevronUp, Server } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

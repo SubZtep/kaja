@@ -1,3 +1,5 @@
+import type { CliResolvedModel, KajaPreferences } from "@kaja/schema/config"
+import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
 import { useState } from "react"
 import { useAgent } from "../../hooks/use-agent"
@@ -5,13 +7,11 @@ import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
-import { savePreferences } from "../../lib/config/config"
+import { saveModels, savePreferences } from "../../lib/config/config"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
+import { FREE_CHAT_PROVIDER } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
-import type { KajaPreferences } from "../../schemas/config"
-import type { ResolvedModel } from "../../schemas/models"
-import type { PersistedSession } from "../../schemas/session"
 import { StartupPanel } from "../startup-panel"
 import { ChatViewport } from "./chat-viewport"
 import { ConfirmCommand } from "./confirm-command"
@@ -41,7 +41,7 @@ function buildMainMenu({
   toggleThinking: () => void
   toggleSounds: () => void
   toggleVoice: () => void
-  chatModels: ResolvedModel[]
+  chatModels: CliResolvedModel[]
   setMenuMode: (mode: MenuMode) => void
 }): MenuCommand[] {
   return [
@@ -98,13 +98,13 @@ function buildCommands({
   toggleThinking: () => void
   toggleSounds: () => void
   toggleVoice: () => void
-  chatModels: ResolvedModel[]
+  chatModels: CliResolvedModel[]
   setMenuMode: (mode: MenuMode) => void
   personas: Persona[]
   persona: Persona
   switchPersona: (next: Persona) => void
   model: string
-  switchModel: (next: ResolvedModel) => void
+  switchModel: (next: CliResolvedModel) => void
 }): MenuCommand[] {
   if (menuMode === "main") {
     return buildMainMenu({
@@ -127,7 +127,7 @@ function buildCommands({
     }))
   }
   return chatModels.map(chatModel => ({
-    label: `${chatModel.id}${chatModel.id === model ? " ✓" : ""}`,
+    label: `${chatModel.model}${chatModel.model === model ? " ✓" : ""}`,
     run: () => {
       switchModel(chatModel)
     }
@@ -148,7 +148,7 @@ export default function App({
   memoryNoteCount = 0
 }: Readonly<{
   initialPreferences?: KajaPreferences
-  models?: ResolvedModel[]
+  models?: CliResolvedModel[]
   personas: Persona[]
   openaiApiModel: string
   /** True when running on the free hosted (OpenCode Zen) chat tier. */
@@ -168,7 +168,7 @@ export default function App({
   const {
     model,
     displayModel,
-    switchModel,
+    switchModel: switchModelAgent,
     persona,
     switchPersona: switchPersonaAgent,
     events,
@@ -190,7 +190,7 @@ export default function App({
     resume: initialSession && {
       session: initialSession,
       persona: personas.find(p => p.id === initialSession.persona),
-      model: models.find(m => m.id === initialSession.model)
+      model: models.find(m => m.model === initialSession.model)
     }
   })
   const switchPersona = (next: Persona) => {
@@ -198,6 +198,13 @@ export default function App({
     switchPersonaAgent(next)
     savePreferences({ persona: next.id }).catch(error => {
       log.warn({ error }, "Failed to save preferences")
+    })
+  }
+  const switchModel = (next: CliResolvedModel) => {
+    if (pending) return
+    switchModelAgent(next)
+    saveModels({ chat: { model: next.model, provider: next.provider } }).catch(error => {
+      log.warn({ error }, "Failed to save models")
     })
   }
   const lastEvent = events.at(-1)
@@ -212,7 +219,7 @@ export default function App({
   // displayModel may be provider-reported (e.g. free-chat proxy) and match no
   // configured model — on the free tier that's expected, so label it "kaja"
   // rather than showing nothing.
-  const provider = models.find(m => m.id === displayModel)?.provider ?? (freeChat ? "kaja" : undefined)
+  const provider = models.find(m => m.model === displayModel)?.provider ?? (freeChat ? FREE_CHAT_PROVIDER : undefined)
 
   const commands = buildCommands({
     menuMode,

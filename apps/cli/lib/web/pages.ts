@@ -1,6 +1,5 @@
-import type { MemoryStore } from "../../schemas/memory"
-import type { Persona } from "../../schemas/personas"
-import type { PersistedSession, SessionMeta } from "../../schemas/session"
+import type { Persona } from "@kaja/schema/cli"
+import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import type { DatasetAnswer } from "../memory/store"
 
 /**

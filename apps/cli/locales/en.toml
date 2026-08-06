@@ -90,7 +90,7 @@ invalidAt = "Invalid services file at {path}: {message}"
 na = "N/A"
 
 [input]
-placeholder = "`/` menu · Alt+Enter newline · PgUp history"
+placeholder = "`/` menu · Alt+Enter newline · PgUp history · Alt+C copy last answer"
 
 [viewport]
 older = "↑ older · PageDown or Ctrl+End to follow"

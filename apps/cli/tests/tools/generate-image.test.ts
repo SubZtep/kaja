@@ -27,7 +27,10 @@ provider = "xai"
 `
 
 await saveConfig({
-  models: { chat: "chat-default", "image-generation": "image-generation-default" }
+  models: {
+    chat: { model: "test-model", provider: "default" },
+    "image-generation": { model: "grok-imagine-image-quality", provider: "xai" }
+  }
 })
 await Bun.write(getModelsPath(), MODELS_TOML)
 
@@ -77,13 +80,16 @@ test("generate_image posts the configured model and prompt, then saves the image
 })
 
 test("generate_image reports when not configured", async () => {
-  await saveConfig({ models: { chat: "chat-default" } })
+  await saveConfig({ models: { chat: { model: "test-model", provider: "default" } } })
 
   const result = await generateImageTool.execute({ prompt: "a red fox" })
   expect(result).toBe("Image generation is not configured.")
 
   // Restore for any test files that run after this one in the same process.
   await saveConfig({
-    models: { chat: "chat-default", "image-generation": "image-generation-default" }
+    models: {
+      chat: { model: "test-model", provider: "default" },
+      "image-generation": { model: "grok-imagine-image-quality", provider: "xai" }
+    }
   })
 })

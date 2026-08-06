@@ -43,7 +43,7 @@ const { chatModelId, isFreeChat } = await import("./lib/models/openai")
 
 // --continue resumes the most recent session, --session <id> a specific
 // one; either way the restored conversation is handed to App as a prop.
-let initialSession: import("./schemas/session").PersistedSession | undefined
+let initialSession: import("@kaja/schema/store").PersistedSession | undefined
 if (cli.flags.continue) {
   initialSession = await loadLatestSessionRow()
   if (!initialSession) {

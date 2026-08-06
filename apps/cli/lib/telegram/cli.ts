@@ -1,5 +1,4 @@
-import type { ResolvedModel } from "../../schemas/models"
-import type { ServicesFile } from "../../schemas/services"
+import type { CliResolvedModel, ServicesFile } from "@kaja/schema/config"
 import type { Tool } from "../agent/agents"
 import { t } from "../i18n"
 import type { Persona } from "../personas/personas"
@@ -18,7 +17,7 @@ export async function runTelegramCli(deps: {
   services: Pick<ServicesFile, "telegram">
   tools: Tool<any>[]
   personas: Persona[]
-  models: ResolvedModel[]
+  models: CliResolvedModel[]
 }): Promise<number> {
   const { telegram } = deps.services
   if (!telegram) {

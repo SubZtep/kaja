@@ -2,7 +2,25 @@
   "name": "@kaja/schema",
   "version": "0.1.0",
   "private": true,
-  "main": "index.ts",
+  "sideEffects": false,
+  "exports": {
+    "./api": {
+      "types": "./api/index.ts",
+      "default": "./api/index.ts"
+    },
+    "./config": {
+      "types": "./config/index.ts",
+      "default": "./config/index.ts"
+    },
+    "./store": {
+      "types": "./store/index.ts",
+      "default": "./store/index.ts"
+    },
+    "./cli": {
+      "types": "./cli/index.ts",
+      "default": "./cli/index.ts"
+    }
+  },
   "dependencies": {
     "zod": "^4.4.3"
   }

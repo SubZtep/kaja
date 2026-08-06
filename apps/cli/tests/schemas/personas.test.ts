@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { PersonaSchema } from "../../schemas/personas"
+import { PersonaSchema } from "@kaja/schema/cli"
 
 test("persona without optional fields still validates", () => {
   const parsed = PersonaSchema.parse({ label: "Helpful assistant" })

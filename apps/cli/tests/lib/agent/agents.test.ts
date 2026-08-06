@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import type { Persona } from "@kaja/schema/cli"
 import type { Agent, AgentEvent } from "../../../lib/agent/agents"
-import type { Persona } from "../../../schemas/personas"
 
 // XDG_DATA_HOME/XDG_CONFIG_HOME are read fresh on every call by
 // lib/config.ts and lib/memory-store.ts (not cached at module load), so
@@ -31,7 +31,7 @@ mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
   join(configKajaDir, "settings.json"),
   JSON.stringify({
-    models: { chat: "chat-default" }
+    models: { chat: { model: "x", provider: "default" } }
   })
 )
 writeFileSync(

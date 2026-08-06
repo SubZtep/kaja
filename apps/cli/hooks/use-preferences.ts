@@ -1,7 +1,7 @@
+import type { KajaPreferences } from "@kaja/schema/config"
 import { useState } from "react"
 import { savePreferences } from "../lib/config/config"
 import { log } from "../lib/logger"
-import type { KajaPreferences } from "../schemas/config"
 
 /**
  * In-app preferences (thinking/sounds/voice), seeded from the config file and

@@ -1,4 +1,5 @@
 import { join } from "node:path"
+import { type KajaConfig, KajaConfigSchema, type KajaModels, type KajaPreferences } from "@kaja/schema/config"
 import { file, write } from "bun"
 // Written on first run: a template settings.json with placeholder model ids,
 // or with models.chat overridden by the first-run prompt (see cli.tsx /
@@ -7,7 +8,6 @@ import { file, write } from "bun"
 // object rather than a string.
 import rawTemplate from "../../../../docs/config/settings.json" with { type: "text" }
 import pkg from "../../package.json" with { type: "json" }
-import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "../../schemas/config"
 import { t } from "../i18n"
 import { getPaths } from "../paths"
 
@@ -124,24 +124,38 @@ export async function savePreferences(preferences: KajaPreferences) {
 }
 
 /**
+ * Merges into the models block: callers persist only the task keys they
+ * manage (e.g. chat) and must not drop others like embedding/rerank. Each
+ * task's value fully replaces the existing entry for that task — a caller
+ * always picks a whole {model, provider} pair, never a partial fragment of
+ * one.
+ */
+export async function saveModels(models: Partial<KajaModels>) {
+  const current = await config()
+  const f = file(getConfigPath(), { type: "application/json" })
+  await write(f, JSON.stringify({ ...current, models: { ...current.models, ...models } }, null, 2))
+  cached = undefined
+}
+
+/**
  * Seeds settings.json's models.chat from a freshly fetched models.toml,
  * without requiring the rest of the file to be schema-valid first — unlike
  * saveConfig/savePreferences, this must work even on a fresh install before
  * models.chat resolves (see lib/config-cli.ts). Only writes when the file
- * on disk doesn't already have a real chat id — the template's own
+ * on disk doesn't already have a real chat model — the template's own
  * placeholder doesn't count, so it never blocks the real fetched one from
  * being seeded.
  */
-export async function saveFetchedChatModel(chatModelId: string) {
+export async function saveFetchedChatModel(chatModel: { model: string; provider?: string }) {
   const current = await readConfigLoose()
-  const templateChatId = (TEMPLATE_JSON as Partial<KajaConfig>).models?.chat
-  const hasRealChat = !!current.models?.chat && current.models.chat !== templateChatId
+  const templateChatModel = (TEMPLATE_JSON as Partial<KajaConfig>).models?.chat
+  const hasRealChat = !!current.models?.chat?.model && current.models.chat.model !== templateChatModel?.model
   if (hasRealChat) return
   const merged: Partial<KajaConfig> = {
     $schema: getSchemaUrl(),
     ...(TEMPLATE_JSON as Partial<KajaConfig>),
     ...current,
-    models: { ...current.models, chat: chatModelId }
+    models: { ...current.models, chat: chatModel }
   }
   const f = file(getConfigPath(), { type: "application/json" })
   await write(f, JSON.stringify(merged, null, 2))

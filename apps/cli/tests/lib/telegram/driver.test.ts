@@ -2,9 +2,9 @@ import { beforeEach, expect, test } from "bun:test"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import type { Persona } from "@kaja/schema/cli"
 import type { Agent, Tool } from "../../../lib/agent/agents"
 import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/driver"
-import type { Persona } from "../../../schemas/personas"
 
 // Same isolation/dynamic-import discipline as tests/lib/agents.test.ts: env
 // vars and a minimal settings.json fixture must be in place before
@@ -21,7 +21,7 @@ mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
   join(configKajaDir, "settings.json"),
   JSON.stringify({
-    models: { chat: "chat-default" }
+    models: { chat: { model: "x", provider: "default" } }
   })
 )
 writeFileSync(
@@ -42,7 +42,7 @@ const { invalidateConfigCache } = await import("../../../lib/config/config")
 const { askUserTool, runCommandTool, switchPersonaTool, tool } = await import("../../../lib/agent/agents")
 const { getDb } = await import("../../../lib/memory/store")
 const { createSessionRow, loadLatestSessionRowForOwner } = await import("../../../lib/session/store")
-const { telegramOwner } = await import("../../../schemas/session")
+const { telegramOwner } = await import("@kaja/schema/store")
 const { createTelegramDriver } = await import("../../../lib/telegram/driver")
 const { t } = await import("../../../lib/i18n")
 

@@ -1,6 +1,6 @@
 {
   "models": {
-    "chat": "chat-default"
+    "chat": { "model": "accounts/fireworks/models/minimax-m3", "provider": "default" }
   },
   "preferences": {
     "thinking": false,

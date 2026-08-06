@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
+import type { MemoryNote } from "@kaja/schema/store"
 import { datasetsPage, escapeHtml, maskSecrets, notesPage, sessionPage, sessionsPage } from "../../../lib/web/pages"
-import type { MemoryNote } from "../../../schemas/memory"
 
 const note = (content: string): MemoryNote => ({
   content,

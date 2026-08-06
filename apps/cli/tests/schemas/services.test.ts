@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { ServicesFileSchema } from "../../schemas/services"
+import { ServicesFileSchema } from "@kaja/schema/config"
 
 test("empty file validates: every section is optional", () => {
   const parsed = ServicesFileSchema.parse({})

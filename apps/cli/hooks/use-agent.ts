@@ -1,3 +1,5 @@
+import type { CliResolvedModel } from "@kaja/schema/config"
+import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
 import { Agent, applyPersona, createSession, type FinalizedAgentEvent, run, type Session } from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
@@ -5,8 +7,6 @@ import { runShellCommand } from "../lib/agent/run-command"
 import { log } from "../lib/logger"
 import { type Persona, samplingOf } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
-import type { ResolvedModel } from "../schemas/models"
-import { LOCAL_OWNER, type PersistedSession } from "../schemas/session"
 
 /**
  * What the chat timeline is made of: the human's own messages, the agent's
@@ -49,13 +49,13 @@ export function useAgent(
   config: ConstructorParameters<typeof Agent>[0] & {
     personas: Persona[]
     /** Models available to resolve a persona's optional `model` field against. */
-    models: ResolvedModel[]
+    models: CliResolvedModel[]
     /** Fallback persona when not resuming a session; defaults to personas[0]. */
     initialPersona?: Persona
     resume?: {
       session: PersistedSession
       persona?: Persona
-      model?: ResolvedModel
+      model?: CliResolvedModel
     }
   }
 ) {
@@ -73,7 +73,7 @@ export function useAgent(
     })
     const startingModel =
       resume?.model ??
-      (!resume && startingPersona?.model ? models.find(m => m.id === startingPersona.model) : undefined)
+      (!resume && startingPersona?.model ? models.find(m => m.model === startingPersona.model) : undefined)
     if (startingModel) created.setModel(startingModel)
     return created
   })
@@ -89,9 +89,9 @@ export function useAgent(
   const [model, setModel] = useState(agent.model)
   const [responseModel, setResponseModel] = useState<string | null>(null)
   const switchModel = useCallback(
-    (next: ResolvedModel) => {
+    (next: CliResolvedModel) => {
       agent.setModel(next)
-      setModel(next.id)
+      setModel(next.model)
       setResponseModel(null)
     },
     [agent]

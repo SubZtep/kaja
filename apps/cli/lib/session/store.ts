@@ -1,4 +1,4 @@
-import { type PersistedSession, PersistedSessionSchema, type SessionMeta } from "../../schemas/session"
+import { type PersistedSession, PersistedSessionSchema, type SessionMeta } from "@kaja/schema/store"
 import { getDb } from "../memory/store"
 
 /**

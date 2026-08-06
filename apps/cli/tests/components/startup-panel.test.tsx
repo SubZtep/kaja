@@ -49,9 +49,9 @@ test("shows persona, grouped models with availability, and stats", async () => {
     <Box flexDirection="column" width={80} height={20}>
       <StartupPanel
         models={[
-          { id: "up-model", task: "chat", baseUrl, provider: "default" },
-          { id: "down-model", task: "chat", baseUrl, provider: "default" },
-          { id: "tts-model", task: "text-to-speech", baseUrl, provider: "default" }
+          { model: "up-model", task: "chat", baseUrl, provider: "default" },
+          { model: "down-model", task: "chat", baseUrl, provider: "default" },
+          { model: "tts-model", task: "text-to-speech", baseUrl, provider: "default" }
         ]}
         activeModelId="up-model"
         cwd="/home/kaja/project"
@@ -86,7 +86,7 @@ test("retries a failed check and settles on available once it succeeds", async (
       <StartupPanel
         models={[
           {
-            id: "flaky-model",
+            model: "flaky-model",
             task: "chat",
             baseUrl,
             provider: "default"
@@ -131,9 +131,9 @@ test("groups models in a fixed task order regardless of input order", async () =
     <Box flexDirection="column" width={80} height={20}>
       <StartupPanel
         models={[
-          { id: "tts-model", task: "text-to-speech", baseUrl, provider: "default" },
-          { id: "embed-model", task: "embedding", baseUrl, provider: "default" },
-          { id: "chat-model", task: "chat", baseUrl, provider: "default" }
+          { model: "tts-model", task: "text-to-speech", baseUrl, provider: "default" },
+          { model: "embed-model", task: "embedding", baseUrl, provider: "default" },
+          { model: "chat-model", task: "chat", baseUrl, provider: "default" }
         ]}
         cwd="/home/kaja/project"
         sessionCount={0}

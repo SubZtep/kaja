@@ -105,10 +105,14 @@ bun run --filter @kaja/cli test
 
 ### Type architecture
 
-- **API contracts** (`Node`, `Command`, request/response schemas): only in `@kaja/schema`
+- **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
+  - `@kaja/schema/api` — API contracts (`Node`, `Command`, request/response schemas), shared by `apps/api`, `apps/web`, `packages/sdk`
+  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.json, models.toml, mcp.toml, services.toml)
+  - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
+  - `@kaja/schema/cli` — remaining CLI domain concepts (personas, datasets)
 - **DB row types**: private to API services; map with private `#rowTo…` helpers
 - **Dates over JSON**: `z.coerce.date()` in schemas
-- **Do not** put CLI-local config/persona schemas in `@kaja/schema` (those live under `apps/cli/schemas/`)
+- See `packages/schema/AGENTS.md` for the full layout and naming conventions
 
 ### Database migrations (lexicographic order)
 

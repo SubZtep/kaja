@@ -20,7 +20,7 @@ import type {
   UpdateMcpServerRequest,
   UpdateModelRequest,
   UpdateProviderRequest
-} from "@kaja/schema"
+} from "@kaja/schema/api"
 import {
   commandSchema,
   connectNodeResponseSchema,
@@ -29,7 +29,7 @@ import {
   mcpServerSchema,
   modelSchema,
   providerSchema
-} from "@kaja/schema"
+} from "@kaja/schema/api"
 import { z } from "zod"
 
 export class KajaAPI {

@@ -13,7 +13,10 @@ process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-tts
 const { saveConfig } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
 await saveConfig({
-  models: { chat: "chat-default", "text-to-speech": "text-to-speech-default" },
+  models: {
+    chat: { model: "test-model", provider: "default" },
+    "text-to-speech": { model: "test-tts-model", provider: "default" }
+  },
   tts: { voice: "test-voice" }
 })
 await Bun.write(

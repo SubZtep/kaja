@@ -1,5 +1,5 @@
 import { error, trace } from "@kaja/logger"
-import type { GeoLocation } from "@kaja/schema"
+import type { GeoLocation } from "@kaja/schema/api"
 import type { Context } from "hono"
 import { getConnInfo } from "hono/bun"
 

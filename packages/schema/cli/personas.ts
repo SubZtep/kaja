@@ -28,13 +28,13 @@ export const SamplingParamsSchema = z.object({
 //
 // A persona's id isn't part of this schema: it's the filename (minus
 // extension) of its file under personas/, attached by loadPersonas() after
-// parsing — same convention as schemas/datasets.ts's topic ids.
+// parsing — same convention as this package's datasets.ts's topic ids.
 export const PersonaSchema = z
   .object({
     label: z.string().min(1),
     instructions: z.string().min(1).optional(),
     model: z.string().min(1).optional(),
-    // Topic id (matches a schemas/datasets.ts config filename) this persona
+    // Topic id (matches a datasets.ts config filename in this package) this persona
     // is responsible for collecting via the dataset_info tool. Optional —
     // most personas don't collect a dataset.
     dataset: z.string().min(1).optional(),

@@ -1,6 +1,6 @@
 import { ToolError, tool } from "../lib/agent/agents"
 import { config } from "../lib/config/config"
-import { loadModelsFile, resolveModelById } from "../lib/models/models"
+import { loadModelsFile, resolveModelFromConfig } from "../lib/models/models"
 
 /**
  * Reranks a list of documents by relevance to a query, using the model
@@ -55,14 +55,11 @@ interface RerankResponse {
 
 async function rerank(args: { query: string; documents: string[]; top_n?: number }) {
   const { models } = await config()
-  if (!models.rerank) {
+  if (!models.rerank?.provider) {
     throw new ToolError("rerank", "No rerank model configured — set models.rerank in settings.json")
   }
-  const resolved = resolveModelById(await loadModelsFile(), models.rerank)
-  if (!resolved) {
-    throw new ToolError("rerank", `No model in models.toml matches settings.json's models.rerank ("${models.rerank}")`)
-  }
-  const { baseUrl, apiKey, id: model } = resolved
+  const resolved = resolveModelFromConfig(await loadModelsFile(), models.rerank, "rerank")!
+  const { baseUrl, apiKey, model } = resolved
 
   const res = await fetch(`${baseUrl.replace(/\/$/, "")}/rerank`, {
     method: "POST",

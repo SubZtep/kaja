@@ -1,7 +1,7 @@
 import { join } from "node:path"
+import { KajaConfigSchema } from "@kaja/schema/config"
 import { write } from "bun"
 import * as z from "zod"
-import { KajaConfigSchema } from "../schemas/config"
 
 const jsonSchema = z.toJSONSchema(KajaConfigSchema)
 const outPath = join(import.meta.dir, "../../../docs/config/settings.schema.json")

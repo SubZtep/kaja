@@ -1,5 +1,5 @@
 import { warn } from "@kaja/logger"
-import type { CreateCommandRequest } from "@kaja/schema"
+import type { CreateCommandRequest } from "@kaja/schema/api"
 
 /**
  * Allowlist of permitted commands

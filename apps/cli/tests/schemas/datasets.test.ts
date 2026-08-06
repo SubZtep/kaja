@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { DatasetSchema, normalizeAnswer } from "../../schemas/datasets"
+import { DatasetSchema, normalizeAnswer } from "@kaja/schema/cli"
 
 test("valid dataset parses with optional fields defaulted to undefined", () => {
   const dataset = DatasetSchema.parse({

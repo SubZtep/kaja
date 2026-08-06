@@ -1,6 +1,6 @@
 import { createRoute } from "@hono/zod-openapi"
 import { error, info, warn } from "@kaja/logger"
-import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schema"
+import { connectNodeRequestSchema, connectNodeResponseSchema } from "@kaja/schema/api"
 import { getClientIp, getGeoLocation } from "../../lib/geo-client"
 import type { RouteRegProps } from "../../types"
 import { unauthorized } from "../../types/errors"

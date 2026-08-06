@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
+import { McpFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
-import { McpFileSchema } from "../../schemas/mcp"
 
 const parse = (toml: string) => McpFileSchema.parse(TOML.parse(toml))
 

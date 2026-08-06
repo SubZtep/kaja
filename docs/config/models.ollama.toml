@@ -1,34 +1,29 @@
 # Kaja models — credentials live in named [providers.*] tables so they are
 # never repeated per model. A model picks one with `provider = "<name>"`;
-# models that don't name one use [providers.default]. `id` is the stable
-# slug settings.json's models.<task> points at; `model` is the name sent to
-# the provider's API.
+# models that don't name one use [providers.default]. `model` is the literal
+# name sent to the provider's API, and settings.json's models.<task> stores
+# that model/provider pair directly (see the docs site).
 
 [providers.default]
 base_url = "http://localhost:11434/v1"
 api_key = "ollama"  # required but ignored by Ollama
 
 [[models]]
-id = "chat-default"
 model = "llama3.2:1b"
 task = "chat"
 
 [[models]]
-id = "chat-qwen2"
 model = "qwen2.5:0.5b"
 task = "chat"
 
 [[models]]
-id = "chat-qwen3"
 model = "qwen3:1.7b"
 task = "chat"
 
 [[models]]
-id = "chat-llama3-3b"
 model = "llama3.2:3b"
 task = "chat"
 
 [[models]]
-id = "embedding-default"
 model = "nomic-embed-text"
 task = "embedding"

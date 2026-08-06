@@ -1,8 +1,8 @@
 # Kaja models — credentials live in named [providers.*] tables so they are
 # never repeated per model. A model picks one with `provider = "<name>"`;
-# models that don't name one use [providers.default]. `id` is the stable
-# slug settings.json's models.<task> points at; `model` is the name sent to
-# the provider's API.
+# models that don't name one use [providers.default]. `model` is the literal
+# name sent to the provider's API, and settings.json's models.<task> stores
+# that model/provider pair directly (see the docs site).
 
 [providers.default]
 base_url = "https://api.fireworks.ai/inference/v1"
@@ -16,38 +16,31 @@ base_url = "https://api.x.ai/v1"
 api_key = "xai-YourSecretTwitterKey"
 
 [[models]]
-id = "chat-default"
 model = "accounts/fireworks/models/minimax-m3"
 task = "chat"
 
 [[models]]
-id = "chat-deepseek"
 model = "accounts/fireworks/models/deepseek-v4-pro"
 task = "chat"
 
 [[models]]
-id = "chat-kimi"
 model = "accounts/fireworks/models/kimi-k2p6"
 task = "chat"
 
 [[models]]
-id = "embedding-default"
 model = "accounts/fireworks/models/qwen3-embedding-8b"
 task = "embedding"
 
 [[models]]
-id = "rerank-default"
 model = "accounts/fireworks/models/qwen3-reranker-8b"
 task = "rerank"
 
 [[models]]
-id = "image-generation-default"
 model = "grok-imagine-image"
 task = "image-generation"
 provider = "xai"
 
 [[models]]
-id = "text-to-speech-default"
 model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
 task = "text-to-speech"
 provider = "speaches"

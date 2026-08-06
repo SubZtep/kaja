@@ -64,7 +64,7 @@
     );
     background-attachment: fixed;
     background-repeat: no-repeat;
-    @apply relative m-0 font-body text-base text-fg antialiased break-anywhere selection:bg-neon/40 overflow-y-scroll;
+    @apply relative m-0 font-body text-base text-fg antialiased wrap-anywhere selection:bg-neon/40 overflow-y-scroll;
   }
 
   body.bg-drift::before {

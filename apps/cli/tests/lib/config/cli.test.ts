@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
-import type { ServicesFile } from "../../../schemas/services"
+import type { ServicesFile } from "@kaja/schema/config"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
 
@@ -172,11 +172,14 @@ task = "chat"
   const { code } = await runConfigCli(["fetch"], {}, { apiUrl: "http://api.test" })
   expect(code).toBe(0)
   const saved = await readConfigLoose()
-  expect(saved.models?.chat).toBe("chat-real")
+  expect(saved.models?.chat).toEqual({ model: "some/chat-model", provider: "default" })
 })
 
 test("an existing real models.chat on disk is not overwritten by a later fetch", async () => {
-  await Bun.write(getConfigPath(), JSON.stringify({ models: { chat: "my-real-chat-id" } }))
+  await Bun.write(
+    getConfigPath(),
+    JSON.stringify({ models: { chat: { model: "my-real-chat-model", provider: "default" } } })
+  )
 
   const modelsToml = `
 [providers.default]
@@ -192,5 +195,5 @@ task = "chat"
   const { code } = await runConfigCli(["fetch"], {}, { apiUrl: "http://api.test" })
   expect(code).toBe(0)
   const saved = await readConfigLoose()
-  expect(saved.models?.chat).toBe("my-real-chat-id")
+  expect(saved.models?.chat).toEqual({ model: "my-real-chat-model", provider: "default" })
 })

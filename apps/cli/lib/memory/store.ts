@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname, join } from "node:path"
+import type { MemoryNote, MemoryStore } from "@kaja/schema/store"
 import { file, write } from "bun"
-import type { MemoryNote, MemoryStore } from "../../schemas/memory"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
 import { getPaths } from "../paths"
 

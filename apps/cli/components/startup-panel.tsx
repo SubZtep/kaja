@@ -1,12 +1,12 @@
+import type { CliResolvedModel } from "@kaja/schema/config"
 import { Box, Text } from "ink"
 import { useEffect, useState } from "react"
 import { t } from "../lib/i18n"
 import { checkModelAvailability } from "../lib/models/check"
-import type { ResolvedModel } from "../schemas/models"
 
 type Availability = "pending" | "up" | "down"
 
-function taskLabel(task: ResolvedModel["task"]) {
+function taskLabel(task: CliResolvedModel["task"]) {
   switch (task) {
     case "chat":
       return t("startup.taskChat")
@@ -28,7 +28,7 @@ function taskLabel(task: ResolvedModel["task"]) {
 // which would otherwise put stt before tts/image-generation). rerank sits
 // right after embedding, mirroring the setup wizard's step order — the two
 // are the halves of the same retrieval pipeline.
-const TASK_ORDER: ResolvedModel["task"][] = [
+const TASK_ORDER: CliResolvedModel["task"][] = [
   "chat",
   "embedding",
   "rerank",
@@ -69,7 +69,7 @@ export function StartupPanel({
   memoryNoteCount,
   toolCount
 }: Readonly<{
-  models: ResolvedModel[]
+  models: CliResolvedModel[]
   /** Id of the chat model actually in use right now. Among chat-task models, only this one gets a live reachability check — the rest stay at their default "pending" icon. Non-chat tasks (tts, stt, embedding, image-generation) are always checked, since there's no notion of an "active" one among them. */
   activeModelId?: string
   mcpServers?: { id: string; toolCount: number }[]
@@ -84,7 +84,7 @@ export function StartupPanel({
     let cancelled = false
     const timers: NodeJS.Timeout[] = []
 
-    const attempt = (index: number, model: ResolvedModel, tries: number) => {
+    const attempt = (index: number, model: CliResolvedModel, tries: number) => {
       checkModelAvailability(model).then(available => {
         if (cancelled) return
         if (available) {
@@ -101,7 +101,7 @@ export function StartupPanel({
     }
 
     for (const [index, model] of models.entries())
-      if (model.task !== "chat" || model.id === activeModelId) attempt(index, model, 1)
+      if (model.task !== "chat" || model.model === activeModelId) attempt(index, model, 1)
 
     return () => {
       cancelled = true
@@ -109,7 +109,7 @@ export function StartupPanel({
     }
   }, [models, activeModelId])
 
-  const grouped = models.reduce<Map<ResolvedModel["task"], number[]>>((acc, model, index) => {
+  const grouped = models.reduce<Map<CliResolvedModel["task"], number[]>>((acc, model, index) => {
     const list = acc.get(model.task) ?? []
     list.push(index)
     acc.set(model.task, list)
@@ -145,7 +145,7 @@ export function StartupPanel({
                   return (
                     <Text color="gray" dimColor key={index}>
                       {"  "}
-                      <Text color={STATUS_COLOR[state]}>{STATUS_ICON[state]}</Text> {model.id}
+                      <Text color={STATUS_COLOR[state]}>{STATUS_ICON[state]}</Text> {model.model}
                     </Text>
                   )
                 })}

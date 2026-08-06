@@ -1,5 +1,5 @@
 import { debug, error, fatal, info, warn } from "@kaja/logger"
-import { KAJA_CLI_CLIENT_ID } from "@kaja/schema"
+import { KAJA_CLI_CLIENT_ID } from "@kaja/schema/api"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { pool } from "../../core/db"

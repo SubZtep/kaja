@@ -1,4 +1,4 @@
-import type { CreateMcpServerRequest, McpServer, UpdateMcpServerRequest } from "@kaja/schema"
+import type { CreateMcpServerRequest, McpServer, UpdateMcpServerRequest } from "@kaja/schema/api"
 import type { Pool } from "pg"
 
 export class McpServerService {

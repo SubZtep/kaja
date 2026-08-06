@@ -2,8 +2,8 @@ import { afterEach, expect, test } from "bun:test"
 import { rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import type { CliResolvedModel } from "@kaja/schema/config"
 import { loadPersonas } from "../../../lib/personas/personas"
-import type { ResolvedModel } from "../../../schemas/models"
 
 // getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it
 // per-test isolates each test from the real ~/.config/kaja — same pattern as
@@ -12,7 +12,7 @@ const fixtureConfigDir = join(import.meta.dir, "../../fixtures/personas")
 const emptyConfigDir = join(tmpdir(), `kaja-test-personas-empty-${Date.now()}`)
 process.env.NODE_ENV = "test"
 
-const models: ResolvedModel[] = []
+const models: CliResolvedModel[] = []
 
 afterEach(async () => {
   delete process.env.XDG_CONFIG_HOME

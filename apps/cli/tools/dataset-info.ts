@@ -1,3 +1,4 @@
+import { normalizeAnswer } from "@kaja/schema/cli"
 import { DATASET_INFO_TOOL, LOCAL_OWNER_CTX, tool } from "../lib/agent/agents"
 import {
   latestDatasetVersion,
@@ -7,7 +8,6 @@ import {
   saveDatasetAnswer
 } from "../lib/memory/store"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
-import { normalizeAnswer } from "../schemas/datasets"
 
 type Args =
   | { action: "list_datasets" }

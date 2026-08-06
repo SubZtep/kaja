@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi"
-import { commandSchema, createCommandRequestSchema } from "@kaja/schema"
+import { commandSchema, createCommandRequestSchema } from "@kaja/schema/api"
 import { validateCommand } from "../../services/command-validator"
 import type { NodeService } from "../../services/node"
 import type { AuthSessionUser, RouteRegProps } from "../../types"

@@ -1,6 +1,6 @@
 import { basename, join } from "node:path"
+import { type Dataset, DatasetSchema } from "@kaja/schema/cli"
 import { file } from "bun"
-import { type Dataset, DatasetSchema } from "../../schemas/datasets"
 import { getConfigDir } from "../config/config"
 import { log } from "../logger"
 

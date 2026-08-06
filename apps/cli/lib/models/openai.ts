@@ -1,16 +1,18 @@
+import type { CliResolvedModel } from "@kaja/schema/config"
 import OpenAI from "openai"
 import { config } from "../config/config"
 import { services } from "../config/services"
-import { loadModelsFile, resolveModelById } from "./models"
+import { loadModelsFile, resolveModelFromConfig } from "./models"
 
-// Free hosted chat tier: used when settings.json's models.chat is omitted,
-// resolved here directly instead of via models.toml, since it has no
-// per-user provider config to look up — just a shared public endpoint. The
-// proxy picks the actual model server-side, so this id is just a
-// placeholder in the request body.
+// Free hosted chat tier: used when settings.json's models.chat has no
+// provider, resolved here directly instead of via models.toml, since it has
+// no per-user provider config to look up — just a shared public endpoint.
+// When models.chat also omits a model name, "auto" lets the proxy pick the
+// actual model server-side; it's just a placeholder in the request body.
 const FREE_CHAT_BASE_URL = "https://openai.kaja.io"
 const FREE_CHAT_API_KEY = "kaja"
 const FREE_CHAT_MODEL_ID = "auto"
+export const FREE_CHAT_PROVIDER = "kaja"
 
 /** Free-chat proxy sets this to the model it resolved and put in the request. */
 export const KAJA_MODEL_HEADER = "x-kaja-model"
@@ -20,17 +22,29 @@ const KAJA_ZEN_KEY_HEADER = "x-kaja-zen-key"
 
 const { models } = await config()
 const { zen } = await services()
-/** True when settings.json's models.chat is omitted, i.e. the free hosted (OpenCode Zen) tier is in use. */
-export const isFreeChat = !models.chat
-const chatModel = isFreeChat
-  ? { id: FREE_CHAT_MODEL_ID, task: "chat" as const, baseUrl: FREE_CHAT_BASE_URL, apiKey: FREE_CHAT_API_KEY }
-  : resolveModelById(await loadModelsFile(), models.chat!)
-if (!chatModel) {
-  throw new Error(`No model in models.toml matches settings.json's models.chat ("${models.chat}")`)
+/** True when settings.json's models.chat has no provider, i.e. the free hosted (OpenCode Zen) tier is in use. */
+export const isFreeChat = !models.chat?.provider
+let chatModel: CliResolvedModel
+if (models.chat?.provider) {
+  try {
+    chatModel = resolveModelFromConfig(await loadModelsFile(), models.chat, "chat")!
+  } catch {
+    throw new Error(
+      `settings.json's models.chat names provider "${models.chat.provider}", but models.toml has no [providers.${models.chat.provider}] table`
+    )
+  }
+} else {
+  chatModel = {
+    model: models.chat?.model ?? FREE_CHAT_MODEL_ID,
+    task: "chat",
+    baseUrl: FREE_CHAT_BASE_URL,
+    apiKey: FREE_CHAT_API_KEY,
+    provider: FREE_CHAT_PROVIDER
+  }
 }
 
 /** The resolved chat model name, as sent to the provider's API. */
-export const chatModelId = chatModel.id
+export const chatModelId = chatModel.model
 
 /**
  * Last model id reported by a free-chat proxy via {@link KAJA_MODEL_HEADER}.

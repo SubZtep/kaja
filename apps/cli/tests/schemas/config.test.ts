@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
-import { KajaConfigSchema } from "../../schemas/config"
+import { KajaConfigSchema } from "@kaja/schema/config"
 
 const base = {
   models: {
-    chat: "chat-default"
+    chat: { model: "accounts/fireworks/models/minimax-m3", provider: "default" }
   }
 }
 

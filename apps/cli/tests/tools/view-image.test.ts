@@ -14,7 +14,7 @@ mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
   join(configKajaDir, "settings.json"),
   JSON.stringify({
-    models: { chat: "chat-default" }
+    models: { chat: { model: "x", provider: "default" } }
   })
 )
 writeFileSync(

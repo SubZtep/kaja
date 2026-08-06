@@ -1,12 +1,14 @@
 import { afterEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
+import type { KajaModelsFile } from "@kaja/schema/config"
 import { write } from "bun"
-import type { KajaModelsFile } from "../../../schemas/models"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-models`
 
 const { setConfigDirOverride, getConfigPath } = await import("../../../lib/config/config")
-const { loadModelsFile, resolveModelById, getModelsPath } = await import("../../../lib/models/models")
+const { loadModelsFile, resolveModelFromConfig, resolveModels, getModelsPath } = await import(
+  "../../../lib/models/models"
+)
 
 const DATA: KajaModelsFile = {
   providers: {
@@ -14,14 +16,14 @@ const DATA: KajaModelsFile = {
     speaches: { base_url: "http://localhost:8000" }
   },
   models: [
-    { id: "chat-default", model: "accounts/example/models/chat", task: "chat" },
-    { id: "stt-default", model: "Systran/faster-whisper", task: "speech-to-text", provider: "speaches" }
+    { model: "accounts/example/models/chat", task: "chat" },
+    { model: "Systran/faster-whisper", task: "speech-to-text", provider: "speaches" }
   ]
 }
 
-test("resolves a model by its models.toml id, with its provider's credentials", () => {
-  expect(resolveModelById(DATA, "chat-default")).toEqual({
-    id: "accounts/example/models/chat",
+test("resolves a settings.json {model, provider} ref against its provider's credentials", () => {
+  expect(resolveModelFromConfig(DATA, { model: "accounts/example/models/chat", provider: "default" }, "chat")).toEqual({
+    model: "accounts/example/models/chat",
     task: "chat",
     baseUrl: "https://api.example.test/v1",
     apiKey: "test-key",
@@ -29,9 +31,11 @@ test("resolves a model by its models.toml id, with its provider's credentials", 
   })
 })
 
-test("resolves a model on a named provider", () => {
-  expect(resolveModelById(DATA, "stt-default")).toEqual({
-    id: "Systran/faster-whisper",
+test("resolves a ref on a named provider", () => {
+  expect(
+    resolveModelFromConfig(DATA, { model: "Systran/faster-whisper", provider: "speaches" }, "speech-to-text")
+  ).toEqual({
+    model: "Systran/faster-whisper",
     task: "speech-to-text",
     baseUrl: "http://localhost:8000",
     apiKey: undefined,
@@ -39,8 +43,31 @@ test("resolves a model on a named provider", () => {
   })
 })
 
-test("unknown id resolves to undefined", () => {
-  expect(resolveModelById(DATA, "nope")).toBeUndefined()
+test("ref with no provider resolves to undefined (free-tier fallback case)", () => {
+  expect(resolveModelFromConfig(DATA, { model: "anything" }, "chat")).toBeUndefined()
+})
+
+test("ref naming an unknown provider throws", () => {
+  expect(() => resolveModelFromConfig(DATA, { model: "anything", provider: "nope" }, "chat")).toThrow()
+})
+
+test("resolveModels flattens each entry with its provider's credentials", () => {
+  expect(resolveModels(DATA)).toEqual([
+    {
+      model: "accounts/example/models/chat",
+      task: "chat",
+      baseUrl: "https://api.example.test/v1",
+      apiKey: "test-key",
+      provider: "default"
+    },
+    {
+      model: "Systran/faster-whisper",
+      task: "speech-to-text",
+      baseUrl: "http://localhost:8000",
+      apiKey: undefined,
+      provider: "speaches"
+    }
+  ])
 })
 
 afterEach(() => {
@@ -60,7 +87,10 @@ test("free hosted chat with no other task configured: loads an empty file withou
 test("free hosted chat plus another configured task: still writes the example template", async () => {
   const dir = `${tmpdir()}/kaja-test-models-free-plus-task-${Math.random()}`
   setConfigDirOverride(dir)
-  await write(getConfigPath(), JSON.stringify({ models: { embedding: "embedding-default" } }))
+  await write(
+    getConfigPath(),
+    JSON.stringify({ models: { embedding: { model: "embedding-default", provider: "default" } } })
+  )
 
   await loadModelsFile()
   expect(await Bun.file(getModelsPath()).exists()).toBe(true)

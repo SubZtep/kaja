@@ -45,6 +45,7 @@ export function FirstRunSetup({
       {step === "provider" && (
         <SelectMenu
           items={[t("firstRun.providerFireworks"), t("firstRun.providerOllama"), t("firstRun.providerSkip")]}
+          width={70}
           onSelect={index => {
             if (index === 0) onDone({ useFree: false, template: "fireworks" })
             else if (index === 1) onDone({ useFree: false, template: "ollama" })

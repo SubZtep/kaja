@@ -1,6 +1,6 @@
+import type { CliResolvedModel } from "@kaja/schema/config"
+import { telegramOwner } from "@kaja/schema/store"
 import type { TimelineEvent } from "../../hooks/use-agent"
-import type { ResolvedModel } from "../../schemas/models"
-import { telegramOwner } from "../../schemas/session"
 import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"
 import { categorizeError } from "../agent/error-category"
@@ -53,7 +53,7 @@ export type TelegramDriverConfig = {
   /** Model/tools/instructions baseline every user's Agent is constructed with. */
   agentConfig: ConstructorParameters<typeof Agent>[0]
   personas: Persona[]
-  models: ResolvedModel[]
+  models: CliResolvedModel[]
   /**
    * Fallback persona for a user with no resumable session (including a
    * fresh /new); defaults to personas[0]. A getter rather than a fixed
@@ -188,7 +188,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const resumeRow = resume ? await loadLatestSessionRowForOwner(owner) : undefined
     const persona =
       (resumeRow && personas.find(p => p.id === resumeRow.persona)) ?? (await getInitialPersona?.()) ?? personas[0]!
-    const resumeModel = resumeRow && models.find(m => m.id === resumeRow.model)
+    const resumeModel = resumeRow && models.find(m => m.model === resumeRow.model)
 
     const agent = createAgent({
       instructions: persona.instructions ?? agentConfig.instructions,
@@ -197,7 +197,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       personaId: persona.id
     })
     const startingModel =
-      resumeModel ?? (!resumeRow && persona.model ? models.find(m => m.id === persona.model) : undefined)
+      resumeModel ?? (!resumeRow && persona.model ? models.find(m => m.model === persona.model) : undefined)
     if (startingModel) agent.setModel(startingModel)
 
     return {

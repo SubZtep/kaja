@@ -1,5 +1,7 @@
 import { existsSync } from "node:fs"
 import { basename, join } from "node:path"
+import { type Persona, PersonaSchema, type SamplingParams } from "@kaja/schema/cli"
+import type { CliResolvedModel } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 // Written on first run: one file per persona, the stock assistant plus the
 // app's former built-in personas, sourced from the same files that document
@@ -8,8 +10,6 @@ import BARKOCHBA_TEMPLATE from "../../../../docs/config/personas/barkochba.toml"
 import CARE_TEMPLATE from "../../../../docs/config/personas/care.toml" with { type: "text" }
 import DEFAULT_TEMPLATE from "../../../../docs/config/personas/default.toml" with { type: "text" }
 import ONBOARDING_TEMPLATE from "../../../../docs/config/personas/onboarding.toml" with { type: "text" }
-import type { ResolvedModel } from "../../schemas/models"
-import { type Persona, PersonaSchema, type SamplingParams } from "../../schemas/personas"
 import { getConfigDir } from "../config/config"
 import { log } from "../logger"
 
@@ -49,7 +49,7 @@ export function getPersonasDir() {
  * names a model id not present in `models` is skipped with a warning rather
  * than stopping the app, so one bad persona can't take down the others.
  */
-export async function loadPersonas(models: ResolvedModel[]): Promise<Persona[]> {
+export async function loadPersonas(models: CliResolvedModel[]): Promise<Persona[]> {
   const dir = getPersonasDir()
   if (!existsSync(dir)) {
     for (const [id, text] of Object.entries(TEMPLATES)) {
@@ -61,7 +61,7 @@ export async function loadPersonas(models: ResolvedModel[]): Promise<Persona[]> 
   for await (const match of glob.scan({ cwd: dir, dot: false })) {
     entries.push(match)
   }
-  const modelIds = new Set(models.map(m => m.id))
+  const modelIds = new Set(models.map(m => m.model))
   const personas: Persona[] = []
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" })

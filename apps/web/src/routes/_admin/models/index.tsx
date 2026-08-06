@@ -1,6 +1,6 @@
 import { CheckboxGroup } from "@base-ui/react/checkbox-group"
 import { Field } from "@base-ui/react/field"
-import type { Model, ModelTask, Provider } from "@kaja/schema"
+import type { Model, ModelTask, Provider } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"

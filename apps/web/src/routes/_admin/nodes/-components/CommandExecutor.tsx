@@ -1,4 +1,4 @@
-import type { Node } from "@kaja/schema"
+import type { Node } from "@kaja/schema/api"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Terminal, X } from "lucide-react"
 import { useState } from "react"

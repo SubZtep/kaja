@@ -16,9 +16,6 @@ export const TaskSchema = z.enum([
 ])
 
 const ModelSchema = z.object({
-  // Stable slug this model is looked up by (settings.json's models.<task> value);
-  // a DB uuid for server-fetched files, any unique string for local templates.
-  id: z.string().min(1),
   // The name sent to the provider's API, e.g. "accounts/fireworks/models/minimax-m3".
   model: z.string().min(1),
   task: TaskSchema,
@@ -40,7 +37,7 @@ export const ModelsFileSchema = z
           path: ["models", index, "provider"],
           message: model.provider
             ? `Unknown provider "${name}"`
-            : `Model "${model.id}" names no provider and [providers.default] is missing`
+            : `Model "${model.model}" names no provider and [providers.default] is missing`
         })
       }
     })
@@ -50,8 +47,9 @@ export type KajaModelsFile = z.infer<typeof ModelsFileSchema>
 export type ModelTask = z.infer<typeof TaskSchema>
 
 /** A model entry flattened with its provider's credentials. */
-export type ResolvedModel = {
-  id: string
+export type CliResolvedModel = {
+  /** The provider-facing model name, sent as the API "model" request parameter. */
+  model: string
   task: ModelTask
   baseUrl: string
   apiKey?: string

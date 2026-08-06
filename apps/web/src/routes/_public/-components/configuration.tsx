@@ -6,11 +6,11 @@ const ITEMS = [
     title: "settings.json",
     desc: (
       <>
-        The only required group is <code className="font-mono text-muted">llm</code>. Add{" "}
-        <code className="font-mono text-muted">stt</code>, <code className="font-mono text-muted">tts</code>,{" "}
-        <code className="font-mono text-muted">location</code>, <code className="font-mono text-muted">webSearch</code>,
-        or <code className="font-mono text-muted">telegram</code> groups to turn features on; leave one out and it's
-        simply unavailable.
+        Add <code className="font-mono text-muted">llm</code>, <code className="font-mono text-muted">stt</code>,{" "}
+        <code className="font-mono text-muted">tts</code>, <code className="font-mono text-muted">location</code>,{" "}
+        <code className="font-mono text-muted">webSearch</code>, or{" "}
+        <code className="font-mono text-muted">telegram</code> groups to turn features on; leave one out and it's simply
+        unavailable.
       </>
     )
   },
@@ -47,16 +47,15 @@ export function Configuration() {
         meta="~/.config/kaja/"
         description={
           <>
-            Everything lives in plain files. Edit them by hand, or let{" "}
-            <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">kaja --wizard</code> write them for
-            you.
+            Everything lives in plain files. Fetch templates during onboarding and edit them by hand if tweaking is
+            necessary.
           </>
         }
       />
       <Section className="mb-5 overflow-x-auto">
         <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
           {
-            "~/.config/kaja/\n├─ settings.json   one required group (llm), rest optional\n├─ models.toml     model catalog per provider\n├─ mcp.toml        Model Context Protocol tool servers\n├─ personas/*.toml one behaviour per file\n└─ datasets/*.json custom fields for personas to collect"
+            "~/.config/kaja/\n├─ settings.json    # optional settings and app preferences\n├─ models.toml      # model catalog per provider\n├─ mcp.toml         # model context protocol tool servers\n├─ personas/*.toml  # one behaviour per file\n└─ datasets/*.json  # custom fields for personas to collect"
           }
         </code>
       </Section>

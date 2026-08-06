@@ -1,5 +1,5 @@
 import { info } from "@kaja/logger"
-import type { GeoLocation, Node } from "@kaja/schema"
+import type { GeoLocation, Node } from "@kaja/schema/api"
 import type { Pool } from "pg"
 import { emitNodeEvent } from "./events"
 

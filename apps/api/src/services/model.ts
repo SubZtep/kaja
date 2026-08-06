@@ -5,7 +5,7 @@ import type {
   Provider,
   UpdateModelRequest,
   UpdateProviderRequest
-} from "@kaja/schema"
+} from "@kaja/schema/api"
 import type { Pool } from "pg"
 
 export class ModelService {

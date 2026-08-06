@@ -4,7 +4,7 @@ import {
   listMcpServersResponseSchema,
   mcpServerSchema,
   updateMcpServerRequestSchema
-} from "@kaja/schema"
+} from "@kaja/schema/api"
 import type { RouteRegProps } from "../../types"
 import { notFound, unauthorized } from "../../types/errors"
 

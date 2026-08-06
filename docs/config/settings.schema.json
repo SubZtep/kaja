@@ -10,29 +10,119 @@
       "type": "object",
       "properties": {
         "chat": {
-          "description": "models.toml id to use for chat; omit to use the free hosted tier",
-          "type": "string",
-          "minLength": 1
+          "description": "Chat model; omit to use the free hosted tier",
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Provider-facing model name, sent as-is to the API"
+            },
+            "provider": {
+              "description": "models.toml [providers.*] table to use; omit to fall back to the free hosted tier",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "additionalProperties": false
         },
         "embedding": {
-          "type": "string",
-          "minLength": 1
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Provider-facing model name, sent as-is to the API"
+            },
+            "provider": {
+              "description": "models.toml [providers.*] table to use; omit to fall back to the free hosted tier",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "additionalProperties": false
         },
         "rerank": {
-          "type": "string",
-          "minLength": 1
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Provider-facing model name, sent as-is to the API"
+            },
+            "provider": {
+              "description": "models.toml [providers.*] table to use; omit to fall back to the free hosted tier",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "additionalProperties": false
         },
         "image-generation": {
-          "type": "string",
-          "minLength": 1
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Provider-facing model name, sent as-is to the API"
+            },
+            "provider": {
+              "description": "models.toml [providers.*] table to use; omit to fall back to the free hosted tier",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "additionalProperties": false
         },
         "text-to-speech": {
-          "type": "string",
-          "minLength": 1
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Provider-facing model name, sent as-is to the API"
+            },
+            "provider": {
+              "description": "models.toml [providers.*] table to use; omit to fall back to the free hosted tier",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "additionalProperties": false
         },
         "speech-to-text": {
-          "type": "string",
-          "minLength": 1
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Provider-facing model name, sent as-is to the API"
+            },
+            "provider": {
+              "description": "models.toml [providers.*] table to use; omit to fall back to the free hosted tier",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

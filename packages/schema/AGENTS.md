@@ -1,15 +1,23 @@
 # @kaja/schema
 
-Single source of truth for **API contract** Zod schemas and related TypeScript types shared by API, web, SDK, and CLI device auth.
+Single source of truth for Zod schemas and related TypeScript types across the monorepo, split into role-based subpaths so unrelated concerns (e.g. two different things both called "model") never collide on import.
 
 ## Layout
 
 ```
-index.ts    # re-exports + KAJA_CLI_CLIENT_ID
-auth.ts     # auth-related payloads if any
-geo.ts      # GeoLocation schema
-node.ts     # node, heartbeat, command request/response schemas
+api/         # API contracts: shared by API, web, SDK, and CLI device auth
+  index.ts     # re-exports + KAJA_CLI_CLIENT_ID
+  auth.ts      # auth-related payloads
+  geo.ts       # GeoLocation schema
+  node.ts      # node, heartbeat, command request/response schemas
+  mcp-server.ts  # MCP server admin CRUD schemas
+  model.ts       # provider/model admin CRUD schemas
+config/      # CLI on-disk config files the user hand-edits (settings.json, models.toml, mcp.toml, services.toml)
+store/       # CLI SQLite-backed runtime state (sessions, memory notes)
+cli/         # Remaining CLI domain concepts (personas, datasets)
 ```
+
+Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
 
 ## Conventions
 
@@ -18,26 +26,17 @@ node.ts     # node, heartbeat, command request/response schemas
 - Date fields that cross JSON boundaries: prefer `z.coerce.date()`
 - UUIDs: `z.uuidv7()` where the API uses UUIDv7
 - Keep this package free of runtime I/O, React, and Hono — pure schemas only
-
-## Type architecture (repo-wide)
-
-| Layer | Where |
-|-------|--------|
-| Public API types (`Node`, `Command`, …) | **here** (`@kaja/schema`) |
-| DB rows / query shapes | private inside `@kaja/api` services |
-| CLI-local config, personas, sessions | `apps/cli/schemas/` |
-
-Consumers (`api`, `sdk`, `web`) import contracts from this package only — never redefine the same payloads elsewhere.
+- Same-named-but-unrelated types across subpaths (e.g. `api`'s `ResolvedModel` vs `config`'s `CliResolvedModel`) are fine — that's exactly what the subpath split is for. Only rename when a name collision would otherwise be genuinely confusing to a reader who imports from two subpaths in the same file.
 
 ## Consumers
 
-- `@kaja/api` — request validation / OpenAPI
-- `@kaja/sdk` — response parsing
-- `@kaja/web` — form and type alignment
-- CLI device/client id constant: `KAJA_CLI_CLIENT_ID = "kaja-cli"`
+- `@kaja/api` — request validation / OpenAPI (`@kaja/schema/api`)
+- `@kaja/sdk` — response parsing (`@kaja/schema/api`)
+- `@kaja/web` — form and type alignment (`@kaja/schema/api`)
+- `@kaja/cli` — local config/store/domain schemas (`@kaja/schema/config`, `/store`, `/cli`)
+- CLI device/client id constant: `KAJA_CLI_CLIENT_ID = "kaja-cli"` (in `api/index.ts`)
 
 ## Boundaries
 
 - Do **not** put DB row types here (those stay private in API services)
-- Do **not** put CLI-local config/persona schemas here (those live under `apps/cli/schemas/`)
-- Changing a schema is a breaking change for all consumers — update API + SDK + tests together
+- Changing a schema is a breaking change for all consumers of that subpath — update every consumer + tests together

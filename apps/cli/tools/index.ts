@@ -53,7 +53,7 @@ export async function getDefaultTools() {
       listNotesTool,
       datasetInfoTool,
       ...(webSearch ? [webSearchTool] : []),
-      ...(models["image-generation"] ? [generateImageTool] : []),
+      ...(models["image-generation"]?.provider ? [generateImageTool] : []),
       ...mcpConnections.flatMap(connection => connection.tools),
       ...pluginTools
     ],

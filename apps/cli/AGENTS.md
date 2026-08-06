@@ -35,12 +35,13 @@ components/             # Ink UI (layout, inputs, timeline, wizard, …)
 hooks/                  # agent, settings, voice, dictation, sounds, …
 lib/                    # domain subfolders: cli, agent, config, models, personas, memory,
                         # session, telegram, audio, mcp, web; cross-cutting utils at lib/ root
-schemas/                # Zod for config, personas, models, sessions, MCP, datasets
 tools/                  # LLM tools (files, web, memory, image, summarize, …)
 locales/                # en.toml, hu.toml
 assets/                 # sounds, datasets
 tests/                  # mirrors source tree
 ```
+
+Zod schemas for this app's config/store/domain types live in `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli` (see `packages/schema/AGENTS.md`), not under this package.
 
 ### Shared monorepo docs
 
@@ -84,7 +85,7 @@ GitHub Pages content is also under monorepo `docs/`.
 
 ### Testing
 
-- Tests under `tests/`, mirroring `components/`, `lib/`, `schemas/`, `tools/`
+- Tests under `tests/`, mirroring `components/`, `lib/`, `tools/`
 - Shared helpers: `tests/test-utils.tsx`
 ## Git
 

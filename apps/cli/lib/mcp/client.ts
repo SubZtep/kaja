@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto"
 import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
+import type { McpServerEntry } from "@kaja/schema/config"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { write } from "bun"
-import type { McpServerEntry } from "../../schemas/mcp"
 import { type Tool, type ToolResult, tool } from "../agent/agents"
 import { getPaths } from "../paths"
 

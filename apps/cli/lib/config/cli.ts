@@ -1,8 +1,7 @@
 import { existsSync } from "node:fs"
 import { rename } from "node:fs/promises"
+import { ModelsFileSchema, type ServicesFile } from "@kaja/schema/config"
 import { file, TOML } from "bun"
-import { ModelsFileSchema } from "../../schemas/models"
-import type { ServicesFile } from "../../schemas/services"
 import { t } from "../i18n"
 import { fetchModelsToml, getModelsPath } from "../models/models"
 import { getConfigDir, saveFetchedChatModel } from "./config"
@@ -42,8 +41,8 @@ export async function runConfigCli(
       // since both files were written.
       try {
         const modelsFile = ModelsFileSchema.parse(TOML.parse(await file(getModelsPath()).text()))
-        const chatModelId = modelsFile.models.find(m => m.task === "chat")?.id
-        if (chatModelId) await saveFetchedChatModel(chatModelId)
+        const chatEntry = modelsFile.models.find(m => m.task === "chat")
+        if (chatEntry) await saveFetchedChatModel({ model: chatEntry.model, provider: chatEntry.provider ?? "default" })
       } catch {}
       const lines = results.map(({ path, backedUpTo }) =>
         backedUpTo ? t("config.fetchedWithBackup", { path, backup: backedUpTo }) : t("config.fetched", { path })

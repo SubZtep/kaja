@@ -1,8 +1,8 @@
 import { join } from "node:path"
+import { type ServicesFile, ServicesFileSchema } from "@kaja/schema/config"
 import { tomlString } from "@kaja/shared"
 import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/services.toml" with { type: "text" }
-import { type ServicesFile, ServicesFileSchema } from "../../schemas/services"
 import { t } from "../i18n"
 import { getConfigDir } from "./config"
 

@@ -1,5 +1,5 @@
 import { error, info } from "@kaja/logger"
-import type { Command, CommandResult, CreateCommandRequest, PendingCommand } from "@kaja/schema"
+import type { Command, CommandResult, CreateCommandRequest, PendingCommand } from "@kaja/schema/api"
 import type { Pool } from "pg"
 import { emitCommandEvent } from "./events"
 

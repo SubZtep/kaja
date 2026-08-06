@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi"
-import { resolvedModelSchema } from "@kaja/schema"
+import { resolvedModelSchema } from "@kaja/schema/api"
 import type { RouteRegProps } from "../../types"
 import { notFound } from "../../types/errors"
 

@@ -1,6 +1,6 @@
 import OpenAI from "openai"
 import { config } from "../config/config"
-import { loadModelsFile, resolveModelById } from "./models"
+import { loadModelsFile, resolveModelFromConfig } from "./models"
 
 /**
  * Generates embeddings via the model configured at models.embedding
@@ -9,19 +9,16 @@ import { loadModelsFile, resolveModelById } from "./models"
  */
 export async function embed(input: string | string[]): Promise<number[][]> {
   const { models } = await config()
-  if (!models.embedding) {
+  if (!models.embedding?.provider) {
     throw new Error("No embedding model configured — set models.embedding in settings.json")
   }
-  const embedding = resolveModelById(await loadModelsFile(), models.embedding)
-  if (!embedding) {
-    throw new Error(`No model in models.toml matches settings.json's models.embedding ("${models.embedding}")`)
-  }
+  const embedding = resolveModelFromConfig(await loadModelsFile(), models.embedding, "embedding")!
   const client = new OpenAI({
     baseURL: embedding.baseUrl,
     apiKey: embedding.apiKey
   })
   const res = await client.embeddings.create({
-    model: embedding.id,
+    model: embedding.model,
     input,
     // Without this, the SDK defaults to requesting base64-encoded vectors
     // and decodes them client-side — explicit "float" gets plain JSON

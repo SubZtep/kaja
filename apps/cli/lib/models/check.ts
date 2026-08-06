@@ -1,5 +1,5 @@
+import type { CliResolvedModel } from "@kaja/schema/config"
 import OpenAI from "openai"
-import type { ResolvedModel } from "../../schemas/models"
 
 /**
  * Confirms a model is actually usable by its provider.
@@ -22,7 +22,7 @@ import type { ResolvedModel } from "../../schemas/models"
  * probe exists (a real call means generating audio or an image), so these
  * fall back to the `GET /models` list as a best-effort signal.
  */
-export async function checkModelAvailability(model: ResolvedModel): Promise<boolean> {
+export async function checkModelAvailability(model: CliResolvedModel): Promise<boolean> {
   const client = new OpenAI({
     apiKey: model.apiKey ?? "none",
     baseURL: model.baseUrl
@@ -30,7 +30,7 @@ export async function checkModelAvailability(model: ResolvedModel): Promise<bool
   try {
     if (model.task === "chat") {
       await client.chat.completions.create({
-        model: model.id,
+        model: model.model,
         messages: [{ role: "user", content: "hi" }],
         max_tokens: 1
       })
@@ -38,18 +38,18 @@ export async function checkModelAvailability(model: ResolvedModel): Promise<bool
     }
     if (model.task === "embedding") {
       await client.embeddings.create({
-        model: model.id,
+        model: model.model,
         input: "hi",
         encoding_format: "float"
       })
       return true
     }
     if (model.task === "speech-to-text") {
-      const res = await fetch(`${model.baseUrl}/v1/models/${encodeURIComponent(model.id)}`, { method: "POST" })
+      const res = await fetch(`${model.baseUrl}/v1/models/${encodeURIComponent(model.model)}`, { method: "POST" })
       return res.ok
     }
     const page = await client.models.list()
-    return page.data.some(entry => entry.id === model.id)
+    return page.data.some(entry => entry.id === model.model)
   } catch {
     return false
   }

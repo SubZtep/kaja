@@ -1,4 +1,4 @@
-import type { PersistedSession } from "../../schemas/session"
+import type { PersistedSession } from "@kaja/schema/store"
 
 /**
  * Renders a persisted session's timeline as a mermaid sequence diagram:

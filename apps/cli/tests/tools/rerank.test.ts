@@ -6,7 +6,10 @@ const { saveConfig } = await import("../../lib/config/config")
 const { getModelsPath } = await import("../../lib/models/models")
 
 await saveConfig({
-  models: { chat: "chat-default", rerank: "rerank-default" }
+  models: {
+    chat: { model: "test-model", provider: "default" },
+    rerank: { model: "accounts/fireworks/models/qwen3-reranker-8b", provider: "default" }
+  }
 })
 await Bun.write(
   getModelsPath(),
@@ -106,6 +109,12 @@ task = "rerank"
 provider = "rerank-host"
 `
   )
+  await saveConfig({
+    models: {
+      chat: { model: "test-model", provider: "default" },
+      rerank: { model: "custom-reranker", provider: "rerank-host" }
+    }
+  })
   await rerankTool.execute({ query: "q", documents: ["a"] })
   expect(lastRequest?.url).toBe("http://rerank-host/v1/rerank")
   const body = JSON.parse(lastRequest!.init.body as string)
