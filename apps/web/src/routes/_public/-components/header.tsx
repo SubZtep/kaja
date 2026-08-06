@@ -1,60 +1,39 @@
 import { Link } from "@tanstack/react-router"
-import type { ReactNode } from "react"
+import { getHeaderItems, type NavItem } from "../../../components/layout/nav-items"
 import { SignOutButton } from "../../../components/layout/SignOutButton"
 import { SiteHeader } from "../../../components/layout/SiteHeader"
 import { useUser } from "../../../hooks/user"
 
-type HeaderMenuItem = {
-  label: string
-  to?: string
-  href?: string
-  internal?: boolean
-  desktopOnly?: boolean
-  className?: string
-  icon?: ReactNode
-}
-
-const guestItems: HeaderMenuItem[] = [
-  { label: "Home", to: "/", internal: true },
-  { label: "Sign In", to: "/signin", internal: true },
-  { label: "Sign Up", to: "/signup", internal: true }
-]
-
-const authedItems: HeaderMenuItem[] = [
-  { label: "Home", to: "/", internal: true },
-  { label: "Dashboard", to: "/dashboard", internal: true }
-]
-
-const sharedItems: HeaderMenuItem[] = [
-  { label: "Docs", href: "https://docs.kaja.io" },
-  {
-    label: "GitHub",
-    href: "https://github.com/SubZtep/kaja",
-    desktopOnly: true,
-    className: "flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 font-medium text-fg"
-  }
-]
-
-function MenuItem({ item, onNavigate }: Readonly<{ item: HeaderMenuItem; onNavigate?: () => void }>) {
+function MenuItem({ item, onNavigate }: Readonly<{ item: NavItem; onNavigate?: () => void }>) {
   if (item.internal) {
     return (
-      <Link to={item.to!} onClick={onNavigate}>
+      <Link
+        to={item.to!}
+        activeProps={{ className: "text-fg nav-line-active" }}
+        className="nav-line hover:text-fg"
+        onClick={onNavigate}
+      >
         {item.label}
       </Link>
     )
   }
 
   return (
-    <a href={item.href} target="_blank" rel="noopener" className={item.className} onClick={onNavigate}>
+    <a
+      href={item.href}
+      target="_blank"
+      rel="noopener"
+      className={item.className ?? "nav-line hover:text-fg"}
+      onClick={onNavigate}
+    >
       {item.label}
-      {item.icon}
     </a>
   )
 }
 
 export function Header() {
   const user = useUser()
-  const menuItems = [...(user ? authedItems : guestItems), ...sharedItems]
+  const menuItems = getHeaderItems(user?.role)
 
   return (
     <SiteHeader

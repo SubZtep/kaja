@@ -46,10 +46,16 @@
     @apply min-h-full bg-bg;
   }
 
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    @apply relative m-0 bg-bg font-body text-base text-fg antialiased wrap-anywhere selection:bg-neon/40;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-neon) 40%, transparent)
+      var(--color-bg);
     background-image: radial-gradient(
       circle at 50% 50%,
       rgba(10, 13, 18, 0) 0%,
@@ -58,6 +64,7 @@
     );
     background-attachment: fixed;
     background-repeat: no-repeat;
+    @apply relative m-0 font-body text-base text-fg antialiased break-anywhere selection:bg-neon/40 overflow-y-scroll;
   }
 
   body.bg-drift::before {
@@ -143,6 +150,40 @@
 @utility container {
   @apply mx-auto max-w-7xl;
   padding-inline: 2rem;
+}
+
+@utility nav-line {
+  position: relative;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--color-border);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+
+  &::before {
+    top: -0.25rem;
+  }
+
+  &::after {
+    bottom: -0.25rem;
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+@utility nav-line-active {
+  &::before {
+    transform: scaleX(1);
+  }
 }
 
 @keyframes blink {

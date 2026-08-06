@@ -9,8 +9,8 @@ function NavLink({ to, label, onNavigate }: Readonly<{ to: string; label: string
     <Link
       to={to}
       activeOptions={{ exact: to === "/dashboard" }}
-      activeProps={{ className: "text-fg" }}
-      className="hover:text-fg"
+      activeProps={{ className: "text-fg nav-line-active" }}
+      className="nav-line hover:text-fg"
       onClick={onNavigate}
     >
       {label}
@@ -24,7 +24,7 @@ export function AdminHeader() {
 
   return (
     <SiteHeader
-      brandTo="/dashboard"
+      brandTo="/"
       desktopNav={
         <>
           {items.map(item => (
