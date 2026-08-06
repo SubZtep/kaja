@@ -23,7 +23,9 @@ export function SiteHeader({
       if (e.key === "Escape") close()
     }
     const onClickOutside = (e: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(e.target as Node)) close()
+      const target = e.target as HTMLElement
+      if (target.closest('[role="alertdialog"], [role="dialog"]')) return
+      if (headerRef.current && !headerRef.current.contains(target)) close()
     }
 
     document.addEventListener("keydown", onKeyDown)
