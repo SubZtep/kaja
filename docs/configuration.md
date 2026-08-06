@@ -20,7 +20,7 @@ Templates ship in [`docs/config/`](https://github.com/SubZtep/kaja/tree/main/doc
 
 See the dedicated pages for each option:
 
-- [Config JSON](configuration/config.md)
-- [Models TOML](configuration/models.md)
-- [Services TOML](configuration/services.md)
+- [Config](configuration/config.md)
+- [Models](configuration/models.md)
+- [Services](configuration/services.md)
 - [Voice / TTS & STT](configuration/voice.md)

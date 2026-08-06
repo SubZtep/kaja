@@ -1,10 +1,10 @@
 ---
 layout: page
-title: Models TOML
+title: Models
 nav_order: 4.2
 ---
 
-# models.toml
+# Models
 
 `models.toml` declares provider credentials and model definitions. Credentials live under `[providers.*]` and models are declared with `[[models]]`.
 

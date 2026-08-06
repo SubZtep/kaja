@@ -10,6 +10,11 @@ One agent core, two front doors. The terminal and Telegram both drive the same p
 and model config.
 
 ```mermaid
+---
+config:
+  look: handDrawn
+  theme: neo-dark
+---
 flowchart TD
     subgraph Inputs["📥 Inputs"]
         Term["💻 Terminal (kaja)"]

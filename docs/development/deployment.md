@@ -2,7 +2,7 @@
 layout: page
 title: Deployment
 parent: Development
-nav_order: 1
+nav_order: 8.1
 ---
 
 # Deployment

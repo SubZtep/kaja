@@ -1,10 +1,10 @@
 ---
 layout: page
-title: Config JSON
+title: Config
 nav_order: 4.1
 ---
 
-# config.json
+# Config
 
 `config.json` selects which model entries in `models.toml` handle each task and configures local settings.
 

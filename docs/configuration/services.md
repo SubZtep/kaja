@@ -1,12 +1,12 @@
 ---
 layout: page
-title: Services TOML
+title: Services
 nav_order: 4.3
 ---
 
-# services.toml
+# Services
 
-Optional external service configuration. Omit a section to disable the related feature.
+s`ervices.toml` has optional external service configuration. Omit a section to disable the related feature.
 
 Examples:
 
