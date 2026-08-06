@@ -61,6 +61,7 @@ jobs:
           FILTER_SDK: ${{ steps.filter.outputs.sdk }}
           FILTER_SCHEMA: ${{ steps.filter.outputs.schema }}
           BEFORE_SHA: ${{ github.event.before }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -140,5 +141,6 @@ jobs:
             echo "Created tag ${tag}"
           done
 
+          git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git pull origin main --rebase
           git push origin main --tags
