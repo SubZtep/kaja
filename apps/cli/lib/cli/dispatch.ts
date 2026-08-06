@@ -26,13 +26,13 @@ export async function dispatchEarlySubcommands(cli: typeof Cli) {
   }
 
   // `kaja config fetch` is how a fresh install (or a broken one) gets real
-  // settings.json/models.toml/services.toml files in the first place, so it
-  // must work without any of them already in place. --api-url substitutes
-  // for services.toml's [api] baseUrl until fetch persists it.
+  // settings.json/models.toml files in the first place, so it must work
+  // without any of them already in place. It needs services.toml's [api]
+  // baseUrl to already be set.
   if (cli.input[0] === "config") {
     const { runConfigCli } = await import("../config/cli")
     const looseServices = await readServicesLoose()
-    const { code, text } = await runConfigCli(cli.input.slice(1), looseServices, { apiUrl: cli.flags.apiUrl })
+    const { code, text } = await runConfigCli(cli.input.slice(1), looseServices)
     console.log(text)
     process.exit(code)
   }

@@ -31,10 +31,10 @@ See the dedicated pages for each option:
 Downloads `mcp.toml` and `models.toml` from a Kaja server, backing up any existing files first:
 
 ```sh
-kaja config fetch --api-url http://localhost:3001
+kaja config fetch
 ```
 
-`--api-url` is only needed the first time — it's saved into `services.toml`'s `[api]` section.
+Set `services.toml`'s `[api]` `baseUrl` (and `token` if required) before running this.
 On a fresh install, the fetched `models.toml`'s first `chat`-task model is also auto-filled into
 `settings.json`'s `models.chat`, so a single fetch is enough to leave a fresh install bootable (a
 chat model you've deliberately chosen is never overwritten by a later fetch).

@@ -15,7 +15,7 @@ providerSkip = "Skip — I'll set up models.toml myself"
 help = """
 Usage
   $ kaja
-  $ kaja config fetch [--api-url <url>]
+  $ kaja config fetch
   $ kaja config wipe
   $ kaja memory <list|forget <key-or-glob>|export>
   $ kaja session <list|diagram <id>>
@@ -26,7 +26,6 @@ Options
   --help          Print this help
   --config        Read settings.json from this directory instead of the default
   --paths         Print every path Kaja reads or writes
-  --api-url       Kaja API base URL for `kaja config fetch` (saved into services.toml after)
   --version       Print the installed app version
   --continue, -c  Resume the most recent session
   --session, -s   Resume a session by id (see: kaja session list)
@@ -35,7 +34,7 @@ Options
 Examples
   $ kaja -c
   $ kaja --paths
-  $ kaja config fetch --api-url http://localhost:3001
+  $ kaja config fetch
 """
 
 [memory]
@@ -67,7 +66,7 @@ Usage
   $ kaja config fetch   Regenerate mcp.toml from the Kaja API
   $ kaja config wipe    Back up and clear the whole config directory
 """
-apiUrlMissing = "Set [api] baseUrl in services.toml first, or pass --api-url"
+apiUrlMissing = "Set [api] baseUrl in services.toml first"
 fetchFailed = "Failed to fetch mcp.toml (HTTP {status})"
 fetched = "Wrote {path}"
 fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
