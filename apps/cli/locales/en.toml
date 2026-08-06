@@ -15,6 +15,7 @@ help = """
 Usage
   $ kaja
   $ kaja config fetch [--api-url <url>]
+  $ kaja config wipe
   $ kaja memory <list|forget <key-or-glob>|export>
   $ kaja session <list|diagram <id>>
   $ kaja telegram
@@ -65,11 +66,14 @@ notExists = "Config file not exists: {path}"
 usage = """
 Usage
   $ kaja config fetch   Regenerate mcp.toml from the Kaja API
+  $ kaja config wipe    Back up and clear the whole config directory
 """
 apiUrlMissing = "Set [api] baseUrl in services.toml first, or pass --api-url"
 fetchFailed = "Failed to fetch mcp.toml (HTTP {status})"
 fetched = "Wrote {path}"
 fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
+wiped = "Moved {path} to {backup}"
+wipeNothing = "Nothing to wipe: {path} does not exist"
 
 [models]
 invalidAt = "Invalid models file at {path}: {message}"

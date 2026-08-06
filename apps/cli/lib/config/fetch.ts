@@ -1,14 +1,17 @@
+import { existsSync } from "node:fs"
 import { file, write } from "bun"
 import { t } from "../i18n"
 
 /**
  * First non-existent path among <path>.bak, <path>.bak2, <path>.bak3, ...
- * so a fetch never clobbers a previous backup.
+ * so callers never clobber a previous backup. Uses node:fs's existsSync
+ * rather than Bun.file(...).exists(), which only detects regular files —
+ * this also needs to work for directory paths (see `kaja config wipe`).
  */
-async function nextBackupPath(path: string): Promise<string> {
+export async function nextBackupPath(path: string): Promise<string> {
   let suffix = ""
   let n = 1
-  while (await file(`${path}.bak${suffix}`).exists()) {
+  while (existsSync(`${path}.bak${suffix}`)) {
     n += 1
     suffix = String(n)
   }

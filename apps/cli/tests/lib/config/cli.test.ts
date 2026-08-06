@@ -5,7 +5,7 @@ import type { ServicesFile } from "../../../schemas/services"
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
 
 const { runConfigCli } = await import("../../../lib/config/cli")
-const { getConfigPath, readConfigLoose } = await import("../../../lib/config/config")
+const { getConfigDir, getConfigPath, readConfigLoose } = await import("../../../lib/config/config")
 const { getMcpPath } = await import("../../../lib/config/mcp-servers")
 const { getModelsPath } = await import("../../../lib/models/models")
 const { getServicesPath, readServicesLoose } = await import("../../../lib/config/services")
@@ -38,6 +38,7 @@ afterEach(async () => {
   await $`rm -f ${getMcpPath()} ${getMcpPath()}.bak ${getMcpPath()}.bak2 ${getModelsPath()} ${getModelsPath()}.bak ${getModelsPath()}.bak2 ${getConfigPath()} ${getServicesPath()}`
     .quiet()
     .nothrow()
+  await $`rm -rf ${getConfigDir()} ${getConfigDir()}.bak ${getConfigDir()}.bak2`.quiet().nothrow()
 })
 
 test("fetch without api.baseUrl configured exits 1", async () => {
@@ -97,6 +98,32 @@ test("fetch surfaces a non-OK response as an error", async () => {
   const { code, text } = await runConfigCli(["fetch"], services)
   expect(code).toBe(1)
   expect(text).toContain("500")
+})
+
+test("wipe backs up the whole config dir to .bak", async () => {
+  await Bun.write(getConfigPath(), JSON.stringify({ hello: "world" }))
+  const { code, text } = await runConfigCli(["wipe"], {})
+  expect(code).toBe(0)
+  expect(text).toContain(`${getConfigDir()}.bak`)
+  expect(await Bun.file(getConfigPath()).exists()).toBe(false)
+  expect(await Bun.file(`${getConfigDir()}.bak/config.json`).text()).toContain("world")
+})
+
+test("a second wipe uses .bak2", async () => {
+  await Bun.write(getConfigPath(), JSON.stringify({ run: 1 }))
+  await runConfigCli(["wipe"], {})
+  await Bun.write(getConfigPath(), JSON.stringify({ run: 2 }))
+  const { code, text } = await runConfigCli(["wipe"], {})
+  expect(code).toBe(0)
+  expect(text).toContain(`${getConfigDir()}.bak2`)
+  expect(await Bun.file(`${getConfigDir()}.bak/config.json`).text()).toContain('"run":1')
+  expect(await Bun.file(`${getConfigDir()}.bak2/config.json`).text()).toContain('"run":2')
+})
+
+test("wipe with no existing config dir is a no-op", async () => {
+  const { code, text } = await runConfigCli(["wipe"], {})
+  expect(code).toBe(0)
+  expect(text).toContain(getConfigDir())
 })
 
 test("unknown or missing subcommand prints usage and exits 1", async () => {

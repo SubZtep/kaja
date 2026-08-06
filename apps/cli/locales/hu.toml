@@ -15,6 +15,7 @@ help = """
 Használat
   $ kaja
   $ kaja config fetch [--api-url <url>]
+  $ kaja config wipe
   $ kaja memory <list|forget <kulcs-vagy-glob>|export>
   $ kaja session <list|diagram <id>>
   $ kaja telegram
@@ -65,11 +66,14 @@ notExists = "Nem létezik a konfigurációs fájl: {path}"
 usage = """
 Használat
   $ kaja config fetch   Újragenerálja az mcp.toml-t a Kaja API-ból
+  $ kaja config wipe    Biztonsági mentés után törli a teljes konfigurációs könyvtárat
 """
 apiUrlMissing = "Állítsd be az [api] baseUrl-t a services.toml-ban, vagy add meg a --api-url kapcsolót"
 fetchFailed = "Nem sikerült letölteni az mcp.toml-t (HTTP {status})"
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
+wiped = "{path} áthelyezve ide: {backup}"
+wipeNothing = "Nincs mit törölni: {path} nem létezik"
 
 [models]
 invalidAt = "Érvénytelen modell fájl ({path}): {message}"

@@ -1,22 +1,26 @@
+import { existsSync } from "node:fs"
+import { rename } from "node:fs/promises"
 import { file, TOML } from "bun"
 import { ModelsFileSchema } from "../../schemas/models"
 import type { ServicesFile } from "../../schemas/services"
 import { t } from "../i18n"
 import { fetchModelsToml, getModelsPath } from "../models/models"
-import { saveFetchedChatModel } from "./config"
+import { getConfigDir, saveFetchedChatModel } from "./config"
+import { nextBackupPath } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
 import { saveFetchedApiBaseUrl } from "./services"
 
 /**
- * Handles the `kaja config <fetch>` subcommand. Returns the text to print
- * and the exit code instead of printing/exiting itself, so tests can call
- * it directly. Runs before the config guard (like memory/session/web): a
+ * Handles the `kaja config <fetch|wipe>` subcommand. Returns the text to
+ * print and the exit code instead of printing/exiting itself, so tests can
+ * call it directly. Runs before the config guard (like memory/session/web): a
  * fresh install has no valid config.json/services.toml yet, and fetching a
  * real models.toml/config is exactly how you'd fix that — so it must work
  * without either. --api-url substitutes for services.toml's [api] baseUrl
  * on the first run and gets persisted there; models.chat in config.json
  * gets seeded from the first fetched chat model, so a single fetch is
- * enough to leave a fresh install fully bootable.
+ * enough to leave a fresh install fully bootable. `wipe` is the inverse: it
+ * backs up and clears the whole config dir so the next run starts fresh.
  */
 export async function runConfigCli(
   argv: string[],
@@ -48,6 +52,14 @@ export async function runConfigCli(
     } catch (error: any) {
       return { code: 1, text: error?.message ?? String(error) }
     }
+  }
+
+  if (command === "wipe") {
+    const dir = getConfigDir()
+    if (!existsSync(dir)) return { code: 0, text: t("config.wipeNothing", { path: dir }) }
+    const backup = await nextBackupPath(dir)
+    await rename(dir, backup)
+    return { code: 0, text: t("config.wiped", { path: dir, backup }) }
   }
 
   return { code: 1, text: t("config.usage") }

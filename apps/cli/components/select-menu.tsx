@@ -25,7 +25,7 @@ export function SelectMenu({
   })
 
   return (
-    <Box borderStyle="round" width={width} borderColor="blue" borderDimColor>
+    <Box borderStyle="classic" width={width} borderColor="magenta" paddingLeft={1}>
       <Select
         visibleOptionCount={Math.min(items.length, 5)}
         options={items.map((item, index) => ({ label: item, value: String(index) }))}
