@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { Menu, X } from "lucide-react"
+import { Menu, Star, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 export function Header() {
@@ -54,7 +54,8 @@ export function Header() {
             className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 font-medium text-fg"
             rel="noopener"
           >
-            ★ Star
+            <Star fill="white" size={12} />
+            Star
           </a>
         </nav>
         <button
@@ -89,7 +90,8 @@ export function Header() {
             className="flex w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 font-medium text-fg"
             rel="noopener"
           >
-            ★ Star
+            <Star fill="white" size={12} />
+            Star
           </a>
         </nav>
       )}

@@ -1,3 +1,4 @@
+import { Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { getInstallCmd } from "../../../../lib/vars"
 
@@ -45,7 +46,8 @@ export function Hero() {
               rel="noopener"
               className="inline-flex items-center gap-2 rounded-md border border-green-600 bg-green-700 px-5 py-2.5 font-semibold text-sm text-white"
             >
-              ★ Star on GitHub
+              <Star fill="white" size={12} />
+              Star on GitHub
             </a>
             <a
               href="https://docs.kaja.io"

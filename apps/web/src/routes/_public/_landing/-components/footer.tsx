@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router"
+import { Star } from "lucide-react"
 
 export function Footer() {
   return (
@@ -28,7 +29,8 @@ export function Footer() {
           rel="noopener"
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-4 py-2 text-fg text-[13px]"
         >
-          ★ Star on GitHub
+          <Star fill="white" size={9} />
+          Star on GitHub
         </a>
       </div>
     </section>
