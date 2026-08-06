@@ -41,14 +41,7 @@ export function getPersonasDir() {
   return join(getConfigDir(), "personas")
 }
 
-/**
- * Load the personas directory: one `<id>.toml` file per persona, id being
- * the filename minus extension — same convention as loadDatasets() in
- * lib/datasets.ts. Missing directory: writes the default template files and
- * loads those. A file that fails to parse, fails schema validation, or
- * names a model id not present in `models` is skipped with a warning rather
- * than stopping the app, so one bad persona can't take down the others.
- */
+/** Loads personas/*.toml (id = filename). Writes default templates if the directory is missing; invalid files are skipped with a warning. */
 export async function loadPersonas(models: CliResolvedModel[]): Promise<Persona[]> {
   const dir = getPersonasDir()
   if (!existsSync(dir)) {

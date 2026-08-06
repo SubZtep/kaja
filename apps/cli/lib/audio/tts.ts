@@ -1,16 +1,10 @@
-// Text-to-speech: speaches synthesizes raw PCM which streams into an
-// AudioSink (speakers, …) as it is generated, so speech is audible almost
-// immediately instead of after the whole sentence has been synthesized.
+// Text-to-speech via speaches: streams raw PCM to an AudioSink as it synthesizes.
 //
 // Usage:
 //   const { speak } = createTts(sink)
-//   await speak("Hello there")   // resolves when the audio has finished playing
+//   await speak("Hello there")
 //
-// Concurrent speak() calls are safe: synthesis runs one utterance at a time
-// (the CPU can't do two at realtime speed anyway) and playback stays in call
-// order, so callers can fire sentences as fast as they arrive.
-//
-// The TTS model must be downloaded once:
+// Model must be pulled once:
 //   curl -X POST localhost:8000/v1/models/speaches-ai/Kokoro-82M-v1.0-ONNX-fp16
 
 import { config } from "../config/config"

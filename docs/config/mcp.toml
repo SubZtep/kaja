@@ -5,22 +5,11 @@
 #   - remote: reached over Streamable HTTP, needs `url` (+ optional `headers`)
 
 [[servers]]
-id = "playwright"
-command = "bunx"
-args = ["@playwright/mcp@latest", "--isolated", "--headless"]
+id = "ip2geo"
+url = "https://ip2geo.demo.land/mcp"
+headers = { Authorization = "Bearer guest" }
 
 # [[servers]]
 # id = "chrome-devtools"
 # command = "bunx"
 # args = ["chrome-devtools-mcp@latest", "--autoConnect"]
-
-# [[servers]]
-# id = "example-with-env"
-# command = "npx"
-# args = ["-y", "some-mcp-server"]
-# env = { API_KEY = "..." }
-
-# [[servers]]
-# id = "geo-service"
-# url = "https://your-geo-service-host/mcp"
-# headers = { Authorization = "Bearer your-secret-api-key" }

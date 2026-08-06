@@ -3,16 +3,7 @@ import type { Tool } from "../agent/agents"
 import { t } from "../i18n"
 import type { Persona } from "../personas/personas"
 
-/**
- * Runs the `kaja telegram` subcommand: a long-polling Telegram bot reusing
- * the same tools/personas/models the terminal app was given. Unlike
- * lib/memory-cli.ts/lib/session-cli.ts, this needs a real Agent to answer
- * messages, so it's dispatched (from cli.tsx) after the config guard and
- * default-tools loading, not before. Returns an exit code instead of calling
- * process.exit itself, so tests can call it directly; resolves only once
- * the bot has been gracefully stopped (SIGINT/SIGTERM), matching the "run
- * until killed" shape of the command.
- */
+/** Runs `kaja telegram`: a long-polling bot reusing the terminal's tools/personas/models. Returns an exit code once gracefully stopped (SIGINT/SIGTERM). */
 export async function runTelegramCli(deps: {
   services: Pick<ServicesFile, "telegram">
   tools: Tool<any>[]

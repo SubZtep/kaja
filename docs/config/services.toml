@@ -1,5 +1,5 @@
-# External service credentials — each section is independently optional;
-# omit one entirely to leave that feature unavailable.
+# External service credentials — each section is optional; skip a section to
+# leave that feature off.
 
 # Base URL of a Kaja server, used by `kaja config fetch` to regenerate
 # mcp.toml/models.toml.
@@ -7,12 +7,12 @@
 # You can also set CONFIG_API_TOKEN in the environment instead of storing it here.
 # [api]
 # baseUrl = "https://api.kaja.io"
-# token = "your-shared-secret-here"
+# token = "kaja"
 
 # Geo lookup for the location tool.
-# [location]
-# serviceUrl = "https://ip2geo.demo.land/"
-# apiKey = "kaja"
+[location]
+serviceUrl = "https://ip2geo.demo.land"
+apiKey = "kaja"
 
 # Brave Search API key for the web_search tool.
 # [webSearch]

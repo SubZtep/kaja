@@ -1,14 +1,6 @@
 import { Marked, type Token, type Tokens } from "marked"
 
-/**
- * Renders assistant Markdown as Telegram `parse_mode: "HTML"` text. A
- * hand-rolled token-tree walk (not marked.use(renderer)) using a fresh
- * `Marked` instance, so it never shares mutable renderer state with
- * components/elem/markdown.tsx's marked-terminal instance — that instance
- * installs ANSI-producing renderers globally via marked.use() on the shared
- * singleton, and Telegram needs an entirely different output, not another
- * marked.use() extension layered on top of it.
- */
+/** Renders assistant Markdown as Telegram HTML via a hand-rolled token walk on a fresh Marked instance — isolated from markdown.tsx's global ANSI renderer. */
 const telegramMarked = new Marked()
 
 /** Telegram's HTML parse mode only requires escaping these three characters. */

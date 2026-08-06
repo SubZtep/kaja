@@ -6,11 +6,8 @@ export const DatasetFieldSchema = z.object({
   accepted: z.array(z.string().min(1)).optional()
 })
 
-// One file per topic under ~/.config/kaja/datasets/ (filename minus
-// extension = topic id). revalidateAfterDays is optional: when set, a fully
-// answered version becomes eligible for a fresh version once that many days
-// have passed since it was completed; when unset, a completed version never
-// expires.
+// One file per topic (~/.config/kaja/datasets/); revalidateAfterDays makes a
+// completed dataset expire after N days.
 export const DatasetSchema = z.object({
   label: z.string().min(1),
   fields: z.array(DatasetFieldSchema).min(1),

@@ -4,15 +4,8 @@ import OpenAI from "openai"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-summarize`
 
-// Mocks the whole module (not just chatModelId/client, which is all this
-// file needs) because bun's mock.module() replaces the module in the
-// registry for the rest of the process — any other test file that later
-// imports the real "../../lib/models/openai" gets this mock instead, so its
-// exports must mirror the real module's shape. noteServedModel/
-// takeLastServedModel/createOpenAIClient are reimplemented here rather than
-// re-exported from the real module: the real module does `await config()`
-// at its own top level, which would hard-exit against this file's empty
-// XDG_CONFIG_HOME fixture.
+// mock.module() leaks into every later test file's import of this module, so the mock must mirror the real module's full shape.
+// Helpers are reimplemented (not re-exported) since the real module's config() hard-exits on this file's empty XDG_CONFIG_HOME.
 const KAJA_MODEL_HEADER = "x-kaja-model"
 let lastServedModel: string | undefined
 

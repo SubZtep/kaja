@@ -1,11 +1,7 @@
 import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaModels, type KajaPreferences } from "@kaja/schema/config"
 import { file, write } from "bun"
-// Written on first run: a template settings.json with placeholder model ids,
-// or with models.chat overridden by the first-run prompt (see cli.tsx /
-// components/first-run-setup.tsx). TS's built-in resolveJsonModule typing
-// wins over the `text` attribute, so the raw import is typed as the parsed
-// object rather than a string.
+// First-run settings.json template. Cast to string: resolveJsonModule mistypes this "text" import as parsed JSON.
 import rawTemplate from "../../../../docs/config/settings.json" with { type: "text" }
 import pkg from "../../package.json" with { type: "json" }
 import { t } from "../i18n"
@@ -18,18 +14,13 @@ const TEMPLATE_JSON = JSON.parse(TEMPLATE)
 // undefined when running from source (see lib/args.ts for the same pattern).
 declare const CLI_VERSION: string | undefined
 
-// Pinned to the release tag (auto-version.yaml tags releases as
-// `cli@X.Y.Z`), so the schema always matches the shape this installed CLI
-// version actually validates, even after the schema changes in later
-// releases.
+// Pinned to this CLI's release tag so the schema matches what this version actually validates.
 function getSchemaUrl() {
   const version = typeof CLI_VERSION === "string" ? CLI_VERSION : pkg.version
   return `https://cdn.jsdelivr.net/gh/SubZtep/kaja@cli@${version}/docs/config/settings.schema.json`
 }
 
-// Set once at startup from the --config-dir flag, pre-scanned from argv in
-// cli.tsx before the first config read; only settings.json moves — data paths
-// (sessions, memory, logs) stay on their env-paths defaults.
+// Set at startup from --config-dir; only settings.json moves, other data paths stay default.
 let configDirOverride: string | undefined
 
 export function setConfigDirOverride(dir: string | undefined) {
@@ -37,10 +28,7 @@ export function setConfigDirOverride(dir: string | undefined) {
   cached = undefined
 }
 
-// Computed fresh on every call rather than as a module-level constant: tests
-// run many spec files in one process and mutate XDG_CONFIG_HOME per file, so
-// a frozen constant would lock in whichever file happened to import this
-// module first, for the rest of the process.
+// Computed fresh per call, not cached — tests mutate XDG_CONFIG_HOME per spec file.
 export function getConfigDir() {
   return configDirOverride ?? getPaths().config
 }
@@ -123,13 +111,7 @@ export async function savePreferences(preferences: KajaPreferences) {
   cached = undefined
 }
 
-/**
- * Merges into the models block: callers persist only the task keys they
- * manage (e.g. chat) and must not drop others like embedding/rerank. Each
- * task's value fully replaces the existing entry for that task — a caller
- * always picks a whole {model, provider} pair, never a partial fragment of
- * one.
- */
+/** Merges into models.* — each task's whole {model, provider} pair is replaced, other tasks untouched. */
 export async function saveModels(models: Partial<KajaModels>) {
   const current = await config()
   const f = file(getConfigPath(), { type: "application/json" })
@@ -137,15 +119,7 @@ export async function saveModels(models: Partial<KajaModels>) {
   cached = undefined
 }
 
-/**
- * Seeds settings.json's models.chat from a freshly fetched models.toml,
- * without requiring the rest of the file to be schema-valid first — unlike
- * saveConfig/savePreferences, this must work even on a fresh install before
- * models.chat resolves (see lib/config-cli.ts). Only writes when the file
- * on disk doesn't already have a real chat model — the template's own
- * placeholder doesn't count, so it never blocks the real fetched one from
- * being seeded.
- */
+/** Seeds settings.json's models.chat from a freshly fetched models.toml, only if no real chat model is set yet (placeholder doesn't count). */
 export async function saveFetchedChatModel(chatModel: { model: string; provider?: string }) {
   const current = await readConfigLoose()
   const templateChatModel = (TEMPLATE_JSON as Partial<KajaConfig>).models?.chat

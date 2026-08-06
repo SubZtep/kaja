@@ -9,34 +9,24 @@ export const ServicesWebSearchSchema = z.object({
   apiKey: z.string().min(1)
 })
 
-// OpenCode Zen free models (https://opencode.ai/zen). When set, the CLI's
-// free-chat path forwards this key so requests use it instead of the
-// server's DB-sourced provider key.
+// OpenCode Zen (https://opencode.ai/zen) API key.
 export const ServicesZenSchema = z.object({
   apiKey: z.string().min(1)
 })
 
-// botToken has no fallback (mandatory); allowedUserIds must be non-empty —
-// an empty allowlist would make the bot silently unusable, and this group
-// gates shell-command execution to whoever can message the bot.
+// allowedUserIds gates who can trigger shell commands via the bot; must be non-empty.
 export const ServicesTelegramSchema = z.object({
   botToken: z.string().min(1),
   allowedUserIds: z.array(z.number().int()).min(1)
 })
 
-// Only needed by commands that talk to the Kaja backend (e.g.
-// `kaja config fetch`), unlike models.toml which is a local-provider file.
-// `token` is the API's CONFIG_API_TOKEN (Bearer) for /config/* routes.
+// Kaja server used by `kaja config fetch`; token is CONFIG_API_TOKEN.
 export const ServicesApiSchema = z.object({
   baseUrl: z.url(),
   token: z.string().min(1).optional()
 })
 
-// External service credentials: each group is independently optional — when
-// absent, that feature is simply unavailable rather than crashing the app.
-// Kept out of settings.json (which stays local UI/model config) since these
-// are the fields most likely to hold real secrets a user pastes in once and
-// otherwise leaves alone.
+// External service credentials, kept separate from settings.json (local/UI config).
 export const ServicesFileSchema = z.object({
   location: ServicesLocationSchema.optional(),
   webSearch: ServicesWebSearchSchema.optional(),

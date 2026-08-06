@@ -1,11 +1,10 @@
-// Speech-to-text: an AudioSource (mic, …) → speaches realtime API → text.
+// Speech-to-text: AudioSource -> speaches realtime API -> text.
 //
 // Usage:
 //   const stt = await createStt({ source: createLocalSource() })
 //   for await (const text of stt.utterances) console.log(text)
 //
-// Requires the speaches container running on speachesUrl (settings.json, default localhost:8000).
-// LOG_LEVEL=debug logs every server event.
+// Requires speaches running at settings.json's speachesUrl.
 
 import { config } from "../config/config"
 import { getLanguage } from "../i18n"

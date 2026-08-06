@@ -20,13 +20,8 @@ export const KajaModelRefSchema = z.object({
 })
 export type KajaModelRef = z.infer<typeof KajaModelRefSchema>
 
-// Every task (chat, embedding, rerank, image-generation, text-to-speech,
-// speech-to-text) resolves the same way: model is the literal provider-facing
-// name sent straight to the API, provider names a models.toml [providers.*]
-// table for its credentials (see lib/models/models.ts resolveModelFromConfig).
-// chat's provider is optional — omitting it falls back to the free hosted
-// chat tier (using the given model name); every other task requires a
-// provider, since there's no free tier for them.
+// Each task resolves to a model + models.toml provider; only chat's provider
+// is optional (falls back to the free tier).
 export const KajaModelsSchema = z.object({
   chat: KajaModelRefSchema.optional().describe("Chat model; omit to use the free hosted tier"),
   embedding: KajaModelRefSchema.optional(),
@@ -36,11 +31,7 @@ export const KajaModelsSchema = z.object({
   "speech-to-text": KajaModelRefSchema.optional()
 })
 
-// Feature groups: each is a self-contained block of config for one feature.
-// stt/tts/location/webSearch are optional — when a group is absent, that
-// feature is simply unavailable rather than crashing the app. Only the
-// non-model settings live here now — the model itself comes from
-// models.<task> above.
+// Per-feature config blocks; the model itself lives in models.<task> above.
 export const KajaSttSchema = z.object({
   speachesUrl: z.url().optional().describe("Speaches AI server endpoint (speech-to-text)"),
   language: z.string().min(1).optional().describe("Language hint for speech-to-text, e.g. 'en'")
@@ -61,8 +52,7 @@ export const KajaMemorySchema = z.object({
 
 /** location/webSearch/telegram/api (external service credentials) live in services.toml */
 export const KajaConfigSchema = z.object({
-  // Editor tooling (e.g. VS Code's JSON language server) uses this to
-  // validate/autocomplete settings.json; not consumed by the CLI itself.
+  // For editor autocomplete/validation only; not read by the CLI.
   $schema: z.url().optional(),
   models: KajaModelsSchema,
   stt: KajaSttSchema.optional(),

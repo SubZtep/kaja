@@ -47,15 +47,7 @@ export function resolveModels(data: KajaModelsFile): CliResolvedModel[] {
   })
 }
 
-/**
- * Resolves a settings.json models.<task> entry to its provider's
- * credentials, by looking up ref.provider in models.toml's [providers.*]
- * table. Returns undefined only when ref.provider is unset (the
- * free-tier-fallback case — callers build their own free-tier CliResolvedModel
- * instead of calling this). Throws when ref.provider is set but names no
- * [providers.*] table — a real misconfiguration, distinct from "fall back
- * to free tier".
- */
+/** Resolves a models.<task> entry to its provider's credentials via models.toml. Returns undefined only for the free-tier case (no provider); throws if provider is set but unknown. */
 export function resolveModelFromConfig(
   data: KajaModelsFile,
   ref: { model: string; provider?: string },
@@ -67,15 +59,7 @@ export function resolveModelFromConfig(
   return { model: ref.model, task, baseUrl: provider.base_url, apiKey: provider.api_key, provider: ref.provider }
 }
 
-/**
- * Load and parse the models file. Missing file: on the free hosted chat
- * tier (models.chat unset and no other task configured) there's nothing to
- * look up, so this returns an empty file rather than writing the Fireworks
- * example template — that free-mode installs stay free of a models.toml
- * pointing at placeholder credentials. Any other setup still gets the
- * example template written and parsed. Invalid file: prints the error and
- * exits, same policy as {@link config}.
- */
+/** Loads models.toml. If missing and on the free chat tier, returns empty (no placeholder file written); otherwise writes+parses the example template. Invalid file: prints error and exits. */
 export async function loadModelsFile(): Promise<KajaModelsFile> {
   const modelsPath = getModelsPath()
   const f = file(modelsPath)

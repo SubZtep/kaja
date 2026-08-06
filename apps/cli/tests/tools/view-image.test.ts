@@ -3,10 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-// tools/view-image.ts pulls in lib/agents.ts -> lib/openai.ts, which reads
-// config() at module load — config() hard-exits the process if settings.json
-// is missing or its chat model doesn't resolve in models.toml, so this
-// isolated config dir needs both (same fixture as tests/lib/agents.test.ts).
+// agents.ts->openai.ts reads config() at import time and hard-exits without a valid settings.json+models.toml, so this fixture provides both.
 const configDir = `${tmpdir()}/kaja-test-xdg-config-view-image`
 process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")

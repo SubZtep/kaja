@@ -1,13 +1,6 @@
 import * as z from "zod"
 
-/**
- * A conversation persisted in the memory database. Two shapes are stored
- * side by side: `session` is the agent's replayable OpenAI-format history
- * (lib/agents.ts Session — messages kept opaque, they carry non-standard
- * fields like reasoning_content), and `events` is the rendered timeline
- * (hooks/use-agent.ts TimelineEvent[]) so a resumed session repaints
- * exactly as it looked, without reconstructing it from the messages.
- */
+/** A persisted conversation: `session` is the replayable OpenAI-format history, `events` is the rendered timeline for exact resume repaint. */
 export const PersistedSessionSchema = z.object({
   id: z.number().int(),
   createdAt: z.string(),
@@ -18,11 +11,7 @@ export const PersistedSessionSchema = z.object({
   model: z.string(),
   /** First user prompt's first line, at most 60 chars. */
   title: z.string(),
-  // Who this conversation belongs to. `null` (also the default for
-  // pre-migration rows with no owner column value) means the terminal app
-  // (local, single-user). Telegram sessions use `telegram:<user id>` (see
-  // telegramOwner below), one owner string per allowed user, so each
-  // person's conversation never resumes another's.
+  // Owner: null = terminal (also legacy rows); telegram:<user id> = one Telegram user's sessions.
   owner: z.string().nullable().default(null),
   session: z.looseObject({
     messages: z.array(z.unknown()),

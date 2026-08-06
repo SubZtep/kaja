@@ -1,13 +1,7 @@
 import { type PersistedSession, PersistedSessionSchema, type SessionMeta } from "@kaja/schema/store"
 import { getDb } from "../memory/store"
 
-/**
- * Persists conversations into the memory database (one row per session in
- * the `sessions` table, whole row rewritten after each turn — chat-scale
- * data). Deliberately built only on memory-store's shared connection —
- * never on lib/agents.ts or lib/openai.ts, which read the LLM config at
- * import time; listing and resuming sessions must work without one.
- */
+/** Persists conversations to the sessions table (whole row rewritten per turn). Only depends on memory-store's connection, never agents.ts/openai.ts, so listing/resuming works without LLM config. */
 
 type SessionRowData = {
   persona: string
@@ -89,12 +83,7 @@ export async function loadSessionRow(id: number): Promise<PersistedSession | und
   return row ? rowToSession(row) : undefined
 }
 
-/**
- * Ordered by updatedAt so resuming an old session makes it "latest" again.
- * Scoped to owner IS NULL (terminal sessions) so the terminal's -c/--continue
- * can never resume a Telegram user's conversation — see
- * loadLatestSessionRowForOwner for the Telegram-side equivalent.
- */
+/** Latest terminal session (owner IS NULL) by updatedAt — Telegram sessions never resumed via this. */
 export async function loadLatestSessionRow(): Promise<PersistedSession | undefined> {
   const database = await getDb()
   const row = database
@@ -103,12 +92,7 @@ export async function loadLatestSessionRow(): Promise<PersistedSession | undefin
   return row ? rowToSession(row) : undefined
 }
 
-/**
- * Like loadLatestSessionRow, but scoped to one owner (e.g. a Telegram user)
- * so each allowed user resumes their own last session instead of whichever
- * session is globally latest (which could belong to the terminal app or a
- * different Telegram user).
- */
+/** Like loadLatestSessionRow, scoped to one owner (e.g. a Telegram user). */
 export async function loadLatestSessionRowForOwner(owner: string): Promise<PersistedSession | undefined> {
   const database = await getDb()
   const row = database
@@ -123,10 +107,7 @@ export async function deleteSessionRow(id: number): Promise<boolean> {
   return result.changes > 0
 }
 
-// Newest first; the payload blobs are not selected. Deliberately left
-// unscoped by owner: kaja session list / --session <id> are terminal-only
-// operator tools, and browsing (or resuming) a Telegram user's session this
-// way is an accepted debugging escape hatch, not a bug.
+// Newest first, no payload blobs. Deliberately unscoped by owner — an accepted debugging escape hatch for operator tools.
 export async function listSessions(): Promise<SessionMeta[]> {
   const database = await getDb()
   return database
@@ -136,13 +117,7 @@ export async function listSessions(): Promise<SessionMeta[]> {
     .all() as SessionMeta[]
 }
 
-/**
- * The human's past prompts across all sessions, newest first, for shell-style
- * ↑/↓ recall in the input. Derived from the stored timelines' `user` events
- * (only human-typed prompts produce those; command-result feedback doesn't),
- * so there is no separate history table to keep in sync. Consecutive
- * duplicates are collapsed like a shell's HISTCONTROL=ignoredups.
- */
+/** Past prompts across sessions, newest first, for shell-style ↑/↓ recall — derived from stored 'user' events, deduped like HISTCONTROL=ignoredups. */
 export async function loadPromptHistory(limit = 100): Promise<string[]> {
   const database = await getDb()
   const rows = database

@@ -4,15 +4,7 @@ import { file } from "bun"
 import { getConfigDir } from "../config/config"
 import { log } from "../logger"
 
-/**
- * Loads user-supplied datasets from `~/.config/kaja/datasets/*.json` — a
- * sibling of tools/ and personas/, one file per topic (filename minus
- * extension is the topic id, e.g. `onboarding.json` -> topic "onboarding").
- * Each file is parsed and validated against {@link DatasetSchema}; a file
- * that fails to read, parse, or validate is skipped with a warning, so one
- * bad dataset can't stop the app from starting (same fault-tolerance as
- * lib/plugin-tools.ts).
- */
+/** Loads ~/.config/kaja/datasets/*.json (filename = topic id). Invalid files are skipped with a warning. */
 export async function loadDatasets(): Promise<Map<string, Dataset>> {
   const dir = join(getConfigDir(), "datasets")
   const glob = new Bun.Glob("*.json")

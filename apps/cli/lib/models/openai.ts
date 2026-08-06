@@ -4,11 +4,7 @@ import { config } from "../config/config"
 import { services } from "../config/services"
 import { loadModelsFile, resolveModelFromConfig } from "./models"
 
-// Free hosted chat tier: used when settings.json's models.chat has no
-// provider, resolved here directly instead of via models.toml, since it has
-// no per-user provider config to look up — just a shared public endpoint.
-// When models.chat also omits a model name, "auto" lets the proxy pick the
-// actual model server-side; it's just a placeholder in the request body.
+// Free hosted chat tier (no provider needed); "auto" model lets the proxy pick server-side.
 const FREE_CHAT_BASE_URL = "https://openai.kaja.io"
 const FREE_CHAT_API_KEY = "kaja"
 const FREE_CHAT_MODEL_ID = "auto"

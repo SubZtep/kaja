@@ -1,9 +1,7 @@
 import { join } from "node:path"
 import { type KajaMcpFile, McpFileSchema } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
-// Written on first run: a ready-to-use example server (Playwright) plus
-// commented-out alternatives, sourced from the same file that documents
-// mcp.toml on the docs site.
+// First-run mcp.toml template (also documents mcp.toml on the docs site).
 import TEMPLATE from "../../../../docs/config/mcp.toml" with { type: "text" }
 import { t } from "../i18n"
 import { getConfigDir } from "./config"

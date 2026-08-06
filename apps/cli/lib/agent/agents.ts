@@ -771,10 +771,7 @@ async function* handleToolCalls(
   return { ask, confirm }
 }
 
-// Finished? Despite the system instructions the model occasionally still
-// ends with a plain-text question ("Want to play another round?"), so as
-// a backstop treat a final ending in "?" as ask_user — the next run() call
-// threads the reply as a regular user message.
+// Backstop: treat a final message ending in "?" as ask_user, since models sometimes end with a plain-text question despite instructions.
 function finalEventFor(message: StreamedRound["message"]): AgentEvent {
   const content = typeof message.content === "string" ? message.content : null
   return content?.trimEnd().endsWith("?")
@@ -815,10 +812,7 @@ export async function* run(
       return
     }
 
-    // Some models answer in plain content and call ask_user in the same
-    // message (e.g. "No, it's not a pet." + "your next question?"). That
-    // content only surfaces through the `final` event, which tool-call
-    // rounds never reach — so yield it here instead of dropping it.
+    // Some models put content alongside an ask_user tool_call; yield it here since tool-call rounds never reach the 'final' event.
     if (typeof message.content === "string" && message.content.trim())
       yield { type: "message", content: message.content }
 

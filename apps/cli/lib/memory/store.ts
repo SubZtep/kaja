@@ -6,34 +6,18 @@ import { file, write } from "bun"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
 import { getPaths } from "../paths"
 
-// Computed fresh on every call, not as a module-level constant: see the same
-// note on getConfigDir/getConfigPath in lib/config.ts — tests run many spec
-// files in one process and mutate XDG_DATA_HOME per file.
+// Computed fresh per call, not cached — tests mutate XDG_DATA_HOME per spec file.
 export function getDefaultMemoryDbPath() {
   return join(getPaths().data, "memory.sqlite")
 }
 
-/**
- * Resolves the database path to open: `config.memory.dbPath` if set,
- * otherwise the default XDG data location. Uses {@link readConfigLoose},
- * not {@link import("../config/config").config}, because managing memory (the
- * `kaja memory` CLI, and this module in general) must keep working even
- * with a missing or invalid settings.json.
- */
+/** Resolves the DB path: config.memory.dbPath, or the default XDG location. Uses readConfigLoose so this works even without a valid settings.json. */
 export async function resolveMemoryDbPath(): Promise<string> {
   const loose = await readConfigLoose()
   return loose.memory?.dbPath || getDefaultMemoryDbPath()
 }
 
-/**
- * After a database has been opened successfully at `dbPath` (proving that
- * path works), writes it into settings.json's `memory.dbPath` if that key
- * wasn't already set there — so the effective path becomes explicit and
- * user-editable instead of implicit. Never touches settings.json if it
- * doesn't exist yet (fresh install with no config) or already has
- * `memory.dbPath` set. Best-effort: a write failure here must not break
- * memory itself, so errors are swallowed.
- */
+/** Persists a working dbPath into settings.json's memory.dbPath if unset; no-op if settings.json is missing or already set. Best-effort — errors are swallowed. */
 async function persistDbPathIfMissing(dbPath: string) {
   try {
     const configPath = getConfigPath()
@@ -95,11 +79,8 @@ function createSchema(db: Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS dataset_answers (
       topic      TEXT NOT NULL,
-      -- '' = terminal session; 'telegram:<id>' otherwise. NOT NULL (unlike
-      -- sessions.owner) because SQLite's PRIMARY KEY uniqueness treats every
-      -- NULL as distinct from every other NULL, which would silently break
-      -- the upsert below for every terminal-session row; ownerKey()/ownerOf()
-      -- translate to/from the public string-or-null convention at the edges.
+      -- '' = terminal session; 'telegram:<id>' otherwise. NOT NULL so PRIMARY KEY
+      -- uniqueness works (NULL != NULL in SQLite); ownerKey()/ownerOf() translate at the edges.
       owner      TEXT NOT NULL,
       version    INTEGER NOT NULL,
       field      TEXT NOT NULL,
@@ -119,31 +100,16 @@ function createSchema(db: Database) {
   `)
 }
 
-/**
- * Migrates an existing database from `fromVersion` up to {@link SCHEMA_VERSION}.
- * See the inline comments for what each version bump does.
- */
+/** Migrates an existing database from `fromVersion` up to {@link SCHEMA_VERSION}. */
 function migrateSchema(db: Database, fromVersion: number) {
-  // v1 → v2 added the sessions table; v2 → v3 added game_results and
-  // game_rounds; v3 → v4 added game_results.rating; v4 → v5 added
-  // game_results.embedding — all purely additive, and (since those columns
-  // were only ever added to the CREATE TABLE IF NOT EXISTS DDL above) only
-  // actually took effect on a brand-new database file, not on an existing
-  // one being upgraded across versions. v5 → v6 is the first migration
-  // that must actually alter an existing table: sessions gains `owner`
-  // (NULL = terminal session) so Telegram users each resume their own last
-  // session instead of whichever is globally latest. SQLite has no ADD
-  // COLUMN IF NOT EXISTS, so guard with try/catch in case this file was
-  // already altered but schema_version is stale for some reason.
+  // v5 -> v6: sessions gains `owner` (NULL = terminal) so Telegram users each
+  // resume their own last session. No ADD COLUMN IF NOT EXISTS in SQLite, so guard with try/catch.
   if (fromVersion < 6) {
     try {
       db.exec("ALTER TABLE sessions ADD COLUMN owner TEXT")
     } catch {}
   }
-  // v6 → v7 replaces the like-or-not game (game_results, game_rounds) with
-  // the dataset info collector (dataset_answers, dataset_versions) — the
-  // old tables are dropped outright since this is a full feature
-  // replacement, not an additive migration.
+  // v6 -> v7: replaces the like-or-not game tables with the dataset info collector.
   if (fromVersion < 7) {
     try {
       db.exec("DROP TABLE IF EXISTS game_results")
@@ -159,17 +125,9 @@ let db: Database | undefined
 let dbPathInUse: string | undefined
 
 /**
- * Opens (creating if needed) the memory database. Cached module-wide
- * (SQLite wants a persistent connection), but keyed by
- * the resolved path: if `resolveMemoryDbPath()` returns something different
- * from the cached connection's path, that connection is closed and a fresh
- * one opened. In a real run the resolved path never changes mid-process, so
- * this never fires — it only matters for tests, which run many logically
- * separate "sessions" (each with its own XDG_DATA_HOME/config.memory.dbPath)
- * in one shared `bun test` process.
- *
- * Exported as the shared seam for lib/session-store.ts, which lives in the
- * same database file — this module stays the single owner of the schema.
+ * Opens (creating if needed) the memory database. Cached module-wide, keyed
+ * by resolved path — reopens if the path changes (only happens across tests).
+ * Also the shared seam for lib/session-store.ts, which lives in the same file.
  */
 export async function getDb(): Promise<Database> {
   const dbPath = await resolveMemoryDbPath()
@@ -198,12 +156,7 @@ export async function getDb(): Promise<Database> {
   return db
 }
 
-/**
- * One-line note header shared by the memory tools and the `kaja memory`
- * CLI, so the model and the human see the same self-explanatory metadata
- * (importance, sticky, tags, last-used day) everywhere:
- * `user:who-they-are [high, sticky] (tags: user, kaja) (used 2026-07-18)`
- */
+/** One-line note header shared by the memory tools and `kaja memory` CLI: `user:who-they-are [high, sticky] (tags: user, kaja) (used 2026-07-18)` */
 export function noteHeader(key: string, note: MemoryNote) {
   const flags = note.sticky ? `${note.importance}, sticky` : note.importance
   const tags = note.tags.length > 0 ? ` (tags: ${note.tags.join(", ")})` : ""
@@ -281,11 +234,7 @@ export type DatasetAnswer = {
   answeredAt: string
 }
 
-// dataset_answers/dataset_versions store owner as a NOT NULL TEXT column
-// ('' for terminal sessions) rather than the public `string | null`
-// convention used elsewhere (e.g. sessions.owner) — see the CREATE TABLE
-// comment above for why. These translate at the boundary so every exported
-// function here still speaks `string | null` like the rest of the app.
+// dataset tables store owner as NOT NULL ('' = terminal); these translate to/from string | null at the boundary.
 function ownerKey(owner: string | null): string {
   return owner ?? ""
 }
@@ -293,11 +242,7 @@ function ownerOf(key: string): string | null {
   return key === "" ? null : key
 }
 
-/**
- * Latest version number recorded for (topic, owner), across both answers and
- * completions (a version may exist with only partial answers and no
- * completion row yet). Returns 0 if no version has ever been started.
- */
+/** Latest version number for (topic, owner), across answers and completions. Returns 0 if none started. */
 export async function latestDatasetVersion(topic: string, owner: string | null): Promise<number> {
   const database = await getDb()
   const row = database
@@ -333,10 +278,7 @@ export async function loadDatasetAnswers(
     }) as DatasetAnswer[]
 }
 
-/**
- * Upserts one field's answer for (topic, owner, version) — re-answering the
- * same field within a version corrects it in place rather than duplicating.
- */
+/** Upserts one field's answer for (topic, owner, version). */
 export async function saveDatasetAnswer(
   topic: string,
   owner: string | null,
@@ -361,12 +303,7 @@ export async function saveDatasetAnswer(
     })
 }
 
-/**
- * Records completion time for (topic, owner, version) — call once, when the
- * version's last required field is first answered. A no-op if already
- * recorded (INSERT OR IGNORE), so it's safe to call unconditionally whenever
- * the caller detects "now complete" without checking first.
- */
+/** Records completion time for (topic, owner, version). No-op if already recorded (INSERT OR IGNORE). */
 export async function markDatasetVersionComplete(topic: string, owner: string | null, version: number): Promise<void> {
   const database = await getDb()
   database
@@ -398,12 +335,7 @@ export async function loadDatasetVersionCompletedAt(
   return row?.completedAt
 }
 
-/**
- * Every (topic, owner, version) that has at least one answer, with its
- * answered-field count and completion time (if any) — a list-view
- * projection for the `kaja web` browser. `totalFields` isn't known here
- * (it depends on the current dataset config, loaded separately by callers).
- */
+/** Every (topic, owner, version) with an answer, plus answered-field count and completion time — for the `kaja web` browser. */
 export async function listDatasetVersionsSummary(): Promise<
   {
     topic: string

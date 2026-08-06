@@ -123,23 +123,6 @@ bun run --filter @kaja/cli test
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `apps/api/scripts/db_migration.sh` (or apply SQL manually).
 
-### Node orchestration
-
-- Connect / heartbeat / disconnect / list / SSE stream under `/nodes`
-- Admin commands under `/admin`
-- Scheduler marks nodes inactive on missed heartbeats
-- Command allowlist + shell-injection checks in services
-
-## Environment (summary)
-
-**API** (see `apps/api/.env.example`): `CORS_ORIGIN`, `DATABASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, SMTP, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `GEO_SERVICE_URL`, `GEO_SERVICE_API_KEY`, `CONFIG_API_TOKEN` (required for `/config/*`; fail-closed). Optional: `WEB_PUBLIC_URL`, rate-limit window/max vars.
-
-**Web** (see `apps/web/.env.example`): `VITE_API_URL`, `VITE_APP_URL`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`. Browser env uses Vite `import.meta.env.MODE` (not `NODE_ENV`).
-
-**Compose ports**: Postgres `5433` (testuser/testpass/kaja), MailDev `1080`/`1025`, API `3001`, Web `3000`.
-
-**Production (API)**: `NODE_ENV=production`, strong `BETTER_AUTH_SECRET`, real SMTP, `CORS_ORIGIN` matching the public domain, quieter `KAJA_LOG_LEVEL` (`info`/`warn`).
-
 ## Code Style
 
 - Biome (`biome.json`): line width 120, double quotes, semicolons asNeeded, no trailing commas, spaces; organizes imports
@@ -148,9 +131,10 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Notes
 
+- A git hooks run lint at commit, and run test before push, so you don't have to run again for double-check after you finished a task.
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
-- Rate limiting is enabled in the API (global + stricter `/auth/*`); disabled when `BUN_TEST` is set or `RATE_LIMIT_ENABLED=false`.
-- Cron service shell is present but intentionally has no registered jobs (node idle handled by SchedulerService).
+<!-- - Rate limiting is enabled in the API (global + stricter `/auth/*`); disabled when `BUN_TEST` is set or `RATE_LIMIT_ENABLED=false`. -->
+<!-- - Cron service shell is present but intentionally has no registered jobs (node idle handled by SchedulerService). -->
 
 ## Testing & CI
 
@@ -166,7 +150,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Key Dependencies
 
-Bun (packageManager in root `package.json`), Hono, Better Auth, TanStack Start, Zod v4, Biome, Pino. Lockfile is `bun.lock`.
+Bun (packageManager in root `package.json`), Hono, Better Auth, TanStack Start, Zod. Lockfile is `bun.lock`.
 
 ## Agent Guidelines
 
