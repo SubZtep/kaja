@@ -18,6 +18,33 @@ function NavLink({ to, label, onNavigate }: Readonly<{ to: string; label: string
   )
 }
 
+function AdminMobileNav({
+  items,
+  user,
+  onNavigate
+}: Readonly<{
+  items: ReturnType<typeof getNavItems>
+  user: ReturnType<typeof useUser>
+  onNavigate: () => void
+}>) {
+  return (
+    <>
+      {items.map(item => (
+        <NavLink key={item.to} to={item.to} label={item.label} onNavigate={onNavigate} />
+      ))}
+      {user ? (
+        <div className="flex items-center justify-between border-border border-t pt-4">
+          <div className="min-w-0">
+            <div className="truncate font-medium text-fg text-sm">{user.name}</div>
+            <div className="truncate text-[#6e7681] text-xs capitalize">{user.role ?? "user"}</div>
+          </div>
+          <SignOutButton />
+        </div>
+      ) : null}
+    </>
+  )
+}
+
 export function AdminHeader() {
   const user = useUser()
   const items = getNavItems(user?.role)
@@ -33,22 +60,7 @@ export function AdminHeader() {
           <SignOutButton />
         </>
       }
-      mobileNav={close => (
-        <>
-          {items.map(item => (
-            <NavLink key={item.to} to={item.to} label={item.label} onNavigate={close} />
-          ))}
-          {user ? (
-            <div className="flex items-center justify-between border-border border-t pt-4">
-              <div className="min-w-0">
-                <div className="truncate font-medium text-fg text-sm">{user.name}</div>
-                <div className="truncate text-[#6e7681] text-xs capitalize">{user.role ?? "user"}</div>
-              </div>
-              <SignOutButton />
-            </div>
-          ) : null}
-        </>
-      )}
+      mobileNav={close => <AdminMobileNav items={items} user={user} onNavigate={close} />}
     />
   )
 }

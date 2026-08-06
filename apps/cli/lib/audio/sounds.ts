@@ -11,9 +11,15 @@ import hehe from "../../assets/sounds/818171__sadiquecat__sadiquecat-mke600-laug
 
 const soundFile = { bell, magic, wind, hehe, error, keyboard } as const
 
+function formatOf(path: string) {
+  if (path.endsWith(".mp3")) return "mp3"
+  if (path.endsWith(".ogg")) return "ogg"
+  return "wav"
+}
+
 export async function playSound(sound: keyof typeof soundFile) {
   const path = soundFile[sound]
-  const format = path.endsWith(".mp3") ? "mp3" : path.endsWith(".ogg") ? "ogg" : "wav"
+  const format = formatOf(path)
 
   const player = Bun.spawn(["ffplay", "-loglevel", "quiet", "-nodisp", "-autoexit", "-f", format, "-i", "pipe:0"], {
     stdin: "pipe"

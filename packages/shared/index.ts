@@ -71,7 +71,7 @@ export function isItTrue(value = "") {
 
 /** Escape a string for TOML encoding. */
 export function tomlString(s: string) {
-  const escaped = s.replaceAll('"', '\\"')
+  const escaped = s.replaceAll('"', String.raw`\"`)
   return `"${escaped}"`
 }
 
@@ -79,7 +79,7 @@ const PRIVATE_HOSTNAMES = new Set(["localhost", "0.0.0.0", "[::1]", "::1"])
 
 /** IPv4 ranges not safe to forward to: loopback, link-local (incl. cloud metadata), CGNAT, RFC1918. */
 function isPrivateIpv4(ipv4: string): boolean {
-  const match = ipv4.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ipv4)
   if (!match) return false
   const [a, b] = [Number(match[1]), Number(match[2])]
   if (a === 127) return true
@@ -97,7 +97,7 @@ function isPrivateIpv4(ipv4: string): boolean {
  * `[::ffff:7f00:1]` (the last two 16-bit groups are the 4 IPv4 octets).
  */
 function extractIpv4MappedAddress(hostname: string): string | null {
-  const match = hostname.match(/^\[::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})\]$/)
+  const match = /^\[::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})\]$/.exec(hostname)
   if (!match?.[1] || !match[2]) return null
   const hi = Number.parseInt(match[1].padStart(4, "0"), 16)
   const lo = Number.parseInt(match[2].padStart(4, "0"), 16)

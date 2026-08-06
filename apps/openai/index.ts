@@ -4,7 +4,7 @@ import { isPublicHttpUrl } from "@kaja/shared"
 const KAJA_API_URL = process.env.KAJA_API_URL ?? "https://api.kaja.io"
 /** Fail-closed: empty/missing token rejects every request. */
 const CONFIG_API_TOKEN = process.env.CONFIG_API_TOKEN?.trim() || undefined
-const PORT = 6669 // FIXME: make it configurable
+const PORT = Number(process.env.PORT) || 6669
 
 /**
  * Response header carrying the model this proxy resolved and put in the
