@@ -1,5 +1,4 @@
 import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
-import type { SpinnerName } from "cli-spinners"
 import type { TextProps } from "ink"
 import { useEffect, useState } from "react"
 import type { PartialMessage } from "../hooks/use-agent"
@@ -7,7 +6,8 @@ import { t } from "../lib/i18n"
 
 const TICK_MS = 120
 
-const DOTS_SPINNERS: SpinnerName[] = [
+/** From `cli-spinners`'s SpinnerName */
+const DOTS_SPINNERS = [
   "dots",
   "dots2",
   "dots3",
@@ -24,10 +24,10 @@ const DOTS_SPINNERS: SpinnerName[] = [
   "dots14",
   "dots8Bit",
   "dotsCircle"
-]
+] as const
 
-function randomDotsSpinner(): SpinnerName {
-  return DOTS_SPINNERS[Math.floor(Math.random() * DOTS_SPINNERS.length)] as SpinnerName
+function randomDotsSpinner() {
+  return DOTS_SPINNERS[Math.floor(Math.random() * DOTS_SPINNERS.length)]
 }
 
 const customTheme = extendTheme(defaultTheme, {
