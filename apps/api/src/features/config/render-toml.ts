@@ -4,18 +4,25 @@ import { tomlString } from "@kaja/shared"
 export function renderMcpToml(servers: McpServer[]): string {
   return servers
     .map(s => {
-      const lines = [
-        "[[servers]]",
-        `id = ${tomlString(s.serverId)}`,
-        `command = ${tomlString(s.command)}`,
-        `args = [${s.args.map(tomlString).join(", ")}]`
-      ]
-      const envEntries = Object.entries(s.env)
-      if (envEntries.length > 0) {
-        const envParts = envEntries.map(([k, v]) => `${tomlString(k)} = ${tomlString(v)}`)
-        const envString = envParts.join(", ")
-        lines.push(`env = { ${envString} }`)
+      const lines = ["[[servers]]", `id = ${tomlString(s.serverId)}`]
+
+      if (s.url) {
+        lines.push(`url = ${tomlString(s.url)}`)
+        const headerEntries = Object.entries(s.headers)
+        if (headerEntries.length > 0) {
+          const headerParts = headerEntries.map(([k, v]) => `${tomlString(k)} = ${tomlString(v)}`)
+          lines.push(`headers = { ${headerParts.join(", ")} }`)
+        }
+      } else {
+        lines.push(`command = ${tomlString(s.command ?? "")}`)
+        lines.push(`args = [${s.args.map(tomlString).join(", ")}]`)
+        const envEntries = Object.entries(s.env)
+        if (envEntries.length > 0) {
+          const envParts = envEntries.map(([k, v]) => `${tomlString(k)} = ${tomlString(v)}`)
+          lines.push(`env = { ${envParts.join(", ")} }`)
+        }
       }
+
       return lines.join("\n")
     })
     .join("\n\n")

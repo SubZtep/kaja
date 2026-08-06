@@ -1,4 +1,4 @@
-import type { McpServer } from "@kaja/schema"
+import type { CreateMcpServerRequest, McpServer } from "@kaja/schema"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -23,12 +23,31 @@ export const Route = createFileRoute("/_admin/mcp-servers/")({
   loader: () => userRequired("admin")
 })
 
-const createFormSchema = z.object({
-  serverId: z.string().min(1, "Required"),
-  command: z.string().min(1, "Required"),
-  args: z.string(),
-  env: z.string()
-})
+const createFormSchema = z
+  .object({
+    serverId: z.string().min(1, "Required"),
+    transport: z.enum(["local", "http"]),
+    command: z.string(),
+    args: z.string(),
+    env: z.string(),
+    url: z.string(),
+    headers: z.string()
+  })
+  .superRefine((data, ctx) => {
+    if (data.transport === "local") {
+      if (!data.command.trim()) {
+        ctx.addIssue({ code: "custom", path: ["command"], message: "Required" })
+      }
+    } else if (!data.url.trim()) {
+      ctx.addIssue({ code: "custom", path: ["url"], message: "Required" })
+    } else {
+      try {
+        new URL(data.url.trim())
+      } catch {
+        ctx.addIssue({ code: "custom", path: ["url"], message: "Must be a valid URL" })
+      }
+    }
+  })
 
 /** Space-separated args, tolerating quoted values with spaces. */
 function parseArgs(input: string): string[] {
@@ -37,15 +56,15 @@ function parseArgs(input: string): string[] {
 }
 
 /** `KEY=value` pairs, one per line or comma-separated. */
-function parseEnv(input: string): Record<string, string> {
-  const env: Record<string, string> = {}
+function parseKeyValues(input: string): Record<string, string> {
+  const out: Record<string, string> = {}
   for (const line of input.split(/[\n,]/)) {
     const trimmed = line.trim()
     if (!trimmed) continue
     const [key, ...rest] = trimmed.split("=")
-    if (key && rest.length > 0) env[key.trim()] = rest.join("=").trim()
+    if (key && rest.length > 0) out[key.trim()] = rest.join("=").trim()
   }
-  return env
+  return out
 }
 
 const columnHelper = createColumnHelper<McpServer>()
@@ -54,20 +73,28 @@ function ServerIdCell(info: CellContext<McpServer, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
 }
 
-function CommandCell(info: CellContext<McpServer, string>) {
+function ConnectionCell(info: CellContext<McpServer, unknown>) {
   const server = info.row.original
+  if (server.url) {
+    return <span className="font-mono text-xs text-muted">{server.url}</span>
+  }
   return (
     <span className="font-mono text-xs text-muted">
-      {info.getValue()} {server.args.join(" ")}
+      {server.command} {server.args.join(" ")}
     </span>
   )
 }
 
-function EnvCell(info: CellContext<McpServer, Record<string, string>>) {
-  const env = info.getValue()
-  const keys = Object.keys(env)
+function ConfigCell(info: CellContext<McpServer, unknown>) {
+  const server = info.row.original
+  const keys = server.url ? Object.keys(server.headers) : Object.keys(server.env)
   if (keys.length === 0) return <span className="text-xs text-muted">—</span>
-  return <span className="font-mono text-xs text-muted">{keys.join(", ")}</span>
+  const label = server.url ? "headers" : "env"
+  return (
+    <span className="font-mono text-xs text-muted">
+      {label}: {keys.join(", ")}
+    </span>
+  )
 }
 
 function makeEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
@@ -112,8 +139,7 @@ function McpServersPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["mcp-servers"] })
 
   const createMcpServer = useMutation({
-    mutationFn: (payload: { serverId: string; command: string; args: string[]; env: Record<string, string> }) =>
-      sdk.mcpServers.create({ ...payload, enabled: true }),
+    mutationFn: (payload: CreateMcpServerRequest) => sdk.mcpServers.create(payload),
     onSuccess: () => {
       invalidate()
       toast.success("MCP server created")
@@ -139,20 +165,36 @@ function McpServersPage() {
   const form = useAppForm({
     defaultValues: {
       serverId: "",
+      transport: "local" as "local" | "http",
       command: "",
       args: "",
-      env: ""
+      env: "",
+      url: "",
+      headers: ""
     },
     validators: {
       onSubmit: createFormSchema
     },
     onSubmit: async ({ value, formApi }) => {
-      await createMcpServer.mutateAsync({
-        serverId: value.serverId,
-        command: value.command,
-        args: parseArgs(value.args),
-        env: parseEnv(value.env)
-      })
+      if (value.transport === "http") {
+        await createMcpServer.mutateAsync({
+          serverId: value.serverId,
+          url: value.url.trim(),
+          headers: parseKeyValues(value.headers),
+          args: [],
+          env: {},
+          enabled: true
+        })
+      } else {
+        await createMcpServer.mutateAsync({
+          serverId: value.serverId,
+          command: value.command.trim(),
+          args: parseArgs(value.args),
+          env: parseKeyValues(value.env),
+          headers: {},
+          enabled: true
+        })
+      }
       formApi.reset()
     }
   })
@@ -162,14 +204,15 @@ function McpServersPage() {
       header: "Server ID",
       cell: ServerIdCell
     }),
-    columnHelper.accessor("command", {
-      header: "Command",
-      cell: CommandCell
+    columnHelper.display({
+      id: "connection",
+      header: "Connection",
+      cell: ConnectionCell
     }),
-    columnHelper.accessor("env", {
-      header: "Env",
-      cell: EnvCell,
-      enableColumnFilter: false
+    columnHelper.display({
+      id: "config",
+      header: "Config",
+      cell: ConfigCell
     }),
     columnHelper.accessor("enabled", {
       header: "Enabled",
@@ -199,7 +242,8 @@ function McpServersPage() {
         title="MCP Servers"
         description={
           <>
-            Manage the MCP servers published in the generated <code className="text-fg">mcp.toml</code>.
+            Manage the MCP servers published in the generated <code className="text-fg">mcp.toml</code>. Local servers
+            spawn over stdio; online servers use Streamable HTTP.
           </>
         }
         meta="mcp.toml"
@@ -224,15 +268,47 @@ function McpServersPage() {
           <form.AppField name="serverId">
             {field => <field.TextField label="Server ID" placeholder="playwright" />}
           </form.AppField>
-          <form.AppField name="command">
-            {field => <field.TextField label="Command" placeholder="bunx" />}
+          <form.AppField name="transport">
+            {field => (
+              <field.SelectField
+                label="Type"
+                options={[
+                  { value: "local", label: "Local (stdio)" },
+                  { value: "http", label: "Online (HTTP)" }
+                ]}
+              />
+            )}
           </form.AppField>
-          <form.AppField name="args">
-            {field => <field.TextField label="Args" placeholder="@playwright/mcp@latest --isolated --headless" />}
-          </form.AppField>
-          <form.AppField name="env">
-            {field => <field.TextField label="Env" placeholder="KEY=value, OTHER=value" />}
-          </form.AppField>
+          <form.Subscribe selector={state => state.values.transport}>
+            {transport =>
+              transport === "http" ? (
+                <>
+                  <form.AppField name="url">
+                    {field => <field.TextField label="URL" placeholder="https://your-geo-service-host/mcp" />}
+                  </form.AppField>
+                  <form.AppField name="headers">
+                    {field => (
+                      <field.TextField label="Headers" placeholder="Authorization=Bearer your-secret-api-key" />
+                    )}
+                  </form.AppField>
+                </>
+              ) : (
+                <>
+                  <form.AppField name="command">
+                    {field => <field.TextField label="Command" placeholder="bunx" />}
+                  </form.AppField>
+                  <form.AppField name="args">
+                    {field => (
+                      <field.TextField label="Args" placeholder="@playwright/mcp@latest --isolated --headless" />
+                    )}
+                  </form.AppField>
+                  <form.AppField name="env">
+                    {field => <field.TextField label="Env" placeholder="KEY=value, OTHER=value" />}
+                  </form.AppField>
+                </>
+              )
+            }
+          </form.Subscribe>
           <Button type="submit" className="justify-self-start sm:col-span-2" loading={createMcpServer.isPending}>
             Add Server
           </Button>

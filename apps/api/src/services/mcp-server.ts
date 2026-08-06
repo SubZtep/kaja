@@ -11,11 +11,19 @@ export class McpServerService {
   async create(input: CreateMcpServerRequest): Promise<McpServer> {
     const result = await this.#db.query(
       `
-      INSERT INTO mcp_server (server_id, command, args, env, enabled)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO mcp_server (server_id, command, args, env, url, headers, enabled)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
       `,
-      [input.serverId, input.command, JSON.stringify(input.args), JSON.stringify(input.env), input.enabled]
+      [
+        input.serverId,
+        input.command ?? null,
+        JSON.stringify(input.args),
+        JSON.stringify(input.env),
+        input.url ?? null,
+        JSON.stringify(input.headers),
+        input.enabled
+      ]
     )
 
     return this.#rowToMcpServer(result.rows[0])
@@ -29,7 +37,9 @@ export class McpServerService {
           command = COALESCE($3, command),
           args = COALESCE($4, args),
           env = COALESCE($5, env),
-          enabled = COALESCE($6, enabled),
+          url = COALESCE($6, url),
+          headers = COALESCE($7, headers),
+          enabled = COALESCE($8, enabled),
           updated_at = NOW()
       WHERE id = $1
       RETURNING *
@@ -37,9 +47,11 @@ export class McpServerService {
       [
         id,
         input.serverId ?? null,
-        input.command ?? null,
+        input.command !== undefined ? input.command : null,
         input.args !== undefined ? JSON.stringify(input.args) : null,
         input.env !== undefined ? JSON.stringify(input.env) : null,
+        input.url !== undefined ? input.url : null,
+        input.headers !== undefined ? JSON.stringify(input.headers) : null,
         input.enabled ?? null
       ]
     )
@@ -71,9 +83,11 @@ export class McpServerService {
     return {
       id: row.id,
       serverId: row.server_id,
-      command: row.command,
-      args: row.args,
-      env: row.env,
+      command: row.command ?? null,
+      args: row.args ?? [],
+      env: row.env ?? {},
+      url: row.url ?? null,
+      headers: row.headers ?? {},
       enabled: row.enabled,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
