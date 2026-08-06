@@ -15,7 +15,7 @@ providerSkip = "Kihagyás — magam állítom be a models.toml fájlt"
 help = """
 Használat
   $ kaja
-  $ kaja config fetch [--api-url <url>]
+  $ kaja config fetch
   $ kaja config wipe
   $ kaja memory <list|forget <kulcs-vagy-glob>|export>
   $ kaja session <list|diagram <id>>
@@ -26,7 +26,6 @@ Kapcsolók
   --help          Kiírja ezt a súgót
   --config        A settings.json-t ebből a könyvtárból olvassa az alapértelmezett helyett
   --paths         Kiírja az összes elérési utat, amit a Kaja használ
-  --api-url       Kaja API alap URL a `kaja config fetch`-hez (utána elmentve a services.toml-ba)
   --version       Kiírja a telepített verziót
   --continue, -c  A legutóbbi munkamenet folytatása
   --session, -s   Munkamenet folytatása azonosító alapján (lásd: kaja session list)
@@ -35,7 +34,7 @@ Kapcsolók
 Példák
   $ kaja -c
   $ kaja --paths
-  $ kaja config fetch --api-url http://localhost:3001
+  $ kaja config fetch
 """
 
 [memory]
@@ -67,7 +66,7 @@ Használat
   $ kaja config fetch   Újragenerálja az mcp.toml-t a Kaja API-ból
   $ kaja config wipe    Biztonsági mentés után törli a teljes konfigurációs könyvtárat
 """
-apiUrlMissing = "Állítsd be az [api] baseUrl-t a services.toml-ban, vagy add meg a --api-url kapcsolót"
+apiUrlMissing = "Állítsd be az [api] baseUrl-t a services.toml-ban"
 fetchFailed = "Nem sikerült letölteni az mcp.toml-t (HTTP {status})"
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"

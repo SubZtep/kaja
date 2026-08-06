@@ -8,7 +8,7 @@ const { runConfigCli } = await import("../../../lib/config/cli")
 const { getConfigDir, getConfigPath, readConfigLoose } = await import("../../../lib/config/config")
 const { getMcpPath } = await import("../../../lib/config/mcp-servers")
 const { getModelsPath } = await import("../../../lib/models/models")
-const { getServicesPath, readServicesLoose } = await import("../../../lib/config/services")
+const { getServicesPath } = await import("../../../lib/config/services")
 
 const originalFetch = globalThis.fetch
 
@@ -134,23 +134,6 @@ test("unknown or missing subcommand prints usage and exits 1", async () => {
   }
 })
 
-test("--api-url substitutes for a missing services [api] baseUrl and gets persisted", async () => {
-  stubFetch({ "/config/mcp.toml": '[[servers]]\nid = "x"\n', "/config/models.toml": '[[models]]\nid = "y"\n' }, 200)
-  const { code } = await runConfigCli(["fetch"], {}, { apiUrl: "http://api.test" })
-  expect(code).toBe(0)
-  const saved = await readServicesLoose()
-  expect(saved.api?.baseUrl).toBe("http://api.test")
-})
-
-test("--api-url takes precedence over an existing services [api] baseUrl", async () => {
-  stubFetch({ "/config/mcp.toml": '[[servers]]\nid = "x"\n', "/config/models.toml": '[[models]]\nid = "y"\n' }, 200)
-  const services: Partial<ServicesFile> = { api: { baseUrl: "http://old.test" } }
-  const { code } = await runConfigCli(["fetch"], services, { apiUrl: "http://new.test" })
-  expect(code).toBe(0)
-  const saved = await readServicesLoose()
-  expect(saved.api?.baseUrl).toBe("http://new.test")
-})
-
 test("a fresh install's models.chat is auto-filled from the first fetched chat model", async () => {
   // No settings.json on disk yet — same as right after a fresh `create()`.
   const modelsToml = `
@@ -169,7 +152,7 @@ model = "some/chat-model"
 task = "chat"
 `
   stubFetch({ "/config/mcp.toml": "[[servers]]\n", "/config/models.toml": modelsToml }, 200)
-  const { code } = await runConfigCli(["fetch"], {}, { apiUrl: "http://api.test" })
+  const { code } = await runConfigCli(["fetch"], { api: { baseUrl: "http://api.test" } })
   expect(code).toBe(0)
   const saved = await readConfigLoose()
   expect(saved.models?.chat).toEqual({ model: "some/chat-model", provider: "default" })
@@ -192,7 +175,7 @@ model = "some/other-chat-model"
 task = "chat"
 `
   stubFetch({ "/config/mcp.toml": "[[servers]]\n", "/config/models.toml": modelsToml }, 200)
-  const { code } = await runConfigCli(["fetch"], {}, { apiUrl: "http://api.test" })
+  const { code } = await runConfigCli(["fetch"], { api: { baseUrl: "http://api.test" } })
   expect(code).toBe(0)
   const saved = await readConfigLoose()
   expect(saved.models?.chat).toEqual({ model: "my-real-chat-model", provider: "default" })

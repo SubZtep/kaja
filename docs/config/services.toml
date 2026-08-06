@@ -2,8 +2,7 @@
 # omit one entirely to leave that feature unavailable.
 
 # Base URL of a Kaja server, used by `kaja config fetch` to regenerate
-# mcp.toml/models.toml. Also settable via `kaja config fetch --api-url <url>`,
-# which writes it here for you.
+# mcp.toml/models.toml.
 # `token` is the API CONFIG_API_TOKEN (Bearer) required by /config/* routes.
 # You can also set CONFIG_API_TOKEN in the environment instead of storing it here.
 # [api]

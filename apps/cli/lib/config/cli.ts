@@ -7,35 +7,32 @@ import { fetchModelsToml, getModelsPath } from "../models/models"
 import { getConfigDir, saveFetchedChatModel } from "./config"
 import { nextBackupPath } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
-import { saveFetchedApiBaseUrl } from "./services"
 
 /**
  * Handles the `kaja config <fetch|wipe>` subcommand. Returns the text to
  * print and the exit code instead of printing/exiting itself, so tests can
  * call it directly. Runs before the config guard (like memory/session/web): a
- * fresh install has no valid settings.json/services.toml yet, and fetching a
- * real models.toml/config is exactly how you'd fix that — so it must work
- * without either. --api-url substitutes for services.toml's [api] baseUrl
- * on the first run and gets persisted there; models.chat in settings.json
- * gets seeded from the first fetched chat model, so a single fetch is
- * enough to leave a fresh install fully bootable. `wipe` is the inverse: it
- * backs up and clears the whole config dir so the next run starts fresh.
+ * fresh install has no valid settings.json yet, and fetching a real
+ * models.toml/config is exactly how you'd fix that — so it must work
+ * without one. It reads services.toml's [api] baseUrl, which the user sets
+ * by hand; models.chat in settings.json gets seeded from the first fetched
+ * chat model, so a single fetch is enough to leave a fresh install fully
+ * bootable. `wipe` is the inverse: it backs up and clears the whole config
+ * dir so the next run starts fresh.
  */
 export async function runConfigCli(
   argv: string[],
-  services: Partial<ServicesFile>,
-  flags: { apiUrl?: string } = {}
+  services: Partial<ServicesFile>
 ): Promise<{ code: number; text: string }> {
   const [command] = argv
 
   if (command === "fetch") {
-    const apiUrl = flags.apiUrl ?? services.api?.baseUrl
+    const apiUrl = services.api?.baseUrl
     if (!apiUrl) return { code: 1, text: t("config.apiUrlMissing") }
     // Prefer services.toml [api].token; fall back to env for local/dev.
     const token = services.api?.token ?? process.env.CONFIG_API_TOKEN
     try {
       const results = await Promise.all([fetchMcpToml(apiUrl, token), fetchModelsToml(apiUrl, token)])
-      if (flags.apiUrl) await saveFetchedApiBaseUrl(flags.apiUrl)
       // Best-effort: an unparseable models.toml just means no chat model
       // gets auto-selected — still report the fetch itself as successful,
       // since both files were written.

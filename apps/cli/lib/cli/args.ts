@@ -32,12 +32,6 @@ export const cli = meow(t("args.help"), {
     port: {
       type: "number",
       default: 4880
-    },
-    // Only used by `kaja config fetch`: lets it run before services.toml has
-    // an [api] section (e.g. right after first run), and gets persisted
-    // there afterward so future fetches don't need it.
-    apiUrl: {
-      type: "string"
     }
   }
 })

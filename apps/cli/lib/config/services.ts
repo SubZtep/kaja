@@ -1,6 +1,5 @@
 import { join } from "node:path"
 import { type ServicesFile, ServicesFileSchema } from "@kaja/schema/config"
-import { tomlString } from "@kaja/shared"
 import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/services.toml" with { type: "text" }
 import { t } from "../i18n"
@@ -55,42 +54,4 @@ export async function services(): Promise<ServicesFile> {
   if (cached) return cached
   cached = await loadServicesFile()
   return cached
-}
-
-// export function tomlString(s: string) {
-//   return String.raw`"${s.replaceAll('"', '\\"')}"`
-// }
-
-/** Renders a ServicesFile back to TOML text — flat sections, no arrays except allowedUserIds. */
-function renderServicesToml(data: ServicesFile) {
-  const sections: string[] = []
-  if (data.api) {
-    const lines = [`[api]`, `baseUrl = ${tomlString(data.api.baseUrl)}`]
-    if (data.api.token) lines.push(`token = ${tomlString(data.api.token)}`)
-    sections.push(lines.join("\n"))
-  }
-  if (data.location)
-    sections.push(
-      `[location]\nserviceUrl = ${tomlString(data.location.serviceUrl)}\napiKey = ${tomlString(data.location.apiKey)}`
-    )
-  if (data.webSearch) sections.push(`[webSearch]\napiKey = ${tomlString(data.webSearch.apiKey)}`)
-  if (data.telegram)
-    sections.push(
-      `[telegram]\nbotToken = ${tomlString(data.telegram.botToken)}\nallowedUserIds = [${data.telegram.allowedUserIds.join(", ")}]`
-    )
-  return sections.join("\n\n")
-}
-
-/**
- * Merges fields into services.toml without requiring the rest of the file
- * to be schema-valid first — used by `kaja config fetch --api-url`, which
- * must work even before services.toml exists. Only api.baseUrl is written
- * back today; other sections are hand-edited only.
- */
-export async function saveFetchedApiBaseUrl(baseUrl: string) {
-  const current = await readServicesLoose()
-  const merged: ServicesFile = { ...current, api: { ...current.api, baseUrl } }
-  const f = file(getServicesPath())
-  await write(f, renderServicesToml(merged))
-  cached = undefined
 }
