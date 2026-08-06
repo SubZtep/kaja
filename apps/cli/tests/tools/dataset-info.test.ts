@@ -22,6 +22,7 @@ writeFileSync(
   join(configKajaDir, "models.toml"),
   `
 [providers.default]
+default = true
 base_url = "http://localhost"
 api_key = "x"
 

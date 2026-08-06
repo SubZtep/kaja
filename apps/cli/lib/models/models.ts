@@ -33,9 +33,10 @@ export async function fetchModelsToml(
 
 /** Flatten each model entry with its provider's credentials. */
 export function resolveModels(data: KajaModelsFile): CliResolvedModel[] {
+  // The schema guarantees a default provider exists when any model omits one.
+  const defaultEntry = Object.entries(data.providers).find(([, p]) => p.default)
   return data.models.map(model => {
-    const providerName = model.provider ?? "default"
-    // The schema guarantees the referenced provider exists.
+    const providerName = model.provider ?? defaultEntry![0]
     const provider = data.providers[providerName]!
     return {
       model: model.model,
