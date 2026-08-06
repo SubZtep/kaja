@@ -1,5 +1,8 @@
 name: Build and release CLI
 
+# - workflow_dispatch: primary path (manual, and Automatic Versioning after a CLI bump)
+# - push tags cli@*: optional manual/legacy path (does not fire when the tagged
+#   commit message contains [skip ci], which auto-version uses on purpose)
 on:
   push:
     tags:

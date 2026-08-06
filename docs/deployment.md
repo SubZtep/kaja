@@ -74,23 +74,16 @@ always re-run migrations after deploy when SQL files change.
 - `CORS_ORIGIN` must match the public web origin.
 - Prefer quieter `KAJA_LOG_LEVEL` (`info` / `warn`) in production.
 
-## GitHub PAT for automatic tag push
+## CLI release automation
 
-The automatic versioning workflow in `.github/workflows/auto-version.yaml` uses a repository secret named `PAT_TOKEN` to push tags back to `origin/main`.
+Automatic Versioning (`.github/workflows/auto-version.yaml`) on `main`:
 
-1. Open GitHub token settings: https://github.com/settings/tokens
-2. Click `Generate new token` → `Fine-grained token`
-3. Set repository access to `Only select repositories` and choose this repository (`kaja`)
-4. Give the token a descriptive name, e.g. `kaja-auto-version-pat`
-5. Set permissions:
-   - `Contents` → `Read and write`
-   - `Pull requests` → `Read and write` (optional)
-6. Set an expiration as desired, then generate the token
-7. Copy the token immediately
-8. In the repository, go to `Settings` → `Secrets and variables` → `Actions`
-9. Create a new repository secret:
-   - Name: `PAT_TOKEN`
-   - Value: the generated token
-10. Save the secret
+1. Detects which workspaces changed under `apps/**` / `packages/**`
+2. Bumps the matching `package.json` versions, commits with `[skip ci]`, and pushes tags (`cli@x.y.z`, …)
+3. If the **CLI** was bumped, it **dispatches** [Build and release CLI](../.github/workflows/build-cli.yaml) on `main` via `gh workflow run`
 
-This enables the workflow to push tags for automatic version bumping and release automation.
+`[skip ci]` stops the bump commit from re-running CI and auto-version (and would also block a tag-triggered build). The explicit dispatch is what actually ships the CLI binary/release.
+
+No personal access token (`PAT_TOKEN`) is required for this flow: the default `GITHUB_TOKEN` can push the bump and start `workflow_dispatch` when the job has `contents: write` and `actions: write`.
+
+You can still run **Build and release CLI** manually from the Actions tab.

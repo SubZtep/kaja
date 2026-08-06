@@ -11,6 +11,9 @@ on:
 
 permissions:
   contents: write
+  # So we can `gh workflow run` Build and release CLI after a CLI bump
+  # (tag pushes alone are skipped by [skip ci] on the bump commit).
+  actions: write
 
 jobs:
   version-and-tag:
@@ -51,6 +54,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump, commit, tag, and push once
+        id: bump
         if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.sdk == 'true' || steps.filter.outputs.schema == 'true'
         env:
           FILTER_API: ${{ steps.filter.outputs.api }}
@@ -61,9 +65,10 @@ jobs:
           FILTER_SDK: ${{ steps.filter.outputs.sdk }}
           FILTER_SCHEMA: ${{ steps.filter.outputs.schema }}
           BEFORE_SHA: ${{ github.event.before }}
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -euo pipefail
+
+          echo "cli_bumped=false" >> "$GITHUB_OUTPUT"
 
           # Commit messages for this push (not origin/main..HEAD, which is empty after checkout)
           if [[ -n "${BEFORE_SHA}" && "${BEFORE_SHA}" != "0000000000000000000000000000000000000000" ]]; then
@@ -111,6 +116,7 @@ jobs:
           fi
           if [[ "$FILTER_CLI" == "true" ]]; then
             bump_workspace "cli" "apps/cli"
+            echo "cli_bumped=true" >> "$GITHUB_OUTPUT"
           fi
           if [[ "$FILTER_WEB" == "true" ]]; then
             bump_workspace "web" "apps/web"
@@ -134,6 +140,9 @@ jobs:
           fi
 
           SUMMARY=$(IFS=", "; echo "${SUMMARY_PARTS[*]}")
+          # [skip ci] avoids re-running CI / this workflow on the bump commit.
+          # Tag push alone will not start Build and release CLI either — we
+          # dispatch that workflow explicitly below when the CLI was bumped.
           git commit -m "chore: auto bump ${SUMMARY} [skip ci]"
 
           for tag in "${TAGS[@]}"; do
@@ -141,6 +150,16 @@ jobs:
             echo "Created tag ${tag}"
           done
 
-          git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          # GITHUB_TOKEN is enough: we no longer rely on the tag push to chain
+          # into other workflows (that required a PAT, and still failed with [skip ci]).
           git pull origin main --rebase
           git push origin main --tags
+
+      - name: Trigger CLI release build
+        if: steps.bump.outputs.cli_bumped == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "CLI was bumped — dispatching Build and release CLI on main"
+          gh workflow run "Build and release CLI" --ref main
