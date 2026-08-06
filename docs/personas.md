@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Personas
-nav_order: 5
+nav_order: 6
 ---
 
 # Personas
@@ -32,3 +32,7 @@ Shipped examples: **`default`** (fallback), **`care`** (self-care companion), **
 
 A persona with a `dataset` collects a defined set of fields via the `dataset_info` tool —
 see `docs/config/datasets/` for the format.
+
+Personas without a `when` are never auto-selected; pick those from the slash menu — note that
+picking one there starts a fresh conversation, while an automatic switch keeps the current one
+going. A persona that pins a `model` swaps the model too; otherwise the current one is kept.

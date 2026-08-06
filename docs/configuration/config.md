@@ -2,7 +2,7 @@
 layout: page
 title: Config
 parent: Configuration
-nav_order: 4.1
+nav_order: 3.1
 ---
 
 # Config

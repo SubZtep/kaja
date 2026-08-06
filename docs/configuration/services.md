@@ -2,7 +2,7 @@
 layout: page
 title: Services
 parent: Configuration
-nav_order: 4.3
+nav_order: 3.3
 ---
 
 # Services
@@ -35,3 +35,8 @@ Notes:
 
 - Credentials and keys are stored here so multiple local config profiles can reuse providers.
 - Keep `services.toml` secure and do not commit real keys to version control.
+
+### Where to get credentials?
+
+- **Web search** (`[webSearch]`): get a free key from [Brave's website](https://brave.com/search/api/).
+- **Location** (`[location]`): the example URL and API key work for a while.

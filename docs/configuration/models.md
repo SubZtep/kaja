@@ -2,7 +2,7 @@
 layout: page
 title: Models
 parent: Configuration
-nav_order: 4.2
+nav_order: 3.2
 ---
 
 # Models

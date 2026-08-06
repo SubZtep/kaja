@@ -35,11 +35,6 @@ Run `kaja`. If no config exists yet, a one-time setup wizard asks how you want t
 > Running in a non-interactive shell (scripts, CI) skips the wizard and writes the default
 template untouched.
 
-## Where config lives
-
-Everything is under `~/.config/kaja/` — see [Configuration](/configuration) for a full
-breakdown. Run `kaja --config` to print the path to `config.json` (and copy it to your
-clipboard).
 
 ## Basic usage
 
@@ -68,4 +63,5 @@ kaja memory export        # dump memory as JSON
 
 kaja telegram             # run as a Telegram bot
 kaja config fetch         # pull mcp.toml/models.toml from a Kaja server
+kaja config wipe          # back up and clear ~/.config/kaja
 ```

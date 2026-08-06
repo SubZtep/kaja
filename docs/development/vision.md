@@ -2,7 +2,7 @@
 layout: page
 title: Vision
 parent: Development
-nav_order: 8.2
+nav_order: 9.2
 ---
 
 ```mermaid

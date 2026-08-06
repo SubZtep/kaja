@@ -2,7 +2,7 @@
 layout: page
 title: Voice
 parent: Configuration
-nav_order: 4.4
+nav_order: 3.4
 ---
 
 # Voice (TTS / STT)
@@ -20,3 +20,15 @@ Example notes:
 - `Ctrl+T` toggles dictation while typing in the CLI.
 
 See `config/config.md` for the `config.json` format and `models.md` for declaring TTS/STT models.
+
+## Language
+
+English or Magyar, covering the UI and the assistant's replies, saved as `settings.language` in
+`config.json` and read once at startup; without a saved choice the system locale decides (a
+Hungarian locale → Magyar, anything else → English).
+
+Voice caveat for Hungarian: dictation needs the multilingual whisper model on the STT server (the
+English default is an English-only model — point `models.speech-to-text` at a multilingual entry
+in `models.toml`, and set `stt.language` in `config.json` to override), and spoken replies stay
+with the configured Kokoro voice (no Hungarian voice) unless `models.text-to-speech` points at
+something Hungarian-capable.
