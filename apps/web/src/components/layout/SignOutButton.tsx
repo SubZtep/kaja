@@ -6,7 +6,7 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
-export function SignOutButton() {
+export function SignOutButton({ onClick }: Readonly<{ onClick?: () => void }>) {
   const navigate = useNavigate()
   const { signOut } = useAuthClient()
   const [loading, setLoading] = useState(false)
@@ -33,6 +33,7 @@ export function SignOutButton() {
         variant="oval"
         size="sm"
         loading={loading}
+        onClick={onClick}
         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 font-medium text-fg"
       >
         <LogOut size={14} />

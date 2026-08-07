@@ -1,7 +1,16 @@
 import { Menu, X } from "lucide-react"
-import { type ReactNode, useEffect, useRef, useState } from "react"
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react"
 import { BrandMark } from "./BrandMark"
 import { ContentWidth } from "./ContentWidth"
+
+/** Lets an interactive element inside `mobileNav` (a link, the sign-out button) close the mobile menu on click. */
+const CloseMobileNavContext = createContext<(() => void) | null>(null)
+
+export function useCloseMobileNav() {
+  const close = useContext(CloseMobileNavContext)
+  if (!close) throw new Error("useCloseMobileNav must be used within SiteHeader's mobileNav")
+  return close
+}
 
 export function SiteHeader({
   brandTo = "/",
@@ -55,9 +64,10 @@ export function SiteHeader({
       </ContentWidth>
 
       {open ? (
-        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape already closes the menu (see useEffect above); this onClick just catches link taps.
-        <nav className="border-border border-t bg-bg text-muted text-sm md:hidden" onClick={close}>
-          <ContentWidth className="flex flex-col gap-4 py-3 sm:py-5">{mobileNav}</ContentWidth>
+        <nav className="border-border border-t bg-bg text-muted text-sm md:hidden">
+          <ContentWidth className="flex flex-col gap-4 py-3 sm:py-5">
+            <CloseMobileNavContext.Provider value={close}>{mobileNav}</CloseMobileNavContext.Provider>
+          </ContentWidth>
         </nav>
       ) : null}
     </header>
