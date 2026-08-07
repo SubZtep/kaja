@@ -10,4 +10,4 @@ elide-lines = 0
 silent = true
 
 [test]
-preload = ["./scripts/load-test-env.ts"]
+preload = ["./apps/api/tests/load-test-env.ts"]

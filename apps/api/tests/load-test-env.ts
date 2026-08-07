@@ -19,7 +19,7 @@ function parseEnvFile(path: string, presetKeys: ReadonlySet<string>) {
   }
 }
 
-const apiDir = join(import.meta.dir, "..", "apps", "api")
+const apiDir = join(import.meta.dir, "..")
 const presetKeys = new Set(Object.keys(Bun.env))
 parseEnvFile(join(apiDir, ".env.example"), presetKeys)
 parseEnvFile(join(apiDir, ".env"), presetKeys)

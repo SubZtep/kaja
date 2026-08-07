@@ -26,7 +26,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | Web env examples | `apps/web/.env.example` |
 | DB migrations | `apps/api/migrations/*.sql` |
 | Migration runner | `apps/api/scripts/db_migration.sh` |
-| Test env preload | `scripts/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
+| Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
 | Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
 | CLI patch for sixel | `patches/sixel@0.16.0.patch` (repo root) |
 
@@ -139,7 +139,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Testing & CI
 
-- `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `scripts/load-test-env.ts` (configured in `bunfig.toml`)
+- `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
 - API integration tests need a running Postgres matching `DATABASE_URL`
 - CLI has a large unit suite under `apps/cli/tests/`
 - CI (`.github/workflows/ci.yaml`): Biome lint/format + tests with PostgreSQL service
