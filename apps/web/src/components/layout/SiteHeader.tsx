@@ -1,5 +1,5 @@
 import { Menu, X } from "lucide-react"
-import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react"
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { BrandMark } from "./BrandMark"
 import { ContentWidth } from "./ContentWidth"
 
@@ -23,7 +23,7 @@ export function SiteHeader({
 }>) {
   const [open, setOpen] = useState(false)
   const headerRef = useRef<HTMLElement>(null)
-  const close = () => setOpen(false)
+  const close = useCallback(() => setOpen(false), [])
 
   useEffect(() => {
     if (!open) return
