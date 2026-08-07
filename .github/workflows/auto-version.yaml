@@ -79,6 +79,14 @@ jobs:
             COMMIT_MSGS=$(git log -1 --pretty=%B)
           fi
 
+          # Versions are computed from package.json on disk, so a concurrent run
+          # landing on main between our compute and push step would make our
+          # tag stale. Retry the whole compute-bump-tag-push cycle against the
+          # latest main instead of rebasing a tag computed from an old version.
+          for attempt in 1 2 3 4 5; do
+          git fetch origin main
+          git reset --hard origin/main
+
           bump_type() {
             local msgs="$1"
             if [[ "$msgs" == *"BREAKING CHANGE"* || "$msgs" == *"!"* ]]; then
@@ -161,10 +169,17 @@ jobs:
             echo "Created tag ${tag}"
           done
 
-          # GITHUB_TOKEN is enough: we no longer rely on the tag push to chain
-          # into other workflows (that required a PAT, and still failed with [skip ci]).
-          git pull origin main --rebase
-          git push origin main --tags
+          # We just reset to origin/main above, so a plain push is a fast-forward
+          # unless another run landed in between — retry from scratch if so.
+          if git push origin main --tags; then
+            break
+          fi
+          echo "Push rejected (attempt ${attempt}) — another run landed first, retrying"
+          if [[ "$attempt" == 5 ]]; then
+            echo "::error::Giving up after 5 attempts"
+            exit 1
+          fi
+          done
 
       - name: Trigger CLI release build
         if: steps.bump.outputs.cli_bumped == 'true'
