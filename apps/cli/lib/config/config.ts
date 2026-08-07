@@ -1,23 +1,12 @@
 import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaModels, type KajaPreferences } from "@kaja/schema/config"
 import { file, write } from "bun"
-// First-run settings.json template. Cast to string: resolveJsonModule mistypes this "text" import as parsed JSON.
 import rawTemplate from "../../../../docs/config/settings.json" with { type: "text" }
-import pkg from "../../package.json" with { type: "json" }
 import { t } from "../i18n"
 import { getPaths } from "../paths"
 
 const TEMPLATE = rawTemplate as unknown as string
 const TEMPLATE_JSON = JSON.parse(TEMPLATE)
-
-// Injected at compile time by CI via `bun build --define CLI_VERSION=...`; undefined when running from source (see lib/args.ts for the same pattern).
-declare const CLI_VERSION: string | undefined
-
-// Pinned to this CLI's release tag so the schema matches what this version actually validates.
-function getSchemaUrl() {
-  const version = typeof CLI_VERSION === "string" ? CLI_VERSION : pkg.version
-  return `https://cdn.jsdelivr.net/gh/SubZtep/kaja@cli@${version}/docs/config/settings.schema.json`
-}
 
 // Set at startup from --config-dir; only settings.json moves, other data paths stay default.
 let configDirOverride: string | undefined
@@ -120,7 +109,6 @@ export async function saveFetchedChatModel(chatModel: { model: string; provider?
   const hasRealChat = !!current.models?.chat?.model && current.models.chat.model !== templateChatModel?.model
   if (hasRealChat) return
   const merged: Partial<KajaConfig> = {
-    $schema: getSchemaUrl(),
     ...(TEMPLATE_JSON as Partial<KajaConfig>),
     ...current,
     models: { ...current.models, chat: chatModel }
@@ -133,10 +121,9 @@ export async function saveFetchedChatModel(chatModel: { model: string; provider?
 /** @param freeChat Omits the template's placeholder models.chat, so it falls back to the free hosted tier. */
 export async function create(freeChat = false) {
   const f = file(getConfigPath(), { type: "application/json" })
-  const withSchema = { $schema: getSchemaUrl(), ...TEMPLATE_JSON }
   if (freeChat) {
-    const { chat: _chat, ...otherModels } = withSchema.models
-    withSchema.models = otherModels
+    const { chat: _chat, ...otherModels } = TEMPLATE_JSON.models
+    TEMPLATE_JSON.models = otherModels
   }
-  await write(f, JSON.stringify(withSchema, null, 2))
+  await write(f, JSON.stringify(TEMPLATE_JSON, null, 2))
 }

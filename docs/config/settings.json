@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.kaja.io/config/settings.schema.json",
   "models": {
   },
   "preferences": {

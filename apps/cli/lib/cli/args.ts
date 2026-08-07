@@ -3,14 +3,8 @@ import { getConfigDir } from "../config/config"
 import { t } from "../i18n"
 import { listPaths } from "../paths"
 
-// Injected at compile time by CI via `bun build --define CLI_VERSION=...`
-// with the package.json version; undefined when running from source, where
-// meow reads package.json itself.
-declare const CLI_VERSION: string | undefined
-
 export const cli = meow(t("args.help"), {
   importMeta: import.meta,
-  ...(typeof CLI_VERSION === "string" ? { version: CLI_VERSION } : {}),
   flags: {
     // Consumed by the argv pre-scan in cli.tsx before this module loads;
     // declared here so meow's --help lists it and parsing accepts it.
