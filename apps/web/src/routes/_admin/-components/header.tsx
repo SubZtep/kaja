@@ -4,14 +4,13 @@ import { SignOutButton } from "../../../components/layout/SignOutButton"
 import { SiteHeader } from "../../../components/layout/SiteHeader"
 import { useUser } from "../../../hooks/user"
 
-function NavLink({ to, label, onNavigate }: Readonly<{ to: string; label: string; onNavigate?: () => void }>) {
+function NavLink({ to, label }: Readonly<{ to: string; label: string }>) {
   return (
     <Link
       to={to}
       activeOptions={{ exact: to === "/dashboard" }}
       activeProps={{ className: "text-fg nav-line-active" }}
       className="nav-line hover:text-fg"
-      onClick={onNavigate}
     >
       {label}
     </Link>
@@ -20,17 +19,15 @@ function NavLink({ to, label, onNavigate }: Readonly<{ to: string; label: string
 
 function AdminMobileNav({
   items,
-  user,
-  onNavigate
+  user
 }: Readonly<{
   items: ReturnType<typeof getNavItems>
   user: ReturnType<typeof useUser>
-  onNavigate: () => void
 }>) {
   return (
     <>
       {items.map(item => (
-        <NavLink key={item.to} to={item.to} label={item.label} onNavigate={onNavigate} />
+        <NavLink key={item.to} to={item.to} label={item.label} />
       ))}
       {user ? (
         <div className="flex items-center justify-between border-border border-t pt-4">
@@ -60,7 +57,7 @@ export function AdminHeader() {
           <SignOutButton />
         </>
       }
-      mobileNav={close => <AdminMobileNav items={items} user={user} onNavigate={close} />}
+      mobileNav={<AdminMobileNav items={items} user={user} />}
     />
   )
 }

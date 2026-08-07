@@ -1,7 +1,15 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
-import { Agent, applyPersona, createSession, type FinalizedAgentEvent, run, type Session } from "../lib/agent/agents"
+import {
+  Agent,
+  type AgentDelta,
+  applyPersona,
+  createSession,
+  type FinalizedAgentEvent,
+  run,
+  type Session
+} from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
 import { log } from "../lib/logger"
@@ -198,22 +206,24 @@ export function useAgent(
       const flush = () => {
         if (hasPartial) setPartial({ ...accumulated })
       }
+      const handleDelta = (event: AgentDelta) => {
+        accumulated[event.channel] += event.text
+        hasPartial = true
+        const now = Date.now()
+        if (now - lastFlush >= DELTA_INTERVAL_MS) {
+          lastFlush = now
+          flush()
+        }
+      }
+      const handleUsage = (event: Extract<FinalizedAgentEvent, { type: "usage" }>) => {
+        if (event.promptTokens != null) setPromptTokens(event.promptTokens)
+        if (event.model) setResponseModel(event.model)
+      }
       try {
         for await (const event of run(agent, prompt, sessionRef.current!)) {
-          if (event.type === "delta") {
-            accumulated[event.channel] += event.text
-            hasPartial = true
-            const now = Date.now()
-            if (now - lastFlush >= DELTA_INTERVAL_MS) {
-              lastFlush = now
-              flush()
-            }
-          } else if (event.type === "usage") {
-            if (event.promptTokens != null) setPromptTokens(event.promptTokens)
-            if (event.model) setResponseModel(event.model)
-          } else {
-            handleFinalizedEvent(event)
-          }
+          if (event.type === "delta") handleDelta(event)
+          else if (event.type === "usage") handleUsage(event)
+          else handleFinalizedEvent(event)
         }
       } catch (error) {
         log.warn({ error }, "Agent run failed")

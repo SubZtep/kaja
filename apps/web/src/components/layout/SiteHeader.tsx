@@ -10,7 +10,7 @@ export function SiteHeader({
 }: Readonly<{
   brandTo?: string
   desktopNav: ReactNode
-  mobileNav: (close: () => void) => ReactNode
+  mobileNav: ReactNode
 }>) {
   const [open, setOpen] = useState(false)
   const headerRef = useRef<HTMLElement>(null)
@@ -55,8 +55,9 @@ export function SiteHeader({
       </ContentWidth>
 
       {open ? (
-        <nav className="border-border border-t bg-bg text-muted text-sm md:hidden">
-          <ContentWidth className="flex flex-col gap-4 py-3 sm:py-5">{mobileNav(close)}</ContentWidth>
+        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape already closes the menu (see useEffect above); this onClick just catches link taps.
+        <nav className="border-border border-t bg-bg text-muted text-sm md:hidden" onClick={close}>
+          <ContentWidth className="flex flex-col gap-4 py-3 sm:py-5">{mobileNav}</ContentWidth>
         </nav>
       ) : null}
     </header>
