@@ -1,7 +1,7 @@
 {
   "name": "@kaja/sdk",
   "description": "Kaja.io API SDK",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "private": true,
   "main": "index.ts",
   "dependencies": {
