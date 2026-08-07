@@ -56,6 +56,8 @@ function parseMarkdown(source: string) {
 
 type Segment = { type: "text"; source: string } | { type: "image"; href: string; alt: string }
 
+const segmentKey = (segment: Segment, i: number) => `${i}-${Bun.hash(JSON.stringify(segment)).toString(36)}`
+
 /**
  * marked-terminal renders images as a link (`alt (href)`), the same as any
  * other link token — there's no terminal image protocol wired into the
@@ -95,9 +97,9 @@ export default memo(function Markdown({ children }: { children: string }) {
     <Box flexDirection="column">
       {segments.map((segment, i) =>
         segment.type === "text" ? (
-          <Text key={i}>{parseMarkdown(segment.source)}</Text>
+          <Text key={segmentKey(segment, i)}>{parseMarkdown(segment.source)}</Text>
         ) : (
-          <Box key={i} flexDirection="column">
+          <Box key={segmentKey(segment, i)} flexDirection="column">
             <Image src={segment.href} width={10} height={5} alt={segment.alt} />
             {segment.alt && <Text dimColor>{segment.alt}</Text>}
           </Box>
