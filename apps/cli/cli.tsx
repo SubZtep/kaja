@@ -61,6 +61,7 @@ const personas = await loadPersonas(models)
 const { tools, mcpServers, closeTools } = await getDefaultTools()
 const sessionCount = (await listSessions()).length
 const memoryNoteCount = Object.keys(await loadMemory()).length
+
 // Closes long-lived tool connections (e.g. Playwright MCP subprocess); guarded so SIGINT and normal exit can't both close it
 let closed = false
 const shutdown = async () => {

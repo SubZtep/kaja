@@ -89,7 +89,7 @@ invalidAt = "Érvénytelen services fájl ({path}): {message}"
 na = "N/A"
 
 [input]
-placeholder = "`/` menü · Alt+Enter új sor · PgUp előzmények · Alt+C új üzenetet másol"
+placeholder = "`/` menü · PgUp előzmények · Alt+Enter új sor · Alt+C választ másol"
 
 [viewport]
 older = "↑ régebbi · PageDown vagy Ctrl+End a követéshez"
