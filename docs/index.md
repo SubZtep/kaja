@@ -6,24 +6,26 @@ nav_order: 1
 
 # Welcome to our Documentation 🦋
 
-_They don’t think it be like it is, ~~but it do~~ **work in progress 🚧**_
+**Kaja is a highly customisable, multi-purpose AI agent.** A single executable binary with an event loop, running broadly at home. Orchestrate various types of models, embedding them into context-sensitive, multi-step pipelines.
 
-## What is it all about?
+Built with an **offline-first** design approach. Configs are local text files. Your memory (brain 🧠) and previous session data are stored in a single SQLite database file, safely on your home computer. If you run your own models locally, there is no Internet connection needed at all.
 
-Kaja is an open-source terminal chat assistant. It runs in your terminal (or as a Telegram
-bot), talks to any OpenAI-compatible model — local or hosted — and comes with personas, tool
-use, MCP support, and optional voice input/output.
+## What Is The Purpose?
 
-## What you get
+Help users through their daily routines by asking questions and validating their answers. Help track daily questionnaires effectively and collect structured user behaviour data over time helping long term analysis ⛨.
 
-- **Any model** — local Ollama, a hosted provider, or the free hosted chat.
-- **[Personas](/personas)** — switch the assistant's character mid-conversation.
-- **[Tools](/tools)** — files, web search, shell commands, memory, MCP servers.
-- **Voice** — mic dictation (`Ctrl+T`) and spoken replies.
-- **[Telegram](/telegram)** — the same setup, as a bot.
+## Is It Safe To Use?
+
+Your conversation history and surrounding data never leave your computer. Every piece of sensitive information stays between you and Kaja🛡️[^1].
+
+> A work-in-progress artificial intelligence bot digging into your sensitive places. What could possibly go wrong[^2]?
 
 ---
 
 Next:
 
 [Installation](/installation){: .btn .btn-green .fs-5 }
+
+[^1]: And perhaps that 3-rd party corporate you rent computes from its sweat shop, where defenetly not happens any public model training with your worries and secrets.
+
+[^2]: Nothing. 🧘

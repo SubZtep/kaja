@@ -39,9 +39,9 @@ docker compose up -d db mail
 # API + web (hot reload)
 bun dev
 
-# CLI (entry is apps/cli/cli.tsx — NOT apps/cli/src/...)
+# CLI (entry is apps/cli/cli.ts — NOT apps/cli/src/...)
 bun run --filter @kaja/cli start
-# or: bun run --env-file=apps/cli/.env apps/cli/cli.tsx
+# or: bun run --env-file=apps/cli/.env apps/cli/cli.ts
 
 # Lint / types / tests
 bun lint

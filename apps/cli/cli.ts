@@ -1,17 +1,14 @@
 import { color } from "bun"
 import { applyConfigDirOverride, detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { runFirstRunIfNeeded } from "./lib/cli/first-run"
-import { getConfigPath, validate } from "./lib/config/config"
+import { getConfigPath, isExists, validate } from "./lib/config/config"
 import { t } from "./lib/i18n"
-import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runMemorySubcommand } from "./subcommands/memory"
 import { runSubcommand } from "./subcommands/run"
 import { runSessionSubcommand } from "./subcommands/session"
 import { runTelegramSubcommand } from "./subcommands/telegram"
 import { runWebSubcommand } from "./subcommands/web"
-
-log.trace("Startup")
 
 // --config must take effect before the language-detecting config read below; args import must come after (meow builds --help at module load)
 applyConfigDirOverride(process.argv.slice(2))
@@ -36,7 +33,9 @@ switch (cli.input[0]) {
     break
 }
 
-await runFirstRunIfNeeded()
+if (!(await isExists())) {
+  await runFirstRunIfNeeded()
+}
 
 if (!(await validate())) {
   console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)

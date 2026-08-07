@@ -1,6 +1,6 @@
 import { render } from "ink"
 import type { FirstRunChoice } from "../../components/first-run-setup"
-import { create, isExists } from "../config/config"
+import { create } from "../config/config"
 
 /**
  * Interactively ask free hosted chat vs. own provider, so a new user isn't
@@ -10,8 +10,6 @@ import { create, isExists } from "../config/config"
  * existed. No-op if a config already exists.
  */
 export async function runFirstRunIfNeeded() {
-  if (await isExists()) return
-
   if (!process.stdin.isTTY) {
     await create()
     return
