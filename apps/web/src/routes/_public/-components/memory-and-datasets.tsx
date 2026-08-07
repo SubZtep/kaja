@@ -4,24 +4,20 @@ import { Section } from "../../../components/ui/Section"
 export function MemoryAndDatasets() {
   return (
     <LandingSection alt>
-      <LandingSectionTitle
-        title="Memory & datasets"
-        description="Two ways Kaja carries context across a conversation — and across sessions."
-      />
+      <LandingSectionTitle title="Memory & datasets" description="How Kaja remembers you, across chats and sessions." />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Section>
           <div className="mb-2 font-semibold text-fg text-[15px]">Persistent memory</div>
           <p className="m-0 text-[13.5px] text-muted">
-            Kaja remembers durable facts about you or your project across sessions, and quietly recalls them later. The
-            important ones are marked sticky, so they ride along in every conversation without you having to repeat
-            yourself.
+            Kaja remembers key facts about you and recalls them later, so you never repeat yourself. &mdash; Mark the
+            important ones sticky to keep them in every conversation.
           </p>
         </Section>
         <Section>
           <div className="mb-2 font-semibold text-fg text-[15px]">Dataset collection</div>
           <p className="m-0 text-[13.5px] text-muted">
-            Some personas gently gather a set of facts over the course of a conversation &mdash; the onboarding
-            assistant, for example, gets to know a new user one question at a time.
+            Some personas monitor a conversation for a set of fields and gently repeat their questions &mdash; even day
+            after day &mdash; until every one is filled in.
           </p>
         </Section>
       </div>

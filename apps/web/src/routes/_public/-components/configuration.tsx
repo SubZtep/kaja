@@ -1,42 +1,18 @@
 import { LandingSection, LandingSectionTitle } from "../../../components/ui/LandingSection"
 import { Section } from "../../../components/ui/Section"
 
-const ITEMS = [
-  {
-    title: "settings.json",
-    desc: (
-      <>
-        Add <code className="font-mono text-muted">llm</code>, <code className="font-mono text-muted">stt</code>,{" "}
-        <code className="font-mono text-muted">tts</code>, <code className="font-mono text-muted">location</code>,{" "}
-        <code className="font-mono text-muted">webSearch</code>, or{" "}
-        <code className="font-mono text-muted">telegram</code> groups to turn features on; leave one out and it's simply
-        unavailable.
-      </>
-    )
-  },
-  {
-    title: "models.toml",
-    desc: (
-      <>
-        Every model your provider offers, so you can swap <code className="font-mono text-muted">llm.model</code>{" "}
-        without re-entering credentials. The wizard writes a template matching your chosen provider on first run.
-      </>
-    )
-  },
-  {
-    title: "mcp.toml",
-    desc: "Model Context Protocol servers the agent can call — a standard way to plug in extra tools without changing Kaja itself."
-  },
-  {
-    title: "personas/ & datasets/",
-    desc: (
-      <>
-        One <code className="font-mono text-muted">.toml</code> per persona, one{" "}
-        <code className="font-mono text-muted">.json</code> per dataset topic &mdash; the fields a persona should try to
-        collect in conversation.
-      </>
-    )
-  }
+const TOOLS = [
+  { name: "current_time", desc: "Current date/time in any IANA timezone" },
+  { name: "read_file", desc: "Read a text file" },
+  { name: "list_files", desc: "List a directory" },
+  { name: "fetch_url", desc: "Fetch a URL and extract to text" },
+  { name: "web_search", desc: "Locaction based web search via Brave API" },
+  { name: "view_image", desc: "See an image's contents" },
+  { name: "generate_image", desc: "Generate an image from a prompt" },
+  { name: "summarize", desc: "Summarize text" },
+  { name: "rerank", desc: "Rank documents against a query" },
+  { name: "memory", desc: "Remember durable facts across sessions" },
+  { name: "dataset_info", desc: "Track persona dataset collection progress" }
 ]
 
 export function Configuration() {
@@ -55,18 +31,21 @@ export function Configuration() {
       <Section className="mb-5 overflow-x-auto">
         <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
           {
-            "~/.config/kaja/\n├─ settings.json    # optional settings and app preferences\n├─ models.toml      # model catalog per provider\n├─ mcp.toml         # model context protocol tool servers\n├─ personas/*.toml  # one behaviour per file\n└─ datasets/*.json  # custom fields for personas to collect"
+            "~/.config/kaja/\n├─ settings.json    # optional settings and app preferences\n├─ models.toml      # model catalog per provider\n├─ mcp.toml         # model context protocol servers\n├─ personas/*.toml  # one behaviour per file\n└─ datasets/*.json  # custom fields for personas to collect"
           }
         </code>
       </Section>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {ITEMS.map(item => (
-          <Section key={item.title}>
-            <div className="mb-1.5 font-semibold text-fg text-sm">{item.title}</div>
-            <div className="text-muted text-sm">{item.desc}</div>
-          </Section>
-        ))}
-      </div>
+      <Section>
+        <div className="mb-3.5 font-semibold text-fg text-sm">Built-in tools</div>
+        <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+          {TOOLS.map(tool => (
+            <div key={tool.name} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+              <code className="whitespace-nowrap font-mono text-neon">{tool.name}</code>
+              <span className="text-muted">{tool.desc}</span>
+            </div>
+          ))}
+        </div>
+      </Section>
     </LandingSection>
   )
 }
