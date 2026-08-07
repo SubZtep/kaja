@@ -1,6 +1,7 @@
 import { CheckboxGroup } from "@base-ui/react/checkbox-group"
 import { Field } from "@base-ui/react/field"
-import type { Model, ModelTask, Provider } from "@kaja/schema/api"
+import type { ListModelsResponse, ListProvidersResponse, Model, ModelTask, Provider } from "@kaja/schema/api"
+import { modelSchema, providerSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -16,7 +17,7 @@ import { PageHeader } from "../../../components/ui/PageHeader"
 import { Section } from "../../../components/ui/Section"
 import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
-import { useApiSdk } from "../../../hooks/use-api-sdk"
+import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
 
@@ -131,24 +132,26 @@ function makeModelActionsCell(onDelete: (id: string) => void) {
 }
 
 function ModelsPage() {
-  const sdk = useApiSdk()
+  const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
 
   const providersQuery = useQuery({
     queryKey: ["providers"],
-    queryFn: () => sdk.providers.list()
+    queryFn: () =>
+      apiFetch<ListProvidersResponse>("/admin/providers").then(r => z.array(providerSchema).parse(r.providers))
   })
 
   const modelsQuery = useQuery({
     queryKey: ["models"],
-    queryFn: () => sdk.models.list()
+    queryFn: () => apiFetch<ListModelsResponse>("/admin/models").then(r => z.array(modelSchema).parse(r.models))
   })
 
   const invalidateProviders = () => queryClient.invalidateQueries({ queryKey: ["providers"] })
   const invalidateModels = () => queryClient.invalidateQueries({ queryKey: ["models"] })
 
   const createProvider = useMutation({
-    mutationFn: (payload: { name: string; baseUrl: string; apiKey?: string }) => sdk.providers.create(payload),
+    mutationFn: (payload: { name: string; baseUrl: string; apiKey?: string }) =>
+      apiFetch("/admin/providers", payload).then(r => providerSchema.parse(r)),
     onSuccess: () => {
       invalidateProviders()
       toast.success("Provider created")
@@ -157,7 +160,7 @@ function ModelsPage() {
   })
 
   const deleteProvider = useMutation({
-    mutationFn: (id: string) => sdk.providers.delete(id),
+    mutationFn: (id: string) => apiFetch(`/admin/providers/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
       invalidateProviders()
       invalidateModels()
@@ -168,7 +171,7 @@ function ModelsPage() {
 
   const createModel = useMutation({
     mutationFn: (payload: { providerId: string; model: string; tasks: ModelTask[]; free: boolean }) =>
-      sdk.models.create({ ...payload, enabled: true }),
+      apiFetch("/admin/models", { ...payload, enabled: true }).then(r => modelSchema.parse(r)),
     onSuccess: () => {
       invalidateModels()
       toast.success("Model created")
@@ -177,19 +180,21 @@ function ModelsPage() {
   })
 
   const toggleModelEnabled = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => sdk.models.update(id, { enabled }),
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      apiFetch(`/admin/models/${id}`, { enabled }, { method: "PATCH" }).then(r => modelSchema.parse(r)),
     onSuccess: invalidateModels,
     onError: (err: Error) => toast.error(err.message || "Failed to update model")
   })
 
   const toggleModelFree = useMutation({
-    mutationFn: ({ id, free }: { id: string; free: boolean }) => sdk.models.update(id, { free }),
+    mutationFn: ({ id, free }: { id: string; free: boolean }) =>
+      apiFetch(`/admin/models/${id}`, { free }, { method: "PATCH" }).then(r => modelSchema.parse(r)),
     onSuccess: invalidateModels,
     onError: (err: Error) => toast.error(err.message || "Failed to update model")
   })
 
   const deleteModel = useMutation({
-    mutationFn: (id: string) => sdk.models.delete(id),
+    mutationFn: (id: string) => apiFetch(`/admin/models/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
       invalidateModels()
       toast.success("Model deleted")

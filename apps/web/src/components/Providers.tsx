@@ -1,18 +1,13 @@
-import { KajaAPI } from "@kaja/sdk"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createContext, type ReactNode, useMemo } from "react"
+import type { ReactNode } from "react"
 import { ToastContainer } from "react-toastify"
-import { getAuthClient } from "../hooks/auth-client"
 
-export function Providers({ apiUrl, children }: Readonly<{ apiUrl: string; children: React.ReactNode }>) {
+export function Providers({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <SDKProvider apiUrl={apiUrl}>
-      <TanStackQueryProvider>
-        {children}
-
-        <ToastContainer theme="colored" position="top-center" />
-      </TanStackQueryProvider>
-    </SDKProvider>
+    <TanStackQueryProvider>
+      {children}
+      <ToastContainer theme="colored" position="top-center" />
+    </TanStackQueryProvider>
   )
 }
 
@@ -41,27 +36,4 @@ export function getContext() {
 function TanStackQueryProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { queryClient } = getContext()
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-}
-
-// MARK: API SDK
-
-export const SDKContext = createContext<KajaAPI | null>(null)
-
-function SDKProvider({ apiUrl, children }: Readonly<{ apiUrl: string; children: ReactNode }>) {
-  const authClient = getAuthClient(apiUrl)
-
-  // Create SDK instance with a function that retrieves the current access token
-  const sdkInstance = useMemo(
-    () =>
-      new KajaAPI({
-        baseUrl: apiUrl,
-        getAccessToken: async () => {
-          const session = await authClient.getSession()
-          return session.data?.session?.token ?? null
-        }
-      }),
-    [apiUrl, authClient]
-  )
-
-  return <SDKContext.Provider value={sdkInstance}>{children}</SDKContext.Provider>
 }

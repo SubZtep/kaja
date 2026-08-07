@@ -93,7 +93,6 @@
         "@fontsource-variable/manrope": "^5.2.8",
         "@kaja/logger": "workspace:*",
         "@kaja/schema": "workspace:*",
-        "@kaja/sdk": "workspace:*",
         "@kaja/shared": "workspace:*",
         "@rsbuild/core": "^2.1.10",
         "@tailwindcss/vite": "^4.3.1",
@@ -131,15 +130,6 @@
       "name": "@kaja/schema",
       "version": "0.2.0",
       "dependencies": {
-        "zod": "^4.4.3",
-      },
-    },
-    "packages/sdk": {
-      "name": "@kaja/sdk",
-      "version": "0.1.0",
-      "dependencies": {
-        "@kaja/logger": "workspace:*",
-        "@kaja/schema": "workspace:*",
         "zod": "^4.4.3",
       },
     },
@@ -386,8 +376,6 @@
     "@kaja/openai": ["@kaja/openai@workspace:apps/openai"],
 
     "@kaja/schema": ["@kaja/schema@workspace:packages/schema"],
-
-    "@kaja/sdk": ["@kaja/sdk@workspace:packages/sdk"],
 
     "@kaja/shared": ["@kaja/shared@workspace:packages/shared"],
 

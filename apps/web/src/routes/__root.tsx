@@ -86,8 +86,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 })
 
 function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
-  const { apiUrl } = Route.useLoaderData()
-
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
@@ -97,7 +95,7 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
         )}
       </head>
       <body>
-        <Providers apiUrl={apiUrl}>{children}</Providers>
+        <Providers>{children}</Providers>
         <Scripts />
       </body>
     </html>

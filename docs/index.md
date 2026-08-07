@@ -12,7 +12,7 @@ Built with an **offline-first** design approach. Configs are local text files. Y
 
 ## What Is The Purpose?
 
-Help users through their daily routines by asking questions and validating their answers. Help track daily questionnaires effectively and collect structured user behaviour data over time helping long term analysis ⛨.
+Help users through their daily routines by asking questions and validating their answers periodically. Tracking mood levels by make you fill structured daily questionnaires effectively facilitate long term analysis.
 
 ## 🛡️ Data Safety
 
@@ -24,4 +24,4 @@ Next:
 
 [Installation](/installation){: .btn .btn-green .fs-5 }
 
-[^1]: And perhaps that 3-rd party sweat shop you rent computes from. Those defenetly not training public models with your worries and secrets.
+[^1]: And perhaps that 3-rd party sweat shop you rent computes from.

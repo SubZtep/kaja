@@ -1,4 +1,5 @@
-import type { CreateMcpServerRequest, McpServer } from "@kaja/schema/api"
+import type { CreateMcpServerRequest, ListMcpServersResponse, McpServer } from "@kaja/schema/api"
+import { mcpServerSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -14,7 +15,7 @@ import { PageHeader } from "../../../components/ui/PageHeader"
 import { Section } from "../../../components/ui/Section"
 import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
-import { useApiSdk } from "../../../hooks/use-api-sdk"
+import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
 
@@ -128,18 +129,20 @@ function makeActionsCell(onDelete: (id: string) => void) {
 }
 
 function McpServersPage() {
-  const sdk = useApiSdk()
+  const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
 
   const { data, error, isLoading } = useQuery({
     queryKey: ["mcp-servers"],
-    queryFn: () => sdk.mcpServers.list()
+    queryFn: () =>
+      apiFetch<ListMcpServersResponse>("/admin/mcp-servers").then(r => z.array(mcpServerSchema).parse(r.mcpServers))
   })
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["mcp-servers"] })
 
   const createMcpServer = useMutation({
-    mutationFn: (payload: CreateMcpServerRequest) => sdk.mcpServers.create(payload),
+    mutationFn: (payload: CreateMcpServerRequest) =>
+      apiFetch("/admin/mcp-servers", payload).then(r => mcpServerSchema.parse(r)),
     onSuccess: () => {
       invalidate()
       toast.success("MCP server created")
@@ -148,13 +151,14 @@ function McpServersPage() {
   })
 
   const toggleEnabled = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => sdk.mcpServers.update(id, { enabled }),
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      apiFetch(`/admin/mcp-servers/${id}`, { enabled }, { method: "PATCH" }).then(r => mcpServerSchema.parse(r)),
     onSuccess: invalidate,
     onError: (err: Error) => toast.error(err.message || "Failed to update MCP server")
   })
 
   const deleteMcpServer = useMutation({
-    mutationFn: (id: string) => sdk.mcpServers.delete(id),
+    mutationFn: (id: string) => apiFetch(`/admin/mcp-servers/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
       invalidate()
       toast.success("MCP server deleted")
