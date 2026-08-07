@@ -30,17 +30,18 @@ export async function isExists() {
   return await f.exists()
 }
 
-export async function validate(quiet = false) {
+export async function validate() {
   const f = file(getConfigPath(), { type: "application/json" })
-  if (await f.exists()) {
-    try {
-      const data = await f.json()
-      return !!KajaConfigSchema.parse(data)
-    } catch (error) {
-      if (!quiet) console.log(error)
-    }
+  if (!(await f.exists())) return false
+
+  let data
+  try {
+    data = await f.json()
+  } catch {
+    return false
   }
-  return false
+
+  return KajaConfigSchema.safeParse(data).success
 }
 
 /** Tolerant reader for the config wizard prefill: returns whatever is in the file (possibly schema-invalid), or {} when missing/unparseable. */

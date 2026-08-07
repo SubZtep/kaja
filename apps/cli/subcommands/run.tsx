@@ -1,0 +1,99 @@
+import type { cli as Cli } from "../lib/cli/args"
+
+/**
+ * The default case (no recognized subcommand): resolves the
+ * session/config/tools/personas, then renders the Ink TUI. Kept out of
+ * cli.tsx so the entry point stays a thin arg-parser.
+ */
+export async function runSubcommand(cli: typeof Cli) {
+  const { config } = await import("../lib/config/config")
+  const { loadModels } = await import("../lib/models/models")
+  const { loadPersonas } = await import("../lib/personas/personas")
+  const { t } = await import("../lib/i18n")
+
+  // Imported after the config guard (already validated by the time cli.tsx calls this): lib/openai.ts reads config at module load (via lib/agents.ts), so a static import would crash before first-run
+  const { default: App } = await import("../components/layout/app")
+  const { getDefaultTools } = await import("../tools")
+  const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("../lib/session/store")
+  const { loadMemory } = await import("../lib/memory/store")
+  const { chatModelId, isFreeChat } = await import("../lib/models/openai")
+
+  // --continue resumes the most recent session, --session <id> a specific one; either way it's handed to App as a prop
+  let initialSession: import("@kaja/schema/store").PersistedSession | undefined
+  if (cli.flags.continue) {
+    initialSession = await loadLatestSessionRow()
+    if (!initialSession) {
+      console.log(t("session.none"))
+      process.exit(1)
+    }
+  } else if (cli.flags.session) {
+    const sessionId = Number.parseInt(cli.flags.session, 10)
+    initialSession = Number.isFinite(sessionId) ? await loadSessionRow(sessionId) : undefined
+    if (!initialSession) {
+      console.log(t("session.notFound", { id: cli.flags.session }))
+      process.exit(1)
+    }
+  }
+  const promptHistory = await loadPromptHistory()
+
+  const currentConfig = await config()
+
+  const { preferences } = currentConfig
+  const models = await loadModels()
+  const personas = await loadPersonas(models)
+  const { tools, mcpServers, closeTools } = await getDefaultTools()
+  const sessionCount = (await listSessions()).length
+  const memoryNoteCount = Object.keys(await loadMemory()).length
+
+  // Closes long-lived tool connections (e.g. Playwright MCP subprocess); guarded so SIGINT and normal exit can't both close it
+  let closed = false
+  const shutdown = async () => {
+    if (closed) return
+    closed = true
+    await closeTools()
+  }
+  process.on("SIGINT", async () => {
+    await shutdown()
+    process.exit(0)
+  })
+  process.on("SIGTERM", async () => {
+    await shutdown()
+    process.exit(0)
+  })
+
+  // Deferred until here: nothing before this point touches the terminal UI
+  const { render } = await import("ink")
+  const { InkPictureProvider } = await import("ink-picture")
+
+  // Alternate screen: full-viewport app, restores primary buffer on exit, no scrollback while running
+  // Kitty keyboard (auto): so Shift+Enter is distinct from Enter — plain TTYs send the same `\r` for both
+  const { waitUntilExit } = render(
+    <InkPictureProvider>
+      <App
+        initialPreferences={preferences}
+        models={models}
+        personas={personas}
+        openaiApiModel={chatModelId}
+        freeChat={isFreeChat}
+        tools={tools}
+        mcpServers={mcpServers}
+        initialSession={initialSession}
+        promptHistory={promptHistory}
+        sessionCount={sessionCount}
+        memoryNoteCount={memoryNoteCount}
+      />
+    </InkPictureProvider>,
+    {
+      alternateScreen: true,
+      kittyKeyboard: {
+        mode: "auto",
+        flags: ["disambiguateEscapeCodes"]
+      }
+    }
+  )
+  await waitUntilExit()
+  await shutdown()
+
+  console.log(t("cli.bye"))
+  process.exit(0)
+}

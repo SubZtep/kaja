@@ -15,6 +15,7 @@ stage_fixed = true
 
 [[pre-commit.jobs]]
 run = "bun typecheck"
+glob = ["*.ts", "*.tsx"]
 
 [pre-push]
 parallel = true
@@ -24,6 +25,7 @@ run = "bun lint"
 
 [[pre-push.jobs]]
 run = "bun typecheck"
+glob = ["*.ts", "*.tsx"]
 
 [[pre-push.jobs]]
 run = "bun test"
