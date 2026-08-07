@@ -68,7 +68,7 @@ function SignIn() {
     <AuthShell>
       <AuthCard
         title="Sign in"
-        description="Welcome back. Sign in to manage nodes, models, and config."
+        description="Welcome back. Sign in to manage models and config."
         footer={
           <>
             No account yet?{" "}

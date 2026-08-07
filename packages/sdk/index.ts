@@ -1,18 +1,10 @@
 import { error } from "@kaja/logger"
 import type {
-  Command,
-  ConnectNodeRequest,
-  ConnectNodeResponse,
-  CreateCommandRequest,
   CreateMcpServerRequest,
   CreateModelRequest,
   CreateProviderRequest,
-  DisconnectNodeRequest,
-  HeartbeatRequest,
-  HeartbeatResponse,
   ListMcpServersResponse,
   ListModelsResponse,
-  ListNodesResponse,
   ListProvidersResponse,
   McpServer,
   Model,
@@ -21,15 +13,7 @@ import type {
   UpdateModelRequest,
   UpdateProviderRequest
 } from "@kaja/schema/api"
-import {
-  commandSchema,
-  connectNodeResponseSchema,
-  heartbeatResponseSchema,
-  listNodesResponseSchema,
-  mcpServerSchema,
-  modelSchema,
-  providerSchema
-} from "@kaja/schema/api"
+import { mcpServerSchema, modelSchema, providerSchema } from "@kaja/schema/api"
 import { z } from "zod"
 
 export class KajaAPI {
@@ -45,53 +29,6 @@ export class KajaAPI {
   /** Get access token (for CLI EventSource connections) */
   async getToken(): Promise<string | null> {
     return this.#getAccessToken()
-  }
-
-  nodes = {
-    list: async (): Promise<ListNodesResponse> => {
-      const response = await this.#request("/nodes")
-      return listNodesResponseSchema.parse(response)
-    },
-    connect: async (payload: ConnectNodeRequest): Promise<ConnectNodeResponse> => {
-      const response = await this.#request("/nodes/connect", payload)
-      return connectNodeResponseSchema.parse(response)
-    },
-    disconnect: async (payload: DisconnectNodeRequest) => {
-      return this.#request<{ success: boolean }>("/nodes/disconnect", payload)
-    },
-    heartbeat: async (payload: HeartbeatRequest, options?: RequestInit): Promise<HeartbeatResponse> => {
-      const response = await this.#request("/nodes/heartbeat", payload, options)
-      return heartbeatResponseSchema.parse(response)
-    },
-    commands: {
-      start: async (nodeId: string, commandId: string): Promise<Command> => {
-        const response = await this.#request(`/nodes/${nodeId}/commands/${commandId}/start`, {})
-        return commandSchema.parse(response)
-      },
-      complete: async (nodeId: string, commandId: string, result: unknown, exitCode?: number): Promise<Command> => {
-        const response = await this.#request(`/nodes/${nodeId}/commands/${commandId}/complete`, { result, exitCode })
-        return commandSchema.parse(response)
-      },
-      fail: async (nodeId: string, commandId: string, error: string, exitCode?: number): Promise<Command> => {
-        const response = await this.#request(`/nodes/${nodeId}/commands/${commandId}/fail`, { error, exitCode })
-        return commandSchema.parse(response)
-      }
-    }
-  }
-
-  commands = {
-    create: async (nodeId: string, payload: CreateCommandRequest): Promise<Command> => {
-      const response = await this.#request(`/admin/nodes/${nodeId}/commands`, payload)
-      return commandSchema.parse(response)
-    },
-    list: async (nodeId: string): Promise<Command[]> => {
-      const response = await this.#request<{ commands: Command[] }>(`/admin/nodes/${nodeId}/commands`)
-      return z.array(commandSchema).parse(response.commands)
-    },
-    cancel: async (commandId: string): Promise<Command> => {
-      const response = await this.#request(`/admin/commands/${commandId}/cancel`, {})
-      return commandSchema.parse(response)
-    }
   }
 
   mcpServers = {

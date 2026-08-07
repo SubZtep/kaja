@@ -17,7 +17,7 @@ function DashboardPage() {
     <>
       <PageHeader
         title={<>Welcome back{user ? `, ${getFirstName(user.name)}` : ""}</>}
-        description="Manage nodes, models, and config for your Kaja platform."
+        description="Manage models and config for your Kaja platform."
         meta={user?.role}
       />
 

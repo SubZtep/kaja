@@ -1,11 +1,11 @@
 # @kaja/sdk
 
-Typed HTTP client for the Kaja API. Used primarily by the web app; designed so CLI/node clients can share the same surface.
+Typed HTTP client for the Kaja API. Used primarily by the web app; designed so other clients can share the same surface.
 
 ## Layout
 
 ```
-index.ts    # KajaAPI class (nodes, commands, private #request)
+index.ts    # KajaAPI class (mcpServers, providers, models, private #request)
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ const api = new KajaAPI({
   getAccessToken: async () => /* session token or null */
 })
 
-const nodes = await api.nodes.list()
+const models = await api.models.list()
 ```
 
 Web wires this in `components/Providers.tsx` and exposes it via `useApiSdk()`. Token comes from the Better Auth session (`authClient.getSession()` / session token). Cookie sessions also work via `credentials: "include"`.

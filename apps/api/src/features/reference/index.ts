@@ -44,10 +44,6 @@ export function setupApiDocs(app: OpenAPIHono<RouteProps>) {
     openapi: "3.2.0",
     tags: [
       {
-        name: "Nodes",
-        description: "Managing CLI nodes connected to the API."
-      },
-      {
         name: "Users",
         description: "User related random stuff."
       },

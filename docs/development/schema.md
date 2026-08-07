@@ -19,26 +19,6 @@ config:
 ---
 erDiagram
   direction LR
-  Node {
-    string id
-    string userId
-    string name
-    date lastSeen
-    NodeStatus status
-  }
-  Command {
-    uuidv7 id
-    uuidv7 nodeId
-    string command
-    CommandStatus status
-    date createdAt
-  }
-  GeoLocation {
-    GeoPlace continent
-    GeoPlace country
-    GeoPlace city
-    LocationDetails location
-  }
   McpServer {
     string id
     string serverId
@@ -67,8 +47,6 @@ erDiagram
     string baseUrl
   }
 
-  Node ||--o{ Command : "issues"
-  Node ||--o| GeoLocation : "geoLocation"
   Provider ||--o{ Model : "providerId"
   Provider ||--o| ResolvedModel : "resolves into"
 ```
@@ -225,7 +203,7 @@ These aren't type imports (each subpath stays decoupled per `packages/schema/AGE
 
 | Subpath | Contents | Consumers |
 |---|---|---|
-| `@kaja/schema/api` | `Node`, `Command`, `GeoLocation`, `McpServer`, `Provider`/`Model`, auth payloads | `apps/api`, `apps/web`, `packages/sdk` |
+| `@kaja/schema/api` | `McpServer`, `Provider`/`Model`, auth payloads | `apps/api`, `apps/web`, `packages/sdk` |
 | `@kaja/schema/config` | `KajaConfig` (settings.json), `KajaModelsFile` (models.toml), `McpFile` (mcp.toml), `ServicesFile` (services.toml) | `apps/cli` |
 | `@kaja/schema/store` | `PersistedSession`/`SessionMeta`, `MemoryNote`/`MemoryStore` (SQLite-backed) | `apps/cli` |
 | `@kaja/schema/cli` | `Persona`, `SamplingParams`, `Dataset`/`DatasetField` | `apps/cli` |

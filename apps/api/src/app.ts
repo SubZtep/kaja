@@ -7,7 +7,6 @@ import { adminRoutes } from "./features/admin"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
 import { healthRoutes } from "./features/health"
-import { nodeRoutes } from "./features/nodes"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { userRoutes } from "./features/users"
 import type { RouteProps } from "./types"
@@ -29,7 +28,6 @@ app.route("/admin", adminRoutes)
 app.route("/auth", authRoutes)
 app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
-app.route("/nodes", nodeRoutes)
 app.route("/users", userRoutes)
 
 // API documentation

@@ -1,8 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi"
-import type { CommandService } from "./services/command"
 import type { McpServerService } from "./services/mcp-server"
 import type { ModelService } from "./services/model"
-import type { NodeService } from "./services/node"
 
 declare module "bun" {
   interface Env {
@@ -40,8 +38,6 @@ export type AuthSessionUser = {
 // context variables for Hono
 export type RouteVariables = {
   user: AuthSessionUser | null
-  nodeService: NodeService
-  commandService: CommandService
   mcpServerService: McpServerService
   modelService: ModelService
 }

@@ -1,15 +1,9 @@
 import { info } from "@kaja/logger"
 import { app } from "../app"
-import { SchedulerService } from "../services/scheduler"
 import { CronService } from "./cron"
-import { pool } from "./db"
 
 const port = Number(process.env.PORT ?? 3001)
 info("API is running", { port })
-
-// Start the scheduler for inactive nodes
-const scheduler = new SchedulerService(pool)
-scheduler.start()
 
 // Start cron jobs
 const cron = new CronService()

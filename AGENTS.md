@@ -4,7 +4,7 @@ This file provides guidance to LLM agents when working with code in this reposit
 
 Kaja is a TypeScript monorepo built with Bun:
 
-- **API** (`apps/api`): Hono REST API with Better Auth, node orchestration, PostgreSQL
+- **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **CLI** (`apps/cli`): Ink TUI agent chat (personas, tools, MCP, Telegram, optional STT/TTS)
 - **OpenAI proxy** (`apps/openai`): OpenAI-compatible forwarder; picks a random model from db (wip)
@@ -74,16 +74,15 @@ bun run --filter @kaja/cli test
 
 ### API (`apps/api/src/`)
 
-- **Entry**: `core/server.ts` — Hono app, `SchedulerService`, `CronService`
+- **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (no jobs registered)
-- **Features**: `features/auth/`, `features/nodes/`, `features/admin/` (plus health, users, config, reference); shared logic in `services/`
-- **Lib**: `lib/geo-client.ts` — external GeoIP service (no local job queue)
+- **Features**: `features/auth/`, `features/admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
 
-- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, nodes, users, profile)
+- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, users, profile)
 - SDK via `useApiSdk()`; auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 
@@ -106,7 +105,7 @@ bun run --filter @kaja/cli test
 ### Type architecture
 
 - **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
-  - `@kaja/schema/api` — API contracts (`Node`, `Command`, request/response schemas), shared by `apps/api`, `apps/web`, `packages/sdk`
+  - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`, `packages/sdk`
   - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.json, models.toml, mcp.toml, services.toml)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/cli` — remaining CLI domain concepts (personas, datasets)
@@ -118,8 +117,7 @@ bun run --filter @kaja/cli test
 
 1. `2026-03-01-uuidv7.sql` — UUIDv7() via pgcrypto
 2. `2026-03-03-better-auth.sql` — Better Auth tables
-3. `2026-03-27-node.sql` — `node` + `command` tables and indexes
-4. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
+3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `apps/api/scripts/db_migration.sh` (or apply SQL manually).
 
@@ -135,7 +133,6 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 - A git hooks run lint at commit, and run test before push, so you don't have to run again for double-check after you finished a task.
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
 <!-- - Rate limiting is enabled in the API (global + stricter `/auth/*`); disabled when `BUN_TEST` is set or `RATE_LIMIT_ENABLED=false`. -->
-<!-- - Cron service shell is present but intentionally has no registered jobs (node idle handled by SchedulerService). -->
 
 ## Testing & CI
 

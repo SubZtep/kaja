@@ -1,6 +1,6 @@
 # @kaja/api
 
-Hono REST API for Kaja: Better Auth, node orchestration, admin commands, emails, GeoIP.
+Hono REST API for Kaja: Better Auth, admin config, emails.
 
 ## Commands
 
@@ -23,25 +23,23 @@ Manual migrations: `scripts/db_migration.sh`
 src/
   app.ts                 # OpenAPIHono app, CORS, route mounts
   core/                  # process infrastructure only
-    server.ts            # process entry: scheduler + cron + export default
+    server.ts            # process entry: cron + export default
     db.ts                # pg Pool
     logger.ts            # traffic logger for hono/logger
     rate-limit.ts        # global + auth limiters (off under bun test)
     cron.ts              # Bun.CronJob shell (intentionally no jobs)
   features/              # one folder per URL mount prefix
     auth/                # Better Auth config + routes + middleware
-    nodes/               # /nodes — connect, heartbeat, disconnect, list, stream, commands
-    admin/               # /admin — create/list/cancel commands, list all nodes
+    admin/               # /admin — mcp-servers, providers, models
     config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
     users/               # /users
     health/              # /health
     reference/           # /reference (dev OpenAPI UI)
-  services/              # shared domain logic (node, command, events, scheduler, validator)
+  services/              # shared domain logic (mcp-server, model)
   emails/                # React Email templates
-  lib/geo-client.ts      # external GEO_SERVICE_URL client
   types.ts / types/      # Hono env types, error helpers
 migrations/              # raw SQL, applied on first Postgres boot via compose
-tests/integration/       # auth, node flow, SSE
+tests/integration/       # auth
 ```
 
 ### Adding an endpoint
@@ -61,21 +59,16 @@ tests/integration/       # auth, node flow, SSE
 
 ## Important behaviors
 
-- Node statuses: `idle` | `busy` | `inactive`
-- `SchedulerService` marks inactive nodes on heartbeat timeout
-- Commands: allowlist + shell-injection rejection in `command-validator.ts`
 - `/config/*` is fail-closed: requires non-empty `CONFIG_API_TOKEN` Bearer match (leaks provider API keys otherwise)
-- SSE: longer `idleTimeout` on the Bun server export (255s)
 - OpenAPI UI only when `NODE_ENV === "development"` (`/reference`)
 - Rate limit middleware is mounted (global + `/auth/*`); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
-- `/admin/*` requires a signed-in non-banned user; command handlers enforce node ownership (platform admins can access any node)
-- `GET /admin/nodes/all` requires Better Auth `admin` role
+- `/admin/*` requires a signed-in non-banned user; `mcp-servers`/`providers`/`models` routes require Better Auth `admin` role
 
 ## Env
 
 See `.env.example`.
 
-**Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `GEO_SERVICE_URL`, `GEO_SERVICE_API_KEY`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`.
+**Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`.
 
 **Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`.
 
@@ -83,7 +76,7 @@ See `.env.example`.
 
 ## Type rules (API layer)
 
-- Import `Node`, `Command`, and request/response types from `@kaja/schema` only
+- Import request/response types from `@kaja/schema` only
 - Keep DB row shapes private inside services; map with `#rowTo…` helpers
 - Parameterized SQL only; Better Auth uses the same `pg` Pool (no ORM adapter)
 

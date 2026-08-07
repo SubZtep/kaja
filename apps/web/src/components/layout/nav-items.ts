@@ -1,4 +1,4 @@
-import { Cpu, LayoutDashboard, type LucideIcon, Plug, Server, Shield, Users } from "lucide-react"
+import { Cpu, LayoutDashboard, type LucideIcon, Plug, Shield, Users } from "lucide-react"
 
 /** "public" matches signed-out visitors; "all" matches every signed-in role plus "public". */
 export type NavRole = "public" | "all" | "admin" | "user"
@@ -34,15 +34,6 @@ const navItems: NavItem[] = [
     roles: ["admin", "user"],
     sections: ["header", "admin"],
     icon: LayoutDashboard
-  },
-  {
-    to: "/nodes",
-    label: "Nodes",
-    description: "Connected CLI nodes and heartbeats",
-    internal: true,
-    roles: ["admin", "user"],
-    sections: ["admin"],
-    icon: Server
   },
   {
     to: "/profile",

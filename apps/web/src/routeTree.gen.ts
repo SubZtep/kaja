@@ -22,7 +22,6 @@ import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as ApiSendRouteImport } from './routes/api/send'
 import { Route as AdminMcpServersIndexRouteImport } from './routes/_admin/mcp-servers/index'
 import { Route as AdminModelsIndexRouteImport } from './routes/_admin/models/index'
-import { Route as AdminNodesIndexRouteImport } from './routes/_admin/nodes/index'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
@@ -91,11 +90,6 @@ const AdminModelsIndexRoute = AdminModelsIndexRouteImport.update({
   path: '/models/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminNodesIndexRoute = AdminNodesIndexRouteImport.update({
-  id: '/nodes/',
-  path: '/nodes/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -131,7 +125,6 @@ export interface FileRoutesByFullPath {
   '/device/approve': typeof PublicDeviceApproveRoute
   '/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/models/': typeof AdminModelsIndexRoute
-  '/nodes/': typeof AdminNodesIndexRoute
   '/users/': typeof AdminUsersIndexRoute
   '/device/': typeof PublicDeviceIndexRoute
 }
@@ -148,7 +141,6 @@ export interface FileRoutesByTo {
   '/device/approve': typeof PublicDeviceApproveRoute
   '/mcp-servers': typeof AdminMcpServersIndexRoute
   '/models': typeof AdminModelsIndexRoute
-  '/nodes': typeof AdminNodesIndexRoute
   '/users': typeof AdminUsersIndexRoute
   '/device': typeof PublicDeviceIndexRoute
 }
@@ -169,7 +161,6 @@ export interface FileRoutesById {
   '/_public/device/approve': typeof PublicDeviceApproveRoute
   '/_admin/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/_admin/models/': typeof AdminModelsIndexRoute
-  '/_admin/nodes/': typeof AdminNodesIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
   '/_public/device/': typeof PublicDeviceIndexRoute
 }
@@ -189,7 +180,6 @@ export interface FileRouteTypes {
     | '/device/approve'
     | '/mcp-servers/'
     | '/models/'
-    | '/nodes/'
     | '/users/'
     | '/device/'
   fileRoutesByTo: FileRoutesByTo
@@ -206,7 +196,6 @@ export interface FileRouteTypes {
     | '/device/approve'
     | '/mcp-servers'
     | '/models'
-    | '/nodes'
     | '/users'
     | '/device'
   id:
@@ -226,7 +215,6 @@ export interface FileRouteTypes {
     | '/_public/device/approve'
     | '/_admin/mcp-servers/'
     | '/_admin/models/'
-    | '/_admin/nodes/'
     | '/_admin/users/'
     | '/_public/device/'
   fileRoutesById: FileRoutesById
@@ -331,13 +319,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminModelsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/nodes/': {
-      id: '/_admin/nodes/'
-      path: '/nodes'
-      fullPath: '/nodes/'
-      preLoaderRoute: typeof AdminNodesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_admin/users/': {
       id: '/_admin/users/'
       path: '/users'
@@ -375,7 +356,6 @@ interface AdminRouteChildren {
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminMcpServersIndexRoute: typeof AdminMcpServersIndexRoute
   AdminModelsIndexRoute: typeof AdminModelsIndexRoute
-  AdminNodesIndexRoute: typeof AdminNodesIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
@@ -385,7 +365,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminMcpServersIndexRoute: AdminMcpServersIndexRoute,
   AdminModelsIndexRoute: AdminModelsIndexRoute,
-  AdminNodesIndexRoute: AdminNodesIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 

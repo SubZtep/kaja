@@ -43,8 +43,8 @@ function DeviceApprovePage() {
           <br />
           So close to connect.
         </p>
-        <Button onClick={() => navigate({ to: "/nodes" })} variant="primary" size="md">
-          View Your Placeholder
+        <Button onClick={() => navigate({ to: "/dashboard" })} variant="primary" size="md">
+          Go to Dashboard
         </Button>
       </>
     )
@@ -62,7 +62,7 @@ function DeviceApprovePage() {
         return
       }
       toast.success("Device approved — you can return to the CLI.")
-      await navigate({ to: "/nodes" })
+      await navigate({ to: "/dashboard" })
     } finally {
       setLoading(false)
     }
@@ -85,8 +85,8 @@ function DeviceApprovePage() {
 
   return (
     <>
-      <h1>Approve a new Node</h1>
-      <p>A piece of device asked to be accessable by your account.</p>
+      <h1>Approve CLI access</h1>
+      <p>The Kaja CLI asked to be accessable by your account.</p>
       <p>
         Code: <div className="text-2xl text-fg tracking-widest font-semibold">{user_code}</div>
       </p>
