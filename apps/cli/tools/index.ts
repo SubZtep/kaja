@@ -1,8 +1,10 @@
+import type { Tool } from "../lib/agent/agents"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../lib/agent/agents"
 import { loadPluginTools } from "../lib/agent/plugin-tools"
 import { config } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
 import { services } from "../lib/config/services"
+import { log } from "../lib/logger"
 import { connectMcpServer } from "../lib/mcp/client"
 import { currentTimeTool } from "./current-time"
 import { datasetInfoTool } from "./dataset-info"
@@ -34,7 +36,17 @@ export async function getDefaultTools() {
   const { models } = await config()
   const { webSearch } = await services()
   const [mcpServers, pluginTools] = await Promise.all([loadMcpServers(), loadPluginTools()])
-  const mcpConnections = await Promise.all(mcpServers.map(server => connectMcpServer(server)))
+  // One broken server (bad command, unreachable URL, ...) must not take down the rest — connect each independently and fall back to no tools for that server.
+  const mcpConnections = await Promise.all(
+    mcpServers.map(async (server): Promise<{ tools: Tool<any>[]; close: () => Promise<void>; failed: boolean }> => {
+      try {
+        return { ...(await connectMcpServer(server)), failed: false }
+      } catch (error) {
+        log.warn({ error, server: server.id }, "Failed to connect to MCP server")
+        return { tools: [], close: async () => {}, failed: true }
+      }
+    })
+  )
   return {
     tools: [
       readFileTool,
@@ -57,10 +69,11 @@ export async function getDefaultTools() {
       ...mcpConnections.flatMap(connection => connection.tools),
       ...pluginTools
     ],
-    // Per-server tool counts for the startup panel (see components/startup-panel.tsx).
+    // Per-server tool counts for the startup panel (see components/startup-panel.tsx); failed connects show as 0 tools with a flag so the panel can mark them.
     mcpServers: mcpServers.map((server, index) => ({
       id: server.id,
-      toolCount: mcpConnections[index]!.tools.length
+      toolCount: mcpConnections[index]!.tools.length,
+      failed: mcpConnections[index]!.failed
     })),
     closeTools: async () => {
       await Promise.all(mcpConnections.map(connection => connection.close()))

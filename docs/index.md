@@ -8,7 +8,7 @@ nav_order: 1
 
 **Kaja is a highly customisable, multi-purpose AI agent.** A single executable binary with an event loop, running broadly at home. Orchestrate various types of models, embedding them into context-sensitive, multi-step pipelines.
 
-Built with an **offline-first** design approach. Configs are local text files. Your memory (brain 🧠) and previous session data are stored in a single SQLite database file, safely on your home computer. If you run your own models locally, there is no Internet connection needed at all.
+Built with an **offline-first** design approach. Configs are local text files. Your memory (brain 🧠) and previous session data are stored in a single SQLite database file, in your home computer’s safety. If you run your own models locally, there is **no Internet connection needed at all**.
 
 ## What Is The Purpose?
 
@@ -28,4 +28,4 @@ Next:
 
 [^1]: And perhaps that 3-rd party corporate you rent computes from its sweat shop, where defenetly not happens any public model training with your worries and secrets.
 
-[^2]: Nothing. 🧘
+[^2]: 🧘

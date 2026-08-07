@@ -67,7 +67,7 @@ export function StartupPanel({
   models: CliResolvedModel[]
   /** Id of the chat model actually in use right now. Among chat-task models, only this one gets a live reachability check — the rest stay at their default "pending" icon. Non-chat tasks (tts, stt, embedding, image-generation) are always checked, since there's no notion of an "active" one among them. */
   activeModelId?: string
-  mcpServers?: { id: string; toolCount: number }[]
+  mcpServers?: { id: string; toolCount: number; failed?: boolean }[]
   cwd: string
   sessionCount: number
   memoryNoteCount: number
@@ -156,9 +156,11 @@ export function StartupPanel({
           {mcpServers.map(server => (
             <Text color="gray" dimColor key={server.id}>
               {"  "}
-              {server.id}{" "}
+              <Text color={server.failed ? "red" : undefined}>{server.failed ? "✗" : "✓"}</Text> {server.id}{" "}
               <Text color="blackBright" dimColor italic>
-                {t("startup.mcpServerToolCount", { count: server.toolCount })}
+                {server.failed
+                  ? t("startup.mcpServerFailed")
+                  : t("startup.mcpServerToolCount", { count: server.toolCount })}
               </Text>
             </Text>
           ))}

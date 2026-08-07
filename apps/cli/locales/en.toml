@@ -1,5 +1,6 @@
 [cli]
 invalidConfig = "Invalid config file: {path}"
+startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
 bye = "Bye, bye!"
 
 [firstRun]
@@ -149,6 +150,7 @@ taskRerank = "Rerank"
 taskImageGen = "Image generation"
 mcpServers = "MCP servers"
 mcpServerToolCount = "({count} tools)"
+mcpServerFailed = "(failed to connect)"
 stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount} · Tools: {toolCount}"
 
 [telegram]

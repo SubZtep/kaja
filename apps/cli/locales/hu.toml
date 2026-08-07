@@ -1,5 +1,6 @@
 [cli]
 invalidConfig = "Érvénytelen konfigurációs fájl: {path}"
+startupError = "Váratlan hiba történt, a Kaja nem tudott elindulni: {message}\nA részletek a naplófájlba kerültek."
 bye = "Pá, pá!"
 
 [firstRun]
@@ -149,6 +150,7 @@ taskRerank = "Rangsorolás"
 taskImageGen = "Képgenerálás"
 mcpServers = "MCP szerverek"
 mcpServerToolCount = "({count} eszköz)"
+mcpServerFailed = "(sikertelen kapcsolódás)"
 stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet · {toolCount} eszköz"
 
 [telegram]

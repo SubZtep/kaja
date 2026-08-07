@@ -3,6 +3,7 @@ import { applyConfigDirOverride, detectAndSetLanguage } from "./lib/cli/bootstra
 import { runFirstRunIfNeeded } from "./lib/cli/first-run"
 import { getConfigPath, isExists, validate } from "./lib/config/config"
 import { t } from "./lib/i18n"
+import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runMemorySubcommand } from "./subcommands/memory"
 import { runSubcommand } from "./subcommands/run"
@@ -10,43 +11,51 @@ import { runSessionSubcommand } from "./subcommands/session"
 import { runTelegramSubcommand } from "./subcommands/telegram"
 import { runWebSubcommand } from "./subcommands/web"
 
-// --config must take effect before the language-detecting config read below; args import must come after (meow builds --help at module load)
-applyConfigDirOverride(process.argv.slice(2))
-await detectAndSetLanguage()
+try {
+  // --config must take effect before the language-detecting config read below; args import must come after (meow builds --help at module load)
+  applyConfigDirOverride(process.argv.slice(2))
+  await detectAndSetLanguage()
 
-// Before the config guard on purpose, so --help/--version/--config work even with a missing or invalid config
-const { cli } = await import("./lib/cli/args")
+  // Before the config guard on purpose, so --help/--version/--config work even with a missing or invalid config
+  const { cli } = await import("./lib/cli/args")
 
-// memory/session/web/config: browsing/fixing config must work even with a missing or invalid LLM config, so these run before the config guard.
-switch (cli.input[0]) {
-  case "memory":
-    await runMemorySubcommand(cli)
-    break
-  case "session":
-    await runSessionSubcommand(cli)
-    break
-  case "web":
-    await runWebSubcommand(cli)
-    break
-  case "config":
-    await runConfigSubcommand(cli)
-    break
-}
+  // memory/session/web/config: browsing/fixing config must work even with a missing or invalid LLM config, so these run before the config guard.
+  switch (cli.input[0]) {
+    case "memory":
+      await runMemorySubcommand(cli)
+      break
+    case "session":
+      await runSessionSubcommand(cli)
+      break
+    case "web":
+      await runWebSubcommand(cli)
+      break
+    case "config":
+      await runConfigSubcommand(cli)
+      break
+  }
 
-if (!(await isExists())) {
-  await runFirstRunIfNeeded()
-}
+  if (!(await isExists())) {
+    await runFirstRunIfNeeded()
+  }
 
-if (!(await validate())) {
-  console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
+  if (!(await validate())) {
+    console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
+    process.exit(1)
+  }
+
+  // telegram needs a fully-validated config to run a real agent; unknown/no command falls through to the Ink TUI
+  switch (cli.input[0]) {
+    case "telegram":
+      await runTelegramSubcommand()
+      break
+    default:
+      await runSubcommand(cli)
+  }
+} catch (error) {
+  // Catch-all so a bug anywhere in startup (config parsing, first-run, MCP tool connections, etc.) prints a short message instead of a raw stack trace; full detail still goes to the log file.
+  log.error({ error }, "Unhandled startup error")
+  const message = error instanceof Error ? error.message : String(error)
+  console.log(`${color("red", "ansi")}${t("cli.startupError", { message })}`)
   process.exit(1)
-}
-
-// telegram needs a fully-validated config to run a real agent; unknown/no command falls through to the Ink TUI
-switch (cli.input[0]) {
-  case "telegram":
-    await runTelegramSubcommand()
-    break
-  default:
-    await runSubcommand(cli)
 }

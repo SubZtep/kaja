@@ -45,12 +45,13 @@ export async function runSubcommand(cli: typeof Cli) {
   const sessionCount = (await listSessions()).length
   const memoryNoteCount = Object.keys(await loadMemory()).length
 
-  // Closes long-lived tool connections (e.g. Playwright MCP subprocess); guarded so SIGINT and normal exit can't both close it
+  // Closes long-lived tool connections (e.g. Playwright MCP subprocess); guarded so SIGINT, normal exit, and a crashed render can't all close it. Force-exits after a timeout so a hung MCP subprocess can't make Ctrl+C stop working.
+  const SHUTDOWN_TIMEOUT_MS = 3000
   let closed = false
   const shutdown = async () => {
     if (closed) return
     closed = true
-    await closeTools()
+    await Promise.race([closeTools(), new Promise(resolve => setTimeout(resolve, SHUTDOWN_TIMEOUT_MS))])
   }
   process.on("SIGINT", async () => {
     await shutdown()
@@ -91,8 +92,12 @@ export async function runSubcommand(cli: typeof Cli) {
       }
     }
   )
-  await waitUntilExit()
-  await shutdown()
+  // finally, not just a trailing call: an error thrown out of waitUntilExit (e.g. a render crash) must not skip closing MCP subprocess connections
+  try {
+    await waitUntilExit()
+  } finally {
+    await shutdown()
+  }
 
   console.log(t("cli.bye"))
   process.exit(0)

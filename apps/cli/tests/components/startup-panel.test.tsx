@@ -179,6 +179,34 @@ test("lists connected MCP servers with their tool counts", async () => {
   await t.waitUntilExit()
 })
 
+test("marks a failed MCP server connection instead of showing a tool count", async () => {
+  const t = renderForTest(
+    <Box flexDirection="column" width={80} height={20}>
+      <StartupPanel
+        models={[]}
+        mcpServers={[
+          { id: "playwright", toolCount: 5 },
+          { id: "broken-server", toolCount: 0, failed: true }
+        ]}
+        cwd="/home/kaja/project"
+        sessionCount={0}
+        memoryNoteCount={0}
+        toolCount={5}
+      />
+    </Box>
+  )
+  await t.tick()
+
+  const frame = t.lastFrame()
+  expect(frame).toContain("✓ playwright")
+  expect(frame).toContain("(5 tools)")
+  expect(frame).toContain("✗ broken-server")
+  expect(frame).toContain("(failed to connect)")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("omits the MCP servers section when none are connected", async () => {
   const t = renderForTest(
     <Box flexDirection="column" width={80} height={10}>
