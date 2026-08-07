@@ -4,11 +4,11 @@ title: Installation
 nav_order: 2
 ---
 
-<!-- # Getting Started -->
-
 # Installation
 
-Run:
+Run the setup script that find and install the correct version.
+
+On Max or Linux:
 
 ```sh
 curl -fsSL https://kaja.io/setup.sh | bash
@@ -20,8 +20,8 @@ On Windows:
 irm https://kaja.io/setup.ps1 | iex
 ```
 
-Or grab a compiled binary directly from [GitHub Releases](https://github.com/SubZtep/kaja/releases)
-— Linux, macOS, and Windows, x64 and arm64.
+Or grab directly from [GitHub Releases](https://github.com/SubZtep/kaja/releases)
+— x64 and arm64.
 
 ## First run
 
@@ -35,8 +35,7 @@ Run `kaja`. If no config exists yet, a one-time setup wizard asks how you want t
 > Running in a non-interactive shell (scripts, CI) skips the wizard and writes the default
 template untouched.
 
-
-## Basic usage
+<!-- ## Basic usage
 
 ```sh
 # Start a new chat
@@ -64,4 +63,10 @@ kaja memory export        # dump memory as JSON
 kaja telegram             # run as a Telegram bot
 kaja config fetch         # pull mcp.toml/models.toml from a Kaja server
 kaja config wipe          # back up and clear ~/.config/kaja
-```
+``` -->
+
+---
+
+Next:
+
+[Configuration](/configuration){: .btn .btn-green .fs-5 }

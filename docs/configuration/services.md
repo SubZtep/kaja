@@ -48,3 +48,9 @@ Notes:
 - **Web search** (`[webSearch]`): get a free key from [Brave's website](https://brave.com/search/api/).
 - **Location** (`[location]`): the example URL and API key work for a while.
 - **Zen** (`[zen]`): get a free API key from [OpenCode Zen](https://opencode.ai/zen).
+
+---
+
+Next:
+
+[Voice](/configuration/voice){: .btn .btn-green .fs-5 }

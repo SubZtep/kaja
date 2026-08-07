@@ -36,3 +36,9 @@ see `docs/config/datasets/` for the format.
 Personas without a `when` are never auto-selected; pick those from the slash menu — note that
 picking one there starts a fresh conversation, while an automatic switch keeps the current one
 going. A persona that pins a `model` swaps the model too; otherwise the current one is kept.
+
+---
+
+Next:
+
+[Tools](/tools){: .btn .btn-green .fs-5 }

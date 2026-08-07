@@ -39,3 +39,34 @@ Notes:
 
 - To enable TTS/STT, add corresponding `models` entries in `models.toml` and a `stt`/`tts` block in `settings.json` (see the Voice page).
 - `settings.json` is written by the setup wizard on first run; you can edit it manually afterwards.
+
+## `kaja config fetch`
+
+Downloads `mcp.toml` and `models.toml` from a Kaja server, backing up any existing files first:
+
+```sh
+kaja config fetch
+```
+
+Set `services.toml`'s `[api]` `baseUrl` (and `token` if required) before running this.
+On a fresh install, the fetched `models.toml`'s first `chat`-task model is also auto-filled into
+`settings.json`'s `models.chat`, so a single fetch is enough to leave a fresh install bootable (a
+chat model you've deliberately chosen is never overwritten by a later fetch).
+
+## `kaja config wipe`
+
+Backs up the whole config directory (`settings.json`, `models.toml`, `mcp.toml`, `services.toml`,
+`tools/`, `personas/`, `datasets/`) by renaming it to `<dir>.bak` (or `.bak2`, `.bak3`, ... if
+backups already exist), leaving a clean slate for the next run of `kaja` to recreate:
+
+```sh
+kaja config wipe
+```
+
+Nothing is ever deleted — recover by renaming the `.bak` directory back if needed.
+
+---
+
+Next:
+
+[Models](/configuration/models){: .btn .btn-green .fs-5 }

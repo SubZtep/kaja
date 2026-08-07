@@ -14,11 +14,9 @@ Built with an **offline-first** design approach. Configs are local text files. Y
 
 Help users through their daily routines by asking questions and validating their answers. Help track daily questionnaires effectively and collect structured user behaviour data over time helping long term analysis ⛨.
 
-## Is It Safe To Use?
+## 🛡️ Data Safety
 
-Your conversation history and surrounding data never leave your computer. Every piece of sensitive information stays between you and Kaja🛡️[^1].
-
-> A work-in-progress artificial intelligence bot digging into your sensitive places. What could possibly go wrong[^2]?
+Your conversation history and surrounding data never leave your computer. Every piece of sensitive information stays between you and Kaja[^1].
 
 ---
 
@@ -26,6 +24,4 @@ Next:
 
 [Installation](/installation){: .btn .btn-green .fs-5 }
 
-[^1]: And perhaps that 3-rd party corporate you rent computes from its sweat shop, where defenetly not happens any public model training with your worries and secrets.
-
-[^2]: 🧘
+[^1]: And perhaps that 3-rd party sweat shop you rent computes from. Those defenetly not training public models with your worries and secrets.

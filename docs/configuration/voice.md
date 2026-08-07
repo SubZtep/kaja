@@ -32,3 +32,9 @@ English default is an English-only model — point `models.speech-to-text` at a 
 in `models.toml`, and set `stt.language` in `settings.json` to override), and spoken replies stay
 with the configured Kokoro voice (no Hungarian voice) unless `models.text-to-speech` points at
 something Hungarian-capable.
+
+---
+
+Next:
+
+[CLI](/cli){: .btn .btn-green .fs-5 }

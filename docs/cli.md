@@ -65,3 +65,9 @@ Typing `/` as the first character opens a menu to toggle thinking/sounds/voice o
 | `↑` / `↓` | Move selection |
 | `Enter` | Activate selected item |
 | `Esc` / `Backspace` / `Delete` | Close the menu |
+
+---
+
+Next:
+
+[Flow](/flow){: .btn .btn-green .fs-5 }

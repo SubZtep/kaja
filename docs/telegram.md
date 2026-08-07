@@ -38,3 +38,9 @@ chat — including the shell-command approve/decline flow, shown as an inline ke
 
 Then open a DM with your bot and send anything. Messages from accounts not in `allowedUserIds`
 are silently ignored — it must be non-empty, there's no "open to everyone" mode.
+
+---
+
+Next:
+
+[Development](/development){: .btn .btn-green .fs-5 }

@@ -55,3 +55,9 @@ Playwright ships enabled by default, giving the agent a headless browser.
 
 Drop a `.ts` file exporting a tool under `~/.config/kaja/tools/` — picked up automatically, no
 rebuild needed.
+
+---
+
+Next:
+
+[Telegram](/telegram){: .btn .btn-green .fs-5 }
