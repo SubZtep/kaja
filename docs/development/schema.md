@@ -9,7 +9,7 @@ nav_order: 9.3
 
 ## `@kaja/schema/api`
 
-Shared by `apps/api`, `apps/web`, `packages/sdk`.
+Shared by `apps/api`, `apps/web`.
 
 ```mermaid
 ---
@@ -203,7 +203,7 @@ These aren't type imports (each subpath stays decoupled per `packages/schema/AGE
 
 | Subpath | Contents | Consumers |
 |---|---|---|
-| `@kaja/schema/api` | `McpServer`, `Provider`/`Model`, auth payloads | `apps/api`, `apps/web`, `packages/sdk` |
+| `@kaja/schema/api` | `McpServer`, `Provider`/`Model`, auth payloads | `apps/api`, `apps/web` |
 | `@kaja/schema/config` | `KajaConfig` (settings.toml), `KajaModelsFile` (models.toml), `McpFile` (mcp.toml), `ServicesFile` (services.toml) | `apps/cli` |
 | `@kaja/schema/store` | `PersistedSession`/`SessionMeta`, `MemoryNote`/`MemoryStore` (SQLite-backed) | `apps/cli` |
 | `@kaja/schema/cli` | `Persona`, `SamplingParams`, `Dataset`/`DatasetField` | `apps/cli` |

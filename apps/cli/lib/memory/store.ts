@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs"
 import { dirname, join } from "node:path"
 import type { MemoryNote, MemoryStore } from "@kaja/schema/store"
 import { file, write } from "bun"
+import { stringify } from "smol-toml"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
 import { getPaths } from "../paths"
 
@@ -24,7 +25,7 @@ async function persistDbPathIfMissing(dbPath: string) {
     if (!(await file(configPath).exists())) return
     const loose = await readConfigLoose()
     if (loose.memory?.dbPath) return
-    await write(file(configPath), JSON.stringify({ ...loose, memory: { ...loose.memory, dbPath } }, null, 2))
+    await write(file(configPath), stringify({ ...loose, memory: { ...loose.memory, dbPath } }))
     invalidateConfigCache()
   } catch {}
 }

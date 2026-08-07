@@ -5,7 +5,7 @@ Single source of truth for Zod schemas and related TypeScript types across the m
 ## Layout
 
 ```
-api/         # API contracts: shared by API, web, SDK, and CLI device auth
+api/         # API contracts: shared by API, web, and CLI device auth
   index.ts     # re-exports + KAJA_CLI_CLIENT_ID
   auth.ts      # auth-related payloads
   geo.ts       # GeoLocation schema
@@ -31,7 +31,6 @@ Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/conf
 ## Consumers
 
 - `@kaja/api` — request validation / OpenAPI (`@kaja/schema/api`)
-- `@kaja/sdk` — response parsing (`@kaja/schema/api`)
 - `@kaja/web` — form and type alignment (`@kaja/schema/api`)
 - `@kaja/cli` — local config/store/domain schemas (`@kaja/schema/config`, `/store`, `/cli`)
 - CLI device/client id constant: `KAJA_CLI_CLIENT_ID = "kaja-cli"` (in `api/index.ts`)

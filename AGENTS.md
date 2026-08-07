@@ -8,7 +8,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **CLI** (`apps/cli`): Ink TUI agent chat (personas, tools, MCP, Telegram, optional STT/TTS)
 - **OpenAI proxy** (`apps/openai`): OpenAI-compatible forwarder; picks a random model from db (wip)
-- **Packages**: `@kaja/schema`, `@kaja/sdk`, `@kaja/logger`, `@kaja/shared`
+- **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`
 
 There is **no mobile app** in this monorepo.
 
@@ -83,7 +83,7 @@ bun run --filter @kaja/cli test
 ### Web (`apps/web/src/`)
 
 - TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, users, profile)
-- SDK via `useApiSdk()`; auth client in `hooks/auth-client.ts`
+- auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 
 ### CLI (`apps/cli/`)
@@ -98,14 +98,13 @@ bun run --filter @kaja/cli test
 | Package | Role |
 |---------|------|
 | `@kaja/schema` | Zod API contracts + `KAJA_CLI_CLIENT_ID` (single source of truth for API types) |
-| `@kaja/sdk` | Typed API client (`KajaAPI`) used by web |
 | `@kaja/logger` | Pino (node) / console (browser) with `message, payload?` API |
 | `@kaja/shared` | Pure utils (`cn`, dates, strings) |
 
 ### Type architecture
 
 - **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
-  - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`, `packages/sdk`
+  - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
   - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/cli` — remaining CLI domain concepts (personas, datasets)

@@ -42,7 +42,7 @@ Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).
 
 ## Conventions
 
-- **Data**: React Query + `@kaja/sdk` via `useApiSdk()` from Providers (SDK token from Better Auth session)
+- **Data**: React Query from Providers (SDK token from Better Auth session)
 - **Auth**: Better Auth client in `hooks/auth-client.ts`; session cookies to API; device approval under `/device`
 - **Forms**: TanStack Form patterns in `lib/form*.ts` and `components/form/`
 - **Styling**: Tailwind v4 + `cn()` from `@kaja/shared`
@@ -62,6 +62,5 @@ Vite uses `import.meta.env.MODE` (not `NODE_ENV`) for browser environment detect
 
 ## Boundaries
 
-- Do not add a second API client; extend `@kaja/sdk` if new endpoints are needed
 - Keep admin and public route trees separate
 - Ask before large landing-page redesigns

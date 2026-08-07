@@ -19,7 +19,6 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 * **Packages** 
   + [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.
   + [`schema`](./packages/schema/) – Payload and data schemas across the workspaces.
-  + [`sdk`](./packages/sdk/) – API SDK for app clients.
   + [`shared`](./packages/shared/) – Shared utilities (pure functions).
 
 ## Quick Start
