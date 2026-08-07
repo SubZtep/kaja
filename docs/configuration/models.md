@@ -33,7 +33,7 @@ task = "chat"
 Notes:
 
 - The shipped templates cover local Ollama (`llama3.2:1b`, `qwen2.5:0.5b`, `qwen3:1.7b`, `llama3.2:3b`) and hosted Fireworks.
-- To switch which model handles a task, set `models.<task>` in `settings.json` directly to that model's `{model, provider}` pair.
+- To switch which model handles a task, set `models.<task>` in `settings.toml` directly to that model's `{model, provider}` pair.
 
 ---
 

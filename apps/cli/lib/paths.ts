@@ -11,7 +11,7 @@ export function listPaths(all = false, configDir = getPaths().config) {
   const paths = getPaths()
 
   const items = [
-    { label: "settings", path: join(configDir, "settings.json") },
+    { label: "settings", path: join(configDir, "settings.toml") },
     { label: "memory & sessions", path: join(paths.data, "memory.sqlite") }
   ]
 

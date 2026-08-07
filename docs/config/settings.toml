@@ -1,0 +1,22 @@
+[models]
+
+[preferences]
+thinking = false
+sounds = true
+voice = false
+language = "en"
+persona = "default"
+
+# Speech-to-text (Speaches AI server).
+# [stt]
+# speachesUrl = "http://localhost:8000"
+# language = "en"
+
+# Text-to-speech (Speaches AI server).
+# [tts]
+# speachesUrl = "http://localhost:8000"
+# voice = "af_heart"
+
+# Overrides the default XDG data location for the memory database.
+# [memory]
+# dbPath = "/home/user/.local/share/kaja/memory.sqlite"

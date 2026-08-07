@@ -31,7 +31,7 @@ export function Configuration() {
       <Section className="mb-5 overflow-x-auto">
         <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
           {
-            "~/.config/kaja/\n├─ settings.json    # optional settings and app preferences\n├─ models.toml      # model catalog per provider\n├─ mcp.toml         # model context protocol servers\n├─ personas/*.toml  # one behaviour per file\n└─ datasets/*.json  # custom fields for personas to collect"
+            "~/.config/kaja/\n├─ settings.toml    # optional settings and app preferences\n├─ models.toml      # model catalog per provider\n├─ mcp.toml         # model context protocol servers\n├─ personas/*.toml  # one behaviour per file\n└─ datasets/*.json  # custom fields for personas to collect"
           }
         </code>
       </Section>

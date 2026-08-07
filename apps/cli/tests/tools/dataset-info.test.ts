@@ -12,10 +12,12 @@ process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "settings.json"),
-  JSON.stringify({
-    models: { chat: { model: "x", provider: "default" } }
-  })
+  join(configKajaDir, "settings.toml"),
+  `
+[models.chat]
+model = "x"
+provider = "default"
+`
 )
 writeFileSync(
   join(configKajaDir, "models.toml"),

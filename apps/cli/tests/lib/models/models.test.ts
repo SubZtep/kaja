@@ -21,7 +21,7 @@ const DATA: KajaModelsFile = {
   ]
 }
 
-test("resolves a settings.json {model, provider} ref against its provider's credentials", () => {
+test("resolves a settings.toml {model, provider} ref against its provider's credentials", () => {
   expect(resolveModelFromConfig(DATA, { model: "accounts/example/models/chat", provider: "default" }, "chat")).toEqual({
     model: "accounts/example/models/chat",
     task: "chat",
@@ -77,7 +77,7 @@ afterEach(() => {
 test("free hosted chat with no other task configured: loads an empty file without writing models.toml", async () => {
   const dir = `${tmpdir()}/kaja-test-models-free-only-${Math.random()}`
   setConfigDirOverride(dir)
-  await write(getConfigPath(), JSON.stringify({ models: {} }))
+  await write(getConfigPath(), "[models]\n")
 
   const data = await loadModelsFile()
   expect(data).toEqual({ providers: {}, models: [] })
@@ -89,7 +89,11 @@ test("free hosted chat plus another configured task: still writes the example te
   setConfigDirOverride(dir)
   await write(
     getConfigPath(),
-    JSON.stringify({ models: { embedding: { model: "embedding-default", provider: "default" } } })
+    `
+[models.embedding]
+model = "embedding-default"
+provider = "default"
+`
   )
 
   await loadModelsFile()

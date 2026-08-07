@@ -3,16 +3,18 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-// agents.ts->openai.ts reads config() at import time and hard-exits without a valid settings.json+models.toml, so this fixture provides both.
+// agents.ts->openai.ts reads config() at import time and hard-exits without a valid settings.toml+models.toml, so this fixture provides both.
 const configDir = `${tmpdir()}/kaja-test-xdg-config-view-image`
 process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "settings.json"),
-  JSON.stringify({
-    models: { chat: { model: "x", provider: "default" } }
-  })
+  join(configKajaDir, "settings.toml"),
+  `
+[models.chat]
+model = "x"
+provider = "default"
+`
 )
 writeFileSync(
   join(configKajaDir, "models.toml"),

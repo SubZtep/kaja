@@ -1,14 +1,15 @@
 import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaModels, type KajaPreferences } from "@kaja/schema/config"
 import { file, write } from "bun"
-import rawTemplate from "../../../../docs/config/settings.json" with { type: "text" }
+import { parse, stringify } from "smol-toml"
+import rawTemplate from "../../../../docs/config/settings.toml" with { type: "text" }
 import { t } from "../i18n"
 import { getPaths } from "../paths"
 
 const TEMPLATE = rawTemplate as unknown as string
-const TEMPLATE_JSON = JSON.parse(TEMPLATE)
+const TEMPLATE_TOML = parse(TEMPLATE)
 
-// Set at startup from --config-dir; only settings.json moves, other data paths stay default.
+// Set at startup from --config-dir; only settings.toml moves, other data paths stay default.
 let configDirOverride: string | undefined
 
 export function setConfigDirOverride(dir: string | undefined) {
@@ -22,7 +23,7 @@ export function getConfigDir() {
 }
 
 export function getConfigPath() {
-  return join(getConfigDir(), "settings.json")
+  return join(getConfigDir(), "settings.toml")
 }
 
 export async function isExists() {
@@ -31,12 +32,12 @@ export async function isExists() {
 }
 
 export async function validate() {
-  const f = file(getConfigPath(), { type: "application/json" })
+  const f = file(getConfigPath())
   if (!(await f.exists())) return false
 
   let data
   try {
-    data = await f.json()
+    data = parse(await f.text())
   } catch {
     return false
   }
@@ -47,9 +48,7 @@ export async function validate() {
 /** Tolerant reader for the config wizard prefill: returns whatever is in the file (possibly schema-invalid), or {} when missing/unparseable. */
 export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
   try {
-    const data = await file(getConfigPath(), {
-      type: "application/json"
-    }).json()
+    const data = parse(await file(getConfigPath()).text())
     if (data && typeof data === "object") return data as Partial<KajaConfig>
   } catch {}
   return {}
@@ -58,7 +57,7 @@ export async function readConfigLoose(): Promise<Partial<KajaConfig>> {
 // Cached after the first read: the file only changes via saveConfig/savePreferences below (and invalidateConfigCache, for writers outside this module), so other readers (stt/tts/geo, called per-utterance) don't hit disk each time.
 let cached: KajaConfig | undefined
 
-/** Clears the config() cache after a write made outside saveConfig/savePreferences — e.g. lib/memory-store.ts persisting a resolved default path into settings.json. */
+/** Clears the config() cache after a write made outside saveConfig/savePreferences — e.g. lib/memory-store.ts persisting a resolved default path into settings.toml. */
 export function invalidateConfigCache() {
   cached = undefined
 }
@@ -66,10 +65,10 @@ export function invalidateConfigCache() {
 export async function config() {
   if (cached) return cached
   const configPath = getConfigPath()
-  const f = file(configPath, { type: "application/json" })
+  const f = file(configPath)
   if (await f.exists()) {
     try {
-      cached = (await f.json()) as KajaConfig
+      cached = parse(await f.text()) as unknown as KajaConfig
       return cached
     } catch (error: any) {
       console.log(t("config.invalidAt", { path: configPath, message: error.message }))
@@ -82,49 +81,45 @@ export async function config() {
 }
 
 export async function saveConfig(data: KajaConfig) {
-  const f = file(getConfigPath(), { type: "application/json" })
-  await write(f, JSON.stringify(data, null, 2))
+  await write(getConfigPath(), stringify(data))
   cached = undefined
 }
 
 export async function savePreferences(preferences: KajaPreferences) {
   const current = await config()
-  const f = file(getConfigPath(), { type: "application/json" })
   // Merge into the existing block: callers persist only the keys they manage (thinking/sounds/voice) and must not drop others like language.
-  await write(f, JSON.stringify({ ...current, preferences: { ...current.preferences, ...preferences } }, null, 2))
+  await write(getConfigPath(), stringify({ ...current, preferences: { ...current.preferences, ...preferences } }))
   cached = undefined
 }
 
 /** Merges into models.* — each task's whole {model, provider} pair is replaced, other tasks untouched. */
 export async function saveModels(models: Partial<KajaModels>) {
   const current = await config()
-  const f = file(getConfigPath(), { type: "application/json" })
-  await write(f, JSON.stringify({ ...current, models: { ...current.models, ...models } }, null, 2))
+  await write(getConfigPath(), stringify({ ...current, models: { ...current.models, ...models } }))
   cached = undefined
 }
 
-/** Seeds settings.json's models.chat from a freshly fetched models.toml, only if no real chat model is set yet (placeholder doesn't count). */
+/** Seeds settings.toml's models.chat from a freshly fetched models.toml, only if no real chat model is set yet (placeholder doesn't count). */
 export async function saveFetchedChatModel(chatModel: { model: string; provider?: string }) {
   const current = await readConfigLoose()
-  const templateChatModel = (TEMPLATE_JSON as Partial<KajaConfig>).models?.chat
+  const templateChatModel = (TEMPLATE_TOML as Partial<KajaConfig>).models?.chat
   const hasRealChat = !!current.models?.chat?.model && current.models.chat.model !== templateChatModel?.model
   if (hasRealChat) return
   const merged: Partial<KajaConfig> = {
-    ...(TEMPLATE_JSON as Partial<KajaConfig>),
+    ...(TEMPLATE_TOML as Partial<KajaConfig>),
     ...current,
     models: { ...current.models, chat: chatModel }
   }
-  const f = file(getConfigPath(), { type: "application/json" })
-  await write(f, JSON.stringify(merged, null, 2))
+  await write(getConfigPath(), stringify(merged))
   cached = undefined
 }
 
 /** @param freeChat Omits the template's placeholder models.chat, so it falls back to the free hosted tier. */
 export async function create(freeChat = false) {
-  const f = file(getConfigPath(), { type: "application/json" })
-  if (freeChat) {
-    const { chat: _chat, ...otherModels } = TEMPLATE_JSON.models
-    TEMPLATE_JSON.models = otherModels
+  if (!freeChat) {
+    await write(getConfigPath(), stringify(TEMPLATE_TOML))
+    return
   }
-  await write(f, JSON.stringify(TEMPLATE_JSON, null, 2))
+  const { chat: _chat, ...otherModels } = TEMPLATE_TOML.models as Record<string, unknown>
+  await write(getConfigPath(), stringify({ ...TEMPLATE_TOML, models: otherModels }))
 }

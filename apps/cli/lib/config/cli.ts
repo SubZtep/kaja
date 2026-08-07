@@ -8,7 +8,7 @@ import { getConfigDir, saveFetchedChatModel } from "./config"
 import { nextBackupPath } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
 
-/** Handles `kaja config <fetch|wipe>`; returns { code, text } instead of printing/exiting so tests can call it directly. Runs before the config guard since a fresh install has no settings.json yet. */
+/** Handles `kaja config <fetch|wipe>`; returns { code, text } instead of printing/exiting so tests can call it directly. Runs before the config guard since a fresh install has no settings.toml yet. */
 export async function runConfigCli(
   argv: string[],
   services: Partial<ServicesFile>

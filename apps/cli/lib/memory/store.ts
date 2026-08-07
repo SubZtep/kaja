@@ -11,13 +11,13 @@ export function getDefaultMemoryDbPath() {
   return join(getPaths().data, "memory.sqlite")
 }
 
-/** Resolves the DB path: config.memory.dbPath, or the default XDG location. Uses readConfigLoose so this works even without a valid settings.json. */
+/** Resolves the DB path: config.memory.dbPath, or the default XDG location. Uses readConfigLoose so this works even without a valid settings.toml. */
 export async function resolveMemoryDbPath(): Promise<string> {
   const loose = await readConfigLoose()
   return loose.memory?.dbPath || getDefaultMemoryDbPath()
 }
 
-/** Persists a working dbPath into settings.json's memory.dbPath if unset; no-op if settings.json is missing or already set. Best-effort — errors are swallowed. */
+/** Persists a working dbPath into settings.toml's memory.dbPath if unset; no-op if settings.toml is missing or already set. Best-effort — errors are swallowed. */
 async function persistDbPathIfMissing(dbPath: string) {
   try {
     const configPath = getConfigPath()
@@ -148,7 +148,7 @@ export async function getDb(): Promise<Database> {
     migrateSchema(db, hasVersion.version)
   }
 
-  // Only persist the path back to settings.json once we know it works — the database above opened and initialized without throwing.
+  // Only persist the path back to settings.toml once we know it works — the database above opened and initialized without throwing.
   await persistDbPathIfMissing(dbPath)
 
   return db

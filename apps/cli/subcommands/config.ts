@@ -3,7 +3,7 @@ import { readServicesLoose } from "../lib/config/services"
 
 /**
  * `kaja config fetch` is how a fresh install (or a broken one) gets real
- * settings.json/models.toml files in the first place, so it must run before
+ * settings.toml/models.toml files in the first place, so it must run before
  * the config guard, without any of them already in place. It needs
  * services.toml's [api] baseUrl to already be set.
  */

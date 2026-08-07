@@ -101,23 +101,23 @@ test("fetch surfaces a non-OK response as an error", async () => {
 })
 
 test("wipe backs up the whole config dir to .bak", async () => {
-  await Bun.write(getConfigPath(), JSON.stringify({ hello: "world" }))
+  await Bun.write(getConfigPath(), 'hello = "world"\n')
   const { code, text } = await runConfigCli(["wipe"], {})
   expect(code).toBe(0)
   expect(text).toContain(`${getConfigDir()}.bak`)
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
-  expect(await Bun.file(`${getConfigDir()}.bak/settings.json`).text()).toContain("world")
+  expect(await Bun.file(`${getConfigDir()}.bak/settings.toml`).text()).toContain("world")
 })
 
 test("a second wipe uses .bak2", async () => {
-  await Bun.write(getConfigPath(), JSON.stringify({ run: 1 }))
+  await Bun.write(getConfigPath(), "run = 1\n")
   await runConfigCli(["wipe"], {})
-  await Bun.write(getConfigPath(), JSON.stringify({ run: 2 }))
+  await Bun.write(getConfigPath(), "run = 2\n")
   const { code, text } = await runConfigCli(["wipe"], {})
   expect(code).toBe(0)
   expect(text).toContain(`${getConfigDir()}.bak2`)
-  expect(await Bun.file(`${getConfigDir()}.bak/settings.json`).text()).toContain('"run":1')
-  expect(await Bun.file(`${getConfigDir()}.bak2/settings.json`).text()).toContain('"run":2')
+  expect(await Bun.file(`${getConfigDir()}.bak/settings.toml`).text()).toContain("run = 1")
+  expect(await Bun.file(`${getConfigDir()}.bak2/settings.toml`).text()).toContain("run = 2")
 })
 
 test("wipe with no existing config dir is a no-op", async () => {
@@ -135,7 +135,7 @@ test("unknown or missing subcommand prints usage and exits 1", async () => {
 })
 
 test("a fresh install's models.chat is auto-filled from the first fetched chat model", async () => {
-  // No settings.json on disk yet — same as right after a fresh `create()`.
+  // No settings.toml on disk yet — same as right after a fresh `create()`.
   const modelsToml = `
 [providers.default]
 default = true
@@ -162,7 +162,11 @@ task = "chat"
 test("an existing real models.chat on disk is not overwritten by a later fetch", async () => {
   await Bun.write(
     getConfigPath(),
-    JSON.stringify({ models: { chat: { model: "my-real-chat-model", provider: "default" } } })
+    `
+[models.chat]
+model = "my-real-chat-model"
+provider = "default"
+`
   )
 
   const modelsToml = `

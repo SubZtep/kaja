@@ -50,8 +50,6 @@ export const KajaMemorySchema = z.object({
 
 /** location/webSearch/telegram/api (external service credentials) live in services.toml */
 export const KajaConfigSchema = z.object({
-  // For editor autocomplete/validation only; not read by the CLI.
-  $schema: z.url().optional(),
   models: KajaModelsSchema,
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),

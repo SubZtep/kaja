@@ -3,16 +3,18 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-// telegram-bot.ts -> telegram-driver.ts -> lib/agents.ts -> lib/openai.ts, which reads config() at module load — config() hard-exits the process if settings.json is missing or its chat model doesn't resolve in models.toml, so this isolated config dir needs both (same fixture as tests/lib/agents.test.ts). Set before the dynamic import below so it's in place before lib/openai.ts is ever evaluated.
+// telegram-bot.ts -> telegram-driver.ts -> lib/agents.ts -> lib/openai.ts, which reads config() at module load — config() hard-exits the process if settings.toml is missing or its chat model doesn't resolve in models.toml, so this isolated config dir needs both (same fixture as tests/lib/agents.test.ts). Set before the dynamic import below so it's in place before lib/openai.ts is ever evaluated.
 const configDir = `${tmpdir()}/kaja-test-xdg-config-telegram-bot`
 process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "settings.json"),
-  JSON.stringify({
-    models: { chat: { model: "x", provider: "default" } }
-  })
+  join(configKajaDir, "settings.toml"),
+  `
+[models.chat]
+model = "x"
+provider = "default"
+`
 )
 writeFileSync(
   join(configKajaDir, "models.toml"),

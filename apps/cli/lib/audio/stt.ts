@@ -4,7 +4,7 @@
 //   const stt = await createStt({ source: createLocalSource() })
 //   for await (const text of stt.utterances) console.log(text)
 //
-// Requires speaches running at settings.json's speachesUrl.
+// Requires speaches running at settings.toml's speachesUrl.
 
 import { config } from "../config/config"
 import { getLanguage } from "../i18n"
@@ -16,7 +16,7 @@ import { createAsyncQueue, SAMPLE_RATE } from "./audio"
 async function resolveSttSettings() {
   const { stt, models } = await config()
   if (!models["speech-to-text"]?.provider) {
-    throw new Error("No STT model configured — set models.speech-to-text in settings.json")
+    throw new Error("No STT model configured — set models.speech-to-text in settings.toml")
   }
   const resolved = resolveModelFromConfig(await loadModelsFile(), models["speech-to-text"], "speech-to-text")!
   return {

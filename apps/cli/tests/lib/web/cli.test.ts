@@ -11,14 +11,16 @@ const configDir = `${tmpdir()}/kaja-test-web-xdg-config`
 process.env.XDG_DATA_HOME = `${tmpdir()}/kaja-test-web-xdg-data`
 process.env.XDG_CONFIG_HOME = configDir
 
-// /personas dynamically imports lib/agents.ts (see web-cli.ts), which pulls in lib/openai.ts's top-level `await config()` — that hard-exits without a settings.json (and a models.toml whose chat model resolves), so both must exist before that route is ever hit.
+// /personas dynamically imports lib/agents.ts (see web-cli.ts), which pulls in lib/openai.ts's top-level `await config()` — that hard-exits without a settings.toml (and a models.toml whose chat model resolves), so both must exist before that route is ever hit.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "settings.json"),
-  JSON.stringify({
-    models: { chat: { model: "x", provider: "default" } }
-  })
+  join(configKajaDir, "settings.toml"),
+  `
+[models.chat]
+model = "x"
+provider = "default"
+`
 )
 writeFileSync(
   join(configKajaDir, "models.toml"),

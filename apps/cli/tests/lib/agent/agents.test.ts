@@ -6,21 +6,23 @@ import type { Persona } from "@kaja/schema/cli"
 import type { Agent, AgentEvent } from "../../../lib/agent/agents"
 
 // XDG_DATA_HOME/XDG_CONFIG_HOME are read fresh on every call by lib/config.ts and lib/memory-store.ts (not cached at module load), so setting them before each test isolates this file from the real ~/.local/share/kaja and ~/.config/kaja even though other test files run in the same `bun test` process and may set these vars between tests.
-// Set before any import: lib/openai.ts does `const { llm } = await config()` at its own module top level (transitively reached from lib/agents.ts), so a *static* import of lib/agents.ts here would resolve before this file's own body — including these env vars — ever ran. Dynamic imports below keep the sequencing: env vars and the settings.json fixture are in place before lib/agents.ts (and everything it pulls in) is ever evaluated.
+// Set before any import: lib/openai.ts does `const { llm } = await config()` at its own module top level (transitively reached from lib/agents.ts), so a *static* import of lib/agents.ts here would resolve before this file's own body — including these env vars — ever ran. Dynamic imports below keep the sequencing: env vars and the settings.toml fixture are in place before lib/agents.ts (and everything it pulls in) is ever evaluated.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data-agents`
 const configDir = `${tmpdir()}/kaja-test-xdg-config-agents`
 process.env.XDG_DATA_HOME = dataDir
 process.env.XDG_CONFIG_HOME = configDir
 process.env.NODE_ENV = "test"
 
-// config() hard-exits the process if settings.json is missing (or its chat model doesn't resolve in models.toml), so this isolated config dir needs both — no `location` block, so run() never attempts a real network geo lookup.
+// config() hard-exits the process if settings.toml is missing (or its chat model doesn't resolve in models.toml), so this isolated config dir needs both — no `location` block, so run() never attempts a real network geo lookup.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
 writeFileSync(
-  join(configKajaDir, "settings.json"),
-  JSON.stringify({
-    models: { chat: { model: "x", provider: "default" } }
-  })
+  join(configKajaDir, "settings.toml"),
+  `
+[models.chat]
+model = "x"
+provider = "default"
+`
 )
 writeFileSync(
   join(configKajaDir, "models.toml"),

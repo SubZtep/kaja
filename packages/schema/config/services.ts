@@ -26,7 +26,7 @@ export const ServicesApiSchema = z.object({
   token: z.string().min(1).optional()
 })
 
-// External service credentials, kept separate from settings.json (local/UI config).
+// External service credentials, kept separate from settings.toml (local/UI config).
 export const ServicesFileSchema = z.object({
   location: ServicesLocationSchema.optional(),
   webSearch: ServicesWebSearchSchema.optional(),

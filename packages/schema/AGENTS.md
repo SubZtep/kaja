@@ -12,7 +12,7 @@ api/         # API contracts: shared by API, web, SDK, and CLI device auth
   node.ts      # node, heartbeat, command request/response schemas
   mcp-server.ts  # MCP server admin CRUD schemas
   model.ts       # provider/model admin CRUD schemas
-config/      # CLI on-disk config files the user hand-edits (settings.json, models.toml, mcp.toml, services.toml)
+config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml)
 store/       # CLI SQLite-backed runtime state (sessions, memory notes)
 cli/         # Remaining CLI domain concepts (personas, datasets)
 ```

@@ -56,7 +56,7 @@ interface RerankResponse {
 async function rerank(args: { query: string; documents: string[]; top_n?: number }) {
   const { models } = await config()
   if (!models.rerank?.provider) {
-    throw new ToolError("rerank", "No rerank model configured — set models.rerank in settings.json")
+    throw new ToolError("rerank", "No rerank model configured — set models.rerank in settings.toml")
   }
   const resolved = resolveModelFromConfig(await loadModelsFile(), models.rerank, "rerank")!
   const { baseUrl, apiKey, model } = resolved

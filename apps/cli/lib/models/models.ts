@@ -55,7 +55,7 @@ export function resolveModelFromConfig(
 ): CliResolvedModel | undefined {
   if (!ref.provider) return undefined
   const provider = data.providers[ref.provider]
-  if (!provider) throw new Error(`models.toml has no [providers.${ref.provider}] table (named by settings.json)`)
+  if (!provider) throw new Error(`models.toml has no [providers.${ref.provider}] table (named by settings.toml)`)
   return { model: ref.model, task, baseUrl: provider.base_url, apiKey: provider.api_key, provider: ref.provider }
 }
 

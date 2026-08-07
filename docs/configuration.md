@@ -11,7 +11,7 @@ Templates ship in [`docs/config/`](https://github.com/SubZtep/kaja/tree/main/doc
 
 ```
 ~/.config/kaja/
-├── settings.json
+├── settings.toml
 ├── models.toml
 ├── mcp.toml
 ├── services.toml

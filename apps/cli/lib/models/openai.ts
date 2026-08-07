@@ -18,7 +18,7 @@ const KAJA_ZEN_KEY_HEADER = "x-kaja-zen-key"
 
 const { models } = await config()
 const { zen } = await services()
-/** True when settings.json's models.chat has no provider, i.e. the free hosted (OpenCode Zen) tier is in use. */
+/** True when settings.toml's models.chat has no provider, i.e. the free hosted (OpenCode Zen) tier is in use. */
 export const isFreeChat = !models.chat?.provider
 let chatModel: CliResolvedModel
 if (models.chat?.provider) {
@@ -26,7 +26,7 @@ if (models.chat?.provider) {
     chatModel = resolveModelFromConfig(await loadModelsFile(), models.chat, "chat")!
   } catch {
     throw new Error(
-      `settings.json's models.chat names provider "${models.chat.provider}", but models.toml has no [providers.${models.chat.provider}] table`
+      `settings.toml's models.chat names provider "${models.chat.provider}", but models.toml has no [providers.${models.chat.provider}] table`
     )
   }
 } else {
