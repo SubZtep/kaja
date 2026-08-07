@@ -121,3 +121,15 @@ export function isPublicHttpUrl(url: string): boolean {
     return false
   }
 }
+
+/**
+ * Title-cases a hyphen/underscore/space-separated label or top bar
+ * @example "my/kimi-k2" → "Kimi K2".
+ */
+export function titleCase(label?: string) {
+  if (label == null) return null
+  return (label.split("/").pop() ?? label)
+    .split(/[-_\s]+/)
+    .map(word => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(" ")
+}

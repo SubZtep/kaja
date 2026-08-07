@@ -1,6 +1,7 @@
 import chalk from "chalk"
 import dedent from "dedent"
-import { Text } from "ink"
+import { Box, Text } from "ink"
+import Image from "ink-picture"
 import { type MarkedExtension, marked } from "marked"
 import { markedTerminal } from "marked-terminal"
 import { memo } from "react"
@@ -53,8 +54,55 @@ function parseMarkdown(source: string) {
   return out
 }
 
+type Segment = { type: "text"; source: string } | { type: "image"; href: string; alt: string }
+
+/**
+ * marked-terminal renders images as a link (`alt (href)`), the same as any
+ * other link token — there's no terminal image protocol wired into the
+ * renderer itself. To actually display images inline, the source is split
+ * around each `![alt](href)` occurrence (found via `marked.lexer` +
+ * `walkTokens`, in document order) into text/image segments; text segments
+ * still go through the normal marked-terminal pipeline, images render via
+ * `ink-picture`'s `<Image>`.
+ */
+function splitSegments(source: string): Segment[] {
+  const images: { raw: string; href: string; alt: string }[] = []
+  marked.walkTokens(marked.lexer(source), token => {
+    if (token.type === "image") images.push({ raw: token.raw, href: token.href, alt: token.text })
+  })
+  if (images.length === 0) return [{ type: "text", source }]
+
+  const segments: Segment[] = []
+  let rest = source
+  for (const image of images) {
+    const index = rest.indexOf(image.raw)
+    if (index === -1) continue
+    const before = rest.slice(0, index)
+    if (before) segments.push({ type: "text", source: before })
+    segments.push({ type: "image", href: image.href, alt: image.alt })
+    rest = rest.slice(index + image.raw.length)
+  }
+  if (rest) segments.push({ type: "text", source: rest })
+  return segments
+}
+
 // memo() so scroll ticks (which re-render mounted subtrees) skip items
 // whose text is unchanged entirely.
 export default memo(function Markdown({ children }: { children: string }) {
-  return <Text>{parseMarkdown(children)}</Text>
+  const segments = splitSegments(children)
+  if (segments.length === 1 && segments[0]!.type === "text") return <Text>{parseMarkdown(children)}</Text>
+  return (
+    <Box flexDirection="column">
+      {segments.map((segment, i) =>
+        segment.type === "text" ? (
+          <Text key={i}>{parseMarkdown(segment.source)}</Text>
+        ) : (
+          <Box key={i} flexDirection="column">
+            <Image src={segment.href} width={10} height={5} alt={segment.alt} />
+            {segment.alt && <Text dimColor>{segment.alt}</Text>}
+          </Box>
+        )
+      )}
+    </Box>
+  )
 })

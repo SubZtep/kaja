@@ -1,5 +1,5 @@
 import { Text } from "ink"
-import type { PartialMessage as PartialMessageData } from "../hooks/use-agent"
+import type { PartialMessage as PartialMessageData } from "../../hooks/use-agent"
 import { ReasoningBox } from "./reasoning-box"
 
 /** The in-flight streaming message: reasoning (if shown) plus content. */

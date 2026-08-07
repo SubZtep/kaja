@@ -56,9 +56,9 @@ jobs:
       - name: Run type checker
         run: bun run typecheck
 
-      - name: Check CLI config schema is up to date
+      - name: Check CLI config json schema is up to date
         run: |
-          bun run --filter @kaja/cli gen-schema
+          bun --filter @kaja/schema gen-json
           git diff --exit-code -- docs/config/settings.schema.json
 
       - name: Apply SQL migrations

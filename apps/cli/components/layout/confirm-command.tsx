@@ -1,7 +1,7 @@
 import { Box, Text } from "ink"
 import { isDangerousCommand } from "../../lib/agent/command-risk"
 import { t } from "../../lib/i18n"
-import { SelectMenu } from "../select-menu"
+import { SelectMenu } from "../elem/select-menu"
 
 const MAX_COMMAND_LINES = 6
 

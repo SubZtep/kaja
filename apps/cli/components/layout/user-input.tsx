@@ -4,8 +4,8 @@ import { useBlink } from "../../hooks/use-blink"
 import { useDictation } from "../../hooks/use-dictation"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
 import { t } from "../../lib/i18n"
+import { SelectMenu } from "../elem/select-menu"
 import { TextInput } from "../elem/text-input"
-import { SelectMenu } from "../select-menu"
 
 /**
  * Outer box max rows (padding/border included). Content lines for the field

@@ -1,9 +1,10 @@
 import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
+import { titleCase } from "@kaja/shared"
 import { Box, Text, type TextProps } from "ink"
 import Gradient from "ink-gradient"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
-import { MonsterMate } from "../monster"
+import { MonsterMate } from "./monster"
 
 const customTheme = extendTheme(defaultTheme, {
   components: {
@@ -17,23 +18,6 @@ const customTheme = extendTheme(defaultTheme, {
     }
   }
 })
-
-/**
- * Shorten path-style model ids for the top bar (`org/team/name` → `name`)
- * so free-chat / Fireworks-style ids stay readable. Plain ids are unchanged.
- */
-export function shortModelLabel(model: string): string {
-  const slash = model.lastIndexOf("/")
-  return slash >= 0 ? model.slice(slash + 1) : model
-}
-
-/** Title-cases a hyphen/underscore/space-separated label, e.g. "kimi-k2" → "Kimi K2". */
-export function titleCase(label: string): string {
-  return label
-    .split(/[-_\s]+/)
-    .map(word => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
-    .join(" ")
-}
 
 /**
  * Live top bar: current persona on the left; on the right, in-flight tool
@@ -60,8 +44,6 @@ export function Header({
   /** Terminal columns (from useWindowSize). */
   width: number
 }>) {
-  const modelLabel = titleCase(shortModelLabel(model))
-  const providerLabel = provider ? titleCase(provider) : undefined
   const tokensSuffix = promptTokens != null ? ` · ${promptTokens.toLocaleString()} tokens` : ""
   const spinnerType = useRandomSpinner(!!currentTool, "block")
 
@@ -84,8 +66,8 @@ export function Header({
       ) : (
         <Box flexShrink={0} flexGrow={0}>
           <Text color="gray">
-            {modelLabel}
-            {providerLabel ? <Text dimColor> {providerLabel}</Text> : null}
+            {titleCase(model)}
+            {provider ? <Text dimColor> {titleCase(provider)}</Text> : null}
             {tokensSuffix}
           </Text>
         </Box>

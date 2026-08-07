@@ -21,6 +21,9 @@
       "default": "./cli/index.ts"
     }
   },
+  "scripts": {
+    "gen-json": "bun run gen-json.ts"
+  },
   "dependencies": {
     "zod": "^4.4.3"
   }

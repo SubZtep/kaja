@@ -9,8 +9,8 @@ import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { isTerminalMouseSequence, parseWheelDirection } from "../../lib/terminal-input"
 import { Activity } from "../activity"
+import { PartialMessage } from "../elem/partial-message"
 import { VirtualScroll, type VirtualScrollRef } from "../elem/virtual-scroll"
-import { PartialMessage } from "../partial-message"
 import { TimelineItem } from "../timeline"
 
 const WHEEL_LINES = 3

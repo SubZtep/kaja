@@ -2,7 +2,7 @@ import { Box, Text } from "ink"
 import { useState } from "react"
 import { t } from "../lib/i18n"
 import { listPaths } from "../lib/paths"
-import { SelectMenu } from "./select-menu"
+import { SelectMenu } from "./elem/select-menu"
 
 export type FirstRunChoice = { useFree: true } | { useFree: false; template?: "fireworks" | "ollama" }
 

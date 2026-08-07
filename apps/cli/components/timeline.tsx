@@ -5,7 +5,7 @@ import type { TimelineEvent } from "../hooks/use-agent"
 import type { ErrorCategory } from "../lib/agent/error-category"
 import { t } from "../lib/i18n"
 import Markdown from "./elem/markdown"
-import { ReasoningBox } from "./reasoning-box"
+import { ReasoningBox } from "./elem/reasoning-box"
 
 const ERROR_ICON: Record<ErrorCategory, string> = {
   network: "⚠",
