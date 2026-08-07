@@ -40,7 +40,7 @@ export function Hero() {
             Kaja CLI is an open-source terminal chat assistant featuring personas, tools, and speech, running on the
             model you choose in the language you like.
           </p>
-          <div className="mb-7 flex flex-wrap gap-3">
+          <div className="mb-7 sm:flex flex-wrap gap-3 hidden">
             <a
               href="https://github.com/SubZtep/kaja/stargazers"
               target="_blank"

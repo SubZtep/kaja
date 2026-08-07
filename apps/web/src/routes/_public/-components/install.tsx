@@ -16,9 +16,17 @@ export function Install() {
         title="Install"
         description="Only tested on Linux. A setup wizard walks you through config on first launch (or anytime config is missing/invalid) &mdash; no separate step needed."
       />
-      <Section>
-        <code className="block font-mono text-fg text-[13.5px]">{installCmd}</code>
-      </Section>
+      <div className="flex gap-4 flex-col md:flex-row">
+        <Section>
+          <p>On Mac/Linux:</p>
+          <code className="block font-mono text-fg text-[13.5px]">{installCmd}</code>
+        </Section>
+        <Section>
+          <p>On Windows:</p>
+          <code className="block font-mono text-fg text-[13.5px]">irm https://kaja.io/setup.ps1 | iex</code>
+        </Section>
+      </div>
+
       <p className="mt-3 text-[#6e7681] text-sm">
         Prefer a plain binary?{" "}
         <a href="https://github.com/SubZtep/kaja/releases" target="_blank" rel="noopener">
