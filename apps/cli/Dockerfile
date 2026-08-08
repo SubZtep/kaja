@@ -19,4 +19,4 @@ COPY --chown=bun:bun --from=builder /home/bun/app/packages ./packages
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/cli ./apps/cli
 
 WORKDIR /home/bun/app/apps/cli
-ENTRYPOINT ["bun", "run", "cli.tsx"]
+ENTRYPOINT ["bun", "run", "cli.ts"]

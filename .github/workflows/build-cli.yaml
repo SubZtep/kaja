@@ -71,7 +71,7 @@ jobs:
             exit 1
           fi
           cd apps/cli
-          bun build cli.tsx \
+          bun build cli.ts \
             --compile \
             --minify \
             --outfile kaja \

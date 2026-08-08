@@ -6,7 +6,7 @@ import { listPaths } from "../paths"
 export const cli = meow(t("args.help"), {
   importMeta: import.meta,
   flags: {
-    // Consumed by the argv pre-scan in cli.tsx before this module loads;
+    // Consumed by the argv pre-scan in cli.ts before this module loads;
     // declared here so meow's --help lists it and parsing accepts it.
     config: {
       type: "string"

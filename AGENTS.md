@@ -88,7 +88,7 @@ bun run --filter @kaja/cli test
 
 ### CLI (`apps/cli/`)
 
-- Entry: `cli.tsx` (Ink TUI)
+- Entry: `cli.ts` (Ink TUI)
 - Agent loop, tools, MCP, personas, sessions, memory, Telegram bot, optional STT/TTS
 - Config templates import from monorepo-root `docs/config/`
 - Detailed agent notes: `apps/cli/AGENTS.md`

@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun run cli.tsx",
+    "start": "bun run cli.ts",
     "test": "bun test",
     "gen-schema": "bun run scripts/gen-schema.ts"
   },
