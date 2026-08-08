@@ -1,6 +1,7 @@
 import type { KajaPreferences } from "@kaja/schema/config"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { savePreferences } from "../lib/config/config"
+import { preferencesEvents } from "../lib/config/config-watcher"
 import { log } from "../lib/logger"
 
 /**
@@ -13,6 +14,19 @@ export function usePreferences(initial?: KajaPreferences) {
   const [sounds, setSounds] = useState(initial?.sounds ?? true)
   // Spoken replies are opt-in: they need the speaches TTS server running.
   const [voice, setVoice] = useState(initial?.voice ?? false)
+
+  // Picks up settings.toml hand-edited externally while this session is already running
+  // (config-watcher.ts); toggle* below stays the source of truth for in-app changes.
+  useEffect(() => {
+    const onExternalChange = (event: Event) => {
+      const preferences = (event as CustomEvent<KajaPreferences>).detail
+      if (preferences.thinking !== undefined) setThinking(preferences.thinking)
+      if (preferences.sounds !== undefined) setSounds(preferences.sounds)
+      if (preferences.voice !== undefined) setVoice(preferences.voice)
+    }
+    preferencesEvents.addEventListener("preferences", onExternalChange)
+    return () => preferencesEvents.removeEventListener("preferences", onExternalChange)
+  }, [])
 
   const persist = (preferences: KajaPreferences) => {
     savePreferences(preferences).catch(error => {
