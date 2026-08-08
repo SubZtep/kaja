@@ -12,6 +12,9 @@ const DEBOUNCE_MS = 200
 /** Fires with the freshly re-read preferences block whenever settings.toml changes on disk (e.g. hand-edited while kaja is already running). */
 export const preferencesEvents = new EventTarget()
 
+/** Fires (with no payload) whenever any watched config file was successfully reloaded — a UI-agnostic "something changed" signal, e.g. for a confirmation sound. */
+export const configChangedEvents = new EventTarget()
+
 let watcher: FSWatcher | undefined
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 let pendingFilenames = new Set<string>()
@@ -21,12 +24,14 @@ async function handleChangedFiles(filenames: Set<string>) {
     // services() folds secrets() in, so either file changing invalidates both.
     invalidateServicesCache()
     invalidateSecretsCache()
+    configChangedEvents.dispatchEvent(new Event("changed"))
   }
   if (filenames.has("settings.toml")) {
     invalidateConfigCache()
     try {
       const { preferences } = await config()
       preferencesEvents.dispatchEvent(new CustomEvent<KajaPreferences>("preferences", { detail: preferences }))
+      configChangedEvents.dispatchEvent(new Event("changed"))
     } catch {
       // A transiently partial write (non-atomic overwrite) mid-debounce, or settings.toml
       // momentarily missing/invalid — skip this tick, the next debounced fire retries.

@@ -8,7 +8,9 @@ process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-watcher`
 const { setConfigDirOverride, getConfigPath } = await import("../../../lib/config/config")
 const { getServicesPath, invalidateServicesCache, services } = await import("../../../lib/config/services")
 const { getSecretsPath, invalidateSecretsCache, secrets } = await import("../../../lib/config/secrets")
-const { startConfigWatcher, stopConfigWatcher, preferencesEvents } = await import("../../../lib/config/config-watcher")
+const { startConfigWatcher, stopConfigWatcher, preferencesEvents, configChangedEvents } = await import(
+  "../../../lib/config/config-watcher"
+)
 
 beforeEach(() => {
   invalidateServicesCache()
@@ -124,4 +126,50 @@ test("starting the watcher twice is a no-op (no duplicate reactions)", async () 
   await write(getSecretsPath(), '[api]\ntoken = "second"\n')
   await waitUntil(async () => (await secrets()).api?.token === "second")
   expect((await services()).api?.token).toBe("second")
+})
+
+test("configChangedEvents fires once per reacted-to file, for both secrets.toml and settings.toml edits", async () => {
+  const dir = `${tmpdir()}/kaja-test-watcher-changed-event-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(join(dir, "services.toml"), '[api]\nbaseUrl = "https://api.example.test"\n')
+  await write(getSecretsPath(), '[api]\ntoken = "first"\n')
+  await write(getConfigPath(), "[models]\n[preferences]\nsounds = true\n")
+
+  let fired = 0
+  const onChanged = () => {
+    fired++
+  }
+  configChangedEvents.addEventListener("changed", onChanged)
+  startConfigWatcher()
+
+  try {
+    await write(getSecretsPath(), '[api]\ntoken = "second"\n')
+    await waitUntil(() => fired >= 1)
+
+    await write(getConfigPath(), "[models]\n[preferences]\nsounds = false\n")
+    await waitUntil(() => fired >= 2)
+  } finally {
+    configChangedEvents.removeEventListener("changed", onChanged)
+  }
+})
+
+test("configChangedEvents does not fire for unrelated files in the config dir", async () => {
+  const dir = `${tmpdir()}/kaja-test-watcher-changed-unrelated-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(join(dir, "services.toml"), '[api]\nbaseUrl = "https://api.example.test"\n')
+
+  let fired = false
+  const onChanged = () => {
+    fired = true
+  }
+  configChangedEvents.addEventListener("changed", onChanged)
+  startConfigWatcher()
+
+  try {
+    await write(join(dir, "mcp.toml"), "\n")
+    await new Promise(resolve => setTimeout(resolve, 400))
+    expect(fired).toBe(false)
+  } finally {
+    configChangedEvents.removeEventListener("changed", onChanged)
+  }
 })
