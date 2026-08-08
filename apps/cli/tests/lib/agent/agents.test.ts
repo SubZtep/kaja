@@ -40,9 +40,16 @@ task = "chat"
 )
 
 const { invalidateConfigCache } = await import("../../../lib/config/config")
-const { askUserTool, buildSystemPrompt, createSession, run, runCommandTool, switchPersonaTool, tool } = await import(
-  "../../../lib/agent/agents"
-)
+const {
+  applyPersonaToMessages,
+  askUserTool,
+  buildSystemPrompt,
+  createSession,
+  run,
+  runCommandTool,
+  switchPersonaTool,
+  tool
+} = await import("../../../lib/agent/agents")
 const { saveMemory } = await import("../../../lib/memory/store")
 const { rememberNoteTool } = await import("../../../tools/memory")
 
@@ -543,6 +550,32 @@ test("switch_persona with an unknown id returns an error result and leaves the p
 
   const toolResponse = session.messages.find(m => m.role === "tool")
   expect((toolResponse as { content: string }).content).toContain('Unknown persona "nope"')
+})
+
+test("applyPersonaToMessages: rewrites the system message and applies the persona, without any tool-response message (used by non-tool-call callers, e.g. an external settings.toml edit)", async () => {
+  const agent = fakePersonaAgent([])
+  const session = createSession()
+  session.messages.push({ role: "system", content: "You are persona A." })
+
+  await applyPersonaToMessages(agent, personaB, session.messages)
+
+  expect(agent.personaId).toBe("b")
+  expect(agent.sampling).toEqual({ temperature: 0.5 })
+  const system = session.messages[0]
+  expect(system?.role).toBe("system")
+  expect((system as { content: string }).content).toContain("You are persona B.")
+  expect(session.messages.some(m => m.role === "tool")).toBe(false)
+})
+
+test("applyPersonaToMessages: unshifts a system message when the session has none yet", async () => {
+  const agent = fakePersonaAgent([])
+  const session = createSession()
+  expect(session.messages).toHaveLength(0)
+
+  await applyPersonaToMessages(agent, personaB, session.messages)
+
+  expect(session.messages).toHaveLength(1)
+  expect(session.messages[0]?.role).toBe("system")
 })
 
 test("## Personas roster appears only with the switch_persona tool and more than one persona", async () => {

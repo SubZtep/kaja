@@ -379,6 +379,22 @@ export function applyPersona(agent: Agent, persona: Persona) {
 }
 
 /**
+ * {@link applyPersona} plus rewriting `messages`' system message in place so
+ * the next completion request reflects the new persona — shared by
+ * {@link run}'s {@link SWITCH_PERSONA_TOOL} interception and any other
+ * non-destructive persona switch (e.g. an external settings.toml edit)
+ * that isn't itself resolving a tool call.
+ */
+export async function applyPersonaToMessages(agent: Agent, persona: Persona, messages: ChatCompletionMessageParam[]) {
+  applyPersona(agent, persona)
+  const system = await buildSystemPrompt(agent)
+  if (system) {
+    if (messages[0]?.role === "system") messages[0].content = system
+    else messages.unshift({ role: "system", content: system })
+  }
+}
+
+/**
  * Name of the tool that gates the persistent-memory feature: when an agent
  * has it, {@link run} injects {@link MEMORY_INSTRUCTIONS} and the sticky
  * notes into the session's system prompt. Unlike {@link ASK_USER_TOOL} and
@@ -570,12 +586,7 @@ async function* handleSwitchPersonaCall(
   } else if (target.id === agent.personaId) {
     content = `Already using persona "${target.id}".`
   } else {
-    applyPersona(agent, target)
-    const system = await buildSystemPrompt(agent)
-    if (system) {
-      if (messages[0]?.role === "system") messages[0].content = system
-      else messages.unshift({ role: "system", content: system })
-    }
+    await applyPersonaToMessages(agent, target, messages)
     yield { type: "persona_switch", personaId: target.id, label: target.label }
     content =
       `Persona switched to "${target.label}" (${target.id}). Your ` +
