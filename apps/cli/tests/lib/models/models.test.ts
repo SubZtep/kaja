@@ -1,5 +1,6 @@
-import { afterEach, expect, test } from "bun:test"
+import { afterEach, beforeEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { write } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-models`
@@ -8,6 +9,7 @@ const { setConfigDirOverride, getConfigPath } = await import("../../../lib/confi
 const { loadModelsFile, resolveModelFromConfig, resolveModels, getModelsPath } = await import(
   "../../../lib/models/models"
 )
+const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
 type ResolvedModelsFile = Awaited<ReturnType<typeof loadModelsFile>>
 
 const DATA: ResolvedModelsFile = {
@@ -70,8 +72,15 @@ test("resolveModels flattens each entry with its provider's credentials", () => 
   ])
 })
 
+// Other test files sharing this bun test process may have already cached secrets() with their
+// own fixtures — invalidate before every test, not just after.
+beforeEach(() => {
+  invalidateSecretsCache()
+})
+
 afterEach(() => {
   setConfigDirOverride(undefined)
+  invalidateSecretsCache()
 })
 
 test("free hosted chat with no other task configured: loads an empty file without writing models.toml", async () => {
@@ -98,4 +107,80 @@ provider = "default"
 
   await loadModelsFile()
   expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+})
+
+test("loadModelsFile folds secrets.toml's [providers.<name>].api_key into the matching provider", async () => {
+  const dir = `${tmpdir()}/kaja-test-models-secrets-merge-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(
+    join(dir, "models.toml"),
+    `
+[providers.fireworks]
+default = true
+base_url = "https://api.fireworks.ai/inference/v1"
+
+[[models]]
+model = "some/chat-model"
+task = "chat"
+`
+  )
+  await write(
+    join(dir, "secrets.toml"),
+    `
+[providers.fireworks]
+api_key = "fw-secret"
+`
+  )
+
+  const data = await loadModelsFile()
+  expect(data.providers.fireworks?.api_key).toBe("fw-secret")
+})
+
+test("loadModelsFile leaves api_key undefined for a provider with no matching secrets.toml entry", async () => {
+  const dir = `${tmpdir()}/kaja-test-models-secrets-missing-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(
+    join(dir, "models.toml"),
+    `
+[providers.fireworks]
+default = true
+base_url = "https://api.fireworks.ai/inference/v1"
+
+[[models]]
+model = "some/chat-model"
+task = "chat"
+`
+  )
+  await write(join(dir, "secrets.toml"), "")
+
+  const data = await loadModelsFile()
+  expect(data.providers.fireworks?.api_key).toBeUndefined()
+})
+
+test("loadModelsFile ignores a secrets.toml provider entry that names no provider in models.toml", async () => {
+  const dir = `${tmpdir()}/kaja-test-models-secrets-unmatched-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(
+    join(dir, "models.toml"),
+    `
+[providers.fireworks]
+default = true
+base_url = "https://api.fireworks.ai/inference/v1"
+
+[[models]]
+model = "some/chat-model"
+task = "chat"
+`
+  )
+  await write(
+    join(dir, "secrets.toml"),
+    `
+[providers.nonexistent]
+api_key = "orphaned-secret"
+`
+  )
+
+  const data = await loadModelsFile()
+  expect(Object.keys(data.providers)).toEqual(["fireworks"])
+  expect(data.providers.fireworks?.api_key).toBeUndefined()
 })

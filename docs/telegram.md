@@ -19,12 +19,18 @@ chat — including the shell-command approve/decline flow, shown as an inline ke
    [@RawDataBot](https://t.me/RawDataBot)) — it replies with your numeric id. That's what goes
    in `allowedUserIds`, not your `@username`.
 
-3. **Add a `[telegram]` section to `~/.config/kaja/services.toml`:**
+3. **Add a `[telegram]` section to `~/.config/kaja/services.toml`** (who's allowed in):
+
+   ```toml
+   [telegram]
+   allowedUserIds = [YOUR_NUMERIC_ID]
+   ```
+
+   **...and one to `~/.config/kaja/secrets.toml`** (the token itself):
 
    ```toml
    [telegram]
    botToken = "123456789:AAH..."
-   allowedUserIds = [YOUR_NUMERIC_ID]
    ```
 
 4. **Run it:**

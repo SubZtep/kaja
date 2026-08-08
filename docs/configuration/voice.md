@@ -2,7 +2,7 @@
 layout: page
 title: Voice
 parent: Configuration
-nav_order: 3.4
+nav_order: 3.5
 ---
 
 # Voice (TTS / STT)

@@ -7,7 +7,9 @@ nav_order: 3.2
 
 # Models
 
-`models.toml` declares provider credentials and model definitions. Credentials live under `[providers.*]` and models are declared with `[[models]]`.
+`models.toml` declares providers and model definitions. Each provider's `api_key` lives in
+[`secrets.toml`](/configuration/secrets) under a matching `[providers.<name>]` table — this file
+only holds `base_url` and the model catalog.
 
 Each `[[models]]` block should include:
 
@@ -23,11 +25,17 @@ Example:
 [providers.ollama]
 default = true
 base_url = "http://localhost:11434/v1"
-api_key = "ollama"  # required but ignored by Ollama
 
 [[models]]
 model = "llama3.2:1b"
 task = "chat"
+```
+
+Ollama needs *some* `api_key` string even though it ignores its value — set it in `secrets.toml`:
+
+```toml
+[providers.ollama]
+api_key = "ollama"
 ```
 
 Notes:

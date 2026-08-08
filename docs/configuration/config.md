@@ -47,7 +47,8 @@ Downloads `mcp.toml` and `models.toml` from a Kaja server, backing up any existi
 kaja config fetch
 ```
 
-Set `services.toml`'s `[api]` `baseUrl` (and `token` if required) before running this.
+Set `services.toml`'s `[api]` `baseUrl` (and `secrets.toml`'s `[api]` `token`, if required) before
+running this.
 On a fresh install, the fetched `models.toml`'s first `chat`-task model is also auto-filled into
 `settings.toml`'s `models.chat`, so a single fetch is enough to leave a fresh install bootable (a
 chat model you've deliberately chosen is never overwritten by a later fetch).
@@ -55,8 +56,9 @@ chat model you've deliberately chosen is never overwritten by a later fetch).
 ## `kaja config wipe`
 
 Backs up the whole config directory (`settings.toml`, `models.toml`, `mcp.toml`, `services.toml`,
-`tools/`, `personas/`, `datasets/`) by renaming it to `<dir>.bak` (or `.bak2`, `.bak3`, ... if
-backups already exist), leaving a clean slate for the next run of `kaja` to recreate:
+`secrets.toml`, `tools/`, `personas/`, `datasets/`) by renaming it to `<dir>.bak` (or `.bak2`,
+`.bak3`, ... if backups already exist), leaving a clean slate for the next run of `kaja` to
+recreate:
 
 ```sh
 kaja config wipe

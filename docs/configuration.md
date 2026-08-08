@@ -15,6 +15,7 @@ Templates ship in [`docs/config/`](https://github.com/SubZtep/kaja/tree/main/doc
 ├── models.toml
 ├── mcp.toml
 ├── services.toml
+├── secrets.toml      # every credential, all in one place
 ├── personas/*.toml
 └── tools/*.ts
 ```

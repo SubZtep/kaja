@@ -7,41 +7,34 @@ nav_order: 3.3
 
 # Services
 
-s`ervices.toml` has optional external service configuration. Omit a section to disable the related feature.
+`services.toml` has optional external service configuration. Omit a section to disable the
+related feature. Credentials for these same sections live in [`secrets.toml`](/configuration/secrets)
+instead — this file only holds the non-secret bits (URLs, ids, flags).
 
 Examples:
 
 ```toml
 # Kaja server used by `kaja config fetch` to regenerate mcp.toml/models.toml.
-# `token` is the API CONFIG_API_TOKEN (Bearer); can also be set via the
-# CONFIG_API_TOKEN env var instead.
 [api]
 baseUrl = "https://api.kaja.io"
-token = "kaja"
 
 # Geo lookup for the location tool (IP → city/country).
 [location]
 serviceUrl = "https://ip2geo.demo.land/"
-apiKey = "kaja"
 
-# Brave Search API key for the web_search tool.
-[webSearch]
-apiKey = "BSA..."
-
-# Telegram bot — see the Telegram page.
+# Telegram bot — see the Telegram page. allowedUserIds gates who the bot
+# will respond to and must be non-empty.
 [telegram]
-botToken = "123456:ABC-DEF..."
 allowedUserIds = [123456789]
-
-# OpenCode Zen free models — see https://opencode.ai/zen.
-[zen]
-apiKey = "sk-..."
 ```
+
+`[webSearch]` and `[zen]` have no non-secret fields of their own — turning them on is just adding
+their section to `secrets.toml` (see the Secrets page).
 
 Notes:
 
-- Credentials and keys are stored here so multiple local config profiles can reuse providers.
-- Keep `services.toml` secure and do not commit real keys to version control.
+- This file is safe to share, commit to a dotfiles repo, or paste into a bug report — no keys live
+  here anymore.
 
 ### Where to get credentials?
 
@@ -53,4 +46,4 @@ Notes:
 
 Next:
 
-[Voice](/configuration/voice){: .btn .btn-green .fs-5 }
+[Secrets](/configuration/secrets){: .btn .btn-green .fs-5 }

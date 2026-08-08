@@ -23,8 +23,9 @@ tools (`~/.config/kaja/tools/*.ts`) you've added.
 | `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term memory notes |
 | `dataset_info` | collect structured answers for a persona's dataset |
 
-Two more appear when configured: `web_search` (needs `[webSearch]` in `services.toml`) and
-`generate_image` (needs a `models.image-generation` entry).
+Two more appear when configured: `web_search` (needs `[webSearch]` in
+[`secrets.toml`](/configuration/secrets)) and `generate_image` (needs a `models.image-generation`
+entry).
 
 ## Shell commands
 
@@ -46,7 +47,14 @@ args = ["@playwright/mcp@latest", "--isolated", "--headless"]
 [[servers]]
 id = "geo-service"
 url = "https://your-geo-service-host/mcp"
-headers = { Authorization = "Bearer your-secret-api-key" }
+```
+
+Needs a header or env var with a secret in it? Add it to
+[`secrets.toml`](/configuration/secrets) under `[mcp.<id>]`, keyed by that server's `id`:
+
+```toml
+[mcp.geo-service]
+Authorization = "Bearer your-secret-api-key"
 ```
 
 Playwright ships enabled by default, giving the agent a headless browser.
