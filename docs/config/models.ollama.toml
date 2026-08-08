@@ -1,14 +1,14 @@
-# Kaja models — credentials live in named [providers.*] tables so they are
-# never repeated per model. A model picks one with `provider = "<name>"`;
-# models that don't name one fall back to whichever provider has
+# Kaja models — each model picks a [providers.*] table with `provider =
+# "<name>"`; models that don't name one fall back to whichever provider has
 # `default = true`. `model` is the literal name sent to the provider's API,
 # and settings.json's models.<task> stores that model/provider pair directly
-# (see the docs site).
+# (see the docs site). Provider API keys live in secrets.toml's
+# [providers.<name>] tables, keyed the same way — Ollama requires one but
+# ignores its value, e.g. [providers.ollama] api_key = "ollama".
 
 [providers.ollama]
 default = true
 base_url = "http://localhost:11434/v1"
-api_key = "ollama"  # required but ignored by Ollama
 
 [[models]]
 model = "llama3.2:1b"

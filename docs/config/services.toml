@@ -1,28 +1,16 @@
-# External service credentials — each section is optional; skip a section to
-# leave that feature off.
+# External service config — each section is optional; skip a section to
+# leave that feature off. Credentials for these same sections live in
+# secrets.toml, not here.
 
 # Kaja server used by `kaja config fetch` to regenerate mcp.toml/models.toml.
-# `token` is the API CONFIG_API_TOKEN (Bearer); can also be set via the
-# CONFIG_API_TOKEN env var instead.
 [api]
 baseUrl = "https://api.kaja.io"
-token = "kaja"
 
 # Geo lookup for the location tool.
 [location]
 serviceUrl = "https://ip2geo.demo.land"
-apiKey = "kaja"
-
-# Brave Search API key for the web_search tool.
-# [webSearch]
-# apiKey = "BSA..."
 
 # Telegram bot: message it to chat with Kaja outside the terminal.
 # allowedUserIds gates who the bot will respond to and must be non-empty.
 # [telegram]
-# botToken = "123456:ABC-DEF..."
 # allowedUserIds = [123456789]
-
-# OpenCode Zen free models - https://opencode.ai/zen
-# [zen]
-# apiKey = "sk-..."

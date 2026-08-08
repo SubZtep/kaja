@@ -4,6 +4,7 @@ process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-emb
 
 const { saveConfig } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
+const { getSecretsPath, invalidateSecretsCache } = await import("../../../lib/config/secrets")
 await saveConfig({
   models: {
     chat: { model: "test-model", provider: "default" },
@@ -16,7 +17,6 @@ await Bun.write(
 [providers.default]
 default = true
 base_url = "http://localhost/v1"
-api_key = "llm-key"
 
 [[models]]
 id = "chat-default"
@@ -29,6 +29,14 @@ model = "test-embedding-model"
 task = "embedding"
 `
 )
+await Bun.write(
+  getSecretsPath(),
+  `
+[providers.default]
+api_key = "llm-key"
+`
+)
+invalidateSecretsCache()
 
 const { embed, cosineSimilarity } = await import("../../../lib/models/embeddings")
 
@@ -99,11 +107,9 @@ test("embedding model resolves via its own provider, independent of chat", async
 [providers.default]
 default = true
 base_url = "http://localhost/v1"
-api_key = "llm-key"
 
 [providers.embed-host]
 base_url = "http://embedding-host/v1"
-api_key = "embedding-key"
 
 [[models]]
 id = "chat-default"
@@ -117,6 +123,17 @@ task = "embedding"
 provider = "embed-host"
 `
   )
+  await Bun.write(
+    getSecretsPath(),
+    `
+[providers.default]
+api_key = "llm-key"
+
+[providers.embed-host]
+api_key = "embedding-key"
+`
+  )
+  invalidateSecretsCache()
   await saveConfig({
     models: {
       chat: { model: "test-model", provider: "default" },

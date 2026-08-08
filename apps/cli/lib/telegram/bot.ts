@@ -7,6 +7,7 @@ import type { Persona } from "../personas/personas"
 import { createTelegramDriver, type InlineKeyboardLike, TelegramRateLimitError } from "./driver"
 
 export type CreateTelegramBotConfig = ServicesTelegram & {
+  botToken: string
   agentConfig: ConstructorParameters<typeof Agent>[0]
   personas: Persona[]
   models: CliResolvedModel[]

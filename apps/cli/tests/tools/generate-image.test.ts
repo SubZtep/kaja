@@ -4,16 +4,15 @@ process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-gen
 
 const { saveConfig } = await import("../../lib/config/config")
 const { getModelsPath } = await import("../../lib/models/models")
+const { getSecretsPath, invalidateSecretsCache } = await import("../../lib/config/secrets")
 
 const MODELS_TOML = `
 [providers.default]
 default = true
 base_url = "http://localhost/v1"
-api_key = "llm-key"
 
 [providers.xai]
 base_url = "https://api.x.ai/v1"
-api_key = "xai-key"
 
 [[models]]
 id = "chat-default"
@@ -27,6 +26,14 @@ task = "image-generation"
 provider = "xai"
 `
 
+const SECRETS_TOML = `
+[providers.default]
+api_key = "llm-key"
+
+[providers.xai]
+api_key = "xai-key"
+`
+
 await saveConfig({
   models: {
     chat: { model: "test-model", provider: "default" },
@@ -34,6 +41,8 @@ await saveConfig({
   }
 })
 await Bun.write(getModelsPath(), MODELS_TOML)
+await Bun.write(getSecretsPath(), SECRETS_TOML)
+invalidateSecretsCache()
 
 const { generateImageTool } = await import("../../tools/generate-image")
 

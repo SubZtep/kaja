@@ -9,7 +9,6 @@ const VALID = `
 [providers.fireworks]
 default = true
 base_url = "https://api.fireworks.ai/inference/v1"
-api_key = "fw-test"
 
 [providers.speaches]
 base_url = "http://localhost:8000"
@@ -24,14 +23,14 @@ task = "text-to-speech"
 provider = "speaches"
 `
 
-test("valid file parses and resolves provider credentials", () => {
+test("valid file parses and resolves provider baseUrl (credentials come from secrets.toml, folded in by loadModelsFile)", () => {
   const models = resolveModels(parse(VALID))
   expect(models).toEqual([
     {
       model: "accounts/fireworks/models/deepseek",
       task: "chat",
       baseUrl: "https://api.fireworks.ai/inference/v1",
-      apiKey: "fw-test",
+      apiKey: undefined,
       provider: "fireworks"
     },
     {
@@ -82,7 +81,6 @@ base_url = "http://localhost:8000"
 [providers.fireworks]
 default = true
 base_url = "https://api.example.test/v1"
-api_key = "fw-test"
 
 [[models]]
 model = "some/model"
@@ -94,7 +92,7 @@ task = "chat"
       model: "some/model",
       task: "chat",
       baseUrl: "https://api.example.test/v1",
-      apiKey: "fw-test",
+      apiKey: undefined,
       provider: "fireworks"
     }
   ])

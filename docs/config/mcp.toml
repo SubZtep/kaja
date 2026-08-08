@@ -3,11 +3,12 @@
 # changes needed. Two server styles:
 #   - local: spawned over stdio, needs `command` (+ optional `args`/`env`)
 #   - remote: reached over Streamable HTTP, needs `url` (+ optional `headers`)
+# Secret env/header values (e.g. Authorization, CONTEXT7_API_KEY) live in
+# secrets.toml's [mcp.<id>] table, keyed by this entry's id.
 
 [[servers]]
 id = "location"
 url = "https://ip2geo.demo.land/mcp"
-headers = { Authorization = "Bearer guest" }
 
 # [[servers]]
 # id = "chrome-devtools"
@@ -18,4 +19,3 @@ headers = { Authorization = "Bearer guest" }
 # id = "context7"
 # command = "bunx"
 # args = ["-y", "@upstash/context7-mcp"]
-# env = { CONTEXT7_API_KEY = "ctx7sk-..." }

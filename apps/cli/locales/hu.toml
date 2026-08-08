@@ -86,6 +86,9 @@ invalidAt = "Érvénytelen MCP szerver fájl ({path}): {message}"
 [services]
 invalidAt = "Érvénytelen services fájl ({path}): {message}"
 
+[secrets]
+invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
+
 [header]
 na = "N/A"
 

@@ -6,7 +6,13 @@ import TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type
 import OLLAMA_TEMPLATE from "../../../../docs/config/models.ollama.toml" with { type: "text" }
 import { config, getConfigDir } from "../config/config"
 import { fetchTomlConfig } from "../config/fetch"
+import { secrets } from "../config/secrets"
 import { t } from "../i18n"
+
+/** models.toml's [providers.*], with secrets.toml's [providers.<name>].api_key folded back in. */
+export type ResolvedModelsFile = Omit<KajaModelsFile, "providers"> & {
+  providers: Record<string, KajaModelsFile["providers"][string] & { api_key?: string }>
+}
 
 export function getModelsPath() {
   return join(getConfigDir(), "models.toml")
@@ -31,7 +37,7 @@ export async function fetchModelsToml(
 }
 
 /** Flatten each model entry with its provider's credentials. */
-export function resolveModels(data: KajaModelsFile): CliResolvedModel[] {
+export function resolveModels(data: ResolvedModelsFile): CliResolvedModel[] {
   // The schema guarantees a default provider exists when any model omits one.
   const defaultEntry = Object.entries(data.providers).find(([, p]) => p.default)
   return data.models.map(model => {
@@ -49,7 +55,7 @@ export function resolveModels(data: KajaModelsFile): CliResolvedModel[] {
 
 /** Resolves a models.<task> entry to its provider's credentials via models.toml. Returns undefined only for the free-tier case (no provider); throws if provider is set but unknown. */
 export function resolveModelFromConfig(
-  data: KajaModelsFile,
+  data: ResolvedModelsFile,
   ref: { model: string; provider?: string },
   task: ModelTask
 ): CliResolvedModel | undefined {
@@ -59,8 +65,8 @@ export function resolveModelFromConfig(
   return { model: ref.model, task, baseUrl: provider.base_url, apiKey: provider.api_key, provider: ref.provider }
 }
 
-/** Loads models.toml. If missing and on the free chat tier, returns empty (no placeholder file written); otherwise writes+parses the example template. Invalid file: prints error and exits. */
-export async function loadModelsFile(): Promise<KajaModelsFile> {
+/** Loads models.toml, then folds in secrets.toml's [providers.<name>].api_key. If missing and on the free chat tier, returns empty (no placeholder file written); otherwise writes+parses the example template. Invalid file: prints error and exits. */
+export async function loadModelsFile(): Promise<ResolvedModelsFile> {
   const modelsPath = getModelsPath()
   const f = file(modelsPath)
   const exists = await f.exists()
@@ -74,7 +80,15 @@ export async function loadModelsFile(): Promise<KajaModelsFile> {
   // Parse TEMPLATE directly rather than reading it back: a freshly written BunFile can report stale (empty) content on an immediate re-read.
   const text = exists ? await f.text() : TEMPLATE
   try {
-    return ModelsFileSchema.parse(TOML.parse(text))
+    const parsed = ModelsFileSchema.parse(TOML.parse(text))
+    const { providers: providerSecrets } = await secrets()
+    const providers = Object.fromEntries(
+      Object.entries(parsed.providers).map(([name, provider]) => [
+        name,
+        { ...provider, api_key: providerSecrets[name]?.api_key }
+      ])
+    )
+    return { ...parsed, providers }
   } catch (error: any) {
     console.log(t("models.invalidAt", { path: modelsPath, message: error.message }))
     process.exit(1)

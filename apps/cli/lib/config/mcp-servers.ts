@@ -6,6 +6,7 @@ import TEMPLATE from "../../../../docs/config/mcp.toml" with { type: "text" }
 import { t } from "../i18n"
 import { getConfigDir } from "./config"
 import { fetchTomlConfig } from "./fetch"
+import { secrets } from "./secrets"
 
 export function getMcpPath() {
   return join(getConfigDir(), "mcp.toml")
@@ -16,7 +17,7 @@ export async function fetchMcpToml(apiBaseUrl: string, token?: string): Promise<
   return fetchTomlConfig(apiBaseUrl, "/config/mcp.toml", getMcpPath(), token)
 }
 
-/** Loads the MCP servers file. Missing file: writes the example template and returns its active servers. Invalid file: prints the error and exits, same policy as {@link config}. */
+/** Loads the MCP servers file, then folds in secrets.toml's [mcp.<id>] table into each server's env (stdio) or headers (HTTP) by key name. Missing file: writes the example template and returns its active servers. Invalid file: prints the error and exits, same policy as {@link config}. */
 export async function loadMcpServers(): Promise<KajaMcpFile["servers"]> {
   const mcpPath = getMcpPath()
   const f = file(mcpPath)
@@ -25,7 +26,15 @@ export async function loadMcpServers(): Promise<KajaMcpFile["servers"]> {
   if (!exists) await write(f, TEMPLATE)
   const text = exists ? await f.text() : TEMPLATE
   try {
-    return McpFileSchema.parse(TOML.parse(text)).servers
+    const { servers } = McpFileSchema.parse(TOML.parse(text))
+    const { mcp: mcpSecrets } = await secrets()
+    return servers.map(server => {
+      const creds = mcpSecrets[server.id]
+      if (!creds) return server
+      return "url" in server
+        ? { ...server, headers: { ...server.headers, ...creds } }
+        : { ...server, env: { ...server.env, ...creds } }
+    })
   } catch (error: any) {
     console.log(t("mcp.invalidAt", { path: mcpPath, message: error.message }))
     process.exit(1)

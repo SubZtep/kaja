@@ -1,4 +1,5 @@
 export * from "./mcp"
 export * from "./models"
+export * from "./secrets"
 export * from "./services"
 export * from "./settings"

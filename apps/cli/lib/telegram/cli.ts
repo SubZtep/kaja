@@ -1,11 +1,12 @@
-import type { CliResolvedModel, ServicesFile } from "@kaja/schema/config"
+import type { CliResolvedModel } from "@kaja/schema/config"
 import type { Tool } from "../agent/agents"
+import type { ResolvedServices } from "../config/services"
 import { t } from "../i18n"
 import type { Persona } from "../personas/personas"
 
 /** Runs `kaja telegram`: a long-polling bot reusing the terminal's tools/personas/models. Returns an exit code once gracefully stopped (SIGINT/SIGTERM). */
 export async function runTelegramCli(deps: {
-  services: Pick<ServicesFile, "telegram">
+  services: Pick<ResolvedServices, "telegram">
   tools: Tool<any>[]
   personas: Persona[]
   models: CliResolvedModel[]

@@ -1,6 +1,5 @@
 import { afterEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
-import type { KajaModelsFile } from "@kaja/schema/config"
 import { write } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-models`
@@ -9,8 +8,9 @@ const { setConfigDirOverride, getConfigPath } = await import("../../../lib/confi
 const { loadModelsFile, resolveModelFromConfig, resolveModels, getModelsPath } = await import(
   "../../../lib/models/models"
 )
+type ResolvedModelsFile = Awaited<ReturnType<typeof loadModelsFile>>
 
-const DATA: KajaModelsFile = {
+const DATA: ResolvedModelsFile = {
   providers: {
     default: { base_url: "https://api.example.test/v1", api_key: "test-key", default: true },
     speaches: { base_url: "http://localhost:8000" }

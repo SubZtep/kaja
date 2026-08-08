@@ -1,9 +1,8 @@
 import * as z from "zod"
 
-// Credentials for one API endpoint, shared by every model that names it.
+// One API endpoint, shared by every model that names it. Its api_key lives in secrets.toml's [providers.<name>].
 const ProviderSchema = z.object({
   base_url: z.url(),
-  api_key: z.string().min(1).optional(),
   // Marks this table as the fallback for models that omit `provider`. If
   // several providers set this, the first one (table order) wins.
   default: z.boolean().optional()

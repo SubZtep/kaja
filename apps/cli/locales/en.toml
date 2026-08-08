@@ -86,6 +86,9 @@ invalidAt = "Invalid MCP servers file at {path}: {message}"
 [services]
 invalidAt = "Invalid services file at {path}: {message}"
 
+[secrets]
+invalidAt = "Invalid secrets file at {path}: {message}"
+
 [header]
 na = "N/A"
 

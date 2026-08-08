@@ -10,7 +10,6 @@ import type {
   ChatCompletionTool
 } from "openai/resources/chat/completions"
 import { readConfigLoose } from "../config/config"
-import { readServicesLoose } from "../config/services"
 import { t } from "../i18n"
 import { loadMemory } from "../memory/store"
 import { client, createOpenAIClient, takeLastServedModel } from "../models/openai"
@@ -18,7 +17,7 @@ import { loadDataset } from "../personas/datasets"
 import { samplingOf } from "../personas/personas"
 import { isDangerousCommand } from "./command-risk"
 import type { GeoLocation } from "./geo"
-import { lookupMyLocation } from "./geo"
+import { tryLookupMyLocation } from "./geo"
 import { runShellCommand } from "./run-command"
 
 /** Identifies who's talking to a {@link Tool}'s `execute` — `null` for a terminal session, `"telegram:<id>"` for a Telegram user (same convention as the sessions table's `owner` column). Supplied by {@link run}, never by the model. */
@@ -487,8 +486,8 @@ export async function buildSystemPrompt(agent: Agent): Promise<string | undefine
           .join("\n")}`
       : undefined
 
-  const [{ preferences }, { location }] = await Promise.all([readConfigLoose(), readServicesLoose()])
-  const locationBlock = location ? locationInstructions(await lookupMyLocation()) : undefined
+  const [{ preferences }, location] = await Promise.all([readConfigLoose(), tryLookupMyLocation()])
+  const locationBlock = location ? locationInstructions(location) : undefined
 
   const replyLanguageBlock = preferences?.language ? t("agent.replyLanguage") : undefined
 
