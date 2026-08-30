@@ -24,6 +24,8 @@ declare module "bun" {
     SMTP_PASS?: string
     /** Public web URL for device-auth verification (defaults to CORS_ORIGIN) */
     WEB_PUBLIC_URL?: string
+    /** Path to the built embeddable widget bundle, served at GET /widget/widget.js. @default "public/widget.js" */
+    WIDGET_BUNDLE_PATH?: string
   }
 }
 

@@ -143,3 +143,25 @@ test("turn() isolates concurrent streamed turns from different users' stores", a
   closeStore(pathA)
   closeStore(pathB)
 })
+
+test("a session id cannot be resumed by a different owner sharing the same dbPath", async () => {
+  const path = dbPath()
+  const nasiOwnerA = await Nasi.open({
+    dbPath: path,
+    profile: "hosted",
+    owner: "widget:key1:visitorA",
+    chat: { client: fakeClient([{ content: "reply for A" }]) as never, model: "fake" }
+  })
+  const first = await nasiOwnerA.turnBuffered({ message: "hi" })
+  expect(first.status).toBe("completed")
+
+  const nasiOwnerB = await Nasi.open({
+    dbPath: path,
+    profile: "hosted",
+    owner: "widget:key1:visitorB",
+    chat: { client: fakeClient([{ content: "should not be reached" }]) as never, model: "fake" }
+  })
+
+  await expect(nasiOwnerB.turnBuffered({ session: first.session, message: "hijack attempt" })).rejects.toThrow()
+  closeStore(path)
+})

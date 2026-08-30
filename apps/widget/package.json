@@ -1,0 +1,9 @@
+{
+  "name": "@kaja/widget",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "bun build --target=browser --format=iife --minify --outfile dist/widget.js src/index.ts"
+  }
+}

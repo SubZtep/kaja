@@ -162,7 +162,9 @@ export class Nasi {
 
     if (sessionId) {
       const row = await loadSessionRow(sessionId)
-      if (!row) {
+      // Also rejects a session id that belongs to a different owner within the same dbPath — e.g. two widget
+      // visitors sharing one account's SQLite file must never resume each other's conversation by guessing/observing a session id.
+      if (!row || (row.owner ?? null) !== (this.opts.owner ?? null)) {
         const err = new Error("session_not_found")
         err.name = "NasiSessionNotFound"
         throw err

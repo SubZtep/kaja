@@ -37,3 +37,8 @@ export const LOCAL_OWNER = null
 export function telegramOwner(userId: number): string {
   return `telegram:${userId}`
 }
+
+/** Owner string for one widget embed's visitor — namespaced by key id so two embeds (or a revoked key) never collide. */
+export function widgetVisitorOwner(keyId: string, visitorId: string): string {
+  return `widget:${keyId}:${visitorId}`
+}

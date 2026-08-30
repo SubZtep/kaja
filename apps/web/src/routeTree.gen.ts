@@ -14,6 +14,7 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as UDotjsRouteImport } from './routes/u[.]js'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
+import { Route as AdminWidgetRouteImport } from './routes/_admin/widget'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicDeviceRouteImport } from './routes/_public/device'
 import { Route as PublicResetPasswordRouteImport } from './routes/_public/reset-password'
@@ -48,6 +49,11 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWidgetRoute = AdminWidgetRouteImport.update({
+  id: '/widget',
+  path: '/widget',
   getParentRoute: () => AdminRoute,
 } as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/u.js': typeof UDotjsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
+  '/widget': typeof AdminWidgetRoute
   '/device': typeof PublicDeviceRouteWithChildren
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/u.js': typeof UDotjsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
+  '/widget': typeof AdminWidgetRoute
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/u.js': typeof UDotjsRoute
   '/_admin/dashboard': typeof AdminDashboardRoute
   '/_admin/profile': typeof AdminProfileRoute
+  '/_admin/widget': typeof AdminWidgetRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
   '/_public/reset-password': typeof PublicResetPasswordRoute
   '/_public/signin': typeof PublicSigninRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/u.js'
     | '/dashboard'
     | '/profile'
+    | '/widget'
     | '/device'
     | '/reset-password'
     | '/signin'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/u.js'
     | '/dashboard'
     | '/profile'
+    | '/widget'
     | '/reset-password'
     | '/signin'
     | '/signup'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/u.js'
     | '/_admin/dashboard'
     | '/_admin/profile'
+    | '/_admin/widget'
     | '/_public/device'
     | '/_public/reset-password'
     | '/_public/signin'
@@ -261,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AdminProfileRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/widget': {
+      id: '/_admin/widget'
+      path: '/widget'
+      fullPath: '/widget'
+      preLoaderRoute: typeof AdminWidgetRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_public/': {
@@ -353,6 +372,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminProfileRoute: typeof AdminProfileRoute
+  AdminWidgetRoute: typeof AdminWidgetRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminMcpServersIndexRoute: typeof AdminMcpServersIndexRoute
   AdminModelsIndexRoute: typeof AdminModelsIndexRoute
@@ -362,6 +382,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminProfileRoute: AdminProfileRoute,
+  AdminWidgetRoute: AdminWidgetRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminMcpServersIndexRoute: AdminMcpServersIndexRoute,
   AdminModelsIndexRoute: AdminModelsIndexRoute,
