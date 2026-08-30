@@ -29,7 +29,7 @@ export function Hero() {
       <ContentWidth className="relative grid grid-cols-1 items-center gap-14 pt-14 pb-8 md:pt-24 md:pb-10 md:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 font-mono text-muted text-xs">
-            <span className="size-1.5 rounded-full bg-ice" /> Open Source &middot; MIT &middot; WIP
+            <span className="size-1.5 rounded-full bg-ice" /> OSS &middot; MIT &middot; WIP
           </div>
           <h1 className="mb-5 font-extrabold text-fg text-[36px] leading-[1.08] tracking-[-0.02em] md:text-[52px]">
             Your terminal
@@ -37,12 +37,8 @@ export function Hero() {
             should talk now.
           </h1>
           <p className="mb-4 max-w-115 text-lg text-muted">
-            Kaja is an open-source{" "}
-            <strong>
-              AI agent<em>ish</em>
-            </strong>{" "}
-            tool. Based on your input, keep running an LLM model with its findings again and again until the
-            appropriated outcome.
+            Kaja is an open-source <strong>AI agentish</strong> tool. Based on your input, keep running an LLM model
+            with its findings again and again until the appropriated outcome (🙏).
           </p>
           <p className="mb-8 max-w-115 text-lg text-muted">
             It's a <strong>state machine</strong>, driven by skilled AI models for various tasks including image

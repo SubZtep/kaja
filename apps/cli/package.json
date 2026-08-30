@@ -37,7 +37,7 @@
     "pino": "^10.3.1",
     "react": "^19.2.8",
     "string-width": "^8.2.2",
-    "supports-hyperlinks": "^3.1.0",
+    "supports-hyperlinks": "^4.5.0",
     "terminal-image": "^5.0.1",
     "terminal-link": "^5.0.0",
     "tinyclip": "^1.0.1",
