@@ -32,9 +32,7 @@ export function Hero() {
             <span className="size-1.5 rounded-full bg-ice" /> OSS &middot; MIT &middot; WIP
           </div>
           <h1 className="mb-5 font-extrabold text-fg text-[36px] leading-[1.08] tracking-[-0.02em] md:text-[52px]">
-            Your terminal
-            <br />
-            should talk now.
+            Your terminal should talk by asking — never by guessing.
           </h1>
           <p className="mb-4 max-w-115 text-lg text-muted">
             Kaja is an open-source <strong>AI agentish</strong> tool. Based on your input, keep running an LLM model

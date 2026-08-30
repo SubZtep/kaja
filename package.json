@@ -13,11 +13,12 @@
   "packageManager": "bun@1.4.0",
   "private": true,
   "scripts": {
-    "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' dev",
+    "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' --filter '@kaja/widget' dev",
     "dev:api": "bun run --filter @kaja/api dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.ts",
     "dev:cli:local": "bun run --env-file=apps/cli/.env apps/cli/cli.ts --local",
     "dev:web": "bun run --filter @kaja/web dev",
+    "dev:widget": "bun run --filter @kaja/widget dev",
     "lint": "biome check --config-path=.",
     "lint:fix": "biome check --config-path=. --write --unsafe",
     "typecheck": "set -e; for pkg in apps/* packages/*; do [ -f \"$pkg/tsconfig.json\" ] || continue; (cd \"$pkg\" && bunx tsc --noEmit); done"
