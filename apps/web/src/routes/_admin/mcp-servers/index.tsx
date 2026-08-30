@@ -3,7 +3,8 @@ import { mcpServerSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { type CellContext, createColumnHelper } from "@tanstack/react-table"
+import type { CellContext } from "@tanstack/react-table"
+import { type LegacyFeatures, legacyCreateColumnHelper } from "@tanstack/react-table/legacy"
 import { Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
@@ -68,13 +69,13 @@ function parseKeyValues(input: string): Record<string, string> {
   return out
 }
 
-const columnHelper = createColumnHelper<McpServer>()
+const columnHelper = legacyCreateColumnHelper<McpServer>()
 
-function ServerIdCell(info: CellContext<McpServer, string>) {
+function ServerIdCell(info: CellContext<LegacyFeatures, McpServer, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
 }
 
-function ConnectionCell(info: CellContext<McpServer, unknown>) {
+function ConnectionCell(info: CellContext<LegacyFeatures, McpServer, unknown>) {
   const server = info.row.original
   if (server.url) {
     return <span className="font-mono text-xs text-muted">{server.url}</span>
@@ -86,7 +87,7 @@ function ConnectionCell(info: CellContext<McpServer, unknown>) {
   )
 }
 
-function ConfigCell(info: CellContext<McpServer, unknown>) {
+function ConfigCell(info: CellContext<LegacyFeatures, McpServer, unknown>) {
   const server = info.row.original
   const keys = server.url ? Object.keys(server.headers) : Object.keys(server.env)
   if (keys.length === 0) return <span className="text-xs text-muted">—</span>
@@ -99,13 +100,13 @@ function ConfigCell(info: CellContext<McpServer, unknown>) {
 }
 
 function makeEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
-  return function EnabledCell(info: CellContext<McpServer, boolean>) {
+  return function EnabledCell(info: CellContext<LegacyFeatures, McpServer, boolean>) {
     const server = info.row.original
     return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: server.id, enabled })} />
   }
 }
 
-function CreatedAtCell(info: CellContext<McpServer, Date>) {
+function CreatedAtCell(info: CellContext<LegacyFeatures, McpServer, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 

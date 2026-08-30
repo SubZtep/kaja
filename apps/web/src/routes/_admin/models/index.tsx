@@ -5,7 +5,8 @@ import { modelSchema, providerSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { type CellContext, createColumnHelper } from "@tanstack/react-table"
+import type { CellContext } from "@tanstack/react-table"
+import { type LegacyFeatures, legacyCreateColumnHelper } from "@tanstack/react-table/legacy"
 import { Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
@@ -41,22 +42,22 @@ const modelFormSchema = z.object({
   free: z.boolean()
 })
 
-const providerColumnHelper = createColumnHelper<Provider>()
-const modelColumnHelper = createColumnHelper<Model>()
+const providerColumnHelper = legacyCreateColumnHelper<Provider>()
+const modelColumnHelper = legacyCreateColumnHelper<Model>()
 
-function ProviderNameCell(info: CellContext<Provider, string>) {
+function ProviderNameCell(info: CellContext<LegacyFeatures, Provider, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
 }
 
-function ProviderBaseUrlCell(info: CellContext<Provider, string>) {
+function ProviderBaseUrlCell(info: CellContext<LegacyFeatures, Provider, string>) {
   return <span className="font-mono text-xs text-muted">{info.getValue()}</span>
 }
 
-function ProviderApiKeyCell(info: CellContext<Provider, string>) {
+function ProviderApiKeyCell(info: CellContext<LegacyFeatures, Provider, string>) {
   return <span className="text-xs text-muted">{info.getValue() ? "•••• set" : "—"}</span>
 }
 
-function ProviderCreatedAtCell(info: CellContext<Provider, Date>) {
+function ProviderCreatedAtCell(info: CellContext<LegacyFeatures, Provider, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
@@ -79,36 +80,36 @@ function makeProviderActionsCell(onDelete: (id: string) => void) {
   }
 }
 
-function ModelNameCell(info: CellContext<Model, string>) {
+function ModelNameCell(info: CellContext<LegacyFeatures, Model, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
 }
 
-function ModelTasksCell(info: CellContext<Model, ModelTask[]>) {
+function ModelTasksCell(info: CellContext<LegacyFeatures, Model, ModelTask[]>) {
   return <span className="text-xs text-muted">{info.getValue().join(", ")}</span>
 }
 
 function makeModelProviderCell(providers: Provider[]) {
-  return function ModelProviderCell(info: CellContext<Model, string>) {
+  return function ModelProviderCell(info: CellContext<LegacyFeatures, Model, string>) {
     const provider = providers.find(p => p.id === info.getValue())
     return <span className="font-mono text-xs text-muted">{provider?.name ?? "—"}</span>
   }
 }
 
 function makeModelEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
-  return function ModelEnabledCell(info: CellContext<Model, boolean>) {
+  return function ModelEnabledCell(info: CellContext<LegacyFeatures, Model, boolean>) {
     const model = info.row.original
     return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: model.id, enabled })} />
   }
 }
 
 function makeModelFreeCell(onToggle: (args: { id: string; free: boolean }) => void) {
-  return function ModelFreeCell(info: CellContext<Model, boolean>) {
+  return function ModelFreeCell(info: CellContext<LegacyFeatures, Model, boolean>) {
     const model = info.row.original
     return <Checkbox checked={info.getValue()} onCheckedChange={free => onToggle({ id: model.id, free })} />
   }
 }
 
-function ModelCreatedAtCell(info: CellContext<Model, Date>) {
+function ModelCreatedAtCell(info: CellContext<LegacyFeatures, Model, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 

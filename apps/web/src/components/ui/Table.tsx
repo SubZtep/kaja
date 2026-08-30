@@ -3,19 +3,23 @@ import {
   type Column,
   type ColumnFiltersState,
   flexRender,
+  type RowData,
+  type TableFeatures
+} from "@tanstack/react-table"
+import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  type RowData,
-  useReactTable
-} from "@tanstack/react-table"
+  type LegacyFeatures,
+  useLegacyTable
+} from "@tanstack/react-table/legacy"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { useState } from "react"
 import { DebouncedText } from "../form/primitives/Text"
 
 declare module "@tanstack/react-table" {
-  interface ColumnMeta<TData extends RowData, TValue> {
+  interface ColumnMeta<TFeatures extends TableFeatures, TData extends RowData, TValue> {
     filterVariant?: "text" | "role" | "period"
   }
 }
@@ -33,7 +37,7 @@ export function Table({
 }: Readonly<{ columns: any[]; data: any[]; showFilters?: boolean }>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
-  const table = useReactTable({
+  const table = useLegacyTable({
     columns,
     data: data,
     getCoreRowModel: getCoreRowModel(),
@@ -272,7 +276,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
   )
 }
 
-function Filter({ column }: Readonly<{ column: Column<any, unknown> }>) {
+function Filter({ column }: Readonly<{ column: Column<LegacyFeatures, any, unknown> }>) {
   const columnFilterValue = column.getFilterValue()
   const { filterVariant } = column.columnDef.meta ?? {}
 

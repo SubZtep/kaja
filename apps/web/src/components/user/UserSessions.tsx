@@ -1,6 +1,12 @@
 import { getDateTime, getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
+import { flexRender } from "@tanstack/react-table"
+import {
+  getCoreRowModel,
+  type LegacyColumnDef,
+  legacyCreateColumnHelper,
+  useLegacyTable
+} from "@tanstack/react-table/legacy"
 import type { SessionWithImpersonatedBy } from "better-auth/plugins"
 import { MonitorX } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -11,9 +17,9 @@ import { queryClient } from "../../lib/query"
 import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
-const columnHelper = createColumnHelper<SessionWithImpersonatedBy>()
+const columnHelper = legacyCreateColumnHelper<SessionWithImpersonatedBy>()
 
-const columns = [
+const columns: LegacyColumnDef<SessionWithImpersonatedBy, any>[] = [
   columnHelper.accessor("ipAddress", {
     header: "IP",
     cell: info => info.getValue()
@@ -66,7 +72,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
     if (error) toast.error(error.message)
   }, [error])
 
-  const table = useReactTable({
+  const table = useLegacyTable({
     data: sessions,
     columns,
     getCoreRowModel: getCoreRowModel()
