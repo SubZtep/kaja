@@ -3,6 +3,7 @@ invalidConfig = "Invalid config file: {path}"
 startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
 bye = "Bye, bye!"
 localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama, or run `kaja --local config fetch`. For hosted chat, just run `kaja` without --local."
+headlessNoSubcommand = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
 
 [firstRun]
 paths = "Kaja will use these paths:"
@@ -21,11 +22,13 @@ Usage
   $ kaja --local memory <list|forget <key-or-glob>|export>
   $ kaja --local session <list|diagram <id>>
   $ kaja --local telegram
+  $ kaja --local --headless telegram
   $ kaja --local web
 
 Options
   --help          Print this help
   --local         Run the local agent loop against your own provider instead of hosted login
+  --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
   --config        Read settings.json from this directory instead of the default
   --paths         Print every path Kaja reads or writes
   --version       Print the installed app version
@@ -38,6 +41,7 @@ Examples
   $ kaja --local -c
   $ kaja --paths
   $ kaja --local config fetch
+  $ kaja --local --headless telegram
 """
 
 [memory]

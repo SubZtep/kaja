@@ -7,23 +7,20 @@ import type { cli as Cli } from "../lib/cli/args"
  */
 export async function runSubcommand(cli: typeof Cli) {
   const { config } = await import("../lib/config/config")
-  const { loadModels } = await import("../lib/models/models")
-  const { loadPersonas } = await import("../lib/personas/personas")
   const { t } = await import("../lib/i18n")
+  const { bootstrapLocalAgentDeps, installShutdownHandlers, requireConfiguredProvider } = await import(
+    "../lib/cli/headless"
+  )
 
   // Imported after the config guard (already validated by the time cli.tsx calls this): lib/openai.ts reads config at module load (via lib/agents.ts), so a static import would crash before first-run
   const { default: App } = await import("../components/layout/app")
-  const { getDefaultTools } = await import("../tools")
   const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("../lib/session/store")
   const { loadMemory } = await import("../lib/memory/store")
   const { chatModelId, isFreeChat } = await import("../lib/models/openai")
 
   // --local is the self-configured-provider path: no silent fallback to
   // Kaja's hosted free tier. Run `kaja` (no flags) for hosted chat instead.
-  if (isFreeChat) {
-    console.log(t("cli.localNoProvider"))
-    process.exit(1)
-  }
+  await requireConfiguredProvider()
 
   // --continue resumes the most recent session, --session <id> a specific one; either way it's handed to App as a prop
   let initialSession: import("@kaja/schema/store").PersistedSession | undefined
@@ -45,28 +42,12 @@ export async function runSubcommand(cli: typeof Cli) {
   const currentConfig = await config()
 
   const { preferences } = currentConfig
-  const models = await loadModels()
-  const personas = await loadPersonas()
-  const { tools, mcpServers, closeTools } = await getDefaultTools(personas)
+  const { models, personas, tools, mcpServers, closeTools } = await bootstrapLocalAgentDeps()
   const sessionCount = (await listSessions()).length
   const memoryNoteCount = Object.keys(await loadMemory()).length
 
-  // Closes long-lived tool connections (e.g. Playwright MCP subprocess); guarded so SIGINT, normal exit, and a crashed render can't all close it. Force-exits after a timeout so a hung MCP subprocess can't make Ctrl+C stop working.
-  const SHUTDOWN_TIMEOUT_MS = 3000
-  let closed = false
-  const shutdown = async () => {
-    if (closed) return
-    closed = true
-    await Promise.race([closeTools(), new Promise(resolve => setTimeout(resolve, SHUTDOWN_TIMEOUT_MS))])
-  }
-  process.on("SIGINT", async () => {
-    await shutdown()
-    process.exit(0)
-  })
-  process.on("SIGTERM", async () => {
-    await shutdown()
-    process.exit(0)
-  })
+  // Closes long-lived tool connections (e.g. Playwright MCP subprocess) on SIGINT/normal exit.
+  const shutdown = installShutdownHandlers(closeTools)
 
   // Deferred until here: nothing before this point touches the terminal UI
   const { render } = await import("ink")

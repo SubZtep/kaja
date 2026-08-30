@@ -31,6 +31,10 @@ export const cli = meow(t("args.help"), {
     // default hosted login.
     local: {
       type: "boolean"
+    },
+    // No Ink render — for a subcommand that doesn't need a terminal (e.g. telegram).
+    headless: {
+      type: "boolean"
     }
   }
 })

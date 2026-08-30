@@ -33,7 +33,7 @@ try {
   }
 
   if (!(await isExists())) {
-    await runFirstRunIfNeeded()
+    await runFirstRunIfNeeded(cli.flags.headless)
   }
   if (!(await validate())) {
     console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
@@ -67,6 +67,11 @@ try {
   }
 
   // MARK: End of Headless
+
+  if (cli.flags.headless) {
+    console.log(t("cli.headlessNoSubcommand"))
+    process.exit(1)
+  }
 
   await runSubcommand(cli)
 } catch (error) {
