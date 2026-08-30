@@ -8,6 +8,7 @@ import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runMemorySubcommand } from "./subcommands/memory"
 import { runSubcommand } from "./subcommands/run"
+import { runRemoteSubcommand } from "./subcommands/run-remote"
 import { runSessionSubcommand } from "./subcommands/session"
 import { runTelegramSubcommand } from "./subcommands/telegram"
 import { runWebSubcommand } from "./subcommands/web"
@@ -17,6 +18,20 @@ try {
 
   applyConfigDirOverride(argv.slice(2))
   await detectAndSetLanguage()
+
+  // meow (lib/cli/args.ts) handles --help/--version by printing and exiting
+  // immediately, and --paths itself; imported unconditionally so those work
+  // whether or not --local is passed.
+  const { cli } = await import("./lib/cli/args")
+
+  // Default: hosted login (nasi.tv), no local config needed. --local runs
+  // the full local agent loop (shell/MCP/tools) against a self-configured
+  // provider instead.
+  if (!cli.flags.local) {
+    await runRemoteSubcommand()
+    process.exit(0)
+  }
+
   if (!(await isExists())) {
     await runFirstRunIfNeeded()
   }
@@ -27,7 +42,6 @@ try {
 
   // MARK: Run Commands
 
-  const { cli } = await import("./lib/cli/args")
   const [cmd] = cli.input
 
   if (cmd === "memory") {

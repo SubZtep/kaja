@@ -2,12 +2,11 @@
 invalidConfig = "Invalid config file: {path}"
 startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
 bye = "Bye, bye!"
+localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama, or run `kaja --local config fetch`. For hosted chat, just run `kaja` without --local."
 
 [firstRun]
 paths = "Kaja will use these paths:"
-intro = "Welcome to Kaja! How would you like to chat?"
-useFree = "Use the free models through Kaja's servers"
-useOwn = "Configure my own provider"
+intro = "Welcome to Kaja! Which provider would you like to use?"
 providerFireworks = "Fireworks (cloud, needs an API key)"
 providerOllama = "Ollama (local, runs on this machine)"
 providerSkip = "Skip — I'll set up models.toml myself"
@@ -16,26 +15,29 @@ providerSkip = "Skip — I'll set up models.toml myself"
 help = """
 Usage
   $ kaja
-  $ kaja config fetch
-  $ kaja config wipe
-  $ kaja memory <list|forget <key-or-glob>|export>
-  $ kaja session <list|diagram <id>>
-  $ kaja telegram
-  $ kaja web
+  $ kaja --local
+  $ kaja --local config fetch
+  $ kaja --local config wipe
+  $ kaja --local memory <list|forget <key-or-glob>|export>
+  $ kaja --local session <list|diagram <id>>
+  $ kaja --local telegram
+  $ kaja --local web
 
 Options
   --help          Print this help
+  --local         Run the local agent loop against your own provider instead of hosted login
   --config        Read settings.json from this directory instead of the default
   --paths         Print every path Kaja reads or writes
   --version       Print the installed app version
-  --continue, -c  Resume the most recent session
-  --session, -s   Resume a session by id (see: kaja session list)
-  --port          Port for kaja web (default: 4880)
+  --continue, -c  Resume the most recent session (--local only)
+  --session, -s   Resume a session by id (--local only; see: kaja --local session list)
+  --port          Port for kaja --local web (default: 4880)
 
 Examples
-  $ kaja -c
+  $ kaja
+  $ kaja --local -c
   $ kaja --paths
-  $ kaja config fetch
+  $ kaja --local config fetch
 """
 
 [memory]

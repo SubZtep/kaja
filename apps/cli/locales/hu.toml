@@ -2,12 +2,11 @@
 invalidConfig = "Érvénytelen konfigurációs fájl: {path}"
 startupError = "Váratlan hiba történt, a Kaja nem tudott elindulni: {message}\nA részletek a naplófájlba kerültek."
 bye = "Pá, pá!"
+localNoProvider = "A --local kapcsolóhoz beállított szolgáltató szükséges. Futtasd újra a `kaja --local` parancsot és válaszd a Fireworks/Ollama opciót, vagy futtasd a `kaja --local config fetch` parancsot. Hosztolt csevegéshez futtasd a `kaja` parancsot --local nélkül."
 
 [firstRun]
 paths = "A Kaja ezeket az elérési utakat fogja használni:"
-intro = "Üdv a Kajában! Hogyan szeretnél csevegni?"
-useFree = "Az ingyenes modellek használata a Kaja szerverein keresztül"
-useOwn = "Saját szolgáltató beállítása"
+intro = "Üdv a Kajában! Melyik szolgáltatót szeretnéd használni?"
 providerFireworks = "Fireworks (felhő, API kulcs szükséges)"
 providerOllama = "Ollama (helyi, ezen a gépen fut)"
 providerSkip = "Kihagyás — magam állítom be a models.toml fájlt"
@@ -16,26 +15,29 @@ providerSkip = "Kihagyás — magam állítom be a models.toml fájlt"
 help = """
 Használat
   $ kaja
-  $ kaja config fetch
-  $ kaja config wipe
-  $ kaja memory <list|forget <kulcs-vagy-glob>|export>
-  $ kaja session <list|diagram <id>>
-  $ kaja telegram
-  $ kaja web
+  $ kaja --local
+  $ kaja --local config fetch
+  $ kaja --local config wipe
+  $ kaja --local memory <list|forget <kulcs-vagy-glob>|export>
+  $ kaja --local session <list|diagram <id>>
+  $ kaja --local telegram
+  $ kaja --local web
 
 Kapcsolók
   --help          Kiírja ezt a súgót
+  --local         A helyi ágens futtatása saját szolgáltatóval a hosztolt bejelentkezés helyett
   --config        A settings.json-t ebből a könyvtárból olvassa az alapértelmezett helyett
   --paths         Kiírja az összes elérési utat, amit a Kaja használ
   --version       Kiírja a telepített verziót
-  --continue, -c  A legutóbbi munkamenet folytatása
-  --session, -s   Munkamenet folytatása azonosító alapján (lásd: kaja session list)
-  --port          A kaja web portja (alapértelmezés: 4880)
+  --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
+  --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
+  --port          A kaja --local web portja (alapértelmezés: 4880)
 
 Példák
-  $ kaja -c
+  $ kaja
+  $ kaja --local -c
   $ kaja --paths
-  $ kaja config fetch
+  $ kaja --local config fetch
 """
 
 [memory]

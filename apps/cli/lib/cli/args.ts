@@ -26,6 +26,11 @@ export const cli = meow(t("args.help"), {
     port: {
       type: "number",
       default: 4880
+    },
+    // Runs the local agent loop against your own provider instead of the
+    // default hosted login.
+    local: {
+      type: "boolean"
     }
   }
 })

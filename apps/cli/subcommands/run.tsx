@@ -18,6 +18,13 @@ export async function runSubcommand(cli: typeof Cli) {
   const { loadMemory } = await import("../lib/memory/store")
   const { chatModelId, isFreeChat } = await import("../lib/models/openai")
 
+  // --local is the self-configured-provider path: no silent fallback to
+  // Kaja's hosted free tier. Run `kaja` (no flags) for hosted chat instead.
+  if (isFreeChat) {
+    console.log(t("cli.localNoProvider"))
+    process.exit(1)
+  }
+
   // --continue resumes the most recent session, --session <id> a specific one; either way it's handed to App as a prop
   let initialSession: import("@kaja/schema/store").PersistedSession | undefined
   if (cli.flags.continue) {
