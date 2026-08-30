@@ -2,7 +2,6 @@ import { capitalized, getTimeAgo } from "@kaja/shared"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
-import { type LegacyFeatures, legacyCreateColumnHelper } from "@tanstack/react-table/legacy"
 import type { UserWithRole } from "better-auth/client/plugins"
 import { Eye, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
@@ -14,6 +13,7 @@ import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
 import { useAuthClient } from "../../../hooks/auth-client"
 import { userRequired } from "../../../lib/loaders"
+import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 
 export const Route = createFileRoute("/_admin/users/")({
   component: UserList,
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_admin/users/")({
 })
 
 type UsersColumns = Pick<UserWithRole, "id" | "name" | "email" | "emailVerified" | "role" | "createdAt" | "image">
-const columnHelper = legacyCreateColumnHelper<UsersColumns>()
+const columnHelper = tableColumnHelper<UsersColumns>()
 
 const ROLE_STYLES: Record<string, string> = {
   admin: "bg-ice/10 text-ice",
@@ -31,7 +31,7 @@ const ROLE_STYLES: Record<string, string> = {
   viewer: "bg-surface/60 text-muted"
 }
 
-function IdentityCell(info: CellContext<LegacyFeatures, UsersColumns, string>) {
+function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, string>) {
   const user = info.row.original
   const initials = (user.name ?? "?")
     .split(" ")
@@ -56,13 +56,13 @@ function IdentityCell(info: CellContext<LegacyFeatures, UsersColumns, string>) {
   )
 }
 
-function AccessLevelCell(info: CellContext<LegacyFeatures, UsersColumns, string | undefined>) {
+function AccessLevelCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, string | undefined>) {
   const role = info.getValue() ?? "user"
   const style = ROLE_STYLES[role] ?? ROLE_STYLES.user
   return <span className={`rounded-md px-2.5 py-1 font-mono text-xs ${style}`}>{capitalized(role)}</span>
 }
 
-function StatusCell(info: CellContext<LegacyFeatures, UsersColumns, boolean>) {
+function StatusCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, boolean>) {
   const verified = info.getValue()
   if (verified) {
     return (
@@ -80,7 +80,7 @@ function StatusCell(info: CellContext<LegacyFeatures, UsersColumns, boolean>) {
   )
 }
 
-function LastSyncCell(info: CellContext<LegacyFeatures, UsersColumns, Date>) {
+function LastSyncCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
@@ -136,31 +136,32 @@ function UserList() {
   }, [users, searchQuery, roleFilter])
 
   const columns = useMemo(
-    () => [
-      columnHelper.accessor("name", {
-        header: "User Identity",
-        cell: IdentityCell
-      }),
-      columnHelper.accessor("role", {
-        header: "Access Level",
-        cell: AccessLevelCell
-      }),
-      columnHelper.accessor("emailVerified", {
-        header: "Status",
-        cell: StatusCell,
-        enableColumnFilter: false
-      }),
-      columnHelper.accessor("createdAt", {
-        header: "Last Sync",
-        cell: LastSyncCell,
-        enableColumnFilter: false
-      }),
-      {
-        id: "actions",
-        header: "",
-        cell: ActionsCell
-      }
-    ],
+    () =>
+      columnHelper.columns([
+        columnHelper.accessor("name", {
+          header: "User Identity",
+          cell: IdentityCell
+        }),
+        columnHelper.accessor("role", {
+          header: "Access Level",
+          cell: AccessLevelCell
+        }),
+        columnHelper.accessor("emailVerified", {
+          header: "Status",
+          cell: StatusCell,
+          enableColumnFilter: false
+        }),
+        columnHelper.accessor("createdAt", {
+          header: "Last Sync",
+          cell: LastSyncCell,
+          enableColumnFilter: false
+        }),
+        columnHelper.display({
+          id: "actions",
+          header: "",
+          cell: ActionsCell
+        })
+      ]),
     []
   )
 

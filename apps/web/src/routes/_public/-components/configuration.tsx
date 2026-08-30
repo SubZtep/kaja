@@ -19,7 +19,7 @@ export function Configuration() {
   return (
     <LandingSection alt>
       <LandingSectionTitle
-        title="Configuration"
+        title="Local configuration"
         meta="~/.config/kaja/"
         description={
           <>

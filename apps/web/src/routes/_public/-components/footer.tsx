@@ -11,7 +11,7 @@ export function Footer() {
             <BrandMark className="text-[15px] font-semibold" />
           </div>
           <div className="text-[#6e7681] text-[13px]">
-            MIT License &middot; built with Bun + TypeScript &middot; by{" "}
+            MIT License &middot; by{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-muted">
               SubZtep
             </a>{" "}
@@ -24,7 +24,7 @@ export function Footer() {
           rel="noopener"
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-4 py-2 text-fg text-[13px]"
         >
-          <Star fill="white" size={9} />
+          <Star fill="yellow" size={9} />
           Star on GitHub
         </a>
       </ContentWidth>

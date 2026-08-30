@@ -48,7 +48,7 @@ export function SiteHeader({
   return (
     <header ref={headerRef} className="sticky top-0 z-10 border-border border-b bg-bg/95 backdrop-blur-sm">
       <ContentWidth className="flex items-center justify-between py-3 sm:py-4.5">
-        <BrandMark to={brandTo} className="text-lg" />
+        <BrandMark to={brandTo} monster className="text-lg" />
 
         <nav className="hidden items-center gap-7 text-muted text-sm md:flex">{desktopNav}</nav>
 

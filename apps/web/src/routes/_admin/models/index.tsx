@@ -6,7 +6,6 @@ import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
-import { type LegacyFeatures, legacyCreateColumnHelper } from "@tanstack/react-table/legacy"
 import { Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
@@ -21,6 +20,7 @@ import { ValueBox } from "../../../components/ui/ValueBox"
 import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
+import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 
 export const Route = createFileRoute("/_admin/models/")({
   component: ModelsPage,
@@ -42,22 +42,22 @@ const modelFormSchema = z.object({
   free: z.boolean()
 })
 
-const providerColumnHelper = legacyCreateColumnHelper<Provider>()
-const modelColumnHelper = legacyCreateColumnHelper<Model>()
+const providerColumnHelper = tableColumnHelper<Provider>()
+const modelColumnHelper = tableColumnHelper<Model>()
 
-function ProviderNameCell(info: CellContext<LegacyFeatures, Provider, string>) {
+function ProviderNameCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
 }
 
-function ProviderBaseUrlCell(info: CellContext<LegacyFeatures, Provider, string>) {
+function ProviderBaseUrlCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
   return <span className="font-mono text-xs text-muted">{info.getValue()}</span>
 }
 
-function ProviderApiKeyCell(info: CellContext<LegacyFeatures, Provider, string>) {
+function ProviderApiKeyCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
   return <span className="text-xs text-muted">{info.getValue() ? "•••• set" : "—"}</span>
 }
 
-function ProviderCreatedAtCell(info: CellContext<LegacyFeatures, Provider, Date>) {
+function ProviderCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Provider, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
@@ -80,36 +80,36 @@ function makeProviderActionsCell(onDelete: (id: string) => void) {
   }
 }
 
-function ModelNameCell(info: CellContext<LegacyFeatures, Model, string>) {
+function ModelNameCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
 }
 
-function ModelTasksCell(info: CellContext<LegacyFeatures, Model, ModelTask[]>) {
+function ModelTasksCell(info: CellContext<typeof tableFeaturesConfig, Model, ModelTask[]>) {
   return <span className="text-xs text-muted">{info.getValue().join(", ")}</span>
 }
 
 function makeModelProviderCell(providers: Provider[]) {
-  return function ModelProviderCell(info: CellContext<LegacyFeatures, Model, string>) {
+  return function ModelProviderCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
     const provider = providers.find(p => p.id === info.getValue())
     return <span className="font-mono text-xs text-muted">{provider?.name ?? "—"}</span>
   }
 }
 
 function makeModelEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
-  return function ModelEnabledCell(info: CellContext<LegacyFeatures, Model, boolean>) {
+  return function ModelEnabledCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
     const model = info.row.original
     return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: model.id, enabled })} />
   }
 }
 
 function makeModelFreeCell(onToggle: (args: { id: string; free: boolean }) => void) {
-  return function ModelFreeCell(info: CellContext<LegacyFeatures, Model, boolean>) {
+  return function ModelFreeCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
     const model = info.row.original
     return <Checkbox checked={info.getValue()} onCheckedChange={free => onToggle({ id: model.id, free })} />
   }
 }
 
-function ModelCreatedAtCell(info: CellContext<LegacyFeatures, Model, Date>) {
+function ModelCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Model, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
@@ -237,7 +237,7 @@ function ModelsPage() {
     }
   })
 
-  const providerColumns = [
+  const providerColumns = providerColumnHelper.columns([
     providerColumnHelper.accessor("name", {
       header: "Name",
       cell: ProviderNameCell
@@ -256,14 +256,14 @@ function ModelsPage() {
       cell: ProviderCreatedAtCell,
       enableColumnFilter: false
     }),
-    {
+    providerColumnHelper.display({
       id: "actions",
       header: "",
       cell: makeProviderActionsCell(id => deleteProvider.mutate(id))
-    }
-  ]
+    })
+  ])
 
-  const modelColumns = [
+  const modelColumns = modelColumnHelper.columns([
     modelColumnHelper.accessor("model", {
       header: "Model",
       cell: ModelNameCell
@@ -293,12 +293,12 @@ function ModelsPage() {
       cell: ModelCreatedAtCell,
       enableColumnFilter: false
     }),
-    {
+    modelColumnHelper.display({
       id: "actions",
       header: "",
       cell: makeModelActionsCell(id => deleteModel.mutate(id))
-    }
-  ]
+    })
+  ])
 
   if (providersQuery.isLoading || modelsQuery.isLoading) return <Loader />
 
