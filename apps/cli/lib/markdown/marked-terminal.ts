@@ -311,7 +311,7 @@ function fixHardReturn(text: string, reflow: boolean) {
     } catch {
       return ""
     }
-    if (prot.indexOf("javascript:") === 0) {
+    if (prot.indexOf("javascript:") === 0 || prot.indexOf("data:") === 0 || prot.indexOf("vbscript:") === 0) {
       return ""
     }
   }
@@ -629,13 +629,18 @@ function escapeRegExp(str: string) {
   return str.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&")
 }
 
+const ENTITY_UNESCAPES: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'"
+}
+
+// Single pass so an entity produced by one replacement (e.g. &amp;lt; -> &lt;)
+// can't be re-matched and unescaped again by a later replacement in the chain.
 function unescapeEntities(html: string) {
-  return html
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+  return html.replace(/&(?:amp|lt|gt|quot|#39);/g, match => ENTITY_UNESCAPES[match]!)
 }
 
 function identity(str: string) {

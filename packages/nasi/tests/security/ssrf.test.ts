@@ -10,6 +10,6 @@ test("rejects loopback and private URLs", async () => {
     "http://169.254.169.254/latest/meta-data/",
     "file:///etc/passwd"
   ]) {
-    expect(fetchPublicHttp(url)).rejects.toBeInstanceOf(UnsafeUrlError)
+    await expect(fetchPublicHttp(url)).rejects.toBeInstanceOf(UnsafeUrlError)
   }
 })
