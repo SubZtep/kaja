@@ -1,12 +1,10 @@
-# Kaja models — each model picks a [providers.*] table with `provider =
-# "<name>"`; models that don't name one fall back to whichever provider has
-# `default = true`. `model` is the literal name sent to the provider's API,
-# and settings.json's models.<task> stores that model/provider pair directly
-# (see the docs site). Provider API keys live in secrets.toml's
+# Kaja models — [models.<id>] entries each pick a [providers.*] table with
+# `provider = "<name>"`. The id (e.g. "fast-chat") is how [active].<task> and
+# a persona's [models].<task> pick this entry; `model` is the literal name
+# sent to the provider's API. Provider API keys live in secrets.toml's
 # [providers.<name>] tables, keyed the same way.
 
 [providers.fireworks]
-default = true
 base_url = "https://api.fireworks.ai/inference/v1"
 
 [providers.speaches]
@@ -15,32 +13,42 @@ base_url = "http://localhost:8000"  # local server, no key needed
 [providers.xai]
 base_url = "https://api.x.ai/v1"
 
-[[models]]
+[models.fast-chat]
 model = "accounts/fireworks/models/minimax-m3"
 task = "chat"
+provider = "fireworks"
 
-[[models]]
+[models.reasoning-chat]
 model = "accounts/fireworks/models/deepseek-v4-pro"
 task = "chat"
+provider = "fireworks"
 
-[[models]]
+[models.big-chat]
 model = "accounts/fireworks/models/kimi-k2p6"
 task = "chat"
+provider = "fireworks"
 
-[[models]]
+[models.default-embedding]
 model = "accounts/fireworks/models/qwen3-embedding-8b"
 task = "embedding"
+provider = "fireworks"
 
-[[models]]
+[models.default-rerank]
 model = "accounts/fireworks/models/qwen3-reranker-8b"
 task = "rerank"
+provider = "fireworks"
 
-[[models]]
+[models.default-image-generation]
 model = "grok-imagine-image"
 task = "image-generation"
 provider = "xai"
 
-[[models]]
+[models.default-text-to-speech]
 model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
 task = "text-to-speech"
 provider = "speaches"
+
+# The model actually in use for each task — one model id per task, all optional.
+[active]
+chat = "fast-chat"
+embedding = "default-embedding"

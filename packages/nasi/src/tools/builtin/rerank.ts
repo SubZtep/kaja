@@ -1,4 +1,5 @@
 import { ToolError, tool } from "../../agent/agent"
+import type { ToolContext } from "../../agent/tools"
 import { getToolDeps } from "../deps"
 
 /**
@@ -38,7 +39,7 @@ export const rerankTool = tool<{
     },
     required: ["query", "documents"]
   },
-  execute: async args => JSON.stringify(await rerank(args))
+  execute: async (args, ctx) => JSON.stringify(await rerank(args, ctx))
 })
 
 interface RerankResponse {
@@ -52,8 +53,8 @@ interface RerankResponse {
   usage: { prompt_tokens: number; total_tokens: number }
 }
 
-async function rerank(args: { query: string; documents: string[]; top_n?: number }) {
-  const resolved = getToolDeps().rerank
+async function rerank(args: { query: string; documents: string[]; top_n?: number }, ctx?: ToolContext) {
+  const resolved = getToolDeps().rerank?.(ctx?.personaId)
   if (!resolved) {
     throw new ToolError("rerank", "No rerank model configured")
   }

@@ -3,8 +3,8 @@ import { rename } from "node:fs/promises"
 import { ModelsFileSchema, type SecretsFile, type ServicesFile } from "@kaja/schema/config"
 import { file, TOML } from "bun"
 import { t } from "../i18n"
-import { fetchModelsToml, getModelsPath } from "../models/models"
-import { getConfigDir, saveFetchedChatModel } from "./config"
+import { fetchModelsToml, getModelsPath, saveFetchedActiveChat } from "../models/models"
+import { getConfigDir } from "./config"
 import { nextBackupPath } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
 
@@ -26,10 +26,9 @@ export async function runConfigCli(
       // Best-effort: an unparseable models.toml still counts as a successful fetch, just without an auto-selected chat model.
       try {
         const modelsFile = ModelsFileSchema.parse(TOML.parse(await file(getModelsPath()).text()))
-        const chatEntry = modelsFile.models.find(m => m.task === "chat")
-        const defaultProviderName = Object.entries(modelsFile.providers).find(([, p]) => p.default)?.[0]
+        const chatEntry = Object.entries(modelsFile.models).find(([, m]) => m.task === "chat")
         if (chatEntry) {
-          await saveFetchedChatModel({ model: chatEntry.model, provider: chatEntry.provider ?? defaultProviderName })
+          await saveFetchedActiveChat(chatEntry[0])
         }
       } catch {}
       const lines = results.map(({ path, backedUpTo }) =>

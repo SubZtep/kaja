@@ -5,8 +5,8 @@ import { write } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-models`
 
-const { setConfigDirOverride, getConfigPath } = await import("../../../lib/config/config")
-const { loadModelsFile, resolveModelFromConfig, resolveModels, getModelsPath } = await import(
+const { setConfigDirOverride } = await import("../../../lib/config/config")
+const { loadModelsFile, resolveActiveModel, findModelById, resolveModels, getModelsPath } = await import(
   "../../../lib/models/models"
 )
 const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
@@ -14,48 +14,21 @@ type ResolvedModelsFile = Awaited<ReturnType<typeof loadModelsFile>>
 
 const DATA: ResolvedModelsFile = {
   providers: {
-    default: { base_url: "https://api.example.test/v1", api_key: "test-key", default: true },
+    default: { base_url: "https://api.example.test/v1", api_key: "test-key" },
     speaches: { base_url: "http://localhost:8000" }
   },
-  models: [
-    { model: "accounts/example/models/chat", task: "chat" },
-    { model: "Systran/faster-whisper", task: "speech-to-text", provider: "speaches" }
-  ]
+  models: {
+    "fast-chat": { model: "accounts/example/models/chat", task: "chat", provider: "default" },
+    "reasoning-chat": { model: "accounts/example/models/reasoning", task: "chat", provider: "default" },
+    "default-stt": { model: "Systran/faster-whisper", task: "speech-to-text", provider: "speaches" }
+  },
+  active: { chat: "fast-chat", "speech-to-text": "default-stt" }
 }
 
-test("resolves a settings.toml {model, provider} ref against its provider's credentials", () => {
-  expect(resolveModelFromConfig(DATA, { model: "accounts/example/models/chat", provider: "default" }, "chat")).toEqual({
-    model: "accounts/example/models/chat",
-    task: "chat",
-    baseUrl: "https://api.example.test/v1",
-    apiKey: "test-key",
-    provider: "default"
-  })
-})
-
-test("resolves a ref on a named provider", () => {
-  expect(
-    resolveModelFromConfig(DATA, { model: "Systran/faster-whisper", provider: "speaches" }, "speech-to-text")
-  ).toEqual({
-    model: "Systran/faster-whisper",
-    task: "speech-to-text",
-    baseUrl: "http://localhost:8000",
-    apiKey: undefined,
-    provider: "speaches"
-  })
-})
-
-test("ref with no provider resolves to undefined (free-tier fallback case)", () => {
-  expect(resolveModelFromConfig(DATA, { model: "anything" }, "chat")).toBeUndefined()
-})
-
-test("ref naming an unknown provider throws", () => {
-  expect(() => resolveModelFromConfig(DATA, { model: "anything", provider: "nope" }, "chat")).toThrow()
-})
-
-test("resolveModels flattens each entry with its provider's credentials", () => {
+test("resolveModels flattens each models.toml entry with its provider's credentials", () => {
   expect(resolveModels(DATA)).toEqual([
     {
+      id: "fast-chat",
       model: "accounts/example/models/chat",
       task: "chat",
       baseUrl: "https://api.example.test/v1",
@@ -63,6 +36,15 @@ test("resolveModels flattens each entry with its provider's credentials", () => 
       provider: "default"
     },
     {
+      id: "reasoning-chat",
+      model: "accounts/example/models/reasoning",
+      task: "chat",
+      baseUrl: "https://api.example.test/v1",
+      apiKey: "test-key",
+      provider: "default"
+    },
+    {
+      id: "default-stt",
       model: "Systran/faster-whisper",
       task: "speech-to-text",
       baseUrl: "http://localhost:8000",
@@ -70,6 +52,41 @@ test("resolveModels flattens each entry with its provider's credentials", () => 
       provider: "speaches"
     }
   ])
+})
+
+test("findModelById looks up by id, optionally constrained to a task", () => {
+  expect(findModelById(resolveModels(DATA), "fast-chat")?.model).toBe("accounts/example/models/chat")
+  expect(findModelById(resolveModels(DATA), "fast-chat", "chat")?.model).toBe("accounts/example/models/chat")
+  expect(findModelById(resolveModels(DATA), "fast-chat", "embedding")).toBeUndefined()
+  expect(findModelById(resolveModels(DATA), undefined)).toBeUndefined()
+  expect(findModelById(resolveModels(DATA), "nope")).toBeUndefined()
+})
+
+test("resolveActiveModel with no personaModels falls back to [active].<task>", () => {
+  expect(resolveActiveModel(DATA, "chat")?.id).toBe("fast-chat")
+  expect(resolveActiveModel(DATA, "speech-to-text")?.id).toBe("default-stt")
+  expect(resolveActiveModel(DATA, "embedding")).toBeUndefined()
+})
+
+test("resolveActiveModel: a persona's pin for a task wins over [active].<task>", () => {
+  const resolved = resolveActiveModel(DATA, "chat", { chat: "reasoning-chat" })
+  expect(resolved?.id).toBe("reasoning-chat")
+})
+
+test("resolveActiveModel: an absent persona pin for a task falls back to [active].<task>", () => {
+  const resolved = resolveActiveModel(DATA, "chat", { embedding: "reasoning-chat" })
+  expect(resolved?.id).toBe("fast-chat")
+})
+
+test("resolveActiveModel: a persona pin naming an unknown id soft-falls-back to [active].<task>", () => {
+  const resolved = resolveActiveModel(DATA, "chat", { chat: "does-not-exist" })
+  expect(resolved?.id).toBe("fast-chat")
+})
+
+test("resolveActiveModel: a persona pin whose task doesn't match soft-falls-back to [active].<task>", () => {
+  // "default-stt" exists but is a speech-to-text entry, not chat.
+  const resolved = resolveActiveModel(DATA, "chat", { chat: "default-stt" })
+  expect(resolved?.id).toBe("fast-chat")
 })
 
 // Other test files sharing this bun test process may have already cached secrets() with their
@@ -83,30 +100,13 @@ afterEach(() => {
   invalidateSecretsCache()
 })
 
-test("free hosted chat with no other task configured: loads an empty file without writing models.toml", async () => {
-  const dir = `${tmpdir()}/kaja-test-models-free-only-${Math.random()}`
+test("no models.toml file: loads no models without writing one", async () => {
+  const dir = `${tmpdir()}/kaja-test-models-no-file-${Math.random()}`
   setConfigDirOverride(dir)
-  await write(getConfigPath(), "[models]\n")
 
   const data = await loadModelsFile()
-  expect(data).toEqual({ providers: {}, models: [] })
+  expect(data).toEqual({ providers: {}, models: {}, active: {} })
   expect(await Bun.file(getModelsPath()).exists()).toBe(false)
-})
-
-test("free hosted chat plus another configured task: still writes the example template", async () => {
-  const dir = `${tmpdir()}/kaja-test-models-free-plus-task-${Math.random()}`
-  setConfigDirOverride(dir)
-  await write(
-    getConfigPath(),
-    `
-[models.embedding]
-model = "embedding-default"
-provider = "default"
-`
-  )
-
-  await loadModelsFile()
-  expect(await Bun.file(getModelsPath()).exists()).toBe(true)
 })
 
 test("loadModelsFile folds secrets.toml's [providers.<name>].api_key into the matching provider", async () => {
@@ -116,12 +116,12 @@ test("loadModelsFile folds secrets.toml's [providers.<name>].api_key into the ma
     join(dir, "models.toml"),
     `
 [providers.fireworks]
-default = true
 base_url = "https://api.fireworks.ai/inference/v1"
 
-[[models]]
+[models.fast-chat]
 model = "some/chat-model"
 task = "chat"
+provider = "fireworks"
 `
   )
   await write(
@@ -143,12 +143,12 @@ test("loadModelsFile leaves api_key undefined for a provider with no matching se
     join(dir, "models.toml"),
     `
 [providers.fireworks]
-default = true
 base_url = "https://api.fireworks.ai/inference/v1"
 
-[[models]]
+[models.fast-chat]
 model = "some/chat-model"
 task = "chat"
+provider = "fireworks"
 `
   )
   await write(join(dir, "secrets.toml"), "")
@@ -164,12 +164,12 @@ test("loadModelsFile ignores a secrets.toml provider entry that names no provide
     join(dir, "models.toml"),
     `
 [providers.fireworks]
-default = true
 base_url = "https://api.fireworks.ai/inference/v1"
 
-[[models]]
+[models.fast-chat]
 model = "some/chat-model"
 task = "chat"
+provider = "fireworks"
 `
   )
   await write(
@@ -183,4 +183,31 @@ api_key = "orphaned-secret"
   const data = await loadModelsFile()
   expect(Object.keys(data.providers)).toEqual(["fireworks"])
   expect(data.providers.fireworks?.api_key).toBeUndefined()
+})
+
+test("saveFetchedActiveChat seeds [active].chat only if unset", async () => {
+  const { saveFetchedActiveChat } = await import("../../../lib/models/models")
+  const dir = `${tmpdir()}/kaja-test-models-save-active-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(
+    join(dir, "models.toml"),
+    `
+[providers.fireworks]
+base_url = "https://api.fireworks.ai/inference/v1"
+
+[models.fast-chat]
+model = "some/chat-model"
+task = "chat"
+provider = "fireworks"
+`
+  )
+
+  await saveFetchedActiveChat("fast-chat")
+  const data = await loadModelsFile()
+  expect(data.active.chat).toBe("fast-chat")
+
+  // A second call with a different id must not overwrite an already-set active.chat.
+  await saveFetchedActiveChat("some-other-id")
+  const dataAfter = await loadModelsFile()
+  expect(dataAfter.active.chat).toBe("fast-chat")
 })

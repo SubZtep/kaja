@@ -8,26 +8,21 @@ const configDir = `${tmpdir()}/kaja-test-xdg-config-telegram-bot`
 process.env.XDG_CONFIG_HOME = configDir
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
-writeFileSync(
-  join(configKajaDir, "settings.toml"),
-  `
-[models.chat]
-model = "x"
-provider = "default"
-`
-)
+writeFileSync(join(configKajaDir, "settings.toml"), "")
 writeFileSync(
   join(configKajaDir, "models.toml"),
   `
 [providers.default]
-default = true
 base_url = "http://localhost"
 api_key = "x"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "x"
 task = "chat"
+provider = "default"
+
+[active]
+chat = "chat-default"
 `
 )
 

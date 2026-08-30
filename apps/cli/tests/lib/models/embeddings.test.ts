@@ -5,28 +5,31 @@ process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-emb
 const { saveConfig } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
 const { getSecretsPath, invalidateSecretsCache } = await import("../../../lib/config/secrets")
-await saveConfig({
-  models: {
-    chat: { model: "test-model", provider: "default" },
-    embedding: { model: "test-embedding-model", provider: "default" }
-  }
-})
+await saveConfig({})
 await Bun.write(
   getModelsPath(),
   `
 [providers.default]
-default = true
 base_url = "http://localhost/v1"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "test-model"
 task = "chat"
+provider = "default"
 
-[[models]]
-id = "embedding-default"
+[models.embedding-default]
 model = "test-embedding-model"
 task = "embedding"
+provider = "default"
+
+[models.embedding-alt]
+model = "test-embedding-model-alt"
+task = "embedding"
+provider = "default"
+
+[active]
+chat = "chat-default"
+embedding = "embedding-default"
 `
 )
 await Bun.write(
@@ -100,27 +103,35 @@ test("embed batches multiple inputs into one request", async () => {
   ])
 })
 
+test("a persona's embedding pin overrides [active].embedding", async () => {
+  await embed("hello", { embedding: "embedding-alt" })
+  const body = JSON.parse(lastRequest!.init.body as string)
+  expect(body.model).toBe("test-embedding-model-alt")
+})
+
 test("embedding model resolves via its own provider, independent of chat", async () => {
   await Bun.write(
     getModelsPath(),
     `
 [providers.default]
-default = true
 base_url = "http://localhost/v1"
 
 [providers.embed-host]
 base_url = "http://embedding-host/v1"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "test-model"
 task = "chat"
+provider = "default"
 
-[[models]]
-id = "embedding-default"
+[models.embedding-default]
 model = "custom-embedder"
 task = "embedding"
 provider = "embed-host"
+
+[active]
+chat = "chat-default"
+embedding = "embedding-default"
 `
   )
   await Bun.write(
@@ -134,12 +145,6 @@ api_key = "embedding-key"
 `
   )
   invalidateSecretsCache()
-  await saveConfig({
-    models: {
-      chat: { model: "test-model", provider: "default" },
-      embedding: { model: "custom-embedder", provider: "embed-host" }
-    }
-  })
   await embed("hello")
   expect(lastRequest?.url).toBe("http://embedding-host/v1/embeddings")
   const body = JSON.parse(lastRequest!.init.body as string)

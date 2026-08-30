@@ -7,17 +7,20 @@
 // Model must be pulled once:
 //   curl -X POST localhost:8000/v1/models/speaches-ai/Kokoro-82M-v1.0-ONNX-fp16
 
+import type { PersonaModels } from "@kaja/schema/cli"
 import { config } from "../config/config"
 import { log } from "../logger"
-import { loadModelsFile, resolveModelFromConfig } from "../models/models"
+import { loadModelsFile, resolveActiveModel } from "../models/models"
 import type { AudioSink } from "./audio"
 
-async function resolveTtsSettings() {
-  const { tts, models } = await config()
-  if (!models["text-to-speech"]?.provider || !tts?.voice) {
-    throw new Error("No TTS model/voice configured — set models.text-to-speech and tts.voice in settings.toml")
+async function resolveTtsSettings(personaModels?: PersonaModels) {
+  const { tts } = await config()
+  const resolved = resolveActiveModel(await loadModelsFile(), "text-to-speech", personaModels)
+  if (!resolved || !tts?.voice) {
+    throw new Error(
+      "No TTS model/voice configured — set [active].text-to-speech in models.toml and tts.voice in settings.toml"
+    )
   }
-  const resolved = resolveModelFromConfig(await loadModelsFile(), models["text-to-speech"], "text-to-speech")!
   return {
     model: resolved.model,
     voice: tts.voice,
@@ -26,8 +29,11 @@ async function resolveTtsSettings() {
   }
 }
 
-export async function fetchSpeech(text: string): Promise<{ response: Response; voice: string }> {
-  const { model, voice, base } = await resolveTtsSettings()
+export async function fetchSpeech(
+  text: string,
+  personaModels?: PersonaModels
+): Promise<{ response: Response; voice: string }> {
+  const { model, voice, base } = await resolveTtsSettings(personaModels)
   const res = await fetch(`${base}/v1/audio/speech`, {
     method: "POST",
     headers: {
@@ -87,7 +93,7 @@ async function* logFirstChunk(
   )
 }
 
-export function createTts(sink: AudioSink) {
+export function createTts(sink: AudioSink, personaModels?: PersonaModels) {
   // Serializes synthesis+consumption across speak() calls so utterances never
   // interleave in the sink and the server synthesizes one at a time.
   let queue: Promise<unknown> = Promise.resolve()
@@ -95,7 +101,7 @@ export function createTts(sink: AudioSink) {
   function speak(text: string): Promise<void> {
     const step = queue.then(async () => {
       const started = Date.now()
-      const { response, voice } = await fetchSpeech(text)
+      const { response, voice } = await fetchSpeech(text, personaModels)
       const utterance = sink.play(logFirstChunk(response.body as unknown as AsyncIterable<Uint8Array>, started, voice))
       await utterance.consumed // ordering + backpressure; next synthesis may start
       // Wrapped: returning the bare promise would make the queue await audible completion and kill synthesis/playback pipelining.
@@ -112,9 +118,9 @@ export function createTts(sink: AudioSink) {
 }
 
 /** Load the TTS model server-side so the first real reply doesn't pay for it. */
-export async function warmupTts(): Promise<void> {
+export async function warmupTts(personaModels?: PersonaModels): Promise<void> {
   try {
-    const { response } = await fetchSpeech("Hi")
+    const { response } = await fetchSpeech("Hi", personaModels)
     await response.arrayBuffer() // discard — we only want the model loaded
     log.debug("tts: warmed up")
   } catch (err) {

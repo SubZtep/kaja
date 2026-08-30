@@ -32,10 +32,6 @@ export async function runFirstRunIfNeeded() {
     )
   })
   if (!choice) process.exit(0)
-  if (choice.useFree) {
-    await create(true)
-  } else {
-    await create()
-    if (choice.template) await writeModelsTemplate(choice.template)
-  }
+  await create()
+  if (!choice.useFree && choice.template) await writeModelsTemplate(choice.template)
 }

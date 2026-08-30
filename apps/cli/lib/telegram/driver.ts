@@ -188,7 +188,10 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       personaId: persona.id
     })
     const startingModel =
-      resumeModel ?? (!resumeRow && persona.model ? models.find(m => m.model === persona.model) : undefined)
+      resumeModel ??
+      (!resumeRow && persona.models?.chat
+        ? models.find(m => m.id === persona.models!.chat && m.task === "chat")
+        : undefined)
     if (startingModel) agent.setModel(startingModel)
 
     return {

@@ -15,8 +15,10 @@ export type RerankModel = {
 
 export type NasiToolDeps = {
   chat?: { client: OpenAI; model: string }
-  rerank?: RerankModel
-  imageGeneration?: ImageGenModel
+  /** Resolves the rerank model to use, given the active persona's id (if any) — lets the caller honor a persona's per-task model pin without this package knowing about personas/models.toml. */
+  rerank?: (personaId?: string) => RerankModel | undefined
+  /** Resolves the image-generation model to use, given the active persona's id (if any) — see {@link rerank}. */
+  imageGeneration?: (personaId?: string) => ImageGenModel | undefined
   webSearchApiKey?: string
   lookupLocation?: () => Promise<GeoLocation | undefined>
   tempDir?: string

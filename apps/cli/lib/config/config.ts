@@ -92,27 +92,6 @@ export async function savePreferences(preferences: KajaPreferences) {
   cached = undefined
 }
 
-/** Seeds settings.toml's models.chat from a freshly fetched models.toml, only if no real chat model is set yet (placeholder doesn't count). */
-export async function saveFetchedChatModel(chatModel: { model: string; provider?: string }) {
-  const current = await readConfigLoose()
-  const templateChatModel = (TEMPLATE_TOML as Partial<KajaConfig>).models?.chat
-  const hasRealChat = !!current.models?.chat?.model && current.models.chat.model !== templateChatModel?.model
-  if (hasRealChat) return
-  const merged: Partial<KajaConfig> = {
-    ...(TEMPLATE_TOML as Partial<KajaConfig>),
-    ...current,
-    models: { ...current.models, chat: chatModel }
-  }
-  await write(getConfigPath(), stringify(merged))
-  cached = undefined
-}
-
-/** @param freeChat Omits the template's placeholder models.chat, so it falls back to the free hosted tier. */
-export async function create(freeChat = false) {
-  if (!freeChat) {
-    await write(getConfigPath(), stringify(TEMPLATE_TOML))
-    return
-  }
-  const { chat: _chat, ...otherModels } = TEMPLATE_TOML.models as Record<string, unknown>
-  await write(getConfigPath(), stringify({ ...TEMPLATE_TOML, models: otherModels }))
+export async function create() {
+  await write(getConfigPath(), stringify(TEMPLATE_TOML))
 }

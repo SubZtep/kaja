@@ -16,13 +16,26 @@ export const SamplingParamsSchema = z.object({
   seed: z.number().int().optional()
 })
 
-// model is optional (falls back to the app default); persona id comes from
-// its filename, attached by loadPersonas().
+// Each value is a models.toml [models.<id>] entry's id; unset or unresolved
+// falls back to models.toml's [active].<task> (see resolveActiveModel).
+const PersonaModelsSchema = z
+  .object({
+    chat: z.string().min(1).optional(),
+    embedding: z.string().min(1).optional(),
+    rerank: z.string().min(1).optional(),
+    "image-generation": z.string().min(1).optional(),
+    "text-to-speech": z.string().min(1).optional(),
+    "speech-to-text": z.string().min(1).optional()
+  })
+  .optional()
+
+// persona id comes from its filename, attached by loadPersonas().
 export const PersonaSchema = z
   .object({
     label: z.string().min(1),
     instructions: z.string().min(1).optional(),
-    model: z.string().min(1).optional(),
+    // Per-task model overrides; each optional, falls back to models.toml's [active].<task>.
+    models: PersonaModelsSchema,
     // Topic id (datasets.ts filename) this persona collects via dataset_info; optional.
     dataset: z.string().min(1).optional(),
     // Short clause describing when this persona fits; shown in the system-prompt persona roster.
@@ -31,4 +44,5 @@ export const PersonaSchema = z
   .extend(SamplingParamsSchema.shape)
 
 export type Persona = z.infer<typeof PersonaSchema> & { id: string }
+export type PersonaModels = NonNullable<z.infer<typeof PersonaModelsSchema>>
 export type SamplingParams = z.infer<typeof SamplingParamsSchema>

@@ -177,8 +177,8 @@ export function applyPersona(agent: Agent, persona: Persona) {
   agent.instructions = persona.instructions
   agent.sampling = samplingOf(persona)
   agent.dataset = persona.dataset
-  if (persona.model) {
-    const model = agent.models.find(m => m.model === persona.model)
+  if (persona.models?.chat) {
+    const model = agent.models.find(m => m.id === persona.models!.chat)
     if (model) agent.setModel(model)
   }
 }

@@ -48,6 +48,7 @@ test.each(["chat", "embedding", "speech-to-text"] as const)(
   "%s model: available when the provider request succeeds",
   async task => {
     const ok = await checkModelAvailability({
+      id: "known-model",
       model: "known-model",
       task,
       baseUrl,
@@ -61,6 +62,7 @@ test.each(["chat", "embedding", "speech-to-text"] as const)(
   "%s model: not available when the provider rejects the model id (even if absent from /models)",
   async task => {
     const ok = await checkModelAvailability({
+      id: "unlisted",
       model: "unlisted-but-should-still-be-tested",
       task,
       baseUrl,
@@ -72,6 +74,7 @@ test.each(["chat", "embedding", "speech-to-text"] as const)(
 
 test("tts model: falls back to the /models list", async () => {
   const ok = await checkModelAvailability({
+    id: "known-tts-model",
     model: "known-tts-model",
     task: "text-to-speech",
     baseUrl,
@@ -82,6 +85,7 @@ test("tts model: falls back to the /models list", async () => {
 
 test("tts model: not available when absent from /models", async () => {
   const ok = await checkModelAvailability({
+    id: "missing-tts-model",
     model: "missing-tts-model",
     task: "text-to-speech",
     baseUrl,

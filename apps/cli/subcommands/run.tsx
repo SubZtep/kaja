@@ -39,8 +39,8 @@ export async function runSubcommand(cli: typeof Cli) {
 
   const { preferences } = currentConfig
   const models = await loadModels()
-  const personas = await loadPersonas(models)
-  const { tools, mcpServers, closeTools } = await getDefaultTools()
+  const personas = await loadPersonas()
+  const { tools, mcpServers, closeTools } = await getDefaultTools(personas)
   const sessionCount = (await listSessions()).length
   const memoryNoteCount = Object.keys(await loadMemory()).length
 

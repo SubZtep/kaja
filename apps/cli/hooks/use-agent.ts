@@ -95,7 +95,9 @@ export function useAgent(
     })
     const startingModel =
       resume?.model ??
-      (!resume && startingPersona?.model ? models.find(m => m.model === startingPersona.model) : undefined)
+      (!resume && startingPersona?.models?.chat
+        ? models.find(m => m.id === startingPersona.models!.chat && m.task === "chat")
+        : undefined)
     if (startingModel) created.setModel(startingModel)
     return created
   })

@@ -6,19 +6,20 @@
 //
 // Requires speaches running at settings.toml's speachesUrl.
 
+import type { PersonaModels } from "@kaja/schema/cli"
 import { config } from "../config/config"
 import { getLanguage } from "../i18n"
 import { log } from "../logger"
-import { loadModelsFile, resolveModelFromConfig } from "../models/models"
+import { loadModelsFile, resolveActiveModel } from "../models/models"
 import type { AudioSource } from "./audio"
 import { createAsyncQueue, SAMPLE_RATE } from "./audio"
 
-async function resolveSttSettings() {
-  const { stt, models } = await config()
-  if (!models["speech-to-text"]?.provider) {
-    throw new Error("No STT model configured — set models.speech-to-text in settings.toml")
+async function resolveSttSettings(personaModels?: PersonaModels) {
+  const { stt } = await config()
+  const resolved = resolveActiveModel(await loadModelsFile(), "speech-to-text", personaModels)
+  if (!resolved) {
+    throw new Error("No STT model configured — set [active].speech-to-text in models.toml")
   }
-  const resolved = resolveModelFromConfig(await loadModelsFile(), models["speech-to-text"], "speech-to-text")!
   return {
     model: resolved.model,
     language: stt?.language ?? getLanguage(),
@@ -49,10 +50,12 @@ export interface SttOptions {
   source: AudioSource
   /** Observe transcription progress, e.g. to show recording/transcribing in a UI. */
   onState?: (state: SttState) => void
+  /** Active persona's per-task model overrides, if any. */
+  personaModels?: PersonaModels
 }
 
-export async function createStt({ source, onState }: SttOptions): Promise<Stt> {
-  const { model, language, base } = await resolveSttSettings()
+export async function createStt({ source, onState, personaModels }: SttOptions): Promise<Stt> {
+  const { model, language, base } = await resolveSttSettings(personaModels)
 
   // Final transcripts, consumed via the `utterances` async iterable.
   const transcripts = createAsyncQueue<string>()

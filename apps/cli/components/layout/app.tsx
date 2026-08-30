@@ -178,7 +178,7 @@ export default function App({
   const pendingCommand = !pending && lastEvent?.type === "confirm_command" ? lastEvent : undefined
   const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = usePreferences(initialPreferences)
   useSound(events, sounds)
-  const speaking = useVoice(events, voice)
+  const speaking = useVoice(events, voice, persona.models)
   const { columns, rows } = useWindowSize()
 
   const [menuMode, setMenuMode] = useState<MenuMode>("main")
@@ -249,6 +249,7 @@ export default function App({
           menuItems={commands.map(command => command.label)}
           onMenuSelect={index => commands[index]?.run()}
           onMenuClose={() => setMenuMode("main")}
+          personaModels={persona.models}
         />
       )}
     </Box>

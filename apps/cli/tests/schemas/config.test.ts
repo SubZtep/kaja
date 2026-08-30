@@ -1,20 +1,15 @@
 import { expect, test } from "bun:test"
 import { KajaConfigSchema } from "@kaja/schema/config"
 
-const base = {
-  models: {
-    chat: { model: "accounts/fireworks/models/minimax-m3", provider: "default" }
-  }
-}
-
-test("config without preferences still validates", () => {
-  const parsed = KajaConfigSchema.parse(base)
+test("empty config validates — every field is optional", () => {
+  const parsed = KajaConfigSchema.parse({})
   expect(parsed.preferences).toBeUndefined()
+  expect(parsed.stt).toBeUndefined()
+  expect(parsed.tts).toBeUndefined()
 })
 
 test("config with preferences round-trips", () => {
   const parsed = KajaConfigSchema.parse({
-    ...base,
     preferences: { thinking: false, sounds: true }
   })
   expect(parsed.preferences).toEqual({ thinking: false, sounds: true })
@@ -22,7 +17,6 @@ test("config with preferences round-trips", () => {
 
 test("partial preferences are allowed", () => {
   const parsed = KajaConfigSchema.parse({
-    ...base,
     preferences: { sounds: false }
   })
   expect(parsed.preferences).toEqual({ sounds: false })
@@ -30,27 +24,20 @@ test("partial preferences are allowed", () => {
 
 test("preferences language accepts en and hu only", () => {
   const parsed = KajaConfigSchema.parse({
-    ...base,
     preferences: { language: "hu" }
   })
   expect(parsed.preferences).toEqual({ language: "hu" })
-  expect(() => KajaConfigSchema.parse({ ...base, preferences: { language: "de" } })).toThrow()
-})
-
-test("models.chat is optional; models itself is required", () => {
-  expect(() => KajaConfigSchema.parse({})).toThrow()
-  expect(KajaConfigSchema.parse({ models: {} }).models.chat).toBeUndefined()
+  expect(() => KajaConfigSchema.parse({ preferences: { language: "de" } })).toThrow()
 })
 
 test("stt, tts are independently optional", () => {
-  const parsed = KajaConfigSchema.parse(base)
+  const parsed = KajaConfigSchema.parse({})
   expect(parsed.stt).toBeUndefined()
   expect(parsed.tts).toBeUndefined()
 })
 
 test("stt group with only some optional fields validates", () => {
   const parsed = KajaConfigSchema.parse({
-    ...base,
     stt: { language: "en" }
   })
   expect(parsed.stt).toEqual({ language: "en" })
@@ -58,7 +45,6 @@ test("stt group with only some optional fields validates", () => {
 
 test("tts group with only some optional fields validates", () => {
   const parsed = KajaConfigSchema.parse({
-    ...base,
     tts: { voice: "af_heart" }
   })
   expect(parsed.tts).toEqual({ voice: "af_heart" })

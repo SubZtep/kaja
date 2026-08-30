@@ -27,8 +27,8 @@ export const generateImageTool = tool<{ prompt: string }>({
     },
     required: ["prompt"]
   },
-  execute: async args => {
-    const imageGen = getToolDeps().imageGeneration
+  execute: async (args, ctx) => {
+    const imageGen = getToolDeps().imageGeneration?.(ctx?.personaId)
     if (!imageGen) return "Image generation is not configured."
 
     const client = new OpenAI({

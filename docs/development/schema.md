@@ -64,32 +64,28 @@ config:
 erDiagram
   direction LR
   KajaConfig {
-    KajaModels models
     KajaStt stt
     KajaTts tts
     KajaMemory memory
     KajaPreferences preferences
   }
-  KajaModels {
-    KajaModelRef chat
-    KajaModelRef embedding
-    KajaModelRef rerank
-    KajaModelRef image_generation
-    KajaModelRef text_to_speech
-    KajaModelRef speech_to_text
-  }
-  KajaModelRef {
-    string model
-    string provider
-  }
   KajaModelsFile {
     ProviderMap providers
-    ModelEntry_array models
+    ModelEntryMap models
+    ActiveModels active
   }
   ModelEntry {
     string model
     Task task
     string provider
+  }
+  ActiveModels {
+    string chat
+    string embedding
+    string rerank
+    string image_generation
+    string text_to_speech
+    string speech_to_text
   }
   McpFile {
     McpServerEntry_array servers
@@ -102,10 +98,9 @@ erDiagram
     ServicesZen zen
   }
 
-  KajaConfig ||--|| KajaModels : "models"
-  KajaModels ||--o{ KajaModelRef : "per task"
-  KajaModelsFile ||--o{ ModelEntry : "models[]"
-  KajaModelRef }o--o| ModelEntry : "provider lookup in models.toml"
+  KajaModelsFile ||--o{ ModelEntry : "models[id]"
+  KajaModelsFile ||--|| ActiveModels : "active"
+  ActiveModels }o--o| ModelEntry : "id lookup in [models.<id>]"
 ```
 
 ## `@kaja/schema/cli`
@@ -123,9 +118,17 @@ erDiagram
   Persona {
     string label
     string instructions
-    string model
+    PersonaModels models
     string dataset
     string when
+  }
+  PersonaModels {
+    string chat
+    string embedding
+    string rerank
+    string image_generation
+    string text_to_speech
+    string speech_to_text
   }
   SamplingParams {
     number temperature
@@ -144,6 +147,7 @@ erDiagram
   }
 
   Persona ||--|| SamplingParams : "extends"
+  Persona ||--o| PersonaModels : "models"
   Persona }o--o| Dataset : "dataset id"
   Dataset ||--o{ DatasetField : "fields[]"
 ```
@@ -195,7 +199,7 @@ erDiagram
 These aren't type imports (each subpath stays decoupled per `packages/schema/AGENTS.md`) — just IDs/strings that happen to reference a concept in another subpath at runtime:
 
 - `config`'s `KajaPreferences.persona` → `cli`'s `Persona.id`
-- `config`'s `KajaModelRef.provider` → looked up against `config`'s own `KajaModelsFile.providers`
+- `cli`'s `Persona.models.<task>` (all six tasks) → `config`'s own `CliResolvedModel.id` (soft fallback: unmatched id falls through to models.toml's `[active].<task>`, resolved per-task via `resolveActiveModel`)
 - `store`'s `PersistedSession.persona` → `cli`'s `Persona.id`
 - `store`'s `PersistedSession.model` → `api`'s `Model.id` (or a free-tier id)
 

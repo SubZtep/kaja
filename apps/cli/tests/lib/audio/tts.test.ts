@@ -3,39 +3,43 @@
 import { afterEach, expect, test } from "bun:test"
 import type { AudioSink } from "../../../lib/audio/audio"
 
-// models.text-to-speech/tts.voice are mandatory config now (no code-side default), so this file needs its own isolated config with them set — same pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
+// [active]."text-to-speech"/tts.voice are mandatory config now (no code-side default), so this file needs its own isolated config with them set — same pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-tts`
 
 const { saveConfig } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
 await saveConfig({
-  models: {
-    chat: { model: "test-model", provider: "default" },
-    "text-to-speech": { model: "test-tts-model", provider: "default" }
-  },
   tts: { voice: "test-voice" }
 })
 await Bun.write(
   getModelsPath(),
   `
 [providers.default]
-default = true
 base_url = "http://localhost/v1"
 api_key = "llm-key"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "test-model"
 task = "chat"
+provider = "default"
 
-[[models]]
-id = "text-to-speech-default"
+[models.text-to-speech-default]
 model = "test-tts-model"
 task = "text-to-speech"
+provider = "default"
+
+[models.text-to-speech-alt]
+model = "test-tts-model-alt"
+task = "text-to-speech"
+provider = "default"
+
+[active]
+chat = "chat-default"
+"text-to-speech" = "text-to-speech-default"
 `
 )
 
-const { createTts } = await import("../../../lib/audio/tts")
+const { createTts, fetchSpeech } = await import("../../../lib/audio/tts")
 
 const realFetch = globalThis.fetch
 
@@ -140,4 +144,26 @@ test("a failed synthesis does not wedge the queue", async () => {
   await expect(speak("fails")).rejects.toThrow("TTS failed: 500")
   await speak("works")
   expect(playedChunks).toBeGreaterThan(0)
+})
+
+test("a persona's text-to-speech pin overrides [active].text-to-speech", async () => {
+  let sentModel: string | undefined
+  globalThis.fetch = (async (_url: string, init: { body: string }) => {
+    sentModel = JSON.parse(init.body).model
+    return new Response(new Uint8Array([0, 0, 0, 0]))
+  }) as unknown as typeof fetch
+
+  await fetchSpeech("hi", { "text-to-speech": "text-to-speech-alt" })
+  expect(sentModel).toBe("test-tts-model-alt")
+})
+
+test("with no persona pin, fetchSpeech uses [active].text-to-speech", async () => {
+  let sentModel: string | undefined
+  globalThis.fetch = (async (_url: string, init: { body: string }) => {
+    sentModel = JSON.parse(init.body).model
+    return new Response(new Uint8Array([0, 0, 0, 0]))
+  }) as unknown as typeof fetch
+
+  await fetchSpeech("hi")
+  expect(sentModel).toBe("test-tts-model")
 })

@@ -2,7 +2,6 @@ import { existsSync } from "node:fs"
 import { basename, join } from "node:path"
 import { samplingOf } from "@kaja/nasi"
 import { type Persona, PersonaSchema } from "@kaja/schema/cli"
-import type { CliResolvedModel } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 // Written on first run: one file per persona, the stock assistant plus the app's former built-in personas, sourced from the same files that document repo docs/config/personas/ (also published on the docs site).
 import BARKOCHBA_TEMPLATE from "../../../../docs/config/personas/barkochba.toml" with { type: "text" }
@@ -26,8 +25,8 @@ export function getPersonasDir() {
   return join(getConfigDir(), "personas")
 }
 
-/** Loads personas/*.toml (id = filename). Writes default templates if the directory is missing; invalid files are skipped with a warning. */
-export async function loadPersonas(models: CliResolvedModel[]): Promise<Persona[]> {
+/** Loads personas/*.toml (id = filename). Writes default templates if the directory is missing; invalid files are skipped with a warning. A persona's models table isn't validated against models.toml here — an unmatched model id soft-falls-back at resolution time (see resolveActiveModel). */
+export async function loadPersonas(): Promise<Persona[]> {
   const dir = getPersonasDir()
   if (!existsSync(dir)) {
     for (const [id, text] of Object.entries(TEMPLATES)) {
@@ -39,7 +38,6 @@ export async function loadPersonas(models: CliResolvedModel[]): Promise<Persona[
   for await (const match of glob.scan({ cwd: dir, dot: false })) {
     entries.push(match)
   }
-  const modelIds = new Set(models.map(m => m.model))
   const personas: Persona[] = []
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" })
@@ -49,7 +47,6 @@ export async function loadPersonas(models: CliResolvedModel[]): Promise<Persona[
     const id = basename(entry, ".toml")
     try {
       const data = PersonaSchema.parse(TOML.parse(await file(path).text()))
-      if (data.model && !modelIds.has(data.model)) throw new Error(`names unknown model "${data.model}"`)
       personas.push({ ...data, id })
     } catch (error) {
       log.warn({ error, path }, "Failed to load persona")

@@ -12,8 +12,8 @@ export async function runTelegramSubcommand() {
   const { services } = await import("../lib/config/services")
 
   const models = await loadModels()
-  const personas = await loadPersonas(models)
-  const { tools, closeTools } = await getDefaultTools()
+  const personas = await loadPersonas()
+  const { tools, closeTools } = await getDefaultTools(personas)
 
   // finally, not just a trailing call: an error thrown out of runTelegramCli must not skip closing MCP subprocess connections
   let code: number

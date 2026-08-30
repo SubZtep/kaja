@@ -83,6 +83,7 @@ async function* handleSwitchPersonaCall(
 }
 
 async function* handleToolCall(
+  agent: Agent,
   toolsByName: Map<string, Tool<any>>,
   messages: ChatCompletionMessageParam[],
   owner: string | null,
@@ -100,7 +101,7 @@ async function* handleToolCall(
     })
     return
   }
-  const result = await t.execute(args, { owner })
+  const result = await t.execute(args, { owner, personaId: agent.personaId })
 
   if (typeof result === "string") {
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
@@ -234,7 +235,7 @@ async function* handleToolCalls(
       continue
     }
 
-    yield* handleToolCall(toolsByName, messages, owner, call)
+    yield* handleToolCall(agent, toolsByName, messages, owner, call)
   }
   return { ask, confirm }
 }

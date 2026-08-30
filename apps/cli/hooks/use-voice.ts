@@ -1,3 +1,4 @@
+import type { PersonaModels } from "@kaja/schema/cli"
 import { useEffect, useRef, useState } from "react"
 import { createLocalSink } from "../lib/audio/audio"
 import { toSpeakable } from "../lib/audio/speakable"
@@ -30,7 +31,7 @@ function speakableText(event: TimelineEvent): string | null {
  * Returns whether speech is audibly in flight, so the mic can be muted while
  * the agent talks (half-duplex — otherwise it transcribes its own voice).
  */
-export function useVoice(events: TimelineEvent[], enabled = false): boolean {
+export function useVoice(events: TimelineEvent[], enabled = false, personaModels?: PersonaModels): boolean {
   const spoken = useRef(0)
   const tts = useRef<{ speak: (text: string) => Promise<void> }>(undefined)
   const sink = useRef<ReturnType<typeof createLocalSink>>(undefined)
@@ -39,8 +40,8 @@ export function useVoice(events: TimelineEvent[], enabled = false): boolean {
 
   // Load the TTS model server-side when voice turns on, so the first real reply doesn't pay the model-load delay. warmupTts logs its own failures.
   useEffect(() => {
-    if (enabled) void warmupTts()
-  }, [enabled])
+    if (enabled) void warmupTts(personaModels)
+  }, [enabled, personaModels])
 
   useEffect(() => {
     const pending = events.slice(spoken.current)
@@ -53,7 +54,7 @@ export function useVoice(events: TimelineEvent[], enabled = false): boolean {
       if (!speech) continue
       if (!tts.current) {
         sink.current = createLocalSink()
-        tts.current = createTts(sink.current)
+        tts.current = createTts(sink.current, personaModels)
       }
       setInFlight(n => n + 1)
       tts.current

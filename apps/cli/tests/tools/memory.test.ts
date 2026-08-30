@@ -13,26 +13,21 @@ process.env.XDG_CONFIG_HOME = configDir
 // agents.ts->openai.ts reads config() at import time and hard-exits without a valid settings.toml+models.toml, so this fixture provides both.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
-writeFileSync(
-  join(configKajaDir, "settings.toml"),
-  `
-[models.chat]
-model = "x"
-provider = "default"
-`
-)
+writeFileSync(join(configKajaDir, "settings.toml"), "")
 writeFileSync(
   join(configKajaDir, "models.toml"),
   `
 [providers.default]
-default = true
 base_url = "http://localhost"
 api_key = "x"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "x"
 task = "chat"
+provider = "default"
+
+[active]
+chat = "chat-default"
 `
 )
 

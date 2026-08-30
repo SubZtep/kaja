@@ -28,10 +28,13 @@ export function renderMcpToml(servers: McpServer[]): string {
 }
 
 /**
- * Renders providers+models into the `[providers.*]` / `[[models]]` shape
+ * Renders providers+models into the `[providers.*]` / `[models.<id>]` shape
  * @kaja/schema/config's models.ts expects. That format has no notion of a model
- * with multiple tasks, so a model with N tasks becomes N `[[models]]`
- * blocks sharing the same id/provider — one per task.
+ * with multiple tasks and keys entries by id, so a model with N tasks becomes
+ * N `[models.<id>]` blocks — one per task, id suffixed with the task when
+ * there's more than one (otherwise the bare model id, since that's the
+ * common case and keeping it unsuffixed avoids churning every existing
+ * single-task model's id).
  */
 export function renderModelsToml(providers: Provider[], models: Model[]): string {
   const providerById = new Map(providers.map(p => [p.id, p]))
@@ -45,13 +48,10 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
   const modelBlocks = models.flatMap(m => {
     const provider = providerById.get(m.providerId)
     return m.tasks.map(task => {
-      const lines = [
-        "[[models]]",
-        `id = ${tomlString(m.id)}`,
-        `model = ${tomlString(m.model)}`,
-        `task = ${tomlString(task)}`
-      ]
-      if (provider && provider.name !== "default") lines.push(`provider = ${tomlString(provider.name)}`)
+      const id = m.tasks.length > 1 ? `${m.id}-${task}` : m.id
+      // Quoted key: model ids (UUIDv7) start with a digit, which a bare TOML key rejects.
+      const lines = [`[models.${tomlString(id)}]`, `model = ${tomlString(m.model)}`, `task = ${tomlString(task)}`]
+      if (provider) lines.push(`provider = ${tomlString(provider.name)}`)
       return lines.join("\n")
     })
   })

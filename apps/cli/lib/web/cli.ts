@@ -106,13 +106,16 @@ export function startWebServer(port: number) {
           datasetInfoTool
         ]
         const models = await loadModels()
-        const personas = await loadPersonas(models)
+        const personas = await loadPersonas()
         const entries = await Promise.all(
           personas.map(async persona => ({
             persona,
             systemPrompt: await buildSystemPrompt(
               new Agent({
-                model: persona.model ?? "",
+                model:
+                  (persona.models?.chat &&
+                    models.find(m => m.id === persona.models!.chat && m.task === "chat")?.model) ??
+                  "",
                 tools: previewTools,
                 instructions: persona.instructions,
                 dataset: persona.dataset,

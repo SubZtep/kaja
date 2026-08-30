@@ -9,27 +9,7 @@ export const KajaPreferencesSchema = z.object({
   persona: z.string().min(1).optional().describe("Id of the persona to open with (see personas.toml)")
 })
 
-export const KajaModelRefSchema = z.object({
-  model: z.string().min(1).describe("Provider-facing model name, sent as-is to the API"),
-  provider: z
-    .string()
-    .min(1)
-    .optional()
-    .describe("models.toml [providers.*] table to use; omit to fall back to the free hosted tier")
-})
-export type KajaModelRef = z.infer<typeof KajaModelRefSchema>
-
-// Each task resolves to a model + models.toml provider; only chat's provider is optional (falls back to the free tier).
-export const KajaModelsSchema = z.object({
-  chat: KajaModelRefSchema.optional().describe("Chat model; omit to use the free hosted tier"),
-  embedding: KajaModelRefSchema.optional(),
-  rerank: KajaModelRefSchema.optional(),
-  "image-generation": KajaModelRefSchema.optional(),
-  "text-to-speech": KajaModelRefSchema.optional(),
-  "speech-to-text": KajaModelRefSchema.optional()
-})
-
-// Per-feature config blocks; the model itself lives in models.<task> above.
+// Per-feature config blocks; the model itself lives in models.toml's [models.*]/[active].
 export const KajaSttSchema = z.object({
   speachesUrl: z.url().optional().describe("Speaches AI server endpoint (speech-to-text)"),
   language: z.string().min(1).optional().describe("Language hint for speech-to-text, e.g. 'en'")
@@ -50,7 +30,6 @@ export const KajaMemorySchema = z.object({
 
 /** location/webSearch/telegram/api (external service credentials) live in services.toml */
 export const KajaConfigSchema = z.object({
-  models: KajaModelsSchema,
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
   memory: KajaMemorySchema.optional(),
@@ -59,7 +38,6 @@ export const KajaConfigSchema = z.object({
 
 export type KajaConfig = z.infer<typeof KajaConfigSchema>
 export type KajaPreferences = z.infer<typeof KajaPreferencesSchema>
-export type KajaModels = z.infer<typeof KajaModelsSchema>
 export type KajaStt = z.infer<typeof KajaSttSchema>
 export type KajaTts = z.infer<typeof KajaTtsSchema>
 export type KajaMemory = z.infer<typeof KajaMemorySchema>
