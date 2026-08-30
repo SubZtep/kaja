@@ -7,7 +7,7 @@ import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
-import { saveModels, savePreferences } from "../../lib/config/config"
+import { savePreferences } from "../../lib/config/config"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel, FREE_CHAT_PROVIDER } from "../../lib/models/openai"
@@ -18,7 +18,7 @@ import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
 import { UserInput } from "./user-input"
 
-type MenuMode = "main" | "model" | "persona"
+type MenuMode = "main" | "persona"
 
 // Slash menu (opened by typing "/" in the input): label + action together. An action returning true keeps the menu open (it swapped in a submenu).
 // biome-ignore lint/suspicious/noConfusingVoidType: matches UserInput's onMenuSelect contract
@@ -31,7 +31,6 @@ function buildMainMenu({
   toggleThinking,
   toggleSounds,
   toggleVoice,
-  chatModels,
   setMenuMode
 }: {
   thinking: boolean
@@ -40,7 +39,6 @@ function buildMainMenu({
   toggleThinking: () => void
   toggleSounds: () => void
   toggleVoice: () => void
-  chatModels: CliResolvedModel[]
   setMenuMode: (mode: MenuMode) => void
 }): MenuCommand[] {
   return [
@@ -55,14 +53,6 @@ function buildMainMenu({
     {
       label: t("menu.toggleVoice", { state: t(voice ? "menu.on" : "menu.off") }),
       run: toggleVoice
-    },
-    {
-      label: t("menu.changeModel"),
-      run: () => {
-        if (chatModels.length === 0) return
-        setMenuMode("model")
-        return true
-      }
     },
     {
       label: t("menu.changePersona"),
@@ -82,13 +72,10 @@ function buildCommands({
   toggleThinking,
   toggleSounds,
   toggleVoice,
-  chatModels,
   setMenuMode,
   personas,
   persona,
-  switchPersona,
-  model,
-  switchModel
+  switchPersona
 }: {
   menuMode: MenuMode
   thinking: boolean
@@ -97,13 +84,10 @@ function buildCommands({
   toggleThinking: () => void
   toggleSounds: () => void
   toggleVoice: () => void
-  chatModels: CliResolvedModel[]
   setMenuMode: (mode: MenuMode) => void
   personas: Persona[]
   persona: Persona
   switchPersona: (next: Persona) => void
-  model: string
-  switchModel: (next: CliResolvedModel) => void
 }): MenuCommand[] {
   if (menuMode === "main") {
     return buildMainMenu({
@@ -113,22 +97,13 @@ function buildCommands({
       toggleThinking,
       toggleSounds,
       toggleVoice,
-      chatModels,
       setMenuMode
     })
   }
-  if (menuMode === "persona") {
-    return personas.map(p => ({
-      label: `${p.label}${p.id === persona.id ? " ✓" : ""}`,
-      run: () => {
-        switchPersona(p)
-      }
-    }))
-  }
-  return chatModels.map(chatModel => ({
-    label: `${chatModel.model}${chatModel.model === model ? " ✓" : ""}`,
+  return personas.map(p => ({
+    label: `${p.label}${p.id === persona.id ? " ✓" : ""}`,
     run: () => {
-      switchModel(chatModel)
+      switchPersona(p)
     }
   }))
 }
@@ -167,7 +142,6 @@ export default function App({
   const {
     model,
     displayModel,
-    switchModel: switchModelAgent,
     persona,
     switchPersona: switchPersonaAgent,
     events,
@@ -200,13 +174,6 @@ export default function App({
       log.warn({ error }, "Failed to save preferences")
     })
   }
-  const switchModel = (next: CliResolvedModel) => {
-    if (pending) return
-    switchModelAgent(next)
-    saveModels({ chat: { model: next.model, provider: next.provider } }).catch(error => {
-      log.warn({ error }, "Failed to save models")
-    })
-  }
   const lastEvent = events.at(-1)
   const pendingCommand = !pending && lastEvent?.type === "confirm_command" ? lastEvent : undefined
   const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = usePreferences(initialPreferences)
@@ -214,7 +181,6 @@ export default function App({
   const speaking = useVoice(events, voice)
   const { columns, rows } = useWindowSize()
 
-  const chatModels = models.filter(m => m.task === "chat")
   const [menuMode, setMenuMode] = useState<MenuMode>("main")
   // displayModel may be provider-reported (e.g. free-chat proxy) and match no configured model — on the free tier that's expected, so label it "kaja" rather than showing nothing.
   const provider = models.find(m => m.model === displayModel)?.provider ?? (freeChat ? FREE_CHAT_PROVIDER : undefined)
@@ -227,13 +193,10 @@ export default function App({
     toggleThinking,
     toggleSounds,
     toggleVoice,
-    chatModels,
     setMenuMode,
     personas,
     persona,
-    switchPersona,
-    model,
-    switchModel
+    switchPersona
   })
 
   let bottomChromeKey: "input" | "running" | "confirm" = "input"

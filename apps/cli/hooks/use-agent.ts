@@ -107,14 +107,6 @@ export function useAgent(
   // React-state mirror of agent.model (the configured/request model id), so consumers rerender on switch. Distinct from `responseModel`, which is the provider-reported id from the last completion (e.g. free-chat proxy).
   const [model, setModel] = useState(agent.model)
   const [responseModel, setResponseModel] = useState<string | null>(null)
-  const switchModel = useCallback(
-    (next: CliResolvedModel) => {
-      agent.setModel(next)
-      setModel(next.model)
-      setResponseModel(null)
-    },
-    [agent]
-  )
 
   const [events, setEvents] = useState<TimelineEvent[]>(
     () => (resume?.session.events as TimelineEvent[] | undefined) ?? []
@@ -141,7 +133,6 @@ export function useAgent(
   const switchPersona = useCallback(
     (next: Persona) => {
       if (pending) return
-      // Only sets the starting point for the new session — the user can still switch models manually afterward via switchModel.
       applyPersona(agent, next)
       setModel(agent.model)
       setResponseModel(null)
@@ -272,7 +263,6 @@ export function useAgent(
     model,
     /** Provider-reported model from the last completion; falls back to the request model when none yet. */
     displayModel: responseModel ?? model,
-    switchModel,
     persona,
     switchPersona,
     events,

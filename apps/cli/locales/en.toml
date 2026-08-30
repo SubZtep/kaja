@@ -114,7 +114,6 @@ off = "off"
 toggleThinking = "Toggle thinking [{state}]"
 toggleSounds = "Toggle sounds [{state}]"
 toggleVoice = "Toggle voice [{state}]"
-changeModel = "Change model"
 changePersona = "Change persona"
 
 [toolCall]

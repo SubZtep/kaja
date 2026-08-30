@@ -114,7 +114,6 @@ off = "ki"
 toggleThinking = "Gondolkodás átkapcsolása [{state}]"
 toggleSounds = "Hangok átkapcsolása [{state}]"
 toggleVoice = "Beszéd átkapcsolása [{state}]"
-changeModel = "Modellváltás"
 changePersona = "Személyiségváltás"
 
 [toolCall]

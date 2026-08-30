@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import { type KajaConfig, KajaConfigSchema, type KajaModels, type KajaPreferences } from "@kaja/schema/config"
+import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "@kaja/schema/config"
 import { file, write } from "bun"
 import { parse, stringify } from "smol-toml"
 import rawTemplate from "../../../../docs/config/settings.toml" with { type: "text" }
@@ -89,13 +89,6 @@ export async function savePreferences(preferences: KajaPreferences) {
   const current = await config()
   // Merge into the existing block: callers persist only the keys they manage (thinking/sounds/voice) and must not drop others like language.
   await write(getConfigPath(), stringify({ ...current, preferences: { ...current.preferences, ...preferences } }))
-  cached = undefined
-}
-
-/** Merges into models.* — each task's whole {model, provider} pair is replaced, other tasks untouched. */
-export async function saveModels(models: Partial<KajaModels>) {
-  const current = await config()
-  await write(getConfigPath(), stringify({ ...current, models: { ...current.models, ...models } }))
   cached = undefined
 }
 
