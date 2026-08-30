@@ -5,7 +5,6 @@ COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/cli/package.json ./apps/cli/package.json
 COPY packages ./packages
-COPY patches ./patches
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY apps/cli ./apps/cli
 

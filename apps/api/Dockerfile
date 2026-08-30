@@ -6,7 +6,6 @@ COPY apps/web/package.json ./apps/web/package.json
 COPY apps/cli/package.json ./apps/cli/package.json
 COPY apps/openai/package.json ./apps/openai/package.json
 COPY packages ./packages
-COPY patches ./patches
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY apps/api ./apps/api
 RUN bun run --filter @kaja/api build
