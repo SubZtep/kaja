@@ -8,7 +8,15 @@ export {
   markDatasetVersionComplete,
   saveDatasetAnswer
 } from "./dataset"
-export { closeStore, getActiveStorePath, getDb, openStore, SCHEMA_VERSION, setActiveStorePath } from "./db"
+export {
+  closeStore,
+  getActiveStorePath,
+  getDb,
+  openStore,
+  SCHEMA_VERSION,
+  setActiveStorePath,
+  withStorePath
+} from "./db"
 export { forgetNotes, loadMemory, noteHeader, saveMemory } from "./memory"
 export {
   createSessionRow,

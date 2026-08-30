@@ -72,7 +72,8 @@ export {
   saveDatasetAnswer,
   saveMemory,
   setActiveStorePath,
-  updateSessionRow
+  updateSessionRow,
+  withStorePath
 } from "./store"
 export { currentTimeTool } from "./tools/builtin/current-time"
 export { datasetInfoTool } from "./tools/builtin/dataset-info"

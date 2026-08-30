@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import { deleteSessionRow, listSessions, loadSessionRow, setActiveStorePath } from "@kaja/nasi"
+import { deleteSessionRow, listSessions, loadSessionRow, withStorePath } from "@kaja/nasi"
 import { NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
 import type { RouteVariables } from "../../types"
 import { notFound, unauthorized } from "../../types/errors"
@@ -76,8 +76,7 @@ const listRoute = createRoute({
 nasiRoutes.openapi(listRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  setActiveStorePath(userSqlitePath(user.id))
-  const sessions = await listSessions()
+  const sessions = await withStorePath(userSqlitePath(user.id), listSessions)
   return c.json({
     sessions: sessions.map(s => ({
       id: s.id,
@@ -107,8 +106,7 @@ nasiRoutes.openapi(getRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { id } = c.req.valid("param")
-  setActiveStorePath(userSqlitePath(user.id))
-  const row = await loadSessionRow(id)
+  const row = await withStorePath(userSqlitePath(user.id), () => loadSessionRow(id))
   if (!row) return notFound(c, "Session not found")
   return c.json({
     id: row.id,
@@ -138,8 +136,7 @@ nasiRoutes.openapi(deleteRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { id } = c.req.valid("param")
-  setActiveStorePath(userSqlitePath(user.id))
-  const ok = await deleteSessionRow(id)
+  const ok = await withStorePath(userSqlitePath(user.id), () => deleteSessionRow(id))
   if (!ok) return notFound(c, "Session not found")
   return c.json({ ok: true })
 })

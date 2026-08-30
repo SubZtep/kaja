@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite"
+import { AsyncLocalStorage } from "node:async_hooks"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
 
@@ -164,19 +165,32 @@ export function closeStore(dbPath: string) {
   openDbs.delete(dbPath)
 }
 
-let activePath: string | undefined
+let defaultPath: string | undefined
+const activePathStorage = new AsyncLocalStorage<string>()
 
-/** Sets the process-wide default store path (CLI host + tests). */
+/**
+ * Sets the default store path used outside a {@link withStorePath} scope
+ * (single-user CLI host). Hosted callers must not rely on this — concurrent
+ * requests for different users would race on the same mutable default; use
+ * {@link withStorePath} to scope the path to one request's async call chain.
+ */
 export function setActiveStorePath(dbPath: string) {
-  activePath = dbPath
+  defaultPath = dbPath
   openStore(dbPath)
 }
 
+/** Runs `fn` with `dbPath` as the active store path for its entire async call chain, isolated from concurrent calls with a different path. */
+export function withStorePath<T>(dbPath: string, fn: () => Promise<T>): Promise<T> {
+  openStore(dbPath)
+  return activePathStorage.run(dbPath, fn)
+}
+
 export function getDb(): Database {
+  const activePath = activePathStorage.getStore() ?? defaultPath
   if (!activePath) throw new Error("nasi store is not open — call setActiveStorePath() or openStore()")
   return openStore(activePath)
 }
 
 export function getActiveStorePath(): string | undefined {
-  return activePath
+  return activePathStorage.getStore() ?? defaultPath
 }

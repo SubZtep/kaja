@@ -5,7 +5,7 @@ import type { AgentEvent, PromptContext } from "./agent/agent"
 import { Agent, createSession, type Session } from "./agent/agent"
 import { run } from "./agent/run"
 import { createOpenAIClient } from "./models/client"
-import { createSessionRow, loadSessionRow, setActiveStorePath, updateSessionRow } from "./store"
+import { createSessionRow, loadSessionRow, openStore, updateSessionRow, withStorePath } from "./store"
 import { createTools, type NasiProfile } from "./tools/registry"
 
 const HOSTED_ENVIRONMENT =
@@ -74,7 +74,7 @@ export class Nasi {
 
   constructor(opts: NasiOpenOptions) {
     this.opts = opts
-    setActiveStorePath(opts.dbPath)
+    openStore(opts.dbPath)
   }
 
   static async open(opts: NasiOpenOptions) {
@@ -82,93 +82,94 @@ export class Nasi {
   }
 
   async turnBuffered(input: NasiTurnInput): Promise<NasiTurnResponse> {
-    setActiveStorePath(this.opts.dbPath)
-    const { tools } = await createTools({ profile: this.opts.profile, deps: { chat: this.opts.chat } })
-    const personas = this.opts.personas ?? []
-    const persona = personas.find(p => p.id === input.personaId) ?? personas[0]
+    return withStorePath(this.opts.dbPath, async () => {
+      const { tools } = await createTools({ profile: this.opts.profile, deps: { chat: this.opts.chat } })
+      const personas = this.opts.personas ?? []
+      const persona = personas.find(p => p.id === input.personaId) ?? personas[0]
 
-    let sessionId = input.session
-    let session = createSession()
-    let events: unknown[] = []
-    let title = input.message.split(/[\r\n]/)[0]!.slice(0, 60)
+      let sessionId = input.session
+      let session = createSession()
+      let events: unknown[] = []
+      let title = input.message.split(/[\r\n]/)[0]!.slice(0, 60)
 
-    if (sessionId) {
-      const row = await loadSessionRow(sessionId)
-      if (!row) {
-        const err = new Error("session_not_found")
-        err.name = "NasiSessionNotFound"
-        throw err
+      if (sessionId) {
+        const row = await loadSessionRow(sessionId)
+        if (!row) {
+          const err = new Error("session_not_found")
+          err.name = "NasiSessionNotFound"
+          throw err
+        }
+        session = row.session as Session
+        events = row.events
+        title = row.title
       }
-      session = row.session as Session
-      events = row.events
-      title = row.title
-    }
 
-    const agent = new Agent({
-      model: this.opts.chat.model,
-      client: this.opts.chat.client,
-      tools,
-      personas,
-      personaId: persona?.id,
-      instructions: persona?.instructions,
-      promptContext: {
-        environment: this.opts.profile === "hosted" ? HOSTED_ENVIRONMENT : this.opts.promptContext?.environment,
-        ...this.opts.promptContext
+      const agent = new Agent({
+        model: this.opts.chat.model,
+        client: this.opts.chat.client,
+        tools,
+        personas,
+        personaId: persona?.id,
+        instructions: persona?.instructions,
+        promptContext: {
+          environment: this.opts.profile === "hosted" ? HOSTED_ENVIRONMENT : this.opts.promptContext?.environment,
+          ...this.opts.promptContext
+        }
+      })
+
+      const turnEvents: AgentEvent[] = []
+      for await (const event of run(agent, input.message, session, this.opts.owner ?? null)) {
+        turnEvents.push(event)
+      }
+
+      const includeThinking = input.includeThinking === true
+      const status = statusFromEvents(session, turnEvents)
+      const message = messageFromEvents(turnEvents, status)
+      const steps = stepsFromEvents(turnEvents, includeThinking)
+      const usageEvent = [...turnEvents].reverse().find(e => e.type === "usage")
+      const thinking = includeThinking
+        ? turnEvents
+            .filter(e => e.type === "reasoning")
+            .map(e => (e.type === "reasoning" ? e.text : ""))
+            .join("")
+        : undefined
+
+      const persistedEvents = [
+        ...events,
+        { type: "user", text: input.message },
+        ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
+      ]
+
+      if (!sessionId) {
+        sessionId = await createSessionRow({
+          persona: persona?.id ?? "default",
+          model: agent.model,
+          title,
+          owner: this.opts.owner ?? null,
+          session,
+          events: persistedEvents
+        })
+      } else {
+        await updateSessionRow(sessionId, {
+          persona: persona?.id ?? "default",
+          model: agent.model,
+          owner: this.opts.owner ?? null,
+          session,
+          events: persistedEvents
+        })
+      }
+
+      return {
+        session: sessionId,
+        status,
+        message,
+        steps,
+        ...(thinking ? { thinking } : {}),
+        ...(usageEvent && usageEvent.type === "usage"
+          ? { usage: { promptTokens: usageEvent.promptTokens, model: usageEvent.model } }
+          : {})
       }
     })
-
-    const turnEvents: AgentEvent[] = []
-    for await (const event of run(agent, input.message, session, this.opts.owner ?? null)) {
-      turnEvents.push(event)
-    }
-
-    const includeThinking = input.includeThinking === true
-    const status = statusFromEvents(session, turnEvents)
-    const message = messageFromEvents(turnEvents, status)
-    const steps = stepsFromEvents(turnEvents, includeThinking)
-    const usageEvent = [...turnEvents].reverse().find(e => e.type === "usage")
-    const thinking = includeThinking
-      ? turnEvents
-          .filter(e => e.type === "reasoning")
-          .map(e => (e.type === "reasoning" ? e.text : ""))
-          .join("")
-      : undefined
-
-    const persistedEvents = [
-      ...events,
-      { type: "user", text: input.message },
-      ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
-    ]
-
-    if (!sessionId) {
-      sessionId = await createSessionRow({
-        persona: persona?.id ?? "default",
-        model: agent.model,
-        title,
-        owner: this.opts.owner ?? null,
-        session,
-        events: persistedEvents
-      })
-    } else {
-      await updateSessionRow(sessionId, {
-        persona: persona?.id ?? "default",
-        model: agent.model,
-        owner: this.opts.owner ?? null,
-        session,
-        events: persistedEvents
-      })
-    }
-
-    return {
-      session: sessionId,
-      status,
-      message,
-      steps,
-      ...(thinking ? { thinking } : {}),
-      ...(usageEvent && usageEvent.type === "usage"
-        ? { usage: { promptTokens: usageEvent.promptTokens, model: usageEvent.model } }
-        : {})
-    }
   }
 }
 
