@@ -8,10 +8,10 @@ test("persona without optional fields still validates", () => {
   })
 })
 
-test("persona model and sampling params round-trip", () => {
+test("persona chat model pin and sampling params round-trip", () => {
   const parsed = PersonaSchema.parse({
     label: "Barkochba guesser",
-    model: "accounts/fireworks/models/kimi-k2p6",
+    models: { chat: "kimi-k2p6" },
     temperature: 0.7,
     top_p: 0.9,
     max_tokens: 512,
@@ -21,7 +21,7 @@ test("persona model and sampling params round-trip", () => {
   })
   expect(parsed).toEqual({
     label: "Barkochba guesser",
-    model: "accounts/fireworks/models/kimi-k2p6",
+    models: { chat: "kimi-k2p6" },
     temperature: 0.7,
     top_p: 0.9,
     max_tokens: 512,
@@ -29,6 +29,31 @@ test("persona model and sampling params round-trip", () => {
     presence_penalty: -0.5,
     seed: 42
   })
+})
+
+test("persona can pin a non-chat task model", () => {
+  const parsed = PersonaSchema.parse({
+    label: "Retrieval specialist",
+    models: { embedding: "default-embedding" }
+  })
+  expect(parsed.models).toEqual({ embedding: "default-embedding" })
+})
+
+test("persona can pin multiple task models at once", () => {
+  const parsed = PersonaSchema.parse({
+    label: "Multi-modal persona",
+    models: { chat: "reasoning-chat", rerank: "default-rerank", "text-to-speech": "default-tts" }
+  })
+  expect(parsed.models).toEqual({
+    chat: "reasoning-chat",
+    rerank: "default-rerank",
+    "text-to-speech": "default-tts"
+  })
+})
+
+test("persona without a models table leaves it undefined", () => {
+  const parsed = PersonaSchema.parse({ label: "Helpful assistant" })
+  expect(parsed.models).toBeUndefined()
 })
 
 test("persona dataset binding round-trips", () => {

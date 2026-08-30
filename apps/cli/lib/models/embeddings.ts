@@ -1,18 +1,17 @@
+import type { PersonaModels } from "@kaja/schema/cli"
 import OpenAI from "openai"
-import { config } from "../config/config"
-import { loadModelsFile, resolveModelFromConfig } from "./models"
+import { loadModelsFile, resolveActiveModel } from "./models"
 
 /**
- * Generates embeddings via the model configured at models.embedding
- * (resolved through models.toml, same as the chat model). Batches multiple
+ * Generates embeddings via the model configured at models.toml's
+ * [active].embedding (or the active persona's pin, if set). Batches multiple
  * inputs into one request.
  */
-export async function embed(input: string | string[]): Promise<number[][]> {
-  const { models } = await config()
-  if (!models.embedding?.provider) {
-    throw new Error("No embedding model configured — set models.embedding in settings.toml")
+export async function embed(input: string | string[], personaModels?: PersonaModels): Promise<number[][]> {
+  const embedding = resolveActiveModel(await loadModelsFile(), "embedding", personaModels)
+  if (!embedding) {
+    throw new Error("No embedding model configured — set [active].embedding in models.toml")
   }
-  const embedding = resolveModelFromConfig(await loadModelsFile(), models.embedding, "embedding")!
   const client = new OpenAI({
     baseURL: embedding.baseUrl,
     apiKey: embedding.apiKey

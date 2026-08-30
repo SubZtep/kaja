@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18.4-alpine
+    image: postgres:18.6-alpine
     ports:
       - "5433:5432"
     restart: unless-stopped
@@ -52,6 +52,9 @@ services:
     environment:
       DATABASE_URL: postgresql://testuser:testpass@db:5432/kaja
       SMTP_HOST: mail
+      NASI_DATA_DIR: /var/lib/kaja/nasi
+    volumes:
+      - nasi-data:/var/lib/kaja/nasi
 
   web:
     build:
@@ -84,3 +87,6 @@ services:
         required: false
     environment:
       KAJA_API_URL: http://api:3001
+
+volumes:
+  nasi-data:

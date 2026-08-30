@@ -13,10 +13,13 @@ const { getSecretsPath, invalidateSecretsCache } = await import("../../../lib/co
 
 // Other test files sharing this bun test process may have already cached secrets() with their
 // own fixtures — invalidate before every test, not just after, so the first test in this file
-// isn't polluted by whichever file happened to run before it.
+// isn't polluted by whichever file happened to run before it. Also clear KAJA_API_URL: a real
+// dev .env (apps/cli/.env, auto-loaded by cwd) may set it to point kaja config fetch at a local
+// API, which would otherwise override [api].baseUrl in loadServicesFile and break these fixtures.
 beforeEach(() => {
   invalidateServicesCache()
   invalidateSecretsCache()
+  delete process.env.KAJA_API_URL
 })
 
 afterEach(() => {

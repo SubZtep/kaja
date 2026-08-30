@@ -66,7 +66,7 @@ export function Header() {
           {menuItems.map(item => (
             <MenuItem key={item.label} item={item} />
           ))}
-          {user ? <SignOutButton /> : null}
+          {user ? <SignOutButton /> : null}|
         </>
       }
       mobileNav={<MobileNav menuItems={menuItems} user={user} />}

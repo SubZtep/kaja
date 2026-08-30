@@ -202,15 +202,15 @@ jobs:
             checksum=$(tr -d '\n' < "${artifact}.sha256")
 
             case "$name" in
-              kaja-linux-x64)   key=linux-x64 ;;
-              kaja-linux-arm64) key=linux-arm64 ;;
-              kaja-macos-arm64) key=macos-arm64 ;;
-              kaja-macos-x64)   key=macos-x64 ;;
-              kaja-windows-x64.exe) key=windows-x64 ;;
+              kaja-linux-x64)   section=platforms; key=linux-x64 ;;
+              kaja-linux-arm64) section=platforms; key=linux-arm64 ;;
+              kaja-macos-arm64) section=platforms; key=macos-arm64 ;;
+              kaja-macos-x64)   section=platforms; key=macos-x64 ;;
+              kaja-windows-x64.exe) section=platforms; key=windows-x64 ;;
               *) echo "❌ Unknown artifact basename: $name"; exit 1 ;;
             esac
 
-            jq --arg c "$checksum" --arg k "$key" '.platforms[$k].checksum=$c' artifacts/manifest.json > tmp.json && mv tmp.json artifacts/manifest.json
+            jq --arg c "$checksum" --arg s "$section" --arg k "$key" '.[$s][$k].checksum=$c' artifacts/manifest.json > tmp.json && mv tmp.json artifacts/manifest.json
           done
 
           if jq -e '

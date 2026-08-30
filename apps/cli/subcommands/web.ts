@@ -1,4 +1,4 @@
-import type { cli as Cli } from "../lib/cli/args"
+import type { args as Cli } from "../lib/cli/args"
 
 /** Runs before the config guard: browsing/fixing config must work even with a missing or invalid LLM config. */
 export async function runWebSubcommand(cli: typeof Cli) {

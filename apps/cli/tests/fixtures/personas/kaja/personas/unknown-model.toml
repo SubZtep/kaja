@@ -1,2 +1,4 @@
 label = "Uses a model that doesn't exist"
-model = "does-not-exist"
+
+[models]
+chat = "does-not-exist"

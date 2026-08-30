@@ -1,3 +1,4 @@
+import type { PersonaModels } from "@kaja/schema/cli"
 import { useEffect, useRef, useState } from "react"
 import { createLocalSource } from "../lib/audio/audio"
 import { createStt, type Stt, type SttState } from "../lib/audio/stt"
@@ -12,7 +13,11 @@ import { createStt, type Stt, type SttState } from "../lib/audio/stt"
  * Returns the server's current {@link SttState} so the UI can show progress
  * (a slow model spends many seconds in "transcribing").
  */
-export function useDictation(listening: boolean, onUtterance: (text: string) => void): SttState {
+export function useDictation(
+  listening: boolean,
+  onUtterance: (text: string) => void,
+  personaModels?: PersonaModels
+): SttState {
   const [state, setState] = useState<SttState>("listening")
   const stt = useRef<Stt>(undefined)
   const deliver = useRef(onUtterance)
@@ -31,7 +36,8 @@ export function useDictation(listening: boolean, onUtterance: (text: string) => 
     let cancelled = false
     createStt({
       source: createLocalSource(),
-      onState: setState
+      onState: setState,
+      personaModels
     }).then(async instance => {
       if (cancelled) {
         instance.stop()

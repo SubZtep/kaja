@@ -1,24 +1,9 @@
 import { capitalized, cn } from "@kaja/shared"
-import {
-  type Column,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type RowData,
-  useReactTable
-} from "@tanstack/react-table"
+import { type Column, type ColumnFiltersState, flexRender, useTable } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { useState } from "react"
+import { tableFeaturesConfig } from "../../lib/table"
 import { DebouncedText } from "../form/primitives/Text"
-
-declare module "@tanstack/react-table" {
-  interface ColumnMeta<TData extends RowData, TValue> {
-    filterVariant?: "text" | "role" | "period"
-  }
-}
 
 type PeriodFilter = [Date | undefined, Date | undefined]
 
@@ -33,13 +18,10 @@ export function Table({
 }: Readonly<{ columns: any[]; data: any[]; showFilters?: boolean }>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     columns,
     data: data,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       sorting: [
         {
@@ -59,7 +41,7 @@ export function Table({
   })
 
   const toggleSorting = (columnId: string) => {
-    const currentSort = table.getState().sorting.find(sort => sort.id === columnId)
+    const currentSort = table.state.sorting.find(sort => sort.id === columnId)
     table.setSorting([currentSort && !currentSort.desc ? { id: columnId, desc: true } : { id: columnId, desc: false }])
   }
 
@@ -118,7 +100,7 @@ export function Table({
           <tbody>
             {rows.map(row => (
               <tr key={row.id}>
-                {row.getVisibleCells().map(cell => (
+                {row.getAllCells().map(cell => (
                   <td key={cell.id} className="border-border border-b p-3">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
@@ -135,9 +117,9 @@ export function Table({
 }
 
 function Pagination({ table }: Readonly<{ table: any }>) {
-  const pageIndex = table.getState().pagination.pageIndex
+  const pageIndex = table.state.pagination.pageIndex
   const pageCount = table.getPageCount()
-  const pageSize = table.getState().pagination.pageSize
+  const pageSize = table.state.pagination.pageSize
   const totalRows = table.getFilteredRowModel().rows.length
 
   const getPageNumbers = () => {
@@ -272,7 +254,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
   )
 }
 
-function Filter({ column }: Readonly<{ column: Column<any, unknown> }>) {
+function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig, any, unknown> }>) {
   const columnFilterValue = column.getFilterValue()
   const { filterVariant } = column.columnDef.meta ?? {}
 

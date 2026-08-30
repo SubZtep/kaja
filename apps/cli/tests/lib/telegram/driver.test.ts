@@ -15,26 +15,21 @@ process.env.NODE_ENV = "test"
 
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
-writeFileSync(
-  join(configKajaDir, "settings.toml"),
-  `
-[models.chat]
-model = "x"
-provider = "default"
-`
-)
+writeFileSync(join(configKajaDir, "settings.toml"), "")
 writeFileSync(
   join(configKajaDir, "models.toml"),
   `
 [providers.default]
-default = true
 base_url = "http://localhost"
 api_key = "x"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "x"
 task = "chat"
+provider = "default"
+
+[active]
+chat = "chat-default"
 `
 )
 

@@ -8,7 +8,11 @@ const FEATURES = [
     desc: "Any OpenAI-compatible API — Ollama, Fireworks, MiniMax M3, and more."
   },
   { glyph: "♪", title: "Voice in, voice out", desc: "Mic dictation and TTS via speaches, toggle with Ctrl+T." },
-  { glyph: "@", title: "Personas", desc: "Switch the assistant's character without restarting." },
+  {
+    glyph: "@",
+    title: "Personas",
+    desc: "The assistant switches its behaviour and tweak model settings based on the context."
+  },
   { glyph: "()", title: "Tool use", desc: "Web search (Brave), location lookups, and more as config groups." },
   { glyph: "tg", title: "Also on Telegram", desc: "kaja telegram runs the same personas, tools and models as a bot." },
   { glyph: "{}", title: "Bun + TypeScript", desc: "Fast startup, single binary install, no runtime bloat." }

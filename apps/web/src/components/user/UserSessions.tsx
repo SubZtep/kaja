@@ -1,6 +1,6 @@
 import { getDateTime, getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
+import { flexRender, useTable } from "@tanstack/react-table"
 import type { SessionWithImpersonatedBy } from "better-auth/plugins"
 import { MonitorX } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -8,12 +8,13 @@ import { toast } from "react-toastify"
 import { UAParser } from "ua-parser-js"
 import { useAuthClient } from "../../hooks/auth-client"
 import { queryClient } from "../../lib/query"
+import { tableColumnHelper, tableFeaturesConfig } from "../../lib/table"
 import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
-const columnHelper = createColumnHelper<SessionWithImpersonatedBy>()
+const columnHelper = tableColumnHelper<SessionWithImpersonatedBy>()
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor("ipAddress", {
     header: "IP",
     cell: info => info.getValue()
@@ -37,7 +38,7 @@ const columns = [
     header: "Expires",
     cell: info => getDateTime(info.getValue(), "short")
   })
-]
+])
 
 export function UserSessions({ userId, className }: Readonly<{ userId: string; className?: string }>) {
   const authClient = useAuthClient()
@@ -66,10 +67,10 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
     if (error) toast.error(error.message)
   }, [error])
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: sessions,
-    columns,
-    getCoreRowModel: getCoreRowModel()
+    columns
   })
 
   return (
@@ -106,7 +107,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
                   key={row.id}
                   className="border-border border-b transition-colors last:border-0 hover:bg-surface-2/60"
                 >
-                  {row.getVisibleCells().map(cell => (
+                  {row.getAllCells().map(cell => (
                     <td key={cell.id} className="px-3 py-2 text-muted">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>

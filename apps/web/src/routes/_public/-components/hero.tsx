@@ -1,4 +1,4 @@
-import { Star } from "lucide-react"
+import { FolderCode } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { getInstallCmd } from "../../../lib/vars"
@@ -29,26 +29,30 @@ export function Hero() {
       <ContentWidth className="relative grid grid-cols-1 items-center gap-14 pt-14 pb-8 md:pt-24 md:pb-10 md:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 font-mono text-muted text-xs">
-            <span className="size-1.5 rounded-full bg-ice" /> open source &middot; MIT &middot; WIP
+            <span className="size-1.5 rounded-full bg-ice" /> OSS &middot; MIT &middot; WIP
           </div>
           <h1 className="mb-5 font-extrabold text-fg text-[36px] leading-[1.08] tracking-[-0.02em] md:text-[52px]">
             Your terminal
             <br />
-            can talk now.
+            should talk now.
           </h1>
+          <p className="mb-4 max-w-115 text-lg text-muted">
+            Kaja is an open-source <strong>AI agentish</strong> tool. Based on your input, keep running an LLM model
+            with its findings again and again until the appropriated outcome (🙏).
+          </p>
           <p className="mb-8 max-w-115 text-lg text-muted">
-            Kaja CLI is an open-source terminal chat assistant featuring personas, tools, and speech, running on the
-            model you choose in the language you like.
+            It's a <strong>state machine</strong>, driven by skilled AI models for various tasks including image
+            generation and speech), with local and online tools.
           </p>
           <div className="mb-7 sm:flex flex-wrap gap-3 hidden">
             <a
-              href="https://github.com/SubZtep/kaja/stargazers"
+              href="https://github.com/SubZtep/kaja"
               target="_blank"
               rel="noopener"
               className="inline-flex items-center gap-2 rounded-md border border-green-600 bg-green-700 px-5 py-2.5 font-semibold text-sm text-white"
             >
-              <Star fill="white" size={12} />
-              Star on GitHub
+              <FolderCode fill="white" size={12} />
+              Source code on GitHub
             </a>
             <a
               href="https://docs.kaja.io"
@@ -59,6 +63,7 @@ export function Hero() {
               Read the docs
             </a>
           </div>
+          <p className="mb-4 max-w-115 text-lg text-muted">Paste this command in a terminal, enter to install:</p>
           <div className="flex max-w-116 items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
             <code className="flex-1 overflow-x-hidden whitespace-nowrap font-mono text-fg text-sm">{installCmd}</code>
             <button

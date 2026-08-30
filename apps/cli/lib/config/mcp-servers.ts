@@ -13,7 +13,10 @@ export function getMcpPath() {
 }
 
 /** The `kaja config fetch` subcommand: downloads the server-rendered mcp.toml and writes it to the local config dir, backing up any existing file first. */
-export async function fetchMcpToml(apiBaseUrl: string, token?: string): Promise<{ path: string; backedUpTo?: string }> {
+export async function fetchMcpToml(
+  apiBaseUrl: string,
+  token?: string
+): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
   return fetchTomlConfig(apiBaseUrl, "/config/mcp.toml", getMcpPath(), token)
 }
 

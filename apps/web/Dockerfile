@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.14 AS builder
+FROM oven/bun:1.4.0 AS builder
 WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
 COPY apps/web/package.json ./apps/web/package.json
@@ -13,7 +13,7 @@ COPY packages ./packages
 ENV NODE_ENV=production
 RUN bun run --filter @kaja/web build
 
-FROM oven/bun:1.3.14-slim AS runner
+FROM oven/bun:1.4.0-slim AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0

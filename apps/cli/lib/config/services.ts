@@ -42,7 +42,7 @@ function mergeSecrets(parsed: ServicesFile, creds: Awaited<ReturnType<typeof sec
   }
 }
 
-/** Loads and parses services.toml, then folds in secrets.toml's credentials. Missing file: writes the commented-out template and parses that (empty). Invalid file: prints the error and exits, same policy as {@link import("./config").config}. */
+/** Loads and parses services.toml, then folds in secrets.toml's credentials. Missing file: writes the commented-out template and parses that (empty). Invalid file: prints the error and exits, same policy as {@link import("./config").config}. KAJA_API_URL overrides [api].baseUrl, for pointing `kaja config fetch` at a local dev API without editing services.toml. */
 export async function loadServicesFile(): Promise<ResolvedServices> {
   const servicesPath = getServicesPath()
   const f = file(servicesPath)
@@ -52,6 +52,7 @@ export async function loadServicesFile(): Promise<ResolvedServices> {
   const text = exists ? await f.text() : TEMPLATE
   try {
     const parsed = ServicesFileSchema.parse(TOML.parse(text))
+    if (process.env.KAJA_API_URL) parsed.api = { ...parsed.api, baseUrl: process.env.KAJA_API_URL }
     return mergeSecrets(parsed, await secrets())
   } catch (error: any) {
     console.log(t("services.invalidAt", { path: servicesPath, message: error.message }))

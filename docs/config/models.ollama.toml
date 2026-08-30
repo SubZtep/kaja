@@ -1,31 +1,39 @@
-# Kaja models — each model picks a [providers.*] table with `provider =
-# "<name>"`; models that don't name one fall back to whichever provider has
-# `default = true`. `model` is the literal name sent to the provider's API,
-# and settings.json's models.<task> stores that model/provider pair directly
-# (see the docs site). Provider API keys live in secrets.toml's
+# Kaja models — [models.<id>] entries each pick a [providers.*] table with
+# `provider = "<name>"`. The id (e.g. "fast-chat") is how [active].<task> and
+# a persona's [models].<task> pick this entry; `model` is the literal name
+# sent to the provider's API. Provider API keys live in secrets.toml's
 # [providers.<name>] tables, keyed the same way — Ollama requires one but
 # ignores its value, e.g. [providers.ollama] api_key = "ollama".
 
 [providers.ollama]
-default = true
 base_url = "http://localhost:11434/v1"
 
-[[models]]
+[models.fast-chat]
 model = "llama3.2:1b"
 task = "chat"
+provider = "ollama"
 
-[[models]]
+[models.tiny-chat]
 model = "qwen2.5:0.5b"
 task = "chat"
+provider = "ollama"
 
-[[models]]
+[models.reasoning-chat]
 model = "qwen3:1.7b"
 task = "chat"
+provider = "ollama"
 
-[[models]]
+[models.big-chat]
 model = "llama3.2:3b"
 task = "chat"
+provider = "ollama"
 
-[[models]]
+[models.default-embedding]
 model = "nomic-embed-text"
 task = "embedding"
+provider = "ollama"
+
+# The model actually in use for each task — one model id per task, all optional.
+[active]
+chat = "fast-chat"
+embedding = "default-embedding"

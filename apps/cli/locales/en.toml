@@ -2,40 +2,51 @@
 invalidConfig = "Invalid config file: {path}"
 startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
 bye = "Bye, bye!"
+localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama, or run `kaja --local config fetch`. For hosted chat instead, run `kaja --remote`."
+headlessNoSubcommand = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
+pleaseSignIn = "Please sign in!"
+deviceLoginGoTo = "Go to:"
+deviceLoginEnterCode = "Enter code:"
 
 [firstRun]
 paths = "Kaja will use these paths:"
-intro = "Welcome to Kaja! How would you like to chat?"
-useFree = "Use the free models through Kaja's servers"
-useOwn = "Configure my own provider"
+intro = "Welcome to Kaja! Which provider would you like to use?"
 providerFireworks = "Fireworks (cloud, needs an API key)"
 providerOllama = "Ollama (local, runs on this machine)"
 providerSkip = "Skip — I'll set up models.toml myself"
 
 [args]
 help = """
-Usage
-  $ kaja
-  $ kaja config fetch
-  $ kaja config wipe
-  $ kaja memory <list|forget <key-or-glob>|export>
-  $ kaja session <list|diagram <id>>
-  $ kaja telegram
-  $ kaja web
+Kaja command like tool • https://kaja.io
 
-Options
-  --help          Print this help
-  --config        Read settings.json from this directory instead of the default
+USAGE
+  $ kaja [OPTIONS] [COMMAND]
+
+COMMANDS
+  config fetch
+  config wipe
+  telegram
+  web
+  memory <list|forget <key-or-glob>|export>
+  session <list|diagram <id>>
+
+OPTIONS
+  --local         Run the local agent loop against your own provider instead of hosted login
+  --remote        Force hosted login even if a local config exists
+  --continue, -c  Resume the most recent session (--local only)
+  --session, -s   Resume a session by id (--local only; see: kaja --local session list)
+  --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
   --paths         Print every path Kaja reads or writes
-  --version       Print the installed app version
-  --continue, -c  Resume the most recent session
-  --session, -s   Resume a session by id (see: kaja session list)
-  --port          Port for kaja web (default: 4880)
+  --port          Port for kaja --local web (default: 4880)
+  --help          Print this help
+  --version       Print app version
 
-Examples
-  $ kaja -c
+EXAMPLES
+  $ kaja
+  $ kaja --local -c
   $ kaja --paths
-  $ kaja config fetch
+  $ kaja --local config fetch
+  $ kaja --local --headless telegram
 """
 
 [memory]
@@ -71,6 +82,7 @@ apiUrlMissing = "Set [api] baseUrl in services.toml first"
 fetchFailed = "Failed to fetch mcp.toml (HTTP {status})"
 fetched = "Wrote {path}"
 fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
+fetchedUnchanged = "{path} is already up to date"
 wiped = "Moved {path} to {backup}"
 wipeNothing = "Nothing to wipe: {path} does not exist"
 
@@ -114,7 +126,6 @@ off = "off"
 toggleThinking = "Toggle thinking [{state}]"
 toggleSounds = "Toggle sounds [{state}]"
 toggleVoice = "Toggle voice [{state}]"
-changeModel = "Change model"
 changePersona = "Change persona"
 
 [toolCall]

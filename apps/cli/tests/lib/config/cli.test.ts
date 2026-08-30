@@ -5,7 +5,7 @@ import type { SecretsFile, ServicesFile } from "@kaja/schema/config"
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
 
 const { runConfigCli } = await import("../../../lib/config/cli")
-const { getConfigDir, getConfigPath, readConfigLoose } = await import("../../../lib/config/config")
+const { getConfigDir, getConfigPath } = await import("../../../lib/config/config")
 const { getMcpPath } = await import("../../../lib/config/mcp-servers")
 const { getModelsPath } = await import("../../../lib/models/models")
 const { getServicesPath } = await import("../../../lib/config/services")
@@ -49,7 +49,7 @@ test("fetch without api.baseUrl configured exits 1", async () => {
 
 test("fetch sends Bearer token from secrets.api.token", async () => {
   const authHeaders = stubFetchCaptureAuth(
-    { "/config/mcp.toml": '[[servers]]\nid = "x"\n', "/config/models.toml": '[[models]]\nid = "y"\n' },
+    { "/config/mcp.toml": '[[servers]]\nid = "x"\n', "/config/models.toml": "[models.y]\n" },
     200
   )
   const services: Partial<ServicesFile> = { api: { baseUrl: "http://api.test" } }
@@ -61,14 +61,14 @@ test("fetch sends Bearer token from secrets.api.token", async () => {
 })
 
 test("fetch writes mcp.toml and models.toml on success", async () => {
-  stubFetch({ "/config/mcp.toml": '[[servers]]\nid = "x"\n', "/config/models.toml": '[[models]]\nid = "y"\n' }, 200)
+  stubFetch({ "/config/mcp.toml": '[[servers]]\nid = "x"\n', "/config/models.toml": "[models.y]\n" }, 200)
   const services: Partial<ServicesFile> = { api: { baseUrl: "http://api.test" } }
   const { code, text } = await runConfigCli(["fetch"], services, {})
   expect(code).toBe(0)
   expect(text).toContain(getMcpPath())
   expect(text).toContain(getModelsPath())
   expect(await Bun.file(getMcpPath()).text()).toContain('id = "x"')
-  expect(await Bun.file(getModelsPath()).text()).toContain('id = "y"')
+  expect(await Bun.file(getModelsPath()).text()).toContain("[models.y]")
 })
 
 test("fetch backs up an existing mcp.toml instead of overwriting it", async () => {
@@ -89,6 +89,32 @@ test("fetch backs up an existing mcp.toml instead of overwriting it", async () =
   expect(await Bun.file(`${getMcpPath()}.bak`).text()).toBe("old content")
   expect(await Bun.file(`${getMcpPath()}.bak2`).text()).toBe("new content")
   expect(await Bun.file(getMcpPath()).text()).toBe("newer content")
+})
+
+test("fetch is a no-op (no new backup) when the fetched content matches what's already on disk", async () => {
+  await Bun.write(getMcpPath(), "same content")
+  stubFetch({ "/config/mcp.toml": "same content", "/config/models.toml": "models content" }, 200)
+  const services: Partial<ServicesFile> = { api: { baseUrl: "http://api.test" } }
+
+  const { code, text } = await runConfigCli(["fetch"], services, {})
+  expect(code).toBe(0)
+  expect(text).not.toContain(".bak")
+  expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(getMcpPath()).text()).toBe("same content")
+})
+
+test("fetch is a no-op (no new backup, comment preserved) when only comments/formatting differ", async () => {
+  const withComment = '# my personal note, please keep me\n\n[[servers]]\nid = "x"\n'
+  const withoutComment = '[[servers]]\nid = "x"\n'
+  await Bun.write(getMcpPath(), withComment)
+  stubFetch({ "/config/mcp.toml": withoutComment, "/config/models.toml": "[models.y]\n" }, 200)
+  const services: Partial<ServicesFile> = { api: { baseUrl: "http://api.test" } }
+
+  const { code, text } = await runConfigCli(["fetch"], services, {})
+  expect(code).toBe(0)
+  expect(text).not.toContain(".bak")
+  expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(getMcpPath()).text()).toBe(withComment)
 })
 
 test("fetch surfaces a non-OK response as an error", async () => {
@@ -133,52 +159,47 @@ test("unknown or missing subcommand prints usage and exits 1", async () => {
   }
 })
 
-test("a fresh install's models.chat is auto-filled from the first fetched chat model", async () => {
-  // No settings.toml on disk yet — same as right after a fresh `create()`.
+test("a fresh install's models.toml [active].chat is auto-filled from the first fetched chat model", async () => {
+  // No models.toml on disk yet — same as right after `kaja config fetch`'s own write.
   const modelsToml = `
 [providers.default]
-default = true
 base_url = "https://api.example.test/v1"
 
-[[models]]
-id = "embedding-default"
+[models.embedding-default]
 model = "some/embedder"
 task = "embedding"
+provider = "default"
 
-[[models]]
-id = "chat-real"
+[models.chat-real]
 model = "some/chat-model"
 task = "chat"
+provider = "default"
 `
   stubFetch({ "/config/mcp.toml": "[[servers]]\n", "/config/models.toml": modelsToml }, 200)
   const { code } = await runConfigCli(["fetch"], { api: { baseUrl: "http://api.test" } }, {})
   expect(code).toBe(0)
-  const saved = await readConfigLoose()
-  expect(saved.models?.chat).toEqual({ model: "some/chat-model", provider: "default" })
+  const { TOML } = await import("bun")
+  const saved = TOML.parse(await Bun.file(getModelsPath()).text()) as { active?: { chat?: string } }
+  expect(saved.active?.chat).toBe("chat-real")
 })
 
-test("an existing real models.chat on disk is not overwritten by a later fetch", async () => {
-  await Bun.write(
-    getConfigPath(),
-    `
-[models.chat]
-model = "my-real-chat-model"
-provider = "default"
-`
-  )
-
+test("an existing real [active].chat in a freshly fetched models.toml is not overwritten by saveFetchedActiveChat", async () => {
   const modelsToml = `
 [providers.default]
 base_url = "https://api.example.test/v1"
 
-[[models]]
-id = "chat-other"
+[models.chat-other]
 model = "some/other-chat-model"
 task = "chat"
+provider = "default"
+
+[active]
+chat = "chat-other"
 `
   stubFetch({ "/config/mcp.toml": "[[servers]]\n", "/config/models.toml": modelsToml }, 200)
   const { code } = await runConfigCli(["fetch"], { api: { baseUrl: "http://api.test" } }, {})
   expect(code).toBe(0)
-  const saved = await readConfigLoose()
-  expect(saved.models?.chat).toEqual({ model: "my-real-chat-model", provider: "default" })
+  const { TOML } = await import("bun")
+  const saved = TOML.parse(await Bun.file(getModelsPath()).text()) as { active?: { chat?: string } }
+  expect(saved.active?.chat).toBe("chat-other")
 })

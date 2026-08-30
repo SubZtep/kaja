@@ -3,14 +3,16 @@ import type { FirstRunChoice } from "../../components/first-run-setup"
 import { create } from "../config/config"
 
 /**
- * Interactively ask free hosted chat vs. own provider, so a new user isn't
- * left with a template pointing at a models.toml id that doesn't exist yet.
- * Non-interactive stdin (scripts, CI) can't answer a prompt, so it falls
- * back to writing the template untouched — same as before this prompt
- * existed. No-op if a config already exists.
+ * Interactively ask which provider template to start from (--local implies
+ * a self-configured provider), so a new user isn't left with a template
+ * pointing at a models.toml id that doesn't exist yet. Non-interactive
+ * stdin (scripts, CI) can't answer a prompt, so it falls back to writing
+ * the template untouched — same as before this prompt existed. No-op if a
+ * config already exists. `headless` skips the TTY check entirely — a
+ * headless launch must never render Ink even if stdin happens to be a TTY.
  */
-export async function runFirstRunIfNeeded() {
-  if (!process.stdin.isTTY) {
+export async function runFirstRunIfNeeded(headless = false) {
+  if (headless || !process.stdin.isTTY) {
     await create()
     return
   }
@@ -32,10 +34,6 @@ export async function runFirstRunIfNeeded() {
     )
   })
   if (!choice) process.exit(0)
-  if (choice.useFree) {
-    await create(true)
-  } else {
-    await create()
-    if (choice.template) await writeModelsTemplate(choice.template)
-  }
+  await create()
+  if (choice.template) await writeModelsTemplate(choice.template)
 }

@@ -1,11 +1,10 @@
-import type { CliResolvedModel, KajaPreferences } from "@kaja/schema/config"
+import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import {
   Agent,
   type AgentDelta,
   applyPersona,
-  applyPersonaToMessages,
   createSession,
   type FinalizedAgentEvent,
   run,
@@ -13,7 +12,6 @@ import {
 } from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
-import { preferencesEvents } from "../lib/config/config-watcher"
 import { log } from "../lib/logger"
 import { type Persona, samplingOf } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
@@ -79,30 +77,38 @@ export function useAgent(
       dataset: startingPersona?.dataset,
       personas,
       models,
-      personaId: startingPersona?.id
+      personaId: startingPersona?.id,
+      promptContext: agentConfig.promptContext ?? {
+        loadStickyNotes: async () => {
+          const { loadMemory } = await import("../lib/memory/store")
+          return Object.entries(await loadMemory()).filter(([, note]) => note.sticky)
+        },
+        loadDataset: async topic => {
+          const { loadDataset } = await import("../lib/personas/datasets")
+          return loadDataset(topic)
+        },
+        loadLocation: async () => {
+          const { tryLookupMyLocation } = await import("../lib/agent/geo")
+          return tryLookupMyLocation()
+        }
+      }
     })
     const startingModel =
       resume?.model ??
-      (!resume && startingPersona?.model ? models.find(m => m.model === startingPersona.model) : undefined)
+      (!resume && startingPersona?.models?.chat
+        ? models.find(m => m.id === startingPersona.models!.chat && m.task === "chat")
+        : undefined)
     if (startingModel) created.setModel(startingModel)
     return created
   })
   const sessionRef = useRef<Session>(undefined)
   if (!sessionRef.current) sessionRef.current = resume ? (resume.session.session as Session) : createSession()
   // The database row this conversation saves into; undefined until the first save (empty sessions are never recorded).
-  const sessionRowIdRef = useRef<number | undefined>(resume?.session.id)
+  const sessionRowIdRef = useRef<string | undefined>(resume?.session.id)
 
   // React-state mirror of agent.model (the configured/request model id), so consumers rerender on switch. Distinct from `responseModel`, which is the provider-reported id from the last completion (e.g. free-chat proxy).
   const [model, setModel] = useState(agent.model)
   const [responseModel, setResponseModel] = useState<string | null>(null)
-  const switchModel = useCallback(
-    (next: CliResolvedModel) => {
-      agent.setModel(next)
-      setModel(next.model)
-      setResponseModel(null)
-    },
-    [agent]
-  )
 
   const [events, setEvents] = useState<TimelineEvent[]>(
     () => (resume?.session.events as TimelineEvent[] | undefined) ?? []
@@ -129,7 +135,6 @@ export function useAgent(
   const switchPersona = useCallback(
     (next: Persona) => {
       if (pending) return
-      // Only sets the starting point for the new session — the user can still switch models manually afterward via switchModel.
       applyPersona(agent, next)
       setModel(agent.model)
       setResponseModel(null)
@@ -186,47 +191,6 @@ export function useAgent(
     },
     [agent, personas]
   )
-
-  // Non-destructive persona switch triggered by an external settings.toml edit (config-watcher.ts)
-  // rather than the switch_persona tool or the persona menu — same applyPersonaToMessages rewrite
-  // as the tool path, but with no tool_call_id to answer, so no explanatory "role: tool" message.
-  const applyExternalPersona = useCallback(
-    (next: Persona) => {
-      applyPersonaToMessages(agent, next, sessionRef.current!.messages).then(() => {
-        personaRef.current = next
-        setPersona(next)
-        setModel(agent.model)
-        setResponseModel(null)
-        persistSession()
-      })
-    },
-    [agent, persistSession]
-  )
-
-  // A persona named in settings.toml while a turn is already in flight (pending) must not be
-  // applied mid-stream — see agents.ts's streamRound/applyPersona docs on why a mid-turn switch
-  // would silently desync the next round's completion from what the model was told. Stash it and
-  // apply the moment pending returns to false, so the edit still lands rather than being dropped.
-  const deferredPersonaIdRef = useRef<string | undefined>(undefined)
-  useEffect(() => {
-    if (pending || !deferredPersonaIdRef.current) return
-    const next = personas.find(p => p.id === deferredPersonaIdRef.current)
-    deferredPersonaIdRef.current = undefined
-    if (next && next.id !== personaRef.current.id) applyExternalPersona(next)
-  }, [pending, personas, applyExternalPersona])
-
-  useEffect(() => {
-    const onPreferences = (event: Event) => {
-      const preferences = (event as CustomEvent<KajaPreferences>).detail
-      if (!preferences.persona || preferences.persona === personaRef.current.id) return
-      const next = personas.find(p => p.id === preferences.persona)
-      if (!next) return
-      if (pending) deferredPersonaIdRef.current = next.id
-      else applyExternalPersona(next)
-    }
-    preferencesEvents.addEventListener("preferences", onPreferences)
-    return () => preferencesEvents.removeEventListener("preferences", onPreferences)
-  }, [pending, personas, applyExternalPersona])
 
   const handleFinalizedEvent = useCallback(
     (event: Exclude<FinalizedAgentEvent, { type: "usage" | "delta" }>) => {
@@ -301,7 +265,6 @@ export function useAgent(
     model,
     /** Provider-reported model from the last completion; falls back to the request model when none yet. */
     displayModel: responseModel ?? model,
-    switchModel,
     persona,
     switchPersona,
     events,

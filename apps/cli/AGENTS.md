@@ -2,7 +2,7 @@
 
 Terminal chat with personas, tools, optional mic dictation, optional TTS, MCP, and Telegram.
 
-This package uses Bun. Entry point is **`cli.tsx`** at the package root (not `src/`).
+This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). **With no `--local`/`--remote` flag, the mode auto-detects**: local if a config already exists (`~/.config/kaja/settings.toml`), hosted login otherwise. `--local` forces the local-agent path; `--remote` forces hosted login even if a local config exists. Hosted mode: no local agent, no sqlite, no MCP, no shell tools, talks to `<apiUrl>/nasi/*` over SSE. Auth: `KAJA_TOKEN` env var, or device login on first run (stored at `~/.config/kaja/credentials.json`, `0o600`). Server-side persona catalog (admin-managed, `apps/api`'s `persona` table) drives `switch_persona` in hosted mode. Local mode: agent logic lives in `@kaja/nasi`, this app is the local host + Ink UI, requires a configured `models.toml` (own provider — no silent fallback to hosted free chat). `lib/auth/` (device-login, credentials), `hooks/use-remote-agent.ts`, and `subcommands/run-remote.tsx` are hosted-only; `components/layout/lite-app.tsx` reuses `Header`/`ChatViewport`/`UserInput` from the full CLI (persona/model switching and `run_command` confirm are `--local`-only — hosted Nasi never emits those).
 
 ## Commands
 
@@ -22,10 +22,11 @@ cli.tsx` directly) for interactive use.
 
 ## CLI surface
 
-- Flags: `--config <dir>`, `--paths`, `-c`/`--continue`, `-s`/`--session <id>`
-- Subcommands (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
+- Flags: `--local`, `--remote`, `--headless`, `--paths`, `-c`/`--continue` (`--local` only), `-s`/`--session <id>` (`--local` only)
+- Subcommands, `--local` only (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
 - Handlers: `lib/memory/cli.ts`, `lib/session/cli.ts`, `lib/telegram/cli.ts`, `lib/web/cli.ts`
-- First run (no `settings.toml` yet, interactive TTY only): `components/first-run-setup.tsx` asks free hosted chat vs. own provider. Free hosted chat omits `models.chat` entirely; `lib/models/openai.ts` treats a missing `models.chat` as the free tier and resolves it directly (base URL `https://openai.kaja.io`, api key `"kaja"`) without touching `models.toml`. If `services.toml` has `[zen].apiKey` set, that key is forwarded to the proxy via the `x-kaja-zen-key` header and used upstream instead of the proxy's DB-sourced provider key (see `apps/openai/index.ts`). Own provider optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`. Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed. Dispatch glue for all of this lives in `lib/cli/` (`args.ts`, `bootstrap.ts`, `dispatch.ts`, `first-run.tsx`).
+- `--headless`: no Ink render, for a subcommand that supports it. `telegram` is the only consumer today (`kaja --local --headless telegram`) — it never rendered Ink to begin with, so this just formalizes it and shares its bootstrap (`lib/cli/headless.ts`'s `bootstrapLocalAgentDeps`/`requireConfiguredProvider`/`installShutdownHandlers`) with the interactive local loop (`subcommands/run.tsx`). Bare `kaja --headless` (no subcommand) exits with an error — there's no headless mode without a consumer yet. Hosted-mode headless (a driver against `createNasiClient`'s SSE stream instead of the local `Agent`) doesn't exist yet.
+- First run under `--local` (no `settings.toml` yet, interactive TTY only): `components/first-run-setup.tsx` asks which provider template to start from. Optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`; "Skip" writes neither, and `subcommands/run.tsx` then exits with an error instead of silently falling back to hosted free chat (`isFreeChat` in `lib/models/openai.ts` — still used internally by `chatModel` resolution, just no longer a reachable default). Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed. Dispatch glue for all of this lives in `lib/cli/` (`args.ts`, `bootstrap.ts`, `first-run.tsx`).
 
 ## Layout
 

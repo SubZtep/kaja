@@ -7,16 +7,12 @@ nav_order: 3.1
 
 # Config
 
-`settings.toml` selects which model entries in `models.toml` handle each task and configures local settings.
-
-All model tasks are optional. Omitting `models.chat` falls back to the free hosted chat tier; embedding, rerank, image-generation, text-to-speech and speech-to-text are enabled by adding the appropriate model ids.
+`settings.toml` configures local, install-wide settings — which model handles each task lives in
+`models.toml` instead (see the Models page).
 
 Example:
 
 ```toml
-[models.chat]
-model = "chat-default"
-
 [preferences]
 thinking = false
 sounds = true
@@ -27,7 +23,6 @@ persona = "default"
 
 Fields:
 
-- `models`: mapping from task name (`chat`, `embedding`, `image-generation`, etc.) to a `[[models]].id` from `models.toml`.
 - `preferences.thinking`: show a ``thinking``/generating indicator when the agent is composing.
 - `preferences.sounds`: play UI sounds.
 - `preferences.voice`: enable spoken replies when a TTS model is configured.
@@ -36,7 +31,7 @@ Fields:
 
 Notes:
 
-- To enable TTS/STT, add corresponding `models` entries in `models.toml` and a `stt`/`tts` block in `settings.toml` (see the Voice page).
+- To enable TTS/STT, set `models.toml`'s `[active]."text-to-speech"`/`[active]."speech-to-text"` and add a `stt`/`tts` block in `settings.toml` (see the Voice page).
 - `settings.toml` is written by the setup wizard on first run; you can edit it manually afterwards.
 
 ## `kaja config fetch`
@@ -49,9 +44,9 @@ kaja config fetch
 
 Set `services.toml`'s `[api]` `baseUrl` (and `secrets.toml`'s `[api]` `token`, if required) before
 running this.
-On a fresh install, the fetched `models.toml`'s first `chat`-task model is also auto-filled into
-`settings.toml`'s `models.chat`, so a single fetch is enough to leave a fresh install bootable (a
-chat model you've deliberately chosen is never overwritten by a later fetch).
+On a fresh install, the fetched `models.toml`'s first `chat`-task model is also auto-filled
+into that same file's `[active].chat`, so a single fetch is enough to leave a fresh install bootable
+(a chat model you've deliberately chosen is never overwritten by a later fetch).
 
 ## `kaja config wipe`
 

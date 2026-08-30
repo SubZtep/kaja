@@ -2,7 +2,7 @@ import * as z from "zod"
 
 /** A persisted conversation: `session` is the replayable OpenAI-format history, `events` is the rendered timeline for exact resume repaint. */
 export const PersistedSessionSchema = z.object({
-  id: z.number().int(),
+  id: z.uuidv7(),
   createdAt: z.string(),
   updatedAt: z.string(),
   /** Persona.id at last save. */

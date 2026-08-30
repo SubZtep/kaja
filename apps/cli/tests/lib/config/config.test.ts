@@ -1,8 +1,7 @@
 import { afterEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { write } from "bun"
-import { stringify } from "smol-toml"
+import { TOML, write } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config`
 
@@ -30,7 +29,7 @@ test("setConfigDirOverride redirects getConfigDir and getConfigPath", () => {
 
 test("config reads come from the overridden directory", async () => {
   const dir = `${tmpdir()}/kaja-test-config-override-read`
-  await write(join(dir, "settings.toml"), stringify({ preferences: {} }))
+  await write(join(dir, "settings.toml"), TOML.stringify({ preferences: {} })!)
   setConfigDirOverride(dir)
   expect(await readConfigLoose()).toEqual({ preferences: {} })
 })

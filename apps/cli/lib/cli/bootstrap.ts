@@ -1,33 +1,12 @@
-import { resolve } from "node:path"
-import { readConfigLoose, setConfigDirOverride } from "../config/config"
+import { readConfigLoose } from "../config/config"
 import { detectLanguage, setLanguage } from "../i18n"
 import { log } from "../logger"
 
-// supports-hyperlinks (used by marked-terminal for clickable links) only recognizes a narrow allowlist of terminals via TERM_PROGRAM/VTE_VERSION; it misses terminals like Alacritty unless TERM is literally "alacritty", so links silently render as "text (url)" instead of OSC 8 hyperlinks. Force it on: it must be set before marked-terminal's first import anywhere, since supports-hyperlinks reads process.env once at module load.
+// supports-hyperlinks (used by the vendored marked-terminal for clickable links, lib/markdown/marked-terminal.ts) only recognizes a narrow allowlist of terminals via TERM_PROGRAM/VTE_VERSION; it misses terminals like Alacritty unless TERM is literally "alacritty", so links silently render as "text (url)" instead of OSC 8 hyperlinks. Force it on: it must be set before lib/markdown/marked-terminal.ts's first import anywhere, since supports-hyperlinks reads process.env once at module load.
 if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
 
 // The TUI owns the terminal: unless the user asked for a level explicitly, silence pino's info chatter (stt/tts progress lines go to stderr and would scribble over the Ink UI).
 if (!process.env.LOG_LEVEL) log.level = "warn"
-
-/**
- * --config is pre-scanned from argv instead of read from meow: it must
- * take effect before the language-detecting config read, and the args
- * import has to come after that read (meow builds --help at module load).
- * The flag is still declared in lib/args.ts so --help documents it.
- */
-export function applyConfigDirOverride(argv: string[]) {
-  let value: string | undefined
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]!
-    if (arg.startsWith("--config=")) {
-      value = arg.slice("--config=".length)
-    } else if (arg === "--config") {
-      const next = argv[i + 1]
-      value = next && !next.startsWith("-") ? next : undefined
-    }
-  }
-  if (value) setConfigDirOverride(resolve(value))
-}
 
 /**
  * i18n first: meow builds --help at module load, so the language must be set

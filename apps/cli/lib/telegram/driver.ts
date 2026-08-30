@@ -88,7 +88,7 @@ type UserState = {
   agent: Agent
   session: Session
   events: TimelineEvent[]
-  sessionRowId: number | undefined
+  sessionRowId: string | undefined
   persona: Persona
   /** Serializes saves the same way hooks/use-agent.ts's persistChainRef does, so a fast next turn can't race the row-id assignment into a duplicate INSERT. */
   persistChain: Promise<void>
@@ -188,7 +188,10 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       personaId: persona.id
     })
     const startingModel =
-      resumeModel ?? (!resumeRow && persona.model ? models.find(m => m.model === persona.model) : undefined)
+      resumeModel ??
+      (!resumeRow && persona.models?.chat
+        ? models.find(m => m.id === persona.models!.chat && m.task === "chat")
+        : undefined)
     if (startingModel) agent.setModel(startingModel)
 
     return {

@@ -6,7 +6,8 @@ test("without a telegram services block, exits 1 without ever importing telegram
     services: {},
     tools: [],
     personas: [],
-    models: []
+    models: [],
+    closeTools: async () => {}
   })
   expect(code).toBe(1)
 })

@@ -1,3 +1,4 @@
+import type { PersonaModels } from "@kaja/schema/cli"
 import { Box, useApp, useInput, useWindowSize } from "ink"
 import { useEffect, useState } from "react"
 import { useBlink } from "../../hooks/use-blink"
@@ -41,7 +42,8 @@ export function UserInput({
   history: initialHistory,
   menuItems,
   onMenuSelect,
-  onMenuClose
+  onMenuClose,
+  personaModels
 }: Readonly<{
   pending: boolean
   /** The agent's voice is audibly playing — mute the mic so it isn't heard. */
@@ -54,6 +56,8 @@ export function UserInput({
   // biome-ignore lint/suspicious/noConfusingVoidType: most handlers naturally return nothing; only a literal `true` is meaningful
   onMenuSelect: (index: number) => boolean | void
   onMenuClose?: () => void
+  /** Active persona's per-task model overrides, if any — passed through to dictation's STT resolution. */
+  personaModels?: PersonaModels
 }>) {
   const [input, setInput] = useState("")
   const [idle, setIdle] = useState(0)
@@ -76,10 +80,14 @@ export function UserInput({
     if (key.escape && !menuOpen) exit()
   })
   // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.
-  const sttState = useDictation(mic && !speaking, text => {
-    history.markEdited()
-    setInput(prev => (prev ? `${prev} ${text}` : text))
-  })
+  const sttState = useDictation(
+    mic && !speaking,
+    text => {
+      history.markEdited()
+      setInput(prev => (prev ? `${prev} ${text}` : text))
+    },
+    personaModels
+  )
 
   const prefix = statusPrefix(mic, speaking, sttState)
   const cursorVisible = useBlink(500, !mic && !pending && !menuOpen)

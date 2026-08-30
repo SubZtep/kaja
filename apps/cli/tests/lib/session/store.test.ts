@@ -83,7 +83,7 @@ test("update bumps updatedAt and loadLatestSessionRow follows it", async () => {
 })
 
 test("loadSessionRow returns undefined for a missing id", async () => {
-  expect(await loadSessionRow(12345)).toBeUndefined()
+  expect(await loadSessionRow("01900000-0000-7000-8000-000000000000")).toBeUndefined()
 })
 
 test("a corrupt row loads as undefined instead of crashing", async () => {

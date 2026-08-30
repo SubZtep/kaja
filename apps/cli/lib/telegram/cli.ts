@@ -1,5 +1,6 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import type { Tool } from "../agent/agents"
+import { installShutdownHandlers } from "../cli/headless"
 import type { ResolvedServices } from "../config/services"
 import { t } from "../i18n"
 import type { Persona } from "../personas/personas"
@@ -10,6 +11,8 @@ export async function runTelegramCli(deps: {
   tools: Tool<any>[]
   personas: Persona[]
   models: CliResolvedModel[]
+  /** Closes long-lived tool connections (e.g. Playwright MCP subprocess); shared with SIGINT/SIGTERM via installShutdownHandlers. */
+  closeTools: () => Promise<void>
 }): Promise<number> {
   const { telegram } = deps.services
   if (!telegram) {
@@ -19,11 +22,13 @@ export async function runTelegramCli(deps: {
 
   const { createTelegramBot } = await import("./bot")
   const { config: readConfig } = await import("../config/config")
-  const { chatModelId } = await import("../models/openai")
+  const { chatModelId, client, clientForModel } = await import("../models/openai")
   const bot = createTelegramBot({
     ...telegram,
     agentConfig: {
       model: chatModelId,
+      client,
+      createClient: clientForModel,
       tools: deps.tools,
       personas: deps.personas,
       models: deps.models
@@ -37,12 +42,11 @@ export async function runTelegramCli(deps: {
     }
   })
 
-  // Owns its own SIGINT/SIGTERM handling for bot.stop() rather than teaching cli.tsx's shared shutdown() about grammy — those signals also still reach cli.tsx's own handlers (closeTools() etc.) unchanged.
-  const onSignal = () => {
-    bot.stop().catch(() => {})
-  }
-  process.on("SIGINT", onSignal)
-  process.on("SIGTERM", onSignal)
+  const shutdown = installShutdownHandlers(deps.closeTools, {
+    onSignal: () => {
+      bot.stop().catch(() => {})
+    }
+  })
 
   console.log(t("telegram.starting"))
   try {
@@ -52,7 +56,6 @@ export async function runTelegramCli(deps: {
     console.log(error instanceof Error ? error.message : String(error))
     return 1
   } finally {
-    process.off("SIGINT", onSignal)
-    process.off("SIGTERM", onSignal)
+    await shutdown()
   }
 }

@@ -3,7 +3,7 @@ import { mcpServerSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { type CellContext, createColumnHelper } from "@tanstack/react-table"
+import type { CellContext } from "@tanstack/react-table"
 import { Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
@@ -18,6 +18,7 @@ import { ValueBox } from "../../../components/ui/ValueBox"
 import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
+import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 
 export const Route = createFileRoute("/_admin/mcp-servers/")({
   component: McpServersPage,
@@ -68,13 +69,13 @@ function parseKeyValues(input: string): Record<string, string> {
   return out
 }
 
-const columnHelper = createColumnHelper<McpServer>()
+const columnHelper = tableColumnHelper<McpServer>()
 
-function ServerIdCell(info: CellContext<McpServer, string>) {
+function ServerIdCell(info: CellContext<typeof tableFeaturesConfig, McpServer, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
 }
 
-function ConnectionCell(info: CellContext<McpServer, unknown>) {
+function ConnectionCell(info: CellContext<typeof tableFeaturesConfig, McpServer, unknown>) {
   const server = info.row.original
   if (server.url) {
     return <span className="font-mono text-xs text-muted">{server.url}</span>
@@ -86,7 +87,7 @@ function ConnectionCell(info: CellContext<McpServer, unknown>) {
   )
 }
 
-function ConfigCell(info: CellContext<McpServer, unknown>) {
+function ConfigCell(info: CellContext<typeof tableFeaturesConfig, McpServer, unknown>) {
   const server = info.row.original
   const keys = server.url ? Object.keys(server.headers) : Object.keys(server.env)
   if (keys.length === 0) return <span className="text-xs text-muted">—</span>
@@ -99,13 +100,13 @@ function ConfigCell(info: CellContext<McpServer, unknown>) {
 }
 
 function makeEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
-  return function EnabledCell(info: CellContext<McpServer, boolean>) {
+  return function EnabledCell(info: CellContext<typeof tableFeaturesConfig, McpServer, boolean>) {
     const server = info.row.original
     return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: server.id, enabled })} />
   }
 }
 
-function CreatedAtCell(info: CellContext<McpServer, Date>) {
+function CreatedAtCell(info: CellContext<typeof tableFeaturesConfig, McpServer, Date>) {
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
@@ -203,7 +204,7 @@ function McpServersPage() {
     }
   })
 
-  const columns = [
+  const columns = columnHelper.columns([
     columnHelper.accessor("serverId", {
       header: "Server ID",
       cell: ServerIdCell
@@ -228,12 +229,12 @@ function McpServersPage() {
       cell: CreatedAtCell,
       enableColumnFilter: false
     }),
-    {
+    columnHelper.display({
       id: "actions",
       header: "",
       cell: makeActionsCell(id => deleteMcpServer.mutate(id))
-    }
-  ]
+    })
+  ])
 
   if (isLoading) return <Loader />
 

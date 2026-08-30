@@ -16,26 +16,21 @@ process.env.NODE_ENV = "test"
 // config() hard-exits the process if settings.toml is missing (or its chat model doesn't resolve in models.toml), so this isolated config dir needs both — no `location` block, so run() never attempts a real network geo lookup.
 const configKajaDir = join(configDir, "kaja")
 mkdirSync(configKajaDir, { recursive: true })
-writeFileSync(
-  join(configKajaDir, "settings.toml"),
-  `
-[models.chat]
-model = "x"
-provider = "default"
-`
-)
+writeFileSync(join(configKajaDir, "settings.toml"), "")
 writeFileSync(
   join(configKajaDir, "models.toml"),
   `
 [providers.default]
-default = true
 base_url = "http://localhost"
 api_key = "x"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "x"
 task = "chat"
+provider = "default"
+
+[active]
+chat = "chat-default"
 `
 )
 
@@ -51,7 +46,7 @@ const {
   tool
 } = await import("../../../lib/agent/agents")
 const { saveMemory } = await import("../../../lib/memory/store")
-const { rememberNoteTool } = await import("../../../tools/memory")
+const { rememberNoteTool } = await import("@kaja/nasi")
 
 // config()'s parsed *contents* are cached in-process on top of the path resolution (see lib/config.ts) — invalidate before every test in case another test file's process-wide cache last populated it with a different config (e.g. a real location block, triggering a real network call from run()).
 beforeEach(() => {
@@ -208,25 +203,7 @@ test("content without tool calls still arrives as final only", async () => {
   expect(finalized).toEqual([{ type: "final", content: "The answer was a platypus." }])
 })
 
-test("run() yields usage with the free-chat proxy's served model when present", async () => {
-  const { noteServedModel, takeLastServedModel } = await import("../../../lib/models/openai")
-  takeLastServedModel() // clear leftover from other tests
-  noteServedModel("nemotron-3-ultra-free")
-
-  const agent = fakeAgent([{ content: "hi" }], [], { usage: { prompt_tokens: 42 } })
-  const events = await collect(agent)
-  const usage = events.find(e => e.type === "usage")
-  expect(usage).toEqual({
-    type: "usage",
-    promptTokens: 42,
-    model: "nemotron-3-ultra-free"
-  })
-})
-
 test("run() picks model and tokens from stream chunks when final omits them", async () => {
-  const { takeLastServedModel } = await import("../../../lib/models/openai")
-  takeLastServedModel()
-
   const agent = fakeAgent([{ content: "hi" }], [], {
     model: "mimo-v2.5-free",
     usage: { prompt_tokens: 99 },
@@ -410,7 +387,9 @@ test("no sticky-note block when there are no sticky notes", async () => {
 })
 
 test("dataset instructions block appears only when agent.dataset is set and the tool is present", async () => {
-  const { datasetInfoTool } = await import("../../../tools/dataset-info")
+  // Module side effect: wires @kaja/nasi's pluggable dataset loader to read from this test's XDG-isolated config dir.
+  await import("../../../lib/personas/datasets")
+  const { datasetInfoTool } = await import("@kaja/nasi")
   const datasetsDir = join(configKajaDir, "datasets")
   mkdirSync(datasetsDir, { recursive: true })
   writeFileSync(

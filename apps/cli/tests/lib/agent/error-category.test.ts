@@ -6,19 +6,21 @@ import { categorizeError } from "../../../lib/agent/error-category"
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-error-category`
 const { saveConfig } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
-await saveConfig({ models: { chat: { model: "test-model", provider: "default" } } })
+await saveConfig({})
 await Bun.write(
   getModelsPath(),
   `
 [providers.default]
-default = true
 base_url = "http://localhost/v1"
 api_key = "llm-key"
 
-[[models]]
-id = "chat-default"
+[models.chat-default]
 model = "test-model"
 task = "chat"
+provider = "default"
+
+[active]
+chat = "chat-default"
 `
 )
 

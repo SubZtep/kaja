@@ -1,11 +1,11 @@
 import { Box, Text } from "ink"
-import Image from "ink-picture"
 import { memo } from "react"
 import type { TimelineEvent } from "../hooks/use-agent"
 import type { ErrorCategory } from "../lib/agent/error-category"
 import { t } from "../lib/i18n"
 import Markdown from "./elem/markdown"
 import { ReasoningBox } from "./elem/reasoning-box"
+import { TerminalImage } from "./elem/terminal-image"
 
 const ERROR_ICON: Record<ErrorCategory, string> = {
   network: "⚠",
@@ -41,12 +41,7 @@ function renderItem(item: TimelineEvent, thinking: boolean) {
     case "tool_image":
       return <Text dimColor>{`[image: ${item.path}]`}</Text>
     case "display_image":
-      return (
-        <Box flexDirection="column">
-          <Image src={item.url} width={10} height={5} alt={item.alt} />
-          <Text dimColor>{item.alt}</Text>
-        </Box>
-      )
+      return <TerminalImage href={item.url} alt={item.alt} />
     case "message":
       return (
         <Box gap={2}>

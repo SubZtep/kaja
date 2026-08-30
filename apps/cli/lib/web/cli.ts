@@ -1,4 +1,4 @@
-import { isExists as configExists, getConfigPath, readConfigLoose } from "../config/config"
+import { isConfigExists as configExists, getConfigPath, readConfigLoose } from "../config/config"
 import { getServicesPath, readServicesLoose } from "../config/services"
 import { t } from "../i18n"
 import {
@@ -86,15 +86,12 @@ export function startWebServer(port: number) {
         if (!(await configExists())) {
           return html(unconfiguredPersonasPage())
         }
+        // @kaja/nasi's memory/dataset-info tools need setActiveStorePath() called before use (throws "nasi store is not open" otherwise) — loadMemory() already resolves the CLI's configured db path and sets it as a side effect, same as subcommands/run.tsx does at startup.
+        await loadMemory()
         const [
           { Agent, askUserTool, buildSystemPrompt, runCommandTool, switchPersonaTool },
-          { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool },
-          { datasetInfoTool }
-        ] = await Promise.all([
-          import("../agent/agents"),
-          import("../../tools/memory"),
-          import("../../tools/dataset-info")
-        ])
+          { datasetInfoTool, forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool }
+        ] = await Promise.all([import("../agent/agents"), import("@kaja/nasi")])
         const previewTools = [
           askUserTool,
           runCommandTool,
@@ -106,13 +103,16 @@ export function startWebServer(port: number) {
           datasetInfoTool
         ]
         const models = await loadModels()
-        const personas = await loadPersonas(models)
+        const personas = await loadPersonas()
         const entries = await Promise.all(
           personas.map(async persona => ({
             persona,
             systemPrompt: await buildSystemPrompt(
               new Agent({
-                model: persona.model ?? "",
+                model:
+                  (persona.models?.chat &&
+                    models.find(m => m.id === persona.models!.chat && m.task === "chat")?.model) ??
+                  "",
                 tools: previewTools,
                 instructions: persona.instructions,
                 dataset: persona.dataset,
@@ -137,12 +137,12 @@ export function startWebServer(port: number) {
       },
       "/sessions": async () => html(sessionsPage(await listSessions())),
       "/sessions/:id": async req => {
-        const session = await loadSessionRow(Number.parseInt(req.params.id, 10))
+        const session = await loadSessionRow(req.params.id)
         return session ? html(sessionPage(session)) : html(notFoundPage(), 404)
       },
       "/sessions/:id/delete": {
         POST: async req => {
-          await deleteSessionRow(Number.parseInt(req.params.id, 10))
+          await deleteSessionRow(req.params.id)
           return seeOther("/sessions")
         }
       },

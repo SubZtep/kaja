@@ -5,37 +5,47 @@ import { renderForTest } from "../test-utils"
 const DOWN = "[B"
 const ESC = ""
 
-test("pressing return on the first option picks the free hosted chat", async () => {
+test("pressing return on the first option picks the fireworks template", async () => {
   let result: FirstRunChoice | undefined
   const t = renderForTest(<FirstRunSetup onDone={choice => (result = choice)} onCancel={() => {}} />)
   await t.tick()
   expect(t.lastFrame()).toContain("Kaja")
 
   await t.press("\r")
-  expect(result).toEqual({ useFree: true })
+  expect(result).toEqual({ template: "fireworks" })
 
   t.unmount()
   await t.waitUntilExit()
 })
 
-test("choosing own provider then Ollama copies the ollama template", async () => {
+test("choosing Ollama copies the ollama template", async () => {
   let result: FirstRunChoice | undefined
   const t = renderForTest(<FirstRunSetup onDone={choice => (result = choice)} onCancel={() => {}} />)
   await t.tick()
 
-  await t.press(DOWN) // move to "own provider"
-  await t.press("\r")
-  expect(result).toBeUndefined()
-
   await t.press(DOWN) // move to "Ollama"
   await t.press("\r")
-  expect(result).toEqual({ useFree: false, template: "ollama" })
+  expect(result).toEqual({ template: "ollama" })
 
   t.unmount()
   await t.waitUntilExit()
 })
 
-test("escape at the provider step cancels without saving anything", async () => {
+test("choosing Skip picks no template", async () => {
+  let result: FirstRunChoice | undefined
+  const t = renderForTest(<FirstRunSetup onDone={choice => (result = choice)} onCancel={() => {}} />)
+  await t.tick()
+
+  await t.press(DOWN) // move to "Ollama"
+  await t.press(DOWN) // move to "Skip"
+  await t.press("\r")
+  expect(result).toEqual({})
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("escape cancels without saving anything", async () => {
   let result: FirstRunChoice | undefined
   let cancelled = false
   const t = renderForTest(<FirstRunSetup onDone={choice => (result = choice)} onCancel={() => (cancelled = true)} />)

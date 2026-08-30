@@ -1,9 +1,3 @@
-[models]
-# Omit models.chat to use the free hosted tier; set it to use your own provider (see models.toml).
-# [models.chat]
-# model = "accounts/fireworks/models/minimax-m3"
-# provider = "fireworks"
-
 [preferences]
 thinking = false
 sounds = true

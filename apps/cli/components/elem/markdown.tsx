@@ -1,13 +1,12 @@
 import chalk from "chalk"
 import dedent from "dedent"
 import { Box, Text } from "ink"
-import Image from "ink-picture"
-import { type MarkedExtension, marked } from "marked"
-import { markedTerminal } from "marked-terminal"
+import { marked } from "marked"
 import { memo } from "react"
+import { markedTerminal } from "../../lib/markdown/marked-terminal"
+import { TerminalImage } from "./terminal-image"
 
 // Palette matches the app's own chat colors (timeline.tsx): pink for structure (mirrors the agent's "●" prefix), cyan for emphasis/code/links (mirrors the user's "> " prefix), gray for de-emphasis.
-// @types/marked-terminal lags the v7 runtime API, which returns a MarkedExtension
 marked.use(
   markedTerminal({
     firstHeading: chalk.hex("#ff1493").bold,
@@ -21,18 +20,8 @@ marked.use(
       style: { head: ["magenta"], border: ["gray"] }
     },
     tab: 2
-  }) as unknown as MarkedExtension
+  })
 )
-
-// marked-terminal's own "text" renderer reads token.text (the raw, unparsed source) instead of recursing into token.tokens, so inline markdown - links, bold, ... - inside a single-line list item or table cell renders as literal source instead of being parsed. Its own link/del/heading renderers don't have this bug; this patches text() to match them.
-marked.use({
-  renderer: {
-    text(token: any) {
-      if (token.tokens) return this.parser!.parseInline(token.tokens)
-      return token.text
-    }
-  }
-} as MarkedExtension)
 
 /**
  * Module-level parse cache: parsing is by far the most expensive per-item
@@ -65,7 +54,7 @@ const segmentKey = (segment: Segment, i: number) => `${i}-${Bun.hash(JSON.string
  * around each `![alt](href)` occurrence (found via `marked.lexer` +
  * `walkTokens`, in document order) into text/image segments; text segments
  * still go through the normal marked-terminal pipeline, images render via
- * `ink-picture`'s `<Image>`.
+ * {@link TerminalImage}.
  */
 function splitSegments(source: string): Segment[] {
   const images: { raw: string; href: string; alt: string }[] = []
@@ -99,10 +88,7 @@ export default memo(function Markdown({ children }: { children: string }) {
         segment.type === "text" ? (
           <Text key={segmentKey(segment, i)}>{parseMarkdown(segment.source)}</Text>
         ) : (
-          <Box key={segmentKey(segment, i)} flexDirection="column">
-            <Image src={segment.href} width={10} height={5} alt={segment.alt} />
-            {segment.alt && <Text dimColor>{segment.alt}</Text>}
-          </Box>
+          <TerminalImage key={segmentKey(segment, i)} href={segment.href} alt={segment.alt} />
         )
       )}
     </Box>

@@ -1,13 +1,13 @@
-import { argv } from "node:process"
 import { color } from "bun"
-import { applyConfigDirOverride, detectAndSetLanguage } from "./lib/cli/bootstrap"
+import { detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { runFirstRunIfNeeded } from "./lib/cli/first-run"
-import { getConfigPath, isExists, validate } from "./lib/config/config"
+import { getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runMemorySubcommand } from "./subcommands/memory"
 import { runSubcommand } from "./subcommands/run"
+import { runRemoteSubcommand } from "./subcommands/run-remote"
 import { runSessionSubcommand } from "./subcommands/session"
 import { runTelegramSubcommand } from "./subcommands/telegram"
 import { runWebSubcommand } from "./subcommands/web"
@@ -15,11 +15,20 @@ import { runWebSubcommand } from "./subcommands/web"
 try {
   // MARK: On-Boarding
 
-  applyConfigDirOverride(argv.slice(2))
   await detectAndSetLanguage()
-  if (!(await isExists())) {
-    await runFirstRunIfNeeded()
+
+  const { args } = await import("./lib/cli/args")
+
+  const useLocal = args.flags.remote ? false : args.flags.local || (await isConfigExists())
+  if (!useLocal) {
+    await runRemoteSubcommand()
+    process.exit(0)
   }
+
+  if (!(await isConfigExists())) {
+    await runFirstRunIfNeeded(args.flags.headless)
+  }
+
   if (!(await validate())) {
     console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
     process.exit(1)
@@ -27,23 +36,22 @@ try {
 
   // MARK: Run Commands
 
-  const { cli } = await import("./lib/cli/args")
-  const [cmd] = cli.input
+  const [cmd] = args.input
 
   if (cmd === "memory") {
-    await runMemorySubcommand(cli)
+    await runMemorySubcommand(args)
   }
 
   if (cmd === "session") {
-    await runSessionSubcommand(cli)
+    await runSessionSubcommand(args)
   }
 
   if (cmd === "web") {
-    await runWebSubcommand(cli)
+    await runWebSubcommand(args)
   }
 
   if (cmd === "config") {
-    await runConfigSubcommand(cli)
+    await runConfigSubcommand(args)
   }
 
   // MARK: Start Agent
@@ -54,7 +62,12 @@ try {
 
   // MARK: End of Headless
 
-  await runSubcommand(cli)
+  if (args.flags.headless) {
+    console.log(t("cli.headlessNoSubcommand"))
+    process.exit(1)
+  }
+
+  await runSubcommand(args)
 } catch (error) {
   log.error({ error }, "Unhandled startup error")
   const message = error instanceof Error ? error.message : String(error)
