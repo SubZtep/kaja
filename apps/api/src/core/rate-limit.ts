@@ -41,12 +41,13 @@ const globalRateLimiterInner = rateLimiter({
 })
 
 /**
- * Strict rate limiter for authentication endpoints.
- * Default: 50 requests per 15 minutes per IP
+ * Rate limiter for authentication endpoints.
+ *
+ * Default: 500 requests per 15 minutes per IP
  */
 const authRateLimiterInner = rateLimiter({
   windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  limit: Number(process.env.AUTH_RATE_LIMIT_MAX) || 50,
+  limit: Number(process.env.AUTH_RATE_LIMIT_MAX) || 500,
   standardHeaders: true,
   keyGenerator: clientIp
 })
@@ -54,13 +55,12 @@ const authRateLimiterInner = rateLimiter({
 /**
  * Per-user rate limiter for /nasi/turn and /nasi/turn/stream — separate from
  * the global IP-based limiter (NAT'd users would otherwise share a bucket).
- * Requires requireAuthMiddleware to have already run so c.get("user") is set;
- * unauthenticated requests fall back to IP so the limiter never throws.
- * Default: 30 requests per 10 minutes per user.
+ *
+ * Default: 300 requests per 10 minutes per user.
  */
 const nasiTurnRateLimiterInner = rateLimiter({
   windowMs: Number(process.env.NASI_TURN_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000,
-  limit: Number(process.env.NASI_TURN_RATE_LIMIT_MAX) || 30,
+  limit: Number(process.env.NASI_TURN_RATE_LIMIT_MAX) || 300,
   standardHeaders: true,
   keyGenerator: (c: Context<{ Variables: RouteVariables }>) => c.get("user")?.id ?? clientIp(c)
 })

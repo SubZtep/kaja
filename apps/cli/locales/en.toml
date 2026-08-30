@@ -4,6 +4,9 @@ startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDeta
 bye = "Bye, bye!"
 localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama, or run `kaja --local config fetch`. For hosted chat instead, run `kaja --remote`."
 headlessNoSubcommand = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
+pleaseSignIn = "Please sign in!"
+deviceLoginGoTo = "Go to:"
+deviceLoginEnterCode = "Enter code:"
 
 [firstRun]
 paths = "Kaja will use these paths:"
@@ -36,7 +39,7 @@ OPTIONS
   --paths         Print every path Kaja reads or writes
   --port          Port for kaja --local web (default: 4880)
   --help          Print this help
-  --version       Print the installed app version
+  --version       Print app version
 
 EXAMPLES
   $ kaja

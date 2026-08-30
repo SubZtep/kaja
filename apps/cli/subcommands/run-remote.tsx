@@ -3,6 +3,7 @@ import { render } from "ink"
 import LiteApp from "../components/layout/lite-app"
 import { loadCredentials } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
+import { t } from "../lib/i18n"
 
 async function resolveToken(apiUrl: string): Promise<string> {
   const envToken = process.env.KAJA_TOKEN
@@ -11,10 +12,12 @@ async function resolveToken(apiUrl: string): Promise<string> {
   const stored = await loadCredentials()
   if (stored && stored.apiUrl === apiUrl) return stored.token
 
-  console.log(`${color("cyan", "ansi")}Signing in to ${apiUrl}...`)
+  console.log(t("cli.pleaseSignIn"))
   return deviceLogin(apiUrl, prompt => {
-    console.log(`\nGo to: ${color("cyan", "ansi")}${prompt.verificationUri}`)
-    console.log(`Enter code: ${color("yellow", "ansi")}${prompt.userCode}${color("white", "ansi")}\n`)
+    console.log(`\n${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${prompt.verificationUri}`)
+    console.log(
+      `${color("white", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${prompt.userCode}${color("white", "ansi")}\n`
+    )
   })
 }
 
@@ -39,7 +42,7 @@ export async function runRemoteSubcommand() {
       }
     })
     await waitUntilExit()
-    console.log("Bye!")
+    console.log(t("cli.bye"))
   } catch (error) {
     const text = error instanceof Error ? error.message : String(error)
     console.log(`${color("red", "ansi")}${text}`)

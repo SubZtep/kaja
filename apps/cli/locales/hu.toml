@@ -4,6 +4,9 @@ startupError = "Váratlan hiba történt, a Kaja nem tudott elindulni: {message}
 bye = "Pá, pá!"
 localNoProvider = "A --local kapcsolóhoz beállított szolgáltató szükséges. Futtasd újra a `kaja --local` parancsot és válaszd a Fireworks/Ollama opciót, vagy futtasd a `kaja --local config fetch` parancsot. Hosztolt csevegéshez futtasd a `kaja --remote` parancsot."
 headlessNoSubcommand = "A --headless kapcsolóhoz ezt támogató alparancs szükséges, például `telegram`. Önálló headless mód még nem létezik."
+pleaseSignIn = "Kérlek jelentkezz be!"
+deviceLoginGoTo = "Nyisd meg:"
+deviceLoginEnterCode = "Add meg a kódot:"
 
 [firstRun]
 paths = "A Kaja ezeket az elérési utakat fogja használni:"
@@ -33,10 +36,10 @@ OPCIÓK
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
-  --paths         Kiírja az összes elérési utat, amit a Kaja használ
+  --paths         Mutatja az összes elérési utat, amit a Kaja használ
   --port          A kaja --local web portja (alapértelmezés: 4880)
-  --help          Kiírja ezt a súgót
-  --version       Kiírja a telepített verziót
+  --help          Mutatja ezt a súgót
+  --version       Mutatja az app verziót
 
 PÉLDÁK
   $ kaja
@@ -51,7 +54,7 @@ usage = """
 Használat
   $ kaja memory list                    Kilistázza az összes elmentett jegyzetet
   $ kaja memory forget <kulcs-vagy-glob>  Jegyzetek törlése kulcs alapján, vagy csoportosan glob mintával, pl. "test:*"
-  $ kaja memory export                  Kiírja a nyers memória JSON-t
+  $ kaja memory export                  Mutatja a nyers memória JSON-t
 """
 empty = "(nincs elmentett jegyzet)"
 noMatch = "(nincs egyező jegyzet)"
