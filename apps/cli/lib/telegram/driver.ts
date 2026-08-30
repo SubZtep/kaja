@@ -88,7 +88,7 @@ type UserState = {
   agent: Agent
   session: Session
   events: TimelineEvent[]
-  sessionRowId: number | undefined
+  sessionRowId: string | undefined
   persona: Persona
   /** Serializes saves the same way hooks/use-agent.ts's persistChainRef does, so a fast next turn can't race the row-id assignment into a duplicate INSERT. */
   persistChain: Promise<void>

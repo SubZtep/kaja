@@ -19,11 +19,13 @@ export async function runTelegramCli(deps: {
 
   const { createTelegramBot } = await import("./bot")
   const { config: readConfig } = await import("../config/config")
-  const { chatModelId } = await import("../models/openai")
+  const { chatModelId, client, clientForModel } = await import("../models/openai")
   const bot = createTelegramBot({
     ...telegram,
     agentConfig: {
       model: chatModelId,
+      client,
+      createClient: clientForModel,
       tools: deps.tools,
       personas: deps.personas,
       models: deps.models

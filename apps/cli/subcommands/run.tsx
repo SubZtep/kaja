@@ -28,8 +28,7 @@ export async function runSubcommand(cli: typeof Cli) {
       process.exit(1)
     }
   } else if (cli.flags.session) {
-    const sessionId = Number.parseInt(cli.flags.session, 10)
-    initialSession = Number.isFinite(sessionId) ? await loadSessionRow(sessionId) : undefined
+    initialSession = await loadSessionRow(cli.flags.session)
     if (!initialSession) {
       console.log(t("session.notFound", { id: cli.flags.session }))
       process.exit(1)

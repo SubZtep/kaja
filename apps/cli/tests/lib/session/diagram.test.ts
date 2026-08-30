@@ -4,7 +4,7 @@ import { sessionToMermaid } from "../../../lib/session/diagram"
 
 function fixture(events: { type: string; [k: string]: unknown }[]) {
   return {
-    id: 1,
+    id: "01900000-0000-7000-8000-000000000001",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
     persona: "kaja",

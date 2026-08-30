@@ -35,8 +35,7 @@ export async function runSessionCli(argv: string[]): Promise<{ code: number; tex
   }
 
   if (command === "diagram" && arg) {
-    const id = Number.parseInt(arg, 10)
-    const session = Number.isFinite(id) ? await loadSessionRow(id) : undefined
+    const session = await loadSessionRow(arg.trim())
     if (!session) return { code: 1, text: t("session.notFound", { id: arg }) }
     return { code: 0, text: sessionToMermaid(session) }
   }

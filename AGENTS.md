@@ -6,9 +6,9 @@ Kaja is a TypeScript monorepo built with Bun:
 
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
-- **CLI** (`apps/cli`): Ink TUI agent chat (personas, tools, MCP, Telegram, optional STT/TTS)
+- **CLI** (`apps/cli`): Ink TUI — full build embeds `@kaja/nasi`; `cli.lite.ts` is API-only (`/nasi/*`)
 - **OpenAI proxy** (`apps/openai`): OpenAI-compatible forwarder; picks a random model from db (wip)
-- **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`
+- **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
 
@@ -100,6 +100,7 @@ bun run --filter @kaja/cli test
 | `@kaja/schema` | Zod API contracts + `KAJA_CLI_CLIENT_ID` (single source of truth for API types) |
 | `@kaja/logger` | Pino (node) / console (browser) with `message, payload?` API |
 | `@kaja/shared` | Pure utils (`cn`, dates, strings) |
+| `@kaja/nasi` | Agent loop, sqlite store, tools. Hosted profile is a subset (no shell/files/MCP). |
 
 ### Type architecture
 
@@ -108,6 +109,7 @@ bun run --filter @kaja/cli test
   - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/cli` — remaining CLI domain concepts (personas, datasets)
+  - `@kaja/schema/nasi` — hosted turn request/response
 - **DB row types**: private to API services; map with private `#rowTo…` helpers
 - **Dates over JSON**: `z.coerce.date()` in schemas
 - See `packages/schema/AGENTS.md` for the full layout and naming conventions

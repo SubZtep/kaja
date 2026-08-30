@@ -137,12 +137,12 @@ export function startWebServer(port: number) {
       },
       "/sessions": async () => html(sessionsPage(await listSessions())),
       "/sessions/:id": async req => {
-        const session = await loadSessionRow(Number.parseInt(req.params.id, 10))
+        const session = await loadSessionRow(req.params.id)
         return session ? html(sessionPage(session)) : html(notFoundPage(), 404)
       },
       "/sessions/:id/delete": {
         POST: async req => {
-          await deleteSessionRow(Number.parseInt(req.params.id, 10))
+          await deleteSessionRow(req.params.id)
           return seeOther("/sessions")
         }
       },

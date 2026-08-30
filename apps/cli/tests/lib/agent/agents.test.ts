@@ -208,25 +208,7 @@ test("content without tool calls still arrives as final only", async () => {
   expect(finalized).toEqual([{ type: "final", content: "The answer was a platypus." }])
 })
 
-test("run() yields usage with the free-chat proxy's served model when present", async () => {
-  const { noteServedModel, takeLastServedModel } = await import("../../../lib/models/openai")
-  takeLastServedModel() // clear leftover from other tests
-  noteServedModel("nemotron-3-ultra-free")
-
-  const agent = fakeAgent([{ content: "hi" }], [], { usage: { prompt_tokens: 42 } })
-  const events = await collect(agent)
-  const usage = events.find(e => e.type === "usage")
-  expect(usage).toEqual({
-    type: "usage",
-    promptTokens: 42,
-    model: "nemotron-3-ultra-free"
-  })
-})
-
 test("run() picks model and tokens from stream chunks when final omits them", async () => {
-  const { takeLastServedModel } = await import("../../../lib/models/openai")
-  takeLastServedModel()
-
   const agent = fakeAgent([{ content: "hi" }], [], {
     model: "mimo-v2.5-free",
     usage: { prompt_tokens: 99 },

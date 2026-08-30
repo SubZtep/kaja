@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import { basename, join } from "node:path"
-import { type Persona, PersonaSchema, type SamplingParams } from "@kaja/schema/cli"
+import { samplingOf } from "@kaja/nasi"
+import { type Persona, PersonaSchema } from "@kaja/schema/cli"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 // Written on first run: one file per persona, the stock assistant plus the app's former built-in personas, sourced from the same files that document repo docs/config/personas/ (also published on the docs site).
@@ -12,27 +13,13 @@ import { getConfigDir } from "../config/config"
 import { log } from "../logger"
 
 export type { Persona }
+export { samplingOf }
 
 const TEMPLATES: Record<string, string> = {
   default: DEFAULT_TEMPLATE,
   barkochba: BARKOCHBA_TEMPLATE,
   care: CARE_TEMPLATE,
   onboarding: ONBOARDING_TEMPLATE
-}
-
-/** Pulls a persona's optional sampling overrides into an Agent-shaped object. */
-export function samplingOf(persona?: Persona): SamplingParams | undefined {
-  if (!persona) return undefined
-  const { temperature, top_p, max_tokens, frequency_penalty, presence_penalty, seed } = persona
-  const sampling = {
-    temperature,
-    top_p,
-    max_tokens,
-    frequency_penalty,
-    presence_penalty,
-    seed
-  }
-  return Object.values(sampling).some(v => v !== undefined) ? sampling : undefined
 }
 
 export function getPersonasDir() {

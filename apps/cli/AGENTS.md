@@ -2,7 +2,7 @@
 
 Terminal chat with personas, tools, optional mic dictation, optional TTS, MCP, and Telegram.
 
-This package uses Bun. Entry point is **`cli.tsx`** at the package root (not `src/`).
+This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). Agent logic lives in `@kaja/nasi`; this app is the local host + Ink UI. `cli.lite.ts` is the API-only binary (`KAJA_TOKEN` + `KAJA_API_URL`).
 
 ## Commands
 

@@ -1,0 +1,73 @@
+import { Readability } from "@mozilla/readability"
+import { parseHTML } from "linkedom"
+import { ToolError, tool } from "../../agent/agent"
+import { fetchPublicHttp, UnsafeUrlError } from "../../security/ssrf"
+
+/**
+ * Fetches a URL and returns its content as plain text.
+ *
+ * @param args.url - The URL to fetch.
+ * @returns HTML pages are reduced to their main article content (nav,
+ * ads, and other boilerplate stripped); other content types are returned
+ * as-is.
+ */
+export const fetchUrlTool = tool<{ url: string }>({
+  name: "fetch_url",
+  description:
+    "Fetch a specific, known URL and return its content as plain text. Use " +
+    "this instead of web_search when you already have the exact URL (e.g. " +
+    "the user gave you a link, or a prior search result) — it's cheaper and " +
+    "returns the actual page instead of a search snippet. The full page " +
+    "text is returned unsummarized — if it's long, call summarize on the " +
+    "result before replying instead of condensing it yourself.",
+  parameters: {
+    type: "object",
+    properties: {
+      url: {
+        type: "string",
+        description: "The URL to fetch"
+      }
+    },
+    required: ["url"]
+  },
+  execute: async args => {
+    let res: Response
+    try {
+      res = await fetchPublicHttp(args.url)
+    } catch (error) {
+      if (error instanceof UnsafeUrlError) throw new ToolError("fetch_url", error.message)
+      throw new ToolError("fetch_url", error instanceof Error ? error.message : String(error))
+    }
+    if (!res.ok) throw new ToolError("fetch_url", `Fetch failed: ${res.status} ${args.url}`)
+    const body = await res.text()
+    const contentType = res.headers.get("content-type") ?? ""
+    return contentType.includes("html") ? extractArticleText(body) : body
+  }
+})
+
+function extractArticleText(html: string): string {
+  const { document } = parseHTML(html)
+  const article = new Readability(document).parse()
+  return article?.textContent?.trim() || stripHtml(html)
+}
+
+const htmlEntities: Record<string, string> = {
+  "&nbsp;": " ",
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'"
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<script[^>]*>[\s\S]*?<\/script[^>]*>/gi, " ")
+    .replace(/<style[^>]*>[\s\S]*?<\/style[^>]*>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^<>]+>/g, " ")
+    .replace(/&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;/g, entity => htmlEntities[entity] ?? entity)
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n+/g, "\n\n")
+    .trim()
+}

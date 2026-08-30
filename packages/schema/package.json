@@ -19,6 +19,10 @@
     "./cli": {
       "types": "./cli/index.ts",
       "default": "./cli/index.ts"
+    },
+    "./nasi": {
+      "types": "./nasi/index.ts",
+      "default": "./nasi/index.ts"
     }
   },
   "dependencies": {

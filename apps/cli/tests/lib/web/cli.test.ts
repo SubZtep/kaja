@@ -39,7 +39,7 @@ task = "chat"
 
 let server: ReturnType<typeof startWebServer>
 let base: string
-let sessionId: number
+let sessionId: string
 
 beforeAll(async () => {
   await saveMemory({

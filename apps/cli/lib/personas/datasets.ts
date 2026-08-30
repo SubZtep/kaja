@@ -1,4 +1,5 @@
 import { basename, join } from "node:path"
+import { setDatasetLoaders } from "@kaja/nasi"
 import { type Dataset, DatasetSchema } from "@kaja/schema/cli"
 import { file } from "bun"
 import { getConfigDir } from "../config/config"
@@ -36,3 +37,5 @@ export async function loadDataset(topic: string): Promise<Dataset | undefined> {
   const datasets = await loadDatasets()
   return datasets.get(topic)
 }
+
+setDatasetLoaders({ loadDatasets, loadDataset })

@@ -87,7 +87,7 @@ test("unknown or missing subcommand prints usage and exits 1", async () => {
   }
 })
 
-test("BUG: diagram id parsing is loose — trailing garbage and whitespace are silently accepted", async () => {
+test("diagram id is an exact UUIDv7; surrounding whitespace is trimmed", async () => {
   const id = await createSessionRow({
     persona: "kaja",
     model: "test-model",
@@ -96,8 +96,8 @@ test("BUG: diagram id parsing is loose — trailing garbage and whitespace are s
     session: { messages: [] },
     events: []
   })
-  for (const arg of [`${id}abc`, ` ${id}`, `${id}.9`, `+${id}`]) {
-    const { code } = await runSessionCli(["diagram", arg])
-    expect(code).toBe(0)
+  expect((await runSessionCli(["diagram", ` ${id} `])).code).toBe(0)
+  for (const arg of [`${id}abc`, `${id}.9`, `+${id}`]) {
+    expect((await runSessionCli(["diagram", arg])).code).toBe(1)
   }
 })

@@ -13,11 +13,12 @@ api/         # API contracts: shared by API, web, and CLI device auth
   mcp-server.ts  # MCP server admin CRUD schemas
   model.ts       # provider/model admin CRUD schemas
 config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml, secrets.toml)
-store/       # CLI SQLite-backed runtime state (sessions, memory notes)
-cli/         # Remaining CLI domain concepts (personas, datasets)
+store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi
+cli/         # Personas, datasets
+nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
 ```
 
-Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
+Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
 
 ## Conventions
 

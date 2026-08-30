@@ -79,7 +79,21 @@ export function useAgent(
       dataset: startingPersona?.dataset,
       personas,
       models,
-      personaId: startingPersona?.id
+      personaId: startingPersona?.id,
+      promptContext: agentConfig.promptContext ?? {
+        loadStickyNotes: async () => {
+          const { loadMemory } = await import("../lib/memory/store")
+          return Object.entries(await loadMemory()).filter(([, note]) => note.sticky)
+        },
+        loadDataset: async topic => {
+          const { loadDataset } = await import("../lib/personas/datasets")
+          return loadDataset(topic)
+        },
+        loadLocation: async () => {
+          const { tryLookupMyLocation } = await import("../lib/agent/geo")
+          return tryLookupMyLocation()
+        }
+      }
     })
     const startingModel =
       resume?.model ??
@@ -90,7 +104,7 @@ export function useAgent(
   const sessionRef = useRef<Session>(undefined)
   if (!sessionRef.current) sessionRef.current = resume ? (resume.session.session as Session) : createSession()
   // The database row this conversation saves into; undefined until the first save (empty sessions are never recorded).
-  const sessionRowIdRef = useRef<number | undefined>(resume?.session.id)
+  const sessionRowIdRef = useRef<string | undefined>(resume?.session.id)
 
   // React-state mirror of agent.model (the configured/request model id), so consumers rerender on switch. Distinct from `responseModel`, which is the provider-reported id from the last completion (e.g. free-chat proxy).
   const [model, setModel] = useState(agent.model)

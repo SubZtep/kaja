@@ -11,7 +11,7 @@ import type { Tool } from "../../lib/agent/agents"
 import { saveModels, savePreferences } from "../../lib/config/config"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
-import { FREE_CHAT_PROVIDER } from "../../lib/models/openai"
+import { client, clientForModel, FREE_CHAT_PROVIDER } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
 import { StartupPanel } from "../startup-panel"
 import { ChatViewport } from "./chat-viewport"
@@ -181,6 +181,8 @@ export default function App({
     promptTokens
   } = useAgent({
     model: openaiApiModel,
+    client,
+    createClient: clientForModel,
     tools,
     personas,
     models,
