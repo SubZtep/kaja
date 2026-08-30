@@ -2,17 +2,17 @@ import { join } from "node:path"
 import {
   type DatasetAnswer,
   forgetNotes,
-  latestDatasetVersion,
-  listAllDatasetAnswers,
-  listDatasetVersionsSummary,
-  loadDatasetAnswers,
-  loadDatasetVersionCompletedAt,
-  markDatasetVersionComplete,
   getDb as nasiGetDb,
+  latestDatasetVersion as nasiLatestDatasetVersion,
+  listAllDatasetAnswers as nasiListAllDatasetAnswers,
+  listDatasetVersionsSummary as nasiListDatasetVersionsSummary,
+  loadDatasetAnswers as nasiLoadDatasetAnswers,
+  loadDatasetVersionCompletedAt as nasiLoadDatasetVersionCompletedAt,
   loadMemory as nasiLoadMemory,
+  markDatasetVersionComplete as nasiMarkDatasetVersionComplete,
+  saveDatasetAnswer as nasiSaveDatasetAnswer,
   saveMemory as nasiSaveMemory,
   noteHeader,
-  saveDatasetAnswer,
   setActiveStorePath
 } from "@kaja/nasi"
 import { file, write } from "bun"
@@ -20,18 +20,7 @@ import { stringify } from "smol-toml"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
 import { getPaths } from "../paths"
 
-export {
-  type DatasetAnswer,
-  forgetNotes,
-  latestDatasetVersion,
-  listAllDatasetAnswers,
-  listDatasetVersionsSummary,
-  loadDatasetAnswers,
-  loadDatasetVersionCompletedAt,
-  markDatasetVersionComplete,
-  noteHeader,
-  saveDatasetAnswer
-}
+export { type DatasetAnswer, forgetNotes, noteHeader }
 
 export function getDefaultMemoryDbPath() {
   return join(getPaths().data, "memory.sqlite")
@@ -68,4 +57,39 @@ export async function loadMemory() {
 export async function saveMemory(store: Parameters<typeof nasiSaveMemory>[0]) {
   await getDb()
   return nasiSaveMemory(store)
+}
+
+export async function latestDatasetVersion(...args: Parameters<typeof nasiLatestDatasetVersion>) {
+  await getDb()
+  return nasiLatestDatasetVersion(...args)
+}
+
+export async function listAllDatasetAnswers(...args: Parameters<typeof nasiListAllDatasetAnswers>) {
+  await getDb()
+  return nasiListAllDatasetAnswers(...args)
+}
+
+export async function listDatasetVersionsSummary(...args: Parameters<typeof nasiListDatasetVersionsSummary>) {
+  await getDb()
+  return nasiListDatasetVersionsSummary(...args)
+}
+
+export async function loadDatasetAnswers(...args: Parameters<typeof nasiLoadDatasetAnswers>) {
+  await getDb()
+  return nasiLoadDatasetAnswers(...args)
+}
+
+export async function loadDatasetVersionCompletedAt(...args: Parameters<typeof nasiLoadDatasetVersionCompletedAt>) {
+  await getDb()
+  return nasiLoadDatasetVersionCompletedAt(...args)
+}
+
+export async function markDatasetVersionComplete(...args: Parameters<typeof nasiMarkDatasetVersionComplete>) {
+  await getDb()
+  return nasiMarkDatasetVersionComplete(...args)
+}
+
+export async function saveDatasetAnswer(...args: Parameters<typeof nasiSaveDatasetAnswer>) {
+  await getDb()
+  return nasiSaveDatasetAnswer(...args)
 }
