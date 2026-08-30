@@ -3,6 +3,7 @@ import { error as logError } from "@kaja/logger"
 import { deleteSessionRow, listSessions, loadSessionRow, withStorePath } from "@kaja/nasi"
 import { NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
+import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import type { RouteVariables } from "../../types"
 import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
@@ -14,6 +15,8 @@ const HEARTBEAT_INTERVAL_MS = 15_000
 
 export const nasiRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 nasiRoutes.use("*", requireAuthMiddleware)
+nasiRoutes.use("/turn", nasiTurnRateLimiter)
+nasiRoutes.use("/turn/stream", nasiTurnRateLimiter)
 
 const errorSchema = z.object({ error: z.string() })
 
