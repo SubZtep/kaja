@@ -21,7 +21,7 @@ src/
   tools/             # builtin tools + local/hosted registries
   mcp/               # local profile only
   plugin/            # local profile only (~/.config/kaja/tools)
-  client/            # HTTP client for lite CLI (no sqlite / loop)
+  client/            # HTTP client for lite CLI: turn() buffered, turn_stream() SSE (no sqlite / loop)
   security/          # SSRF + path guard
 ```
 

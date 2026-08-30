@@ -3,7 +3,6 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
-import { playSound } from "../../lib/audio/sounds"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
@@ -243,8 +242,8 @@ export function ChatViewport({
       const text = lastCopyableText(events)
       if (text) {
         writeText(text)
-          .then(() => {
-            if (sounds) playSound("keyboard")
+          .then(async () => {
+            if (sounds) (await import("../../lib/audio/sounds")).playSound("keyboard")
           })
           .catch(error => log.warn({ error }, "Copy to clipboard failed"))
       }

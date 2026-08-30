@@ -19,6 +19,7 @@
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@mozilla/readability": "^0.6.0",
+    "better-auth": "^1.6.26",
     "chalk": "^6.0.0",
     "dedent": "^1.7.2",
     "env-paths": "^4.0.0",

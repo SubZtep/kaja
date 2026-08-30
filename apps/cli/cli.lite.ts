@@ -1,34 +1,35 @@
-import { createNasiClient } from "@kaja/nasi/client"
 import { color } from "bun"
+import { loadCredentials } from "./lib/auth/credentials"
+import { deviceLogin } from "./lib/auth/device-login"
 
 /**
- * API-only CLI: talks to api.kaja.io/nasi, no local agent.
- * Device login lands in a later slice; for now KAJA_TOKEN + KAJA_API_URL.
+ * API-only entry: talks to <apiUrl>/nasi/*, no local agent, no sqlite, no
+ * MCP, no shell tools. `cli.ts` (full) must not be imported from this file —
+ * that would pull @kaja/nasi's loop/store/tools into the lite bundle.
  */
 const apiUrl = process.env.KAJA_API_URL ?? process.env.API_URL ?? "https://api.kaja.io"
-const token = process.env.KAJA_TOKEN
 
-if (!token) {
-  console.log(
-    `${color("yellow", "ansi")}kaja-lite needs a kaja.io session token.\nSet KAJA_TOKEN (and optionally KAJA_API_URL). Device login is not wired in this build yet.`
-  )
-  process.exit(1)
+async function resolveToken(): Promise<string> {
+  const envToken = process.env.KAJA_TOKEN
+  if (envToken) return envToken
+
+  const stored = await loadCredentials()
+  if (stored && stored.apiUrl === apiUrl) return stored.token
+
+  console.log(`${color("cyan", "ansi")}Signing in to ${apiUrl}...`)
+  return deviceLogin(apiUrl, prompt => {
+    console.log(`\nGo to: ${color("cyan", "ansi")}${prompt.verificationUri}${color("reset", "ansi")}`)
+    console.log(`Enter code: ${color("yellow", "ansi")}${prompt.userCode}${color("reset", "ansi")}\n`)
+  })
 }
-
-const message = process.argv.slice(2).join(" ").trim()
-if (!message) {
-  console.log("usage: kaja-lite <message>")
-  process.exit(1)
-}
-
-const client = createNasiClient({
-  baseUrl: apiUrl,
-  getToken: async () => token
-})
 
 try {
-  const result = await client.turn({ message })
-  console.log(result.message)
+  const token = await resolveToken()
+
+  const { runLiteApp } = await import("./subcommands/run-lite")
+  await runLiteApp(apiUrl, token)
+  console.log("Bye!")
+  process.exit(0)
 } catch (error) {
   const text = error instanceof Error ? error.message : String(error)
   console.log(`${color("red", "ansi")}${text}`)

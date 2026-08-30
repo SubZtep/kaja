@@ -2,7 +2,7 @@
 
 Terminal chat with personas, tools, optional mic dictation, optional TTS, MCP, and Telegram.
 
-This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). Agent logic lives in `@kaja/nasi`; this app is the local host + Ink UI. `cli.lite.ts` is the API-only binary (`KAJA_TOKEN` + `KAJA_API_URL`).
+This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). Agent logic lives in `@kaja/nasi`; this app is the local host + Ink UI. `cli.lite.ts` is the API-only binary: no local agent, no sqlite, no MCP, no shell tools — talks to `<apiUrl>/nasi/*` over SSE. Auth: `KAJA_TOKEN` env var, or device login on first run (stored at `~/.config/kaja/credentials.json`, `0o600`). `lib/auth/` (device-login, credentials) and `hooks/use-remote-agent.ts` are lite-only; `components/layout/lite-app.tsx` reuses `Header`/`ChatViewport`/`UserInput` from the full CLI (persona/model switching and `run_command` confirm are full-CLI-only — hosted Nasi never emits those).
 
 ## Commands
 

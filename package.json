@@ -16,6 +16,7 @@
     "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' dev",
     "dev:api": "bun run --filter @kaja/api dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.ts",
+    "dev:cli:lite": "bun run --env-file=apps/cli/.env apps/cli/cli.lite.ts",
     "dev:web": "bun run --filter @kaja/web dev",
     "lint": "biome check --config-path=.",
     "lint:fix": "biome check --config-path=. --write --unsafe",

@@ -21,22 +21,27 @@ jobs:
             platform: linux-x64
             bun_target: bun-linux-x64
             artifact: kaja-linux-x64
+            lite_artifact: kaja-lite-linux-x64
           - os: ubuntu-latest
             platform: linux-arm64
             bun_target: bun-linux-arm64
             artifact: kaja-linux-arm64
+            lite_artifact: kaja-lite-linux-arm64
           - os: macos-latest
             platform: macos-x64
             bun_target: bun-darwin-x64
             artifact: kaja-macos-x64
+            lite_artifact: kaja-lite-macos-x64
           - os: macos-latest
             platform: macos-arm64
             bun_target: bun-darwin-arm64
             artifact: kaja-macos-arm64
+            lite_artifact: kaja-lite-macos-arm64
           - os: windows-latest
             platform: windows-x64
             bun_target: bun-windows-x64
             artifact: kaja-windows-x64.exe
+            lite_artifact: kaja-lite-windows-x64.exe
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -113,6 +118,54 @@ jobs:
             ${{ matrix.artifact }}.sha256
           retention-days: 30
 
+      - name: Build lite CLI for ${{ matrix.platform }}
+        shell: bash
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          cd apps/cli
+          bun build cli.lite.ts \
+            --compile \
+            --minify \
+            --outfile kaja-lite \
+            --target="${{ matrix.bun_target }}" \
+            --define process.env.KAJA_APP_NAME="\"cli-lite\"" \
+            --define process.env.KAJA_LOG_LEVEL="\"warn\"" \
+            --define process.env.API_URL="\"${API_URL}\""
+
+      - name: Rename lite artifact
+        shell: bash
+        run: |
+          out="${{ matrix.lite_artifact }}"
+          if [[ -f "apps/cli/kaja-lite.exe" ]]; then
+            mv "apps/cli/kaja-lite.exe" "$out"
+          elif [[ -f "apps/cli/kaja-lite" ]]; then
+            mv "apps/cli/kaja-lite" "$out"
+          else
+            echo "Expected kaja-lite or kaja-lite.exe in apps/cli"
+            ls -la apps/cli/ || true
+            exit 1
+          fi
+          chmod +x "$out" || true
+
+      - name: Generate lite SHA256 checksum
+        shell: bash
+        run: |
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${{ matrix.lite_artifact }}" | awk '{print $1}' > "${{ matrix.lite_artifact }}.sha256"
+          else
+            shasum -a 256 "${{ matrix.lite_artifact }}" | awk '{print $1}' > "${{ matrix.lite_artifact }}.sha256"
+          fi
+
+      - name: Upload lite artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ matrix.lite_artifact }}
+          path: |
+            ${{ matrix.lite_artifact }}
+            ${{ matrix.lite_artifact }}.sha256
+          retention-days: 30
+
   release:
     needs: build
     permissions:
@@ -186,6 +239,28 @@ jobs:
                 "artifact": "kaja-windows-x64.exe",
                 "checksum": ""
               }
+            },
+            "lite": {
+              "linux-x64": {
+                "artifact": "kaja-lite-linux-x64",
+                "checksum": ""
+              },
+              "linux-arm64": {
+                "artifact": "kaja-lite-linux-arm64",
+                "checksum": ""
+              },
+              "macos-arm64": {
+                "artifact": "kaja-lite-macos-arm64",
+                "checksum": ""
+              },
+              "macos-x64": {
+                "artifact": "kaja-lite-macos-x64",
+                "checksum": ""
+              },
+              "windows-x64": {
+                "artifact": "kaja-lite-windows-x64.exe",
+                "checksum": ""
+              }
             }
           }
           EOF
@@ -202,15 +277,20 @@ jobs:
             checksum=$(tr -d '\n' < "${artifact}.sha256")
 
             case "$name" in
-              kaja-linux-x64)   key=linux-x64 ;;
-              kaja-linux-arm64) key=linux-arm64 ;;
-              kaja-macos-arm64) key=macos-arm64 ;;
-              kaja-macos-x64)   key=macos-x64 ;;
-              kaja-windows-x64.exe) key=windows-x64 ;;
+              kaja-linux-x64)   section=platforms; key=linux-x64 ;;
+              kaja-linux-arm64) section=platforms; key=linux-arm64 ;;
+              kaja-macos-arm64) section=platforms; key=macos-arm64 ;;
+              kaja-macos-x64)   section=platforms; key=macos-x64 ;;
+              kaja-windows-x64.exe) section=platforms; key=windows-x64 ;;
+              kaja-lite-linux-x64)   section=lite; key=linux-x64 ;;
+              kaja-lite-linux-arm64) section=lite; key=linux-arm64 ;;
+              kaja-lite-macos-arm64) section=lite; key=macos-arm64 ;;
+              kaja-lite-macos-x64)   section=lite; key=macos-x64 ;;
+              kaja-lite-windows-x64.exe) section=lite; key=windows-x64 ;;
               *) echo "❌ Unknown artifact basename: $name"; exit 1 ;;
             esac
 
-            jq --arg c "$checksum" --arg k "$key" '.platforms[$k].checksum=$c' artifacts/manifest.json > tmp.json && mv tmp.json artifacts/manifest.json
+            jq --arg c "$checksum" --arg s "$section" --arg k "$key" '.[$s][$k].checksum=$c' artifacts/manifest.json > tmp.json && mv tmp.json artifacts/manifest.json
           done
 
           if jq -e '
@@ -218,7 +298,12 @@ jobs:
             .platforms["linux-arm64"].checksum == "" or
             .platforms["macos-arm64"].checksum == "" or
             .platforms["macos-x64"].checksum == "" or
-            .platforms["windows-x64"].checksum == ""
+            .platforms["windows-x64"].checksum == "" or
+            .lite["linux-x64"].checksum == "" or
+            .lite["linux-arm64"].checksum == "" or
+            .lite["macos-arm64"].checksum == "" or
+            .lite["macos-x64"].checksum == "" or
+            .lite["windows-x64"].checksum == ""
           ' artifacts/manifest.json > /dev/null; then
             echo "❌ Missing checksum in manifest"
             cat artifacts/manifest.json
