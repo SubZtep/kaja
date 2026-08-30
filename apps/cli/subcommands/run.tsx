@@ -51,26 +51,23 @@ export async function runSubcommand(cli: typeof Cli) {
 
   // Deferred until here: nothing before this point touches the terminal UI
   const { render } = await import("ink")
-  const { InkPictureProvider } = await import("ink-picture")
 
   // Alternate screen: full-viewport app, restores primary buffer on exit, no scrollback while running
   // Kitty keyboard (auto): so Shift+Enter is distinct from Enter — plain TTYs send the same `\r` for both
   const { waitUntilExit } = render(
-    <InkPictureProvider>
-      <App
-        initialPreferences={preferences}
-        models={models}
-        personas={personas}
-        openaiApiModel={chatModelId}
-        freeChat={isFreeChat}
-        tools={tools}
-        mcpServers={mcpServers}
-        initialSession={initialSession}
-        promptHistory={promptHistory}
-        sessionCount={sessionCount}
-        memoryNoteCount={memoryNoteCount}
-      />
-    </InkPictureProvider>,
+    <App
+      initialPreferences={preferences}
+      models={models}
+      personas={personas}
+      openaiApiModel={chatModelId}
+      freeChat={isFreeChat}
+      tools={tools}
+      mcpServers={mcpServers}
+      initialSession={initialSession}
+      promptHistory={promptHistory}
+      sessionCount={sessionCount}
+      memoryNoteCount={memoryNoteCount}
+    />,
     {
       alternateScreen: true,
       kittyKeyboard: {

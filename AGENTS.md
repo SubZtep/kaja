@@ -28,7 +28,6 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | Migration runner | `apps/api/scripts/db_migration.sh` |
 | Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
 | Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
-| CLI patch for sixel | `patches/sixel@0.16.0.patch` (repo root) |
 
 ## Development Commands
 

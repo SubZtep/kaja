@@ -9,7 +9,6 @@
     "gen-schema": "bun run scripts/gen-schema.ts"
   },
   "//": [
-    "marked is pinned to ^15 (not latest) because marked-terminal@7 requires marked >=1 <16",
     "react-devtools-core is ink's optional devtools peer; it must be installed for `bun build --compile` to bundle ink (inert at runtime unless DEV=true)"
   ],
   "dependencies": {
@@ -19,32 +18,33 @@
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@mozilla/readability": "^0.6.0",
+    "ansi-escapes": "^7.0.0",
+    "ansi-regex": "^6.1.0",
     "better-auth": "^1.6.26",
     "chalk": "^6.0.0",
+    "cli-highlight": "^2.1.11",
+    "cli-table3": "^0.6.5",
     "dedent": "^1.7.2",
     "env-paths": "^4.0.0",
     "grammy": "^1.45.1",
     "ink": "^7.1.1",
     "ink-gradient": "^4.0.1",
-    "ink-picture": "^2.1.0",
     "linkedom": "^0.18.13",
-    "marked": "^15",
-    "marked-terminal": "^7.3.0",
+    "marked": "^18.0.11",
     "meow": "^14.1.0",
+    "node-emoji": "^2.2.0",
     "openai": "^7.4.0",
     "pino": "^10.3.1",
     "react": "^19.2.8",
     "string-width": "^8.2.2",
+    "supports-hyperlinks": "^3.1.0",
+    "terminal-image": "^5.0.1",
     "terminal-link": "^5.0.0",
     "tinyclip": "^1.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/marked-terminal": "^6.1.1",
     "@types/react": "^19.2.18",
     "react-devtools-core": "^7.0.1"
-  },
-  "patchedDependencies": {
-    "sixel@0.16.0": "patches/sixel@0.16.0.patch"
   }
 }
