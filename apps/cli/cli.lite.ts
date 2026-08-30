@@ -18,8 +18,8 @@ async function resolveToken(): Promise<string> {
 
   console.log(`${color("cyan", "ansi")}Signing in to ${apiUrl}...`)
   return deviceLogin(apiUrl, prompt => {
-    console.log(`\nGo to: ${color("cyan", "ansi")}${prompt.verificationUri}${color("reset", "ansi")}`)
-    console.log(`Enter code: ${color("yellow", "ansi")}${prompt.userCode}${color("reset", "ansi")}\n`)
+    console.log(`\nGo to: ${color("cyan", "ansi")}${prompt.verificationUri}`)
+    console.log(`Enter code: ${color("yellow", "ansi")}${prompt.userCode}${color("white", "ansi")}\n`)
   })
 }
 

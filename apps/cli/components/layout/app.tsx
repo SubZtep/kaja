@@ -3,7 +3,6 @@ import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
 import { useState } from "react"
 import { useAgent } from "../../hooks/use-agent"
-import { useConfigReloadSound } from "../../hooks/use-config-reload-sound"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
 import { useVoice } from "../../hooks/use-voice"
@@ -212,7 +211,6 @@ export default function App({
   const pendingCommand = !pending && lastEvent?.type === "confirm_command" ? lastEvent : undefined
   const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = usePreferences(initialPreferences)
   useSound(events, sounds)
-  useConfigReloadSound(sounds)
   const speaking = useVoice(events, voice)
   const { columns, rows } = useWindowSize()
 

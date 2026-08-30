@@ -7,7 +7,6 @@ import type { cli as Cli } from "../lib/cli/args"
  */
 export async function runSubcommand(cli: typeof Cli) {
   const { config } = await import("../lib/config/config")
-  const { startConfigWatcher, stopConfigWatcher } = await import("../lib/config/config-watcher")
   const { loadModels } = await import("../lib/models/models")
   const { loadPersonas } = await import("../lib/personas/personas")
   const { t } = await import("../lib/i18n")
@@ -51,7 +50,6 @@ export async function runSubcommand(cli: typeof Cli) {
   const shutdown = async () => {
     if (closed) return
     closed = true
-    stopConfigWatcher()
     await Promise.race([closeTools(), new Promise(resolve => setTimeout(resolve, SHUTDOWN_TIMEOUT_MS))])
   }
   process.on("SIGINT", async () => {
@@ -62,10 +60,6 @@ export async function runSubcommand(cli: typeof Cli) {
     await shutdown()
     process.exit(0)
   })
-
-  // Picks up settings.toml/services.toml/secrets.toml edited externally while this session
-  // stays open (e.g. pasting an API key into secrets.toml without restarting kaja).
-  startConfigWatcher()
 
   // Deferred until here: nothing before this point touches the terminal UI
   const { render } = await import("ink")
