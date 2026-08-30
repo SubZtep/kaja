@@ -1,4 +1,5 @@
-import { tool } from "../../agent/agent"
+import { ToolError, tool } from "../../agent/agent"
+import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-guard"
 
 /**
  * Lists files under a directory, optionally by glob pattern.
@@ -27,9 +28,18 @@ export const listFilesTool = tool<{ path: string; pattern?: string }>({
     required: ["path"]
   },
   execute: async args => {
+    let safePath: string
+    try {
+      safePath = guardWorkspacePath(args.path)
+    } catch (error) {
+      if (error instanceof PathEscapeError || error instanceof PathDeniedError) {
+        throw new ToolError("list_files", error.message)
+      }
+      throw error
+    }
     const glob = new Bun.Glob(args.pattern ?? "*")
     const matches: string[] = []
-    for await (const match of glob.scan({ cwd: args.path, dot: false })) {
+    for await (const match of glob.scan({ cwd: safePath, dot: false })) {
       matches.push(match)
     }
     matches.sort((a, b) => a.localeCompare(b))

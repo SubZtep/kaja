@@ -1,4 +1,5 @@
-import { tool } from "../../agent/agent"
+import { ToolError, tool } from "../../agent/agent"
+import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-guard"
 
 /**
  * Reads a text file from disk.
@@ -19,5 +20,16 @@ export const readFileTool = tool<{ path: string }>({
     },
     required: ["path"]
   },
-  execute: async args => await Bun.file(args.path).text()
+  execute: async args => {
+    let safePath: string
+    try {
+      safePath = guardWorkspacePath(args.path)
+    } catch (error) {
+      if (error instanceof PathEscapeError || error instanceof PathDeniedError) {
+        throw new ToolError("read_file", error.message)
+      }
+      throw error
+    }
+    return await Bun.file(safePath).text()
+  }
 })

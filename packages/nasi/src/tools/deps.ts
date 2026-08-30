@@ -20,6 +20,7 @@ export type NasiToolDeps = {
   webSearchApiKey?: string
   lookupLocation?: () => Promise<GeoLocation | undefined>
   tempDir?: string
+  workspaceRoot?: string
 }
 
 let deps: NasiToolDeps = {}
