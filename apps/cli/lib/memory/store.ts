@@ -15,8 +15,7 @@ import {
   noteHeader,
   setActiveStorePath
 } from "@kaja/nasi"
-import { file, write } from "bun"
-import { stringify } from "smol-toml"
+import { file, TOML, write } from "bun"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
 import { getPaths } from "../paths"
 
@@ -37,7 +36,7 @@ async function persistDbPathIfMissing(dbPath: string) {
     if (!(await file(configPath).exists())) return
     const loose = await readConfigLoose()
     if (loose.memory?.dbPath) return
-    await write(file(configPath), stringify({ ...loose, memory: { ...loose.memory, dbPath } }))
+    await write(file(configPath), TOML.stringify({ ...loose, memory: { ...loose.memory, dbPath } })!)
     invalidateConfigCache()
   } catch {}
 }

@@ -19,12 +19,14 @@ async function resolveToken(apiUrl: string): Promise<string> {
 }
 
 /**
- * `--remote`: resolves an API token (env, cached credentials, or device
- * login), then renders LiteApp against hosted Nasi. No local agent, no
- * sqlite, no MCP, no shell tools — talks to `<apiUrl>/nasi/*` over SSE.
+ * Hosted path: reached via `--remote`, or by default when no local config
+ * exists yet (see cli.ts's useLocal check). Resolves an API token (env,
+ * cached credentials, or device login), then renders LiteApp against hosted
+ * Nasi. No local agent, no sqlite, no MCP, no shell tools — talks to
+ * `<apiUrl>/nasi/*` over SSE.
  */
 export async function runRemoteSubcommand() {
-  const apiUrl = process.env.KAJA_API_URL ?? process.env.API_URL ?? "https://api.kaja.io"
+  const apiUrl = process.env.KAJA_API_URL ?? "https://api.kaja.io"
 
   try {
     const token = await resolveToken(apiUrl)

@@ -1,4 +1,4 @@
-import type { cli as Cli } from "../lib/cli/args"
+import type { args as Cli } from "../lib/cli/args"
 
 /**
  * The default case (no recognized subcommand): resolves the

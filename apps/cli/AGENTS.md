@@ -2,7 +2,7 @@
 
 Terminal chat with personas, tools, optional mic dictation, optional TTS, MCP, and Telegram.
 
-This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). **Default (no flags): hosted login** — no local agent, no sqlite, no MCP, no shell tools, talks to `<apiUrl>/nasi/*` over SSE. Auth: `KAJA_TOKEN` env var, or device login on first run (stored at `~/.config/kaja/credentials.json`, `0o600`). Server-side persona catalog (admin-managed, `apps/api`'s `persona` table) drives `switch_persona` in hosted mode. `--local` switches to the local-agent path: agent logic lives in `@kaja/nasi`, this app is the local host + Ink UI, requires a configured `models.toml` (own provider — no silent fallback to hosted free chat). `lib/auth/` (device-login, credentials), `hooks/use-remote-agent.ts`, and `subcommands/run-remote.tsx` are hosted-only; `components/layout/lite-app.tsx` reuses `Header`/`ChatViewport`/`UserInput` from the full CLI (persona/model switching and `run_command` confirm are `--local`-only — hosted Nasi never emits those).
+This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). **With no `--local`/`--remote` flag, the mode auto-detects**: local if a config already exists (`~/.config/kaja/settings.toml`), hosted login otherwise. `--local` forces the local-agent path; `--remote` forces hosted login even if a local config exists. Hosted mode: no local agent, no sqlite, no MCP, no shell tools, talks to `<apiUrl>/nasi/*` over SSE. Auth: `KAJA_TOKEN` env var, or device login on first run (stored at `~/.config/kaja/credentials.json`, `0o600`). Server-side persona catalog (admin-managed, `apps/api`'s `persona` table) drives `switch_persona` in hosted mode. Local mode: agent logic lives in `@kaja/nasi`, this app is the local host + Ink UI, requires a configured `models.toml` (own provider — no silent fallback to hosted free chat). `lib/auth/` (device-login, credentials), `hooks/use-remote-agent.ts`, and `subcommands/run-remote.tsx` are hosted-only; `components/layout/lite-app.tsx` reuses `Header`/`ChatViewport`/`UserInput` from the full CLI (persona/model switching and `run_command` confirm are `--local`-only — hosted Nasi never emits those).
 
 ## Commands
 
@@ -22,7 +22,7 @@ cli.tsx` directly) for interactive use.
 
 ## CLI surface
 
-- Flags: `--local`, `--headless`, `--config <dir>`, `--paths`, `-c`/`--continue` (`--local` only), `-s`/`--session <id>` (`--local` only)
+- Flags: `--local`, `--remote`, `--headless`, `--paths`, `-c`/`--continue` (`--local` only), `-s`/`--session <id>` (`--local` only)
 - Subcommands, `--local` only (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
 - Handlers: `lib/memory/cli.ts`, `lib/session/cli.ts`, `lib/telegram/cli.ts`, `lib/web/cli.ts`
 - `--headless`: no Ink render, for a subcommand that supports it. `telegram` is the only consumer today (`kaja --local --headless telegram`) — it never rendered Ink to begin with, so this just formalizes it and shares its bootstrap (`lib/cli/headless.ts`'s `bootstrapLocalAgentDeps`/`requireConfiguredProvider`/`installShutdownHandlers`) with the interactive local loop (`subcommands/run.tsx`). Bare `kaja --headless` (no subcommand) exits with an error — there's no headless mode without a consumer yet. Hosted-mode headless (a driver against `createNasiClient`'s SSE stream instead of the local `Agent`) doesn't exist yet.

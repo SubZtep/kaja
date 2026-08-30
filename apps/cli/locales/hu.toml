@@ -2,7 +2,7 @@
 invalidConfig = "Érvénytelen konfigurációs fájl: {path}"
 startupError = "Váratlan hiba történt, a Kaja nem tudott elindulni: {message}\nA részletek a naplófájlba kerültek."
 bye = "Pá, pá!"
-localNoProvider = "A --local kapcsolóhoz beállított szolgáltató szükséges. Futtasd újra a `kaja --local` parancsot és válaszd a Fireworks/Ollama opciót, vagy futtasd a `kaja --local config fetch` parancsot. Hosztolt csevegéshez futtasd a `kaja` parancsot --local nélkül."
+localNoProvider = "A --local kapcsolóhoz beállított szolgáltató szükséges. Futtasd újra a `kaja --local` parancsot és válaszd a Fireworks/Ollama opciót, vagy futtasd a `kaja --local config fetch` parancsot. Hosztolt csevegéshez futtasd a `kaja --remote` parancsot."
 headlessNoSubcommand = "A --headless kapcsolóhoz ezt támogató alparancs szükséges, például `telegram`. Önálló headless mód még nem létezik."
 
 [firstRun]
@@ -14,29 +14,31 @@ providerSkip = "Kihagyás — magam állítom be a models.toml fájlt"
 
 [args]
 help = """
-Használat
-  $ kaja
-  $ kaja --local
-  $ kaja --local config fetch
-  $ kaja --local config wipe
-  $ kaja --local memory <list|forget <kulcs-vagy-glob>|export>
-  $ kaja --local session <list|diagram <id>>
-  $ kaja --local telegram
-  $ kaja --local --headless telegram
-  $ kaja --local web
+Kaja parancssoros felület • https://kaja.io
 
-Kapcsolók
-  --help          Kiírja ezt a súgót
+HASZNÁLAT
+  $ kaja [OPCIÓK] [PARANCS]
+
+PARANCSOK
+  config fetch
+  config wipe
+  telegram
+  web
+  memory <list|forget <kulcs-vagy-glob>|export>
+  session <list|diagram <id>>
+
+OPCIÓK
   --local         A helyi ágens futtatása saját szolgáltatóval a hosztolt bejelentkezés helyett
-  --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
-  --config        A settings.json-t ebből a könyvtárból olvassa az alapértelmezett helyett
-  --paths         Kiírja az összes elérési utat, amit a Kaja használ
-  --version       Kiírja a telepített verziót
+  --remote        Hosztolt bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
+  --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
+  --paths         Kiírja az összes elérési utat, amit a Kaja használ
   --port          A kaja --local web portja (alapértelmezés: 4880)
+  --help          Kiírja ezt a súgót
+  --version       Kiírja a telepített verziót
 
-Példák
+PÉLDÁK
   $ kaja
   $ kaja --local -c
   $ kaja --paths
@@ -77,6 +79,7 @@ apiUrlMissing = "Állítsd be az [api] baseUrl-t a services.toml-ban"
 fetchFailed = "Nem sikerült letölteni az mcp.toml-t (HTTP {status})"
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
+fetchedUnchanged = "{path} már naprakész"
 wiped = "{path} áthelyezve ide: {backup}"
 wipeNothing = "Nincs mit törölni: {path} nem létezik"
 

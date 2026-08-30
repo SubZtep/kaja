@@ -1,4 +1,4 @@
-import type { cli as Cli } from "../lib/cli/args"
+import type { args as Cli } from "../lib/cli/args"
 
 /** Runs before the config guard: browsing/fixing sessions must work even with a missing or invalid LLM config. */
 export async function runSessionSubcommand(cli: typeof Cli) {

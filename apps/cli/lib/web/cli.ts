@@ -1,4 +1,4 @@
-import { isExists as configExists, getConfigPath, readConfigLoose } from "../config/config"
+import { isConfigExists as configExists, getConfigPath, readConfigLoose } from "../config/config"
 import { getServicesPath, readServicesLoose } from "../config/services"
 import { t } from "../i18n"
 import {

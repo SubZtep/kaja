@@ -91,6 +91,32 @@ test("fetch backs up an existing mcp.toml instead of overwriting it", async () =
   expect(await Bun.file(getMcpPath()).text()).toBe("newer content")
 })
 
+test("fetch is a no-op (no new backup) when the fetched content matches what's already on disk", async () => {
+  await Bun.write(getMcpPath(), "same content")
+  stubFetch({ "/config/mcp.toml": "same content", "/config/models.toml": "models content" }, 200)
+  const services: Partial<ServicesFile> = { api: { baseUrl: "http://api.test" } }
+
+  const { code, text } = await runConfigCli(["fetch"], services, {})
+  expect(code).toBe(0)
+  expect(text).not.toContain(".bak")
+  expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(getMcpPath()).text()).toBe("same content")
+})
+
+test("fetch is a no-op (no new backup, comment preserved) when only comments/formatting differ", async () => {
+  const withComment = '# my personal note, please keep me\n\n[[servers]]\nid = "x"\n'
+  const withoutComment = '[[servers]]\nid = "x"\n'
+  await Bun.write(getMcpPath(), withComment)
+  stubFetch({ "/config/mcp.toml": withoutComment, "/config/models.toml": "[models.y]\n" }, 200)
+  const services: Partial<ServicesFile> = { api: { baseUrl: "http://api.test" } }
+
+  const { code, text } = await runConfigCli(["fetch"], services, {})
+  expect(code).toBe(0)
+  expect(text).not.toContain(".bak")
+  expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(getMcpPath()).text()).toBe(withComment)
+})
+
 test("fetch surfaces a non-OK response as an error", async () => {
   stubFetch({ "/config/mcp.toml": "nope", "/config/models.toml": "nope" }, 500)
   const services: Partial<ServicesFile> = { api: { baseUrl: "http://api.test" } }

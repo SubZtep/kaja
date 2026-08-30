@@ -8,7 +8,11 @@ import { getConfigDir } from "./config"
 import { nextBackupPath } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
 
-/** Handles `kaja config <fetch|wipe>`; returns { code, text } instead of printing/exiting so tests can call it directly. Runs before the config guard since a fresh install has no settings.toml yet. */
+/**
+ * Handles `kaja config <fetch|wipe>`;
+ *
+ * Returns `{ code, text }`
+ */
 export async function runConfigCli(
   argv: string[],
   services: Partial<ServicesFile>,
@@ -19,20 +23,31 @@ export async function runConfigCli(
   if (command === "fetch") {
     const apiUrl = services.api?.baseUrl
     if (!apiUrl) return { code: 1, text: t("config.apiUrlMissing") }
-    // Prefer secrets.toml [api].token; fall back to env for local/dev.
+
     const token = secrets.api?.token ?? process.env.CONFIG_API_TOKEN
+
     try {
-      const results = await Promise.all([fetchMcpToml(apiUrl, token), fetchModelsToml(apiUrl, token)])
-      // Best-effort: an unparseable models.toml still counts as a successful fetch, just without an auto-selected chat model.
-      try {
-        const modelsFile = ModelsFileSchema.parse(TOML.parse(await file(getModelsPath()).text()))
-        const chatEntry = Object.entries(modelsFile.models).find(([, m]) => m.task === "chat")
-        if (chatEntry) {
-          await saveFetchedActiveChat(chatEntry[0])
+      const [mcpResult, modelsResult] = await Promise.all([fetchMcpToml(apiUrl, token), fetchModelsToml(apiUrl, token)])
+      const results = [mcpResult, modelsResult]
+
+      if (!modelsResult.unchanged) {
+        try {
+          const modelsFile = ModelsFileSchema.parse(TOML.parse(await file(getModelsPath()).text()))
+          const chatEntry = Object.entries(modelsFile.models).find(([, m]) => m.task === "chat")
+          if (chatEntry) {
+            await saveFetchedActiveChat(chatEntry[0])
+          }
+        } catch {
+          // console.log("Failed to save", modelsResult)
         }
-      } catch {}
-      const lines = results.map(({ path, backedUpTo }) =>
-        backedUpTo ? t("config.fetchedWithBackup", { path, backup: backedUpTo }) : t("config.fetched", { path })
+      }
+
+      const lines = results.map(({ path, backedUpTo, unchanged }) =>
+        unchanged
+          ? t("config.fetchedUnchanged", { path })
+          : backedUpTo
+            ? t("config.fetchedWithBackup", { path, backup: backedUpTo })
+            : t("config.fetched", { path })
       )
       return { code: 0, text: lines.join("\n") }
     } catch (error: any) {
