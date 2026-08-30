@@ -15,7 +15,8 @@ export {
   openStore,
   SCHEMA_VERSION,
   setActiveStorePath,
-  withStorePath
+  withStorePath,
+  withStorePathGenerator
 } from "./db"
 export { forgetNotes, loadMemory, noteHeader, saveMemory } from "./memory"
 export {

@@ -32,9 +32,9 @@ async function defaultChatResolver() {
   }
 }
 
-export async function runUserTurn(userId: string, body: NasiTurnRequest): Promise<NasiTurnResponse> {
+async function openNasiForUser(userId: string): Promise<Nasi> {
   const chat = await (chatResolver ?? defaultChatResolver)()
-  const nasi = await Nasi.open({
+  return Nasi.open({
     dbPath: userSqlitePath(userId),
     profile: "hosted",
     chat,
@@ -42,5 +42,14 @@ export async function runUserTurn(userId: string, body: NasiTurnRequest): Promis
       environment: "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP."
     }
   })
+}
+
+export async function runUserTurn(userId: string, body: NasiTurnRequest): Promise<NasiTurnResponse> {
+  const nasi = await openNasiForUser(userId)
   return nasi.turnBuffered(body)
+}
+
+export async function openUserTurnStream(userId: string, body: NasiTurnRequest) {
+  const nasi = await openNasiForUser(userId)
+  return nasi.turn(body)
 }

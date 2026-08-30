@@ -1,12 +1,16 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
+import { error as logError } from "@kaja/logger"
 import { deleteSessionRow, listSessions, loadSessionRow, withStorePath } from "@kaja/nasi"
 import { NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
+import { streamSSE } from "hono/streaming"
 import type { RouteVariables } from "../../types"
-import { notFound, unauthorized } from "../../types/errors"
+import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
-import { runUserTurn } from "./chat"
+import { openUserTurnStream, runUserTurn } from "./chat"
 import { withUserLock } from "./mutex"
 import { userSqlitePath } from "./paths"
+
+const HEARTBEAT_INTERVAL_MS = 15_000
 
 export const nasiRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 nasiRoutes.use("*", requireAuthMiddleware)
@@ -42,6 +46,61 @@ nasiRoutes.openapi(turnRoute, async c => {
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
     throw error
   }
+})
+
+/** SSE event name for each AgentEvent type the client should see; events with no entry (tool_image, display_image) are not forwarded. */
+const SSE_EVENT_NAME: Partial<Record<string, string>> = {
+  delta: "delta",
+  reasoning: "reasoning",
+  message: "message",
+  tool_call: "tool_call",
+  ask_user: "ask_user",
+  persona_switch: "persona_switch",
+  usage: "usage",
+  final: "final"
+}
+
+nasiRoutes.post("/turn/stream", async c => {
+  const user = c.get("user")
+  if (!user) return unauthorized(c)
+  const parsed = NasiTurnRequestSchema.safeParse(await c.req.json().catch(() => undefined))
+  if (!parsed.success) return badRequest(c, "Invalid request body")
+  const body = parsed.data
+
+  return streamSSE(c, async stream => {
+    const heartbeat = setInterval(() => {
+      stream.writeSSE({ event: "heartbeat", data: "" }).catch(() => {})
+    }, HEARTBEAT_INTERVAL_MS)
+    stream.onAbort(() => clearInterval(heartbeat))
+
+    try {
+      await withUserLock(user.id, async () => {
+        const gen = await openUserTurnStream(user.id, body)
+        let next = await gen.next()
+        while (!next.done) {
+          const name = SSE_EVENT_NAME[next.value.type]
+          if (name) await stream.writeSSE({ event: name, data: JSON.stringify(next.value) })
+          next = await gen.next()
+        }
+        await stream.writeSSE({
+          event: "done",
+          data: JSON.stringify({ session: next.value.session, status: next.value.status })
+        })
+      })
+    } catch (error) {
+      const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
+      const isNoModel = error instanceof Error && error.message === "no_model"
+      if (!isNotFound && !isNoModel) logError("nasi turn/stream failed", { userId: user.id, error: String(error) })
+      await stream.writeSSE({
+        event: "error",
+        data: JSON.stringify({
+          error: isNotFound ? "Session not found" : isNoModel ? "No model available" : "Turn failed"
+        })
+      })
+    } finally {
+      clearInterval(heartbeat)
+    }
+  })
 })
 
 const listRoute = createRoute({

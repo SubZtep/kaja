@@ -86,3 +86,60 @@ test("plain question mark final is completed, not needs_input", async () => {
   expect(result.message).toBe("Is it alive?")
   closeStore(path)
 })
+
+test("turn() streams delta events live and returns the same response turnBuffered would", async () => {
+  const path = dbPath()
+  const nasi = await Nasi.open({
+    dbPath: path,
+    profile: "hosted",
+    chat: {
+      client: fakeClient([{ content: "streamed reply" }]) as never,
+      model: "fake"
+    }
+  })
+
+  const seen: string[] = []
+  const gen = nasi.turn({ message: "hi" })
+  let next = await gen.next()
+  while (!next.done) {
+    seen.push(next.value.type)
+    next = await gen.next()
+  }
+
+  expect(seen).toContain("delta")
+  expect(seen).toContain("final")
+  expect(next.value.status).toBe("completed")
+  expect(next.value.message).toBe("streamed reply")
+  expect(next.value.session).toBeTruthy()
+  closeStore(path)
+})
+
+test("turn() isolates concurrent streamed turns from different users' stores", async () => {
+  const pathA = dbPath()
+  const pathB = dbPath()
+  const nasiA = await Nasi.open({
+    dbPath: pathA,
+    profile: "hosted",
+    chat: { client: fakeClient([{ content: "A-reply" }]) as never, model: "fake" }
+  })
+  const nasiB = await Nasi.open({
+    dbPath: pathB,
+    profile: "hosted",
+    chat: { client: fakeClient([{ content: "B-reply" }]) as never, model: "fake" }
+  })
+
+  async function drain(gen: AsyncGenerator<unknown, { message: string }, void>) {
+    let next = await gen.next()
+    while (!next.done) next = await gen.next()
+    return next.value
+  }
+
+  const [resultA, resultB] = await Promise.all([
+    drain(nasiA.turn({ message: "hi" })),
+    drain(nasiB.turn({ message: "hi" }))
+  ])
+  expect(resultA.message).toBe("A-reply")
+  expect(resultB.message).toBe("B-reply")
+  closeStore(pathA)
+  closeStore(pathB)
+})

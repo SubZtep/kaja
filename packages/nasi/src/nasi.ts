@@ -5,7 +5,14 @@ import type { AgentEvent, PromptContext } from "./agent/agent"
 import { Agent, createSession, type Session } from "./agent/agent"
 import { run } from "./agent/run"
 import { createOpenAIClient } from "./models/client"
-import { createSessionRow, loadSessionRow, openStore, updateSessionRow, withStorePath } from "./store"
+import {
+  createSessionRow,
+  loadSessionRow,
+  openStore,
+  updateSessionRow,
+  withStorePath,
+  withStorePathGenerator
+} from "./store"
 import { createTools, type NasiProfile } from "./tools/registry"
 
 const HOSTED_ENVIRONMENT =
@@ -69,6 +76,68 @@ function messageFromEvents(events: AgentEvent[], status: NasiTurnStatus): string
   return ""
 }
 
+type LoadedTurn = {
+  agent: Agent
+  session: Session
+  sessionId: string | undefined
+  events: unknown[]
+  title: string
+}
+
+async function persistTurn(
+  opts: NasiOpenOptions,
+  loaded: LoadedTurn,
+  input: NasiTurnInput,
+  turnEvents: AgentEvent[]
+): Promise<string> {
+  const persistedEvents = [
+    ...loaded.events,
+    { type: "user", text: input.message },
+    ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
+  ]
+  const row = {
+    persona: loaded.agent.personaId ?? "default",
+    model: loaded.agent.model,
+    owner: opts.owner ?? null,
+    session: loaded.session,
+    events: persistedEvents
+  }
+  if (!loaded.sessionId) {
+    return createSessionRow({ ...row, title: loaded.title })
+  }
+  await updateSessionRow(loaded.sessionId, row)
+  return loaded.sessionId
+}
+
+function responseFromEvents(
+  sessionId: string,
+  session: Session,
+  turnEvents: AgentEvent[],
+  includeThinking: boolean
+): NasiTurnResponse {
+  const status = statusFromEvents(session, turnEvents)
+  const message = messageFromEvents(turnEvents, status)
+  const steps = stepsFromEvents(turnEvents, includeThinking)
+  const usageEvent = [...turnEvents].reverse().find(e => e.type === "usage")
+  const thinking = includeThinking
+    ? turnEvents
+        .filter(e => e.type === "reasoning")
+        .map(e => (e.type === "reasoning" ? e.text : ""))
+        .join("")
+    : undefined
+
+  return {
+    session: sessionId,
+    status,
+    message,
+    steps,
+    ...(thinking ? { thinking } : {}),
+    ...(usageEvent && usageEvent.type === "usage"
+      ? { usage: { promptTokens: usageEvent.promptTokens, model: usageEvent.model } }
+      : {})
+  }
+}
+
 export class Nasi {
   readonly opts: NasiOpenOptions
 
@@ -81,95 +150,78 @@ export class Nasi {
     return new Nasi(opts)
   }
 
+  private async loadTurn(input: NasiTurnInput): Promise<LoadedTurn> {
+    const { tools } = await createTools({ profile: this.opts.profile, deps: { chat: this.opts.chat } })
+    const personas = this.opts.personas ?? []
+    const persona = personas.find(p => p.id === input.personaId) ?? personas[0]
+
+    const sessionId = input.session
+    let session = createSession()
+    let events: unknown[] = []
+    let title = input.message.split(/[\r\n]/)[0]!.slice(0, 60)
+
+    if (sessionId) {
+      const row = await loadSessionRow(sessionId)
+      if (!row) {
+        const err = new Error("session_not_found")
+        err.name = "NasiSessionNotFound"
+        throw err
+      }
+      session = row.session as Session
+      events = row.events
+      title = row.title
+    }
+
+    const agent = new Agent({
+      model: this.opts.chat.model,
+      client: this.opts.chat.client,
+      tools,
+      personas,
+      personaId: persona?.id,
+      instructions: persona?.instructions,
+      promptContext: {
+        environment: this.opts.profile === "hosted" ? HOSTED_ENVIRONMENT : this.opts.promptContext?.environment,
+        ...this.opts.promptContext
+      }
+    })
+
+    return { agent, session, sessionId, events, title }
+  }
+
   async turnBuffered(input: NasiTurnInput): Promise<NasiTurnResponse> {
     return withStorePath(this.opts.dbPath, async () => {
-      const { tools } = await createTools({ profile: this.opts.profile, deps: { chat: this.opts.chat } })
-      const personas = this.opts.personas ?? []
-      const persona = personas.find(p => p.id === input.personaId) ?? personas[0]
-
-      let sessionId = input.session
-      let session = createSession()
-      let events: unknown[] = []
-      let title = input.message.split(/[\r\n]/)[0]!.slice(0, 60)
-
-      if (sessionId) {
-        const row = await loadSessionRow(sessionId)
-        if (!row) {
-          const err = new Error("session_not_found")
-          err.name = "NasiSessionNotFound"
-          throw err
-        }
-        session = row.session as Session
-        events = row.events
-        title = row.title
-      }
-
-      const agent = new Agent({
-        model: this.opts.chat.model,
-        client: this.opts.chat.client,
-        tools,
-        personas,
-        personaId: persona?.id,
-        instructions: persona?.instructions,
-        promptContext: {
-          environment: this.opts.profile === "hosted" ? HOSTED_ENVIRONMENT : this.opts.promptContext?.environment,
-          ...this.opts.promptContext
-        }
-      })
+      const loaded = await this.loadTurn(input)
 
       const turnEvents: AgentEvent[] = []
-      for await (const event of run(agent, input.message, session, this.opts.owner ?? null)) {
+      for await (const event of run(loaded.agent, input.message, loaded.session, this.opts.owner ?? null)) {
         turnEvents.push(event)
       }
 
-      const includeThinking = input.includeThinking === true
-      const status = statusFromEvents(session, turnEvents)
-      const message = messageFromEvents(turnEvents, status)
-      const steps = stepsFromEvents(turnEvents, includeThinking)
-      const usageEvent = [...turnEvents].reverse().find(e => e.type === "usage")
-      const thinking = includeThinking
-        ? turnEvents
-            .filter(e => e.type === "reasoning")
-            .map(e => (e.type === "reasoning" ? e.text : ""))
-            .join("")
-        : undefined
-
-      const persistedEvents = [
-        ...events,
-        { type: "user", text: input.message },
-        ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
-      ]
-
-      if (!sessionId) {
-        sessionId = await createSessionRow({
-          persona: persona?.id ?? "default",
-          model: agent.model,
-          title,
-          owner: this.opts.owner ?? null,
-          session,
-          events: persistedEvents
-        })
-      } else {
-        await updateSessionRow(sessionId, {
-          persona: persona?.id ?? "default",
-          model: agent.model,
-          owner: this.opts.owner ?? null,
-          session,
-          events: persistedEvents
-        })
-      }
-
-      return {
-        session: sessionId,
-        status,
-        message,
-        steps,
-        ...(thinking ? { thinking } : {}),
-        ...(usageEvent && usageEvent.type === "usage"
-          ? { usage: { promptTokens: usageEvent.promptTokens, model: usageEvent.model } }
-          : {})
-      }
+      const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
+      return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
     })
+  }
+
+  /**
+   * Streams one turn live: yields every {@link AgentEvent} as it happens
+   * (including `delta` chunks), then returns the same buffered-shaped
+   * response `turnBuffered` would have, once the session is persisted.
+   */
+  turn(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
+    return withStorePathGenerator(this.opts.dbPath, this.turnInner(input))
+  }
+
+  private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
+    const loaded = await this.loadTurn(input)
+
+    const turnEvents: AgentEvent[] = []
+    for await (const event of run(loaded.agent, input.message, loaded.session, this.opts.owner ?? null)) {
+      turnEvents.push(event)
+      yield event
+    }
+
+    const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
+    return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
   }
 }
 

@@ -185,6 +185,25 @@ export function withStorePath<T>(dbPath: string, fn: () => Promise<T>): Promise<
   return activePathStorage.run(dbPath, fn)
 }
 
+/**
+ * Generator counterpart to {@link withStorePath}. `AsyncLocalStorage.run()`
+ * only propagates to code that runs synchronously inside its callback, and a
+ * generator's body resumes outside that window on every `.next()` — so the
+ * context has to be re-entered around each resumption, not just once at
+ * creation, or concurrent callers with different paths would still race.
+ */
+export async function* withStorePathGenerator<T, R>(
+  dbPath: string,
+  gen: AsyncGenerator<T, R, void>
+): AsyncGenerator<T, R, void> {
+  openStore(dbPath)
+  while (true) {
+    const result = await activePathStorage.run(dbPath, () => gen.next())
+    if (result.done) return result.value
+    yield result.value
+  }
+}
+
 export function getDb(): Database {
   const activePath = activePathStorage.getStore() ?? defaultPath
   if (!activePath) throw new Error("nasi store is not open — call setActiveStorePath() or openStore()")

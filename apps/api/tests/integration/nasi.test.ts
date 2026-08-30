@@ -91,4 +91,61 @@ describe("nasi", () => {
     })
     expect(res.status).toBe(404)
   })
+
+  describe("turn/stream", () => {
+    function parseSse(body: string): { event: string; data: string }[] {
+      const events: { event: string; data: string }[] = []
+      for (const block of body.split("\n\n")) {
+        if (!block.trim()) continue
+        const eventLine = block.split("\n").find(l => l.startsWith("event: "))
+        const dataLine = block.split("\n").find(l => l.startsWith("data: "))
+        if (eventLine && dataLine) events.push({ event: eventLine.slice(7), data: dataLine.slice(6) })
+      }
+      return events
+    }
+
+    test("unauthenticated stream is 401", async () => {
+      const res = await app.request("/nasi/turn/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "hi" })
+      })
+      expect(res.status).toBe(401)
+    })
+
+    test("streams delta/message/final events then done with a uuidv7 session", async () => {
+      const res = await app.request("/nasi/turn/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: "hi" })
+      })
+      expect(res.status).toBe(200)
+      expect(res.headers.get("content-type")).toContain("text/event-stream")
+
+      const events = parseSse(await res.text())
+      const names = events.map(e => e.event)
+      expect(names).toContain("delta")
+      expect(names).toContain("final")
+      expect(names[names.length - 1]).toBe("done")
+
+      const done = JSON.parse(events[events.length - 1]!.data)
+      expect(done.status).toBe("completed")
+      expect(done.session).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+
+      const finalEvent = events.find(e => e.event === "final")!
+      expect(JSON.parse(finalEvent.data).content).toBe("hello from nasi")
+    })
+
+    test("unknown session on stream emits an error event, not a 500", async () => {
+      const res = await app.request("/nasi/turn/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ session: "01900000-0000-7000-8000-00000000dead", message: "hi" })
+      })
+      expect(res.status).toBe(200)
+      const events = parseSse(await res.text())
+      expect(events.map(e => e.event)).toEqual(["error"])
+      expect(JSON.parse(events[0]!.data).error).toBe("Session not found")
+    })
+  })
 })
