@@ -1,38 +1,13 @@
 import { afterEach, expect, test } from "bun:test"
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { loadMemory, openStore, saveMemory, setActiveStorePath } from "../../src/store"
+import { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool } from "../../src/tools/builtin/memory"
 
-// XDG_CONFIG_HOME is isolated too, since memory-store.ts can write
-// config.memory.dbPath back into settings.toml on first successful open.
-const dataDir = `${tmpdir()}/kaja-test-xdg-data-tools`
-const configDir = `${tmpdir()}/kaja-test-xdg-config-tools`
-process.env.XDG_DATA_HOME = dataDir
-process.env.XDG_CONFIG_HOME = configDir
-
-// agents.ts->openai.ts reads config() at import time and hard-exits without a valid settings.toml+models.toml, so this fixture provides both.
-const configKajaDir = join(configDir, "kaja")
-mkdirSync(configKajaDir, { recursive: true })
-writeFileSync(join(configKajaDir, "settings.toml"), "")
-writeFileSync(
-  join(configKajaDir, "models.toml"),
-  `
-[providers.default]
-base_url = "http://localhost"
-api_key = "x"
-
-[models.chat-default]
-model = "x"
-task = "chat"
-provider = "default"
-
-[active]
-chat = "chat-default"
-`
-)
-
-const { saveMemory } = await import("../../lib/memory/store")
-const { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool } = await import("../../tools/memory")
+const dbPath = join(mkdtempSync(join(tmpdir(), "nasi-memory-tool-")), "nasi.sqlite")
+openStore(dbPath)
+setActiveStorePath(dbPath)
 
 afterEach(async () => {
   await saveMemory({})
@@ -56,8 +31,7 @@ test("remember_note upserts by key, preserving createdAt", async () => {
     content: "Andras",
     importance: "low"
   })
-  const first = (await import("../../lib/memory/store")).loadMemory
-  const before = await first()
+  const before = await loadMemory()
   const createdAt = before["user:name"]!.createdAt
 
   await new Promise(r => setTimeout(r, 5))
@@ -67,7 +41,7 @@ test("remember_note upserts by key, preserving createdAt", async () => {
     importance: "high"
   })
 
-  const after = await first()
+  const after = await loadMemory()
   expect(Object.keys(after)).toHaveLength(1)
   expect(after["user:name"]!.content).toBe("Andras Serfozo")
   expect(after["user:name"]!.importance).toBe("high")

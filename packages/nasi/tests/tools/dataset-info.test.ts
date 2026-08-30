@@ -1,61 +1,45 @@
 import { afterEach, expect, test } from "bun:test"
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import type { Dataset } from "@kaja/schema/cli"
+import { setDatasetLoaders } from "../../src/personas"
+import { openStore, saveMemory, setActiveStorePath } from "../../src/store"
+import { datasetInfoTool } from "../../src/tools/builtin/dataset-info"
 
-// Fresh directories (not fixed names) so re-running the suite never accumulates rows/config from a previous run's on-disk state.
-const dataDir = mkdtempSync(join(tmpdir(), "kaja-test-xdg-data-dataset-info-"))
-const configDir = mkdtempSync(join(tmpdir(), "kaja-test-xdg-config-dataset-info-"))
-process.env.XDG_DATA_HOME = dataDir
-process.env.XDG_CONFIG_HOME = configDir
+const dbPath = join(mkdtempSync(join(tmpdir(), "nasi-dataset-info-tool-")), "nasi.sqlite")
+openStore(dbPath)
+setActiveStorePath(dbPath)
 
-const configKajaDir = join(configDir, "kaja")
-mkdirSync(configKajaDir, { recursive: true })
-writeFileSync(join(configKajaDir, "settings.toml"), "")
-writeFileSync(
-  join(configKajaDir, "models.toml"),
-  `
-[providers.default]
-base_url = "http://localhost"
-api_key = "x"
+const datasets = new Map<string, Dataset>([
+  [
+    "onboarding",
+    {
+      label: "Onboarding",
+      revalidateAfterDays: 30,
+      fields: [
+        { name: "favorite_color", prompt: "What's your favorite color?" },
+        {
+          name: "notification_pref",
+          prompt: "How do you want to be notified?",
+          accepted: ["email", "push", "none"]
+        }
+      ]
+    }
+  ],
+  [
+    "never_expires",
+    {
+      label: "Never Expires",
+      fields: [{ name: "name", prompt: "What's your name?" }]
+    }
+  ]
+])
 
-[models.chat-default]
-model = "x"
-task = "chat"
-provider = "default"
-
-[active]
-chat = "chat-default"
-`
-)
-
-const datasetsDir = join(configKajaDir, "datasets")
-mkdirSync(datasetsDir, { recursive: true })
-writeFileSync(
-  join(datasetsDir, "onboarding.json"),
-  JSON.stringify({
-    label: "Onboarding",
-    revalidateAfterDays: 30,
-    fields: [
-      { name: "favorite_color", prompt: "What's your favorite color?" },
-      {
-        name: "notification_pref",
-        prompt: "How do you want to be notified?",
-        accepted: ["email", "push", "none"]
-      }
-    ]
-  })
-)
-writeFileSync(
-  join(datasetsDir, "never_expires.json"),
-  JSON.stringify({
-    label: "Never Expires",
-    fields: [{ name: "name", prompt: "What's your name?" }]
-  })
-)
-
-const { saveMemory } = await import("../../lib/memory/store")
-const { datasetInfoTool } = await import("../../tools/dataset-info")
+setDatasetLoaders({
+  loadDatasets: async () => datasets,
+  loadDataset: async topic => datasets.get(topic)
+})
 
 afterEach(async () => {
   await saveMemory({})

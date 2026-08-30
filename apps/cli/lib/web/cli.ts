@@ -86,15 +86,12 @@ export function startWebServer(port: number) {
         if (!(await configExists())) {
           return html(unconfiguredPersonasPage())
         }
+        // @kaja/nasi's memory/dataset-info tools need setActiveStorePath() called before use (throws "nasi store is not open" otherwise) — loadMemory() already resolves the CLI's configured db path and sets it as a side effect, same as subcommands/run.tsx does at startup.
+        await loadMemory()
         const [
           { Agent, askUserTool, buildSystemPrompt, runCommandTool, switchPersonaTool },
-          { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool },
-          { datasetInfoTool }
-        ] = await Promise.all([
-          import("../agent/agents"),
-          import("../../tools/memory"),
-          import("../../tools/dataset-info")
-        ])
+          { datasetInfoTool, forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool }
+        ] = await Promise.all([import("../agent/agents"), import("@kaja/nasi")])
         const previewTools = [
           askUserTool,
           runCommandTool,

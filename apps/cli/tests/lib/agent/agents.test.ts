@@ -46,7 +46,7 @@ const {
   tool
 } = await import("../../../lib/agent/agents")
 const { saveMemory } = await import("../../../lib/memory/store")
-const { rememberNoteTool } = await import("../../../tools/memory")
+const { rememberNoteTool } = await import("@kaja/nasi")
 
 // config()'s parsed *contents* are cached in-process on top of the path resolution (see lib/config.ts) — invalidate before every test in case another test file's process-wide cache last populated it with a different config (e.g. a real location block, triggering a real network call from run()).
 beforeEach(() => {
@@ -387,7 +387,9 @@ test("no sticky-note block when there are no sticky notes", async () => {
 })
 
 test("dataset instructions block appears only when agent.dataset is set and the tool is present", async () => {
-  const { datasetInfoTool } = await import("../../../tools/dataset-info")
+  // Module side effect: wires @kaja/nasi's pluggable dataset loader to read from this test's XDG-isolated config dir.
+  await import("../../../lib/personas/datasets")
+  const { datasetInfoTool } = await import("@kaja/nasi")
   const datasetsDir = join(configKajaDir, "datasets")
   mkdirSync(datasetsDir, { recursive: true })
   writeFileSync(
