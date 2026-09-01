@@ -56,7 +56,7 @@ test("fetch sends Bearer token from secrets.api.token", async () => {
   const secrets: Partial<SecretsFile> = { api: { token: "shared-secret" } }
   const { code } = await runConfigCli(["fetch"], services, secrets)
   expect(code).toBe(0)
-  expect(authHeaders).toHaveLength(2)
+  expect(authHeaders).toHaveLength(3)
   expect(authHeaders.every(h => h === "Bearer shared-secret")).toBe(true)
 })
 

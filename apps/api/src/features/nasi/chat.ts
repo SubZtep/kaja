@@ -1,8 +1,9 @@
 import { createOpenAIClient, Nasi } from "@kaja/nasi"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared"
-import { modelService, personaService } from "../../services"
+import { modelService } from "../../services"
 import { userSqlitePath } from "./paths"
+import { listPersonas } from "./personas"
 
 export type ChatResolver = () => Promise<{ client: ReturnType<typeof createOpenAIClient>; model: string }>
 
@@ -35,13 +36,7 @@ async function defaultChatResolver() {
 /** Shared by hosted (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account SQLite file, `owner` distinguishes whose rows within it. */
 export async function openNasiFor(opts: { userId: string; owner?: string | null }): Promise<Nasi> {
   const chat = await (chatResolver ?? defaultChatResolver)()
-  const rows = await personaService.listEnabled()
-  const personas = rows.map(row => ({
-    id: row.personaId,
-    label: row.label,
-    instructions: row.instructions ?? undefined,
-    when: row.when ?? undefined
-  }))
+  const personas = listPersonas()
   return Nasi.open({
     dbPath: userSqlitePath(opts.userId),
     profile: "hosted",

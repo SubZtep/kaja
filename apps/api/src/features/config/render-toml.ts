@@ -1,4 +1,4 @@
-import type { McpServer, Model, Provider } from "@kaja/schema/api"
+import type { McpServer, Model, PersonaToml, Provider } from "@kaja/schema/api"
 import { tomlString } from "@kaja/shared"
 
 export function renderMcpToml(servers: McpServer[]): string {
@@ -57,4 +57,15 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
   })
 
   return [...providerBlocks, ...modelBlocks].join("\n\n")
+}
+
+export function renderPersonasToml(personas: PersonaToml[]): string {
+  return personas
+    .map(p => {
+      const lines = [`[personas.${tomlString(p.id)}]`, `label = ${tomlString(p.label)}`]
+      if (p.when) lines.push(`when = ${tomlString(p.when)}`)
+      if (p.instructions) lines.push(`instructions = ${tomlString(p.instructions)}`)
+      return lines.join("\n")
+    })
+    .join("\n\n")
 }

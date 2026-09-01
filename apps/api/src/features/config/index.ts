@@ -5,6 +5,7 @@ import { unauthorized } from "../../types/errors"
 import { registerMcpToml } from "./mcp-toml-route"
 import { registerGetModel } from "./model-route"
 import { registerModelsToml } from "./models-toml-route"
+import { registerPersonasToml } from "./persona-toml-route"
 
 const attachServices = async (c: any, next: any) => {
   c.set("mcpServerService", mcpServerService)
@@ -36,3 +37,4 @@ configRoutes.use("*", attachServices)
 registerMcpToml(configRoutes)
 registerModelsToml(configRoutes)
 registerGetModel(configRoutes)
+registerPersonasToml(configRoutes)

@@ -39,4 +39,12 @@ describe("config routes auth (fail-closed)", () => {
     expect(res.status).not.toBe(401)
     expect(res.status).toBe(200)
   })
+
+  test("GET /config/personas.toml with valid token is not 401", async () => {
+    const res = await app.request("/config/personas.toml", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    expect(res.status).not.toBe(401)
+    expect(res.status).toBe(200)
+  })
 })

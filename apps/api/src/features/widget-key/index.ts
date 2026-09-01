@@ -6,8 +6,9 @@ import {
 } from "@kaja/schema/api"
 import { widgetKeyService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { notFound, unauthorized } from "../../types/errors"
+import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth"
+import { listPersonas } from "../nasi/personas"
 
 const errorSchema = z.object({ error: z.string() })
 const idParam = z.object({
@@ -47,6 +48,7 @@ const createRouteDef = createRoute({
   },
   responses: {
     201: { description: "Created", content: { "application/json": { schema: createWidgetKeyResponseSchema } } },
+    400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } }
   }
 })
@@ -55,6 +57,9 @@ widgetKeyRoutes.openapi(createRouteDef, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { label, allowedOrigins, personaId } = c.req.valid("json")
+  if (personaId && !listPersonas().some(p => p.id === personaId)) {
+    return badRequest(c, `Unknown personaId "${personaId}"`)
+  }
   const key = await widgetKeyService.createKey(user.id, label, allowedOrigins, personaId)
   return c.json(key, 201)
 })

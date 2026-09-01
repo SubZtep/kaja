@@ -4,6 +4,7 @@ import { ModelsFileSchema, type SecretsFile, type ServicesFile } from "@kaja/sch
 import { file, TOML } from "bun"
 import { t } from "../i18n"
 import { fetchModelsToml, getModelsPath, saveFetchedActiveChat } from "../models/models"
+import { fetchPersonasToml } from "../personas/fetch"
 import { getConfigDir } from "./config"
 import { nextBackupPath } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
@@ -27,8 +28,12 @@ export async function runConfigCli(
     const token = secrets.api?.token ?? process.env.CONFIG_API_TOKEN
 
     try {
-      const [mcpResult, modelsResult] = await Promise.all([fetchMcpToml(apiUrl, token), fetchModelsToml(apiUrl, token)])
-      const results = [mcpResult, modelsResult]
+      const [mcpResult, modelsResult, personasResult] = await Promise.all([
+        fetchMcpToml(apiUrl, token),
+        fetchModelsToml(apiUrl, token),
+        fetchPersonasToml(apiUrl, token)
+      ])
+      const results = [mcpResult, modelsResult, personasResult]
 
       if (!modelsResult.unchanged) {
         try {

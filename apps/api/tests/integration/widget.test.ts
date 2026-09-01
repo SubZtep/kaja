@@ -136,6 +136,15 @@ describe("widget", () => {
     expect(found.personaId).toBe("barkochba")
   })
 
+  test("creating a key with an unknown personaId is rejected", async () => {
+    const res = await app.request("/widget-keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ label: "Bad persona", allowedOrigins: [allowedOrigin], personaId: "does-not-exist" })
+    })
+    expect(res.status).toBe(400)
+  })
+
   test("a key with no personaId behaves exactly as before (auto-select, unaffected)", async () => {
     const res = await app.request("/widget/turn", {
       method: "POST",

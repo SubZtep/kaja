@@ -119,7 +119,7 @@ function WidgetPage() {
 
   const { data: personas } = useQuery({
     queryKey: ["personas"],
-    queryFn: () => apiFetch<ListPersonasResponse>("/admin/personas").then(r => r.personas.filter(p => p.enabled))
+    queryFn: () => apiFetch<ListPersonasResponse>("/admin/personas").then(r => r.personas)
   })
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widget-keys"] })
@@ -214,7 +214,7 @@ function WidgetPage() {
                 label="Persona"
                 options={[
                   { value: AUTO_SELECT_PERSONA, label: "Auto-select" },
-                  ...(personas ?? []).map(p => ({ value: p.personaId, label: p.label }))
+                  ...(personas ?? []).map(p => ({ value: p.id, label: p.label }))
                 ]}
               />
             )}
