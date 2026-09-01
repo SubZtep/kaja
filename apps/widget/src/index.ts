@@ -41,6 +41,9 @@ function injectStyles() {
     .kaja-widget-input { flex: 1; border: none; padding: 10px; font: inherit; }
     .kaja-widget-input:focus { outline: none; }
     .kaja-widget-send { border: none; background: none; padding: 0 14px; cursor: pointer; font: inherit; }
+    .kaja-widget-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border-top: 1px solid #eee; }
+    .kaja-widget-answer { border: 1px solid #ddd; background: #fff; border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; }
+    .kaja-widget-answer:hover { background: #f1f1f1; }
   `
   document.head.appendChild(style)
 }
@@ -64,14 +67,19 @@ function findEmbedScript(): HTMLScriptElement | null {
   return document.querySelector<HTMLScriptElement>("script[data-kaja-key]")
 }
 
+const BARKOCHBA_ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
+
 function init() {
   const scriptEl = findEmbedScript()
-  const widgetKey = scriptEl?.dataset.kajaKey
-  const baseUrl = scriptEl?.dataset.kajaBaseUrl
-  if (!widgetKey || !baseUrl) {
+  const widgetKeyAttr = scriptEl?.dataset.kajaKey
+  const baseUrlAttr = scriptEl?.dataset.kajaBaseUrl
+  const mode = scriptEl?.dataset.kajaMode
+  if (!widgetKeyAttr || !baseUrlAttr) {
     console.error("[kaja-widget] missing data-kaja-key or data-kaja-base-url on the embed <script> tag")
     return
   }
+  const widgetKey: string = widgetKeyAttr
+  const baseUrl: string = baseUrlAttr
 
   injectStyles()
 
@@ -90,30 +98,8 @@ function init() {
   const messages = document.createElement("div")
   messages.className = "kaja-widget-messages"
 
-  const form = document.createElement("form")
-  form.className = "kaja-widget-form"
-  const input = document.createElement("input")
-  input.className = "kaja-widget-input"
-  input.placeholder = "Ask something…"
-  const send = document.createElement("button")
-  send.type = "submit"
-  send.className = "kaja-widget-send"
-  send.textContent = "Send"
-  form.append(input, send)
-
-  panel.append(messages, form)
-
-  bubble.addEventListener("click", () => {
-    panel.hidden = !panel.hidden
-  })
-
-  form.addEventListener("submit", async e => {
-    e.preventDefault()
-    const message = input.value.trim()
-    if (!message) return
-    input.value = ""
+  async function sendMessage(message: string) {
     appendMessage(messages, message, "user")
-
     try {
       const res = await fetch(`${baseUrl}/widget/turn`, {
         method: "POST",
@@ -127,6 +113,45 @@ function init() {
     } catch {
       appendMessage(messages, "Something went wrong. Please try again.", "bot")
     }
+  }
+
+  if (mode === "barkochba") {
+    const buttons = document.createElement("div")
+    buttons.className = "kaja-widget-buttons"
+    for (const answer of BARKOCHBA_ANSWERS) {
+      const button = document.createElement("button")
+      button.type = "button"
+      button.className = "kaja-widget-answer"
+      button.textContent = answer
+      button.addEventListener("click", () => sendMessage(answer))
+      buttons.append(button)
+    }
+    panel.append(messages, buttons)
+  } else {
+    const form = document.createElement("form")
+    form.className = "kaja-widget-form"
+    const input = document.createElement("input")
+    input.className = "kaja-widget-input"
+    input.placeholder = "Ask something…"
+    const send = document.createElement("button")
+    send.type = "submit"
+    send.className = "kaja-widget-send"
+    send.textContent = "Send"
+    form.append(input, send)
+
+    form.addEventListener("submit", e => {
+      e.preventDefault()
+      const message = input.value.trim()
+      if (!message) return
+      input.value = ""
+      void sendMessage(message)
+    })
+
+    panel.append(messages, form)
+  }
+
+  bubble.addEventListener("click", () => {
+    panel.hidden = !panel.hidden
   })
 
   document.body.append(bubble, panel)

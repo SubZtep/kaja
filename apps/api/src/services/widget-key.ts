@@ -16,15 +16,20 @@ export class WidgetKeyService {
   }
 
   /** Returns the raw key alongside the row — the only time the raw key is ever available; only its hash is stored. */
-  async createKey(userId: string, label: string, allowedOrigins: string[]): Promise<WidgetKey & { rawKey: string }> {
+  async createKey(
+    userId: string,
+    label: string,
+    allowedOrigins: string[],
+    personaId?: string | null
+  ): Promise<WidgetKey & { rawKey: string }> {
     const rawKey = `${KEY_PREFIX}${randomBytes(24).toString("base64url")}`
     const result = await this.#db.query(
       `
-      INSERT INTO widget_key (user_id, label, key_prefix, key_hash, allowed_origins)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO widget_key (user_id, label, key_prefix, key_hash, allowed_origins, persona_id)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
       `,
-      [userId, label, rawKey.slice(0, 12), hashKey(rawKey), allowedOrigins]
+      [userId, label, rawKey.slice(0, 12), hashKey(rawKey), allowedOrigins, personaId ?? null]
     )
     return { ...this.#rowToWidgetKey(result.rows[0]), rawKey }
   }
@@ -43,14 +48,16 @@ export class WidgetKeyService {
   }
 
   /** Resolves a raw widget key from an incoming request to its owning account and origin allowlist, or null if unknown/disabled. */
-  async resolveByRawKey(rawKey: string): Promise<{ id: string; userId: string; allowedOrigins: string[] } | null> {
+  async resolveByRawKey(
+    rawKey: string
+  ): Promise<{ id: string; userId: string; allowedOrigins: string[]; personaId: string | null } | null> {
     const { rows } = await this.#db.query(
-      `SELECT id, user_id, allowed_origins FROM widget_key WHERE key_hash = $1 AND enabled`,
+      `SELECT id, user_id, allowed_origins, persona_id FROM widget_key WHERE key_hash = $1 AND enabled`,
       [hashKey(rawKey)]
     )
     const row = rows[0]
     if (!row) return null
-    return { id: row.id, userId: row.user_id, allowedOrigins: row.allowed_origins }
+    return { id: row.id, userId: row.user_id, allowedOrigins: row.allowed_origins, personaId: row.persona_id }
   }
 
   async touchLastUsed(id: string): Promise<void> {
@@ -63,6 +70,7 @@ export class WidgetKeyService {
       label: row.label,
       keyPrefix: row.key_prefix,
       allowedOrigins: row.allowed_origins,
+      personaId: row.persona_id,
       enabled: row.enabled,
       createdAt: new Date(row.created_at),
       lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : null

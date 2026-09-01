@@ -2,7 +2,7 @@ import { createMiddleware } from "hono/factory"
 import { widgetKeyService } from "../../services"
 import { forbidden, unauthorized } from "../../types/errors"
 
-export type ResolvedWidgetKey = { id: string; userId: string; allowedOrigins: string[] }
+export type ResolvedWidgetKey = { id: string; userId: string; allowedOrigins: string[]; personaId: string | null }
 
 export type WidgetVariables = { widgetKey: ResolvedWidgetKey }
 

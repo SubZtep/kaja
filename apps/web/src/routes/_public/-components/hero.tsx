@@ -2,6 +2,7 @@ import { FolderCode } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { getInstallCmd } from "../../../lib/vars"
+import { BarkochbaGame } from "./barkochba-game"
 
 export function Hero() {
   const [copied, setCopied] = useState(false)
@@ -74,34 +75,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]">
-          <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
-            <span className="size-2.5 rounded-full bg-[#ff5f56]" />
-            <span className="size-2.5 rounded-full bg-[#ffbd2e]" />
-            <span className="size-2.5 rounded-full bg-[#27c93f]" />
-            <span className="ml-1.5 font-mono text-muted text-xs">kaja</span>
-          </div>
-          <div className="min-h-65 p-5 font-mono text-[13.5px] leading-[1.9]">
-            <div className="text-muted">
-              $ <span className="text-fg">kaja</span>
-            </div>
-            <div>&gt; how can i watch one night in paris tonight in the uk?</div>
-            <div className="text-muted">⋮ calling web_search &hellip;</div>
-            <div className="text-ice">✓ found 2 relevant films</div>
-            <div className="mt-2.5">
-              There are actually <span className="text-neon">a couple of films</span> with a similar name. Just to check
-              — are you referring to:
-              <br />
-              1. <strong>One Night in Paris (2021)</strong> – a French stand-up comedy special on Netflix featuring top
-              French comics
-              <br />
-              2. &hellip;
-            </div>
-            <div className="mt-2.5 text-muted">
-              *&nbsp;nevermind<span style={{ animation: "blink 1s step-end infinite" }}>█</span>
-            </div>
-          </div>
-        </div>
+        <BarkochbaGame />
       </ContentWidth>
     </section>
   )

@@ -120,6 +120,33 @@ describe("widget", () => {
     expect(hijack.status).toBe(404)
   })
 
+  test("a key created with a personaId round-trips it through create and list", async () => {
+    const createKey = await app.request("/widget-keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ label: "Barkochba widget", allowedOrigins: [allowedOrigin], personaId: "barkochba" })
+    })
+    expect(createKey.status).toBe(201)
+    const created = await createKey.json()
+    expect(created.personaId).toBe("barkochba")
+
+    const list = await app.request("/widget-keys", { headers: { Authorization: `Bearer ${token}` } })
+    const { keys } = await list.json()
+    const found = keys.find((k: { id: string }) => k.id === created.id)
+    expect(found.personaId).toBe("barkochba")
+  })
+
+  test("a key with no personaId behaves exactly as before (auto-select, unaffected)", async () => {
+    const res = await app.request("/widget/turn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
+      body: JSON.stringify({ message: "hi again", visitorId: "v1" })
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.message).toBe("hello from widget")
+  })
+
   test("revoked key is rejected", async () => {
     const list = await app.request("/widget-keys", { headers: { Authorization: `Bearer ${token}` } })
     const { keys } = await list.json()

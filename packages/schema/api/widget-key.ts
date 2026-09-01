@@ -5,6 +5,7 @@ export const widgetKeySchema = z.object({
   label: z.string().min(1),
   keyPrefix: z.string().min(1),
   allowedOrigins: z.array(z.string().min(1)),
+  personaId: z.string().min(1).nullable(),
   enabled: z.boolean(),
   createdAt: z.coerce.date(),
   lastUsedAt: z.coerce.date().nullable()
@@ -12,7 +13,8 @@ export const widgetKeySchema = z.object({
 
 export const createWidgetKeyRequestSchema = z.object({
   label: z.string().min(1),
-  allowedOrigins: z.array(z.string().min(1)).min(1)
+  allowedOrigins: z.array(z.string().min(1)).min(1),
+  personaId: z.string().min(1).optional()
 })
 
 /** Only ever returned once, at creation — never stored or shown again. */

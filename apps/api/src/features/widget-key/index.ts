@@ -54,8 +54,8 @@ const createRouteDef = createRoute({
 widgetKeyRoutes.openapi(createRouteDef, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  const { label, allowedOrigins } = c.req.valid("json")
-  const key = await widgetKeyService.createKey(user.id, label, allowedOrigins)
+  const { label, allowedOrigins, personaId } = c.req.valid("json")
+  const key = await widgetKeyService.createKey(user.id, label, allowedOrigins, personaId)
   return c.json(key, 201)
 })
 

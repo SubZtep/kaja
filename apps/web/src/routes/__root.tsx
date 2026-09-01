@@ -16,6 +16,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     }
     return {
       apiUrl: process.env.VITE_API_URL,
+      widgetKey: process.env.VITE_KAJA_WIDGET_KEY,
       session
     }
   },
@@ -89,12 +90,6 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
-        <script
-          async
-          src="http://localhost:3001/widget/widget.js"
-          data-kaja-key="kwk_qlRkBvCYwOZJSqE8-4y34wYwmpQmnmbv"
-          data-kaja-base-url="http://localhost:3001"
-        ></script>
         <HeadContent />
         {process.env.VITE_UMAMI_WEBSITE_ID && (
           <script defer src="/u.js" data-website-id={process.env.VITE_UMAMI_WEBSITE_ID} data-host-url="/"></script>
