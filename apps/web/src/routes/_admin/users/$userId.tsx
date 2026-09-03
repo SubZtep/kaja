@@ -10,10 +10,12 @@ import { Section } from "../../../components/ui/Section"
 import { UserSessions } from "../../../components/user/UserSessions"
 import { useAuthClient } from "../../../hooks/auth-client"
 import { userRequired } from "../../../lib/loaders"
+import { getPageTitle } from "../../../lib/vars"
 
 export const Route = createFileRoute("/_admin/users/$userId")({
   component: UserPageComponent,
-  loader: () => userRequired("admin")
+  loader: () => userRequired("admin"),
+  head: () => ({ meta: [{ title: getPageTitle("User") }] })
 })
 
 function UserPageComponent() {

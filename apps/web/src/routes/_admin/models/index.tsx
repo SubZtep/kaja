@@ -21,10 +21,12 @@ import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
+import { getPageTitle } from "../../../lib/vars"
 
 export const Route = createFileRoute("/_admin/models/")({
   component: ModelsPage,
-  loader: () => userRequired("admin")
+  loader: () => userRequired("admin"),
+  head: () => ({ meta: [{ title: getPageTitle("Models") }] })
 })
 
 const MODEL_TASKS: ModelTask[] = ["chat", "text-to-speech", "speech-to-text", "embedding", "image-generation", "rerank"]

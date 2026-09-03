@@ -85,6 +85,7 @@ function init() {
 
   const visitorId = getVisitorId()
   let session: string | undefined
+  let pending = false
 
   const bubble = document.createElement("button")
   bubble.className = "kaja-widget-bubble"
@@ -99,7 +100,15 @@ function init() {
   messages.className = "kaja-widget-messages"
 
   async function sendMessage(message: string) {
+    if (pending) return
+    pending = true
+    setControlsDisabled(true)
     appendMessage(messages, message, "user")
+    const thinking = document.createElement("div")
+    thinking.className = "kaja-widget-msg kaja-widget-msg-bot"
+    thinking.textContent = "…"
+    messages.appendChild(thinking)
+    messages.scrollTop = messages.scrollHeight
     try {
       const res = await fetch(`${baseUrl}/widget/turn`, {
         method: "POST",
@@ -107,17 +116,22 @@ function init() {
         body: JSON.stringify({ session, message, visitorId })
       })
       if (res.status === 429) {
-        appendMessage(messages, "Too many messages — please wait a moment.", "bot")
+        thinking.textContent = "Too many messages — please wait a moment."
         return
       }
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
       const data = (await res.json()) as TurnResponse
       session = data.session
-      appendMessage(messages, data.message, "bot")
+      thinking.textContent = data.message
     } catch {
-      appendMessage(messages, "Something went wrong. Please try again.", "bot")
+      thinking.textContent = "Something went wrong. Please try again."
+    } finally {
+      pending = false
+      setControlsDisabled(false)
     }
   }
+
+  let setControlsDisabled: (disabled: boolean) => void = () => {}
 
   if (mode === "barkochba") {
     const buttons = document.createElement("div")
@@ -129,6 +143,9 @@ function init() {
       button.textContent = answer
       button.addEventListener("click", () => sendMessage(answer))
       buttons.append(button)
+    }
+    setControlsDisabled = disabled => {
+      for (const button of buttons.querySelectorAll("button")) button.disabled = disabled
     }
     panel.append(messages, buttons)
   } else {
@@ -151,6 +168,10 @@ function init() {
       void sendMessage(message)
     })
 
+    setControlsDisabled = disabled => {
+      input.disabled = disabled
+      send.disabled = disabled
+    }
     panel.append(messages, form)
   }
 

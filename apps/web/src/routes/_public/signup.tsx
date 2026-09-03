@@ -5,11 +5,13 @@ import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
+import { getPageTitle } from "../../lib/vars"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/signup")({
-  component: SignUp
+  component: SignUp,
+  head: () => ({ meta: [{ title: getPageTitle("Sign Up") }] })
 })
 
 function SignUp() {

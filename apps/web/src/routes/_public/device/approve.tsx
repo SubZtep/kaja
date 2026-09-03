@@ -4,12 +4,14 @@ import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
 import { useAuthClient } from "../../../hooks/auth-client"
+import { getPageTitle } from "../../../lib/vars"
 
 export const Route = createFileRoute("/_public/device/approve")({
   validateSearch: z.object({
     user_code: z.string().optional()
   }),
-  component: DeviceApprovePage
+  component: DeviceApprovePage,
+  head: () => ({ meta: [{ title: getPageTitle("Approve Device") }] })
 })
 
 function DeviceApprovePage() {

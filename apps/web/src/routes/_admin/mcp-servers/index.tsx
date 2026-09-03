@@ -19,10 +19,12 @@ import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
+import { getPageTitle } from "../../../lib/vars"
 
 export const Route = createFileRoute("/_admin/mcp-servers/")({
   component: McpServersPage,
-  loader: () => userRequired("admin")
+  loader: () => userRequired("admin"),
+  head: () => ({ meta: [{ title: getPageTitle("MCP Servers") }] })
 })
 
 const createFormSchema = z
