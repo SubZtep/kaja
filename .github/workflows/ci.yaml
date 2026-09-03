@@ -69,7 +69,7 @@ jobs:
       - name: Run tests
         run: |
           eval "$(dbus-launch --sh-syntax)"
-          eval "$(printf '' | gnome-keyring-daemon --unlock --components=secrets)"
+          eval "$(printf '' | gnome-keyring-daemon --unlock)"
           bun test
 
   compile-cli:
