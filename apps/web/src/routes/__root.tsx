@@ -16,7 +16,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     }
     return {
       apiUrl: process.env.VITE_API_URL,
-      widgetKey: process.env.VITE_KAJA_WIDGET_KEY,
+      barkochbaWidgetKey: process.env.VITE_WIDGET_BARKOCHBA_KEY,
+      chatWidgetKey: process.env.VITE_WIDGET_CHAT_KEY,
       session
     }
   },

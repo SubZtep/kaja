@@ -1,9 +1,35 @@
-import type { NasiTurnResponse } from "@kaja/schema/nasi"
+import { createVisitorId, sendWidgetTurn } from "@kaja/widget/client"
 import { useLoaderData } from "@tanstack/react-router"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-const VISITOR_ID_STORAGE_KEY = "kaja-hero-visitor-id"
 const ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
+const STATE_STORAGE_KEY = "kaja-barkochba-state"
+
+type GameState = {
+  phase: "idle" | "playing"
+  visitorId?: string
+  session?: string
+  current: string
+  aside: string
+}
+
+const IDLE_STATE: GameState = { phase: "idle", visitorId: undefined, session: undefined, current: "", aside: "" }
+
+function loadState(): GameState {
+  try {
+    const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
+    if (!raw) return IDLE_STATE
+    return { ...IDLE_STATE, ...JSON.parse(raw) }
+  } catch {
+    return IDLE_STATE
+  }
+}
+
+function saveState(state: GameState) {
+  try {
+    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state))
+  } catch {}
+}
 
 /**
  * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring
@@ -18,42 +44,35 @@ function withoutQuestion(content: string, question: string): string {
   return collapsed.replace(/(?:^|[.!?]\s+)\S{1,20}(?:\s\S{1,20}){0,2}:$/u, "").trim()
 }
 
-function getVisitorId(): string {
-  try {
-    const existing = localStorage.getItem(VISITOR_ID_STORAGE_KEY)
-    if (existing) return existing
-    const created = crypto.randomUUID()
-    localStorage.setItem(VISITOR_ID_STORAGE_KEY, created)
-    return created
-  } catch {
-    return crypto.randomUUID()
-  }
-}
-
 export function BarkochbaGame() {
-  const { apiUrl, widgetKey } = useLoaderData({ from: "__root__" })
-  const [phase, setPhase] = useState<"idle" | "playing">("idle")
-  const [session, setSession] = useState<string>()
-  const [current, setCurrent] = useState("")
-  const [aside, setAside] = useState("")
+  const { apiUrl, barkochbaWidgetKey } = useLoaderData({ from: "__root__" })
+  const [phase, setPhase] = useState<GameState["phase"]>(IDLE_STATE.phase)
+  const [visitorId] = useState(() => loadState().visitorId ?? createVisitorId())
+  const [session, setSession] = useState<string | undefined>(IDLE_STATE.session)
+  const [current, setCurrent] = useState(IDLE_STATE.current)
+  const [aside, setAside] = useState(IDLE_STATE.aside)
   const [pending, setPending] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
+
+  // Resume from sessionStorage only after mount — reading it during the initial
+  // render would desync from the server-rendered idle markup and trigger a hydration error.
+  useEffect(() => {
+    const stored = loadState()
+    setPhase(stored.phase)
+    setSession(stored.session)
+    setCurrent(stored.current)
+    setAside(stored.aside)
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (hydrated) saveState({ phase, visitorId, session, current, aside })
+  }, [hydrated, phase, visitorId, session, current, aside])
 
   async function sendMessage(message: string) {
     setPending(true)
     try {
-      const res = await fetch(`${apiUrl}/widget/turn`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-kaja-widget-key": widgetKey ?? ""
-        },
-        body: JSON.stringify({ session, message, visitorId: getVisitorId() })
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => undefined)
-        throw new Error(typeof body?.error === "string" ? body.error : `Request failed: ${res.status}`)
-      }
-      const data = (await res.json()) as NasiTurnResponse
+      const data = await sendWidgetTurn(apiUrl, barkochbaWidgetKey ?? "", { session, message, visitorId })
       setSession(data.session)
       setCurrent(data.message)
       const askStep = data.steps.find(step => step.type === "ask_user")
@@ -87,9 +106,9 @@ export function BarkochbaGame() {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]">
       <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
-        <span className="size-2.5 rounded-full bg-[#ff5f56]" />
-        <span className="size-2.5 rounded-full bg-[#ffbd2e]" />
-        <span className="size-2.5 rounded-full bg-[#27c93f]" />
+        <span className="size-2.5 rounded-full bg-red-600" />
+        <span className="size-2.5 rounded-full bg-green-600" />
+        <span className="size-2.5 rounded-full bg-blue-600" />
         <span className="ml-1.5 font-mono text-muted text-xs">barkochba</span>
       </div>
 
@@ -100,7 +119,7 @@ export function BarkochbaGame() {
             <button
               type="button"
               onClick={start}
-              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm"
+              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm animate-pulse hover:animate-none"
             >
               Start
             </button>

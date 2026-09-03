@@ -3,8 +3,18 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
+  "exports": {
+    "./client": {
+      "types": "./src/client.ts",
+      "default": "./src/client.ts"
+    }
+  },
   "scripts": {
     "dev": "bun build --target=browser --format=iife --watch --outfile ../api/public/widget.js src/index.ts",
     "build": "bun build --target=browser --format=iife --minify --outfile dist/widget.js src/index.ts"
+  },
+  "dependencies": {
+    "@kaja/schema": "workspace:*",
+    "@kaja/shared": "workspace:*"
   }
 }

@@ -16,6 +16,9 @@ export function Install() {
         title="Install"
         description="Only tested on Linux. A setup wizard walks you through config on first launch (or anytime config is missing/invalid) &mdash; no separate step needed."
       />
+      <p className="mb-4 text-md text-mist-500">
+        Paste the appropriate command in your terminal, press Enter to install:
+      </p>
       <div className="flex gap-4 flex-col md:flex-row">
         <Section>
           <p>On Mac/Linux:</p>

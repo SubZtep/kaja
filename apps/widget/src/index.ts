@@ -1,21 +1,21 @@
-const VISITOR_ID_STORAGE_KEY = "kaja-widget-visitor-id"
+import { createVisitorId, sendWidgetTurn, WidgetTurnRateLimitError } from "./client"
 
-function getVisitorId(): string {
+const STATE_STORAGE_KEY = "kaja-widget-state"
+
+type StoredState = { visitorId: string; session?: string }
+
+function loadState(): StoredState {
   try {
-    const existing = localStorage.getItem(VISITOR_ID_STORAGE_KEY)
-    if (existing) return existing
-    const created = crypto.randomUUID()
-    localStorage.setItem(VISITOR_ID_STORAGE_KEY, created)
-    return created
-  } catch {
-    return crypto.randomUUID()
-  }
+    const raw = sessionStorage.getItem(STATE_STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return { visitorId: createVisitorId() }
 }
 
-type TurnResponse = {
-  session: string
-  status: "completed" | "needs_input" | "needs_approval" | "error"
-  message: string
+function saveState(state: StoredState) {
+  try {
+    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state))
+  } catch {}
 }
 
 function injectStyles() {
@@ -37,13 +37,14 @@ function injectStyles() {
     .kaja-widget-msg { margin-bottom: 8px; padding: 8px 10px; border-radius: 8px; max-width: 85%; }
     .kaja-widget-msg-user { background: #111; color: #fff; margin-left: auto; }
     .kaja-widget-msg-bot { background: #f1f1f1; }
-    .kaja-widget-form { display: flex; border-top: 1px solid #eee; }
-    .kaja-widget-input { flex: 1; border: none; padding: 10px; font: inherit; }
-    .kaja-widget-input:focus { outline: none; }
-    .kaja-widget-send { border: none; background: none; padding: 0 14px; cursor: pointer; font: inherit; }
-    .kaja-widget-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border-top: 1px solid #eee; }
-    .kaja-widget-answer { border: 1px solid #ddd; background: #fff; border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; }
-    .kaja-widget-answer:hover { background: #f1f1f1; }
+    .kaja-widget-msg-question { background: #eef6ff; border: 1px solid #cfe4ff; }
+    .kaja-chat-form { display: flex; border-top: 1px solid #eee; }
+    .kaja-chat-input { flex: 1; border: none; padding: 10px; font: inherit; }
+    .kaja-chat-input:focus { outline: none; }
+    .kaja-chat-send { border: none; background: none; padding: 0 14px; cursor: pointer; font: inherit; }
+    .kaja-barkochba-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border-top: 1px solid #eee; }
+    .kaja-barkochba-answer { border: 1px solid #ddd; background: #fff; border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; }
+    .kaja-barkochba-answer:hover { background: #f1f1f1; }
   `
   document.head.appendChild(style)
 }
@@ -69,11 +70,13 @@ function findEmbedScript(): HTMLScriptElement | null {
 
 const BARKOCHBA_ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
 
+type WidgetMode = "chat" | "barkochba"
+
 function init() {
   const scriptEl = findEmbedScript()
   const widgetKeyAttr = scriptEl?.dataset.kajaKey
   const baseUrlAttr = scriptEl?.dataset.kajaBaseUrl
-  const mode = scriptEl?.dataset.kajaMode
+  const mode: WidgetMode = scriptEl?.dataset.kajaMode === "barkochba" ? "barkochba" : "chat"
   if (!widgetKeyAttr || !baseUrlAttr) {
     console.error("[kaja-widget] missing data-kaja-key or data-kaja-base-url on the embed <script> tag")
     return
@@ -83,8 +86,7 @@ function init() {
 
   injectStyles()
 
-  const visitorId = getVisitorId()
-  let session: string | undefined
+  const state = loadState()
   let pending = false
 
   const bubble = document.createElement("button")
@@ -110,21 +112,20 @@ function init() {
     messages.appendChild(thinking)
     messages.scrollTop = messages.scrollHeight
     try {
-      const res = await fetch(`${baseUrl}/widget/turn`, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-kaja-widget-key": widgetKey },
-        body: JSON.stringify({ session, message, visitorId })
+      const data = await sendWidgetTurn(baseUrl, widgetKey, {
+        session: state.session,
+        message,
+        visitorId: state.visitorId
       })
-      if (res.status === 429) {
-        thinking.textContent = "Too many messages — please wait a moment."
-        return
-      }
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-      const data = (await res.json()) as TurnResponse
-      session = data.session
+      state.session = data.session
+      saveState(state)
       thinking.textContent = data.message
-    } catch {
-      thinking.textContent = "Something went wrong. Please try again."
+      const awaitingAnswer = data.status === "needs_input"
+      if (awaitingAnswer) thinking.classList.add("kaja-widget-msg-question")
+      onAwaitingAnswerChange(awaitingAnswer)
+    } catch (error) {
+      thinking.textContent =
+        error instanceof WidgetTurnRateLimitError ? error.message : "Something went wrong. Please try again."
     } finally {
       pending = false
       setControlsDisabled(false)
@@ -132,14 +133,15 @@ function init() {
   }
 
   let setControlsDisabled: (disabled: boolean) => void = () => {}
+  let onAwaitingAnswerChange: (awaitingAnswer: boolean) => void = () => {}
 
   if (mode === "barkochba") {
     const buttons = document.createElement("div")
-    buttons.className = "kaja-widget-buttons"
+    buttons.className = "kaja-barkochba-buttons"
     for (const answer of BARKOCHBA_ANSWERS) {
       const button = document.createElement("button")
       button.type = "button"
-      button.className = "kaja-widget-answer"
+      button.className = "kaja-barkochba-answer"
       button.textContent = answer
       button.addEventListener("click", () => sendMessage(answer))
       buttons.append(button)
@@ -150,13 +152,13 @@ function init() {
     panel.append(messages, buttons)
   } else {
     const form = document.createElement("form")
-    form.className = "kaja-widget-form"
+    form.className = "kaja-chat-form"
     const input = document.createElement("input")
-    input.className = "kaja-widget-input"
+    input.className = "kaja-chat-input"
     input.placeholder = "Ask something…"
     const send = document.createElement("button")
     send.type = "submit"
-    send.className = "kaja-widget-send"
+    send.className = "kaja-chat-send"
     send.textContent = "Send"
     form.append(input, send)
 
@@ -167,6 +169,10 @@ function init() {
       input.value = ""
       void sendMessage(message)
     })
+
+    onAwaitingAnswerChange = awaitingAnswer => {
+      input.placeholder = awaitingAnswer ? "Your answer…" : "Ask something…"
+    }
 
     setControlsDisabled = disabled => {
       input.disabled = disabled

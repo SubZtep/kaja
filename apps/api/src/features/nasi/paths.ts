@@ -12,7 +12,7 @@ export function userSqlitePath(userId: string): string {
   const parsed = uuidv7.safeParse(userId)
   if (!parsed.success) throw new Error("invalid user id")
   const root = resolve(nasiDataDir())
-  const dir = resolve(join(root, parsed.data))
-  if (!dir.startsWith(`${root}/`) && dir !== root) throw new Error("nasi path escaped data dir")
-  return join(dir, "nasi.sqlite")
+  const path = resolve(join(root, `${parsed.data}.sqlite`))
+  if (!path.startsWith(`${root}/`)) throw new Error("nasi path escaped data dir")
+  return path
 }

@@ -6,15 +6,15 @@
     "@commitlint/config-conventional": "^21.2.0",
     "@types/bun": "^1.4.0",
     "lefthook": "^2.1.10",
-    "nitro": "npm:nitro-nightly@3.0.1-20260903-085528-568b687f",
-    "tombi": "^1.5.0",
+    "nitro": "npm:nitro-nightly@3.0.1-20260903-223540-a28ca29f",
+    "tombi": "^1.5.1",
     "typescript": "^7.0.2"
   },
   "description": "monorepo",
   "packageManager": "bun@1.4.0",
   "private": true,
   "scripts": {
-    "dev": "bun run --filter '@kaja/api' --filter '@kaja/web' --filter '@kaja/widget' dev",
+    "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' --filter '@kaja/widget' dev",
     "dev:api": "bun run --filter @kaja/api dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.ts",
     "dev:cli:local": "bun run --env-file=apps/cli/.env apps/cli/cli.ts --local",
