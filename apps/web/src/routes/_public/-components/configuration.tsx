@@ -6,7 +6,7 @@ const TOOLS = [
   { name: "read_file", desc: "Read a text file" },
   { name: "list_files", desc: "List a directory" },
   { name: "fetch_url", desc: "Fetch a URL and extract to text" },
-  { name: "web_search", desc: "Locaction based web search via Brave API" },
+  { name: "web_search", desc: "Location based web search via Brave API" },
   { name: "view_image", desc: "See an image’s contents" },
   { name: "generate_image", desc: "Generate an image from a prompt" },
   { name: "summarize", desc: "Summarize text" },

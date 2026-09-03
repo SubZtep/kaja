@@ -16,7 +16,7 @@ const FEATURES = [
   {
     glyph: <Drama strokeWidth={1} />,
     title: "Personas",
-    desc: "The assistant switches its behaviour and tweak model settings based on the context."
+    desc: "The assistant switches its behaviours and tweaks model settings based on the context."
   },
   {
     glyph: <Hammer strokeWidth={1} />,

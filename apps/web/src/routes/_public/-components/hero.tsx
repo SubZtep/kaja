@@ -61,11 +61,11 @@ export function Hero() {
         <div className="order-3 md:order-0 md:col-start-1">
           <p className="mb-4 max-w-115 text-lg text-muted">
             <span className="font-bold text-gray-300">Kaja</span> is an open-source <strong>agentic harness</strong>.
-            Based on your input, keep running an LLM model with its findings again and again until the appropriated
-            outcome (🙏).
+            Based on your input, keep running an LLM with its findings again and again until the appropriate outcome
+            (🙏).
           </p>
           <p className="mb-8 max-w-115 text-lg text-muted">
-            It’s a <strong>state machine</strong>, driven by skilled AI models for various tasks including image
+            It’s a <strong>state machine</strong>, driven by skilled AI models for various tasks (including image
             generation and speech), with local and online tools.
           </p>
           <div className="mb-7 sm:flex flex-wrap gap-3 hidden">
