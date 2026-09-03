@@ -46,6 +46,25 @@ export type CreateToolsOptions = {
   tempDir?: string
 }
 
+type McpConnection = { tools: Tool<any>[]; close: () => Promise<void>; failed: boolean; id: string }
+
+async function connectMcpServers(mcpServers: McpServerEntry[], tempDir: string): Promise<McpConnection[]> {
+  const connections: McpConnection[] = []
+  for (const server of mcpServers) {
+    try {
+      const connected = await connectMcpServer(server, tempDir)
+      connections.push({ ...connected, failed: false, id: server.id })
+    } catch (error) {
+      warn("Failed to connect to MCP server", {
+        server: server.id,
+        error: error instanceof Error ? error.message : error
+      })
+      connections.push({ tools: [], close: async () => {}, failed: true, id: server.id })
+    }
+  }
+  return connections
+}
+
 export async function createTools(opts: CreateToolsOptions) {
   if (opts.deps) setToolDeps({ ...opts.deps, tempDir: opts.tempDir ?? opts.deps.tempDir })
 
@@ -71,21 +90,10 @@ export async function createTools(opts: CreateToolsOptions) {
 
   const tools = opts.profile === "hosted" ? builtin.filter(t => HOSTED_SAFE.has(toolName(t))) : builtin
 
-  const mcpConnections: { tools: Tool<any>[]; close: () => Promise<void>; failed: boolean; id: string }[] = []
-  if (opts.profile === "local" && opts.mcpServers && opts.tempDir) {
-    for (const server of opts.mcpServers) {
-      try {
-        const connected = await connectMcpServer(server, opts.tempDir)
-        mcpConnections.push({ ...connected, failed: false, id: server.id })
-      } catch (error) {
-        warn("Failed to connect to MCP server", {
-          server: server.id,
-          error: error instanceof Error ? error.message : error
-        })
-        mcpConnections.push({ tools: [], close: async () => {}, failed: true, id: server.id })
-      }
-    }
-  }
+  const mcpConnections =
+    opts.profile === "local" && opts.mcpServers && opts.tempDir
+      ? await connectMcpServers(opts.mcpServers, opts.tempDir)
+      : []
 
   const pluginTools = opts.profile === "local" && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []
 

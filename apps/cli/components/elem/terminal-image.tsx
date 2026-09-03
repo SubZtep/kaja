@@ -8,7 +8,7 @@ import { renderTerminalImage } from "../../lib/image/render-terminal-image"
  * keeps showing it if rendering fails (e.g. unreachable URL) instead of
  * showing nothing.
  */
-export function TerminalImage({ href, alt }: { href: string; alt: string }) {
+export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
   const [rendered, setRendered] = useState<string | null>(null)
 
   useEffect(() => {

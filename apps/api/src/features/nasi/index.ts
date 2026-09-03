@@ -94,11 +94,12 @@ nasiRoutes.post("/turn/stream", async c => {
       const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
       const isNoModel = error instanceof Error && error.message === "no_model"
       if (!isNotFound && !isNoModel) logError("nasi turn/stream failed", { userId: user.id, error: String(error) })
+      let errorMessage = "Turn failed"
+      if (isNotFound) errorMessage = "Session not found"
+      else if (isNoModel) errorMessage = "No model available"
       await stream.writeSSE({
         event: "error",
-        data: JSON.stringify({
-          error: isNotFound ? "Session not found" : isNoModel ? "No model available" : "Turn failed"
-        })
+        data: JSON.stringify({ error: errorMessage })
       })
     } finally {
       clearInterval(heartbeat)
