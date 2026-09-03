@@ -31,6 +31,10 @@ export function internalError(c: Context, message = "Internal server error") {
   return c.json({ error: message }, 500) as any
 }
 
+export function badGateway(c: Context, message = "Upstream provider error") {
+  return c.json({ error: message }, 502) as any
+}
+
 export function forbidden(c: Context, message = "Forbidden") {
   return c.json({ error: message }, 403) as any
 }

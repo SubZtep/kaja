@@ -33,7 +33,7 @@ const PersonaModelsSchema = z
 export const PersonaSchema = z
   .object({
     label: z.string().min(1),
-    instructions: z.string().min(1).optional(),
+    instructions: z.string().min(1).optional().describe("System prompt"),
     // Per-task model overrides; each optional, falls back to models.toml's [active].<task>.
     models: PersonaModelsSchema,
     // Topic id (datasets.ts filename) this persona collects via dataset_info; optional.

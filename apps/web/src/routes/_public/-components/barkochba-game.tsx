@@ -5,6 +5,19 @@ import { useState } from "react"
 const VISITOR_ID_STORAGE_KEY = "kaja-hero-visitor-id"
 const ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
 
+/**
+ * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring
+ * match, so it works for any language — then drops a short trailing label left behind by a
+ * removal (e.g. "Question 2:"), identified purely by length/punctuation, not vocabulary.
+ */
+function withoutQuestion(content: string, question: string): string {
+  if (!question) return content.trim()
+  const index = content.toLowerCase().indexOf(question.toLowerCase())
+  const withoutMatch = index === -1 ? content : content.slice(0, index) + content.slice(index + question.length)
+  const collapsed = withoutMatch.replace(/\s+/g, " ").trim()
+  return collapsed.replace(/(?:^|[.!?]\s+)\S{1,20}(?:\s\S{1,20}){0,2}:$/u, "").trim()
+}
+
 function getVisitorId(): string {
   try {
     const existing = localStorage.getItem(VISITOR_ID_STORAGE_KEY)
@@ -36,18 +49,20 @@ export function BarkochbaGame() {
         },
         body: JSON.stringify({ session, message, visitorId: getVisitorId() })
       })
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => undefined)
+        throw new Error(typeof body?.error === "string" ? body.error : `Request failed: ${res.status}`)
+      }
       const data = (await res.json()) as NasiTurnResponse
       setSession(data.session)
       setCurrent(data.message)
-      setAside(
-        data.steps
-          .filter(step => step.type === "message")
-          .map(step => step.content)
-          .join(" ")
-      )
-    } catch {
-      setCurrent("Something went wrong. Please try again.")
+      const askStep = data.steps.find(step => step.type === "ask_user")
+      const note = askStep?.type === "ask_user" ? askStep.note : undefined
+      const messageStep = data.steps.find(step => step.type === "message")
+      const fallback = messageStep?.type === "message" ? withoutQuestion(messageStep.content, data.message) : ""
+      setAside(note ?? fallback)
+    } catch (error) {
+      setCurrent(error instanceof Error ? error.message : "Something went wrong. Please try again.")
       setAside("")
     } finally {
       setPending(false)

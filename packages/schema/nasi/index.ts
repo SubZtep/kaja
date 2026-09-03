@@ -16,7 +16,7 @@ export const NasiStepSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("message"), content: z.string() }),
   z.object({ type: z.literal("tool_call"), name: z.string(), arguments: z.string() }),
   z.object({ type: z.literal("tool_result"), name: z.string(), preview: z.string() }),
-  z.object({ type: z.literal("ask_user"), question: z.string() }),
+  z.object({ type: z.literal("ask_user"), question: z.string(), note: z.string().optional() }),
   z.object({ type: z.literal("persona_switch"), personaId: z.string(), label: z.string() }),
   z.object({ type: z.literal("confirm_command"), command: z.string(), description: z.string() })
 ])
