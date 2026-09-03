@@ -11,13 +11,13 @@ Run the setup script that find and install the correct version.
 On Max or Linux:
 
 ```sh
-curl -fsSL https://kaja.io/setup.sh | bash
+curl -fsSL https://kaja.io/install.sh | bash
 ```
 
 On Windows:
 
 ```powershell
-irm https://kaja.io/setup.ps1 | iex
+irm https://kaja.io/install.ps1 | iex
 ```
 
 Or grab directly from [GitHub Releases](https://github.com/SubZtep/kaja/releases)
