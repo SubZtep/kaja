@@ -1,4 +1,4 @@
-// import { useLoaderData } from "@tanstack/react-router"
+import { useLoaderData } from "@tanstack/react-router"
 import { FolderCode } from "lucide-react"
 import { useEffect, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
@@ -6,7 +6,7 @@ import { getInstallCmd } from "../../../lib/vars"
 import { BarkochbaGame } from "./barkochba-game"
 
 export function Hero() {
-  // const { apiUrl, bubbleWidgetKey } = useLoaderData({ from: "__root__" })
+  const { apiUrl, chatWidgetKey } = useLoaderData({ from: "__root__" })
   const [copied, setCopied] = useState(false)
   const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/install.sh | bash")
 
@@ -16,18 +16,18 @@ export function Hero() {
 
   // Embeds the standalone chat widget bubble under a separate account's key, alongside the
   // barkochba hero card above — demonstrates two independent widget instances on the same page.
-  // useEffect(() => {
-  //   if (!bubbleWidgetKey) return
-  //   const script = document.createElement("script")
-  //   script.async = true
-  //   script.src = `${apiUrl}/widget/widget.js`
-  //   script.dataset.kajaKey = bubbleWidgetKey
-  //   script.dataset.kajaBaseUrl = apiUrl
-  //   document.body.appendChild(script)
-  //   return () => {
-  //     document.body.removeChild(script)
-  //   }
-  // }, [apiUrl, bubbleWidgetKey])
+  useEffect(() => {
+    if (!chatWidgetKey) return
+    const script = document.createElement("script")
+    script.async = true
+    script.src = `${apiUrl}/widget/widget.js`
+    script.dataset.kajaKey = chatWidgetKey
+    script.dataset.kajaBaseUrl = apiUrl
+    document.body.appendChild(script)
+    return () => {
+      document.body.removeChild(script)
+    }
+  }, [apiUrl, chatWidgetKey])
 
   const copyInstall = () => {
     navigator.clipboard?.writeText(installCmd)
@@ -60,11 +60,12 @@ export function Hero() {
 
         <div className="order-3 md:order-0 md:col-start-1">
           <p className="mb-4 max-w-115 text-lg text-muted">
-            Kaja is an open-source <strong>agentic harness</strong>. Based on your input, keep running an LLM model with
-            its findings again and again until the appropriated outcome (🙏).
+            <span className="font-bold text-gray-300">Kaja</span> is an open-source <strong>agentic harness</strong>.
+            Based on your input, keep running an LLM model with its findings again and again until the appropriated
+            outcome (🙏).
           </p>
           <p className="mb-8 max-w-115 text-lg text-muted">
-            It's a <strong>state machine</strong>, driven by skilled AI models for various tasks including image
+            It’s a <strong>state machine</strong>, driven by skilled AI models for various tasks including image
             generation and speech), with local and online tools.
           </p>
           <div className="mb-7 sm:flex flex-wrap gap-3 hidden">

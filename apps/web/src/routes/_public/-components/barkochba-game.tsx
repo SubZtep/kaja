@@ -45,7 +45,7 @@ function withoutQuestion(content: string, question: string): string {
 }
 
 export function BarkochbaGame() {
-  const { apiUrl, widgetKey } = useLoaderData({ from: "__root__" })
+  const { apiUrl, barkochbaWidgetKey } = useLoaderData({ from: "__root__" })
   const [phase, setPhase] = useState<GameState["phase"]>(IDLE_STATE.phase)
   const [visitorId] = useState(() => loadState().visitorId ?? createVisitorId())
   const [session, setSession] = useState<string | undefined>(IDLE_STATE.session)
@@ -72,7 +72,7 @@ export function BarkochbaGame() {
   async function sendMessage(message: string) {
     setPending(true)
     try {
-      const data = await sendWidgetTurn(apiUrl, widgetKey ?? "", { session, message, visitorId })
+      const data = await sendWidgetTurn(apiUrl, barkochbaWidgetKey ?? "", { session, message, visitorId })
       setSession(data.session)
       setCurrent(data.message)
       const askStep = data.steps.find(step => step.type === "ask_user")

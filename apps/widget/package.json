@@ -14,6 +14,7 @@
     "build": "bun build --target=browser --format=iife --minify --outfile dist/widget.js src/index.ts"
   },
   "dependencies": {
-    "@kaja/schema": "workspace:*"
+    "@kaja/schema": "workspace:*",
+    "@kaja/shared": "workspace:*"
   }
 }

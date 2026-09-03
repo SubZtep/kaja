@@ -1,8 +1,9 @@
 import type { NasiTurnResponse, WidgetTurnRequest } from "@kaja/schema/nasi"
+import { randomUUIDv7 } from "@kaja/shared"
 
 /** Generates a random visitor id. Callers own persisting/reusing it across turns. */
 export function createVisitorId(): string {
-  return crypto.randomUUID() // FIXME: UUIDv7
+  return randomUUIDv7()
 }
 
 export class WidgetTurnRateLimitError extends Error {}

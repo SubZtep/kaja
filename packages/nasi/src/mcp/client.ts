@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto"
 import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import type { McpServerEntry } from "@kaja/schema/config"
+import { randomUUIDv7 } from "@kaja/shared"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
@@ -63,7 +63,7 @@ async function callTool(
   const images = await Promise.all(
     imageBlocks.map(async block => {
       const ext = block.mimeType.split("/")[1] ?? "png"
-      const path = join(tempDir, `${randomUUID()}.${ext}`)
+      const path = join(tempDir, `${randomUUIDv7()}.${ext}`)
       await write(path, Buffer.from(block.data, "base64"))
       return { path, mimeType: block.mimeType }
     })

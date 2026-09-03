@@ -7,7 +7,7 @@ const TOOLS = [
   { name: "list_files", desc: "List a directory" },
   { name: "fetch_url", desc: "Fetch a URL and extract to text" },
   { name: "web_search", desc: "Locaction based web search via Brave API" },
-  { name: "view_image", desc: "See an image's contents" },
+  { name: "view_image", desc: "See an image’s contents" },
   { name: "generate_image", desc: "Generate an image from a prompt" },
   { name: "summarize", desc: "Summarize text" },
   { name: "rerank", desc: "Rank documents against a query" },
@@ -31,7 +31,7 @@ export function Configuration() {
       <Section className="mb-5 overflow-x-auto">
         <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
           {
-            "~/.config/kaja/\n├─ settings.toml    # optional settings and app preferences\n├─ models.toml      # model catalog per provider\n├─ mcp.toml         # model context protocol servers\n├─ personas/*.toml  # one behaviour per file\n└─ datasets/*.json  # custom fields for personas to collect"
+            "~/.config/kaja/\n├─ datasets/*.json  # custom fields for personas to collect\n├─ personas/*.toml  # one behaviour per file\n├─ mcp.toml         # model context protocol servers\n├─ models.toml      # model catalog per provider\n├─ services.toml    # external service definitions and endpoints\n├─ secrets.toml     # user’s secret keys and tokens\n└─ settings.toml    # optional settings and app preferences"
           }
         </code>
       </Section>

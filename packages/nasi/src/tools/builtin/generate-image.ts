@@ -1,6 +1,6 @@
-import { randomUUID } from "node:crypto"
 import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
+import { randomUUIDv7 } from "@kaja/shared"
 import { write } from "bun"
 import OpenAI from "openai"
 import { ToolError, tool } from "../../agent/agent"
@@ -50,7 +50,7 @@ export const generateImageTool = tool<{ prompt: string }>({
     const dir = getToolDeps().tempDir
     if (!dir) return "Image generation is not configured."
     await mkdir(dir, { recursive: true })
-    const path = join(dir, `${randomUUID()}.${ext}`)
+    const path = join(dir, `${randomUUIDv7()}.${ext}`)
     await write(path, await res.arrayBuffer())
 
     return {
