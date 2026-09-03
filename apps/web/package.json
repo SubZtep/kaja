@@ -17,6 +17,7 @@
     "@kaja/logger": "workspace:*",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
+    "@kaja/widget": "workspace:*",
     "@rsbuild/core": "^2.2.3",
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-form": "^1.33.3",
