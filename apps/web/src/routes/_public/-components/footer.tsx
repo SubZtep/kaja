@@ -15,7 +15,7 @@ export function Footer() {
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-muted">
               SubZtep
             </a>{" "}
-            &middot; {new Date().getFullYear()} 🕳
+            &middot; {new Date().getFullYear()} &middot; 🕳
           </div>
         </div>
         <a

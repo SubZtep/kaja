@@ -106,9 +106,9 @@ export function BarkochbaGame() {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]">
       <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
-        <span className="size-2.5 rounded-full bg-[#ff5f56]" />
-        <span className="size-2.5 rounded-full bg-[#ffbd2e]" />
-        <span className="size-2.5 rounded-full bg-[#27c93f]" />
+        <span className="size-2.5 rounded-full bg-red-600" />
+        <span className="size-2.5 rounded-full bg-green-600" />
+        <span className="size-2.5 rounded-full bg-blue-600" />
         <span className="ml-1.5 font-mono text-muted text-xs">barkochba</span>
       </div>
 
@@ -119,7 +119,7 @@ export function BarkochbaGame() {
             <button
               type="button"
               onClick={start}
-              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm"
+              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm animate-pulse hover:animate-none"
             >
               Start
             </button>
