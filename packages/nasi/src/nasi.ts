@@ -1,8 +1,7 @@
 import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import type OpenAI from "openai"
-import type { AgentEvent, PromptContext } from "./agent/agent"
-import { Agent, createSession, type Session } from "./agent/agent"
+import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import { run } from "./agent/run"
 import { createOpenAIClient } from "./models/client"
 import {
@@ -31,24 +30,33 @@ export type NasiTurnInput = NasiTurnRequest & {
   personaId?: string
 }
 
+const SKIPPED_EVENT_TYPES = new Set(["delta", "usage", "final", "tool_image", "display_image"])
+
+function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | undefined {
+  switch (event.type) {
+    case "reasoning":
+      return includeThinking ? { type: "reasoning", text: event.text } : undefined
+    case "message":
+      return { type: "message", content: event.content }
+    case "tool_call":
+      return { type: "tool_call", name: event.name, arguments: event.arguments }
+    case "ask_user":
+      return { type: "ask_user", question: event.question }
+    case "persona_switch":
+      return { type: "persona_switch", personaId: event.personaId, label: event.label }
+    case "confirm_command":
+      return { type: "confirm_command", command: event.command, description: event.description }
+    default:
+      return undefined
+  }
+}
+
 function stepsFromEvents(events: AgentEvent[], includeThinking: boolean): NasiStep[] {
   const steps: NasiStep[] = []
   for (const event of events) {
-    if (event.type === "delta") continue
-    if (event.type === "usage") continue
-    if (event.type === "final") continue
-    if (event.type === "tool_image" || event.type === "display_image") continue
-    if (event.type === "reasoning") {
-      if (includeThinking) steps.push({ type: "reasoning", text: event.text })
-      continue
-    }
-    if (event.type === "message") steps.push({ type: "message", content: event.content })
-    else if (event.type === "tool_call") steps.push({ type: "tool_call", name: event.name, arguments: event.arguments })
-    else if (event.type === "ask_user") steps.push({ type: "ask_user", question: event.question })
-    else if (event.type === "persona_switch")
-      steps.push({ type: "persona_switch", personaId: event.personaId, label: event.label })
-    else if (event.type === "confirm_command")
-      steps.push({ type: "confirm_command", command: event.command, description: event.description })
+    if (SKIPPED_EVENT_TYPES.has(event.type)) continue
+    const step = stepFromEvent(event, includeThinking)
+    if (step) steps.push(step)
   }
   return steps
 }
@@ -64,15 +72,15 @@ function statusFromEvents(session: Session, events: AgentEvent[]): NasiTurnStatu
 function messageFromEvents(events: AgentEvent[], status: NasiTurnStatus): string {
   if (status === "needs_input") {
     const ask = [...events].reverse().find(e => e.type === "ask_user")
-    if (ask && ask.type === "ask_user") return ask.question
+    if (ask?.type === "ask_user") return ask.question
   }
   const fin = [...events].reverse().find(e => e.type === "final")
-  if (fin && fin.type === "final") return fin.content ?? ""
+  if (fin?.type === "final") return fin.content ?? ""
   // Local `?` backstop yields ask_user without pendingAskUserId — still the visible reply.
   const ask = [...events].reverse().find(e => e.type === "ask_user")
-  if (ask && ask.type === "ask_user") return ask.question
+  if (ask?.type === "ask_user") return ask.question
   const msg = [...events].reverse().find(e => e.type === "message")
-  if (msg && msg.type === "message") return msg.content
+  if (msg?.type === "message") return msg.content
   return ""
 }
 
@@ -132,7 +140,7 @@ function responseFromEvents(
     message,
     steps,
     ...(thinking ? { thinking } : {}),
-    ...(usageEvent && usageEvent.type === "usage"
+    ...(usageEvent?.type === "usage"
       ? { usage: { promptTokens: usageEvent.promptTokens, model: usageEvent.model } }
       : {})
   }
@@ -162,7 +170,9 @@ export class Nasi {
 
     if (sessionId) {
       const row = await loadSessionRow(sessionId)
-      if (!row) {
+      // Also rejects a session id that belongs to a different owner within the same dbPath — e.g. two widget
+      // visitors sharing one account's SQLite file must never resume each other's conversation by guessing/observing a session id.
+      if (!row || (row.owner ?? null) !== (this.opts.owner ?? null)) {
         const err = new Error("session_not_found")
         err.name = "NasiSessionNotFound"
         throw err

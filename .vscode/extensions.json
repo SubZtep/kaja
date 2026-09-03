@@ -2,7 +2,8 @@
   "recommendations": [
     "biomejs.biome",
     "bradlc.vscode-tailwindcss",
-    "editorconfig.editorconfig"
+    "editorconfig.editorconfig",
+    "tombi-toml.tombi"
   ],
   "unwantedRecommendations": [
     "dbaeumer.vscode-eslint",

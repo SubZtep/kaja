@@ -10,13 +10,20 @@ import { healthRoutes } from "./features/health"
 import { nasiRoutes } from "./features/nasi"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { userRoutes } from "./features/users"
+import { widgetRoutes } from "./features/widget"
+import { widgetKeyRoutes } from "./features/widget-key"
 import type { RouteProps } from "./types"
 
 export const app = new OpenAPIHono<RouteProps>()
 
 // Global middlewares
 app.use(logger(trafficLogger))
-app.use("*", cors({ origin: process.env.CORS_ORIGIN, credentials: true }))
+// /widget/* is embedded on arbitrary third-party sites and has its own reflected-origin CORS
+// (features/widget/cors.ts) — the app's single fixed CORS_ORIGIN can't apply there.
+app.use("*", async (c, next) => {
+  if (c.req.path.startsWith("/widget/")) return next()
+  return cors({ origin: process.env.CORS_ORIGIN, credentials: true })(c, next)
+})
 app.use("*", globalRateLimiter)
 app.use("*", authMiddleware)
 
@@ -31,6 +38,8 @@ app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
 app.route("/users", userRoutes)
+app.route("/widget", widgetRoutes)
+app.route("/widget-keys", widgetKeyRoutes)
 
 // API documentation
 if (process.env.NODE_ENV === "development") {

@@ -6,6 +6,11 @@ export const NasiTurnRequestSchema = z.object({
   includeThinking: z.boolean().optional()
 })
 
+/** Same turn contract, plus the widget's client-minted visitor id (resumption token, not a credential — the widget key already authenticates the request). */
+export const WidgetTurnRequestSchema = NasiTurnRequestSchema.extend({
+  visitorId: z.string().min(1).max(128)
+})
+
 export const NasiStepSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("reasoning"), text: z.string() }),
   z.object({ type: z.literal("message"), content: z.string() }),
@@ -47,6 +52,7 @@ export const NasiErrorBodySchema = z.object({
 })
 
 export type NasiTurnRequest = z.infer<typeof NasiTurnRequestSchema>
+export type WidgetTurnRequest = z.infer<typeof WidgetTurnRequestSchema>
 export type NasiStep = z.infer<typeof NasiStepSchema>
 export type NasiTurnResponse = z.infer<typeof NasiTurnResponseSchema>
 export type NasiTurnStatus = z.infer<typeof NasiTurnStatusSchema>

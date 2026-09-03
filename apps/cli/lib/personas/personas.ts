@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs"
 import { basename, join } from "node:path"
-import { samplingOf } from "@kaja/nasi"
 import { type Persona, PersonaSchema } from "@kaja/schema/cli"
 import { file, TOML, write } from "bun"
 // Written on first run: one file per persona, the stock assistant plus the app's former built-in personas, sourced from the same files that document repo docs/config/personas/ (also published on the docs site).
@@ -11,10 +10,10 @@ import ONBOARDING_TEMPLATE from "../../../../docs/config/personas/onboarding.tom
 import { getConfigDir } from "../config/config"
 import { log } from "../logger"
 
+export { samplingOf } from "@kaja/nasi"
 export type { Persona }
-export { samplingOf }
 
-const TEMPLATES: Record<string, string> = {
+export const TEMPLATES: Record<string, string> = {
   default: DEFAULT_TEMPLATE,
   barkochba: BARKOCHBA_TEMPLATE,
   care: CARE_TEMPLATE,
@@ -52,5 +51,6 @@ export async function loadPersonas(): Promise<Persona[]> {
       log.warn({ error, path }, "Failed to load persona")
     }
   }
+
   return personas
 }

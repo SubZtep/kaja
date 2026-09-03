@@ -96,6 +96,45 @@ const MEMORY_INSTRUCTIONS =
   "user:, project:, decision: — like user:communication-style, so keys " +
   "stay consistent and don't collide."
 
+async function buildStickyBlock(agent: Agent, hasMemory: boolean): Promise<string | undefined> {
+  const ctx = agent.promptContext ?? {}
+  const loadSticky =
+    ctx.loadStickyNotes ??
+    (hasMemory ? async () => Object.entries(await loadMemory()).filter(([, note]) => note.sticky) : undefined)
+  const stickyNotes = hasMemory && loadSticky ? await loadSticky() : []
+  if (stickyNotes.length === 0) return undefined
+  return `Known context about this user/project (from persistent memory):\n${stickyNotes
+    .map(([key, note]) => `- [${key}] ${note.content}`)
+    .join("\n")}`
+}
+
+async function buildEnvironmentBlock(agent: Agent): Promise<string> {
+  const ctx = agent.promptContext ?? {}
+  const location = ctx.location ?? (ctx.loadLocation ? await ctx.loadLocation() : undefined)
+  const locationBlock = location ? locationInstructions(location) : undefined
+  return [ctx.environment ?? defaultEnvironmentInstructions(), locationBlock].filter(Boolean).join("\n")
+}
+
+function buildPersonasBlock(agent: Agent, toolNames: Set<string>): string | undefined {
+  if (!(toolNames.has(SWITCH_PERSONA_TOOL) && agent.personas.length > 1)) return undefined
+  return (
+    `You can change your own persona mid-conversation by calling ` +
+    `${SWITCH_PERSONA_TOOL} when the topic clearly matches another ` +
+    `persona's purpose. Current persona: "${agent.personaId ?? "unknown"}". ` +
+    `Available personas:\n` +
+    agent.personas.map(personaListItem).join("\n") +
+    `\nSwitch only when the fit is clear — when unsure, stay put. ` +
+    `Don't announce the mechanics of switching; just continue naturally.`
+  )
+}
+
+async function buildDatasetBlock(agent: Agent, toolNames: Set<string>): Promise<string | undefined> {
+  if (!(agent.dataset && toolNames.has(DATASET_INFO_TOOL))) return undefined
+  const loadDataset = agent.promptContext?.loadDataset ?? defaultLoadDataset
+  const dataset = await loadDataset(agent.dataset)
+  return dataset ? datasetInstructions(agent.dataset, dataset.label) : undefined
+}
+
 /**
  * Assembles the system prompt for a fresh session with the given agent.
  * Returns `undefined` if every block is empty.
@@ -104,41 +143,11 @@ export async function buildSystemPrompt(agent: Agent): Promise<string | undefine
   const toolNames = new Set(agent.tools.map(t => toolName(t)))
   const ctx = agent.promptContext ?? {}
   const hasMemory = toolNames.has(REMEMBER_NOTE_TOOL)
-  const loadSticky =
-    ctx.loadStickyNotes ??
-    (hasMemory ? async () => Object.entries(await loadMemory()).filter(([, note]) => note.sticky) : undefined)
-  const stickyNotes = hasMemory && loadSticky ? await loadSticky() : []
-  const stickyBlock =
-    stickyNotes.length > 0
-      ? `Known context about this user/project (from persistent memory):\n${stickyNotes
-          .map(([key, note]) => `- [${key}] ${note.content}`)
-          .join("\n")}`
-      : undefined
 
-  const location = ctx.location ?? (ctx.loadLocation ? await ctx.loadLocation() : undefined)
-  const locationBlock = location ? locationInstructions(location) : undefined
-  const environmentBlock = [ctx.environment ?? defaultEnvironmentInstructions(), locationBlock]
-    .filter(Boolean)
-    .join("\n")
-
-  const personasBlock =
-    toolNames.has(SWITCH_PERSONA_TOOL) && agent.personas.length > 1
-      ? `You can change your own persona mid-conversation by calling ` +
-        `${SWITCH_PERSONA_TOOL} when the topic clearly matches another ` +
-        `persona's purpose. Current persona: "${agent.personaId ?? "unknown"}". ` +
-        `Available personas:\n` +
-        agent.personas.map(personaListItem).join("\n") +
-        `\nSwitch only when the fit is clear — when unsure, stay put. ` +
-        `Don't announce the mechanics of switching; just continue naturally.`
-      : undefined
-
-  const loadDataset = ctx.loadDataset ?? defaultLoadDataset
-  const datasetBlock =
-    agent.dataset && toolNames.has(DATASET_INFO_TOOL)
-      ? await loadDataset(agent.dataset).then(dataset =>
-          dataset ? datasetInstructions(agent.dataset!, dataset.label) : undefined
-        )
-      : undefined
+  const stickyBlock = await buildStickyBlock(agent, hasMemory)
+  const environmentBlock = await buildEnvironmentBlock(agent)
+  const personasBlock = buildPersonasBlock(agent, toolNames)
+  const datasetBlock = await buildDatasetBlock(agent, toolNames)
 
   return (
     [

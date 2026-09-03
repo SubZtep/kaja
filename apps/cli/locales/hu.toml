@@ -75,11 +75,9 @@ invalidAt = "Érvénytelen konfigurációs fájl ({path}): {message}"
 notExists = "Nem létezik a konfigurációs fájl: {path}"
 usage = """
 Használat
-  $ kaja config fetch   Újragenerálja az mcp.toml-t a Kaja API-ból
+  $ kaja config fetch   Újragenerálja a konfigurációs fájlokat a beépített sablonokból
   $ kaja config wipe    Biztonsági mentés után törli a teljes konfigurációs könyvtárat
 """
-apiUrlMissing = "Állítsd be az [api] baseUrl-t a services.toml-ban"
-fetchFailed = "Nem sikerült letölteni az mcp.toml-t (HTTP {status})"
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
 fetchedUnchanged = "{path} már naprakész"

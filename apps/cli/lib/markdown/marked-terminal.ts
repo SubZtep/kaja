@@ -64,7 +64,7 @@ const defaultOptions = {
 }
 
 function Renderer(this: any, options: any, highlightOptions: any) {
-  this.o = Object.assign({}, defaultOptions, options)
+  this.o = { ...defaultOptions, ...options }
   this.tab = sanitizeTab(this.o.tab, defaultOptions.tab)
   this.tableSettings = this.o.tableOptions
   this.emoji = this.o.emoji ? insertEmojis : identity
@@ -146,12 +146,29 @@ function fixHardReturn(text: string, reflow: boolean) {
     const listToken = body
     ordered = listToken.ordered
     body = ""
-    for (let j = 0; j < listToken.items.length; j++) {
-      body += this.listitem(listToken.items[j])
+    for (const item of listToken.items) {
+      body += this.listitem(item)
     }
   }
   body = this.o.list(body, ordered, this.tab)
   return section(fixNestedLists(indentLines(this.tab, body), this.tab))
+}
+
+// Prefixes a loose task item's first paragraph (and its first text token, if
+// any) with the checkbox instead of prepending to the whole rendered item.
+function prependCheckboxToLooseItem(item: any, checkbox: string) {
+  if (item.tokens.length > 0 && item.tokens[0].type === "paragraph") {
+    item.tokens[0].text = `${checkbox} ${item.tokens[0].text}`
+    if (item.tokens[0].tokens && item.tokens[0].tokens.length > 0 && item.tokens[0].tokens[0].type === "text") {
+      item.tokens[0].tokens[0].text = `${checkbox} ${item.tokens[0].tokens[0].text}`
+    }
+  } else {
+    item.tokens.unshift({
+      type: "text",
+      raw: `${checkbox} `,
+      text: `${checkbox} `
+    })
+  }
 }
 
 ;(Renderer.prototype as any).listitem = function (this: any, text: any) {
@@ -160,28 +177,14 @@ function fixHardReturn(text: string, reflow: boolean) {
     text = ""
     if (item.task) {
       const checkbox = this.checkbox({ checked: !!item.checked })
-      if (item.loose) {
-        if (item.tokens.length > 0 && item.tokens[0].type === "paragraph") {
-          item.tokens[0].text = `${checkbox} ${item.tokens[0].text}`
-          if (item.tokens[0].tokens && item.tokens[0].tokens.length > 0 && item.tokens[0].tokens[0].type === "text") {
-            item.tokens[0].tokens[0].text = `${checkbox} ${item.tokens[0].tokens[0].text}`
-          }
-        } else {
-          item.tokens.unshift({
-            type: "text",
-            raw: `${checkbox} `,
-            text: `${checkbox} `
-          })
-        }
-      } else {
-        text += `${checkbox} `
-      }
+      if (item.loose) prependCheckboxToLooseItem(item, checkbox)
+      else text += `${checkbox} `
     }
 
     text += this.parser.parse(item.tokens, !!item.loose)
   }
   const transform = compose(this.o.listitem, this.transform)
-  const isNested = text.indexOf("\n") !== -1
+  const isNested = text.includes("\n")
   if (isNested) text = text.trim()
 
   // Use BULLET_POINT as a marker for ordered or unordered list item
@@ -213,32 +216,25 @@ function fixHardReturn(text: string, reflow: boolean) {
     header = ""
 
     let cell = ""
-    for (let j = 0; j < token.header.length; j++) {
-      cell += this.tablecell(token.header[j])
+    for (const headerCell of token.header) {
+      cell += this.tablecell(headerCell)
     }
     header += this.tablerow({ text: cell })
 
     body = ""
-    for (let j = 0; j < token.rows.length; j++) {
-      const row = token.rows[j]
-
+    for (const row of token.rows) {
       cell = ""
-      for (let k = 0; k < row.length; k++) {
-        cell += this.tablecell(row[k])
+      for (const rowCell of row) {
+        cell += this.tablecell(rowCell)
       }
 
       body += this.tablerow({ text: cell })
     }
   }
-  const table = new Table(
-    Object.assign(
-      {},
-      {
-        head: generateTableRow(header)[0]
-      },
-      this.tableSettings
-    )
-  )
+  const table = new Table({
+    head: generateTableRow(header)[0],
+    ...this.tableSettings
+  })
 
   generateTableRow(body, this.transform).forEach((row: any) => {
     table.push(row)
@@ -281,7 +277,7 @@ function fixHardReturn(text: string, reflow: boolean) {
     text = text.text
   }
   text = fixHardReturn(text, this.o.reflowText)
-  return this.o.codespan(text.replace(/:/g, COLON_REPLACER))
+  return this.o.codespan(text.replaceAll(":", COLON_REPLACER))
 }
 
 ;(Renderer.prototype as any).br = function (this: any) {
@@ -311,7 +307,7 @@ function fixHardReturn(text: string, reflow: boolean) {
     } catch {
       return ""
     }
-    if (prot.indexOf("javascript:") === 0 || prot.indexOf("data:") === 0 || prot.indexOf("vbscript:") === 0) {
+    if (prot.startsWith("javascript:") || prot.startsWith("data:") || prot.startsWith("vbscript:")) {
       return ""
     }
   }
@@ -329,9 +325,8 @@ function fixHardReturn(text: string, reflow: boolean) {
     }
     out = ansiEscapes.link(
       link,
-      href
-        // textLength breaks on '+' in URLs
-        .replace(/\+/g, "%20")
+      // textLength breaks on '+' in URLs
+      href.replaceAll("+", "%20")
     )
   } else {
     if (hasText) out += `${this.emoji(text)} (`
@@ -397,6 +392,98 @@ export function markedTerminal(options?: any, highlightOptions?: any) {
   )
 }
 
+type ReflowState = {
+  column: number
+  currentLine: string
+  reflowed: string[]
+}
+
+// Word is longer than the remaining width: emit as many full-width lines as
+// needed, then leave the remainder as the new current line.
+function wrapOverflowingWord(state: ReflowState, word: string, width: number, addSpace: boolean) {
+  let w = word.substring(0, width - state.column - (addSpace ? 1 : 0))
+  if (addSpace) state.currentLine += " "
+  state.currentLine += w
+  state.reflowed.push(state.currentLine)
+  state.currentLine = ""
+  state.column = 0
+
+  word = word.substring(w.length)
+  while (word.length) {
+    w = word.substring(0, width)
+    if (!w.length) break
+
+    if (w.length < width) {
+      state.currentLine = w
+      state.column = w.length
+      break
+    }
+    state.reflowed.push(w)
+    word = word.substring(width)
+  }
+}
+
+function appendWord(state: ReflowState, word: string, width: number, addSpace: boolean) {
+  if (state.column + word.length + (addSpace ? 1 : 0) > width) {
+    if (word.length <= width) {
+      // If the new word is smaller than the required width
+      // just add it at the beginning of a new line
+      state.reflowed.push(state.currentLine)
+      state.currentLine = word
+      state.column = word.length
+    } else {
+      wrapOverflowingWord(state, word, width, addSpace)
+    }
+  } else {
+    if (addSpace) {
+      state.currentLine += " "
+      state.column++
+    }
+    state.currentLine += word
+    state.column += word.length
+  }
+}
+
+function reflowSection(section: string, width: number, state: ReflowState) {
+  // Split the section by escape codes so that we can
+  // deal with them separately. RegExp constructor (not a literal) so the \x1b
+  // escape stays a string escape sequence instead of a raw control character.
+  // biome-ignore lint/complexity/useRegexLiterals: literal form trips noControlCharactersInRegex on \x1b
+  const fragments = section.split(new RegExp("(\\x1b\\[(?:\\d{1,3})(?:;\\d{1,3})*m)", "g"))
+  let lastWasEscapeChar = false
+
+  while (fragments.length) {
+    const fragment = fragments[0]!
+
+    if (fragment === "") {
+      fragments.splice(0, 1)
+      lastWasEscapeChar = false
+      continue
+    }
+
+    // This is an escape code - leave it whole and
+    // move to the next fragment.
+    if (!textLength(fragment)) {
+      state.currentLine += fragment
+      fragments.splice(0, 1)
+      lastWasEscapeChar = true
+      continue
+    }
+
+    const words = fragment.split(/[ \t\n]+/)
+
+    for (const word of words) {
+      const addSpace = state.column !== 0 && !lastWasEscapeChar
+      appendWord(state, word, width, addSpace)
+      lastWasEscapeChar = false
+    }
+
+    fragments.splice(0, 1)
+  }
+
+  if (textLength(state.currentLine)) state.reflowed.push(state.currentLine)
+}
+
 // Munge \n's and spaces in "text" so that the number of
 // characters between \n's is less than or equal to "width".
 function reflowText(text: string, width: number, gfm: boolean) {
@@ -407,91 +494,7 @@ function reflowText(text: string, width: number, gfm: boolean) {
   const reflowed: string[] = []
 
   sections.forEach(section => {
-    // Split the section by escape codes so that we can
-    // deal with them separately. RegExp constructor (not a literal) so the \x1b
-    // escape stays a string escape sequence instead of a raw control character.
-    // biome-ignore lint/complexity/useRegexLiterals: literal form trips noControlCharactersInRegex on \x1b
-    const fragments = section.split(new RegExp("(\\x1b\\[(?:\\d{1,3})(?:;\\d{1,3})*m)", "g"))
-    let column = 0
-    let currentLine = ""
-    let lastWasEscapeChar = false
-
-    while (fragments.length) {
-      const fragment = fragments[0]!
-
-      if (fragment === "") {
-        fragments.splice(0, 1)
-        lastWasEscapeChar = false
-        continue
-      }
-
-      // This is an escape code - leave it whole and
-      // move to the next fragment.
-      if (!textLength(fragment)) {
-        currentLine += fragment
-        fragments.splice(0, 1)
-        lastWasEscapeChar = true
-        continue
-      }
-
-      const words = fragment.split(/[ \t\n]+/)
-
-      for (let i = 0; i < words.length; i++) {
-        let word = words[i]!
-        let addSpace = column !== 0
-        if (lastWasEscapeChar) addSpace = false
-
-        // If adding the new word overflows the required width
-        if (column + word.length + (addSpace ? 1 : 0) > width) {
-          if (word.length <= width) {
-            // If the new word is smaller than the required width
-            // just add it at the beginning of a new line
-            reflowed.push(currentLine)
-            currentLine = word
-            column = word.length
-          } else {
-            // If the new word is longer than the required width
-            // split this word into smaller parts.
-            let w = word.substring(0, width - column - (addSpace ? 1 : 0))
-            if (addSpace) currentLine += " "
-            currentLine += w
-            reflowed.push(currentLine)
-            currentLine = ""
-            column = 0
-
-            word = word.substring(w.length)
-            while (word.length) {
-              w = word.substring(0, width)
-
-              if (!w.length) break
-
-              if (w.length < width) {
-                currentLine = w
-                column = w.length
-                break
-              } else {
-                reflowed.push(w)
-                word = word.substring(width)
-              }
-            }
-          }
-        } else {
-          if (addSpace) {
-            currentLine += " "
-            column++
-          }
-
-          currentLine += word
-          column += word.length
-        }
-
-        lastWasEscapeChar = false
-      }
-
-      fragments.splice(0, 1)
-    }
-
-    if (textLength(currentLine)) reflowed.push(currentLine)
+    reflowSection(section, width, { column: 0, currentLine: "", reflowed })
   })
 
   return reflowed.join("\n")
@@ -506,15 +509,15 @@ function indentify(indent: string, text: string) {
   return indent + text.split("\n").join(`\n${indent}`)
 }
 
-const BULLET_POINT_REGEX = "\\*"
-const NUMBERED_POINT_REGEX = "\\d+\\."
+const BULLET_POINT_REGEX = String.raw`\*`
+const NUMBERED_POINT_REGEX = String.raw`\d+\.`
 const POINT_REGEX = `(?:${[BULLET_POINT_REGEX, NUMBERED_POINT_REGEX].join("|")})`
 
 // Prevents nested lists from joining their parent list's last line
 function fixNestedLists(body: string, indent: string) {
   const regex = new RegExp(
     `${
-      "(\\S(?: |  )?)" + // Last char of current point, plus one or two spaces
+      String.raw`(\S(?: |  )?)` + // Last char of current point, plus one or two spaces
       // to allow trailing spaces
       "((?:"
     }${indent})+)(${POINT_REGEX}(?:.*)+)$`,
@@ -524,7 +527,7 @@ function fixNestedLists(body: string, indent: string) {
 }
 
 function isPointedLine(line: string, indent: string) {
-  return line.match(`^(?:${indent})*${POINT_REGEX}`)
+  return new RegExp(`^(?:${indent})*${POINT_REGEX}`).exec(line)
 }
 
 function toSpaces(str: string) {
@@ -658,7 +661,7 @@ function compose(...funcs: ((...args: any[]) => any)[]) {
 }
 
 function isAllowedTabString(string: string) {
-  return TAB_ALLOWED_CHARACTERS.some(char => string.match(`^(${char})+$`))
+  return TAB_ALLOWED_CHARACTERS.some(char => new RegExp(`^(${char})+$`).exec(string))
 }
 
 function sanitizeTab(tab: string | number, fallbackTab: number) {

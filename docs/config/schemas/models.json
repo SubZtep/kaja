@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "providers": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "base_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "base_url"
+        ]
+      }
+    },
+    "models": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "text-to-speech",
+              "speech-to-text",
+              "embedding",
+              "image-generation",
+              "rerank"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "model",
+          "task",
+          "provider"
+        ]
+      }
+    },
+    "active": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "chat": {
+          "type": "string",
+          "minLength": 1
+        },
+        "embedding": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rerank": {
+          "type": "string",
+          "minLength": 1
+        },
+        "image-generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text-to-speech": {
+          "type": "string",
+          "minLength": 1
+        },
+        "speech-to-text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

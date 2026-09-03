@@ -10,7 +10,7 @@ async function resolveToken(apiUrl: string): Promise<string> {
   if (envToken) return envToken
 
   const stored = await loadCredentials()
-  if (stored && stored.apiUrl === apiUrl) return stored.token
+  if (stored?.apiUrl === apiUrl) return stored.token
 
   console.log(t("cli.pleaseSignIn"))
   return deviceLogin(apiUrl, prompt => {

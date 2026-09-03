@@ -1,7 +1,5 @@
 import { join } from "node:path"
 import {
-  type DatasetAnswer,
-  forgetNotes,
   getDb as nasiGetDb,
   latestDatasetVersion as nasiLatestDatasetVersion,
   listAllDatasetAnswers as nasiListAllDatasetAnswers,
@@ -12,14 +10,13 @@ import {
   markDatasetVersionComplete as nasiMarkDatasetVersionComplete,
   saveDatasetAnswer as nasiSaveDatasetAnswer,
   saveMemory as nasiSaveMemory,
-  noteHeader,
   setActiveStorePath
 } from "@kaja/nasi"
 import { file, TOML, write } from "bun"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
 import { getPaths } from "../paths"
 
-export { type DatasetAnswer, forgetNotes, noteHeader }
+export { type DatasetAnswer, forgetNotes, noteHeader } from "@kaja/nasi"
 
 export function getDefaultMemoryDbPath() {
   return join(getPaths().data, "memory.sqlite")

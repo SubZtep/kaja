@@ -56,23 +56,29 @@ export function useRemoteAgent(options: NasiClientOptions) {
         if (hasPartial) setPartial({ ...accumulated })
       }
 
+      const handleDelta = (event: Extract<NasiStreamEvent, { type: "delta" }>) => {
+        accumulated[event.channel] += event.text
+        hasPartial = true
+        const now = Date.now()
+        if (now - lastFlush >= DELTA_INTERVAL_MS) {
+          lastFlush = now
+          flush()
+        }
+      }
+
+      const handleUsage = (event: Extract<NasiStreamEvent, { type: "usage" }>) => {
+        if (event.promptTokens != null) setPromptTokens(event.promptTokens)
+        if (event.model) setResponseModel(event.model)
+      }
+
       try {
         const gen = client.turn_stream({ session: sessionRef.current, message: prompt })
         let next = await gen.next()
         while (!next.done) {
           const event = next.value
-          if (event.type === "delta") {
-            accumulated[event.channel] += event.text
-            hasPartial = true
-            const now = Date.now()
-            if (now - lastFlush >= DELTA_INTERVAL_MS) {
-              lastFlush = now
-              flush()
-            }
-          } else if (event.type === "usage") {
-            if (event.promptTokens != null) setPromptTokens(event.promptTokens)
-            if (event.model) setResponseModel(event.model)
-          } else {
+          if (event.type === "delta") handleDelta(event)
+          else if (event.type === "usage") handleUsage(event)
+          else {
             setPartial(null)
             pushEvent(event)
           }

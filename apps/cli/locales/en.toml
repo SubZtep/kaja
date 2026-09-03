@@ -75,11 +75,9 @@ invalidAt = "Invalid config file at {path}: {message}"
 notExists = "Config file not exists: {path}"
 usage = """
 Usage
-  $ kaja config fetch   Regenerate mcp.toml from the Kaja API
+  $ kaja config fetch   Regenerate config files from the bundled templates
   $ kaja config wipe    Back up and clear the whole config directory
 """
-apiUrlMissing = "Set [api] baseUrl in services.toml first"
-fetchFailed = "Failed to fetch mcp.toml (HTTP {status})"
 fetched = "Wrote {path}"
 fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
 fetchedUnchanged = "{path} is already up to date"

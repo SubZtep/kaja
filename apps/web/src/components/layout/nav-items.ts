@@ -1,4 +1,4 @@
-import { Cpu, LayoutDashboard, type LucideIcon, Plug, Shield, Users } from "lucide-react"
+import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, Users } from "lucide-react"
 
 /** "public" matches signed-out visitors; "all" matches every signed-in role plus "public". */
 export type NavRole = "public" | "all" | "admin" | "user"
@@ -70,6 +70,15 @@ const navItems: NavItem[] = [
     roles: ["admin"],
     sections: ["admin"],
     icon: Cpu
+  },
+  {
+    to: "/widget",
+    label: "Widget",
+    description: "Embeddable chat widget keys",
+    internal: true,
+    roles: ["admin", "user"],
+    sections: ["admin"],
+    icon: MessageCircle
   },
   { label: "Docs", href: "https://docs.kaja.io", roles: ["all"], sections: ["header"] }
   // {

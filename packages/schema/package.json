@@ -23,6 +23,10 @@
     "./nasi": {
       "types": "./nasi/index.ts",
       "default": "./nasi/index.ts"
+    },
+    "./tombi": {
+      "types": "./tombi/index.ts",
+      "default": "./tombi/index.ts"
     }
   },
   "dependencies": {

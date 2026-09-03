@@ -6,6 +6,31 @@ nav_order: 9
 
 # Development
 
+## Summary
+
+The entire project sits in a single monorepo, built with common web and surrounding tools.
+
+It's recommended to let git hooks run to auto-run easily forgottable tasks.
+
+## Environment
+
+You might wanna install these.
+
+### Required
+
+- **Bash**-compatible terminal for executing package commands
+- **Bun** JavaScript for runtime and builds
+
+### Recommended
+
+- **VSCode** (or compatible) editor with the recommended extensions and project settings
+- **Claude Code**, **OpenCode**, or any _AGENTS.md_-compatible coding agent
+- **Docker Compose** for simple services setup
+
+### Good to have
+
+- **FFplay** for sound playback
+
 ## Setup
 
 Start PostgreSQL and SMTP services:
@@ -14,7 +39,7 @@ Start PostgreSQL and SMTP services:
 docker compose up -d db mail
 ```
 
-> Mounts the persistent PostgreSQL data in the `./pgdata` folder. The migration files run automatically on first boot.
+> This mounts the persistent PostgreSQL data in the `./pgdata` folder. The migration files run automatically on first boot.
 
 ## Available commands
 
@@ -33,13 +58,13 @@ bun lint
 # Apply formatter and unsafe lint fixes
 bun lint:fix
 
-# Run test
+# Run tests
 bun run test
 
-# Post multiple random jobs locally (10 or given)
+# Post multiple random jobs locally (10 by default, or specify a number)
 bun run ./apps/api/scripts/mass_post_jobs.ts [number]
 
-# Create multiple random users locally (10 or given)
+# Create multiple random users locally (10 by default, or specify a number)
 bun run ./apps/api/scripts/mass_user_create.ts [number]
 ```
 

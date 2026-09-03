@@ -8,8 +8,8 @@
     "start": "bun run dist/server.js"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^1.5.1",
-    "@hono/zod-validator": "^0.9.0",
+    "@hono/zod-openapi": "^1.6.2",
+    "@hono/zod-validator": "^0.9.1",
     "@kaja/logger": "workspace:*",
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",
@@ -20,7 +20,7 @@
     "better-auth": "^1.7.2",
     "hono": "^4.13.0",
     "hono-rate-limiter": "^0.5.3",
-    "nodemailer": "^9.0.4",
+    "nodemailer": "^9.1.1",
     "pg": "^8.22.0",
     "react": "^19.2.8",
     "zod": "^4.4.3"
