@@ -20,6 +20,8 @@ FROM oven/bun:1.4.0-slim AS runner
 WORKDIR /home/bun/app
 ENV NODE_ENV=production
 
+RUN mkdir -p /var/lib/kaja && chown bun:bun /var/lib/kaja
+
 USER bun
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/server.js ./server.js
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/migrate.js ./migrate.js

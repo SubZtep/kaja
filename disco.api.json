@@ -3,7 +3,13 @@
   "services": {
     "web": {
       "port": 3001,
-      "image": "backend"
+      "image": "backend",
+      "volumes": [
+        {
+          "name": "nasi-data",
+          "destinationPath": "/var/lib/kaja"
+        }
+      ]
     },
     "hook:deploy:start:before": {
       "type": "command",
