@@ -5,6 +5,7 @@ COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/cli/package.json ./apps/cli/package.json
 COPY apps/openai/package.json ./apps/openai/package.json
+COPY apps/widget/package.json ./apps/widget/package.json
 COPY packages ./packages
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY apps/openai ./apps/openai
