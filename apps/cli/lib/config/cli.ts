@@ -1,9 +1,7 @@
 import { existsSync } from "node:fs"
 import { rename } from "node:fs/promises"
-import { ModelsFileSchema, type SecretsFile, type ServicesFile } from "@kaja/schema/config"
-import { file, TOML } from "bun"
 import { t } from "../i18n"
-import { fetchModelsToml, getModelsPath, saveFetchedActiveChat } from "../models/models"
+import { fetchModelsToml } from "../models/models"
 import { fetchPersonasToml } from "../personas/fetch"
 import { getConfigDir } from "./config"
 import { nextBackupPath } from "./fetch"
@@ -14,38 +12,17 @@ import { fetchMcpToml } from "./mcp-servers"
  *
  * Returns `{ code, text }`
  */
-export async function runConfigCli(
-  argv: string[],
-  services: Partial<ServicesFile>,
-  secrets: Partial<SecretsFile>
-): Promise<{ code: number; text: string }> {
+export async function runConfigCli(argv: string[]): Promise<{ code: number; text: string }> {
   const [command] = argv
 
   if (command === "fetch") {
-    const apiUrl = services.api?.baseUrl
-    if (!apiUrl) return { code: 1, text: t("config.apiUrlMissing") }
-
-    const token = secrets.api?.token ?? process.env.CONFIG_API_TOKEN
-
     try {
-      const [mcpResult, modelsResult, personasResult] = await Promise.all([
-        fetchMcpToml(apiUrl, token),
-        fetchModelsToml(apiUrl, token),
-        fetchPersonasToml(apiUrl, token)
+      const [mcpResult, modelsResult, personasResults] = await Promise.all([
+        fetchMcpToml(),
+        fetchModelsToml(),
+        fetchPersonasToml()
       ])
-      const results = [mcpResult, modelsResult, personasResult]
-
-      if (!modelsResult.unchanged) {
-        try {
-          const modelsFile = ModelsFileSchema.parse(TOML.parse(await file(getModelsPath()).text()))
-          const chatEntry = Object.entries(modelsFile.models).find(([, m]) => m.task === "chat")
-          if (chatEntry) {
-            await saveFetchedActiveChat(chatEntry[0])
-          }
-        } catch {
-          // console.log("Failed to save", modelsResult)
-        }
-      }
+      const results = [mcpResult, modelsResult, ...personasResults]
 
       const lines = results.map(({ path, backedUpTo, unchanged }) =>
         unchanged

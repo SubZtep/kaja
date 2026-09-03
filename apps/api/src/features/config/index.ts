@@ -1,14 +1,10 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { mcpServerService, modelService } from "../../services"
+import { modelService } from "../../services"
 import type { RouteProps } from "../../types"
 import { unauthorized } from "../../types/errors"
-import { registerMcpToml } from "./mcp-toml-route"
 import { registerGetModel } from "./model-route"
-import { registerModelsToml } from "./models-toml-route"
-import { registerPersonasToml } from "./persona-toml-route"
 
 const attachServices = async (c: any, next: any) => {
-  c.set("mcpServerService", mcpServerService)
   c.set("modelService", modelService)
   await next()
 }
@@ -34,7 +30,4 @@ const configTokenAuth = async (c: any, next: any) => {
 export const configRoutes = new OpenAPIHono<RouteProps>()
 configRoutes.use("*", configTokenAuth)
 configRoutes.use("*", attachServices)
-registerMcpToml(configRoutes)
-registerModelsToml(configRoutes)
 registerGetModel(configRoutes)
-registerPersonasToml(configRoutes)

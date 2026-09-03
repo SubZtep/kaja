@@ -14,7 +14,7 @@ import { log } from "../logger"
 export type { Persona }
 export { samplingOf }
 
-const TEMPLATES: Record<string, string> = {
+export const TEMPLATES: Record<string, string> = {
   default: DEFAULT_TEMPLATE,
   barkochba: BARKOCHBA_TEMPLATE,
   care: CARE_TEMPLATE,
@@ -25,9 +25,7 @@ export function getPersonasDir() {
   return join(getConfigDir(), "personas")
 }
 
-const FETCHED_FILENAME = "_fetched.toml"
-
-/** Loads personas/*.toml (id = filename). Writes default templates if the directory is missing; invalid files are skipped with a warning. A persona's models table isn't validated against models.toml here — an unmatched model id soft-falls-back at resolution time (see resolveActiveModel). Also merges in `kaja config fetch`'s combined _fetched.toml for any id not already covered by an individual file, so a hand-edited local persona always wins. */
+/** Loads personas/*.toml (id = filename). Writes default templates if the directory is missing; invalid files are skipped with a warning. A persona's models table isn't validated against models.toml here — an unmatched model id soft-falls-back at resolution time (see resolveActiveModel). */
 export async function loadPersonas(): Promise<Persona[]> {
   const dir = getPersonasDir()
   if (!existsSync(dir)) {
@@ -38,7 +36,7 @@ export async function loadPersonas(): Promise<Persona[]> {
   const glob = new Bun.Glob("*.toml")
   const entries: string[] = []
   for await (const match of glob.scan({ cwd: dir, dot: false })) {
-    if (match !== FETCHED_FILENAME) entries.push(match)
+    entries.push(match)
   }
   const personas: Persona[] = []
 
@@ -52,24 +50,6 @@ export async function loadPersonas(): Promise<Persona[]> {
       personas.push({ ...data, id })
     } catch (error) {
       log.warn({ error, path }, "Failed to load persona")
-    }
-  }
-
-  const fetchedPath = join(dir, FETCHED_FILENAME)
-  if (existsSync(fetchedPath)) {
-    const knownIds = new Set(personas.map(p => p.id))
-    try {
-      const { personas: fetched } = TOML.parse(await file(fetchedPath).text()) as { personas?: Record<string, unknown> }
-      for (const [id, raw] of Object.entries(fetched ?? {})) {
-        if (knownIds.has(id)) continue
-        try {
-          personas.push({ ...PersonaSchema.parse(raw), id })
-        } catch (error) {
-          log.warn({ error, id }, "Failed to load fetched persona")
-        }
-      }
-    } catch (error) {
-      log.warn({ error, path: fetchedPath }, "Failed to load fetched personas")
     }
   }
 

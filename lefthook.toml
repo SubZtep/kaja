@@ -9,8 +9,8 @@ run = "bun lint:fix"
 stage_fixed = true
 
 [[pre-commit.jobs]]
-run = "bun --filter @kaja/schema gen-json"
-glob = ["package/schema/config/settings.ts"]
+run = "bun generate:schemas"
+glob = ["packages/schema/config/*.ts", "packages/schema/cli/personas.ts", "packages/schema/cli/datasets.ts"]
 stage_fixed = true
 
 [[pre-commit.jobs]]

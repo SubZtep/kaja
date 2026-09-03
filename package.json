@@ -19,6 +19,7 @@
     "dev:cli:local": "bun run --env-file=apps/cli/.env apps/cli/cli.ts --local",
     "dev:web": "bun run --filter @kaja/web dev",
     "dev:widget": "bun run --filter @kaja/widget dev",
+    "generate:schemas": "bun run packages/schema/tombi/generate.ts",
     "lint": "biome check --config-path=.",
     "lint:fix": "biome check --config-path=. --write --unsafe",
     "typecheck": "set -e; for pkg in apps/* packages/*; do [ -f \"$pkg/tsconfig.json\" ] || continue; (cd \"$pkg\" && bunx tsc --noEmit); done"

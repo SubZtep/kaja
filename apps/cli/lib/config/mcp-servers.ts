@@ -5,19 +5,16 @@ import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/mcp.toml" with { type: "text" }
 import { t } from "../i18n"
 import { getConfigDir } from "./config"
-import { fetchTomlConfig } from "./fetch"
+import { writeTemplateConfig } from "./fetch"
 import { secrets } from "./secrets"
 
 export function getMcpPath() {
   return join(getConfigDir(), "mcp.toml")
 }
 
-/** The `kaja config fetch` subcommand: downloads the server-rendered mcp.toml and writes it to the local config dir, backing up any existing file first. */
-export async function fetchMcpToml(
-  apiBaseUrl: string,
-  token?: string
-): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
-  return fetchTomlConfig(apiBaseUrl, "/config/mcp.toml", getMcpPath(), token)
+/** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/mcp.toml template, backing up any existing (differing) file first. */
+export async function fetchMcpToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
+  return writeTemplateConfig(TEMPLATE, getMcpPath())
 }
 
 /** Loads the MCP servers file, then folds in secrets.toml's [mcp.<id>] table into each server's env (stdio) or headers (HTTP) by key name. Missing file: writes the example template and returns its active servers. Invalid file: prints the error and exits, same policy as {@link config}. */

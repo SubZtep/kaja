@@ -6,7 +6,7 @@ import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
 import OLLAMA_TEMPLATE from "../../../../docs/config/models.ollama.toml" with { type: "text" }
 import { getConfigDir } from "../config/config"
-import { fetchTomlConfig } from "../config/fetch"
+import { writeTemplateConfig } from "../config/fetch"
 import { secrets } from "../config/secrets"
 import { t } from "../i18n"
 
@@ -24,27 +24,9 @@ export async function writeModelsTemplate(which: "fireworks" | "ollama") {
   await write(file(getModelsPath()), which === "ollama" ? OLLAMA_TEMPLATE : TEMPLATE)
 }
 
-/**
- * The `kaja config fetch` subcommand: downloads the server-rendered
- * models.toml from the Kaja API and writes it to the local config dir. An
- * existing file is renamed to .bak (.bak2, .bak3, ...) rather than
- * overwritten in place, so a bad fetch is always recoverable. Carries the
- * existing [active].chat (if set) over into the fetched data before
- * comparing to disk, so a fetch that's otherwise identical to last time
- * doesn't count as "changed" just because an earlier fetch seeded
- * [active].chat locally.
- */
-export async function fetchModelsToml(
-  apiBaseUrl: string,
-  token?: string
-): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
-  return fetchTomlConfig(apiBaseUrl, "/config/models.toml", getModelsPath(), token, (fetched, existing) => {
-    const existingActive = existing.active as Record<string, unknown> | undefined
-    if (!existingActive?.chat) return fetched
-    const active = (fetched.active as Record<string, unknown> | undefined) ?? {}
-    if (active.chat) return fetched
-    return { ...fetched, active: { ...active, chat: existingActive.chat } }
-  })
+/** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/models.fireworks.toml template, backing up any existing (differing) file first. */
+export async function fetchModelsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
+  return writeTemplateConfig(TEMPLATE, getModelsPath())
 }
 
 /** Flatten each models.toml entry with its provider's credentials. */
@@ -119,15 +101,4 @@ export async function loadModelsFile(): Promise<ResolvedModelsFile> {
 /** {@link loadModelsFile}, flattened into every model with its provider's credentials. */
 export async function loadModels(): Promise<CliResolvedModel[]> {
   return resolveModels(await loadModelsFile())
-}
-
-/** Seeds a freshly fetched models.toml's [active].chat with a model id, only if unset. */
-export async function saveFetchedActiveChat(chatId: string) {
-  const modelsPath = getModelsPath()
-  const f = file(modelsPath)
-  if (!(await f.exists())) return
-  const parsed = TOML.parse(await f.text()) as Record<string, unknown>
-  const active = (parsed.active as Record<string, unknown> | undefined) ?? {}
-  if (active.chat) return
-  await write(modelsPath, TOML.stringify({ ...parsed, active: { ...active, chat: chatId } })!)
 }

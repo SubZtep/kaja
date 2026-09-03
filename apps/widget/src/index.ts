@@ -106,6 +106,10 @@ function init() {
         headers: { "content-type": "application/json", "x-kaja-widget-key": widgetKey },
         body: JSON.stringify({ session, message, visitorId })
       })
+      if (res.status === 429) {
+        appendMessage(messages, "Too many messages — please wait a moment.", "bot")
+        return
+      }
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
       const data = (await res.json()) as TurnResponse
       session = data.session

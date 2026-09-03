@@ -184,30 +184,3 @@ api_key = "orphaned-secret"
   expect(Object.keys(data.providers)).toEqual(["fireworks"])
   expect(data.providers.fireworks?.api_key).toBeUndefined()
 })
-
-test("saveFetchedActiveChat seeds [active].chat only if unset", async () => {
-  const { saveFetchedActiveChat } = await import("../../../lib/models/models")
-  const dir = `${tmpdir()}/kaja-test-models-save-active-${Math.random()}`
-  setConfigDirOverride(dir)
-  await write(
-    join(dir, "models.toml"),
-    `
-[providers.fireworks]
-base_url = "https://api.fireworks.ai/inference/v1"
-
-[models.fast-chat]
-model = "some/chat-model"
-task = "chat"
-provider = "fireworks"
-`
-  )
-
-  await saveFetchedActiveChat("fast-chat")
-  const data = await loadModelsFile()
-  expect(data.active.chat).toBe("fast-chat")
-
-  // A second call with a different id must not overwrite an already-set active.chat.
-  await saveFetchedActiveChat("some-other-id")
-  const dataAfter = await loadModelsFile()
-  expect(dataAfter.active.chat).toBe("fast-chat")
-})

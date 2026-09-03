@@ -1,0 +1,28 @@
+toml-version = "v1.1.0"
+
+# Schemas are generated from @kaja/schema's Zod schemas — run `bun generate:schemas`
+# after changing packages/schema/config/*.ts or packages/schema/cli/{personas,datasets}.ts.
+
+[[schemas]]
+path = "docs/config/schemas/settings.json"
+include = ["docs/config/settings.toml", "**/.config/kaja/settings.toml"]
+
+[[schemas]]
+path = "docs/config/schemas/services.json"
+include = ["docs/config/services.toml", "**/.config/kaja/services.toml"]
+
+[[schemas]]
+path = "docs/config/schemas/secrets.json"
+include = ["docs/config/secrets.toml", "**/.config/kaja/secrets.toml"]
+
+[[schemas]]
+path = "docs/config/schemas/models.json"
+include = ["docs/config/models*.toml", "**/.config/kaja/models.toml"]
+
+[[schemas]]
+path = "docs/config/schemas/mcp.json"
+include = ["docs/config/mcp.toml", "**/.config/kaja/mcp.toml"]
+
+[[schemas]]
+path = "docs/config/schemas/persona.json"
+include = ["docs/config/personas/*.toml", "**/.config/kaja/personas/*.toml"]
