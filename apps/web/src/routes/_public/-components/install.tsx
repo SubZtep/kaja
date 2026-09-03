@@ -4,7 +4,7 @@ import { Section } from "../../../components/ui/Section"
 import { getInstallCmd } from "../../../lib/vars"
 
 export function Install() {
-  const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/setup.sh | bash")
+  const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/install.sh | bash")
 
   useEffect(() => {
     setInstallCmd(getInstallCmd())
@@ -23,7 +23,7 @@ export function Install() {
         </Section>
         <Section>
           <p>On Windows:</p>
-          <code className="block font-mono text-fg text-[13.5px]">irm https://kaja.io/setup.ps1 | iex</code>
+          <code className="block font-mono text-fg text-[13.5px]">irm https://kaja.io/install.ps1 | iex</code>
         </Section>
       </div>
 

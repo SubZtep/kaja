@@ -91,6 +91,19 @@ export async function savePreferences(preferences: KajaPreferences) {
   cached = undefined
 }
 
+/** The last signed-in hosted (--remote) user's email, if any. Reads tolerantly since settings.toml may not exist yet for hosted-only users. */
+export async function getCurrentUser(): Promise<string | undefined> {
+  const current = await readConfigLoose()
+  return current.user
+}
+
+/** Persists the current hosted (--remote) user's email, creating settings.toml if it doesn't exist yet (hosted-only users have none). */
+export async function saveCurrentUser(user: string): Promise<void> {
+  const current = await readConfigLoose()
+  await write(getConfigPath(), TOML.stringify({ ...current, user })!)
+  cached = undefined
+}
+
 export async function create() {
   await write(getConfigPath(), TOML.stringify(TEMPLATE_TOML)!)
 }

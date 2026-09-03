@@ -6,6 +6,7 @@ import { z } from "zod"
 import { Button } from "../../components/form/primitives/Button"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
+import { getPageTitle } from "../../lib/vars"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 
@@ -13,7 +14,8 @@ export const Route = createFileRoute("/_public/reset-password")({
   component: ResetPassword,
   validateSearch: z.object({
     token: z.string().optional()
-  })
+  }),
+  head: () => ({ meta: [{ title: getPageTitle("Reset Password") }] })
 })
 
 function ResetPassword() {

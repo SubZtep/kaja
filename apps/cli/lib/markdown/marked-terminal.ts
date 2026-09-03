@@ -590,7 +590,7 @@ function highlight(code: string, language: string, opts: any, hightlightOpts: an
   code = fixHardReturn(code, opts.reflowText)
 
   try {
-    return highlightCli(code, Object.assign({}, { language }, hightlightOpts))
+    return highlightCli(code, { language, ...hightlightOpts })
   } catch {
     return style(code)
   }
@@ -629,7 +629,7 @@ function generateTableRow(text: string, escapeFn?: any) {
 }
 
 function escapeRegExp(str: string) {
-  return str.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&")
+  return str.replace(/[-[\]/{}()*+?.\\^$|]/g, String.raw`\$&`)
 }
 
 const ENTITY_UNESCAPES: Record<string, string> = {

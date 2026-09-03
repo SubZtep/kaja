@@ -28,7 +28,7 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 Install:
 
 ```bash
-curl -fsSL https://kaja.io/setup.sh | bash
+curl -fsSL https://kaja.io/install.sh | bash
 ```
 
 Execute:

@@ -1,13 +1,14 @@
+import { redirect } from "@tanstack/react-router"
 import { getSession } from "./session"
 
-/** Use the loader to require a session. */
-export const userRequired = async (role?: "user" | "admin") => {
+/** Use the loader to require a session, redirecting to sign-in (or the dashboard) rather than throwing. */
+export const userRequired = async (role?: "user" | "admin", redirectTo?: string) => {
   const session = await getSession()
   if (!session?.user) {
-    throw new Error("Unauthorized: You must be signed in to access to this page.")
+    throw redirect({ to: "/signin", search: redirectTo ? { redirect: redirectTo } : undefined })
   }
   if (role && session.user.role !== role) {
-    throw new Error("Unauthorized: You don’t have access to this page.")
+    throw redirect({ to: "/dashboard" })
   }
   return session.user
 }

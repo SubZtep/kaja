@@ -4,7 +4,7 @@ import { WidgetTurnRequestSchema } from "@kaja/schema/nasi"
 import { Hono } from "hono"
 import { withLock } from "../../core/lock"
 import { widgetKeyRateLimiter, widgetTurnRateLimiter } from "../../core/rate-limit"
-import { badRequest, notFound } from "../../types/errors"
+import { badGateway, badRequest, notFound } from "../../types/errors"
 import { type WidgetVariables, widgetKeyAuthMiddleware } from "./auth"
 import { runWidgetTurn } from "./chat"
 import { widgetCors } from "./cors"
@@ -37,6 +37,7 @@ widgetRoutes.post("/turn", widgetKeyRateLimiter, widgetTurnRateLimiter, widgetKe
   } catch (error) {
     if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
+    if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
     logError("widget turn failed", { widgetKeyId: widgetKey.id, error: String(error) })
     throw error
   }

@@ -2,6 +2,7 @@ import { existsSync } from "node:fs"
 import { rename } from "node:fs/promises"
 import { t } from "../i18n"
 import { fetchModelsToml } from "../models/models"
+import { listPaths } from "../paths"
 import { fetchPersonasToml } from "../personas/fetch"
 import { getConfigDir } from "./config"
 import { nextBackupPath } from "./fetch"
@@ -35,8 +36,15 @@ async function runWipe(): Promise<{ code: number; text: string }> {
   return { code: 0, text: t("config.wiped", { path: dir, backup }) }
 }
 
+function runPaths(): { code: number; text: string } {
+  const text = listPaths(true, getConfigDir())
+    .map(({ label, path }) => `${label}: ${path}`)
+    .join("\n")
+  return { code: 0, text }
+}
+
 /**
- * Handles `kaja config <fetch|wipe>`;
+ * Handles `kaja config <fetch|wipe|paths>`;
  *
  * Returns `{ code, text }`
  */
@@ -45,6 +53,7 @@ export async function runConfigCli(argv: string[]): Promise<{ code: number; text
 
   if (command === "fetch") return runFetch()
   if (command === "wipe") return runWipe()
+  if (command === "paths") return runPaths()
 
   return { code: 1, text: t("config.usage") }
 }

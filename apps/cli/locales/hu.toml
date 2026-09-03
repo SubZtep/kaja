@@ -7,6 +7,7 @@ headlessNoSubcommand = "A --headless kapcsolóhoz ezt támogató alparancs szük
 pleaseSignIn = "Kérlek jelentkezz be!"
 deviceLoginGoTo = "Nyisd meg:"
 deviceLoginEnterCode = "Add meg a kódot:"
+secretsUnavailable = "Nem sikerült elérni a rendszer kulcstartóját a bejelentkezés tárolásához. Próbáld a --local kapcsolóval futtatni, ahhoz nem szükséges rendszerszintű hitelesítő-adat tárolás."
 
 [firstRun]
 paths = "A Kaja ezeket az elérési utakat fogja használni:"
@@ -23,8 +24,7 @@ HASZNÁLAT
   $ kaja [OPCIÓK] [PARANCS]
 
 PARANCSOK
-  config fetch
-  config wipe
+  config <fetch|wipe|paths>  Konfigurációs fájlok kezelése
   telegram
   web
   memory <list|forget <kulcs-vagy-glob>|export>
@@ -33,10 +33,10 @@ PARANCSOK
 OPCIÓK
   --local         A helyi ágens futtatása saját szolgáltatóval a hosztolt bejelentkezés helyett
   --remote        Hosztolt bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció
+  --user          Hosztolt (--remote) fiók kiválasztása/váltása e-mail cím alapján
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
-  --paths         Mutatja az összes elérési utat, amit a Kaja használ
   --port          A kaja --local web portja (alapértelmezés: 4880)
   --help          Mutatja ezt a súgót
   --version       Mutatja az app verziót
@@ -44,7 +44,7 @@ OPCIÓK
 PÉLDÁK
   $ kaja
   $ kaja --local -c
-  $ kaja --paths
+  $ kaja config paths
   $ kaja --local config fetch
   $ kaja --local --headless telegram
 """
@@ -77,6 +77,7 @@ usage = """
 Használat
   $ kaja config fetch   Újragenerálja a konfigurációs fájlokat a beépített sablonokból
   $ kaja config wipe    Biztonsági mentés után törli a teljes konfigurációs könyvtárat
+  $ kaja config paths   Mutatja az összes elérési utat, amit a Kaja használ
 """
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
@@ -166,7 +167,7 @@ mcpServerFailed = "(sikertelen kapcsolódás)"
 stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet · {toolCount} eszköz"
 
 [telegram]
-notConfigured = "Adj hozzá egy `telegram` blokkot a konfigurációhoz (a fájl helyéért lásd: `kaja --paths`) `botToken` és `allowedUserIds` mezőkkel, hogy használhasd ezt a parancsot."
+notConfigured = "Adj hozzá egy `telegram` blokkot a konfigurációhoz (a fájl helyéért lásd: `kaja config paths`) `botToken` és `allowedUserIds` mezőkkel, hogy használhasd ezt a parancsot."
 invalidToken = "Érvénytelen Telegram bot token — ellenőrizd a config.telegram.botToken értékét."
 starting = "Telegram bot indítása…"
 ready = "Telegram bot kész, üzenetekre vár."

@@ -5,7 +5,7 @@ import { NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi
 import { streamSSE } from "hono/streaming"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import type { RouteVariables } from "../../types"
-import { badRequest, notFound, unauthorized } from "../../types/errors"
+import { badGateway, badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
 import { openUserTurnStream, runUserTurn } from "./chat"
 import { withUserLock } from "./mutex"
@@ -47,6 +47,7 @@ nasiRoutes.openapi(turnRoute, async c => {
   } catch (error) {
     if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
+    if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
     throw error
   }
 })
@@ -93,10 +94,13 @@ nasiRoutes.post("/turn/stream", async c => {
     } catch (error) {
       const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
       const isNoModel = error instanceof Error && error.message === "no_model"
-      if (!isNotFound && !isNoModel) logError("nasi turn/stream failed", { userId: user.id, error: String(error) })
+      const isModelUnavailable = error instanceof Error && error.name === "NasiModelUnavailable"
+      if (!isNotFound && !isNoModel && !isModelUnavailable)
+        logError("nasi turn/stream failed", { userId: user.id, error: String(error) })
       let errorMessage = "Turn failed"
       if (isNotFound) errorMessage = "Session not found"
       else if (isNoModel) errorMessage = "No model available"
+      else if (isModelUnavailable) errorMessage = (error as Error).message
       await stream.writeSSE({
         event: "error",
         data: JSON.stringify({ error: errorMessage })

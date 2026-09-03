@@ -7,7 +7,7 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 usage() {
   cat <<'EOF'
 Usage:
-  curl -fsSL https://kaja.io/setup.sh | bash
+  curl -fsSL https://kaja.io/install.sh | bash
 
 Environment (optional):
   REPO=owner/repo          GitHub repo hosting releases (default: subztep/kaja)
@@ -15,8 +15,8 @@ Environment (optional):
   VERSION=v1.2.3           Pin to a specific release tag instead of latest
 
 Examples (put REPO / VERSION to the right of the pipe so they apply to the shell):
-  curl -fsSL https://kaja.io/setup.sh | REPO=myfork/kaja bash
-  curl -fsSL https://kaja.io/setup.sh | REPO=owner/repo VERSION=v0.1.0 bash
+  curl -fsSL https://kaja.io/install.sh | REPO=myfork/kaja bash
+  curl -fsSL https://kaja.io/install.sh | REPO=owner/repo VERSION=v0.1.0 bash
 EOF
   return
 }
@@ -178,7 +178,7 @@ main() {
   echo ""
   install
   echo ""
-  echo "Run 'kaja' to get started!"
+  echo "Run 'kaja --help' to get started!"
   return
 }
 

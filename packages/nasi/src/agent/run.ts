@@ -1,5 +1,6 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import { file } from "bun"
+import OpenAI from "openai"
 import type { ChatCompletionMessageParam, ChatCompletionMessageToolCall } from "openai/resources/chat/completions"
 import { takeLastServedModel } from "../models/client"
 import {
@@ -149,18 +150,28 @@ async function* streamRound(
   let thinking = ""
   let chunkModel: string | undefined
   let chunkPromptTokens: number | undefined
-  for await (const chunk of stream) {
-    if (chunk.model) chunkModel = chunk.model
-    if (chunk.usage?.prompt_tokens != null) chunkPromptTokens = chunk.usage.prompt_tokens
-    const delta = chunk.choices[0]?.delta as
-      | { reasoning_content?: string; reasoning?: string; content?: string }
-      | undefined
-    const reasoning = delta?.reasoning_content ?? delta?.reasoning
-    if (reasoning) {
-      thinking += reasoning
-      yield { type: "delta", channel: "reasoning", text: reasoning }
+
+  try {
+    for await (const chunk of stream) {
+      if (chunk.model) chunkModel = chunk.model
+      if (chunk.usage?.prompt_tokens != null) chunkPromptTokens = chunk.usage.prompt_tokens
+      const delta = chunk.choices[0]?.delta as
+        | { reasoning_content?: string; reasoning?: string; content?: string }
+        | undefined
+      const reasoning = delta?.reasoning_content ?? delta?.reasoning
+      if (reasoning) {
+        thinking += reasoning
+        yield { type: "delta", channel: "reasoning", text: reasoning }
+      }
+      if (delta?.content) yield { type: "delta", channel: "content", text: delta.content }
     }
-    if (delta?.content) yield { type: "delta", channel: "content", text: delta.content }
+  } catch (cause) {
+    if (cause instanceof OpenAI.APIError) {
+      const err = new Error(`Model provider request failed: ${cause.message}`)
+      err.name = "NasiModelUnavailable"
+      throw err
+    }
+    throw cause
   }
 
   const completion = await stream.finalChatCompletion()
@@ -211,17 +222,24 @@ async function* handleToolCalls(
   toolCalls: ChatCompletionMessageToolCall[]
 ): AsyncGenerator<
   AgentEvent,
-  { ask?: { id: string; question: string }; confirm?: { id: string; command: string; description: string } },
+  {
+    ask?: { id: string; question: string; note?: string }
+    confirm?: { id: string; command: string; description: string }
+  },
   void
 > {
-  let ask: { id: string; question: string } | undefined
+  let ask: { id: string; question: string; note?: string } | undefined
   let confirm: { id: string; command: string; description: string } | undefined
   for (const call of toolCalls) {
     if (call.type !== "function") continue
 
     if (call.function.name === ASK_USER_TOOL) {
-      const args = parseToolArgs(call.function.arguments) as { question?: string } | null
-      ask = { id: call.id, question: typeof args?.question === "string" ? args.question : "" }
+      const args = parseToolArgs(call.function.arguments) as { question?: string; note?: string } | null
+      ask = {
+        id: call.id,
+        question: typeof args?.question === "string" ? args.question : "",
+        note: typeof args?.note === "string" && args.note.trim() ? args.note : undefined
+      }
       continue
     }
 
@@ -249,12 +267,12 @@ function finalEventFor(message: StreamedRound["message"]): AgentEvent {
 
 function* handlePendingHandoff(
   session: Session,
-  ask: { id: string; question: string } | undefined,
+  ask: { id: string; question: string; note?: string } | undefined,
   confirm: { id: string; command: string; description: string } | undefined
 ): Generator<AgentEvent, boolean, void> {
   if (ask) {
     session.pendingAskUserId = ask.id
-    yield { type: "ask_user", question: ask.question }
+    yield { type: "ask_user", question: ask.question, note: ask.note }
     return true
   }
 

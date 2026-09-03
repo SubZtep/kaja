@@ -63,8 +63,18 @@ jobs:
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
 
+      - name: Install secret-service backend
+        run: sudo apt-get update && sudo apt-get install -y gnome-keyring dbus-x11
+
       - name: Run tests
-        run: bun test
+        run: |
+          eval "$(dbus-launch --sh-syntax)"
+          # a non-empty password is required for gnome-keyring-daemon to create the "login"
+          # collection; empty/EOF stdin only creates the ephemeral "session" collection, which
+          # Bun.secrets does not use, leaving Bun.secrets.set to fail against the CI runner's
+          # otherwise-blank keyring state
+          eval "$(echo 'ci-dummy-password' | gnome-keyring-daemon --unlock)"
+          bun test
 
   compile-cli:
     needs: lint

@@ -6,7 +6,7 @@ import { BarkochbaGame } from "./barkochba-game"
 
 export function Hero() {
   const [copied, setCopied] = useState(false)
-  const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/setup.sh | bash")
+  const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/install.sh | bash")
 
   useEffect(() => {
     setInstallCmd(getInstallCmd())

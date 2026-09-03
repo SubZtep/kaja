@@ -1,14 +1,9 @@
 import meow from "meow"
-import { getConfigDir } from "../config/config"
 import { t } from "../i18n"
-import { listPaths } from "../paths"
 
 export const args = meow(t("args.help"), {
   importMeta: import.meta,
   flags: {
-    paths: {
-      type: "boolean"
-    },
     continue: {
       type: "boolean",
       shortFlag: "c"
@@ -30,14 +25,13 @@ export const args = meow(t("args.help"), {
     remote: {
       type: "boolean"
     },
+    /** Selects/switches the hosted (--remote) account by email; overrides the last signed-in user from settings.toml. */
+    user: {
+      type: "string"
+    },
     /** No Ink render — for a subcommand that doesn't need a terminal (e.g. telegram). */
     headless: {
       type: "boolean"
     }
   }
 })
-
-if (args.flags.paths) {
-  for (const { label, path } of listPaths(true, getConfigDir())) console.log(`${label}: ${path}`)
-  process.exit(0)
-}

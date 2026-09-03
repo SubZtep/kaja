@@ -4,6 +4,11 @@
     "web": {
       "port": 3001,
       "image": "backend"
+    },
+    "hook:deploy:start:before": {
+      "type": "command",
+      "image": "backend",
+      "command": "bun run migrate.js"
     }
   },
   "images": {

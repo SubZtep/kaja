@@ -81,7 +81,7 @@ export const DATASET_INFO_TOOL = "dataset_info"
 export const SWITCH_PERSONA_TOOL = "switch_persona"
 export const REMEMBER_NOTE_TOOL = "remember_note"
 
-export const askUserTool = tool<{ question: string }>({
+export const askUserTool = tool<{ question: string; note?: string }>({
   name: ASK_USER_TOOL,
   description:
     "Ask the human a question and wait for their reply. Use this when you need " +
@@ -94,6 +94,13 @@ export const askUserTool = tool<{ question: string }>({
       question: {
         type: "string",
         description: "The question to ask the human."
+      },
+      note: {
+        type: "string",
+        description:
+          "Optional short reaction to their previous answer, shown separately from " +
+          "the question (e.g. 'Not alive — got it.'). Never repeat or preview the " +
+          "question itself here."
       }
     },
     required: ["question"]
@@ -207,7 +214,7 @@ export type AgentEvent =
   | { type: "tool_call"; name: string; arguments: string }
   | { type: "tool_image"; path: string }
   | { type: "display_image"; url: string; alt: string }
-  | { type: "ask_user"; question: string }
+  | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "final"; content: string | null }

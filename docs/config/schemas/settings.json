@@ -2,6 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
+    "user": {
+      "description": "Email of the last signed-in hosted (--remote) user; the token itself lives in the OS credential store",
+      "type": "string",
+      "minLength": 1
+    },
     "stt": {
       "type": "object",
       "properties": {

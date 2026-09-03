@@ -9,10 +9,12 @@ import { Section } from "../../components/ui/Section"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { userRequired } from "../../lib/loaders"
+import { getPageTitle } from "../../lib/vars"
 
 export const Route = createFileRoute("/_admin/profile")({
   component: Profile,
-  loader: () => userRequired()
+  loader: () => userRequired(),
+  head: () => ({ meta: [{ title: getPageTitle("Profile") }] })
 })
 
 function Profile() {

@@ -6,7 +6,7 @@ export function getPaths() {
   return envPaths("kaja", { suffix: "" })
 }
 
-/** Every path the CLI reads/writes, for display (--paths, first-run screen). Duplicated as a flat list to avoid importing modules with config side effects. */
+/** Every path the CLI reads/writes, for display (`config paths`, first-run screen). Duplicated as a flat list to avoid importing modules with config side effects. */
 export function listPaths(all = false, configDir = getPaths().config) {
   const paths = getPaths()
 

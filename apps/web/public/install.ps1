@@ -1,7 +1,7 @@
 # kaja autoinstall (Windows)
-# Usage:  irm https://kaja.io/setup.ps1 | iex
+# Usage:  irm https://kaja.io/install.ps1 | iex
 # Optional: set $env:REPO, $env:VERSION, or $env:INSTALL_DIR in the same shell first, e.g.:
-#   $env:REPO = 'myfork/kaja'; irm https://kaja.io/setup.ps1 | iex
+#   $env:REPO = 'myfork/kaja'; irm https://kaja.io/install.ps1 | iex
 #Requires -Version 5.1
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
@@ -73,5 +73,5 @@ if (-not $already) {
   Write-Host "Example:"
   Write-Host "  $hint"
   Write-Host ""
-  Write-Host "Run 'kaja' to get started!"
+  Write-Host "Run 'kaja --help' to get started!"
 }

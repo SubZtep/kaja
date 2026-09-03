@@ -30,6 +30,11 @@ export const KajaMemorySchema = z.object({
 
 /** location/webSearch/telegram/api (external service credentials) live in services.toml */
 export const KajaConfigSchema = z.object({
+  user: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("Email of the last signed-in hosted (--remote) user; the token itself lives in the OS credential store"),
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
   memory: KajaMemorySchema.optional(),

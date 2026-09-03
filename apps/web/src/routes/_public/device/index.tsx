@@ -5,12 +5,14 @@ import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
 import { useAuthClient } from "../../../hooks/auth-client"
+import { getPageTitle } from "../../../lib/vars"
 
 export const Route = createFileRoute("/_public/device/")({
   validateSearch: z.object({
     user_code: z.string().optional()
   }),
-  component: DeviceCodePage
+  component: DeviceCodePage,
+  head: () => ({ meta: [{ title: getPageTitle("Device Login") }] })
 })
 
 function DeviceCodePage() {
