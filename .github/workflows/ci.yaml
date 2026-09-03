@@ -63,8 +63,14 @@ jobs:
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
 
+      - name: Install secret-service backend
+        run: sudo apt-get update && sudo apt-get install -y gnome-keyring dbus-x11
+
       - name: Run tests
-        run: bun test
+        run: |
+          eval "$(dbus-launch --sh-syntax)"
+          eval "$(printf '' | gnome-keyring-daemon --unlock --components=secrets)"
+          bun test
 
   compile-cli:
     needs: lint
