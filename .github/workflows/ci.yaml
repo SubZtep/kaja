@@ -66,6 +66,19 @@ jobs:
       - name: Install secret-service backend
         run: sudo apt-get update && sudo apt-get install -y gnome-keyring dbus-x11
 
+      - name: Diagnose secret-service state (temporary)
+        run: |
+          echo "pre-existing DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"
+          echo "pre-existing GNOME_KEYRING_CONTROL=$GNOME_KEYRING_CONTROL"
+          ls -la "$HOME/.local/share/keyrings" 2>&1 || echo "no keyrings dir"
+          ls -la "$HOME/.cache/keyring-"* 2>&1 || echo "no keyring cache dir"
+          eval "$(dbus-launch --sh-syntax)"
+          eval "$(printf '' | gnome-keyring-daemon --unlock)"
+          echo "post-launch DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"
+          echo "post-launch GNOME_KEYRING_CONTROL=$GNOME_KEYRING_CONTROL"
+          gdbus call --session --dest org.freedesktop.secrets --object-path /org/freedesktop/secrets --method org.freedesktop.DBus.Properties.Get org.freedesktop.Secret.Service Collections 2>&1 || true
+          secret-tool store --label=diag service diag-service name diag-name <<< "diag-value" 2>&1 || true
+
       - name: Run tests
         run: |
           eval "$(dbus-launch --sh-syntax)"
