@@ -1,41 +1,37 @@
-import { expect, test } from "bun:test"
-import { tmpdir } from "node:os"
+import { afterEach, expect, test } from "bun:test"
+import { clearToken, loadToken, saveToken } from "../../../lib/auth/credentials"
 
-process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-auth-credentials`
+const EMAIL = "alice@kaja-test.invalid"
+const OTHER_EMAIL = "bob@kaja-test.invalid"
 
-const { clearCredentials, loadCredentials, saveCredentials } = await import("../../../lib/auth/credentials")
-
-test("loadCredentials returns undefined when nothing is stored", async () => {
-  await clearCredentials()
-  expect(await loadCredentials()).toBeUndefined()
+afterEach(async () => {
+  await clearToken(EMAIL)
+  await clearToken(OTHER_EMAIL)
 })
 
-test("saveCredentials then loadCredentials round-trips", async () => {
-  await saveCredentials({ apiUrl: "https://api.kaja.io", token: "tok_abc" })
-  const loaded = await loadCredentials()
-  expect(loaded).toEqual({ apiUrl: "https://api.kaja.io", token: "tok_abc" })
+test("loadToken returns undefined when nothing is stored", async () => {
+  expect(await loadToken(EMAIL)).toBeUndefined()
 })
 
-test("saved credentials file is 0o600", async () => {
-  await saveCredentials({ apiUrl: "https://api.kaja.io", token: "tok_abc" })
-  const { join } = await import("node:path")
-  const { getPaths } = await import("../../../lib/paths")
-  const { stat } = await import("node:fs/promises")
-  const path = join(getPaths().config, "credentials.json")
-  const info = await stat(path)
-  expect(info.mode & 0o777).toBe(0o600)
+test("saveToken then loadToken round-trips", async () => {
+  await saveToken(EMAIL, "tok_abc")
+  expect(await loadToken(EMAIL)).toBe("tok_abc")
 })
 
-test("clearCredentials removes the file", async () => {
-  await saveCredentials({ apiUrl: "https://api.kaja.io", token: "tok_abc" })
-  await clearCredentials()
-  expect(await loadCredentials()).toBeUndefined()
+test("clearToken removes the stored token", async () => {
+  await saveToken(EMAIL, "tok_abc")
+  await clearToken(EMAIL)
+  expect(await loadToken(EMAIL)).toBeUndefined()
 })
 
-test("loadCredentials returns undefined on corrupt JSON", async () => {
-  const { join } = await import("node:path")
-  const { getPaths } = await import("../../../lib/paths")
-  const path = join(getPaths().config, "credentials.json")
-  await Bun.write(path, "not json")
-  expect(await loadCredentials()).toBeUndefined()
+test("tokens for different emails coexist independently", async () => {
+  await saveToken(EMAIL, "tok_alice")
+  await saveToken(OTHER_EMAIL, "tok_bob")
+
+  expect(await loadToken(EMAIL)).toBe("tok_alice")
+  expect(await loadToken(OTHER_EMAIL)).toBe("tok_bob")
+
+  await clearToken(EMAIL)
+  expect(await loadToken(EMAIL)).toBeUndefined()
+  expect(await loadToken(OTHER_EMAIL)).toBe("tok_bob")
 })

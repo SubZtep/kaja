@@ -1,32 +1,56 @@
 import { color } from "bun"
 import { render } from "ink"
 import LiteApp from "../components/layout/lite-app"
-import { loadCredentials } from "../lib/auth/credentials"
+import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
+import { args } from "../lib/cli/args"
+import { getCurrentUser, saveCurrentUser } from "../lib/config/config"
 import { t } from "../lib/i18n"
 
+/** Reset terminal colours */
+const ANSI_RESET = "\x1b[0m"
+
 async function resolveToken(apiUrl: string): Promise<string> {
-  const envToken = process.env.KAJA_TOKEN
-  if (envToken) return envToken
+  try {
+    // Multiple accounts can be signed in on one machine (each keyed by email in the OS credential store,
+    // see credentials.ts) — --user picks one explicitly, otherwise fall back to the last-used account.
+    const targetEmail = args.flags.user ?? (await getCurrentUser())
 
-  const stored = await loadCredentials()
-  if (stored?.apiUrl === apiUrl) return stored.token
+    if (targetEmail) {
+      const stored = await loadToken(targetEmail)
+      if (stored) {
+        await saveCurrentUser(targetEmail)
+        return stored
+      }
+    }
 
-  console.log(t("cli.pleaseSignIn"))
-  return deviceLogin(apiUrl, prompt => {
-    console.log(`\n${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${prompt.verificationUri}`)
-    console.log(
-      `${color("white", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${prompt.userCode}${color("white", "ansi")}\n`
-    )
-  })
+    console.log(t("cli.pleaseSignIn"))
+
+    const { email, token } = await deviceLogin(apiUrl, prompt => {
+      console.log(
+        `\n${color("lightgray", "ansi")}${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${prompt.verificationUri}`
+      )
+      console.log(
+        `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${prompt.userCode}${ANSI_RESET}\n`
+      )
+    })
+    await saveCurrentUser(email)
+    return token
+  } catch (error) {
+    if (error instanceof SecretsAccessError) {
+      const reason = error.cause instanceof Error ? error.cause.message : String(error.cause)
+      throw new Error(`${t("cli.secretsUnavailable")} (${reason})`)
+    }
+    throw error
+  }
 }
 
 /**
  * Hosted path: reached via `--remote`, or by default when no local config
- * exists yet (see cli.ts's useLocal check). Resolves an API token (env,
- * cached credentials, or device login), then renders LiteApp against hosted
- * Nasi. No local agent, no sqlite, no MCP, no shell tools — talks to
- * `<apiUrl>/nasi/*` over SSE.
+ * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
+ * credentials for the current/selected user, or device login), then renders
+ * LiteApp against hosted Nasi. No local agent, no sqlite, no MCP, no shell
+ * tools — talks to `<apiUrl>/nasi/*` over SSE.
  */
 export async function runRemoteSubcommand() {
   const apiUrl = process.env.KAJA_API_URL ?? "https://api.kaja.io"

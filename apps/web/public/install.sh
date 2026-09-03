@@ -178,7 +178,7 @@ main() {
   echo ""
   install
   echo ""
-  echo "Run 'kaja' to get started!"
+  echo "Run 'kaja --help' to get started!"
   return
 }
 

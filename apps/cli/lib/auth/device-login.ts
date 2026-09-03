@@ -1,7 +1,7 @@
 import { KAJA_CLI_CLIENT_ID } from "@kaja/schema/api"
 import { createAuthClient } from "better-auth/client"
 import { deviceAuthorizationClient } from "better-auth/client/plugins"
-import { saveCredentials } from "./credentials"
+import { saveToken } from "./credentials"
 
 export type DeviceLoginPrompt = {
   userCode: string
@@ -9,17 +9,39 @@ export type DeviceLoginPrompt = {
   verificationUriComplete?: string
 }
 
+export type DeviceLoginResult = {
+  email: string
+  token: string
+}
+
+/** Looks up the signed-in user's email for `token` via `/auth/get-session`, so the token can be stored per-account (see credentials.ts). */
+async function fetchEmail(apiUrl: string, token: string): Promise<string> {
+  const response = await fetch(new URL("/auth/get-session", apiUrl), {
+    headers: { authorization: `Bearer ${token}` }
+  })
+  if (!response.ok) throw new Error("Failed to look up the signed-in user")
+  const data = (await response.json()) as { user?: { email?: string } } | null
+  const email = data?.user?.email
+  if (!email) throw new Error("Failed to look up the signed-in user")
+  return email
+}
+
 /**
  * Runs the OAuth device-authorization-grant flow against `apiUrl`: requests
  * a device code, hands the caller the code/URL to show the user (`onPrompt`),
  * then polls `/auth/device/token` until the user approves it in the browser.
- * On success, persists the bearer token to `credentials.json` and returns it.
+ * On success, looks up the signed-in user's email and persists the bearer
+ * token to the OS credential store under that email (see credentials.ts —
+ * keyed by user, not apiUrl, so multiple accounts can coexist on one machine).
  *
  * Rejects on `access_denied`, `expired_token`, or any other terminal error;
  * `authorization_pending` and `slow_down` are retried per the RFC 8628 poll
  * interval (increased by 5s on `slow_down`, per the spec).
  */
-export async function deviceLogin(apiUrl: string, onPrompt: (prompt: DeviceLoginPrompt) => void): Promise<string> {
+export async function deviceLogin(
+  apiUrl: string,
+  onPrompt: (prompt: DeviceLoginPrompt) => void
+): Promise<DeviceLoginResult> {
   const authClient = createAuthClient({
     baseURL: apiUrl,
     basePath: "/auth",
@@ -52,8 +74,9 @@ export async function deviceLogin(apiUrl: string, onPrompt: (prompt: DeviceLogin
     })
     if (poll.data?.access_token) {
       const token = poll.data.access_token
-      await saveCredentials({ apiUrl, token })
-      return token
+      const email = await fetchEmail(apiUrl, token)
+      await saveToken(email, token)
+      return { email, token }
     }
     switch (poll.error?.error) {
       case "authorization_pending":

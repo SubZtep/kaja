@@ -73,5 +73,5 @@ if (-not $already) {
   Write-Host "Example:"
   Write-Host "  $hint"
   Write-Host ""
-  Write-Host "Run 'kaja' to get started!"
+  Write-Host "Run 'kaja --help' to get started!"
 }

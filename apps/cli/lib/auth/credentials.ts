@@ -1,40 +1,35 @@
-import { join } from "node:path"
-import * as z from "zod"
-import { getPaths } from "../paths"
+const SECRETS_SERVICE = "kaja-cli"
 
-const CredentialsSchema = z.object({
-  apiUrl: z.string(),
-  token: z.string()
-})
-
-export type Credentials = z.infer<typeof CredentialsSchema>
-
-function credentialsPath(): string {
-  return join(getPaths().config, "credentials.json")
-}
-
-/** Loads the stored lite-CLI bearer token, if any. Never throws — a missing or corrupt file just means "not logged in". */
-export async function loadCredentials(): Promise<Credentials | undefined> {
-  try {
-    const raw = await Bun.file(credentialsPath()).json()
-    const parsed = CredentialsSchema.safeParse(raw)
-    return parsed.success ? parsed.data : undefined
-  } catch {
-    return undefined
+/** Thrown when the OS credential store itself is unreachable (e.g. no secret-service daemon on Linux) — distinct from "no token stored". */
+export class SecretsAccessError extends Error {
+  constructor(cause: unknown) {
+    super("Could not access the system credential store", { cause })
   }
 }
 
-/** Persists the lite-CLI bearer token at 0o600 — this file is a bearer credential, not provider config, so it does not live in secrets.toml. */
-export async function saveCredentials(credentials: Credentials): Promise<void> {
-  const { chmod, mkdir } = await import("node:fs/promises")
-  await mkdir(getPaths().config, { recursive: true })
-  const path = credentialsPath()
-  await Bun.write(path, JSON.stringify(credentials, null, 2))
-  await chmod(path, 0o600)
+/** Loads the stored lite-CLI bearer token for `email` from the OS credential store, if any. Keyed by user, not apiUrl, so multiple accounts can coexist on one machine. */
+export async function loadToken(email: string): Promise<string | undefined> {
+  try {
+    const value = await Bun.secrets.get({ service: SECRETS_SERVICE, name: email })
+    return value ?? undefined
+  } catch (error) {
+    throw new SecretsAccessError(error)
+  }
 }
 
-export async function clearCredentials(): Promise<void> {
-  await Bun.file(credentialsPath())
-    .delete()
-    .catch(() => {})
+/** Persists the lite-CLI bearer token for `email` in the OS credential store (Keychain / Credential Manager / secret-service). */
+export async function saveToken(email: string, token: string): Promise<void> {
+  try {
+    await Bun.secrets.set({ service: SECRETS_SERVICE, name: email, value: token })
+  } catch (error) {
+    throw new SecretsAccessError(error)
+  }
+}
+
+export async function clearToken(email: string): Promise<void> {
+  try {
+    await Bun.secrets.delete({ service: SECRETS_SERVICE, name: email })
+  } catch (error) {
+    throw new SecretsAccessError(error)
+  }
 }

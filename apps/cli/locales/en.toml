@@ -7,6 +7,7 @@ headlessNoSubcommand = "--headless needs a subcommand that supports it, like `te
 pleaseSignIn = "Please sign in!"
 deviceLoginGoTo = "Go to:"
 deviceLoginEnterCode = "Enter code:"
+secretsUnavailable = "Could not access the system keychain to store your login. Try running with --local instead, which does not require OS credential storage."
 
 [firstRun]
 paths = "Kaja will use these paths:"
@@ -23,8 +24,7 @@ USAGE
   $ kaja [OPTIONS] [COMMAND]
 
 COMMANDS
-  config fetch
-  config wipe
+  config <fetch|wipe|paths>  Manage config files
   telegram
   web
   memory <list|forget <key-or-glob>|export>
@@ -33,10 +33,10 @@ COMMANDS
 OPTIONS
   --local         Run the local agent loop against your own provider instead of hosted login
   --remote        Force hosted login even if a local config exists
+  --user          Select/switch the hosted (--remote) account by email
   --continue, -c  Resume the most recent session (--local only)
   --session, -s   Resume a session by id (--local only; see: kaja --local session list)
   --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
-  --paths         Print every path Kaja reads or writes
   --port          Port for kaja --local web (default: 4880)
   --help          Print this help
   --version       Print app version
@@ -44,7 +44,7 @@ OPTIONS
 EXAMPLES
   $ kaja
   $ kaja --local -c
-  $ kaja --paths
+  $ kaja config paths
   $ kaja --local config fetch
   $ kaja --local --headless telegram
 """
@@ -77,6 +77,7 @@ usage = """
 Usage
   $ kaja config fetch   Regenerate config files from the bundled templates
   $ kaja config wipe    Back up and clear the whole config directory
+  $ kaja config paths   Print every path Kaja reads or writes
 """
 fetched = "Wrote {path}"
 fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
@@ -166,7 +167,7 @@ mcpServerFailed = "(failed to connect)"
 stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount} · Tools: {toolCount}"
 
 [telegram]
-notConfigured = "Add a `telegram` block to your config (see `kaja --paths` for the file path) with `botToken` and `allowedUserIds` to use this command."
+notConfigured = "Add a `telegram` block to your config (see `kaja config paths` for the file path) with `botToken` and `allowedUserIds` to use this command."
 invalidToken = "Invalid Telegram bot token — check config.telegram.botToken."
 starting = "Starting Telegram bot…"
 ready = "Telegram bot ready, long-polling for messages."

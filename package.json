@@ -1,12 +1,13 @@
 {
   "name": "kaja",
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.12",
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
     "@types/bun": "^1.4.0",
     "lefthook": "^2.1.10",
     "nitro": "npm:nitro-nightly@3.0.1-20260902-190952-ee541098",
+    "tombi": "^1.5.0",
     "typescript": "^7.0.2"
   },
   "description": "monorepo",
@@ -20,8 +21,8 @@
     "dev:web": "bun run --filter @kaja/web dev",
     "dev:widget": "bun run --filter @kaja/widget dev",
     "generate:schemas": "bun run packages/schema/tombi/generate.ts",
-    "lint": "biome check --config-path=.",
-    "lint:fix": "biome check --config-path=. --write --unsafe",
+    "lint": "biome check --config-path=. && tombi format --check && tombi lint",
+    "lint:fix": "biome check --config-path=. --write --unsafe && tombi format && tombi lint --error-on-warnings",
     "typecheck": "set -e; for pkg in apps/* packages/*; do [ -f \"$pkg/tsconfig.json\" ] || continue; (cd \"$pkg\" && bunx tsc --noEmit); done"
   },
   "workspaces": [
