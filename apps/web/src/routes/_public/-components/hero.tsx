@@ -25,7 +25,7 @@ export function Hero() {
     script.dataset.kajaBaseUrl = apiUrl
     document.body.appendChild(script)
     return () => {
-      document.body.removeChild(script)
+      script.remove()
     }
   }, [apiUrl, chatWidgetKey])
 

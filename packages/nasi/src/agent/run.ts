@@ -214,6 +214,15 @@ function pushPromptToMessages(session: Session, prompt: string): void {
   }
 }
 
+function handleAskUserCall(call: FunctionToolCall): { id: string; question: string; note?: string } {
+  const args = parseToolArgs(call.function.arguments) as { question?: string; note?: string } | null
+  return {
+    id: call.id,
+    question: typeof args?.question === "string" ? args.question : "",
+    note: typeof args?.note === "string" && args.note.trim() ? args.note : undefined
+  }
+}
+
 async function* handleToolCalls(
   agent: Agent,
   messages: ChatCompletionMessageParam[],
@@ -234,12 +243,7 @@ async function* handleToolCalls(
     if (call.type !== "function") continue
 
     if (call.function.name === ASK_USER_TOOL) {
-      const args = parseToolArgs(call.function.arguments) as { question?: string; note?: string } | null
-      ask = {
-        id: call.id,
-        question: typeof args?.question === "string" ? args.question : "",
-        note: typeof args?.note === "string" && args.note.trim() ? args.note : undefined
-      }
+      ask = handleAskUserCall(call)
       continue
     }
 
