@@ -1,8 +1,9 @@
+import { error as logError } from "@kaja/logger"
 import { createMiddleware } from "hono/factory"
 import { widgetKeyService } from "../../services"
 import { forbidden, unauthorized } from "../../types/errors"
 
-export type ResolvedWidgetKey = { id: string; userId: string; allowedOrigins: string[]; personaId: string | null }
+export type ResolvedWidgetKey = { id: string; userId: string; allowedOrigins: string[]; persona: string | null }
 
 export type WidgetVariables = { widgetKey: ResolvedWidgetKey }
 
@@ -23,7 +24,9 @@ export const widgetKeyAuthMiddleware = createMiddleware<{ Variables: WidgetVaria
   if (!origin || !resolved.allowedOrigins.includes(origin)) return forbidden(c, "Origin not allowed for this key")
 
   c.set("widgetKey", resolved)
-  void widgetKeyService.touchLastUsed(resolved.id)
+  void widgetKeyService
+    .touchLastUsed(resolved.id)
+    .catch(error => logError("widget touchLastUsed failed", { widgetKeyId: resolved.id, error: String(error) }))
 
   await next()
 })

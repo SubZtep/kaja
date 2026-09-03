@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "widget_key" (
   "id" uuid default uuidv7 () not null primary key,
   "user_id" uuid not null references "user" ("id") on delete cascade,
-  "persona_id" text,
+  "persona" text,
   "label" text not null,
   "key_prefix" text not null,
   "key_hash" text not null unique,

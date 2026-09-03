@@ -9,5 +9,5 @@ export async function runWidgetTurn(widgetKey: ResolvedWidgetKey, body: WidgetTu
     userId: widgetKey.userId,
     owner: widgetVisitorOwner(widgetKey.id, visitorId)
   })
-  return nasi.turnBuffered({ ...turnBody, personaId: widgetKey.personaId ?? undefined })
+  return nasi.turnBuffered({ ...turnBody, personaId: widgetKey.persona ?? undefined })
 }

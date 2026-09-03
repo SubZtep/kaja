@@ -74,6 +74,19 @@ describe("widget", () => {
     expect(res.status).toBe(401)
   })
 
+  test("well-formed but never-issued widget key is 401", async () => {
+    const res = await app.request("/widget/turn", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        origin: allowedOrigin,
+        "x-kaja-widget-key": `kwk_${"a".repeat(32)}`
+      },
+      body: JSON.stringify({ message: "hi", visitorId: "v1" })
+    })
+    expect(res.status).toBe(401)
+  })
+
   test("mismatched origin is 403", async () => {
     const res = await app.request("/widget/turn", {
       method: "POST",
@@ -120,32 +133,32 @@ describe("widget", () => {
     expect(hijack.status).toBe(404)
   })
 
-  test("a key created with a personaId round-trips it through create and list", async () => {
+  test("a key created with a persona round-trips it through create and list", async () => {
     const createKey = await app.request("/widget-keys", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "Barkochba widget", allowedOrigins: [allowedOrigin], personaId: "barkochba" })
+      body: JSON.stringify({ label: "Barkochba widget", allowedOrigins: [allowedOrigin], persona: "barkochba" })
     })
     expect(createKey.status).toBe(201)
     const created = await createKey.json()
-    expect(created.personaId).toBe("barkochba")
+    expect(created.persona).toBe("barkochba")
 
     const list = await app.request("/widget-keys", { headers: { Authorization: `Bearer ${token}` } })
     const { keys } = await list.json()
     const found = keys.find((k: { id: string }) => k.id === created.id)
-    expect(found.personaId).toBe("barkochba")
+    expect(found.persona).toBe("barkochba")
   })
 
-  test("creating a key with an unknown personaId is rejected", async () => {
+  test("creating a key with an unknown persona is rejected", async () => {
     const res = await app.request("/widget-keys", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "Bad persona", allowedOrigins: [allowedOrigin], personaId: "does-not-exist" })
+      body: JSON.stringify({ label: "Bad persona", allowedOrigins: [allowedOrigin], persona: "does-not-exist" })
     })
     expect(res.status).toBe(400)
   })
 
-  test("a key with no personaId behaves exactly as before (auto-select, unaffected)", async () => {
+  test("a key with no persona behaves exactly as before (auto-select, unaffected)", async () => {
     const res = await app.request("/widget/turn", {
       method: "POST",
       headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },

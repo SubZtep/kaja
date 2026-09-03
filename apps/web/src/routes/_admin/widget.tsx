@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_admin/widget")({
 const createFormSchema = z.object({
   label: z.string().min(1, "Required"),
   allowedOrigins: z.string().min(1, "Required"),
-  personaId: z.string()
+  persona: z.string()
 })
 
 const AUTO_SELECT_PERSONA = ""
@@ -91,9 +91,9 @@ function makeActionsCell(onRevoke: (id: string) => void) {
 function EmbedSnippet({
   apiUrl,
   rawKey,
-  personaId
-}: Readonly<{ apiUrl: string; rawKey: string; personaId: string | null }>) {
-  const mode = personaId === "barkochba" ? ` data-kaja-mode="barkochba"` : ""
+  persona
+}: Readonly<{ apiUrl: string; rawKey: string; persona: string | null }>) {
+  const mode = persona === "barkochba" ? ` data-kaja-mode="barkochba"` : ""
   const snippet = `<script async src="${apiUrl}/widget/widget.js" data-kaja-key="${rawKey}" data-kaja-base-url="${apiUrl}"${mode}></script>`
   return (
     <div className="mt-4 rounded-lg border border-border bg-surface p-4">
@@ -125,7 +125,7 @@ function WidgetPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widget-keys"] })
 
   const createKey = useMutation({
-    mutationFn: (payload: { label: string; allowedOrigins: string[]; personaId?: string }) =>
+    mutationFn: (payload: { label: string; allowedOrigins: string[]; persona?: string }) =>
       apiFetch<CreateWidgetKeyResponse>("/widget-keys", payload),
     onSuccess: response => {
       invalidate()
@@ -145,13 +145,13 @@ function WidgetPage() {
   })
 
   const form = useAppForm({
-    defaultValues: { label: "", allowedOrigins: "", personaId: AUTO_SELECT_PERSONA },
+    defaultValues: { label: "", allowedOrigins: "", persona: AUTO_SELECT_PERSONA },
     validators: { onSubmit: createFormSchema },
     onSubmit: async ({ value, formApi }) => {
       await createKey.mutateAsync({
         label: value.label,
         allowedOrigins: parseOrigins(value.allowedOrigins),
-        personaId: value.personaId || undefined
+        persona: value.persona || undefined
       })
       formApi.reset()
     }
@@ -208,7 +208,7 @@ function WidgetPage() {
               <field.TextField label="Allowed Origins" placeholder="https://example.com, https://www.example.com" />
             )}
           </form.AppField>
-          <form.AppField name="personaId">
+          <form.AppField name="persona">
             {field => (
               <field.SelectField
                 label="Persona"
@@ -223,7 +223,7 @@ function WidgetPage() {
             Create Key
           </Button>
         </form>
-        {justCreated && <EmbedSnippet apiUrl={apiUrl} rawKey={justCreated.rawKey} personaId={justCreated.personaId} />}
+        {justCreated && <EmbedSnippet apiUrl={apiUrl} rawKey={justCreated.rawKey} persona={justCreated.persona} />}
       </Section>
 
       <Section padded={false}>

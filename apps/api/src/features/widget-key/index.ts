@@ -56,11 +56,11 @@ const createRouteDef = createRoute({
 widgetKeyRoutes.openapi(createRouteDef, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  const { label, allowedOrigins, personaId } = c.req.valid("json")
-  if (personaId && !listPersonas().some(p => p.id === personaId)) {
-    return badRequest(c, `Unknown personaId "${personaId}"`)
+  const { label, allowedOrigins, persona } = c.req.valid("json")
+  if (persona && !listPersonas().some(p => p.id === persona)) {
+    return badRequest(c, `Unknown persona "${persona}"`)
   }
-  const key = await widgetKeyService.createKey(user.id, label, allowedOrigins, personaId)
+  const key = await widgetKeyService.createKey(user.id, label, allowedOrigins, persona)
   return c.json(key, 201)
 })
 
