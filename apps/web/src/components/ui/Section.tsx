@@ -16,7 +16,7 @@ export function Section({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-border bg-surface",
+        "overflow-hidden rounded-xl border border-border sm:bg-surface",
         padded && "px-5.5 py-5 sm:px-6 sm:py-6",
         className
       )}

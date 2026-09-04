@@ -33,7 +33,7 @@ export function Personas() {
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {PERSONAS.map(p => (
-          <Section key={p.id}>
+          <Section key={p.id} className="border-0 bg-transparent p-0 sm:border sm:px-6 sm:py-6">
             <div className="mb-2.5 flex items-center justify-between">
               <div className="font-semibold text-fg text-[15px]">{p.label}</div>
               <span className="font-mono text-[#6e7681] text-[11px]">{p.id}.toml</span>

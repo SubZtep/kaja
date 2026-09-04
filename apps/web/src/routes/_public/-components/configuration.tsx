@@ -28,18 +28,18 @@ export function Configuration() {
           </>
         }
       />
-      <Section className="mb-5 overflow-x-auto">
+      <Section className="mb-5 overflow-x-auto border-0 p-0 sm:border sm:px-6 sm:py-6">
         <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
           {
             "~/.config/kaja/\n├─ datasets/*.json  # custom fields for personas to collect\n├─ personas/*.toml  # one behaviour per file\n├─ mcp.toml         # model context protocol servers\n├─ models.toml      # model catalog per provider\n├─ services.toml    # external service definitions and endpoints\n├─ secrets.toml     # user’s secret keys and tokens\n└─ settings.toml    # optional settings and app preferences"
           }
         </code>
       </Section>
-      <Section>
+      <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
         <div className="mb-3.5 font-semibold text-fg text-sm">Built-in tools</div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map(tool => (
-            <div key={tool.name} className="rounded-lg border border-border/50 bg-surface-2 p-2">
+            <div key={tool.name} className="rounded-lg border border-border/50 bg-transparent p-2">
               <code className="block whitespace-nowrap font-mono text-neon text-sm">{tool.name}</code>
               <span className="mt-1 block text-muted text-sm">{tool.desc}</span>
             </div>

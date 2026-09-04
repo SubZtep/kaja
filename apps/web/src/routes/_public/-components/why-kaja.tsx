@@ -37,7 +37,7 @@ export function WhyKaja() {
       <LandingSectionTitle title="Why Kaja" meta="Work in Progress (WIP)" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map(f => (
-          <Section key={f.title}>
+          <Section key={f.title} className="border-0 bg-transparent p-0 sm:border sm:px-6 sm:py-6">
             <div className="mb-3.5 flex size-8 items-center justify-center rounded-md border border-neon/25 bg-neon/15 font-mono text-base text-neon">
               {f.glyph}
             </div>
