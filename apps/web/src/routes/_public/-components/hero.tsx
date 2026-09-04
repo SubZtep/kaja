@@ -49,7 +49,10 @@ export function Hero() {
           <span className="size-1.5 rounded-full bg-ice" /> OSS &middot; MIT &middot; WIP
         </div>
 
-        <h1 className="order-2 mb-8 font-extrabold text-balance text-fg text-[36px] leading-10 md:leading-16 tracking-[-0.02em] md:order-0 md:col-span-2 md:mb-8 md:text-[52px]">
+        <h1
+          className="order-2 mb-8 font-extrabold text-balance text-fg opacity-80 text-[36px] leading-10 md:leading-16 tracking-[-0.02em] md:order-0 md:col-span-2 md:mb-8 md:text-[52px]"
+          style={{ textShadow: "0 0 8px rgba(120, 119, 198, 0.18)" }}
+        >
           <q className="italic">Your terminal should talk by asking — never by guessing</q>
           <span className="ml-4 font-semibold text-gray-50 text-[32px] md:text-[44px] whitespace-nowrap">
             ― MiniMax M3

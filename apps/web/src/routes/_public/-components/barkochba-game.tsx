@@ -102,14 +102,16 @@ function StatusIcon({ won, aside }: Readonly<{ won: boolean; aside: string }>) {
   return <Wand className="size-5 text-neon" />
 }
 
+const DOT_POSITIONS = ["first", "second", "third"] as const
+
 function TitleBarDots({ variant }: Readonly<{ variant: DotVariant }>) {
   const { colors, pulseMs } = DOT_VARIANTS[variant]
   return (
     <>
-      {colors.map((color, i) => (
+      {DOT_POSITIONS.map((position, i) => (
         <span
-          key={i}
-          className={`size-2.5 rounded-full ${color} ${pulseMs ? "animate-[dot-pulse_ease-in-out_infinite]" : ""}`}
+          key={position}
+          className={`size-2.5 rounded-full ${colors[i]} ${pulseMs ? "animate-[dot-pulse_ease-in-out_infinite]" : ""}`}
           style={pulseMs ? { animationDuration: `${pulseMs}ms`, animationDelay: `${i * 150}ms` } : undefined}
         />
       ))}
