@@ -8,9 +8,6 @@
     "test": "bun test",
     "gen-schema": "bun run scripts/gen-schema.ts"
   },
-  "//": [
-    "react-devtools-core is ink's optional devtools peer; it must be installed for `bun build --compile` to bundle ink (inert at runtime unless DEV=true)"
-  ],
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "@kaja/nasi": "workspace:*",
@@ -33,6 +30,7 @@
     "marked": "^18.0.11",
     "meow": "^14.1.0",
     "node-emoji": "^2.2.0",
+    "node-notifier": "^10.0.1",
     "openai": "^7.10.0",
     "pino": "^10.3.1",
     "react": "^19.2.8",
@@ -44,6 +42,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/node-notifier": "^8.0.5",
     "@types/react": "^19.2.18",
     "react-devtools-core": "^7.0.1"
   }
