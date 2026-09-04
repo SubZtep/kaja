@@ -1,5 +1,6 @@
 import { createVisitorId, sendWidgetTurn } from "@kaja/widget/client"
 import { useLoaderData } from "@tanstack/react-router"
+import { Wand } from "lucide-react"
 import { useEffect, useState } from "react"
 
 const ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
@@ -131,7 +132,7 @@ export function BarkochbaGame() {
                 <span className="text-muted">⋮ thinking&hellip;</span>
               ) : (
                 <>
-                  {aside && <span className="text-muted text-xs italic">{aside}</span>}
+                  {aside ? <span className="text-muted text-xs italic">{aside}</span> : <Wand />}
                   <span className="text-fg">{current}</span>
                 </>
               )}

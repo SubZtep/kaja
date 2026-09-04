@@ -1,7 +1,8 @@
 import meow from "meow"
+import pkg from "../../package.json"
 import { t } from "../i18n"
 
-export const args = meow(t("args.help"), {
+export const args = meow(t("args.help", { version: pkg.version }), {
   importMeta: import.meta,
   flags: {
     continue: {

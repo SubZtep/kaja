@@ -31,12 +31,27 @@ test("choosing Ollama copies the ollama template", async () => {
   await t.waitUntilExit()
 })
 
+test("choosing llama.cpp copies the llama template", async () => {
+  let result: FirstRunChoice | undefined
+  const t = renderForTest(<FirstRunSetup onDone={choice => (result = choice)} onCancel={() => {}} />)
+  await t.tick()
+
+  await t.press(DOWN) // move to "Ollama"
+  await t.press(DOWN) // move to "llama.cpp"
+  await t.press("\r")
+  expect(result).toEqual({ template: "llama" })
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("choosing Skip picks no template", async () => {
   let result: FirstRunChoice | undefined
   const t = renderForTest(<FirstRunSetup onDone={choice => (result = choice)} onCancel={() => {}} />)
   await t.tick()
 
   await t.press(DOWN) // move to "Ollama"
+  await t.press(DOWN) // move to "llama.cpp"
   await t.press(DOWN) // move to "Skip"
   await t.press("\r")
   expect(result).toEqual({})

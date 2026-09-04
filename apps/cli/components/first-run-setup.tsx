@@ -3,7 +3,7 @@ import { t } from "../lib/i18n"
 import { listPaths } from "../lib/paths"
 import { SelectMenu } from "./elem/select-menu"
 
-export type FirstRunChoice = { template?: "fireworks" | "ollama" }
+export type FirstRunChoice = { template?: "fireworks" | "ollama" | "llama" }
 
 /**
  * One-shot first-run prompt for `--local`, rendered before the main App and
@@ -28,11 +28,17 @@ export function FirstRunSetup({
       </Box>
       <Text>{t("firstRun.intro")}</Text>
       <SelectMenu
-        items={[t("firstRun.providerFireworks"), t("firstRun.providerOllama"), t("firstRun.providerSkip")]}
+        items={[
+          t("firstRun.providerFireworks"),
+          t("firstRun.providerOllama"),
+          t("firstRun.providerLlama"),
+          t("firstRun.providerSkip")
+        ]}
         width={70}
         onSelect={index => {
           if (index === 0) onDone({ template: "fireworks" })
           else if (index === 1) onDone({ template: "ollama" })
+          else if (index === 2) onDone({ template: "llama" })
           else onDone({})
         }}
         onClose={onCancel}

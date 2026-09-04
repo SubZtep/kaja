@@ -16,7 +16,7 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
   + [`cli`](./apps/cli/) – Terminal based agentic AI (personas, tools, MCP, Telegram).
   + [`openai`](./apps/openai/) – Proxy for integrating external free LLMs.
   + [`web`](./apps/web/) – Public web and admin portal.
-  + [`widget](./apps/widget/) – Embeddable web components.
+  + [`widget`](./apps/widget/) – Embeddable web components.
 * **Packages** 
   + [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.
   + [`nasi`](./packages/nasi/) – The AI loop.

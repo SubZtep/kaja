@@ -2,7 +2,7 @@
 invalidConfig = "Érvénytelen konfigurációs fájl: {path}"
 startupError = "Váratlan hiba történt, a Kaja nem tudott elindulni: {message}\nA részletek a naplófájlba kerültek."
 bye = "Pá, pá!"
-localNoProvider = "A --local kapcsolóhoz beállított szolgáltató szükséges. Futtasd újra a `kaja --local` parancsot és válaszd a Fireworks/Ollama opciót, vagy futtasd a `kaja --local config fetch` parancsot. Hosztolt csevegéshez futtasd a `kaja --remote` parancsot."
+localNoProvider = "A --local kapcsolóhoz beállított szolgáltató szükséges. Futtasd újra a `kaja --local` parancsot és válaszd a Fireworks/Ollama/llama.cpp opciót, vagy futtasd a `kaja --local config fetch` parancsot. Hosztolt csevegéshez futtasd a `kaja --remote` parancsot."
 headlessNoSubcommand = "A --headless kapcsolóhoz ezt támogató alparancs szükséges, például `telegram`. Önálló headless mód még nem létezik."
 pleaseSignIn = "Kérlek jelentkezz be!"
 deviceLoginGoTo = "Nyisd meg:"
@@ -14,11 +14,12 @@ paths = "A Kaja ezeket az elérési utakat fogja használni:"
 intro = "Üdv a Kajában! Melyik szolgáltatót szeretnéd használni?"
 providerFireworks = "Fireworks (felhő, API kulcs szükséges)"
 providerOllama = "Ollama (helyi, ezen a gépen fut)"
+providerLlama = "llama.cpp (helyi, ezen a gépen fut)"
 providerSkip = "Kihagyás — magam állítom be a models.toml fájlt"
 
 [args]
 help = """
-Kaja parancssoros felület • https://kaja.io
+Kaja parancssoros felület • v{version} • https://kaja.io
 
 HASZNÁLAT
   $ kaja [OPCIÓK] [PARANCS]
@@ -33,20 +34,11 @@ PARANCSOK
 OPCIÓK
   --local         A helyi ágens futtatása saját szolgáltatóval a hosztolt bejelentkezés helyett
   --remote        Hosztolt bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció
-  --user          Hosztolt (--remote) fiók kiválasztása/váltása e-mail cím alapján
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
-  --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
+  --user          Hosztolt (--remote) fiók kiválasztása/váltása e-mail cím alapján
+  --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --port          A kaja --local web portja (alapértelmezés: 4880)
-  --help          Mutatja ezt a súgót
-  --version       Mutatja az app verziót
-
-PÉLDÁK
-  $ kaja
-  $ kaja --local -c
-  $ kaja config paths
-  $ kaja --local config fetch
-  $ kaja --local --headless telegram
 """
 
 [memory]

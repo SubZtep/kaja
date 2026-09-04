@@ -2,7 +2,7 @@
 invalidConfig = "Invalid config file: {path}"
 startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
 bye = "Bye, bye!"
-localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama, or run `kaja --local config fetch`. For hosted chat instead, run `kaja --remote`."
+localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama/llama.cpp, or run `kaja --local config fetch`. For hosted chat instead, run `kaja --remote`."
 headlessNoSubcommand = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
 pleaseSignIn = "Please sign in!"
 deviceLoginGoTo = "Go to:"
@@ -14,11 +14,12 @@ paths = "Kaja will use these paths:"
 intro = "Welcome to Kaja! Which provider would you like to use?"
 providerFireworks = "Fireworks (cloud, needs an API key)"
 providerOllama = "Ollama (local, runs on this machine)"
+providerLlama = "llama.cpp (local, runs on this machine)"
 providerSkip = "Skip — I'll set up models.toml myself"
 
 [args]
 help = """
-Kaja command like tool • https://kaja.io
+Kaja command like tool • v{version} • https://kaja.io
 
 USAGE
   $ kaja [OPTIONS] [COMMAND]
@@ -32,21 +33,12 @@ COMMANDS
 
 OPTIONS
   --local         Run the local agent loop against your own provider instead of hosted login
-  --remote        Force hosted login even if a local config exists
-  --user          Select/switch the hosted (--remote) account by email
+  --remote        Force hosted login even if a local config exists (default)
   --continue, -c  Resume the most recent session (--local only)
-  --session, -s   Resume a session by id (--local only; see: kaja --local session list)
   --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
   --port          Port for kaja --local web (default: 4880)
-  --help          Print this help
-  --version       Print app version
-
-EXAMPLES
-  $ kaja
-  $ kaja --local -c
-  $ kaja config paths
-  $ kaja --local config fetch
-  $ kaja --local --headless telegram
+  --user          Select/switch the hosted (--remote) account by email
+  --session, -s   Resume a session by id (--local only; see: kaja --local session list)
 """
 
 [memory]

@@ -4,6 +4,7 @@ import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type Mode
 import { file, TOML, write } from "bun"
 // Written on first run: an example provider/model catalog, sourced from the same file that documents models.toml on the docs site.
 import TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
+import LLAMA_TEMPLATE from "../../../../docs/config/models.llama.toml" with { type: "text" }
 import OLLAMA_TEMPLATE from "../../../../docs/config/models.ollama.toml" with { type: "text" }
 import { getConfigDir } from "../config/config"
 import { writeTemplateConfig } from "../config/fetch"
@@ -20,8 +21,9 @@ export function getModelsPath() {
 }
 
 /** Writes the chosen example template, for the "configure my own provider" first-run choice. */
-export async function writeModelsTemplate(which: "fireworks" | "ollama") {
-  await write(file(getModelsPath()), which === "ollama" ? OLLAMA_TEMPLATE : TEMPLATE)
+export async function writeModelsTemplate(which: "fireworks" | "ollama" | "llama") {
+  const template = which === "ollama" ? OLLAMA_TEMPLATE : which === "llama" ? LLAMA_TEMPLATE : TEMPLATE
+  await write(file(getModelsPath()), template)
 }
 
 /** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/models.fireworks.toml template, backing up any existing (differing) file first. */
