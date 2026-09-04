@@ -20,11 +20,11 @@ export function Install() {
         Paste the appropriate command in your terminal, press Enter to install:
       </p>
       <div className="flex gap-4 flex-col md:flex-row">
-        <Section>
+        <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
           <p>On Mac/Linux:</p>
           <code className="block font-mono text-fg text-[13.5px]">{installCmd}</code>
         </Section>
-        <Section>
+        <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
           <p>On Windows:</p>
           <code className="block font-mono text-fg text-[13.5px]">irm https://kaja.io/install.ps1 | iex</code>
         </Section>

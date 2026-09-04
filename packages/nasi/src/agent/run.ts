@@ -262,11 +262,20 @@ async function* handleToolCalls(
   return { ask, confirm }
 }
 
+const TRAILING_TOOL_TAG = /<\/(?:parameter|invoke)>\s*$/
+
+/** Some models leak literal tool-call closing tags into plain content instead of using structured `tool_calls`. */
+function stripLeakedToolTags(content: string): string {
+  let result = content.trimEnd()
+  while (TRAILING_TOOL_TAG.test(result)) {
+    result = result.replace(TRAILING_TOOL_TAG, "").trimEnd()
+  }
+  return result
+}
+
 function finalEventFor(message: StreamedRound["message"]): AgentEvent {
-  const content = typeof message.content === "string" ? message.content : null
-  return content?.trimEnd().endsWith("?")
-    ? { type: "ask_user", question: content }
-    : { type: "final", content: message.content }
+  const content = typeof message.content === "string" ? stripLeakedToolTags(message.content) : null
+  return content?.trimEnd().endsWith("?") ? { type: "ask_user", question: content } : { type: "final", content }
 }
 
 function* handlePendingHandoff(

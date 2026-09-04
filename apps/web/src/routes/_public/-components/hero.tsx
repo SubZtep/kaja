@@ -49,9 +49,14 @@ export function Hero() {
           <span className="size-1.5 rounded-full bg-ice" /> OSS &middot; MIT &middot; WIP
         </div>
 
-        <h1 className="order-2 mb-8 font-extrabold text-balance text-fg text-[36px] leading-10 md:leading-16 tracking-[-0.02em] md:order-0 md:col-span-2 md:mb-8 md:text-[52px]">
+        <h1
+          className="order-2 mb-8 font-extrabold text-balance text-fg opacity-80 text-[36px] leading-10 md:leading-16 tracking-[-0.02em] md:order-0 md:col-span-2 md:mb-8 md:text-[52px]"
+          style={{ textShadow: "0 0 8px rgba(120, 119, 198, 0.18)" }}
+        >
           <q className="italic">Your terminal should talk by asking — never by guessing</q>
-          <span className="ml-4 font-semibold text-gray-50">― MiniMax M3</span>
+          <span className="ml-4 font-semibold text-gray-50 text-[32px] md:text-[44px] whitespace-nowrap">
+            ― MiniMax M3
+          </span>
         </h1>
 
         <div className="order-1 md:order-0 md:col-start-2 md:row-start-3 md:self-start">
@@ -73,16 +78,16 @@ export function Hero() {
               href="https://github.com/SubZtep/kaja"
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md border border-green-600 bg-green-700 px-5 py-2.5 font-semibold text-sm text-white"
+              className="inline-flex items-center gap-2 rounded-md bg-neon px-5 py-2.5 font-bold text-bg text-sm hover:bg-neon-hi transition-colors duration-200 ease-in-out"
             >
-              <FolderCode fill="white" size={12} />
+              <FolderCode size={12} />
               Source code on GitHub
             </a>
             <a
               href="https://docs.kaja.io"
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-5 py-2.5 font-medium text-fg text-sm"
+              className="inline-flex items-center gap-2 rounded-md border border-border hover:border-amber-900 bg-surface px-5 py-2.5 font-medium text-fg text-sm transition-colors duration-150 ease-in-out"
             >
               Read the docs
             </a>

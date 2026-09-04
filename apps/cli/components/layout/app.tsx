@@ -1,6 +1,7 @@
 import type { CliResolvedModel, KajaPreferences } from "@kaja/schema/config"
 import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
+import notifier from "node-notifier"
 import { useState } from "react"
 import { useAgent } from "../../hooks/use-agent"
 import { usePreferences } from "../../hooks/use-preferences"
@@ -167,12 +168,15 @@ export default function App({
       model: models.find(m => m.model === initialSession.model)
     }
   })
-  const switchPersona = (next: Persona) => {
+  const switchPersona = async (next: Persona) => {
     if (pending) return
     switchPersonaAgent(next)
-    savePreferences({ persona: next.id }).catch(error => {
+    try {
+      await savePreferences({ persona: next.id })
+      notifier.notify({ title: "Persona Switched", message: `Switched to ${next.label}` })
+    } catch (error) {
       log.warn({ error }, "Failed to save preferences")
-    })
+    }
   }
   const lastEvent = events.at(-1)
   const pendingCommand = !pending && lastEvent?.type === "confirm_command" ? lastEvent : undefined

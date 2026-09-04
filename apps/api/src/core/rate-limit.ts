@@ -30,24 +30,26 @@ function skipWhenDisabled(limiter: MiddlewareHandler): MiddlewareHandler {
 
 /**
  * Global rate limiter — all routes except health checks.
- * Default: 300 requests per 15 minutes per IP
+ * Default: 1000 requests per 15 minutes per IP
  */
 const globalRateLimiterInner = rateLimiter({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  limit: Number(process.env.RATE_LIMIT_MAX) || 300,
+  limit: Number(process.env.RATE_LIMIT_MAX) || 1000,
   standardHeaders: true,
   keyGenerator: clientIp,
   skip: c => c.req.path === "/health" || c.req.path.startsWith("/health/")
 })
 
 /**
- * Rate limiter for authentication endpoints.
+ * Rate limiter for authentication endpoints — covers all of Better Auth's /auth/*
+ * surface (sign-in, sign-up, session checks, CSRF, device flow), not just login
+ * attempts, so normal page traffic can burn through a tight budget fast.
  *
- * Default: 500 requests per 15 minutes per IP
+ * Default: 2000 requests per 15 minutes per IP
  */
 const authRateLimiterInner = rateLimiter({
   windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  limit: Number(process.env.AUTH_RATE_LIMIT_MAX) || 500,
+  limit: Number(process.env.AUTH_RATE_LIMIT_MAX) || 2000,
   standardHeaders: true,
   keyGenerator: clientIp
 })
@@ -56,11 +58,11 @@ const authRateLimiterInner = rateLimiter({
  * Per-user rate limiter for /nasi/turn and /nasi/turn/stream — separate from
  * the global IP-based limiter (NAT'd users would otherwise share a bucket).
  *
- * Default: 300 requests per 10 minutes per user.
+ * Default: 1000 requests per 10 minutes per user.
  */
 const nasiTurnRateLimiterInner = rateLimiter({
   windowMs: Number(process.env.NASI_TURN_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000,
-  limit: Number(process.env.NASI_TURN_RATE_LIMIT_MAX) || 300,
+  limit: Number(process.env.NASI_TURN_RATE_LIMIT_MAX) || 1000,
   standardHeaders: true,
   keyGenerator: (c: Context<{ Variables: RouteVariables }>) => c.get("user")?.id ?? clientIp(c)
 })
@@ -69,11 +71,11 @@ const nasiTurnRateLimiterInner = rateLimiter({
  * Per-visitor rate limiter for /widget/turn — keyed on the widget key plus IP,
  * since there's no authenticated user id for an anonymous widget visitor.
  *
- * Default: 60 requests per 10 minutes per (key, IP) pair.
+ * Default: 300 requests per 10 minutes per (key, IP) pair.
  */
 const widgetTurnRateLimiterInner = rateLimiter({
   windowMs: Number(process.env.WIDGET_TURN_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000,
-  limit: Number(process.env.WIDGET_TURN_RATE_LIMIT_MAX) || 60,
+  limit: Number(process.env.WIDGET_TURN_RATE_LIMIT_MAX) || 300,
   standardHeaders: true,
   keyGenerator: (c: Context) => `${c.req.header("x-kaja-widget-key") ?? "none"}:${clientIp(c)}`
 })
@@ -83,11 +85,11 @@ const widgetTurnRateLimiterInner = rateLimiter({
  * protects the owning account's model-provider spend regardless of how many
  * distinct visitors or IPs are hitting one widget.
  *
- * Default: 1000 requests per 10 minutes per key.
+ * Default: 3000 requests per 10 minutes per key.
  */
 const widgetKeyRateLimiterInner = rateLimiter({
   windowMs: Number(process.env.WIDGET_KEY_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000,
-  limit: Number(process.env.WIDGET_KEY_RATE_LIMIT_MAX) || 1000,
+  limit: Number(process.env.WIDGET_KEY_RATE_LIMIT_MAX) || 3000,
   standardHeaders: true,
   keyGenerator: (c: Context) => c.req.header("x-kaja-widget-key") ?? "none"
 })

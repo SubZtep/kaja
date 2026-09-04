@@ -4,6 +4,7 @@
 ![Continuous integration](https://github.com/SubZtep/kaja/actions/workflows/ci.yaml/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
+
 > [!IMPORTANT]
 > Kaja is still evolving :speaker::godmode::loudspeaker:
 
@@ -12,45 +13,47 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 ## What’s in the Monorepo?
 
 * **Apps** 
-  + [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery.
-  + [`cli`](./apps/cli/) – Terminal based agentic AI (personas, tools, MCP, Telegram).
-  + [`openai`](./apps/openai/) – Proxy for integrating external free LLMs.
-  + [`web`](./apps/web/) – Public web and admin portal.
+  + [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery
+  + [`cli`](./apps/cli/) – AI Agent TUI
+  + [`openai`](./apps/openai/) – Proxy for external LLMs
+  + [`web`](./apps/web/) – Public homepage and admin portal
+  + [`widget`](./apps/widget/) – Web components
 * **Packages** 
-  + [`logger`](./packages/logger/) – Pino wrapper for backend and frontend.
-  + [`schema`](./packages/schema/) – Payload and data schemas across the workspaces.
-  + [`shared`](./packages/shared/) – Shared utilities (pure functions).
+  + [`logger`](./packages/logger/) – Pino logger for backend and frontend.
+  + [`nasi`](./packages/nasi/) – The AI harness
+  + [`schema`](./packages/schema/) – Shared request schemas and types
+  + [`shared`](./packages/shared/) – Shared utilities (pure functions)
 
-## Quick Start
+---
 
-### Release Run
+## ![Kaja](https://kaja.io/monster.gif)
+
+### Download build and install
 
 ```bash
 # Install
 curl -fsSL https://kaja.io/install.sh | bash
 
-# Execute
-kaja
+# Run
+kaja --help
 
 # Uninstall
 rm ~/.local/bin/kaja
 ```
 
-### Source Run
+### Run in containers
 
-Download source and run with [working defaults](compose.yaml):
+Fetch config[^1], clone or download the source in a terminal, and run with [compose config](compose.yaml):
 
 ```bash
 docker compose up -d
 ```
 
-This command starts:
-
-- PostgreSQL
-- MailDev SMTP
+- Setup PostgreSQL and run database migration
+- Start MailDev SMTP server with web inbox
 - API
 - Web
-- ~~OpenAI~~
+- OpenAI LLM API Proxy
 
 This is all the CLI needs to connect:
 
@@ -58,6 +61,22 @@ This is all the CLI needs to connect:
 bun dev:cli
 ```
 
-## Documentation
+### Configuration files
+
+
+```ini
+~/.config/kaja/
+├─ datasets/*.json  # custom fields for personas to collect
+├─ personas/*.toml  # one behaviour per file
+├─ mcp.toml         # model context protocol servers
+├─ models.toml      # model catalog per provider
+├─ services.toml    # external service definitions and endpoints
+├─ secrets.toml     # user’s secret keys and tokens
+└─ settings.toml    # optional settings and app preferences"
+```
+
+### Documentation
 
 See [GitHub Pages](https://docs.kaja.io) for more details.
+
+[^1]: exec `kaja dev:cli --local config fetch`
