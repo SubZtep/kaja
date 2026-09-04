@@ -92,6 +92,27 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <HeadContent />
+
+        <meta property="og:title" content="Kaja" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://kaja.io/monster.gif" />
+        <meta property="og:url" content="https://kaja.io" />
+
+        <meta
+          property="og:description"
+          content="Open-source agentic harness. Keep looping your prompt with an LLM until the appropriate outcome is achieved."
+        />
+        <meta property="og:site_name" content="Kaja.io" />
+        <meta property="og:locale" content="en_GB" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Kaja.io" />
+        <meta
+          name="twitter:description"
+          content="Open-source agentic harness. Keep looping your prompt with an LLM until the appropriate outcome is achieved."
+        />
+        <meta name="twitter:image" content="https://kaja.io/monster.gif" />
+
         {process.env.VITE_UMAMI_WEBSITE_ID && (
           <script defer src="/u.js" data-website-id={process.env.VITE_UMAMI_WEBSITE_ID} data-host-url="/"></script>
         )}
