@@ -1,3 +1,4 @@
+import { samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
@@ -13,7 +14,7 @@ import {
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
 import { log } from "../lib/logger"
-import { type Persona, samplingOf } from "../lib/personas/personas"
+import type { Persona } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
 
 /**

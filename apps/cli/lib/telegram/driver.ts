@@ -1,3 +1,4 @@
+import { samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
 import type { TimelineEvent } from "../../hooks/use-agent"
@@ -7,7 +8,7 @@ import { categorizeError } from "../agent/error-category"
 import { runShellCommand } from "../agent/run-command"
 import { t } from "../i18n"
 import { log } from "../logger"
-import { type Persona, samplingOf } from "../personas/personas"
+import type { Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
 import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "./markdown"
 
