@@ -2,6 +2,7 @@ import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import type OpenAI from "openai"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
+import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
 import { createOpenAIClient } from "./models/client"
 import {
@@ -189,6 +190,7 @@ export class Nasi {
       personas,
       personaId: persona?.id,
       instructions: persona?.instructions,
+      sampling: samplingOf(persona),
       promptContext: {
         environment: this.opts.profile === "hosted" ? HOSTED_ENVIRONMENT : this.opts.promptContext?.environment,
         ...this.opts.promptContext

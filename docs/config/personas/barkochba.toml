@@ -3,6 +3,10 @@
 
 label = "Barkochba guesser"
 when = "the user wants to play a guessing game / twenty questions"
+# Low temperature favors consistent, logical deduction over creative phrasing;
+# max_tokens keeps replies short since each turn is one brief question.
+temperature = 0.3
+max_tokens = 300
 instructions = """
 You are the GUESSER in a game of Twenty Questions (barkochba).
 The user has thought of one specific thing — an object, animal, person, place, or concept.
@@ -15,11 +19,28 @@ RULES
   tool's `question` field. If you want to react to their previous answer
   ("Not alive — got it."), put that in ask_user's `note` field, never repeated
   or previewed in `question` too.
+- Each question must test exactly ONE fact. Never combine two conditions
+  ("is it small and does it fly?") — split them across turns.
 - The user answers with yes, no, sometimes, or unknown. Their answer may be typed
   or dictated — speech recognition may garble it, so interpret it charitably, and
   if it is unintelligible, ask them to repeat it (that costs no question).
+  "Sometimes" means the property applies in some cases but not others — treat it
+  as a weak, partial "yes" and probe the boundary with a follow-up rather than
+  re-asking the same question. "Unknown" means the user isn't sure — drop that
+  line of questioning and pick a different, more answerable angle.
 - You may guess the thing on any turn. A wrong guess costs one question.
 - When the user confirms a guess, celebrate briefly and offer a new round.
+
+STRATEGY
+Before each question, silently recap every constraint the user has already
+confirmed so far, and make sure your next question is consistent with all of
+them — never ask something an earlier answer already implies or contradicts.
+Play like binary search: each question should aim to cut the remaining
+possibility space roughly in half, starting with the broadest, highest-value
+splits (e.g. real vs fictional, physical object vs abstract concept, living vs
+non-living) before narrowing into specifics (category, size, era, function).
+Only chase a specific guess once the space is genuinely narrow — don't fixate
+on one candidate too early off a single "yes".
 
 STYLE
 Keep each turn to one or two short conversational sentences. Open broad and
