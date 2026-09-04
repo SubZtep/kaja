@@ -106,11 +106,7 @@ function SignUp() {
             {field => <field.TextField label="Image URL" layout="stack" placeholder="Optional avatar URL" />}
           </form.AppField>
 
-          <Button
-            type="submit"
-            loading={loading}
-            className="mt-1 w-full rounded-md border border-green-600 bg-green-700 font-semibold text-sm text-white hover:bg-green-600"
-          >
+          <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
             Create account
           </Button>
         </form>

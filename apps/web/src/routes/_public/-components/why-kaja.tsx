@@ -6,29 +6,33 @@ const FEATURES = [
   {
     glyph: <Bot strokeWidth={1} />,
     title: "Local or cloud models",
-    desc: "Any OpenAI-compatible API — Ollama, Fireworks, MiniMax M3, and more."
+    desc: "OpenAI compatible — Ollama, Fireworks, Ministral, MiniMax M3, and more"
   },
   {
     glyph: <MicAudioLines strokeWidth={1} />,
     title: "Voice in, voice out",
-    desc: "Mic dictation and TTS via speaches, toggle with Ctrl+T."
+    desc: "Mic dictation and TTS via speaches, toggle with Ctrl+T"
+  },
+  {
+    glyph: <Shapes strokeWidth={1} />,
+    title: "Widgets",
+    desc: "Embeddable UI components for seamless AI integration"
   },
   {
     glyph: <Drama strokeWidth={1} />,
     title: "Personas",
-    desc: "The assistant switches its behaviours and tweaks model settings based on the context."
+    desc: "The assistant switches its behaviours and tweaks model settings based on the context"
   },
   {
     glyph: <Hammer strokeWidth={1} />,
     title: "Tool use",
-    desc: "Web search (Brave), location lookups, and more as config groups."
+    desc: "Brave web search, location lookups, and more as config groups"
   },
   {
     glyph: <Smartphone strokeWidth={1} />,
     title: "Also on Telegram",
-    desc: "kaja telegram runs the same personas, tools and models as a bot."
-  },
-  { glyph: <Shapes strokeWidth={1} />, title: "Widgets", desc: "Embeddable UI components for seamless AI integration." }
+    desc: "Kaja telegram runs the same personas, tools and models as a bot"
+  }
 ]
 
 export function WhyKaja() {

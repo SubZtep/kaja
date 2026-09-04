@@ -26,7 +26,7 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 
 ---
 
-![](https://kaja.io/monster.gif)
+## ![Kaja](https://kaja.io/monster.gif)
 
 ### Download build and install
 
@@ -43,7 +43,7 @@ rm ~/.local/bin/kaja
 
 ### Run in containers
 
-Clone or download source and run with [Docker Compose](compose.yaml):
+Fetch config[^1], clone or download the source in a terminal, and run with [compose config](compose.yaml):
 
 ```bash
 docker compose up -d
@@ -53,7 +53,7 @@ docker compose up -d
 - Start MailDev SMTP server with web inbox
 - API
 - Web
-- OpenAI LLM API
+- OpenAI LLM API Proxy
 
 This is all the CLI needs to connect:
 
@@ -61,6 +61,22 @@ This is all the CLI needs to connect:
 bun dev:cli
 ```
 
-## Documentation
+### Configuration files
+
+
+```ini
+~/.config/kaja/
+├─ datasets/*.json  # custom fields for personas to collect
+├─ personas/*.toml  # one behaviour per file
+├─ mcp.toml         # model context protocol servers
+├─ models.toml      # model catalog per provider
+├─ services.toml    # external service definitions and endpoints
+├─ secrets.toml     # user’s secret keys and tokens
+└─ settings.toml    # optional settings and app preferences"
+```
+
+### Documentation
 
 See [GitHub Pages](https://docs.kaja.io) for more details.
+
+[^1]: exec `kaja dev:cli --local config fetch`

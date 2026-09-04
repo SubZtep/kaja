@@ -124,11 +124,7 @@ function SignIn() {
             </ForgotPassword>
           </div>
 
-          <Button
-            type="submit"
-            loading={loading}
-            className="mt-1 w-full rounded-md border border-green-600 bg-green-700 font-semibold text-sm text-white hover:bg-green-600"
-          >
+          <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
             Sign in
           </Button>
         </form>

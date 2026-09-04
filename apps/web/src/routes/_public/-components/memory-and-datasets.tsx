@@ -4,7 +4,7 @@ import { Section } from "../../../components/ui/Section"
 export function MemoryAndDatasets() {
   return (
     <LandingSection alt>
-      <LandingSectionTitle title="Memory & datasets" description="How Kaja remembers you, across chats and sessions." />
+      <LandingSectionTitle title="Memory & Datasets" description="How Kaja remembers you, across chats and sessions." />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
           <div className="mb-2 font-semibold text-fg text-[15px]">Persistent memory</div>

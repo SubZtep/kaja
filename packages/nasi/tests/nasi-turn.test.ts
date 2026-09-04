@@ -87,6 +87,24 @@ test("plain question mark final is completed, not needs_input", async () => {
   closeStore(path)
 })
 
+test("leaked tool-call closing tags are stripped from the final message", async () => {
+  const path = dbPath()
+  const nasi = await Nasi.open({
+    dbPath: path,
+    profile: "hosted",
+    chat: {
+      client: fakeClient([
+        { content: "It's a cat! Want to go another round? </parameter> </invoke> </invoke>" }
+      ]) as never,
+      model: "fake"
+    }
+  })
+  const result = await nasi.turnBuffered({ message: "yes" })
+  expect(result.status).toBe("completed")
+  expect(result.message).toBe("It's a cat! Want to go another round?")
+  closeStore(path)
+})
+
 test("turn() streams delta events live and returns the same response turnBuffered would", async () => {
   const path = dbPath()
   const nasi = await Nasi.open({

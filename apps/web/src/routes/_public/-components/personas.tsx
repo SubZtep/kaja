@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react"
 import { LandingSection, LandingSectionTitle } from "../../../components/ui/LandingSection"
 import { Section } from "../../../components/ui/Section"
 
@@ -21,7 +22,18 @@ export function Personas() {
     <LandingSection>
       <LandingSectionTitle
         title="Personas"
-        meta="~/.config/kaja/personas/*.toml"
+        meta={
+          <div className="flex items-center gap-1">
+            <ChevronRight />
+            <a
+              href="https://github.com/SubZtep/kaja/blob/stability/docs/config/schemas/persona.json"
+              target="_blank"
+              rel="noopener"
+            >
+              TOML’s JSON Schema
+            </a>
+          </div>
+        }
         description={
           <>
             Each persona is a <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">.toml</code> file:

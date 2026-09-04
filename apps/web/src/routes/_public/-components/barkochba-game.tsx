@@ -1,9 +1,35 @@
 import { createVisitorId, sendWidgetTurn } from "@kaja/widget/client"
 import { useLoaderData } from "@tanstack/react-router"
-import { Wand } from "lucide-react"
+import {
+  BrainCircuit,
+  Check,
+  CircleHelp,
+  Dices,
+  EqualApproximately,
+  Guitar,
+  Pizza,
+  Rocket,
+  Sparkles,
+  Wand,
+  X
+} from "lucide-react"
 import { useEffect, useState } from "react"
 
-const ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
+const ANSWERS = [
+  { label: "Yes", icon: Check },
+  { label: "No", icon: X },
+  { label: "Sometimes", icon: EqualApproximately },
+  { label: "Unknown", icon: CircleHelp }
+] as const
+
+const EXAMPLE_THINGS = [
+  { label: "Pizza", icon: Pizza },
+  { label: "Guitar", icon: Guitar },
+  { label: "Rocket", icon: Rocket },
+  { label: "Dice", icon: Dices }
+] as const
+
+const MAX_QUESTIONS = 20
 const STATE_STORAGE_KEY = "kaja-barkochba-state"
 
 type GameState = {
@@ -12,9 +38,19 @@ type GameState = {
   session?: string
   current: string
   aside: string
+  questionCount: number
+  won: boolean
 }
 
-const IDLE_STATE: GameState = { phase: "idle", visitorId: undefined, session: undefined, current: "", aside: "" }
+const IDLE_STATE: GameState = {
+  phase: "idle",
+  visitorId: undefined,
+  session: undefined,
+  current: "",
+  aside: "",
+  questionCount: 0,
+  won: false
+}
 
 function loadState(): GameState {
   try {
@@ -52,6 +88,8 @@ export function BarkochbaGame() {
   const [session, setSession] = useState<string | undefined>(IDLE_STATE.session)
   const [current, setCurrent] = useState(IDLE_STATE.current)
   const [aside, setAside] = useState(IDLE_STATE.aside)
+  const [questionCount, setQuestionCount] = useState(IDLE_STATE.questionCount)
+  const [won, setWon] = useState(IDLE_STATE.won)
   const [pending, setPending] = useState(false)
   const [hydrated, setHydrated] = useState(false)
 
@@ -63,12 +101,14 @@ export function BarkochbaGame() {
     setSession(stored.session)
     setCurrent(stored.current)
     setAside(stored.aside)
+    setQuestionCount(stored.questionCount)
+    setWon(stored.won)
     setHydrated(true)
   }, [])
 
   useEffect(() => {
-    if (hydrated) saveState({ phase, visitorId, session, current, aside })
-  }, [hydrated, phase, visitorId, session, current, aside])
+    if (hydrated) saveState({ phase, visitorId, session, current, aside, questionCount, won })
+  }, [hydrated, phase, visitorId, session, current, aside, questionCount, won])
 
   async function sendMessage(message: string) {
     setPending(true)
@@ -77,6 +117,8 @@ export function BarkochbaGame() {
       setSession(data.session)
       setCurrent(data.message)
       const askStep = data.steps.find(step => step.type === "ask_user")
+      if (askStep) setQuestionCount(count => count + 1)
+      setWon(!askStep && data.status === "completed")
       const note = askStep?.type === "ask_user" ? askStep.note : undefined
       const messageStep = data.steps.find(step => step.type === "message")
       const fallback = messageStep?.type === "message" ? withoutQuestion(messageStep.content, data.message) : ""
@@ -94,6 +136,8 @@ export function BarkochbaGame() {
     setCurrent("")
     setAside("")
     setSession(undefined)
+    setQuestionCount(0)
+    setWon(false)
     void sendMessage("Let's play!")
   }
 
@@ -102,61 +146,128 @@ export function BarkochbaGame() {
     setCurrent("")
     setAside("")
     setSession(undefined)
+    setQuestionCount(0)
+    setWon(false)
   }
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]">
       <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
-        <span className="size-2.5 rounded-full bg-red-600" />
-        <span className="size-2.5 rounded-full bg-green-600" />
-        <span className="size-2.5 rounded-full bg-blue-600" />
-        <span className="ml-1.5 font-mono text-muted text-xs">barkochba</span>
+        {won ? (
+          <>
+            <span className="size-2.5 animate-[dot-pulse_1.2s_ease-in-out_infinite] rounded-full bg-ice [animation-delay:0ms]" />
+            <span className="size-2.5 animate-[dot-pulse_1.2s_ease-in-out_infinite] rounded-full bg-ice [animation-delay:150ms]" />
+            <span className="size-2.5 animate-[dot-pulse_1.2s_ease-in-out_infinite] rounded-full bg-ice [animation-delay:300ms]" />
+          </>
+        ) : pending ? (
+          <>
+            <span className="size-2.5 animate-[dot-pulse_1s_ease-in-out_infinite] rounded-full bg-neon [animation-delay:0ms]" />
+            <span className="size-2.5 animate-[dot-pulse_1s_ease-in-out_infinite] rounded-full bg-neon [animation-delay:150ms]" />
+            <span className="size-2.5 animate-[dot-pulse_1s_ease-in-out_infinite] rounded-full bg-neon [animation-delay:300ms]" />
+          </>
+        ) : phase === "idle" ? (
+          <>
+            <span className="size-2.5 rounded-full bg-border" />
+            <span className="size-2.5 rounded-full bg-border" />
+            <span className="size-2.5 rounded-full bg-border" />
+          </>
+        ) : (
+          <>
+            <span className="size-2.5 rounded-full bg-red-600" />
+            <span className="size-2.5 rounded-full bg-green-600" />
+            <span className="size-2.5 rounded-full bg-blue-600" />
+          </>
+        )}
+        <span className="ml-1.5 font-mono text-muted text-xs">AI widget: barkochba game</span>
       </div>
 
       <div className="flex min-h-65 flex-col justify-between p-5 font-mono text-[13.5px] leading-[1.9]">
         {phase === "idle" ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-            <p className="text-muted">Think of a thing. Kaja will ask up to 20 yes/no questions to guess it.</p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
+            <p className="text-muted">
+              Think of something. You get {MAX_QUESTIONS} questions — answer by clicking a button below.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {EXAMPLE_THINGS.map(({ label, icon: Icon }) => (
+                <span
+                  key={label}
+                  className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-muted text-xs"
+                >
+                  <Icon className="size-3.5" />
+                  {label}
+                </span>
+              ))}
+              <span className="text-muted text-xs">&hellip;or anything else</span>
+            </div>
             <button
               type="button"
               onClick={start}
-              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm animate-pulse hover:animate-none"
+              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm transition-transform duration-200 motion-safe:animate-pulse hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0"
             >
               Start
             </button>
           </div>
         ) : (
           <>
-            <div className="flex flex-1 flex-col justify-center gap-1.5">
+            <div className="mb-3 flex items-center justify-center gap-1">
+              {Array.from({ length: MAX_QUESTIONS }, (_, i) => (
+                <span
+                  key={`q-${i + 1}`}
+                  className={`size-1.5 rounded-full ${i < questionCount ? "bg-neon" : "bg-border"}`}
+                />
+              ))}
+            </div>
+            <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
               {pending ? (
-                <span className="text-muted">⋮ thinking&hellip;</span>
+                <span className="text-muted flex items-center gap-1">
+                  <BrainCircuit size={18} /> thinking&hellip;
+                </span>
               ) : (
                 <>
-                  {aside ? <span className="text-muted text-xs italic">{aside}</span> : <Wand />}
+                  {won ? (
+                    <Sparkles className="size-5 text-ice" />
+                  ) : aside ? (
+                    <span className="text-muted text-xs italic">{aside}</span>
+                  ) : (
+                    <Wand className="size-5 text-neon" />
+                  )}
                   <span className="text-fg">{current}</span>
                 </>
               )}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {ANSWERS.map(answer => (
+            {won ? (
+              <button
+                type="button"
+                onClick={playAgain}
+                className="mt-4 cursor-pointer self-center rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm"
+              >
+                Play again
+              </button>
+            ) : (
+              <>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {ANSWERS.map(({ label, icon: Icon }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled={pending}
+                      onClick={() => sendMessage(label)}
+                      className="flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-fg text-sm transition-colors hover:border-neon/60 hover:bg-neon/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Icon className="size-3.5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <button
-                  key={answer}
                   type="button"
-                  disabled={pending}
-                  onClick={() => sendMessage(answer)}
-                  className="cursor-pointer rounded-md border border-border bg-surface px-3 py-2 text-fg text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={playAgain}
+                  className="mt-3 cursor-pointer self-center text-muted text-xs underline underline-offset-2 transition-colors duration-200 hover:underline-offset-0 hover:text-fg"
                 >
-                  {answer}
+                  Give up
                 </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={playAgain}
-              className="mt-3 self-center text-muted text-xs underline underline-offset-2"
-            >
-              Play again
-            </button>
+              </>
+            )}
           </>
         )}
       </div>

@@ -75,16 +75,16 @@ export function Hero() {
               href="https://github.com/SubZtep/kaja"
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md border border-green-600 bg-green-700 px-5 py-2.5 font-semibold text-sm text-white"
+              className="inline-flex items-center gap-2 rounded-md bg-neon px-5 py-2.5 font-bold text-bg text-sm hover:bg-neon-hi transition-colors duration-200 ease-in-out"
             >
-              <FolderCode fill="white" size={12} />
+              <FolderCode size={12} />
               Source code on GitHub
             </a>
             <a
               href="https://docs.kaja.io"
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-5 py-2.5 font-medium text-fg text-sm"
+              className="inline-flex items-center gap-2 rounded-md border border-border hover:border-amber-900 bg-surface px-5 py-2.5 font-medium text-fg text-sm transition-colors duration-150 ease-in-out"
             >
               Read the docs
             </a>

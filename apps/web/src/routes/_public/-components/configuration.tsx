@@ -1,7 +1,9 @@
+import { ChevronRight } from "lucide-react"
 import { LandingSection, LandingSectionTitle } from "../../../components/ui/LandingSection"
 import { Section } from "../../../components/ui/Section"
 
 const TOOLS = [
+  { name: "custom ip2geo mcp", desc: "Convert IP to city level location" },
   { name: "current_time", desc: "Current date/time in any IANA timezone" },
   { name: "read_file", desc: "Read a text file" },
   { name: "list_files", desc: "List a directory" },
@@ -19,24 +21,24 @@ export function Configuration() {
   return (
     <LandingSection alt>
       <LandingSectionTitle
-        title="Local configuration"
-        meta="~/.config/kaja/"
+        title="Built-in Tools & MCP Clients"
+        meta={
+          <div className="flex items-center gap-1">
+            <ChevronRight />
+            <a href="https://github.com/SubZtep/kaja/discussions/40" target="_blank" rel="noopener">
+              Have a favourite MCP or skill?
+            </a>
+          </div>
+        }
         description={
           <>
-            Everything lives in plain files. Fetch templates during onboarding and edit them by hand if tweaking is
+            Easily extendable plain files. Fetch templates during onboarding and edit them by hand if tweaking is
             necessary.
           </>
         }
       />
-      <Section className="mb-5 overflow-x-auto border-0 p-0 sm:border sm:px-6 sm:py-6">
-        <code className="block whitespace-pre font-mono text-[11px] text-fg sm:text-sm">
-          {
-            "~/.config/kaja/\n├─ datasets/*.json  # custom fields for personas to collect\n├─ personas/*.toml  # one behaviour per file\n├─ mcp.toml         # model context protocol servers\n├─ models.toml      # model catalog per provider\n├─ services.toml    # external service definitions and endpoints\n├─ secrets.toml     # user’s secret keys and tokens\n└─ settings.toml    # optional settings and app preferences"
-          }
-        </code>
-      </Section>
       <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
-        <div className="mb-3.5 font-semibold text-fg text-sm">Built-in tools</div>
+        <div className="mb-3.5 font-semibold text-fg text-sm"></div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map(tool => (
             <div key={tool.name} className="rounded-lg border border-border/50 bg-transparent p-2">
