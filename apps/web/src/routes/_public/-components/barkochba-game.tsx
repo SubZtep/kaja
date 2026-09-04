@@ -32,6 +32,21 @@ const EXAMPLE_THINGS = [
 const MAX_QUESTIONS = 20
 const STATE_STORAGE_KEY = "kaja-barkochba-state"
 
+const DOT_VARIANTS = {
+  won: { colors: ["bg-ice", "bg-ice", "bg-ice"], pulseMs: 1200 },
+  thinking: { colors: ["bg-neon", "bg-neon", "bg-neon"], pulseMs: 1000 },
+  idle: { colors: ["bg-border", "bg-border", "bg-border"], pulseMs: undefined },
+  playing: { colors: ["bg-red-600", "bg-green-600", "bg-blue-600"], pulseMs: undefined }
+} as const
+
+type DotVariant = keyof typeof DOT_VARIANTS
+
+function dotVariantFor(won: boolean, pending: boolean, phase: GameState["phase"]): DotVariant {
+  if (won) return "won"
+  if (pending) return "thinking"
+  return phase === "idle" ? "idle" : "playing"
+}
+
 type GameState = {
   phase: "idle" | "playing"
   visitorId?: string
@@ -79,6 +94,27 @@ function withoutQuestion(content: string, question: string): string {
   const withoutMatch = index === -1 ? content : content.slice(0, index) + content.slice(index + question.length)
   const collapsed = withoutMatch.replace(/\s+/g, " ").trim()
   return collapsed.replace(/(?:^|[.!?]\s+)\S{1,20}(?:\s\S{1,20}){0,2}:$/u, "").trim()
+}
+
+function StatusIcon({ won, aside }: Readonly<{ won: boolean; aside: string }>) {
+  if (won) return <Sparkles className="size-5 text-ice" />
+  if (aside) return <span className="text-muted text-xs italic">{aside}</span>
+  return <Wand className="size-5 text-neon" />
+}
+
+function TitleBarDots({ variant }: Readonly<{ variant: DotVariant }>) {
+  const { colors, pulseMs } = DOT_VARIANTS[variant]
+  return (
+    <>
+      {colors.map((color, i) => (
+        <span
+          key={i}
+          className={`size-2.5 rounded-full ${color} ${pulseMs ? "animate-[dot-pulse_ease-in-out_infinite]" : ""}`}
+          style={pulseMs ? { animationDuration: `${pulseMs}ms`, animationDelay: `${i * 150}ms` } : undefined}
+        />
+      ))}
+    </>
+  )
 }
 
 export function BarkochbaGame() {
@@ -153,31 +189,7 @@ export function BarkochbaGame() {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]">
       <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
-        {won ? (
-          <>
-            <span className="size-2.5 animate-[dot-pulse_1.2s_ease-in-out_infinite] rounded-full bg-ice [animation-delay:0ms]" />
-            <span className="size-2.5 animate-[dot-pulse_1.2s_ease-in-out_infinite] rounded-full bg-ice [animation-delay:150ms]" />
-            <span className="size-2.5 animate-[dot-pulse_1.2s_ease-in-out_infinite] rounded-full bg-ice [animation-delay:300ms]" />
-          </>
-        ) : pending ? (
-          <>
-            <span className="size-2.5 animate-[dot-pulse_1s_ease-in-out_infinite] rounded-full bg-neon [animation-delay:0ms]" />
-            <span className="size-2.5 animate-[dot-pulse_1s_ease-in-out_infinite] rounded-full bg-neon [animation-delay:150ms]" />
-            <span className="size-2.5 animate-[dot-pulse_1s_ease-in-out_infinite] rounded-full bg-neon [animation-delay:300ms]" />
-          </>
-        ) : phase === "idle" ? (
-          <>
-            <span className="size-2.5 rounded-full bg-border" />
-            <span className="size-2.5 rounded-full bg-border" />
-            <span className="size-2.5 rounded-full bg-border" />
-          </>
-        ) : (
-          <>
-            <span className="size-2.5 rounded-full bg-red-600" />
-            <span className="size-2.5 rounded-full bg-green-600" />
-            <span className="size-2.5 rounded-full bg-blue-600" />
-          </>
-        )}
+        <TitleBarDots variant={dotVariantFor(won, pending, phase)} />
         <span className="ml-1.5 font-mono text-muted text-xs">AI widget: barkochba game</span>
       </div>
 
@@ -224,13 +236,7 @@ export function BarkochbaGame() {
                 </span>
               ) : (
                 <>
-                  {won ? (
-                    <Sparkles className="size-5 text-ice" />
-                  ) : aside ? (
-                    <span className="text-muted text-xs italic">{aside}</span>
-                  ) : (
-                    <Wand className="size-5 text-neon" />
-                  )}
+                  <StatusIcon won={won} aside={aside} />
                   <span className="text-fg">{current}</span>
                 </>
               )}

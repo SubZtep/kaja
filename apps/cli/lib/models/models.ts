@@ -20,10 +20,11 @@ export function getModelsPath() {
   return join(getConfigDir(), "models.toml")
 }
 
+const MODEL_TEMPLATES = { fireworks: TEMPLATE, ollama: OLLAMA_TEMPLATE, llama: LLAMA_TEMPLATE } as const
+
 /** Writes the chosen example template, for the "configure my own provider" first-run choice. */
 export async function writeModelsTemplate(which: "fireworks" | "ollama" | "llama") {
-  const template = which === "ollama" ? OLLAMA_TEMPLATE : which === "llama" ? LLAMA_TEMPLATE : TEMPLATE
-  await write(file(getModelsPath()), template)
+  await write(file(getModelsPath()), MODEL_TEMPLATES[which])
 }
 
 /** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/models.fireworks.toml template, backing up any existing (differing) file first. */
