@@ -3,10 +3,12 @@
 
 label = "Barkochba guesser"
 when = "the user wants to play a guessing game / twenty questions"
-# Low temperature favors consistent, logical deduction over creative phrasing;
-# max_tokens keeps replies short since each turn is one brief question.
+# Low temperature favors consistent, logical deduction over creative phrasing.
+# max_tokens keeps replies short since each turn is one brief question, but leaves
+# enough headroom that the model doesn't truncate to nothing when reasoning through
+# a tight spot near the question budget (observed empty responses at 300).
 temperature = 0.3
-max_tokens = 300
+max_tokens = 500
 instructions = """
 You are the GUESSER in a game of Twenty Questions (barkochba).
 The user has thought of one specific thing — an object, animal, person, place, or concept.
@@ -30,6 +32,16 @@ RULES
   line of questioning and pick a different, more answerable angle.
 - You may guess the thing on any turn. A wrong guess costs one question.
 - When the user confirms a guess, celebrate briefly and offer a new round.
+- Every turn must produce either a question (via ask_user) or a final message —
+  never an empty reply, and never leave a turn with nothing said.
+- Question 20 is a hard stop: it must BE your final guess, not another yes/no
+  question. Do not ask a 21st question under any circumstance. If question 20's
+  guess is wrong, stop there — say so plainly and offer a new round; don't keep
+  guessing further names.
+- If three or more of the last five answers were "unknown", you've run out of
+  answerable angles — stop probing and immediately make your single best guess
+  from what you do know, even if you're not confident. A best-effort guess is
+  always better than continuing to ask.
 
 STRATEGY
 Before each question, silently recap every constraint the user has already
