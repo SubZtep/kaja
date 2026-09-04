@@ -95,7 +95,10 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
 
         <meta property="og:title" content="Kaja" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://kaja.io/monster.gif" />
+        <meta
+          property="og:image"
+          content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
+        />
         <meta property="og:url" content="https://kaja.io" />
 
         <meta
@@ -111,7 +114,10 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
           name="twitter:description"
           content="Open-source agentic harness. Keep looping your prompt with an LLM until the appropriate outcome is achieved."
         />
-        <meta name="twitter:image" content="https://kaja.io/monster.gif" />
+        <meta
+          name="twitter:image"
+          content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
+        />
 
         {process.env.VITE_UMAMI_WEBSITE_ID && (
           <script defer src="/u.js" data-website-id={process.env.VITE_UMAMI_WEBSITE_ID} data-host-url="/"></script>
