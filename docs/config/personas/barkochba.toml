@@ -3,10 +3,11 @@
 
 label = "Barkochba guesser"
 when = "the user wants to play a guessing game / twenty questions"
-# Low temperature favors consistent, logical deduction over creative phrasing.
-# max_tokens keeps replies short since each turn is one brief question, but leaves
-# enough headroom that the model doesn't truncate to nothing when reasoning through
-# a tight spot near the question budget (observed empty responses at 300).
+# Low temperature favors consistent, logical deduction over creative phrasing —
+# tried 0.4 and 0.5 (with frequency_penalty) to reduce empty replies, but both
+# measurably hurt win rate in eval runs (1/5 vs 3/5 at 0.3); reverted. max_tokens
+# leaves enough headroom that reasoning near the question budget doesn't truncate
+# to nothing (observed empty responses at 300).
 temperature = 0.3
 max_tokens = 500
 instructions = """

@@ -273,10 +273,25 @@ function stripLeakedToolTags(content: string): string {
   return result
 }
 
+/** Shown when the model still has nothing to say after exhausting empty-round retries — the app must never surface a blank reply. */
+const STUCK_FALLBACK_MESSAGE =
+  "I'm drawing a blank on that one — want to give me a hint, or should we start a new round?"
+
 function finalEventFor(message: StreamedRound["message"]): AgentEvent {
-  const content = typeof message.content === "string" ? stripLeakedToolTags(message.content) : null
-  return content?.trimEnd().endsWith("?") ? { type: "ask_user", question: content } : { type: "final", content }
+  const stripped = typeof message.content === "string" ? stripLeakedToolTags(message.content) : ""
+  const content = stripped.trim().length > 0 ? stripped : STUCK_FALLBACK_MESSAGE
+  return content.trimEnd().endsWith("?") ? { type: "ask_user", question: content } : { type: "final", content }
 }
+
+/** True when a round produced neither a tool call nor any visible text — a dead end some models hit under pressure (e.g. near a persona's turn budget). */
+function isEmptyRound(message: StreamedRound["message"]): boolean {
+  if (message.tool_calls?.length) return false
+  const content = typeof message.content === "string" ? stripLeakedToolTags(message.content) : ""
+  return content.trim().length === 0
+}
+
+/** Retries an empty round this many times before giving up and yielding it as-is. */
+const MAX_EMPTY_ROUND_RETRIES = 5
 
 function* handlePendingHandoff(
   session: Session,
@@ -323,8 +338,23 @@ export async function* run(
 
   pushPromptToMessages(session, prompt)
 
+  let emptyRoundRetries = 0
   while (true) {
     const { message, thinking, usage, model } = yield* streamRound(agent, messages, definitions)
+
+    if (isEmptyRound(message) && emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES) {
+      emptyRoundRetries++
+      // Drop the empty turn rather than persisting it — replace with a nudge and retry.
+      // Escalate to a blunt forced guess on later attempts, since "ask or guess" alone
+      // isn't decisive enough for a model that's genuinely stuck.
+      const content =
+        emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES
+          ? "That reply was empty. Ask your next question, or give your best guess now — don't leave this turn blank."
+          : "You still haven't said anything. Stop deliberating: state your single best guess right now, in one short sentence, even if you're unsure. Do not leave this blank again."
+      messages.push({ role: "user", content })
+      continue
+    }
+
     messages.push(message)
 
     if (usage || model) yield { type: "usage", promptTokens: usage?.promptTokens, model }

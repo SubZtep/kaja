@@ -162,6 +162,40 @@ test("turn() isolates concurrent streamed turns from different users' stores", a
   closeStore(pathB)
 })
 
+test("an empty round is retried with a nudge instead of surfacing a blank final message", async () => {
+  const path = dbPath()
+  const nasi = await Nasi.open({
+    dbPath: path,
+    profile: "hosted",
+    chat: {
+      client: fakeClient([{ content: null }, { content: "Is it alive?" }]) as never,
+      model: "fake"
+    }
+  })
+  const result = await nasi.turnBuffered({ message: "guess" })
+  expect(result.status).toBe("completed")
+  expect(result.message).toBe("Is it alive?")
+  closeStore(path)
+})
+
+test("a fallback message is shown, never a blank reply, after exhausting retries", async () => {
+  const path = dbPath()
+  const nasi = await Nasi.open({
+    dbPath: path,
+    profile: "hosted",
+    chat: {
+      // 5 retries + the initial attempt = 6 empty rounds needed to exhaust the budget.
+      client: fakeClient(Array(6).fill({ content: null })) as never,
+      model: "fake"
+    }
+  })
+  const result = await nasi.turnBuffered({ message: "guess" })
+  expect(result.status).toBe("completed")
+  expect(result.message).not.toBe("")
+  expect(result.message.length).toBeGreaterThan(0)
+  closeStore(path)
+})
+
 test("a session id cannot be resumed by a different owner sharing the same dbPath", async () => {
   const path = dbPath()
   const nasiOwnerA = await Nasi.open({
