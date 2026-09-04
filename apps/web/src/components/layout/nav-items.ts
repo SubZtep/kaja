@@ -41,7 +41,7 @@ const navItems: NavItem[] = [
     description: "Account, email, and password",
     internal: true,
     roles: ["admin", "user"],
-    sections: ["admin"],
+    sections: ["header", "admin"],
     icon: Shield
   },
   {
@@ -50,7 +50,7 @@ const navItems: NavItem[] = [
     description: "Directory and access controls",
     internal: true,
     roles: ["admin"],
-    sections: ["admin"],
+    sections: ["header", "admin"],
     icon: Users
   },
   {
@@ -59,7 +59,7 @@ const navItems: NavItem[] = [
     description: "Published mcp.toml servers",
     internal: true,
     roles: ["admin"],
-    sections: ["admin"],
+    sections: ["header", "admin"],
     icon: Plug
   },
   {
@@ -68,7 +68,7 @@ const navItems: NavItem[] = [
     description: "Providers and models.toml",
     internal: true,
     roles: ["admin"],
-    sections: ["admin"],
+    sections: ["header", "admin"],
     icon: Cpu
   },
   {
@@ -77,7 +77,7 @@ const navItems: NavItem[] = [
     description: "Embeddable chat widget keys",
     internal: true,
     roles: ["admin", "user"],
-    sections: ["admin"],
+    sections: ["header", "admin"],
     icon: MessageCircle
   },
   { label: "Docs", href: "https://docs.kaja.io", roles: ["all"], sections: ["header"] }
