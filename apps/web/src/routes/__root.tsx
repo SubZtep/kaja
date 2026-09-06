@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, ErrorComponent, HeadContent, Scripts } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { Providers } from "../components/Providers"
+import { env } from "../env/server"
 import { getSession } from "../lib/session"
 import appCss from "../styles.css?url"
 
@@ -15,9 +16,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       error("Failed to fetch session in root loader", { error: err instanceof Error ? err.message : err })
     }
     return {
-      apiUrl: process.env.VITE_API_URL,
-      barkochbaWidgetKey: process.env.VITE_WIDGET_BARKOCHBA_KEY,
-      chatWidgetKey: process.env.VITE_WIDGET_CHAT_KEY,
+      apiUrl: env.VITE_API_URL,
+      barkochbaWidgetKey: env.VITE_WIDGET_BARKOCHBA_KEY,
+      chatWidgetKey: env.VITE_WIDGET_CHAT_KEY,
       session
     }
   },
@@ -119,8 +120,8 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
         />
 
-        {process.env.VITE_UMAMI_WEBSITE_ID && (
-          <script defer src="/u.js" data-website-id={process.env.VITE_UMAMI_WEBSITE_ID} data-host-url="/"></script>
+        {env.VITE_UMAMI_WEBSITE_ID && (
+          <script defer src="/u.js" data-website-id={env.VITE_UMAMI_WEBSITE_ID} data-host-url="/"></script>
         )}
       </head>
       <body>

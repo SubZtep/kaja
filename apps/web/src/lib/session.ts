@@ -2,12 +2,10 @@ import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import type { Session } from "better-auth"
 import type { UserWithRole } from "better-auth/plugins"
+import { env } from "../env/server"
 
 export const getSession = createServerFn({ method: "GET" }).handler(async () => {
-  const apiUrl = process.env.API_URL || process.env.VITE_API_URL
-  if (!apiUrl) {
-    throw new Error("VITE_API_URL is not set")
-  }
+  const apiUrl = env.API_URL || env.VITE_API_URL
 
   const headers = getRequestHeaders()
   const cookie = headers.get("cookie") ?? ""
