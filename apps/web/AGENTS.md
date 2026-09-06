@@ -52,8 +52,7 @@ Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).
 
 ## Generated files
 
-`src/routeTree.gen.ts` is produced by the router plugin. Prefer not hand-editing.  
-Root `biome.json` currently has a typo (`apps/weeb` instead of `apps/web`), so Biome may flag this file until the ignore is fixed.
+`src/routeTree.gen.ts` is produced by the router plugin. Prefer not hand-editing.
 
 ## Env
 

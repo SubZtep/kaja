@@ -34,8 +34,9 @@ cli.tsx` directly) for interactive use.
 cli.tsx                 # entry
 components/             # Ink UI (layout, inputs, timeline, wizard, …)
 hooks/                  # agent, settings, voice, dictation, sounds, …
-lib/                    # domain subfolders: cli, agent, config, models, personas, memory,
-                        # session, telegram, audio, mcp, web; cross-cutting utils at lib/ root
+lib/                    # domain subfolders: cli, agent, auth, config, models, personas, memory,
+                        # session, telegram, audio, mcp, image, markdown, web; cross-cutting utils at lib/ root
+subcommands/            # run.tsx (--local), run-remote.tsx (hosted)
 tools/                  # LLM tools (files, web, memory, image, summarize, …)
 locales/                # en.toml, hu.toml
 assets/                 # sounds, datasets

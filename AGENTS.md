@@ -7,6 +7,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **CLI** (`apps/cli`): Ink TUI — default talks to the hosted API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
+- **Widget** (`apps/widget`): embeddable browser chat bundle, served by the API at `/widget/widget.js`
 - **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
@@ -34,7 +35,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 # PostgreSQL + MailDev (API/web optional via compose)
 docker compose up -d db mail
 
-# API + web (hot reload)
+# API + web + widget (hot reload)
 bun dev
 
 # CLI (entry is apps/cli/cli.ts — NOT apps/cli/src/...)
@@ -123,6 +124,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 ## Code Style
 
 - Biome (`biome.json`): line width 120, double quotes, semicolons asNeeded, no trailing commas, spaces; organizes imports
+- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint`/`lint:fix` also run `tombi format`/`tombi lint` on TOML files
 - TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`
 - Prefer surgical diffs; do not drive-by refactor
 - Comments: single line, no wrapping. `/** ... */` (TSDoc) for exported functions/values — VSCode surfaces these on hover; `// ...` for internal notes (locals, implementation asides)
@@ -131,7 +133,6 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 - A git hooks run lint at commit, and run test before push, so you don't have to run again for double-check after you finished a task.
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
-<!-- - Rate limiting is enabled in the API (global + stricter `/auth/*`); disabled when `BUN_TEST` is set or `RATE_LIMIT_ENABLED=false`. -->
 
 ## Testing & CI
 

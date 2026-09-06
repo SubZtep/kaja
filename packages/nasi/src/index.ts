@@ -28,7 +28,7 @@ export {
 export { samplingOf } from "./agent/persona"
 export { run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
-export { applyPersonaToMessages, buildSystemPrompt, defaultEnvironmentInstructions } from "./agent/system-prompt"
+export { applyPersonaToMessages, buildSystemPrompt } from "./agent/system-prompt"
 export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResult, tool, toolName } from "./agent/tools"
 export { connectMcpServer } from "./mcp/client"
 export {
@@ -42,7 +42,7 @@ export {
   noteServedModel,
   takeLastServedModel
 } from "./models/client"
-export { clientFromResolved, Nasi, type NasiOpenOptions, type NasiTurnInput } from "./nasi"
+export { Nasi, type NasiOpenOptions, type NasiTurnInput } from "./nasi"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
 export { fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"
