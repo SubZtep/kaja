@@ -51,7 +51,7 @@ describe("widget", () => {
     })
     token = (await signIn.json()).token
 
-    const createKey = await app.request("/widget-keys", {
+    const createKey = await app.request("/widget/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ label: "Test widget", allowedOrigins: [allowedOrigin] })
@@ -134,26 +134,59 @@ describe("widget", () => {
   })
 
   test("a key created with a persona round-trips it through create and list", async () => {
-    const createKey = await app.request("/widget-keys", {
+    const createKey = await app.request("/widget/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "Barkochba widget", allowedOrigins: [allowedOrigin], persona: "barkochba" })
+      body: JSON.stringify({
+        label: "Barkochba widget",
+        allowedOrigins: [allowedOrigin],
+        config: { persona: "barkochba" }
+      })
     })
     expect(createKey.status).toBe(201)
     const created = await createKey.json()
-    expect(created.persona).toBe("barkochba")
+    expect(created.config.persona).toBe("barkochba")
 
-    const list = await app.request("/widget-keys", { headers: { Authorization: `Bearer ${token}` } })
+    const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
     const { keys } = await list.json()
     const found = keys.find((k: { id: string }) => k.id === created.id)
-    expect(found.persona).toBe("barkochba")
+    expect(found.config.persona).toBe("barkochba")
+  })
+
+  test("widgetType is independent of persona and defaults to chat", async () => {
+    const createKey = await app.request("/widget/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ label: "No type set", allowedOrigins: [allowedOrigin] })
+    })
+    expect(createKey.status).toBe(201)
+    const created = await createKey.json()
+    expect(created.config.widgetType).toBe("chat")
+
+    const createBarkochbaTyped = await app.request("/widget/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        label: "Barkochba UI, no persona",
+        allowedOrigins: [allowedOrigin],
+        config: { widgetType: "barkochba" }
+      })
+    })
+    expect(createBarkochbaTyped.status).toBe(201)
+    const createdBarkochba = await createBarkochbaTyped.json()
+    expect(createdBarkochba.config.widgetType).toBe("barkochba")
+    expect(createdBarkochba.config.persona).toBeUndefined()
   })
 
   test("creating a key with an unknown persona is rejected", async () => {
-    const res = await app.request("/widget-keys", {
+    const res = await app.request("/widget/admin", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ label: "Bad persona", allowedOrigins: [allowedOrigin], persona: "does-not-exist" })
+      body: JSON.stringify({
+        label: "Bad persona",
+        allowedOrigins: [allowedOrigin],
+        config: { persona: "does-not-exist" }
+      })
     })
     expect(res.status).toBe(400)
   })
@@ -170,9 +203,9 @@ describe("widget", () => {
   })
 
   test("revoked key is rejected", async () => {
-    const list = await app.request("/widget-keys", { headers: { Authorization: `Bearer ${token}` } })
+    const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
     const { keys } = await list.json()
-    const revoke = await app.request(`/widget-keys/${keys[0].id}`, {
+    const revoke = await app.request(`/widget/admin/${keys[0].id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
     })

@@ -7,7 +7,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **CLI** (`apps/cli`): Ink TUI — default talks to the hosted API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
-- **Widget** (`apps/widget`): embeddable browser chat bundle, served by the API at `/widget/widget.js`
+- **Widget** (`apps/widget`): embeddable browser chat bundle, served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
 - **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.

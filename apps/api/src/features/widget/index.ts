@@ -5,6 +5,7 @@ import { Hono } from "hono"
 import { env } from "../../core/env"
 import { withLock } from "../../core/lock"
 import { widgetKeyRateLimiter, widgetTurnRateLimiter } from "../../core/rate-limit"
+import { widgetService } from "../../services"
 import { badGateway, badRequest, notFound } from "../../types/errors"
 import { type WidgetVariables, widgetKeyAuthMiddleware } from "./auth"
 import { runWidgetTurn } from "./chat"
@@ -17,10 +18,17 @@ widgetRoutes.use("*", widgetCors)
 // not resolved via import.meta.dir since that points at server.js's own location once bundled, not this source file's.
 const widgetBundlePath = resolve(env.WIDGET_BUNDLE_PATH)
 
-widgetRoutes.get("/widget.js", async c => {
+widgetRoutes.get("/:rawKey{[A-Za-z0-9_-]+\\.js}", widgetKeyRateLimiter, async c => {
+  const rawKey = c.req.param("rawKey").replace(/\.js$/, "")
+  const resolved = await widgetService.resolveByRawKey(rawKey)
+  if (!resolved) return notFound(c, "Unknown widget")
+
   const file = Bun.file(widgetBundlePath)
   if (!(await file.exists())) return notFound(c, "Widget bundle not built")
-  return new Response(file, { headers: { "content-type": "application/javascript; charset=utf-8" } })
+
+  const bundle = await file.text()
+  const body = `window.__kajaWidgetMode=${JSON.stringify(resolved.config.widgetType)};\n${bundle}`
+  return new Response(body, { headers: { "content-type": "application/javascript; charset=utf-8" } })
 })
 
 widgetRoutes.options("/turn", c => c.body(null, 204))
