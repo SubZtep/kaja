@@ -66,9 +66,8 @@ always re-run migrations after deploy when SQL files change.
 ## Production checklist (security)
 
 - Set a strong `BETTER_AUTH_SECRET` and real SMTP credentials.
-- Set a strong `CONFIG_API_TOKEN` on the API (and the same value on `apps/openai` if you
-  run the proxy). `/config/*` is **fail-closed**: missing/empty token returns 401 and
-  never serves provider API keys.
+- Set a strong `CONFIG_API_TOKEN` on the API. `/config/*` is **fail-closed**: missing/empty
+  token returns 401 and never serves provider API keys.
 - CLI `kaja config fetch` needs that token via `services.toml` `[api].token` or the
   `CONFIG_API_TOKEN` environment variable.
 - `CORS_ORIGIN` must match the public web origin.

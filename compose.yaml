@@ -72,21 +72,5 @@ services:
     environment:
       API_URL: http://api:3001
 
-  openai:
-    build:
-      context: .
-      dockerfile: apps/openai/Dockerfile
-    ports:
-      - "6669:6669"
-    depends_on:
-      - api
-    env_file:
-      - path: apps/openai/.env.example
-        required: true
-      - path: apps/openai/.env
-        required: false
-    environment:
-      KAJA_API_URL: http://api:3001
-
 volumes:
   nasi-data:

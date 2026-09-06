@@ -15,7 +15,6 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 * **Apps** 
   + [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery
   + [`cli`](./apps/cli/) – AI Agent TUI
-  + [`openai`](./apps/openai/) – Proxy for external LLMs
   + [`web`](./apps/web/) – Public homepage and admin portal
   + [`widget`](./apps/widget/) – Web components
 * **Packages** 
@@ -53,7 +52,6 @@ docker compose up -d
 - Start MailDev SMTP server with web inbox
 - API
 - Web
-- OpenAI LLM API Proxy
 
 This is all the CLI needs to connect:
 

@@ -85,14 +85,6 @@
         "react-devtools-core": "^7.0.1",
       },
     },
-    "apps/openai": {
-      "name": "@kaja/openai",
-      "version": "0.0.1",
-      "dependencies": {
-        "@kaja/logger": "workspace:*",
-        "@kaja/shared": "workspace:*",
-      },
-    },
     "apps/web": {
       "name": "@kaja/web",
       "version": "0.6.1",
@@ -404,8 +396,6 @@
     "@kaja/logger": ["@kaja/logger@workspace:packages/logger"],
 
     "@kaja/nasi": ["@kaja/nasi@workspace:packages/nasi"],
-
-    "@kaja/openai": ["@kaja/openai@workspace:apps/openai"],
 
     "@kaja/schema": ["@kaja/schema@workspace:packages/schema"],
 
