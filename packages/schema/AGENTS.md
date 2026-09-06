@@ -16,10 +16,11 @@ config/      # CLI on-disk config files the user hand-edits (settings.toml, mode
 store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi
 cli/         # Personas, datasets
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
+env/         # Shared env-parsing helpers (parseEnv, bool/url/positiveInt/trimmed) — no app schemas live here, each app owns its own EnvSchema
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```
 
-Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
+Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`, `@kaja/schema/env`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
 
 ## Conventions
 

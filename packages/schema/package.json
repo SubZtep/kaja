@@ -24,6 +24,10 @@
       "types": "./nasi/index.ts",
       "default": "./nasi/index.ts"
     },
+    "./env": {
+      "types": "./env/index.ts",
+      "default": "./env/index.ts"
+    },
     "./tombi": {
       "types": "./tombi/index.ts",
       "default": "./tombi/index.ts"
