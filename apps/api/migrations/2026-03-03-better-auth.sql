@@ -67,8 +67,6 @@ CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "session" ("userId");
 
 CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account" ("userId");
 
-CREATE UNIQUE INDEX IF NOT EXISTS "account_issuer_accountId_idx" ON "account" ("issuer", "accountId");
-
 CREATE INDEX IF NOT EXISTS "verification_identifier_idx" ON "verification" ("identifier");
 
 CREATE INDEX IF NOT EXISTS "deviceCode_userId_idx" ON "deviceCode" ("userId");
