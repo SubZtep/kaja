@@ -32,6 +32,8 @@ jobs:
       DATABASE_URL: postgresql://testuser:testpass@127.0.0.1:5432/kaja
       BETTER_AUTH_SECRET: ci_better_auth_secret_at_least_32_chars_long
       CORS_ORIGIN: http://localhost:3000
+      CONFIG_API_TOKEN: ci_config_api_token
+      NASI_DATA_DIR: .data/nasi
     services:
       postgres:
         image: postgres:18-alpine
