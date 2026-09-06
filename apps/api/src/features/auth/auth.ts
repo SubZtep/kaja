@@ -55,7 +55,11 @@ export const auth = betterAuth({
     cookiePrefix: "kaja",
     database: {
       generateId: () => Bun.randomUUIDv7(),
-      defaultFindManyLimit: 1000
+      defaultFindManyLimit: 1000,
+      // Better Auth 1.7's schema-check crashes requests on the "deviceCode" table:
+      // its Postgres introspection passes the mixed-case name unquoted to
+      // pg_get_serial_sequence(), which folds it to "devicecode" and fails to resolve.
+      validateSchema: false
     },
     ipAddress: {
       ipv6Subnet: 56
