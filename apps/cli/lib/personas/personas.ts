@@ -48,7 +48,7 @@ export async function loadPersonas(): Promise<Persona[]> {
       const data = PersonaSchema.parse(TOML.parse(await file(path).text()))
       personas.push({ ...data, id })
     } catch (error) {
-      log.warn({ error, path }, "Failed to load persona")
+      log.warn("Failed to load persona", { error, path })
     }
   }
 

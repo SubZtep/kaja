@@ -4,6 +4,16 @@ declare module "bun" {
   interface Env {
     /** Node environment; "development" enables API docs and Better Auth's OpenAPI plugin */
     NODE_ENV?: string
+    /** App name attached to every log line */
+    KAJA_APP_NAME?: string
+    /** Master on/off switch for logging - unset means no log output at all */
+    KAJA_LOG_LEVEL?: string
+    /** Append JSON logs here instead of pretty-printing/Axiom, in any NODE_ENV */
+    KAJA_LOG_FILE?: string
+    /** Axiom dataset to ship logs to (node, NODE_ENV=production, no KAJA_LOG_FILE) */
+    AXIOM_DATASET?: string
+    /** Axiom ingest token (node, NODE_ENV=production, no KAJA_LOG_FILE) */
+    AXIOM_TOKEN?: string
     /** Port the API server listens on */
     PORT?: string
     /** Origin allowed for browser requests (also Better Auth's trusted origin and email callback base) */

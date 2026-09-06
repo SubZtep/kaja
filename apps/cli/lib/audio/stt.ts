@@ -67,7 +67,7 @@ export async function createStt({ source, onState, personaModels }: SttOptions):
 
   // --- speaches realtime session ---
   const url = `${base}/v1/realtime?model=${encodeURIComponent(model)}`
-  log.info({ url }, "stt: connecting")
+  log.info("stt: connecting", { url })
   const ws = new WebSocket(url)
 
   const send = (event: Record<string, unknown>) => {
@@ -117,21 +117,15 @@ export async function createStt({ source, onState, personaModels }: SttOptions):
 
   ws.onmessage = e => {
     const ev = JSON.parse(String(e.data))
-    log.debug(
-      {
-        event: ev.type
-      },
-      "stt: server event"
-    )
+    log.debug("stt: server event", {
+      event: ev.type
+    })
     switch (ev.type) {
       case "session.created":
-        log.info(
-          {
-            model,
-            language
-          },
-          "stt: connected — configuring session"
-        )
+        log.info("stt: connected — configuring session", {
+          model,
+          language
+        })
         break
       case "session.updated":
         log.info("stt: listening — speak")
@@ -143,12 +137,9 @@ export async function createStt({ source, onState, personaModels }: SttOptions):
         onState?.("recording")
         break
       case "input_audio_buffer.speech_stopped":
-        log.info(
-          {
-            audio_s: +((ev.audio_end_ms - speechStartMs) / 1000).toFixed(1)
-          },
-          "stt: pause detected"
-        )
+        log.info("stt: pause detected", {
+          audio_s: +((ev.audio_end_ms - speechStartMs) / 1000).toFixed(1)
+        })
         break
       case "input_audio_buffer.committed":
         transcribeStart = Date.now()
@@ -168,20 +159,14 @@ export async function createStt({ source, onState, personaModels }: SttOptions):
         onState?.("listening")
         // VAD can fire on ambient noise, yielding empty transcripts — skip those.
         if (text) {
-          log.info(
-            {
-              took_s
-            },
-            "stt: segment transcribed"
-          )
+          log.info("stt: segment transcribed", {
+            took_s
+          })
           transcripts.push(text)
         } else {
-          log.info(
-            {
-              took_s
-            },
-            "stt: empty transcript (noise) — skipped"
-          )
+          log.info("stt: empty transcript (noise) — skipped", {
+            took_s
+          })
         }
         break
       }
@@ -189,19 +174,16 @@ export async function createStt({ source, onState, personaModels }: SttOptions):
         const msg = ev.error?.message ?? JSON.stringify(ev)
         // The server flags prefix_padding_ms as unsupported even though its own schema requires it in session.update; harmless, so don't surface it.
         if (!msg.includes("prefix_padding_ms"))
-          log.error(
-            {
-              src: "server"
-            },
-            msg
-          )
+          log.error(msg, {
+            src: "server"
+          })
         break
       }
     }
   }
 
   ws.onerror = () => {
-    log.error({ url }, "stt: connection failed — is the speaches container running?")
+    log.error("stt: connection failed — is the speaches container running?", { url })
   }
   ws.onclose = stop
 

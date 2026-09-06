@@ -175,7 +175,7 @@ export default function App({
       await savePreferences({ persona: next.id })
       notifier.notify({ title: "Persona Switched", message: `Switched to ${next.label}` })
     } catch (error) {
-      log.warn({ error }, "Failed to save preferences")
+      log.warn("Failed to save preferences", { error })
     }
   }
   const lastEvent = events.at(-1)

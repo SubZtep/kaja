@@ -23,7 +23,6 @@ export function listPaths(all = false, configDir = getPaths().config) {
       { label: "personas", path: join(configDir, "personas") },
       { label: "datasets", path: join(configDir, "datasets") },
       { label: "tools", path: join(configDir, "tools") },
-      { label: "log", path: join(paths.cache, "kaja.log") },
       { label: "temp", path: paths.temp }
     )
   }

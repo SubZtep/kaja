@@ -5,20 +5,6 @@ import { type FieldInfo, inspectFields } from "./lib/env-schema"
 
 const rootDir = join(import.meta.dir, "..")
 
-const LOGGER_TRAILER: Record<"api" | "web", string> = {
-  api: `
-# Logger Configuration
-KAJA_APP_NAME=api
-KAJA_LOG_LEVEL=trace
-# KAJA_LOG_FILE=./logs/api.log     # Append JSON logs here instead of pretty-printing; unset KAJA_LOG_LEVEL = no log output at all
-`,
-  web: `
-# Logger Configuration
-KAJA_APP_NAME=web
-KAJA_LOG_LEVEL=trace
-`
-}
-
 function renderLine(field: FieldInfo): string {
   const comment = field.description ? `   # ${field.description}` : ""
 
@@ -43,7 +29,7 @@ function renderLine(field: FieldInfo): string {
   return `${field.key}=${comment} (required)`
 }
 
-function renderEnvExample(schema: z.ZodObject<z.ZodRawShape>, trailer: string): string {
+function renderEnvExample(schema: z.ZodObject<z.ZodRawShape>): string {
   const fields = inspectFields(schema)
   const sections = new Map<string | undefined, FieldInfo[]>()
   for (const field of fields) {
@@ -60,12 +46,12 @@ function renderEnvExample(schema: z.ZodObject<z.ZodRawShape>, trailer: string): 
     blocks.push(`# ${section}\n${sectionFields.map(renderLine).join("\n")}`)
   }
 
-  return `${blocks.join("\n\n")}\n${trailer}`
+  return `${blocks.join("\n\n")}\n`
 }
 
 const targets = [
-  { app: "api" as const, schema: ApiEnvSchema, outPath: join(rootDir, "apps/api/.env.example") },
-  { app: "web" as const, schema: WebEnvSchema, outPath: join(rootDir, "apps/web/.env.example") }
+  { schema: ApiEnvSchema, outPath: join(rootDir, "apps/api/.env.example") },
+  { schema: WebEnvSchema, outPath: join(rootDir, "apps/web/.env.example") }
 ]
 
 const knownKeys = new Set(targets.flatMap(t => Object.keys(t.schema.shape)))
@@ -113,7 +99,7 @@ if (isCheck) {
   let hasDiff = false
 
   for (const target of targets) {
-    const generated = renderEnvExample(target.schema, LOGGER_TRAILER[target.app])
+    const generated = renderEnvExample(target.schema)
     const onDisk = await Bun.file(target.outPath)
       .text()
       .catch(() => "")
@@ -136,7 +122,7 @@ if (isCheck) {
   console.log("env schemas and .env.example files are in sync")
 } else {
   for (const target of targets) {
-    const generated = renderEnvExample(target.schema, LOGGER_TRAILER[target.app])
+    const generated = renderEnvExample(target.schema)
     await Bun.write(target.outPath, generated)
     console.log(`Wrote ${target.outPath}`)
   }

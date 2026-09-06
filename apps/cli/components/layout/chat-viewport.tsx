@@ -245,7 +245,7 @@ export function ChatViewport({
           .then(async () => {
             if (sounds) (await import("../../lib/audio/sounds")).playSound("keyboard")
           })
-          .catch(error => log.warn({ error }, "Copy to clipboard failed"))
+          .catch(error => log.warn("Copy to clipboard failed", { error }))
       }
       return
     }

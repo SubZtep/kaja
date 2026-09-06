@@ -27,7 +27,7 @@ export async function loadDatasets(): Promise<Map<string, Dataset>> {
       const dataset = DatasetSchema.parse(raw)
       datasets.set(topic, dataset)
     } catch (error) {
-      log.warn({ error, path }, "Failed to load dataset")
+      log.warn("Failed to load dataset", { error, path })
     }
   }
   return datasets

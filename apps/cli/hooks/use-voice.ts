@@ -60,7 +60,7 @@ export function useVoice(events: TimelineEvent[], enabled = false, personaModels
       tts.current
         .speak(speech)
         .catch(error => {
-          log.warn({ error }, "voice: speak failed")
+          log.warn("voice: speak failed", { error })
         })
         .finally(() => setInFlight(n => n - 1))
     }

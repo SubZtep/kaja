@@ -117,12 +117,9 @@ export function createLocalSource({ inputFile }: LocalSourceOptions = {}): Audio
       if (stopping) continue
       const text = new TextDecoder().decode(chunk).trim()
       if (text)
-        log.error(
-          {
-            src: "ffmpeg"
-          },
-          text
-        )
+        log.error(text, {
+          src: "ffmpeg"
+        })
     }
   })()
 

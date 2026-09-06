@@ -16,7 +16,7 @@ export function usePreferences(initial?: KajaPreferences) {
 
   const persist = (preferences: KajaPreferences) => {
     savePreferences(preferences).catch(error => {
-      log.warn({ error }, "Failed to save preferences")
+      log.warn("Failed to save preferences", { error })
     })
   }
 

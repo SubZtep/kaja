@@ -22,8 +22,18 @@ type CreateLoggerOptions = {
   sink: LogSink
 }
 
+// Error instances have no enumerable own properties (message/stack are inherited getters), so a plain
+// object spread silently drops them - serialize explicitly before merging into the log line.
+function serializeErrors(payload: LogObject): LogObject {
+  const result: LogObject = {}
+  for (const [key, value] of Object.entries(payload)) {
+    result[key] = value instanceof Error ? { name: value.name, message: value.message, stack: value.stack } : value
+  }
+  return result
+}
+
 function mergeBindings(base: LogObject, incoming?: LogObject) {
-  return incoming ? { ...base, ...incoming } : base
+  return incoming ? { ...base, ...serializeErrors(incoming) } : base
 }
 
 function createLevelMethod(level: LogLevel, sink: LogSink, baseBindings: LogObject) {

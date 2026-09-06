@@ -1,7 +1,7 @@
-import * as z from "zod"
 import { url } from "./helpers"
+import { LoggerEnvSchema } from "./logger"
 
-export const CliEnvSchema = z.object({
+export const CliEnvSchema = LoggerEnvSchema.extend({
   KAJA_API_URL: url
     .optional()
     .describe(

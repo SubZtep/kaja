@@ -140,7 +140,7 @@ class EditThrottle {
         this.intervalMs = Math.min(this.intervalMs * 2, MAX_EDIT_INTERVAL_MS)
         if (error.retryAfterSec) this.lastEditAt = Date.now() + error.retryAfterSec * 1000
       } else {
-        log.warn({ error }, "Telegram edit failed")
+        log.warn("Telegram edit failed", { error })
       }
     }
   }
@@ -243,7 +243,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
           await updateSessionRow(state.sessionRowId, data)
         }
       })
-      .catch(error => log.warn({ error }, "Failed to save telegram session"))
+      .catch(error => log.warn("Failed to save telegram session", { error }))
     return state.persistChain
   }
 
@@ -256,7 +256,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     try {
       await sender.editMessageText(chatId, messageId, text, opts)
     } catch (error) {
-      log.warn({ error }, "Telegram edit failed")
+      log.warn("Telegram edit failed", { error })
     }
   }
 
@@ -265,7 +265,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     try {
       await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
     } catch (error) {
-      log.warn({ error }, "Telegram photo send failed")
+      log.warn("Telegram photo send failed", { error })
     }
   }
 
@@ -411,7 +411,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
         if (done) return
       }
     } catch (error) {
-      log.warn({ error }, "Telegram agent run failed")
+      log.warn("Telegram agent run failed", { error })
       const { category, message } = categorizeError(error)
       state.events.push({ type: "error", text: message, category })
       await editIfChanged(`⚠ ${category}: ${message}`)

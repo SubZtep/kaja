@@ -17,10 +17,11 @@ store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaj
 cli/         # Personas, datasets
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
 env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, CliEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
-  index.ts     # re-exports api/web/cli/helpers
-  api.ts       # ApiEnvSchema — every var apps/api reads
-  web.ts       # WebEnvSchema — every var apps/web reads
-  cli.ts       # CliEnvSchema — KAJA_API_URL (the only apps/cli var worth schematizing; locale vars and a hyperlink-support workaround stay plain process.env reads)
+  index.ts     # re-exports api/web/cli/logger/helpers
+  api.ts       # ApiEnvSchema — LoggerEnvSchema.extend() + every other var apps/api reads
+  web.ts       # WebEnvSchema — LoggerEnvSchema.extend() + every other var apps/web reads
+  cli.ts       # CliEnvSchema — LoggerEnvSchema.extend() + KAJA_API_URL (locale vars and a hyperlink-support workaround stay plain process.env reads)
+  logger.ts    # LoggerEnvSchema — @kaja/logger's own contract (KAJA_APP_NAME, KAJA_LOG_LEVEL, KAJA_LOG_FILE, AXIOM_DATASET, AXIOM_TOKEN, NODE_ENV); merged into api/web/cli so it's typed/validated everywhere even though @kaja/logger itself reads these raw via process.env (it can't depend on @kaja/schema)
   helpers.ts   # trimmed/bool/positiveInt/url field helpers, parseEnv(schema, source)
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```

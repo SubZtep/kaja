@@ -49,12 +49,9 @@ export async function fetchSpeech(
         if (msg.type === "warmup_done") {
           log.debug("tts: warmup done")
         } else if (msg.type === "warmup_error") {
-          log.warn(
-            {
-              msg
-            },
-            "tts: warmup error"
-          )
+          log.warn("tts: warmup error", {
+            msg
+          })
         }
       },
       response_format: "pcm" // s16le mono 24kHz (its wav output minus the header)
@@ -75,22 +72,16 @@ async function* logFirstChunk(
   for await (const chunk of pcm) {
     if (first) {
       first = false
-      log.info(
-        {
-          first_audio_s: +((Date.now() - started) / 1000).toFixed(1)
-        },
-        "tts: speaking"
-      )
+      log.info("tts: speaking", {
+        first_audio_s: +((Date.now() - started) / 1000).toFixed(1)
+      })
     }
     yield chunk
   }
-  log.debug(
-    {
-      synth_s: +((Date.now() - started) / 1000).toFixed(1),
-      voice
-    },
-    "tts: utterance synthesized"
-  )
+  log.debug("tts: utterance synthesized", {
+    synth_s: +((Date.now() - started) / 1000).toFixed(1),
+    voice
+  })
 }
 
 export function createTts(sink: AudioSink, personaModels?: PersonaModels) {
@@ -123,7 +114,7 @@ export async function warmupTts(personaModels?: PersonaModels): Promise<void> {
     const { response } = await fetchSpeech("Hi", personaModels)
     await response.arrayBuffer() // discard — we only want the model loaded
     log.debug("tts: warmed up")
-  } catch (err) {
-    log.warn(err, "tts: warmup failed")
+  } catch (error) {
+    log.warn("tts: warmup failed", { error })
   }
 }

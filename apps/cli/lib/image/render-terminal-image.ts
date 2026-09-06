@@ -21,7 +21,7 @@ export async function renderTerminalImage(src: string, options?: { width?: strin
       preserveAspectRatio: true
     })
   } catch (error) {
-    log.warn({ error, src }, "Failed to render terminal image")
+    log.warn("Failed to render terminal image", { error, src })
     return null
   }
 }

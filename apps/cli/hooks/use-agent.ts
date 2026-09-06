@@ -175,7 +175,7 @@ export function useAgent(
           await updateSessionRow(sessionRowIdRef.current, data)
         }
       })
-      .catch(error => log.warn({ error }, "Failed to save session"))
+      .catch(error => log.warn("Failed to save session", { error }))
   }, [agent])
 
   // Mirrors a persona_switch event into React state — run() already mutated the agent via applyPersona, so header/menu and the session row's persona column just need to follow.
@@ -234,7 +234,7 @@ export function useAgent(
           else handleFinalizedEvent(event)
         }
       } catch (error) {
-        log.warn({ error }, "Agent run failed")
+        log.warn("Agent run failed", { error })
         const { category, message } = categorizeError(error)
         pushEvent({ type: "error", text: message, category })
       } finally {

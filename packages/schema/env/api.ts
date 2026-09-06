@@ -1,7 +1,8 @@
-import * as z from "zod"
 import { bool, positiveInt, trimmed, url } from "./helpers"
+import { LoggerEnvSchema } from "./logger"
 
-export const ApiEnvSchema = z.object({
+export const ApiEnvSchema = LoggerEnvSchema.extend({
+  // Overrides LoggerEnvSchema's generic NODE_ENV description with the API-specific behavior it also gates.
   NODE_ENV: trimmed
     .optional()
     .describe('Node environment; "development" enables API docs and Better Auth\'s OpenAPI plugin'),

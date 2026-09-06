@@ -69,7 +69,7 @@ try {
 
   await runSubcommand(args)
 } catch (error) {
-  log.error({ error }, "Unhandled startup error")
+  log.error("Unhandled startup error", { error })
   const message = error instanceof Error ? error.message : String(error)
   console.log(`${color("red", "ansi")}${t("cli.startupError", { message })}`)
   process.exit(1)

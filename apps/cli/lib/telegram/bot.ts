@@ -118,10 +118,10 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
   bot.catch(err => {
     // A 401 here (unlike at the getMe() preflight in start()) means the token was revoked mid-session — every future API call will fail the same way, including the notify-the-user sendMessage below, so that failure would otherwise go completely silent. Log it distinctly so an operator watching logs can tell "bot is dead" apart from one bad update.
     if (err.error instanceof GrammyError && err.error.error_code === 401) {
-      log.error({ error: err.error }, "Telegram bot token rejected — bot is now unreachable")
+      log.error("Telegram bot token rejected — bot is now unreachable", { error: err.error })
       return
     }
-    log.error({ error: err.error }, "Unhandled error in Telegram update handler")
+    log.error("Unhandled error in Telegram update handler", { error: err.error })
     const chatId = err.ctx.chat?.id
     if (chatId !== undefined) bot.api.sendMessage(chatId, t("telegram.genericError")).catch(() => {})
   })
