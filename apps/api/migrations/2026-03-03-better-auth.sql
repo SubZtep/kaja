@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS "account" (
   "id" UUID DEFAULT uuidv7 () NOT NULL PRIMARY KEY,
   "accountId" TEXT NOT NULL,
   "providerId" TEXT NOT NULL,
-  "issuer" TEXT NOT NULL,
   "userId" UUID NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
   "accessToken" TEXT,
   "refreshToken" TEXT,
@@ -66,6 +65,8 @@ CREATE TABLE IF NOT EXISTS "deviceCode" (
 CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "session" ("userId");
 
 CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account" ("userId");
+
+CREATE UNIQUE INDEX IF NOT EXISTS "account_providerId_accountId_idx" ON "account" ("providerId", "accountId");
 
 CREATE INDEX IF NOT EXISTS "verification_identifier_idx" ON "verification" ("identifier");
 

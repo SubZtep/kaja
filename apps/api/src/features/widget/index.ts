@@ -14,7 +14,7 @@ import { widgetCors } from "./cors"
 export const widgetRoutes = new Hono<{ Variables: WidgetVariables }>()
 widgetRoutes.use("*", widgetCors)
 
-// Built by `bun run --filter @kaja/widget build`; copied to apps/api/public/widget.js (see Dockerfile) —
+// Built by `bun run --filter @kaja/api build:widget` straight into apps/api/public/widget.js —
 // not resolved via import.meta.dir since that points at server.js's own location once bundled, not this source file's.
 const widgetBundlePath = resolve(env.WIDGET_BUNDLE_PATH)
 

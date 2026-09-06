@@ -7,7 +7,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **CLI** (`apps/cli`): Ink TUI — default talks to the hosted API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
-- **Widget** (`apps/widget`): embeddable browser chat bundle, served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
+- **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
 - **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
@@ -120,6 +120,7 @@ bun run --filter @kaja/cli test
 1. `2026-03-01-uuidv7.sql` — UUIDv7() via pgcrypto
 2. `2026-03-03-better-auth.sql` — Better Auth tables
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
+4. `2026-08-31-widget.sql` — `widget` table
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 
