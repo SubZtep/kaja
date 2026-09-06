@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicRouteImport } from './routes/_public'
-import { Route as UDotjsRouteImport } from './routes/u[.]js'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
 import { Route as AdminWidgetRouteImport } from './routes/_admin/widget'
@@ -20,7 +19,6 @@ import { Route as PublicDeviceRouteImport } from './routes/_public/device'
 import { Route as PublicResetPasswordRouteImport } from './routes/_public/reset-password'
 import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
-import { Route as ApiSendRouteImport } from './routes/api/send'
 import { Route as AdminMcpServersIndexRouteImport } from './routes/_admin/mcp-servers/index'
 import { Route as AdminModelsIndexRouteImport } from './routes/_admin/models/index'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
@@ -34,11 +32,6 @@ const AdminRoute = AdminRouteImport.update({
 } as any)
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UDotjsRoute = UDotjsRouteImport.update({
-  id: '/u.js',
-  path: '/u.js',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
@@ -81,11 +74,6 @@ const PublicSignupRoute = PublicSignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => PublicRoute,
 } as any)
-const ApiSendRoute = ApiSendRouteImport.update({
-  id: '/api/send',
-  path: '/api/send',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminMcpServersIndexRoute = AdminMcpServersIndexRouteImport.update({
   id: '/mcp-servers/',
   path: '/mcp-servers/',
@@ -119,7 +107,6 @@ const PublicDeviceApproveRoute = PublicDeviceApproveRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
-  '/u.js': typeof UDotjsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
   '/widget': typeof AdminWidgetRoute
@@ -127,7 +114,6 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
-  '/api/send': typeof ApiSendRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/mcp-servers/': typeof AdminMcpServersIndexRoute
@@ -137,14 +123,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
-  '/u.js': typeof UDotjsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
   '/widget': typeof AdminWidgetRoute
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
-  '/api/send': typeof ApiSendRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/mcp-servers': typeof AdminMcpServersIndexRoute
@@ -156,7 +140,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
-  '/u.js': typeof UDotjsRoute
   '/_admin/dashboard': typeof AdminDashboardRoute
   '/_admin/profile': typeof AdminProfileRoute
   '/_admin/widget': typeof AdminWidgetRoute
@@ -164,7 +147,6 @@ export interface FileRoutesById {
   '/_public/reset-password': typeof PublicResetPasswordRoute
   '/_public/signin': typeof PublicSigninRoute
   '/_public/signup': typeof PublicSignupRoute
-  '/api/send': typeof ApiSendRoute
   '/_public/': typeof PublicIndexRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
   '/_public/device/approve': typeof PublicDeviceApproveRoute
@@ -177,7 +159,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/u.js'
     | '/dashboard'
     | '/profile'
     | '/widget'
@@ -185,7 +166,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signin'
     | '/signup'
-    | '/api/send'
     | '/users/$userId'
     | '/device/approve'
     | '/mcp-servers/'
@@ -195,14 +175,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/u.js'
     | '/dashboard'
     | '/profile'
     | '/widget'
     | '/reset-password'
     | '/signin'
     | '/signup'
-    | '/api/send'
     | '/users/$userId'
     | '/device/approve'
     | '/mcp-servers'
@@ -213,7 +191,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_admin'
     | '/_public'
-    | '/u.js'
     | '/_admin/dashboard'
     | '/_admin/profile'
     | '/_admin/widget'
@@ -221,7 +198,6 @@ export interface FileRouteTypes {
     | '/_public/reset-password'
     | '/_public/signin'
     | '/_public/signup'
-    | '/api/send'
     | '/_public/'
     | '/_admin/users/$userId'
     | '/_public/device/approve'
@@ -234,8 +210,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
-  UDotjsRoute: typeof UDotjsRoute
-  ApiSendRoute: typeof ApiSendRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,13 +226,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/u.js': {
-      id: '/u.js'
-      path: '/u.js'
-      fullPath: '/u.js'
-      preLoaderRoute: typeof UDotjsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_admin/dashboard': {
@@ -316,13 +283,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/signup'
       preLoaderRoute: typeof PublicSignupRouteImport
       parentRoute: typeof PublicRoute
-    }
-    '/api/send': {
-      id: '/api/send'
-      path: '/api/send'
-      fullPath: '/api/send'
-      preLoaderRoute: typeof ApiSendRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_admin/mcp-servers/': {
       id: '/_admin/mcp-servers/'
@@ -427,18 +387,7 @@ const PublicRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
-  UDotjsRoute: UDotjsRoute,
-  ApiSendRoute: ApiSendRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
