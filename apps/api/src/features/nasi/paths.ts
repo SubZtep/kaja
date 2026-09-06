@@ -1,10 +1,11 @@
 import { join, resolve } from "node:path"
 import * as z from "zod"
+import { env } from "../../core/env"
 
 const uuidv7 = z.uuidv7()
 
 export function nasiDataDir() {
-  return process.env.NASI_DATA_DIR?.trim() || "/var/lib/kaja/nasi"
+  return env.NASI_DATA_DIR
 }
 
 /** SQLite path for an authenticated user. Never takes a client-supplied path segment. */

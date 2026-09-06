@@ -1,8 +1,9 @@
 import { info } from "@kaja/logger"
 import { app } from "../app"
 import { CronService } from "./cron"
+import { env } from "./env"
 
-const port = Number(process.env.PORT ?? 3001)
+const port = env.PORT
 info("API is running", { port })
 
 // Start cron jobs

@@ -1,6 +1,7 @@
 import { createOpenAIClient, Nasi } from "@kaja/nasi"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared"
+import { env } from "../../core/env"
 import { modelService } from "../../services"
 import { userSqlitePath } from "./paths"
 import { listPersonas } from "./personas"
@@ -14,7 +15,7 @@ export function setNasiChatResolver(resolver: ChatResolver | undefined) {
 }
 
 async function defaultChatResolver() {
-  const stub = process.env.NASI_STUB_MODEL
+  const stub = env.NASI_STUB_MODEL
   if (stub) {
     return {
       client: createOpenAIClient({ baseURL: "http://127.0.0.1:9", apiKey: "stub" }),

@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
+import { env } from "./core/env"
 import { trafficLogger } from "./core/logger"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { adminRoutes } from "./features/admin"
@@ -22,7 +23,7 @@ app.use(logger(trafficLogger))
 // (features/widget/cors.ts) — the app's single fixed CORS_ORIGIN can't apply there.
 app.use("*", async (c, next) => {
   if (c.req.path.startsWith("/widget/")) return next()
-  return cors({ origin: process.env.CORS_ORIGIN, credentials: true })(c, next)
+  return cors({ origin: env.CORS_ORIGIN, credentials: true })(c, next)
 })
 app.use("*", globalRateLimiter)
 app.use("*", authMiddleware)
@@ -42,14 +43,14 @@ app.route("/widget", widgetRoutes)
 app.route("/widget-keys", widgetKeyRoutes)
 
 // API documentation
-if (process.env.NODE_ENV === "development") {
+if (env.NODE_ENV === "development") {
   setupApiDocs(app)
   app.route("/reference", referenceRoutes)
 }
 
 // Run server
 export default {
-  port: Number(process.env.PORT || 3001),
+  port: env.PORT,
   idleTimeout: 30,
   fetch: app.fetch
 }

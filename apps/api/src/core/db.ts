@@ -1,8 +1,9 @@
 import { error } from "@kaja/logger"
 import { Pool } from "pg"
+import { env } from "./env"
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: env.DATABASE_URL,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 2_000,
   maxLifetimeSeconds: 60,

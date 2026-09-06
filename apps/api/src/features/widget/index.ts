@@ -2,6 +2,7 @@ import { resolve } from "node:path"
 import { error as logError } from "@kaja/logger"
 import { WidgetTurnRequestSchema } from "@kaja/schema/nasi"
 import { Hono } from "hono"
+import { env } from "../../core/env"
 import { withLock } from "../../core/lock"
 import { widgetKeyRateLimiter, widgetTurnRateLimiter } from "../../core/rate-limit"
 import { badGateway, badRequest, notFound } from "../../types/errors"
@@ -14,7 +15,7 @@ widgetRoutes.use("*", widgetCors)
 
 // Built by `bun run --filter @kaja/widget build`; copied to apps/api/public/widget.js (see Dockerfile) —
 // not resolved via import.meta.dir since that points at server.js's own location once bundled, not this source file's.
-const widgetBundlePath = resolve(process.env.WIDGET_BUNDLE_PATH?.trim() || "public/widget.js")
+const widgetBundlePath = resolve(env.WIDGET_BUNDLE_PATH)
 
 widgetRoutes.get("/widget.js", async c => {
   const file = Bun.file(widgetBundlePath)

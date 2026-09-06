@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { env } from "../../core/env"
 import { modelService } from "../../services"
 import type { RouteProps } from "../../types"
 import { unauthorized } from "../../types/errors"
@@ -20,7 +21,7 @@ export function isValidConfigToken(authHeader: string | undefined | null, token:
 }
 
 const configTokenAuth = async (c: any, next: any) => {
-  const token = process.env.CONFIG_API_TOKEN
+  const token = env.CONFIG_API_TOKEN
   if (!isValidConfigToken(c.req.header("authorization"), token)) {
     return unauthorized(c)
   }
