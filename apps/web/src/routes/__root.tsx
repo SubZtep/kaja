@@ -3,8 +3,8 @@ import type { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, ErrorComponent, HeadContent, Scripts } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { Providers } from "../components/Providers"
-import { env } from "../env/server"
 import { getSession } from "../lib/session"
+import { getRootEnv } from "../lib/vars"
 import appCss from "../styles.css?url"
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -15,10 +15,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     } catch (err) {
       error("Failed to fetch session in root loader", { error: err instanceof Error ? err.message : err })
     }
+    const { apiUrl, barkochbaWidgetKey, chatWidgetKey } = await getRootEnv()
     return {
-      apiUrl: env.VITE_API_URL,
-      barkochbaWidgetKey: env.VITE_WIDGET_BARKOCHBA_KEY,
-      chatWidgetKey: env.VITE_WIDGET_CHAT_KEY,
+      apiUrl,
+      barkochbaWidgetKey,
+      chatWidgetKey,
       session
     }
   },

@@ -5,6 +5,14 @@ export const getApiUrl = createServerFn().handler(() => {
   return env.API_URL || env.VITE_API_URL
 })
 
+export const getRootEnv = createServerFn().handler(() => {
+  return {
+    apiUrl: env.VITE_API_URL,
+    barkochbaWidgetKey: env.VITE_WIDGET_BARKOCHBA_KEY,
+    chatWidgetKey: env.VITE_WIDGET_CHAT_KEY
+  }
+})
+
 export const isWin32 = () => typeof navigator !== "undefined" && navigator.userAgent.includes("Windows")
 
 export const getInstallCmd = () =>
