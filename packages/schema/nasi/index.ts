@@ -37,24 +37,8 @@ export const NasiTurnResponseSchema = z.object({
   usage: NasiUsageSchema.optional()
 })
 
-export const NasiSessionMetaSchema = z.object({
-  id: z.uuidv7(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  persona: z.string(),
-  model: z.string(),
-  title: z.string()
-})
-
-export const NasiErrorBodySchema = z.object({
-  error: z.string(),
-  code: z.string().optional()
-})
-
 export type NasiTurnRequest = z.infer<typeof NasiTurnRequestSchema>
 export type WidgetTurnRequest = z.infer<typeof WidgetTurnRequestSchema>
 export type NasiStep = z.infer<typeof NasiStepSchema>
 export type NasiTurnResponse = z.infer<typeof NasiTurnResponseSchema>
 export type NasiTurnStatus = z.infer<typeof NasiTurnStatusSchema>
-export type NasiSessionMeta = z.infer<typeof NasiSessionMetaSchema>
-export type NasiErrorBody = z.infer<typeof NasiErrorBodySchema>

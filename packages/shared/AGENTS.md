@@ -5,15 +5,18 @@ Pure shared utilities with no I/O and no app-specific business logic.
 ## Layout
 
 ```
-index.ts    # getTimeAgo, getDateTime, getFirstName, capitalized, cn, isImageUrl, isItTrue
+index.ts    # getTimeAgo, getDateTime, getFirstName, capitalized, cn, isItTrue,
+            # isPublicHttpUrl, randomUUIDv7, titleCase
 ```
 
 ## Notable helpers
 
 - **`cn(...inputs)`** — `clsx` + `tailwind-merge` for class names (web UI)
 - **`getTimeAgo` / `getDateTime`** — locale-aware formatting via `Intl`
-- **`isImageUrl`** — pathname extension check
 - **`isItTrue`** — loose boolean parse from strings (`true`/`1`/`on`/`y…`)
+- **`isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT hosts
+- **`randomUUIDv7`** — time-ordered UUIDv7 generator
+- **`titleCase`** — hyphen/underscore/space-separated label to Title Case
 
 ## Conventions
 

@@ -1,22 +1,22 @@
 import { error, info, warn } from "@kaja/logger"
-import { isItTrue } from "@kaja/shared"
 import nodemailer from "nodemailer"
+import { env } from "../core/env"
 import { getChangeEmailHtml } from "./ChangeEmail"
 import { getResetPasswordHtml } from "./ResetPassword"
 import type { SendEmailArgs } from "./template"
 import { getVerificationHtml } from "./Verification"
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: isItTrue(process.env.SMTP_SECURE),
+  host: env.SMTP_HOST,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_SECURE ?? false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS
   }
 })
 
-if (!process.env.CI) {
+if (!env.CI) {
   void (async () => {
     try {
       const verified = await transporter.verify()

@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start"
+import { env } from "../env/server"
 
 export const getApiUrl = createServerFn().handler(() => {
-  return process.env.API_URL || process.env.VITE_API_URL
+  return env.API_URL || env.VITE_API_URL
 })
 
 export const isWin32 = () => typeof navigator !== "undefined" && navigator.userAgent.includes("Windows")

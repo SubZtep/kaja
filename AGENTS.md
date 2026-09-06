@@ -7,7 +7,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **CLI** (`apps/cli`): Ink TUI — default talks to the hosted API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
-- **OpenAI proxy** (`apps/openai`): OpenAI-compatible forwarder; picks a random model from db (wip)
+- **Widget** (`apps/widget`): embeddable browser chat bundle, served by the API at `/widget/widget.js`
 - **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
@@ -25,7 +25,9 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | API env examples | `apps/api/.env.example` |
 | Web env examples | `apps/web/.env.example` |
 | DB migrations | `apps/api/migrations/*.sql` |
-| Migration runner | `apps/api/scripts/db_migration.sh` |
+| Migration runner | `scripts/db_migration.sh` |
+| `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
+| `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
 | Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
 | Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
 
@@ -35,7 +37,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 # PostgreSQL + MailDev (API/web optional via compose)
 docker compose up -d db mail
 
-# API + web (hot reload)
+# API + web + widget (hot reload)
 bun dev
 
 # CLI (entry is apps/cli/cli.ts — NOT apps/cli/src/...)
@@ -119,11 +121,12 @@ bun run --filter @kaja/cli test
 2. `2026-03-03-better-auth.sql` — Better Auth tables
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 
-Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `apps/api/scripts/db_migration.sh` (or apply SQL manually).
+Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 
 ## Code Style
 
 - Biome (`biome.json`): line width 120, double quotes, semicolons asNeeded, no trailing commas, spaces; organizes imports
+- `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint`/`lint:fix` also run `tombi format`/`tombi lint` on TOML files
 - TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`
 - Prefer surgical diffs; do not drive-by refactor
 - Comments: single line, no wrapping. `/** ... */` (TSDoc) for exported functions/values — VSCode surfaces these on hover; `// ...` for internal notes (locals, implementation asides)
@@ -132,7 +135,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 - A git hooks run lint at commit, and run test before push, so you don't have to run again for double-check after you finished a task.
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
-<!-- - Rate limiting is enabled in the API (global + stricter `/auth/*`); disabled when `BUN_TEST` is set or `RATE_LIMIT_ENABLED=false`. -->
+- env vars: edit `packages/schema/env/{api,web,cli}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
 ## Testing & CI
 

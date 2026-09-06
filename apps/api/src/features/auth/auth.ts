@@ -3,12 +3,13 @@ import { KAJA_CLI_CLIENT_ID } from "@kaja/schema/api"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { pool } from "../../core/db"
+import { env } from "../../core/env"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
 
 function deviceVerificationUrl() {
-  const fromEnv = [process.env.WEB_PUBLIC_URL, process.env.CORS_ORIGIN].map(s => s?.trim()).find(Boolean)
-  const base = (fromEnv ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000")).replace(/\/$/, "")
+  const fromEnv = [env.WEB_PUBLIC_URL, env.CORS_ORIGIN].find(Boolean)
+  const base = (fromEnv ?? (env.NODE_ENV === "production" ? "" : "http://localhost:3000")).replace(/\/$/, "")
   if (!base) {
     throw new Error("CORS_ORIGIN or WEB_PUBLIC_URL must be set for device authorization")
   }
@@ -45,17 +46,21 @@ const plugins: BetterAuthPlugin[] = [
   })
 ]
 
-if (process.env.NODE_ENV === "development") {
+if (env.NODE_ENV === "development") {
   plugins.push(openAPI({ theme: "purple" }))
 }
 
 export const auth = betterAuth({
-  trustedOrigins: [process.env.CORS_ORIGIN],
+  trustedOrigins: [env.CORS_ORIGIN],
   advanced: {
     cookiePrefix: "kaja",
     database: {
       generateId: () => Bun.randomUUIDv7(),
-      defaultFindManyLimit: 1000
+      defaultFindManyLimit: 1000,
+      // Better Auth 1.7's schema-check crashes requests on the "deviceCode" table:
+      // its Postgres introspection passes the mixed-case name unquoted to
+      // pg_get_serial_sequence(), which folds it to "devicecode" and fails to resolve.
+      validateSchema: false
     },
     ipAddress: {
       ipv6Subnet: 56
@@ -65,11 +70,11 @@ export const auth = betterAuth({
       window: 60, // time window in seconds
       max: 100 // max requests in the window
     },
-    ...(process.env.CROSS_PARENT_DOMAIN
+    ...(env.CROSS_PARENT_DOMAIN
       ? {
           crossSubDomainCookies: {
             enabled: true,
-            domain: process.env.CROSS_PARENT_DOMAIN
+            domain: env.CROSS_PARENT_DOMAIN
           },
           cookies: {
             session_token: {
@@ -107,7 +112,7 @@ export const auth = betterAuth({
   emailVerification: {
     sendVerificationEmail: async ({ user, url }: Readonly<EmailPayload>) => {
       const urlObj = new URL(url)
-      urlObj.searchParams.set("callbackURL", new URL("/dashboard", process.env.CORS_ORIGIN).toString())
+      urlObj.searchParams.set("callbackURL", new URL("/dashboard", env.CORS_ORIGIN).toString())
       sendAuthEmail({ type: "verification", payload: { user, url: urlObj.toString() } })
     },
     sendOnSignUp: true,

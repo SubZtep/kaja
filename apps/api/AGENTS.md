@@ -14,8 +14,9 @@ bun run --filter @kaja/api start
 bun run test
 ```
 
-Local secrets helper: `scripts/create_local_secrets.sh`  
-Manual migrations: `scripts/db_migration.sh`
+Local secrets helper: `../../scripts/create_local_secrets.sh`  
+Manual migrations: `../../scripts/db_migration.sh`  
+DB migration builder for Docker/Disco (stays here — path-coupled to `../migrations` and the Dockerfile build step): `scripts/migrate.ts`
 
 ## Layout
 

@@ -8,17 +8,24 @@ Single source of truth for Zod schemas and related TypeScript types across the m
 api/         # API contracts: shared by API, web, and CLI device auth
   index.ts     # re-exports + KAJA_CLI_CLIENT_ID
   auth.ts      # auth-related payloads
-  geo.ts       # GeoLocation schema
-  node.ts      # node, heartbeat, command request/response schemas
   mcp-server.ts  # MCP server admin CRUD schemas
   model.ts       # provider/model admin CRUD schemas
+  persona-toml.ts  # persona admin CRUD schemas
+  widget-key.ts    # widget key admin CRUD schemas
 config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml, secrets.toml)
 store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi
 cli/         # Personas, datasets
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
+env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, CliEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
+  index.ts     # re-exports api/web/cli/helpers
+  api.ts       # ApiEnvSchema — every var apps/api reads
+  web.ts       # WebEnvSchema — every var apps/web reads
+  cli.ts       # CliEnvSchema — KAJA_API_URL (the only apps/cli var worth schematizing; locale vars and a hyperlink-support workaround stay plain process.env reads)
+  helpers.ts   # trimmed/bool/positiveInt/url field helpers, parseEnv(schema, source)
+tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```
 
-Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
+Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`, `@kaja/schema/env`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
 
 ## Conventions
 

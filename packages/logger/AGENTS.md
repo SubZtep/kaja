@@ -14,13 +14,10 @@ browser.ts    # console.* sinks, silent unless KAJA_LOG_LEVEL is set
 ## API
 
 ```ts
-import { info, error, createLogger } from "@kaja/logger"
+import { info, error } from "@kaja/logger"
 
 info("node connected", { nodeId })
 error("API request failed", { path, response })
-
-// Custom sink / tests
-const logger = createLogger({ /* ... */ })
 ```
 
 ## Configuration (env)

@@ -52,27 +52,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** @returns `true` if the given string is an image URL. */
-export function isImageUrl(value?: string | null) {
-  if (!value) return false
-  try {
-    const url = new URL(value.includes("://") ? value : `https://${value}`)
-    return /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|avif)$/i.test(url.pathname)
-  } catch {
-    return false
-  }
-}
-
 /** Determines the boolean value represented by a string. */
 export function isItTrue(value = "") {
   const normalized = value.trim().toLowerCase()
   return normalized === "true" || normalized === "1" || normalized === "on" || normalized.startsWith("y")
-}
-
-/** Escape a string for TOML encoding. */
-export function tomlString(s: string) {
-  const escaped = s.replaceAll('"', String.raw`\"`)
-  return `"${escaped}"`
 }
 
 const PRIVATE_HOSTNAMES = new Set(["localhost", "0.0.0.0", "[::1]", "::1"])

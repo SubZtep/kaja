@@ -11,8 +11,6 @@ function toLogLevel(value: string | undefined): LogLevel | undefined {
   return value && LOG_LEVELS.has(value) ? (value as LogLevel) : undefined
 }
 
-export { createLogger, type Logger, type LogSink } from "./core"
-
 /** Vite injects `import.meta.env`; plain TS has no such field — read via cast. */
 function viteEnv(key: "KAJA_APP_NAME" | "KAJA_LOG_LEVEL" | "MODE"): string | undefined {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env

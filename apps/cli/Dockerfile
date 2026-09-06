@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.0 AS builder
+FROM oven/bun:1.4.2 AS builder
 WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
 COPY apps/api/package.json ./apps/api/package.json
@@ -8,7 +8,7 @@ COPY packages ./packages
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY apps/cli ./apps/cli
 
-FROM oven/bun:1.4.0-slim AS runner
+FROM oven/bun:1.4.2-slim AS runner
 WORKDIR /home/bun/app
 ENV NODE_ENV=production
 
