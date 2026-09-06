@@ -1,8 +1,8 @@
-import { afterEach, expect, test } from "bun:test"
+import { expect, test } from "bun:test"
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { Nasi } from "../src/nasi"
+import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { closeStore } from "../src/store/db"
 
 function fakeClient(script: { content: string | null; tool_calls?: unknown[] }[]) {
@@ -31,34 +31,33 @@ function dbPath() {
   return join(mkdtempSync(join(tmpdir(), "nasi-turn-")), "nasi.sqlite")
 }
 
-afterEach(() => {
-  // each test uses a fresh path
-})
+function open(
+  path: string,
+  script: { content: string | null; tool_calls?: unknown[] }[],
+  extra?: Partial<NasiOpenOptions>
+) {
+  return Nasi.open({
+    dbPath: path,
+    chat: { client: fakeClient(script) as never, model: "fake" },
+    ...extra
+  })
+}
 
 test("ask_user tool yields needs_input and the next message binds as a tool result", async () => {
   const path = dbPath()
-  const nasi = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    chat: {
-      client: fakeClient([
+  const nasi = await open(path, [
+    {
+      content: null,
+      tool_calls: [
         {
-          content: null,
-          tool_calls: [
-            {
-              id: "call_1",
-              type: "function",
-              function: { name: "ask_user", arguments: JSON.stringify({ question: "Favorite color?" }) }
-            }
-          ]
-        },
-        { content: "Noted, blue." }
-      ]) as never,
-      model: "fake"
-    }
-  })
-  // Hosted tools include ask_user; inject the same intercept tool plus skip extras by using local agent tools via createTools.
-  // turnBuffered uses createTools hosted which includes ask_user.
+          id: "call_1",
+          type: "function",
+          function: { name: "ask_user", arguments: JSON.stringify({ question: "Favorite color?" }) }
+        }
+      ]
+    },
+    { content: "Noted, blue." }
+  ])
 
   const first = await nasi.turnBuffered({ message: "hi" })
   expect(first.status).toBe("needs_input")
@@ -73,14 +72,7 @@ test("ask_user tool yields needs_input and the next message binds as a tool resu
 
 test("plain question mark final is completed, not needs_input", async () => {
   const path = dbPath()
-  const nasi = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    chat: {
-      client: fakeClient([{ content: "Is it alive?" }]) as never,
-      model: "fake"
-    }
-  })
+  const nasi = await open(path, [{ content: "Is it alive?" }])
   const result = await nasi.turnBuffered({ message: "guess" })
   expect(result.status).toBe("completed")
   expect(result.message).toBe("Is it alive?")
@@ -89,16 +81,7 @@ test("plain question mark final is completed, not needs_input", async () => {
 
 test("leaked tool-call closing tags are stripped from the final message", async () => {
   const path = dbPath()
-  const nasi = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    chat: {
-      client: fakeClient([
-        { content: "It's a cat! Want to go another round? </parameter> </invoke> </invoke>" }
-      ]) as never,
-      model: "fake"
-    }
-  })
+  const nasi = await open(path, [{ content: "It's a cat! Want to go another round? </parameter> </invoke> </invoke>" }])
   const result = await nasi.turnBuffered({ message: "yes" })
   expect(result.status).toBe("completed")
   expect(result.message).toBe("It's a cat! Want to go another round?")
@@ -107,14 +90,7 @@ test("leaked tool-call closing tags are stripped from the final message", async 
 
 test("turn() streams delta events live and returns the same response turnBuffered would", async () => {
   const path = dbPath()
-  const nasi = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    chat: {
-      client: fakeClient([{ content: "streamed reply" }]) as never,
-      model: "fake"
-    }
-  })
+  const nasi = await open(path, [{ content: "streamed reply" }])
 
   const seen: string[] = []
   const gen = nasi.turn({ message: "hi" })
@@ -135,16 +111,8 @@ test("turn() streams delta events live and returns the same response turnBuffere
 test("turn() isolates concurrent streamed turns from different users' stores", async () => {
   const pathA = dbPath()
   const pathB = dbPath()
-  const nasiA = await Nasi.open({
-    dbPath: pathA,
-    profile: "hosted",
-    chat: { client: fakeClient([{ content: "A-reply" }]) as never, model: "fake" }
-  })
-  const nasiB = await Nasi.open({
-    dbPath: pathB,
-    profile: "hosted",
-    chat: { client: fakeClient([{ content: "B-reply" }]) as never, model: "fake" }
-  })
+  const nasiA = await open(pathA, [{ content: "A-reply" }])
+  const nasiB = await open(pathB, [{ content: "B-reply" }])
 
   async function drain(gen: AsyncGenerator<unknown, { message: string }, void>) {
     let next = await gen.next()
@@ -164,14 +132,7 @@ test("turn() isolates concurrent streamed turns from different users' stores", a
 
 test("an empty round is retried with a nudge instead of surfacing a blank final message", async () => {
   const path = dbPath()
-  const nasi = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    chat: {
-      client: fakeClient([{ content: null }, { content: "Is it alive?" }]) as never,
-      model: "fake"
-    }
-  })
+  const nasi = await open(path, [{ content: null }, { content: "Is it alive?" }])
   const result = await nasi.turnBuffered({ message: "guess" })
   expect(result.status).toBe("completed")
   expect(result.message).toBe("Is it alive?")
@@ -180,15 +141,8 @@ test("an empty round is retried with a nudge instead of surfacing a blank final 
 
 test("a fallback message is shown, never a blank reply, after exhausting retries", async () => {
   const path = dbPath()
-  const nasi = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    chat: {
-      // 5 retries + the initial attempt = 6 empty rounds needed to exhaust the budget.
-      client: fakeClient(Array(6).fill({ content: null })) as never,
-      model: "fake"
-    }
-  })
+  // 5 retries + the initial attempt = 6 empty rounds needed to exhaust the budget.
+  const nasi = await open(path, Array(6).fill({ content: null }))
   const result = await nasi.turnBuffered({ message: "guess" })
   expect(result.status).toBe("completed")
   expect(result.message).not.toBe("")
@@ -198,22 +152,11 @@ test("a fallback message is shown, never a blank reply, after exhausting retries
 
 test("a session id cannot be resumed by a different owner sharing the same dbPath", async () => {
   const path = dbPath()
-  const nasiOwnerA = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    owner: "widget:key1:visitorA",
-    chat: { client: fakeClient([{ content: "reply for A" }]) as never, model: "fake" }
-  })
+  const nasiOwnerA = await open(path, [{ content: "reply for A" }], { owner: "widget:key1:visitorA" })
   const first = await nasiOwnerA.turnBuffered({ message: "hi" })
   expect(first.status).toBe("completed")
 
-  const nasiOwnerB = await Nasi.open({
-    dbPath: path,
-    profile: "hosted",
-    owner: "widget:key1:visitorB",
-    chat: { client: fakeClient([{ content: "should not be reached" }]) as never, model: "fake" }
-  })
-
+  const nasiOwnerB = await open(path, [{ content: "should not be reached" }], { owner: "widget:key1:visitorB" })
   await expect(nasiOwnerB.turnBuffered({ session: first.session, message: "hijack attempt" })).rejects.toThrow()
   closeStore(path)
 })

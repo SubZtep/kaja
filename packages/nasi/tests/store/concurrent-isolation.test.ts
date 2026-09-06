@@ -54,7 +54,6 @@ test("concurrent turns from different users do not cross-write to each other's s
   // this interleaving is what used to flip the process-wide active store path out from under A.
   const nasiA = await Nasi.open({
     dbPath: dbA,
-    profile: "hosted",
     chat: {
       client: toolCallClient("A-done", 50, {
         name: "remember_note",
@@ -65,7 +64,6 @@ test("concurrent turns from different users do not cross-write to each other's s
   })
   const nasiB = await Nasi.open({
     dbPath: dbB,
-    profile: "hosted",
     chat: { client: toolCallClient("B-done", 0), model: "m" }
   })
 

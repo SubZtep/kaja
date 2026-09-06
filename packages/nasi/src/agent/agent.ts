@@ -9,7 +9,7 @@ export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResul
 
 /** Host-injected bits for system prompt assembly — never read from settings.toml. */
 export type PromptContext = {
-  /** Override the default OS/home line. Hosted should describe the hosted environment. */
+  /** Override the default OS/home line. Callers that are not a user machine should describe their environment. */
   environment?: string
   location?: GeoLocation
   loadLocation?: () => Promise<GeoLocation | undefined>

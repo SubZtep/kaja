@@ -12,9 +12,7 @@ function isTool(value: unknown): value is Tool<any> {
   )
 }
 
-/**
- * Loads user-supplied tools from `dir/*.ts`. Hosted must never call this.
- */
+/** Loads user-supplied tools from `dir/*.ts`. */
 export async function loadPluginTools(dir: string): Promise<Tool<any>[]> {
   const glob = new Bun.Glob("*.ts")
   const tools: Tool<any>[] = []

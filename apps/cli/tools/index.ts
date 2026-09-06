@@ -1,7 +1,8 @@
+import { join } from "node:path"
 import { createTools, type ImageGenModel, type RerankModel, setDatasetLoaders } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
 import { tryLookupMyLocation } from "../lib/agent/geo"
-import { loadPluginTools } from "../lib/agent/plugin-tools"
+import { getConfigDir } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
 import { services } from "../lib/config/services"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
@@ -11,7 +12,7 @@ import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
 export async function getDefaultTools(personas: Persona[]) {
   const { webSearch } = await services()
-  const [mcpServers, pluginTools] = await Promise.all([loadMcpServers(), loadPluginTools()])
+  const mcpServers = await loadMcpServers()
   setDatasetLoaders({ loadDataset, loadDatasets })
 
   const modelsFile = await loadModelsFile().catch(() => undefined)
@@ -30,10 +31,10 @@ export async function getDefaultTools(personas: Persona[]) {
       }
     : undefined
 
-  const created = await createTools({
-    profile: "local",
-    tempDir: getPaths().temp,
+  return createTools({
+    includeLocalTools: true,
     mcpServers,
+    pluginDir: join(getConfigDir(), "tools"),
     deps: {
       chat: { client, model: chatModelId },
       rerank,
@@ -43,10 +44,4 @@ export async function getDefaultTools(personas: Persona[]) {
       tempDir: getPaths().temp
     }
   })
-
-  return {
-    tools: [...created.tools, ...pluginTools],
-    mcpServers: created.mcpServers,
-    closeTools: created.closeTools
-  }
 }

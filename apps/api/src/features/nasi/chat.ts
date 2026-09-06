@@ -40,7 +40,6 @@ export async function openNasiFor(opts: { userId: string; owner?: string | null 
   const personas = listPersonas()
   return Nasi.open({
     dbPath: userSqlitePath(opts.userId),
-    profile: "hosted",
     chat,
     personas,
     owner: opts.owner,
