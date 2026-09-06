@@ -1,7 +1,6 @@
 import { join } from "node:path"
 import type { z } from "zod"
-import { EnvSchema as ApiEnvSchema } from "../apps/api/src/core/env.schema"
-import { EnvSchema as WebEnvSchema } from "../apps/web/src/env/server.schema"
+import { ApiEnvSchema, WebEnvSchema } from "../packages/schema/env"
 
 const rootDir = join(import.meta.dir, "..")
 

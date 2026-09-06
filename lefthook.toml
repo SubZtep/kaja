@@ -15,7 +15,7 @@ stage_fixed = true
 
 [[pre-commit.jobs]]
 run = "bun generate:env"
-glob = ["**/env.schema.ts", "**/.env.example", "compose.yaml", "disco.*.json"]
+glob = ["packages/schema/env/*.ts", "**/.env.example", "compose.yaml", "disco.*.json"]
 stage_fixed = true
 
 [[pre-commit.jobs]]

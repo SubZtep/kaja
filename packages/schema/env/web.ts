@@ -1,7 +1,7 @@
-import { trimmed, url } from "@kaja/schema/env"
 import * as z from "zod"
+import { trimmed, url } from "./helpers"
 
-export const EnvSchema = z.object({
+export const WebEnvSchema = z.object({
   API_URL: url
     .optional()
     .describe(

@@ -1,7 +1,6 @@
-import { parseEnv } from "@kaja/schema/env"
-import { EnvSchema } from "./env.schema"
+import { ApiEnvSchema, parseEnv } from "@kaja/schema/env"
 
-const result = parseEnv(EnvSchema, process.env)
+const result = parseEnv(ApiEnvSchema, process.env)
 
 if (!result.success) {
   console.error("Invalid environment variables:")

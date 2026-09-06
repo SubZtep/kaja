@@ -1,7 +1,7 @@
-import { bool, positiveInt, trimmed, url } from "@kaja/schema/env"
 import * as z from "zod"
+import { bool, positiveInt, trimmed, url } from "./helpers"
 
-export const EnvSchema = z.object({
+export const ApiEnvSchema = z.object({
   NODE_ENV: trimmed
     .optional()
     .describe('Node environment; "development" enables API docs and Better Auth\'s OpenAPI plugin'),
