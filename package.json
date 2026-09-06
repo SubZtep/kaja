@@ -20,6 +20,8 @@
     "dev:cli:local": "bun run --env-file=apps/cli/.env apps/cli/cli.ts --local",
     "dev:web": "bun run --filter @kaja/web dev",
     "dev:widget": "bun run --filter @kaja/widget dev",
+    "check:env": "bun scripts/env.ts --check",
+    "generate:env": "bun scripts/env.ts",
     "generate:schemas": "bun run packages/schema/tombi/generate.ts",
     "lint": "biome check --config-path=. && tombi format --check && tombi lint",
     "lint:fix": "biome check --config-path=. --write --unsafe && tombi format && tombi lint --error-on-warnings",
