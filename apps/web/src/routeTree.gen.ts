@@ -17,6 +17,7 @@ import { Route as AdminWidgetRouteImport } from './routes/_admin/widget'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicDeviceRouteImport } from './routes/_public/device'
 import { Route as PublicResetPasswordRouteImport } from './routes/_public/reset-password'
+import { Route as PublicSentryExamplePageRouteImport } from './routes/_public/sentry-example-page'
 import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as AdminMcpServersIndexRouteImport } from './routes/_admin/mcp-servers/index'
@@ -62,6 +63,11 @@ const PublicDeviceRoute = PublicDeviceRouteImport.update({
 const PublicResetPasswordRoute = PublicResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicSentryExamplePageRoute = PublicSentryExamplePageRouteImport.update({
+  id: '/sentry-example-page',
+  path: '/sentry-example-page',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicSigninRoute = PublicSigninRouteImport.update({
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/widget': typeof AdminWidgetRoute
   '/device': typeof PublicDeviceRouteWithChildren
   '/reset-password': typeof PublicResetPasswordRoute
+  '/sentry-example-page': typeof PublicSentryExamplePageRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AdminProfileRoute
   '/widget': typeof AdminWidgetRoute
   '/reset-password': typeof PublicResetPasswordRoute
+  '/sentry-example-page': typeof PublicSentryExamplePageRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/_admin/widget': typeof AdminWidgetRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
   '/_public/reset-password': typeof PublicResetPasswordRoute
+  '/_public/sentry-example-page': typeof PublicSentryExamplePageRoute
   '/_public/signin': typeof PublicSigninRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/': typeof PublicIndexRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/widget'
     | '/device'
     | '/reset-password'
+    | '/sentry-example-page'
     | '/signin'
     | '/signup'
     | '/users/$userId'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/widget'
     | '/reset-password'
+    | '/sentry-example-page'
     | '/signin'
     | '/signup'
     | '/users/$userId'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/_admin/widget'
     | '/_public/device'
     | '/_public/reset-password'
+    | '/_public/sentry-example-page'
     | '/_public/signin'
     | '/_public/signup'
     | '/_public/'
@@ -268,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof PublicResetPasswordRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/sentry-example-page': {
+      id: '/_public/sentry-example-page'
+      path: '/sentry-example-page'
+      fullPath: '/sentry-example-page'
+      preLoaderRoute: typeof PublicSentryExamplePageRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/signin': {
@@ -368,6 +387,7 @@ const PublicDeviceRouteWithChildren = PublicDeviceRoute._addFileChildren(
 interface PublicRouteChildren {
   PublicDeviceRoute: typeof PublicDeviceRouteWithChildren
   PublicResetPasswordRoute: typeof PublicResetPasswordRoute
+  PublicSentryExamplePageRoute: typeof PublicSentryExamplePageRoute
   PublicSigninRoute: typeof PublicSigninRoute
   PublicSignupRoute: typeof PublicSignupRoute
   PublicIndexRoute: typeof PublicIndexRoute
@@ -376,6 +396,7 @@ interface PublicRouteChildren {
 const PublicRouteChildren: PublicRouteChildren = {
   PublicDeviceRoute: PublicDeviceRouteWithChildren,
   PublicResetPasswordRoute: PublicResetPasswordRoute,
+  PublicSentryExamplePageRoute: PublicSentryExamplePageRoute,
   PublicSigninRoute: PublicSigninRoute,
   PublicSignupRoute: PublicSignupRoute,
   PublicIndexRoute: PublicIndexRoute,
