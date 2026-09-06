@@ -1,3 +1,4 @@
+import { sentryTanstackStart } from "@sentry/tanstackstart-react/vite"
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
@@ -26,7 +27,12 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
-    viteReact()
+    viteReact(),
+    sentryTanstackStart({
+      org: "kaja-io",
+      project: "kaja-web",
+      authToken: process.env.SENTRY_AUTH_TOKEN
+    })
     //
   ]
 })

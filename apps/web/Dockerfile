@@ -24,4 +24,4 @@ USER bun
 COPY --chown=bun:bun --chmod=555 --from=builder /home/bun/app/apps/web/.output ./
 
 EXPOSE 3000
-CMD ["bun", "run", "server/index.mjs"]
+CMD ["bun", "--preload", "./server/instrument.server.mjs", "run", "server/index.mjs"]

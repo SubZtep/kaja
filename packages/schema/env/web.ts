@@ -20,5 +20,9 @@ export const WebEnvSchema = z.object({
     .optional()
     .describe(
       "Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget script."
-    )
+    ),
+  SENTRY_AUTH_TOKEN: trimmed
+    .optional()
+    .describe("Sentry auth token used by the build-time Vite plugin to upload source maps")
+    .meta({ secret: true })
 })

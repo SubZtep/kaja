@@ -1,4 +1,5 @@
 import { error } from "@kaja/logger"
+import * as Sentry from "@sentry/tanstackstart-react"
 import type { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, ErrorComponent, HeadContent, Scripts } from "@tanstack/react-router"
 import { useEffect } from "react"
@@ -136,6 +137,7 @@ function NotFound() {
 function DefaultError({ error: err }: Readonly<{ error: Error }>) {
   useEffect(() => {
     error(err.message, { error: err })
+    Sentry.captureException(err)
   }, [err])
 
   return (
