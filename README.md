@@ -13,10 +13,9 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
 ## What’s in the Monorepo?
 
 * **Apps** 
-  + [`api`](./apps/api/) – Rest API, authentication, database migrations files, and email delivery
+  + [`api`](./apps/api/) – Rest API, authentication, database migrations files, email delivery, and the embeddable widget bundle (`apps/api/widgets`)
   + [`cli`](./apps/cli/) – AI Agent TUI
   + [`web`](./apps/web/) – Public homepage and admin portal
-  + [`widget`](./apps/widget/) – Web components
 * **Packages** 
   + [`logger`](./packages/logger/) – Pino logger for backend and frontend.
   + [`nasi`](./packages/nasi/) – The AI harness

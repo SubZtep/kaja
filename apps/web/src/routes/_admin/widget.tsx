@@ -1,5 +1,5 @@
 import type { CreateWidgetKeyResponse, ListPersonasResponse, ListWidgetKeysResponse, WidgetKey } from "@kaja/schema/api"
-import { widgetKeySchema } from "@kaja/schema/api"
+import { widgetKeySchema, widgetTypeSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useLoaderData } from "@tanstack/react-router"
@@ -30,10 +30,13 @@ export const Route = createFileRoute("/_admin/widget")({
 const createFormSchema = z.object({
   label: z.string().min(1, "Required"),
   allowedOrigins: z.string().min(1, "Required"),
+  widgetType: widgetTypeSchema,
   persona: z.string()
 })
 
 const AUTO_SELECT_PERSONA = ""
+const DEFAULT_WIDGET_TYPE = widgetTypeSchema.options[0]
+const WIDGET_TYPE_OPTIONS = widgetTypeSchema.options.map(value => ({ value, label: value }))
 
 /** Comma or newline separated origins, e.g. "https://example.com, https://www.example.com". */
 function parseOrigins(input: string): string[] {
@@ -90,13 +93,8 @@ function makeActionsCell(onRevoke: (id: string) => void) {
   }
 }
 
-function EmbedSnippet({
-  apiUrl,
-  rawKey,
-  persona
-}: Readonly<{ apiUrl: string; rawKey: string; persona: string | null }>) {
-  const mode = persona === "barkochba" ? ` data-kaja-mode="barkochba"` : ""
-  const snippet = `<script async src="${apiUrl}/widget/widget.js" data-kaja-key="${rawKey}" data-kaja-base-url="${apiUrl}"${mode}></script>`
+function EmbedSnippet({ apiUrl, rawKey }: Readonly<{ apiUrl: string; rawKey: string }>) {
+  const snippet = `<script async src="${apiUrl}/widget/${rawKey}.js"></script>`
   return (
     <div className="mt-4 rounded-lg border border-border bg-surface p-4">
       <p className="mb-2 text-fg text-sm">
@@ -116,7 +114,7 @@ function WidgetPage() {
 
   const { data, error, isLoading } = useQuery({
     queryKey: ["widget-keys"],
-    queryFn: () => apiFetch<ListWidgetKeysResponse>("/widget-keys").then(r => z.array(widgetKeySchema).parse(r.keys))
+    queryFn: () => apiFetch<ListWidgetKeysResponse>("/widget/admin").then(r => z.array(widgetKeySchema).parse(r.keys))
   })
 
   const { data: personas } = useQuery({
@@ -127,8 +125,11 @@ function WidgetPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widget-keys"] })
 
   const createKey = useMutation({
-    mutationFn: (payload: { label: string; allowedOrigins: string[]; persona?: string }) =>
-      apiFetch<CreateWidgetKeyResponse>("/widget-keys", payload),
+    mutationFn: (payload: {
+      label: string
+      allowedOrigins: string[]
+      config?: { widgetType?: string; persona?: string }
+    }) => apiFetch<CreateWidgetKeyResponse>("/widget/admin", payload),
     onSuccess: response => {
       invalidate()
       setJustCreated(response)
@@ -138,7 +139,7 @@ function WidgetPage() {
   })
 
   const revokeKey = useMutation({
-    mutationFn: (id: string) => apiFetch(`/widget-keys/${id}`, undefined, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch(`/widget/admin/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
       invalidate()
       toast.success("Widget key revoked")
@@ -147,13 +148,13 @@ function WidgetPage() {
   })
 
   const form = useAppForm({
-    defaultValues: { label: "", allowedOrigins: "", persona: AUTO_SELECT_PERSONA },
+    defaultValues: { label: "", allowedOrigins: "", widgetType: DEFAULT_WIDGET_TYPE, persona: AUTO_SELECT_PERSONA },
     validators: { onSubmit: createFormSchema },
     onSubmit: async ({ value, formApi }) => {
       await createKey.mutateAsync({
         label: value.label,
         allowedOrigins: parseOrigins(value.allowedOrigins),
-        persona: value.persona || undefined
+        config: { widgetType: value.widgetType, persona: value.persona || undefined }
       })
       formApi.reset()
     }
@@ -210,6 +211,9 @@ function WidgetPage() {
               <field.TextField label="Allowed Origins" placeholder="https://example.com, https://www.example.com" />
             )}
           </form.AppField>
+          <form.AppField name="widgetType">
+            {field => <field.SelectField label="Widget Type" options={WIDGET_TYPE_OPTIONS} />}
+          </form.AppField>
           <form.AppField name="persona">
             {field => (
               <field.SelectField
@@ -225,7 +229,7 @@ function WidgetPage() {
             Create Key
           </Button>
         </form>
-        {justCreated && <EmbedSnippet apiUrl={apiUrl} rawKey={justCreated.rawKey} persona={justCreated.persona} />}
+        {justCreated && <EmbedSnippet apiUrl={apiUrl} rawKey={justCreated.rawKey} />}
       </Section>
 
       <Section padded={false}>

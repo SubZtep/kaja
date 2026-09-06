@@ -20,9 +20,7 @@ export function Hero() {
     if (!chatWidgetKey) return
     const script = document.createElement("script")
     script.async = true
-    script.src = `${apiUrl}/widget/widget.js`
-    script.dataset.kajaKey = chatWidgetKey
-    script.dataset.kajaBaseUrl = apiUrl
+    script.src = `${apiUrl}/widget/${chatWidgetKey}.js`
     document.body.appendChild(script)
     return () => {
       script.remove()

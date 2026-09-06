@@ -1,4 +1,4 @@
-import { createVisitorId, sendWidgetTurn } from "@kaja/widget/client"
+import type { NasiTurnResponse, WidgetTurnRequest } from "@kaja/schema/nasi"
 import { useLoaderData } from "@tanstack/react-router"
 import {
   BrainCircuit,
@@ -83,6 +83,21 @@ function saveState(state: GameState) {
   } catch {}
 }
 
+/** POSTs one turn to `/widget/turn`, same as the embeddable widget bundle does. */
+async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTurnRequest): Promise<NasiTurnResponse> {
+  const res = await fetch(`${baseUrl}/widget/turn`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-kaja-widget-key": widgetKey },
+    body: JSON.stringify(body)
+  })
+  if (res.status === 429) throw new Error("Too many messages — please wait a moment.")
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => undefined)
+    throw new Error(typeof errorBody?.error === "string" ? errorBody.error : `Request failed: ${res.status}`)
+  }
+  return res.json()
+}
+
 /**
  * Removes an exact (case-insensitive) occurrence of `question` from `content` — a plain substring
  * match, so it works for any language — then drops a short trailing label left behind by a
@@ -122,7 +137,7 @@ function TitleBarDots({ variant }: Readonly<{ variant: DotVariant }>) {
 export function BarkochbaGame() {
   const { apiUrl, barkochbaWidgetKey } = useLoaderData({ from: "__root__" })
   const [phase, setPhase] = useState<GameState["phase"]>(IDLE_STATE.phase)
-  const [visitorId] = useState(() => loadState().visitorId ?? createVisitorId())
+  const [visitorId] = useState(() => loadState().visitorId ?? crypto.randomUUID())
   const [session, setSession] = useState<string | undefined>(IDLE_STATE.session)
   const [current, setCurrent] = useState(IDLE_STATE.current)
   const [aside, setAside] = useState(IDLE_STATE.aside)

@@ -4,7 +4,7 @@ import {
   createWidgetKeyResponseSchema,
   listWidgetKeysResponseSchema
 } from "@kaja/schema/api"
-import { widgetKeyService } from "../../services"
+import { widgetService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth"
@@ -15,8 +15,8 @@ const idParam = z.object({
   id: z.uuidv7().openapi({ param: { name: "id", in: "path" } })
 })
 
-export const widgetKeyRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
-widgetKeyRoutes.use("*", requireAuthMiddleware)
+export const widgetAdminRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
+widgetAdminRoutes.use("*", requireAuthMiddleware)
 
 const listRoute = createRoute({
   method: "get",
@@ -30,10 +30,10 @@ const listRoute = createRoute({
   }
 })
 
-widgetKeyRoutes.openapi(listRoute, async c => {
+widgetAdminRoutes.openapi(listRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  const keys = await widgetKeyService.listKeys(user.id)
+  const keys = await widgetService.listKeys(user.id)
   return c.json({ keys })
 })
 
@@ -53,14 +53,14 @@ const createRouteDef = createRoute({
   }
 })
 
-widgetKeyRoutes.openapi(createRouteDef, async c => {
+widgetAdminRoutes.openapi(createRouteDef, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  const { label, allowedOrigins, persona } = c.req.valid("json")
-  if (persona && !listPersonas().some(p => p.id === persona)) {
-    return badRequest(c, `Unknown persona "${persona}"`)
+  const { label, allowedOrigins, config } = c.req.valid("json")
+  if (config?.persona && !listPersonas().some(p => p.id === config.persona)) {
+    return badRequest(c, `Unknown persona "${config.persona}"`)
   }
-  const key = await widgetKeyService.createKey(user.id, label, allowedOrigins, persona)
+  const key = await widgetService.createKey(user.id, label, allowedOrigins, config)
   return c.json(key, 201)
 })
 
@@ -78,11 +78,11 @@ const deleteRoute = createRoute({
   }
 })
 
-widgetKeyRoutes.openapi(deleteRoute, async c => {
+widgetAdminRoutes.openapi(deleteRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { id } = c.req.valid("param")
-  const ok = await widgetKeyService.revokeKey(user.id, id)
+  const ok = await widgetService.revokeKey(user.id, id)
   if (!ok) return notFound(c, "Widget key not found")
   return c.json({ ok: true })
 })

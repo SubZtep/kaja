@@ -1,3 +1,4 @@
+import type { WidgetType } from "@kaja/schema/api"
 import { createVisitorId, sendWidgetTurn, WidgetTurnRateLimitError } from "./client"
 
 const STATE_STORAGE_KEY = "kaja-widget-state"
@@ -73,29 +74,44 @@ function appendMessage(container: HTMLElement, text: string, role: "user" | "bot
 /**
  * `document.currentScript` is only reliable for a classic parser-inserted <script> — it's null (or already
  * reset) for a <script> a framework injects into the DOM programmatically, e.g. React rendering it as JSX.
- * Fall back to finding any <script> tag carrying our data attribute.
+ * Fall back to finding any <script> tag whose src points at a widget bundle.
  */
 function findEmbedScript(): HTMLScriptElement | null {
   const current = document.currentScript as HTMLScriptElement | null
-  if (current?.dataset.kajaKey) return current
-  return document.querySelector<HTMLScriptElement>("script[data-kaja-key]")
+  if (current?.src.includes("/widget/")) return current
+  return document.querySelector<HTMLScriptElement>('script[src*="/widget/"]')
 }
 
 const BARKOCHBA_ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
 
-type WidgetMode = "chat" | "barkochba"
+declare global {
+  interface Window {
+    __kajaWidgetMode?: string
+  }
+}
+
+/** The embed URL is `<baseUrl>/widget/<rawKey>.js` — the raw widget key doubles as the auth for `/widget/turn`. */
+function parseScriptSrc(src: string | undefined): { baseUrl: string; widgetKey: string } | null {
+  if (!src) return null
+  try {
+    const url = new URL(src, location.href)
+    const widgetKey = url.pathname.split("/").pop()?.replace(/\.js$/, "")
+    if (!widgetKey) return null
+    return { baseUrl: url.origin, widgetKey }
+  } catch {
+    return null
+  }
+}
 
 function init() {
   const scriptEl = findEmbedScript()
-  const widgetKeyAttr = scriptEl?.dataset.kajaKey
-  const baseUrlAttr = scriptEl?.dataset.kajaBaseUrl
-  const mode: WidgetMode = scriptEl?.dataset.kajaMode === "barkochba" ? "barkochba" : "chat"
-  if (!widgetKeyAttr || !baseUrlAttr) {
-    console.error("[kaja-widget] missing data-kaja-key or data-kaja-base-url on the embed <script> tag")
+  const parsedSrc = parseScriptSrc(scriptEl?.src)
+  if (!parsedSrc) {
+    console.error("[kaja-widget] could not resolve widget key from the embed <script> tag's src")
     return
   }
-  const widgetKey: string = widgetKeyAttr
-  const baseUrl: string = baseUrlAttr
+  const { baseUrl, widgetKey } = parsedSrc
+  const mode: WidgetType = window.__kajaWidgetMode === "barkochba" ? "barkochba" : "chat"
 
   injectStyles()
 
