@@ -11,7 +11,10 @@ function parseEnvFile(path: string, presetKeys: ReadonlySet<string>) {
     if (eq === -1) continue
     const key = trimmed.slice(0, eq).trim()
     if (presetKeys.has(key)) continue
-    let value = trimmed.slice(eq + 1).trim()
+    let value = trimmed.slice(eq + 1)
+    const hashIndex = value.indexOf("#")
+    if (hashIndex !== -1) value = value.slice(0, hashIndex)
+    value = value.trim()
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1)
     }
