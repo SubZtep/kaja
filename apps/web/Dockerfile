@@ -17,7 +17,7 @@ FROM oven/bun:1.4.2-slim AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
-# API_URL / VITE_API_URL / VITE_APP_URL / VITE_UMAMI_WEBSITE_ID are injected
+# API_URL / VITE_API_URL / VITE_APP_URL are injected
 # at container runtime (e.g. `disco env:set`), not baked in at build time.
 WORKDIR /home/bun/app
 USER bun

@@ -12,8 +12,6 @@ declare module "bun" {
     VITE_WIDGET_BARKOCHBA_KEY?: string
     /** Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget script. */
     VITE_WIDGET_CHAT_KEY?: string
-    /** Umami analytics website id */
-    VITE_UMAMI_WEBSITE_ID?: string
   }
 }
 

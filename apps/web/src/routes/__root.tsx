@@ -119,10 +119,6 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
           name="twitter:image"
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
         />
-
-        {env.VITE_UMAMI_WEBSITE_ID && (
-          <script defer src="/u.js" data-website-id={env.VITE_UMAMI_WEBSITE_ID} data-host-url="/"></script>
-        )}
       </head>
       <body>
         <Providers>{children}</Providers>

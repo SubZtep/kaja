@@ -20,8 +20,5 @@ export const WebEnvSchema = z.object({
     .optional()
     .describe(
       "Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget script."
-    ),
-  VITE_UMAMI_WEBSITE_ID: trimmed.optional().describe("Umami analytics website id").meta({
-    example: "00000000-0000-4000-0000-000000000000"
-  })
+    )
 })
