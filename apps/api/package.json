@@ -1,6 +1,6 @@
 {
   "name": "@kaja/api",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "private": true,
   "scripts": {
     "dev": "bun run --hot src/core/server.ts",
