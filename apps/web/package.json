@@ -10,7 +10,7 @@
     "test": "echo \"no tests\""
   },
   "dependencies": {
-    "@base-ui/react": "^1.7.0",
+    "@base-ui/react": "^1.8.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/manrope": "^5.2.8",
@@ -25,9 +25,9 @@
     "@tanstack/react-router": "^1.170.21",
     "@tanstack/react-start": "^1.168.38",
     "@tanstack/react-table": "^9.2.4",
-    "better-auth": "^1.7.2",
-    "lucide-react": "^1.40.0",
-    "nitro": "npm:nitro-nightly@3.0.260903-beta",
+    "better-auth": "^1.7.3",
+    "lucide-react": "^1.41.0",
+    "nitro": "npm:nitro-nightly@3.0.1-20260904-104602-c5177e92",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-toastify": "^11.1.0",

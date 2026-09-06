@@ -4,14 +4,14 @@
     "@biomejs/biome": "^2.5.12",
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
-    "@types/bun": "^1.4.0",
+    "@types/bun": "^1.4.1",
     "lefthook": "^2.1.10",
-    "nitro": "npm:nitro-nightly@3.0.260903-beta",
-    "tombi": "^1.5.1",
+    "nitro": "npm:nitro-nightly@3.0.1-20260904-104602-c5177e92",
+    "tombi": "^1.5.2",
     "typescript": "^7.0.2"
   },
   "description": "monorepo",
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.2",
   "private": true,
   "scripts": {
     "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' --filter '@kaja/widget' dev",
