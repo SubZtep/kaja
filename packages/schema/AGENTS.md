@@ -16,10 +16,11 @@ config/      # CLI on-disk config files the user hand-edits (settings.toml, mode
 store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi
 cli/         # Personas, datasets
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
-env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
-  index.ts     # re-exports api/web/helpers
+env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, CliEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
+  index.ts     # re-exports api/web/cli/helpers
   api.ts       # ApiEnvSchema — every var apps/api reads
   web.ts       # WebEnvSchema — every var apps/web reads
+  cli.ts       # CliEnvSchema — KAJA_API_URL (the only apps/cli var worth schematizing; locale vars and a hyperlink-support workaround stay plain process.env reads)
   helpers.ts   # trimmed/bool/positiveInt/url field helpers, parseEnv(schema, source)
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```

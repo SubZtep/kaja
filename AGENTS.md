@@ -27,6 +27,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | DB migrations | `apps/api/migrations/*.sql` |
 | Migration runner | `apps/api/scripts/db_migration.sh` |
 | `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
+| `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
 | Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
 | Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
 
@@ -134,7 +135,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 - A git hooks run lint at commit, and run test before push, so you don't have to run again for double-check after you finished a task.
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
-- env vars: edit `packages/schema/env/{api,web}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift.
+- env vars: edit `packages/schema/env/{api,web,cli}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
 ## Testing & CI
 

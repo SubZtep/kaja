@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import type { z } from "zod"
 import { ApiEnvSchema, WebEnvSchema } from "../packages/schema/env"
+import { type FieldInfo, inspectFields } from "./lib/env-schema"
 
 const rootDir = join(import.meta.dir, "..")
 
@@ -16,41 +17,6 @@ KAJA_LOG_LEVEL=trace
 KAJA_APP_NAME=web
 KAJA_LOG_LEVEL=trace
 `
-}
-
-interface FieldInfo {
-  key: string
-  description: string
-  example?: string
-  secret?: boolean
-  section?: string
-  isOptional: boolean
-  defaultValue?: unknown
-}
-
-function isZodDefault(schema: z.ZodTypeAny): boolean {
-  return (schema as unknown as { _zod: { def: { type: string } } })._zod.def.type === "default"
-}
-
-function defaultValueOf(schema: z.ZodTypeAny): unknown {
-  return (schema as unknown as { _zod: { def: { defaultValue: unknown } } })._zod.def.defaultValue
-}
-
-function inspectFields(schema: z.ZodObject<z.ZodRawShape>): FieldInfo[] {
-  return Object.entries(schema.shape).map(([key, fieldSchema]) => {
-    const meta = fieldSchema.meta?.() as
-      | { description?: string; example?: string; secret?: boolean; section?: string }
-      | undefined
-    return {
-      key,
-      description: meta?.description ?? "",
-      example: meta?.example,
-      secret: meta?.secret,
-      section: meta?.section,
-      isOptional: fieldSchema.isOptional(),
-      defaultValue: isZodDefault(fieldSchema) ? defaultValueOf(fieldSchema) : undefined
-    }
-  })
 }
 
 function renderLine(field: FieldInfo): string {

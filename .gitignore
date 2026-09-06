@@ -1,5 +1,6 @@
 .claude
 .config
+.data
 .output
 .playwright-mcp
 .tanstack

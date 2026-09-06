@@ -19,6 +19,11 @@ glob = ["packages/schema/env/*.ts", "**/.env.example", "compose.yaml", "disco.*.
 stage_fixed = true
 
 [[pre-commit.jobs]]
+run = "bun generate:env-types"
+glob = ["packages/schema/env/*.ts"]
+stage_fixed = true
+
+[[pre-commit.jobs]]
 run = "bun typecheck"
 glob = ["*.ts", "*.tsx"]
 
