@@ -3,9 +3,7 @@
   "version": "0.4.12",
   "private": true,
   "scripts": {
-    "dev": "bun run --parallel dev:server dev:widget",
-    "dev:server": "bun run --hot src/core/server.ts",
-    "dev:widget": "bun build --target=browser --format=iife --watch --outfile public/widget.js widgets/src/index.ts",
+    "dev": "bun run --hot src/core/server.ts",
     "build": "bun run build:widget && bun build --minify --target bun --outfile dist/server.js src/core/server.ts",
     "build:widget": "bun build --target=browser --format=iife --minify --outfile public/widget.js widgets/src/index.ts",
     "start": "bun run dist/server.js"

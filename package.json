@@ -20,7 +20,6 @@
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.ts",
     "dev:cli:local": "bun run --env-file=apps/cli/.env apps/cli/cli.ts --local",
     "dev:web": "bun run --filter @kaja/web dev",
-    "dev:widget": "bun run --filter @kaja/api dev:widget",
     "check:env": "bun scripts/env.ts --check",
     "generate:env": "bun scripts/env.ts",
     "generate:env-types": "bun scripts/env-types.ts",

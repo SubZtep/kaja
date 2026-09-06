@@ -6,7 +6,7 @@ Hono REST API for Kaja: Better Auth, admin config, emails.
 
 ```bash
 # From monorepo root
-bun run --filter @kaja/api dev      # hot reload: src/core/server.ts + widget bundle watch (widgets/AGENTS.md)
+bun run --filter @kaja/api dev      # hot reload: src/core/server.ts (widget bundle built lazily on first request, see widgets/AGENTS.md)
 bun run --filter @kaja/api build    # dist/server.js (bun target) + widget bundle into public/widget.js
 bun run --filter @kaja/api start
 

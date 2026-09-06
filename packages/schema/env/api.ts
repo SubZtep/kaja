@@ -83,9 +83,5 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
     .describe("Per-user Nasi SQLite directory (one <userId>/nasi.sqlite file each)"),
   NASI_STUB_MODEL: trimmed
     .optional()
-    .describe("When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only)"),
-
-  WIDGET_BUNDLE_PATH: trimmed
-    .default("public/widget.js")
-    .describe("Path to the built embeddable widget bundle, served at GET /widget/widget.js")
+    .describe("When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only)")
 })

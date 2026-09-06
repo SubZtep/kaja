@@ -70,8 +70,6 @@ declare module "bun" {
     NASI_DATA_DIR?: string
     /** When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only) */
     NASI_STUB_MODEL?: string
-    /** Path to the built embeddable widget bundle, served at GET /widget/widget.js */
-    WIDGET_BUNDLE_PATH?: string
   }
 }
 
