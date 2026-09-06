@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { sentry } from "@sentry/hono/bun"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
 import { env } from "./core/env"
@@ -18,6 +19,14 @@ import type { RouteProps } from "./types"
 export const app = new OpenAPIHono<RouteProps>()
 
 // Global middlewares
+if (env.NODE_ENV === "production") {
+  app.use(
+    sentry(app, {
+      dsn: "https://bf4e285ce5108859b3a4e541ba9a8cab@o326475.ingest.us.sentry.io/4512041143828480",
+      environment: "production"
+    })
+  )
+}
 app.use(logger(trafficLogger))
 // /widget/* is embedded on arbitrary third-party sites and has its own reflected-origin CORS
 // (features/widget/cors.ts) — the app's single fixed CORS_ORIGIN can't apply there.
