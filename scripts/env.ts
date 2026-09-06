@@ -1,0 +1,178 @@
+import { join } from "node:path"
+import type { z } from "zod"
+import { EnvSchema as ApiEnvSchema } from "../apps/api/src/core/env.schema"
+import { EnvSchema as WebEnvSchema } from "../apps/web/src/env/server.schema"
+
+const rootDir = join(import.meta.dir, "..")
+
+const LOGGER_TRAILER: Record<"api" | "web", string> = {
+  api: `
+# Logger Configuration
+KAJA_APP_NAME=api
+KAJA_LOG_LEVEL=trace
+# KAJA_LOG_FILE=./logs/api.log     # Append JSON logs here instead of pretty-printing; unset KAJA_LOG_LEVEL = no log output at all
+`,
+  web: `
+# Logger Configuration
+KAJA_APP_NAME=web
+KAJA_LOG_LEVEL=trace
+`
+}
+
+interface FieldInfo {
+  key: string
+  description: string
+  example?: string
+  secret?: boolean
+  section?: string
+  isOptional: boolean
+  defaultValue?: unknown
+}
+
+function isZodDefault(schema: z.ZodTypeAny): boolean {
+  return (schema as unknown as { _zod: { def: { type: string } } })._zod.def.type === "default"
+}
+
+function defaultValueOf(schema: z.ZodTypeAny): unknown {
+  return (schema as unknown as { _zod: { def: { defaultValue: unknown } } })._zod.def.defaultValue
+}
+
+function inspectFields(schema: z.ZodObject<z.ZodRawShape>): FieldInfo[] {
+  return Object.entries(schema.shape).map(([key, fieldSchema]) => {
+    const meta = fieldSchema.meta?.() as
+      | { description?: string; example?: string; secret?: boolean; section?: string }
+      | undefined
+    return {
+      key,
+      description: meta?.description ?? "",
+      example: meta?.example,
+      secret: meta?.secret,
+      section: meta?.section,
+      isOptional: fieldSchema.isOptional(),
+      defaultValue: isZodDefault(fieldSchema) ? defaultValueOf(fieldSchema) : undefined
+    }
+  })
+}
+
+function renderLine(field: FieldInfo): string {
+  const comment = field.description ? `   # ${field.description}` : ""
+
+  if (field.secret) {
+    const value = field.example ?? ""
+    return `# ${field.key}=${value}${comment ? `${comment} (generate with: openssl rand -base64 32)` : " # generate with: openssl rand -base64 32"}`
+  }
+
+  if (field.defaultValue !== undefined) {
+    return `# ${field.key}=${field.defaultValue}${comment}`
+  }
+
+  if (field.isOptional) {
+    const value = field.example ?? ""
+    return `# ${field.key}=${value}${comment}`
+  }
+
+  if (field.example !== undefined) {
+    return `${field.key}=${field.example}${comment}`
+  }
+
+  return `${field.key}=${comment} (required)`
+}
+
+function renderEnvExample(schema: z.ZodObject<z.ZodRawShape>, trailer: string): string {
+  const fields = inspectFields(schema)
+  const sections = new Map<string | undefined, FieldInfo[]>()
+  for (const field of fields) {
+    const bucket = sections.get(field.section) ?? []
+    bucket.push(field)
+    sections.set(field.section, bucket)
+  }
+
+  const blocks: string[] = []
+  const unsectioned = sections.get(undefined)
+  if (unsectioned) blocks.push(unsectioned.map(renderLine).join("\n"))
+  for (const [section, sectionFields] of sections) {
+    if (section === undefined) continue
+    blocks.push(`# ${section}\n${sectionFields.map(renderLine).join("\n")}`)
+  }
+
+  return `${blocks.join("\n\n")}\n${trailer}`
+}
+
+const targets = [
+  { app: "api" as const, schema: ApiEnvSchema, outPath: join(rootDir, "apps/api/.env.example") },
+  { app: "web" as const, schema: WebEnvSchema, outPath: join(rootDir, "apps/web/.env.example") }
+]
+
+const knownKeys = new Set(targets.flatMap(t => Object.keys(t.schema.shape)))
+
+/** Only checks the `api`/`web` services — `db`'s environment block configures the Postgres image, not our app schemas. */
+async function extractComposeOverrideKeys(): Promise<string[]> {
+  const content = await Bun.file(join(rootDir, "compose.yaml")).text()
+  const lines = content.split("\n")
+  const keys: string[] = []
+  let currentService: string | undefined
+  let inEnvBlock = false
+  let envBlockIndent = 0
+
+  for (const line of lines) {
+    const serviceMatch = /^ {2}([a-z][a-z0-9-]*):\s*$/.exec(line)
+    if (serviceMatch) {
+      currentService = serviceMatch[1]
+      inEnvBlock = false
+      continue
+    }
+
+    const envMatch = /^(\s+)environment:\s*$/.exec(line)
+    if (envMatch) {
+      inEnvBlock = currentService === "api" || currentService === "web"
+      envBlockIndent = envMatch[1]!.length
+      continue
+    }
+    if (inEnvBlock) {
+      const indentMatch = /^(\s*)/.exec(line)
+      const indent = indentMatch![1]!.length
+      if (line.trim() === "" || indent <= envBlockIndent) {
+        inEnvBlock = false
+        continue
+      }
+      const keyMatch = /^\s+([A-Z][A-Z0-9_]*):/.exec(line)
+      if (keyMatch) keys.push(keyMatch[1]!)
+    }
+  }
+  return keys
+}
+
+const isCheck = process.argv.includes("--check")
+
+if (isCheck) {
+  let hasDiff = false
+
+  for (const target of targets) {
+    const generated = renderEnvExample(target.schema, LOGGER_TRAILER[target.app])
+    const onDisk = await Bun.file(target.outPath)
+      .text()
+      .catch(() => "")
+    if (generated !== onDisk) {
+      hasDiff = true
+      console.error(`✗ ${target.outPath} is out of date — run \`bun generate:env\``)
+    } else {
+      console.log(`✓ ${target.outPath} is up to date`)
+    }
+  }
+
+  const composeKeys = await extractComposeOverrideKeys()
+  const unknownComposeKeys = composeKeys.filter(key => !knownKeys.has(key))
+  if (unknownComposeKeys.length > 0) {
+    hasDiff = true
+    console.error(`✗ compose.yaml references unknown env key(s): ${unknownComposeKeys.join(", ")}`)
+  }
+
+  if (hasDiff) process.exit(1)
+  console.log("env schemas and .env.example files are in sync")
+} else {
+  for (const target of targets) {
+    const generated = renderEnvExample(target.schema, LOGGER_TRAILER[target.app])
+    await Bun.write(target.outPath, generated)
+    console.log(`Wrote ${target.outPath}`)
+  }
+}
