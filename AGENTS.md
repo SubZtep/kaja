@@ -26,6 +26,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | Web env examples | `apps/web/.env.example` |
 | DB migrations | `apps/api/migrations/*.sql` |
 | Migration runner | `apps/api/scripts/db_migration.sh` |
+| `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
 | Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
 | Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
 
@@ -133,6 +134,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 - A git hooks run lint at commit, and run test before push, so you don't have to run again for double-check after you finished a task.
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
+- env vars: edit the app's `env.schema.ts` (`apps/api/src/core/`, `apps/web/src/env/`), run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift.
 
 ## Testing & CI
 
