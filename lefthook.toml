@@ -24,6 +24,11 @@ glob = ["packages/schema/env/*.ts"]
 stage_fixed = true
 
 [[pre-commit.jobs]]
+run = "bun run --filter @kaja/web generate:routes"
+glob = ["apps/web/src/routes/**"]
+stage_fixed = true
+
+[[pre-commit.jobs]]
 run = "bun typecheck"
 glob = ["*.ts", "*.tsx"]
 
