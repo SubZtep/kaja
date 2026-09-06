@@ -2,7 +2,7 @@
 set -eu
 
 script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-repo_root="$(cd -- "$script_dir/../../.." && pwd)"
+repo_root="$(cd -- "$script_dir/.." && pwd)"
 migrations_dir="$repo_root/apps/api/migrations"
 
 if [ -z "${DATABASE_URL:-}" ]; then

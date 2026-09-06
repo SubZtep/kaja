@@ -8,6 +8,7 @@
         "@biomejs/biome": "^2.5.12",
         "@commitlint/cli": "^21.2.1",
         "@commitlint/config-conventional": "^21.2.0",
+        "@faker-js/faker": "^10.5.0",
         "@types/bun": "^1.4.1",
         "lefthook": "^2.1.10",
         "nitro": "npm:nitro-nightly@3.0.1-20260904-104602-c5177e92",

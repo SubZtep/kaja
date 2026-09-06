@@ -25,7 +25,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | API env examples | `apps/api/.env.example` |
 | Web env examples | `apps/web/.env.example` |
 | DB migrations | `apps/api/migrations/*.sql` |
-| Migration runner | `apps/api/scripts/db_migration.sh` |
+| Migration runner | `scripts/db_migration.sh` |
 | `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
 | `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
 | Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
@@ -121,7 +121,7 @@ bun run --filter @kaja/cli test
 2. `2026-03-03-better-auth.sql` — Better Auth tables
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 
-Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `apps/api/scripts/db_migration.sh` (or apply SQL manually).
+Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 
 ## Code Style
 
