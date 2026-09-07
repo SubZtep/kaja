@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
+import { pool } from "../../src/core/db"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
 
 function fakeChatClient(reply: string) {
@@ -13,6 +14,36 @@ function fakeChatClient(reply: string) {
           },
           finalChatCompletion: async () => ({
             choices: [{ message: { role: "assistant", content: reply } }]
+          })
+        })
+      }
+    }
+  }
+}
+
+/** A resolver whose one round always calls `fetch_url` on a non-public URL, so `fetchUrlTool` throws `ToolError("fetch_url", …)` uncaught into `run()` — reproducing a tool failure mid-turn. */
+function fetchUrlToolCallChatClient() {
+  return {
+    chat: {
+      completions: {
+        stream: () => ({
+          async *[Symbol.asyncIterator]() {},
+          finalChatCompletion: async () => ({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: null,
+                  tool_calls: [
+                    {
+                      id: "call_1",
+                      type: "function",
+                      function: { name: "fetch_url", arguments: JSON.stringify({ url: "http://localhost/x" }) }
+                    }
+                  ]
+                }
+              }
+            ]
           })
         })
       }
@@ -86,6 +117,22 @@ describe("nasi", () => {
     expect(res.status).toBe(404)
   })
 
+  test("a tool error surfaces the real reason, not a generic message", async () => {
+    setNasiChatResolver(async () => ({ client: fetchUrlToolCallChatClient() as never, model: "fake-model" }))
+    try {
+      const res = await app.request("/nasi/turn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: "fetch something" })
+      })
+      expect(res.status).toBe(500)
+      const body = await res.json()
+      expect(body.error).toBe("fetch_url: Blocked non-public URL: http://localhost/x")
+    } finally {
+      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
+    }
+  })
+
   describe("turn/stream", () => {
     function parseSse(body: string): { event: string; data: string }[] {
       const events: { event: string; data: string }[] = []
@@ -140,6 +187,82 @@ describe("nasi", () => {
       const events = parseSse(await res.text())
       expect(events.map(e => e.event)).toEqual(["error"])
       expect(JSON.parse(events[0]!.data).error).toBe("Session not found")
+    })
+
+    test("a tool error on stream emits a categorized error event with the real reason", async () => {
+      setNasiChatResolver(async () => ({ client: fetchUrlToolCallChatClient() as never, model: "fake-model" }))
+      try {
+        const res = await app.request("/nasi/turn/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ message: "fetch something" })
+        })
+        expect(res.status).toBe(200)
+        const events = parseSse(await res.text())
+        expect(events.map(e => e.event)).toEqual(["tool_call", "error"])
+        const errorBody = JSON.parse(events[1]!.data)
+        expect(errorBody.error).toBe("fetch_url: Blocked non-public URL: http://localhost/x")
+        expect(errorBody.category).toBe("tool")
+      } finally {
+        setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
+      }
+    })
+  })
+
+  describe("info", () => {
+    let providerId: string
+    const modelName = `nasi-info-test-${faker.string.alphanumeric(8)}`
+
+    beforeAll(async () => {
+      const provider = await pool.query<{ id: string }>(
+        "INSERT INTO provider (name, base_url) VALUES ($1, $2) RETURNING id",
+        [`nasi-info-test-${faker.string.alphanumeric(8)}`, "http://localhost:1"]
+      )
+      providerId = provider.rows[0]!.id
+      await pool.query("INSERT INTO model (provider_id, model, tasks, enabled, free) VALUES ($1, $2, $3, true, true)", [
+        providerId,
+        modelName,
+        ["chat"]
+      ])
+    })
+
+    afterAll(async () => {
+      await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
+    })
+
+    test("unauthenticated info is 401", async () => {
+      const res = await app.request("/nasi/info")
+      expect(res.status).toBe(401)
+    })
+
+    test("returns persona label, a model, and the hosted tool list", async () => {
+      const res = await app.request("/nasi/info", { headers: { Authorization: `Bearer ${token}` } })
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.persona.id).toBeString()
+      expect(body.persona.label).toBeString()
+      expect(body.model).toBeString()
+      expect(body.tools).toContain("ask_user")
+      expect(body.tools).not.toContain("run_command")
+    })
+
+    test("pins the session's model on subsequent info lookups", async () => {
+      // The turn resolver is stubbed to "fake-model" (not a seeded model row), so info's lookup-by-name
+      // falls back to a fresh random pick — this only proves the pinned lookup path runs without erroring
+      // for a session whose stored model isn't resolvable; see model.test.ts for the actual pin/fallback logic.
+      const turn = await app.request("/nasi/turn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: "hi" })
+      })
+      const { session } = await turn.json()
+
+      const info = await app.request(`/nasi/info?session=${session}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      expect(info.status).toBe(200)
+      const body = await info.json()
+      expect(body.model).toBeString()
     })
   })
 })

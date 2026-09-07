@@ -8,6 +8,7 @@ pleaseSignIn = "Kérlek jelentkezz be!"
 deviceLoginGoTo = "Nyisd meg:"
 deviceLoginEnterCode = "Add meg a kódot:"
 secretsUnavailable = "Nem sikerült elérni a rendszer kulcstartóját a bejelentkezés tárolásához. Próbáld a --local kapcsolóval futtatni, ahhoz nem szükséges rendszerszintű hitelesítő-adat tárolás."
+connecting = "Csatlakozás…"
 
 [firstRun]
 paths = "A Kaja ezeket az elérési utakat fogja használni:"

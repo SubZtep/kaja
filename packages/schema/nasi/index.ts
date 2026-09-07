@@ -37,8 +37,15 @@ export const NasiTurnResponseSchema = z.object({
   usage: NasiUsageSchema.optional()
 })
 
+export const NasiInfoResponseSchema = z.object({
+  persona: z.object({ id: z.string(), label: z.string() }),
+  model: z.string(),
+  tools: z.array(z.string())
+})
+
 export type NasiTurnRequest = z.infer<typeof NasiTurnRequestSchema>
 export type WidgetTurnRequest = z.infer<typeof WidgetTurnRequestSchema>
 export type NasiStep = z.infer<typeof NasiStepSchema>
 export type NasiTurnResponse = z.infer<typeof NasiTurnResponseSchema>
 export type NasiTurnStatus = z.infer<typeof NasiTurnStatusSchema>
+export type NasiInfoResponse = z.infer<typeof NasiInfoResponseSchema>

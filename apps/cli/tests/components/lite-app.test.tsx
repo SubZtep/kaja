@@ -19,19 +19,45 @@ function sseResponse(text: string): Response {
   return new Response(stream, { headers: { "content-type": "text/event-stream" } })
 }
 
+function infoResponse(): Response {
+  return Response.json({ persona: { id: "default", label: "Helpful assistant" }, model: "test-model", tools: [] })
+}
+
+function sseToolErrorResponse(): Response {
+  const body =
+    'event: tool_call\ndata: {"type":"tool_call","name":"fetch_url","arguments":"{}"}\n\n' +
+    'event: error\ndata: {"error":"fetch_url: Blocked non-public URL: http://localhost/x","category":"tool"}\n\n'
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(body))
+      controller.close()
+    }
+  })
+  return new Response(stream, { headers: { "content-type": "text/event-stream" } })
+}
+
+let nextTurnResponse: () => Response = () => sseResponse("hello from lite")
+
 beforeEach(() => {
-  globalThis.fetch = (async (_url: string | URL | Request, _init?: RequestInit) =>
-    sseResponse("hello from lite")) as typeof fetch
+  nextTurnResponse = () => sseResponse("hello from lite")
+  globalThis.fetch = (async (url: string | URL | Request, _init?: RequestInit) => {
+    const path = typeof url === "string" ? url : url instanceof URL ? url.pathname : new URL(url.url).pathname
+    if (path.endsWith("/nasi/info")) return infoResponse()
+    return nextTurnResponse()
+  }) as typeof fetch
 })
 
 afterEach(() => {
   globalThis.fetch = originalFetch
 })
 
-test("renders the startup panel with the configured API URL", async () => {
+test("renders the resolved persona label and model from /nasi/info", async () => {
   const t = renderForTest(<LiteApp apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
-  expect(t.lastFrame()).toContain("api.kaja.io")
+  await t.tick()
+  expect(t.lastFrame()).toContain("Helpful assistant")
+  expect(t.lastFrame()).toContain("test-model")
   t.unmount()
   await t.waitUntilExit()
 })
@@ -44,6 +70,22 @@ test("sending a message streams the reply into the timeline", async () => {
   await t.tick()
   await t.tick()
   expect(t.lastFrame()).toContain("hello from lite")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a tool error from the server renders as a tool failure, not a network error", async () => {
+  nextTurnResponse = () => sseToolErrorResponse()
+  const t = renderForTest(<LiteApp apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.press("fetch that")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  const frame = t.lastFrame()
+  expect(frame).toContain("Tool failed")
+  expect(frame).not.toContain("Network error")
+  expect(frame).toContain("fetch_url: Blocked non-public URL: http://localhost/x")
   t.unmount()
   await t.waitUntilExit()
 })

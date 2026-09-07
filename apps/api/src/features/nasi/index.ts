@@ -1,13 +1,15 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { error as logError } from "@kaja/logger"
-import { NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
+import { categorizeError, listHostedToolNames } from "@kaja/nasi"
+import { NasiInfoResponseSchema, NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import type { RouteVariables } from "../../types"
-import { badGateway, badRequest, notFound, unauthorized } from "../../types/errors"
+import { badGateway, badRequest, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
-import { openUserTurnStream, runUserTurn } from "./chat"
+import { openUserTurnStream, pinnedModelFor, resolveModelWithProvider, runUserTurn } from "./chat"
+import { listPersonas } from "./personas"
 import { createPostgresStore } from "./pg-store"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
@@ -47,7 +49,9 @@ nasiRoutes.openapi(turnRoute, async c => {
     if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
     if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
-    throw error
+    const { category, message } = categorizeError(error)
+    logError("nasi turn failed", { userId: user.id, category, error: String(error) })
+    return internalError(c, message)
   }
 })
 
@@ -92,19 +96,57 @@ nasiRoutes.post("/turn/stream", async c => {
       const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
       const isNoModel = error instanceof Error && error.message === "no_model"
       const isModelUnavailable = error instanceof Error && error.name === "NasiModelUnavailable"
-      if (!isNotFound && !isNoModel && !isModelUnavailable)
-        logError("nasi turn/stream failed", { userId: user.id, error: String(error) })
-      let errorMessage = "Turn failed"
+      let errorMessage: string
+      let category: string | undefined
       if (isNotFound) errorMessage = "Session not found"
       else if (isNoModel) errorMessage = "No model available"
       else if (isModelUnavailable) errorMessage = (error as Error).message
+      else {
+        const categorized = categorizeError(error)
+        errorMessage = categorized.message
+        category = categorized.category
+        logError("nasi turn/stream failed", { userId: user.id, category, error: String(error) })
+      }
       await stream.writeSSE({
         event: "error",
-        data: JSON.stringify({ error: errorMessage })
+        data: JSON.stringify({ error: errorMessage, ...(category ? { category } : {}) })
       })
     } finally {
       clearInterval(heartbeat)
     }
+  })
+})
+
+const infoRoute = createRoute({
+  method: "get",
+  path: "/info",
+  tags: ["Nasi"],
+  summary: "Resolved persona, model, and available tools for hosted chat",
+  security: [{ bearerAuth: [] }],
+  request: { query: z.object({ session: z.uuidv7().optional() }) },
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: NasiInfoResponseSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
+    404: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+nasiRoutes.openapi(infoRoute, async c => {
+  const user = c.get("user")
+  if (!user) return unauthorized(c)
+  const { session } = c.req.valid("query")
+
+  const pinnedModel = await pinnedModelFor(user.id, session)
+  const result = await resolveModelWithProvider(pinnedModel)
+  if (!result) return notFound(c, "No model available")
+
+  const persona = listPersonas()[0]
+  const tools = await listHostedToolNames()
+
+  return c.json({
+    persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },
+    model: result.model.model,
+    tools
   })
 })
 

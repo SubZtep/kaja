@@ -8,6 +8,7 @@ pleaseSignIn = "Please sign in!"
 deviceLoginGoTo = "Go to:"
 deviceLoginEnterCode = "Enter code:"
 secretsUnavailable = "Could not access the system keychain to store your login. Try running with --local instead, which does not require OS credential storage."
+connecting = "Connecting…"
 
 [firstRun]
 paths = "Kaja will use these paths:"

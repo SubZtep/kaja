@@ -137,6 +137,40 @@ export class ModelService {
     }
   }
 
+  /** A specific free+enabled model by name, with its resolved provider — used to re-resolve a session's previously pinned model. */
+  async getModelWithProviderByName(model: string): Promise<{ model: Model; provider: Provider } | null> {
+    const { rows } = await this.#db.query(
+      `
+      SELECT m.*,
+             p.name AS provider_name,
+             p.base_url AS provider_base_url,
+             p.api_key AS provider_api_key,
+             p.created_at AS provider_created_at,
+             p.updated_at AS provider_updated_at
+      FROM model m
+      JOIN provider p ON p.id = m.provider_id
+      WHERE m.model = $1 AND m.enabled AND m.free
+      LIMIT 1
+      `,
+      [model]
+    )
+
+    const row = rows[0]
+    if (!row) return null
+
+    return {
+      model: this.#rowToModel(row),
+      provider: this.#rowToProvider({
+        id: row.provider_id,
+        name: row.provider_name,
+        base_url: row.provider_base_url,
+        api_key: row.provider_api_key,
+        created_at: row.provider_created_at,
+        updated_at: row.provider_updated_at
+      })
+    }
+  }
+
   /** A random free+enabled model with its resolved provider (GET /config/models). */
   async getRandomModelWithProvider(): Promise<{ model: Model; provider: Provider } | null> {
     const { rows } = await this.#db.query(

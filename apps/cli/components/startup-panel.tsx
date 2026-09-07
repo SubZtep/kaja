@@ -53,22 +53,26 @@ export function StartupPanel({
   cwd,
   sessionCount,
   memoryNoteCount,
-  tools
+  tools,
+  skipAvailabilityCheck = false
 }: Readonly<{
   models: CliResolvedModel[]
   /** Id of the chat model actually in use right now. Only this one is shown under the "chat" task group (and gets the live reachability check) — persona-pinned alternates configured in models.toml are not listed here. Non-chat tasks (tts, stt, embedding, image-generation) always show every configured entry and are always checked, since there's no notion of an "active" one among them. */
   activeModelId?: string
   mcpServers?: { id: string; toolCount: number; failed?: boolean }[]
-  cwd: string
+  cwd?: string
   sessionCount: number
   memoryNoteCount: number
   tools: Tool<any>[]
+  /** Hosted (`--remote`) mode has no local provider credentials to ping against — skip the live reachability check and just list the model name. */
+  skipAvailabilityCheck?: boolean
 }>) {
   const { columns } = useWindowSize()
   const narrow = columns < NARROW_WIDTH_BREAKPOINT
   const [status, setStatus] = useState<Record<number, Availability>>({})
 
   useEffect(() => {
+    if (skipAvailabilityCheck) return
     let cancelled = false
     const timers: NodeJS.Timeout[] = []
 
@@ -95,7 +99,7 @@ export function StartupPanel({
       cancelled = true
       for (const timer of timers) clearTimeout(timer)
     }
-  }, [models, activeModelId])
+  }, [models, activeModelId, skipAvailabilityCheck])
 
   const grouped = models.reduce<Map<CliResolvedModel["task"], number[]>>((acc, model, index) => {
     if (model.task === "chat" && model.model !== activeModelId) return acc
@@ -108,14 +112,16 @@ export function StartupPanel({
   return (
     <Box flexDirection={narrow ? "column" : "row"} gap={narrow ? 1 : 2}>
       <Box flexDirection="column" gap={1} flexGrow={1} flexShrink={1} minWidth={0}>
-        <Box>
-          <Text color="blackBright" dimColor>
-            {t("startup.cwd")}
-          </Text>
-          <Text color="grey" dimColor bold>
-            {cwd}
-          </Text>
-        </Box>
+        {cwd && (
+          <Box>
+            <Text color="blackBright" dimColor>
+              {t("startup.cwd")}
+            </Text>
+            <Text color="grey" dimColor bold>
+              {cwd}
+            </Text>
+          </Box>
+        )}
         {models.length === 0 ? (
           <Text color="blackBright" dimColor>
             {t("startup.noModels")}
@@ -135,7 +141,8 @@ export function StartupPanel({
                     return (
                       <Text color="gray" dimColor key={index}>
                         {"  "}
-                        <Text color={STATUS_COLOR[state]}>{STATUS_ICON[state]}</Text> {model.model}
+                        {skipAvailabilityCheck ? null : <Text color={STATUS_COLOR[state]}>{STATUS_ICON[state]} </Text>}
+                        {model.model}
                       </Text>
                     )
                   })}
