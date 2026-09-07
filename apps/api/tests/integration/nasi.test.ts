@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
+import { cleanupModel, seedModel } from "./helpers"
 
 function fakeChatClient(reply: string) {
   return {
@@ -69,6 +69,16 @@ function fetchUrlToolCallChatClient() {
         })
       }
     }
+  }
+}
+
+/** Stubs the nasi chat resolver with `client` for the duration of `fn`, then restores the default fake resolver. */
+async function withStubbedResolver<T>(client: unknown, fn: () => Promise<T>) {
+  setNasiChatResolver(async () => ({ client: client as never, model: "fake-model" }))
+  try {
+    return await fn()
+  } finally {
+    setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
   }
 }
 
@@ -139,8 +149,7 @@ describe("nasi", () => {
   })
 
   test("a tool error surfaces the real reason, not a generic message", async () => {
-    setNasiChatResolver(async () => ({ client: fetchUrlToolCallChatClient() as never, model: "fake-model" }))
-    try {
+    await withStubbedResolver(fetchUrlToolCallChatClient(), async () => {
       const res = await app.request("/nasi/turn", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -149,53 +158,49 @@ describe("nasi", () => {
       expect(res.status).toBe(500)
       const body = await res.json()
       expect(body.error).toBe("fetch_url: Blocked non-public URL: http://localhost/x")
-    } finally {
-      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
-    }
+    })
   })
 
   test("a non-English language request adds a reply-language instruction to the system prompt", async () => {
     let capturedMessages: unknown[] = []
-    setNasiChatResolver(async () => ({
-      client: capturingChatClient("hello from nasi", messages => {
+    await withStubbedResolver(
+      capturingChatClient("hello from nasi", messages => {
         capturedMessages = messages
-      }) as never,
-      model: "fake-model"
-    }))
-    try {
-      const res = await app.request("/nasi/turn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: "hi", language: "hu" })
-      })
-      expect(res.status).toBe(200)
-      const system = capturedMessages.find((m): m is { role: string; content: string } => (m as any).role === "system")
-      expect(system?.content).toContain("Hungarian")
-    } finally {
-      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
-    }
+      }),
+      async () => {
+        const res = await app.request("/nasi/turn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ message: "hi", language: "hu" })
+        })
+        expect(res.status).toBe(200)
+        const system = capturedMessages.find(
+          (m): m is { role: string; content: string } => (m as any).role === "system"
+        )
+        expect(system?.content).toContain("Hungarian")
+      }
+    )
   })
 
   test("no language field means no reply-language instruction", async () => {
     let capturedMessages: unknown[] = []
-    setNasiChatResolver(async () => ({
-      client: capturingChatClient("hello from nasi", messages => {
+    await withStubbedResolver(
+      capturingChatClient("hello from nasi", messages => {
         capturedMessages = messages
-      }) as never,
-      model: "fake-model"
-    }))
-    try {
-      const res = await app.request("/nasi/turn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: "hi" })
-      })
-      expect(res.status).toBe(200)
-      const system = capturedMessages.find((m): m is { role: string; content: string } => (m as any).role === "system")
-      expect(system?.content).not.toContain("Hungarian")
-    } finally {
-      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
-    }
+      }),
+      async () => {
+        const res = await app.request("/nasi/turn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ message: "hi" })
+        })
+        expect(res.status).toBe(200)
+        const system = capturedMessages.find(
+          (m): m is { role: string; content: string } => (m as any).role === "system"
+        )
+        expect(system?.content).not.toContain("Hungarian")
+      }
+    )
   })
 
   describe("turn/stream", () => {
@@ -255,8 +260,7 @@ describe("nasi", () => {
     })
 
     test("a tool error on stream emits a categorized error event with the real reason", async () => {
-      setNasiChatResolver(async () => ({ client: fetchUrlToolCallChatClient() as never, model: "fake-model" }))
-      try {
+      await withStubbedResolver(fetchUrlToolCallChatClient(), async () => {
         const res = await app.request("/nasi/turn/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -268,31 +272,19 @@ describe("nasi", () => {
         const errorBody = JSON.parse(events[1]!.data)
         expect(errorBody.error).toBe("fetch_url: Blocked non-public URL: http://localhost/x")
         expect(errorBody.category).toBe("tool")
-      } finally {
-        setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
-      }
+      })
     })
   })
 
   describe("info", () => {
     let providerId: string
-    const modelName = `nasi-info-test-${faker.string.alphanumeric(8)}`
 
     beforeAll(async () => {
-      const provider = await pool.query<{ id: string }>(
-        "INSERT INTO provider (name, base_url) VALUES ($1, $2) RETURNING id",
-        [`nasi-info-test-${faker.string.alphanumeric(8)}`, "http://localhost:1"]
-      )
-      providerId = provider.rows[0]!.id
-      await pool.query("INSERT INTO model (provider_id, model, tasks, enabled, free) VALUES ($1, $2, $3, true, true)", [
-        providerId,
-        modelName,
-        ["chat"]
-      ])
+      ;({ providerId } = await seedModel("nasi-info-test"))
     })
 
     afterAll(async () => {
-      await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
+      await cleanupModel(providerId)
     })
 
     test("unauthenticated info is 401", async () => {

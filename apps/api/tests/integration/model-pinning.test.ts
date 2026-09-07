@@ -1,28 +1,19 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
-import { pool } from "../../src/core/db"
 import { resolveModelWithProvider } from "../../src/features/nasi/chat"
 import { modelService } from "../../src/services"
+import { cleanupModel, seedModel } from "./helpers"
 
 describe("model pinning", () => {
   let providerId: string
-  const modelName = `pin-test-${faker.string.alphanumeric(8)}`
+  let modelName: string
 
   beforeAll(async () => {
-    const provider = await pool.query<{ id: string }>(
-      "INSERT INTO provider (name, base_url) VALUES ($1, $2) RETURNING id",
-      [`pin-test-${faker.string.alphanumeric(8)}`, "http://localhost:1"]
-    )
-    providerId = provider.rows[0]!.id
-    await pool.query("INSERT INTO model (provider_id, model, tasks, enabled, free) VALUES ($1, $2, $3, true, true)", [
-      providerId,
-      modelName,
-      ["chat"]
-    ])
+    ;({ providerId, modelName } = await seedModel("pin-test"))
   })
 
   afterAll(async () => {
-    await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
+    await cleanupModel(providerId)
   })
 
   test("getModelWithProviderByName resolves an enabled+free model by name", async () => {
