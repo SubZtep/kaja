@@ -58,7 +58,6 @@ export function SiteHeader({
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
-          <LanguageSelect />
           <button
             type="button"
             onClick={() => setOpen(v => !v)}
@@ -75,6 +74,7 @@ export function SiteHeader({
         <nav className="border-border border-t bg-bg text-muted text-sm md:hidden">
           <ContentWidth className="flex flex-col gap-4 py-3 sm:py-5">
             <CloseMobileNavContext.Provider value={close}>{mobileNav}</CloseMobileNavContext.Provider>
+            <LanguageSelect />
           </ContentWidth>
         </nav>
       ) : null}
