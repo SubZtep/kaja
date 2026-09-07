@@ -13,13 +13,13 @@ import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
 import { useAuthClient } from "../../../hooks/auth-client"
 import { userRequired } from "../../../lib/loaders"
+import { seo } from "../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
-import { getPageTitle } from "../../../lib/vars"
 
 export const Route = createFileRoute("/_admin/users/")({
   component: UserList,
   loader: () => userRequired("admin"),
-  head: () => ({ meta: [{ title: getPageTitle("Users") }] })
+  head: () => ({ meta: seo({ title: "Users" }) })
 })
 
 type UsersColumns = Pick<UserWithRole, "id" | "name" | "email" | "emailVerified" | "role" | "createdAt" | "image">

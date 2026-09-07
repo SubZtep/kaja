@@ -18,13 +18,13 @@ import { ValueBox } from "../../components/ui/ValueBox"
 import { useApiFetch } from "../../lib/api-fetch"
 import { useAppForm } from "../../lib/form"
 import { userRequired } from "../../lib/loaders"
+import { seo } from "../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../lib/table"
-import { getPageTitle } from "../../lib/vars"
 
 export const Route = createFileRoute("/_admin/widget")({
   component: WidgetPage,
   loader: () => userRequired(),
-  head: () => ({ meta: [{ title: getPageTitle("Widget") }] })
+  head: () => ({ meta: seo({ title: "Widget" }) })
 })
 
 const createFormSchema = z.object({

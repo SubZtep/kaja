@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { Section } from "../../components/ui/Section"
+import { noindexSeo } from "../../lib/seo"
 import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/device")({
   component: DeviceLayout,
-  head: () => ({ meta: [{ name: "robots", content: "noindex" }] })
+  head: () => ({ meta: noindexSeo() })
 })
 
 function DeviceLayout() {
