@@ -43,7 +43,8 @@ export function Table({
 
   const toggleSorting = (columnId: string) => {
     const currentSort = table.state.sorting.find(sort => sort.id === columnId)
-    table.setSorting([currentSort && !currentSort.desc ? { id: columnId, desc: true } : { id: columnId, desc: false }])
+    const desc = currentSort ? !currentSort.desc : false
+    table.setSorting([{ id: columnId, desc }])
   }
 
   const { rows } = table.getRowModel()
@@ -70,52 +71,9 @@ export function Table({
           <thead>
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  const sorted = header.column.getIsSorted()
-                  const label = String(header.column.columnDef.header ?? "")
-                  return (
-                    <th
-                      key={header.id}
-                      aria-sort={
-                        header.column.getCanSort()
-                          ? sorted === "asc"
-                            ? "ascending"
-                            : sorted === "desc"
-                              ? "descending"
-                              : "none"
-                          : undefined
-                      }
-                      className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
-                    >
-                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                        <button
-                          type="button"
-                          aria-label={
-                            sorted === "asc"
-                              ? m.table_sort_ascending({ column: label })
-                              : sorted === "desc"
-                                ? m.table_sort_descending({ column: label })
-                                : m.table_sort_none({ column: label })
-                          }
-                          className={cn(
-                            "flex gap-2 items-center cursor-pointer",
-                            sorted && "select-none",
-                            !sorted && "mr-7.25"
-                          )}
-                          onClick={() => toggleSorting(header.column.id)}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <ArrowDown size={21} className="text-muted" />,
-                            desc: <ArrowUp size={21} className="text-muted" />
-                          }[sorted as string] ?? null}
-                        </button>
-                      ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
-                      )}
-                    </th>
-                  )
-                })}
+                {headerGroup.headers.map(header => (
+                  <TableHeaderCell key={header.id} header={header} onToggleSort={toggleSorting} />
+                ))}
               </tr>
             ))}
           </thead>
@@ -135,6 +93,48 @@ export function Table({
 
       <Pagination table={table} />
     </div>
+  )
+}
+
+const ARIA_SORT_BY_STATE = { asc: "ascending", desc: "descending" } as const
+
+function TableHeaderCell({
+  header,
+  onToggleSort
+}: Readonly<{ header: any; onToggleSort: (columnId: string) => void }>) {
+  const sorted = header.column.getIsSorted()
+  const label = String(header.column.columnDef.header ?? "")
+  const canSort = header.column.getCanSort()
+  const ariaSort = canSort ? (ARIA_SORT_BY_STATE[sorted as keyof typeof ARIA_SORT_BY_STATE] ?? "none") : undefined
+
+  const sortLabelByState = {
+    asc: m.table_sort_ascending({ column: label }),
+    desc: m.table_sort_descending({ column: label }),
+    none: m.table_sort_none({ column: label })
+  } as const
+
+  return (
+    <th
+      aria-sort={ariaSort}
+      className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
+    >
+      {header.isPlaceholder ? null : canSort ? (
+        <button
+          type="button"
+          aria-label={sortLabelByState[sorted as keyof typeof sortLabelByState] ?? sortLabelByState.none}
+          className={cn("flex gap-2 items-center cursor-pointer", sorted && "select-none", !sorted && "mr-7.25")}
+          onClick={() => onToggleSort(header.column.id)}
+        >
+          {flexRender(header.column.columnDef.header, header.getContext())}
+          {{
+            asc: <ArrowDown size={21} className="text-muted" />,
+            desc: <ArrowUp size={21} className="text-muted" />
+          }[sorted as string] ?? null}
+        </button>
+      ) : (
+        flexRender(header.column.columnDef.header, header.getContext())
+      )}
+    </th>
   )
 }
 

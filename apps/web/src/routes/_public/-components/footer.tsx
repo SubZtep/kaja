@@ -27,7 +27,14 @@ export function Footer() {
         <Button
           variant="chip"
           className="items-center gap-1.5 bg-surface px-4! py-2! text-[13px] text-fg"
-          render={<a href="https://github.com/SubZtep/kaja/stargazers" target="_blank" rel="noopener" />}
+          render={
+            <a
+              href="https://github.com/SubZtep/kaja/stargazers"
+              target="_blank"
+              rel="noopener"
+              aria-label={m.footer_star()}
+            />
+          }
         >
           <Star fill="yellow" size={9} />
           {m.footer_star()}

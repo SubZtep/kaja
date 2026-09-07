@@ -70,7 +70,14 @@ export function Hero() {
             <Button
               variant="primary"
               className="flex-1 gap-2 rounded-md! px-5! text-sm transition-colors duration-200 ease-in-out"
-              render={<a href="https://github.com/SubZtep/kaja" target="_blank" rel="noopener" />}
+              render={
+                <a
+                  href="https://github.com/SubZtep/kaja"
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={m.hero_cta_source()}
+                />
+              }
             >
               <FolderCode size={21} className="pb-0.5" />
               {m.hero_cta_source()}
@@ -78,7 +85,7 @@ export function Hero() {
             <Button
               variant="secondary"
               className="flex-1 gap-2 rounded-md! px-5! text-sm transition-colors duration-150 ease-in-out"
-              render={<a href="https://docs.kaja.io" target="_blank" rel="noopener" />}
+              render={<a href="https://docs.kaja.io" target="_blank" rel="noopener" aria-label={m.hero_cta_docs()} />}
             >
               {m.hero_cta_docs()}
             </Button>
