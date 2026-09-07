@@ -45,7 +45,7 @@ OPCIÓK
   --user          Hosztolt (--remote) fiók kiválasztása/váltása e-mail cím alapján
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --port          A kaja --local web portja (alapértelmezés: 4880)
-  --lang          A felület/válaszok nyelvének felülírása ehhez a futáshoz (en, hu, vagy ch-TW), a mentett beállítástól függetlenül
+  --lang          A felület/válaszok nyelvének felülírása ehhez a futáshoz (en-GB, hu vagy nan-TW), a mentett beállítástól függetlenül
 """
 
 [memory]

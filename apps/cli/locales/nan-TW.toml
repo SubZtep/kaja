@@ -1,11 +1,11 @@
 [cli]
 invalidConfig = "無效个設定檔：{path}"
-startupError = "Kaja 發生無想著个錯誤，袂使啟動：{message}\n詳細資訊已經寫入記錄檔矣。"
+startupError = "Kaja 發生無想著个錯誤，袂當啟動：{message}\n詳細資訊已經寫入記錄檔矣。"
 bye = "拜拜！"
 localNoProvider = "--local 需要設定好个供應商。請重新執行 `kaja --local` 選 Fireworks/Ollama/llama.cpp，抑是執行 `kaja --local config fetch`。若欲改用託管聊天，請執行 `kaja --remote`。"
 headlessNoSubcommand = "--headless 需要一个有支援个子指令，比如 `telegram`。這馬猶未有獨立个 headless 模式。"
 pleaseSignIn = "請登入！"
-deviceLoginGoTo = "去："
+deviceLoginGoTo = "請去："
 deviceLoginEnterCode = "輸入代碼："
 deviceLoginCodeCopied = "代碼已經拷貝去剪貼簿矣"
 secretsUnavailable = "袂當使用系統金鑰圈來貯登入資訊。請改用 --local 執行，這个模式免用著系統憑證儲存。"
@@ -40,12 +40,12 @@ Kaja 命令列工具 • v{version} • https://kaja.io
 選項
   --local         用家己个供應商執行本機代理迴圈，代替託管登入
   --remote        強制用託管登入，就算已經有本機設定嘛仝款
-  --continue, -c  接落去上一改个工作階段（干焦 --local 有效）
+  --continue, -c  接落去上新个工作階段（干焦 --local 有效）
   --headless      無顯示終端機介面；用佇有支援這个模式个子指令（比如 telegram）
   --port          kaja --local web 用个連接埠（預設：4880）
-  --user          用電子批來選擇/换託管（--remote）帳號
+  --user          用電子批來選擇/換託管（--remote）帳號
   --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja --local session list）
-  --lang          這改執行專用个介面/回覆語言（en、hu 抑是 nan-TW），比已經儲存个設定較有力
+  --lang          這改執行專用个介面/回覆語言（en-GB、hu 抑是 nan-TW），比已經儲存个設定較有力
 """
 
 [memory]
@@ -115,7 +115,7 @@ running = "執行中…"
 truncated = "… 猶有 {count} 逝"
 
 [activity]
-thinking = "咧想…… 已經過 {seconds} 秒矣，猶咧推理"
+thinking = "咧想… 已經過 {seconds} 秒矣，猶咧推理"
 tokens = " · 這馬已經產生大約 {tokens} 个 token"
 
 [menu]
@@ -174,7 +174,7 @@ ready = "Telegram bot 已經準備好矣，咧長輪詢等訊息。"
 botOnline = "🟢 機器人已經連線矣。"
 botOffline = "🔴 機器人欲離線矣。"
 newSession = "🆕 已經開始一个新个工作階段。"
-stillWorking = "猶咧處理你頭前一句訊息…"
+stillWorking = "猶咧處理你頂一句訊息…"
 pendingCommand = "頂懸有一个指令咧等你核准 — 請先揀核准抑是拒絕。"
 commandExpired = "這个指令已經無咧等核准矣。"
 approved = "已經核准"
@@ -183,7 +183,7 @@ emptyResponse = "（空白回覆）"
 genericError = "處理个時陣出代誌矣 — 請看記錄檔。"
 
 [web]
-listening = "Kaja 網頁介面：{url}（撚 Ctrl+C 通停止）"
+listening = "Kaja 網頁介面：{url}（揤 Ctrl+C 通停止）"
 
 [agent]
 replyLanguage = "使用者講个是臺灣閩南語（臺語）。請一定愛用臺語回覆，包括用 ask_user 工具問个問題嘛仝款。"
