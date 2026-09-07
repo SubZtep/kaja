@@ -49,6 +49,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         title: m.site_title()
+      },
+      {
+        property: "og:url",
+        content: `https://kaja.io${match.pathname}`
       }
     ],
     links: [
@@ -126,7 +130,6 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
           property="og:image"
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
         />
-        <meta property="og:url" content="https://kaja.io" />
         <meta property="og:site_name" content="Kaja.io" />
         <meta property="og:locale" content={ogLocale} />
 
