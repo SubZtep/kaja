@@ -1,19 +1,27 @@
 {
-  "name": "kaja.io",
-  "short_name": "kaja.io",
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "name": "Kaja.io",
+  "short_name": "Kaja",
+  "description": "Open-source AI agentic harness.",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f2027",
-  "theme_color": "#e2e8f0",
+  "background_color": "#131711",
+  "theme_color": "#9aa88f",
   "icons": [
     {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
       "src": "/android-chrome-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "192x192"
     },
     {
       "src": "/android-chrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ]
 }

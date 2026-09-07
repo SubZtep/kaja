@@ -11,7 +11,7 @@ import {
 import { useEffect } from "react"
 import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
-import { getRootEnv } from "../lib/vars"
+import { getPageTitle, getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
 import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
@@ -48,7 +48,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "width=device-width, initial-scale=1"
       },
       {
-        title: m.site_title()
+        title: getPageTitle()
+      },
+      {
+        property: "og:url",
+        content: `https://kaja.io${match.pathname}`
+      }
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss
       },
       {
         rel: "apple-touch-icon",
@@ -72,30 +82,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "/site.webmanifest"
       },
       {
-        name: "og:locale",
-        content: OG_LOCALE[getLocale()]
-      },
-      {
-        name: "og:site_name",
-        content: "Kaja.io"
-      },
-      {
-        name: "og:url",
-        content: "https://kaja.io"
-      },
-      {
-        name: "twitter:title",
-        content: "Kaja.io"
-      },
-      {
-        name: "twitter:url",
-        content: "https://x.com/SubZtep"
-      }
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss
+        rel: "alternate",
+        type: "text/markdown",
+        title: "LLM-friendly version",
+        href: "/llms.txt"
       },
       ...locales.map(locale => ({
         rel: "alternate",
@@ -106,6 +96,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "alternate",
         hrefLang: "x-default",
         href: `https://kaja.io${localizeHref(match.pathname, { locale: baseLocale })}`
+      }
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Kaja",
+          url: "https://kaja.io",
+          publisher: {
+            "@type": "Organization",
+            name: "Kaja",
+            url: "https://kaja.io",
+            logo: "https://kaja.io/android-chrome-512x512.png",
+            sameAs: ["https://github.com/SubZtep/kaja", "https://x.com/SubZtep"]
+          }
+        })
       }
     ]
   }),
@@ -123,21 +131,15 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
       <head>
         <HeadContent />
 
-        <meta property="og:title" content="Kaja" />
         <meta property="og:type" content="website" />
         <meta
           property="og:image"
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
         />
-        <meta property="og:url" content="https://kaja.io" />
-
-        <meta property="og:description" content={m.site_og_description()} />
         <meta property="og:site_name" content="Kaja.io" />
         <meta property="og:locale" content={ogLocale} />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Kaja.io" />
-        <meta name="twitter:description" content={m.site_og_description()} />
         <meta
           name="twitter:image"
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"

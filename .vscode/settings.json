@@ -16,6 +16,7 @@
     "**/routeTree.gen.ts": true
   },
   "json.schemaDownload.trustedDomains": {
+    "https://json.schemastore.org/": true,
     "https://json-schema.org/": true,
     "https://inlang.com/": true
   },

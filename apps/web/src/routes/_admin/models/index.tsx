@@ -20,13 +20,13 @@ import { ValueBox } from "../../../components/ui/ValueBox"
 import { useApiFetch } from "../../../lib/api-fetch"
 import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
+import { seo } from "../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
-import { getPageTitle } from "../../../lib/vars"
 
 export const Route = createFileRoute("/_admin/models/")({
   component: ModelsPage,
   loader: () => userRequired("admin"),
-  head: () => ({ meta: [{ title: getPageTitle("Models") }] })
+  head: () => ({ meta: seo({ title: "Models" }) })
 })
 
 const MODEL_TASKS: ModelTask[] = ["chat", "tts", "stt", "embedding", "image-generation", "rerank"]

@@ -4,11 +4,11 @@ import { getDashboardLinks } from "../../components/layout/nav-items"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
 import { useUser } from "../../hooks/user"
-import { getPageTitle } from "../../lib/vars"
+import { seo } from "../../lib/seo"
 
 export const Route = createFileRoute("/_admin/dashboard")({
   component: DashboardPage,
-  head: () => ({ meta: [{ title: getPageTitle("Dashboard") }] })
+  head: () => ({ meta: seo({ title: "Dashboard" }) })
 })
 
 function DashboardPage() {

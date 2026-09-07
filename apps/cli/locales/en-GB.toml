@@ -24,7 +24,7 @@ providerSkip = "Skip — I'll set up models.toml myself"
 
 [args]
 help = """
-Kaja command like tool • v{version} • https://kaja.io
+Kaja command line tool • v{version} • https://kaja.io
 
 USAGE
   $ kaja [OPTIONS] [COMMAND]
@@ -45,7 +45,7 @@ OPTIONS
   --port          Port for kaja --local web (default: 4880)
   --user          Select/switch the hosted (--remote) account by email
   --session, -s   Resume a session by id (--local only; see: kaja --local session list)
-  --lang          Override the UI/reply language for this run (en, hu, or ch-TW), regardless of saved config
+  --lang          Override the UI/reply language for this run (en-GB, hu, or nan-TW), regardless of saved config
 """
 
 [memory]
@@ -71,7 +71,7 @@ notFound = "Session not found: {id}"
 
 [config]
 invalidAt = "Invalid config file at {path}: {message}"
-notExists = "Config file not exists: {path}"
+notExists = "Config file does not exist: {path}"
 usage = """
 Usage
   $ kaja config fetch   Regenerate config files from the bundled templates
