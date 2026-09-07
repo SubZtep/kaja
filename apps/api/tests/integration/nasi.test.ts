@@ -1,7 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
-import { mkdtempSync } from "node:fs"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
@@ -24,9 +21,6 @@ function fakeChatClient(reply: string) {
 }
 
 describe("nasi", () => {
-  const dataDir = mkdtempSync(join(tmpdir(), "nasi-api-"))
-  process.env.NASI_DATA_DIR = dataDir
-
   const email = faker.internet.email()
   const password = faker.internet.password({ length: 8, prefix: "P4$s" })
   let token: string

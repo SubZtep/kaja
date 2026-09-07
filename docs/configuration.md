@@ -12,15 +12,15 @@ First  fetches the templates from [`docs/config`](https://github.com/SubZtep/kaj
 
 Install recommended VSCode extensions for TOML [`schemas`](config/schemas/).
 
-```
+```ini
 ~/.config/kaja/
-├── settings.toml
-├── models.toml
-├── mcp.toml
-├── services.toml
-├── secrets.toml      # every credential, all in one place
-├── personas/*.toml
-└── tools/*.ts
+├─ datasets/*.json  # custom fields for personas to collect
+├─ personas/*.toml  # one behaviour per file
+├─ mcp.toml         # model context protocol servers
+├─ models.toml      # model catalog per provider
+├─ services.toml    # external service definitions and endpoints
+├─ secrets.toml     # user’s secret keys and tokens
+└─ settings.toml    # optional settings and app preferences"
 ```
 
 ---

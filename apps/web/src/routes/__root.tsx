@@ -1,7 +1,13 @@
 import { error } from "@kaja/logger"
 import * as Sentry from "@sentry/tanstackstart-react"
 import type { QueryClient } from "@tanstack/react-query"
-import { createRootRouteWithContext, ErrorComponent, HeadContent, Scripts } from "@tanstack/react-router"
+import {
+  createRootRouteWithContext,
+  ErrorComponent,
+  type ErrorComponentProps,
+  HeadContent,
+  Scripts
+} from "@tanstack/react-router"
 import { useEffect } from "react"
 import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
@@ -134,9 +140,9 @@ function NotFound() {
   return <p className="text-center my-28 text-red-500 text-xl font-bold">Sorry, this page doesn't exist.</p>
 }
 
-function DefaultError({ error: err }: Readonly<{ error: Error }>) {
+function DefaultError({ error: err }: ErrorComponentProps) {
   useEffect(() => {
-    error(err.message, { error: err })
+    error(err instanceof Error ? err.message : String(err), { error: err })
     Sentry.captureException(err)
   }, [err])
 

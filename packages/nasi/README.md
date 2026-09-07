@@ -2,13 +2,13 @@
 
 Kaja's agent brain: an OpenAI-compatible tool loop, per-user SQLite (sessions, memory, datasets), and built-in tools.
 
-Hosts construct it. This package has no Ink, Hono, Better Auth, and **does not read `settings.toml`** — the host injects the db path, model client, prompt context, and whether local tools are on.
+Hosts construct it. This package has no Ink, Hono, Better Auth, sqlite, or pg, and **does not read `settings.toml`** — the host injects a store, the model client, prompt context, and whether local tools are on.
 
 ```
 src/
   nasi.ts            # Nasi host: turn() / turnBuffered() over SQLite
   agent/             # Agent, run(), system prompt, intercepts
-  store/             # bun:sqlite schema + sessions / memory / datasets
+  store/             # NasiStore interface + in-memory adapter (CLI sqlite, API Postgres)
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
   mcp/               # attached when includeLocalTools and mcpServers are set
@@ -28,7 +28,7 @@ Contracts live in `@kaja/schema/nasi` (HTTP turn), `@kaja/schema/store` (SQLite 
 
 ## Hosts
 
-- **API** (`apps/api`) opens `Nasi` with a per-account sqlite file (local tools off by default). `owner` scopes rows inside that file (account vs widget visitor).
+- **API** (`apps/api`) opens `Nasi` with a Postgres store scoped to the account (local tools off). `owner` scopes widget/telegram rows within that account.
 - **CLI `--local`** builds an `Agent` itself (`createTools({ includeLocalTools: true, mcpServers, … })`) and calls `run()` — same loop, no HTTP.
 - **CLI hosted / lite** uses `@kaja/nasi/client` against the API. No local sqlite, MCP, or shell.
 
@@ -44,7 +44,7 @@ There are two layers. HTTP and `Nasi` share the schema in `@kaja/schema/nasi`. T
 
 ```ts
 const nasi = await Nasi.open({
-  dbPath,                          // sqlite file; created if missing
+  store,                           // sessions, memory, datasets
   chat: { client, model },         // OpenAI-compatible client
   includeLocalTools?,              // files, shell, MCP, plugins — default false
   personas?,                       // roster for switch_persona
@@ -154,15 +154,13 @@ Tool `execute` returns `string` or `{ text, images?, displayImage? }`. Images ca
 
 ## Store
 
-SQLite at the host-provided `dbPath`. Schema version is `SCHEMA_VERSION` (currently 8).
+`Nasi.open({ store })` takes a `NasiStore`. Nasi does not open a database.
 
-| Table | Role |
-|-------|------|
-| `sessions` | Conversation rows: id (UUIDv7 text), persona, model, title, owner, `session` JSON, `events` JSON |
-| `notes` | Memory (`remember_note` / `recall_memory` / …) |
-| `dataset_answers` / `dataset_versions` | Structured collection bound to a persona's `dataset` topic |
+- CLI: sqlite via `createSqliteStore(path)` (`apps/cli/lib/store/sqlite.ts`)
+- API: Postgres via `createPostgresStore(pool, userId)` (`apps/api/.../pg-store.ts`)
+- Tests: `createMemoryStore()`
 
-Parameterized SQL only. `withStorePath` / `withStorePathGenerator` keep concurrent opens on different files isolated via `AsyncLocalStorage`.
+`owner` still distinguishes widget/telegram rows inside one account (or one local file).
 
 ## Model client
 

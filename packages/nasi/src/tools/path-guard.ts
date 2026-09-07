@@ -1,6 +1,5 @@
 import { realpathSync } from "node:fs"
 import { basename, resolve } from "node:path"
-import { getActiveStorePath } from "../store"
 import { getToolDeps } from "./deps"
 
 const DENIED_FILENAMES = new Set(["secrets.toml"])
@@ -22,7 +21,7 @@ export class PathDeniedError extends Error {
 /**
  * Resolves `path` against the configured workspace root (default `process.cwd()`)
  * and throws {@link PathEscapeError} if it lands outside that root — blocks `..`
- * traversal and symlink escapes via `realpath`. Also denies the active nasi
+ * traversal and symlink escapes via `realpath`. Also denies the configured
  * sqlite file and any `secrets.toml`, regardless of workspace root, since a
  * prompt-injected read_file/list_files call should never surface credentials.
  * Local-only guard, not a sandbox: a full CLI session already has shell access
@@ -47,8 +46,8 @@ export function guardWorkspacePath(path: string): string {
   }
 
   if (DENIED_FILENAMES.has(basename(realResolved))) throw new PathDeniedError(path)
-  const activeStorePath = getActiveStorePath()
-  if (activeStorePath && realResolved === activeStorePath) throw new PathDeniedError(path)
+  const storePath = getToolDeps().storePath
+  if (storePath && realResolved === storePath) throw new PathDeniedError(path)
 
   return realResolved
 }

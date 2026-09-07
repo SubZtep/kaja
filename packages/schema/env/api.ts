@@ -78,9 +78,6 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
     .describe("Max turns per window per widget key, regardless of visitor/IP")
     .meta({ section: "Rate Limiting" }),
 
-  NASI_DATA_DIR: trimmed
-    .default("/var/lib/kaja/nasi")
-    .describe("Per-user Nasi SQLite directory (one <userId>/nasi.sqlite file each)"),
   NASI_STUB_MODEL: trimmed
     .optional()
     .describe("When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only)")

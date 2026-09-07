@@ -2,7 +2,6 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { openStore, setActiveStorePath } from "../../src/store"
 import { setToolDeps } from "../../src/tools/deps"
 import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../../src/tools/path-guard"
 
@@ -48,10 +47,10 @@ test("rejects secrets.toml by filename even inside the workspace root", () => {
   expect(() => guardWorkspacePath("secrets.toml")).toThrow(PathDeniedError)
 })
 
-test("rejects reading the active nasi sqlite file", () => {
+test("rejects reading the configured sqlite file", () => {
   const dbPath = join(root, "nasi.sqlite")
-  openStore(dbPath)
-  setActiveStorePath(dbPath)
+  writeFileSync(dbPath, "")
+  setToolDeps({ workspaceRoot: root, storePath: dbPath })
   expect(() => guardWorkspacePath("nasi.sqlite")).toThrow(PathDeniedError)
 })
 

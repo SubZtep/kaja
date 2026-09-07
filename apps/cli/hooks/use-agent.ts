@@ -14,6 +14,7 @@ import {
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
 import { log } from "../lib/logger"
+import { peekStore } from "../lib/memory/store"
 import type { Persona } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
 
@@ -73,6 +74,7 @@ export function useAgent(
     const startingPersona = resume?.persona ?? initialPersona
     const created = new Agent({
       ...agentConfig,
+      store: agentConfig.store ?? peekStore(),
       instructions: startingPersona?.instructions ?? agentConfig.instructions,
       sampling: samplingOf(startingPersona),
       dataset: startingPersona?.dataset,

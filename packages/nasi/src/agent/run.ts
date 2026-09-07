@@ -102,7 +102,7 @@ async function* handleToolCall(
     })
     return
   }
-  const result = await t.execute(args, { owner, personaId: agent.personaId })
+  const result = await t.execute(args, { owner, personaId: agent.personaId, store: agent.store })
 
   if (typeof result === "string") {
     messages.push({ role: "tool", tool_call_id: call.id, content: result })

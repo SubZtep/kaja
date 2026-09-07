@@ -47,33 +47,14 @@ export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
 export { fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"
 export {
-  closeStore,
-  createSessionRow,
+  createMemoryStore,
   type DatasetAnswer,
-  deleteSessionRow,
+  type DatasetVersionSummary,
   forgetNotes,
-  getActiveStorePath,
-  getDb,
-  latestDatasetVersion,
-  listAllDatasetAnswers,
-  listDatasetVersionsSummary,
-  listSessions,
-  loadDatasetAnswers,
-  loadDatasetVersionCompletedAt,
-  loadLatestSessionRow,
-  loadLatestSessionRowForOwner,
-  loadMemory,
-  loadPromptHistory,
-  loadSessionRow,
-  markDatasetVersionComplete,
+  type NasiStore,
   noteHeader,
-  openStore,
-  SCHEMA_VERSION,
-  saveDatasetAnswer,
-  saveMemory,
-  setActiveStorePath,
-  updateSessionRow,
-  withStorePath
+  requireStore,
+  type SessionWrite
 } from "./store"
 export { currentTimeTool } from "./tools/builtin/current-time"
 export { datasetInfoTool } from "./tools/builtin/dataset-info"

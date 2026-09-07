@@ -6,9 +6,9 @@ import { tmpdir } from "node:os"
 process.env.XDG_DATA_HOME = `${tmpdir()}/kaja-test-xdg-data-session`
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-session`
 
-const { getDb } = await import("../../../lib/memory/store")
 const {
   createSessionRow,
+  deleteSessionRow,
   listSessions,
   loadLatestSessionRow,
   loadLatestSessionRowForOwner,
@@ -37,8 +37,7 @@ function row(overrides: Record<string, unknown> = {}) {
 }
 
 afterEach(async () => {
-  const db = await getDb()
-  db.exec("DELETE FROM sessions")
+  for (const session of await listSessions()) await deleteSessionRow(session.id)
 })
 
 test("create then load round-trips, including pending tool-call ids", async () => {
@@ -88,8 +87,11 @@ test("loadSessionRow returns undefined for a missing id", async () => {
 
 test("a corrupt row loads as undefined instead of crashing", async () => {
   const id = await createSessionRow(row())
-  const db = await getDb()
+  const { peekStorePath } = await import("../../../lib/memory/store")
+  const { Database } = await import("bun:sqlite")
+  const db = new Database(peekStorePath()!)
   db.query("UPDATE sessions SET session = 'not json' WHERE id = ?").run(id)
+  db.close()
   expect(await loadSessionRow(id)).toBeUndefined()
 })
 

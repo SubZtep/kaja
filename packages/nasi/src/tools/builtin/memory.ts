@@ -1,6 +1,6 @@
 import type { MemoryImportance } from "@kaja/schema/store"
 import { REMEMBER_NOTE_TOOL, tool } from "../../agent/agent"
-import { forgetNotes, loadMemory, noteHeader, saveMemory } from "../../store"
+import { forgetNotes, noteHeader, requireStore } from "../../store"
 
 const IMPORTANCE_WEIGHT: Record<MemoryImportance, number> = {
   low: 1,
@@ -56,8 +56,9 @@ export const rememberNoteTool = tool<{
     },
     required: ["key", "content", "importance"]
   },
-  execute: async args => {
-    const store = await loadMemory()
+  execute: async (args, ctx) => {
+    const nasi = requireStore(ctx)
+    const store = await nasi.loadMemory()
     const now = new Date().toISOString()
     const existing = store[args.key]
     store[args.key] = {
@@ -69,7 +70,7 @@ export const rememberNoteTool = tool<{
       lastUsedAt: now,
       useCount: existing?.useCount ?? 0
     }
-    await saveMemory(store)
+    await nasi.saveMemory(store)
     return `Remembered "${args.key}".`
   }
 })
@@ -126,8 +127,9 @@ export const recallMemoryTool = tool<{
     },
     required: ["query"]
   },
-  execute: async args => {
-    const store = await loadMemory()
+  execute: async (args, ctx) => {
+    const nasi = requireStore(ctx)
+    const store = await nasi.loadMemory()
     const tokens = args.query.toLowerCase().split(/\s+/).filter(Boolean)
 
     const scored = Object.entries(store)
@@ -162,7 +164,7 @@ export const recallMemoryTool = tool<{
     for (const { key, note } of scored) {
       store[key] = { ...note, lastUsedAt: now, useCount: note.useCount + 1 }
     }
-    await saveMemory(store)
+    await nasi.saveMemory(store)
 
     return result
   }
@@ -200,15 +202,16 @@ export const forgetNoteTool = tool<{
     },
     required: []
   },
-  execute: async args => {
+  execute: async (args, ctx) => {
     const selectors = [args.key, args.tag, args.pattern].filter(s => s !== undefined)
     if (selectors.length !== 1) return "Provide exactly one of: key, tag, pattern."
 
-    const store = await loadMemory()
+    const nasi = requireStore(ctx)
+    const store = await nasi.loadMemory()
     const victims = forgetNotes(store, args)
     if (victims.length === 0) return args.key !== undefined ? "(no note with that key)" : "(no matching notes)"
 
-    await saveMemory(store)
+    await nasi.saveMemory(store)
     return `Forgot: ${victims.join(", ")}`
   }
 })
@@ -234,8 +237,8 @@ export const listNotesTool = tool<{ full?: boolean }>({
     },
     required: []
   },
-  execute: async args => {
-    const store = await loadMemory()
+  execute: async (args, ctx) => {
+    const store = await requireStore(ctx).loadMemory()
     const entries = Object.entries(store)
     if (entries.length === 0) return "(no notes stored)"
     return entries

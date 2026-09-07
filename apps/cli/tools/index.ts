@@ -5,6 +5,7 @@ import { tryLookupMyLocation } from "../lib/agent/geo"
 import { getConfigDir } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
 import { services } from "../lib/config/services"
+import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
 import { chatModelId, client } from "../lib/models/openai"
 import { getPaths } from "../lib/paths"
@@ -41,7 +42,8 @@ export async function getDefaultTools(personas: Persona[]) {
       imageGeneration,
       webSearchApiKey: webSearch?.apiKey,
       lookupLocation: tryLookupMyLocation,
-      tempDir: getPaths().temp
+      tempDir: getPaths().temp,
+      storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }
   })
 }

@@ -22,58 +22,41 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
   + [`schema`](./packages/schema/) – Shared request schemas and types
   + [`shared`](./packages/shared/) – Shared utilities (pure functions)
 
----
+### Run local development
 
-## ![Kaja](https://kaja.io/monster.gif)
-
-### Download build and install
+Clone or download the source, install dependencies, and copy the env examples:
 
 ```bash
-# Install
-curl -fsSL https://kaja.io/install.sh | bash
-
-# Run
-kaja --help
-
-# Uninstall
-rm ~/.local/bin/kaja
+bun install
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 ```
 
-### Run in containers
-
-Fetch config[^1], clone or download the source in a terminal, and run with [compose config](compose.yaml):
+Start PostgreSQL (runs the database migrations on first init) and MailDev, using the [compose config](compose.yaml):
 
 ```bash
-docker compose up -d
+docker compose up -d db mail
 ```
 
-- Setup PostgreSQL and run database migration
-- Start MailDev SMTP server with web inbox
-- API
-- Web
+Then start the API and web app together:
 
-This is all the CLI needs to connect:
+```bash
+bun dev
+```
+
+The CLI talks to this hosted API by default:
 
 ```sh
 bun dev:cli
 ```
 
-### Configuration files
+To run the CLI's agent loop locally instead (own LLM provider, no hosted API), pass `--local` and fetch the config templates first:
 
-
-```ini
-~/.config/kaja/
-├─ datasets/*.json  # custom fields for personas to collect
-├─ personas/*.toml  # one behaviour per file
-├─ mcp.toml         # model context protocol servers
-├─ models.toml      # model catalog per provider
-├─ services.toml    # external service definitions and endpoints
-├─ secrets.toml     # user’s secret keys and tokens
-└─ settings.toml    # optional settings and app preferences"
+```sh
+bun dev:cli --local config fetch
+bun dev:cli --local
 ```
 
 ### Documentation
 
 See [GitHub Pages](https://docs.kaja.io) for more details.
-
-[^1]: exec `kaja dev:cli --local config fetch`

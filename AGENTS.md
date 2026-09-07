@@ -101,7 +101,7 @@ bun run --filter @kaja/cli test
 | `@kaja/schema` | Zod API contracts + `KAJA_CLI_CLIENT_ID` (single source of truth for API types) |
 | `@kaja/logger` | Pino (node) / console (browser) with `message, payload?` API |
 | `@kaja/shared` | Pure utils (`cn`, dates, strings) |
-| `@kaja/nasi` | Agent loop, sqlite store, tools. `includeLocalTools` (default false) adds files/shell/MCP. |
+| `@kaja/nasi` | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres. |
 
 ### Type architecture
 

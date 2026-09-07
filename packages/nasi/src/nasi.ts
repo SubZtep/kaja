@@ -5,11 +5,11 @@ import { Agent, type AgentEvent, createSession, type PromptContext, type Session
 import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
 import type { Tool } from "./agent/tools"
-import { createSessionRow, loadSessionRow, openStore, updateSessionRow, withStorePathGenerator } from "./store"
+import type { NasiStore } from "./store/types"
 import { createTools } from "./tools/registry"
 
 export type NasiOpenOptions = {
-  dbPath: string
+  store: NasiStore
   chat: { client: OpenAI; model: string }
   /** Files, shell, MCP, and plugins. Default false. */
   includeLocalTools?: boolean
@@ -97,8 +97,8 @@ async function persistTurn(
     session: loaded.session,
     events: persistedEvents
   }
-  if (!loaded.sessionId) return createSessionRow({ ...row, title: loaded.title })
-  await updateSessionRow(loaded.sessionId, row)
+  if (!loaded.sessionId) return opts.store.createSession({ ...row, title: loaded.title })
+  await opts.store.updateSession(loaded.sessionId, row)
   return loaded.sessionId
 }
 
@@ -134,7 +134,6 @@ export class Nasi {
   private constructor(opts: NasiOpenOptions, tools: Tool<any>[]) {
     this.opts = opts
     this.tools = tools
-    openStore(opts.dbPath)
   }
 
   static async open(opts: NasiOpenOptions) {
@@ -155,9 +154,9 @@ export class Nasi {
     let title = input.message.split(/[\r\n]/)[0]!.slice(0, 60)
 
     if (sessionId) {
-      const row = await loadSessionRow(sessionId)
-      // Also rejects a session id that belongs to a different owner within the same dbPath — e.g. two widget
-      // visitors sharing one account's SQLite file must never resume each other's conversation by guessing/observing a session id.
+      const row = await this.opts.store.loadSession(sessionId)
+      // Also rejects a session id that belongs to a different owner in the same store — e.g. two widget
+      // visitors sharing one account must never resume each other's conversation by guessing/observing a session id.
       if (!row || (row.owner ?? null) !== (this.opts.owner ?? null)) {
         const err = new Error("session_not_found")
         err.name = "NasiSessionNotFound"
@@ -176,7 +175,8 @@ export class Nasi {
       personaId: persona?.id,
       instructions: persona?.instructions,
       sampling: samplingOf(persona),
-      promptContext: this.opts.promptContext ?? {}
+      promptContext: this.opts.promptContext ?? {},
+      store: this.opts.store
     })
 
     return { agent, session, sessionId, events, title }
@@ -195,7 +195,7 @@ export class Nasi {
    * response `turnBuffered` would have, once the session is persisted.
    */
   turn(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
-    return withStorePathGenerator(this.opts.dbPath, this.turnInner(input))
+    return this.turnInner(input)
   }
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {

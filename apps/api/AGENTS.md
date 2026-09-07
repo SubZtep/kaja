@@ -34,7 +34,7 @@ src/
     admin/               # /admin — mcp-servers, providers, models
     config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
     users/               # /users
-    nasi/                # /nasi — hosted agent (per-user sqlite under NASI_DATA_DIR)
+    nasi/                # /nasi — hosted agent (sessions/memory/datasets in Postgres)
     health/              # /health
     reference/           # /reference (dev OpenAPI UI)
   services/              # shared domain logic (mcp-server, model)

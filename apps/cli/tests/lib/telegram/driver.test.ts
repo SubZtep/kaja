@@ -35,8 +35,10 @@ chat = "chat-default"
 
 const { invalidateConfigCache } = await import("../../../lib/config/config")
 const { askUserTool, runCommandTool, switchPersonaTool, tool } = await import("../../../lib/agent/agents")
-const { getDb } = await import("../../../lib/memory/store")
-const { createSessionRow, loadLatestSessionRowForOwner } = await import("../../../lib/session/store")
+const { peekStore } = await import("../../../lib/memory/store")
+const { createSessionRow, deleteSessionRow, listSessions, loadLatestSessionRowForOwner } = await import(
+  "../../../lib/session/store"
+)
 const { telegramOwner } = await import("@kaja/schema/store")
 const { createTelegramDriver } = await import("../../../lib/telegram/driver")
 const { t } = await import("../../../lib/i18n")
@@ -45,8 +47,7 @@ beforeEach(async () => {
   process.env.XDG_DATA_HOME = dataDir
   process.env.XDG_CONFIG_HOME = configDir
   invalidateConfigCache()
-  const db = await getDb()
-  db.exec("DELETE FROM sessions")
+  for (const session of await listSessions()) await deleteSessionRow(session.id)
 })
 
 type FakeMessage = {
@@ -139,7 +140,7 @@ function makeDriver(
   extraTools: Tool<never>[] = []
 ) {
   return createTelegramDriver({
-    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool] },
+    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool], store: peekStore() },
     personas: [persona],
     models: [],
     allowedUserIds,
@@ -292,7 +293,7 @@ test("/new re-resolves getInitialPersona live, picking up a persona switched aft
 
   const { sender } = fakeSender()
   const driver = createTelegramDriver({
-    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool] },
+    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool], store: peekStore() },
     personas: [kaja, grumpy],
     models: [],
     allowedUserIds: [42],
@@ -488,7 +489,7 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
   }
   const { sender, edited } = fakeSender()
   const driver = createTelegramDriver({
-    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool] },
+    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool], store: peekStore() },
     personas: [kaja, grumpy],
     models: [],
     allowedUserIds: [42],
