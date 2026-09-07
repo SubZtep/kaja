@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders, getRequestUrl } from "@tanstack/react-start/server"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
@@ -11,8 +12,8 @@ import { Personas } from "./-components/personas"
 import { WhyKaja } from "./-components/why-kaja"
 
 /** The homepage has no locale prefix for en-GB, so the url strategy always wins there over the cookie. Redirect here once, on the actual unprefixed root request, to honor a returning visitor's saved language. */
-function loader() {
-  if (getRequestUrl().pathname !== "/") return
+const getReturningVisitorLocale = createServerFn({ method: "GET" }).handler(() => {
+  if (getRequestUrl().pathname !== "/") return null
 
   const cookieLocale = getRequestHeaders()
     .get("cookie")
@@ -20,6 +21,12 @@ function loader() {
     .map(c => c.trim())
     .find(c => c.startsWith(`${cookieName}=`))
     ?.slice(cookieName.length + 1)
+
+  return cookieLocale ?? null
+})
+
+async function loader() {
+  const cookieLocale = await getReturningVisitorLocale()
 
   if (cookieLocale && isLocale(cookieLocale) && cookieLocale !== "en-GB") {
     throw redirect({ href: localizeHref("/", { locale: cookieLocale }) })
