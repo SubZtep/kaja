@@ -5,7 +5,7 @@ import { detectLanguage, type Language, setLanguage } from "../i18n"
 if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
 
 function toLanguage(value: string | undefined): Language | undefined {
-  return value === "hu" || value === "en" ? value : undefined
+  return value === "hu" || value === "en" || value === "zh-TW" ? value : undefined
 }
 
 /** Reads `--lang` straight from argv (as `--lang=hu` or `--lang hu`), bypassing meow's args parser — that parser can't be imported yet (its --help text needs the language already set), so this is a minimal standalone parse of just this one flag. */

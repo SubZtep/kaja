@@ -68,7 +68,8 @@
           "type": "string",
           "enum": [
             "en",
-            "hu"
+            "hu",
+            "zh-TW"
           ]
         },
         "persona": {

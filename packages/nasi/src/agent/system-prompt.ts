@@ -38,7 +38,11 @@ export function defaultEnvironmentInstructions() {
   return `You are running on ${osName()}. Use ${process.platform === "win32" ? "backslash" : "forward-slash"} paths accordingly. The user's home directory is ${homedir()}.`
 }
 
-const LANGUAGE_NAME: Record<string, string> = { en: "English", hu: "Hungarian" }
+const LANGUAGE_NAME: Record<string, string> = {
+  en: "English",
+  hu: "Hungarian",
+  "zh-TW": "Traditional Chinese (Taiwan)"
+}
 
 /** Builds a PromptContext.replyLanguageInstruction for a UI language code — "en" is omitted (it's already the model's default), any other known code tells the model to reply in that language. */
 export function replyLanguageInstructionFor(language: string): string | undefined {
