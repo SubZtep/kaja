@@ -31,7 +31,7 @@ const config = defineConfig({
       project: "./project.inlang",
       outdir: "./src/paraglide",
       emitTsDeclarations: true,
-      strategy: ["cookie", "baseLocale"]
+      strategy: ["cookie", "preferredLanguage", "baseLocale"]
     }),
     tanstackStart(),
     viteReact(),
@@ -40,7 +40,6 @@ const config = defineConfig({
       project: "kaja-web",
       authToken: process.env.SENTRY_AUTH_TOKEN
     })
-    //
   ]
 })
 
