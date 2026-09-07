@@ -1,36 +1,29 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-
   "site_title": "🕳 • Kaja",
   "site_og_description": "Nyílt forráskódú ágens keretrendszer. Futtasd újra és újra a promptodat egy LLM-mel az eredményeivel együtt, amíg el nem éred a megfelelő kimenetet.",
   "not_found_message": "Sajnáljuk, ez az oldal nem létezik.",
-
   "nav_home": "Kezdőlap",
   "nav_sign_in": "Bejelentkezés",
   "nav_sign_up": "Regisztráció",
   "nav_docs": "Dokumentáció",
-
   "menu_open": "Menü megnyitása",
   "menu_close": "Menü bezárása",
-
   "brand_monster_alt": "Szörny",
-
   "language_select_label": "Nyelv",
-
   "hero_badge": "OSS · MIT · WIP",
   "hero_quote": "A terminálodnak kérdezve kellene beszélnie — sosem találgatva",
   "hero_quote_attribution": "― MiniMax M3",
-  "hero_paragraph_1": "A Kaja egy nyílt forráskódú ágens keretrendszer. A bemeneted alapján újra és újra lefuttat egy LLM-et a saját eredményeivel, amíg el nem éri a megfelelő kimenetet (🙏).",
+  "hero_paragraph_1": "A Kaja egy nyílt forráskódú ágens keretrendszer. A bemeneted alapján újra és újra lefuttat egy LLM-et a saját eredményeivel kiegészítve, amíg a kimenetet megfelelő lesz (🙏).",
   "hero_paragraph_2": "Egy állapotgép, amelyet különféle feladatokra (képgenerálásra és beszédre is) képzett AI modellek hajtanak, helyi és online eszközökkel.",
   "hero_cta_source": "Forráskód a GitHubon",
   "hero_cta_docs": "Dokumentáció elolvasása",
   "hero_copy_copied": "Másolva!",
   "hero_copy_copy": "Másolás",
-
   "why_kaja_title": "Miért a Kaja",
   "why_kaja_meta": "Fejlesztés alatt (WIP)",
   "why_kaja_feature_models_title": "Helyi vagy felhő alapú modellek",
-  "why_kaja_feature_models_desc": "OpenAI-kompatibilis — Ollama, Fireworks, Ministral, MiniMax M3 és több",
+  "why_kaja_feature_models_desc": "OpenAI-kompatibilis — Ollama, Fireworks, Ministral, MiniMax M3 és többi",
   "why_kaja_feature_voice_title": "Hang be, hang ki",
   "why_kaja_feature_voice_desc": "Mikrofonos diktálás és TTS a speaches-en keresztül, Ctrl+T-vel kapcsolható",
   "why_kaja_feature_widgets_title": "Widgetek",
@@ -41,7 +34,6 @@
   "why_kaja_feature_tools_desc": "Brave webes keresés, helymeghatározás és más konfigurációs csoportok",
   "why_kaja_feature_telegram_title": "Telegramon is elérhető",
   "why_kaja_feature_telegram_desc": "A Kaja Telegram bot ugyanazokat a perszónákat, eszközöket és modelleket futtatja",
-
   "personas_title": "Perszónák",
   "personas_schema_link": "TOML JSON sémája",
   "personas_description": "Minden perszóna egy .toml fájl: egy címke, a system-prompt utasításai, és egy opcionális when feltétel. A Kaja felméri a helyzetet és magától vált perszónát a beszélgetés közben — parancs nélkül.",
@@ -53,14 +45,12 @@
   "personas_care_when": "a felhasználó a napjáról, érzéseiről, hangulatáról vagy személyes nehézségeiről beszél",
   "personas_onboarding_label": "Beléptető asszisztens",
   "personas_onboarding_when": "egy új felhasználót végig kell vezetni a kezdeti ismerkedős kérdéseken",
-
   "memory_title": "Memória és adathalmazok",
   "memory_description": "Hogyan emlékszik rád a Kaja, beszélgetéseken és munkameneteken át.",
   "memory_persistent_title": "Tartós memória",
   "memory_persistent_desc": "A Kaja megjegyzi a rólad szóló fontos tényeket, és később felidézi őket, így sosem kell ismételned magad. — Jelöld ki fontosnak a lényegeseket, hogy minden beszélgetésben megmaradjanak.",
   "memory_dataset_title": "Adathalmaz gyűjtés",
   "memory_dataset_desc": "Néhány perszóna figyeli a beszélgetést egy adott mezőkészlet szempontjából, és finoman megismétli a kérdéseit — akár napról napra — amíg mindegyik ki nem töltődik.",
-
   "configuration_title": "Beépített eszközök és MCP kliensek",
   "configuration_meta_link": "Van egy kedvenc MCP-d vagy skilled?",
   "configuration_description": "Könnyen bővíthető sima fájlok. Kérj le sablonokat a beléptetés során, és szerkeszd kézzel, ha finomhangolásra van szükség.",
@@ -76,7 +66,6 @@
   "configuration_tool_rerank_desc": "Dokumentumok rangsorolása egy lekérdezéshez képest",
   "configuration_tool_memory_desc": "Tartós tények megjegyzése munkameneteken át",
   "configuration_tool_dataset_info_desc": "Perszóna adathalmaz-gyűjtés folyamatának követése",
-
   "install_title": "Telepítés",
   "install_description": "Csak Linuxon tesztelt. Egy beállítási varázsló végigvezet a konfiguráción az első induláskor (vagy amikor a konfiguráció hiányzik/érvénytelen) — külön lépés nem szükséges.",
   "install_instruction": "Illeszd be a megfelelő parancsot a terminálodba, majd nyomj Entert a telepítéshez:",
@@ -85,11 +74,9 @@
   "install_binary_prefix": "Inkább sima bináris kellene?",
   "install_binary_link": "Szerezz egyet a Releases oldalról",
   "install_binary_suffix": "— Linux, macOS és Windows, x64 és arm64.",
-
   "footer_license_prefix": "MIT licenc · készítette",
   "footer_license_suffix": "· {year} · 🕳",
   "footer_star": "Csillagozd a GitHubon",
-
   "barkochba_title_bar": "AI widget: barkochba játék",
   "barkochba_idle_prompt": "Gondolj valamire. {maxQuestions} kérdésed van — válaszolj egy gomb megnyomásával.",
   "barkochba_example_pizza": "Pizza",
@@ -100,12 +87,12 @@
   "barkochba_start": "Indítás",
   "barkochba_play_again": "Új játék",
   "barkochba_give_up": "Feladom",
-  "barkochba_thinking": "gondolkodik…",
+  "barkochba_thinking": "gondolkodom…",
   "barkochba_answer_yes": "Igen",
   "barkochba_answer_no": "Nem",
   "barkochba_answer_sometimes": "Néha",
   "barkochba_answer_unknown": "Nem tudom",
-  "barkochba_error_rate_limited": "Túl sok üzenet — kérjük, várj egy kicsit.",
+  "barkochba_error_rate_limited": "Túl sok üzenet — kérlek, várj egy kicsit.",
   "barkochba_error_generic": "Valami hiba történt. Próbáld újra.",
   "barkochba_error_request_failed": "A kérés sikertelen: {status}"
 }

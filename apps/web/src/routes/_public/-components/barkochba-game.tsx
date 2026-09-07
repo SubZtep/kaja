@@ -15,9 +15,11 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { m } from "../../../paraglide/messages.js"
+import { getLocale } from "../../../paraglide/runtime.js"
 
-// `value` is what's actually sent to the LLM backend — kept in English regardless of
-// display language, since the persona only understands English input right now.
+// `value` stays a fixed English literal ("Yes"/"No"/...) regardless of display language —
+// the model is instructed (via the `language` field below) to reply in the UI language
+// regardless of what language the user writes in, so translating these isn't needed.
 // Read via functions (not module-scope constants) so labels re-evaluate per render —
 // `m.*()` calls captured at module load can go stale across the SSR/hydration boundary.
 const getAnswers = () =>
@@ -175,7 +177,12 @@ export function BarkochbaGame() {
   async function sendMessage(message: string) {
     setPending(true)
     try {
-      const data = await sendWidgetTurn(apiUrl, barkochbaWidgetKey ?? "", { session, message, visitorId })
+      const data = await sendWidgetTurn(apiUrl, barkochbaWidgetKey ?? "", {
+        session,
+        message,
+        visitorId,
+        language: getLocale()
+      })
       setSession(data.session)
       setCurrent(data.message)
       const askStep = data.steps.find(step => step.type === "ask_user")
