@@ -1,6 +1,7 @@
 import { KAJA_CLI_CLIENT_ID } from "@kaja/schema/api"
 import { createAuthClient } from "better-auth/client"
 import { deviceAuthorizationClient } from "better-auth/client/plugins"
+import { t } from "../i18n"
 import { saveToken } from "./credentials"
 
 export type DeviceLoginPrompt = {
@@ -19,10 +20,10 @@ async function fetchEmail(apiUrl: string, token: string): Promise<string> {
   const response = await fetch(new URL("/auth/get-session", apiUrl), {
     headers: { authorization: `Bearer ${token}` }
   })
-  if (!response.ok) throw new Error("Failed to look up the signed-in user")
+  if (!response.ok) throw new Error(t("cli.deviceLoginFetchEmailFailed"))
   const data = (await response.json()) as { user?: { email?: string } } | null
   const email = data?.user?.email
-  if (!email) throw new Error("Failed to look up the signed-in user")
+  if (!email) throw new Error(t("cli.deviceLoginFetchEmailFailed"))
   return email
 }
 
@@ -53,7 +54,7 @@ export async function deviceLogin(
     scope: "openid profile email"
   })
   if (error || !data) {
-    throw new Error(error?.error_description ?? "Failed to start device login")
+    throw new Error(error?.error_description ?? t("cli.deviceLoginStartFailed"))
   }
 
   onPrompt({
@@ -85,12 +86,12 @@ export async function deviceLogin(
         interval += 5
         continue
       case "access_denied":
-        throw new Error("Device login was denied")
+        throw new Error(t("cli.deviceLoginDenied"))
       case "expired_token":
-        throw new Error("Device login code expired — run login again")
+        throw new Error(t("cli.deviceLoginExpired"))
       default:
-        throw new Error(poll.error?.error_description ?? "Device login failed")
+        throw new Error(poll.error?.error_description ?? t("cli.deviceLoginFailed"))
     }
   }
-  throw new Error("Device login timed out")
+  throw new Error(t("cli.deviceLoginTimedOut"))
 }
