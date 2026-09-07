@@ -31,7 +31,7 @@ const config = defineConfig({
       project: "./project.inlang",
       outdir: "./src/paraglide",
       emitTsDeclarations: true,
-      strategy: ["url", "cookie", "preferredLanguage", "baseLocale"],
+      strategy: ["cookie", "url", "preferredLanguage", "baseLocale"],
       urlPatterns: [
         {
           pattern: "/:path(.*)?",
