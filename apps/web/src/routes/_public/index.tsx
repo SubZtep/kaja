@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { getPageTitle } from "../../lib/vars"
+import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 import { Configuration } from "./-components/configuration"
 import { Hero } from "./-components/hero"
 import { Install } from "./-components/install"
@@ -9,7 +10,7 @@ import { WhyKaja } from "./-components/why-kaja"
 
 export const Route = createFileRoute("/_public/")({
   component: LandingPage,
-  head: () => ({ meta: [{ title: getPageTitle() }] })
+  head: () => ({ meta: seo({ description: m.site_og_description() }) })
 })
 
 function LandingPage() {

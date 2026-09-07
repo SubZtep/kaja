@@ -8,7 +8,7 @@ import { Button } from "../../components/form/primitives/Button"
 import { ForgotPassword } from "../../components/user/ForgotPassword"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
-import { getPageTitle } from "../../lib/vars"
+import { seo } from "../../lib/seo"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 
@@ -19,7 +19,9 @@ const signinSearchSchema = z.object({
 export const Route = createFileRoute("/_public/signin")({
   validateSearch: signinSearchSchema,
   component: SignIn,
-  head: () => ({ meta: [{ title: getPageTitle("Sign In") }] })
+  head: () => ({
+    meta: seo({ title: "Sign In", description: "Welcome back. Sign in to manage models and config." })
+  })
 })
 
 function SignIn() {

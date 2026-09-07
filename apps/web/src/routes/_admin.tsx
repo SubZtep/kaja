@@ -6,7 +6,8 @@ import { Header } from "./_public/-components/header"
 
 export const Route = createFileRoute("/_admin")({
   component: AdminLayoutRoute,
-  loader: ({ location }) => userRequired(undefined, location.href)
+  loader: ({ location }) => userRequired(undefined, location.href),
+  head: () => ({ meta: [{ name: "robots", content: "noindex" }] })
 })
 
 function AdminLayoutRoute() {

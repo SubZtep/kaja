@@ -3,7 +3,8 @@ import { Section } from "../../components/ui/Section"
 import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/device")({
-  component: DeviceLayout
+  component: DeviceLayout,
+  head: () => ({ meta: [{ name: "robots", content: "noindex" }] })
 })
 
 function DeviceLayout() {

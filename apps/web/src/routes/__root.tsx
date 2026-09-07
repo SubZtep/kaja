@@ -49,6 +49,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         title: m.site_title()
+      }
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss
       },
       {
         rel: "apple-touch-icon",
@@ -70,32 +76,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "manifest",
         href: "/site.webmanifest"
-      },
-      {
-        name: "og:locale",
-        content: OG_LOCALE[getLocale()]
-      },
-      {
-        name: "og:site_name",
-        content: "Kaja.io"
-      },
-      {
-        name: "og:url",
-        content: "https://kaja.io"
-      },
-      {
-        name: "twitter:title",
-        content: "Kaja.io"
-      },
-      {
-        name: "twitter:url",
-        content: "https://x.com/SubZtep"
-      }
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss
       },
       ...locales.map(locale => ({
         rel: "alternate",
@@ -123,21 +103,16 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
       <head>
         <HeadContent />
 
-        <meta property="og:title" content="Kaja" />
         <meta property="og:type" content="website" />
         <meta
           property="og:image"
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
         />
         <meta property="og:url" content="https://kaja.io" />
-
-        <meta property="og:description" content={m.site_og_description()} />
         <meta property="og:site_name" content="Kaja.io" />
         <meta property="og:locale" content={ogLocale} />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Kaja.io" />
-        <meta name="twitter:description" content={m.site_og_description()} />
         <meta
           name="twitter:image"
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
