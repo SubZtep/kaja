@@ -25,7 +25,7 @@ stage_fixed = true
 
 [[pre-commit.jobs]]
 run = "bun run --filter @kaja/web generate:routes"
-glob = ["apps/web/src/routes/**"]
+glob = ["apps/web/src/routes/**", "apps/web/src/routeTree.gen.ts"]
 stage_fixed = true
 
 [[pre-commit.jobs]]

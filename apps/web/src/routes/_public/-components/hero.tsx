@@ -63,28 +63,28 @@ export function Hero() {
         </div>
 
         <div className="order-3 md:order-0 md:col-start-1">
-          <p className="mb-4 max-w-115 text-lg text-muted">{m.hero_paragraph_1()}</p>
-          <p className="mb-8 max-w-115 text-lg text-muted">{m.hero_paragraph_2()}</p>
-          <div className="mb-7 sm:flex flex-wrap gap-3 hidden">
+          <p className="mb-4 text-lg text-muted">{m.hero_paragraph_1()}</p>
+          <p className="mb-8 text-lg text-muted">{m.hero_paragraph_2()}</p>
+          <div className="mb-7 sm:flex flex-wrap gap-3 hidden w-full">
             <a
               href="https://github.com/SubZtep/kaja"
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md bg-neon px-5 py-2.5 font-bold text-bg text-sm hover:bg-neon-hi transition-colors duration-200 ease-in-out"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-neon px-5 py-2.5 font-bold text-bg text-sm hover:bg-neon-hi transition-colors duration-200 ease-in-out"
             >
-              <FolderCode size={12} />
+              <FolderCode size={21} className="pb-0.5" />
               {m.hero_cta_source()}
             </a>
             <a
               href="https://docs.kaja.io"
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md border border-border hover:border-amber-900 bg-surface px-5 py-2.5 font-medium text-fg text-sm transition-colors duration-150 ease-in-out"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-md border border-border hover:border-amber-900 bg-surface px-5 py-2.5 font-medium text-fg text-sm transition-colors duration-150 ease-in-out"
             >
               {m.hero_cta_docs()}
             </a>
           </div>
-          <div className="flex max-w-116 items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
+          <div className="flex items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
             <code className="flex-1 overflow-x-hidden whitespace-nowrap font-mono text-fg text-sm">{installCmd}</code>
             <button
               type="button"
