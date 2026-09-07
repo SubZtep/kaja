@@ -36,16 +36,15 @@ jobs:
         shell: bash
         env:
           APP_NAME: ${{ inputs.app }}
-          APP_DIR: apps/${{ inputs.app }}
           TAG: ${{ inputs.tag }}
         run: |
           PREV_TAG=$(git tag --list "${APP_NAME}@*" --sort=-v:refname | grep -v "^${TAG}\$" | head -n1)
           {
             echo "## Changes"
             if [[ -n "$PREV_TAG" ]]; then
-              git log "${PREV_TAG}..${TAG}" --pretty='- %s (%h)' -- "$APP_DIR"
+              git log "${PREV_TAG}..${TAG}" --pretty='- %s (%h)'
             else
-              git log "${TAG}" --pretty='- %s (%h)' -- "$APP_DIR"
+              git log "${TAG}" --pretty='- %s (%h)'
             fi
           } > changelog.md
           cat changelog.md
