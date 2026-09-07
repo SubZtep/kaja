@@ -34,7 +34,7 @@ export function LandingSectionTitle({
     <>
       <div className={cn("flex flex-wrap items-baseline justify-between gap-2", description ? "mb-2" : "mb-7")}>
         <h2 className="m-0 font-bold text-fg text-[26px]">{title}</h2>
-        {meta ? <span className="font-mono text-[#6e7681] text-xs">{meta}</span> : null}
+        {meta ? <span className="font-mono text-muted text-xs">{meta}</span> : null}
       </div>
       {description ? <p className="mb-7 max-w-160 text-[14.5px] text-muted">{description}</p> : null}
     </>

@@ -12,6 +12,8 @@ import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
 import { Checkbox } from "../../../components/form/primitives/Checkbox"
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog"
+import { ErrorNotice } from "../../../components/ui/ErrorNotice"
+import { IconButton } from "../../../components/ui/IconButton"
 import { Loader } from "../../../components/ui/Loader"
 import { PageHeader } from "../../../components/ui/PageHeader"
 import { Section } from "../../../components/ui/Section"
@@ -74,9 +76,9 @@ function makeProviderActionsCell(onDelete: (id: string) => void) {
           confirm={m.models_delete_confirm_button()}
           onConfirm={() => onDelete(info.row.original.id)}
         >
-          <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
+          <IconButton variant="danger" aria-label={m.models_delete_confirm_button()}>
             <Trash2 size={18} />
-          </button>
+          </IconButton>
         </ConfirmDialog>
       </div>
     )
@@ -101,14 +103,26 @@ function makeModelProviderCell(providers: Provider[]) {
 function makeModelEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
   return function ModelEnabledCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
     const model = info.row.original
-    return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: model.id, enabled })} />
+    return (
+      <Checkbox
+        checked={info.getValue()}
+        aria-label={m.models_toggle_enabled({ model: model.model })}
+        onCheckedChange={enabled => onToggle({ id: model.id, enabled })}
+      />
+    )
   }
 }
 
 function makeModelFreeCell(onToggle: (args: { id: string; free: boolean }) => void) {
   return function ModelFreeCell(info: CellContext<typeof tableFeaturesConfig, Model, boolean>) {
     const model = info.row.original
-    return <Checkbox checked={info.getValue()} onCheckedChange={free => onToggle({ id: model.id, free })} />
+    return (
+      <Checkbox
+        checked={info.getValue()}
+        aria-label={m.models_toggle_free({ model: model.model })}
+        onCheckedChange={free => onToggle({ id: model.id, free })}
+      />
+    )
   }
 }
 
@@ -126,9 +140,9 @@ function makeModelActionsCell(onDelete: (id: string) => void) {
           confirm={m.models_delete_confirm_button()}
           onConfirm={() => onDelete(info.row.original.id)}
         >
-          <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
+          <IconButton variant="danger" aria-label={m.models_delete_confirm_button()}>
             <Trash2 size={18} />
-          </button>
+          </IconButton>
         </ConfirmDialog>
       </div>
     )
@@ -324,11 +338,10 @@ function ModelsPage() {
         <ValueBox label={m.models_free()}>{freeCount}</ValueBox>
       </PageHeader>
 
-      {providersQuery.error && <p className="mb-6 text-red-400 text-sm">{providersQuery.error.message}</p>}
-      {modelsQuery.error && <p className="mb-6 text-red-400 text-sm">{modelsQuery.error.message}</p>}
+      <ErrorNotice error={providersQuery.error} />
+      <ErrorNotice error={modelsQuery.error} />
 
-      <Section className="mb-4">
-        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.models_add_provider_title()}</h2>
+      <Section className="mb-4" title={m.models_add_provider_title()}>
         <form
           onSubmit={e => {
             e.preventDefault()
@@ -364,8 +377,7 @@ function ModelsPage() {
         </div>
       </Section>
 
-      <Section className="mb-4">
-        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.models_add_model_title()}</h2>
+      <Section className="mb-4" title={m.models_add_model_title()}>
         {providers.length === 0 ? (
           <p className="text-muted text-sm">{m.models_add_model_needs_provider()}</p>
         ) : (

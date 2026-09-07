@@ -92,10 +92,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id} className="border-border border-b">
                   {headerGroup.headers.map(header => (
-                    <th
-                      key={header.id}
-                      className="px-3 py-2 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider"
-                    >
+                    <th key={header.id} className="px-3 py-2 font-mono text-[11px] text-muted uppercase tracking-wider">
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}

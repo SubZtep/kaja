@@ -26,7 +26,7 @@ export function LanguageSelect() {
       <Select.Trigger
         aria-label={m.language_select_label()}
         title={hasChosenLocale ? LOCALE_LABELS[getLocale()] : undefined}
-        className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg"
+        className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg cursor-pointer"
       >
         {hasChosenLocale && <Languages size={14} className="hidden md:block" />}
         <Select.Value className={hasChosenLocale ? "md:hidden" : undefined} />

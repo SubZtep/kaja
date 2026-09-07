@@ -70,31 +70,52 @@ export function Table({
           <thead>
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th
-                    key={header.id}
-                    className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
-                  >
-                    {header.isPlaceholder ? null : (
-                      <button
-                        type="button"
-                        className={cn(
-                          "flex gap-2 items-center",
-                          header.column.getCanSort() && "cursor-pointer",
-                          header.column.getIsSorted() && "select-none",
-                          header.column.getCanSort() && !header.column.getIsSorted() && "mr-7.25"
-                        )}
-                        onClick={() => header.column.getCanSort() && toggleSorting(header.column.id)}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{
-                          asc: <ArrowDown size={21} className="text-muted" />,
-                          desc: <ArrowUp size={21} className="text-muted" />
-                        }[header.column.getIsSorted() as string] ?? null}
-                      </button>
-                    )}
-                  </th>
-                ))}
+                {headerGroup.headers.map(header => {
+                  const sorted = header.column.getIsSorted()
+                  const label = String(header.column.columnDef.header ?? "")
+                  return (
+                    <th
+                      key={header.id}
+                      aria-sort={
+                        header.column.getCanSort()
+                          ? sorted === "asc"
+                            ? "ascending"
+                            : sorted === "desc"
+                              ? "descending"
+                              : "none"
+                          : undefined
+                      }
+                      className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
+                    >
+                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                        <button
+                          type="button"
+                          aria-label={
+                            sorted === "asc"
+                              ? m.table_sort_ascending({ column: label })
+                              : sorted === "desc"
+                                ? m.table_sort_descending({ column: label })
+                                : m.table_sort_none({ column: label })
+                          }
+                          className={cn(
+                            "flex gap-2 items-center cursor-pointer",
+                            sorted && "select-none",
+                            !sorted && "mr-7.25"
+                          )}
+                          onClick={() => toggleSorting(header.column.id)}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {{
+                            asc: <ArrowDown size={21} className="text-muted" />,
+                            desc: <ArrowUp size={21} className="text-muted" />
+                          }[sorted as string] ?? null}
+                        </button>
+                      ) : (
+                        flexRender(header.column.columnDef.header, header.getContext())
+                      )}
+                    </th>
+                  )
+                })}
               </tr>
             ))}
           </thead>

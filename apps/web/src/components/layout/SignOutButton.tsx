@@ -31,11 +31,10 @@ export function SignOutButton({ onClick }: Readonly<{ onClick?: () => void }>) {
       }}
     >
       <Button
-        variant="oval"
-        size="sm"
+        variant="chip"
         loading={loading}
         onClick={onClick}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 font-medium text-fg"
+        className="inline-flex items-center gap-1.5 bg-surface px-3.5! text-fg"
       >
         <LogOut size={14} />
         {m.sign_out()}

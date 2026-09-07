@@ -4,6 +4,7 @@ import type { UserWithRole } from "better-auth/plugins"
 import { ArrowLeft, Calendar, CheckCircle2, Clock, Mail, Shield } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
+import { Avatar } from "../../../components/ui/Avatar"
 import { Loader } from "../../../components/ui/Loader"
 import { PageHeader } from "../../../components/ui/PageHeader"
 import { Section } from "../../../components/ui/Section"
@@ -41,6 +42,7 @@ function UserPageComponent() {
           <span className="inline-flex items-center gap-3">
             <Link
               to="/users"
+              aria-label={m.users_back_to_list()}
               className="inline-flex rounded-md border border-border bg-surface p-1.5 text-muted transition-colors hover:border-neon/40 hover:text-fg"
             >
               <ArrowLeft size={18} />
@@ -55,15 +57,12 @@ function UserPageComponent() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Section>
           <div className="mb-5 flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-surface-2">
-              {user.image ? (
-                <img alt={user.name ?? ""} className="h-full w-full object-cover" src={user.image} />
-              ) : (
-                <span className="font-mono font-semibold text-neon text-xl">
-                  {user.name?.charAt(0)?.toUpperCase() ?? "?"}
-                </span>
-              )}
-            </div>
+            <Avatar
+              size="lg"
+              src={user.image}
+              alt={user.name ?? ""}
+              initials={user.name?.charAt(0)?.toUpperCase() ?? "?"}
+            />
             <div>
               <h2 className="m-0 font-semibold text-fg text-[15px]">{user.name}</h2>
               <span className="text-muted text-sm">{user.email}</span>
@@ -110,7 +109,7 @@ function DetailRow({
   return (
     <div className="flex items-center gap-3">
       <Icon size={16} className="shrink-0 text-muted" />
-      <span className="w-24 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider">{label}</span>
+      <span className="w-24 font-mono text-[11px] text-muted uppercase tracking-wider">{label}</span>
       <span className="text-fg text-sm">{value}</span>
     </div>
   )

@@ -10,6 +10,7 @@ type Props = {
   disabled?: boolean
   required?: boolean
   className?: string
+  "aria-label"?: string
   onBlur?: React.FocusEventHandler
   onCheckedChange?: (checked: boolean) => void
 }
@@ -21,6 +22,7 @@ export function Checkbox({
   disabled,
   required,
   className,
+  "aria-label": ariaLabel,
   onBlur,
   onCheckedChange
 }: Readonly<Props>) {
@@ -31,6 +33,7 @@ export function Checkbox({
       defaultChecked={defaultChecked}
       disabled={disabled}
       required={required}
+      aria-label={ariaLabel}
       onBlur={onBlur}
       onCheckedChange={onCheckedChange}
       className={cn(

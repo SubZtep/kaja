@@ -6,9 +6,14 @@ import type { UserWithRole } from "better-auth/client/plugins"
 import { Eye, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
+import { Button } from "../../../components/form/primitives/Button"
+import { Avatar } from "../../../components/ui/Avatar"
+import { Badge } from "../../../components/ui/Badge"
+import { IconButton } from "../../../components/ui/IconButton"
 import { Loader } from "../../../components/ui/Loader"
 import { PageHeader } from "../../../components/ui/PageHeader"
 import { Section } from "../../../components/ui/Section"
+import { StatusDot } from "../../../components/ui/StatusDot"
 import { Table } from "../../../components/ui/Table"
 import { ValueBox } from "../../../components/ui/ValueBox"
 import { useAuthClient } from "../../../hooks/auth-client"
@@ -26,12 +31,12 @@ export const Route = createFileRoute("/_admin/users/")({
 type UsersColumns = Pick<UserWithRole, "id" | "name" | "email" | "emailVerified" | "role" | "createdAt" | "image">
 const columnHelper = tableColumnHelper<UsersColumns>()
 
-const ROLE_STYLES: Record<string, string> = {
-  admin: "bg-ice/10 text-ice",
-  superuser: "bg-ice/10 text-ice",
-  user: "bg-surface/60 text-muted",
-  editor: "bg-surface/60 text-muted",
-  viewer: "bg-surface/60 text-muted"
+const ROLE_TONES: Record<string, "ice" | "muted"> = {
+  admin: "ice",
+  superuser: "ice",
+  user: "muted",
+  editor: "muted",
+  viewer: "muted"
 }
 
 function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, string>) {
@@ -44,13 +49,7 @@ function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns
     .slice(0, 2)
   return (
     <div className="flex items-center gap-4">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-surface-2">
-        {user.image ? (
-          <img alt={user.name ?? ""} className="h-full w-full object-cover" src={user.image} />
-        ) : (
-          <span className="font-mono text-neon text-xs font-semibold">{initials}</span>
-        )}
-      </div>
+      <Avatar src={user.image} alt={user.name ?? ""} initials={initials} />
       <div>
         <div className="font-medium text-fg text-sm">{info.getValue()}</div>
         <div className="text-muted text-xs">{user.email}</div>
@@ -61,26 +60,12 @@ function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns
 
 function AccessLevelCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, string | undefined>) {
   const role = info.getValue() ?? "user"
-  const style = ROLE_STYLES[role] ?? ROLE_STYLES.user
-  return <span className={`rounded-md px-2.5 py-1 font-mono text-xs ${style}`}>{capitalized(role)}</span>
+  return <Badge tone={ROLE_TONES[role] ?? ROLE_TONES.user}>{capitalized(role)}</Badge>
 }
 
 function StatusCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, boolean>) {
   const verified = info.getValue()
-  if (verified) {
-    return (
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 w-1.5 rounded-full bg-neon" />
-        <span className="text-muted text-xs">{m.users_status_authenticated()}</span>
-      </div>
-    )
-  }
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 w-1.5 rounded-full bg-surface-2" />
-      <span className="text-xs text-muted">{m.users_status_pending()}</span>
-    </div>
-  )
+  return <StatusDot active={verified} label={verified ? m.users_status_authenticated() : m.users_status_pending()} />
 }
 
 function LastSyncCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, Date>) {
@@ -90,13 +75,13 @@ function LastSyncCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns
 function ActionsCell(info: { readonly row: { readonly original: { readonly id: string } } }) {
   return (
     <div className="text-right">
-      <Link
-        to="/users/$userId"
-        params={{ userId: info.row.original.id }}
-        className="inline-flex rounded-md p-2 text-neon transition-colors hover:bg-neon/10"
+      <IconButton
+        variant="neutral"
+        aria-label={m.users_view_details()}
+        render={<Link to="/users/$userId" params={{ userId: info.row.original.id }} />}
       >
         <Eye size={18} />
-      </Link>
+      </IconButton>
     </div>
   )
 }
@@ -196,33 +181,23 @@ function UserList() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="mr-1 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider">
-              {m.users_filters()}
-            </span>
+            <span className="mr-1 font-mono text-[11px] text-muted uppercase tracking-wider">{m.users_filters()}</span>
             {roleFilter ? (
-              <button
-                type="button"
+              <Button
+                variant="chip"
                 onClick={() => setRoleFilter("")}
-                className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-fg text-xs transition-colors hover:border-neon/40"
+                className="flex items-center gap-2 text-fg hover:border-neon/40"
               >
                 {m.users_filter_role({ role: capitalized(roleFilter) })} <X size={12} />
-              </button>
+              </Button>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter("admin")}
-                  className="rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-muted text-xs transition-colors hover:text-fg"
-                >
+                <Button variant="chip" onClick={() => setRoleFilter("admin")} className="text-muted hover:text-fg">
                   {m.role_admin()}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter("user")}
-                  className="rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-muted text-xs transition-colors hover:text-fg"
-                >
+                </Button>
+                <Button variant="chip" onClick={() => setRoleFilter("user")} className="text-muted hover:text-fg">
                   {m.role_user()}
-                </button>
+                </Button>
               </>
             )}
             {(searchQuery || roleFilter) && (

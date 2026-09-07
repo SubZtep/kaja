@@ -245,7 +245,7 @@ export function BarkochbaGame() {
             <button
               type="button"
               onClick={start}
-              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm transition-transform duration-200 motion-safe:animate-pulse hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0"
+              className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm transition-transform duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0"
             >
               {m.barkochba_start()}
             </button>

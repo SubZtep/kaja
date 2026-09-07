@@ -34,16 +34,13 @@ function Profile() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Section className="sm:row-span-2">
-          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.profile_edit_personal_data()}</h2>
+        <Section className="sm:row-span-2" title={m.profile_edit_personal_data()}>
           <EditUser user={user} />
         </Section>
-        <Section>
-          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.profile_change_email()}</h2>
+        <Section title={m.profile_change_email()}>
           <ChangeEmail />
         </Section>
-        <Section>
-          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.profile_change_password()}</h2>
+        <Section title={m.profile_change_password()}>
           <ChangePassword />
         </Section>
       </div>

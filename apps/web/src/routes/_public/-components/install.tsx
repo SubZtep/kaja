@@ -14,21 +14,21 @@ export function Install() {
   return (
     <LandingSection>
       <LandingSectionTitle title={m.install_title()} description={m.install_description()} />
-      <p className="mb-4 text-md text-mist-500">{m.install_instruction()}</p>
+      <p className="mb-4 text-md text-muted">{m.install_instruction()}</p>
       <div className="flex gap-4 flex-col md:flex-row">
-        <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
+        <Section bordered="sm-up">
           <p>{m.install_mac_linux_label()}</p>
           <code className="block font-mono text-fg text-[13.5px]">{installCmd}</code>
         </Section>
-        <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
+        <Section bordered="sm-up">
           <p>{m.install_windows_label()}</p>
           <code className="block font-mono text-fg text-[13.5px]">irm https://kaja.io/install.ps1 | iex</code>
         </Section>
       </div>
 
-      <p className="mt-3 text-[#6e7681] text-sm">
+      <p className="mt-3 text-muted text-sm">
         {m.install_binary_prefix()}{" "}
-        <a href="https://github.com/SubZtep/kaja/releases" target="_blank" rel="noopener">
+        <a href="https://github.com/SubZtep/kaja/releases" target="_blank" rel="noopener" className="underline">
           {m.install_binary_link()}
         </a>{" "}
         {m.install_binary_suffix()}

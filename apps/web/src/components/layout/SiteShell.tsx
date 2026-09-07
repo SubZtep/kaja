@@ -13,7 +13,7 @@ export function SiteShell({
   return (
     <div className="flex min-h-screen flex-col bg-bg font-body leading-normal text-muted">
       {header}
-      <div className="flex flex-1 flex-col">{children}</div>
+      <main className="flex flex-1 flex-col">{children}</main>
       {footer}
     </div>
   )

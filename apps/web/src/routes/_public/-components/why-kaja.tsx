@@ -50,7 +50,7 @@ export function WhyKaja() {
       <LandingSectionTitle title={m.why_kaja_title()} meta={m.why_kaja_meta()} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {getFeatures().map(f => (
-          <Section key={f.id} className="border-0 bg-transparent p-0 sm:border sm:px-6 sm:py-6">
+          <Section key={f.id} bordered="sm-up" className="bg-transparent">
             <div className="mb-3.5 flex size-8 items-center justify-center rounded-md border border-neon/25 bg-neon/15 font-mono text-base text-neon">
               {f.glyph}
             </div>

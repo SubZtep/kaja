@@ -19,8 +19,11 @@ export function SelectField({
       touched={field.state.meta.isTouched}
     >
       <div className="md:flex">
-        <Field.Label className="flex w-48 align-middle items-center justify-between">{label}:</Field.Label>
+        <Field.Label htmlFor={field.name} className="flex w-48 align-middle items-center justify-between">
+          {label}:
+        </Field.Label>
         <select
+          id={field.name}
           name={field.name}
           value={field.state.value}
           onBlur={field.handleBlur}

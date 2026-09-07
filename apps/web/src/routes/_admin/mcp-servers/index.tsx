@@ -10,6 +10,8 @@ import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
 import { Checkbox } from "../../../components/form/primitives/Checkbox"
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog"
+import { ErrorNotice } from "../../../components/ui/ErrorNotice"
+import { IconButton } from "../../../components/ui/IconButton"
 import { Loader } from "../../../components/ui/Loader"
 import { PageHeader } from "../../../components/ui/PageHeader"
 import { Section } from "../../../components/ui/Section"
@@ -105,7 +107,13 @@ function ConfigCell(info: CellContext<typeof tableFeaturesConfig, McpServer, unk
 function makeEnabledCell(onToggle: (args: { id: string; enabled: boolean }) => void) {
   return function EnabledCell(info: CellContext<typeof tableFeaturesConfig, McpServer, boolean>) {
     const server = info.row.original
-    return <Checkbox checked={info.getValue()} onCheckedChange={enabled => onToggle({ id: server.id, enabled })} />
+    return (
+      <Checkbox
+        checked={info.getValue()}
+        aria-label={m.mcp_servers_toggle_enabled({ serverId: server.serverId })}
+        onCheckedChange={enabled => onToggle({ id: server.id, enabled })}
+      />
+    )
   }
 }
 
@@ -123,9 +131,9 @@ function makeActionsCell(onDelete: (id: string) => void) {
           confirm={m.mcp_servers_delete_confirm_button()}
           onConfirm={() => onDelete(info.row.original.id)}
         >
-          <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
+          <IconButton variant="danger" aria-label={m.mcp_servers_delete_confirm_button()}>
             <Trash2 size={18} />
-          </button>
+          </IconButton>
         </ConfirmDialog>
       </div>
     )
@@ -257,10 +265,9 @@ function McpServersPage() {
         <ValueBox label={m.mcp_servers_enabled()}>{enabledCount}</ValueBox>
       </PageHeader>
 
-      {error && <p className="mb-6 text-red-400 text-sm">{error.message}</p>}
+      <ErrorNotice error={error} />
 
-      <Section className="mb-4">
-        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.mcp_servers_add_title()}</h2>
+      <Section className="mb-4" title={m.mcp_servers_add_title()}>
         <form
           onSubmit={e => {
             e.preventDefault()

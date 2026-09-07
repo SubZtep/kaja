@@ -10,6 +10,8 @@ import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../components/form/primitives/Button"
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog"
+import { ErrorNotice } from "../../components/ui/ErrorNotice"
+import { IconButton } from "../../components/ui/IconButton"
 import { Loader } from "../../components/ui/Loader"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
@@ -89,9 +91,9 @@ function makeActionsCell(onRevoke: (id: string) => void) {
           confirm={m.widget_revoke_confirm_button()}
           onConfirm={() => onRevoke(info.row.original.id)}
         >
-          <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
+          <IconButton variant="danger" aria-label={m.widget_revoke_confirm_button()}>
             <Trash2 size={18} />
-          </button>
+          </IconButton>
         </ConfirmDialog>
       </div>
     )
@@ -207,10 +209,9 @@ function WidgetPage() {
         <ValueBox label={m.widget_active()}>{activeCount}</ValueBox>
       </PageHeader>
 
-      {error && <p className="mb-6 text-red-400 text-sm">{error.message}</p>}
+      <ErrorNotice error={error} />
 
-      <Section className="mb-4">
-        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.widget_create_title()}</h2>
+      <Section className="mb-4" title={m.widget_create_title()}>
         <form
           onSubmit={e => {
             e.preventDefault()
