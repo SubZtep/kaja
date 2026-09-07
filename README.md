@@ -31,15 +31,7 @@ Prepare:
 
 Pick one of two ways to run it:
 
-### Option A: everything in Docker
-
-The [compose config](compose.yaml) defaults just work — open a terminal and start:
-
-```bash
-docker compose up -d
-```
-
-### Option B: Docker for the backing services only
+### Run backend services in Docker
 
 Just want Postgres and MailDev in containers, with the API and web app running locally (hot reload, breakpoints, etc.)? Install dependencies and copy the env examples:
 
@@ -60,6 +52,12 @@ Then, in another terminal, start the API and web app together:
 ```bash
 bun dev
 ```
+
+> [!TIP]
+> The [compose config](compose.yaml) defaults just work for all included services. For the API and the web portal, open a terminal, and start:
+> ```bash
+> docker compose up -d
+> ```
 
 ### Talking to it from the CLI
 

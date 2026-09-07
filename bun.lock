@@ -19,7 +19,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "dependencies": {
         "@hono/zod-openapi": "^1.6.3",
         "@hono/zod-validator": "^0.9.1",
@@ -49,7 +49,7 @@
     },
     "apps/cli": {
       "name": "@kaja/cli",
-      "version": "0.10.10",
+      "version": "0.10.11",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/logger": "workspace:*",
@@ -91,7 +91,7 @@
     },
     "apps/web": {
       "name": "@kaja/web",
-      "version": "0.9.0",
+      "version": "0.9.1",
       "dependencies": {
         "@base-ui/react": "^1.8.0",
         "@fontsource-variable/inter": "^5.2.8",
@@ -150,7 +150,7 @@
     },
     "packages/schema": {
       "name": "@kaja/schema",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "dependencies": {
         "zod": "^4.4.3",
       },
