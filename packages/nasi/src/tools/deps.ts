@@ -23,6 +23,8 @@ export type NasiToolDeps = {
   lookupLocation?: () => Promise<GeoLocation | undefined>
   tempDir?: string
   workspaceRoot?: string
+  /** Absolute path of the local sqlite file, denied by the path guard. */
+  storePath?: string
 }
 
 let deps: NasiToolDeps = {}

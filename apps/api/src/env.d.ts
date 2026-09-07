@@ -66,8 +66,6 @@ declare module "bun" {
     WIDGET_KEY_RATE_LIMIT_WINDOW_MS?: string
     /** Max turns per window per widget key, regardless of visitor/IP */
     WIDGET_KEY_RATE_LIMIT_MAX?: string
-    /** Per-user Nasi SQLite directory (one <userId>/nasi.sqlite file each) */
-    NASI_DATA_DIR?: string
     /** When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only) */
     NASI_STUB_MODEL?: string
   }

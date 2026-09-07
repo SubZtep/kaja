@@ -38,8 +38,8 @@
             "type": "string",
             "enum": [
               "chat",
-              "text-to-speech",
-              "speech-to-text",
+              "tts",
+              "stt",
               "embedding",
               "image-generation",
               "rerank"
@@ -55,36 +55,6 @@
           "task",
           "provider"
         ]
-      }
-    },
-    "active": {
-      "default": {},
-      "type": "object",
-      "properties": {
-        "chat": {
-          "type": "string",
-          "minLength": 1
-        },
-        "embedding": {
-          "type": "string",
-          "minLength": 1
-        },
-        "rerank": {
-          "type": "string",
-          "minLength": 1
-        },
-        "image-generation": {
-          "type": "string",
-          "minLength": 1
-        },
-        "text-to-speech": {
-          "type": "string",
-          "minLength": 1
-        },
-        "speech-to-text": {
-          "type": "string",
-          "minLength": 1
-        }
       }
     }
   }

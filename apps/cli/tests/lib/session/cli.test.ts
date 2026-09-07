@@ -6,13 +6,11 @@ import { tmpdir } from "node:os"
 process.env.XDG_DATA_HOME = `${tmpdir()}/kaja-test-xdg-data-session-cli`
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-session-cli`
 
-const { getDb } = await import("../../../lib/memory/store")
-const { createSessionRow } = await import("../../../lib/session/store")
+const { createSessionRow, deleteSessionRow, listSessions } = await import("../../../lib/session/store")
 const { runSessionCli } = await import("../../../lib/session/cli")
 
 afterEach(async () => {
-  const db = await getDb()
-  db.exec("DELETE FROM sessions")
+  for (const session of await listSessions()) await deleteSessionRow(session.id)
 })
 
 test("list on an empty store", async () => {

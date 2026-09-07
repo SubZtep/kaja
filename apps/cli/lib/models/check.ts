@@ -28,7 +28,7 @@ export async function checkModelAvailability(model: CliResolvedModel): Promise<b
       })
       return true
     }
-    if (model.task === "speech-to-text") {
+    if (model.task === "stt") {
       const res = await fetch(`${model.baseUrl}/v1/models/${encodeURIComponent(model.model)}`, { method: "POST" })
       return res.ok
     }

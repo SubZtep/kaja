@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_admin/models/")({
   head: () => ({ meta: [{ title: getPageTitle("Models") }] })
 })
 
-const MODEL_TASKS: ModelTask[] = ["chat", "text-to-speech", "speech-to-text", "embedding", "image-generation", "rerank"]
+const MODEL_TASKS: ModelTask[] = ["chat", "tts", "stt", "embedding", "image-generation", "rerank"]
 
 const providerFormSchema = z.object({
   name: z.string().min(1, "Required"),

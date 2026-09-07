@@ -47,33 +47,14 @@ export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
 export { fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"
 export {
-  closeStore,
-  createSessionRow,
+  createMemoryStore,
   type DatasetAnswer,
-  deleteSessionRow,
+  type DatasetVersionSummary,
   forgetNotes,
-  getActiveStorePath,
-  getDb,
-  latestDatasetVersion,
-  listAllDatasetAnswers,
-  listDatasetVersionsSummary,
-  listSessions,
-  loadDatasetAnswers,
-  loadDatasetVersionCompletedAt,
-  loadLatestSessionRow,
-  loadLatestSessionRowForOwner,
-  loadMemory,
-  loadPromptHistory,
-  loadSessionRow,
-  markDatasetVersionComplete,
+  type NasiStore,
   noteHeader,
-  openStore,
-  SCHEMA_VERSION,
-  saveDatasetAnswer,
-  saveMemory,
-  setActiveStorePath,
-  updateSessionRow,
-  withStorePath
+  requireStore,
+  type SessionWrite
 } from "./store"
 export { currentTimeTool } from "./tools/builtin/current-time"
 export { datasetInfoTool } from "./tools/builtin/dataset-info"
@@ -87,4 +68,4 @@ export { summarizeTool } from "./tools/builtin/summarize"
 export { viewImageTool } from "./tools/builtin/view-image"
 export { webSearchTool } from "./tools/builtin/web-search"
 export { getToolDeps, type ImageGenModel, type NasiToolDeps, type RerankModel, setToolDeps } from "./tools/deps"
-export { type CreateToolsOptions, createTools, HOSTED_SAFE, LOCAL_ONLY, type NasiProfile } from "./tools/registry"
+export { type CreateToolsOptions, createTools } from "./tools/registry"

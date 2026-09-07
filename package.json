@@ -9,7 +9,8 @@
     "lefthook": "^2.1.10",
     "nitro": "npm:nitro-nightly@3.0.1-20260904-104602-c5177e92",
     "tombi": "^1.5.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "zod": "^4.4.3"
   },
   "description": "monorepo",
   "packageManager": "bun@1.4.2",
@@ -18,7 +19,6 @@
     "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' dev",
     "dev:api": "bun run --filter @kaja/api dev",
     "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.ts",
-    "dev:cli:local": "bun run --env-file=apps/cli/.env apps/cli/cli.ts --local",
     "dev:web": "bun run --filter @kaja/web dev",
     "check:env": "bun scripts/env.ts --check",
     "generate:env": "bun scripts/env.ts",

@@ -12,12 +12,12 @@ await Bun.write(
 [providers.default]
 base_url = "http://localhost/v1"
 
-[models.chat-default]
+[models.chat]
 model = "test-model"
 task = "chat"
 provider = "default"
 
-[models.embedding-default]
+[models.embedding]
 model = "test-embedding-model"
 task = "embedding"
 provider = "default"
@@ -26,10 +26,6 @@ provider = "default"
 model = "test-embedding-model-alt"
 task = "embedding"
 provider = "default"
-
-[active]
-chat = "chat-default"
-embedding = "embedding-default"
 `
 )
 await Bun.write(
@@ -103,7 +99,7 @@ test("embed batches multiple inputs into one request", async () => {
   ])
 })
 
-test("a persona's embedding pin overrides [active].embedding", async () => {
+test("a persona's embedding pin overrides [models.embedding]", async () => {
   await embed("hello", { embedding: "embedding-alt" })
   const body = JSON.parse(lastRequest!.init.body as string)
   expect(body.model).toBe("test-embedding-model-alt")
@@ -119,19 +115,15 @@ base_url = "http://localhost/v1"
 [providers.embed-host]
 base_url = "http://embedding-host/v1"
 
-[models.chat-default]
+[models.chat]
 model = "test-model"
 task = "chat"
 provider = "default"
 
-[models.embedding-default]
+[models.embedding]
 model = "custom-embedder"
 task = "embedding"
 provider = "embed-host"
-
-[active]
-chat = "chat-default"
-embedding = "embedding-default"
 `
   )
   await Bun.write(

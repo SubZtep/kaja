@@ -1,15 +1,14 @@
 import { afterEach, expect, test } from "bun:test"
-import { mkdtempSync } from "node:fs"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import type { Dataset } from "@kaja/schema/cli"
+import { LOCAL_OWNER_CTX } from "../../src/agent/tools"
 import { setDatasetLoaders } from "../../src/personas"
-import { openStore, saveMemory, setActiveStorePath } from "../../src/store"
+import { createMemoryStore, type NasiStore } from "../../src/store"
 import { datasetInfoTool } from "../../src/tools/builtin/dataset-info"
 
-const dbPath = join(mkdtempSync(join(tmpdir(), "nasi-dataset-info-tool-")), "nasi.sqlite")
-openStore(dbPath)
-setActiveStorePath(dbPath)
+let store: NasiStore = createMemoryStore()
+function ctx(owner?: string | null) {
+  return { ...LOCAL_OWNER_CTX, store, owner: owner ?? LOCAL_OWNER_CTX.owner }
+}
 
 const datasets = new Map<string, Dataset>([
   [
@@ -41,29 +40,35 @@ setDatasetLoaders({
   loadDataset: async topic => datasets.get(topic)
 })
 
-afterEach(async () => {
-  await saveMemory({})
+afterEach(() => {
+  store = createMemoryStore()
 })
 
 test("list_datasets lists available datasets with field counts", async () => {
-  const result = await datasetInfoTool.execute({ action: "list_datasets" })
+  const result = await datasetInfoTool.execute({ action: "list_datasets" }, ctx())
   expect(result).toContain("onboarding: Onboarding (2 fields)")
   expect(result).toContain("never_expires: Never Expires (1 fields)")
 })
 
 test("get_status on an unknown dataset returns an error", async () => {
-  const result = await datasetInfoTool.execute({
-    action: "get_status",
-    dataset: "nope"
-  })
+  const result = await datasetInfoTool.execute(
+    {
+      action: "get_status",
+      dataset: "nope"
+    },
+    ctx()
+  )
   expect(result).toBe("Unknown dataset: nope")
 })
 
 test("get_status on a fresh dataset lists all fields unanswered", async () => {
-  const result = await datasetInfoTool.execute({
-    action: "get_status",
-    dataset: "onboarding"
-  })
+  const result = await datasetInfoTool.execute(
+    {
+      action: "get_status",
+      dataset: "onboarding"
+    },
+    ctx()
+  )
   expect(result).toContain("Version 1.")
   expect(result).toContain("favorite_color")
   expect(result).toContain("notification_pref")
@@ -80,12 +85,12 @@ test("answer rejects a value not in the field's accepted list, without persistin
       field: "notification_pref",
       value: "carrier pigeon"
     },
-    { owner }
+    ctx(owner)
   )
   expect(result).toContain("isn't an accepted answer")
   expect(result).toContain("email, none, push")
 
-  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "onboarding" }, { owner })
+  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "onboarding" }, ctx(owner))
   expect(status).not.toContain("Already answered")
 })
 
@@ -97,7 +102,7 @@ test("answer accepts a case-insensitive match against the accepted list", async 
       field: "notification_pref",
       value: "EMAIL"
     },
-    { owner: "test:case-insensitive" }
+    ctx("test:case-insensitive")
   )
   expect(result).toContain("Already answered")
   expect(result).toContain("notification_pref: EMAIL")
@@ -106,7 +111,7 @@ test("answer accepts a case-insensitive match against the accepted list", async 
 test("answer on an unknown field returns an error", async () => {
   const result = await datasetInfoTool.execute(
     { action: "answer", dataset: "onboarding", field: "nope", value: "x" },
-    { owner: "test:unknown-field" }
+    ctx("test:unknown-field")
   )
   expect(result).toBe("Unknown field: nope")
 })
@@ -120,9 +125,9 @@ test("answering every field marks the version complete", async () => {
       field: "name",
       value: "Andras"
     },
-    { owner }
+    ctx(owner)
   )
-  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, { owner })
+  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, ctx(owner))
   expect(status).toContain("complete, never expires")
 })
 
@@ -135,9 +140,9 @@ test("a complete, non-stale version is resumed as complete rather than restarted
       field: "name",
       value: "Andras"
     },
-    { owner }
+    ctx(owner)
   )
-  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, { owner })
+  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, ctx(owner))
   expect(status).toContain("Version 1.")
   expect(status).toContain("complete, never expires")
   expect(status).not.toContain("started fresh version")
@@ -152,11 +157,11 @@ test("start_new_version explicitly bumps the version without waiting for stalene
       field: "name",
       value: "Andras"
     },
-    { owner }
+    ctx(owner)
   )
-  const result = await datasetInfoTool.execute({ action: "start_new_version", dataset: "never_expires" }, { owner })
+  const result = await datasetInfoTool.execute({ action: "start_new_version", dataset: "never_expires" }, ctx(owner))
   expect(result).toContain("started fresh version 2")
-  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, { owner })
+  const status = await datasetInfoTool.execute({ action: "get_status", dataset: "never_expires" }, ctx(owner))
   // get_status resolves the latest version independently of start_new_version's (not-yet-persisted) bump — since no answer was saved under version 2 yet, version 1 (complete, never expiring) is still what's active.
   expect(status).toContain("complete, never expires")
 })
@@ -169,15 +174,15 @@ test("owner scoping: two owners answering the same dataset don't see each other'
       field: "favorite_color",
       value: "blue"
     },
-    { owner: "telegram:1" }
+    ctx("telegram:1")
   )
   const statusForOwner1 = await datasetInfoTool.execute(
     { action: "get_status", dataset: "onboarding" },
-    { owner: "telegram:1" }
+    ctx("telegram:1")
   )
   const statusForOwner2 = await datasetInfoTool.execute(
     { action: "get_status", dataset: "onboarding" },
-    { owner: "telegram:2" }
+    ctx("telegram:2")
   )
   expect(statusForOwner1).toContain("favorite_color: blue")
   expect(statusForOwner2).not.toContain("Already answered")

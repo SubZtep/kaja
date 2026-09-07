@@ -24,13 +24,10 @@ writeFileSync(
 base_url = "http://localhost"
 api_key = "x"
 
-[models.chat-default]
+[models.chat]
 model = "x"
 task = "chat"
 provider = "default"
-
-[active]
-chat = "chat-default"
 `
 )
 
@@ -45,7 +42,7 @@ const {
   switchPersonaTool,
   tool
 } = await import("../../../lib/agent/agents")
-const { saveMemory } = await import("../../../lib/memory/store")
+const { peekStore, saveMemory } = await import("../../../lib/memory/store")
 const { rememberNoteTool } = await import("@kaja/nasi")
 
 // config()'s parsed *contents* are cached in-process on top of the path resolution (see lib/config.ts) — invalidate before every test in case another test file's process-wide cache last populated it with a different config (e.g. a real location block, triggering a real network call from run()).
@@ -118,7 +115,8 @@ function fakeAgent(
     name: "Tester",
     model: "fake-model",
     tools: [askUserTool, runCommandTool, ...extraTools],
-    client: fakeClient(script, opts)
+    client: fakeClient(script, opts),
+    store: peekStore()
   } as unknown as Agent
 }
 

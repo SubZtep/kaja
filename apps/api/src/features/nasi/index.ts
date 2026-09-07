@@ -1,15 +1,14 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { error as logError } from "@kaja/logger"
-import { deleteSessionRow, listSessions, loadSessionRow, withStorePath } from "@kaja/nasi"
 import { NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
+import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
 import { openUserTurnStream, runUserTurn } from "./chat"
-import { withUserLock } from "./mutex"
-import { userSqlitePath } from "./paths"
+import { createPostgresStore } from "./pg-store"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
 
@@ -42,7 +41,7 @@ nasiRoutes.openapi(turnRoute, async c => {
   if (!user) return unauthorized(c)
   const body = c.req.valid("json")
   try {
-    const result = await withUserLock(user.id, () => runUserTurn(user.id, body))
+    const result = await runUserTurn(user.id, body)
     return c.json(result)
   } catch (error) {
     if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
@@ -78,18 +77,16 @@ nasiRoutes.post("/turn/stream", async c => {
     stream.onAbort(() => clearInterval(heartbeat))
 
     try {
-      await withUserLock(user.id, async () => {
-        const gen = await openUserTurnStream(user.id, body)
-        let next = await gen.next()
-        while (!next.done) {
-          const name = SSE_EVENT_NAME[next.value.type]
-          if (name) await stream.writeSSE({ event: name, data: JSON.stringify(next.value) })
-          next = await gen.next()
-        }
-        await stream.writeSSE({
-          event: "done",
-          data: JSON.stringify({ session: next.value.session, status: next.value.status })
-        })
+      const gen = openUserTurnStream(user.id, body)
+      let next = await gen.next()
+      while (!next.done) {
+        const name = SSE_EVENT_NAME[next.value.type]
+        if (name) await stream.writeSSE({ event: name, data: JSON.stringify(next.value) })
+        next = await gen.next()
+      }
+      await stream.writeSSE({
+        event: "done",
+        data: JSON.stringify({ session: next.value.session, status: next.value.status })
       })
     } catch (error) {
       const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
@@ -143,7 +140,7 @@ const listRoute = createRoute({
 nasiRoutes.openapi(listRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  const sessions = await withStorePath(userSqlitePath(user.id), listSessions)
+  const sessions = await createPostgresStore(pool, user.id).listSessions()
   return c.json({
     sessions: sessions.map(s => ({
       id: s.id,
@@ -173,7 +170,7 @@ nasiRoutes.openapi(getRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { id } = c.req.valid("param")
-  const row = await withStorePath(userSqlitePath(user.id), () => loadSessionRow(id))
+  const row = await createPostgresStore(pool, user.id).loadSession(id)
   if (!row) return notFound(c, "Session not found")
   return c.json({
     id: row.id,
@@ -203,7 +200,7 @@ nasiRoutes.openapi(deleteRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { id } = c.req.valid("param")
-  const ok = await withStorePath(userSqlitePath(user.id), () => deleteSessionRow(id))
+  const ok = await createPostgresStore(pool, user.id).deleteSession(id)
   if (!ok) return notFound(c, "Session not found")
   return c.json({ ok: true })
 })

@@ -20,25 +20,15 @@ export {
 
 const modelsFile = await loadModelsFile()
 const { zen } = await services()
-export const isFreeChat = !modelsFile.active.chat
-let chatModel: CliResolvedModel
-if (modelsFile.active.chat) {
-  const resolved = findModelById(resolveModels(modelsFile), modelsFile.active.chat, "chat")
-  if (!resolved) {
-    throw new Error(
-      `models.toml's [active].chat names model id "${modelsFile.active.chat}", which isn't in [models.*] (or isn't a chat-task entry)`
-    )
-  }
-  chatModel = resolved
-} else {
-  chatModel = {
-    id: FREE_CHAT_PROVIDER,
-    model: FREE_CHAT_MODEL_ID,
-    task: "chat",
-    baseUrl: FREE_CHAT_BASE_URL,
-    apiKey: FREE_CHAT_API_KEY,
-    provider: FREE_CHAT_PROVIDER
-  }
+const chatEntry = findModelById(resolveModels(modelsFile), "chat", "chat")
+export const isFreeChat = !chatEntry
+const chatModel: CliResolvedModel = chatEntry ?? {
+  id: FREE_CHAT_PROVIDER,
+  model: FREE_CHAT_MODEL_ID,
+  task: "chat",
+  baseUrl: FREE_CHAT_BASE_URL,
+  apiKey: FREE_CHAT_API_KEY,
+  provider: FREE_CHAT_PROVIDER
 }
 
 export const chatModelId = chatModel.model

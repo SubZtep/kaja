@@ -15,11 +15,9 @@ import type { AudioSink } from "./audio"
 
 async function resolveTtsSettings(personaModels?: PersonaModels) {
   const { tts } = await config()
-  const resolved = resolveActiveModel(await loadModelsFile(), "text-to-speech", personaModels)
+  const resolved = resolveActiveModel(await loadModelsFile(), "tts", personaModels)
   if (!resolved || !tts?.voice) {
-    throw new Error(
-      "No TTS model/voice configured — set [active].text-to-speech in models.toml and tts.voice in settings.toml"
-    )
+    throw new Error("No TTS model/voice configured — set [models.tts] in models.toml and tts.voice in settings.toml")
   }
   return {
     model: resolved.model,

@@ -1,13 +1,8 @@
 import { normalizeAnswer } from "@kaja/schema/cli"
 import { DATASET_INFO_TOOL, LOCAL_OWNER_CTX, tool } from "../../agent/agent"
 import { loadDataset, loadDatasets } from "../../personas"
-import {
-  latestDatasetVersion,
-  loadDatasetAnswers,
-  loadDatasetVersionCompletedAt,
-  markDatasetVersionComplete,
-  saveDatasetAnswer
-} from "../../store"
+import { requireStore } from "../../store"
+import type { NasiStore } from "../../store/types"
 
 type Args =
   | { action: "list_datasets" }
@@ -25,19 +20,20 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
  * version).
  */
 async function resolveActiveVersion(
+  store: NasiStore,
   topic: string,
   owner: string | null,
   revalidateAfterDays: number | undefined,
   totalFields: number
 ) {
-  const latest = await latestDatasetVersion(topic, owner)
+  const latest = await store.latestDatasetVersion(topic, owner)
   if (latest === 0) return { version: 1, justStarted: false, answers: [] }
 
-  const answers = await loadDatasetAnswers(topic, owner, latest)
+  const answers = await store.loadDatasetAnswers(topic, owner, latest)
   const complete = answers.length >= totalFields
   if (!complete) return { version: latest, justStarted: false, answers }
 
-  const completedAt = await loadDatasetVersionCompletedAt(topic, owner, latest)
+  const completedAt = await store.loadDatasetVersionCompletedAt(topic, owner, latest)
   const stale =
     completedAt !== undefined &&
     revalidateAfterDays !== undefined &&
@@ -94,10 +90,11 @@ async function handleListDatasets(): Promise<string> {
     .join("\n")
 }
 
-async function handleGetStatus(datasetId: string, owner: string | null): Promise<string> {
+async function handleGetStatus(store: NasiStore, datasetId: string, owner: string | null): Promise<string> {
   const dataset = await loadDataset(datasetId)
   if (!dataset) return `Unknown dataset: ${datasetId}`
   const { version, justStarted, answers } = await resolveActiveVersion(
+    store,
     datasetId,
     owner,
     dataset.revalidateAfterDays,
@@ -106,7 +103,11 @@ async function handleGetStatus(datasetId: string, owner: string | null): Promise
   return formatStatus(dataset, version, answers, justStarted)
 }
 
-async function handleAnswer(args: Extract<Args, { action: "answer" }>, owner: string | null): Promise<string> {
+async function handleAnswer(
+  store: NasiStore,
+  args: Extract<Args, { action: "answer" }>,
+  owner: string | null
+): Promise<string> {
   if (!args.field) return "Error: 'field' is required for answer."
   if (args.value === undefined) return "Error: 'value' is required for answer."
   const dataset = await loadDataset(args.dataset)
@@ -125,26 +126,28 @@ async function handleAnswer(args: Extract<Args, { action: "answer" }>, owner: st
   }
 
   const { version, answers } = await resolveActiveVersion(
+    store,
     args.dataset,
     owner,
     dataset.revalidateAfterDays,
     dataset.fields.length
   )
-  await saveDatasetAnswer(args.dataset, owner, version, field.name, args.value)
+  await store.saveDatasetAnswer(args.dataset, owner, version, field.name, args.value)
 
   const updatedAnswers = [
     ...answers.filter(a => a.field !== field.name),
     { field: field.name, value: args.value, answeredAt: "" }
   ]
-  if (updatedAnswers.length >= dataset.fields.length) await markDatasetVersionComplete(args.dataset, owner, version)
+  if (updatedAnswers.length >= dataset.fields.length)
+    await store.markDatasetVersionComplete(args.dataset, owner, version)
 
   return formatStatus(dataset, version, updatedAnswers, false)
 }
 
-async function handleStartNewVersion(datasetId: string, owner: string | null): Promise<string> {
+async function handleStartNewVersion(store: NasiStore, datasetId: string, owner: string | null): Promise<string> {
   const dataset = await loadDataset(datasetId)
   if (!dataset) return `Unknown dataset: ${datasetId}`
-  const latest = await latestDatasetVersion(datasetId, owner)
+  const latest = await store.latestDatasetVersion(datasetId, owner)
   const version = latest + 1
   return formatStatus(dataset, version, [], true)
 }
@@ -212,11 +215,11 @@ export const datasetInfoTool = tool<Args>({
       case "list_datasets":
         return handleListDatasets()
       case "get_status":
-        return handleGetStatus(args.dataset, ctx.owner)
+        return handleGetStatus(requireStore(ctx), args.dataset, ctx.owner)
       case "answer":
-        return handleAnswer(args, ctx.owner)
+        return handleAnswer(requireStore(ctx), args, ctx.owner)
       case "start_new_version":
-        return handleStartNewVersion(args.dataset, ctx.owner)
+        return handleStartNewVersion(requireStore(ctx), args.dataset, ctx.owner)
       default:
         return `Unknown action: ${(args as { action: string }).action}`
     }

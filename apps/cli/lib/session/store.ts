@@ -1,51 +1,34 @@
-import {
-  createSessionRow as nasiCreate,
-  deleteSessionRow as nasiDelete,
-  loadPromptHistory as nasiHistory,
-  loadLatestSessionRow as nasiLatest,
-  loadLatestSessionRowForOwner as nasiLatestOwner,
-  listSessions as nasiList,
-  loadSessionRow as nasiLoad,
-  updateSessionRow as nasiUpdate
-} from "@kaja/nasi"
-import { getDb } from "../memory/store"
+import type { NasiStore } from "@kaja/nasi"
+import { getStore } from "../memory/store"
 
-export async function createSessionRow(data: Parameters<typeof nasiCreate>[0]): Promise<string> {
-  await getDb()
-  return nasiCreate(data)
+export async function createSessionRow(...args: Parameters<NasiStore["createSession"]>) {
+  return (await getStore()).createSession(...args)
 }
 
-export async function updateSessionRow(id: string, data: Parameters<typeof nasiUpdate>[1]) {
-  await getDb()
-  return nasiUpdate(id, data)
+export async function updateSessionRow(...args: Parameters<NasiStore["updateSession"]>) {
+  return (await getStore()).updateSession(...args)
 }
 
 export async function loadSessionRow(id: string) {
-  await getDb()
-  return nasiLoad(id)
+  return (await getStore()).loadSession(id)
 }
 
 export async function loadLatestSessionRow() {
-  await getDb()
-  return nasiLatest()
+  return (await getStore()).loadLatestSession(null)
 }
 
 export async function loadLatestSessionRowForOwner(owner: string) {
-  await getDb()
-  return nasiLatestOwner(owner)
+  return (await getStore()).loadLatestSession(owner)
 }
 
 export async function deleteSessionRow(id: string) {
-  await getDb()
-  return nasiDelete(id)
+  return (await getStore()).deleteSession(id)
 }
 
 export async function listSessions() {
-  await getDb()
-  return nasiList()
+  return (await getStore()).listSessions()
 }
 
 export async function loadPromptHistory(limit = 100) {
-  await getDb()
-  return nasiHistory(limit)
+  return (await getStore()).loadPromptHistory(limit)
 }

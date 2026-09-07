@@ -4,24 +4,15 @@ import type OpenAI from "openai"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
-import { createOpenAIClient } from "./models/client"
-import {
-  createSessionRow,
-  loadSessionRow,
-  openStore,
-  updateSessionRow,
-  withStorePath,
-  withStorePathGenerator
-} from "./store"
-import { createTools, type NasiProfile } from "./tools/registry"
-
-const HOSTED_ENVIRONMENT =
-  "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP. You have memory, web tools, and personas."
+import type { Tool } from "./agent/tools"
+import type { NasiStore } from "./store/types"
+import { createTools } from "./tools/registry"
 
 export type NasiOpenOptions = {
-  dbPath: string
-  profile: NasiProfile
+  store: NasiStore
   chat: { client: OpenAI; model: string }
+  /** Files, shell, MCP, and plugins. Default false. */
+  includeLocalTools?: boolean
   personas?: Persona[]
   promptContext?: PromptContext
   owner?: string | null
@@ -31,7 +22,12 @@ export type NasiTurnInput = NasiTurnRequest & {
   personaId?: string
 }
 
-const SKIPPED_EVENT_TYPES = new Set(["delta", "usage", "final", "tool_image", "display_image"])
+function lastOf<T extends AgentEvent["type"]>(events: AgentEvent[], type: T) {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const event = events[i]!
+    if (event.type === type) return event as Extract<AgentEvent, { type: T }>
+  }
+}
 
 function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | undefined {
   switch (event.type) {
@@ -55,34 +51,24 @@ function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | 
 function stepsFromEvents(events: AgentEvent[], includeThinking: boolean): NasiStep[] {
   const steps: NasiStep[] = []
   for (const event of events) {
-    if (SKIPPED_EVENT_TYPES.has(event.type)) continue
     const step = stepFromEvent(event, includeThinking)
     if (step) steps.push(step)
   }
   return steps
 }
 
-function statusFromEvents(session: Session, events: AgentEvent[]): NasiTurnStatus {
+function statusFromEvents(session: Session): NasiTurnStatus {
   if (session.pendingAskUserId) return "needs_input"
   if (session.pendingRunCommandId) return "needs_approval"
-  const last = [...events].reverse().find(e => e.type === "final" || e.type === "ask_user")
-  if (last?.type === "ask_user" && session.pendingAskUserId) return "needs_input"
   return "completed"
 }
 
 function messageFromEvents(events: AgentEvent[], status: NasiTurnStatus): string {
-  if (status === "needs_input") {
-    const ask = [...events].reverse().find(e => e.type === "ask_user")
-    if (ask?.type === "ask_user") return ask.question
-  }
-  const fin = [...events].reverse().find(e => e.type === "final")
-  if (fin?.type === "final") return fin.content ?? ""
-  // Local `?` backstop yields ask_user without pendingAskUserId — still the visible reply.
-  const ask = [...events].reverse().find(e => e.type === "ask_user")
-  if (ask?.type === "ask_user") return ask.question
-  const msg = [...events].reverse().find(e => e.type === "message")
-  if (msg?.type === "message") return msg.content
-  return ""
+  if (status === "needs_input") return lastOf(events, "ask_user")?.question ?? ""
+  const fin = lastOf(events, "final")
+  if (fin) return fin.content ?? ""
+  // Trailing-`?` backstop yields ask_user without pendingAskUserId — still the visible reply.
+  return lastOf(events, "ask_user")?.question ?? lastOf(events, "message")?.content ?? ""
 }
 
 type LoadedTurn = {
@@ -111,10 +97,8 @@ async function persistTurn(
     session: loaded.session,
     events: persistedEvents
   }
-  if (!loaded.sessionId) {
-    return createSessionRow({ ...row, title: loaded.title })
-  }
-  await updateSessionRow(loaded.sessionId, row)
+  if (!loaded.sessionId) return opts.store.createSession({ ...row, title: loaded.title })
+  await opts.store.updateSession(loaded.sessionId, row)
   return loaded.sessionId
 }
 
@@ -124,10 +108,8 @@ function responseFromEvents(
   turnEvents: AgentEvent[],
   includeThinking: boolean
 ): NasiTurnResponse {
-  const status = statusFromEvents(session, turnEvents)
-  const message = messageFromEvents(turnEvents, status)
-  const steps = stepsFromEvents(turnEvents, includeThinking)
-  const usageEvent = [...turnEvents].reverse().find(e => e.type === "usage")
+  const status = statusFromEvents(session)
+  const usage = lastOf(turnEvents, "usage")
   const thinking = includeThinking
     ? turnEvents
         .filter(e => e.type === "reasoning")
@@ -138,29 +120,31 @@ function responseFromEvents(
   return {
     session: sessionId,
     status,
-    message,
-    steps,
+    message: messageFromEvents(turnEvents, status),
+    steps: stepsFromEvents(turnEvents, includeThinking),
     ...(thinking ? { thinking } : {}),
-    ...(usageEvent?.type === "usage"
-      ? { usage: { promptTokens: usageEvent.promptTokens, model: usageEvent.model } }
-      : {})
+    ...(usage ? { usage: { promptTokens: usage.promptTokens, model: usage.model } } : {})
   }
 }
 
 export class Nasi {
   readonly opts: NasiOpenOptions
+  private readonly tools: Tool<any>[]
 
-  constructor(opts: NasiOpenOptions) {
+  private constructor(opts: NasiOpenOptions, tools: Tool<any>[]) {
     this.opts = opts
-    openStore(opts.dbPath)
+    this.tools = tools
   }
 
   static async open(opts: NasiOpenOptions) {
-    return new Nasi(opts)
+    const { tools } = await createTools({
+      includeLocalTools: opts.includeLocalTools,
+      deps: { chat: opts.chat }
+    })
+    return new Nasi(opts, tools)
   }
 
   private async loadTurn(input: NasiTurnInput): Promise<LoadedTurn> {
-    const { tools } = await createTools({ profile: this.opts.profile, deps: { chat: this.opts.chat } })
     const personas = this.opts.personas ?? []
     const persona = personas.find(p => p.id === input.personaId) ?? personas[0]
 
@@ -170,9 +154,9 @@ export class Nasi {
     let title = input.message.split(/[\r\n]/)[0]!.slice(0, 60)
 
     if (sessionId) {
-      const row = await loadSessionRow(sessionId)
-      // Also rejects a session id that belongs to a different owner within the same dbPath — e.g. two widget
-      // visitors sharing one account's SQLite file must never resume each other's conversation by guessing/observing a session id.
+      const row = await this.opts.store.loadSession(sessionId)
+      // Also rejects a session id that belongs to a different owner in the same store — e.g. two widget
+      // visitors sharing one account must never resume each other's conversation by guessing/observing a session id.
       if (!row || (row.owner ?? null) !== (this.opts.owner ?? null)) {
         const err = new Error("session_not_found")
         err.name = "NasiSessionNotFound"
@@ -186,32 +170,23 @@ export class Nasi {
     const agent = new Agent({
       model: this.opts.chat.model,
       client: this.opts.chat.client,
-      tools,
+      tools: this.tools,
       personas,
       personaId: persona?.id,
       instructions: persona?.instructions,
       sampling: samplingOf(persona),
-      promptContext: {
-        environment: this.opts.profile === "hosted" ? HOSTED_ENVIRONMENT : this.opts.promptContext?.environment,
-        ...this.opts.promptContext
-      }
+      promptContext: this.opts.promptContext ?? {},
+      store: this.opts.store
     })
 
     return { agent, session, sessionId, events, title }
   }
 
   async turnBuffered(input: NasiTurnInput): Promise<NasiTurnResponse> {
-    return withStorePath(this.opts.dbPath, async () => {
-      const loaded = await this.loadTurn(input)
-
-      const turnEvents: AgentEvent[] = []
-      for await (const event of run(loaded.agent, input.message, loaded.session, this.opts.owner ?? null)) {
-        turnEvents.push(event)
-      }
-
-      const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
-      return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
-    })
+    const gen = this.turn(input)
+    let next = await gen.next()
+    while (!next.done) next = await gen.next()
+    return next.value
   }
 
   /**
@@ -220,7 +195,7 @@ export class Nasi {
    * response `turnBuffered` would have, once the session is persisted.
    */
   turn(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
-    return withStorePathGenerator(this.opts.dbPath, this.turnInner(input))
+    return this.turnInner(input)
   }
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
@@ -234,15 +209,5 @@ export class Nasi {
 
     const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
     return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
-  }
-}
-
-export function clientFromResolved(resolved: { baseUrl: string; apiKey: string | null; model: string }) {
-  return {
-    client: createOpenAIClient({
-      baseURL: resolved.baseUrl,
-      apiKey: resolved.apiKey ?? "unused"
-    }),
-    model: resolved.model
   }
 }

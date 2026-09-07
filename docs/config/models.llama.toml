@@ -1,9 +1,9 @@
-# Kaja models — [models.<id>] entries each pick a [providers.*] table with
-# `provider = "<name>"`. The id (e.g. "fast-chat") is how [active].<task> and
-# a persona's [models].<task> pick this entry; `model` is the literal name
-# sent to the provider's API. Provider API keys live in secrets.toml's
-# [providers.<name>] tables, keyed the same way — llama.cpp's server doesn't
-# need one.
+# Kaja models — [models.<task>] entries each pick a [providers.*] table with
+# `provider = "<name>"`. The id must match the task name (e.g. "chat"); a
+# persona's [models].<task> can pin a different model id if one exists.
+# `model` is the literal name sent to the provider's API. Provider API keys
+# live in secrets.toml's [providers.<name>] tables, keyed the same way —
+# llama.cpp's server doesn't need one.
 
 [providers.llama]
 base_url = "http://localhost:8080/v1"
@@ -11,16 +11,17 @@ base_url = "http://localhost:8080/v1"
 [providers.xai]
 base_url = "https://api.x.ai/v1"
 
-[models.fast-chat]
+[models.chat]
 model = "mistralai/Ministral-3-3B-Reasoning-2512-GGUF:Q4_K_M"
 task = "chat"
 provider = "llama"
 
-[models.default-image-generation]
+[models.image-generation]
 model = "grok-imagine-image"
 task = "image-generation"
 provider = "xai"
 
-# The model actually in use for each task — one model id per task, all optional.
-[active]
-chat = "fast-chat"
+# [models.stt]
+# model = "<provider-specific model name>"
+# task = "stt"
+# provider = "<name>"

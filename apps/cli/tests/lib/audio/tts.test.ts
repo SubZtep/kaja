@@ -3,7 +3,7 @@
 import { afterEach, expect, test } from "bun:test"
 import type { AudioSink } from "../../../lib/audio/audio"
 
-// [active]."text-to-speech"/tts.voice are mandatory config now (no code-side default), so this file needs its own isolated config with them set — same pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
+// [models.tts]/tts.voice are mandatory config now (no code-side default), so this file needs its own isolated config with them set — same pattern as tests/lib/embeddings.test.ts / tests/tools/rerank.test.ts.
 process.env.XDG_CONFIG_HOME = `${import.meta.dir}/../../.tmp-test-xdg-config-tts`
 
 const { saveConfig } = await import("../../../lib/config/config")
@@ -18,24 +18,20 @@ await Bun.write(
 base_url = "http://localhost/v1"
 api_key = "llm-key"
 
-[models.chat-default]
+[models.chat]
 model = "test-model"
 task = "chat"
 provider = "default"
 
-[models.text-to-speech-default]
+[models.tts]
 model = "test-tts-model"
-task = "text-to-speech"
+task = "tts"
 provider = "default"
 
-[models.text-to-speech-alt]
+[models.tts-alt]
 model = "test-tts-model-alt"
-task = "text-to-speech"
+task = "tts"
 provider = "default"
-
-[active]
-chat = "chat-default"
-"text-to-speech" = "text-to-speech-default"
 `
 )
 
@@ -146,18 +142,18 @@ test("a failed synthesis does not wedge the queue", async () => {
   expect(playedChunks).toBeGreaterThan(0)
 })
 
-test("a persona's text-to-speech pin overrides [active].text-to-speech", async () => {
+test("a persona's tts pin overrides [models.tts]", async () => {
   let sentModel: string | undefined
   globalThis.fetch = (async (_url: string, init: { body: string }) => {
     sentModel = JSON.parse(init.body).model
     return new Response(new Uint8Array([0, 0, 0, 0]))
   }) as unknown as typeof fetch
 
-  await fetchSpeech("hi", { "text-to-speech": "text-to-speech-alt" })
+  await fetchSpeech("hi", { tts: "tts-alt" })
   expect(sentModel).toBe("test-tts-model-alt")
 })
 
-test("with no persona pin, fetchSpeech uses [active].text-to-speech", async () => {
+test("with no persona pin, fetchSpeech uses [models.tts]", async () => {
   let sentModel: string | undefined
   globalThis.fetch = (async (_url: string, init: { body: string }) => {
     sentModel = JSON.parse(init.body).model

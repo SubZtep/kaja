@@ -6,6 +6,7 @@ import {
   listAllDatasetAnswers,
   listDatasetVersionsSummary,
   loadMemory,
+  peekStore,
   resolveMemoryDbPath,
   saveMemory
 } from "../memory/store"
@@ -86,7 +87,6 @@ export function startWebServer(port: number) {
         if (!(await configExists())) {
           return html(unconfiguredPersonasPage())
         }
-        // @kaja/nasi's memory/dataset-info tools need setActiveStorePath() called before use (throws "nasi store is not open" otherwise) — loadMemory() already resolves the CLI's configured db path and sets it as a side effect, same as subcommands/run.tsx does at startup.
         await loadMemory()
         const [
           { Agent, askUserTool, buildSystemPrompt, runCommandTool, switchPersonaTool },
@@ -109,6 +109,7 @@ export function startWebServer(port: number) {
             persona,
             systemPrompt: await buildSystemPrompt(
               new Agent({
+                store: peekStore(),
                 model:
                   (persona.models?.chat &&
                     models.find(m => m.id === persona.models!.chat && m.task === "chat")?.model) ??

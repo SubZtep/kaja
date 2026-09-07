@@ -1,6 +1,7 @@
 import type { Persona, SamplingParams } from "@kaja/schema/cli"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import type OpenAI from "openai"
+import type { NasiStore } from "../store/types"
 import type { GeoLocation } from "./geo"
 import { samplingOf } from "./persona"
 import { type Tool, tool } from "./tools"
@@ -9,7 +10,7 @@ export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResul
 
 /** Host-injected bits for system prompt assembly — never read from settings.toml. */
 export type PromptContext = {
-  /** Override the default OS/home line. Hosted should describe the hosted environment. */
+  /** Override the default OS/home line. Callers that are not a user machine should describe their environment. */
   environment?: string
   location?: GeoLocation
   loadLocation?: () => Promise<GeoLocation | undefined>
@@ -39,6 +40,7 @@ export class Agent {
   promptContext: PromptContext
   /** Builds a client for a resolved model. Required for persona-pinned model swaps. */
   createClient?: (model: CliResolvedModel) => OpenAI
+  store?: NasiStore
 
   constructor(config: {
     name?: string
@@ -53,6 +55,7 @@ export class Agent {
     personaId?: string
     promptContext?: PromptContext
     createClient?: (model: CliResolvedModel) => OpenAI
+    store?: NasiStore
   }) {
     this.name = config.name ?? "Assistant"
     this.model = config.model
@@ -66,6 +69,7 @@ export class Agent {
     this.personaId = config.personaId
     this.promptContext = config.promptContext ?? {}
     this.createClient = config.createClient
+    this.store = config.store
   }
 
   /** Point the agent at another model, swapping the client when {@link createClient} is set. */

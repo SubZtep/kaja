@@ -2,7 +2,6 @@ import { homedir } from "node:os"
 import type { Persona } from "@kaja/schema/cli"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { loadDataset as defaultLoadDataset } from "../personas"
-import { loadMemory } from "../store/memory"
 import {
   type Agent,
   ASK_USER_TOOL,
@@ -100,7 +99,9 @@ async function buildStickyBlock(agent: Agent, hasMemory: boolean): Promise<strin
   const ctx = agent.promptContext ?? {}
   const loadSticky =
     ctx.loadStickyNotes ??
-    (hasMemory ? async () => Object.entries(await loadMemory()).filter(([, note]) => note.sticky) : undefined)
+    (hasMemory && agent.store
+      ? async () => Object.entries(await agent.store!.loadMemory()).filter(([, note]) => note.sticky)
+      : undefined)
   const stickyNotes = hasMemory && loadSticky ? await loadSticky() : []
   if (stickyNotes.length === 0) return undefined
   return `Known context about this user/project (from persistent memory):\n${stickyNotes

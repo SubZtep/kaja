@@ -18,17 +18,16 @@ const DATA: ResolvedModelsFile = {
     speaches: { base_url: "http://localhost:8000" }
   },
   models: {
-    "fast-chat": { model: "accounts/example/models/chat", task: "chat", provider: "default" },
+    chat: { model: "accounts/example/models/chat", task: "chat", provider: "default" },
     "reasoning-chat": { model: "accounts/example/models/reasoning", task: "chat", provider: "default" },
-    "default-stt": { model: "Systran/faster-whisper", task: "speech-to-text", provider: "speaches" }
-  },
-  active: { chat: "fast-chat", "speech-to-text": "default-stt" }
+    stt: { model: "Systran/faster-whisper", task: "stt", provider: "speaches" }
+  }
 }
 
 test("resolveModels flattens each models.toml entry with its provider's credentials", () => {
   expect(resolveModels(DATA)).toEqual([
     {
-      id: "fast-chat",
+      id: "chat",
       model: "accounts/example/models/chat",
       task: "chat",
       baseUrl: "https://api.example.test/v1",
@@ -44,9 +43,9 @@ test("resolveModels flattens each models.toml entry with its provider's credenti
       provider: "default"
     },
     {
-      id: "default-stt",
+      id: "stt",
       model: "Systran/faster-whisper",
-      task: "speech-to-text",
+      task: "stt",
       baseUrl: "http://localhost:8000",
       apiKey: undefined,
       provider: "speaches"
@@ -55,38 +54,38 @@ test("resolveModels flattens each models.toml entry with its provider's credenti
 })
 
 test("findModelById looks up by id, optionally constrained to a task", () => {
-  expect(findModelById(resolveModels(DATA), "fast-chat")?.model).toBe("accounts/example/models/chat")
-  expect(findModelById(resolveModels(DATA), "fast-chat", "chat")?.model).toBe("accounts/example/models/chat")
-  expect(findModelById(resolveModels(DATA), "fast-chat", "embedding")).toBeUndefined()
+  expect(findModelById(resolveModels(DATA), "chat")?.model).toBe("accounts/example/models/chat")
+  expect(findModelById(resolveModels(DATA), "chat", "chat")?.model).toBe("accounts/example/models/chat")
+  expect(findModelById(resolveModels(DATA), "chat", "embedding")).toBeUndefined()
   expect(findModelById(resolveModels(DATA), undefined)).toBeUndefined()
   expect(findModelById(resolveModels(DATA), "nope")).toBeUndefined()
 })
 
-test("resolveActiveModel with no personaModels falls back to [active].<task>", () => {
-  expect(resolveActiveModel(DATA, "chat")?.id).toBe("fast-chat")
-  expect(resolveActiveModel(DATA, "speech-to-text")?.id).toBe("default-stt")
+test("resolveActiveModel with no personaModels falls back to the [models.<task>] entry", () => {
+  expect(resolveActiveModel(DATA, "chat")?.id).toBe("chat")
+  expect(resolveActiveModel(DATA, "stt")?.id).toBe("stt")
   expect(resolveActiveModel(DATA, "embedding")).toBeUndefined()
 })
 
-test("resolveActiveModel: a persona's pin for a task wins over [active].<task>", () => {
+test("resolveActiveModel: a persona's pin for a task wins over the [models.<task>] entry", () => {
   const resolved = resolveActiveModel(DATA, "chat", { chat: "reasoning-chat" })
   expect(resolved?.id).toBe("reasoning-chat")
 })
 
-test("resolveActiveModel: an absent persona pin for a task falls back to [active].<task>", () => {
+test("resolveActiveModel: an absent persona pin for a task falls back to the [models.<task>] entry", () => {
   const resolved = resolveActiveModel(DATA, "chat", { embedding: "reasoning-chat" })
-  expect(resolved?.id).toBe("fast-chat")
+  expect(resolved?.id).toBe("chat")
 })
 
-test("resolveActiveModel: a persona pin naming an unknown id soft-falls-back to [active].<task>", () => {
+test("resolveActiveModel: a persona pin naming an unknown id soft-falls-back to the [models.<task>] entry", () => {
   const resolved = resolveActiveModel(DATA, "chat", { chat: "does-not-exist" })
-  expect(resolved?.id).toBe("fast-chat")
+  expect(resolved?.id).toBe("chat")
 })
 
-test("resolveActiveModel: a persona pin whose task doesn't match soft-falls-back to [active].<task>", () => {
-  // "default-stt" exists but is a speech-to-text entry, not chat.
-  const resolved = resolveActiveModel(DATA, "chat", { chat: "default-stt" })
-  expect(resolved?.id).toBe("fast-chat")
+test("resolveActiveModel: a persona pin whose task doesn't match soft-falls-back to the [models.<task>] entry", () => {
+  // "stt" exists but is an stt entry, not chat.
+  const resolved = resolveActiveModel(DATA, "chat", { chat: "stt" })
+  expect(resolved?.id).toBe("chat")
 })
 
 // Other test files sharing this bun test process may have already cached secrets() with their
@@ -105,7 +104,7 @@ test("no models.toml file: loads no models without writing one", async () => {
   setConfigDirOverride(dir)
 
   const data = await loadModelsFile()
-  expect(data).toEqual({ providers: {}, models: {}, active: {} })
+  expect(data).toEqual({ providers: {}, models: {} })
   expect(await Bun.file(getModelsPath()).exists()).toBe(false)
 })
 

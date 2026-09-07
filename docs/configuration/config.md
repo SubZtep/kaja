@@ -31,7 +31,7 @@ Fields:
 
 Notes:
 
-- To enable TTS/STT, set `models.toml`'s `[active]."text-to-speech"`/`[active]."speech-to-text"` and add a `stt`/`tts` block in `settings.toml` (see the Voice page).
+- To enable TTS/STT, add a `[models.tts]`/`[models.stt]` entry to `models.toml` and a `stt`/`tts` block in `settings.toml` (see the Voice page).
 - `settings.toml` is written by the setup wizard on first run; you can edit it manually afterwards.
 
 ## `kaja config fetch`
@@ -44,9 +44,6 @@ kaja config fetch
 
 Set `services.toml`'s `[api]` `baseUrl` (and `secrets.toml`'s `[api]` `token`, if required) before
 running this.
-On a fresh install, the fetched `models.toml`'s first `chat`-task model is also auto-filled
-into that same file's `[active].chat`, so a single fetch is enough to leave a fresh install bootable
-(a chat model you've deliberately chosen is never overwritten by a later fetch).
 
 ## `kaja config wipe`
 

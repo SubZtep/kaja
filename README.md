@@ -8,9 +8,9 @@
 > [!IMPORTANT]
 > Kaja is still evolving :speaker::godmode::loudspeaker:
 
-Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**, a **TanStack Start** web app, and a local **React Ink** terminal AI agent with Telegram support.
+Kaja is a full-stack AI playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a terminal AI agent (built with **React Ink**) that follows you into Telegram. All **TypeScript**, all **Bun**, one repo.
 
-## What’s in the Monorepo?
+## What's in the Monorepo?
 
 * **Apps** 
   + [`api`](./apps/api/) – Rest API, authentication, database migrations files, email delivery, and the embeddable widget bundle (`apps/api/widgets`)
@@ -22,58 +22,64 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
   + [`schema`](./packages/schema/) – Shared request schemas and types
   + [`shared`](./packages/shared/) – Shared utilities (pure functions)
 
----
+## Run on your machine
 
-## ![Kaja](https://kaja.io/monster.gif)
+Prepare:
 
-### Download build and install
+1. Be sure [Docker Compose](https://docs.docker.com/compose/install/) is installed
+2. Clone or download the source
 
-```bash
-# Install
-curl -fsSL https://kaja.io/install.sh | bash
+Pick one of two ways to run it:
 
-# Run
-kaja --help
+### Option A: everything in Docker
 
-# Uninstall
-rm ~/.local/bin/kaja
-```
-
-### Run in containers
-
-Fetch config[^1], clone or download the source in a terminal, and run with [compose config](compose.yaml):
+The [compose config](compose.yaml) defaults just work — open a terminal and start:
 
 ```bash
 docker compose up -d
 ```
 
-- Setup PostgreSQL and run database migration
-- Start MailDev SMTP server with web inbox
-- API
-- Web
+### Option B: Docker for the backing services only
 
-This is all the CLI needs to connect:
+Just want Postgres and MailDev in containers, with the API and web app running locally (hot reload, breakpoints, etc.)? Install dependencies and copy the env examples:
+
+```bash
+bun install
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+```
+
+Start PostgreSQL (runs the database migrations on first init) and MailDev:
+
+```bash
+docker compose up -d db mail
+```
+
+Then, in another terminal, start the API and web app together:
+
+```bash
+bun dev
+```
+
+### Talking to it from the CLI
+
+However you started the stack above, the CLI is the same:
 
 ```sh
 bun dev:cli
 ```
 
-### Configuration files
+By default it talks to the hosted API. To run the CLI's agent loop locally instead (own LLM provider, no hosted API), pass `--local` and fetch the config templates first:
 
-
-```ini
-~/.config/kaja/
-├─ datasets/*.json  # custom fields for personas to collect
-├─ personas/*.toml  # one behaviour per file
-├─ mcp.toml         # model context protocol servers
-├─ models.toml      # model catalog per provider
-├─ services.toml    # external service definitions and endpoints
-├─ secrets.toml     # user’s secret keys and tokens
-└─ settings.toml    # optional settings and app preferences"
+```sh
+bun dev:cli --local config fetch
+bun dev:cli --local
 ```
 
-### Documentation
+## Git hooks
 
-See [GitHub Pages](https://docs.kaja.io) for more details.
+It is recommended to run [git hooks](lefthook.toml) for common, easily forgotten helper tasks.
 
-[^1]: exec `kaja dev:cli --local config fetch`
+## Documentation
+
+Want the full story? Head to [GitHub Pages](https://docs.kaja.io).

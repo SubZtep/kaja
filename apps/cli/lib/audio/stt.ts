@@ -16,9 +16,9 @@ import { createAsyncQueue, SAMPLE_RATE } from "./audio"
 
 async function resolveSttSettings(personaModels?: PersonaModels) {
   const { stt } = await config()
-  const resolved = resolveActiveModel(await loadModelsFile(), "speech-to-text", personaModels)
+  const resolved = resolveActiveModel(await loadModelsFile(), "stt", personaModels)
   if (!resolved) {
-    throw new Error("No STT model configured — set [active].speech-to-text in models.toml")
+    throw new Error("No STT model configured — set [models.stt] in models.toml")
   }
   return {
     model: resolved.model,

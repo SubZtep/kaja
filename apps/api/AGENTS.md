@@ -16,7 +16,7 @@ bun run test
 
 Local secrets helper: `../../scripts/create_local_secrets.sh`  
 Manual migrations: `../../scripts/db_migration.sh`  
-DB migration builder for Docker/Disco (stays here — path-coupled to `../migrations` and the Dockerfile build step): `scripts/migrate.ts`
+DB migration builder for Docker/Disco (stays here — path-coupled to `./migrations` and the Dockerfile build step): `migrate.ts`
 
 ## Layout
 
@@ -34,7 +34,7 @@ src/
     admin/               # /admin — mcp-servers, providers, models
     config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
     users/               # /users
-    nasi/                # /nasi — hosted agent (per-user sqlite under NASI_DATA_DIR)
+    nasi/                # /nasi — hosted agent (sessions/memory/datasets in Postgres)
     health/              # /health
     reference/           # /reference (dev OpenAPI UI)
   services/              # shared domain logic (mcp-server, model)

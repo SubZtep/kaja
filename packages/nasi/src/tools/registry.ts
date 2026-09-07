@@ -18,8 +18,7 @@ import { webSearchTool } from "./builtin/web-search"
 import type { NasiToolDeps } from "./deps"
 import { setToolDeps } from "./deps"
 
-export type NasiProfile = "local" | "hosted"
-
+/** Builtins safe to expose when `includeLocalTools` is false (hosted mode) — an allowlist so a new builtin is hosted-exposed only once someone opts it in here, not by default. */
 const HOSTED_SAFE = new Set([
   "ask_user",
   "switch_persona",
@@ -36,10 +35,9 @@ const HOSTED_SAFE = new Set([
   "generate_image"
 ])
 
-const LOCAL_ONLY = new Set(["read_file", "list_files", "view_image", "run_command"])
-
 export type CreateToolsOptions = {
-  profile: NasiProfile
+  /** Files, shell, MCP, and plugins. Default false. */
+  includeLocalTools?: boolean
   deps?: NasiToolDeps
   mcpServers?: McpServerEntry[]
   pluginDir?: string
@@ -65,7 +63,7 @@ async function connectMcpServers(mcpServers: McpServerEntry[], tempDir: string):
   return connections
 }
 
-export async function createTools(opts: CreateToolsOptions) {
+export async function createTools(opts: CreateToolsOptions = {}) {
   if (opts.deps) setToolDeps({ ...opts.deps, tempDir: opts.tempDir ?? opts.deps.tempDir })
 
   const builtin: Tool<any>[] = [
@@ -88,14 +86,13 @@ export async function createTools(opts: CreateToolsOptions) {
     ...(opts.deps?.imageGeneration ? [generateImageTool] : [])
   ]
 
-  const tools = opts.profile === "hosted" ? builtin.filter(t => HOSTED_SAFE.has(toolName(t))) : builtin
+  const local = opts.includeLocalTools === true
+  const tools = local ? builtin : builtin.filter(t => HOSTED_SAFE.has(toolName(t)))
+  const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
-  const mcpConnections =
-    opts.profile === "local" && opts.mcpServers && opts.tempDir
-      ? await connectMcpServers(opts.mcpServers, opts.tempDir)
-      : []
+  const mcpConnections = local && opts.mcpServers && tempDir ? await connectMcpServers(opts.mcpServers, tempDir) : []
 
-  const pluginTools = opts.profile === "local" && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []
+  const pluginTools = local && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []
 
   return {
     tools: [...tools, ...mcpConnections.flatMap(c => c.tools), ...pluginTools],
@@ -109,5 +106,3 @@ export async function createTools(opts: CreateToolsOptions) {
     }
   }
 }
-
-export { HOSTED_SAFE, LOCAL_ONLY }

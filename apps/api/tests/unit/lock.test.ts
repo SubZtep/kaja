@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { withLock } from "../../src/core/lock"
+import { withLock, withLockGenerator } from "../../src/core/lock"
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -54,5 +54,38 @@ describe("withLock", () => {
     first.resolve()
     await a
     expect(order).toEqual(["a-start", "b-start", "b-end", "a-end"])
+  })
+})
+
+describe("withLockGenerator", () => {
+  test("holds the lock until the generator is fully drained, not just until it's created", async () => {
+    const order: string[] = []
+    const first = deferred<void>()
+
+    async function* slow() {
+      order.push("a-start")
+      yield "a-yield"
+      await first.promise
+      order.push("a-end")
+      return "a-return"
+    }
+
+    const genA = withLockGenerator("same", slow)
+    const nextA = genA.next() // creates + starts draining `slow`, but doesn't await completion
+
+    const b = withLock("same", async () => {
+      order.push("b-start")
+      order.push("b-end")
+    })
+
+    // b must not start even though genA already yielded and is now waiting on `first`.
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(await nextA).toEqual({ value: "a-yield", done: false })
+    expect(order).toEqual(["a-start"])
+
+    first.resolve()
+    expect(await genA.next()).toEqual({ value: "a-return", done: true })
+    await b
+    expect(order).toEqual(["a-start", "a-end", "b-start", "b-end"])
   })
 })
