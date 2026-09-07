@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug API (apps/api)",
+      "program": "${workspaceFolder}/apps/api/src/core/server.ts",
+      "cwd": "${workspaceFolder}/apps/api",
+      "watchMode": false,
+      "stopOnEntry": false
+    },
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug CLI --local",
+      "program": "${workspaceFolder}/apps/cli/cli.ts",
+      "args": [],
+      "cwd": "${workspaceFolder}/apps/cli",
+      "stopOnEntry": false
+    },
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug CLI --remote",
+      "program": "${workspaceFolder}/apps/cli/cli.ts",
+      "args": ["--remote"],
+      "cwd": "${workspaceFolder}/apps/cli",
+      "stopOnEntry": false
+    }
+  ]
+}
