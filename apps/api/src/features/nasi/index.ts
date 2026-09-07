@@ -77,7 +77,7 @@ nasiRoutes.post("/turn/stream", async c => {
     stream.onAbort(() => clearInterval(heartbeat))
 
     try {
-      const gen = await openUserTurnStream(user.id, body)
+      const gen = openUserTurnStream(user.id, body)
       let next = await gen.next()
       while (!next.done) {
         const name = SSE_EVENT_NAME[next.value.type]
