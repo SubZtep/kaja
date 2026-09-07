@@ -3,6 +3,7 @@ import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
+import { withLock, withLockGenerator } from "../../core/lock"
 import { modelService } from "../../services"
 import { listPersonas } from "./personas"
 import { createPostgresStore } from "./pg-store"
@@ -19,6 +20,7 @@ async function defaultChatResolver() {
   const stub = env.NASI_STUB_MODEL
   if (stub) {
     return {
+      // Port 9 is the RFC 863 discard port — nothing listens there, so a real call fails fast instead of silently hitting something else.
       client: createOpenAIClient({ baseURL: "http://127.0.0.1:9", apiKey: "stub" }),
       model: stub
     }
@@ -50,12 +52,22 @@ export async function openNasiFor(opts: { userId: string; owner?: string | null 
   })
 }
 
-export async function runUserTurn(userId: string, body: NasiTurnRequest): Promise<NasiTurnResponse> {
-  const nasi = await openNasiFor({ userId })
-  return nasi.turnBuffered(body)
+/** Serializes turns on an existing session so overlapping requests (retries, duplicate tabs) can't race the read-modify-write around session persistence; a new session (no id yet) has no shared row to race on. */
+function withSessionLock<T>(userId: string, body: NasiTurnRequest, fn: () => Promise<T>): Promise<T> {
+  return body.session ? withLock(`${userId}:${body.session}`, fn) : fn()
 }
 
-export async function openUserTurnStream(userId: string, body: NasiTurnRequest) {
-  const nasi = await openNasiFor({ userId })
-  return nasi.turn(body)
+export async function runUserTurn(userId: string, body: NasiTurnRequest): Promise<NasiTurnResponse> {
+  return withSessionLock(userId, body, async () => {
+    const nasi = await openNasiFor({ userId })
+    return nasi.turnBuffered(body)
+  })
+}
+
+export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
+  const run = async function* () {
+    const nasi = await openNasiFor({ userId })
+    return yield* nasi.turn(body)
+  }
+  return body.session ? withLockGenerator(`${userId}:${body.session}`, run) : run()
 }

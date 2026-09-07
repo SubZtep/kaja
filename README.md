@@ -76,6 +76,10 @@ bun dev:cli --local config fetch
 bun dev:cli --local
 ```
 
-### Documentation
+## Git hooks
+
+It is recommended to run [git hooks](lefthook.toml) for common, easily forgotten helper tasks.
+
+## Documentation
 
 Want the full story? Head to [GitHub Pages](https://docs.kaja.io).
