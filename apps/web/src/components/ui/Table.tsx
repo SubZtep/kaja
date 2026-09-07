@@ -1,7 +1,7 @@
 import { capitalized, cn } from "@kaja/shared"
 import { type Column, type ColumnFiltersState, flexRender, useTable } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 import { tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"
 import { DebouncedText } from "../form/primitives/Text"
@@ -113,27 +113,34 @@ function TableHeaderCell({
     none: m.table_sort_none({ column: label })
   } as const
 
+  const headerContent = flexRender(header.column.columnDef.header, header.getContext())
+
+  let cellContent: ReactNode = headerContent
+  if (!header.isPlaceholder && canSort) {
+    cellContent = (
+      <button
+        type="button"
+        aria-label={sortLabelByState[sorted as keyof typeof sortLabelByState] ?? sortLabelByState.none}
+        className={cn("flex gap-2 items-center cursor-pointer", sorted && "select-none", !sorted && "mr-7.25")}
+        onClick={() => onToggleSort(header.column.id)}
+      >
+        {headerContent}
+        {{
+          asc: <ArrowDown size={21} className="text-muted" />,
+          desc: <ArrowUp size={21} className="text-muted" />
+        }[sorted as string] ?? null}
+      </button>
+    )
+  } else if (header.isPlaceholder) {
+    cellContent = null
+  }
+
   return (
     <th
       aria-sort={ariaSort}
       className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
     >
-      {header.isPlaceholder ? null : canSort ? (
-        <button
-          type="button"
-          aria-label={sortLabelByState[sorted as keyof typeof sortLabelByState] ?? sortLabelByState.none}
-          className={cn("flex gap-2 items-center cursor-pointer", sorted && "select-none", !sorted && "mr-7.25")}
-          onClick={() => onToggleSort(header.column.id)}
-        >
-          {flexRender(header.column.columnDef.header, header.getContext())}
-          {{
-            asc: <ArrowDown size={21} className="text-muted" />,
-            desc: <ArrowUp size={21} className="text-muted" />
-          }[sorted as string] ?? null}
-        </button>
-      ) : (
-        flexRender(header.column.columnDef.header, header.getContext())
-      )}
+      {cellContent}
     </th>
   )
 }
