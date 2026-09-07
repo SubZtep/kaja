@@ -40,6 +40,7 @@ OPTIONS
   --port          Port for kaja --local web (default: 4880)
   --user          Select/switch the hosted (--remote) account by email
   --session, -s   Resume a session by id (--local only; see: kaja --local session list)
+  --lang          Override the UI/reply language for this run (en or hu), regardless of saved config
 """
 
 [memory]

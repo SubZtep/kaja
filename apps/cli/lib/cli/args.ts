@@ -33,6 +33,10 @@ export const args = meow(t("args.help", { version: pkg.version }), {
     /** No Ink render — for a subcommand that doesn't need a terminal (e.g. telegram). */
     headless: {
       type: "boolean"
+    },
+    /** Overrides the UI/reply language ("en" or "hu") for this run, stronger than the saved config preference. Actually applied in lib/cli/bootstrap.ts's detectAndSetLanguage, which reads it straight from argv before this module (and its --help text) can be built — declared here only so --help documents it and meow doesn't warn on an unknown flag. */
+    lang: {
+      type: "string"
     }
   }
 })
