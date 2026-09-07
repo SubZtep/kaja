@@ -7,6 +7,7 @@ headlessNoSubcommand = "A --headless kapcsolóhoz ezt támogató alparancs szük
 pleaseSignIn = "Kérlek jelentkezz be!"
 deviceLoginGoTo = "Nyisd meg:"
 deviceLoginEnterCode = "Add meg a kódot:"
+deviceLoginCodeCopied = "A kód a vágólapra másolva"
 secretsUnavailable = "Nem sikerült elérni a rendszer kulcstartóját a bejelentkezés tárolásához. Próbáld a --local kapcsolóval futtatni, ahhoz nem szükséges rendszerszintű hitelesítő-adat tárolás."
 connecting = "Csatlakozás…"
 logoutSuccess = "Kijelentkezve: {email}."

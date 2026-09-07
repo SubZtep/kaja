@@ -7,6 +7,7 @@ headlessNoSubcommand = "--headless needs a subcommand that supports it, like `te
 pleaseSignIn = "Please sign in!"
 deviceLoginGoTo = "Go to:"
 deviceLoginEnterCode = "Enter code:"
+deviceLoginCodeCopied = "Code is in your clipboard"
 secretsUnavailable = "Could not access the system keychain to store your login. Try running with --local instead, which does not require OS credential storage."
 connecting = "Connecting…"
 logoutSuccess = "Logged out {email}."
