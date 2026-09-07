@@ -4,8 +4,9 @@ import { m } from "../../paraglide/messages.js"
 import { getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
 
 const LOCALE_LABELS: Record<Locale, string> = {
-  en: "English",
-  hu: "Magyar"
+  "en-GB": "English",
+  hu: "Magyar",
+  "nan-TW": "臺語"
 }
 
 export function LanguageSelect() {

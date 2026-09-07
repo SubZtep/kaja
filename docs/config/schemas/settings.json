@@ -67,8 +67,9 @@
           "description": "Language for the chat and application",
           "type": "string",
           "enum": [
-            "en",
-            "hu"
+            "en-GB",
+            "hu",
+            "nan-TW"
           ]
         },
         "persona": {

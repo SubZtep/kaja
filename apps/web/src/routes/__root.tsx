@@ -13,8 +13,14 @@ import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
 import { getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
-import { getLocale, getTextDirection } from "../paraglide/runtime.js"
+import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
+
+const OG_LOCALE: Record<Locale, string> = {
+  "en-GB": "en_GB",
+  hu: "hu_HU",
+  "nan-TW": "nan_TW"
+}
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
@@ -32,7 +38,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       session
     }
   },
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
       {
         charSet: "utf-8"
@@ -67,7 +73,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         name: "og:locale",
-        content: getLocale() === "hu" ? "hu_HU" : "en_GB"
+        content: OG_LOCALE[getLocale()]
       },
       {
         name: "og:site_name",
@@ -90,6 +96,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: appCss
+      },
+      ...locales.map(locale => ({
+        rel: "alternate",
+        hrefLang: locale,
+        href: `https://kaja.io${localizeHref(match.pathname, { locale })}`
+      })),
+      {
+        rel: "alternate",
+        hrefLang: "x-default",
+        href: `https://kaja.io${localizeHref(match.pathname, { locale: baseLocale })}`
       }
     ]
   }),
@@ -100,7 +116,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = getLocale()
-  const ogLocale = locale === "hu" ? "hu_HU" : "en_GB"
+  const ogLocale = OG_LOCALE[locale]
 
   return (
     <html lang={locale} dir={getTextDirection()} suppressHydrationWarning>

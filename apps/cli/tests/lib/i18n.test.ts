@@ -1,10 +1,14 @@
 import { afterEach, expect, test } from "bun:test"
 import { detectLanguage, dictionaries, setLanguage, t } from "../../lib/i18n"
 
-afterEach(() => setLanguage("en"))
+afterEach(() => setLanguage("en-GB"))
 
-test("en and hu dictionaries have the same keys", () => {
-  expect([...dictionaries.hu.keys()].sort()).toEqual([...dictionaries.en.keys()].sort())
+test("en-GB and hu dictionaries have the same keys", () => {
+  expect([...dictionaries.hu.keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
+})
+
+test("en-GB and nan-TW dictionaries have the same keys", () => {
+  expect([...dictionaries["nan-TW"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
 })
 
 test("interpolates params", () => {
@@ -25,13 +29,13 @@ test("setLanguage switches the dictionary", () => {
   expect(t("startup.persona")).toBe("Személyiség: ")
 })
 
-test("detectLanguage maps Hungarian locales to hu, others to en", () => {
+test("detectLanguage maps Hungarian locales to hu, others to en-GB", () => {
   const saved = { ...process.env }
   try {
     process.env.LC_ALL = "hu_HU.UTF-8"
     expect(detectLanguage()).toBe("hu")
     process.env.LC_ALL = "en_GB.UTF-8"
-    expect(detectLanguage()).toBe("en")
+    expect(detectLanguage()).toBe("en-GB")
     delete process.env.LC_ALL
     delete process.env.LC_MESSAGES
     process.env.LANG = "hu_HU"

@@ -17,7 +17,7 @@ Example:
 thinking = false
 sounds = true
 voice = false
-language = "en"
+language = "en-GB"
 persona = "default"
 ```
 
@@ -26,7 +26,7 @@ Fields:
 - `preferences.thinking`: show a ``thinking``/generating indicator when the agent is composing.
 - `preferences.sounds`: play UI sounds.
 - `preferences.voice`: enable spoken replies when a TTS model is configured.
-- `preferences.language`: `en` or `hu` (affects local UI, not model behavior).
+- `preferences.language`: `en-GB`, `hu`, or `nan-TW` (affects local UI, not model behavior).
 - `preferences.persona`: default persona id to open the CLI with.
 
 Notes:

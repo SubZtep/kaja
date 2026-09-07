@@ -84,7 +84,7 @@ test("sends the CLI's active language with the turn request", async () => {
   await t.press("\r")
   await t.tick()
   await t.tick()
-  expect(lastTurnBody?.language).toBe("en")
+  expect(lastTurnBody?.language).toBe("en-GB")
   t.unmount()
   await t.waitUntilExit()
 })
