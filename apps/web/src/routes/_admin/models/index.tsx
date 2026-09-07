@@ -22,25 +22,26 @@ import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
+import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/models/")({
   component: ModelsPage,
   loader: () => userRequired("admin"),
-  head: () => ({ meta: seo({ title: "Models" }) })
+  head: () => ({ meta: seo({ title: m.nav_models() }) })
 })
 
 const MODEL_TASKS: ModelTask[] = ["chat", "tts", "stt", "embedding", "image-generation", "rerank"]
 
 const providerFormSchema = z.object({
-  name: z.string().min(1, "Required"),
-  baseUrl: z.url("Must be a valid URL"),
+  name: z.string().min(1, m.models_validation_required()),
+  baseUrl: z.url(m.models_validation_invalid_url()),
   apiKey: z.string()
 })
 
 const modelFormSchema = z.object({
-  providerId: z.string().min(1, "Required"),
-  model: z.string().min(1, "Required"),
-  tasks: z.array(z.string()).min(1, "Select at least one task"),
+  providerId: z.string().min(1, m.models_validation_required()),
+  model: z.string().min(1, m.models_validation_required()),
+  tasks: z.array(z.string()).min(1, m.models_validation_select_task()),
   free: z.boolean()
 })
 
@@ -56,7 +57,7 @@ function ProviderBaseUrlCell(info: CellContext<typeof tableFeaturesConfig, Provi
 }
 
 function ProviderApiKeyCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
-  return <span className="text-xs text-muted">{info.getValue() ? "•••• set" : "—"}</span>
+  return <span className="text-xs text-muted">{info.getValue() ? m.models_column_api_key_set() : "—"}</span>
 }
 
 function ProviderCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Provider, Date>) {
@@ -68,9 +69,9 @@ function makeProviderActionsCell(onDelete: (id: string) => void) {
     return (
       <div className="text-right">
         <ConfirmDialog
-          title="Delete provider?"
-          description={`This will remove "${info.row.original.name}" and any models using it from the generated models.toml.`}
-          confirm="Delete"
+          title={m.models_delete_provider_confirm_title()}
+          description={m.models_delete_provider_confirm_description({ name: info.row.original.name })}
+          confirm={m.models_delete_confirm_button()}
           onConfirm={() => onDelete(info.row.original.id)}
         >
           <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
@@ -120,9 +121,9 @@ function makeModelActionsCell(onDelete: (id: string) => void) {
     return (
       <div className="text-right">
         <ConfirmDialog
-          title="Delete model?"
-          description={`This will remove "${info.row.original.model}" from the generated models.toml.`}
-          confirm="Delete"
+          title={m.models_delete_model_confirm_title()}
+          description={m.models_delete_model_confirm_description({ model: info.row.original.model })}
+          confirm={m.models_delete_confirm_button()}
           onConfirm={() => onDelete(info.row.original.id)}
         >
           <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
@@ -157,9 +158,9 @@ function ModelsPage() {
       apiFetch("/admin/providers", payload).then(r => providerSchema.parse(r)),
     onSuccess: () => {
       invalidateProviders()
-      toast.success("Provider created")
+      toast.success(m.models_success_provider_created())
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to create provider")
+    onError: (err: Error) => toast.error(err.message || m.models_error_provider_create_failed())
   })
 
   const deleteProvider = useMutation({
@@ -167,9 +168,9 @@ function ModelsPage() {
     onSuccess: () => {
       invalidateProviders()
       invalidateModels()
-      toast.success("Provider deleted")
+      toast.success(m.models_success_provider_deleted())
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to delete provider")
+    onError: (err: Error) => toast.error(err.message || m.models_error_provider_delete_failed())
   })
 
   const createModel = useMutation({
@@ -177,32 +178,32 @@ function ModelsPage() {
       apiFetch("/admin/models", { ...payload, enabled: true }).then(r => modelSchema.parse(r)),
     onSuccess: () => {
       invalidateModels()
-      toast.success("Model created")
+      toast.success(m.models_success_model_created())
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to create model")
+    onError: (err: Error) => toast.error(err.message || m.models_error_model_create_failed())
   })
 
   const toggleModelEnabled = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
       apiFetch(`/admin/models/${id}`, { enabled }, { method: "PATCH" }).then(r => modelSchema.parse(r)),
     onSuccess: invalidateModels,
-    onError: (err: Error) => toast.error(err.message || "Failed to update model")
+    onError: (err: Error) => toast.error(err.message || m.models_error_model_update_failed())
   })
 
   const toggleModelFree = useMutation({
     mutationFn: ({ id, free }: { id: string; free: boolean }) =>
       apiFetch(`/admin/models/${id}`, { free }, { method: "PATCH" }).then(r => modelSchema.parse(r)),
     onSuccess: invalidateModels,
-    onError: (err: Error) => toast.error(err.message || "Failed to update model")
+    onError: (err: Error) => toast.error(err.message || m.models_error_model_update_failed())
   })
 
   const deleteModel = useMutation({
     mutationFn: (id: string) => apiFetch(`/admin/models/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
       invalidateModels()
-      toast.success("Model deleted")
+      toast.success(m.models_success_model_deleted())
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to delete model")
+    onError: (err: Error) => toast.error(err.message || m.models_error_model_delete_failed())
   })
 
   const providerForm = useAppForm({
@@ -241,20 +242,20 @@ function ModelsPage() {
 
   const providerColumns = providerColumnHelper.columns([
     providerColumnHelper.accessor("name", {
-      header: "Name",
+      header: m.models_column_provider_name(),
       cell: ProviderNameCell
     }),
     providerColumnHelper.accessor("baseUrl", {
-      header: "Base URL",
+      header: m.models_column_base_url(),
       cell: ProviderBaseUrlCell
     }),
     providerColumnHelper.accessor("apiKey", {
-      header: "API Key",
+      header: m.models_column_api_key(),
       cell: ProviderApiKeyCell,
       enableColumnFilter: false
     }),
     providerColumnHelper.accessor("createdAt", {
-      header: "Created",
+      header: m.models_column_created(),
       cell: ProviderCreatedAtCell,
       enableColumnFilter: false
     }),
@@ -267,31 +268,31 @@ function ModelsPage() {
 
   const modelColumns = modelColumnHelper.columns([
     modelColumnHelper.accessor("model", {
-      header: "Model",
+      header: m.models_column_model(),
       cell: ModelNameCell
     }),
     modelColumnHelper.accessor("tasks", {
-      header: "Tasks",
+      header: m.models_column_tasks(),
       cell: ModelTasksCell,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("providerId", {
-      header: "Provider",
+      header: m.models_column_provider(),
       cell: makeModelProviderCell(providers),
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("enabled", {
-      header: "Enabled",
+      header: m.models_enabled(),
       cell: makeModelEnabledCell(args => toggleModelEnabled.mutate(args)),
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("free", {
-      header: "Free",
+      header: m.models_column_free(),
       cell: makeModelFreeCell(args => toggleModelFree.mutate(args)),
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("createdAt", {
-      header: "Created",
+      header: m.models_column_created(),
       cell: ModelCreatedAtCell,
       enableColumnFilter: false
     }),
@@ -311,28 +312,23 @@ function ModelsPage() {
   return (
     <>
       <PageHeader
-        title="Models"
-        description={
-          <>
-            Manage the providers and models published in the generated <code className="text-fg">models.toml</code>.
-            Free models are exposed via <code className="text-fg">GET /config/models</code>.
-          </>
-        }
-        meta="models.toml"
+        title={m.models_title()}
+        description={m.models_description({ modelsToml: "models.toml", endpoint: "GET /config/models" })}
+        meta={m.models_meta()}
       >
-        <ValueBox label="Providers" variant="neon">
+        <ValueBox label={m.models_providers()} variant="neon">
           {providers.length}
         </ValueBox>
-        <ValueBox label="Models">{models.length}</ValueBox>
-        <ValueBox label="Enabled">{enabledCount}</ValueBox>
-        <ValueBox label="Free">{freeCount}</ValueBox>
+        <ValueBox label={m.models_models()}>{models.length}</ValueBox>
+        <ValueBox label={m.models_enabled()}>{enabledCount}</ValueBox>
+        <ValueBox label={m.models_free()}>{freeCount}</ValueBox>
       </PageHeader>
 
       {providersQuery.error && <p className="mb-6 text-red-400 text-sm">{providersQuery.error.message}</p>}
       {modelsQuery.error && <p className="mb-6 text-red-400 text-sm">{modelsQuery.error.message}</p>}
 
       <Section className="mb-4">
-        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Add Provider</h2>
+        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.models_add_provider_title()}</h2>
         <form
           onSubmit={e => {
             e.preventDefault()
@@ -341,16 +337,23 @@ function ModelsPage() {
           className="grid gap-4 sm:grid-cols-3"
         >
           <providerForm.AppField name="name">
-            {field => <field.TextField label="Name" placeholder="default" />}
+            {field => (
+              <field.TextField
+                label={m.models_field_provider_name()}
+                placeholder={m.models_field_provider_name_placeholder()}
+              />
+            )}
           </providerForm.AppField>
           <providerForm.AppField name="baseUrl">
-            {field => <field.TextField label="Base URL" placeholder="https://api.fireworks.ai/inference/v1" />}
+            {field => (
+              <field.TextField label={m.models_field_base_url()} placeholder="https://api.fireworks.ai/inference/v1" />
+            )}
           </providerForm.AppField>
           <providerForm.AppField name="apiKey">
-            {field => <field.TextField label="API Key" placeholder="fw_YourSecretKey" />}
+            {field => <field.TextField label={m.models_field_api_key()} placeholder="fw_YourSecretKey" />}
           </providerForm.AppField>
           <Button type="submit" className="justify-self-start sm:col-span-3" loading={createProvider.isPending}>
-            Add Provider
+            {m.models_add_provider_button()}
           </Button>
         </form>
       </Section>
@@ -362,9 +365,9 @@ function ModelsPage() {
       </Section>
 
       <Section className="mb-4">
-        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Add Model</h2>
+        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.models_add_model_title()}</h2>
         {providers.length === 0 ? (
-          <p className="text-muted text-sm">Add a provider first.</p>
+          <p className="text-muted text-sm">{m.models_add_model_needs_provider()}</p>
         ) : (
           <form
             onSubmit={e => {
@@ -375,16 +378,21 @@ function ModelsPage() {
           >
             <modelForm.AppField name="providerId">
               {field => (
-                <field.SelectField label="Provider" options={providers.map(p => ({ value: p.id, label: p.name }))} />
+                <field.SelectField
+                  label={m.models_field_provider()}
+                  options={providers.map(p => ({ value: p.id, label: p.name }))}
+                />
               )}
             </modelForm.AppField>
             <modelForm.AppField name="model">
-              {field => <field.TextField label="Model" placeholder="accounts/fireworks/models/minimax-m3" />}
+              {field => (
+                <field.TextField label={m.models_field_model()} placeholder="accounts/fireworks/models/minimax-m3" />
+              )}
             </modelForm.AppField>
             <modelForm.AppField name="tasks">
               {field => (
                 <div className="sm:col-span-3 md:flex">
-                  <span className="flex w-48 items-center justify-between align-middle">Tasks:</span>
+                  <span className="flex w-48 items-center justify-between align-middle">{m.models_field_tasks()}</span>
                   <CheckboxGroup
                     value={field.state.value}
                     onValueChange={value => field.handleChange(value)}
@@ -403,10 +411,10 @@ function ModelsPage() {
               )}
             </modelForm.AppField>
             <modelForm.AppField name="free">
-              {field => <field.CheckboxField label="Free (exposed on /config/models)" className="sm:col-span-3" />}
+              {field => <field.CheckboxField label={m.models_field_free()} className="sm:col-span-3" />}
             </modelForm.AppField>
             <Button type="submit" className="justify-self-start sm:col-span-3" loading={createModel.isPending}>
-              Add Model
+              {m.models_add_model_button()}
             </Button>
           </form>
         )}

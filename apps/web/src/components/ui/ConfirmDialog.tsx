@@ -1,5 +1,6 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog"
 import { cn } from "@kaja/shared"
+import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
 
 interface Props {
@@ -14,9 +15,9 @@ interface Props {
 
 export function ConfirmDialog({
   title,
-  description = "You can’t undo this action.",
-  cancel = "Cancel",
-  confirm = "Confirm",
+  description = m.confirm_dialog_description(),
+  cancel = m.confirm_dialog_cancel(),
+  confirm = m.confirm_dialog_confirm(),
   confirmClassName,
   onConfirm,
   children

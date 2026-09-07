@@ -3,6 +3,7 @@ import { type Column, type ColumnFiltersState, flexRender, useTable } from "@tan
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { useState } from "react"
 import { tableFeaturesConfig } from "../../lib/table"
+import { m } from "../../paraglide/messages.js"
 import { DebouncedText } from "../form/primitives/Text"
 
 type PeriodFilter = [Date | undefined, Date | undefined]
@@ -158,18 +159,16 @@ function Pagination({ table }: Readonly<{ table: any }>) {
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
       <div className="flex items-center gap-2 text-sm text-muted">
-        <span>
-          Showing {startRow} to {endRow} of {totalRows} entries
-        </span>
+        <span>{m.table_showing_entries({ startRow, endRow, totalRows })}</span>
         <select
           value={pageSize}
           onChange={e => table.setPageSize(Number(e.target.value))}
-          aria-label="Select page size"
+          aria-label={m.table_select_page_size()}
           className="ml-2 rounded-lg bg-surface-2 px-3 py-1 text-fg outline-none transition-all focus:ring-1 focus:ring-neon"
         >
           {PAGE_SIZES.map(size => (
             <option key={size} value={size}>
-              {size} per page
+              {m.table_per_page({ size })}
             </option>
           ))}
         </select>
@@ -180,7 +179,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.setPageIndex(0)}
           disabled={!table.getCanPreviousPage()}
-          aria-label="Go to first page"
+          aria-label={m.table_first_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanPreviousPage()
@@ -194,7 +193,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
-          aria-label="Go to previous page"
+          aria-label={m.table_previous_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanPreviousPage()
@@ -229,7 +228,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
-          aria-label="Go to next page"
+          aria-label={m.table_next_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
@@ -241,7 +240,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.setPageIndex(table.getPageCount() - 1)}
           disabled={!table.getCanNextPage()}
-          aria-label="Go to last page"
+          aria-label={m.table_last_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
@@ -287,7 +286,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
         <div className="flex flex-col gap-0.5">
           <DebouncedText
             type="date"
-            placeholder="From"
+            placeholder={m.table_date_from()}
             variant="simple"
             className="w-34"
             value={values[0] ?? ""}
@@ -300,7 +299,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
           />
           <DebouncedText
             type="date"
-            placeholder="To"
+            placeholder={m.table_date_to()}
             variant="simple"
             className="w-34"
             value={values[1] ?? ""}
@@ -319,7 +318,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
     default:
       return (
         <DebouncedText
-          placeholder="Search..."
+          placeholder={m.table_search_placeholder()}
           className="w-32"
           variant="simple"
           onChange={value => column.setFilterValue(value)}

@@ -95,24 +95,45 @@ const navItems: NavItem[] = [
 const getItems = (section: NavSection, role: string | null | undefined) =>
   navItems.filter(item => item.sections.includes(section) && matchesRole(item.roles, role))
 
-/** Translated labels for the public-facing header items; admin-only items keep their literal English label. */
-const HEADER_LABEL_OVERRIDES: Record<string, () => string> = {
+/** Translated labels for every nav item. */
+const LABEL_OVERRIDES: Record<string, () => string> = {
   "/": m.nav_home,
   "/signin": m.nav_sign_in,
   "/signup": m.nav_sign_up,
-  "https://docs.kaja.io": m.nav_docs
+  "https://docs.kaja.io": m.nav_docs,
+  "/dashboard": m.nav_dashboard,
+  "/profile": m.nav_profile,
+  "/users": m.nav_users,
+  "/mcp-servers": m.nav_mcp_servers,
+  "/models": m.nav_models,
+  "/widget": m.nav_widget
+}
+
+/** Translated descriptions for the admin sidebar/dashboard items. */
+const DESCRIPTION_OVERRIDES: Record<string, () => string> = {
+  "/dashboard": m.nav_dashboard_desc,
+  "/profile": m.nav_profile_desc,
+  "/users": m.nav_users_desc,
+  "/mcp-servers": m.nav_mcp_servers_desc,
+  "/models": m.nav_models_desc,
+  "/widget": m.nav_widget_desc
 }
 
 export const getHeaderItems = (role: string | null | undefined) =>
   getItems("header", role).map(item => {
-    const translate = HEADER_LABEL_OVERRIDES[item.to ?? item.href ?? ""]
+    const translate = LABEL_OVERRIDES[item.to ?? item.href ?? ""]
     return translate ? { ...item, label: translate() } : item
   })
 
 /** Every "admin" section item defines `to`, `description`, and `icon`. */
 export type AdminNavItem = NavItem & { to: string; description: string; icon: LucideIcon }
 
-export const getNavItems = (role: string | null | undefined) => getItems("admin", role) as AdminNavItem[]
+export const getNavItems = (role: string | null | undefined) =>
+  (getItems("admin", role) as AdminNavItem[]).map(item => ({
+    ...item,
+    label: LABEL_OVERRIDES[item.to]?.() ?? item.label,
+    description: DESCRIPTION_OVERRIDES[item.to]?.() ?? item.description
+  }))
 
 /** Dashboard shortcuts omit the dashboard route itself. */
 export const getDashboardLinks = (role: string | null | undefined) =>

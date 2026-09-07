@@ -35,7 +35,7 @@ function SignUp() {
     onSubmit: async ({ value }) => {
       const parsed = registerSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? "Invalid data")
+        toast.error(parsed.error?.message ?? m.signup_error_invalid_data())
         return
       }
 
@@ -45,7 +45,7 @@ function SignUp() {
 
         if (error) toast.error(error.message ?? error.statusText)
         if (data?.user) {
-          toast.success("User registered")
+          toast.success(m.signup_success())
           navigate({ to: "/dashboard" })
         }
       } catch (error: any) {
@@ -59,13 +59,13 @@ function SignUp() {
   return (
     <AuthShell>
       <AuthCard
-        title="Create account"
-        description="Sign up to access the admin portal and manage your Kaja setup."
+        title={m.signup_title()}
+        description={m.seo_signup_desc()}
         footer={
           <>
-            Already have an account?{" "}
+            {m.signup_have_account()}{" "}
             <Link to="/signin" className="font-medium text-neon hover:text-neon-hi">
-              Sign in
+              {m.signin_title()}
             </Link>
           </>
         }
@@ -78,13 +78,20 @@ function SignUp() {
           className="flex flex-col gap-4"
         >
           <form.AppField name="name">
-            {field => <field.TextField label="Name" layout="stack" placeholder="Your name" autoComplete="name" />}
+            {field => (
+              <field.TextField
+                label={m.auth_field_name()}
+                layout="stack"
+                placeholder={m.auth_field_name_placeholder()}
+                autoComplete="name"
+              />
+            )}
           </form.AppField>
 
           <form.AppField name="email">
             {field => (
               <field.TextField
-                label="Email"
+                label={m.auth_field_email()}
                 layout="stack"
                 type="email"
                 placeholder="you@example.com"
@@ -96,7 +103,7 @@ function SignUp() {
           <form.AppField name="password">
             {field => (
               <field.TextField
-                label="Password"
+                label={m.auth_field_password()}
                 layout="stack"
                 type="password"
                 autoComplete="new-password"
@@ -106,11 +113,17 @@ function SignUp() {
           </form.AppField>
 
           <form.AppField name="image">
-            {field => <field.TextField label="Image URL" layout="stack" placeholder="Optional avatar URL" />}
+            {field => (
+              <field.TextField
+                label={m.auth_field_image_url()}
+                layout="stack"
+                placeholder={m.auth_field_image_url_placeholder()}
+              />
+            )}
           </form.AppField>
 
           <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
-            Create account
+            {m.signup_submit()}
           </Button>
         </form>
       </AuthCard>

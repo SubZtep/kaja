@@ -9,6 +9,7 @@ import { UAParser } from "ua-parser-js"
 import { useAuthClient } from "../../hooks/auth-client"
 import { queryClient } from "../../lib/query"
 import { tableColumnHelper, tableFeaturesConfig } from "../../lib/table"
+import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
@@ -16,11 +17,11 @@ const columnHelper = tableColumnHelper<SessionWithImpersonatedBy>()
 
 const columns = columnHelper.columns([
   columnHelper.accessor("ipAddress", {
-    header: "IP",
+    header: m.user_sessions_column_ip(),
     cell: info => info.getValue()
   }),
   columnHelper.accessor("userAgent", {
-    header: "User Agent",
+    header: m.user_sessions_column_user_agent(),
     cell: info => {
       const parsed = UAParser(info.getValue() || "{}")
       return (
@@ -31,11 +32,11 @@ const columns = columnHelper.columns([
     }
   }),
   columnHelper.accessor("createdAt", {
-    header: "Created",
+    header: m.user_sessions_column_created(),
     cell: info => getTimeAgo(info.getValue())
   }),
   columnHelper.accessor("expiresAt", {
-    header: "Expires",
+    header: m.user_sessions_column_expires(),
     cell: info => getDateTime(info.getValue(), "short")
   })
 ])
@@ -76,10 +77,10 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
   return (
     <div className={className}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="m-0 font-semibold text-fg text-[15px]">Sessions</h2>
-        <ConfirmDialog title="Are you sure?" onConfirm={() => mutate()}>
+        <h2 className="m-0 font-semibold text-fg text-[15px]">{m.user_sessions_title()}</h2>
+        <ConfirmDialog title={m.confirm_dialog_are_you_sure()} onConfirm={() => mutate()}>
           <Button size="sm" variant="oval" disabled={sessions.length === 0}>
-            <MonitorX size={14} className="mr-2" /> Revoke All
+            <MonitorX size={14} className="mr-2" /> {m.user_sessions_revoke_all()}
           </Button>
         </ConfirmDialog>
       </div>
@@ -118,7 +119,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
           </table>
         </div>
       ) : (
-        <p className="m-0 text-muted text-sm">No active sessions.</p>
+        <p className="m-0 text-muted text-sm">{m.user_sessions_none()}</p>
       )}
     </div>
   )

@@ -20,16 +20,17 @@ import { useAppForm } from "../../../lib/form"
 import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
+import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/mcp-servers/")({
   component: McpServersPage,
   loader: () => userRequired("admin"),
-  head: () => ({ meta: seo({ title: "MCP Servers" }) })
+  head: () => ({ meta: seo({ title: m.nav_mcp_servers() }) })
 })
 
 const createFormSchema = z
   .object({
-    serverId: z.string().min(1, "Required"),
+    serverId: z.string().min(1, m.mcp_servers_validation_required()),
     transport: z.enum(["local", "http"]),
     command: z.string(),
     args: z.string(),
@@ -40,15 +41,15 @@ const createFormSchema = z
   .superRefine((data, ctx) => {
     if (data.transport === "local") {
       if (!data.command.trim()) {
-        ctx.addIssue({ code: "custom", path: ["command"], message: "Required" })
+        ctx.addIssue({ code: "custom", path: ["command"], message: m.mcp_servers_validation_required() })
       }
     } else if (!data.url.trim()) {
-      ctx.addIssue({ code: "custom", path: ["url"], message: "Required" })
+      ctx.addIssue({ code: "custom", path: ["url"], message: m.mcp_servers_validation_required() })
     } else {
       try {
         new URL(data.url.trim())
       } catch {
-        ctx.addIssue({ code: "custom", path: ["url"], message: "Must be a valid URL" })
+        ctx.addIssue({ code: "custom", path: ["url"], message: m.mcp_servers_validation_invalid_url() })
       }
     }
   })
@@ -93,7 +94,7 @@ function ConfigCell(info: CellContext<typeof tableFeaturesConfig, McpServer, unk
   const server = info.row.original
   const keys = server.url ? Object.keys(server.headers) : Object.keys(server.env)
   if (keys.length === 0) return <span className="text-xs text-muted">—</span>
-  const label = server.url ? "headers" : "env"
+  const label = server.url ? m.mcp_servers_headers_label() : m.mcp_servers_env_label()
   return (
     <span className="font-mono text-xs text-muted">
       {label}: {keys.join(", ")}
@@ -117,9 +118,9 @@ function makeActionsCell(onDelete: (id: string) => void) {
     return (
       <div className="text-right">
         <ConfirmDialog
-          title="Delete MCP server?"
-          description={`This will remove "${info.row.original.serverId}" from the generated mcp.toml.`}
-          confirm="Delete"
+          title={m.mcp_servers_delete_confirm_title()}
+          description={m.mcp_servers_delete_confirm_description({ serverId: info.row.original.serverId })}
+          confirm={m.mcp_servers_delete_confirm_button()}
           onConfirm={() => onDelete(info.row.original.id)}
         >
           <button type="button" className="inline-flex rounded-lg p-2 text-red-400 transition-all hover:bg-red-400/10">
@@ -148,25 +149,25 @@ function McpServersPage() {
       apiFetch("/admin/mcp-servers", payload).then(r => mcpServerSchema.parse(r)),
     onSuccess: () => {
       invalidate()
-      toast.success("MCP server created")
+      toast.success(m.mcp_servers_success_created())
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to create MCP server")
+    onError: (err: Error) => toast.error(err.message || m.mcp_servers_error_create_failed())
   })
 
   const toggleEnabled = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
       apiFetch(`/admin/mcp-servers/${id}`, { enabled }, { method: "PATCH" }).then(r => mcpServerSchema.parse(r)),
     onSuccess: invalidate,
-    onError: (err: Error) => toast.error(err.message || "Failed to update MCP server")
+    onError: (err: Error) => toast.error(err.message || m.mcp_servers_error_update_failed())
   })
 
   const deleteMcpServer = useMutation({
     mutationFn: (id: string) => apiFetch(`/admin/mcp-servers/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
       invalidate()
-      toast.success("MCP server deleted")
+      toast.success(m.mcp_servers_success_deleted())
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to delete MCP server")
+    onError: (err: Error) => toast.error(err.message || m.mcp_servers_error_delete_failed())
   })
 
   const form = useAppForm({
@@ -208,26 +209,26 @@ function McpServersPage() {
 
   const columns = columnHelper.columns([
     columnHelper.accessor("serverId", {
-      header: "Server ID",
+      header: m.mcp_servers_column_server_id(),
       cell: ServerIdCell
     }),
     columnHelper.display({
       id: "connection",
-      header: "Connection",
+      header: m.mcp_servers_column_connection(),
       cell: ConnectionCell
     }),
     columnHelper.display({
       id: "config",
-      header: "Config",
+      header: m.mcp_servers_column_config(),
       cell: ConfigCell
     }),
     columnHelper.accessor("enabled", {
-      header: "Enabled",
+      header: m.mcp_servers_column_enabled(),
       cell: makeEnabledCell(args => toggleEnabled.mutate(args)),
       enableColumnFilter: false
     }),
     columnHelper.accessor("createdAt", {
-      header: "Created",
+      header: m.mcp_servers_column_created(),
       cell: CreatedAtCell,
       enableColumnFilter: false
     }),
@@ -246,25 +247,20 @@ function McpServersPage() {
   return (
     <>
       <PageHeader
-        title="MCP Servers"
-        description={
-          <>
-            Manage the MCP servers published in the generated <code className="text-fg">mcp.toml</code>. Local servers
-            spawn over stdio; online servers use Streamable HTTP.
-          </>
-        }
-        meta="mcp.toml"
+        title={m.mcp_servers_title()}
+        description={m.mcp_servers_description({ mcpToml: "mcp.toml" })}
+        meta={m.mcp_servers_meta()}
       >
-        <ValueBox label="Total" variant="neon">
+        <ValueBox label={m.mcp_servers_total()} variant="neon">
           {mcpServers.length}
         </ValueBox>
-        <ValueBox label="Enabled">{enabledCount}</ValueBox>
+        <ValueBox label={m.mcp_servers_enabled()}>{enabledCount}</ValueBox>
       </PageHeader>
 
       {error && <p className="mb-6 text-red-400 text-sm">{error.message}</p>}
 
       <Section className="mb-4">
-        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Add MCP Server</h2>
+        <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{m.mcp_servers_add_title()}</h2>
         <form
           onSubmit={e => {
             e.preventDefault()
@@ -273,15 +269,15 @@ function McpServersPage() {
           className="grid gap-4 sm:grid-cols-2"
         >
           <form.AppField name="serverId">
-            {field => <field.TextField label="Server ID" placeholder="playwright" />}
+            {field => <field.TextField label={m.mcp_servers_field_server_id()} placeholder="playwright" />}
           </form.AppField>
           <form.AppField name="transport">
             {field => (
               <field.SelectField
-                label="Type"
+                label={m.mcp_servers_field_type()}
                 options={[
-                  { value: "local", label: "Local (stdio)" },
-                  { value: "http", label: "Online (HTTP)" }
+                  { value: "local", label: m.mcp_servers_type_local() },
+                  { value: "http", label: m.mcp_servers_type_http() }
                 ]}
               />
             )}
@@ -291,33 +287,46 @@ function McpServersPage() {
               transport === "http" ? (
                 <>
                   <form.AppField name="url">
-                    {field => <field.TextField label="URL" placeholder="https://your-geo-service-host/mcp" />}
+                    {field => (
+                      <field.TextField
+                        label={m.mcp_servers_field_url()}
+                        placeholder="https://your-geo-service-host/mcp"
+                      />
+                    )}
                   </form.AppField>
                   <form.AppField name="headers">
                     {field => (
-                      <field.TextField label="Headers" placeholder="Authorization=Bearer your-secret-api-key" />
+                      <field.TextField
+                        label={m.mcp_servers_field_headers()}
+                        placeholder="Authorization=Bearer your-secret-api-key"
+                      />
                     )}
                   </form.AppField>
                 </>
               ) : (
                 <>
                   <form.AppField name="command">
-                    {field => <field.TextField label="Command" placeholder="bunx" />}
+                    {field => <field.TextField label={m.mcp_servers_field_command()} placeholder="bunx" />}
                   </form.AppField>
                   <form.AppField name="args">
                     {field => (
-                      <field.TextField label="Args" placeholder="@playwright/mcp@latest --isolated --headless" />
+                      <field.TextField
+                        label={m.mcp_servers_field_args()}
+                        placeholder="@playwright/mcp@latest --isolated --headless"
+                      />
                     )}
                   </form.AppField>
                   <form.AppField name="env">
-                    {field => <field.TextField label="Env" placeholder="KEY=value, OTHER=value" />}
+                    {field => (
+                      <field.TextField label={m.mcp_servers_field_env()} placeholder="KEY=value, OTHER=value" />
+                    )}
                   </form.AppField>
                 </>
               )
             }
           </form.Subscribe>
           <Button type="submit" className="justify-self-start sm:col-span-2" loading={createMcpServer.isPending}>
-            Add Server
+            {m.mcp_servers_add_button()}
           </Button>
         </form>
       </Section>

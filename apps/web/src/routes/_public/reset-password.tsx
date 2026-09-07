@@ -37,7 +37,7 @@ function ResetPassword() {
     onSubmit: async ({ value }) => {
       const parsed = resetPasswordSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? "Invalid data")
+        toast.error(parsed.error?.message ?? m.reset_password_error_invalid_data())
         return
       }
 
@@ -49,7 +49,7 @@ function ResetPassword() {
         })
         if (error) toast.error(error.message)
         if (data?.status) {
-          toast.info("Password changed")
+          toast.info(m.reset_password_success())
           navigate({ to: "/signin" })
         }
       } catch (error: any) {
@@ -63,13 +63,13 @@ function ResetPassword() {
   return (
     <AuthShell>
       <AuthCard
-        title="Reset password"
-        description="Choose a new password for your account."
+        title={m.reset_password_title()}
+        description={m.seo_reset_password_desc()}
         footer={
           <>
-            Remembered it?{" "}
+            {m.reset_password_remembered()}{" "}
             <Link to="/signin" className="font-medium text-neon hover:text-neon-hi">
-              Sign in
+              {m.signin_title()}
             </Link>
           </>
         }
@@ -84,7 +84,7 @@ function ResetPassword() {
           <form.AppField name="newPassword">
             {field => (
               <field.TextField
-                label="New password"
+                label={m.auth_field_new_password()}
                 layout="stack"
                 type="password"
                 autoComplete="new-password"
@@ -94,7 +94,7 @@ function ResetPassword() {
           </form.AppField>
 
           <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
-            Update password
+            {m.reset_password_submit()}
           </Button>
         </form>
       </AuthCard>

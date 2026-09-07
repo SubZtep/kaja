@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "../../hooks/auth-client"
+import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
@@ -13,7 +14,7 @@ export function SignOutButton({ onClick }: Readonly<{ onClick?: () => void }>) {
 
   return (
     <ConfirmDialog
-      title="Sign Out?"
+      title={m.sign_out_confirm_title()}
       onConfirm={async () => {
         setLoading(true)
         const { error } = await signOut({
@@ -24,7 +25,7 @@ export function SignOutButton({ onClick }: Readonly<{ onClick?: () => void }>) {
           }
         })
         if (error) {
-          toast.error(error.message || error.statusText || "An unknown error occurred")
+          toast.error(error.message || error.statusText || m.sign_out_error_unknown())
         }
         setLoading(false)
       }}
@@ -37,7 +38,7 @@ export function SignOutButton({ onClick }: Readonly<{ onClick?: () => void }>) {
         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 font-medium text-fg"
       >
         <LogOut size={14} />
-        Sign Out
+        {m.sign_out()}
       </Button>
     </ConfirmDialog>
   )

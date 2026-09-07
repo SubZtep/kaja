@@ -11,11 +11,12 @@ import { UserSessions } from "../../../components/user/UserSessions"
 import { useAuthClient } from "../../../hooks/auth-client"
 import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
+import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/users/$userId")({
   component: UserPageComponent,
   loader: () => userRequired("admin"),
-  head: () => ({ meta: seo({ title: "User" }) })
+  head: () => ({ meta: seo({ title: m.seo_user_title() }) })
 })
 
 function UserPageComponent() {
@@ -47,7 +48,7 @@ function UserPageComponent() {
             {user.name}
           </span>
         }
-        description="User details and active sessions"
+        description={m.user_detail_description()}
         meta={user.role ?? "user"}
       />
 
@@ -70,14 +71,22 @@ function UserPageComponent() {
           </div>
 
           <div className="space-y-3 border-border border-t pt-4">
-            <DetailRow icon={Mail} label="Email" value={user.email} />
+            <DetailRow icon={Mail} label={m.user_detail_field_email()} value={user.email} />
             <DetailRow
               icon={user.emailVerified ? CheckCircle2 : Clock}
-              label="Verification"
-              value={user.emailVerified ? "Verified" : "Pending"}
+              label={m.user_detail_field_verification()}
+              value={
+                user.emailVerified
+                  ? m.user_detail_field_verification_verified()
+                  : m.user_detail_field_verification_pending()
+              }
             />
-            <DetailRow icon={Shield} label="Role" value={user.role ?? "user"} />
-            <DetailRow icon={Calendar} label="Created" value={getDateTime(user.createdAt, "long")} />
+            <DetailRow icon={Shield} label={m.user_detail_field_role()} value={user.role ?? "user"} />
+            <DetailRow
+              icon={Calendar}
+              label={m.user_detail_field_created()}
+              value={getDateTime(user.createdAt, "long")}
+            />
           </div>
         </Section>
 

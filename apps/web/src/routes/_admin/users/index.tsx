@@ -15,11 +15,12 @@ import { useAuthClient } from "../../../hooks/auth-client"
 import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
+import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/users/")({
   component: UserList,
   loader: () => userRequired("admin"),
-  head: () => ({ meta: seo({ title: "Users" }) })
+  head: () => ({ meta: seo({ title: m.nav_users() }) })
 })
 
 type UsersColumns = Pick<UserWithRole, "id" | "name" | "email" | "emailVerified" | "role" | "createdAt" | "image">
@@ -70,14 +71,14 @@ function StatusCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, 
     return (
       <div className="flex items-center gap-2">
         <div className="h-1.5 w-1.5 rounded-full bg-neon" />
-        <span className="text-muted text-xs">Authenticated</span>
+        <span className="text-muted text-xs">{m.users_status_authenticated()}</span>
       </div>
     )
   }
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-1.5 rounded-full bg-surface-2" />
-      <span className="text-xs text-muted">Pending</span>
+      <span className="text-xs text-muted">{m.users_status_pending()}</span>
     </div>
   )
 }
@@ -141,20 +142,20 @@ function UserList() {
     () =>
       columnHelper.columns([
         columnHelper.accessor("name", {
-          header: "User Identity",
+          header: m.users_column_identity(),
           cell: IdentityCell
         }),
         columnHelper.accessor("role", {
-          header: "Access Level",
+          header: m.users_column_access_level(),
           cell: AccessLevelCell
         }),
         columnHelper.accessor("emailVerified", {
-          header: "Status",
+          header: m.users_column_status(),
           cell: StatusCell,
           enableColumnFilter: false
         }),
         columnHelper.accessor("createdAt", {
-          header: "Last Sync",
+          header: m.users_column_last_sync(),
           cell: LastSyncCell,
           enableColumnFilter: false
         }),
@@ -175,15 +176,11 @@ function UserList() {
 
   return (
     <>
-      <PageHeader
-        title="Users"
-        description="Manage your organization's identity hierarchy and access controls."
-        meta="directory"
-      >
-        <ValueBox label="Total Users" variant="neon">
+      <PageHeader title={m.users_title()} description={m.users_description()} meta={m.users_meta()}>
+        <ValueBox label={m.users_total()} variant="neon">
           {userCount.toLocaleString()}
         </ValueBox>
-        <ValueBox label="Verified">{activeCount}</ValueBox>
+        <ValueBox label={m.users_verified()}>{activeCount}</ValueBox>
       </PageHeader>
 
       <Section padded={false}>
@@ -192,21 +189,23 @@ function UserList() {
             <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
             <input
               type="text"
-              placeholder="Search by name, email, or role..."
+              placeholder={m.users_search_placeholder()}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full rounded-md border border-border bg-surface-2 py-2.5 pr-3 pl-10 text-fg text-sm outline-none transition-colors placeholder:text-muted/70 focus:border-neon/50"
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="mr-1 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider">Filters</span>
+            <span className="mr-1 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider">
+              {m.users_filters()}
+            </span>
             {roleFilter ? (
               <button
                 type="button"
                 onClick={() => setRoleFilter("")}
                 className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-fg text-xs transition-colors hover:border-neon/40"
               >
-                Role: {capitalized(roleFilter)} <X size={12} />
+                {m.users_filter_role({ role: capitalized(roleFilter) })} <X size={12} />
               </button>
             ) : (
               <>
@@ -215,14 +214,14 @@ function UserList() {
                   onClick={() => setRoleFilter("admin")}
                   className="rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-muted text-xs transition-colors hover:text-fg"
                 >
-                  Admin
+                  {m.role_admin()}
                 </button>
                 <button
                   type="button"
                   onClick={() => setRoleFilter("user")}
                   className="rounded-md border border-border bg-surface-2 px-3 py-1.5 font-medium text-muted text-xs transition-colors hover:text-fg"
                 >
-                  User
+                  {m.role_user()}
                 </button>
               </>
             )}
@@ -235,7 +234,7 @@ function UserList() {
                 }}
                 className="ml-1 font-mono text-neon text-[11px] uppercase tracking-wider hover:text-neon-hi"
               >
-                Clear
+                {m.users_clear()}
               </button>
             )}
           </div>
