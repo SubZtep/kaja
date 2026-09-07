@@ -24,10 +24,10 @@ personaSwitchedMessage = "已經換做 {label} 矣"
 
 [paths]
 settings = "設定"
-memorySessions = "記憶佮工作階段"
+memorySessions = "記智佮工作階段"
 models = "模型"
 mcpServers = "mcp 伺服器"
-services = "services"
+services = "服務"
 personas = "角色"
 datasets = "資料集"
 tools = "工具"
@@ -106,9 +106,6 @@ wipeNothing = "無物件通清空：{path} 無存在"
 [models]
 invalidAt = "模型檔無效（{path}）：{message}"
 
-[personas]
-invalidAt = "persona 檔無效（{path}）：{message}"
-
 [mcp]
 invalidAt = "MCP 伺服器檔無效（{path}）：{message}"
 
@@ -117,9 +114,6 @@ invalidAt = "services 檔無效（{path}）：{message}"
 
 [secrets]
 invalidAt = "secrets 檔無效（{path}）：{message}"
-
-[header]
-na = "無"
 
 [input]
 placeholder = "`/` 選單 · PgUp 歷史紀錄 · Alt+Enter 換逝 · Alt+C 拷貝上尾一句回覆"
@@ -154,7 +148,7 @@ listFiles = "咧列 {path} 个檔案..."
 readFile = "咧讀 {path}..."
 viewImage = "咧看 {path}..."
 rememberNote = "咧記「{key}」..."
-recallMemory = "咧想起記憶{query}..."
+recallMemory = "咧想起記智{query}..."
 forgetNote = "咧刪除筆記..."
 listNotes = "咧列筆記..."
 rerank = "咧共 {n} 筆結果排序..."
@@ -183,7 +177,7 @@ mcpServers = "MCP 伺服器"
 mcpServerToolCount = "（{count} 个工具）"
 mcpServerFailed = "（連線失敗）"
 tools = "工具"
-stats = "工作階段：{sessionCount} · 記憶筆記：{memoryNoteCount}"
+stats = "工作階段：{sessionCount} · 記智筆記：{memoryNoteCount}"
 
 [telegram]
 notConfigured = "請佇設定內底加一个 `telegram` 區塊（設定檔路徑看 `kaja config paths`），閣加 `botToken` 佮 `allowedUserIds` 才會使用這个指令。"
@@ -203,6 +197,3 @@ genericError = "處理个時陣出代誌矣 — 請看記錄檔。"
 
 [web]
 listening = "Kaja 網頁介面：{url}（揤 Ctrl+C 通停止）"
-
-[agent]
-replyLanguage = "使用者講个是臺灣閩南語（臺語）。請一定愛用臺語回覆，包括用 ask_user 工具問个問題嘛仝款。"

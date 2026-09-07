@@ -212,7 +212,7 @@
   "widget_column_last_used": "上一改使用",
   "widget_status_active": "作用中",
   "widget_status_revoked": "已收回",
-  "widget_never_used": "永遠無",
+  "widget_never_used": "毋捌用過",
   "widget_revoke_confirm_title": "欲收回小工具金鎖匙矣無？",
   "widget_revoke_confirm_description": "任何有嵌入「{label}」个網站會隨時停止運作。",
   "widget_revoke_confirm_button": "收回",
