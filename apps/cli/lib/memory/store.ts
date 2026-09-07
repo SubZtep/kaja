@@ -31,7 +31,7 @@ let cached: { path: string; store: NasiStore } | undefined
 
 export async function getStore(): Promise<NasiStore> {
   const dbPath = await resolveMemoryDbPath()
-  if (!cached || cached.path !== dbPath) {
+  if (cached?.path !== dbPath) {
     cached = { path: dbPath, store: createSqliteStore(dbPath) }
     await persistDbPathIfMissing(dbPath)
   }

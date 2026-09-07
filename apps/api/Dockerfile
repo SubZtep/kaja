@@ -9,7 +9,7 @@ RUN bun install --frozen-lockfile --ignore-scripts
 COPY docs/config ./docs/config
 COPY apps/api ./apps/api
 RUN bun run --filter @kaja/api build
-RUN bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/scripts/migrate.ts
+RUN bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/migrate.ts
 
 FROM oven/bun:1.4.2-slim AS runner
 WORKDIR /home/bun/app

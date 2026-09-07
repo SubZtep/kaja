@@ -1,14 +1,11 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { Client } from "pg"
 
-// source tree: scripts/migrate.ts next to ../migrations
-// built image: migrate.js next to ./migrations (see Dockerfile)
+// source tree and built image both keep migrate next to migrations (see Dockerfile)
 const scriptDir = dirname(fileURLToPath(import.meta.url))
-const migrationsDir = existsSync(join(scriptDir, "migrations"))
-  ? join(scriptDir, "migrations")
-  : join(scriptDir, "..", "migrations")
+const migrationsDir = join(scriptDir, "migrations")
 
 const files = readdirSync(migrationsDir)
   .filter(f => f.endsWith(".sql"))

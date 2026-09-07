@@ -1,5 +1,5 @@
-import type { MemoryStore } from "@kaja/schema/store"
-import { type PersistedSession, PersistedSessionSchema, type SessionMeta } from "@kaja/schema/store"
+import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
+import { PersistedSessionSchema } from "@kaja/schema/store"
 import type { DatasetAnswer, DatasetVersionSummary, NasiStore, SessionWrite } from "./types"
 
 function ownerKey(owner: string | null): string {
@@ -16,7 +16,8 @@ function parseSession(row: PersistedSession): PersistedSession | undefined {
 }
 
 function datasetKey(topic: string, owner: string | null, version: number, field?: string) {
-  return `${topic}\0${ownerKey(owner)}\0${version}${field !== undefined ? `\0${field}` : ""}`
+  const base = `${topic}\0${ownerKey(owner)}\0${version}`
+  return field !== undefined ? `${base}\0${field}` : base
 }
 
 /** In-memory store for tests and hosts that do not persist. */
