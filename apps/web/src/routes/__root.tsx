@@ -13,8 +13,14 @@ import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
 import { getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
-import { getLocale, getTextDirection } from "../paraglide/runtime.js"
+import { getLocale, getTextDirection, type Locale } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
+
+const OG_LOCALE: Record<Locale, string> = {
+  en: "en_GB",
+  hu: "hu_HU",
+  "zh-TW": "zh_TW"
+}
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
@@ -67,7 +73,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         name: "og:locale",
-        content: getLocale() === "hu" ? "hu_HU" : "en_GB"
+        content: OG_LOCALE[getLocale()]
       },
       {
         name: "og:site_name",
@@ -100,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = getLocale()
-  const ogLocale = locale === "hu" ? "hu_HU" : "en_GB"
+  const ogLocale = OG_LOCALE[locale]
 
   return (
     <html lang={locale} dir={getTextDirection()} suppressHydrationWarning>
