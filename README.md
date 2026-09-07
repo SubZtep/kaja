@@ -8,9 +8,9 @@
 > [!IMPORTANT]
 > Kaja is still evolving :speaker::godmode::loudspeaker:
 
-Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**, a **TanStack Start** web app, and a local **React Ink** terminal AI agent with Telegram support.
+Kaja is a full-stack AI playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a terminal AI agent (built with **React Ink**) that follows you into Telegram. All **TypeScript**, all **Bun**, one repo.
 
-## What’s in the Monorepo?
+## What's in the Monorepo?
 
 * **Apps** 
   + [`api`](./apps/api/) – Rest API, authentication, database migrations files, email delivery, and the embeddable widget bundle (`apps/api/widgets`)
@@ -22,9 +22,26 @@ Stack sandbox with **Bun** and **TypeScript**: **Better Auth** on a **Hono API**
   + [`schema`](./packages/schema/) – Shared request schemas and types
   + [`shared`](./packages/shared/) – Shared utilities (pure functions)
 
-### Run local development
+## Run on your machine
 
-Clone or download the source, install dependencies, and copy the env examples:
+Prepare:
+
+1. Be sure [Docker Compose](https://docs.docker.com/compose/install/) is installed
+2. Clone or download the source
+
+Pick one of two ways to run it:
+
+### Option A: everything in Docker
+
+The [compose config](compose.yaml) defaults just work — open a terminal and start:
+
+```bash
+docker compose up -d
+```
+
+### Option B: Docker for the backing services only
+
+Just want Postgres and MailDev in containers, with the API and web app running locally (hot reload, breakpoints, etc.)? Install dependencies and copy the env examples:
 
 ```bash
 bun install
@@ -32,25 +49,27 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-Start PostgreSQL (runs the database migrations on first init) and MailDev, using the [compose config](compose.yaml):
+Start PostgreSQL (runs the database migrations on first init) and MailDev:
 
 ```bash
 docker compose up -d db mail
 ```
 
-Then start the API and web app together:
+Then, in another terminal, start the API and web app together:
 
 ```bash
 bun dev
 ```
 
-The CLI talks to this hosted API by default:
+### Talking to it from the CLI
+
+However you started the stack above, the CLI is the same:
 
 ```sh
 bun dev:cli
 ```
 
-To run the CLI's agent loop locally instead (own LLM provider, no hosted API), pass `--local` and fetch the config templates first:
+By default it talks to the hosted API. To run the CLI's agent loop locally instead (own LLM provider, no hosted API), pass `--local` and fetch the config templates first:
 
 ```sh
 bun dev:cli --local config fetch
@@ -59,4 +78,4 @@ bun dev:cli --local
 
 ### Documentation
 
-See [GitHub Pages](https://docs.kaja.io) for more details.
+Want the full story? Head to [GitHub Pages](https://docs.kaja.io).
