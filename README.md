@@ -4,80 +4,53 @@
 ![Continuous integration](https://github.com/SubZtep/kaja/actions/workflows/ci.yaml/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
 
-
 > [!IMPORTANT]
 > Kaja is still evolving :speaker::godmode::loudspeaker:
 
-Kaja is a full-stack AI playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a terminal AI agent (built with **React Ink**) that follows you into Telegram. All **TypeScript**, all **Bun**, one repo.
+Kaja is an AI assistant you talk to from your terminal. Give it a task and it keeps looping with an LLM, using tools and switching personas as needed, until the job is done. Point it at a local model or a cloud one, chat with it in the terminal, on Telegram, or through a widget on your own website.
 
-## What's in the Monorepo?
+Under the hood it is a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent. All **TypeScript**, all **Bun**, one repo.
 
-* **Apps** 
-  + [`api`](./apps/api/) – Rest API, authentication, database migrations files, email delivery, and the embeddable widget bundle (`apps/api/widgets`)
-  + [`cli`](./apps/cli/) – AI Agent TUI
-  + [`web`](./apps/web/) – Public homepage and admin portal
-* **Packages** 
-  + [`logger`](./packages/logger/) – Pino logger for backend and frontend.
-  + [`nasi`](./packages/nasi/) – The AI harness
-  + [`schema`](./packages/schema/) – Shared request schemas and types
-  + [`shared`](./packages/shared/) – Shared utilities (pure functions)
+## Quick start
 
-## Run on your machine
-
-Prepare:
-
-1. Be sure [Docker Compose](https://docs.docker.com/compose/install/) is installed
-2. Clone or download the source
-
-Pick one of two ways to run it:
-
-### Run backend services in Docker
-
-Just want Postgres and MailDev in containers, with the API and web app running locally (hot reload, breakpoints, etc.)? Install dependencies and copy the env examples:
+You need [Bun](https://bun.sh) and [Docker Compose](https://docs.docker.com/compose/install/).
 
 ```bash
+git clone https://github.com/SubZtep/kaja.git
+cd kaja
 bun install
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
+docker compose up -d   # database, mail, API and web portal
+bun dev:cli            # start chatting
 ```
 
-Start PostgreSQL (runs the database migrations on first init) and MailDev:
+By default the CLI talks to the hosted API. To run the agent loop on your own machine with your own LLM provider, pass `--local`. The first time, fetch the config templates:
 
 ```bash
-docker compose up -d db mail
-```
-
-Then, in another terminal, start the API and web app together:
-
-```bash
-bun dev
-```
-
-> [!TIP]
-> The [compose config](compose.yaml) defaults just work for all included services. For the API and the web portal, open a terminal, and start:
-> ```bash
-> docker compose up -d
-> ```
-
-### Talking to it from the CLI
-
-However you started the stack above, the CLI is the same:
-
-```sh
-bun dev:cli
-```
-
-By default it talks to the hosted API. To run the CLI's agent loop locally instead (own LLM provider, no hosted API), pass `--local` and fetch the config templates first:
-
-```sh
 bun dev:cli --local config fetch
 bun dev:cli --local
 ```
 
-## Git hooks
+Hacking on the API or web app? `bun dev` runs both with hot reload.
 
-It is recommended to run [git hooks](lefthook.toml) for common, easily forgotten helper tasks.
+## What's inside
+
+**Apps**
+
+- [`cli`](./apps/cli/) – the terminal AI agent, also runs as a Telegram bot
+- [`api`](./apps/api/) – REST API, auth, database migrations, email, and the embeddable chat widget bundle
+- [`web`](./apps/web/) – public homepage and admin portal
+
+**Packages**
+
+- [`nasi`](./packages/nasi/) – the agent brain: the loop, tools, and memory
+- [`schema`](./packages/schema/) – shared Zod schemas and types
+- [`logger`](./packages/logger/) – Pino logger for backend and frontend
+- [`shared`](./packages/shared/) – small pure utilities
+
+## Contributing
+
+Install the [git hooks](lefthook.toml) with `bunx lefthook install`. They lint on commit and run the tests on push, so the easily forgotten chores take care of themselves.
 
 ## Documentation
 
-Want the full story? Head to [GitHub Pages](https://docs.kaja.io).
+Want the full story? Head to [docs.kaja.io](https://docs.kaja.io).
