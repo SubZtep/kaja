@@ -6,6 +6,8 @@ export const SamplingParamsSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   /** Nucleus sampling threshold: only tokens in the top `top_p` probability mass are considered. */
   top_p: z.number().min(0).max(1).optional(),
+  /** Limits sampling to the `top_k` most likely tokens at each step; not supported by all providers. */
+  top_k: z.number().int().positive().optional(),
   /** Maximum number of tokens to generate in the completion. */
   max_tokens: z.number().int().positive().optional(),
   /** Penalizes tokens by how often they've already appeared, -2 to 2; positive values discourage repetition. */

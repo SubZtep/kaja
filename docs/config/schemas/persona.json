@@ -58,6 +58,11 @@
       "minimum": 0,
       "maximum": 1
     },
+    "top_k": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
     "max_tokens": {
       "type": "integer",
       "exclusiveMinimum": 0,

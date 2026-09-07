@@ -14,6 +14,7 @@ test("persona chat model pin and sampling params round-trip", () => {
     models: { chat: "kimi-k2p6" },
     temperature: 0.7,
     top_p: 0.9,
+    top_k: 40,
     max_tokens: 512,
     frequency_penalty: 0.5,
     presence_penalty: -0.5,
@@ -24,6 +25,7 @@ test("persona chat model pin and sampling params round-trip", () => {
     models: { chat: "kimi-k2p6" },
     temperature: 0.7,
     top_p: 0.9,
+    top_k: 40,
     max_tokens: 512,
     frequency_penalty: 0.5,
     presence_penalty: -0.5,
@@ -75,6 +77,11 @@ test("temperature out of range is rejected", () => {
 
 test("top_p out of range is rejected", () => {
   expect(() => PersonaSchema.parse({ label: "X", top_p: 1.5 })).toThrow()
+})
+
+test("top_k must be a positive integer", () => {
+  expect(() => PersonaSchema.parse({ label: "X", top_k: 0 })).toThrow()
+  expect(() => PersonaSchema.parse({ label: "X", top_k: 1.5 })).toThrow()
 })
 
 test("max_tokens must be a positive integer", () => {
