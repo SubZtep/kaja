@@ -170,7 +170,10 @@ export default function App({
     switchPersonaAgent(next)
     try {
       await savePreferences({ persona: next.id })
-      notifier.notify({ title: "Persona Switched", message: `Switched to ${next.label}` })
+      notifier.notify({
+        title: t("cli.personaSwitchedTitle"),
+        message: t("cli.personaSwitchedMessage", { label: next.label })
+      })
     } catch (error) {
       log.warn("Failed to save preferences", { error })
     }

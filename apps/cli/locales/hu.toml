@@ -13,6 +13,25 @@ connecting = "Csatlakozás…"
 logoutSuccess = "Kijelentkezve: {email}."
 logoutNotSignedIn = "{email} nem volt bejelentkezve."
 logoutNoUser = "Nincs hosztolt fiók, amiből ki lehetne jelentkezni — jelentkezz be előbb a `kaja --remote` paranccsal, vagy add meg a --user <email> kapcsolót."
+deviceLoginFetchEmailFailed = "Nem sikerült lekérdezni a bejelentkezett felhasználót"
+deviceLoginStartFailed = "Nem sikerült elindítani az eszközös bejelentkezést"
+deviceLoginDenied = "Az eszközös bejelentkezés elutasítva"
+deviceLoginExpired = "Az eszközös bejelentkezési kód lejárt — futtasd újra a bejelentkezést"
+deviceLoginFailed = "Az eszközös bejelentkezés sikertelen"
+deviceLoginTimedOut = "Az eszközös bejelentkezés túllépte az időkorlátot"
+personaSwitchedTitle = "Perszóna váltva"
+personaSwitchedMessage = "Váltva erre: {label}"
+
+[paths]
+settings = "beállítások"
+memorySessions = "memória és munkamenetek"
+models = "modellek"
+mcpServers = "mcp szerverek"
+services = "szolgáltatások"
+personas = "perszónák"
+datasets = "adathalmazok"
+tools = "eszközök"
+temp = "ideiglenes"
 
 [firstRun]
 paths = "A Kaja ezeket az elérési utakat fogja használni:"
@@ -42,18 +61,18 @@ OPCIÓK
   --remote        Hosztolt bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
+  --port          A kaja --local web portja (alapértelmezés: 4880)
   --user          Hosztolt (--remote) fiók kiválasztása/váltása e-mail cím alapján
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
-  --port          A kaja --local web portja (alapértelmezés: 4880)
   --lang          A felület/válaszok nyelvének felülírása ehhez a futáshoz (en-GB, hu vagy nan-TW), a mentett beállítástól függetlenül
 """
 
 [memory]
 usage = """
 Használat
-  $ kaja memory list                    Kilistázza az összes elmentett jegyzetet
+  $ kaja memory list                      Kilistázza az összes elmentett jegyzetet
   $ kaja memory forget <kulcs-vagy-glob>  Jegyzetek törlése kulcs alapján, vagy csoportosan glob mintával, pl. "test:*"
-  $ kaja memory export                  Mutatja a nyers memória JSON-t
+  $ kaja memory export                    Mutatja a nyers memória JSON-t
 """
 empty = "(nincs elmentett jegyzet)"
 noMatch = "(nincs egyező jegyzet)"
@@ -87,9 +106,6 @@ wipeNothing = "Nincs mit törölni: {path} nem létezik"
 [models]
 invalidAt = "Érvénytelen modell fájl ({path}): {message}"
 
-[personas]
-invalidAt = "Érvénytelen persona fájl ({path}): {message}"
-
 [mcp]
 invalidAt = "Érvénytelen MCP szerver fájl ({path}): {message}"
 
@@ -99,11 +115,8 @@ invalidAt = "Érvénytelen services fájl ({path}): {message}"
 [secrets]
 invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 
-[header]
-na = "N/A"
-
 [input]
-placeholder = "`/` menü · PgUp előzmények · Alt+Enter új sor · Alt+C választ másol"
+placeholder = "`/` menü · PgUp előzmények · Alt+Enter új sor · Alt+C válasz másolása"
 
 [viewport]
 older = "↑ régebbi · PageDown vagy Ctrl+End a követéshez"
@@ -115,7 +128,7 @@ running = "Fut…"
 truncated = "… még {count} sor"
 
 [activity]
-thinking = "Gondolkozom… {seconds}s eltelt, még mindig gondolkodom"
+thinking = "Gondolkodom… {seconds}s eltelt, még mindig gondolkodom"
 tokens = " · ~{tokens} token eddig"
 
 [menu]
@@ -124,7 +137,7 @@ off = "ki"
 toggleThinking = "Gondolkodás átkapcsolása [{state}]"
 toggleSounds = "Hangok átkapcsolása [{state}]"
 toggleVoice = "Beszéd átkapcsolása [{state}]"
-changePersona = "Személyiségváltás"
+changePersona = "Perszónaváltás"
 
 [toolCall]
 webSearch = "Keresés: \"{query}\"..."
@@ -142,7 +155,7 @@ rerank = "{n} találat rangsorolása..."
 summarize = "Összegzés..."
 
 [timeline]
-personaSwitch = "Persona váltás: {label}"
+personaSwitch = "Perszóna váltva: {label}"
 
 [error]
 network = "Hálózati hiba"
@@ -151,7 +164,7 @@ agent = "Hiba történt"
 unknown = "Ismeretlen hiba"
 
 [startup]
-persona = "Személyiség: "
+persona = "Perszóna: "
 cwd = "Könyvtár: "
 noModels = "Nincs beállított modell"
 taskChat = "Chat"
@@ -184,6 +197,3 @@ genericError = "Hiba történt a feldolgozás közben — nézd meg a naplót."
 
 [web]
 listening = "Kaja web UI: {url} (Ctrl+C a leállításhoz)"
-
-[agent]
-replyLanguage = "A felhasználó magyarul beszél. Mindig magyarul válaszolj, beleértve az ask_user eszközön keresztül feltett kérdéseket is."

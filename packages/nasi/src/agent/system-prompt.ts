@@ -169,7 +169,9 @@ export async function buildSystemPrompt(agent: Agent): Promise<string | undefine
     [
       agent.instructions,
       `## Environment\n${environmentBlock}`,
-      toolNames.has(ASK_USER_TOOL) ? `## Tool contract: ${ASK_USER_TOOL}\n${ASK_USER_INSTRUCTIONS}` : undefined,
+      toolNames.has(ASK_USER_TOOL)
+        ? `## Tool contract: ${ASK_USER_TOOL}\n${ctx.askUserInstruction ?? ASK_USER_INSTRUCTIONS}`
+        : undefined,
       toolNames.has(RUN_COMMAND_TOOL)
         ? `## Tool contract: ${RUN_COMMAND_TOOL}\n${RUN_COMMAND_INSTRUCTIONS}`
         : undefined,

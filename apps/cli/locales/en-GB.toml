@@ -13,6 +13,25 @@ connecting = "Connecting…"
 logoutSuccess = "Logged out {email}."
 logoutNotSignedIn = "{email} wasn't signed in."
 logoutNoUser = "No hosted account to log out — sign in first with `kaja --remote`, or pass --user <email>."
+deviceLoginFetchEmailFailed = "Failed to look up the signed-in user"
+deviceLoginStartFailed = "Failed to start device login"
+deviceLoginDenied = "Device login was denied"
+deviceLoginExpired = "Device login code expired — run login again"
+deviceLoginFailed = "Device login failed"
+deviceLoginTimedOut = "Device login timed out"
+personaSwitchedTitle = "Persona Switched"
+personaSwitchedMessage = "Switched to {label}"
+
+[paths]
+settings = "settings"
+memorySessions = "memory & sessions"
+models = "models"
+mcpServers = "mcp servers"
+services = "services"
+personas = "personas"
+datasets = "datasets"
+tools = "tools"
+temp = "temp"
 
 [firstRun]
 paths = "Kaja will use these paths:"
@@ -87,9 +106,6 @@ wipeNothing = "Nothing to wipe: {path} does not exist"
 [models]
 invalidAt = "Invalid models file at {path}: {message}"
 
-[personas]
-invalidAt = "Invalid personas file at {path}: {message}"
-
 [mcp]
 invalidAt = "Invalid MCP servers file at {path}: {message}"
 
@@ -98,9 +114,6 @@ invalidAt = "Invalid services file at {path}: {message}"
 
 [secrets]
 invalidAt = "Invalid secrets file at {path}: {message}"
-
-[header]
-na = "N/A"
 
 [input]
 placeholder = "`/` menu · PgUp history · Alt+Enter newline · Alt+C copy last answer"
@@ -184,6 +197,3 @@ genericError = "Something went wrong processing that — check the logs."
 
 [web]
 listening = "Kaja web UI: {url} (Ctrl+C to stop)"
-
-[agent]
-replyLanguage = "The user speaks English. Always reply in English, including questions asked through the ask_user tool."

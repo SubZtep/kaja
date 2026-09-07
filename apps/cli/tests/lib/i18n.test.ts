@@ -26,7 +26,7 @@ test("unknown key falls back to the key itself", () => {
 test("setLanguage switches the dictionary", () => {
   expect(t("startup.persona")).toBe("Persona: ")
   setLanguage("hu")
-  expect(t("startup.persona")).toBe("Személyiség: ")
+  expect(t("startup.persona")).toBe("Perszóna: ")
 })
 
 test("detectLanguage maps Hungarian locales to hu, others to en-GB", () => {

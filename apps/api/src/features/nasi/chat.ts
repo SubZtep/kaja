@@ -1,4 +1,4 @@
-import { createOpenAIClient, Nasi, replyLanguageInstructionFor } from "@kaja/nasi"
+import { ASK_USER_TOOL, createOpenAIClient, Nasi, replyLanguageInstructionFor } from "@kaja/nasi"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared"
 import { pool } from "../../core/db"
@@ -45,6 +45,20 @@ async function defaultChatResolver(pinnedModel?: string) {
   }
 }
 
+/** Host-neutral replacement for the CLI's terminal-flavored ask_user contract — hosted chat is a normal message UI, not a terminal that blocks on tool calls. */
+const HOSTED_ASK_USER_INSTRUCTION =
+  `You talk to the human through a chat interface, and they can only reply ` +
+  `when you call the ${ASK_USER_TOOL} tool — plain text output is shown to ` +
+  `them but gives them no way to answer. So EVERY time you expect a reply — ` +
+  `a question, a confirmation, their turn in a game (e.g. "Question 3: is ` +
+  `it alive?") — deliver it by calling ${ASK_USER_TOOL}. Never write a ` +
+  `question as plain text: plain messages are only for statements and ` +
+  `results that need no reply, and end the conversation turn. That also ` +
+  `means no courtesy closers like "Would you like...?" or "Let me know ` +
+  `if..." — the conversation is over the moment you send plain text, so ` +
+  `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
+  `just state the result and stop.`
+
 /** Shared by hosted (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. */
 export async function openNasiFor(opts: {
   userId: string
@@ -61,6 +75,7 @@ export async function openNasiFor(opts: {
     owner: opts.owner,
     promptContext: {
       environment: "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP.",
+      askUserInstruction: HOSTED_ASK_USER_INSTRUCTION,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })

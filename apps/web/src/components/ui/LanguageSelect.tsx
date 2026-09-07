@@ -1,7 +1,8 @@
 import { Select } from "@base-ui/react/select"
-import { ChevronsUpDown } from "lucide-react"
+import { ChevronsUpDown, Languages } from "lucide-react"
+import { useEffect, useState } from "react"
 import { m } from "../../paraglide/messages.js"
-import { getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
+import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
 
 const LOCALE_LABELS: Record<Locale, string> = {
   "en-GB": "English",
@@ -10,6 +11,12 @@ const LOCALE_LABELS: Record<Locale, string> = {
 }
 
 export function LanguageSelect() {
+  const [hasChosenLocale, setHasChosenLocale] = useState(false)
+
+  useEffect(() => {
+    setHasChosenLocale(Boolean(extractLocaleFromCookie()))
+  }, [])
+
   return (
     <Select.Root
       items={locales.map(locale => ({ label: LOCALE_LABELS[locale], value: locale }))}
@@ -18,16 +25,18 @@ export function LanguageSelect() {
     >
       <Select.Trigger
         aria-label={m.language_select_label()}
-        className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg"
+        title={hasChosenLocale ? LOCALE_LABELS[getLocale()] : undefined}
+        className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg cursor-pointer"
       >
-        <Select.Value />
+        {hasChosenLocale && <Languages size={14} className="hidden md:block" />}
+        <Select.Value className={hasChosenLocale ? "md:hidden" : undefined} />
         <Select.Icon>
           <ChevronsUpDown size={12} />
         </Select.Icon>
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner className="z-20 outline-none select-none" sideOffset={4}>
-          <Select.Popup className="min-w-[var(--anchor-width)] rounded-md border border-border bg-surface py-1 text-fg text-sm shadow-lg outline-none transition-all duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+          <Select.Popup className="min-w-(--anchor-width) rounded-md border border-border bg-surface py-1 text-fg text-sm shadow-lg outline-none transition-all duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
             {locales.map(locale => (
               <Select.Item
                 key={locale}

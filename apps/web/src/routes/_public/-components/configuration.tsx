@@ -35,7 +35,7 @@ export function Configuration() {
         }
         description={m.configuration_description()}
       />
-      <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
+      <Section bordered="sm-up">
         <div className="mb-3.5 font-semibold text-fg text-sm"></div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {getTools().map(tool => (

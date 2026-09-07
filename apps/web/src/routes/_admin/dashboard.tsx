@@ -5,10 +5,11 @@ import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
 import { useUser } from "../../hooks/user"
 import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/dashboard")({
   component: DashboardPage,
-  head: () => ({ meta: seo({ title: "Dashboard" }) })
+  head: () => ({ meta: seo({ title: m.nav_dashboard() }) })
 })
 
 function DashboardPage() {
@@ -18,8 +19,13 @@ function DashboardPage() {
   return (
     <>
       <PageHeader
-        title={<>Welcome back{user ? `, ${getFirstName(user.name)}` : ""}</>}
-        description="Manage models and config for your Kaja platform."
+        title={
+          <>
+            {m.dashboard_welcome_back()}
+            {user ? `, ${getFirstName(user.name)}` : ""}
+          </>
+        }
+        description={m.dashboard_description()}
         meta={user?.role}
       />
 

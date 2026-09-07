@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import envPaths from "env-paths"
+import { t } from "./i18n"
 
 // Computed fresh per call, not cached — tests mutate XDG_*_HOME per spec file.
 export function getPaths() {
@@ -11,19 +12,19 @@ export function listPaths(all = false, configDir = getPaths().config) {
   const paths = getPaths()
 
   const items = [
-    { label: "settings", path: join(configDir, "settings.toml") },
-    { label: "memory & sessions", path: join(paths.data, "memory.sqlite") }
+    { label: t("paths.settings"), path: join(configDir, "settings.toml") },
+    { label: t("paths.memorySessions"), path: join(paths.data, "memory.sqlite") }
   ]
 
   if (all) {
     items.push(
-      { label: "models", path: join(configDir, "models.toml") },
-      { label: "mcp servers", path: join(configDir, "mcp.toml") },
-      { label: "services", path: join(configDir, "services.toml") },
-      { label: "personas", path: join(configDir, "personas") },
-      { label: "datasets", path: join(configDir, "datasets") },
-      { label: "tools", path: join(configDir, "tools") },
-      { label: "temp", path: paths.temp }
+      { label: t("paths.models"), path: join(configDir, "models.toml") },
+      { label: t("paths.mcpServers"), path: join(configDir, "mcp.toml") },
+      { label: t("paths.services"), path: join(configDir, "services.toml") },
+      { label: t("paths.personas"), path: join(configDir, "personas") },
+      { label: t("paths.datasets"), path: join(configDir, "datasets") },
+      { label: t("paths.tools"), path: join(configDir, "tools") },
+      { label: t("paths.temp"), path: paths.temp }
     )
   }
 

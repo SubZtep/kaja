@@ -1,8 +1,9 @@
 import { capitalized, cn } from "@kaja/shared"
 import { type Column, type ColumnFiltersState, flexRender, useTable } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 import { tableFeaturesConfig } from "../../lib/table"
+import { m } from "../../paraglide/messages.js"
 import { DebouncedText } from "../form/primitives/Text"
 
 type PeriodFilter = [Date | undefined, Date | undefined]
@@ -42,7 +43,8 @@ export function Table({
 
   const toggleSorting = (columnId: string) => {
     const currentSort = table.state.sorting.find(sort => sort.id === columnId)
-    table.setSorting([currentSort && !currentSort.desc ? { id: columnId, desc: true } : { id: columnId, desc: false }])
+    const desc = currentSort ? !currentSort.desc : false
+    table.setSorting([{ id: columnId, desc }])
   }
 
   const { rows } = table.getRowModel()
@@ -70,29 +72,7 @@ export function Table({
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
-                  <th
-                    key={header.id}
-                    className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
-                  >
-                    {header.isPlaceholder ? null : (
-                      <button
-                        type="button"
-                        className={cn(
-                          "flex gap-2 items-center",
-                          header.column.getCanSort() && "cursor-pointer",
-                          header.column.getIsSorted() && "select-none",
-                          header.column.getCanSort() && !header.column.getIsSorted() && "mr-7.25"
-                        )}
-                        onClick={() => header.column.getCanSort() && toggleSorting(header.column.id)}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{
-                          asc: <ArrowDown size={21} className="text-muted" />,
-                          desc: <ArrowUp size={21} className="text-muted" />
-                        }[header.column.getIsSorted() as string] ?? null}
-                      </button>
-                    )}
-                  </th>
+                  <TableHeaderCell key={header.id} header={header} onToggleSort={toggleSorting} />
                 ))}
               </tr>
             ))}
@@ -113,6 +93,55 @@ export function Table({
 
       <Pagination table={table} />
     </div>
+  )
+}
+
+const ARIA_SORT_BY_STATE = { asc: "ascending", desc: "descending" } as const
+
+function TableHeaderCell({
+  header,
+  onToggleSort
+}: Readonly<{ header: any; onToggleSort: (columnId: string) => void }>) {
+  const sorted = header.column.getIsSorted()
+  const label = String(header.column.columnDef.header ?? "")
+  const canSort = header.column.getCanSort()
+  const ariaSort = canSort ? (ARIA_SORT_BY_STATE[sorted as keyof typeof ARIA_SORT_BY_STATE] ?? "none") : undefined
+
+  const sortLabelByState = {
+    asc: m.table_sort_ascending({ column: label }),
+    desc: m.table_sort_descending({ column: label }),
+    none: m.table_sort_none({ column: label })
+  } as const
+
+  const headerContent = flexRender(header.column.columnDef.header, header.getContext())
+
+  let cellContent: ReactNode = headerContent
+  if (!header.isPlaceholder && canSort) {
+    cellContent = (
+      <button
+        type="button"
+        aria-label={sortLabelByState[sorted as keyof typeof sortLabelByState] ?? sortLabelByState.none}
+        className={cn("flex gap-2 items-center cursor-pointer", sorted && "select-none", !sorted && "mr-7.25")}
+        onClick={() => onToggleSort(header.column.id)}
+      >
+        {headerContent}
+        {{
+          asc: <ArrowDown size={21} className="text-muted" />,
+          desc: <ArrowUp size={21} className="text-muted" />
+        }[sorted as string] ?? null}
+      </button>
+    )
+  } else if (header.isPlaceholder) {
+    cellContent = null
+  }
+
+  return (
+    <th
+      aria-sort={ariaSort}
+      className="border-border border-b p-3 text-left align-top text-muted text-xs font-mono uppercase tracking-wider"
+    >
+      {cellContent}
+    </th>
   )
 }
 
@@ -158,18 +187,16 @@ function Pagination({ table }: Readonly<{ table: any }>) {
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
       <div className="flex items-center gap-2 text-sm text-muted">
-        <span>
-          Showing {startRow} to {endRow} of {totalRows} entries
-        </span>
+        <span>{m.table_showing_entries({ startRow, endRow, totalRows })}</span>
         <select
           value={pageSize}
           onChange={e => table.setPageSize(Number(e.target.value))}
-          aria-label="Select page size"
+          aria-label={m.table_select_page_size()}
           className="ml-2 rounded-lg bg-surface-2 px-3 py-1 text-fg outline-none transition-all focus:ring-1 focus:ring-neon"
         >
           {PAGE_SIZES.map(size => (
             <option key={size} value={size}>
-              {size} per page
+              {m.table_per_page({ size })}
             </option>
           ))}
         </select>
@@ -180,7 +207,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.setPageIndex(0)}
           disabled={!table.getCanPreviousPage()}
-          aria-label="Go to first page"
+          aria-label={m.table_first_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanPreviousPage()
@@ -194,7 +221,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
-          aria-label="Go to previous page"
+          aria-label={m.table_previous_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanPreviousPage()
@@ -229,7 +256,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
-          aria-label="Go to next page"
+          aria-label={m.table_next_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
@@ -241,7 +268,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
           type="button"
           onClick={() => table.setPageIndex(table.getPageCount() - 1)}
           disabled={!table.getCanNextPage()}
-          aria-label="Go to last page"
+          aria-label={m.table_last_page()}
           className={cn(
             "p-2 rounded-lg transition-all",
             table.getCanNextPage() ? "text-fg hover:bg-surface-2 hover:text-neon" : "text-muted/50 cursor-not-allowed"
@@ -287,7 +314,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
         <div className="flex flex-col gap-0.5">
           <DebouncedText
             type="date"
-            placeholder="From"
+            placeholder={m.table_date_from()}
             variant="simple"
             className="w-34"
             value={values[0] ?? ""}
@@ -300,7 +327,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
           />
           <DebouncedText
             type="date"
-            placeholder="To"
+            placeholder={m.table_date_to()}
             variant="simple"
             className="w-34"
             value={values[1] ?? ""}
@@ -319,7 +346,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
     default:
       return (
         <DebouncedText
-          placeholder="Search..."
+          placeholder={m.table_search_placeholder()}
           className="w-32"
           variant="simple"
           onChange={value => column.setFilterValue(value)}

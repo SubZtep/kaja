@@ -3,6 +3,7 @@
     "biomejs.biome",
     "bradlc.vscode-tailwindcss",
     "editorconfig.editorconfig",
+    "oven.bun-vscode",
     "tombi-toml.tombi"
   ],
   "unwantedRecommendations": [

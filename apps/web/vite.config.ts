@@ -48,7 +48,8 @@ const config = defineConfig({
     sentryTanstackStart({
       org: "kaja-io",
       project: "kaja-web",
-      authToken: process.env.SENTRY_AUTH_TOKEN
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      telemetry: false
     })
   ]
 })

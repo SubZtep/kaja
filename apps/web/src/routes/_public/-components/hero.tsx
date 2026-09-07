@@ -1,6 +1,7 @@
 import { useLoaderData } from "@tanstack/react-router"
 import { FolderCode } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Button } from "../../../components/form/primitives/Button"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { getInstallCmd } from "../../../lib/vars"
 import { m } from "../../../paraglide/messages.js"
@@ -63,28 +64,33 @@ export function Hero() {
         </div>
 
         <div className="order-3 md:order-0 md:col-start-1">
-          <p className="mb-4 max-w-115 text-lg text-muted">{m.hero_paragraph_1()}</p>
-          <p className="mb-8 max-w-115 text-lg text-muted">{m.hero_paragraph_2()}</p>
-          <div className="mb-7 sm:flex flex-wrap gap-3 hidden">
-            <a
-              href="https://github.com/SubZtep/kaja"
-              target="_blank"
-              rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md bg-neon px-5 py-2.5 font-bold text-bg text-sm hover:bg-neon-hi transition-colors duration-200 ease-in-out"
+          <p className="mb-4 text-lg text-muted">{m.hero_paragraph_1()}</p>
+          <p className="mb-8 text-lg text-muted">{m.hero_paragraph_2()}</p>
+          <div className="mb-7 sm:flex flex-wrap gap-3 hidden w-full">
+            <Button
+              variant="primary"
+              className="flex-1 gap-2 rounded-md! px-5! text-sm transition-colors duration-200 ease-in-out"
+              render={
+                <a
+                  href="https://github.com/SubZtep/kaja"
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={m.hero_cta_source()}
+                />
+              }
             >
-              <FolderCode size={12} />
+              <FolderCode size={21} className="pb-0.5" />
               {m.hero_cta_source()}
-            </a>
-            <a
-              href="https://docs.kaja.io"
-              target="_blank"
-              rel="noopener"
-              className="inline-flex items-center gap-2 rounded-md border border-border hover:border-amber-900 bg-surface px-5 py-2.5 font-medium text-fg text-sm transition-colors duration-150 ease-in-out"
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1 gap-2 rounded-md! px-5! text-sm transition-colors duration-150 ease-in-out"
+              render={<a href="https://docs.kaja.io" target="_blank" rel="noopener" aria-label={m.hero_cta_docs()} />}
             >
               {m.hero_cta_docs()}
-            </a>
+            </Button>
           </div>
-          <div className="flex max-w-116 items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
+          <div className="flex items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
             <code className="flex-1 overflow-x-hidden whitespace-nowrap font-mono text-fg text-sm">{installCmd}</code>
             <button
               type="button"

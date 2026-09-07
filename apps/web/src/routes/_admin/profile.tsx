@@ -10,11 +10,12 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { userRequired } from "../../lib/loaders"
 import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/profile")({
   component: Profile,
   loader: () => userRequired(),
-  head: () => ({ meta: seo({ title: "Profile" }) })
+  head: () => ({ meta: seo({ title: m.nav_profile() }) })
 })
 
 function Profile() {
@@ -23,27 +24,23 @@ function Profile() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Profile"
-        description={
-          <>
-            Logged in with the {user.emailVerified ? "verified" : "unverified"}{" "}
-            <strong className="text-fg">{user.email}</strong> as <strong className="text-neon">{user.role}</strong>.
-          </>
-        }
-        meta="account"
+        title={m.profile_title()}
+        description={m.profile_description_logged_in_as({
+          verified: user.emailVerified ? m.profile_description_verified() : m.profile_description_unverified(),
+          email: user.email,
+          role: user.role ?? "user"
+        })}
+        meta={m.profile_meta()}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Section className="sm:row-span-2">
-          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Edit Personal Data</h2>
+        <Section className="sm:row-span-2" title={m.profile_edit_personal_data()}>
           <EditUser user={user} />
         </Section>
-        <Section>
-          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Change Email</h2>
+        <Section title={m.profile_change_email()}>
           <ChangeEmail />
         </Section>
-        <Section>
-          <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">Change Password</h2>
+        <Section title={m.profile_change_password()}>
           <ChangePassword />
         </Section>
       </div>
@@ -66,7 +63,7 @@ function EditUser({ user }: Readonly<{ user: User }>) {
     onSubmit: async ({ value }) => {
       const parsed = editSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? "Invalid data")
+        toast.error(parsed.error?.message ?? m.profile_error_invalid_data())
         return
       }
 
@@ -74,7 +71,7 @@ function EditUser({ user }: Readonly<{ user: User }>) {
         setLoading(true)
         const { error, data } = await updateUser(parsed.data)
         if (error) toast.error(error.message ?? error.statusText)
-        if (data?.status) toast.success("User updated")
+        if (data?.status) toast.success(m.profile_success_user_updated())
       } catch (error: any) {
         toast.error(error.message)
       } finally {
@@ -91,10 +88,10 @@ function EditUser({ user }: Readonly<{ user: User }>) {
       }}
       className="flex flex-col gap-2"
     >
-      <form.AppField name="name">{field => <field.TextField label="Name" />}</form.AppField>
-      <form.AppField name="image">{field => <field.TextField label="Image" />}</form.AppField>
+      <form.AppField name="name">{field => <field.TextField label={m.profile_field_name()} />}</form.AppField>
+      <form.AppField name="image">{field => <field.TextField label={m.profile_field_image()} />}</form.AppField>
       <Button type="submit" className="mt-4" loading={loading}>
-        Submit
+        {m.profile_submit()}
       </Button>
     </form>
   )
@@ -114,7 +111,7 @@ function ChangeEmail() {
     onSubmit: async ({ value }) => {
       const parsed = editEmailSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? "Invalid data")
+        toast.error(parsed.error?.message ?? m.profile_error_invalid_data())
         return
       }
 
@@ -122,7 +119,7 @@ function ChangeEmail() {
         setLoading(true)
         const { error, data } = await changeEmail(parsed.data)
         if (error) toast.error(error.message ?? error.statusText)
-        if (data?.status) toast.success("User email updated")
+        if (data?.status) toast.success(m.profile_success_email_updated())
       } catch (error: any) {
         toast.error(error.message)
       } finally {
@@ -139,9 +136,11 @@ function ChangeEmail() {
       }}
       className="flex flex-col gap-2"
     >
-      <form.AppField name="newEmail">{field => <field.TextField label="New email" type="email" />}</form.AppField>
+      <form.AppField name="newEmail">
+        {field => <field.TextField label={m.profile_field_new_email()} type="email" />}
+      </form.AppField>
       <Button type="submit" className="mt-4" loading={loading}>
-        Submit
+        {m.profile_submit()}
       </Button>
     </form>
   )
@@ -163,7 +162,7 @@ function ChangePassword() {
     onSubmit: async ({ value }) => {
       const parsed = changePasswordSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? "Invalid data")
+        toast.error(parsed.error?.message ?? m.profile_error_invalid_data())
         return
       }
 
@@ -175,7 +174,7 @@ function ChangePassword() {
           revokeOtherSessions: parsed.data.revokeOtherSessions
         })
         if (error) toast.error(error.message ?? error.statusText)
-        if (data?.user) toast.success("Password changed")
+        if (data?.user) toast.success(m.profile_success_password_changed())
       } catch (error: any) {
         toast.error(error.message)
       } finally {
@@ -193,21 +192,28 @@ function ChangePassword() {
       }}
     >
       <form.AppField name="newPassword">
-        {field => <field.TextField label="New password" type="password" autoComplete="new-password" />}
+        {field => (
+          <field.TextField label={m.profile_field_new_password()} type="password" autoComplete="new-password" />
+        )}
       </form.AppField>
 
       <form.AppField name="currentPassword">
-        {field => <field.TextField label="Current password" type="password" autoComplete="current-password" />}
+        {field => (
+          <field.TextField label={m.profile_field_current_password()} type="password" autoComplete="current-password" />
+        )}
       </form.AppField>
 
       <form.AppField name="revokeOtherSessions">
         {field => (
-          <field.CheckboxField label="Revoke other sessions" className="mt-1 flex justify-end [&>label]:w-auto!" />
+          <field.CheckboxField
+            label={m.profile_field_revoke_other_sessions()}
+            className="mt-1 flex justify-end [&>label]:w-auto!"
+          />
         )}
       </form.AppField>
 
       <Button type="submit" className="mt-4" loading={loading}>
-        Submit
+        {m.profile_submit()}
       </Button>
     </form>
   )

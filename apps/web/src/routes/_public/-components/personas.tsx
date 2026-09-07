@@ -41,10 +41,10 @@ export function Personas() {
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {getPersonas().map(p => (
-          <Section key={p.id} className="border-0 bg-transparent p-0 sm:border sm:px-6 sm:py-6">
+          <Section key={p.id} bordered="sm-up" className="bg-transparent">
             <div className="mb-2.5 flex items-center justify-between">
               <div className="font-semibold text-fg text-[15px]">{p.label}</div>
-              <span className="font-mono text-[#6e7681] text-[11px]">{p.id}.toml</span>
+              <span className="font-mono text-[11px] text-muted">{p.id}.toml</span>
             </div>
             <div className="rounded-md border border-border bg-surface-2 px-3 py-2.5 font-mono text-[12.5px] text-muted leading-relaxed">
               when = <span className="text-neon-hi">"{p.when}"</span>

@@ -16,7 +16,7 @@ export function ValueBox({
         variant === "neon" ? "border-t-neon" : "border-t-ice"
       )}
     >
-      <p className="mb-1 font-mono text-[#6e7681] text-[11px] uppercase tracking-wider">{label}</p>
+      <p className="mb-1 font-mono text-[11px] text-muted uppercase tracking-wider">{label}</p>
       <p className={cn("font-mono font-semibold text-2xl", variant === "neon" ? "text-neon" : "text-ice")}>
         {children}
       </p>

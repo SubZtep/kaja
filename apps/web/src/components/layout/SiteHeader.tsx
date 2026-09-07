@@ -52,12 +52,12 @@ export function SiteHeader({
       <ContentWidth className="flex items-center justify-between py-3 sm:py-4.5">
         <BrandMark to={brandTo} monster className="text-lg" />
 
-        <nav className="hidden items-center gap-7 text-muted text-sm md:flex">
+        <nav className="hidden items-center gap-7 text-muted text-sm lg:flex">
           {desktopNav}
           <LanguageSelect />
         </nav>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
           <button
             type="button"
             onClick={() => setOpen(v => !v)}

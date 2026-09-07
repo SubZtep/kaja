@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_admin")({
 function AdminLayoutRoute() {
   return (
     <SiteShell header={<Header />}>
-      <ContentWidth as="main" className="flex-1 py-10 md:py-14">
+      <ContentWidth className="flex-1 py-10 md:py-14">
         <Outlet />
       </ContentWidth>
     </SiteShell>

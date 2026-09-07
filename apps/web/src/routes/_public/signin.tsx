@@ -10,6 +10,7 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
+import { localizeHref } from "../../paraglide/runtime.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 
@@ -43,7 +44,7 @@ function SignIn() {
       trace("Sign in form submitted", { value })
       const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? "Invalid data")
+        toast.error(parsed.error?.message ?? m.signin_error_invalid_data())
         error("Sign in form validation failed", { error: parsed.error })
         return
       }
@@ -52,14 +53,14 @@ function SignIn() {
         setLoading(true)
         const { error: authError } = await authClient.signIn.email({
           ...parsed.data,
-          callbackURL: redirect ?? "/dashboard"
+          callbackURL: localizeHref(redirect ?? "/dashboard")
         })
         if (authError) {
           toast.error(authError.message ?? authError.statusText)
           error("Sign in failed", { error: authError })
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Something went wrong")
+        toast.error(err instanceof Error ? err.message : m.signin_error_generic())
         error("Sign in fail catched", { error: err })
       } finally {
         setLoading(false)
@@ -72,13 +73,13 @@ function SignIn() {
   return (
     <AuthShell>
       <AuthCard
-        title="Sign in"
-        description="Welcome back. Sign in to manage models and config."
+        title={m.signin_title()}
+        description={m.seo_signin_desc()}
         footer={
           <>
-            No account yet?{" "}
+            {m.signin_no_account()}{" "}
             <Link to="/signup" className="font-medium text-neon hover:text-neon-hi">
-              Create one
+              {m.signin_create_one()}
             </Link>
           </>
         }
@@ -94,7 +95,7 @@ function SignIn() {
           <form.AppField name="email">
             {field => (
               <field.TextField
-                label="Email"
+                label={m.auth_field_email()}
                 layout="stack"
                 type="email"
                 autoComplete="email"
@@ -106,7 +107,7 @@ function SignIn() {
           <form.AppField name="password">
             {field => (
               <field.TextField
-                label="Password"
+                label={m.auth_field_password()}
                 layout="stack"
                 type="password"
                 autoComplete="current-password"
@@ -117,18 +118,23 @@ function SignIn() {
 
           <div className="flex items-center justify-between gap-3">
             <form.AppField name="rememberMe">
-              {field => <field.CheckboxField label="Remember me" className="text-[13px] text-muted" />}
+              {field => <field.CheckboxField label={m.auth_field_remember_me()} className="text-[13px] text-muted" />}
             </form.AppField>
 
             <ForgotPassword getEmail={() => form.state.values.email}>
-              <Button size="sm" variant="link" disabled={loading} className="text-[13px] text-muted hover:text-neon">
-                Forgot password?
+              <Button
+                size="sm"
+                variant="link"
+                disabled={loading}
+                className="text-[13px] text-muted hover:text-neon mx-0"
+              >
+                {m.auth_field_forgot_password()}
               </Button>
             </ForgotPassword>
           </div>
 
           <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
-            Sign in
+            {m.signin_submit()}
           </Button>
         </form>
       </AuthCard>
