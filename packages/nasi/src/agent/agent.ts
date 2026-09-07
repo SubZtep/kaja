@@ -12,6 +12,8 @@ export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResul
 export type PromptContext = {
   /** Override the default OS/home line. Callers that are not a user machine should describe their environment. */
   environment?: string
+  /** Override the default ask_user tool contract, which assumes a terminal. Hosts with a chat UI should describe that instead. */
+  askUserInstruction?: string
   location?: GeoLocation
   loadLocation?: () => Promise<GeoLocation | undefined>
   replyLanguageInstruction?: string
