@@ -1,0 +1,16 @@
+# Kaja
+
+> Open-source agentic harness. Keep looping your prompt with an LLM until the appropriate outcome is achieved.
+
+Kaja is a highly customisable, multi-purpose AI agent: a single executable binary with an event loop, orchestrating various models into context-sensitive, multi-step pipelines. Offline-first — configs are local text files, memory and session data live in a local SQLite database, and it can run entirely without an Internet connection against local models.
+
+## Documentation
+- Docs home: https://docs.kaja.io/
+- Installation: https://docs.kaja.io/installation/
+- Configuration: https://docs.kaja.io/configuration/
+- CLI usage: https://docs.kaja.io/cli/
+- Personas: https://docs.kaja.io/personas/
+- Tools: https://docs.kaja.io/tools/
+
+## Source
+- GitHub: https://github.com/SubZtep/kaja

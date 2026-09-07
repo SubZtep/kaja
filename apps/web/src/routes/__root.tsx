@@ -87,6 +87,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         hrefLang: "x-default",
         href: `https://kaja.io${localizeHref(match.pathname, { locale: baseLocale })}`
       }
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Kaja",
+          url: "https://kaja.io",
+          publisher: {
+            "@type": "Organization",
+            name: "Kaja",
+            url: "https://kaja.io",
+            logo: "https://kaja.io/android-chrome-512x512.png",
+            sameAs: ["https://github.com/SubZtep/kaja", "https://x.com/SubZtep"]
+          }
+        })
+      }
     ]
   }),
   shellComponent: RootDocument,
