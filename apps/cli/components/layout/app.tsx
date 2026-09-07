@@ -11,7 +11,7 @@ import type { Tool } from "../../lib/agent/agents"
 import { savePreferences } from "../../lib/config/config"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
-import { client, clientForModel, FREE_CHAT_PROVIDER } from "../../lib/models/openai"
+import { client, clientForModel } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
 import { StartupPanel } from "../startup-panel"
 import { ChatViewport } from "./chat-viewport"
@@ -114,7 +114,6 @@ export default function App({
   models = [],
   personas,
   openaiApiModel,
-  freeChat = false,
   tools,
   mcpServers = [],
   initialSession,
@@ -126,8 +125,6 @@ export default function App({
   models?: CliResolvedModel[]
   personas: Persona[]
   openaiApiModel: string
-  /** True when running on the free hosted (OpenCode Zen) chat tier. */
-  freeChat?: boolean
   tools: Tool<any>[]
   /** Connected MCP servers with their tool counts, shown in the startup panel. */
   mcpServers?: { id: string; toolCount: number }[]
@@ -186,8 +183,7 @@ export default function App({
   const { columns, rows } = useWindowSize()
 
   const [menuMode, setMenuMode] = useState<MenuMode>("main")
-  // displayModel may be provider-reported (e.g. free-chat proxy) and match no configured model — on the free tier that's expected, so label it "kaja" rather than showing nothing.
-  const provider = models.find(m => m.model === displayModel)?.provider ?? (freeChat ? FREE_CHAT_PROVIDER : undefined)
+  const provider = models.find(m => m.model === displayModel)?.provider
 
   const commands = buildCommands({
     menuMode,

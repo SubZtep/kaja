@@ -33,12 +33,7 @@ export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResul
 export { connectMcpServer } from "./mcp/client"
 export {
   createOpenAIClient,
-  FREE_CHAT_API_KEY,
-  FREE_CHAT_BASE_URL,
-  FREE_CHAT_MODEL_ID,
-  FREE_CHAT_PROVIDER,
   KAJA_MODEL_HEADER,
-  KAJA_ZEN_KEY_HEADER,
   noteServedModel,
   takeLastServedModel
 } from "./models/client"

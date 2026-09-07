@@ -31,10 +31,6 @@ apiKey = "BSA..."
 [telegram]
 botToken = "123456:ABC-DEF..."
 
-# Powers services.toml's [zen] (free OpenCode Zen models)
-[zen]
-apiKey = "sk-..."
-
 # Powers models.toml's [providers.<name>] tables, keyed the same way
 [providers.fireworks]
 api_key = "fw_YourSecretKey"

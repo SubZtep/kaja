@@ -28,8 +28,8 @@ serviceUrl = "https://ip2geo.demo.land/"
 allowedUserIds = [123456789]
 ```
 
-`[webSearch]` and `[zen]` have no non-secret fields of their own — turning them on is just adding
-their section to `secrets.toml` (see the Secrets page).
+`[webSearch]` has no non-secret fields of its own — turning it on is just adding
+its section to `secrets.toml` (see the Secrets page).
 
 Notes:
 
@@ -40,7 +40,6 @@ Notes:
 
 - **Web search** (`[webSearch]`): get a free key from [Brave's website](https://brave.com/search/api/).
 - **Location** (`[location]`): the example URL and API key work for a while.
-- **Zen** (`[zen]`): get a free API key from [OpenCode Zen](https://opencode.ai/zen).
 
 ---
 

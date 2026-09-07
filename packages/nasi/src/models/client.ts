@@ -1,16 +1,7 @@
 import OpenAI from "openai"
 
-/** Free hosted chat tier (no provider needed); "auto" model lets the proxy pick server-side. */
-export const FREE_CHAT_BASE_URL = "https://openai.kaja.io"
-export const FREE_CHAT_API_KEY = "kaja"
-export const FREE_CHAT_MODEL_ID = "auto"
-export const FREE_CHAT_PROVIDER = "kaja"
-
 /** Free-chat proxy sets this to the model it resolved and put in the request. */
 export const KAJA_MODEL_HEADER = "x-kaja-model"
-
-/** Forwarded to the free-chat proxy: use this key instead of its DB-sourced provider key. */
-export const KAJA_ZEN_KEY_HEADER = "x-kaja-zen-key"
 
 /**
  * Last model id reported by a free-chat proxy via {@link KAJA_MODEL_HEADER}.
