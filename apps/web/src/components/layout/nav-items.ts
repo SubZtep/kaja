@@ -81,15 +81,7 @@ const navItems: NavItem[] = [
     sections: ["header", "admin"],
     icon: MessageCircle
   },
-  { label: "Docs", href: "https://docs.kaja.io", roles: ["all"], sections: ["header"] }
-  // {
-  //   label: "GitHub",
-  //   href: "https://github.com/SubZtep/kaja",
-  //   desktopOnly: true,
-  //   className: "flex items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 py-1.5 font-medium text-fg",
-  //   roles: ["public"],
-  //   sections: ["header"]
-  // }
+  { label: "Docs", href: "https://docs.kaja.io", roles: ["public"], sections: ["header"] }
 ]
 
 const getItems = (section: NavSection, role: string | null | undefined) =>

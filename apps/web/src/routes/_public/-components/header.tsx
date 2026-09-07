@@ -67,7 +67,6 @@ export function Header() {
             <MenuItem key={item.label} item={item} />
           ))}
           {user ? <SignOutButton /> : null}
-          <span className="text-gray-700 font-bold">|</span>
         </>
       }
       mobileNav={<MobileNav menuItems={menuItems} user={user} />}
