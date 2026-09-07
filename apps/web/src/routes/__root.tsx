@@ -19,7 +19,7 @@ import appCss from "../styles.css?url"
 const OG_LOCALE: Record<Locale, string> = {
   en: "en_GB",
   hu: "hu_HU",
-  "zh-TW": "zh_TW"
+  "nan-TW": "nan_TW"
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({

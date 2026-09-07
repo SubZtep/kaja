@@ -6,7 +6,7 @@ import { getLocale, type Locale, locales, setLocale } from "../../paraglide/runt
 const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
   hu: "Magyar",
-  "zh-TW": "繁體中文"
+  "nan-TW": "臺語"
 }
 
 export function LanguageSelect() {

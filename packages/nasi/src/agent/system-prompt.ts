@@ -41,7 +41,7 @@ export function defaultEnvironmentInstructions() {
 const LANGUAGE_NAME: Record<string, string> = {
   en: "English",
   hu: "Hungarian",
-  "zh-TW": "Traditional Chinese (Taiwan)"
+  "nan-TW": "Taiwanese Hokkien"
 }
 
 /** Builds a PromptContext.replyLanguageInstruction for a UI language code — "en" is omitted (it's already the model's default), any other known code tells the model to reply in that language. */

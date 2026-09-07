@@ -3,9 +3,9 @@
 import * as z from "zod"
 import en from "../locales/en.toml"
 import hu from "../locales/hu.toml"
-import zhTw from "../locales/zh-TW.toml"
+import nanTw from "../locales/nan-TW.toml"
 
-export type Language = "en" | "hu" | "zh-TW"
+export type Language = "en" | "hu" | "nan-TW"
 
 function flatten(table: Record<string, unknown>, prefix = "", out = new Map<string, string>()) {
   for (const [key, value] of Object.entries(table)) {
@@ -20,7 +20,7 @@ function flatten(table: Record<string, unknown>, prefix = "", out = new Map<stri
 export const dictionaries: Record<Language, Map<string, string>> = {
   en: flatten(en),
   hu: flatten(hu),
-  "zh-TW": flatten(zhTw)
+  "nan-TW": flatten(nanTw)
 }
 
 let language: Language = "en"
@@ -29,17 +29,17 @@ export function getLanguage() {
   return language
 }
 
-/** System locale → supported language: zh-TW for a Taiwan Chinese locale, hu for a Hungarian locale, else en. */
+/** System locale → supported language: nan-TW for a Taiwanese Hokkien locale, hu for a Hungarian locale, else en. */
 export function detectLanguage(): Language {
   const locale =
     process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG || Intl.DateTimeFormat().resolvedOptions().locale
   const lower = locale.toLowerCase()
-  if (lower.startsWith("zh-tw") || lower.startsWith("zh_tw")) return "zh-TW"
+  if (lower.startsWith("nan-tw") || lower.startsWith("nan_tw")) return "nan-TW"
   return lower.startsWith("hu") ? "hu" : "en"
 }
 
-// zod's z.locales keys are camelCase (e.g. zhTW), unlike this module's BCP-47-style Language codes.
-const ZOD_LOCALE: Record<Language, keyof typeof z.locales> = { en: "en", hu: "hu", "zh-TW": "zhTW" }
+// zod has no locale file for nan-TW, so validation messages fall back to its default (English).
+const ZOD_LOCALE: Record<Language, keyof typeof z.locales> = { en: "en", hu: "hu", "nan-TW": "en" }
 
 export function setLanguage(next: Language) {
   language = next

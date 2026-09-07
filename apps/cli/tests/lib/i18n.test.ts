@@ -7,8 +7,8 @@ test("en and hu dictionaries have the same keys", () => {
   expect([...dictionaries.hu.keys()].sort()).toEqual([...dictionaries.en.keys()].sort())
 })
 
-test("en and zh-TW dictionaries have the same keys", () => {
-  expect([...dictionaries["zh-TW"].keys()].sort()).toEqual([...dictionaries.en.keys()].sort())
+test("en and nan-TW dictionaries have the same keys", () => {
+  expect([...dictionaries["nan-TW"].keys()].sort()).toEqual([...dictionaries.en.keys()].sort())
 })
 
 test("interpolates params", () => {
