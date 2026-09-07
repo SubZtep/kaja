@@ -107,8 +107,10 @@ async function askGuesserQuestion(
       return { question: args.question, callId: askCall.id }
     }
     // Model replied without calling ask_user (e.g. leaked plain text) — nudge it once more.
-    messages.push({ role: "assistant", content })
-    messages.push({ role: "user", content: "Ask your next question using the ask_user tool, not plain text." })
+    messages.push(
+      { role: "assistant", content },
+      { role: "user", content: "Ask your next question using the ask_user tool, not plain text." }
+    )
   }
 }
 
@@ -142,7 +144,7 @@ function isConfirmedWin(answer: string): boolean {
 /** Strips newlines/control chars from model-generated text before it's logged. */
 function forLog(text: string): string {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control chars, not matching content
-  return text.replace(/[\r\n\t\x00-\x1f]+/g, " ").trim()
+  return text.replace(/[\x00-\x1f]+/g, " ").trim()
 }
 
 async function playRound() {
