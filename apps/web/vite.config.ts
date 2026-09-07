@@ -38,7 +38,7 @@ const config = defineConfig({
           localized: [
             ["hu", "/hu/:path(.*)?"],
             ["nan-TW", "/nan-TW/:path(.*)?"],
-            ["en", "/:path(.*)?"]
+            ["en-GB", "/:path(.*)?"]
           ]
         }
       ]
