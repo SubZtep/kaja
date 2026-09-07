@@ -11,7 +11,7 @@ import {
 import { useEffect } from "react"
 import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
-import { getRootEnv } from "../lib/vars"
+import { getPageTitle, getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
 import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
@@ -48,7 +48,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "width=device-width, initial-scale=1"
       },
       {
-        title: m.site_title()
+        title: getPageTitle()
       },
       {
         property: "og:url",
@@ -80,6 +80,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "manifest",
         href: "/site.webmanifest"
+      },
+      {
+        rel: "alternate",
+        type: "text/markdown",
+        title: "LLM-friendly version",
+        href: "/llms.txt"
       },
       ...locales.map(locale => ({
         rel: "alternate",

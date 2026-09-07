@@ -1,27 +1,19 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-
-  "site_title": "🕳 • Kaja",
   "site_og_description": "Open-source agentic harness. Keep looping your prompt with an LLM until the appropriate outcome is achieved.",
   "not_found_message": "Sorry, this page doesn't exist.",
-
   "nav_home": "Home",
   "nav_sign_in": "Sign In",
   "nav_sign_up": "Sign Up",
   "nav_docs": "Docs",
-
   "seo_signin_desc": "Welcome back. Sign in to manage models and config.",
   "seo_signup_desc": "Sign up to access the admin portal and manage your Kaja setup.",
   "seo_reset_password_title": "Reset Password",
   "seo_reset_password_desc": "Choose a new password for your account.",
-
   "menu_open": "Open menu",
   "menu_close": "Close menu",
-
   "brand_monster_alt": "Monster",
-
   "language_select_label": "Language",
-
   "hero_badge": "OSS · MIT · WIP",
   "hero_quote": "Your terminal should talk by asking — never by guessing",
   "hero_quote_attribution": "― MiniMax M3",
@@ -31,7 +23,6 @@
   "hero_cta_docs": "Read the docs",
   "hero_copy_copied": "Copied!",
   "hero_copy_copy": "Copy",
-
   "why_kaja_title": "Why Kaja",
   "why_kaja_meta": "Work in Progress (WIP)",
   "why_kaja_feature_models_title": "Local or cloud models",
@@ -46,7 +37,6 @@
   "why_kaja_feature_tools_desc": "Brave web search, location lookups, and more as config groups",
   "why_kaja_feature_telegram_title": "Also on Telegram",
   "why_kaja_feature_telegram_desc": "Kaja telegram runs the same personas, tools and models as a bot",
-
   "personas_title": "Personas",
   "personas_schema_link": "TOML's JSON Schema",
   "personas_description": "Each persona is a .toml file: a label, its system-prompt instructions, and an optional when clause. Kaja reads the room and switches personas mid-conversation on its own — no command needed.",
@@ -58,14 +48,12 @@
   "personas_care_when": "the user talks about their day, feelings, mood, or personal struggles",
   "personas_onboarding_label": "Onboarding assistant",
   "personas_onboarding_when": "a new user should be walked through the initial getting-to-know-you questions",
-
   "memory_title": "Memory & Datasets",
   "memory_description": "How Kaja remembers you, across chats and sessions.",
   "memory_persistent_title": "Persistent memory",
   "memory_persistent_desc": "Kaja remembers key facts about you and recalls them later, so you never repeat yourself. — Mark the important ones sticky to keep them in every conversation.",
   "memory_dataset_title": "Dataset collection",
   "memory_dataset_desc": "Some personas monitor a conversation for a set of fields and gently repeat their questions — even day after day — until every one is filled in.",
-
   "configuration_title": "Built-in Tools & MCP Clients",
   "configuration_meta_link": "Have a favourite MCP or skill?",
   "configuration_description": "Easily extendable plain files. Fetch templates during onboarding and edit them by hand if tweaking is necessary.",
@@ -81,7 +69,6 @@
   "configuration_tool_rerank_desc": "Rank documents against a query",
   "configuration_tool_memory_desc": "Remember durable facts across sessions",
   "configuration_tool_dataset_info_desc": "Track persona dataset collection progress",
-
   "install_title": "Install",
   "install_description": "Only tested on Linux. A setup wizard walks you through config on first launch (or anytime config is missing/invalid) — no separate step needed.",
   "install_instruction": "Paste the appropriate command in your terminal, press Enter to install:",
@@ -90,11 +77,9 @@
   "install_binary_prefix": "Prefer a plain binary?",
   "install_binary_link": "Grab one from Releases",
   "install_binary_suffix": "— Linux, macOS, and Windows, x64 and arm64.",
-
-  "footer_license_prefix": "MIT License · by",
-  "footer_license_suffix": "· {year} · 🕳",
+  "footer_license_name": "MIT License",
+  "footer_license_by": "by",
   "footer_star": "Star on GitHub",
-
   "barkochba_title_bar": "AI widget: barkochba game",
   "barkochba_idle_prompt": "Think of something. You get {maxQuestions} questions — answer by clicking a button below.",
   "barkochba_example_pizza": "Pizza",

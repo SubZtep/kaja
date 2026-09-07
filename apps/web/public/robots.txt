@@ -3,3 +3,6 @@ User-agent: *
 Disallow:
 
 Sitemap: https://kaja.io/sitemap.xml
+
+# https://llmstxt.org/
+# llms.txt: https://kaja.io/llms.txt

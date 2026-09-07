@@ -1,6 +1,5 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_title": "🕳 • Kaja",
   "site_og_description": "Nyílt forráskódú ágens keretrendszer. Futtasd újra és újra a promptodat egy LLM-mel az eredményeivel együtt, amíg el nem éred a megfelelő kimenetet.",
   "not_found_message": "Sajnáljuk, ez az oldal nem létezik.",
   "nav_home": "Kezdőlap",
@@ -78,8 +77,8 @@
   "install_binary_prefix": "Inkább sima bináris kellene?",
   "install_binary_link": "Szerezz egyet a Releases oldalról",
   "install_binary_suffix": "— Linux, macOS és Windows, x64 és arm64.",
-  "footer_license_prefix": "MIT licenc · készítette",
-  "footer_license_suffix": "· {year} · 🕳",
+  "footer_license_name": "MIT licenc",
+  "footer_license_by": "készítette",
   "footer_star": "Csillagozd a GitHubon",
   "barkochba_title_bar": "AI widget: barkochba játék",
   "barkochba_idle_prompt": "Gondolj valamire. {maxQuestions} kérdésed van — válaszolj egy gomb megnyomásával.",

@@ -1,6 +1,5 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_title": "🕳 • Kaja",
   "site_og_description": "開放原始碼个代理框架。照你个輸入，予 LLM 紮著頭前个結果一直踅落去，一直到揣著合軀个結果為止。",
   "not_found_message": "歹勢，這个頁面無存在。",
   "nav_home": "頭頁",
@@ -78,8 +77,8 @@
   "install_binary_prefix": "想欲純執行檔？",
   "install_binary_link": "去 Releases 提一个",
   "install_binary_suffix": "— 有支援 Linux、macOS 佮 Windows，x64 佮 arm64。",
-  "footer_license_prefix": "MIT 授權 · 作者",
-  "footer_license_suffix": "· {year} · 🕳",
+  "footer_license_name": "MIT 授權",
+  "footer_license_by": "作者",
   "footer_star": "去 GitHub 頂共伊拍星",
   "barkochba_title_bar": "AI 小工具：巴科奇巴遊戲",
   "barkochba_idle_prompt": "想一項物件。你有 {maxQuestions} 个問題會使問——揤下跤个按鈕來回答。",
