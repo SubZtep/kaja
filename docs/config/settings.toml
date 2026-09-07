@@ -2,7 +2,7 @@
 thinking = false
 sounds = true
 voice = false
-language = "en"
+language = "en-GB"
 persona = "default"
 
 # Speech-to-text (Speaches AI server).

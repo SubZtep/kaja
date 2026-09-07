@@ -15,12 +15,12 @@ afterEach(() => {
   process.argv = originalArgv
   process.env.LANG = originalLang
   setConfigDirOverride(undefined)
-  setLanguage("en")
+  setLanguage("en-GB")
 })
 
-test("--lang=hu overrides everything, even a saved en preference", async () => {
+test("--lang=hu overrides everything, even a saved en-GB preference", async () => {
   const dir = `${tmpdir()}/kaja-test-bootstrap-flag-${Date.now()}`
-  await write(`${dir}/settings.toml`, TOML.stringify({ preferences: { language: "en" } })!)
+  await write(`${dir}/settings.toml`, TOML.stringify({ preferences: { language: "en-GB" } })!)
   setConfigDirOverride(dir)
   process.argv = [...originalArgv, "--lang=hu"]
 

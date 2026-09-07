@@ -17,7 +17,7 @@ import { baseLocale, getLocale, getTextDirection, type Locale, locales, localize
 import appCss from "../styles.css?url"
 
 const OG_LOCALE: Record<Locale, string> = {
-  en: "en_GB",
+  "en-GB": "en_GB",
   hu: "hu_HU",
   "nan-TW": "nan_TW"
 }

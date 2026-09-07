@@ -64,7 +64,7 @@ GitHub Pages content is also under monorepo `docs/`.
 
 - Fetch current docs for dependency versions (Context7) when using libraries
 - Run lint before commit (monorepo `bun lint` or package biome if configured)
-- User-facing strings go through `t()` from `lib/i18n.ts` with keys in **all three** of `locales/en.toml`, `locales/hu.toml`, and `locales/nan-TW.toml`
+- User-facing strings go through `t()` from `lib/i18n.ts` with keys in **all three** of `locales/en-GB.toml`, `locales/hu.toml`, and `locales/nan-TW.toml`
 - Write short, explicit TSDoc on non-obvious exports
 
 ### Ask first

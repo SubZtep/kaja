@@ -4,7 +4,7 @@ export const KajaPreferencesSchema = z.object({
   thinking: z.boolean().optional().describe("Show thinking indicator when the model is generating a response"),
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
-  language: z.enum(["en", "hu", "nan-TW"]).optional().describe("Language for the chat and application"),
+  language: z.enum(["en-GB", "hu", "nan-TW"]).optional().describe("Language for the chat and application"),
   // Id of the last-selected persona (see @kaja/schema/cli's personas.ts), so the app reopens with it instead of always defaulting to the first one.
   persona: z.string().min(1).optional().describe("Id of the persona to open with (see personas.toml)")
 })
