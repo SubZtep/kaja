@@ -156,7 +156,8 @@ taskImageGen = "Image generation"
 mcpServers = "MCP servers"
 mcpServerToolCount = "({count} tools)"
 mcpServerFailed = "(failed to connect)"
-stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount} · Tools: {toolCount}"
+tools = "Tools"
+stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount}"
 
 [telegram]
 notConfigured = "Add a `telegram` block to your config (see `kaja config paths` for the file path) with `botToken` and `allowedUserIds` to use this command."

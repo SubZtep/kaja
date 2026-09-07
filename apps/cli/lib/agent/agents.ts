@@ -22,5 +22,6 @@ export {
   type ToolContext,
   ToolError,
   type ToolResult,
-  tool
+  tool,
+  toolName
 } from "@kaja/nasi"

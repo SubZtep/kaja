@@ -156,7 +156,8 @@ taskImageGen = "Képgenerálás"
 mcpServers = "MCP szerverek"
 mcpServerToolCount = "({count} eszköz)"
 mcpServerFailed = "(sikertelen kapcsolódás)"
-stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet · {toolCount} eszköz"
+tools = "Eszközök"
+stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet"
 
 [telegram]
 notConfigured = "Adj hozzá egy `telegram` blokkot a konfigurációhoz (a fájl helyéért lásd: `kaja config paths`) `botToken` és `allowedUserIds` mezőkkel, hogy használhasd ezt a parancsot."

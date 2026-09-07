@@ -227,7 +227,7 @@ export default function App({
             cwd={process.cwd()}
             sessionCount={sessionCount}
             memoryNoteCount={memoryNoteCount}
-            toolCount={tools.length}
+            tools={tools}
           />
         }
       />
