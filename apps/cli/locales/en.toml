@@ -9,6 +9,9 @@ deviceLoginGoTo = "Go to:"
 deviceLoginEnterCode = "Enter code:"
 secretsUnavailable = "Could not access the system keychain to store your login. Try running with --local instead, which does not require OS credential storage."
 connecting = "Connecting…"
+logoutSuccess = "Logged out {email}."
+logoutNotSignedIn = "{email} wasn't signed in."
+logoutNoUser = "No hosted account to log out — sign in first with `kaja --remote`, or pass --user <email>."
 
 [firstRun]
 paths = "Kaja will use these paths:"
@@ -31,6 +34,7 @@ COMMANDS
   web
   memory <list|forget <key-or-glob>|export>
   session <list|diagram <id>>
+  logout                     Log out of the hosted (--remote) account, clearing its stored credential
 
 OPTIONS
   --local         Run the local agent loop against your own provider instead of hosted login

@@ -9,6 +9,9 @@ deviceLoginGoTo = "Nyisd meg:"
 deviceLoginEnterCode = "Add meg a kódot:"
 secretsUnavailable = "Nem sikerült elérni a rendszer kulcstartóját a bejelentkezés tárolásához. Próbáld a --local kapcsolóval futtatni, ahhoz nem szükséges rendszerszintű hitelesítő-adat tárolás."
 connecting = "Csatlakozás…"
+logoutSuccess = "Kijelentkezve: {email}."
+logoutNotSignedIn = "{email} nem volt bejelentkezve."
+logoutNoUser = "Nincs hosztolt fiók, amiből ki lehetne jelentkezni — jelentkezz be előbb a `kaja --remote` paranccsal, vagy add meg a --user <email> kapcsolót."
 
 [firstRun]
 paths = "A Kaja ezeket az elérési utakat fogja használni:"
@@ -31,6 +34,7 @@ PARANCSOK
   web
   memory <list|forget <kulcs-vagy-glob>|export>
   session <list|diagram <id>>
+  logout                     Kijelentkezés a hosztolt (--remote) fiókból, a tárolt hitelesítő adat törlésével
 
 OPCIÓK
   --local         A helyi ágens futtatása saját szolgáltatóval a hosztolt bejelentkezés helyett
