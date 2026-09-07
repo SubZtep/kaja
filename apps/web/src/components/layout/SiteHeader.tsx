@@ -35,7 +35,7 @@ export function SiteHeader({
     }
     const onClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.closest('[role="alertdialog"], [role="dialog"]')) return
+      if (target.closest('[role="alertdialog"], [role="dialog"], [role="listbox"]')) return
       if (headerRef.current && !headerRef.current.contains(target)) close()
     }
 
