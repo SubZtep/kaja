@@ -7,6 +7,7 @@ import { Button } from "../../components/form/primitives/Button"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/_public/reset-password")({
     token: z.string().optional()
   }),
   head: () => ({
-    meta: seo({ title: "Reset Password", description: "Choose a new password for your account." })
+    meta: seo({ title: m.seo_reset_password_title(), description: m.seo_reset_password_desc() })
   })
 })
 

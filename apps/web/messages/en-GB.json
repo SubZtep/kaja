@@ -10,6 +10,11 @@
   "nav_sign_up": "Sign Up",
   "nav_docs": "Docs",
 
+  "seo_signin_desc": "Welcome back. Sign in to manage models and config.",
+  "seo_signup_desc": "Sign up to access the admin portal and manage your Kaja setup.",
+  "seo_reset_password_title": "Reset Password",
+  "seo_reset_password_desc": "Choose a new password for your account.",
+
   "menu_open": "Open menu",
   "menu_close": "Close menu",
 

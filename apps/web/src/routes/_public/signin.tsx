@@ -9,6 +9,7 @@ import { ForgotPassword } from "../../components/user/ForgotPassword"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/_public/signin")({
   validateSearch: signinSearchSchema,
   component: SignIn,
   head: () => ({
-    meta: seo({ title: "Sign In", description: "Welcome back. Sign in to manage models and config." })
+    meta: seo({ title: m.nav_sign_in(), description: m.seo_signin_desc() })
   })
 })
 

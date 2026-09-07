@@ -6,13 +6,14 @@ import { Button } from "../../components/form/primitives/Button"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { seo } from "../../lib/seo"
+import { m } from "../../paraglide/messages.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/signup")({
   component: SignUp,
   head: () => ({
-    meta: seo({ title: "Sign Up", description: "Sign up to access the admin portal and manage your Kaja setup." })
+    meta: seo({ title: m.nav_sign_up(), description: m.seo_signup_desc() })
   })
 })
 
