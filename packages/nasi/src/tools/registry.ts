@@ -18,8 +18,22 @@ import { webSearchTool } from "./builtin/web-search"
 import type { NasiToolDeps } from "./deps"
 import { setToolDeps } from "./deps"
 
-/** Files, shell, and disk-bound vision. Off unless `includeLocalTools` is set. */
-const LOCAL_TOOLS = new Set(["read_file", "list_files", "view_image", "run_command"])
+/** Builtins safe to expose when `includeLocalTools` is false (hosted mode) — an allowlist so a new builtin is hosted-exposed only once someone opts it in here, not by default. */
+const HOSTED_SAFE = new Set([
+  "ask_user",
+  "switch_persona",
+  "remember_note",
+  "recall_memory",
+  "forget_note",
+  "list_notes",
+  "dataset_info",
+  "current_time",
+  "summarize",
+  "rerank",
+  "fetch_url",
+  "web_search",
+  "generate_image"
+])
 
 export type CreateToolsOptions = {
   /** Files, shell, MCP, and plugins. Default false. */
@@ -73,7 +87,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   ]
 
   const local = opts.includeLocalTools === true
-  const tools = local ? builtin : builtin.filter(t => !LOCAL_TOOLS.has(toolName(t)))
+  const tools = local ? builtin : builtin.filter(t => HOSTED_SAFE.has(toolName(t)))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
   const mcpConnections = local && opts.mcpServers && tempDir ? await connectMcpServers(opts.mcpServers, tempDir) : []
