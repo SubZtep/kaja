@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "echo \"no tests\"",
     "generate:routes": "tsr generate",
-    "generate:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --emit-ts-declarations --strategy cookie preferredLanguage baseLocale"
+    "generate:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --emit-ts-declarations --strategy url cookie preferredLanguage baseLocale"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

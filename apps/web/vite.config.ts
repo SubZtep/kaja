@@ -31,7 +31,17 @@ const config = defineConfig({
       project: "./project.inlang",
       outdir: "./src/paraglide",
       emitTsDeclarations: true,
-      strategy: ["cookie", "preferredLanguage", "baseLocale"]
+      strategy: ["url", "cookie", "preferredLanguage", "baseLocale"],
+      urlPatterns: [
+        {
+          pattern: "/:path(.*)?",
+          localized: [
+            ["hu", "/hu/:path(.*)?"],
+            ["nan-TW", "/nan-TW/:path(.*)?"],
+            ["en", "/:path(.*)?"]
+          ]
+        }
+      ]
     }),
     tanstackStart(),
     viteReact(),

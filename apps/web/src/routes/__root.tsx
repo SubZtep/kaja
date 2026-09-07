@@ -13,7 +13,7 @@ import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
 import { getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
-import { getLocale, getTextDirection, type Locale } from "../paraglide/runtime.js"
+import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
 
 const OG_LOCALE: Record<Locale, string> = {
@@ -38,7 +38,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       session
     }
   },
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
       {
         charSet: "utf-8"
@@ -96,6 +96,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: appCss
+      },
+      ...locales.map(locale => ({
+        rel: "alternate",
+        hrefLang: locale,
+        href: `https://kaja.io${localizeHref(match.pathname, { locale })}`
+      })),
+      {
+        rel: "alternate",
+        hrefLang: "x-default",
+        href: `https://kaja.io${localizeHref(match.pathname, { locale: baseLocale })}`
       }
     ]
   }),
