@@ -139,6 +139,12 @@ function isConfirmedWin(answer: string): boolean {
   return answer.toLowerCase().includes(SECRET.toLowerCase())
 }
 
+/** Strips newlines/control chars from model-generated text before it's logged. */
+function forLog(text: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control chars, not matching content
+  return text.replace(/[\r\n\t\x00-\x1f]+/g, " ").trim()
+}
+
 async function playRound() {
   const chat = await loadChatModel()
   const persona = await loadGuesserPersona()
@@ -151,13 +157,13 @@ async function playRound() {
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     const { question, callId } = await askGuesserQuestion(chat, persona, guesserMessages)
-    console.log(`\n[${round}] Guesser: ${question}`)
+    console.log(`\n[${round}] Guesser: ${forLog(question)}`)
 
     thinkerMessages.push({ role: "user", content: question })
     const { content } = await chatCompletion(chat, thinkerMessages)
     const answer = content ?? ""
     thinkerMessages.push({ role: "assistant", content: answer })
-    console.log(`[${round}] Thinker: ${answer}`)
+    console.log(`[${round}] Thinker: ${forLog(answer)}`)
 
     guesserMessages.push({ role: "tool", tool_call_id: callId, content: answer })
 
