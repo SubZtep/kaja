@@ -63,6 +63,12 @@ async function connectMcpServers(mcpServers: McpServerEntry[], tempDir: string):
   return connections
 }
 
+/** Names of builtin tools a hosted turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting MCP/plugins (hosted never does). */
+export async function listHostedToolNames(deps?: NasiToolDeps): Promise<string[]> {
+  const { tools } = await createTools({ deps })
+  return tools.map(toolName)
+}
+
 export async function createTools(opts: CreateToolsOptions = {}) {
   if (opts.deps) setToolDeps({ ...opts.deps, tempDir: opts.tempDir ?? opts.deps.tempDir })
 

@@ -35,7 +35,6 @@ test("missing file: writes the template and returns its active (non-commented) s
   expect(data.location).toEqual({ apiKey: "kaja" })
   expect(data.webSearch).toBeUndefined()
   expect(data.telegram).toBeUndefined()
-  expect(data.zen).toBeUndefined()
   expect(data.providers).toEqual({})
 })
 
@@ -92,27 +91,27 @@ test("secrets() caches after the first read; invalidateSecretsCache() forces a r
   await write(
     join(dir, "secrets.toml"),
     `
-[zen]
+[webSearch]
 apiKey = "first"
 `
   )
 
   const first = await secrets()
-  expect(first.zen).toEqual({ apiKey: "first" })
+  expect(first.webSearch).toEqual({ apiKey: "first" })
 
   await write(
     join(dir, "secrets.toml"),
     `
-[zen]
+[webSearch]
 apiKey = "second"
 `
   )
   // Still cached: rewriting the file on disk alone must not change what secrets() returns.
-  expect((await secrets()).zen).toEqual({ apiKey: "first" })
+  expect((await secrets()).webSearch).toEqual({ apiKey: "first" })
   expect(await secrets()).toBe(first)
 
   invalidateSecretsCache()
-  expect((await secrets()).zen).toEqual({ apiKey: "second" })
+  expect((await secrets()).webSearch).toEqual({ apiKey: "second" })
 })
 
 test("provider and mcp tables default to {} when absent, never undefined", async () => {

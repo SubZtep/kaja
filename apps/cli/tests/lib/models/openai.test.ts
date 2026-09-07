@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 
-// lib/models/openai.ts does `const { models } = await config()` and `const { zen } = await services()` at its own module top level, so the module-scope `client` singleton depends on whichever test file's fixtures happened to be in place at first import across the whole `bun test` run (see the same note in tests/lib/agent/agents.test.ts). createOpenAIClient itself takes all inputs as parameters, so it's tested directly here instead of relying on that load-order-sensitive singleton.
+// lib/models/openai.ts does `const { models } = await config()` at its own module top level, so the module-scope `client` singleton depends on whichever test file's fixtures happened to be in place at first import across the whole `bun test` run (see the same note in tests/lib/agent/agents.test.ts). createOpenAIClient itself takes all inputs as parameters, so it's tested directly here instead of relying on that load-order-sensitive singleton.
 const { createOpenAIClient } = await import("../../../lib/models/openai")
 
 test("createOpenAIClient merges custom headers into outgoing requests without dropping the SDK's own headers", async () => {
@@ -8,7 +8,7 @@ test("createOpenAIClient merges custom headers into outgoing requests without dr
   const openai = createOpenAIClient({
     baseURL: "http://localhost/v1",
     apiKey: "sk-sdk-auth",
-    headers: { "x-kaja-zen-key": "sk-custom" }
+    headers: { "x-test-key": "sk-custom" }
   })
   const originalFetch = globalThis.fetch
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -21,7 +21,7 @@ test("createOpenAIClient merges custom headers into outgoing requests without dr
   } finally {
     globalThis.fetch = originalFetch
   }
-  expect(seenHeaders?.get("x-kaja-zen-key")).toBe("sk-custom")
+  expect(seenHeaders?.get("x-test-key")).toBe("sk-custom")
   expect(seenHeaders?.get("authorization")).toBe("Bearer sk-sdk-auth")
 })
 
@@ -38,5 +38,5 @@ test("createOpenAIClient without headers leaves outgoing requests unchanged", as
   } finally {
     globalThis.fetch = originalFetch
   }
-  expect(seenHeaders?.get("x-kaja-zen-key")).toBeNull()
+  expect(seenHeaders?.get("x-test-key")).toBeNull()
 })

@@ -104,6 +104,14 @@ export async function saveCurrentUser(user: string): Promise<void> {
   cached = undefined
 }
 
+/** Clears the saved current hosted (--remote) user, e.g. after logout — a later run falls back to device login instead of silently reusing a (now-cleared) token for this email. No-op if settings.toml doesn't exist. */
+export async function clearCurrentUser(): Promise<void> {
+  if (!(await isConfigExists())) return
+  const { user, ...rest } = await readConfigLoose()
+  await write(getConfigPath(), TOML.stringify(rest)!)
+  cached = undefined
+}
+
 export async function create() {
   await write(getConfigPath(), TOML.stringify(TEMPLATE_TOML)!)
 }

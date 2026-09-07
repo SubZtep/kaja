@@ -7,7 +7,6 @@ test("empty file validates: every section is optional, providers/mcp default to 
   expect(parsed.location).toBeUndefined()
   expect(parsed.webSearch).toBeUndefined()
   expect(parsed.telegram).toBeUndefined()
-  expect(parsed.zen).toBeUndefined()
   expect(parsed.providers).toEqual({})
   expect(parsed.mcp).toEqual({})
 })
@@ -34,12 +33,6 @@ test("telegram group requires botToken", () => {
   const parsed = SecretsFileSchema.parse({ telegram: { botToken: "123:abc" } })
   expect(parsed.telegram).toEqual({ botToken: "123:abc" })
   expect(() => SecretsFileSchema.parse({ telegram: {} })).toThrow()
-})
-
-test("zen group requires apiKey", () => {
-  const parsed = SecretsFileSchema.parse({ zen: { apiKey: "sk-zen" } })
-  expect(parsed.zen).toEqual({ apiKey: "sk-zen" })
-  expect(() => SecretsFileSchema.parse({ zen: {} })).toThrow()
 })
 
 test("providers is keyed by provider name, each requiring api_key", () => {

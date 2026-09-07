@@ -50,7 +50,7 @@ function DeviceCodePage() {
   }
 
   useEffect(() => {
-    if (userCode.length >= 4) {
+    if (userCode.length >= 9) {
       toast.success("User code accepted, redirecting...")
       login()
     }
@@ -71,7 +71,7 @@ function DeviceCodePage() {
           className="border border-border rounded-md px-3 py-2 bg-surface"
           value={userCode}
           onChange={ev => setUserCode(ev.target.value)}
-          placeholder="e.g. ABCD1234"
+          placeholder="e.g. ABCD-1234"
           maxLength={16}
           autoComplete="one-time-code"
           minLength={4}

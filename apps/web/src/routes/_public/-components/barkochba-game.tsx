@@ -14,20 +14,29 @@ import {
   X
 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { m } from "../../../paraglide/messages.js"
+import { getLocale } from "../../../paraglide/runtime.js"
 
-const ANSWERS = [
-  { label: "Yes", icon: Check },
-  { label: "No", icon: X },
-  { label: "Sometimes", icon: EqualApproximately },
-  { label: "Unknown", icon: CircleHelp }
-] as const
+// `value` stays a fixed English literal ("Yes"/"No"/...) regardless of display language —
+// the model is instructed (via the `language` field below) to reply in the UI language
+// regardless of what language the user writes in, so translating these isn't needed.
+// Read via functions (not module-scope constants) so labels re-evaluate per render —
+// `m.*()` calls captured at module load can go stale across the SSR/hydration boundary.
+const getAnswers = () =>
+  [
+    { label: m.barkochba_answer_yes(), value: "Yes", icon: Check },
+    { label: m.barkochba_answer_no(), value: "No", icon: X },
+    { label: m.barkochba_answer_sometimes(), value: "Sometimes", icon: EqualApproximately },
+    { label: m.barkochba_answer_unknown(), value: "Unknown", icon: CircleHelp }
+  ] as const
 
-const EXAMPLE_THINGS = [
-  { label: "Pizza", icon: Pizza },
-  { label: "Guitar", icon: Guitar },
-  { label: "Rocket", icon: Rocket },
-  { label: "Dice", icon: Dices }
-] as const
+const getExampleThings = () =>
+  [
+    { label: m.barkochba_example_pizza(), icon: Pizza },
+    { label: m.barkochba_example_guitar(), icon: Guitar },
+    { label: m.barkochba_example_rocket(), icon: Rocket },
+    { label: m.barkochba_example_dice(), icon: Dices }
+  ] as const
 
 const MAX_QUESTIONS = 20
 const STATE_STORAGE_KEY = "kaja-barkochba-state"
@@ -90,10 +99,12 @@ async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTu
     headers: { "content-type": "application/json", "x-kaja-widget-key": widgetKey },
     body: JSON.stringify(body)
   })
-  if (res.status === 429) throw new Error("Too many messages — please wait a moment.")
+  if (res.status === 429) throw new Error(m.barkochba_error_rate_limited())
   if (!res.ok) {
     const errorBody = await res.json().catch(() => undefined)
-    throw new Error(typeof errorBody?.error === "string" ? errorBody.error : `Request failed: ${res.status}`)
+    throw new Error(
+      typeof errorBody?.error === "string" ? errorBody.error : m.barkochba_error_request_failed({ status: res.status })
+    )
   }
   return res.json()
 }
@@ -166,7 +177,12 @@ export function BarkochbaGame() {
   async function sendMessage(message: string) {
     setPending(true)
     try {
-      const data = await sendWidgetTurn(apiUrl, barkochbaWidgetKey ?? "", { session, message, visitorId })
+      const data = await sendWidgetTurn(apiUrl, barkochbaWidgetKey ?? "", {
+        session,
+        message,
+        visitorId,
+        language: getLocale()
+      })
       setSession(data.session)
       setCurrent(data.message)
       const askStep = data.steps.find(step => step.type === "ask_user")
@@ -177,7 +193,7 @@ export function BarkochbaGame() {
       const fallback = messageStep?.type === "message" ? withoutQuestion(messageStep.content, data.message) : ""
       setAside(note ?? fallback)
     } catch (error) {
-      setCurrent(error instanceof Error ? error.message : "Something went wrong. Please try again.")
+      setCurrent(error instanceof Error ? error.message : m.barkochba_error_generic())
       setAside("")
     } finally {
       setPending(false)
@@ -207,17 +223,15 @@ export function BarkochbaGame() {
     <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]">
       <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
         <TitleBarDots variant={dotVariantFor(won, pending, phase)} />
-        <span className="ml-1.5 font-mono text-muted text-xs">AI widget: barkochba game</span>
+        <span className="ml-1.5 font-mono text-muted text-xs">{m.barkochba_title_bar()}</span>
       </div>
 
       <div className="flex min-h-65 flex-col justify-between p-5 font-mono text-[13.5px] leading-[1.9]">
         {phase === "idle" ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
-            <p className="text-muted">
-              Think of something. You get {MAX_QUESTIONS} questions — answer by clicking a button below.
-            </p>
+            <p className="text-muted">{m.barkochba_idle_prompt({ maxQuestions: MAX_QUESTIONS })}</p>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {EXAMPLE_THINGS.map(({ label, icon: Icon }) => (
+              {getExampleThings().map(({ label, icon: Icon }) => (
                 <span
                   key={label}
                   className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-muted text-xs"
@@ -226,14 +240,14 @@ export function BarkochbaGame() {
                   {label}
                 </span>
               ))}
-              <span className="text-muted text-xs">&hellip;or anything else</span>
+              <span className="text-muted text-xs">{m.barkochba_example_or_anything()}</span>
             </div>
             <button
               type="button"
               onClick={start}
               className="cursor-pointer rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm transition-transform duration-200 motion-safe:animate-pulse hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0"
             >
-              Start
+              {m.barkochba_start()}
             </button>
           </div>
         ) : (
@@ -249,7 +263,7 @@ export function BarkochbaGame() {
             <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
               {pending ? (
                 <span className="text-muted flex items-center gap-1">
-                  <BrainCircuit size={18} /> thinking&hellip;
+                  <BrainCircuit size={18} /> {m.barkochba_thinking()}
                 </span>
               ) : (
                 <>
@@ -264,17 +278,17 @@ export function BarkochbaGame() {
                 onClick={playAgain}
                 className="mt-4 cursor-pointer self-center rounded-md border border-neon bg-neon/10 px-5 py-2 font-semibold text-neon text-sm"
               >
-                Play again
+                {m.barkochba_play_again()}
               </button>
             ) : (
               <>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  {ANSWERS.map(({ label, icon: Icon }) => (
+                  {getAnswers().map(({ label, value, icon: Icon }) => (
                     <button
-                      key={label}
+                      key={value}
                       type="button"
                       disabled={pending}
-                      onClick={() => sendMessage(label)}
+                      onClick={() => sendMessage(value)}
                       className="flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-fg text-sm transition-colors hover:border-neon/60 hover:bg-neon/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Icon className="size-3.5" />
@@ -287,7 +301,7 @@ export function BarkochbaGame() {
                   onClick={playAgain}
                   className="mt-3 cursor-pointer self-center text-muted text-xs underline underline-offset-2 transition-colors duration-200 hover:underline-offset-0 hover:text-fg"
                 >
-                  Give up
+                  {m.barkochba_give_up()}
                 </button>
               </>
             )}

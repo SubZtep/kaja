@@ -28,7 +28,6 @@ export type ResolvedServices = ServicesFile & {
   location?: ServicesFile["location"] & { apiKey: string }
   telegram?: ServicesFile["telegram"] & { botToken: string }
   webSearch?: { apiKey: string }
-  zen?: { apiKey: string }
 }
 
 /** Folds secrets.toml's credentials into services.toml's parsed sections, so no consumer needs to change. */
@@ -38,8 +37,7 @@ function mergeSecrets(parsed: ServicesFile, creds: Awaited<ReturnType<typeof sec
     api: parsed.api ? { ...parsed.api, token: creds.api?.token } : undefined,
     location: parsed.location && creds.location ? { ...parsed.location, apiKey: creds.location.apiKey } : undefined,
     telegram: parsed.telegram && creds.telegram ? { ...parsed.telegram, botToken: creds.telegram.botToken } : undefined,
-    webSearch: creds.webSearch,
-    zen: creds.zen
+    webSearch: creds.webSearch
   }
 }
 

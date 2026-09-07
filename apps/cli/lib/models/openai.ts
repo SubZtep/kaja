@@ -1,48 +1,25 @@
-import {
-  createOpenAIClient,
-  FREE_CHAT_API_KEY,
-  FREE_CHAT_BASE_URL,
-  FREE_CHAT_MODEL_ID,
-  FREE_CHAT_PROVIDER,
-  KAJA_ZEN_KEY_HEADER
-} from "@kaja/nasi"
+import { createOpenAIClient } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
-import { services } from "../config/services"
 import { findModelById, loadModelsFile, resolveModels } from "./models"
 
-export {
-  createOpenAIClient,
-  FREE_CHAT_PROVIDER,
-  KAJA_MODEL_HEADER,
-  noteServedModel,
-  takeLastServedModel
-} from "@kaja/nasi"
+export { createOpenAIClient, KAJA_MODEL_HEADER, noteServedModel, takeLastServedModel } from "@kaja/nasi"
 
 const modelsFile = await loadModelsFile()
-const { zen } = await services()
 const chatEntry = findModelById(resolveModels(modelsFile), "chat", "chat")
 export const isFreeChat = !chatEntry
-const chatModel: CliResolvedModel = chatEntry ?? {
-  id: FREE_CHAT_PROVIDER,
-  model: FREE_CHAT_MODEL_ID,
-  task: "chat",
-  baseUrl: FREE_CHAT_BASE_URL,
-  apiKey: FREE_CHAT_API_KEY,
-  provider: FREE_CHAT_PROVIDER
-}
 
-export const chatModelId = chatModel.model
+// chatEntry is only undefined when isFreeChat is true, which every caller of chatModelId/client
+// below (app.tsx, tools/*, telegram/cli.ts) is prevented from reaching by requireConfiguredProvider().
+export const chatModelId = chatEntry?.model ?? ""
 
 export const client = createOpenAIClient({
-  apiKey: chatModel.apiKey ?? "unused",
-  baseURL: chatModel.baseUrl,
-  headers: isFreeChat && zen?.apiKey ? { [KAJA_ZEN_KEY_HEADER]: zen.apiKey } : undefined
+  apiKey: chatEntry?.apiKey ?? "unused",
+  baseURL: chatEntry?.baseUrl ?? ""
 })
 
 export function clientForModel(model: CliResolvedModel) {
   return createOpenAIClient({
     baseURL: model.baseUrl,
-    apiKey: model.apiKey ?? "unused",
-    headers: isFreeChat && zen?.apiKey ? { [KAJA_ZEN_KEY_HEADER]: zen.apiKey } : undefined
+    apiKey: model.apiKey ?? "unused"
   })
 }

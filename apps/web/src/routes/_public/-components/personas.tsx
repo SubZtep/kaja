@@ -1,19 +1,22 @@
 import { ChevronRight } from "lucide-react"
 import { LandingSection, LandingSectionTitle } from "../../../components/ui/LandingSection"
 import { Section } from "../../../components/ui/Section"
+import { m } from "../../../paraglide/messages.js"
 
-const PERSONAS = [
-  { id: "default", label: "Helpful assistant", when: "no other persona clearly fits the conversation" },
-  { id: "barkochba", label: "Barkochba guesser", when: "the user wants to play a guessing game / twenty questions" },
+// Read via a function (not a module-scope constant) so labels re-evaluate per render —
+// `m.*()` calls captured at module load can go stale across the SSR/hydration boundary.
+const getPersonas = () => [
+  { id: "default", label: m.personas_default_label(), when: m.personas_default_when() },
+  { id: "barkochba", label: m.personas_barkochba_label(), when: m.personas_barkochba_when() },
   {
     id: "care",
-    label: "Self-care companion",
-    when: "the user talks about their day, feelings, mood, or personal struggles"
+    label: m.personas_care_label(),
+    when: m.personas_care_when()
   },
   {
     id: "onboarding",
-    label: "Onboarding assistant",
-    when: "a new user should be walked through the initial getting-to-know-you questions"
+    label: m.personas_onboarding_label(),
+    when: m.personas_onboarding_when()
   }
 ]
 
@@ -21,7 +24,7 @@ export function Personas() {
   return (
     <LandingSection>
       <LandingSectionTitle
-        title="Personas"
+        title={m.personas_title()}
         meta={
           <div className="flex items-center gap-1">
             <ChevronRight />
@@ -30,21 +33,14 @@ export function Personas() {
               target="_blank"
               rel="noopener"
             >
-              TOML’s JSON Schema
+              {m.personas_schema_link()}
             </a>
           </div>
         }
-        description={
-          <>
-            Each persona is a <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">.toml</code> file:
-            a label, its system-prompt instructions, and an optional{" "}
-            <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-muted">when</code> clause. Kaja reads the
-            room and switches personas mid-conversation on its own &mdash; no command needed.
-          </>
-        }
+        description={m.personas_description()}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {PERSONAS.map(p => (
+        {getPersonas().map(p => (
           <Section key={p.id} className="border-0 bg-transparent p-0 sm:border sm:px-6 sm:py-6">
             <div className="mb-2.5 flex items-center justify-between">
               <div className="font-semibold text-fg text-[15px]">{p.label}</div>

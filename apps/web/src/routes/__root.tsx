@@ -12,6 +12,8 @@ import { useEffect } from "react"
 import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
 import { getRootEnv } from "../lib/vars"
+import { m } from "../paraglide/messages.js"
+import { getLocale, getTextDirection } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -40,7 +42,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "width=device-width, initial-scale=1"
       },
       {
-        title: "🕳 • Kaja"
+        title: m.site_title()
       },
       {
         rel: "apple-touch-icon",
@@ -65,7 +67,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         name: "og:locale",
-        content: "en_GB"
+        content: getLocale() === "hu" ? "hu_HU" : "en_GB"
       },
       {
         name: "og:site_name",
@@ -97,8 +99,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 })
 
 function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = getLocale()
+  const ogLocale = locale === "hu" ? "hu_HU" : "en_GB"
+
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
+    <html lang={locale} dir={getTextDirection()} suppressHydrationWarning>
       <head>
         <HeadContent />
 
@@ -110,19 +115,13 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
         />
         <meta property="og:url" content="https://kaja.io" />
 
-        <meta
-          property="og:description"
-          content="Open-source agentic harness. Keep looping your prompt with an LLM until the appropriate outcome is achieved."
-        />
+        <meta property="og:description" content={m.site_og_description()} />
         <meta property="og:site_name" content="Kaja.io" />
-        <meta property="og:locale" content="en_GB" />
+        <meta property="og:locale" content={ogLocale} />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Kaja.io" />
-        <meta
-          name="twitter:description"
-          content="Open-source agentic harness. Keep looping your prompt with an LLM until the appropriate outcome is achieved."
-        />
+        <meta name="twitter:description" content={m.site_og_description()} />
         <meta
           name="twitter:image"
           content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
@@ -137,7 +136,7 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
 }
 
 function NotFound() {
-  return <p className="text-center my-28 text-red-500 text-xl font-bold">Sorry, this page doesn't exist.</p>
+  return <p className="text-center my-28 text-red-500 text-xl font-bold">{m.not_found_message()}</p>
 }
 
 function DefaultError({ error: err }: ErrorComponentProps) {

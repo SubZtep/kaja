@@ -1,11 +1,14 @@
 import { color } from "bun"
 import { render } from "ink"
+import notifier from "node-notifier"
+import { writeText } from "tinyclip"
 import LiteApp from "../components/layout/lite-app"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
 import { args } from "../lib/cli/args"
 import { getCurrentUser, saveCurrentUser } from "../lib/config/config"
 import { t } from "../lib/i18n"
+import { log } from "../lib/logger"
 
 /** Reset terminal colours */
 const ANSI_RESET = "\x1b[0m"
@@ -26,12 +29,19 @@ async function resolveToken(apiUrl: string): Promise<string> {
 
     console.log(t("cli.pleaseSignIn"))
 
-    const { email, token } = await deviceLogin(apiUrl, prompt => {
+    const { email, token } = await deviceLogin(apiUrl, async prompt => {
+      const code = `${prompt.userCode.slice(0, 4)}-${prompt.userCode.slice(4)}`
+      await writeText(code)
+      notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
+        // TODO: validate that notify worked
+        if (error) log.warn("Device login notification failed", { error })
+      })
+
       console.log(
         `\n${color("lightgray", "ansi")}${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${prompt.verificationUri}`
       )
       console.log(
-        `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${prompt.userCode}${ANSI_RESET}\n`
+        `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${code}${ANSI_RESET}\n`
       )
     })
     await saveCurrentUser(email)

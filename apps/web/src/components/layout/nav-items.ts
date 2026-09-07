@@ -1,4 +1,5 @@
 import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, Users } from "lucide-react"
+import { m } from "../../paraglide/messages.js"
 
 /** "public" matches signed-out visitors; "all" matches every signed-in role plus "public". */
 export type NavRole = "public" | "all" | "admin" | "user"
@@ -94,7 +95,19 @@ const navItems: NavItem[] = [
 const getItems = (section: NavSection, role: string | null | undefined) =>
   navItems.filter(item => item.sections.includes(section) && matchesRole(item.roles, role))
 
-export const getHeaderItems = (role: string | null | undefined) => getItems("header", role)
+/** Translated labels for the public-facing header items; admin-only items keep their literal English label. */
+const HEADER_LABEL_OVERRIDES: Record<string, () => string> = {
+  "/": m.nav_home,
+  "/signin": m.nav_sign_in,
+  "/signup": m.nav_sign_up,
+  "https://docs.kaja.io": m.nav_docs
+}
+
+export const getHeaderItems = (role: string | null | undefined) =>
+  getItems("header", role).map(item => {
+    const translate = HEADER_LABEL_OVERRIDES[item.to ?? item.href ?? ""]
+    return translate ? { ...item, label: translate() } : item
+  })
 
 /** Every "admin" section item defines `to`, `description`, and `icon`. */
 export type AdminNavItem = NavItem & { to: string; description: string; icon: LucideIcon }

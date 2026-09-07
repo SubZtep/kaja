@@ -1,11 +1,19 @@
 import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStreamEvent } from "@kaja/nasi/client"
-import { useCallback, useRef, useState } from "react"
+import type { NasiInfoResponse } from "@kaja/schema/nasi"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { getLanguage } from "../lib/i18n"
 
-/** Lite's error surface is just network/HTTP — no local agent tool errors, no raw OpenAI SDK errors, so this doesn't need @kaja/nasi's categorizeError (importing that would pull the openai package into the lite bundle for an instanceof check that can never match here). */
-export type RemoteErrorCategory = "network" | "unknown"
+/** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai package into the lite bundle for nothing. */
+export type RemoteErrorCategory = "network" | "tool" | "agent" | "unknown"
+
+function isRemoteErrorCategory(value: string | undefined): value is RemoteErrorCategory {
+  return value === "network" || value === "tool" || value === "agent" || value === "unknown"
+}
 
 function categorizeRemoteError(error: unknown): { category: RemoteErrorCategory; message: string } {
-  if (error instanceof NasiStreamError) return { category: "network", message: error.message }
+  if (error instanceof NasiStreamError) {
+    return { category: isRemoteErrorCategory(error.category) ? error.category : "network", message: error.message }
+  }
   if (error instanceof TypeError) return { category: "network", message: error.message }
   if (error instanceof Error) return { category: "unknown", message: error.message }
   return { category: "unknown", message: String(error) }
@@ -43,6 +51,20 @@ export function useRemoteAgent(options: NasiClientOptions) {
   const [pending, setPending] = useState(false)
   const [promptTokens, setPromptTokens] = useState<number | null>(null)
   const [responseModel, setResponseModel] = useState<string | null>(null)
+  const [info, setInfo] = useState<NasiInfoResponse | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    client.info(sessionRef.current).then(
+      result => {
+        if (!cancelled) setInfo(result)
+      },
+      () => {}
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const send = useCallback(
     async (prompt: string, showUserEvent = true) => {
@@ -72,7 +94,7 @@ export function useRemoteAgent(options: NasiClientOptions) {
       }
 
       try {
-        const gen = client.turn_stream({ session: sessionRef.current, message: prompt })
+        const gen = client.turn_stream({ session: sessionRef.current, message: prompt, language: getLanguage() })
         let next = await gen.next()
         while (!next.done) {
           const event = next.value
@@ -97,7 +119,9 @@ export function useRemoteAgent(options: NasiClientOptions) {
   )
 
   return {
-    model: responseModel ?? "kaja",
+    model: responseModel ?? info?.model ?? "kaja",
+    persona: info?.persona,
+    tools: info?.tools ?? [],
     events,
     partial,
     pending,

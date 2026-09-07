@@ -1,4 +1,4 @@
-import { samplingOf } from "@kaja/nasi"
+import { replyLanguageInstructionFor, samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
@@ -13,6 +13,7 @@ import {
 } from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
+import { getLanguage } from "../lib/i18n"
 import { log } from "../lib/logger"
 import { peekStore } from "../lib/memory/store"
 import type { Persona } from "../lib/personas/personas"
@@ -82,6 +83,7 @@ export function useAgent(
       models,
       personaId: startingPersona?.id,
       promptContext: agentConfig.promptContext ?? {
+        replyLanguageInstruction: replyLanguageInstructionFor(getLanguage()),
         loadStickyNotes: async () => {
           const { loadMemory } = await import("../lib/memory/store")
           return Object.entries(await loadMemory()).filter(([, note]) => note.sticky)

@@ -86,7 +86,6 @@ erDiagram
     ServicesWebSearch webSearch
     ServicesTelegram telegram
     ServicesApi api
-    ServicesZen zen
   }
 
   KajaModelsFile ||--o{ ModelEntry : "models[id]"

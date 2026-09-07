@@ -5,6 +5,7 @@ import { getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
+import { runLogoutSubcommand } from "./subcommands/logout"
 import { runMemorySubcommand } from "./subcommands/memory"
 import { runSubcommand } from "./subcommands/run"
 import { runRemoteSubcommand } from "./subcommands/run-remote"
@@ -18,6 +19,11 @@ try {
   await detectAndSetLanguage()
 
   const { args } = await import("./lib/cli/args")
+
+  if (args.input[0] === "logout") {
+    await runLogoutSubcommand(args)
+    process.exit(0)
+  }
 
   const useLocal = args.flags.remote ? false : args.flags.local || (await isConfigExists())
   if (!useLocal) {

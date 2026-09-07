@@ -7,7 +7,12 @@ headlessNoSubcommand = "A --headless kapcsolóhoz ezt támogató alparancs szük
 pleaseSignIn = "Kérlek jelentkezz be!"
 deviceLoginGoTo = "Nyisd meg:"
 deviceLoginEnterCode = "Add meg a kódot:"
+deviceLoginCodeCopied = "A kód a vágólapra másolva"
 secretsUnavailable = "Nem sikerült elérni a rendszer kulcstartóját a bejelentkezés tárolásához. Próbáld a --local kapcsolóval futtatni, ahhoz nem szükséges rendszerszintű hitelesítő-adat tárolás."
+connecting = "Csatlakozás…"
+logoutSuccess = "Kijelentkezve: {email}."
+logoutNotSignedIn = "{email} nem volt bejelentkezve."
+logoutNoUser = "Nincs hosztolt fiók, amiből ki lehetne jelentkezni — jelentkezz be előbb a `kaja --remote` paranccsal, vagy add meg a --user <email> kapcsolót."
 
 [firstRun]
 paths = "A Kaja ezeket az elérési utakat fogja használni:"
@@ -30,6 +35,7 @@ PARANCSOK
   web
   memory <list|forget <kulcs-vagy-glob>|export>
   session <list|diagram <id>>
+  logout                     Kijelentkezés a hosztolt (--remote) fiókból, a tárolt hitelesítő adat törlésével
 
 OPCIÓK
   --local         A helyi ágens futtatása saját szolgáltatóval a hosztolt bejelentkezés helyett
@@ -39,6 +45,7 @@ OPCIÓK
   --user          Hosztolt (--remote) fiók kiválasztása/váltása e-mail cím alapján
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --port          A kaja --local web portja (alapértelmezés: 4880)
+  --lang          A felület/válaszok nyelvének felülírása ehhez a futáshoz (en vagy hu), a mentett beállítástól függetlenül
 """
 
 [memory]
@@ -156,7 +163,8 @@ taskImageGen = "Képgenerálás"
 mcpServers = "MCP szerverek"
 mcpServerToolCount = "({count} eszköz)"
 mcpServerFailed = "(sikertelen kapcsolódás)"
-stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet · {toolCount} eszköz"
+tools = "Eszközök"
+stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet"
 
 [telegram]
 notConfigured = "Adj hozzá egy `telegram` blokkot a konfigurációhoz (a fájl helyéért lásd: `kaja config paths`) `botToken` és `allowedUserIds` mezőkkel, hogy használhasd ezt a parancsot."

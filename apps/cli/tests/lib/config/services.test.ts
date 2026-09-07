@@ -137,27 +137,22 @@ token = "shared-secret"
   expect(api).toEqual({ baseUrl: "https://api.example.test", token: "shared-secret" })
 })
 
-test("webSearch and zen are secrets-only sections: present in secrets.toml alone is enough", async () => {
+test("webSearch is a secrets-only section: present in secrets.toml alone is enough", async () => {
   await setup(
     "",
     `
 [webSearch]
 apiKey = "brave-key"
-
-[zen]
-apiKey = "zen-key"
 `
   )
   const data = await loadServicesFile()
   expect(data.webSearch).toEqual({ apiKey: "brave-key" })
-  expect(data.zen).toEqual({ apiKey: "zen-key" })
 })
 
-test("webSearch and zen are undefined when secrets.toml has neither", async () => {
+test("webSearch is undefined when secrets.toml has none", async () => {
   await setup("", "")
   const data = await loadServicesFile()
   expect(data.webSearch).toBeUndefined()
-  expect(data.zen).toBeUndefined()
 })
 
 test("services() caches after the first read; invalidateServicesCache() forces a reload", async () => {

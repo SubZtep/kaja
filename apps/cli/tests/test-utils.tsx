@@ -12,7 +12,7 @@ const ansi = /\x1b\[[0-9;?]*[a-zA-Z]/g
  * `readable` events, so plain EventEmitters won't do), stdout records every
  * chunk written for later inspection.
  */
-export function renderForTest(node: ReactNode) {
+export function renderForTest(node: ReactNode, options?: { columns?: number; rows?: number }) {
   const stdin = new Readable({ read() {} }) as any
   stdin.isTTY = true
   stdin.setRawMode = () => {}
@@ -25,8 +25,8 @@ export function renderForTest(node: ReactNode) {
   let writeCount = 0
   const stdout = new EventEmitter() as any
   stdout.isTTY = true
-  stdout.columns = 80
-  stdout.rows = 24
+  stdout.columns = options?.columns ?? 80
+  stdout.rows = options?.rows ?? 24
   stdout.write = (chunk: string) => {
     chunks.push(chunk)
     writeCount++

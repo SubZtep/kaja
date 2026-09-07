@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { LandingSection, LandingSectionTitle } from "../../../components/ui/LandingSection"
 import { Section } from "../../../components/ui/Section"
 import { getInstallCmd } from "../../../lib/vars"
+import { m } from "../../../paraglide/messages.js"
 
 export function Install() {
   const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/install.sh | bash")
@@ -12,30 +13,25 @@ export function Install() {
 
   return (
     <LandingSection>
-      <LandingSectionTitle
-        title="Install"
-        description="Only tested on Linux. A setup wizard walks you through config on first launch (or anytime config is missing/invalid) &mdash; no separate step needed."
-      />
-      <p className="mb-4 text-md text-mist-500">
-        Paste the appropriate command in your terminal, press Enter to install:
-      </p>
+      <LandingSectionTitle title={m.install_title()} description={m.install_description()} />
+      <p className="mb-4 text-md text-mist-500">{m.install_instruction()}</p>
       <div className="flex gap-4 flex-col md:flex-row">
         <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
-          <p>On Mac/Linux:</p>
+          <p>{m.install_mac_linux_label()}</p>
           <code className="block font-mono text-fg text-[13.5px]">{installCmd}</code>
         </Section>
         <Section className="border-0 p-0 sm:border sm:px-6 sm:py-6">
-          <p>On Windows:</p>
+          <p>{m.install_windows_label()}</p>
           <code className="block font-mono text-fg text-[13.5px]">irm https://kaja.io/install.ps1 | iex</code>
         </Section>
       </div>
 
       <p className="mt-3 text-[#6e7681] text-sm">
-        Prefer a plain binary?{" "}
+        {m.install_binary_prefix()}{" "}
         <a href="https://github.com/SubZtep/kaja/releases" target="_blank" rel="noopener">
-          Grab one from Releases
+          {m.install_binary_link()}
         </a>{" "}
-        &mdash; Linux, macOS, and Windows, x64 and arm64.
+        {m.install_binary_suffix()}
       </p>
     </LandingSection>
   )

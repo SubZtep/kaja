@@ -1,6 +1,7 @@
 import { Star } from "lucide-react"
 import { BrandMark } from "../../../components/layout/BrandMark"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
+import { m } from "../../../paraglide/messages.js"
 
 export function Footer() {
   return (
@@ -11,11 +12,11 @@ export function Footer() {
             <BrandMark className="text-[15px] font-semibold" />
           </div>
           <div className="text-[#6e7681] text-[13px]">
-            MIT License &middot; by{" "}
+            {m.footer_license_prefix()}{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-muted">
               SubZtep
             </a>{" "}
-            &middot; {new Date().getFullYear()} &middot; 🕳
+            {m.footer_license_suffix({ year: new Date().getFullYear() })}
           </div>
         </div>
         <a
@@ -25,7 +26,7 @@ export function Footer() {
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-4 py-2 text-fg text-[13px]"
         >
           <Star fill="yellow" size={9} />
-          Star on GitHub
+          {m.footer_star()}
         </a>
       </ContentWidth>
     </section>

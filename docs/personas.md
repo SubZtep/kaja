@@ -22,7 +22,7 @@ when = "no other persona clearly fits the conversation"
 | `model` | override the default chat model |
 | `when` | short clause telling the model when to auto-switch here |
 | `dataset` | id of a dataset this persona collects |
-| sampling params | `temperature`, `top_p`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
+| sampling params | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
 
 Every persona's `when` clause goes into the system prompt as a roster, so the model can call
 `switch_persona` mid-conversation on its own.

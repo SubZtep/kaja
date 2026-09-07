@@ -21,7 +21,6 @@ mock.module("../../lib/models/openai", () => ({
     }
   },
   isFreeChat: false,
-  FREE_CHAT_PROVIDER: "kaja",
   KAJA_MODEL_HEADER,
   noteServedModel: (model: string) => {
     lastServedModel = model

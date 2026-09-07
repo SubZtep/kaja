@@ -15,6 +15,10 @@
   "files.watcherExclude": {
     "**/routeTree.gen.ts": true
   },
+  "json.schemaDownload.trustedDomains": {
+    "https://json-schema.org/": true,
+    "https://inlang.com/": true
+  },
   "search.exclude": {
     "**/routeTree.gen.ts": true,
     "**/apps/api/dist": true,

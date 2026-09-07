@@ -1,4 +1,6 @@
 import {
+  type NasiInfoResponse,
+  NasiInfoResponseSchema,
   type NasiTurnRequest,
   NasiTurnRequestSchema,
   type NasiTurnResponse,
@@ -28,7 +30,15 @@ export type NasiStreamEvent =
   | { type: "usage"; promptTokens?: number; model?: string }
   | { type: "final"; content: string | null }
 
-export class NasiStreamError extends Error {}
+export class NasiStreamError extends Error {
+  /** The server's error category (e.g. "tool", "network"), when it sent one — absent for connection-level failures (bad response, dropped stream) that never reached the server's own error handling. */
+  readonly category?: string
+
+  constructor(message: string, category?: string) {
+    super(message)
+    this.category = category
+  }
+}
 
 function parseSseBlock(block: string): { event: string; data: string } | undefined {
   let event: string | undefined
@@ -82,6 +92,18 @@ export function createNasiClient(opts: NasiClientOptions) {
   }
 
   return {
+    /** `GET /nasi/info` — resolved persona label, model, and available hosted tools, for display before/without a turn. Pass `session` to resolve that session's pinned model instead of a fresh one. */
+    async info(session?: string): Promise<NasiInfoResponse> {
+      const url = new URL("/nasi/info", opts.baseUrl)
+      if (session) url.searchParams.set("session", session)
+      const res = await fetch(url, { headers: await headers() })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Nasi info failed: ${res.status} ${text}`)
+      }
+      return NasiInfoResponseSchema.parse(await res.json())
+    },
+
     async turn(body: NasiTurnRequest): Promise<NasiTurnResponse> {
       const parsed = NasiTurnRequestSchema.parse(body)
       const res = await fetch(new URL("/nasi/turn", opts.baseUrl), {
@@ -120,8 +142,8 @@ export function createNasiClient(opts: NasiClientOptions) {
       for await (const { event, data } of parseSseStream(res.body)) {
         if (event === "heartbeat") continue
         if (event === "error") {
-          const parsedError = JSON.parse(data) as { error: string }
-          throw new NasiStreamError(parsedError.error)
+          const parsedError = JSON.parse(data) as { error: string; category?: string }
+          throw new NasiStreamError(parsedError.error, parsedError.category)
         }
         if (event === "done") {
           return JSON.parse(data) as { session: string; status: NasiTurnStatus }

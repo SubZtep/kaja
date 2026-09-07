@@ -16,7 +16,7 @@ export async function runSubcommand(cli: typeof Cli) {
   const { default: App } = await import("../components/layout/app")
   const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("../lib/session/store")
   const { loadMemory } = await import("../lib/memory/store")
-  const { chatModelId, isFreeChat } = await import("../lib/models/openai")
+  const { chatModelId } = await import("../lib/models/openai")
 
   // --local is the self-configured-provider path: no silent fallback to
   // Kaja's hosted free tier. Run `kaja` (no flags) for hosted chat instead.
@@ -60,7 +60,6 @@ export async function runSubcommand(cli: typeof Cli) {
       models={models}
       personas={personas}
       openaiApiModel={chatModelId}
-      freeChat={isFreeChat}
       tools={tools}
       mcpServers={mcpServers}
       initialSession={initialSession}
