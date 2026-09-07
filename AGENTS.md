@@ -134,7 +134,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Notes
 
-- A git hooks run lint at commit, and run test before push, so you don't have to run again for double-check after you finished a task.
+- Git hooks already run `bun lint` on commit and `bun test` on push, so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
 - env vars: edit `packages/schema/env/{api,web,cli}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
