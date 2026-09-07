@@ -24,13 +24,10 @@ writeFileSync(
 base_url = "http://localhost"
 api_key = "x"
 
-[models.chat-default]
+[models.chat]
 model = "x"
 task = "chat"
 provider = "default"
-
-[active]
-chat = "chat-default"
 `
 )
 

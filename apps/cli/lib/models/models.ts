@@ -61,7 +61,7 @@ export function findModelById(
   return models.find(m => m.id === id && (!task || m.task === task))
 }
 
-/** Resolves the model to use for a task: a persona's pin for that task wins */
+/** Resolves the model to use for a task: a persona's pin for that task wins, else the [models.<task>] entry */
 export function resolveActiveModel(
   data: ResolvedModelsFile,
   task: ModelTask,
@@ -70,7 +70,7 @@ export function resolveActiveModel(
   const models = resolveModels(data)
   const pinned = findModelById(models, personaModels?.[task], task)
   if (pinned) return pinned
-  return findModelById(models, data.active[task], task)
+  return findModelById(models, task, task)
 }
 
 /**

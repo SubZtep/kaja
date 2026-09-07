@@ -11,7 +11,7 @@ Mic dictation and spoken replies run through a [Speaches AI](https://github.com/
 
 To enable voice features:
 
-1. Add a `[models.<id>]` entry in `models.toml` for `task = "text-to-speech"` and/or `task = "speech-to-text"`, and set it as `[active]."text-to-speech"`/`[active]."speech-to-text"`.
+1. Add a `[models.tts]` and/or `[models.stt]` entry in `models.toml`.
 2. Add a `stt` and/or `tts` block to `settings.toml` with the `speachesUrl` or provider-specific settings.
 
 Example notes:
@@ -27,9 +27,9 @@ English or Magyar, covering the UI and the assistant's replies, saved as `prefer
 Hungarian locale → Magyar, anything else → English).
 
 Voice caveat for Hungarian: dictation needs the multilingual whisper model on the STT server (the
-English default is an English-only model — point `[active]."speech-to-text"` at a multilingual
-entry in `models.toml`, and set `stt.language` in `settings.toml` to override), and spoken replies
-stay with the configured Kokoro voice (no Hungarian voice) unless `[active]."text-to-speech"`
+English default is an English-only model — point `models.toml`'s `[models.stt]` at a
+multilingual entry, and set `stt.language` in `settings.toml` to override), and spoken replies
+stay with the configured Kokoro voice (no Hungarian voice) unless `[models.tts]`
 points at something Hungarian-capable.
 
 ---

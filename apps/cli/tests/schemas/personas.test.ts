@@ -42,12 +42,12 @@ test("persona can pin a non-chat task model", () => {
 test("persona can pin multiple task models at once", () => {
   const parsed = PersonaSchema.parse({
     label: "Multi-modal persona",
-    models: { chat: "reasoning-chat", rerank: "default-rerank", "text-to-speech": "default-tts" }
+    models: { chat: "reasoning-chat", rerank: "default-rerank", tts: "default-tts" }
   })
   expect(parsed.models).toEqual({
     chat: "reasoning-chat",
     rerank: "default-rerank",
-    "text-to-speech": "default-tts"
+    tts: "default-tts"
   })
 })
 

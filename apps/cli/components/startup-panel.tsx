@@ -6,32 +6,17 @@ import { checkModelAvailability } from "../lib/models/check"
 
 type Availability = "pending" | "up" | "down"
 
-function taskLabel(task: CliResolvedModel["task"]) {
-  switch (task) {
-    case "chat":
-      return t("startup.taskChat")
-    case "text-to-speech":
-      return t("startup.taskTts")
-    case "speech-to-text":
-      return t("startup.taskStt")
-    case "embedding":
-      return t("startup.taskEmbedding")
-    case "rerank":
-      return t("startup.taskRerank")
-    case "image-generation":
-      return t("startup.taskImageGen")
-  }
-}
-
 // Display order for the grouped task sections, independent of the order models are merged in (models.toml entries land before settings.toml's stt, which would otherwise put stt before tts/image-generation). rerank sits right after embedding, mirroring the setup wizard's step order — the two are the halves of the same retrieval pipeline.
-const TASK_ORDER: CliResolvedModel["task"][] = [
-  "chat",
-  "embedding",
-  "rerank",
-  "text-to-speech",
-  "speech-to-text",
-  "image-generation"
-]
+const TASK_ORDER: CliResolvedModel["task"][] = ["chat", "embedding", "rerank", "tts", "stt", "image-generation"]
+
+const TASK_LABEL_KEY: Record<CliResolvedModel["task"], string> = {
+  chat: "startup.taskChat",
+  tts: "startup.taskTts",
+  stt: "startup.taskStt",
+  embedding: "startup.taskEmbedding",
+  rerank: "startup.taskRerank",
+  "image-generation": "startup.taskImageGen"
+}
 
 const STATUS_ICON: Record<Availability, string> = {
   pending: "○",
@@ -132,7 +117,7 @@ export function StartupPanel({
             .map(([task, indices]) => (
               <Box key={task} flexDirection="column">
                 <Text color="blackBright" dimColor>
-                  {taskLabel(task)}
+                  {t(TASK_LABEL_KEY[task])}
                 </Text>
                 {indices.map(index => {
                   const model = models[index]!

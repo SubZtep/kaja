@@ -72,20 +72,11 @@ erDiagram
   KajaModelsFile {
     ProviderMap providers
     ModelEntryMap models
-    ActiveModels active
   }
   ModelEntry {
     string model
     Task task
     string provider
-  }
-  ActiveModels {
-    string chat
-    string embedding
-    string rerank
-    string image_generation
-    string text_to_speech
-    string speech_to_text
   }
   McpFile {
     McpServerEntry_array servers
@@ -99,8 +90,6 @@ erDiagram
   }
 
   KajaModelsFile ||--o{ ModelEntry : "models[id]"
-  KajaModelsFile ||--|| ActiveModels : "active"
-  ActiveModels }o--o| ModelEntry : "id lookup in [models.<id>]"
 ```
 
 ## `@kaja/schema/cli`
@@ -127,8 +116,8 @@ erDiagram
     string embedding
     string rerank
     string image_generation
-    string text_to_speech
-    string speech_to_text
+    string tts
+    string stt
   }
   SamplingParams {
     number temperature
@@ -199,7 +188,7 @@ erDiagram
 These aren't type imports (each subpath stays decoupled per `packages/schema/AGENTS.md`) — just IDs/strings that happen to reference a concept in another subpath at runtime:
 
 - `config`'s `KajaPreferences.persona` → `cli`'s `Persona.id`
-- `cli`'s `Persona.models.<task>` (all six tasks) → `config`'s own `CliResolvedModel.id` (soft fallback: unmatched id falls through to models.toml's `[active].<task>`, resolved per-task via `resolveActiveModel`)
+- `cli`'s `Persona.models.<task>` (all six tasks) → `config`'s own `CliResolvedModel.id` (soft fallback: unmatched id falls through to models.toml's `[models.<task>]` entry, resolved per-task via `resolveActiveModel`)
 - `store`'s `PersistedSession.persona` → `cli`'s `Persona.id`
 - `store`'s `PersistedSession.model` → `api`'s `Model.id` (or a free-tier id)
 

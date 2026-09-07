@@ -47,7 +47,7 @@ test("shows persona, grouped models with availability, and stats", async () => {
         models={[
           { id: "up-model", model: "up-model", task: "chat", baseUrl, provider: "default" },
           { id: "down-model", model: "down-model", task: "chat", baseUrl, provider: "default" },
-          { id: "tts-model", model: "tts-model", task: "text-to-speech", baseUrl, provider: "default" }
+          { id: "tts-model", model: "tts-model", task: "tts", baseUrl, provider: "default" }
         ]}
         activeModelId="up-model"
         cwd="/home/kaja/project"
@@ -126,7 +126,7 @@ test("groups models in a fixed task order regardless of input order", async () =
     <Box flexDirection="column" width={80} height={20}>
       <StartupPanel
         models={[
-          { id: "tts-model", model: "tts-model", task: "text-to-speech", baseUrl, provider: "default" },
+          { id: "tts-model", model: "tts-model", task: "tts", baseUrl, provider: "default" },
           { id: "embed-model", model: "embed-model", task: "embedding", baseUrl, provider: "default" },
           { id: "chat-model", model: "chat-model", task: "chat", baseUrl, provider: "default" }
         ]}

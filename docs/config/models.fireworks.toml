@@ -1,8 +1,8 @@
-# Kaja models — [models.<id>] entries each pick a [providers.*] table with
-# `provider = "<name>"`. The id (e.g. "fast-chat") is how [active].<task> and
-# a persona's [models].<task> pick this entry; `model` is the literal name
-# sent to the provider's API. Provider API keys live in secrets.toml's
-# [providers.<name>] tables, keyed the same way.
+# Kaja models — [models.<task>] entries each pick a [providers.*] table with
+# `provider = "<name>"`. The id must match the task name (e.g. "chat"); a
+# persona's [models].<task> can pin a different model id if one exists.
+# `model` is the literal name sent to the provider's API. Provider API keys
+# live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
 [providers.fireworks]
 base_url = "https://api.fireworks.ai/inference/v1"
@@ -13,42 +13,32 @@ base_url = "http://localhost:8000"  # local server, no key needed
 [providers.xai]
 base_url = "https://api.x.ai/v1"
 
-[models.fast-chat]
+[models.chat]
 model = "accounts/fireworks/models/minimax-m3"
 task = "chat"
 provider = "fireworks"
 
-[models.reasoning-chat]
-model = "accounts/fireworks/models/deepseek-v4-pro"
-task = "chat"
-provider = "fireworks"
-
-[models.big-chat]
-model = "accounts/fireworks/models/kimi-k2p6"
-task = "chat"
-provider = "fireworks"
-
-[models.default-embedding]
+[models.embedding]
 model = "accounts/fireworks/models/qwen3-embedding-8b"
 task = "embedding"
 provider = "fireworks"
 
-[models.default-rerank]
+[models.rerank]
 model = "accounts/fireworks/models/qwen3-reranker-8b"
 task = "rerank"
 provider = "fireworks"
 
-[models.default-image-generation]
+[models.image-generation]
 model = "grok-imagine-image"
 task = "image-generation"
 provider = "xai"
 
-[models.default-text-to-speech]
+[models.tts]
 model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
-task = "text-to-speech"
+task = "tts"
 provider = "speaches"
 
-# The model actually in use for each task — one model id per task, all optional.
-[active]
-chat = "fast-chat"
-embedding = "default-embedding"
+# [models.stt]
+# model = "<provider-specific model name>"
+# task = "stt"
+# provider = "<name>"
