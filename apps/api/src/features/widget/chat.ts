@@ -8,7 +8,8 @@ export async function runWidgetTurn(widgetKey: ResolvedWidgetKey, body: WidgetTu
   const nasi = await openNasiFor({
     userId: widgetKey.userId,
     owner: widgetVisitorOwner(widgetKey.id, visitorId),
-    pinnedModel: await pinnedModelFor(widgetKey.userId, turnBody.session)
+    pinnedModel: await pinnedModelFor(widgetKey.userId, turnBody.session),
+    language: turnBody.language
   })
   return nasi.turnBuffered({ ...turnBody, personaId: widgetKey.config.persona })
 }

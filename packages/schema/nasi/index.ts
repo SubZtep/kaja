@@ -3,7 +3,9 @@ import * as z from "zod"
 export const NasiTurnRequestSchema = z.object({
   session: z.uuidv7().optional(),
   message: z.string().min(1).max(32_768),
-  includeThinking: z.boolean().optional()
+  includeThinking: z.boolean().optional(),
+  /** BCP-47-ish UI language code (e.g. "en", "hu") the caller wants replies in — passed through to the model as a reply-language instruction. */
+  language: z.string().min(2).max(10).optional()
 })
 
 /** Same turn contract, plus the widget's client-minted visitor id (resumption token, not a credential — the widget key already authenticates the request). */

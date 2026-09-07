@@ -1,4 +1,4 @@
-import { createOpenAIClient, Nasi } from "@kaja/nasi"
+import { createOpenAIClient, Nasi, replyLanguageInstructionFor } from "@kaja/nasi"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared"
 import { pool } from "../../core/db"
@@ -50,6 +50,7 @@ export async function openNasiFor(opts: {
   userId: string
   owner?: string | null
   pinnedModel?: string
+  language?: string
 }): Promise<Nasi> {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
   const personas = listPersonas()
@@ -59,7 +60,8 @@ export async function openNasiFor(opts: {
     personas,
     owner: opts.owner,
     promptContext: {
-      environment: "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP."
+      environment: "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP.",
+      replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })
 }
@@ -81,14 +83,22 @@ export async function pinnedModelFor(userId: string, sessionId: string | undefin
 
 export async function runUserTurn(userId: string, body: NasiTurnRequest): Promise<NasiTurnResponse> {
   return withSessionLock(userId, body, async () => {
-    const nasi = await openNasiFor({ userId, pinnedModel: await pinnedModelFor(userId, body.session) })
+    const nasi = await openNasiFor({
+      userId,
+      pinnedModel: await pinnedModelFor(userId, body.session),
+      language: body.language
+    })
     return nasi.turnBuffered(body)
   })
 }
 
 export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
   const run = async function* () {
-    const nasi = await openNasiFor({ userId, pinnedModel: await pinnedModelFor(userId, body.session) })
+    const nasi = await openNasiFor({
+      userId,
+      pinnedModel: await pinnedModelFor(userId, body.session),
+      language: body.language
+    })
     return yield* nasi.turn(body)
   }
   return body.session ? withLockGenerator(`${userId}:${body.session}`, run) : run()

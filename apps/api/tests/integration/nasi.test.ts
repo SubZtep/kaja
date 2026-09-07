@@ -21,6 +21,27 @@ function fakeChatClient(reply: string) {
   }
 }
 
+/** Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt content, while still replying normally. */
+function capturingChatClient(reply: string, onMessages: (messages: unknown[]) => void) {
+  return {
+    chat: {
+      completions: {
+        stream: (opts: { messages: unknown[] }) => {
+          onMessages(opts.messages)
+          return {
+            async *[Symbol.asyncIterator]() {
+              yield { choices: [{ delta: { content: reply } }] }
+            },
+            finalChatCompletion: async () => ({
+              choices: [{ message: { role: "assistant", content: reply } }]
+            })
+          }
+        }
+      }
+    }
+  }
+}
+
 /** A resolver whose one round always calls `fetch_url` on a non-public URL, so `fetchUrlTool` throws `ToolError("fetch_url", …)` uncaught into `run()` — reproducing a tool failure mid-turn. */
 function fetchUrlToolCallChatClient() {
   return {
@@ -128,6 +149,50 @@ describe("nasi", () => {
       expect(res.status).toBe(500)
       const body = await res.json()
       expect(body.error).toBe("fetch_url: Blocked non-public URL: http://localhost/x")
+    } finally {
+      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
+    }
+  })
+
+  test("a non-English language request adds a reply-language instruction to the system prompt", async () => {
+    let capturedMessages: unknown[] = []
+    setNasiChatResolver(async () => ({
+      client: capturingChatClient("hello from nasi", messages => {
+        capturedMessages = messages
+      }) as never,
+      model: "fake-model"
+    }))
+    try {
+      const res = await app.request("/nasi/turn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: "hi", language: "hu" })
+      })
+      expect(res.status).toBe(200)
+      const system = capturedMessages.find((m): m is { role: string; content: string } => (m as any).role === "system")
+      expect(system?.content).toContain("Hungarian")
+    } finally {
+      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
+    }
+  })
+
+  test("no language field means no reply-language instruction", async () => {
+    let capturedMessages: unknown[] = []
+    setNasiChatResolver(async () => ({
+      client: capturingChatClient("hello from nasi", messages => {
+        capturedMessages = messages
+      }) as never,
+      model: "fake-model"
+    }))
+    try {
+      const res = await app.request("/nasi/turn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: "hi" })
+      })
+      expect(res.status).toBe(200)
+      const system = capturedMessages.find((m): m is { role: string; content: string } => (m as any).role === "system")
+      expect(system?.content).not.toContain("Hungarian")
     } finally {
       setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
     }

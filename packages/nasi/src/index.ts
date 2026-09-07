@@ -28,7 +28,7 @@ export {
 export { samplingOf } from "./agent/persona"
 export { run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
-export { applyPersonaToMessages, buildSystemPrompt } from "./agent/system-prompt"
+export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
 export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResult, tool, toolName } from "./agent/tools"
 export { connectMcpServer } from "./mcp/client"
 export {

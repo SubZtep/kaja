@@ -1,6 +1,7 @@
 import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStreamEvent } from "@kaja/nasi/client"
 import type { NasiInfoResponse } from "@kaja/schema/nasi"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { getLanguage } from "../lib/i18n"
 
 /** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai package into the lite bundle for nothing. */
 export type RemoteErrorCategory = "network" | "tool" | "agent" | "unknown"
@@ -93,7 +94,7 @@ export function useRemoteAgent(options: NasiClientOptions) {
       }
 
       try {
-        const gen = client.turn_stream({ session: sessionRef.current, message: prompt })
+        const gen = client.turn_stream({ session: sessionRef.current, message: prompt, language: getLanguage() })
         let next = await gen.next()
         while (!next.done) {
           const event = next.value

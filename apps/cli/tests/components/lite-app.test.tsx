@@ -38,12 +38,15 @@ function sseToolErrorResponse(): Response {
 }
 
 let nextTurnResponse: () => Response = () => sseResponse("hello from lite")
+let lastTurnBody: Record<string, unknown> | undefined
 
 beforeEach(() => {
   nextTurnResponse = () => sseResponse("hello from lite")
-  globalThis.fetch = (async (url: string | URL | Request, _init?: RequestInit) => {
+  lastTurnBody = undefined
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     const path = typeof url === "string" ? url : url instanceof URL ? url.pathname : new URL(url.url).pathname
     if (path.endsWith("/nasi/info")) return infoResponse()
+    if (path.endsWith("/nasi/turn/stream") && typeof init?.body === "string") lastTurnBody = JSON.parse(init.body)
     return nextTurnResponse()
   }) as typeof fetch
 })
@@ -70,6 +73,18 @@ test("sending a message streams the reply into the timeline", async () => {
   await t.tick()
   await t.tick()
   expect(t.lastFrame()).toContain("hello from lite")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("sends the CLI's active language with the turn request", async () => {
+  const t = renderForTest(<LiteApp apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.press("hi there")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  expect(lastTurnBody?.language).toBe("en")
   t.unmount()
   await t.waitUntilExit()
 })
