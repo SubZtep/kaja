@@ -1,5 +1,7 @@
 import { Menu, X } from "lucide-react"
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react"
+import { m } from "../../paraglide/messages.js"
+import { LanguageSelect } from "../ui/LanguageSelect"
 import { BrandMark } from "./BrandMark"
 import { ContentWidth } from "./ContentWidth"
 
@@ -50,17 +52,23 @@ export function SiteHeader({
       <ContentWidth className="flex items-center justify-between py-3 sm:py-4.5">
         <BrandMark to={brandTo} monster className="text-lg" />
 
-        <nav className="hidden items-center gap-7 text-muted text-sm md:flex">{desktopNav}</nav>
+        <nav className="hidden items-center gap-7 text-muted text-sm md:flex">
+          {desktopNav}
+          <LanguageSelect />
+        </nav>
 
-        <button
-          type="button"
-          onClick={() => setOpen(v => !v)}
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          className="flex items-center justify-center rounded-md border border-border bg-surface p-2 text-fg md:hidden"
-        >
-          {open ? <X size={18} /> : <Menu size={18} />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <LanguageSelect />
+          <button
+            type="button"
+            onClick={() => setOpen(v => !v)}
+            aria-label={open ? m.menu_close() : m.menu_open()}
+            aria-expanded={open}
+            className="flex items-center justify-center rounded-md border border-border bg-surface p-2 text-fg"
+          >
+            {open ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </ContentWidth>
 
       {open ? (
