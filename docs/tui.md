@@ -1,12 +1,12 @@
 ---
 layout: page
-title: TUI
+title: Terminal UI
 nav_order: 4
 ---
 
-# TUI
+# Terminal UI
 
-Terminal chat with personas, tools, optional mic dictation, and optional TTS.
+Terminal/console chat. with personas, tools, optional mic dictation, and optional TTS.
 
 ## Terminal commands
 

@@ -2,6 +2,10 @@ This file provides guidance to LLM agents when working with code in this reposit
 
 The project is not live yet, so feel free to adjust any breaking changes.
 
+When you modify a feature check its test (if any) for possible required update too.
+
+When you change a translation text, update all the languages as well.
+
 ## Project Overview
 
 Kaja is a TypeScript monorepo built with Bun:

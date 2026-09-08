@@ -13,7 +13,7 @@ Under the hood it is a full-stack playground: a **Hono API** secured by **Better
 
 ## Quick start
 
-You need [Bun](https://bun.sh) and [Docker Compose](https://docs.docker.com/compose/install/).
+You need [Bun](https://bun.com/docs/installation) and [Docker Compose](https://docs.docker.com/compose/install/).
 
 ```bash
 git clone https://github.com/SubZtep/kaja.git
@@ -36,9 +36,18 @@ Hacking on the API or web app? `bun dev` runs both with hot reload.
 
 **Apps**
 
-- [`tui`](./apps/tui/) – the terminal AI agent, also runs as a Telegram bot
-- [`api`](./apps/api/) – REST API, auth, database migrations, email, and the embeddable chat widget bundle
-- [`web`](./apps/web/) – public homepage and admin portal
+- [`api`](./apps/api/)
+  - REST API
+  - Authentication
+  - Database migrations
+  - Email sending and templates
+  - Web component widget bundle
+- [`tui`](./apps/tui/)
+  - Terminal UI for AI agent
+  - Telegram bot
+- [`web`](./apps/web/)
+  - Public homepage
+  - Admin portal
 
 **Packages**
 
@@ -49,7 +58,7 @@ Hacking on the API or web app? `bun dev` runs both with hot reload.
 
 ## Contributing
 
-Install the [git hooks](lefthook.toml) with `bunx lefthook install`. They lint on commit and run the tests on push, so the easily forgotten chores take care of themselves.
+Until it reach the 1st major version, the codebase under constantly refactor. Install the [git hooks](lefthook.toml) with `bunx lefthook install`. They lint on commit and run the tests on push, so the easily forgotten chores take care of themselves.
 
 ## Documentation
 
