@@ -2,7 +2,7 @@ import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 import rawTemplate from "../../../../docs/config/settings.toml" with { type: "text" }
-import { t } from "../i18n"
+import { detectLanguage, t } from "../i18n"
 import { getPaths } from "../paths"
 
 const TEMPLATE = rawTemplate as unknown as string
@@ -93,4 +93,9 @@ export async function savePreferences(preferences: KajaPreferences) {
 
 export async function create() {
   await write(getConfigPath(), TOML.stringify(TEMPLATE_TOML)!)
+}
+
+/** Remote (hosted) config: just the language preference, detected from the system locale. No persona (personas are a local-agent concept) and no stt/tts/memory sections (those don't apply to the hosted client). */
+export async function createRemote() {
+  await write(getConfigPath(), TOML.stringify({ preferences: { language: detectLanguage() } })!)
 }

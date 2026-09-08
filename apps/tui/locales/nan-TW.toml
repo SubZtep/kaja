@@ -57,7 +57,6 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   --continue, -c  接落去上新个工作階段（干焦 --local 有效）
   --headless      無顯示終端機介面；用佇有支援這个模式个子指令（比如 telegram）
   --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja --local session list）
-  --lang          這改執行專用个介面/回覆語言（en-GB、hu 抑是 nan-TW），比已經儲存个設定較有力
 """
 
 [config]

@@ -1,7 +1,7 @@
 import { color } from "bun"
 import { detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { runFirstRunIfNeeded } from "./lib/cli/first-run"
-import { getConfigPath, isConfigExists, validate } from "./lib/config/config"
+import { createRemote, getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
@@ -24,6 +24,7 @@ try {
 
   const useLocal = args.flags.remote ? false : args.flags.local || (await isConfigExists())
   if (!useLocal) {
+    if (!(await isConfigExists())) await createRemote()
     await runRemoteSubcommand()
     process.exit(0)
   }

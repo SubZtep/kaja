@@ -18,48 +18,18 @@ afterEach(() => {
   setLanguage("en-GB")
 })
 
-test("--lang=hu overrides everything, even a saved en-GB preference", async () => {
-  const dir = `${tmpdir()}/kaja-test-bootstrap-flag-${Date.now()}`
-  await write(`${dir}/settings.toml`, TOML.stringify({ preferences: { language: "en-GB" } })!)
-  setConfigDirOverride(dir)
-  process.argv = [...originalArgv, "--lang=hu"]
-
-  await detectAndSetLanguage()
-  expect(getLanguage()).toBe("hu")
-})
-
-test("--lang hu (space-separated) also works", async () => {
-  setConfigDirOverride(`${tmpdir()}/kaja-test-bootstrap-flag-space-${Date.now()}`)
-  process.argv = [...originalArgv, "--lang", "hu"]
-
-  await detectAndSetLanguage()
-  expect(getLanguage()).toBe("hu")
-})
-
-test("an invalid --lang value is ignored, falling through to config/locale", async () => {
-  const dir = `${tmpdir()}/kaja-test-bootstrap-invalid-flag-${Date.now()}`
-  await write(`${dir}/settings.toml`, TOML.stringify({ preferences: { language: "hu" } })!)
-  setConfigDirOverride(dir)
-  process.argv = [...originalArgv, "--lang=fr"]
-
-  await detectAndSetLanguage()
-  expect(getLanguage()).toBe("hu")
-})
-
-test("without a flag, a saved config preference wins over the OS locale", async () => {
+test("a saved config preference wins over the OS locale", async () => {
   const dir = `${tmpdir()}/kaja-test-bootstrap-config-${Date.now()}`
   await write(`${dir}/settings.toml`, TOML.stringify({ preferences: { language: "hu" } })!)
   setConfigDirOverride(dir)
-  process.argv = originalArgv
   process.env.LANG = "en_US.UTF-8"
 
   await detectAndSetLanguage()
   expect(getLanguage()).toBe("hu")
 })
 
-test("with no flag and no config, the OS locale decides", async () => {
+test("with no config, the OS locale decides", async () => {
   setConfigDirOverride(`${tmpdir()}/kaja-test-bootstrap-no-config-${Date.now()}`)
-  process.argv = originalArgv
   process.env.LANG = "hu_HU.UTF-8"
 
   await detectAndSetLanguage()

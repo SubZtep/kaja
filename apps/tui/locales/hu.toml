@@ -57,7 +57,6 @@ OPCIÓK
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
-  --lang          A felület/válaszok nyelvének felülírása ehhez a futáshoz (en-GB, hu vagy nan-TW), a mentett beállítástól függetlenül
 """
 
 [config]
