@@ -3,7 +3,7 @@ WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/api/package.json ./apps/api/package.json
-COPY apps/cli/package.json ./apps/cli/package.json
+COPY apps/tui/package.json ./apps/tui/package.json
 COPY packages ./packages
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY apps/web ./apps/web

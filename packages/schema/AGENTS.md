@@ -6,7 +6,7 @@ Single source of truth for Zod schemas and related TypeScript types across the m
 
 ```
 api/         # API contracts: shared by API, web, and CLI device auth
-  index.ts     # re-exports + KAJA_CLI_CLIENT_ID
+  index.ts     # re-exports + KAJA_TUI_CLIENT_ID
   auth.ts      # auth-related payloads
   mcp-server.ts  # MCP server admin CRUD schemas
   model.ts       # provider/model admin CRUD schemas
@@ -16,12 +16,12 @@ config/      # CLI on-disk config files the user hand-edits (settings.toml, mode
 store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi
 cli/         # Personas, datasets
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
-env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, CliEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
-  index.ts     # re-exports api/web/cli/logger/helpers
+env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, TuiEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
+  index.ts     # re-exports api/web/tui/logger/helpers
   api.ts       # ApiEnvSchema — LoggerEnvSchema.extend() + every other var apps/api reads
   web.ts       # WebEnvSchema — LoggerEnvSchema.extend() + every other var apps/web reads
-  cli.ts       # CliEnvSchema — LoggerEnvSchema.extend() + KAJA_API_URL (locale vars and a hyperlink-support workaround stay plain process.env reads)
-  logger.ts    # LoggerEnvSchema — @kaja/logger's own contract (KAJA_APP_NAME, KAJA_LOG_LEVEL, KAJA_LOG_FILE, AXIOM_DATASET, AXIOM_TOKEN, NODE_ENV); merged into api/web/cli so it's typed/validated everywhere even though @kaja/logger itself reads these raw via process.env (it can't depend on @kaja/schema)
+  tui.ts       # TuiEnvSchema — LoggerEnvSchema.extend() + KAJA_API_URL (locale vars and a hyperlink-support workaround stay plain process.env reads)
+  logger.ts    # LoggerEnvSchema — @kaja/logger's own contract (KAJA_APP_NAME, KAJA_LOG_LEVEL, KAJA_LOG_FILE, AXIOM_DATASET, AXIOM_TOKEN, NODE_ENV); merged into api/web/tui so it's typed/validated everywhere even though @kaja/logger itself reads these raw via process.env (it can't depend on @kaja/schema)
   helpers.ts   # trimmed/bool/positiveInt/url field helpers, parseEnv(schema, source)
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```
@@ -41,8 +41,8 @@ Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/conf
 
 - `@kaja/api` — request validation / OpenAPI (`@kaja/schema/api`)
 - `@kaja/web` — form and type alignment (`@kaja/schema/api`)
-- `@kaja/cli` — local config/store/domain schemas (`@kaja/schema/config`, `/store`, `/cli`)
-- CLI device/client id constant: `KAJA_CLI_CLIENT_ID = "kaja-cli"` (in `api/index.ts`)
+- `@kaja/tui` — local config/store/domain schemas (`@kaja/schema/config`, `/store`, `/cli`, `/env`'s `TuiEnvSchema`)
+- CLI device/client id constant: `KAJA_TUI_CLIENT_ID = "kaja-tui"` (in `api/index.ts`)
 
 ## Boundaries
 

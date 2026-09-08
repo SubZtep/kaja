@@ -20,14 +20,14 @@ git clone https://github.com/SubZtep/kaja.git
 cd kaja
 bun install
 docker compose up -d   # database, mail, API and web portal
-bun dev:cli            # start chatting
+bun dev:tui            # start chatting
 ```
 
-By default the CLI talks to the hosted API. To run the agent loop on your own machine with your own LLM provider, pass `--local`. The first time, fetch the config templates:
+By default the TUI talks to the hosted API. To run the agent loop on your own machine with your own LLM provider, pass `--local`. The first time, fetch the config templates:
 
 ```bash
-bun dev:cli --local config fetch
-bun dev:cli --local
+bun dev:tui --local config fetch
+bun dev:tui --local
 ```
 
 Hacking on the API or web app? `bun dev` runs both with hot reload.
@@ -36,7 +36,7 @@ Hacking on the API or web app? `bun dev` runs both with hot reload.
 
 **Apps**
 
-- [`cli`](./apps/cli/) – the terminal AI agent, also runs as a Telegram bot
+- [`tui`](./apps/tui/) – the terminal AI agent, also runs as a Telegram bot
 - [`api`](./apps/api/) – REST API, auth, database migrations, email, and the embeddable chat widget bundle
 - [`web`](./apps/web/) – public homepage and admin portal
 

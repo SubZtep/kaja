@@ -19,7 +19,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "dependencies": {
         "@hono/zod-openapi": "^1.6.3",
         "@hono/zod-validator": "^0.9.1",
@@ -47,9 +47,9 @@
         "@types/react": "^19.2.18",
       },
     },
-    "apps/cli": {
-      "name": "@kaja/cli",
-      "version": "0.11.1",
+    "apps/tui": {
+      "name": "@kaja/tui",
+      "version": "0.11.2",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/logger": "workspace:*",
@@ -91,7 +91,7 @@
     },
     "apps/web": {
       "name": "@kaja/web",
-      "version": "0.10.4",
+      "version": "0.10.5",
       "dependencies": {
         "@base-ui/react": "^1.8.0",
         "@fontsource-variable/inter": "^5.2.8",
@@ -394,8 +394,6 @@
 
     "@kaja/api": ["@kaja/api@workspace:apps/api"],
 
-    "@kaja/cli": ["@kaja/cli@workspace:apps/cli"],
-
     "@kaja/logger": ["@kaja/logger@workspace:packages/logger"],
 
     "@kaja/nasi": ["@kaja/nasi@workspace:packages/nasi"],
@@ -403,6 +401,8 @@
     "@kaja/schema": ["@kaja/schema@workspace:packages/schema"],
 
     "@kaja/shared": ["@kaja/shared@workspace:packages/shared"],
+
+    "@kaja/tui": ["@kaja/tui@workspace:apps/tui"],
 
     "@kaja/web": ["@kaja/web@workspace:apps/web"],
 

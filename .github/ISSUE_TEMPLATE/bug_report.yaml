@@ -24,7 +24,7 @@ body:
       description: Which app are you seeing the problem on?
       options:
         - API
-        - CLI
+        - TUI
         - Web
     validations:
       required: false

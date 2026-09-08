@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "bun run --parallel --filter '@kaja/api' --filter '@kaja/web' dev",
     "dev:api": "bun run --filter @kaja/api dev",
-    "dev:cli": "bun run --env-file=apps/cli/.env apps/cli/cli.ts",
+    "dev:tui": "bun run --env-file=apps/tui/.env apps/tui/cli.ts",
     "dev:web": "bun run --filter @kaja/web dev",
     "check:env": "bun scripts/env.ts --check",
     "generate:env": "bun scripts/env.ts",

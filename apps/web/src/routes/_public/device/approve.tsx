@@ -63,7 +63,7 @@ function DeviceApprovePage() {
         toast.error(error.statusText ?? "Failed to approve")
         return
       }
-      toast.success("Device approved — you can return to the CLI.")
+      toast.success("Device approved — you can return to the TUI.")
       await navigate({ to: "/dashboard" })
     } finally {
       setLoading(false)
@@ -87,8 +87,8 @@ function DeviceApprovePage() {
 
   return (
     <>
-      <h1>Approve CLI access</h1>
-      <p>The Kaja CLI asked to be accessable by your account.</p>
+      <h1>Approve TUI access</h1>
+      <p>The Kaja TUI asked to be accessable by your account.</p>
       <p>
         Code: <div className="text-2xl text-fg tracking-widest font-semibold">{user_code}</div>
       </p>

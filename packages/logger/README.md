@@ -63,7 +63,7 @@ When `KAJA_LOG_LEVEL` is set:
 
 - **Browser**: logs at or above that level go to `console.*` as normal.
 - **Node**:
-  1. `KAJA_LOG_FILE` set → append JSON lines there, in any `NODE_ENV`. This is what `apps/cli` uses — as a terminal UI app, it can never log to the console (that would corrupt the display), so a log file is the only safe destination regardless of dev/prod.
+  1. `KAJA_LOG_FILE` set → append JSON lines there, in any `NODE_ENV`. This is what `apps/tui` uses — as a terminal UI app, it can never log to the console (that would corrupt the display), so a log file is the only safe destination regardless of dev/prod.
   2. Else, based on `NODE_ENV`:
      - `"development"` → pretty-print to the console via `pino-pretty`.
      - `"production"` → send to Axiom via `@axiomhq/pino`, using `AXIOM_DATASET`/`AXIOM_TOKEN`. If either is missing, no destination (silent).

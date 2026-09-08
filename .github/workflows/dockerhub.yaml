@@ -7,8 +7,8 @@ on:
         description: "Release API"
         type: boolean
         default: false
-      release_cli:
-        description: "Release CLI"
+      release_tui:
+        description: "Release TUI"
         type: boolean
         default: true
       release_web:
@@ -43,9 +43,9 @@ jobs:
           dockerfile: ./apps/api/Dockerfile
           version: ${{ steps.version.outputs.version }}
 
-  cli-docker:
-    name: CLI Build and Push
-    if: ${{ inputs.release_cli }}
+  tui-docker:
+    name: TUI Build and Push
+    if: ${{ inputs.release_tui }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -54,19 +54,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - name: Get CLI version
+      - name: Get TUI version
         id: version
         run: |
-          VERSION=$(jq -r .version ./apps/cli/package.json)
+          VERSION=$(jq -r .version ./apps/tui/package.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Release CLI
+      - name: Release TUI
         uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
         with:
-          dockerhub_repository: ${{ vars.DOCKER_IMAGE_CLI }}
+          dockerhub_repository: ${{ vars.DOCKER_IMAGE_TUI }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-          dockerfile: ./apps/cli/Dockerfile
+          dockerfile: ./apps/tui/Dockerfile
           version: ${{ steps.version.outputs.version }}
 
   web-docker:

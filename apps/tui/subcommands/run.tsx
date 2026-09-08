@@ -3,7 +3,7 @@ import type { args as Cli } from "../lib/cli/args"
 /**
  * The default case (no recognized subcommand): resolves the
  * session/config/tools/personas, then renders the Ink TUI. Kept out of
- * cli.tsx so the entry point stays a thin arg-parser.
+ * cli.ts so the entry point stays a thin arg-parser.
  */
 export async function runSubcommand(cli: typeof Cli) {
   const { config } = await import("../lib/config/config")
@@ -12,7 +12,7 @@ export async function runSubcommand(cli: typeof Cli) {
     "../lib/cli/headless"
   )
 
-  // Imported after the config guard (already validated by the time cli.tsx calls this): lib/openai.ts reads config at module load (via lib/agents.ts), so a static import would crash before first-run
+  // Imported after the config guard (already validated by the time cli.ts calls this): lib/openai.ts reads config at module load (via lib/agents.ts), so a static import would crash before first-run
   const { default: App } = await import("../components/layout/app")
   const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("../lib/session/store")
   const { loadMemory } = await import("../lib/memory/store")

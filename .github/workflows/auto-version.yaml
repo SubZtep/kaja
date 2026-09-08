@@ -11,7 +11,7 @@ on:
 
 permissions:
   contents: write
-  # So we can `gh workflow run` Build and release CLI after a CLI bump
+  # So we can `gh workflow run` Build and release TUI after a TUI bump
   # (tag pushes alone are skipped by [skip ci] on the bump commit).
   actions: write
 
@@ -34,8 +34,8 @@ jobs:
           filters: |
             api:
               - 'apps/api/**'
-            cli:
-              - 'apps/cli/**'
+            tui:
+              - 'apps/tui/**'
             web:
               - 'apps/web/**'
             shared:
@@ -46,17 +46,17 @@ jobs:
               - 'packages/schema/**'
 
       - name: Setup Git
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.schema == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump, commit, tag, and push once
         id: bump
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.cli == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.schema == 'true'
         env:
           FILTER_API: ${{ steps.filter.outputs.api }}
-          FILTER_CLI: ${{ steps.filter.outputs.cli }}
+          FILTER_TUI: ${{ steps.filter.outputs.tui }}
           FILTER_WEB: ${{ steps.filter.outputs.web }}
           FILTER_SHARED: ${{ steps.filter.outputs.shared }}
           FILTER_LOGGER: ${{ steps.filter.outputs.logger }}
@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "cli_bumped=false" >> "$GITHUB_OUTPUT"
+          echo "tui_bumped=false" >> "$GITHUB_OUTPUT"
           echo "api_tag=" >> "$GITHUB_OUTPUT"
           echo "web_tag=" >> "$GITHUB_OUTPUT"
 
@@ -121,9 +121,9 @@ jobs:
           if [[ "$FILTER_API" == "true" ]]; then
             bump_workspace "api" "apps/api"
           fi
-          if [[ "$FILTER_CLI" == "true" ]]; then
-            bump_workspace "cli" "apps/cli"
-            echo "cli_bumped=true" >> "$GITHUB_OUTPUT"
+          if [[ "$FILTER_TUI" == "true" ]]; then
+            bump_workspace "tui" "apps/tui"
+            echo "tui_bumped=true" >> "$GITHUB_OUTPUT"
           fi
           if [[ "$FILTER_WEB" == "true" ]]; then
             bump_workspace "web" "apps/web"
@@ -154,8 +154,8 @@ jobs:
 
           SUMMARY=$(IFS=", "; echo "${SUMMARY_PARTS[*]}")
           # [skip ci] avoids re-running CI / this workflow on the bump commit.
-          # Tag push alone will not start Build and release CLI either — we
-          # dispatch that workflow explicitly below when the CLI was bumped.
+          # Tag push alone will not start Build and release TUI either — we
+          # dispatch that workflow explicitly below when the TUI was bumped.
           git commit -m "chore: auto bump ${SUMMARY} [skip ci]"
 
           for tag in "${TAGS[@]}"; do
@@ -175,14 +175,14 @@ jobs:
           fi
           done
 
-      - name: Trigger CLI release build
-        if: steps.bump.outputs.cli_bumped == 'true'
+      - name: Trigger TUI release build
+        if: steps.bump.outputs.tui_bumped == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          echo "CLI was bumped — dispatching Build and release CLI on main"
-          gh workflow run "Build and release CLI" --ref main
+          echo "TUI was bumped — dispatching Build and release TUI on main"
+          gh workflow run "Build and release TUI" --ref main
 
       - name: Trigger api release
         if: steps.bump.outputs.api_tag != ''

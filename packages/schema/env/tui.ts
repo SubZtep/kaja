@@ -1,7 +1,7 @@
 import { url } from "./helpers"
 import { LoggerEnvSchema } from "./logger"
 
-export const CliEnvSchema = LoggerEnvSchema.extend({
+export const TuiEnvSchema = LoggerEnvSchema.extend({
   KAJA_API_URL: url
     .optional()
     .describe(

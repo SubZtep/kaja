@@ -1,4 +1,4 @@
-const SECRETS_SERVICE = "kaja-cli"
+const SECRETS_SERVICE = "kaja-tui"
 
 /** Thrown when the OS credential store itself is unreachable (e.g. no secret-service daemon on Linux) — distinct from "no token stored". */
 export class SecretsAccessError extends Error {

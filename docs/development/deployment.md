@@ -28,7 +28,7 @@ values) and a gitignored `.env` (your local copy, real values + secrets). Bootst
 ```sh
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
-cp apps/cli/.env.example apps/cli/.env
+cp apps/tui/.env.example apps/tui/.env
 ```
 
 Generate a local secret (appends `BETTER_AUTH_SECRET` to `apps/api/.env`):
@@ -78,11 +78,11 @@ always re-run migrations after deploy when SQL files change.
 Automatic Versioning (`.github/workflows/auto-version.yaml`) on `main`:
 
 1. Detects which workspaces changed under `apps/**` / `packages/**`
-2. Bumps the matching `package.json` versions, commits with `[skip ci]`, and pushes tags (`cli@x.y.z`, …)
-3. If the **CLI** was bumped, it **dispatches** [Build and release CLI](../.github/workflows/build-cli.yaml) on `main` via `gh workflow run`
+2. Bumps the matching `package.json` versions, commits with `[skip ci]`, and pushes tags (`tui@x.y.z`, …)
+3. If the **TUI** was bumped, it **dispatches** [Build and release TUI](../.github/workflows/build-tui.yaml) on `main` via `gh workflow run`
 
 `[skip ci]` stops the bump commit from re-running CI and auto-version (and would also block a tag-triggered build). The explicit dispatch is what actually ships the CLI binary/release.
 
 No personal access token (`PAT_TOKEN`) is required for this flow: the default `GITHUB_TOKEN` can push the bump and start `workflow_dispatch` when the job has `contents: write` and `actions: write`.
 
-You can still run **Build and release CLI** manually from the Actions tab.
+You can still run **Build and release TUI** manually from the Actions tab.

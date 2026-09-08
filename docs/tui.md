@@ -1,10 +1,10 @@
 ---
 layout: page
-title: CLI
+title: TUI
 nav_order: 4
 ---
 
-# CLI
+# TUI
 
 Terminal chat with personas, tools, optional mic dictation, and optional TTS.
 

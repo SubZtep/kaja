@@ -1,4 +1,4 @@
-import { KAJA_CLI_CLIENT_ID } from "@kaja/schema/api"
+import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { createAuthClient } from "better-auth/client"
 import { deviceAuthorizationClient } from "better-auth/client/plugins"
 import { t } from "../i18n"
@@ -50,7 +50,7 @@ export async function deviceLogin(
   })
 
   const { data, error } = await authClient.device.code({
-    client_id: KAJA_CLI_CLIENT_ID,
+    client_id: KAJA_TUI_CLIENT_ID,
     scope: "openid profile email"
   })
   if (error || !data) {
@@ -71,7 +71,7 @@ export async function deviceLogin(
     const poll = await authClient.device.token({
       grant_type: "urn:ietf:params:oauth:grant-type:device_code",
       device_code: data.device_code,
-      client_id: KAJA_CLI_CLIENT_ID
+      client_id: KAJA_TUI_CLIENT_ID
     })
     if (poll.data?.access_token) {
       const token = poll.data.access_token

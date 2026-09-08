@@ -1,5 +1,5 @@
 import { debug, error, fatal, info, warn } from "@kaja/logger"
-import { KAJA_CLI_CLIENT_ID } from "@kaja/schema/api"
+import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { pool } from "../../core/db"
@@ -39,7 +39,7 @@ const plugins: BetterAuthPlugin[] = [
   deviceAuthorization({
     schema: {},
     verificationUri: deviceVerificationUrl(),
-    validateClient: clientId => clientId === KAJA_CLI_CLIENT_ID,
+    validateClient: clientId => clientId === KAJA_TUI_CLIENT_ID,
     onDeviceAuthRequest: (clientId, scope) => {
       debug("Device authorization requested", { clientId, scope })
     }

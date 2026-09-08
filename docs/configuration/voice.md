@@ -36,4 +36,4 @@ points at something Hungarian-capable.
 
 Next:
 
-[CLI](/cli){: .btn .btn-green .fs-5 }
+[TUI](/tui){: .btn .btn-green .fs-5 }

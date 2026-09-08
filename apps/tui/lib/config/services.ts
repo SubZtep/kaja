@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { type ServicesFile, ServicesFileSchema } from "@kaja/schema/config"
-import { CliEnvSchema } from "@kaja/schema/env"
+import { TuiEnvSchema } from "@kaja/schema/env"
 import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/services.toml" with { type: "text" }
 import { t } from "../i18n"
@@ -51,7 +51,7 @@ export async function loadServicesFile(): Promise<ResolvedServices> {
   const text = exists ? await f.text() : TEMPLATE
   try {
     const parsed = ServicesFileSchema.parse(TOML.parse(text))
-    const kajaApiUrl = CliEnvSchema.shape.KAJA_API_URL.safeParse(process.env.KAJA_API_URL).data
+    const kajaApiUrl = TuiEnvSchema.shape.KAJA_API_URL.safeParse(process.env.KAJA_API_URL).data
     if (kajaApiUrl) parsed.api = { ...parsed.api, baseUrl: kajaApiUrl }
     return mergeSecrets(parsed, await secrets())
   } catch (error: any) {

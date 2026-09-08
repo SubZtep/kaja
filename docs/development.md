@@ -49,8 +49,8 @@ From your project root, run in a terminal:
 # Run the API and web app
 bun dev
 
-# Run the CLI app
-bun dev:cli
+# Run the TUI app
+bun dev:tui
 
 # Check formatting and lint rules
 bun lint

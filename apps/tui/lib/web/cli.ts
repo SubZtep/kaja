@@ -29,7 +29,7 @@ import {
 /**
  * The `kaja web` subcommand: a localhost-only webserver for viewing the
  * config (secrets masked) and browsing/pruning memory.sqlite. Like
- * lib/memory-cli.ts and lib/session-cli.ts it's dispatched (from cli.tsx)
+ * lib/memory-cli.ts and lib/session-cli.ts it's dispatched (from cli.ts)
  * before the config guard and built only on the stores plus
  * readConfigLoose — inspecting a broken setup is precisely when this UI is
  * most useful, so it must work without a valid LLM config.
@@ -83,7 +83,7 @@ export function startWebServer(port: number) {
         )
       },
       "/personas": async () => {
-        // lib/agents.ts pulls in lib/openai.ts, which reads the LLM config at module load and exits the process if it's missing/invalid — fine for the normal boot path (cli.tsx only imports it after its own config guard), fatal here since this whole server exists to stay usable on a broken config. Import it dynamically, and only once we know the file is there.
+        // lib/agents.ts pulls in lib/openai.ts, which reads the LLM config at module load and exits the process if it's missing/invalid — fine for the normal boot path (cli.ts only imports it after its own config guard), fatal here since this whole server exists to stay usable on a broken config. Import it dynamically, and only once we know the file is there.
         if (!(await configExists())) {
           return html(unconfiguredPersonasPage())
         }

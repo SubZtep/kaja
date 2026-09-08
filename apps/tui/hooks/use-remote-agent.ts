@@ -19,7 +19,7 @@ function categorizeRemoteError(error: unknown): { category: RemoteErrorCategory;
   return { category: "unknown", message: String(error) }
 }
 
-/** Same shape as apps/cli/hooks/use-agent.ts's TimelineEvent, restricted to what hosted Nasi can ever emit (no tool_image/display_image/confirm_command — those are local-only). */
+/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what hosted Nasi can ever emit (no tool_image/display_image/confirm_command — those are local-only). */
 export type RemoteTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: RemoteErrorCategory }

@@ -1,24 +1,24 @@
-# @kaja/cli
+# @kaja/tui
 
 Terminal chat with personas, tools, optional mic dictation, optional TTS, MCP, and Telegram.
 
-This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). **With no `--local`/`--remote` flag, the mode auto-detects**: local if a config already exists (`~/.config/kaja/settings.toml`), hosted login otherwise. `--local` forces the local-agent path; `--remote` forces hosted login even if a local config exists. Hosted mode: no local agent, no sqlite, no MCP, no shell tools, talks to `<apiUrl>/nasi/*` over SSE. Auth: device login on first run (token stored in the OS credential store via `Bun.secrets`, keyed by `service: "kaja-cli"` / `name: <user email>` — supports multiple accounts on one machine; no on-disk credentials file; if the OS keychain is unavailable, the CLI errors out and recommends `--local`). The last signed-in email is remembered as `user` in `settings.toml`; `--user <email>` switches accounts. Server-side persona catalog (admin-managed, `apps/api`'s `persona` table) drives `switch_persona` in hosted mode. Local mode: agent logic lives in `@kaja/nasi`, this app is the local host + Ink UI, requires a configured `models.toml` (own provider — no silent fallback to hosted free chat). `lib/auth/` (device-login, credentials), `hooks/use-remote-agent.ts`, and `subcommands/run-remote.tsx` are hosted-only; `components/layout/lite-app.tsx` reuses `Header`/`ChatViewport`/`UserInput` from the full CLI (persona/model switching and `run_command` confirm are `--local`-only — hosted Nasi never emits those).
+This package uses Bun. Entry point is **`cli.ts`** at the package root (not `src/`). **With no `--local`/`--remote` flag, the mode auto-detects**: local if a config already exists (`~/.config/kaja/settings.toml`), hosted login otherwise. `--local` forces the local-agent path; `--remote` forces hosted login even if a local config exists. Hosted mode: no local agent, no sqlite, no MCP, no shell tools, talks to `<apiUrl>/nasi/*` over SSE. Auth: device login on first run (token stored in the OS credential store via `Bun.secrets`, keyed by `service: "kaja-tui"` / `name: <user email>` — supports multiple accounts on one machine; no on-disk credentials file; if the OS keychain is unavailable, the CLI errors out and recommends `--local`). The last signed-in email is remembered as `user` in `settings.toml`; `--user <email>` switches accounts. Server-side persona catalog (admin-managed, `apps/api`'s `persona` table) drives `switch_persona` in hosted mode. Local mode: agent logic lives in `@kaja/nasi`, this app is the local host + Ink UI, requires a configured `models.toml` (own provider — no silent fallback to hosted free chat). `lib/auth/` (device-login, credentials), `hooks/use-remote-agent.ts`, and `subcommands/run-remote.tsx` are hosted-only; `components/layout/lite-app.tsx` reuses `Header`/`ChatViewport`/`UserInput` from the full TUI (persona/model switching and `run_command` confirm are `--local`-only — hosted Nasi never emits those).
 
 ## Commands
 
 ```bash
-bun start                 # from apps/cli
+bun start                 # from apps/tui
 bun test                  # package tests
 # From monorepo root:
-bun dev:cli               # interactive — attaches your real TTY, use this one
-bun run --filter @kaja/cli test
+bun dev:tui               # interactive — attaches your real TTY, use this one
+bun run --filter @kaja/tui test
 ```
 
-`bun run --filter @kaja/cli start` also works but runs through Bun's workspace script
+`bun run --filter @kaja/tui start` also works but runs through Bun's workspace script
 runner, which does not pass your terminal's TTY through to the child process — Ink then
 sees `process.stdin.isTTY` as falsy (skips the first-run prompt, and the main app crashes
-with "Raw mode is not supported"). Always use `bun dev:cli` (or `cd apps/cli && bun run
-cli.tsx` directly) for interactive use.
+with "Raw mode is not supported"). Always use `bun dev:tui` (or `cd apps/tui && bun run
+cli.ts` directly) for interactive use.
 
 ## CLI surface
 
@@ -31,7 +31,7 @@ cli.tsx` directly) for interactive use.
 ## Layout
 
 ```
-cli.tsx                 # entry
+cli.ts                  # entry
 components/             # Ink UI (layout, inputs, timeline, wizard, …)
 hooks/                  # agent, settings, voice, dictation, sounds, …
 lib/                    # domain subfolders: cli, agent, auth, config, models, personas, memory,

@@ -53,7 +53,7 @@ erDiagram
 
 ## `@kaja/schema/config`
 
-CLI on-disk files the user hand-edits (`apps/cli`).
+CLI on-disk files the user hand-edits (`apps/tui`).
 
 ```mermaid
 ---
@@ -93,7 +93,7 @@ erDiagram
 
 ## `@kaja/schema/cli`
 
-Remaining CLI domain concepts (`apps/cli`).
+Remaining CLI domain concepts (`apps/tui`).
 
 ```mermaid
 ---
@@ -142,7 +142,7 @@ erDiagram
 
 ## `@kaja/schema/store`
 
-CLI SQLite-backed runtime state (`apps/cli`).
+CLI SQLite-backed runtime state (`apps/tui`).
 
 ```mermaid
 ---
@@ -196,6 +196,6 @@ These aren't type imports (each subpath stays decoupled per `packages/schema/AGE
 | Subpath | Contents | Consumers |
 |---|---|---|
 | `@kaja/schema/api` | `McpServer`, `Provider`/`Model`, auth payloads | `apps/api`, `apps/web` |
-| `@kaja/schema/config` | `KajaConfig` (settings.toml), `KajaModelsFile` (models.toml), `McpFile` (mcp.toml), `ServicesFile` (services.toml) | `apps/cli` |
-| `@kaja/schema/store` | `PersistedSession`/`SessionMeta`, `MemoryNote`/`MemoryStore` (SQLite-backed) | `apps/cli` |
-| `@kaja/schema/cli` | `Persona`, `SamplingParams`, `Dataset`/`DatasetField` | `apps/cli` |
+| `@kaja/schema/config` | `KajaConfig` (settings.toml), `KajaModelsFile` (models.toml), `McpFile` (mcp.toml), `ServicesFile` (services.toml) | `apps/tui` |
+| `@kaja/schema/store` | `PersistedSession`/`SessionMeta`, `MemoryNote`/`MemoryStore` (SQLite-backed) | `apps/tui` |
+| `@kaja/schema/cli` | `Persona`, `SamplingParams`, `Dataset`/`DatasetField` | `apps/tui` |

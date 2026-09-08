@@ -5,7 +5,7 @@
 .playwright-mcp
 .tanstack
 .tmp-test-xdg-config-*/
-apps/cli/assets/datasets/
+apps/tui/assets/datasets/
 apps/api/public/
 apps/api/.data/
 dist
