@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import { rename } from "node:fs/promises"
 import { t } from "../i18n"
+import { markdownToTerminal } from "../markdown/md-terminal"
 import { fetchModelsToml } from "../models/models"
 import { listPaths } from "../paths"
 import { fetchPersonasToml } from "../personas/fetch"
@@ -37,10 +38,11 @@ async function runWipe(): Promise<{ code: number; text: string }> {
 }
 
 function runPaths(): { code: number; text: string } {
-  const text = listPaths(true, getConfigDir())
-    .map(({ label, path }) => `${label}: ${path}`)
+  const rows = listPaths(true, getConfigDir())
+    .map(({ label, path }) => `| ${label} | ${path} |`)
     .join("\n")
-  return { code: 0, text }
+  const md = `| Config | Path |\n| :--- | :--- |\n${rows}`
+  return { code: 0, text: markdownToTerminal(md) }
 }
 
 /**
