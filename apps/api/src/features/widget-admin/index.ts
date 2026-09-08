@@ -57,7 +57,7 @@ widgetAdminRoutes.openapi(createRouteDef, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { label, allowedOrigins, config } = c.req.valid("json")
-  if (config?.persona && !listPersonas().some(p => p.id === config.persona)) {
+  if (config?.persona && !(await listPersonas()).some(p => p.id === config.persona)) {
     return badRequest(c, `Unknown persona "${config.persona}"`)
   }
   const key = await widgetService.createKey(user.id, label, allowedOrigins, config)

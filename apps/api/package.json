@@ -6,7 +6,8 @@
     "dev": "bun run --hot src/core/server.ts",
     "build": "bun run build:widget && bun build --minify --target bun --outfile dist/server.js src/core/server.ts",
     "build:widget": "bun build --target=browser --format=iife --minify --outfile public/widget.js widgets/src/index.ts",
-    "start": "bun run dist/server.js"
+    "start": "bun run dist/server.js",
+    "seed:config": "bun run scripts/seed-config.ts"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.6.3",

@@ -13,11 +13,11 @@ export function Footer() {
             <BrandMark className="text-[15px] font-semibold" />
           </div>
           <div className="text-muted text-[13px]">
-            {m.footer_license_name()} · {new Date().getFullYear()} · {m.footer_license_by()}{" "}
+            {m.footer_license_name()} · {m.footer_license_by()}{" "}
             <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-muted">
               SubZtep
             </a>{" "}
-            ·{" "}
+            · {new Date().getFullYear()} ·{" "}
             <a href="/llms.txt" className="text-muted">
               llms.txt
             </a>{" "}

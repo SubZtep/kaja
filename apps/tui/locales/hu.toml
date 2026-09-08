@@ -64,15 +64,39 @@ invalidAt = "Érvénytelen konfigurációs fájl ({path}): {message}"
 notExists = "Nem létezik a konfigurációs fájl: {path}"
 usage = """
 Használat
-  $ kaja config fetch   Újragenerálja a konfigurációs fájlokat a beépített sablonokból
+  $ kaja config fetch   Letölti a konfigurációs fájlokat a szerverről (offline: beépített sablonok)
+  $ kaja config diff    Megmutatja, mit változtatna a fetch, írás nélkül
+  $ kaja config wizard  Interaktív beállítás: nyelv, szolgáltató, perszóna
   $ kaja config wipe    Biztonsági mentés után törli a teljes konfigurációs könyvtárat
   $ kaja config paths   Mutatja az összes elérési utat, amit a Kaja használ
 """
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
 fetchedUnchanged = "{path} már naprakész"
+fetchAllUpToDate = "Minden naprakész"
+fetchOfflineFallback = "Nem sikerült elérni a szervert ({message}) — beépített sablonok használata"
 wiped = "{path} áthelyezve ide: {backup}"
 wipeNothing = "Nincs mit törölni: {path} nem létezik"
+diffNew = "{path}: új"
+diffUnchanged = "{path}: változatlan"
+diffWouldUpdate = "{path}: frissülne"
+
+[wizard]
+languageTitle = "Válassz nyelvet"
+providerTitle = "Válassz modellszolgáltatót"
+providerFetch = "Katalógus letöltése a szerverről"
+providerFireworks = "Fireworks (felhő)"
+providerOllama = "Ollama (helyi)"
+providerLlama = "llama.cpp (helyi)"
+apiKeyTitle = "Add meg a Fireworks API kulcsodat"
+apiKeyPlaceholder = "fw_..."
+personaTitle = "Válassz alapértelmezett perszónát"
+personaSkip = "Kihagyás"
+summaryTitle = "Beállítás kész"
+summaryHint = "Nyomj Entert a befejezéshez. A `kaja config diff` bármikor megmutatja, mi változna."
+headlessDone = "Alapértelmezett konfiguráció elmentve (nem interaktív munkamenet)"
+cancelled = "Megszakítva — semmi nem változott"
+done = "Beállítás kész"
 
 [models]
 invalidAt = "Érvénytelen modell fájl ({path}): {message}"

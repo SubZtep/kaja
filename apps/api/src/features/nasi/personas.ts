@@ -1,20 +1,25 @@
-import { type PersonaToml, personaTomlSchema } from "@kaja/schema/api"
-import { TOML } from "bun"
-// Bundled at build time (no docs/ dir is shipped in the API's Docker image), sourced from the same
-// files apps/tui/lib/personas/personas.ts bundles for the CLI.
-import BARKOCHBA_TEMPLATE from "../../../../../docs/config/personas/barkochba.toml" with { type: "text" }
-import CARE_TEMPLATE from "../../../../../docs/config/personas/care.toml" with { type: "text" }
-import DEFAULT_TEMPLATE from "../../../../../docs/config/personas/default.toml" with { type: "text" }
-import ONBOARDING_TEMPLATE from "../../../../../docs/config/personas/onboarding.toml" with { type: "text" }
+import type { PersonaToml } from "@kaja/schema/api"
+import { personaService } from "../../services"
 
-const TEMPLATES: Record<string, string> = {
-  default: DEFAULT_TEMPLATE,
-  barkochba: BARKOCHBA_TEMPLATE,
-  care: CARE_TEMPLATE,
-  onboarding: ONBOARDING_TEMPLATE
+const CACHE_TTL_MS = 30_000
+
+let cache: { personas: PersonaToml[]; expiresAt: number } | undefined
+
+function toPersonaToml(row: Awaited<ReturnType<typeof personaService.listEnabled>>[number]): PersonaToml {
+  return {
+    id: row.personaId,
+    label: row.label,
+    instructions: row.instructions ?? undefined,
+    when: row.when ?? undefined,
+    ...row.sampling
+  }
 }
 
-/** The hosted agent loop's persona catalog, read from docs/config/personas/*.toml (id = filename). */
-export function listPersonas(): PersonaToml[] {
-  return Object.entries(TEMPLATES).map(([id, text]) => ({ id, ...personaTomlSchema.parse(TOML.parse(text)) }))
+/** The hosted agent loop's persona catalog, read from the `persona` table (admin-managed). Cached in-process for CACHE_TTL_MS so every turn doesn't hit Postgres. */
+export async function listPersonas(): Promise<PersonaToml[]> {
+  if (cache && cache.expiresAt > Date.now()) return cache.personas
+  const rows = await personaService.listEnabled()
+  const personas = rows.map(toPersonaToml)
+  cache = { personas, expiresAt: Date.now() + CACHE_TTL_MS }
+  return personas
 }

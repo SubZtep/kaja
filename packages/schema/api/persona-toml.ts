@@ -19,15 +19,4 @@ export const personaTomlSchema = z.object({
   seed: z.number().int().optional()
 })
 
-export const listPersonasResponseSchema = z.object({
-  personas: z.array(
-    z.object({
-      id: z.string(),
-      label: z.string(),
-      when: z.string().optional()
-    })
-  )
-})
-
 export type PersonaToml = z.infer<typeof personaTomlSchema> & { id: string }
-export type ListPersonasResponse = z.infer<typeof listPersonasResponseSchema>

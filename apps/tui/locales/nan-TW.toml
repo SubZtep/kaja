@@ -64,15 +64,39 @@ invalidAt = "設定檔無效（{path}）：{message}"
 notExists = "設定檔無存在：{path}"
 usage = """
 用法
-  $ kaja config fetch   對內建範本重新產生設定檔
+  $ kaja config fetch   對伺服器下載設定檔（若離線就用內建範本）
+  $ kaja config diff    顯示 fetch 會改變啥物，毋寫入任何物件
+  $ kaja config wizard  互動式設定：語言、供應商、人設
   $ kaja config wipe    先備份才共規个設定資料夾清空
   $ kaja config paths   印出 Kaja 讀寫个所有路徑
 """
 fetched = "已經寫入 {path}"
 fetchedWithBackup = "已經寫入 {path}（早前个檔案已經備份去 {backup}）"
 fetchedUnchanged = "{path} 已經是上新版矣"
+fetchAllUpToDate = "全部已經是上新版矣"
+fetchOfflineFallback = "連袂著伺服器（{message}）— 改用內建範本"
 wiped = "已經共 {path} 徙去 {backup}"
 wipeNothing = "無物件通清空：{path} 無存在"
+diffNew = "{path}：新个"
+diffUnchanged = "{path}：無變"
+diffWouldUpdate = "{path}：會更新"
+
+[wizard]
+languageTitle = "揀語言"
+providerTitle = "揀模型供應商"
+providerFetch = "對伺服器下載目錄"
+providerFireworks = "Fireworks（雲端）"
+providerOllama = "Ollama（本地）"
+providerLlama = "llama.cpp（本地）"
+apiKeyTitle = "輸入你个 Fireworks API 金鎖匙"
+apiKeyPlaceholder = "fw_..."
+personaTitle = "揀預設人設"
+personaSkip = "跳過"
+summaryTitle = "設定完成矣"
+summaryHint = "按 Enter 完成。隨時會使跑 `kaja config diff` 來看會改變啥物。"
+headlessDone = "已經寫入預設設定（非互動作業階段）"
+cancelled = "已經取消矣 — 攏無變化"
+done = "設定完成矣"
 
 [models]
 invalidAt = "模型檔無效（{path}）：{message}"

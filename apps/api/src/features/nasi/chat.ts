@@ -67,7 +67,7 @@ export async function openNasiFor(opts: {
   language?: string
 }): Promise<Nasi> {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
-  const personas = listPersonas()
+  const personas = await listPersonas()
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,

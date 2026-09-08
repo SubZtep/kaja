@@ -29,8 +29,14 @@ Run `kaja config paths` to print the resolved location of each of these on your 
 directory follows XDG, so `$XDG_CONFIG_HOME/kaja` when set.
 
 The first `kaja --local` run seeds these from the templates in
-[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config); `kaja config fetch`
-rewrites them from the same templates later, backing up anything you'd changed.
+[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config). `kaja config fetch`
+later downloads the current admin-managed defaults (personas, model catalog, MCP servers) from
+the hosted API's `GET /config/export` and rewrites `models.toml`/`mcp.toml`/`personas/*.toml`
+from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
+the same bundled templates as first run. `kaja config diff` shows what a fetch would change
+without writing anything, and `kaja config wizard` re-runs the interactive first-run setup at any
+time (language, provider, persona). `secrets.toml`, `services.toml`, and `settings.toml` are
+never touched by `fetch` — those stay yours to hand-edit.
 
 ## Which file does what
 

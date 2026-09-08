@@ -2,7 +2,9 @@
 # leave that feature off. Credentials for these same sections live in
 # secrets.toml, not here.
 
-# Kaja server used by `kaja config fetch` to regenerate mcp.toml/models.toml.
+# Kaja server used by `kaja config fetch`/`diff`/`wizard` to download the
+# admin-managed defaults (personas, models, MCP servers). No token needed —
+# GET /config/export is public.
 [api]
 baseUrl = "https://api.kaja.io"
 

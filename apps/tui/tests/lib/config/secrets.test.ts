@@ -29,9 +29,8 @@ test("missing file: writes the template and returns its active (non-commented) s
   const data = await loadSecretsFile()
 
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
-  // The shipped template's [api]/[location] ship active (matching services.toml's defaults);
+  // The shipped template's [location] ships active (matching services.toml's defaults);
   // everything else ships commented out.
-  expect(data.api).toEqual({ token: "kaja" })
   expect(data.location).toEqual({ apiKey: "kaja" })
   expect(data.webSearch).toBeUndefined()
   expect(data.telegram).toBeUndefined()
@@ -51,7 +50,6 @@ apiKey = "custom-brave-key"
 
   const data = await loadSecretsFile()
   expect(data.webSearch).toEqual({ apiKey: "custom-brave-key" })
-  expect(data.api).toBeUndefined()
 })
 
 test("readSecretsLoose returns {} when the file is missing, without writing anything", async () => {

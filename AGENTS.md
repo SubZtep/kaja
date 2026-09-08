@@ -128,6 +128,7 @@ bun run --filter @kaja/tui test
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
 5. `2026-09-07-nasi.sql` — hosted agent state (sessions, memory, datasets)
+6. `2026-09-08-persona.sql` — `persona` table (admin-managed persona catalog; seed via `bun seed:config`, see `apps/api/scripts/seed-config.ts`)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 

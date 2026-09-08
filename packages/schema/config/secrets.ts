@@ -1,9 +1,5 @@
 import * as z from "zod"
 
-export const SecretsApiSchema = z.object({
-  token: z.string().min(1)
-})
-
 export const SecretsLocationSchema = z.object({
   apiKey: z.string().min(1)
 })
@@ -28,7 +24,6 @@ const SecretsMcpServerSchema = z.record(z.string(), z.string())
 // here corresponds to a section/table in services.toml, models.toml, or
 // mcp.toml, keyed the same way, and is folded back in by that file's loader.
 export const SecretsFileSchema = z.object({
-  api: SecretsApiSchema.optional(),
   location: SecretsLocationSchema.optional(),
   webSearch: SecretsWebSearchSchema.optional(),
   telegram: SecretsTelegramSchema.optional(),
@@ -37,7 +32,6 @@ export const SecretsFileSchema = z.object({
 })
 
 export type SecretsFile = z.infer<typeof SecretsFileSchema>
-export type SecretsApi = z.infer<typeof SecretsApiSchema>
 export type SecretsLocation = z.infer<typeof SecretsLocationSchema>
 export type SecretsWebSearch = z.infer<typeof SecretsWebSearchSchema>
 export type SecretsTelegram = z.infer<typeof SecretsTelegramSchema>
