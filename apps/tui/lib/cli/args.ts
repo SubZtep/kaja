@@ -26,10 +26,6 @@ export const args = meow(t("args.help", { version: pkg.version }), {
     remote: {
       type: "boolean"
     },
-    /** Selects/switches the hosted (--remote) account by email; overrides the last signed-in user from settings.toml. */
-    user: {
-      type: "string"
-    },
     /** No Ink render — for a subcommand that doesn't need a terminal (e.g. telegram). */
     headless: {
       type: "boolean"

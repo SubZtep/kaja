@@ -21,7 +21,7 @@ try {
   const { args } = await import("./lib/cli/args")
 
   if (args.input[0] === "logout") {
-    await runLogoutSubcommand(args)
+    await runLogoutSubcommand()
     process.exit(0)
   }
 

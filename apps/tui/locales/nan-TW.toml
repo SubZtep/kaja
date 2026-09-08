@@ -10,10 +10,8 @@ deviceLoginEnterCode = "輸入代碼："
 deviceLoginCodeCopied = "代碼已經拷貝去剪貼簿矣"
 secretsUnavailable = "袂當使用系統金鑰圈來貯登入資訊。請改用 --local 執行，這个模式免用著系統憑證儲存。"
 connecting = "連線中…"
-logoutSuccess = "已經登出 {email} 矣。"
-logoutNotSignedIn = "{email} 猶未登入。"
-logoutNoUser = "無託管帳號通登出 — 請先用 `kaja --remote` 登入，抑是加 --user <email> 參數。"
-deviceLoginFetchEmailFailed = "揣無已經登入个使用者"
+logoutSuccess = "已經登出矣。"
+logoutNotSignedIn = "猶未登入。"
 deviceLoginStartFailed = "裝置登入啟動袂起來"
 deviceLoginDenied = "裝置登入已經予人拒絕矣"
 deviceLoginExpired = "裝置登入代碼過期矣 — 請重新登入"
@@ -62,7 +60,6 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   --continue, -c  接落去上新个工作階段（干焦 --local 有效）
   --headless      無顯示終端機介面；用佇有支援這个模式个子指令（比如 telegram）
   --port          kaja --local web 用个連接埠（預設：4880）
-  --user          用電子批來選擇/換託管（--remote）帳號
   --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja --local session list）
   --lang          這改執行專用个介面/回覆語言（en-GB、hu 抑是 nan-TW），比已經儲存个設定較有力
 """

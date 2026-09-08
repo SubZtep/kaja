@@ -1,4 +1,5 @@
 const SECRETS_SERVICE = "kaja-tui"
+const SECRETS_NAME = "token"
 
 /** Thrown when the OS credential store itself is unreachable (e.g. no secret-service daemon on Linux) — distinct from "no token stored". */
 export class SecretsAccessError extends Error {
@@ -7,28 +8,28 @@ export class SecretsAccessError extends Error {
   }
 }
 
-/** Loads the stored lite-CLI bearer token for `email` from the OS credential store, if any. Keyed by user, not apiUrl, so multiple accounts can coexist on one machine. */
-export async function loadToken(email: string): Promise<string | undefined> {
+/** Loads the stored hosted (--remote) bearer token from the OS credential store, if any. */
+export async function loadToken(): Promise<string | undefined> {
   try {
-    const value = await Bun.secrets.get({ service: SECRETS_SERVICE, name: email })
+    const value = await Bun.secrets.get({ service: SECRETS_SERVICE, name: SECRETS_NAME })
     return value ?? undefined
   } catch (error) {
     throw new SecretsAccessError(error)
   }
 }
 
-/** Persists the lite-CLI bearer token for `email` in the OS credential store (Keychain / Credential Manager / secret-service). */
-export async function saveToken(email: string, token: string): Promise<void> {
+/** Persists the hosted (--remote) bearer token in the OS credential store (Keychain / Credential Manager / secret-service). */
+export async function saveToken(token: string): Promise<void> {
   try {
-    await Bun.secrets.set({ service: SECRETS_SERVICE, name: email, value: token })
+    await Bun.secrets.set({ service: SECRETS_SERVICE, name: SECRETS_NAME, value: token })
   } catch (error) {
     throw new SecretsAccessError(error)
   }
 }
 
-export async function clearToken(email: string): Promise<void> {
+export async function clearToken(): Promise<void> {
   try {
-    await Bun.secrets.delete({ service: SECRETS_SERVICE, name: email })
+    await Bun.secrets.delete({ service: SECRETS_SERVICE, name: SECRETS_NAME })
   } catch (error) {
     throw new SecretsAccessError(error)
   }

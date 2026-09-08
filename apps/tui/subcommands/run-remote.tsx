@@ -5,8 +5,6 @@ import { writeText } from "tinyclip"
 import LiteApp from "../components/layout/lite-app"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
-import { args } from "../lib/cli/args"
-import { getCurrentUser, saveCurrentUser } from "../lib/config/config"
 import { t } from "../lib/i18n"
 import { log } from "../lib/logger"
 
@@ -15,21 +13,12 @@ const ANSI_RESET = "\x1b[0m"
 
 async function resolveToken(apiUrl: string): Promise<string> {
   try {
-    // Multiple accounts can be signed in on one machine (each keyed by email in the OS credential store,
-    // see credentials.ts) — --user picks one explicitly, otherwise fall back to the last-used account.
-    const targetEmail = args.flags.user ?? (await getCurrentUser())
-
-    if (targetEmail) {
-      const stored = await loadToken(targetEmail)
-      if (stored) {
-        await saveCurrentUser(targetEmail)
-        return stored
-      }
-    }
+    const stored = await loadToken()
+    if (stored) return stored
 
     console.log(t("cli.pleaseSignIn"))
 
-    const { email, token } = await deviceLogin(apiUrl, async prompt => {
+    const { token } = await deviceLogin(apiUrl, async prompt => {
       const code = `${prompt.userCode.slice(0, 4)}-${prompt.userCode.slice(4)}`
       await writeText(code)
       notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
@@ -44,7 +33,6 @@ async function resolveToken(apiUrl: string): Promise<string> {
         `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${code}${ANSI_RESET}\n`
       )
     })
-    await saveCurrentUser(email)
     return token
   } catch (error) {
     if (error instanceof SecretsAccessError) {
@@ -58,9 +46,9 @@ async function resolveToken(apiUrl: string): Promise<string> {
 /**
  * Hosted path: reached via `--remote`, or by default when no local config
  * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
- * credentials for the current/selected user, or device login), then renders
- * LiteApp against hosted Nasi. No local agent, no sqlite, no MCP, no shell
- * tools — talks to `<apiUrl>/nasi/*` over SSE.
+ * credentials, or device login), then renders LiteApp against hosted Nasi.
+ * No local agent, no sqlite, no MCP, no shell tools — talks to
+ * `<apiUrl>/nasi/*` over SSE.
  */
 export async function runRemoteSubcommand() {
   const apiUrl = process.env.KAJA_API_URL ?? "https://api.kaja.io"

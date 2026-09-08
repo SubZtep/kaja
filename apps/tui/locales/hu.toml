@@ -10,10 +10,8 @@ deviceLoginEnterCode = "Add meg a kódot:"
 deviceLoginCodeCopied = "A kód a vágólapra másolva"
 secretsUnavailable = "Nem sikerült elérni a rendszer kulcstartóját a bejelentkezés tárolásához. Próbáld a --local kapcsolóval futtatni, ahhoz nem szükséges rendszerszintű hitelesítő-adat tárolás."
 connecting = "Csatlakozás…"
-logoutSuccess = "Kijelentkezve: {email}."
-logoutNotSignedIn = "{email} nem volt bejelentkezve."
-logoutNoUser = "Nincs hosztolt fiók, amiből ki lehetne jelentkezni — jelentkezz be előbb a `kaja --remote` paranccsal, vagy add meg a --user <email> kapcsolót."
-deviceLoginFetchEmailFailed = "Nem sikerült lekérdezni a bejelentkezett felhasználót"
+logoutSuccess = "Kijelentkezve."
+logoutNotSignedIn = "Nem voltál bejelentkezve."
 deviceLoginStartFailed = "Nem sikerült elindítani az eszközös bejelentkezést"
 deviceLoginDenied = "Az eszközös bejelentkezés elutasítva"
 deviceLoginExpired = "Az eszközös bejelentkezési kód lejárt — futtasd újra a bejelentkezést"
@@ -62,7 +60,6 @@ OPCIÓK
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
   --port          A kaja --local web portja (alapértelmezés: 4880)
-  --user          Hosztolt (--remote) fiók kiválasztása/váltása e-mail cím alapján
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --lang          A felület/válaszok nyelvének felülírása ehhez a futáshoz (en-GB, hu vagy nan-TW), a mentett beállítástól függetlenül
 """

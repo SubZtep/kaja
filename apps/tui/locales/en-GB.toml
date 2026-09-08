@@ -10,10 +10,8 @@ deviceLoginEnterCode = "Enter code:"
 deviceLoginCodeCopied = "Code is in your clipboard"
 secretsUnavailable = "Could not access the system keychain to store your login. Try running with --local instead, which does not require OS credential storage."
 connecting = "Connecting…"
-logoutSuccess = "Logged out {email}."
-logoutNotSignedIn = "{email} wasn't signed in."
-logoutNoUser = "No hosted account to log out — sign in first with `kaja --remote`, or pass --user <email>."
-deviceLoginFetchEmailFailed = "Failed to look up the signed-in user"
+logoutSuccess = "Logged out."
+logoutNotSignedIn = "You weren't signed in."
 deviceLoginStartFailed = "Failed to start device login"
 deviceLoginDenied = "Device login was denied"
 deviceLoginExpired = "Device login code expired — run login again"
@@ -62,7 +60,6 @@ OPTIONS
   --continue, -c  Resume the most recent session (--local only)
   --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
   --port          Port for kaja --local web (default: 4880)
-  --user          Select/switch the hosted (--remote) account by email
   --session, -s   Resume a session by id (--local only; see: kaja --local session list)
   --lang          Override the UI/reply language for this run (en-GB, hu, or nan-TW), regardless of saved config
 """

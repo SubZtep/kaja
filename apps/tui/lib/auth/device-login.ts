@@ -11,29 +11,15 @@ export type DeviceLoginPrompt = {
 }
 
 export type DeviceLoginResult = {
-  email: string
   token: string
-}
-
-/** Looks up the signed-in user's email for `token` via `/auth/get-session`, so the token can be stored per-account (see credentials.ts). */
-async function fetchEmail(apiUrl: string, token: string): Promise<string> {
-  const response = await fetch(new URL("/auth/get-session", apiUrl), {
-    headers: { authorization: `Bearer ${token}` }
-  })
-  if (!response.ok) throw new Error(t("cli.deviceLoginFetchEmailFailed"))
-  const data = (await response.json()) as { user?: { email?: string } } | null
-  const email = data?.user?.email
-  if (!email) throw new Error(t("cli.deviceLoginFetchEmailFailed"))
-  return email
 }
 
 /**
  * Runs the OAuth device-authorization-grant flow against `apiUrl`: requests
  * a device code, hands the caller the code/URL to show the user (`onPrompt`),
  * then polls `/auth/device/token` until the user approves it in the browser.
- * On success, looks up the signed-in user's email and persists the bearer
- * token to the OS credential store under that email (see credentials.ts —
- * keyed by user, not apiUrl, so multiple accounts can coexist on one machine).
+ * On success, persists the bearer token to the OS credential store (see
+ * credentials.ts).
  *
  * Rejects on `access_denied`, `expired_token`, or any other terminal error;
  * `authorization_pending` and `slow_down` are retried per the RFC 8628 poll
@@ -75,9 +61,8 @@ export async function deviceLogin(
     })
     if (poll.data?.access_token) {
       const token = poll.data.access_token
-      const email = await fetchEmail(apiUrl, token)
-      await saveToken(email, token)
-      return { email, token }
+      await saveToken(token)
+      return { token }
     }
     switch (poll.error?.error) {
       case "authorization_pending":
