@@ -144,16 +144,16 @@ jobs:
       - name: Generate changelog
         id: changelog
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           PREV_TAG=$(git tag --list 'tui@*' --sort=-v:refname | grep -v "^${VERSION}\$" | head -n1)
-          {
-            echo "## Changes"
-            if [[ -n "$PREV_TAG" ]]; then
-              git log "${PREV_TAG}..${VERSION}" --pretty='- %s (%h)' -- apps/tui
-            else
-              git log "${VERSION}" --pretty='- %s (%h)' -- apps/tui
-            fi
-          } > changelog.md
+          if [[ -n "$PREV_TAG" ]]; then
+            RANGE="${PREV_TAG}..${VERSION}"
+          else
+            RANGE="${VERSION}"
+          fi
+          "${GITHUB_WORKSPACE}/.github/scripts/changelog.sh" "$RANGE" apps/tui > changelog.md
           cat changelog.md
 
       - name: Create manifest.json
