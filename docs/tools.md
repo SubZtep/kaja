@@ -1,71 +1,112 @@
 ---
 layout: page
 title: Tools
-nav_order: 7
+nav_order: 8
 ---
 
 # Tools
 
-Every chat session starts with the built-in toolset, plus whatever MCP servers and local plugin
-tools (`~/.config/kaja/tools/*.ts`) you've added.
+Every session starts with the built-in toolset. In [local mode](/modes) that's joined by whatever
+MCP servers and plugin tools you've configured.
 
-| Tool | Purpose |
-| --- | --- |
-| `read_file` / `list_files` | read local files, list a directory |
-| `fetch_url` | fetch a URL |
-| `view_image` | look at an image file |
-| `summarize` | summarize long text |
-| `rerank` | rerank passages against a query |
-| `current_time` | current date/time |
-| `ask_user` | ask a clarifying question mid-task |
-| `run_command` | run a shell command |
-| `switch_persona` | change [persona](/personas) mid-conversation |
-| `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term memory notes |
-| `dataset_info` | collect structured answers for a persona's dataset |
+## Built-ins
 
-Two more appear when configured: `web_search` (needs `[webSearch]` in
-[`secrets.toml`](/configuration/secrets)) and `generate_image` (needs a `models.image-generation`
-entry).
+| Tool | Purpose | Hosted |
+| --- | --- | :---: |
+| `ask_user` | ask a clarifying question mid-task | ✓ |
+| `switch_persona` | change [persona](/personas) mid-conversation | ✓ |
+| `current_time` | current date and time | ✓ |
+| `fetch_url` | fetch a URL | ✓ |
+| `summarize` | summarize long text | ✓ |
+| `rerank` | rerank passages against a query | ✓ |
+| `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/memory) | ✓ |
+| `dataset_info` | collect structured answers for a persona's [dataset](/memory#datasets) | ✓ |
+| `web_search` | Brave web search | ✓ |
+| `generate_image` | text-to-image | ✓ |
+| `read_file` / `list_files` | read a local file, list a directory | ✗ |
+| `view_image` | look at an image file | ✗ |
+| `run_command` | run a shell command | ✗ |
+
+Two are conditional even locally: `web_search` needs `[webSearch]` in
+[`secrets.toml`](/configuration/secrets), and `generate_image` needs a `[models.image-generation]`
+entry in [`models.toml`](/configuration/models).
+
+The **Hosted** column is an explicit allowlist, not a side effect — anything touching your
+filesystem or shell is unavailable when the loop runs on the server, and MCP and plugin tools are
+never attached there.
 
 ## Shell commands
 
-`run_command` always asks before running. Known-risky patterns (`rm -rf`, `sudo`,
-`git push --force`, `DROP TABLE`, fork bombs, …) get a louder warning — an advisory cue, not a
-sandbox. It runs with your own shell permissions.
+`run_command` always asks before running. Known-risky patterns get a louder warning:
+
+- `rm -rf` (in any flag order, and the long-form `--recursive --force`)
+- `sudo`, `mkfs`, writes to `/dev/sd*`
+- `git push --force`, `git reset --hard`
+- `DROP TABLE` / `DROP DATABASE`
+- recursive `chmod`/`chown` on `/`
+- fork bombs
+
+This is an **advisory cue, not a sandbox**. The command runs with your own shell permissions —
+read what you're approving.
 
 ## MCP servers
 
 Add a server to `~/.config/kaja/mcp.toml` and its tools are folded in automatically — local
-(stdio, needs `command`) or remote (HTTP, needs `url`):
+(stdio, needs `command`) or remote (Streamable HTTP, needs `url`):
 
 ```toml
 [[servers]]
-id = "playwright"
+id = "location"
+url = "https://ip2geo.demo.land/mcp"
+
+[[servers]]
+id = "context7"
 command = "bunx"
-args = ["@playwright/mcp@latest", "--isolated", "--headless"]
-
-[[servers]]
-id = "geo-service"
-url = "https://your-geo-service-host/mcp"
+args = ["-y", "@upstash/context7-mcp"]
 ```
 
-Needs a header or env var with a secret in it? Add it to
-[`secrets.toml`](/configuration/secrets) under `[mcp.<id>]`, keyed by that server's `id`:
+The `location` server ships enabled; `chrome-devtools` and `context7` ship commented out. A server
+that fails to connect is logged and skipped — the session still starts, just without its tools. The
+startup panel shows each connected server and how many tools it contributed.
+
+Needs a header or env var with a secret? Put it in [`secrets.toml`](/configuration/secrets) under
+`[mcp.<id>]`, keyed by that server's `id`:
 
 ```toml
-[mcp.geo-service]
-Authorization = "Bearer your-secret-api-key"
+[mcp.location]
+Authorization = "Bearer guest"
 ```
 
-Playwright ships enabled by default, giving the agent a headless browser.
+Values fold into the server's `env` (stdio) or `headers` (HTTP) by key name.
 
 ## Your own tools
 
-Drop a `.ts` file exporting a tool under `~/.config/kaja/tools/` — picked up automatically, no
-rebuild needed.
+Drop a `.ts` file under `~/.config/kaja/tools/` that exports a tool object — every export with a
+`definition` and an `execute` function is picked up on the next start, no rebuild:
+
+```ts
+export const diceTool = {
+  definition: {
+    type: "function",
+    function: {
+      name: "roll_dice",
+      description: "Roll an n-sided die",
+      parameters: {
+        type: "object",
+        properties: { sides: { type: "number" } },
+        required: ["sides"]
+      }
+    }
+  },
+  execute: async ({ sides }: { sides: number }) => String(1 + Math.floor(Math.random() * sides))
+}
+```
+
+`execute` returns a string, or `{ text, images?, displayImage? }` when the result includes images.
+A file that throws on import is logged and skipped.
 
 ---
 
 Next:
 
-[Telegram](/telegram){: .btn .btn-green .fs-5 }
+[Memory](/memory){: .btn .btn-green .fs-5 }

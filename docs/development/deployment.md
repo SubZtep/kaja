@@ -2,87 +2,83 @@
 layout: page
 title: Deployment
 parent: Development
-nav_order: 9.1
+nav_order: 12.5
 ---
 
 # Deployment
 
-These are snippets of how [kaja.io](https://kaja.io) is deployed to its current environment.
-[Disco](https://disco.cloud) handles most of the work — push to `main` and the pipeline runs.
+How [kaja.io](https://kaja.io) reaches its current environment.
+[Disco](https://disco.cloud) does most of the work — push to `main` and the pipeline runs.
 
 ## Prerequisites
 
-- [**GitHub + Ubuntu** 24.04](https://disco.cloud/docs/#prerequisites) — the publish webhook
-  triggers deployment on the fully managed box. Even the smallest
-  [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) is more than enough to host
-  several services and a database, as long as traffic stays reasonable.
-- **SMTP server** is required for authentication emails.
-- **Geo-service** endpoint for IP geolocation (see [Configuration](/configuration#services)
-  for setup details).
+- [**GitHub + Ubuntu 24.04**](https://disco.cloud/docs/#prerequisites) — the publish webhook
+  triggers deployment on the managed box. Even the smallest
+  [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
+  comfortably at modest traffic.
+- **SMTP server** for authentication emails.
+- **Geo-service** endpoint for IP geolocation (see [Services](/configuration/services)).
 
-## Local environment files
+## Projects
 
-Each app under `/apps/*/` ships two env files: a committed `.env.example` (template, no real
-values) and a gitignored `.env` (your local copy, real values + secrets). Bootstrap them:
-
-```sh
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-cp apps/tui/.env.example apps/tui/.env
-```
-
-Generate a local secret (appends `BETTER_AUTH_SECRET` to `apps/api/.env`):
-
-```sh
-./scripts/create_local_secrets.sh
-```
-
-## Server setup
-
-Docker builds omit `.env` files entirely — inject environment variables on the server instead
-(Disco, Docker `--env-file` outside the image, k8s secrets, etc.). No `.env*` files ship to
-production.
-
-Install [Disco](https://disco.cloud/docs) on the server and configure it.
-
-Create two **Projects** (API and Web) and add this additional environment variable to each,
-alongside the usual ones:
+Create two Disco **Projects** and point each at its own config file:
 
 | Project | Variable | Value |
 | --- | --- | --- |
 | API | `DISCO_JSON_PATH` | `disco.api.json` |
 | Web | `DISCO_JSON_PATH` | `disco.web.json` |
 
-Install and attach the **PostgreSQL addon** to the API project — this automatically creates the
-`DATABASE_URL` env var.
+Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
+automatically.
 
-> Automatic database migration is not needed right now — just run SQL updates directly. 🫪
-{: .warning }
+The API config declares a named `nasi-data` volume mounted at `/var/lib/kaja` and a
+`hook:deploy:start:before` step that runs `bun run migrate.js`, so **migrations apply on every
+deploy** before the new container takes traffic. Named volumes, not host bind mounts — `compose.yaml`
+is for local development only.
 
-After server init, run the migration scripts from `apps/api/migrations`.
-New migration files are **not** applied automatically to an existing database volume —
-always re-run migrations after deploy when SQL files change.
+## Environment variables
 
-## Production checklist (security)
+Docker builds omit `.env` files entirely. **No `.env*` file ships to production** — inject
+variables on the server (Disco's UI, `docker --env-file` outside the image, k8s secrets).
 
-- Set a strong `BETTER_AUTH_SECRET` and real SMTP credentials.
-- Set a strong `CONFIG_API_TOKEN` on the API. `/config/*` is **fail-closed**: missing/empty
-  token returns 401 and never serves provider API keys.
-- CLI `kaja config fetch` needs that token via `services.toml` `[api].token` or the
-  `CONFIG_API_TOKEN` environment variable.
-- `CORS_ORIGIN` must match the public web origin.
-- Prefer quieter `KAJA_LOG_LEVEL` (`info` / `warn`) in production.
+Locally, bootstrap from the generated templates instead:
+
+```sh
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+./scripts/create_local_secrets.sh   # appends BETTER_AUTH_SECRET
+```
+
+## Production checklist
+
+- A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and real SMTP credentials.
+- A strong `CONFIG_API_TOKEN`. `/config/*` is **fail-closed**: a missing or empty token returns 401
+  for every request on the prefix and never serves provider API keys.
+- `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/widget) routes are
+  deliberately exempt — they reflect origins and gate on the key's own allowlist instead.
+- `NODE_ENV=production` (JSON logs, no pretty printer, no `/reference` UI).
+- A quieter `KAJA_LOG_LEVEL` (`info` or `warn`).
+- Rate limits left on — they only auto-disable under `bun test`.
 
 ## CLI release automation
 
-Automatic Versioning (`.github/workflows/auto-version.yaml`) on `main`:
+`.github/workflows/auto-version.yaml` runs on `main`:
 
-1. Detects which workspaces changed under `apps/**` / `packages/**`
-2. Bumps the matching `package.json` versions, commits with `[skip ci]`, and pushes tags (`tui@x.y.z`, …)
-3. If the **TUI** was bumped, it **dispatches** [Build and release TUI](../.github/workflows/build-tui.yaml) on `main` via `gh workflow run`
+1. Detects which workspaces changed under `apps/**` / `packages/**`.
+2. Bumps the matching `package.json` versions, commits with `[skip ci]`, and pushes tags
+   (`tui@x.y.z`, …).
+3. If the **TUI** was bumped, it dispatches **Build and release TUI** on `main` via
+   `gh workflow run`.
 
-`[skip ci]` stops the bump commit from re-running CI and auto-version (and would also block a tag-triggered build). The explicit dispatch is what actually ships the CLI binary/release.
+`[skip ci]` keeps the bump commit from re-triggering CI and auto-version — which is also why the
+explicit dispatch, not a tag trigger, is what ships the binary. No personal access token is
+needed: the default `GITHUB_TOKEN` can push the bump and start the dispatch given `contents: write`
+and `actions: write`.
 
-No personal access token (`PAT_TOKEN`) is required for this flow: the default `GITHUB_TOKEN` can push the bump and start `workflow_dispatch` when the job has `contents: write` and `actions: write`.
+You can always run **Build and release TUI** by hand from the Actions tab.
 
-You can still run **Build and release TUI** manually from the Actions tab.
+---
+
+Next:
+
+[Vision](/development/vision){: .btn .btn-green .fs-5 }

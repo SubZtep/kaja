@@ -84,7 +84,7 @@ bun run --filter @kaja/tui test
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (no jobs registered)
-- **Features**: `features/auth/`, `features/admin/` (plus health, users, config, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (hosted agent), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
@@ -127,6 +127,7 @@ bun run --filter @kaja/tui test
 2. `2026-03-03-better-auth.sql` — Better Auth tables
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
+5. `2026-09-07-nasi.sql` — hosted agent state (sessions, memory, datasets)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 

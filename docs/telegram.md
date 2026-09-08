@@ -1,13 +1,20 @@
 ---
 layout: page
 title: Telegram
-nav_order: 8
+nav_order: 10
 ---
 
 # Telegram
 
 `kaja telegram` runs a bot that uses the same personas, tools, and models as the terminal
 chat — including the shell-command approve/decline flow, shown as an inline keyboard.
+
+> The bot is **[local mode](/modes) only** — it runs the agent loop on your machine and needs a
+> configured `models.toml`. There is no hosted Telegram bot.
+{: .note }
+
+Each allowed user gets their own conversation and their own agent state, kept apart by an `owner`
+id in the [store](/tui/sqlite) — they can't see or resume each other's sessions.
 
 ## Setup
 
@@ -36,7 +43,8 @@ chat — including the shell-command approve/decline flow, shown as an inline ke
 4. **Run it:**
 
    ```sh
-   kaja telegram
+   kaja telegram              # with the terminal UI shell around it
+   kaja --headless telegram   # no Ink render — for services and containers
    ```
 
    The bot preflights with `getMe()` — an invalid token fails immediately with a one-line
@@ -49,4 +57,4 @@ are silently ignored — it must be non-empty, there's no "open to everyone" mod
 
 Next:
 
-[Development](/development){: .btn .btn-green .fs-5 }
+[Widget](/widget){: .btn .btn-green .fs-5 }

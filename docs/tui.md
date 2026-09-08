@@ -1,32 +1,23 @@
 ---
 layout: page
 title: Terminal UI
-nav_order: 4
+nav_order: 5
 ---
 
 # Terminal UI
 
-Terminal/console chat. with personas, tools, optional mic dictation, and optional TTS.
+The chat client: a scrollable transcript, a multi-line input, and a `/` menu. Built with
+[Ink](https://github.com/vadimdemedes/ink), so it's all keyboard-driven.
 
-## Terminal commands
+Both [modes](/modes) share the same UI shell, but hosted mode runs a lighter version of it — no
+persona/model switching and no shell-command confirmation, because the hosted agent never emits
+those.
 
-### Run
+## Startup panel
 
-```bash
-kaja
-```
-
-### Help
-
-```bash
-kaja --help
-```
-
-### Uninstall
-
-```bash
-rm ~/.local/bin/kaja
-```
+The first thing a local session prints is a summary of what it loaded: the active persona and
+model, connected MCP servers with their tool counts, how many saved conversations exist, and how
+many memory notes are stored.
 
 ## Keyboard shortcuts
 
@@ -40,10 +31,12 @@ rm ~/.local/bin/kaja
 | `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move cursor one word |
 | `Home` / `End` | Move cursor to start/end of the current line |
 | `Backspace` / `Delete` | Delete character before/after cursor |
-| `↑` / `↓` | Recall previous/next prompt from history, when the cursor is on the first/last line; otherwise moves the cursor between wrapped lines |
+| `↑` / `↓` | Recall previous/next prompt from history, when the cursor is on the first/last line; otherwise moves between wrapped lines |
 | `Ctrl+T` | Toggle mic dictation |
 | `Esc` | Quit the app (closes the `/` menu first if one is open) |
 | `Ctrl+C` | Interrupt / exit |
+
+Prompt history spans all past sessions, newest first.
 
 ### Chat viewport
 
@@ -56,15 +49,35 @@ rm ~/.local/bin/kaja
 | Mouse wheel | Scroll chat by 3 lines |
 | `Alt+C` (`Meta+C`) | Copy the most recent message to the clipboard |
 
-### `/` menu
+### The `/` menu
 
-Typing `/` as the first character opens a menu to toggle thinking/sounds/voice or switch model/persona (and reuses the same picker for shell-command confirmations).
+Typing `/` as the first character of an empty input opens the menu. The same picker is reused for
+shell-command approve/decline prompts.
+
+| Item | Effect |
+|---|---|
+| Toggle thinking | show or hide the model's reasoning |
+| Toggle sounds | UI sound effects |
+| Toggle voice | spoken replies (needs a TTS model) |
+| Change persona | opens a submenu of every loaded [persona](/personas) |
+
+Toggles are written back to `settings.toml`, so they persist. Picking a persona here starts a
+**fresh conversation**; an automatic `switch_persona` mid-chat keeps the current one going.
 
 | Key | Action |
 |---|---|
 | `↑` / `↓` | Move selection |
 | `Enter` | Activate selected item |
 | `Esc` / `Backspace` / `Delete` | Close the menu |
+
+The menu is empty in hosted mode.
+
+## Rendering
+
+Assistant replies are rendered as markdown in the terminal — headings, lists, tables, and
+syntax-highlighted code blocks. Images the agent produces or views are drawn inline as terminal
+graphics where the terminal supports it, and links are clickable in terminals that support OSC 8
+hyperlinks.
 
 ---
 

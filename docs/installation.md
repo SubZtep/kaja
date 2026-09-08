@@ -6,9 +6,9 @@ nav_order: 2
 
 # Installation
 
-Run the setup script that find and install the correct version.
+Run the setup script that finds and installs the correct version.
 
-On Max or Linux:
+On macOS or Linux:
 
 ```sh
 curl -fsSL https://kaja.io/install.sh | bash
@@ -20,46 +20,64 @@ On Windows:
 irm https://kaja.io/install.ps1 | iex
 ```
 
-Or grab directly from [GitHub Releases](https://github.com/SubZtep/kaja/releases)
+Or grab a binary directly from [GitHub Releases](https://github.com/SubZtep/kaja/releases)
 — x64 and arm64.
 
 ## First run
 
-Run `kaja`. If no config exists yet, a one-time setup wizard asks how you want to chat:
+Run `kaja`. With no config on disk, it starts in [hosted mode](/modes) and walks you through a
+**device login**: approve the printed code in your browser and you're chatting. Nothing to
+configure, no LLM key of your own.
 
-- **Free hosted chat** — nothing else to configure, works immediately.
-- **Bring your own provider** — writes a starter `models.toml` for either Fireworks AI or a
-  local Ollama install, which you then fill in with your own credentials/models (see
-  [Configuration](/configuration#models)).
-
-> Running in a non-interactive shell (scripts, CI) skips the wizard and writes the default
-template untouched.
-
-<!-- ## Basic usage
+Want the agent to run on your own machine against your own provider instead?
 
 ```sh
-# Start a new chat
-kaja
-
-# Resume the most recent session
-kaja -c
-kaja --continue
-
-# Resume a specific session by id
-kaja -s 42
-kaja --session 42
+kaja --local
 ```
 
-Other subcommands:
+The first `--local` run asks which provider template to start from (Fireworks AI or a local
+Ollama) and writes `~/.config/kaja/`. Fill in your credentials in
+[`secrets.toml`](/configuration/secrets), then run `kaja` again — from then on the auto-detect
+picks local, because a config now exists.
+
+> In a non-interactive shell (scripts, CI) the setup prompt is skipped and the default template is
+> written untouched.
+{: .note }
+
+## Command surface
 
 ```sh
+kaja                      # chat — hosted or local, auto-detected
+kaja --local              # force the local agent loop
+kaja --remote             # force hosted login
+kaja --help               # flags and subcommands
+kaja logout               # clear the stored hosted token
+
+# Local mode only
+kaja -c                   # resume the most recent session
+kaja --continue
+kaja -s <id>              # resume a specific session
+kaja --session <id>
 kaja telegram             # run as a Telegram bot
-kaja config fetch         # pull mcp.toml/models.toml from a Kaja server
+kaja --headless telegram  # same, without rendering the terminal UI
+
+# Config files (local mode)
+kaja config fetch         # rewrite mcp.toml / models.toml / personas from the bundled templates
+kaja config paths         # print where every config file lives
 kaja config wipe          # back up and clear ~/.config/kaja
-``` -->
+```
+
+## Uninstall
+
+```sh
+rm ~/.local/bin/kaja
+```
+
+Local config and data are left behind — remove them with `kaja config wipe` first (which backs
+them up) or delete `~/.config/kaja` and the SQLite file yourself.
 
 ---
 
 Next:
 
-[Configuration](/configuration){: .btn .btn-green .fs-5 }
+[Modes](/modes){: .btn .btn-green .fs-5 }

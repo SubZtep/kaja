@@ -2,10 +2,29 @@
 layout: page
 title: Schema
 parent: Development
-nav_order: 9.3
+nav_order: 12.4
 ---
 
-`@kaja/schema` is split into four role-based subpaths — `api`, `config`, `store`, `cli` — each its own import (no bare `@kaja/schema` import). See `packages/schema/AGENTS.md` for conventions.
+# @kaja/schema
+
+Every Zod schema in the project lives here, split into role-based subpaths that are each their own
+import — there is no bare `@kaja/schema` import, and no app keeps local schema files.
+
+| Subpath | Contents | Consumers |
+|---|---|---|
+| `@kaja/schema/api` | REST contracts: `McpServer`, `Provider`/`Model`, `WidgetKey`, auth payloads | `apps/api`, `apps/web` |
+| `@kaja/schema/nasi` | hosted turn request/response, widget turn | `apps/api`, `apps/tui`, `packages/nasi` |
+| `@kaja/schema/config` | the CLI's hand-edited TOML files | `apps/tui` |
+| `@kaja/schema/store` | SQLite/Postgres-backed runtime state | `apps/tui`, `packages/nasi` |
+| `@kaja/schema/cli` | remaining CLI domain concepts: personas, datasets | `apps/tui` |
+| `@kaja/schema/env` | env-var schemas — source of truth for every `.env.example` | build scripts |
+| `@kaja/schema/tombi` | JSON Schema generation for the TOML config files | build scripts |
+
+The last two are generators' input, not runtime imports: `bun generate:env`,
+`bun generate:env-types`, and `bun generate:schemas` read them. See `packages/schema/AGENTS.md` for
+naming conventions.
+
+Dates are `z.coerce.date()` throughout, so JSON round-trips cleanly.
 
 ## `@kaja/schema/api`
 
@@ -46,10 +65,60 @@ erDiagram
     ModelTask_array tasks
     string baseUrl
   }
+  WidgetKey {
+    string id
+    string label
+    string keyPrefix
+    string_array allowedOrigins
+    WidgetConfig config
+    boolean enabled
+  }
 
   Provider ||--o{ Model : "providerId"
   Provider ||--o| ResolvedModel : "resolves into"
 ```
+
+## `@kaja/schema/nasi`
+
+The HTTP turn contract, shared by the API, the hosted CLI client, and the widget.
+
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neo-dark
+---
+erDiagram
+  direction LR
+  NasiTurnRequest {
+    string message
+    string session
+    boolean includeThinking
+  }
+  WidgetTurnRequest {
+    string message
+    string session
+    string visitorId
+  }
+  NasiTurnResponse {
+    string session
+    NasiStatus status
+    string message
+    NasiStep_array steps
+    string thinking
+    NasiUsage usage
+  }
+  NasiStep {
+    NasiStepType type
+    string payload
+  }
+
+  NasiTurnRequest ||--o| NasiTurnResponse : "POST /nasi/turn"
+  WidgetTurnRequest ||--o| NasiTurnResponse : "POST /widget/turn"
+  NasiTurnResponse ||--o{ NasiStep : "steps[]"
+```
+
+See [Agent brain](/development/nasi) for what the statuses and step types mean.
 
 ## `@kaja/schema/config`
 
@@ -189,13 +258,18 @@ These aren't type imports (each subpath stays decoupled per `packages/schema/AGE
 - `config`'s `KajaPreferences.persona` → `cli`'s `Persona.id`
 - `cli`'s `Persona.models.<task>` (all six tasks) → `config`'s own `CliResolvedModel.id` (soft fallback: unmatched id falls through to models.toml's `[models.<task>]` entry, resolved per-task via `resolveActiveModel`)
 - `store`'s `PersistedSession.persona` → `cli`'s `Persona.id`
-- `store`'s `PersistedSession.model` → `api`'s `Model.id` (or a free-tier id)
+- `store`'s `PersistedSession.model` → `api`'s `Model.id`
 
-## Subpaths
+## TOML schemas
 
-| Subpath | Contents | Consumers |
-|---|---|---|
-| `@kaja/schema/api` | `McpServer`, `Provider`/`Model`, auth payloads | `apps/api`, `apps/web` |
-| `@kaja/schema/config` | `KajaConfig` (settings.toml), `KajaModelsFile` (models.toml), `McpFile` (mcp.toml), `ServicesFile` (services.toml) | `apps/tui` |
-| `@kaja/schema/store` | `PersistedSession`/`SessionMeta`, `MemoryNote`/`MemoryStore` (SQLite-backed) | `apps/tui` |
-| `@kaja/schema/cli` | `Persona`, `SamplingParams`, `Dataset`/`DatasetField` | `apps/tui` |
+`bun generate:schemas` turns the `config` and `cli` schemas into the JSON Schemas under
+[`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas), which is
+what gives editors completion and validation for `settings.toml`, `models.toml`, `mcp.toml`,
+`services.toml`, personas, and datasets. The pre-commit hook regenerates them whenever those
+schemas change — never edit the JSON by hand.
+
+---
+
+Next:
+
+[Deployment](/development/deployment){: .btn .btn-green .fs-5 }
