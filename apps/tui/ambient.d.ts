@@ -24,3 +24,15 @@ declare module "*.json" {
   const content: unknown
   export default content
 }
+
+declare module "play-sound" {
+  interface PlaySoundOptions {
+    player?: string
+    players?: string[]
+  }
+  interface Player {
+    play(file: string, callback?: (err: Error | null) => void): void
+  }
+  function playSound(options?: PlaySoundOptions): Player
+  export default playSound
+}

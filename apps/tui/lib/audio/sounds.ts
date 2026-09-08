@@ -1,3 +1,4 @@
+import playSoundLib from "play-sound"
 import bell from "../../assets/sounds/333695__khrinx__thin-bell-ding-2.wav" with { type: "file" }
 import keyboard from "../../assets/sounds/391310__pfranzen__hitting-the-enter-key-on-a-keyboard.ogg" with {
   type: "file"
@@ -8,27 +9,19 @@ import wind from "../../assets/sounds/817959__jriches1__whoosh-away.mp3" with { 
 import hehe from "../../assets/sounds/818171__sadiquecat__sadiquecat-mke600-laughing-nervous-laugh-hehe.wav" with {
   type: "file"
 }
+import { log } from "../logger"
 
 const soundFile = { bell, magic, wind, hehe, error, keyboard } as const
 
-function formatOf(path: string) {
-  if (path.endsWith(".mp3")) return "mp3"
-  if (path.endsWith(".ogg")) return "ogg"
-  return "wav"
-}
+const player = playSoundLib()
 
 export async function playSound(sound: keyof typeof soundFile) {
   const path = soundFile[sound]
-  const format = formatOf(path)
 
-  const player = Bun.spawn(["ffplay", "-loglevel", "quiet", "-nodisp", "-autoexit", "-f", format, "-i", "pipe:0"], {
-    stdin: "pipe"
+  await new Promise<void>(resolve => {
+    player.play(path, err => {
+      if (err) log.error("Failed to play sound", { sound, err })
+      resolve()
+    })
   })
-
-  for await (const chunk of Bun.file(path).stream()) {
-    player.stdin.write(chunk)
-  }
-
-  await player.stdin.end()
-  await player.exited
 }
