@@ -53,13 +53,6 @@ kaja --session 42
 Other subcommands:
 
 ```sh
-kaja session list         # list saved sessions
-kaja session diagram 42   # render a session as a Mermaid diagram
-
-kaja memory list          # list remembered notes
-kaja memory forget <key>  # forget a note (supports * wildcards)
-kaja memory export        # dump memory as JSON
-
 kaja telegram             # run as a Telegram bot
 kaja config fetch         # pull mcp.toml/models.toml from a Kaja server
 kaja config wipe          # back up and clear ~/.config/kaja

@@ -49,9 +49,6 @@ USAGE
 COMMANDS
   config <fetch|wipe|paths>  Manage config files
   telegram
-  web
-  memory <list|forget <key-or-glob>|export>
-  session <list|diagram <id>>
   logout                     Log out of the hosted (--remote) account, clearing its stored credential
 
 OPTIONS
@@ -59,31 +56,9 @@ OPTIONS
   --remote        Force hosted login even if a local config exists (default)
   --continue, -c  Resume the most recent session (--local only)
   --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
-  --port          Port for kaja --local web (default: 4880)
   --session, -s   Resume a session by id (--local only; see: kaja --local session list)
   --lang          Override the UI/reply language for this run (en-GB, hu, or nan-TW), regardless of saved config
 """
-
-[memory]
-usage = """
-Usage
-  $ kaja memory list                   List every stored note
-  $ kaja memory forget <key-or-glob>   Delete notes by key, or in bulk with a glob like "test:*"
-  $ kaja memory export                 Print the raw memory JSON
-"""
-empty = "(no notes stored)"
-noMatch = "(no matching notes)"
-forgot = "Forgot: {keys}"
-
-[session]
-usage = """
-Usage
-  $ kaja session list           List past sessions (newest first)
-  $ kaja session diagram <id>   Print a session as a mermaid sequence diagram
-"""
-empty = "(no sessions recorded)"
-none = "No session to continue"
-notFound = "Session not found: {id}"
 
 [config]
 invalidAt = "Invalid config file at {path}: {message}"
@@ -191,6 +166,3 @@ approved = "Approved"
 declined = "Declined"
 emptyResponse = "(empty response)"
 genericError = "Something went wrong processing that — check the logs."
-
-[web]
-listening = "Kaja web UI: {url} (Ctrl+C to stop)"

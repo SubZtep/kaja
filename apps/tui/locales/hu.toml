@@ -49,9 +49,6 @@ HASZNÁLAT
 PARANCSOK
   config <fetch|wipe|paths>  Konfigurációs fájlok kezelése
   telegram
-  web
-  memory <list|forget <kulcs-vagy-glob>|export>
-  session <list|diagram <id>>
   logout                     Kijelentkezés a hosztolt (--remote) fiókból, a tárolt hitelesítő adat törlésével
 
 OPCIÓK
@@ -59,31 +56,9 @@ OPCIÓK
   --remote        Hosztolt bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
-  --port          A kaja --local web portja (alapértelmezés: 4880)
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
   --lang          A felület/válaszok nyelvének felülírása ehhez a futáshoz (en-GB, hu vagy nan-TW), a mentett beállítástól függetlenül
 """
-
-[memory]
-usage = """
-Használat
-  $ kaja memory list                      Kilistázza az összes elmentett jegyzetet
-  $ kaja memory forget <kulcs-vagy-glob>  Jegyzetek törlése kulcs alapján, vagy csoportosan glob mintával, pl. "test:*"
-  $ kaja memory export                    Mutatja a nyers memória JSON-t
-"""
-empty = "(nincs elmentett jegyzet)"
-noMatch = "(nincs egyező jegyzet)"
-forgot = "Elfelejtve: {keys}"
-
-[session]
-usage = """
-Használat
-  $ kaja session list           Kilistázza a korábbi munkameneteket (legújabb elöl)
-  $ kaja session diagram <id>   Kiír egy munkamenetet mermaid szekvenciadiagramként
-"""
-empty = "(nincs elmentett munkamenet)"
-none = "Nincs folytatható munkamenet"
-notFound = "Nincs ilyen munkamenet: {id}"
 
 [config]
 invalidAt = "Érvénytelen konfigurációs fájl ({path}): {message}"
@@ -191,6 +166,3 @@ approved = "Jóváhagyva"
 declined = "Elutasítva"
 emptyResponse = "(üres válasz)"
 genericError = "Hiba történt a feldolgozás közben — nézd meg a naplót."
-
-[web]
-listening = "Kaja web UI: {url} (Ctrl+C a leállításhoz)"

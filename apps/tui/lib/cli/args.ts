@@ -13,11 +13,6 @@ export const args = meow(t("args.help", { version: pkg.version }), {
       type: "string",
       shortFlag: "s"
     },
-    /** Only used by the `kaja web` subcommand. */
-    port: {
-      type: "number",
-      default: 4880
-    },
     /** Forces the local agent loop against your own provider, even without a local config yet. */
     local: {
       type: "boolean"

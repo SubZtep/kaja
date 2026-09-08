@@ -6,12 +6,9 @@ import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runLogoutSubcommand } from "./subcommands/logout"
-import { runMemorySubcommand } from "./subcommands/memory"
 import { runSubcommand } from "./subcommands/run"
 import { runRemoteSubcommand } from "./subcommands/run-remote"
-import { runSessionSubcommand } from "./subcommands/session"
 import { runTelegramSubcommand } from "./subcommands/telegram"
-import { runWebSubcommand } from "./subcommands/web"
 
 try {
   // MARK: On-Boarding
@@ -43,18 +40,6 @@ try {
   // MARK: Run Commands
 
   const [cmd] = args.input
-
-  if (cmd === "memory") {
-    await runMemorySubcommand(args)
-  }
-
-  if (cmd === "session") {
-    await runSessionSubcommand(args)
-  }
-
-  if (cmd === "web") {
-    await runWebSubcommand(args)
-  }
 
   if (cmd === "config") {
     await runConfigSubcommand(args)

@@ -49,9 +49,6 @@ Kaja 命令列工具 • v{version} • https://kaja.io
 指令
   config <fetch|wipe|paths>  管理設定檔
   telegram
-  web
-  memory <list|forget <鍵值抑是萬用字元>|export>
-  session <list|diagram <id>>
   logout                     登出託管（--remote）帳號，共儲存个憑證清掉
 
 選項
@@ -59,31 +56,9 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   --remote        強制用託管登入，就算已經有本機設定嘛仝款
   --continue, -c  接落去上新个工作階段（干焦 --local 有效）
   --headless      無顯示終端機介面；用佇有支援這个模式个子指令（比如 telegram）
-  --port          kaja --local web 用个連接埠（預設：4880）
   --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja --local session list）
   --lang          這改執行專用个介面/回覆語言（en-GB、hu 抑是 nan-TW），比已經儲存个設定較有力
 """
-
-[memory]
-usage = """
-用法
-  $ kaja memory list                   列出所有已經儲存个筆記
-  $ kaja memory forget <鍵值抑是萬用字元>   照鍵值刪除筆記，抑是用萬用字元（親像 "test:*"）鬥陣刪除
-  $ kaja memory export                 印出原始个筆記 JSON
-"""
-empty = "（無已經儲存个筆記）"
-noMatch = "（無合个筆記）"
-forgot = "已經刪除：{keys}"
-
-[session]
-usage = """
-用法
-  $ kaja session list           列出以早个工作階段（上新个排頭前）
-  $ kaja session diagram <id>   用 mermaid 循序圖印出工作階段
-"""
-empty = "（無記錄著个工作階段）"
-none = "無工作階段通接落去"
-notFound = "揣無工作階段：{id}"
 
 [config]
 invalidAt = "設定檔無效（{path}）：{message}"
@@ -191,6 +166,3 @@ approved = "已經核准"
 declined = "已經拒絕"
 emptyResponse = "（空白回覆）"
 genericError = "處理个時陣出代誌矣 — 請看記錄檔。"
-
-[web]
-listening = "Kaja 網頁介面：{url}（揤 Ctrl+C 通停止）"

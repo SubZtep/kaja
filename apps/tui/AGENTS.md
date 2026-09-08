@@ -23,8 +23,8 @@ cli.ts` directly) for interactive use.
 ## CLI surface
 
 - Flags: `--local`, `--remote`, `--headless`, `--paths`, `-c`/`--continue` (`--local` only), `-s`/`--session <id>` (`--local` only)
-- Subcommands, `--local` only (run **before** LLM config guard): `memory`, `session`, `telegram`, plus web UI helpers
-- Handlers: `lib/memory/cli.ts`, `lib/session/cli.ts`, `lib/telegram/cli.ts`, `lib/web/cli.ts`
+- Subcommands, `--local` only (run **before** LLM config guard): `telegram`
+- Handlers: `lib/telegram/cli.ts`
 - `--headless`: no Ink render, for a subcommand that supports it. `telegram` is the only consumer today (`kaja --local --headless telegram`) — it never rendered Ink to begin with, so this just formalizes it and shares its bootstrap (`lib/cli/headless.ts`'s `bootstrapLocalAgentDeps`/`requireConfiguredProvider`/`installShutdownHandlers`) with the interactive local loop (`subcommands/run.tsx`). Bare `kaja --headless` (no subcommand) exits with an error — there's no headless mode without a consumer yet. Hosted-mode headless (a driver against `createNasiClient`'s SSE stream instead of the local `Agent`) doesn't exist yet.
 - First run under `--local` (no `settings.toml` yet, interactive TTY only): `components/first-run-setup.tsx` asks which provider template to start from. Optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`; "Skip" writes neither, and `subcommands/run.tsx` then exits with an error instead of silently falling back to hosted free chat (`isFreeChat` in `lib/models/openai.ts` — still used internally by `chatModel` resolution, just no longer a reachable default). Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed. Dispatch glue for all of this lives in `lib/cli/` (`args.ts`, `bootstrap.ts`, `first-run.tsx`).
 
@@ -35,7 +35,7 @@ cli.ts                  # entry
 components/             # Ink UI (layout, inputs, timeline, wizard, …)
 hooks/                  # agent, settings, voice, dictation, sounds, …
 lib/                    # domain subfolders: cli, agent, auth, config, models, personas, memory,
-                        # session, telegram, audio, mcp, image, markdown, web; cross-cutting utils at lib/ root
+                        # session, telegram, audio, mcp, image, markdown; cross-cutting utils at lib/ root
 subcommands/            # run.tsx (--local), run-remote.tsx (hosted)
 tools/                  # LLM tools (files, web, memory, image, summarize, …)
 locales/                # en.toml, hu.toml, nan-TW.toml
