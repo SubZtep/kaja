@@ -1,12 +1,18 @@
 This file provides guidance to LLM agents when working with code in this repository.
 
+The project is not live yet, so feel free to adjust any breaking changes.
+
+When you modify a feature check its test (if any) for possible required update too.
+
+When you change a translation text, update all the languages as well.
+
 ## Project Overview
 
 Kaja is a TypeScript monorepo built with Bun:
 
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
-- **CLI** (`apps/cli`): Ink TUI — default talks to the hosted API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
+- **TUI** (`apps/tui`): Ink TUI — default talks to the hosted API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
 - **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
@@ -40,9 +46,9 @@ docker compose up -d db mail
 # API + web + widget (hot reload)
 bun dev
 
-# CLI (entry is apps/cli/cli.ts — NOT apps/cli/src/...)
-bun run --filter @kaja/cli start
-# or: bun run --env-file=apps/cli/.env apps/cli/cli.ts
+# CLI (entry is apps/tui/cli.ts — NOT apps/tui/src/...)
+bun run --filter @kaja/tui start
+# or: bun run --env-file=apps/tui/.env apps/tui/cli.ts
 
 # Lint / types / tests
 bun lint
@@ -60,8 +66,8 @@ bun run --filter @kaja/api build
 bun run --filter @kaja/web dev
 bun run --filter @kaja/web build
 
-bun run --filter @kaja/cli start
-bun run --filter @kaja/cli test
+bun run --filter @kaja/tui start
+bun run --filter @kaja/tui test
 ```
 
 ## Architecture
@@ -69,7 +75,7 @@ bun run --filter @kaja/cli test
 ### Authentication
 
 - Better Auth (email/password, verification, reset, admin roles, device authorization)
-- CLI client id: `KAJA_CLI_CLIENT_ID` from `@kaja/schema` (`"kaja-cli"`)
+- CLI client id: `KAJA_TUI_CLIENT_ID` from `@kaja/schema` (`"kaja-tui"`)
 - Device approval UI: web `/device`
 - Session cookies prefixed with `kaja`
 
@@ -78,7 +84,7 @@ bun run --filter @kaja/cli test
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (no jobs registered)
-- **Features**: `features/auth/`, `features/admin/` (plus health, users, config, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (hosted agent), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
@@ -87,18 +93,18 @@ bun run --filter @kaja/cli test
 - auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 
-### CLI (`apps/cli/`)
+### CLI (`apps/tui/`)
 
 - Entry: `cli.ts` (Ink TUI)
 - Agent loop, tools, MCP, personas, sessions, memory, Telegram bot, optional STT/TTS
 - Config templates import from monorepo-root `docs/config/`
-- Detailed agent notes: `apps/cli/AGENTS.md`
+- Detailed agent notes: `apps/tui/AGENTS.md`
 
 ### Packages
 
 | Package | Role |
 |---------|------|
-| `@kaja/schema` | Zod API contracts + `KAJA_CLI_CLIENT_ID` (single source of truth for API types) |
+| `@kaja/schema` | Zod API contracts + `KAJA_TUI_CLIENT_ID` (single source of truth for API types) |
 | `@kaja/logger` | Pino (node) / console (browser) with `message, payload?` API |
 | `@kaja/shared` | Pure utils (`cn`, dates, strings) |
 | `@kaja/nasi` | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres. |
@@ -121,6 +127,7 @@ bun run --filter @kaja/cli test
 2. `2026-03-03-better-auth.sql` — Better Auth tables
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
+5. `2026-09-07-nasi.sql` — hosted agent state (sessions, memory, datasets)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 
@@ -135,14 +142,14 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 ## Notes
 
 - Git hooks already run `bun lint` on commit and `bun test` on push, so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
-- CLI config templates import from monorepo-root `docs/config/` (not under `apps/cli/`).
-- env vars: edit `packages/schema/env/{api,web,cli}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
+- CLI config templates import from monorepo-root `docs/config/` (not under `apps/tui/`).
+- env vars: edit `packages/schema/env/{api,web,tui}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
 ## Testing & CI
 
 - `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
 - API integration tests need a running Postgres matching `DATABASE_URL`
-- CLI has a large unit suite under `apps/cli/tests/`
+- CLI has a large unit suite under `apps/tui/tests/`
 - CI (`.github/workflows/ci.yaml`): Biome lint/format + tests with PostgreSQL service
 - Separate workflow builds the CLI
 

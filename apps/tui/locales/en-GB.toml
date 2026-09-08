@@ -1,0 +1,167 @@
+[cli]
+invalidConfig = "Invalid config file: {path}"
+startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
+bye = "Bye, bye!"
+localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama/llama.cpp, or run `kaja --local config fetch`. For hosted chat instead, run `kaja --remote`."
+headlessNoSubcommand = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
+pleaseSignIn = "Please sign in!"
+deviceLoginGoTo = "Go to:"
+deviceLoginEnterCode = "Enter code:"
+deviceLoginCodeCopied = "Code is in your clipboard"
+secretsUnavailable = "Could not access the system keychain to store your login. Try running with --local instead, which does not require OS credential storage."
+connecting = "Connecting…"
+logoutSuccess = "Logged out."
+logoutNotSignedIn = "You weren't signed in."
+deviceLoginStartFailed = "Failed to start device login"
+deviceLoginDenied = "Device login was denied"
+deviceLoginExpired = "Device login code expired — run login again"
+deviceLoginFailed = "Device login failed"
+deviceLoginTimedOut = "Device login timed out"
+personaSwitchedTitle = "Persona Switched"
+personaSwitchedMessage = "Switched to {label}"
+
+[paths]
+settings = "settings"
+memorySessions = "memory & sessions"
+models = "models"
+mcpServers = "mcp servers"
+services = "services"
+personas = "personas"
+datasets = "datasets"
+tools = "tools"
+temp = "temp"
+
+[firstRun]
+paths = "Kaja will use these paths:"
+intro = "Welcome to Kaja! Which provider would you like to use?"
+providerFireworks = "Fireworks (cloud, needs an API key)"
+providerOllama = "Ollama (local, runs on this machine)"
+providerLlama = "llama.cpp (local, runs on this machine)"
+providerSkip = "Skip — I'll set up models.toml myself"
+
+[args]
+help = """
+Kaja command line tool • v{version} • https://kaja.io
+
+USAGE
+  $ kaja [OPTIONS] [COMMAND]
+
+COMMANDS
+  config <fetch|wipe|paths>  Manage config files
+  telegram
+  logout                     Log out of the hosted (--remote) account, clearing its stored credential
+
+OPTIONS
+  --local         Run the local agent loop against your own provider instead of hosted login
+  --remote        Force hosted login even if a local config exists (default)
+  --continue, -c  Resume the most recent session (--local only)
+  --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
+  --session, -s   Resume a session by id (--local only; see: kaja --local session list)
+"""
+
+[config]
+invalidAt = "Invalid config file at {path}: {message}"
+notExists = "Config file does not exist: {path}"
+usage = """
+Usage
+  $ kaja config fetch   Regenerate config files from the bundled templates
+  $ kaja config wipe    Back up and clear the whole config directory
+  $ kaja config paths   Print every path Kaja reads or writes
+"""
+fetched = "Wrote {path}"
+fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
+fetchedUnchanged = "{path} is already up to date"
+wiped = "Moved {path} to {backup}"
+wipeNothing = "Nothing to wipe: {path} does not exist"
+
+[models]
+invalidAt = "Invalid models file at {path}: {message}"
+
+[mcp]
+invalidAt = "Invalid MCP servers file at {path}: {message}"
+
+[services]
+invalidAt = "Invalid services file at {path}: {message}"
+
+[secrets]
+invalidAt = "Invalid secrets file at {path}: {message}"
+
+[input]
+placeholder = "`/` menu · PgUp history · Alt+Enter newline · Alt+C copy last answer"
+
+[viewport]
+older = "↑ older · PageDown or Ctrl+End to follow"
+
+[confirmCommand]
+yes = "Yes, run it"
+no = "No, cancel"
+running = "Running…"
+truncated = "… {count} more lines"
+
+[activity]
+thinking = "Thinking… {seconds}s elapsed, still reasoning"
+tokens = " · ~{tokens} tokens generated so far"
+
+[menu]
+on = "on"
+off = "off"
+toggleThinking = "Toggle thinking [{state}]"
+toggleSounds = "Toggle sounds [{state}]"
+toggleVoice = "Toggle voice [{state}]"
+changePersona = "Change persona"
+
+[toolCall]
+webSearch = "Searching \"{query}\"..."
+fetchUrl = "Fetching {url}..."
+currentTime = "Checking the time{timezone}..."
+generateImage = "Generating an image: \"{prompt}\"..."
+listFiles = "Listing files in {path}..."
+readFile = "Reading {path}..."
+viewImage = "Viewing {path}..."
+rememberNote = "Remembering \"{key}\"..."
+recallMemory = "Recalling memory{query}..."
+forgetNote = "Forgetting a note..."
+listNotes = "Listing notes..."
+rerank = "Ranking {n} results..."
+summarize = "Summarizing..."
+
+[timeline]
+personaSwitch = "Persona switched: {label}"
+
+[error]
+network = "Network error"
+tool = "Tool failed"
+agent = "Something went wrong"
+unknown = "Unknown error"
+
+[startup]
+persona = "Persona: "
+cwd = "Directory: "
+noModels = "No models configured"
+taskChat = "Chat"
+taskTts = "Text-to-speech"
+taskStt = "Speech-to-text"
+taskEmbedding = "Embedding"
+taskRerank = "Rerank"
+taskImageGen = "Image generation"
+mcpServers = "MCP servers"
+mcpServerToolCount = "({count} tools)"
+mcpServerFailed = "(failed to connect)"
+tools = "Tools"
+stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount}"
+
+[telegram]
+notConfigured = "Add a `telegram` block to your config (see `kaja config paths` for the file path) with `botToken` and `allowedUserIds` to use this command."
+invalidToken = "Invalid Telegram bot token — check config.telegram.botToken."
+starting = "Starting Telegram bot…"
+ready = "Telegram bot ready, long-polling for messages."
+botOnline = "🟢 Bot is online."
+botOffline = "🔴 Bot is going offline."
+newSession = "🆕 Started a new session."
+stillWorking = "Still working on your last message…"
+pendingCommand = "There's a pending command waiting for your approval above — tap Approve or Decline first."
+commandExpired = "This command is no longer pending."
+approved = "Approved"
+declined = "Declined"
+emptyResponse = "(empty response)"
+genericError = "Something went wrong processing that — check the logs."

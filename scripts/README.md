@@ -4,7 +4,7 @@ Repo-wide dev/ops utilities, run from the monorepo root with `bun run scripts/<n
 
 ## Env schema tooling
 
-Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebEnvSchema`, `CliEnvSchema`). Edit the schemas there, then regenerate — never hand-edit the generated output.
+Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebEnvSchema`, `TuiEnvSchema`). Edit the schemas there, then regenerate — never hand-edit the generated output.
 
 - **`env.ts`** — generates each app's `.env.example` from its Zod env schema.
   ```sh
@@ -14,7 +14,7 @@ Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebE
   ```
 - **`env-types.ts`** — generates each workspace's ambient `Bun.Env` typing (`declare module "bun" { interface Env {...} } `) from the same schemas, so `process.env.FOO` autocompletes and gets a doc comment.
   ```sh
-  bun run generate:env-types    # write apps/api/src/env.d.ts, apps/web/src/env.d.ts, apps/cli/env.d.ts
+  bun run generate:env-types    # write apps/api/src/env.d.ts, apps/web/src/env.d.ts, apps/tui/env.d.ts
   ```
 - **`lib/env-schema.ts`** — shared field-introspection helper (`inspectFields`) used by both generators above; not a standalone script.
 

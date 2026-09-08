@@ -5,10 +5,10 @@ name: Release api/web
 #
 # Triggered via workflow_dispatch from auto-version.yaml, not by the tag push
 # itself — the bump commit carries [skip ci], which suppresses tag-push
-# triggers too (see build-cli.yaml for the same workaround).
+# triggers too (see build-tui.yaml for the same workaround).
 #
 # Marked prerelease so these never win GitHub's releases/latest — that alias
-# must keep resolving to the most recent cli@ release, which install.sh relies
+# must keep resolving to the most recent tui@ release, which install.sh relies
 # on for its manifest.json download.
 on:
   workflow_dispatch:

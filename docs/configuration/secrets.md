@@ -2,7 +2,7 @@
 layout: page
 title: Secrets
 parent: Configuration
-nav_order: 3.4
+nav_order: 4.4
 ---
 
 # Secrets
@@ -15,11 +15,11 @@ Each section mirrors a table elsewhere by name, and gets folded back in automati
 starts. No wiring, no references, no ceremony — just matching names:
 
 ```toml
-# Powers services.toml's [api] (used by `kaja config fetch`)
+# Powers services.toml's [api] (the Kaja server this install talks to)
 [api]
 token = "kaja"
 
-# Powers services.toml's [location] (the location tool)
+# Powers services.toml's [location] (geo lookup for the system prompt)
 [location]
 apiKey = "kaja"
 

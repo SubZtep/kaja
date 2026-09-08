@@ -1,30 +1,73 @@
 ---
 layout: page
 title: Configuration
-nav_order: 3
+nav_order: 4
 ---
 
 # Configuration
 
-LLM provider credentials, model mapping to tasks, secrets, services, and various settings are in `~/.config/kaja`. Including [`personas`](config/personas/) with [`datasets`](config/datasets/).
+Everything on this page is **[local mode](/modes) only** — hosted mode reads no config files at
+all, apart from a minimal `settings.toml` holding your UI language.
 
-First  fetches the templates from [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config).
-
-Install recommended VSCode extensions for TOML [`schemas`](config/schemas/).
+LLM provider credentials, model-to-task mapping, secrets, services, and preferences live in
+`~/.config/kaja/`, alongside [`personas`](https://github.com/SubZtep/kaja/tree/main/docs/config/personas)
+and their [`datasets`](https://github.com/SubZtep/kaja/tree/main/docs/config/datasets).
 
 ```ini
 ~/.config/kaja/
-├─ datasets/*.json  # custom fields for personas to collect
+├─ datasets/*.json  # structured field sets for personas to collect
 ├─ personas/*.toml  # one behaviour per file
+├─ tools/*.ts       # your own plugin tools
 ├─ mcp.toml         # model context protocol servers
 ├─ models.toml      # model catalog per provider
 ├─ services.toml    # external service definitions and endpoints
-├─ secrets.toml     # user’s secret keys and tokens
-└─ settings.toml    # optional settings and app preferences"
+├─ secrets.toml     # your secret keys and tokens
+└─ settings.toml    # preferences and app settings
 ```
+
+Run `kaja config paths` to print the resolved location of each of these on your machine — the
+directory follows XDG, so `$XDG_CONFIG_HOME/kaja` when set.
+
+The first `kaja --local` run seeds these from the templates in
+[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config); `kaja config fetch`
+rewrites them from the same templates later, backing up anything you'd changed.
+
+## Which file does what
+
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neo-dark
+---
+flowchart LR
+    S["settings.toml<br><small>preferences, stt, tts, memory</small>"]
+    M["models.toml<br><small>providers + model per task</small>"]
+    V["services.toml<br><small>URLs, ids, flags</small>"]
+    C["mcp.toml<br><small>MCP servers</small>"]
+    P["personas/*.toml"]
+    D["datasets/*.json"]
+    K["secrets.toml<br><small>every key and token</small>"]
+
+    K -.->|"[providers.x]"| M
+    K -.->|"[api] [location] [webSearch] [telegram]"| V
+    K -.->|"[mcp.id]"| C
+    P -->|"dataset id"| D
+    P -.->|"model pin"| M
+    S -->|"default persona"| P
+```
+
+`secrets.toml` is the only file that holds credentials — the others stay safe to share, commit, or
+paste into a bug report.
+
+## Editor support
+
+JSON Schemas for every one of these files ship in
+[`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas). Install the
+recommended VSCode TOML extension and you get completion and validation while editing.
 
 ---
 
 Next:
 
-[Config](/configuration/config){: .btn .btn-green .fs-5 }
+[Settings](/configuration/config){: .btn .btn-green .fs-5 }

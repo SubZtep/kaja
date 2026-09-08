@@ -156,7 +156,7 @@ Tool `execute` returns `string` or `{ text, images?, displayImage? }`. Images ca
 
 `Nasi.open({ store })` takes a `NasiStore`. Nasi does not open a database.
 
-- CLI: sqlite via `createSqliteStore(path)` (`apps/cli/lib/store/sqlite.ts`)
+- CLI: sqlite via `createSqliteStore(path)` (`apps/tui/lib/store/sqlite.ts`)
 - API: Postgres via `createPostgresStore(pool, userId)` (`apps/api/.../pg-store.ts`)
 - Tests: `createMemoryStore()`
 

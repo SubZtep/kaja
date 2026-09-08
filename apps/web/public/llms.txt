@@ -8,7 +8,7 @@ Kaja is a highly customisable, multi-purpose AI agent: a single executable binar
 - Docs home: https://docs.kaja.io/
 - Installation: https://docs.kaja.io/installation/
 - Configuration: https://docs.kaja.io/configuration/
-- CLI usage: https://docs.kaja.io/cli/
+- TUI usage: https://docs.kaja.io/tui/
 - Personas: https://docs.kaja.io/personas/
 - Tools: https://docs.kaja.io/tools/
 

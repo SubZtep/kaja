@@ -1,16 +1,14 @@
 ---
 layout: page
-title: Config
+title: Settings
 parent: Configuration
-nav_order: 3.1
+nav_order: 4.1
 ---
 
-# Config
+# settings.toml
 
-`settings.toml` configures local, install-wide settings — which model handles each task lives in
-`models.toml` instead (see the Models page).
-
-Example:
+Local, install-wide preferences. Which model handles each task lives in
+[`models.toml`](/configuration/models) instead.
 
 ```toml
 [preferences]
@@ -19,44 +17,74 @@ sounds = true
 voice = false
 language = "en-GB"
 persona = "default"
+
+# Speech-to-text (Speaches AI server).
+# [stt]
+# speachesUrl = "http://localhost:8000"
+# language = "en"
+
+# Text-to-speech (Speaches AI server).
+# [tts]
+# speachesUrl = "http://localhost:8000"
+# voice = "af_heart"
+
+# Overrides the default XDG data location for the memory database.
+# [memory]
+# dbPath = "/home/user/.local/share/kaja/memory.sqlite"
 ```
 
-Fields:
+## `[preferences]`
 
-- `preferences.thinking`: show a ``thinking``/generating indicator when the agent is composing.
-- `preferences.sounds`: play UI sounds.
-- `preferences.voice`: enable spoken replies when a TTS model is configured.
-- `preferences.language`: `en-GB`, `hu`, or `nan-TW` (affects local UI, not model behavior).
-- `preferences.persona`: default persona id to open the CLI with.
+| Field | Purpose |
+| --- | --- |
+| `thinking` | show the model's reasoning while it generates |
+| `sounds` | play UI sounds |
+| `voice` | speak replies aloud (needs a `[models.tts]` entry) |
+| `language` | `en-GB`, `hu`, or `nan-TW` — affects the UI and the assistant's replies |
+| `persona` | persona id to open with |
 
-Notes:
+The first four are also togglable at runtime from the `/` menu, which writes the change back to
+this file. `language` is read once at startup; with no saved value the system locale decides.
 
-- To enable TTS/STT, add a `[models.tts]`/`[models.stt]` entry to `models.toml` and a `stt`/`tts` block in `settings.toml` (see the Voice page).
-- `settings.toml` is written by the setup wizard on first run; you can edit it manually afterwards.
+## `[stt]` / `[tts]`
 
-## `kaja config fetch`
+Voice endpoints — see [Voice](/configuration/voice). The *models* for these tasks are declared in
+`models.toml`; these blocks hold the server URL and per-feature options.
 
-Downloads `mcp.toml` and `models.toml` from a Kaja server, backing up any existing files first:
+## `[memory]`
+
+`dbPath` overrides where the SQLite file lives. Omit it and Kaja uses the XDG data directory. See
+[Storage](/tui/sqlite) for what's in that file.
+
+## Config subcommands
+
+### `kaja config paths`
+
+Prints a table of every config file and where it resolves on this machine. Start here when you're
+not sure which file Kaja is actually reading.
+
+### `kaja config fetch`
+
+Rewrites `mcp.toml`, `models.toml`, and the shipped personas from the templates bundled with your
+Kaja binary, backing up any existing file that differs (an unchanged file is left alone).
 
 ```sh
 kaja config fetch
 ```
 
-Set `services.toml`'s `[api]` `baseUrl` (and `secrets.toml`'s `[api]` `token`, if required) before
-running this.
+Use it to pick up new template defaults after an upgrade, or to recover a file you've broken. Your
+`secrets.toml`, `settings.toml`, and `services.toml` are never touched.
 
-## `kaja config wipe`
+### `kaja config wipe`
 
-Backs up the whole config directory (`settings.toml`, `models.toml`, `mcp.toml`, `services.toml`,
-`secrets.toml`, `tools/`, `personas/`, `datasets/`) by renaming it to `<dir>.bak` (or `.bak2`,
-`.bak3`, ... if backups already exist), leaving a clean slate for the next run of `kaja` to
-recreate:
+Renames the whole config directory to `<dir>.bak` (or `.bak2`, `.bak3`, …), leaving a clean slate
+for the next run to recreate:
 
 ```sh
 kaja config wipe
 ```
 
-Nothing is ever deleted — recover by renaming the `.bak` directory back if needed.
+Nothing is deleted — recover by renaming the `.bak` directory back.
 
 ---
 

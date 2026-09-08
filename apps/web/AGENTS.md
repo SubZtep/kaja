@@ -28,7 +28,7 @@ src/
     _admin.tsx                    # private shell (auth-gated; same max-w-280 + sticky header pattern)
     _admin/
       -components/header.tsx      # admin nav (mirrors public Header)
-      dashboard|nodes|users|profile|models|mcp-servers
+      dashboard|users|profile|models|mcp-servers|widget
   components/
     layout/  SiteShell, SiteHeader, ContentWidth, BrandMark, SignOutButton, nav-items
     ui/      Section, PageHeader, LandingSection, Table, ValueBox, ...

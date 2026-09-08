@@ -11,34 +11,46 @@ Kaja is an AI assistant you talk to from your terminal. Give it a task and it ke
 
 Under the hood it is a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent. All **TypeScript**, all **Bun**, one repo.
 
-## Quick start
+## Try it
 
-You need [Bun](https://bun.sh) and [Docker Compose](https://docs.docker.com/compose/install/).
+```bash
+curl -fsSL https://kaja.io/install.sh | bash   # macOS / Linux
+kaja
+```
+
+That's hosted mode — approve a device code in the browser and start chatting, no API key of your own. Run `kaja --local` instead to run the agent loop on your machine against your own provider; the first run writes `~/.config/kaja/` for you to fill in.
+
+## Hacking on it
+
+You need [Bun](https://bun.com/docs/installation) and [Docker Compose](https://docs.docker.com/compose/install/).
 
 ```bash
 git clone https://github.com/SubZtep/kaja.git
 cd kaja
 bun install
-docker compose up -d   # database, mail, API and web portal
-bun dev:cli            # start chatting
+bunx lefthook install       # lint on commit, test on push
+docker compose up -d db mail
+bun dev                     # API + web portal, hot reload
+bun dev:tui                 # the terminal client
 ```
 
-By default the CLI talks to the hosted API. To run the agent loop on your own machine with your own LLM provider, pass `--local`. The first time, fetch the config templates:
-
-```bash
-bun dev:cli --local config fetch
-bun dev:cli --local
-```
-
-Hacking on the API or web app? `bun dev` runs both with hot reload.
+`docker compose up -d` (no service names) additionally builds and runs the API and web images.
 
 ## What's inside
 
 **Apps**
 
-- [`cli`](./apps/cli/) – the terminal AI agent, also runs as a Telegram bot
-- [`api`](./apps/api/) – REST API, auth, database migrations, email, and the embeddable chat widget bundle
-- [`web`](./apps/web/) – public homepage and admin portal
+- [`api`](./apps/api/)
+  - REST API and hosted agent (`/nasi`)
+  - Authentication and database migrations
+  - Email sending and templates
+  - [Widget](./apps/api/widgets/) bundle served to third-party sites
+- [`tui`](./apps/tui/)
+  - Terminal UI for the AI agent
+  - Telegram bot
+- [`web`](./apps/web/)
+  - Public homepage
+  - Admin portal
 
 **Packages**
 
@@ -49,7 +61,7 @@ Hacking on the API or web app? `bun dev` runs both with hot reload.
 
 ## Contributing
 
-Install the [git hooks](lefthook.toml) with `bunx lefthook install`. They lint on commit and run the tests on push, so the easily forgotten chores take care of themselves.
+Until it reaches its 1st major version the codebase is under constant refactor. Install the [git hooks](lefthook.toml) with `bunx lefthook install` — they lint on commit and run the tests on push, so the easily forgotten chores take care of themselves.
 
 ## Documentation
 

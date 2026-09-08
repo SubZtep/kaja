@@ -1,0 +1,167 @@
+[cli]
+invalidConfig = "無效个設定檔：{path}"
+startupError = "Kaja 發生無想著个錯誤，袂當啟動：{message}\n詳細資訊已經寫入記錄檔矣。"
+bye = "拜拜！"
+localNoProvider = "--local 需要設定好个供應商。請重新執行 `kaja --local` 選 Fireworks/Ollama/llama.cpp，抑是執行 `kaja --local config fetch`。若欲改用託管聊天，請執行 `kaja --remote`。"
+headlessNoSubcommand = "--headless 需要一个有支援个子指令，比如 `telegram`。這馬猶未有獨立个 headless 模式。"
+pleaseSignIn = "請登入！"
+deviceLoginGoTo = "請去："
+deviceLoginEnterCode = "輸入代碼："
+deviceLoginCodeCopied = "代碼已經拷貝去剪貼簿矣"
+secretsUnavailable = "袂當使用系統金鑰圈來貯登入資訊。請改用 --local 執行，這个模式免用著系統憑證儲存。"
+connecting = "連線中…"
+logoutSuccess = "已經登出矣。"
+logoutNotSignedIn = "猶未登入。"
+deviceLoginStartFailed = "裝置登入啟動袂起來"
+deviceLoginDenied = "裝置登入已經予人拒絕矣"
+deviceLoginExpired = "裝置登入代碼過期矣 — 請重新登入"
+deviceLoginFailed = "裝置登入失敗"
+deviceLoginTimedOut = "裝置登入超過時間矣"
+personaSwitchedTitle = "已經換角色矣"
+personaSwitchedMessage = "已經換做 {label} 矣"
+
+[paths]
+settings = "設定"
+memorySessions = "記智佮工作階段"
+models = "模型"
+mcpServers = "mcp 伺服器"
+services = "服務"
+personas = "角色"
+datasets = "資料集"
+tools = "工具"
+temp = "臨時檔"
+
+[firstRun]
+paths = "Kaja 欲使用以下路徑："
+intro = "歡迎使用 Kaja！你欲用佗一个供應商？"
+providerFireworks = "Fireworks（雲端，需要 API 金鑰）"
+providerOllama = "Ollama（本機，佇這台機器頂懸執行）"
+providerLlama = "llama.cpp（本機，佇這台機器頂懸執行）"
+providerSkip = "略過 — 我家己設定 models.toml"
+
+[args]
+help = """
+Kaja 命令列工具 • v{version} • https://kaja.io
+
+用法
+  $ kaja [選項] [指令]
+
+指令
+  config <fetch|wipe|paths>  管理設定檔
+  telegram
+  logout                     登出託管（--remote）帳號，共儲存个憑證清掉
+
+選項
+  --local         用家己个供應商執行本機代理迴圈，代替託管登入
+  --remote        強制用託管登入，就算已經有本機設定嘛仝款
+  --continue, -c  接落去上新个工作階段（干焦 --local 有效）
+  --headless      無顯示終端機介面；用佇有支援這个模式个子指令（比如 telegram）
+  --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja --local session list）
+"""
+
+[config]
+invalidAt = "設定檔無效（{path}）：{message}"
+notExists = "設定檔無存在：{path}"
+usage = """
+用法
+  $ kaja config fetch   對內建範本重新產生設定檔
+  $ kaja config wipe    先備份才共規个設定資料夾清空
+  $ kaja config paths   印出 Kaja 讀寫个所有路徑
+"""
+fetched = "已經寫入 {path}"
+fetchedWithBackup = "已經寫入 {path}（早前个檔案已經備份去 {backup}）"
+fetchedUnchanged = "{path} 已經是上新版矣"
+wiped = "已經共 {path} 徙去 {backup}"
+wipeNothing = "無物件通清空：{path} 無存在"
+
+[models]
+invalidAt = "模型檔無效（{path}）：{message}"
+
+[mcp]
+invalidAt = "MCP 伺服器檔無效（{path}）：{message}"
+
+[services]
+invalidAt = "services 檔無效（{path}）：{message}"
+
+[secrets]
+invalidAt = "secrets 檔無效（{path}）：{message}"
+
+[input]
+placeholder = "`/` 選單 · PgUp 歷史紀錄 · Alt+Enter 換逝 · Alt+C 拷貝上尾一句回覆"
+
+[viewport]
+older = "↑ 較早進前 · PageDown 抑是 Ctrl+End 轉去上新个"
+
+[confirmCommand]
+yes = "好，執行"
+no = "毋通，取消"
+running = "執行中…"
+truncated = "… 猶有 {count} 逝"
+
+[activity]
+thinking = "咧想… 已經過 {seconds} 秒矣，猶咧推理"
+tokens = " · 這馬已經產生大約 {tokens} 个 token"
+
+[menu]
+on = "開"
+off = "關"
+toggleThinking = "切換思考顯示 [{state}]"
+toggleSounds = "切換音效 [{state}]"
+toggleVoice = "切換語音 [{state}]"
+changePersona = "換角色"
+
+[toolCall]
+webSearch = "咧揣「{query}」..."
+fetchUrl = "咧提 {url}..."
+currentTime = "咧查時間{timezone}..."
+generateImage = "咧產生圖片：「{prompt}」..."
+listFiles = "咧列 {path} 个檔案..."
+readFile = "咧讀 {path}..."
+viewImage = "咧看 {path}..."
+rememberNote = "咧記「{key}」..."
+recallMemory = "咧想起記智{query}..."
+forgetNote = "咧刪除筆記..."
+listNotes = "咧列筆記..."
+rerank = "咧共 {n} 筆結果排序..."
+summarize = "咧摘要..."
+
+[timeline]
+personaSwitch = "已經換角色：{label}"
+
+[error]
+network = "網路錯誤"
+tool = "工具執行失敗"
+agent = "發生錯誤"
+unknown = "毋知影个錯誤"
+
+[startup]
+persona = "角色："
+cwd = "資料夾："
+noModels = "猶未設定模型"
+taskChat = "聊天"
+taskTts = "文字轉語音"
+taskStt = "語音轉文字"
+taskEmbedding = "嵌入"
+taskRerank = "重新排序"
+taskImageGen = "圖片生成"
+mcpServers = "MCP 伺服器"
+mcpServerToolCount = "（{count} 个工具）"
+mcpServerFailed = "（連線失敗）"
+tools = "工具"
+stats = "工作階段：{sessionCount} · 記智筆記：{memoryNoteCount}"
+
+[telegram]
+notConfigured = "請佇設定內底加一个 `telegram` 區塊（設定檔路徑看 `kaja config paths`），閣加 `botToken` 佮 `allowedUserIds` 才會使用這个指令。"
+invalidToken = "Telegram bot token 無效 — 請檢查 config.telegram.botToken。"
+starting = "咧啟動 Telegram bot…"
+ready = "Telegram bot 已經準備好矣，咧長輪詢等訊息。"
+botOnline = "🟢 機器人已經連線矣。"
+botOffline = "🔴 機器人欲離線矣。"
+newSession = "🆕 已經開始一个新个工作階段。"
+stillWorking = "猶咧處理你頂一句訊息…"
+pendingCommand = "頂懸有一个指令咧等你核准 — 請先揀核准抑是拒絕。"
+commandExpired = "這个指令已經無咧等核准矣。"
+approved = "已經核准"
+declined = "已經拒絕"
+emptyResponse = "（空白回覆）"
+genericError = "處理个時陣出代誌矣 — 請看記錄檔。"

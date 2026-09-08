@@ -84,7 +84,7 @@ jobs:
           eval "$(echo 'ci-dummy-password' | gnome-keyring-daemon --unlock)"
           bun test
 
-  compile-cli:
+  compile-tui:
     needs: lint
     permissions:
       contents: read
@@ -99,9 +99,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
-      - name: Compile full CLI
+      - name: Compile full TUI
         run: |
-          cd apps/cli
+          cd apps/tui
           bun build cli.ts --compile --outfile kaja-check \
-            --define process.env.KAJA_APP_NAME="\"cli\"" \
+            --define process.env.KAJA_APP_NAME="\"tui\"" \
             --define process.env.API_URL="\"https://api.kaja.io\""

@@ -1,0 +1,238 @@
+name: Build and release TUI
+
+# - workflow_dispatch: primary path (manual, and Automatic Versioning after a TUI bump)
+# - push tags tui@*: optional manual/legacy path (does not fire when the tagged
+#   commit message contains [skip ci], which auto-version uses on purpose)
+on:
+  push:
+    tags:
+      - "tui@*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+            bun_target: bun-linux-x64
+            artifact: kaja-linux-x64
+          - os: ubuntu-latest
+            platform: linux-arm64
+            bun_target: bun-linux-arm64
+            artifact: kaja-linux-arm64
+          - os: macos-latest
+            platform: macos-x64
+            bun_target: bun-darwin-x64
+            artifact: kaja-macos-x64
+          - os: macos-latest
+            platform: macos-arm64
+            bun_target: bun-darwin-arm64
+            artifact: kaja-macos-arm64
+          - os: windows-latest
+            platform: windows-x64
+            bun_target: bun-windows-x64
+            artifact: kaja-windows-x64.exe
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          PACKAGE_VERSION="$(jq -r .version apps/tui/package.json)"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "tui@${PACKAGE_VERSION}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match apps/tui/package.json version tui@${PACKAGE_VERSION}"
+            exit 1
+          fi
+          echo "VERSION=tui@${PACKAGE_VERSION}" >> "$GITHUB_ENV"
+          echo "version=tui@${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build TUI for ${{ matrix.platform }}
+        shell: bash
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "${API_URL}" ]; then
+            echo "Set the API_URL repository variable (Settings → Secrets and variables → Actions → Variables)."
+            exit 1
+          fi
+          cd apps/tui
+          bun build cli.ts \
+            --compile \
+            --minify \
+            --outfile kaja \
+            --target="${{ matrix.bun_target }}" \
+            --define process.env.KAJA_APP_NAME="\"tui\"" \
+            --define process.env.KAJA_LOG_LEVEL="\"warn\"" \
+            --define process.env.API_URL="\"${API_URL}\""
+
+      - name: Rename artifact
+        shell: bash
+        run: |
+          out="${{ matrix.artifact }}"
+          if [[ -f "apps/tui/kaja.exe" ]]; then
+            mv "apps/tui/kaja.exe" "$out"
+          elif [[ -f "apps/tui/kaja" ]]; then
+            mv "apps/tui/kaja" "$out"
+          else
+            echo "Expected kaja or kaja.exe in apps/tui"
+            ls -la apps/tui/ || true
+            exit 1
+          fi
+          chmod +x "$out" || true
+
+      - name: Generate SHA256 checksum
+        shell: bash
+        run: |
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${{ matrix.artifact }}" | awk '{print $1}' > "${{ matrix.artifact }}.sha256"
+          else
+            shasum -a 256 "${{ matrix.artifact }}" | awk '{print $1}' > "${{ matrix.artifact }}.sha256"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.artifact }}
+            ${{ matrix.artifact }}.sha256
+          retention-days: 30
+
+  release:
+    needs: build
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          path: artifacts
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          PACKAGE_VERSION="$(jq -r .version apps/tui/package.json)"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "tui@${PACKAGE_VERSION}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match apps/tui/package.json version tui@${PACKAGE_VERSION}"
+            exit 1
+          fi
+          echo "VERSION=tui@${PACKAGE_VERSION}" >> "$GITHUB_ENV"
+          echo "version=tui@${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        id: changelog
+        shell: bash
+        run: |
+          PREV_TAG=$(git tag --list 'tui@*' --sort=-v:refname | grep -v "^${VERSION}\$" | head -n1)
+          {
+            echo "## Changes"
+            if [[ -n "$PREV_TAG" ]]; then
+              git log "${PREV_TAG}..${VERSION}" --pretty='- %s (%h)' -- apps/tui
+            else
+              git log "${VERSION}" --pretty='- %s (%h)' -- apps/tui
+            fi
+          } > changelog.md
+          cat changelog.md
+
+      - name: Create manifest.json
+        shell: bash
+        run: |
+          BASE_URL="${{ github.server_url }}/${{ github.repository }}/releases/download/${VERSION}"
+
+          cat > artifacts/manifest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "base_url": "${BASE_URL}",
+            "platforms": {
+              "linux-x64": {
+                "artifact": "kaja-linux-x64",
+                "checksum": ""
+              },
+              "linux-arm64": {
+                "artifact": "kaja-linux-arm64",
+                "checksum": ""
+              },
+              "macos-arm64": {
+                "artifact": "kaja-macos-arm64",
+                "checksum": ""
+              },
+              "macos-x64": {
+                "artifact": "kaja-macos-x64",
+                "checksum": ""
+              },
+              "windows-x64": {
+                "artifact": "kaja-windows-x64.exe",
+                "checksum": ""
+              }
+            }
+          }
+          EOF
+
+          shopt -s nullglob
+          for artifact in artifacts/*/kaja-*; do
+            [[ -f "$artifact" ]] || continue
+            [[ "$artifact" == *.sha256 ]] && continue
+            name=$(basename "$artifact")
+            if [[ ! -f "${artifact}.sha256" ]]; then
+              echo "❌ Missing sidecar: ${artifact}.sha256"
+              exit 1
+            fi
+            checksum=$(tr -d '\n' < "${artifact}.sha256")
+
+            case "$name" in
+              kaja-linux-x64)   section=platforms; key=linux-x64 ;;
+              kaja-linux-arm64) section=platforms; key=linux-arm64 ;;
+              kaja-macos-arm64) section=platforms; key=macos-arm64 ;;
+              kaja-macos-x64)   section=platforms; key=macos-x64 ;;
+              kaja-windows-x64.exe) section=platforms; key=windows-x64 ;;
+              *) echo "❌ Unknown artifact basename: $name"; exit 1 ;;
+            esac
+
+            jq --arg c "$checksum" --arg s "$section" --arg k "$key" '.[$s][$k].checksum=$c' artifacts/manifest.json > tmp.json && mv tmp.json artifacts/manifest.json
+          done
+
+          if jq -e '
+            .platforms["linux-x64"].checksum == "" or
+            .platforms["linux-arm64"].checksum == "" or
+            .platforms["macos-arm64"].checksum == "" or
+            .platforms["macos-x64"].checksum == "" or
+            .platforms["windows-x64"].checksum == ""
+          ' artifacts/manifest.json > /dev/null; then
+            echo "❌ Missing checksum in manifest"
+            cat artifacts/manifest.json
+            exit 1
+          fi
+
+          cat artifacts/manifest.json
+
+      - name: Create Release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          draft: false
+          body_path: changelog.md
+          files: |
+            artifacts/*/kaja-*
+            artifacts/manifest.json

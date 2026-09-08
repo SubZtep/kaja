@@ -2,7 +2,7 @@
 layout: page
 title: Models
 parent: Configuration
-nav_order: 3.2
+nav_order: 4.2
 ---
 
 # Models
@@ -40,9 +40,10 @@ Ollama needs *some* `api_key` string even though it ignores its value — set it
 api_key = "ollama"
 ```
 
-Every task is optional. Omitting `[models.chat]` falls back to the free hosted chat tier; the
-other five tasks stay "not configured" until their `[models.<task>]` entry (or a persona's pin)
-exists.
+`[models.chat]` is **required** in [local mode](/modes) — without a resolvable chat model the CLI
+exits with an error rather than silently falling back to hosted chat. Use `kaja --remote` if you
+want the hosted tier. The other five tasks stay "not configured" until their `[models.<task>]`
+entry (or a persona's pin) exists, and the features that need them stay off.
 
 ## Persona overrides
 
@@ -58,10 +59,19 @@ Each task is optional; an unset or unresolved pin (e.g. an id that doesn't exist
 install's `models.toml` — expected for a persona shared from elsewhere) falls back to
 `[models.<task>]` rather than failing to load.
 
-Notes:
+## Shipped templates
 
-- The shipped templates cover local Ollama (`llama3.2:1b`), llama.cpp, and hosted Fireworks.
-- To switch which model handles a task, edit or add its `[models.<task>]` entry in `models.toml`.
+Three starting points live in
+[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config):
+
+| Template | Providers | Notes |
+| --- | --- | --- |
+| `models.ollama.toml` | Ollama | chat + embedding, fully local. Offered by the first-run wizard. |
+| `models.fireworks.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts. Offered by the first-run wizard. |
+| `models.llama.toml` | llama.cpp, xAI | chat against a local `llama-server`. Copy it in manually. |
+
+To switch which model handles a task, edit or add its `[models.<task>]` entry — or run
+`kaja config fetch` to pull a catalog from a Kaja server.
 
 ---
 
