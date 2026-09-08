@@ -56,6 +56,44 @@ flowchart LR
 
 That split is what keeps the hosted CLI small: it ships the client, not the agent.
 
+## Inputs and outputs
+
+The API host and widget host don't touch `Agent`/`run()` directly — they go through `Nasi`, which
+wraps loading a session, running one turn, and persisting it back.
+
+```ts
+const nasi = await Nasi.open({
+  store,                 // NasiStore — Postgres for API/widget
+  chat: { client, model }, // OpenAI-compatible client + default model id
+  includeLocalTools: false,
+  personas,               // this account's/persona's roster, or []
+  promptContext,          // environment/askUser/location/language overrides
+  owner                    // null, or a namespaced widget-visitor id
+})
+
+const response = await nasi.turnBuffered({ session, message, includeThinking, language })
+// or: for await (const event of nasi.turn({ ... })) { ... }
+```
+
+**In:** `NasiTurnInput` — `session` (a UUIDv7 to resume, omitted to start fresh), `message` (1–32,768
+chars), and optional `includeThinking` / `language` / `personaId`.
+
+**Out:** `NasiTurnResponse` — the same shape whether you awaited `turnBuffered()` or drained
+`turn()`'s generator to its return value:
+
+| Field | Meaning |
+| --- | --- |
+| `session` | the session id — pass it back on the next turn |
+| `status` | `completed` / `needs_input` / `needs_approval` / `error` |
+| `message` | the reply, or the pending question/command when not `completed` |
+| `steps` | ordered `NasiStep[]` — reasoning, messages, tool calls, handoffs — for rendering a transcript |
+| `thinking` | full reasoning text, only when `includeThinking` was set |
+| `usage` | `promptTokens` and which `model` actually served the request |
+
+`turn()` yields every `AgentEvent` (including token-level `delta`s) as the turn runs, then returns
+that same `NasiTurnResponse` once persistence finishes — that's what lets the API stream SSE and
+still hand back one consistent shape at the end.
+
 ## The loop
 
 `run(agent, prompt, session, owner)` is an async generator. It yields events as they happen and
@@ -79,6 +117,51 @@ Three tools are **intercepted** rather than executed normally: `ask_user`, `run_
 A trailing `?` on otherwise-final assistant text is also surfaced as `ask_user`, so a rhetorical
 question doesn't stall an HTTP turn.
 
+Inside one turn, `run()` loops rounds of "call the model → run any tool calls → call the model
+again" until a round ends with no tool calls (→ `final`/`ask_user`) or a tool call needs a human
+(→ `ask_user`/`confirm_command`, which sets `session.pendingAskUserId`/`pendingRunCommandId` and
+returns). A round that comes back completely empty — no text, no tool call — is nudged and retried
+up to 5 times before falling back to a fixed "I'm drawing a blank" message, so the app never has to
+render a blank turn.
+
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neo-dark
+---
+flowchart TD
+    Start(["turn(agent, prompt, session)"]) --> Sys{"session empty?"}
+    Sys -->|yes| Build["buildSystemPrompt()\ninstructions + env + tool\ncontracts + personas +\nsticky memory + language"]
+    Sys -->|no, resuming| Push
+    Build --> Push["push prompt\n(or pending tool result)"]
+
+    Push --> Call["streamRound()\nOpenAI chat.completions.stream"]
+    Call -->|"delta events"| Call
+
+    Call --> Empty{"empty round?"}
+    Empty -->|"yes, retries left"| Nudge["push a nudge message"] --> Call
+    Empty -->|no| Calls{"tool_calls present?"}
+
+    Calls -->|none| Final["final or ask_user\n(trailing '?' backstop)"] --> Done(["return"])
+
+    Calls -->|yes| Dispatch{"which tool?"}
+    Dispatch -->|"ask_user"| AskEv["yield ask_user\nset pendingAskUserId"] --> Wait(["return — wait for host"])
+    Dispatch -->|"run_command"| Risk{"mutates:false and\nread-only allowlist?"}
+    Risk -->|yes| AutoRun["run immediately\nresult → messages"] --> Call
+    Risk -->|no| ConfirmEv["yield confirm_command\nset pendingRunCommandId"] --> Wait
+    Dispatch -->|"switch_persona"| Switch["applyPersona()\nrewrite system message\nmaybe swap model"] --> Call
+    Dispatch -->|"any other tool"| Exec["tool.execute(args, ctx)\nctx: owner, personaId, store"]
+    Exec -->|"text or images"| Result["result → messages\nimages also yielded for vision"] --> Call
+
+    classDef decision fill:#161b22,stroke:#58a6ff,color:#e6edf3
+    classDef action fill:#0d1117,stroke:#1f6feb,color:#e6edf3
+    classDef stop fill:#161b22,stroke:#3fb950,color:#e6edf3
+    class Sys,Empty,Calls,Dispatch,Risk decision
+    class Build,Push,Call,Nudge,AutoRun,Switch,Exec,Result action
+    class Final,Done,AskEv,Wait,ConfirmEv stop
+```
+
 ## Turn statuses
 
 Over HTTP the same loop is buffered into one response:
@@ -91,6 +174,28 @@ Over HTTP the same loop is buffered into one response:
 | `error` | the turn failed |
 
 `session` comes back on every response; send it again to continue the conversation.
+
+## System prompt
+
+`buildSystemPrompt()` assembles the system message once, when a session's message list is still
+empty — resuming a session reuses what's already there, except a persona switch mid-turn, which
+rewrites it in place. It concatenates whichever of these blocks apply, in order:
+
+1. the persona's `instructions` (or none, for the default agent)
+2. `## Environment` — OS/home line, or the host's override (`PromptContext.environment`), plus a
+   resolved location block when geolocation is available
+3. `## Tool contract: ask_user` — only when that tool is in the registry; hosted hosts override the
+   terminal-flavored default via `PromptContext.askUserInstruction`
+4. `## Tool contract: run_command` — only when `includeLocalTools` exposed it
+5. `## Tool contract: memory` — only when `remember_note` is in the registry
+6. `## Personas` — the roster and switching rules, only with more than one persona and
+   `switch_persona` available
+7. `## Dataset collection` — only when the persona is bound to a dataset topic
+8. sticky memory notes (from the store, or `PromptContext.loadStickyNotes`)
+9. a reply-language instruction (`PromptContext.replyLanguageInstruction`)
+
+Every block is conditional on what's actually wired up, so the prompt a hosted turn sees is
+strictly a subset of what a local `--local` session sees.
 
 ## Store and ownership
 
