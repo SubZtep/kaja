@@ -71,6 +71,9 @@ jobs:
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
 
+      - name: Seed default config
+        run: bun run seed:config
+
       - name: Install secret-service backend
         run: sudo apt-get update && sudo apt-get install -y gnome-keyring dbus-x11
 

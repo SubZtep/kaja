@@ -5,6 +5,7 @@ import { writeText } from "tinyclip"
 import LiteApp from "../components/layout/lite-app"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
+import { getApiBaseUrl } from "../lib/config/services"
 import { t } from "../lib/i18n"
 import { log } from "../lib/logger"
 
@@ -51,7 +52,7 @@ async function resolveToken(apiUrl: string): Promise<string> {
  * `<apiUrl>/nasi/*` over SSE.
  */
 export async function runRemoteSubcommand() {
-  const apiUrl = process.env.KAJA_API_URL ?? "https://api.kaja.io"
+  const apiUrl = await getApiBaseUrl()
 
   try {
     const token = await resolveToken(apiUrl)

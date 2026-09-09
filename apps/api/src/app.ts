@@ -8,6 +8,7 @@ import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { adminRoutes } from "./features/admin"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
+import { configExportRoutes } from "./features/config-export"
 import { healthRoutes } from "./features/health"
 import { nasiRoutes } from "./features/nasi"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
@@ -47,6 +48,7 @@ app.get("/robots.txt", c => c.text("User-agent: *\nDisallow: /", 200))
 app.use("/auth/*", authRateLimiter)
 app.route("/admin", adminRoutes)
 app.route("/auth", authRoutes)
+app.route("/config", configExportRoutes)
 app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)

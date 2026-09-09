@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { mcpServerService, modelService } from "../../services"
+import { mcpServerService, modelService, personaService } from "../../services"
 import type { RouteProps } from "../../types"
 import { adminMiddleware, requireAuthMiddleware } from "../auth"
 import { registerAdminMcpServers } from "./mcp-server"
@@ -9,6 +9,7 @@ import { registerAdminPersonas } from "./persona"
 const attachServices = async (c: any, next: any) => {
   c.set("mcpServerService", mcpServerService)
   c.set("modelService", modelService)
+  c.set("personaService", personaService)
   await next()
 }
 

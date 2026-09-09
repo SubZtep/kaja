@@ -49,3 +49,16 @@ export async function secrets(): Promise<SecretsFile> {
   cached = await loadSecretsFile()
   return cached
 }
+
+/** Merges a partial update into secrets.toml (e.g. a provider's api_key from the wizard) and invalidates the cache. Callers must not drop unrelated sections — pass only the keys being changed. */
+export async function saveSecrets(update: Partial<SecretsFile>): Promise<void> {
+  const current = await loadSecretsFile()
+  const next: SecretsFile = {
+    ...current,
+    ...update,
+    providers: { ...current.providers, ...update.providers },
+    mcp: { ...current.mcp, ...update.mcp }
+  }
+  await write(getSecretsPath(), TOML.stringify(next)!)
+  cached = undefined
+}

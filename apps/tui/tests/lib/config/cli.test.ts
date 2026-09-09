@@ -8,6 +8,8 @@ const { getConfigDir, getConfigPath } = await import("../../../lib/config/config
 const { getMcpPath } = await import("../../../lib/config/mcp-servers")
 const { getModelsPath } = await import("../../../lib/models/models")
 const { getPersonasDir } = await import("../../../lib/personas/personas")
+const { getPaths } = await import("../../../lib/paths")
+const { join } = await import("node:path")
 
 afterEach(async () => {
   const { $ } = await import("bun")
@@ -15,6 +17,8 @@ afterEach(async () => {
     .quiet()
     .nothrow()
   await $`rm -rf ${getConfigDir()} ${getConfigDir()}.bak ${getConfigDir()}.bak2`.quiet().nothrow()
+  // fetchRemoteConfigBundle() caches the last seen ETag outside the config dir — clear it so tests don't leak a 304 into each other.
+  await $`rm -f ${join(getPaths().temp, "kaja-config-fetch-etag")}`.quiet().nothrow()
 })
 
 test("fetch writes mcp.toml, models.toml and persona files from the bundled templates", async () => {
@@ -86,5 +90,108 @@ test("unknown or missing subcommand prints usage and exits 1", async () => {
     const { code, text } = await runConfigCli(argv)
     expect(code).toBe(1)
     expect(text).toContain("kaja config fetch")
+  }
+})
+
+function mockBundleFetch(files: Record<string, string>, etag = '"abc123"') {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input instanceof URL ? input : new URL(String(input))
+    expect(url.pathname).toBe("/config/export")
+    const ifNoneMatch = new Headers(init?.headers).get("if-none-match")
+    if (ifNoneMatch === etag) return new Response(null, { status: 304 })
+    return new Response(JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), files }), {
+      status: 200,
+      headers: { etag, "content-type": "application/json" }
+    })
+  }) as typeof fetch
+  return () => {
+    globalThis.fetch = originalFetch
+  }
+}
+
+test("fetch downloads the bundle from the server when reachable", async () => {
+  const restore = mockBundleFetch({
+    "models.toml": 'label = "from-server"\n',
+    "mcp.toml": "servers = []\n",
+    "personas/default.toml": 'label = "server persona"\n'
+  })
+  try {
+    const { code, text } = await runConfigCli(["fetch"])
+    expect(code).toBe(0)
+    expect(text).toContain(getModelsPath())
+    expect(await Bun.file(getModelsPath()).text()).toContain("from-server")
+    expect(await Bun.file(`${getPersonasDir()}/default.toml`).text()).toContain("server persona")
+  } finally {
+    restore()
+  }
+})
+
+test("fetch with --offline never touches the network", async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = (async (_input: RequestInfo | URL, _init?: RequestInit) => {
+    throw new Error("network should not be used with --offline")
+  }) as unknown as typeof fetch
+  try {
+    const { code } = await runConfigCli(["fetch", "--offline"])
+    expect(code).toBe(0)
+    expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("fetch falls back to bundled templates when the server is unreachable", async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = (async (_input: RequestInfo | URL, _init?: RequestInit) => {
+    throw new Error("connection refused")
+  }) as unknown as typeof fetch
+  try {
+    const { code, text } = await runConfigCli(["fetch"])
+    expect(code).toBe(0)
+    expect(text).toContain(getModelsPath())
+    expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("fetch never writes secrets.toml, services.toml, or settings.toml", async () => {
+  const restore = mockBundleFetch({ "models.toml": 'label = "x"\n' })
+  try {
+    await runConfigCli(["fetch"])
+  } finally {
+    restore()
+  }
+  const { getSecretsPath } = await import("../../../lib/config/secrets")
+  const { getServicesPath } = await import("../../../lib/config/services")
+  expect(await Bun.file(getSecretsPath()).exists()).toBe(false)
+  expect(await Bun.file(getServicesPath()).exists()).toBe(false)
+  expect(await Bun.file(getConfigPath()).exists()).toBe(false)
+})
+
+test("wizard --headless writes default config without prompting", async () => {
+  const { code, text } = await runConfigCli(["wizard", "--headless"])
+  expect(code).toBe(0)
+  expect(text.length).toBeGreaterThan(0)
+  expect(await Bun.file(getConfigPath()).exists()).toBe(true)
+})
+
+test("fetch after a wipe re-downloads instead of trusting a 304", async () => {
+  const restore = mockBundleFetch({ "models.toml": 'label = "from-server"\n' })
+  try {
+    await runConfigCli(["fetch"])
+    expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+
+    // Wipe renames the config dir away; the ETag cache lives outside it, so without the fix the
+    // next fetch would get a 304 and report "up to date" while models.toml no longer exists.
+    await runConfigCli(["wipe"])
+    expect(await Bun.file(getModelsPath()).exists()).toBe(false)
+
+    const { code } = await runConfigCli(["fetch"])
+    expect(code).toBe(0)
+    expect(await Bun.file(getModelsPath()).text()).toContain("from-server")
+  } finally {
+    restore()
   }
 })

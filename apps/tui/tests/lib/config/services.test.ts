@@ -9,7 +9,7 @@ const { setConfigDirOverride } = await import("../../../lib/config/config")
 const { getServicesPath, loadServicesFile, services, invalidateServicesCache } = await import(
   "../../../lib/config/services"
 )
-const { getSecretsPath, invalidateSecretsCache } = await import("../../../lib/config/secrets")
+const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
 
 // Other test files sharing this bun test process may have already cached secrets() with their
 // own fixtures — invalidate before every test, not just after, so the first test in this file
@@ -43,7 +43,7 @@ test("missing file: writes the template, folds in the default demo secrets", asy
   const data = await loadServicesFile()
 
   expect(await Bun.file(getServicesPath()).exists()).toBe(true)
-  expect(data.api).toEqual({ baseUrl: "https://api.kaja.io", token: "kaja" })
+  expect(data.api).toEqual({ baseUrl: "https://api.kaja.io" })
   expect(data.location).toEqual({ serviceUrl: "https://ip2geo.demo.land", apiKey: "kaja" })
 })
 
@@ -110,7 +110,7 @@ allowedUserIds = [42]
   expect((await loadServicesFile()).telegram).toBeUndefined()
 })
 
-test("api: token is folded in when present, but a missing secrets.toml [api] leaves baseUrl usable with an undefined token", async () => {
+test("api: baseUrl passes through as-is (no secrets.toml [api] section — the export endpoint is public)", async () => {
   await setup(
     `
 [api]
@@ -119,22 +119,7 @@ baseUrl = "https://api.example.test"
     ""
   )
   const { api } = await loadServicesFile()
-  expect(api).toEqual({ baseUrl: "https://api.example.test", token: undefined })
-})
-
-test("api: token is folded in from secrets.toml when both are present", async () => {
-  await setup(
-    `
-[api]
-baseUrl = "https://api.example.test"
-`,
-    `
-[api]
-token = "shared-secret"
-`
-  )
-  const { api } = await loadServicesFile()
-  expect(api).toEqual({ baseUrl: "https://api.example.test", token: "shared-secret" })
+  expect(api).toEqual({ baseUrl: "https://api.example.test" })
 })
 
 test("webSearch is a secrets-only section: present in secrets.toml alone is enough", async () => {
@@ -161,20 +146,16 @@ test("services() caches after the first read; invalidateServicesCache() forces a
 [api]
 baseUrl = "https://api.example.test"
 `,
-    `
-[api]
-token = "first"
-`
+    ""
   )
 
   const first = await services()
-  expect(first.api?.token).toBe("first")
+  expect(first.api?.baseUrl).toBe("https://api.example.test")
 
-  await write(getSecretsPath(), '[api]\ntoken = "second"\n')
-  // Still cached — neither services() nor secrets() have been invalidated.
-  expect((await services()).api?.token).toBe("first")
+  await write(getServicesPath(), '[api]\nbaseUrl = "https://api.second.test"\n')
+  // Still cached — services() hasn't been invalidated.
+  expect((await services()).api?.baseUrl).toBe("https://api.example.test")
 
-  invalidateSecretsCache()
   invalidateServicesCache()
-  expect((await services()).api?.token).toBe("second")
+  expect((await services()).api?.baseUrl).toBe("https://api.second.test")
 })

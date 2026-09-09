@@ -24,7 +24,6 @@ export async function readServicesLoose(): Promise<Partial<ServicesFile>> {
 
 /** services.toml's non-secret config, with secrets.toml's matching credentials folded back in — the shape every consumer (web-search, geo, telegram, openai) actually reads. */
 export type ResolvedServices = ServicesFile & {
-  api?: ServicesFile["api"] & { token?: string }
   location?: ServicesFile["location"] & { apiKey: string }
   telegram?: ServicesFile["telegram"] & { botToken: string }
   webSearch?: { apiKey: string }
@@ -34,7 +33,6 @@ export type ResolvedServices = ServicesFile & {
 function mergeSecrets(parsed: ServicesFile, creds: Awaited<ReturnType<typeof secrets>>): ResolvedServices {
   return {
     ...parsed,
-    api: parsed.api ? { ...parsed.api, token: creds.api?.token } : undefined,
     location: parsed.location && creds.location ? { ...parsed.location, apiKey: creds.location.apiKey } : undefined,
     telegram: parsed.telegram && creds.telegram ? { ...parsed.telegram, botToken: creds.telegram.botToken } : undefined,
     webSearch: creds.webSearch
@@ -72,4 +70,14 @@ export async function services(): Promise<ResolvedServices> {
   if (cached) return cached
   cached = await loadServicesFile()
   return cached
+}
+
+const DEFAULT_API_BASE_URL = "https://api.kaja.io"
+
+/** Resolves the hosted API base URL: KAJA_API_URL env → services.toml [api].baseUrl → the default hosted API. Used by both `kaja --remote`/free-tier chat and `kaja config fetch`. */
+export async function getApiBaseUrl(): Promise<string> {
+  const kajaApiUrl = TuiEnvSchema.shape.KAJA_API_URL.safeParse(process.env.KAJA_API_URL).data
+  if (kajaApiUrl) return kajaApiUrl
+  const resolved = await services()
+  return resolved.api?.baseUrl ?? DEFAULT_API_BASE_URL
 }

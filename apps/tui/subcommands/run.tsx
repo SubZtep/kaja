@@ -14,8 +14,7 @@ export async function runSubcommand(cli: typeof Cli) {
 
   // Imported after the config guard (already validated by the time cli.ts calls this): lib/openai.ts reads config at module load (via lib/agents.ts), so a static import would crash before first-run
   const { default: App } = await import("../components/layout/app")
-  const { listSessions, loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("../lib/session/store")
-  const { loadMemory } = await import("../lib/memory/store")
+  const { loadLatestSessionRow, loadPromptHistory, loadSessionRow } = await import("../lib/session/store")
   const { chatModelId } = await import("../lib/models/openai")
 
   // --local is the self-configured-provider path: no silent fallback to
@@ -42,9 +41,7 @@ export async function runSubcommand(cli: typeof Cli) {
   const currentConfig = await config()
 
   const { preferences } = currentConfig
-  const { models, personas, tools, mcpServers, closeTools } = await bootstrapLocalAgentDeps()
-  const sessionCount = (await listSessions()).length
-  const memoryNoteCount = Object.keys(await loadMemory()).length
+  const { models, personas, tools, closeTools } = await bootstrapLocalAgentDeps()
 
   // Closes long-lived tool connections (e.g. Playwright MCP subprocess) on SIGINT/normal exit.
   const shutdown = installShutdownHandlers(closeTools)
@@ -61,11 +58,8 @@ export async function runSubcommand(cli: typeof Cli) {
       personas={personas}
       openaiApiModel={chatModelId}
       tools={tools}
-      mcpServers={mcpServers}
       initialSession={initialSession}
       promptHistory={promptHistory}
-      sessionCount={sessionCount}
-      memoryNoteCount={memoryNoteCount}
     />,
     {
       alternateScreen: true,

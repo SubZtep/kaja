@@ -241,7 +241,7 @@ function WidgetPage() {
                 label={m.widget_field_persona()}
                 options={[
                   { value: AUTO_SELECT_PERSONA, label: m.widget_field_persona_auto() },
-                  ...(personas ?? []).map(p => ({ value: p.id, label: p.label }))
+                  ...(personas ?? []).map(p => ({ value: p.personaId, label: p.label }))
                 ]}
               />
             )}

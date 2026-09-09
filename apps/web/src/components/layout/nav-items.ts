@@ -1,4 +1,4 @@
-import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, Users } from "lucide-react"
+import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, UserSquare, Users } from "lucide-react"
 import { m } from "../../paraglide/messages.js"
 
 /** "public" matches signed-out visitors; "all" matches every signed-in role plus "public". */
@@ -73,6 +73,15 @@ const navItems: NavItem[] = [
     icon: Cpu
   },
   {
+    to: "/personas",
+    label: "Personas",
+    description: "Hosted persona catalog",
+    internal: true,
+    roles: ["admin"],
+    sections: ["header", "admin"],
+    icon: UserSquare
+  },
+  {
     to: "/widget",
     label: "Widget",
     description: "Embeddable chat widget keys",
@@ -98,6 +107,7 @@ const LABEL_OVERRIDES: Record<string, () => string> = {
   "/users": m.nav_users,
   "/mcp-servers": m.nav_mcp_servers,
   "/models": m.nav_models,
+  "/personas": m.nav_personas,
   "/widget": m.nav_widget
 }
 
@@ -108,6 +118,7 @@ const DESCRIPTION_OVERRIDES: Record<string, () => string> = {
   "/users": m.nav_users_desc,
   "/mcp-servers": m.nav_mcp_servers_desc,
   "/models": m.nav_models_desc,
+  "/personas": m.nav_personas_desc,
   "/widget": m.nav_widget_desc
 }
 

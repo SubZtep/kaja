@@ -13,7 +13,6 @@ import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
-import { StartupPanel } from "../startup-panel"
 import { ChatViewport } from "./chat-viewport"
 import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
@@ -115,30 +114,20 @@ export default function App({
   personas,
   openaiApiModel,
   tools,
-  mcpServers = [],
   initialSession,
-  promptHistory,
-  sessionCount = 0,
-  memoryNoteCount = 0
+  promptHistory
 }: Readonly<{
   initialPreferences?: KajaPreferences
   models?: CliResolvedModel[]
   personas: Persona[]
   openaiApiModel: string
   tools: Tool<any>[]
-  /** Connected MCP servers with their tool counts, shown in the startup panel. */
-  mcpServers?: { id: string; toolCount: number }[]
   /** A persisted session to continue (--continue / --session <id>). */
   initialSession?: PersistedSession
   /** Past prompts across all sessions for ↑/↓ recall, newest first. */
   promptHistory?: string[]
-  /** Saved conversations so far, shown in the startup stats panel. */
-  sessionCount?: number
-  /** Stored memory notes so far, shown in the startup stats panel. */
-  memoryNoteCount?: number
 }>) {
   const {
-    model,
     displayModel,
     persona,
     switchPersona: switchPersonaAgent,
@@ -222,17 +211,6 @@ export default function App({
         pending={pending}
         sounds={sounds}
         bottomChromeKey={bottomChromeKey}
-        startupPanel={
-          <StartupPanel
-            models={models}
-            activeModelId={model}
-            mcpServers={mcpServers}
-            cwd={process.cwd()}
-            sessionCount={sessionCount}
-            memoryNoteCount={memoryNoteCount}
-            tools={tools}
-          />
-        }
       />
       {pendingCommand ? (
         <ConfirmCommand
