@@ -33,20 +33,29 @@ test("fetch writes mcp.toml, models.toml and persona files from the bundled temp
 })
 
 test("fetch backs up an existing mcp.toml instead of overwriting it", async () => {
-  await Bun.write(getMcpPath(), "old content")
+  // Each fetch needs a fresh etag and body: a repeated etag yields a 304 ("all up to date")
+  // and identical content is a no-op, and neither writes the .bak2 this asserts on.
+  let restore = mockBundleFetch({ "mcp.toml": "servers = []\n" }, '"v1"')
+  try {
+    await Bun.write(getMcpPath(), "old content")
 
-  const first = await runConfigCli(["fetch"])
-  expect(first.code).toBe(0)
-  expect(first.text).toContain(".bak")
-  expect(await Bun.file(`${getMcpPath()}.bak`).text()).toBe("old content")
-  expect(await Bun.file(getMcpPath()).text()).not.toBe("old content")
+    const first = await runConfigCli(["fetch"])
+    expect(first.code).toBe(0)
+    expect(first.text).toContain(".bak")
+    expect(await Bun.file(`${getMcpPath()}.bak`).text()).toBe("old content")
+    expect(await Bun.file(getMcpPath()).text()).not.toBe("old content")
 
-  await Bun.write(getMcpPath(), "newer content")
-  const second = await runConfigCli(["fetch"])
-  expect(second.code).toBe(0)
-  expect(second.text).toContain(".bak2")
-  expect(await Bun.file(`${getMcpPath()}.bak`).text()).toBe("old content")
-  expect(await Bun.file(`${getMcpPath()}.bak2`).text()).toBe("newer content")
+    await Bun.write(getMcpPath(), "newer content")
+    restore()
+    restore = mockBundleFetch({ "mcp.toml": 'servers = ["changed"]\n' }, '"v2"')
+    const second = await runConfigCli(["fetch"])
+    expect(second.code).toBe(0)
+    expect(second.text).toContain(".bak2")
+    expect(await Bun.file(`${getMcpPath()}.bak`).text()).toBe("old content")
+    expect(await Bun.file(`${getMcpPath()}.bak2`).text()).toBe("newer content")
+  } finally {
+    restore()
+  }
 })
 
 test("fetch is a no-op (no new backup) when the file already matches the bundled template", async () => {
