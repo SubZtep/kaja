@@ -9,7 +9,7 @@ import { fetchPersonasToml } from "../personas/fetch"
 import { getConfigDir } from "./config"
 import { nextBackupPath, writeTemplateConfig } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
-import { fetchRemoteConfigBundle } from "./remote-fetch"
+import { clearCachedEtag, fetchRemoteConfigBundle } from "./remote-fetch"
 
 type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean }
 
@@ -41,7 +41,9 @@ async function runFetchOffline(only?: string): Promise<FetchResult[]> {
 }
 
 async function runFetchOnline(only: string | undefined): Promise<FetchResult[] | undefined> {
-  const bundle = await fetchRemoteConfigBundle()
+  // A 304 only means "same as the last download", not "same as what's on disk" — so when the config
+  // dir is missing entirely (post-wipe, first run) ask for the full body instead of trusting it.
+  const bundle = await fetchRemoteConfigBundle(existsSync(getConfigDir()))
   if ("unchanged" in bundle) return undefined
 
   const entries = Object.entries(bundle.files).filter(([key]) => matchesOnly(key, only))
@@ -82,6 +84,7 @@ async function runWipe(): Promise<{ code: number; text: string }> {
   if (!existsSync(dir)) return { code: 0, text: t("config.wipeNothing", { path: dir }) }
   const backup = await nextBackupPath(dir)
   await rename(dir, backup)
+  await clearCachedEtag()
   return { code: 0, text: t("config.wiped", { path: dir, backup }) }
 }
 

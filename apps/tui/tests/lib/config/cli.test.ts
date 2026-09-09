@@ -176,3 +176,22 @@ test("wizard --headless writes default config without prompting", async () => {
   expect(text.length).toBeGreaterThan(0)
   expect(await Bun.file(getConfigPath()).exists()).toBe(true)
 })
+
+test("fetch after a wipe re-downloads instead of trusting a 304", async () => {
+  const restore = mockBundleFetch({ "models.toml": 'label = "from-server"\n' })
+  try {
+    await runConfigCli(["fetch"])
+    expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+
+    // Wipe renames the config dir away; the ETag cache lives outside it, so without the fix the
+    // next fetch would get a 304 and report "up to date" while models.toml no longer exists.
+    await runConfigCli(["wipe"])
+    expect(await Bun.file(getModelsPath()).exists()).toBe(false)
+
+    const { code } = await runConfigCli(["fetch"])
+    expect(code).toBe(0)
+    expect(await Bun.file(getModelsPath()).text()).toContain("from-server")
+  } finally {
+    restore()
+  }
+})

@@ -32,34 +32,26 @@ export class PersonaService {
   }
 
   async update(id: string, input: UpdatePersonaRequest): Promise<Persona | null> {
+    // Built from the keys actually present so an explicit null clears the column, while an absent
+    // key leaves it untouched — COALESCE over every column can't tell those two cases apart.
+    const columns: Record<string, unknown> = {}
+    if (input.personaId !== undefined) columns.persona_id = input.personaId
+    if (input.label !== undefined) columns.label = input.label
+    if (input.when !== undefined) columns['"when"'] = input.when
+    if (input.instructions !== undefined) columns.instructions = input.instructions
+    if (input.dataset !== undefined) columns.dataset = input.dataset
+    if (input.models !== undefined) columns.models = JSON.stringify(input.models)
+    if (input.sampling !== undefined) columns.sampling = JSON.stringify(input.sampling)
+    if (input.enabled !== undefined) columns.enabled = input.enabled
+    if (input.sortOrder !== undefined) columns.sort_order = input.sortOrder
+
+    const entries = Object.entries(columns)
+    if (entries.length === 0) return this.get(id)
+
+    const assignments = entries.map(([column], index) => `${column} = $${index + 2}`).join(", ")
     const result = await this.#db.query(
-      `
-      UPDATE persona
-      SET persona_id = COALESCE($2, persona_id),
-          label = COALESCE($3, label),
-          "when" = COALESCE($4, "when"),
-          instructions = COALESCE($5, instructions),
-          dataset = COALESCE($6, dataset),
-          models = COALESCE($7, models),
-          sampling = COALESCE($8, sampling),
-          enabled = COALESCE($9, enabled),
-          sort_order = COALESCE($10, sort_order),
-          updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-      `,
-      [
-        id,
-        input.personaId ?? null,
-        input.label ?? null,
-        input.when ?? null,
-        input.instructions ?? null,
-        input.dataset ?? null,
-        input.models !== undefined ? JSON.stringify(input.models) : null,
-        input.sampling !== undefined ? JSON.stringify(input.sampling) : null,
-        input.enabled ?? null,
-        input.sortOrder ?? null
-      ]
+      `UPDATE persona SET ${assignments}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id, ...entries.map(([, value]) => value)]
     )
 
     return result.rows[0] ? this.#rowToPersona(result.rows[0]) : null
@@ -78,6 +70,11 @@ export class PersonaService {
   async listEnabled(): Promise<Persona[]> {
     const { rows } = await this.#db.query(`SELECT * FROM persona WHERE enabled ORDER BY sort_order, created_at`)
     return rows.map(row => this.#rowToPersona(row))
+  }
+
+  async get(id: string): Promise<Persona | null> {
+    const { rows } = await this.#db.query(`SELECT * FROM persona WHERE id = $1`, [id])
+    return rows[0] ? this.#rowToPersona(rows[0]) : null
   }
 
   async getByPersonaId(personaId: string): Promise<Persona | null> {

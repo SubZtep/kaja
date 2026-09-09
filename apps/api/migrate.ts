@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { Client } from "pg"
+import { seedConfig } from "./scripts/seed-config"
 
 // source tree and built image both keep migrate next to migrations (see Dockerfile)
 const scriptDir = dirname(fileURLToPath(import.meta.url))
@@ -20,5 +21,10 @@ for (const file of files) {
   await client.query(sql)
 }
 
-await client.end()
 console.log(`${files.length} migration${files.length === 1 ? "" : "s"} applied`)
+
+// The hosted agent reads its persona catalog from the DB, so an unseeded database means no
+// personas at all. Idempotent, so running it on every deploy leaves admin edits untouched.
+await seedConfig(client)
+
+await client.end()

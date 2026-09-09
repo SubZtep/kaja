@@ -18,10 +18,10 @@ type Step = "language" | "provider" | "apiKey" | "persona" | "summary"
 const STEP_ORDER: Step[] = ["language", "provider", "apiKey", "persona", "summary"]
 
 /**
- * Multi-step re-runnable setup wizard for `kaja config wizard` (also used by first-run — see
- * lib/cli/first-run.tsx). Escape/backspace/delete at any step cancels the whole wizard, same
- * dismissal contract as {@link SelectMenu}. Each step writes nothing itself — the caller applies
- * the collected {@link WizardResult} once `onDone` fires, via the existing config/secrets writers.
+ * Multi-step re-runnable setup wizard for `kaja config wizard`. First run has its own narrower
+ * prompt (lib/cli/first-run.tsx). Escape/backspace/delete at any step cancels the whole wizard,
+ * same dismissal contract as {@link SelectMenu}. Each step writes nothing itself — the caller
+ * applies the collected {@link WizardResult} once `onDone` fires, via the existing config/secrets writers.
  */
 export function ConfigWizard({
   personaChoices,

@@ -2,6 +2,7 @@
 // Idempotent upsert of docs/config/{personas,models.fireworks,mcp}.toml into Postgres —
 // the admin-managed defaults the hosted API and `kaja config fetch` now serve from the DB.
 // ON CONFLICT DO NOTHING so admin edits made after the first run always survive a re-run.
+// Called by apps/api/migrate.ts after the SQL files, so a deploy seeds a fresh database.
 import { TOML } from "bun"
 import { Pool } from "pg"
 import MCP_TEMPLATE from "../../../docs/config/mcp.toml" with { type: "text" }
@@ -10,6 +11,9 @@ import BARKOCHBA_TEMPLATE from "../../../docs/config/personas/barkochba.toml" wi
 import CARE_TEMPLATE from "../../../docs/config/personas/care.toml" with { type: "text" }
 import DEFAULT_TEMPLATE from "../../../docs/config/personas/default.toml" with { type: "text" }
 import ONBOARDING_TEMPLATE from "../../../docs/config/personas/onboarding.toml" with { type: "text" }
+
+/** Minimal surface both `pg`'s Pool and Client satisfy, so migrate.ts can reuse its own connection. */
+type Queryable = { query: (sql: string, values?: unknown[]) => Promise<{ rows: any[]; rowCount: number | null }> }
 
 const PERSONA_TEMPLATES: Record<string, string> = {
   default: DEFAULT_TEMPLATE,
@@ -28,15 +32,7 @@ const SAMPLING_KEYS = [
   "seed"
 ] as const
 
-const databaseUrl = process.env.DATABASE_URL
-if (!databaseUrl) {
-  console.error("DATABASE_URL is not set")
-  process.exit(1)
-}
-
-const pool = new Pool({ connectionString: databaseUrl })
-
-async function seedPersonas() {
+async function seedPersonas(db: Queryable) {
   let sortOrder = 0
   for (const [personaId, text] of Object.entries(PERSONA_TEMPLATES)) {
     const data = TOML.parse(text) as Record<string, unknown>
@@ -44,7 +40,7 @@ async function seedPersonas() {
     for (const key of SAMPLING_KEYS) {
       if (data[key] !== undefined) sampling[key] = data[key]
     }
-    await pool.query(
+    await db.query(
       `
       INSERT INTO persona (persona_id, label, "when", instructions, sampling, sort_order)
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -56,7 +52,7 @@ async function seedPersonas() {
   console.log(`Seeded ${Object.keys(PERSONA_TEMPLATES).length} personas`)
 }
 
-async function seedModels() {
+async function seedModels(db: Queryable) {
   const data = TOML.parse(MODELS_TEMPLATE) as {
     providers: Record<string, { base_url: string }>
     models: Record<string, { model: string; task: string; provider: string }>
@@ -64,7 +60,7 @@ async function seedModels() {
 
   const providerIds: Record<string, string> = {}
   for (const [name, provider] of Object.entries(data.providers)) {
-    const result = await pool.query(
+    const result = await db.query(
       `
       INSERT INTO provider (name, base_url)
       VALUES ($1, $2)
@@ -80,12 +76,12 @@ async function seedModels() {
   for (const entry of Object.values(data.models)) {
     const providerId = providerIds[entry.provider]
     if (!providerId) continue
-    const existing = await pool.query(`SELECT id FROM model WHERE provider_id = $1 AND model = $2`, [
+    const existing = await db.query(`SELECT id FROM model WHERE provider_id = $1 AND model = $2`, [
       providerId,
       entry.model
     ])
     if (existing.rows.length > 0) continue
-    await pool.query(
+    await db.query(
       `
       INSERT INTO model (provider_id, model, tasks, enabled, free)
       VALUES ($1, $2, $3, true, true)
@@ -97,11 +93,11 @@ async function seedModels() {
   console.log(`Seeded ${Object.keys(data.providers).length} providers, ${count} models`)
 }
 
-async function seedMcpServers() {
+async function seedMcpServers(db: Queryable) {
   const data = TOML.parse(MCP_TEMPLATE) as { servers: Array<Record<string, unknown>> }
   let count = 0
   for (const server of data.servers ?? []) {
-    const result = await pool.query(
+    const result = await db.query(
       `
       INSERT INTO mcp_server (server_id, command, args, env, url, headers, enabled)
       VALUES ($1, $2, $3, $4, $5, $6, true)
@@ -121,10 +117,25 @@ async function seedMcpServers() {
   console.log(`Seeded ${count} MCP servers`)
 }
 
-try {
-  await seedPersonas()
-  await seedModels()
-  await seedMcpServers()
-} finally {
-  await pool.end()
+/** Seeds the admin-managed defaults onto an existing connection. Safe to re-run — every insert is a no-op once the row exists. */
+export async function seedConfig(db: Queryable) {
+  await seedPersonas(db)
+  await seedModels(db)
+  await seedMcpServers(db)
+}
+
+// Standalone entry (`bun seed:config`); no-op when imported by migrate.ts.
+if (import.meta.main) {
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) {
+    console.error("DATABASE_URL is not set")
+    process.exit(1)
+  }
+
+  const pool = new Pool({ connectionString: databaseUrl })
+  try {
+    await seedConfig(pool)
+  } finally {
+    await pool.end()
+  }
 }

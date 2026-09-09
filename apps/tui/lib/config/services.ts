@@ -72,19 +72,6 @@ export async function services(): Promise<ResolvedServices> {
   return cached
 }
 
-/** Merges a partial update into services.toml (e.g. a telegram allowedUserIds from the wizard) and invalidates the cache. Callers must not drop unrelated sections — pass only the keys being changed. */
-export async function saveServices(update: Partial<ServicesFile>): Promise<void> {
-  const servicesPath = getServicesPath()
-  const f = file(servicesPath)
-  const exists = await f.exists()
-  if (!exists) await write(f, TEMPLATE)
-  const text = exists ? await f.text() : TEMPLATE
-  const current = ServicesFileSchema.parse(TOML.parse(text))
-  const next: ServicesFile = { ...current, ...update }
-  await write(servicesPath, TOML.stringify(next)!)
-  cached = undefined
-}
-
 const DEFAULT_API_BASE_URL = "https://api.kaja.io"
 
 /** Resolves the hosted API base URL: KAJA_API_URL env → services.toml [api].baseUrl → the default hosted API. Used by both `kaja --remote`/free-tier chat and `kaja config fetch`. */
