@@ -1,10 +1,10 @@
-import type { CreatePersonaRequest, ListPersonasResponse, Persona } from "@kaja/schema/api"
+import type { CreatePersonaRequest, ListPersonasResponse, Persona, UpdatePersonaRequest } from "@kaja/schema/api"
 import { personaSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
-import { Trash2 } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
@@ -23,6 +23,7 @@ import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 import { m } from "../../../paraglide/messages.js"
+import { EditPersonaDialog } from "./-components/EditPersonaDialog"
 
 export const Route = createFileRoute("/_admin/personas/")({
   component: PersonasPage,
@@ -70,15 +71,25 @@ function CreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Persona, Da
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
-function makeActionsCell(onDelete: (id: string) => void) {
+function makeActionsCell(
+  onDelete: (id: string) => void,
+  onSave: (id: string, payload: UpdatePersonaRequest) => Promise<unknown>,
+  isSaving: boolean
+) {
   return function ActionsCell(info: { row: { original: Persona } }) {
+    const persona = info.row.original
     return (
-      <div className="text-right">
+      <div className="flex justify-end gap-1">
+        <EditPersonaDialog persona={persona} isPending={isSaving} onSave={payload => onSave(persona.id, payload)}>
+          <IconButton aria-label={m.personas_admin_edit_title()}>
+            <Pencil size={18} />
+          </IconButton>
+        </EditPersonaDialog>
         <ConfirmDialog
           title={m.personas_admin_delete_confirm_title()}
-          description={m.personas_admin_delete_confirm_description({ personaId: info.row.original.personaId })}
+          description={m.personas_admin_delete_confirm_description({ personaId: persona.personaId })}
           confirm={m.personas_admin_delete_confirm_button()}
-          onConfirm={() => onDelete(info.row.original.id)}
+          onConfirm={() => onDelete(persona.id)}
         >
           <IconButton variant="danger" aria-label={m.personas_admin_delete_confirm_button()}>
             <Trash2 size={18} />
@@ -114,6 +125,16 @@ function PersonasPage() {
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
       apiFetch(`/admin/personas/${id}`, { enabled }, { method: "PATCH" }).then(r => personaSchema.parse(r)),
     onSuccess: invalidate,
+    onError: (err: Error) => toast.error(err.message || m.personas_admin_error_update_failed())
+  })
+
+  const updatePersona = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdatePersonaRequest }) =>
+      apiFetch(`/admin/personas/${id}`, payload, { method: "PATCH" }).then(r => personaSchema.parse(r)),
+    onSuccess: () => {
+      invalidate()
+      toast.success(m.personas_admin_success_updated())
+    },
     onError: (err: Error) => toast.error(err.message || m.personas_admin_error_update_failed())
   })
 
@@ -175,7 +196,11 @@ function PersonasPage() {
     columnHelper.display({
       id: "actions",
       header: "",
-      cell: makeActionsCell(id => deletePersona.mutate(id))
+      cell: makeActionsCell(
+        id => deletePersona.mutate(id),
+        (id, payload) => updatePersona.mutateAsync({ id, payload }),
+        updatePersona.isPending
+      )
     })
   ])
 

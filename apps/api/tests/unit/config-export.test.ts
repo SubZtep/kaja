@@ -83,14 +83,41 @@ describe("renderModelsToml", () => {
     const parsed = TOML.parse(toml) as { models: Record<string, unknown> }
     expect(Object.keys(parsed.models)).toHaveLength(0)
   })
+
+  test("omits paid models — the export endpoint is public", () => {
+    const toml = renderModelsToml([makeProvider()], [makeModel({ free: false })])
+    const parsed = TOML.parse(toml) as { models: Record<string, unknown> }
+    expect(Object.keys(parsed.models)).toHaveLength(0)
+  })
+
+  test("omits providers no exported model references", () => {
+    const toml = renderModelsToml([makeProvider()], [makeModel({ free: false })])
+    const parsed = TOML.parse(toml) as { providers: Record<string, unknown> }
+    expect(Object.keys(parsed.providers)).toHaveLength(0)
+  })
 })
 
 describe("renderMcpToml", () => {
-  test("strips secret-shaped header/env keys", () => {
+  test("strips header/env keys that aren't on the safe allowlist", () => {
     const toml = renderMcpToml([makeMcpServer()])
     expect(toml).not.toContain("sk-secret-token")
     expect(toml).not.toContain("Authorization")
-    expect(toml).toContain("X-Region")
+    // Not obviously secret-shaped, but nobody vetted it either — the allowlist drops it.
+    expect(toml).not.toContain("X-Region")
+  })
+
+  test("keeps allowlisted keys", () => {
+    const toml = renderMcpToml([makeMcpServer({ headers: { "Content-Type": "application/json" } })])
+    expect(toml).toContain("Content-Type")
+  })
+
+  test("drops credentials a secret-shaped denylist would have missed", () => {
+    const toml = renderMcpToml([
+      makeMcpServer({ headers: { "X-Api": "sk-leaky", BRAVE_ID: "id-leaky", CLIENT_ID: "client-leaky" } })
+    ])
+    expect(toml).not.toContain("sk-leaky")
+    expect(toml).not.toContain("id-leaky")
+    expect(toml).not.toContain("client-leaky")
   })
 
   test("round-trips through McpFileSchema", () => {

@@ -20,9 +20,13 @@ async function applyResult(result: WizardResult) {
   }
 
   if (result.provider === "fetch") {
+    // Writes the whole bundle (models.toml, mcp.toml and every persona), matching what
+    // `kaja config fetch` does — picking "fetch" here means "take the admin-managed defaults".
     const bundle = await fetchRemoteConfigBundle(false)
-    if (!("unchanged" in bundle) && bundle.files["models.toml"]) {
-      await writeTemplateConfig(bundle.files["models.toml"], pathForBundleKey("models.toml"))
+    if (!("unchanged" in bundle)) {
+      await Promise.all(
+        Object.entries(bundle.files).map(([key, text]) => writeTemplateConfig(text, pathForBundleKey(key)))
+      )
     }
   } else if (result.provider) {
     await writeModelsTemplate(result.provider)

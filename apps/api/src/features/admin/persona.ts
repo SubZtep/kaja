@@ -7,6 +7,7 @@ import {
 } from "@kaja/schema/api"
 import type { RouteRegProps } from "../../types"
 import { notFound, unauthorized } from "../../types/errors"
+import { invalidatePersonaCache } from "../nasi/personas"
 
 const errorSchema = z.object({ error: z.string() })
 const idParam = z.object({
@@ -95,6 +96,7 @@ export function registerAdminPersonas(app: RouteRegProps) {
     const body = c.req.valid("json")
     const personaService = c.get("personaService")
     const persona = await personaService.create(body)
+    invalidatePersonaCache()
     return c.json(persona, 201)
   })
 
@@ -107,6 +109,7 @@ export function registerAdminPersonas(app: RouteRegProps) {
     const personaService = c.get("personaService")
     const persona = await personaService.update(id, body)
     if (!persona) return notFound(c, "Persona not found")
+    invalidatePersonaCache()
     return c.json(persona)
   })
 
@@ -118,6 +121,7 @@ export function registerAdminPersonas(app: RouteRegProps) {
     const personaService = c.get("personaService")
     const success = await personaService.delete(id)
     if (!success) return notFound(c, "Persona not found")
+    invalidatePersonaCache()
     return c.json({ success })
   })
 }

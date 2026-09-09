@@ -45,7 +45,12 @@ export function ConfigWizard({
     const next = { ...result, ...patch }
     setResult(next)
     const currentIndex = STEP_ORDER.indexOf(step)
-    setStep(STEP_ORDER[currentIndex + 1] ?? "summary")
+    let nextStep = STEP_ORDER[currentIndex + 1] ?? "summary"
+    // Only fireworks needs a key from this flow; ollama/llama are typically local, and "fetch" takes
+    // its provider list from the server. Skipped here rather than mid-render so the step never
+    // renders just to immediately advance out of itself.
+    if (nextStep === "apiKey" && next.provider !== "fireworks") nextStep = "persona"
+    setStep(nextStep)
   }
 
   if (step === "language") {
@@ -81,11 +86,6 @@ export function ConfigWizard({
   }
 
   if (step === "apiKey") {
-    // Only fireworks needs a key from this flow; ollama/llama are typically local, fetch has no provider choice yet.
-    if (result.provider !== "fireworks") {
-      advance({})
-      return null
-    }
     return (
       <Box flexDirection="column" gap={1}>
         <Text>{t("wizard.apiKeyTitle")}</Text>

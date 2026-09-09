@@ -1,10 +1,13 @@
 import type { McpServer, Model, Persona, Provider } from "@kaja/schema/api"
 import { TOML } from "bun"
 
-const SECRET_KEY_PATTERN = /key|token|secret|authorization|password/i
+// GET /config/export is public, so this is the only thing standing between an admin-entered MCP
+// credential and the open internet. An allowlist fails closed: a key nobody has vetted is dropped,
+// where a "looks secret-shaped" denylist would happily export X-Api, BRAVE_ID or CLIENT_ID.
+const SAFE_KEY_PATTERN = /^(content-type|accept|accept-language|user-agent|node_env|lang|locale|tz|path|home)$/i
 
 function stripSecretEntries(entries: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(Object.entries(entries).filter(([key]) => !SECRET_KEY_PATTERN.test(key)))
+  return Object.fromEntries(Object.entries(entries).filter(([key]) => SAFE_KEY_PATTERN.test(key)))
 }
 
 // Excluded from ETag hashing (the route layer hashes the un-prefixed body): a live timestamp would
@@ -15,12 +18,12 @@ function generatedHeader(): string {
 
 /** models.toml — provider.api_key is never emitted; secrets live in the CLI's secrets.toml. */
 export function renderModelsToml(providers: Provider[], models: Model[]): string {
-  const providersData = Object.fromEntries(providers.map(p => [p.name, { base_url: p.baseUrl }]))
-
-  // One entry per task: first enabled+free model for that task wins (sort_order/created_at order already applied by the caller).
+  // One entry per task: first enabled+free model for that task wins (created_at order already applied by the caller).
+  // The `free` filter matters — this endpoint is public, so a paid model here would hand anonymous
+  // CLI users a model id their own credentials can't reach.
   const modelsData: Record<string, { model: string; task: string; provider: string }> = {}
   for (const model of models) {
-    if (!model.enabled) continue
+    if (!model.enabled || !model.free) continue
     const providerName = providers.find(p => p.id === model.providerId)?.name
     if (!providerName) continue
     for (const task of model.tasks) {
@@ -28,6 +31,13 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
       modelsData[task] = { model: model.model, task, provider: providerName }
     }
   }
+
+  // Only providers an exported model actually references — a provider whose models are all paid or
+  // disabled would otherwise appear with nothing pointing at it.
+  const usedProviderNames = new Set(Object.values(modelsData).map(entry => entry.provider))
+  const providersData = Object.fromEntries(
+    providers.filter(p => usedProviderNames.has(p.name)).map(p => [p.name, { base_url: p.baseUrl }])
+  )
 
   return generatedHeader() + TOML.stringify({ providers: providersData, models: modelsData })
 }
