@@ -60,7 +60,7 @@ test("renders the resolved persona label and model from /nasi/info", async () =>
   await t.tick()
   await t.tick()
   expect(t.lastFrame()).toContain("Helpful assistant")
-  expect(t.lastFrame()).toContain("test-model")
+  expect(t.lastFrame()).toContain("Test Model")
   t.unmount()
   await t.waitUntilExit()
 })

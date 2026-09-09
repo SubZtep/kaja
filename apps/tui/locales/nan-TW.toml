@@ -48,6 +48,7 @@ Kaja 命令列工具 • v{version} • https://kaja.io
 
 指令
   config <fetch|wipe|paths>  管理設定檔
+  doctor                     印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
   telegram
   logout                     登出託管（--remote）帳號，共儲存个憑證清掉
 
@@ -158,8 +159,7 @@ tool = "工具執行失敗"
 agent = "發生錯誤"
 unknown = "毋知影个錯誤"
 
-[startup]
-persona = "角色："
+[doctor]
 cwd = "資料夾："
 noModels = "猶未設定模型"
 taskChat = "聊天"
@@ -168,6 +168,9 @@ taskStt = "語音轉文字"
 taskEmbedding = "嵌入"
 taskRerank = "重新排序"
 taskImageGen = "圖片生成"
+checking = "咧檢查模型…"
+modelUp = "通用"
+modelDown = "袂通用"
 mcpServers = "MCP 伺服器"
 mcpServerToolCount = "（{count} 个工具）"
 mcpServerFailed = "（連線失敗）"

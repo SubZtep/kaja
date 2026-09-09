@@ -5,6 +5,7 @@ import { createRemote, getConfigPath, isConfigExists, validate } from "./lib/con
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
 import { runConfigSubcommand } from "./subcommands/config"
+import { runDoctorSubcommand } from "./subcommands/doctor"
 import { runLogoutSubcommand } from "./subcommands/logout"
 import { runSubcommand } from "./subcommands/run"
 import { runRemoteSubcommand } from "./subcommands/run-remote"
@@ -44,6 +45,10 @@ try {
 
   if (cmd === "config") {
     await runConfigSubcommand(args)
+  }
+
+  if (cmd === "doctor") {
+    await runDoctorSubcommand()
   }
 
   // MARK: Start Agent

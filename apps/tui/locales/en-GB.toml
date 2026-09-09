@@ -48,6 +48,7 @@ USAGE
 
 COMMANDS
   config <fetch|wipe|paths>  Manage config files
+  doctor                     Print configured models, MCP servers and tools, and check connections
   telegram
   logout                     Log out of the hosted (--remote) account, clearing its stored credential
 
@@ -158,8 +159,7 @@ tool = "Tool failed"
 agent = "Something went wrong"
 unknown = "Unknown error"
 
-[startup]
-persona = "Persona: "
+[doctor]
 cwd = "Directory: "
 noModels = "No models configured"
 taskChat = "Chat"
@@ -168,6 +168,9 @@ taskStt = "Speech-to-text"
 taskEmbedding = "Embedding"
 taskRerank = "Rerank"
 taskImageGen = "Image generation"
+checking = "Checking models…"
+modelUp = "up"
+modelDown = "down"
 mcpServers = "MCP servers"
 mcpServerToolCount = "({count} tools)"
 mcpServerFailed = "(failed to connect)"

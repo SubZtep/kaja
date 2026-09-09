@@ -48,6 +48,7 @@ HASZNÁLAT
 
 PARANCSOK
   config <fetch|wipe|paths>  Konfigurációs fájlok kezelése
+  doctor                     Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
   telegram
   logout                     Kijelentkezés a hosztolt (--remote) fiókból, a tárolt hitelesítő adat törlésével
 
@@ -158,8 +159,7 @@ tool = "Eszköz hiba"
 agent = "Hiba történt"
 unknown = "Ismeretlen hiba"
 
-[startup]
-persona = "Perszóna: "
+[doctor]
 cwd = "Könyvtár: "
 noModels = "Nincs beállított modell"
 taskChat = "Chat"
@@ -168,6 +168,9 @@ taskStt = "Beszédfelismerés"
 taskEmbedding = "Beágyazás"
 taskRerank = "Rangsorolás"
 taskImageGen = "Képgenerálás"
+checking = "Modellek ellenőrzése…"
+modelUp = "elérhető"
+modelDown = "nem elérhető"
 mcpServers = "MCP szerverek"
 mcpServerToolCount = "({count} eszköz)"
 mcpServerFailed = "(sikertelen kapcsolódás)"
