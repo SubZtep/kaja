@@ -30,7 +30,7 @@ async function buildFiles(): Promise<Record<string, string>> {
 
 function etagFor(files: Record<string, string>): string {
   const hash = createHash("sha256")
-  for (const key of Object.keys(files).sort()) {
+  for (const key of Object.keys(files).sort((a, b) => a.localeCompare(b))) {
     hash.update(key)
     hash.update(files[key]!)
   }

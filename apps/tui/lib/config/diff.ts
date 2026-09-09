@@ -19,7 +19,7 @@ export async function diffConfig(offline: boolean): Promise<string[]> {
   const files = offline ? await offlineBundle() : await remoteOrOfflineBundle()
 
   const lines: string[] = []
-  for (const key of Object.keys(files).sort()) {
+  for (const key of Object.keys(files).sort((a, b) => a.localeCompare(b))) {
     const path = pathForBundleKey(key)
     const f = file(path)
     if (!(await f.exists())) {

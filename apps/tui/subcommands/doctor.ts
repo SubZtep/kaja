@@ -14,6 +14,48 @@ const TASK_LABEL_KEY: Record<CliResolvedModel["task"], string> = {
   "image-generation": "doctor.taskImageGen"
 }
 
+function groupModelsByTask(models: CliResolvedModel[]): [CliResolvedModel["task"], CliResolvedModel[]][] {
+  const grouped = models.reduce<Map<CliResolvedModel["task"], CliResolvedModel[]>>((acc, model) => {
+    const list = acc.get(model.task) ?? []
+    list.push(model)
+    acc.set(model.task, list)
+    return acc
+  }, new Map())
+
+  return [...grouped.entries()].sort(([a], [b]) => TASK_ORDER.indexOf(a) - TASK_ORDER.indexOf(b))
+}
+
+async function printModelStatus(model: CliResolvedModel) {
+  const available = await checkModelAvailability(model)
+  console.log(`  ${available ? "✓" : "✗"} ${model.model} (${t(available ? "doctor.modelUp" : "doctor.modelDown")})`)
+}
+
+async function printModels(models: CliResolvedModel[]) {
+  if (models.length === 0) {
+    console.log(t("doctor.noModels"))
+    return
+  }
+
+  console.log(t("doctor.checking"))
+  for (const [task, entries] of groupModelsByTask(models)) {
+    console.log(t(TASK_LABEL_KEY[task]))
+    for (const model of entries) await printModelStatus(model)
+  }
+}
+
+function printMcpServers(mcpServers: { id: string; failed: boolean; toolCount: number }[]) {
+  if (mcpServers.length === 0) return
+
+  console.log(t("doctor.mcpServers"))
+  for (const server of mcpServers) {
+    const status = server.failed
+      ? t("doctor.mcpServerFailed")
+      : t("doctor.mcpServerToolCount", { count: server.toolCount })
+    console.log(`  ${server.failed ? "✗" : "✓"} ${server.id} ${status}`)
+  }
+  console.log()
+}
+
 /**
  * `kaja doctor` — prints the same configuration/connectivity info the old
  * startup panel used to show in the empty chat viewport, but to the console
@@ -29,41 +71,10 @@ export async function runDoctorSubcommand() {
 
   const { models, tools, mcpServers, closeTools } = await bootstrapLocalAgentDeps()
 
-  if (models.length === 0) {
-    console.log(t("doctor.noModels"))
-  } else {
-    console.log(t("doctor.checking"))
-    const grouped = models.reduce<Map<CliResolvedModel["task"], CliResolvedModel[]>>((acc, model) => {
-      const list = acc.get(model.task) ?? []
-      list.push(model)
-      acc.set(model.task, list)
-      return acc
-    }, new Map())
-
-    for (const [task, entries] of [...grouped.entries()].sort(
-      ([a], [b]) => TASK_ORDER.indexOf(a) - TASK_ORDER.indexOf(b)
-    )) {
-      console.log(t(TASK_LABEL_KEY[task]))
-      for (const model of entries) {
-        const available = await checkModelAvailability(model)
-        console.log(
-          `  ${available ? "✓" : "✗"} ${model.model} (${t(available ? "doctor.modelUp" : "doctor.modelDown")})`
-        )
-      }
-    }
-  }
+  await printModels(models)
   console.log()
 
-  if (mcpServers.length > 0) {
-    console.log(t("doctor.mcpServers"))
-    for (const server of mcpServers) {
-      const status = server.failed
-        ? t("doctor.mcpServerFailed")
-        : t("doctor.mcpServerToolCount", { count: server.toolCount })
-      console.log(`  ${server.failed ? "✗" : "✓"} ${server.id} ${status}`)
-    }
-    console.log()
-  }
+  printMcpServers(mcpServers)
 
   if (tools.length > 0) {
     console.log(t("doctor.tools"))
