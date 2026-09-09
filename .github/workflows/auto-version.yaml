@@ -152,6 +152,10 @@ jobs:
             exit 0
           fi
 
+          # bun.lock records each workspace version, so it goes stale on every bump
+          bun install --lockfile-only
+          git add bun.lock
+
           SUMMARY=$(IFS=", "; echo "${SUMMARY_PARTS[*]}")
           # [skip ci] avoids re-running CI / this workflow on the bump commit.
           # Tag push alone will not start Build and release TUI either — we
