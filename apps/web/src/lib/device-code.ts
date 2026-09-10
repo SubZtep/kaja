@@ -6,7 +6,7 @@ const DEVICE_CODE_COOKIE = "kaja_device_code"
 
 /** Stashes the device user_code in a short-lived cookie, then redirects to /device/approve without it in the URL. */
 export const stashDeviceCodeAndRedirect = createServerFn({ method: "GET" })
-  .inputValidator((userCode: string) => userCode)
+  .validator((userCode: string) => userCode)
   .handler(({ data: userCode }) => {
     setCookie(DEVICE_CODE_COOKIE, userCode, {
       httpOnly: true,
