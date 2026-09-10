@@ -8,15 +8,11 @@
  * cursor so every row shares the same origin (no sibling-Text skew).
  *
  * Ctrl+↑/↓ are left unhandled so the chat viewport can scroll.
- *
- * The terminal's real cursor is parked on the painted one via Ink's
- * `useCursor`, so an IME candidate window (CJK/Taiwanese composition) anchors
- * to the right spot. The inverse-video block stays the visible cursor.
  */
 
 import chalk from "chalk"
-import { Box, type DOMElement, type Key, measureElement, Text, useCursor, useInput, useStdin } from "ink"
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { Box, type Key, Text, useInput, useStdin } from "ink"
+import { useEffect, useMemo, useState } from "react"
 import { isIgnoredTerminalInput } from "../../lib/terminal-input"
 import {
   clampWindowStart,
@@ -444,8 +440,6 @@ export function TextInput({
   })
   const [windowStart, setWindowStart] = useState(0)
   const { isRawModeSupported } = useStdin()
-  const boxRef = useRef<DOMElement | null>(null)
-  const { setCursorPosition } = useCursor()
   const { cursorOffset, cursorWidth, preferredColumn } = state
   const hang = Math.max(0, prefixCols)
   const firstLead = prefix
@@ -530,26 +524,6 @@ export function TextInput({
 
   const cursorActive = showCursor && canFocus
 
-  // Park the terminal's real cursor on the painted one so an IME candidate window anchors there.
-  // useLayoutEffect (not useEffect): measureElement needs committed layout, and useCursor's own
-  // useInsertionEffect publishes during the same commit.
-  useLayoutEffect(() => {
-    if (!cursorActive || !boxRef.current) {
-      setCursorPosition(undefined)
-      return
-    }
-    const { x, y } = measureElement(boxRef.current)
-    const cell = cursorCellOffset({
-      lines,
-      display,
-      cursorOffset,
-      windowStart,
-      firstLeadWidth: firstLead.length,
-      contLeadWidth: contLead.length
-    })
-    setCursorPosition({ x: x + cell.x, y: y + cell.y })
-  }, [cursorActive, lines, display, cursorOffset, windowStart, firstLead, contLead, setCursorPosition])
-
   let body: React.ReactNode
   if (lines && maxVis) {
     body = renderWindowed({
@@ -571,9 +545,5 @@ export function TextInput({
   }
 
   // flexDirection column so the measured origin is the first painted row, whatever the body renders.
-  return (
-    <Box ref={boxRef} flexDirection="column">
-      {body}
-    </Box>
-  )
+  return <Box flexDirection="column">{body}</Box>
 }
