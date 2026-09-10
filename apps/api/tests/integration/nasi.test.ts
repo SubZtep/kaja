@@ -4,6 +4,12 @@ import { app } from "../../src/app"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
 import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
 
+const turnRequestInit = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ message: "hi" })
+}
+
 /** Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt content, while still replying normally. */
 function capturingChatClient(reply: string, onMessages: (messages: unknown[]) => void) {
   return {
@@ -84,12 +90,7 @@ describe("nasi", () => {
     setNasiChatResolver(undefined)
   })
 
-  test("unauthenticated turn is 401", () =>
-    expectUnauthenticated("/nasi/turn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "hi" })
-    }))
+  test("unauthenticated turn is 401", () => expectUnauthenticated("/nasi/turn", turnRequestInit))
 
   test("turn creates a uuidv7 session and returns the reply", async () => {
     const res = await app.request("/nasi/turn", {
@@ -187,12 +188,7 @@ describe("nasi", () => {
       return events
     }
 
-    test("unauthenticated stream is 401", () =>
-      expectUnauthenticated("/nasi/turn/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "hi" })
-      }))
+    test("unauthenticated stream is 401", () => expectUnauthenticated("/nasi/turn/stream", turnRequestInit))
 
     test("streams delta/message/final events then done with a uuidv7 session", async () => {
       const res = await app.request("/nasi/turn/stream", {
