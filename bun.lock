@@ -49,7 +49,7 @@
     },
     "apps/tui": {
       "name": "@kaja/tui",
-      "version": "0.12.0",
+      "version": "0.12.1",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/logger": "workspace:*",
