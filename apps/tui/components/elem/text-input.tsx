@@ -8,6 +8,11 @@
  * cursor so every row shares the same origin (no sibling-Text skew).
  *
  * Ctrl+↑/↓ are left unhandled so the chat viewport can scroll.
+ *
+ * FIXME: no native-cursor positioning (Ink's `useCursor`), so a terminal's
+ * IME candidate window (CJK/Taiwanese composition) may anchor to the wrong
+ * spot. Add it if that's ever reported — compute {x, y} from displayColumnAt
+ * + the visual line index, both already available in the render path.
  */
 
 import chalk from "chalk"
@@ -519,5 +524,3 @@ export function TextInput({
 
   return renderStatic(display, placeholder, firstLead)
 }
-
-export default TextInput

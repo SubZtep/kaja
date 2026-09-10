@@ -78,7 +78,7 @@ export async function runDoctorSubcommand() {
 
   if (tools.length > 0) {
     console.log(t("doctor.tools"))
-    for (const tool of tools) console.log(`  ${toolName(tool)}`)
+    console.log(`  ${tools.map(toolName).join(", ")}`)
     console.log()
   }
 
