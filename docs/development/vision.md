@@ -42,7 +42,7 @@ flowchart LR
 
   U -- HTTPS --- W
   UG -- "widget script" --- A
-  UT -- "hosted mode" --- A
+  UT -- "cloud mode" --- A
   UT -- "local mode" --> N
   W -- HTTP --- A
   A <==> D
@@ -64,7 +64,7 @@ means writing a host, not another agent.
 account, no server, and no telemetry: config is plain TOML you can read, state is one SQLite file
 you can delete, and pointed at Ollama or llama.cpp it needs no internet connection at all.
 
-**The hosted path is the same product, minus your machine.** Hosted mode exists so someone can try
+**The cloud path is the same product, minus your machine.** Cloud mode exists so someone can try
 Kaja without an API key, not as a different app. Same loop, same tools minus the ones that would
 reach into a server's filesystem, same personas and memory — just running somewhere else, against
 an account.

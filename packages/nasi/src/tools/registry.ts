@@ -18,8 +18,8 @@ import { webSearchTool } from "./builtin/web-search"
 import type { NasiToolDeps } from "./deps"
 import { setToolDeps } from "./deps"
 
-/** Builtins safe to expose when `includeLocalTools` is false (hosted mode) — an allowlist so a new builtin is hosted-exposed only once someone opts it in here, not by default. */
-const HOSTED_SAFE = new Set([
+/** Builtins safe to expose when `includeLocalTools` is false (cloud mode) — an allowlist so a new builtin is cloud-exposed only once someone opts it in here, not by default. */
+const CLOUD_SAFE = new Set([
   "ask_user",
   "switch_persona",
   "remember_note",
@@ -30,7 +30,7 @@ const HOSTED_SAFE = new Set([
   "current_time",
   "summarize",
   "rerank",
-  // Only ever reaches a hosted turn with `fetchProxy` set — see the conditional in `builtin` below.
+  // Only ever reaches a cloud turn with `fetchProxy` set — see the conditional in `builtin` below.
   "fetch_url",
   "web_search",
   "generate_image"
@@ -64,8 +64,8 @@ async function connectMcpServers(mcpServers: McpServerEntry[], tempDir: string):
   return connections
 }
 
-/** Names of builtin tools a hosted turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting MCP/plugins (hosted never does). */
-export async function listHostedToolNames(deps?: NasiToolDeps): Promise<string[]> {
+/** Names of builtin tools a cloud turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting MCP/plugins (cloud never does). */
+export async function listCloudToolNames(deps?: NasiToolDeps): Promise<string[]> {
   const { tools } = await createTools({ deps })
   return tools.map(toolName)
 }
@@ -78,7 +78,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   const builtin: Tool<any>[] = [
     readFileTool,
     listFilesTool,
-    // Local fetches from the user's own machine; hosted egresses from the server, so it needs a proxy configured or it stays off.
+    // Local fetches from the user's own machine; cloud egresses from the server, so it needs a proxy configured or it stays off.
     ...(local || opts.deps?.fetchProxy ? [fetchUrlTool] : []),
     viewImageTool,
     summarizeTool,
@@ -96,7 +96,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     ...(opts.deps?.imageGeneration ? [generateImageTool] : [])
   ]
 
-  const tools = local ? builtin : builtin.filter(t => HOSTED_SAFE.has(toolName(t)))
+  const tools = local ? builtin : builtin.filter(t => CLOUD_SAFE.has(toolName(t)))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
   const mcpConnections = local && opts.mcpServers && tempDir ? await connectMcpServers(opts.mcpServers, tempDir) : []

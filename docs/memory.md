@@ -7,7 +7,7 @@ nav_order: 9
 # Memory & datasets
 
 Two different kinds of remembering, both persisted in the same
-[store](/tui/sqlite) (SQLite locally, Postgres when hosted).
+[store](/tui/sqlite) (SQLite locally, Postgres when cloud).
 
 | | **Notes** | **Datasets** |
 |---|---|---|

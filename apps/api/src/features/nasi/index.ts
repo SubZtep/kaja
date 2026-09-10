@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { error as logError } from "@kaja/logger"
-import { categorizeError, listHostedToolNames } from "@kaja/nasi"
+import { categorizeError, listCloudToolNames } from "@kaja/nasi"
 import { NasiInfoResponseSchema, NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
@@ -121,7 +121,7 @@ const infoRoute = createRoute({
   method: "get",
   path: "/info",
   tags: ["Nasi"],
-  summary: "Resolved persona, model, and available tools for hosted chat",
+  summary: "Resolved persona, model, and available tools for cloud chat",
   security: [{ bearerAuth: [] }],
   request: { query: z.object({ session: z.uuidv7().optional() }) },
   responses: {
@@ -141,7 +141,7 @@ nasiRoutes.openapi(infoRoute, async c => {
   if (!result) return notFound(c, "No model available")
 
   const persona = (await listPersonas())[0]
-  const tools = await listHostedToolNames(nasiToolDeps())
+  const tools = await listCloudToolNames(nasiToolDeps())
 
   return c.json({
     persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },

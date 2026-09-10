@@ -18,7 +18,7 @@ curl -fsSL https://kaja.io/install.sh | bash   # macOS / Linux
 kaja
 ```
 
-That's hosted mode — approve a device code in the browser and start chatting, no API key of your own. Run `kaja --local` instead to run the agent loop on your machine against your own provider; the first run writes `~/.config/kaja/` for you to fill in.
+That's cloud mode — approve a device code in the browser and start chatting, no API key of your own. Run `kaja --local` instead to run the agent loop on your machine against your own provider; the first run writes `~/.config/kaja/` for you to fill in.
 
 ## Hacking on it
 
@@ -41,7 +41,7 @@ bun dev:tui                 # the terminal client
 **Apps**
 
 - [`api`](./apps/api/)
-  - REST API and hosted agent (`/nasi`)
+  - REST API and cloud agent (`/nasi`)
   - Authentication and database migrations
   - Email sending and templates
   - [Widget](./apps/api/widgets/) bundle served to third-party sites

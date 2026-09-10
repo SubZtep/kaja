@@ -79,7 +79,7 @@ async function* parseSseStream(body: ReadableStream<Uint8Array>): AsyncGenerator
 }
 
 /**
- * HTTP client for hosted Nasi (`POST /nasi/turn`, `/nasi/turn/stream`). Used
+ * HTTP client for cloud Nasi (`POST /nasi/turn`, `/nasi/turn/stream`). Used
  * by the lite CLI. This module must not import sqlite or the agent loop.
  */
 export function createNasiClient(opts: NasiClientOptions) {
@@ -92,7 +92,7 @@ export function createNasiClient(opts: NasiClientOptions) {
   }
 
   return {
-    /** `GET /nasi/info` — resolved persona label, model, and available hosted tools, for display before/without a turn. Pass `session` to resolve that session's pinned model instead of a fresh one. */
+    /** `GET /nasi/info` — resolved persona label, model, and available cloud tools, for display before/without a turn. Pass `session` to resolve that session's pinned model instead of a fresh one. */
     async info(session?: string): Promise<NasiInfoResponse> {
       const url = new URL("/nasi/info", opts.baseUrl)
       if (session) url.searchParams.set("session", session)

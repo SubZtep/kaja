@@ -39,7 +39,7 @@ location-sensitive questions. A separate `location` MCP server against the same 
 in [`mcp.toml`](/tools#mcp-servers) if you want the model to look things up itself.
 
 `[api].baseUrl` can be overridden for a single run with the `KAJA_API_URL` environment variable —
-handy for pointing at a local dev API without editing the file. Hosted mode reads that same
+handy for pointing at a local dev API without editing the file. Cloud mode reads that same
 variable, defaulting to `https://api.kaja.io`.
 
 This file is safe to share, commit to a dotfiles repo, or paste into a bug report — no keys live

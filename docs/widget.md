@@ -64,7 +64,7 @@ conversations.
 ## What the agent can do
 
 A widget turn runs with local tools **off** — no shell, no filesystem, no MCP, no plugins. It gets
-the same hosted allowlist as [hosted CLI chat](/tools#built-ins): memory, datasets, `ask_user`,
+the same cloud allowlist as [cloud CLI chat](/tools#built-ins): memory, datasets, `ask_user`,
 `web_search`, `generate_image`, and the rest. `fetch_url` is included only when the server sets
 `WEB_PROXY` — see [Tools](/tools#built-ins).
 

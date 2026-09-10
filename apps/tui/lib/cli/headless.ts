@@ -20,7 +20,7 @@ export async function bootstrapLocalAgentDeps() {
   return { models, personas, tools, mcpServers, closeTools }
 }
 
-/** Exits the process if no provider is configured — no silent fallback to Kaja's hosted free tier for --local entry points. */
+/** Exits the process if no provider is configured — no silent fallback to Kaja's cloud free tier for --local entry points. */
 export async function requireConfiguredProvider() {
   const { t } = await import("../i18n")
   const { isFreeChat } = await import("../models/openai")

@@ -60,9 +60,9 @@ Get fresh copies any time with `kaja config fetch`, or read them in
 > questions go through the `ask_user` tool, and the `dataset_info` get-status/answer protocol.
 {: .note }
 
-## Hosted mode
+## Cloud mode
 
-Hosted chat uses a server-side persona catalog managed from the [admin portal](/development/web),
+Cloud chat uses a server-side persona catalog managed from the [admin portal](/development/web),
 not your local files. `switch_persona` still works; the `/` menu picker doesn't.
 
 ---

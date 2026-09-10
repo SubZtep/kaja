@@ -21,10 +21,10 @@
     "@scalar/hono-api-reference": "^0.12.1",
     "@sentry/bun": "10.74.0",
     "@sentry/hono": "^10.74.0",
-    "better-auth": "^1.7.3",
+    "better-auth": "^1.7.4",
     "hono": "^4.13.7",
     "hono-rate-limiter": "^0.5.4",
-    "nodemailer": "^10.0.2",
+    "nodemailer": "^10.0.3",
     "pg": "^8.23.0",
     "react": "^19.3.0",
     "zod": "^4.6.1"

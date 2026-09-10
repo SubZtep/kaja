@@ -22,9 +22,9 @@
     {
       "type": "bun",
       "request": "launch",
-      "name": "Debug TUI --remote",
+      "name": "Debug TUI --cloud",
       "program": "${workspaceFolder}/apps/tui/cli.ts",
-      "args": ["--remote"],
+      "args": ["--cloud"],
       "cwd": "${workspaceFolder}/apps/tui",
       "stopOnEntry": false
     }

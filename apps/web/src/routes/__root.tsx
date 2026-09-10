@@ -25,17 +25,20 @@ const OG_LOCALE: Record<Locale, string> = {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
     let session: Awaited<ReturnType<typeof getSession>> | null = null
+    let sessionError = false
     try {
       session = await getSession()
     } catch (err) {
       error("Failed to fetch session in root loader", { error: err instanceof Error ? err.message : err })
+      sessionError = true
     }
     const { apiUrl, barkochbaWidgetKey, chatWidgetKey } = await getRootEnv()
     return {
       apiUrl,
       barkochbaWidgetKey,
       chatWidgetKey,
-      session
+      session,
+      sessionError
     }
   },
   head: ({ match }) => ({

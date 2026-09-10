@@ -23,7 +23,7 @@ for (const file of files) {
 
 console.log(`${files.length} migration${files.length === 1 ? "" : "s"} applied`)
 
-// The hosted agent reads its persona catalog from the DB, so an unseeded database means no
+// The cloud agent reads its persona catalog from the DB, so an unseeded database means no
 // personas at all. Idempotent, so running it on every deploy leaves admin edits untouched.
 await seedConfig(client)
 

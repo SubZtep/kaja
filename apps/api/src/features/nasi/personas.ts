@@ -15,12 +15,12 @@ function toPersonaToml(row: Awaited<ReturnType<typeof personaService.listEnabled
   }
 }
 
-/** Drops the cached catalog so the next turn re-reads the table. Called by the admin persona routes — without it an edit takes up to CACHE_TTL_MS to reach hosted chat. Only clears this process's cache; other instances still wait out the TTL. */
+/** Drops the cached catalog so the next turn re-reads the table. Called by the admin persona routes — without it an edit takes up to CACHE_TTL_MS to reach cloud chat. Only clears this process's cache; other instances still wait out the TTL. */
 export function invalidatePersonaCache() {
   cache = undefined
 }
 
-/** The hosted agent loop's persona catalog, read from the `persona` table (admin-managed). Cached in-process for CACHE_TTL_MS so every turn doesn't hit Postgres. */
+/** The cloud agent loop's persona catalog, read from the `persona` table (admin-managed). Cached in-process for CACHE_TTL_MS so every turn doesn't hit Postgres. */
 export async function listPersonas(): Promise<PersonaToml[]> {
   if (cache && cache.expiresAt > Date.now()) return cache.personas
   const rows = await personaService.listEnabled()

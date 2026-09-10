@@ -52,7 +52,7 @@ require the Better Auth `admin` role.
 | `/dashboard` | overview |
 | `/users`, `/users/$userId` | accounts, roles, bans |
 | `/models` | providers and their models, per task |
-| `/mcp-servers` | MCP servers offered to hosted chat |
+| `/mcp-servers` | MCP servers offered to cloud chat |
 | `/widget` | [widget keys](/widget#getting-a-key) — create, disable, delete |
 | `/profile` | your own account |
 

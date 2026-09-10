@@ -25,7 +25,7 @@ Or grab a binary directly from [GitHub Releases](https://github.com/SubZtep/kaja
 
 ## First run
 
-Run `kaja`. With no config on disk, it starts in [hosted mode](/modes) and walks you through a
+Run `kaja`. With no config on disk, it starts in [cloud mode](/modes) and walks you through a
 **device login**: approve the printed code in your browser and you're chatting. Nothing to
 configure, no LLM key of your own.
 
@@ -47,11 +47,11 @@ picks local, because a config now exists.
 ## Command surface
 
 ```sh
-kaja                      # chat — hosted or local, auto-detected
+kaja                      # chat — cloud or local, auto-detected
 kaja --local              # force the local agent loop
-kaja --remote             # force hosted login
+kaja --cloud             # force cloud login
 kaja --help               # flags and subcommands
-kaja logout               # clear the stored hosted token
+kaja logout               # clear the stored cloud token
 
 # Local mode only
 kaja -c                   # resume the most recent session

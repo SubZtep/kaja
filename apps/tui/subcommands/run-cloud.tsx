@@ -1,6 +1,8 @@
+import { formatDeviceUserCode } from "@kaja/shared"
 import { color } from "bun"
 import { render } from "ink"
 import notifier from "node-notifier"
+import open from "open"
 import { writeText } from "tinyclip"
 import LiteApp from "../components/layout/lite-app"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
@@ -20,7 +22,7 @@ async function resolveToken(apiUrl: string): Promise<string> {
     console.log(t("cli.pleaseSignIn"))
 
     const { token } = await deviceLogin(apiUrl, async prompt => {
-      const code = `${prompt.userCode.slice(0, 4)}-${prompt.userCode.slice(4)}`
+      const code = formatDeviceUserCode(prompt.userCode)
       await writeText(code)
       notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
         if (error) log.warn("Device login notification failed", { error })
@@ -32,6 +34,9 @@ async function resolveToken(apiUrl: string): Promise<string> {
       console.log(
         `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${code}${ANSI_RESET}\n`
       )
+
+      const url = prompt.verificationUriComplete ?? prompt.verificationUri
+      open(url).catch(error => log.warn("Failed to open browser for device login", { error }))
     })
     return token
   } catch (error) {
@@ -44,13 +49,13 @@ async function resolveToken(apiUrl: string): Promise<string> {
 }
 
 /**
- * Hosted path: reached via `--remote`, or by default when no local config
+ * Cloud path: reached via `--cloud`, or by default when no local config
  * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
- * credentials, or device login), then renders LiteApp against hosted Nasi.
+ * credentials, or device login), then renders LiteApp against cloud Nasi.
  * No local agent, no sqlite, no MCP, no shell tools — talks to
  * `<apiUrl>/nasi/*` over SSE.
  */
-export async function runRemoteSubcommand() {
+export async function runCloudSubcommand() {
   const apiUrl = await getApiBaseUrl()
 
   try {

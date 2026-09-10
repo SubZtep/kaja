@@ -26,8 +26,8 @@
     "@tanstack/react-router": "^1.170.34",
     "@tanstack/react-start": "^1.168.51",
     "@tanstack/react-table": "^9.2.4",
-    "better-auth": "^1.7.3",
-    "lucide-react": "^1.43.0",
+    "better-auth": "^1.7.4",
+    "lucide-react": "^1.44.0",
     "nitro": "npm:nitro-nightly@3.0.1-20260908-105246-3b8980bb",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -42,6 +42,6 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.1",
-    "vite": "^8.2.2"
+    "vite": "^8.3.0"
   }
 }

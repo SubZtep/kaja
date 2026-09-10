@@ -15,8 +15,8 @@ const options = {
   local: {
     type: "boolean"
   },
-  /** Forces hosted login even if a local config exists. */
-  remote: {
+  /** Forces cloud login even if a local config exists. */
+  cloud: {
     type: "boolean"
   },
   /** No Ink render — for a subcommand that doesn't need a terminal (e.g. telegram). */

@@ -11,7 +11,7 @@ MCP servers and plugin tools you've configured.
 
 ## Built-ins
 
-| Tool | Purpose | Hosted |
+| Tool | Purpose | Cloud |
 | --- | --- | :---: |
 | `ask_user` | ask a clarifying question mid-task | ✓ |
 | `switch_persona` | change [persona](/personas) mid-conversation | ✓ |
@@ -31,16 +31,16 @@ Two are conditional even locally: `web_search` needs `[webSearch]` in
 [`secrets.toml`](/configuration/secrets), and `generate_image` needs a `[models.image-generation]`
 entry in [`models.toml`](/configuration/models).
 
-`fetch_url` is always available locally, where it fetches from your own machine. Hosted turns
+`fetch_url` is always available locally, where it fetches from your own machine. Cloud turns
 egress from the server instead, so it appears only when the server sets `WEB_PROXY` — with
-no proxy configured it is left out of the hosted toolset entirely, rather than fetching directly.
+no proxy configured it is left out of the cloud toolset entirely, rather than fetching directly.
 
-`WEB_PROXY` applies to hosted turns only. Local fetches go out directly from your own machine,
+`WEB_PROXY` applies to cloud turns only. Local fetches go out directly from your own machine,
 under your own IP, whether or not a proxy is configured on the server — so a page you fetch in
 local mode sees your address, and the proxy provider's dashboard records nothing. Use
-`kaja --remote` if you want the fetch to leave through the server's proxy.
+`kaja --cloud` if you want the fetch to leave through the server's proxy.
 
-The **Hosted** column is an explicit allowlist, not a side effect — anything touching your
+The **Cloud** column is an explicit allowlist, not a side effect — anything touching your
 filesystem or shell is unavailable when the loop runs on the server, and MCP and plugin tools are
 never attached there.
 

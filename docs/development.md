@@ -48,12 +48,12 @@ flowchart TD
     API --> DB
     TUI --> SQL
     WEB -->|HTTP| API
-    TUI -->|"HTTP (hosted mode)"| API
+    TUI -->|"HTTP (cloud mode)"| API
 ```
 
 | Workspace | What it is |
 | --- | --- |
-| `apps/api` | Hono REST API — auth, admin config, hosted agent (`/nasi`), [widget](/widget) serving, emails |
+| `apps/api` | Hono REST API — auth, admin config, cloud agent (`/nasi`), [widget](/widget) serving, emails |
 | `apps/api/widgets` | the embeddable browser chat bundle, built as part of the API |
 | `apps/web` | TanStack Start — public landing site and the [admin portal](/development/web) |
 | `apps/tui` | the [terminal client](/tui), Telegram bot, local config and storage |

@@ -75,7 +75,7 @@ const navItems: NavItem[] = [
   {
     to: "/personas",
     label: "Personas",
-    description: "Hosted persona catalog",
+    description: "Cloud persona catalog",
     internal: true,
     roles: ["admin"],
     sections: ["header", "admin"],

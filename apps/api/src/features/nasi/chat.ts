@@ -45,8 +45,8 @@ async function defaultChatResolver(pinnedModel?: string) {
   }
 }
 
-/** Host-neutral replacement for the CLI's terminal-flavored ask_user contract — hosted chat is a normal message UI, not a terminal that blocks on tool calls. */
-const HOSTED_ASK_USER_INSTRUCTION =
+/** Host-neutral replacement for the CLI's terminal-flavored ask_user contract — cloud chat is a normal message UI, not a terminal that blocks on tool calls. */
+const CLOUD_ASK_USER_INSTRUCTION =
   `You talk to the human through a chat interface, and they can only reply ` +
   `when you call the ${ASK_USER_TOOL} tool — plain text output is shown to ` +
   `them but gives them no way to answer. So EVERY time you expect a reply — ` +
@@ -66,12 +66,12 @@ export function setNasiFetchProxyOverride(proxy: string | undefined) {
   fetchProxyOverride = proxy
 }
 
-/** Tool deps every hosted turn runs with. `fetchProxy` unset leaves `fetch_url` out of the hosted tool set entirely — hosted fetches egress from the server, so they go through a proxy or not at all. */
+/** Tool deps every cloud turn runs with. `fetchProxy` unset leaves `fetch_url` out of the cloud tool set entirely — cloud fetches egress from the server, so they go through a proxy or not at all. */
 export function nasiToolDeps() {
   return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
 
-/** Shared by hosted (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. */
+/** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. */
 export async function openNasiFor(opts: {
   userId: string
   owner?: string | null
@@ -88,9 +88,9 @@ export async function openNasiFor(opts: {
     deps: nasiToolDeps(),
     promptContext: {
       environment:
-        "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP. " +
+        "You are Kaja cloud chat. You cannot read the user's disk, run a shell, or use MCP. " +
         "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing.",
-      askUserInstruction: HOSTED_ASK_USER_INSTRUCTION,
+      askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })

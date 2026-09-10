@@ -13,7 +13,7 @@ In [local mode](/modes) everything Kaja remembers lives in one SQLite file on yo
 
 It opens in WAL mode, so it's safe to have the terminal chat and the Telegram bot running at once.
 
-In hosted mode there is no local database — the same four tables live in the server's Postgres,
+In cloud mode there is no local database — the same four tables live in the server's Postgres,
 scoped to your account.
 
 ## Tables

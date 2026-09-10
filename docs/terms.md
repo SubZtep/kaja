@@ -20,11 +20,11 @@ By creating an account or using Kaja, you agree to these Terms. If you do not ag
 
 ## The Service
 
-Kaja is an AI assistant. These Terms cover the **hosted** service — the API, the website, hosted terminal chat, and the embeddable website widget — which is currently offered for free.
+Kaja is an AI assistant. These Terms cover the **cloud** service — the API, the website, cloud terminal chat, and the embeddable website widget — which is currently offered for free.
 
 Kaja is also open-source software you can run entirely on your own machine. Running it locally is governed by its licence, not by these Terms, and needs no account.
 
-Kaja may change, suspend, or discontinue any part of the hosted service at any time. If a change materially affects users, reasonable notice will be provided where practical.
+Kaja may change, suspend, or discontinue any part of the cloud service at any time. If a change materially affects users, reasonable notice will be provided where practical.
 
 ## AI Output
 

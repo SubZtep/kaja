@@ -41,8 +41,8 @@ api_key = "ollama"
 ```
 
 `[models.chat]` is **required** in [local mode](/modes) — without a resolvable chat model the CLI
-exits with an error rather than silently falling back to hosted chat. Use `kaja --remote` if you
-want the hosted tier. The other five tasks stay "not configured" until their `[models.<task>]`
+exits with an error rather than silently falling back to cloud chat. Use `kaja --cloud` if you
+want the cloud tier. The other five tasks stay "not configured" until their `[models.<task>]`
 entry (or a persona's pin) exists, and the features that need them stay off.
 
 ## Persona overrides

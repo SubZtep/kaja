@@ -22,15 +22,15 @@ always-current list. This page is the map.
 | `/users/me` | session | the signed-in user |
 | `/admin/*` | session + `admin` role | MCP servers, providers, models, personas |
 | `/widget/admin/*` | session | list, create, and delete [widget](/widget) keys |
-| `/nasi/*` | bearer | hosted agent — turns and sessions |
+| `/nasi/*` | bearer | cloud agent — turns and sessions |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/*` | shared secret | model resolution for tooling |
 | `/health` | none | liveness |
 | `/reference` | none | OpenAPI UI, development builds only |
 
-## Hosted agent — `/nasi`
+## Cloud agent — `/nasi`
 
-The endpoints the CLI uses in [hosted mode](/modes). All require a bearer token from device login.
+The endpoints the CLI uses in [cloud mode](/modes). All require a bearer token from device login.
 
 | Method | Path | Purpose |
 | --- | --- | --- |

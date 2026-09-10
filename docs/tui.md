@@ -9,8 +9,8 @@ nav_order: 5
 The chat client: a scrollable transcript, a multi-line input, and a `/` menu. Built with
 [Ink](https://github.com/vadimdemedes/ink), so it's all keyboard-driven.
 
-Both [modes](/modes) share the same UI shell, but hosted mode runs a lighter version of it — no
-persona/model switching and no shell-command confirmation, because the hosted agent never emits
+Both [modes](/modes) share the same UI shell, but cloud mode runs a lighter version of it — no
+persona/model switching and no shell-command confirmation, because the cloud agent never emits
 those.
 
 ## Startup panel
@@ -70,7 +70,7 @@ Toggles are written back to `settings.toml`, so they persist. Picking a persona 
 | `Enter` | Activate selected item |
 | `Esc` / `Backspace` / `Delete` | Close the menu |
 
-The menu is empty in hosted mode.
+The menu is empty in cloud mode.
 
 ## Rendering
 

@@ -13,7 +13,7 @@ import — there is no bare `@kaja/schema` import, and no app keeps local schema
 | Subpath | Contents | Consumers |
 |---|---|---|
 | `@kaja/schema/api` | REST contracts: `McpServer`, `Provider`/`Model`, `WidgetKey`, auth payloads | `apps/api`, `apps/web` |
-| `@kaja/schema/nasi` | hosted turn request/response, widget turn | `apps/api`, `apps/tui`, `packages/nasi` |
+| `@kaja/schema/nasi` | cloud turn request/response, widget turn | `apps/api`, `apps/tui`, `packages/nasi` |
 | `@kaja/schema/config` | the CLI's hand-edited TOML files | `apps/tui` |
 | `@kaja/schema/store` | SQLite/Postgres-backed runtime state | `apps/tui`, `packages/nasi` |
 | `@kaja/schema/cli` | remaining CLI domain concepts: personas, datasets | `apps/tui` |
@@ -80,7 +80,7 @@ erDiagram
 
 ## `@kaja/schema/nasi`
 
-The HTTP turn contract, shared by the API, the hosted CLI client, and the widget.
+The HTTP turn contract, shared by the API, the cloud CLI client, and the widget.
 
 ```mermaid
 ---

@@ -8,7 +8,7 @@ export class SecretsAccessError extends Error {
   }
 }
 
-/** Loads the stored hosted (--remote) bearer token from the OS credential store, if any. */
+/** Loads the stored cloud bearer token from the OS credential store, if any. */
 export async function loadToken(): Promise<string | undefined> {
   try {
     const value = await Bun.secrets.get({ service: SECRETS_SERVICE, name: SECRETS_NAME })
@@ -18,7 +18,7 @@ export async function loadToken(): Promise<string | undefined> {
   }
 }
 
-/** Persists the hosted (--remote) bearer token in the OS credential store (Keychain / Credential Manager / secret-service). */
+/** Persists the cloud bearer token in the OS credential store (Keychain / Credential Manager / secret-service). */
 export async function saveToken(token: string): Promise<void> {
   try {
     await Bun.secrets.set({ service: SECRETS_SERVICE, name: SECRETS_NAME, value: token })
