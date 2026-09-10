@@ -11,7 +11,7 @@
  */
 
 import chalk from "chalk"
-import { type Key, Text, useInput } from "ink"
+import { type Key, Text, useInput, useStdin } from "ink"
 import { useEffect, useMemo, useState } from "react"
 import { isIgnoredTerminalInput } from "../../lib/terminal-input"
 import {
@@ -414,15 +414,17 @@ export function TextInput({
     preferredColumn: null as number | null
   })
   const [windowStart, setWindowStart] = useState(0)
+  const { isRawModeSupported } = useStdin()
   const { cursorOffset, cursorWidth, preferredColumn } = state
   const hang = Math.max(0, prefixCols)
   const firstLead = prefix
   const contLead = hang > 0 ? " ".repeat(hang) : ""
   const wrapWidth = columns && columns > 0 ? columns : undefined
+  const canFocus = focus && isRawModeSupported
 
   useEffect(() => {
     setState(prev => {
-      if (!focus || !showCursor) return prev
+      if (!canFocus || !showCursor) return prev
       if (prev.cursorOffset > originalValue.length) {
         return {
           cursorOffset: originalValue.length,
@@ -477,7 +479,7 @@ export function TextInput({
       })
       if (result.value !== originalValue) onChange(result.value)
     },
-    { isActive: focus }
+    { isActive: canFocus }
   )
 
   const display = mask ? mask.repeat(originalValue.length) : originalValue
@@ -496,7 +498,7 @@ export function TextInput({
   }, [lines, cursorOffset, maxVis])
 
   if (lines && maxVis) {
-    const active = showCursor && cursorVisible && focus
+    const active = showCursor && cursorVisible && canFocus
     return renderWindowed({
       lines,
       windowStart,
@@ -511,7 +513,7 @@ export function TextInput({
     })
   }
 
-  if (showCursor && focus) {
+  if (showCursor && canFocus) {
     return renderActiveSingleLine(display, placeholder, firstLead, cursorVisible, cursorOffset, pasteWidth)
   }
 
