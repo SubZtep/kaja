@@ -293,6 +293,26 @@ function isEmptyRound(message: StreamedRound["message"]): boolean {
 /** Retries an empty round this many times before giving up and yielding it as-is. */
 const MAX_EMPTY_ROUND_RETRIES = 5
 
+/**
+ * The nudge pushed after a round came back with nothing. Escalates to a blunt
+ * forced guess on the last attempt, since "ask or guess" alone isn't decisive
+ * enough for a model that's genuinely stuck.
+ */
+function emptyRoundNudge(retries: number): string {
+  return retries < MAX_EMPTY_ROUND_RETRIES
+    ? "That reply was empty. Ask your next question, or give your best guess now — don't leave this turn blank."
+    : "You still haven't said anything. Stop deliberating: state your single best guess right now, in one short sentence, even if you're unsure. Do not leave this blank again."
+}
+
+/** Per-round telemetry: token usage/model, then any reasoning text. */
+function* roundTelemetry(
+  round: Pick<StreamedRound, "thinking" | "usage" | "model">
+): Generator<AgentEvent, void, void> {
+  const { thinking, usage, model } = round
+  if (usage || model) yield { type: "usage", promptTokens: usage?.promptTokens, model }
+  if (thinking) yield { type: "reasoning", text: thinking }
+}
+
 function* handlePendingHandoff(
   session: Session,
   ask: { id: string; question: string; note?: string } | undefined,
@@ -345,21 +365,13 @@ export async function* run(
     if (isEmptyRound(message) && emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES) {
       emptyRoundRetries++
       // Drop the empty turn rather than persisting it — replace with a nudge and retry.
-      // Escalate to a blunt forced guess on later attempts, since "ask or guess" alone
-      // isn't decisive enough for a model that's genuinely stuck.
-      const content =
-        emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES
-          ? "That reply was empty. Ask your next question, or give your best guess now — don't leave this turn blank."
-          : "You still haven't said anything. Stop deliberating: state your single best guess right now, in one short sentence, even if you're unsure. Do not leave this blank again."
-      messages.push({ role: "user", content })
+      messages.push({ role: "user", content: emptyRoundNudge(emptyRoundRetries) })
       continue
     }
 
     messages.push(message)
 
-    if (usage || model) yield { type: "usage", promptTokens: usage?.promptTokens, model }
-
-    if (thinking) yield { type: "reasoning", text: thinking }
+    yield* roundTelemetry({ thinking, usage, model })
 
     if (!message.tool_calls?.length) {
       yield finalEventFor(message)

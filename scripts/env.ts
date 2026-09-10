@@ -10,7 +10,10 @@ function renderLine(field: FieldInfo): string {
 
   if (field.secret) {
     const value = field.example ?? ""
-    return `# ${field.key}=${value}${comment ? `${comment} (generate with: openssl rand -base64 32)` : " # generate with: openssl rand -base64 32"}`
+    const hint = comment
+      ? `${comment} (generate with: openssl rand -base64 32)`
+      : " # generate with: openssl rand -base64 32"
+    return `# ${field.key}=${value}${hint}`
   }
 
   if (field.defaultValue !== undefined) {
