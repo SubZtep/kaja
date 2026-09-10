@@ -79,6 +79,8 @@ The full agent. The loop, the tools, and the storage all run in your process:
 - your own provider from `models.toml` — there is **no** silent fallback to hosted free chat; if
   no chat model is configured, the CLI exits with an error
 - local tools on: files, shell, MCP, plugins
+- `fetch_url` fetches under your own network identity — the server's `WEB_PROXY` does not apply
+  here ([Tools](/tools#built-ins))
 - `-c` / `--continue` and `-s <id>` / `--session <id>` to resume a conversation
 
 Both modes share the same agent core (`@kaja/nasi`), the same tool contracts, and the same

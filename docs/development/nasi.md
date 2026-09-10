@@ -68,7 +68,8 @@ const nasi = await Nasi.open({
   includeLocalTools: false,
   personas,               // this account's/persona's roster, or []
   promptContext,          // environment/askUser/location/language overrides
-  owner                    // null, or a namespaced widget-visitor id
+  owner,                   // null, or a namespaced widget-visitor id
+  deps                     // extra tool deps, merged over `chat` — gates dep-conditional tools
 })
 
 const response = await nasi.turnBuffered({ session, message, includeThinking, language })
@@ -214,6 +215,14 @@ other's chats.
 allowlist of hosted-safe built-ins is returned, so a newly added tool is never hosted-exposed by
 accident. Turning it on adds file, shell, MCP, and plugin tools. See [Tools](/tools) for the
 resulting list.
+
+Some built-ins are gated on a **dep** as well as the allowlist — they only register when the host
+supplies what they need: `web_search` needs `webSearchApiKey`, `generate_image` needs
+`imageGeneration`, and hosted `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`
+unconditionally, since it fetches from the user's own machine; hosted egresses from the server, so
+without a proxy the tool is left out rather than fetching directly. Failing closed is deliberate —
+a proxied fetch that can't reach its proxy raises `ProxyUnavailableError` instead of retrying
+direct, which would silently defeat the point of configuring one.
 
 ---
 

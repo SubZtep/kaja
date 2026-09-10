@@ -1,7 +1,12 @@
+import { warn } from "@kaja/logger"
 import { Readability } from "@mozilla/readability"
 import { parseHTML } from "linkedom"
 import { ToolError, tool } from "../../agent/agent"
-import { fetchPublicHttp, UnsafeUrlError } from "../../security/ssrf"
+import { fetchPublicHttp, ProxyUnavailableError, UnsafeUrlError } from "../../security/ssrf"
+import { getToolDeps } from "../deps"
+
+/** Raised well above the ssrf default: heavy modern pages run past it, and Readability strips the HTML to a few KB of text before the model ever sees it. */
+const MAX_PAGE_BYTES = 2 * 1024 * 1024
 
 /**
  * Fetches a URL and returns its content as plain text.
@@ -33,9 +38,14 @@ export const fetchUrlTool = tool<{ url: string }>({
   execute: async args => {
     let res: Response
     try {
-      res = await fetchPublicHttp(args.url)
+      res = await fetchPublicHttp(args.url, { maxBytes: MAX_PAGE_BYTES, proxy: getToolDeps().fetchProxy })
     } catch (error) {
       if (error instanceof UnsafeUrlError) throw new ToolError("fetch_url", error.message)
+      // The model (and user) can't act on a proxy outage, so they get a generic failure; the operator needs it named.
+      if (error instanceof ProxyUnavailableError) {
+        warn("fetch_url proxy unreachable", { url: args.url, error: error.message })
+        throw new ToolError("fetch_url", `Fetch failed: ${args.url}`)
+      }
       throw new ToolError("fetch_url", error instanceof Error ? error.message : String(error))
     }
     if (!res.ok) throw new ToolError("fetch_url", `Fetch failed: ${res.status} ${args.url}`)

@@ -39,6 +39,8 @@ async function getWidgetBundle(): Promise<string> {
   return output.text()
 }
 
+// Plain string literal (not String.raw) so Hono can infer the ":rawKey" param name from the
+// literal type — a tagged template widens to `string` and c.req.param("rawKey") loses its typing.
 widgetRoutes.get("/:rawKey{[A-Za-z0-9_-]+\\.js}", widgetKeyRateLimiter, async c => {
   const rawKey = c.req.param("rawKey").replace(/\.js$/, "")
   const resolved = await widgetService.resolveByRawKey(rawKey)

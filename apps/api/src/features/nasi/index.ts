@@ -8,7 +8,7 @@ import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
-import { openUserTurnStream, pinnedModelFor, resolveModelWithProvider, runUserTurn } from "./chat"
+import { nasiToolDeps, openUserTurnStream, pinnedModelFor, resolveModelWithProvider, runUserTurn } from "./chat"
 import { listPersonas } from "./personas"
 import { createPostgresStore } from "./pg-store"
 
@@ -141,7 +141,7 @@ nasiRoutes.openapi(infoRoute, async c => {
   if (!result) return notFound(c, "No model available")
 
   const persona = (await listPersonas())[0]
-  const tools = await listHostedToolNames()
+  const tools = await listHostedToolNames(nasiToolDeps())
 
   return c.json({
     persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },

@@ -58,7 +58,10 @@ OPTIONS
   --continue, -c  Resume the most recent session (--local only)
   --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
   --session, -s   Resume a session by id (--local only; see: kaja --local session list)
+  --help          Show this help
+  --version       Print the version
 """
+unknownFlag = "{message}. Run `kaja --help` to see the available options."
 
 [config]
 invalidAt = "Invalid config file at {path}: {message}"

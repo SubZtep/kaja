@@ -1,11 +1,13 @@
 import { expect, test } from "bun:test"
 import {
   applyTextEdit,
+  cursorCellOffset,
   historyDirection,
   nextWordBoundary,
   prevWordBoundary,
   type TextEditState
 } from "../../components/elem/text-input"
+import { softWrapLines } from "../../lib/text-wrap"
 
 const emptyKey = {
   upArrow: false,
@@ -256,4 +258,90 @@ test("historyDirection: Ctrl/Meta combos and non-vertical keys stay null", () =>
       meta: false
     })
   ).toBeNull()
+})
+
+// MARK: cursorCellOffset (native cursor / IME anchoring)
+
+test("cursorCellOffset: single line offsets by the prefix width", () => {
+  expect(
+    cursorCellOffset({
+      lines: null,
+      display: "hello",
+      cursorOffset: 3,
+      windowStart: 0,
+      firstLeadWidth: 2,
+      contLeadWidth: 2
+    })
+  ).toEqual({ x: 5, y: 0 })
+})
+
+test("cursorCellOffset: empty input sits at the prefix", () => {
+  expect(
+    cursorCellOffset({ lines: null, display: "", cursorOffset: 0, windowStart: 0, firstLeadWidth: 2, contLeadWidth: 2 })
+  ).toEqual({ x: 2, y: 0 })
+})
+
+test("cursorCellOffset: wide (CJK) characters count as two cells", () => {
+  // The IME case the native cursor exists for: 2 chars, 4 display cells.
+  expect(
+    cursorCellOffset({
+      lines: null,
+      display: "漢字",
+      cursorOffset: 2,
+      windowStart: 0,
+      firstLeadWidth: 0,
+      contLeadWidth: 0
+    })
+  ).toEqual({ x: 4, y: 0 })
+})
+
+test("cursorCellOffset: continuation lines use the hang indent, not the prefix", () => {
+  const lines = softWrapLines("aaaa bbbb", 4)
+  // cursor in the second visual line ("bbbb")
+  const got = cursorCellOffset({
+    lines,
+    display: "aaaa bbbb",
+    cursorOffset: 7,
+    windowStart: 0,
+    firstLeadWidth: 2,
+    contLeadWidth: 3
+  })
+  expect(got.y).toBe(1)
+  expect(got.x).toBe(3 + 2)
+})
+
+test("cursorCellOffset: y is relative to the visible window", () => {
+  const lines = softWrapLines("aaaa bbbb cccc dddd", 4)
+  const scrolled = cursorCellOffset({
+    lines,
+    display: "aaaa bbbb cccc dddd",
+    cursorOffset: 17,
+    windowStart: 2,
+    firstLeadWidth: 0,
+    contLeadWidth: 0
+  })
+  const unscrolled = cursorCellOffset({
+    lines,
+    display: "aaaa bbbb cccc dddd",
+    cursorOffset: 17,
+    windowStart: 0,
+    firstLeadWidth: 0,
+    contLeadWidth: 0
+  })
+  expect(unscrolled.y).toBe(3)
+  expect(scrolled.y).toBe(1)
+})
+
+test("cursorCellOffset: never reports a negative row", () => {
+  const lines = softWrapLines("aaaa bbbb", 4)
+  expect(
+    cursorCellOffset({
+      lines,
+      display: "aaaa bbbb",
+      cursorOffset: 1,
+      windowStart: 5,
+      firstLeadWidth: 0,
+      contLeadWidth: 0
+    }).y
+  ).toBe(0)
 })

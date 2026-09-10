@@ -1,4 +1,5 @@
 import { Box, Text } from "ink"
+import Gradient from "ink-gradient"
 import { useEffect, useState } from "react"
 
 const IDLE = "༼☉ɷ⊙༽" as const
@@ -52,9 +53,9 @@ export function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnim
 
   return (
     <Box>
-      <Text color="#ff1493" bold>
-        {frame}
-      </Text>
+      <Gradient name="rainbow">
+        <Text bold>{frame}</Text>
+      </Gradient>
     </Box>
   )
 }

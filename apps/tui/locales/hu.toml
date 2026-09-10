@@ -58,7 +58,10 @@ OPCIÓK
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
   --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
+  --help          Ennek a súgónak a megjelenítése
+  --version       A verziószám kiírása
 """
+unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opciókért."
 
 [config]
 invalidAt = "Érvénytelen konfigurációs fájl ({path}): {message}"

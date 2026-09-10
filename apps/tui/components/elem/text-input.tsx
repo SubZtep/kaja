@@ -8,15 +8,20 @@
  * cursor so every row shares the same origin (no sibling-Text skew).
  *
  * Ctrl+↑/↓ are left unhandled so the chat viewport can scroll.
+ *
+ * The terminal's real cursor is parked on the painted one via Ink's
+ * `useCursor`, so an IME candidate window (CJK/Taiwanese composition) anchors
+ * to the right spot. The inverse-video block stays the visible cursor.
  */
 
 import chalk from "chalk"
-import { type Key, Text, useInput } from "ink"
-import { useEffect, useMemo, useState } from "react"
+import { Box, type DOMElement, type Key, measureElement, Text, useCursor, useInput, useStdin } from "ink"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { isIgnoredTerminalInput } from "../../lib/terminal-input"
 import {
   clampWindowStart,
   cursorLineIndex,
+  displayColumnAt,
   layoutLines,
   lineEndOffset,
   lineStartOffset,
@@ -271,6 +276,30 @@ export function applyTextEdit(
   }
 }
 
+/**
+ * Where the cursor sits inside the component, in cells relative to its own
+ * top-left. `lines` is the soft-wrapped layout (null for the single-line
+ * renders); `windowStart` is the first visible line, so a scrolled draft
+ * reports the on-screen row rather than the absolute one.
+ */
+export function cursorCellOffset(opts: {
+  lines: VisualLine[] | null
+  display: string
+  cursorOffset: number
+  windowStart: number
+  firstLeadWidth: number
+  contLeadWidth: number
+}): { x: number; y: number } {
+  const { lines, display, cursorOffset, windowStart, firstLeadWidth, contLeadWidth } = opts
+  // Single-line render: one visual line spanning the whole value, so the same display-width maths applies.
+  const layout = lines ?? [{ start: 0, end: display.length, text: display }]
+  if (layout.length === 0) return { x: firstLeadWidth, y: 0 }
+
+  const absLine = cursorLineIndex(layout, cursorOffset)
+  const lead = absLine === 0 ? firstLeadWidth : contLeadWidth
+  return { x: lead + displayColumnAt(layout, cursorOffset), y: Math.max(0, absLine - windowStart) }
+}
+
 /** Paint one visual line with optional inverse cursor (chalk, one string). */
 export function paintLineWithCursor(
   line: VisualLine,
@@ -414,15 +443,19 @@ export function TextInput({
     preferredColumn: null as number | null
   })
   const [windowStart, setWindowStart] = useState(0)
+  const { isRawModeSupported } = useStdin()
+  const boxRef = useRef<DOMElement | null>(null)
+  const { setCursorPosition } = useCursor()
   const { cursorOffset, cursorWidth, preferredColumn } = state
   const hang = Math.max(0, prefixCols)
   const firstLead = prefix
   const contLead = hang > 0 ? " ".repeat(hang) : ""
   const wrapWidth = columns && columns > 0 ? columns : undefined
+  const canFocus = focus && isRawModeSupported
 
   useEffect(() => {
     setState(prev => {
-      if (!focus || !showCursor) return prev
+      if (!canFocus || !showCursor) return prev
       if (prev.cursorOffset > originalValue.length) {
         return {
           cursorOffset: originalValue.length,
@@ -477,7 +510,7 @@ export function TextInput({
       })
       if (result.value !== originalValue) onChange(result.value)
     },
-    { isActive: focus }
+    { isActive: canFocus }
   )
 
   const display = mask ? mask.repeat(originalValue.length) : originalValue
@@ -495,9 +528,31 @@ export function TextInput({
     setWindowStart(prev => clampWindowStart(cLine, prev, maxVis, lines.length))
   }, [lines, cursorOffset, maxVis])
 
+  const cursorActive = showCursor && canFocus
+
+  // Park the terminal's real cursor on the painted one so an IME candidate window anchors there.
+  // useLayoutEffect (not useEffect): measureElement needs committed layout, and useCursor's own
+  // useInsertionEffect publishes during the same commit.
+  useLayoutEffect(() => {
+    if (!cursorActive || !boxRef.current) {
+      setCursorPosition(undefined)
+      return
+    }
+    const { x, y } = measureElement(boxRef.current)
+    const cell = cursorCellOffset({
+      lines,
+      display,
+      cursorOffset,
+      windowStart,
+      firstLeadWidth: firstLead.length,
+      contLeadWidth: contLead.length
+    })
+    setCursorPosition({ x: x + cell.x, y: y + cell.y })
+  }, [cursorActive, lines, display, cursorOffset, windowStart, firstLead, contLead, setCursorPosition])
+
+  let body: React.ReactNode
   if (lines && maxVis) {
-    const active = showCursor && cursorVisible && focus
-    return renderWindowed({
+    body = renderWindowed({
       lines,
       windowStart,
       maxVis,
@@ -507,15 +562,18 @@ export function TextInput({
       contLead,
       cursorOffset,
       pasteWidth,
-      active
+      active: cursorActive && cursorVisible
     })
+  } else if (cursorActive) {
+    body = renderActiveSingleLine(display, placeholder, firstLead, cursorVisible, cursorOffset, pasteWidth)
+  } else {
+    body = renderStatic(display, placeholder, firstLead)
   }
 
-  if (showCursor && focus) {
-    return renderActiveSingleLine(display, placeholder, firstLead, cursorVisible, cursorOffset, pasteWidth)
-  }
-
-  return renderStatic(display, placeholder, firstLead)
+  // flexDirection column so the measured origin is the first painted row, whatever the body renders.
+  return (
+    <Box ref={boxRef} flexDirection="column">
+      {body}
+    </Box>
+  )
 }
-
-export default TextInput

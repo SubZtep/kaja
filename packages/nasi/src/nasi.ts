@@ -6,6 +6,7 @@ import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
 import type { Tool } from "./agent/tools"
 import type { NasiStore } from "./store/types"
+import type { NasiToolDeps } from "./tools/deps"
 import { createTools } from "./tools/registry"
 
 export type NasiOpenOptions = {
@@ -16,6 +17,8 @@ export type NasiOpenOptions = {
   personas?: Persona[]
   promptContext?: PromptContext
   owner?: string | null
+  /** Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `fetch_url` needs `fetchProxy`). */
+  deps?: Omit<NasiToolDeps, "chat">
 }
 
 export type NasiTurnInput = NasiTurnRequest & {
@@ -139,7 +142,7 @@ export class Nasi {
   static async open(opts: NasiOpenOptions) {
     const { tools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
-      deps: { chat: opts.chat }
+      deps: { ...opts.deps, chat: opts.chat }
     })
     return new Nasi(opts, tools)
   }

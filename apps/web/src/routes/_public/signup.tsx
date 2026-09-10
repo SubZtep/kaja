@@ -70,6 +70,12 @@ function SignUp() {
           </>
         }
       >
+        {/* Pre-launch notice. Remove before public release. */}
+        <p className="animate-pulse mb-6 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
+          This project is under development. The database may be wiped at any time — please don’t rely on any data you
+          enter here.
+        </p>
+
         <form
           onSubmit={e => {
             e.preventDefault()

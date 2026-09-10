@@ -23,7 +23,6 @@ async function resolveToken(apiUrl: string): Promise<string> {
       const code = `${prompt.userCode.slice(0, 4)}-${prompt.userCode.slice(4)}`
       await writeText(code)
       notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
-        // TODO: validate that notify worked
         if (error) log.warn("Device login notification failed", { error })
       })
 

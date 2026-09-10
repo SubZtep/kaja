@@ -1,7 +1,6 @@
 import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
 import { titleCase } from "@kaja/shared"
 import { Box, Text, type TextProps } from "ink"
-import Gradient from "ink-gradient"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
 import { MonsterMate } from "./monster"
@@ -52,9 +51,9 @@ export function Header({
       <Box gap={1} flexShrink={1} flexGrow={0} minWidth={0} overflow="hidden">
         <MonsterMate />
         <Box overflow="hidden" flexShrink={1} minWidth={0}>
-          <Gradient name="rainbow">
-            <Text wrap="truncate-end">{persona}</Text>
-          </Gradient>
+          <Text color="#ff1493" wrap="truncate-end">
+            {persona}
+          </Text>
         </Box>
       </Box>
       {currentTool ? (
