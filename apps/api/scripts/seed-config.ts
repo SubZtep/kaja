@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // Idempotent upsert of docs/config/{personas,models.fireworks,mcp}.toml into Postgres —
-// the admin-managed defaults the hosted API and `kaja config fetch` now serve from the DB.
+// the admin-managed defaults the cloud API and `kaja config fetch` now serve from the DB.
 // ON CONFLICT DO NOTHING so admin edits made after the first run always survive a re-run.
 // Called by apps/api/migrate.ts after the SQL files, so a deploy seeds a fresh database.
 import { TOML } from "bun"

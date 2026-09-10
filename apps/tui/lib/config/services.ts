@@ -74,7 +74,7 @@ export async function services(): Promise<ResolvedServices> {
 
 const DEFAULT_API_BASE_URL = "https://api.kaja.io"
 
-/** Resolves the hosted API base URL: KAJA_API_URL env → services.toml [api].baseUrl → the default hosted API. Used by both `kaja --remote`/free-tier chat and `kaja config fetch`. */
+/** Resolves the cloud API base URL: KAJA_API_URL env → services.toml [api].baseUrl → the default cloud API. Used by both `kaja --cloud`/free-tier chat and `kaja config fetch`. */
 export async function getApiBaseUrl(): Promise<string> {
   const kajaApiUrl = TuiEnvSchema.shape.KAJA_API_URL.safeParse(process.env.KAJA_API_URL).data
   if (kajaApiUrl) return kajaApiUrl

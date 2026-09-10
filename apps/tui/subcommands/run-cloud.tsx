@@ -49,13 +49,13 @@ async function resolveToken(apiUrl: string): Promise<string> {
 }
 
 /**
- * Hosted path: reached via `--remote`, or by default when no local config
+ * Cloud path: reached via `--cloud`, or by default when no local config
  * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
- * credentials, or device login), then renders LiteApp against hosted Nasi.
+ * credentials, or device login), then renders LiteApp against cloud Nasi.
  * No local agent, no sqlite, no MCP, no shell tools — talks to
  * `<apiUrl>/nasi/*` over SSE.
  */
-export async function runRemoteSubcommand() {
+export async function runCloudSubcommand() {
   const apiUrl = await getApiBaseUrl()
 
   try {

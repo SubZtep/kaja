@@ -12,7 +12,7 @@ what matters — until the job is done.
 
 There are two ways to run it, and you pick per-invocation:
 
-| | **Hosted** (default) | **Local** (`--local`) |
+| | **Cloud** (default) | **Local** (`--local`) |
 |---|---|---|
 | Agent loop runs | on `api.kaja.io` | on your machine |
 | Needs an account | yes (device login) | no |
@@ -39,7 +39,7 @@ In **local mode**, conversation history and memory never leave your computer —
 text files and everything else lives in a single SQLite file. Run your own models locally and no
 internet connection is needed at all.
 
-In **hosted mode**, sessions and memory are stored server-side against your account. See the
+In **cloud mode**, sessions and memory are stored server-side against your account. See the
 [Privacy Policy](/privacy) for what that means in practice.
 
 ---

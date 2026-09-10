@@ -55,7 +55,7 @@ flowchart TD
 
     Reply --> DB
     RunTool --> DB
-    DB[("🗄️ SQLite (local)\nPostgres (hosted)")]
+    DB[("🗄️ SQLite (local)\nPostgres (cloud)")]
     DB -.->|"notes, dataset answers,\nresumed session"| Core
 
     classDef inputs fill:#21262d,stroke:#8b949e,color:#e6edf3
@@ -73,7 +73,7 @@ flowchart TD
 | Front door | Loop runs | Store | Local tools |
 |---|---|---|---|
 | `kaja --local` | your machine | SQLite | ✓ shell, files, MCP, plugins |
-| `kaja` (hosted) | the API | Postgres | ✗ |
+| `kaja` (cloud) | the API | Postgres | ✗ |
 | `kaja telegram` | your machine | SQLite | ✓ |
 | Website [widget](/widget) | the API | Postgres | ✗ |
 

@@ -8,7 +8,7 @@ nav_order: 12.1
 # @kaja/nasi
 
 The agent brain: an OpenAI-compatible tool loop, a store interface, and the built-in tools. Every
-front door in Kaja — terminal, Telegram, hosted chat, widget — runs *this* loop. What differs is
+front door in Kaja — terminal, Telegram, cloud chat, widget — runs *this* loop. What differs is
 who hosts it and what it's allowed to touch.
 
 The package has no Ink, no Hono, no Better Auth, no sqlite, and no pg. It reads no config files.
@@ -33,7 +33,7 @@ flowchart LR
     CLI["apps/tui --local"] -->|"builds Agent directly<br>includeLocalTools: true"| AG
     API["apps/api /nasi"] -->|"Nasi.open()<br>includeLocalTools: false"| AG
     WID["apps/api /widget"] -->|"Nasi.open()"| AG
-    LITE["apps/tui hosted"] -->|"@kaja/nasi/client<br>HTTP + SSE"| API
+    LITE["apps/tui cloud"] -->|"@kaja/nasi/client<br>HTTP + SSE"| API
 
     ST -.-> SQ[("SQLite<br><small>apps/tui</small>")]
     ST -.-> PG[("Postgres<br><small>apps/api</small>")]
@@ -45,7 +45,7 @@ flowchart LR
 | CLI `--local` | builds an `Agent` and calls `run()` in-process | SQLite | ✓ |
 | API `/nasi` | `Nasi.open()` scoped to the signed-in account | Postgres | ✗ |
 | API `/widget` | `Nasi.open()` scoped to the key's owner, namespaced per visitor | Postgres | ✗ |
-| CLI hosted | no loop at all — `@kaja/nasi/client` over HTTP | (server's) | ✗ |
+| CLI cloud | no loop at all — `@kaja/nasi/client` over HTTP | (server's) | ✗ |
 
 ## Two entry points
 
@@ -54,7 +54,7 @@ flowchart LR
 | `@kaja/nasi` | `Nasi`, `Agent`, `run()`, the store interface, the tools. Pulls in the loop. |
 | `@kaja/nasi/client` | `createNasiClient` only — the HTTP/SSE client. Must never import the loop. |
 
-That split is what keeps the hosted CLI small: it ships the client, not the agent.
+That split is what keeps the cloud CLI small: it ships the client, not the agent.
 
 ## Inputs and outputs
 
@@ -185,7 +185,7 @@ rewrites it in place. It concatenates whichever of these blocks apply, in order:
 1. the persona's `instructions` (or none, for the default agent)
 2. `## Environment` — OS/home line, or the host's override (`PromptContext.environment`), plus a
    resolved location block when geolocation is available
-3. `## Tool contract: ask_user` — only when that tool is in the registry; hosted hosts override the
+3. `## Tool contract: ask_user` — only when that tool is in the registry; cloud hosts override the
    terminal-flavored default via `PromptContext.askUserInstruction`
 4. `## Tool contract: run_command` — only when `includeLocalTools` exposed it
 5. `## Tool contract: memory` — only when `remember_note` is in the registry
@@ -195,7 +195,7 @@ rewrites it in place. It concatenates whichever of these blocks apply, in order:
 8. sticky memory notes (from the store, or `PromptContext.loadStickyNotes`)
 9. a reply-language instruction (`PromptContext.replyLanguageInstruction`)
 
-Every block is conditional on what's actually wired up, so the prompt a hosted turn sees is
+Every block is conditional on what's actually wired up, so the prompt a cloud turn sees is
 strictly a subset of what a local `--local` session sees.
 
 ## Store and ownership
@@ -212,14 +212,14 @@ other's chats.
 ## Tool exposure
 
 `createTools({ includeLocalTools })` decides the registry. The default is **off**: only an explicit
-allowlist of hosted-safe built-ins is returned, so a newly added tool is never hosted-exposed by
+allowlist of cloud-safe built-ins is returned, so a newly added tool is never cloud-exposed by
 accident. Turning it on adds file, shell, MCP, and plugin tools. See [Tools](/tools) for the
 resulting list.
 
 Some built-ins are gated on a **dep** as well as the allowlist — they only register when the host
 supplies what they need: `web_search` needs `webSearchApiKey`, `generate_image` needs
-`imageGeneration`, and hosted `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`
-unconditionally, since it fetches from the user's own machine; hosted egresses from the server, so
+`imageGeneration`, and cloud `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`
+unconditionally, since it fetches from the user's own machine; cloud egresses from the server, so
 without a proxy the tool is left out rather than fetching directly. Failing closed is deliberate —
 a proxied fetch that can't reach its proxy raises `ProxyUnavailableError` instead of retrying
 direct, which would silently defeat the point of configuring one.
@@ -228,4 +228,4 @@ direct, which would silently defeat the point of configuring one.
 
 Next:
 
-[Hosted API](/development/api){: .btn .btn-green .fs-5 }
+[Cloud API](/development/api){: .btn .btn-green .fs-5 }

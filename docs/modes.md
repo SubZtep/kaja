@@ -4,7 +4,7 @@ title: Modes
 nav_order: 3
 ---
 
-# Hosted vs local
+# Cloud vs local
 
 Kaja is one CLI with two ways to get an answer. The difference is *where the agent loop runs*.
 
@@ -15,15 +15,15 @@ config:
   theme: neo-dark
 ---
 flowchart TD
-    Start(["kaja"]) --> Flag{"--local / --remote<br>flag given?"}
+    Start(["kaja"]) --> Flag{"--local / --cloud<br>flag given?"}
     Flag -->|"--local"| Local
-    Flag -->|"--remote"| Hosted
+    Flag -->|"--cloud"| Cloud
     Flag -->|"neither"| Detect{"~/.config/kaja/<br>settings.toml exists?"}
     Detect -->|yes| Local
-    Detect -->|no| Hosted
+    Detect -->|no| Cloud
 
-    subgraph HostedBox["☁️ Hosted"]
-        Hosted["Device login<br>(token in OS keychain)"] --> NasiHTTP["POST /nasi/turn/stream"]
+    subgraph CloudBox["☁️ Cloud"]
+        Cloud["Device login<br>(token in OS keychain)"] --> NasiHTTP["POST /nasi/turn/stream"]
         NasiHTTP --> ServerLoop["Agent loop on the API<br>sessions + memory in Postgres"]
     end
 
@@ -38,29 +38,29 @@ flowchart TD
 With **no flag**, the mode is picked for you:
 
 - a local config exists (`~/.config/kaja/settings.toml`) → **local**
-- no config → **hosted**
+- no config → **cloud**
 
 Force either one explicitly:
 
 ```sh
 kaja --local     # local agent loop, even with no config yet (runs first-run setup)
-kaja --remote    # hosted login, even if a local config exists
+kaja --cloud     # cloud login, even if a local config exists
 ```
 
-## Hosted mode
+## Cloud mode
 
 The default for a fresh install. On first run the CLI does a **device login**: it prints a code,
 you approve it in the browser at [kaja.io/device](https://kaja.io/device), and a single bearer
 token is stored in your OS credential store (`Bun.secrets`, service `kaja-tui`). There is no
 credentials file on disk.
 
-Only one hosted account can be signed in at a time. `kaja logout` clears the token.
+Only one cloud account can be signed in at a time. `kaja logout` clears the token.
 
-> If the OS keychain is unavailable, hosted mode errors out and recommends `--local` — there is no
+> If the OS keychain is unavailable, cloud mode errors out and recommends `--local` — there is no
 > plaintext fallback.
 {: .warning }
 
-What hosted mode **does not** have:
+What cloud mode **does not** have:
 
 - no local SQLite, no `~/.config/kaja` files
 - no shell (`run_command`), no file tools, no MCP servers, no plugin tools
@@ -68,7 +68,7 @@ What hosted mode **does not** have:
   persona catalog and resolves the model
 
 Everything else — memory notes, datasets, `ask_user`, web search, image generation — works, scoped
-to your account. See [Hosted API](/development/api) for the endpoints.
+to your account. See [Cloud API](/development/api) for the endpoints.
 
 ## Local mode
 
@@ -76,7 +76,7 @@ The full agent. The loop, the tools, and the storage all run in your process:
 
 - config from `~/.config/kaja/` ([Configuration](/configuration))
 - sessions, memory notes, and dataset answers in a SQLite file ([Storage](/tui/sqlite))
-- your own provider from `models.toml` — there is **no** silent fallback to hosted free chat; if
+- your own provider from `models.toml` — there is **no** silent fallback to cloud free chat; if
   no chat model is configured, the CLI exits with an error
 - local tools on: files, shell, MCP, plugins
 - `fetch_url` fetches under your own network identity — the server's `WEB_PROXY` does not apply

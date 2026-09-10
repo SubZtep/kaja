@@ -20,7 +20,7 @@ export interface GeoLocation {
 export type GeoLookupConfig = {
   serviceUrl: string
   apiKey?: string
-  /** When set, skip ipify and look this address up (hosted: request IP). */
+  /** When set, skip ipify and look this address up (cloud: request IP). */
   ip?: string
 }
 

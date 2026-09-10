@@ -1,13 +1,13 @@
 import { Box, useWindowSize } from "ink"
-import { useRemoteAgent } from "../../hooks/use-remote-agent"
+import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { t } from "../../lib/i18n"
 import { ChatViewport } from "./chat-viewport"
 import { Header } from "./header"
 import { UserInput } from "./user-input"
 
-/** kaja-lite's counterpart to App: same chat chrome (Header/ChatViewport/UserInput), backed by hosted Nasi over SSE instead of the local Agent loop. No persona/model switching, no run_command confirm, no MCP — hosted never emits those. */
+/** kaja-lite's counterpart to App: same chat chrome (Header/ChatViewport/UserInput), backed by cloud Nasi over SSE instead of the local Agent loop. No persona/model switching, no run_command confirm, no MCP — cloud never emits those. */
 export default function LiteApp({ apiUrl, token }: Readonly<{ apiUrl: string; token: string }>) {
-  const { model, persona, events, partial, pending, send, promptTokens } = useRemoteAgent({
+  const { model, persona, events, partial, pending, send, promptTokens } = useCloudAgent({
     baseUrl: apiUrl,
     getToken: async () => token
   })

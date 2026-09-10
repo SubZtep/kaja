@@ -95,7 +95,7 @@ export async function create() {
   await write(getConfigPath(), TOML.stringify(TEMPLATE_TOML)!)
 }
 
-/** Remote (hosted) config: just the language preference, detected from the system locale. No persona (personas are a local-agent concept) and no stt/tts/memory sections (those don't apply to the hosted client). */
-export async function createRemote() {
+/** Cloud config: just the language preference, detected from the system locale. No persona (personas are a local-agent concept) and no stt/tts/memory sections (those don't apply to the cloud client). */
+export async function createCloud() {
   await write(getConfigPath(), TOML.stringify({ preferences: { language: detectLanguage() } })!)
 }

@@ -1,10 +1,27 @@
 {
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "id": "https://kaja.io",
+  "lang": "en-GB",
+  "dir": "ltr",
   "name": "Kaja.io",
+  "name_localized": {
+    "hu": { "value": "Kaja.io", "lang": "en" },
+    "nan-TW": { "value": "Kaja.io", "lang": "en" }
+  },
   "short_name": "Kaja",
+  "short_name_localized": {
+    "hu": { "value": "Kaja", "lang": "en" },
+    "nan-TW": { "value": "Kaja", "lang": "en" }
+  },
   "description": "Open-source AI agentic harness.",
+  "description_localized": {
+    "hu": "Nyílt forráskódú AI ügynöki eszköz.",
+    "nan-TW": "開源 AI 代理工具。"
+  },
+  "categories": ["entertainment", "lifestyle", "productivity"],
   "start_url": "/",
-  "display": "standalone",
+  "display": "browser",
+  "orientation": "any",
   "background_color": "#131711",
   "theme_color": "#9aa88f",
   "icons": [

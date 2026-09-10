@@ -10,7 +10,7 @@ nav_order: 10
 chat — including the shell-command approve/decline flow, shown as an inline keyboard.
 
 > The bot is **[local mode](/modes) only** — it runs the agent loop on your machine and needs a
-> configured `models.toml`. There is no hosted Telegram bot.
+> configured `models.toml`. There is no cloud Telegram bot.
 {: .note }
 
 Each allowed user gets their own conversation and their own agent state, kept apart by an `owner`

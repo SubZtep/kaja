@@ -294,7 +294,7 @@ describe("nasi", () => {
       expect(res.status).toBe(401)
     })
 
-    test("returns persona label, a model, and the hosted tool list", async () => {
+    test("returns persona label, a model, and the cloud tool list", async () => {
       const res = await app.request("/nasi/info", { headers: { Authorization: `Bearer ${token}` } })
       expect(res.status).toBe(200)
       const body = await res.json()

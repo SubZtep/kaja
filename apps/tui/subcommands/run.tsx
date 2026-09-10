@@ -18,7 +18,7 @@ export async function runSubcommand(cli: typeof Cli) {
   const { chatModelId } = await import("../lib/models/openai")
 
   // --local is the self-configured-provider path: no silent fallback to
-  // Kaja's hosted free tier. Run `kaja` (no flags) for hosted chat instead.
+  // Kaja's cloud free tier. Run `kaja` (no flags) for cloud chat instead.
   await requireConfiguredProvider()
 
   // --continue resumes the most recent session, --session <id> a specific one; either way it's handed to App as a prop

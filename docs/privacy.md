@@ -20,7 +20,7 @@ Kaja can run two ways, and the difference matters here.
 
 **Local mode** (`kaja --local`) runs entirely on your own computer. Your conversations, memory notes, and dataset answers are stored in a SQLite file in your home directory; your configuration is plain text files there too. None of it reaches Kaja's servers. If you point Kaja at a local model, nothing leaves your machine at all; if you point it at a third-party LLM provider, your prompts go to that provider under *their* privacy policy, not this one. **This policy does not apply to local mode**, apart from the account sections if you also have an account.
 
-**Hosted mode** (the default `kaja`, the website, and the embeddable widget) runs the agent on Kaja's servers against an account. That is what this policy covers.
+**Cloud mode** (the default `kaja`, the website, and the embeddable widget) runs the agent on Kaja's servers against an account. That is what this policy covers.
 
 ## Data We Collect
 
@@ -31,7 +31,7 @@ When you create or use an account, Kaja may collect:
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
 - email data needed to send account emails, such as verification, password reset, and email change messages.
 
-When you use **hosted chat**, Kaja additionally stores, against your account:
+When you use **cloud chat**, Kaja additionally stores, against your account:
 
 - conversation content — the messages you send, the assistant's replies, and the tool calls made during a turn;
 - memory notes the assistant writes about you, and answers you give to structured questionnaires (datasets);
@@ -39,7 +39,7 @@ When you use **hosted chat**, Kaja additionally stores, against your account:
 
 When you interact with a **widget** embedded on someone else's website, the same conversation data is stored against *that site owner's* Kaja account, not yours. A random visitor id is kept in your browser's `sessionStorage` to keep one conversation together; it is not a cookie and it does not follow you across sites.
 
-Prompts and replies in hosted mode are sent to the configured LLM provider in order to produce an answer. Kaja does not use your conversations to train models.
+Prompts and replies in cloud mode are sent to the configured LLM provider in order to produce an answer. Kaja does not use your conversations to train models.
 
 IP address handling details:
 
@@ -86,11 +86,11 @@ Personal data may be processed by service providers used to run Kaja, such as:
 - database provider: same as hosting;
 - email/SMTP provider: Gmail SMTP;
 - error monitoring: Sentry, enabled in production on both the API and the website. Kaja does not deliberately send prompts, memory content, or API keys to it;
-- LLM providers: whichever model serves your hosted conversation receives the messages in that conversation;
+- LLM providers: whichever model serves your cloud conversation receives the messages in that conversation;
 - IP geolocation provider, used to derive approximate location as described above;
 - web search provider (Brave), when the assistant runs a search — it receives the search query;
-<!-- TODO: accurate only once WEB_PROXY is set in production. Until then hosted turns have no fetch_url at all — drop this line if the policy ships before the proxy does. -->
-- outbound proxy provider, when the assistant fetches a URL in a hosted conversation — it receives the URL being fetched. Hosted page fetches leave through this proxy rather than directly from Kaja's servers.
+<!-- TODO: accurate only once WEB_PROXY is set in production. Until then cloud turns have no fetch_url at all — drop this line if the policy ships before the proxy does. -->
+- outbound proxy provider, when the assistant fetches a URL in a cloud conversation — it receives the URL being fetched. Cloud page fetches leave through this proxy rather than directly from Kaja's servers.
 
 Kaja may also disclose data if required by law, to protect users, or to investigate abuse or security incidents.
 
@@ -98,7 +98,7 @@ Kaja may also disclose data if required by law, to protect users, or to investig
 
 Kaja keeps account data while your account exists.
 
-Hosted conversations are kept until you or your account delete them. An individual conversation can be deleted at any time through the API's session endpoint, which removes it along with its stored messages.
+Cloud conversations are kept until you or your account delete them. An individual conversation can be deleted at any time through the API's session endpoint, which removes it along with its stored messages.
 
 After account deletion, Kaja will delete or anonymize personal data within 30 days, unless it must be kept longer for security, abuse prevention, backups, or legal reasons.
 

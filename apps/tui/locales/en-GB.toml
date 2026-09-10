@@ -2,7 +2,7 @@
 invalidConfig = "Invalid config file: {path}"
 startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
 bye = "Bye, bye!"
-localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama/llama.cpp, or run `kaja --local config fetch`. For hosted chat instead, run `kaja --remote`."
+localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama/llama.cpp, or run `kaja --local config fetch`. For cloud chat instead, run `kaja --cloud`."
 headlessNoSubcommand = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
 pleaseSignIn = "Please sign in!"
 deviceLoginGoTo = "Go to:"
@@ -50,11 +50,11 @@ COMMANDS
   config <fetch|wipe|paths>  Manage config files
   doctor                     Print configured models, MCP servers and tools, and check connections
   telegram
-  logout                     Log out of the hosted (--remote) account, clearing its stored credential
+  logout                     Log out of the cloud account, clearing its stored credential
 
 OPTIONS
-  --local         Run the local agent loop against your own provider instead of hosted login
-  --remote        Force hosted login even if a local config exists (default)
+  --local         Run the local agent loop against your own provider instead of cloud login
+  --cloud         Force cloud login even if a local config exists (default)
   --continue, -c  Resume the most recent session (--local only)
   --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
   --session, -s   Resume a session by id (--local only; see: kaja --local session list)

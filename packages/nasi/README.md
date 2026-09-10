@@ -30,7 +30,7 @@ Contracts live in `@kaja/schema/nasi` (HTTP turn), `@kaja/schema/store` (SQLite 
 
 - **API** (`apps/api`) opens `Nasi` with a Postgres store scoped to the account (local tools off). `owner` scopes widget/telegram rows within that account.
 - **CLI `--local`** builds an `Agent` itself (`createTools({ includeLocalTools: true, mcpServers, … })`) and calls `run()` — same loop, no HTTP.
-- **CLI hosted / lite** uses `@kaja/nasi/client` against the API. No local sqlite, MCP, or shell.
+- **CLI cloud / lite** uses `@kaja/nasi/client` against the API. No local sqlite, MCP, or shell.
 
 ---
 
