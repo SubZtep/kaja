@@ -126,8 +126,8 @@ function TableHeaderCell({
       >
         {headerContent}
         {{
-          asc: <ArrowDown size={21} className="text-muted" />,
-          desc: <ArrowUp size={21} className="text-muted" />
+          asc: <ArrowUp size={21} className="text-muted" />,
+          desc: <ArrowDown size={21} className="text-muted" />
         }[sorted as string] ?? null}
       </button>
     )
