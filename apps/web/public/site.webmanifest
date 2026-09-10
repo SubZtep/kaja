@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
-  "id": "https://kaja.io",
+  "id": "/",
   "lang": "en-GB",
   "dir": "ltr",
   "name": "Kaja.io",

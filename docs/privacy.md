@@ -89,7 +89,6 @@ Personal data may be processed by service providers used to run Kaja, such as:
 - LLM providers: whichever model serves your cloud conversation receives the messages in that conversation;
 - IP geolocation provider, used to derive approximate location as described above;
 - web search provider (Brave), when the assistant runs a search — it receives the search query;
-<!-- TODO: accurate only once WEB_PROXY is set in production. Until then cloud turns have no fetch_url at all — drop this line if the policy ships before the proxy does. -->
 - outbound proxy provider, when the assistant fetches a URL in a cloud conversation — it receives the URL being fetched. Cloud page fetches leave through this proxy rather than directly from Kaja's servers.
 
 Kaja may also disclose data if required by law, to protect users, or to investigate abuse or security incidents.
