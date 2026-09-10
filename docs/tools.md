@@ -35,6 +35,11 @@ entry in [`models.toml`](/configuration/models).
 egress from the server instead, so it appears only when the server sets `WEB_PROXY` — with
 no proxy configured it is left out of the hosted toolset entirely, rather than fetching directly.
 
+`WEB_PROXY` applies to hosted turns only. Local fetches go out directly from your own machine,
+under your own IP, whether or not a proxy is configured on the server — so a page you fetch in
+local mode sees your address, and the proxy provider's dashboard records nothing. Use
+`kaja --remote` if you want the fetch to leave through the server's proxy.
+
 The **Hosted** column is an explicit allowlist, not a side effect — anything touching your
 filesystem or shell is unavailable when the loop runs on the server, and MCP and plugin tools are
 never attached there.
