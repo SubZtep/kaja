@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
-import { cleanupModel, fakeChatClient, seedModel } from "./helpers"
+import { cleanupModel, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
 
 /** Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt content, while still replying normally. */
 function capturingChatClient(reply: string, onMessages: (messages: unknown[]) => void) {
@@ -77,18 +77,7 @@ describe("nasi", () => {
       client: fakeChatClient("hello from nasi") as never,
       model: "fake-model"
     }))
-    const signUp = await app.request("/auth/sign-up/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name: "Nasi Tester" })
-    })
-    expect(signUp.ok).toBeTrue()
-    const signIn = await app.request("/auth/sign-in/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    })
-    token = (await signIn.json()).token
+    token = await signUpAndSignIn(email, password, "Nasi Tester")
   })
 
   afterAll(() => {

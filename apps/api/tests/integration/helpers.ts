@@ -1,4 +1,6 @@
+import { expect } from "bun:test"
 import { faker } from "@faker-js/faker"
+import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 
 /** Inserts a provider + an enabled/free chat model under it, returning both ids. Caller must `cleanupModel` in `afterAll`. */
@@ -19,6 +21,22 @@ export async function seedModel(namePrefix: string) {
 
 export async function cleanupModel(providerId: string) {
   await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
+}
+
+/** Signs up a fresh user and signs back in, returning the bearer token for authenticated requests. */
+export async function signUpAndSignIn(email: string, password: string, name: string): Promise<string> {
+  const signUp = await app.request("/auth/sign-up/email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, name })
+  })
+  expect(signUp.ok).toBeTrue()
+  const signIn = await app.request("/auth/sign-in/email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  })
+  return (await signIn.json()).token
 }
 
 /** An OpenAI-shaped chat client that streams and finalizes to the same fixed reply. */
