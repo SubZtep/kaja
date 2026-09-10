@@ -1,60 +1,38 @@
-import { error } from "@kaja/logger"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
-import { toast } from "react-toastify"
+import { createFileRoute } from "@tanstack/react-router"
+import { useServerFn } from "@tanstack/react-start"
+import { useState } from "react"
 import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
-import { useAuthClient } from "../../../hooks/auth-client"
+import { stashDeviceCodeAndRedirect } from "../../../lib/device-code"
 import { seo } from "../../../lib/seo"
 
 export const Route = createFileRoute("/_public/device/")({
   validateSearch: z.object({
     user_code: z.string().optional()
   }),
+  loaderDeps: ({ search }) => ({ user_code: search.user_code }),
+  loader: async ({ deps }) => {
+    if (deps.user_code) {
+      await stashDeviceCodeAndRedirect({ data: deps.user_code })
+    }
+  },
   component: DeviceCodePage,
   head: () => ({ meta: seo({ title: "Device Login" }) })
 })
 
 function DeviceCodePage() {
-  const authClient = useAuthClient()
-  const navigate = useNavigate()
-  const search = Route.useSearch()
-  const [userCode, setUserCode] = useState(() => search.user_code ?? "")
+  const stashAndRedirect = useServerFn(stashDeviceCodeAndRedirect)
+  const [userCode, setUserCode] = useState("")
   const [loading, setLoading] = useState(false)
 
   async function login() {
     setLoading(true)
     try {
-      const { data, error } = await authClient.device({ query: { user_code: userCode } })
-      if (error) {
-        toast.error(error.statusText ?? "Invalid or expired code")
-        return
-      }
-      if (data) {
-        if (data.status === "pending") {
-          toast.success("User code accepted, redirecting...")
-          await navigate({
-            to: "/device/approve",
-            search: { user_code: userCode }
-          })
-        } else {
-          toast.error("This code has already been used")
-        }
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong")
-      error("Device code login error", { error: err })
+      await stashAndRedirect({ data: userCode })
     } finally {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    if (userCode.length >= 9) {
-      toast.success("User code accepted, redirecting...")
-      login()
-    }
-  }, [])
 
   return (
     <>

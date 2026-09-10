@@ -28,12 +28,14 @@ async function resolveToken(apiUrl: string): Promise<string> {
         if (error) log.warn("Device login notification failed", { error })
       })
 
-      const url = prompt.verificationUriComplete ?? prompt.verificationUri
-      console.log(`\n${color("lightgray", "ansi")}${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${url}`)
+      console.log(
+        `\n${color("lightgray", "ansi")}${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${prompt.verificationUri}`
+      )
       console.log(
         `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${code}${ANSI_RESET}\n`
       )
 
+      const url = prompt.verificationUriComplete ?? prompt.verificationUri
       open(url).catch(error => log.warn("Failed to open browser for device login", { error }))
     })
     return token

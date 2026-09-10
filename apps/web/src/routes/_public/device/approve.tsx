@@ -1,22 +1,26 @@
 import { formatDeviceUserCode } from "@kaja/shared"
-import { createFileRoute, useLoaderData, useNavigate, useRouter, useSearch } from "@tanstack/react-router"
+import { createFileRoute, redirect, useLoaderData, useNavigate, useRouter } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
-import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
 import { useAuthClient } from "../../../hooks/auth-client"
+import { clearStashedDeviceCode, getStashedDeviceCode } from "../../../lib/device-code"
 import { seo } from "../../../lib/seo"
 
 export const Route = createFileRoute("/_public/device/approve")({
-  validateSearch: z.object({
-    user_code: z.string().optional()
-  }),
+  loader: async () => {
+    const userCode = await getStashedDeviceCode()
+    if (!userCode) {
+      throw redirect({ to: "/device" })
+    }
+    return userCode
+  },
   component: DeviceApprovePage,
   head: () => ({ meta: seo({ title: "Approve Device" }) })
 })
 
 function DeviceApprovePage() {
-  const params = useSearch({ from: "/_public/device/approve" })
+  const userCode = useLoaderData({ from: "/_public/device/approve" })
   const { session, sessionError } = useLoaderData({ from: "__root__" })
   const authClient = useAuthClient()
   const navigate = useNavigate()
@@ -26,23 +30,18 @@ function DeviceApprovePage() {
   const [claimed, setClaimed] = useState(false)
 
   useEffect(() => {
-    if (!sessionError && !session?.user && params.user_code) {
-      navigate({
-        to: "/signin",
-        search: {
-          redirect: `/device/approve?user_code=${encodeURIComponent(params.user_code)}`
-        }
-      })
+    if (!sessionError && !session?.user) {
+      navigate({ to: "/signin", search: { redirect: "/device/approve" } })
     }
-  }, [sessionError, session?.user, params.user_code])
+  }, [sessionError, session?.user])
 
   // Associate this device code with the current session before allowing approve/deny
   useEffect(() => {
-    if (!session?.user || !params.user_code) {
+    if (!session?.user) {
       return
     }
     let cancelled = false
-    authClient.device({ query: { user_code: params.user_code } }).then(({ data, error }) => {
+    authClient.device({ query: { user_code: userCode } }).then(({ data, error }) => {
       if (cancelled) {
         return
       }
@@ -55,7 +54,7 @@ function DeviceApprovePage() {
     return () => {
       cancelled = true
     }
-  }, [session?.user, params.user_code])
+  }, [session?.user, userCode])
 
   if (sessionError) {
     return (
@@ -76,25 +75,6 @@ function DeviceApprovePage() {
   if (!session?.user) {
     return null
   }
-
-  if (!params.user_code || params.user_code.length < 4) {
-    return (
-      <>
-        <h1 className="text-neon-hi/80">{params.user_code ? "Invalid" : "Missing"} user code</h1>
-        <p>
-          Please check the code or the link, and try again.
-          <br />
-          So close to connect.
-        </p>
-        <Button onClick={() => navigate({ to: "/dashboard" })} variant="primary" size="md">
-          Go to Dashboard
-        </Button>
-      </>
-    )
-  }
-
-  // TypeScript now knows user_code is a non-empty string here
-  const user_code: string = params.user_code
 
   if (claimError) {
     return (
@@ -119,11 +99,12 @@ function DeviceApprovePage() {
   async function approve() {
     setLoading(true)
     try {
-      const { error } = await authClient.device.approve({ userCode: user_code })
+      const { error } = await authClient.device.approve({ userCode })
       if (error) {
         toast.error(error.statusText ?? "Failed to approve")
         return
       }
+      await clearStashedDeviceCode()
       toast.success("Device approved — you can return to the TUI.")
       await navigate({ to: "/dashboard" })
     } finally {
@@ -134,11 +115,12 @@ function DeviceApprovePage() {
   async function deny() {
     setLoading(true)
     try {
-      const { error } = await authClient.device.deny({ userCode: user_code })
+      const { error } = await authClient.device.deny({ userCode })
       if (error) {
         toast.error(error.statusText ?? "Failed to deny")
         return
       }
+      await clearStashedDeviceCode()
       toast.info("Request denied.")
       await navigate({ to: "/dashboard" })
     } finally {
@@ -151,7 +133,7 @@ function DeviceApprovePage() {
       <h1>Approve TUI access</h1>
       <p>The Kaja TUI asked to be accessable by your account.</p>
       <p>
-        Code: <span className="text-2xl text-fg tracking-widest font-semibold">{formatDeviceUserCode(user_code)}</span>
+        Code: <span className="text-2xl text-fg tracking-widest font-semibold">{formatDeviceUserCode(userCode)}</span>
       </p>
       <div className="flex gap-2 flex-wrap">
         <Button type="button" loading={loading} onClick={approve} autoFocus>
