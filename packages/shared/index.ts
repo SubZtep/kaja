@@ -1,6 +1,13 @@
 import clsx, { type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+export {
+  renderTelegramHtml,
+  splitTelegramMessage,
+  TELEGRAM_MESSAGE_LIMIT,
+  truncateForStreaming
+} from "./telegram-markdown"
+
 /** Calculates the relative time interval. */
 export function getTimeAgo(time: Date, now = new Date(), locale?: Intl.LocalesArgument) {
   const monthDiff = (dateFrom: Date, dateTo: Date) =>

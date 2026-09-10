@@ -1,11 +1,11 @@
 import { error as logError, warn as logWarn } from "@kaja/logger"
 import { categorizeError, type FinalizedAgentEvent } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
+import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { withLock } from "../../core/lock"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
-import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "./markdown"
 
 const NOT_LINKED_MESSAGE =
   "This Telegram account isn't linked to a Kaja account yet. Go to your profile on the Kaja web app and tap " +

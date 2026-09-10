@@ -5,8 +5,9 @@ Pure shared utilities with no I/O and no app-specific business logic.
 ## Layout
 
 ```
-index.ts    # getTimeAgo, getDateTime, getFirstName, capitalized, cn, isItTrue,
-            # isPublicHttpUrl, randomUUIDv7, titleCase
+index.ts               # getTimeAgo, getDateTime, getFirstName, capitalized, cn, isItTrue,
+                        # isPublicHttpUrl, randomUUIDv7, titleCase — re-exports telegram-markdown.ts
+telegram-markdown.ts    # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT
 ```
 
 ## Notable helpers

@@ -1,10 +1,5 @@
 import { expect, test } from "bun:test"
-import {
-  renderTelegramHtml,
-  splitTelegramMessage,
-  TELEGRAM_MESSAGE_LIMIT,
-  truncateForStreaming
-} from "../../../lib/telegram/markdown"
+import { renderTelegramHtml, splitTelegramMessage, TELEGRAM_MESSAGE_LIMIT, truncateForStreaming } from "../index"
 
 test("bold and italic", () => {
   expect(renderTelegramHtml("**bold** and *italic*")).toBe("<b>bold</b> and <i>italic</i>")

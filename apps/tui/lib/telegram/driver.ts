@@ -1,6 +1,7 @@
 import { samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
+import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "@kaja/shared"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"
@@ -10,7 +11,6 @@ import { t } from "../i18n"
 import { log } from "../logger"
 import type { Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
-import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "./markdown"
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
 const MAX_COMMAND_LINES = 6

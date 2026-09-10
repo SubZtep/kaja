@@ -25,7 +25,6 @@
     "grammy": "^1.46.0",
     "hono": "^4.13.7",
     "hono-rate-limiter": "^0.5.4",
-    "marked": "^18.0.12",
     "nodemailer": "^10.0.3",
     "pg": "^8.23.0",
     "react": "^19.3.0",
