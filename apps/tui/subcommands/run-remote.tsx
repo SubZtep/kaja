@@ -1,6 +1,8 @@
+import { formatDeviceUserCode } from "@kaja/shared"
 import { color } from "bun"
 import { render } from "ink"
 import notifier from "node-notifier"
+import open from "open"
 import { writeText } from "tinyclip"
 import LiteApp from "../components/layout/lite-app"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
@@ -20,18 +22,19 @@ async function resolveToken(apiUrl: string): Promise<string> {
     console.log(t("cli.pleaseSignIn"))
 
     const { token } = await deviceLogin(apiUrl, async prompt => {
-      const code = `${prompt.userCode.slice(0, 4)}-${prompt.userCode.slice(4)}`
+      const code = formatDeviceUserCode(prompt.userCode)
       await writeText(code)
       notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
         if (error) log.warn("Device login notification failed", { error })
       })
 
-      console.log(
-        `\n${color("lightgray", "ansi")}${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${prompt.verificationUri}`
-      )
+      const url = prompt.verificationUriComplete ?? prompt.verificationUri
+      console.log(`\n${color("lightgray", "ansi")}${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${url}`)
       console.log(
         `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${code}${ANSI_RESET}\n`
       )
+
+      open(url).catch(error => log.warn("Failed to open browser for device login", { error }))
     })
     return token
   } catch (error) {

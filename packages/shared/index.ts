@@ -125,6 +125,11 @@ export function randomUUIDv7(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
+/** Formats a device authorization user code for display, e.g. "ABCD2345" → "ABCD-2345". Display-only — never send the dashed form back to the server. */
+export function formatDeviceUserCode(userCode: string) {
+  return userCode.length > 4 ? `${userCode.slice(0, 4)}-${userCode.slice(4)}` : userCode
+}
+
 /**
  * Title-cases a hyphen/underscore/space-separated label or top bar
  * @example "my/kimi-k2" → "Kimi K2".
