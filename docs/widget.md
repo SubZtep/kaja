@@ -66,7 +66,7 @@ conversations.
 A widget turn runs with local tools **off** — no shell, no filesystem, no MCP, no plugins. It gets
 the same hosted allowlist as [hosted CLI chat](/tools#built-ins): memory, datasets, `ask_user`,
 `web_search`, `generate_image`, and the rest. `fetch_url` is included only when the server sets
-`NASI_FETCH_PROXY` — see [Tools](/tools#built-ins).
+`WEB_PROXY` — see [Tools](/tools#built-ins).
 
 ## Types
 

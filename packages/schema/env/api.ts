@@ -82,7 +82,7 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
     .optional()
     .describe("When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only)"),
 
-  NASI_FETCH_PROXY: trimmed
+  WEB_PROXY: trimmed
     .optional()
     .describe("HTTP(S) proxy for hosted fetch_url egress; unset leaves fetch_url out of hosted turns entirely")
     .meta({ example: "http://user:pass@proxy.example.com:8080" })

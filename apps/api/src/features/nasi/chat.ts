@@ -68,7 +68,7 @@ export function setNasiFetchProxyOverride(proxy: string | undefined) {
 
 /** Tool deps every hosted turn runs with. `fetchProxy` unset leaves `fetch_url` out of the hosted tool set entirely — hosted fetches egress from the server, so they go through a proxy or not at all. */
 export function nasiToolDeps() {
-  return { fetchProxy: fetchProxyOverride ?? env.NASI_FETCH_PROXY }
+  return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
 
 /** Shared by hosted (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. */

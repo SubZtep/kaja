@@ -32,7 +32,7 @@ Two are conditional even locally: `web_search` needs `[webSearch]` in
 entry in [`models.toml`](/configuration/models).
 
 `fetch_url` is always available locally, where it fetches from your own machine. Hosted turns
-egress from the server instead, so it appears only when the server sets `NASI_FETCH_PROXY` — with
+egress from the server instead, so it appears only when the server sets `WEB_PROXY` — with
 no proxy configured it is left out of the hosted toolset entirely, rather than fetching directly.
 
 The **Hosted** column is an explicit allowlist, not a side effect — anything touching your
