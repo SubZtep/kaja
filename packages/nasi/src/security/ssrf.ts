@@ -11,12 +11,22 @@ export class UnsafeUrlError extends Error {
   }
 }
 
+/** A proxied fetch that never reached the proxy. Separate from an origin-side failure so "the proxy is down" and "that site is down" are distinguishable in logs; the request is never retried direct, which would silently defeat the proxy. */
+export class ProxyUnavailableError extends Error {
+  constructor(url: string, cause: unknown) {
+    super(`Proxy unreachable fetching ${url}: ${cause instanceof Error ? cause.message : String(cause)}`)
+    this.name = "ProxyUnavailableError"
+  }
+}
+
 /**
  * GET a public http(s) URL. Re-checks each redirect hop against {@link isPublicHttpUrl}.
+ *
+ * @param opts.proxy - HTTP(S) proxy to egress through. Applies to every redirect hop. Fails closed: if the proxy is unreachable the request throws {@link ProxyUnavailableError} rather than falling back to a direct connection.
  */
 export async function fetchPublicHttp(
   url: string,
-  opts?: { timeoutMs?: number; maxBytes?: number; maxRedirects?: number }
+  opts?: { timeoutMs?: number; maxBytes?: number; maxRedirects?: number; proxy?: string }
 ): Promise<Response> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxBytes = opts?.maxBytes ?? DEFAULT_MAX_BYTES
@@ -29,7 +39,15 @@ export async function fetchPublicHttp(
     const timer = setTimeout(() => controller.abort(), timeoutMs)
     let res: Response
     try {
-      res = await fetch(current, { redirect: "manual", signal: controller.signal })
+      res = await fetch(current, {
+        redirect: "manual",
+        signal: controller.signal,
+        ...(opts?.proxy ? { proxy: opts.proxy } : {})
+      })
+    } catch (error) {
+      // A timeout aborts the same way with or without a proxy, so it stays a timeout; anything else on a proxied fetch failed before reaching the origin.
+      if (opts?.proxy && !controller.signal.aborted) throw new ProxyUnavailableError(current, error)
+      throw error
     } finally {
       clearTimeout(timer)
     }

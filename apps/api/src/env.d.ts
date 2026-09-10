@@ -68,6 +68,8 @@ declare module "bun" {
     WIDGET_KEY_RATE_LIMIT_MAX?: string
     /** When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only) */
     NASI_STUB_MODEL?: string
+    /** HTTP(S) proxy for hosted fetch_url egress; unset leaves fetch_url out of hosted turns entirely */
+    NASI_FETCH_PROXY?: string
   }
 }
 

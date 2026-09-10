@@ -30,6 +30,7 @@ const HOSTED_SAFE = new Set([
   "current_time",
   "summarize",
   "rerank",
+  // Only ever reaches a hosted turn with `fetchProxy` set — see the conditional in `builtin` below.
   "fetch_url",
   "web_search",
   "generate_image"
@@ -72,10 +73,13 @@ export async function listHostedToolNames(deps?: NasiToolDeps): Promise<string[]
 export async function createTools(opts: CreateToolsOptions = {}) {
   if (opts.deps) setToolDeps({ ...opts.deps, tempDir: opts.tempDir ?? opts.deps.tempDir })
 
+  const local = opts.includeLocalTools === true
+
   const builtin: Tool<any>[] = [
     readFileTool,
     listFilesTool,
-    fetchUrlTool,
+    // Local fetches from the user's own machine; hosted egresses from the server, so it needs a proxy configured or it stays off.
+    ...(local || opts.deps?.fetchProxy ? [fetchUrlTool] : []),
     viewImageTool,
     summarizeTool,
     rerankTool,
@@ -92,7 +96,6 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     ...(opts.deps?.imageGeneration ? [generateImageTool] : [])
   ]
 
-  const local = opts.includeLocalTools === true
   const tools = local ? builtin : builtin.filter(t => HOSTED_SAFE.has(toolName(t)))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 

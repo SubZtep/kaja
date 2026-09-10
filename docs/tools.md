@@ -16,7 +16,7 @@ MCP servers and plugin tools you've configured.
 | `ask_user` | ask a clarifying question mid-task | ✓ |
 | `switch_persona` | change [persona](/personas) mid-conversation | ✓ |
 | `current_time` | current date and time | ✓ |
-| `fetch_url` | fetch a URL | ✓ |
+| `fetch_url` | fetch a URL | proxy |
 | `summarize` | summarize long text | ✓ |
 | `rerank` | rerank passages against a query | ✓ |
 | `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/memory) | ✓ |
@@ -30,6 +30,10 @@ MCP servers and plugin tools you've configured.
 Two are conditional even locally: `web_search` needs `[webSearch]` in
 [`secrets.toml`](/configuration/secrets), and `generate_image` needs a `[models.image-generation]`
 entry in [`models.toml`](/configuration/models).
+
+`fetch_url` is always available locally, where it fetches from your own machine. Hosted turns
+egress from the server instead, so it appears only when the server sets `NASI_FETCH_PROXY` — with
+no proxy configured it is left out of the hosted toolset entirely, rather than fetching directly.
 
 The **Hosted** column is an explicit allowlist, not a side effect — anything touching your
 filesystem or shell is unavailable when the loop runs on the server, and MCP and plugin tools are

@@ -20,3 +20,21 @@ test("includeLocalTools registers files and shell", async () => {
   expect(names.has("ask_user")).toBe(true)
   await closeTools()
 })
+
+test("hosted fetch_url is off without a proxy", async () => {
+  const { tools, closeTools } = await createTools()
+  expect(tools.map(t => toolName(t))).not.toContain("fetch_url")
+  await closeTools()
+})
+
+test("hosted fetch_url is on with a proxy", async () => {
+  const { tools, closeTools } = await createTools({ deps: { fetchProxy: "http://proxy.example.com:8080" } })
+  expect(tools.map(t => toolName(t))).toContain("fetch_url")
+  await closeTools()
+})
+
+test("local fetch_url needs no proxy", async () => {
+  const { tools, closeTools } = await createTools({ includeLocalTools: true })
+  expect(tools.map(t => toolName(t))).toContain("fetch_url")
+  await closeTools()
+})

@@ -59,6 +59,18 @@ const HOSTED_ASK_USER_INSTRUCTION =
   `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
   `just state the result and stop.`
 
+let fetchProxyOverride: string | undefined
+
+/** Test seam: forces the proxy `nasiToolDeps` reports, so a test can exercise proxy-gated tools without a real proxy. Pass undefined to restore the env value. */
+export function setNasiFetchProxyOverride(proxy: string | undefined) {
+  fetchProxyOverride = proxy
+}
+
+/** Tool deps every hosted turn runs with. `fetchProxy` unset leaves `fetch_url` out of the hosted tool set entirely — hosted fetches egress from the server, so they go through a proxy or not at all. */
+export function nasiToolDeps() {
+  return { fetchProxy: fetchProxyOverride ?? env.NASI_FETCH_PROXY }
+}
+
 /** Shared by hosted (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. */
 export async function openNasiFor(opts: {
   userId: string
@@ -73,8 +85,11 @@ export async function openNasiFor(opts: {
     chat,
     personas,
     owner: opts.owner,
+    deps: nasiToolDeps(),
     promptContext: {
-      environment: "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP.",
+      environment:
+        "You are Kaja hosted chat. You cannot read the user's disk, run a shell, or use MCP. " +
+        "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing.",
       askUserInstruction: HOSTED_ASK_USER_INSTRUCTION,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
