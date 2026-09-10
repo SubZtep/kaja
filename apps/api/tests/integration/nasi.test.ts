@@ -2,24 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
-import { cleanupModel, seedModel } from "./helpers"
-
-function fakeChatClient(reply: string) {
-  return {
-    chat: {
-      completions: {
-        stream: () => ({
-          async *[Symbol.asyncIterator]() {
-            yield { choices: [{ delta: { content: reply } }] }
-          },
-          finalChatCompletion: async () => ({
-            choices: [{ message: { role: "assistant", content: reply } }]
-          })
-        })
-      }
-    }
-  }
-}
+import { cleanupModel, fakeChatClient, seedModel } from "./helpers"
 
 /** Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt content, while still replying normally. */
 function capturingChatClient(reply: string, onMessages: (messages: unknown[]) => void) {

@@ -2,23 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-
-function fakeChatClient(reply: string) {
-  return {
-    chat: {
-      completions: {
-        stream: () => ({
-          async *[Symbol.asyncIterator]() {
-            yield { choices: [{ delta: { content: reply } }] }
-          },
-          finalChatCompletion: async () => ({
-            choices: [{ message: { role: "assistant", content: reply } }]
-          })
-        })
-      }
-    }
-  }
-}
+import { fakeChatClient } from "./helpers"
 
 describe("widget", () => {
   const email = faker.internet.email()

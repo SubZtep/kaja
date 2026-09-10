@@ -20,3 +20,21 @@ export async function seedModel(namePrefix: string) {
 export async function cleanupModel(providerId: string) {
   await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
 }
+
+/** An OpenAI-shaped chat client that streams and finalizes to the same fixed reply. */
+export function fakeChatClient(reply: string) {
+  return {
+    chat: {
+      completions: {
+        stream: () => ({
+          async *[Symbol.asyncIterator]() {
+            yield { choices: [{ delta: { content: reply } }] }
+          },
+          finalChatCompletion: async () => ({
+            choices: [{ message: { role: "assistant", content: reply } }]
+          })
+        })
+      }
+    }
+  }
+}
