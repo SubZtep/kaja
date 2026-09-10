@@ -19,6 +19,33 @@ export class ProxyUnavailableError extends Error {
   }
 }
 
+/** One hop, with its own timeout. Never follows redirects — the caller re-checks each hop's URL before continuing. */
+async function fetchHop(url: string, timeoutMs: number, proxy: string | undefined): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, {
+      redirect: "manual",
+      signal: controller.signal,
+      ...(proxy ? { proxy } : {})
+    })
+  } catch (error) {
+    // A timeout aborts the same way with or without a proxy, so it stays a timeout; anything else on a proxied fetch failed before reaching the origin.
+    if (proxy && !controller.signal.aborted) throw new ProxyUnavailableError(url, error)
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/** The redirect target, or undefined when the response isn't a redirect. */
+function redirectTarget(res: Response, current: string): string | undefined {
+  if (res.status < 300 || res.status >= 400) return undefined
+  const location = res.headers.get("location")
+  if (!location) throw new Error(`Redirect with no Location header from ${current}`)
+  return new URL(location, current).toString()
+}
+
 /**
  * GET a public http(s) URL. Re-checks each redirect hop against {@link isPublicHttpUrl}.
  *
@@ -35,27 +62,11 @@ export async function fetchPublicHttp(
   let current = url
   for (let hop = 0; hop <= maxRedirects; hop++) {
     if (!isPublicHttpUrl(current)) throw new UnsafeUrlError(current)
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
-    let res: Response
-    try {
-      res = await fetch(current, {
-        redirect: "manual",
-        signal: controller.signal,
-        ...(opts?.proxy ? { proxy: opts.proxy } : {})
-      })
-    } catch (error) {
-      // A timeout aborts the same way with or without a proxy, so it stays a timeout; anything else on a proxied fetch failed before reaching the origin.
-      if (opts?.proxy && !controller.signal.aborted) throw new ProxyUnavailableError(current, error)
-      throw error
-    } finally {
-      clearTimeout(timer)
-    }
 
-    if (res.status >= 300 && res.status < 400) {
-      const location = res.headers.get("location")
-      if (!location) throw new Error(`Redirect with no Location header from ${current}`)
-      current = new URL(location, current).toString()
+    const res = await fetchHop(current, timeoutMs, opts?.proxy)
+    const next = redirectTarget(res, current)
+    if (next) {
+      current = next
       continue
     }
 
