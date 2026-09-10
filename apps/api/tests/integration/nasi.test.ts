@@ -2,23 +2,12 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
-import { cleanupModel, seedModel } from "./helpers"
+import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
 
-function fakeChatClient(reply: string) {
-  return {
-    chat: {
-      completions: {
-        stream: () => ({
-          async *[Symbol.asyncIterator]() {
-            yield { choices: [{ delta: { content: reply } }] }
-          },
-          finalChatCompletion: async () => ({
-            choices: [{ message: { role: "assistant", content: reply } }]
-          })
-        })
-      }
-    }
-  }
+const turnRequestInit = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ message: "hi" })
 }
 
 /** Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt content, while still replying normally. */
@@ -94,32 +83,14 @@ describe("nasi", () => {
       client: fakeChatClient("hello from nasi") as never,
       model: "fake-model"
     }))
-    const signUp = await app.request("/auth/sign-up/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name: "Nasi Tester" })
-    })
-    expect(signUp.ok).toBeTrue()
-    const signIn = await app.request("/auth/sign-in/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    })
-    token = (await signIn.json()).token
+    token = await signUpAndSignIn(email, password, "Nasi Tester")
   })
 
   afterAll(() => {
     setNasiChatResolver(undefined)
   })
 
-  test("unauthenticated turn is 401", async () => {
-    const res = await app.request("/nasi/turn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "hi" })
-    })
-    expect(res.status).toBe(401)
-  })
+  test("unauthenticated turn is 401", () => expectUnauthenticated("/nasi/turn", turnRequestInit))
 
   test("turn creates a uuidv7 session and returns the reply", async () => {
     const res = await app.request("/nasi/turn", {
@@ -217,14 +188,7 @@ describe("nasi", () => {
       return events
     }
 
-    test("unauthenticated stream is 401", async () => {
-      const res = await app.request("/nasi/turn/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "hi" })
-      })
-      expect(res.status).toBe(401)
-    })
+    test("unauthenticated stream is 401", () => expectUnauthenticated("/nasi/turn/stream", turnRequestInit))
 
     test("streams delta/message/final events then done with a uuidv7 session", async () => {
       const res = await app.request("/nasi/turn/stream", {
@@ -289,10 +253,7 @@ describe("nasi", () => {
       await cleanupModel(providerId)
     })
 
-    test("unauthenticated info is 401", async () => {
-      const res = await app.request("/nasi/info")
-      expect(res.status).toBe(401)
-    })
+    test("unauthenticated info is 401", () => expectUnauthenticated("/nasi/info"))
 
     test("returns persona label, a model, and the cloud tool list", async () => {
       const res = await app.request("/nasi/info", { headers: { Authorization: `Bearer ${token}` } })

@@ -63,6 +63,6 @@ test("concurrent turns from different stores do not cross-write memory", async (
 
   await Promise.all([nasiA.turnBuffered({ message: "remember this" }), nasiB.turnBuffered({ message: "hi from B" })])
 
-  expect((await storeA.loadMemory()).k).toBeDefined()
-  expect((await storeB.loadMemory()).k).toBeUndefined()
+  expect((await storeA.loadMemory(null)).k).toBeDefined()
+  expect((await storeB.loadMemory(null)).k).toBeUndefined()
 })

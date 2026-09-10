@@ -1,5 +1,6 @@
 import { homedir } from "node:os"
 import type { Persona } from "@kaja/schema/cli"
+import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { loadDataset as defaultLoadDataset } from "../personas"
 import {
@@ -110,12 +111,12 @@ const MEMORY_INSTRUCTIONS =
   "user:, project:, decision: — like user:communication-style, so keys " +
   "stay consistent and don't collide."
 
-async function buildStickyBlock(agent: Agent, hasMemory: boolean): Promise<string | undefined> {
+async function buildStickyBlock(agent: Agent, hasMemory: boolean, owner: string | null): Promise<string | undefined> {
   const ctx = agent.promptContext ?? {}
   const loadSticky =
     ctx.loadStickyNotes ??
     (hasMemory && agent.store
-      ? async () => Object.entries(await agent.store!.loadMemory()).filter(([, note]) => note.sticky)
+      ? async () => Object.entries(await agent.store!.loadMemory(owner)).filter(([, note]) => note.sticky)
       : undefined)
   const stickyNotes = hasMemory && loadSticky ? await loadSticky() : []
   if (stickyNotes.length === 0) return undefined
@@ -155,12 +156,12 @@ async function buildDatasetBlock(agent: Agent, toolNames: Set<string>): Promise<
  * Assembles the system prompt for a fresh session with the given agent.
  * Returns `undefined` if every block is empty.
  */
-export async function buildSystemPrompt(agent: Agent): Promise<string | undefined> {
+export async function buildSystemPrompt(agent: Agent, owner: string | null = LOCAL_OWNER): Promise<string | undefined> {
   const toolNames = new Set(agent.tools.map(t => toolName(t)))
   const ctx = agent.promptContext ?? {}
   const hasMemory = toolNames.has(REMEMBER_NOTE_TOOL)
 
-  const stickyBlock = await buildStickyBlock(agent, hasMemory)
+  const stickyBlock = await buildStickyBlock(agent, hasMemory, owner)
   const environmentBlock = await buildEnvironmentBlock(agent)
   const personasBlock = buildPersonasBlock(agent, toolNames)
   const datasetBlock = await buildDatasetBlock(agent, toolNames)

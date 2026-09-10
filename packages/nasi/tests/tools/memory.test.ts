@@ -36,7 +36,7 @@ test("remember_note upserts by key, preserving createdAt", async () => {
     },
     ctx()
   )
-  const before = await store.loadMemory()
+  const before = await store.loadMemory(null)
   const createdAt = before["user:name"]!.createdAt
 
   await new Promise(r => setTimeout(r, 5))
@@ -49,7 +49,7 @@ test("remember_note upserts by key, preserving createdAt", async () => {
     ctx()
   )
 
-  const after = await store.loadMemory()
+  const after = await store.loadMemory(null)
   expect(Object.keys(after)).toHaveLength(1)
   expect(after["user:name"]!.content).toBe("Andras Serfozo")
   expect(after["user:name"]!.importance).toBe("high")

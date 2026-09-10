@@ -25,7 +25,7 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@mozilla/readability": "^0.6.0",
     "linkedom": "^0.18.13",
-    "openai": "^7.14.0",
+    "openai": "^7.15.0",
     "zod": "^4.6.1"
   }
 }

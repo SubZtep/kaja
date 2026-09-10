@@ -122,7 +122,7 @@ function WidgetPage() {
     queryFn: () => apiFetch<ListWidgetKeysResponse>("/widget/admin").then(r => z.array(widgetKeySchema).parse(r.keys))
   })
 
-  const { data: personas } = useQuery({
+  const { data: personas, error: personasError } = useQuery({
     queryKey: ["personas"],
     queryFn: () => apiFetch<ListPersonasResponse>("/admin/personas").then(r => r.personas)
   })
@@ -210,6 +210,7 @@ function WidgetPage() {
       </PageHeader>
 
       <ErrorNotice error={error} />
+      <ErrorNotice error={personasError} />
 
       <Section className="mb-4" title={m.widget_create_title()}>
         <form

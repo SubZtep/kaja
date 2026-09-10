@@ -1,5 +1,5 @@
 import { getDateTime, getTimeAgo } from "@kaja/shared"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { flexRender, useTable } from "@tanstack/react-table"
 import type { SessionWithImpersonatedBy } from "better-auth/plugins"
 import { MonitorX } from "lucide-react"
@@ -7,7 +7,6 @@ import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { UAParser } from "ua-parser-js"
 import { useAuthClient } from "../../hooks/auth-client"
-import { queryClient } from "../../lib/query"
 import { tableColumnHelper, tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
@@ -43,6 +42,7 @@ const columns = columnHelper.columns([
 
 export function UserSessions({ userId, className }: Readonly<{ userId: string; className?: string }>) {
   const authClient = useAuthClient()
+  const queryClient = useQueryClient()
   const [sessions, setSessions] = useState<SessionWithImpersonatedBy[]>([])
 
   const { data, error, refetch } = useQuery({

@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS "telegram_link_token" (
   "created_at" timestamptz default CURRENT_TIMESTAMP not null,
   "expires_at" timestamptz not null
 );
+
+CREATE INDEX IF NOT EXISTS "telegram_link_token_user_id_idx" ON "telegram_link_token" ("user_id");

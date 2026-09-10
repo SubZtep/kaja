@@ -67,7 +67,7 @@ export async function config() {
   const f = file(configPath)
   if (await f.exists()) {
     try {
-      cached = TOML.parse(await f.text()) as unknown as KajaConfig
+      cached = KajaConfigSchema.parse(TOML.parse(await f.text()))
       return cached
     } catch (error: any) {
       console.log(t("config.invalidAt", { path: configPath, message: error.message }))

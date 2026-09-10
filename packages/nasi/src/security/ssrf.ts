@@ -1,4 +1,5 @@
-import { isPublicHttpUrl } from "@kaja/shared"
+import dns from "node:dns"
+import { isPrivateAddress, isPublicHttpUrl } from "@kaja/shared"
 
 const DEFAULT_TIMEOUT_MS = 8_000
 const DEFAULT_MAX_BYTES = 256 * 1024
@@ -16,6 +17,22 @@ export class ProxyUnavailableError extends Error {
   constructor(url: string, cause: unknown) {
     super(`Proxy unreachable fetching ${url}: ${cause instanceof Error ? cause.message : String(cause)}`)
     this.name = "ProxyUnavailableError"
+  }
+}
+
+/**
+ * `isPublicHttpUrl` only inspects the literal hostname, so a DNS name that resolves to a private/
+ * loopback address (attacker-controlled DNS, or a rebinding attack) sails through it. This resolves
+ * the hostname and rejects if any address it comes back with is private — closing that gap for the
+ * direct-fetch path. Skipped when a `proxy` is set: the proxy does its own egress resolution/policy,
+ * a different trust boundary this check can't see into anyway.
+ */
+async function hasOnlyPublicAddresses(hostname: string): Promise<boolean> {
+  try {
+    const records = await dns.promises.lookup(hostname, { all: true, verbatim: true })
+    return records.length > 0 && records.every(r => !isPrivateAddress(r.address))
+  } catch {
+    return false
   }
 }
 
@@ -89,6 +106,7 @@ export async function fetchPublicHttp(
   let current = url
   for (let hop = 0; hop <= maxRedirects; hop++) {
     if (!isPublicHttpUrl(current)) throw new UnsafeUrlError(current)
+    if (!opts?.proxy && !(await hasOnlyPublicAddresses(new URL(current).hostname))) throw new UnsafeUrlError(current)
 
     const res = await fetchHop(current, timeoutMs, opts?.proxy)
     const next = redirectTarget(res, current)

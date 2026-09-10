@@ -1,4 +1,5 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
+import { LOCAL_OWNER } from "@kaja/schema/store"
 import { toolName } from "../lib/agent/agents"
 import { t } from "../lib/i18n"
 import { checkModelAvailability } from "../lib/models/check"
@@ -83,7 +84,7 @@ export async function runDoctorSubcommand() {
   }
 
   const sessionCount = (await listSessions()).length
-  const memoryNoteCount = Object.keys(await loadMemory()).length
+  const memoryNoteCount = Object.keys(await loadMemory(LOCAL_OWNER)).length
   console.log(t("doctor.stats", { sessionCount, memoryNoteCount }))
 
   await closeTools()

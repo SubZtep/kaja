@@ -33,6 +33,15 @@ function parseToolArgs(raw: string): unknown {
 /** Auto-runs read-only allowlisted commands; otherwise reports a pending confirmation. */
 const AUTO_APPROVE_BINARIES = /^(ls|cat|head|tail|git status|git diff|git log|pwd|whoami|date|uname|echo|true)(\s|$)/
 
+// Shell metacharacters that let a command chain into, pipe into, or substitute in another command
+// (`sh -c` interprets all of these) — auto-approval requires none of them, so the allowlist above
+// only ever matches a single simple invocation, never a smuggled second command.
+const SHELL_METACHARACTERS = /[;&|`$(){}<>\n]/
+
+function isSimpleAllowlistedCommand(command: string): boolean {
+  return !SHELL_METACHARACTERS.test(command) && AUTO_APPROVE_BINARIES.test(command.trim())
+}
+
 async function handleRunCommandCall(
   messages: ChatCompletionMessageParam[],
   call: FunctionToolCall
@@ -51,7 +60,7 @@ async function handleRunCommandCall(
     return undefined
   }
   const autoApprove =
-    args.mutates === false && !isDangerousCommand(args.command) && AUTO_APPROVE_BINARIES.test(args.command.trim())
+    args.mutates === false && !isDangerousCommand(args.command) && isSimpleAllowlistedCommand(args.command)
   if (autoApprove) {
     const result = await runShellCommand(args.command)
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
@@ -352,7 +361,7 @@ export async function* run(
   const messages = session.messages
 
   if (messages.length === 0) {
-    const system = await buildSystemPrompt(agent)
+    const system = await buildSystemPrompt(agent, owner)
     if (system) messages.push({ role: "system", content: system })
   }
 

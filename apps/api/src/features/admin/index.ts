@@ -1,17 +1,18 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { createMiddleware } from "hono/factory"
 import { mcpServerService, modelService, personaService } from "../../services"
-import type { RouteProps } from "../../types"
+import type { RouteProps, RouteVariables } from "../../types"
 import { adminMiddleware, requireAuthMiddleware } from "../auth"
 import { registerAdminMcpServers } from "./mcp-server"
 import { registerAdminModels } from "./model"
 import { registerAdminPersonas } from "./persona"
 
-const attachServices = async (c: any, next: any) => {
+const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
   c.set("mcpServerService", mcpServerService)
   c.set("modelService", modelService)
   c.set("personaService", personaService)
   await next()
-}
+})
 
 /**
  * Platform-admin-only: /admin/mcp-servers/*, /admin/providers/*, /admin/models/*,

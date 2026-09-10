@@ -1,6 +1,13 @@
 import clsx, { type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+export {
+  renderTelegramHtml,
+  splitTelegramMessage,
+  TELEGRAM_MESSAGE_LIMIT,
+  truncateForStreaming
+} from "./telegram-markdown"
+
 /** Calculates the relative time interval. */
 export function getTimeAgo(time: Date, now = new Date(), locale?: Intl.LocalesArgument) {
   const monthDiff = (dateFrom: Date, dateTo: Date) =>
@@ -85,6 +92,24 @@ function extractIpv4MappedAddress(hostname: string): string | null {
   const hi = Number.parseInt(match[1].padStart(4, "0"), 16)
   const lo = Number.parseInt(match[2].padStart(4, "0"), 16)
   return [hi >> 8, hi & 0xff, lo >> 8, lo & 0xff].join(".")
+}
+
+/** Loopback, link-local, and unique-local IPv6 ranges — mirrors {@link isPrivateIpv4}'s IPv4 coverage. */
+function isPrivateIpv6(address: string): boolean {
+  const normalized = address.replace(/^\[|\]$/g, "").toLowerCase()
+  if (normalized === "::1" || normalized === "::") return true
+  if (normalized.startsWith("fe8") || normalized.startsWith("fe9")) return true // fe80::/10 (link-local)
+  if (normalized.startsWith("fea") || normalized.startsWith("feb")) return true
+  if (/^f[cd][0-9a-f]{2}:/.test(normalized)) return true // fc00::/7 (unique local)
+  return false
+}
+
+/** Whether a bare IP address (no scheme/hostname wrapping) falls in a private/loopback/link-local range. */
+export function isPrivateAddress(address: string): boolean {
+  const mappedIpv4 = extractIpv4MappedAddress(address.startsWith("[") ? address : `[${address}]`)
+  if (mappedIpv4) return isPrivateIpv4(mappedIpv4)
+  if (address.includes(":")) return isPrivateIpv6(address)
+  return isPrivateIpv4(address)
 }
 
 /**

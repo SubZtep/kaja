@@ -2,6 +2,7 @@ import { join } from "node:path"
 import type { NasiStore } from "@kaja/nasi"
 import { file, TOML, write } from "bun"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
+import { log } from "../logger"
 import { getPaths } from "../paths"
 import { createSqliteStore } from "../store/sqlite"
 
@@ -24,7 +25,9 @@ async function persistDbPathIfMissing(dbPath: string) {
     if (loose.memory?.dbPath) return
     await write(file(configPath), TOML.stringify({ ...loose, memory: { ...loose.memory, dbPath } })!)
     invalidateConfigCache()
-  } catch {}
+  } catch (error) {
+    log.warn("Failed to persist memory db path to config", { error, dbPath })
+  }
 }
 
 let cached: { path: string; store: NasiStore } | undefined
@@ -46,12 +49,12 @@ export function peekStorePath(): string | undefined {
   return cached?.path
 }
 
-export async function loadMemory() {
-  return (await getStore()).loadMemory()
+export async function loadMemory(...args: Parameters<NasiStore["loadMemory"]>) {
+  return (await getStore()).loadMemory(...args)
 }
 
-export async function saveMemory(store: Parameters<NasiStore["saveMemory"]>[0]) {
-  return (await getStore()).saveMemory(store)
+export async function saveMemory(...args: Parameters<NasiStore["saveMemory"]>) {
+  return (await getStore()).saveMemory(...args)
 }
 
 export async function latestDatasetVersion(...args: Parameters<NasiStore["latestDatasetVersion"]>) {

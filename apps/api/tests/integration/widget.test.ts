@@ -2,23 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-
-function fakeChatClient(reply: string) {
-  return {
-    chat: {
-      completions: {
-        stream: () => ({
-          async *[Symbol.asyncIterator]() {
-            yield { choices: [{ delta: { content: reply } }] }
-          },
-          finalChatCompletion: async () => ({
-            choices: [{ message: { role: "assistant", content: reply } }]
-          })
-        })
-      }
-    }
-  }
-}
+import { fakeChatClient, signUpAndSignIn } from "./helpers"
 
 describe("widget", () => {
   const email = faker.internet.email()
@@ -32,18 +16,7 @@ describe("widget", () => {
       client: fakeChatClient("hello from widget") as never,
       model: "fake-model"
     }))
-    const signUp = await app.request("/auth/sign-up/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name: "Widget Tester" })
-    })
-    expect(signUp.ok).toBeTrue()
-    const signIn = await app.request("/auth/sign-in/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    })
-    token = (await signIn.json()).token
+    token = await signUpAndSignIn(email, password, "Widget Tester")
 
     const createKey = await app.request("/widget/admin", {
       method: "POST",
