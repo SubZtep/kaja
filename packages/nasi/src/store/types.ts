@@ -32,8 +32,8 @@ export type NasiStore = {
   listSessions(): Promise<SessionMeta[]>
   loadPromptHistory(limit?: number): Promise<string[]>
 
-  loadMemory(): Promise<MemoryStore>
-  saveMemory(memory: MemoryStore): Promise<void>
+  loadMemory(owner: string | null): Promise<MemoryStore>
+  saveMemory(owner: string | null, memory: MemoryStore): Promise<void>
 
   latestDatasetVersion(topic: string, owner: string | null): Promise<number>
   loadDatasetAnswers(topic: string, owner: string | null, version: number): Promise<DatasetAnswer[]>

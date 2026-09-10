@@ -46,12 +46,12 @@ export function peekStorePath(): string | undefined {
   return cached?.path
 }
 
-export async function loadMemory() {
-  return (await getStore()).loadMemory()
+export async function loadMemory(...args: Parameters<NasiStore["loadMemory"]>) {
+  return (await getStore()).loadMemory(...args)
 }
 
-export async function saveMemory(store: Parameters<NasiStore["saveMemory"]>[0]) {
-  return (await getStore()).saveMemory(store)
+export async function saveMemory(...args: Parameters<NasiStore["saveMemory"]>) {
+  return (await getStore()).saveMemory(...args)
 }
 
 export async function latestDatasetVersion(...args: Parameters<NasiStore["latestDatasetVersion"]>) {

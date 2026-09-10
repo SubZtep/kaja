@@ -139,7 +139,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
       return prompts
     },
 
-    async loadMemory() {
+    async loadMemory(_owner) {
       const result = await db.query(
         `SELECT key, content, importance, tags, sticky, created_at, last_used_at, use_count
          FROM nasi_note WHERE user_id = $1`,
@@ -160,7 +160,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
       return store
     },
 
-    async saveMemory(store) {
+    async saveMemory(_owner, store) {
       const client = await db.connect()
       try {
         await client.query("BEGIN")

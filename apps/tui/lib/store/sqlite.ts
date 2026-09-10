@@ -12,17 +12,27 @@ function ownerOf(key: string): string | null {
   return key === "" ? null : key
 }
 
+// Pre-existing `notes` tables predate the `owner` column (all rows were implicitly local-owner). Add it in place so upgraded installs keep their notes instead of losing them to the new PRIMARY KEY.
+function migrateNotesOwnerColumn(db: Database) {
+  const columns = db.query("PRAGMA table_info(notes)").all() as { name: string }[]
+  if (columns.length === 0 || columns.some(c => c.name === "owner")) return
+  db.run(`ALTER TABLE notes ADD COLUMN owner TEXT NOT NULL DEFAULT ''`)
+}
+
 function createSchema(db: Database) {
+  migrateNotesOwnerColumn(db)
   db.run(`
     CREATE TABLE IF NOT EXISTS notes (
-      key         TEXT PRIMARY KEY,
+      owner       TEXT NOT NULL,
+      key         TEXT NOT NULL,
       content     TEXT NOT NULL,
       importance  TEXT NOT NULL CHECK (importance IN ('low','medium','high')),
       tags        TEXT NOT NULL,
       sticky      INTEGER NOT NULL,
       createdAt   TEXT NOT NULL,
       lastUsedAt  TEXT NOT NULL,
-      useCount    INTEGER NOT NULL
+      useCount    INTEGER NOT NULL,
+      PRIMARY KEY (owner, key)
     )
   `)
   db.run(`
@@ -196,10 +206,12 @@ export function createSqliteStore(dbPath: string): NasiStore {
       return prompts
     },
 
-    async loadMemory() {
+    async loadMemory(owner) {
       const rows = db
-        .query("SELECT key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount FROM notes")
-        .all() as {
+        .query(
+          "SELECT key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount FROM notes WHERE owner = $owner"
+        )
+        .all({ $owner: ownerKey(owner) }) as {
         key: string
         content: string
         importance: string
@@ -224,15 +236,16 @@ export function createSqliteStore(dbPath: string): NasiStore {
       return store
     },
 
-    async saveMemory(store) {
+    async saveMemory(owner, store) {
       const insert = db.query(`
-        INSERT INTO notes (key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount)
-        VALUES ($key, $content, $importance, $tags, $sticky, $createdAt, $lastUsedAt, $useCount)
+        INSERT INTO notes (owner, key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount)
+        VALUES ($owner, $key, $content, $importance, $tags, $sticky, $createdAt, $lastUsedAt, $useCount)
       `)
-      const deleteAll = db.query("DELETE FROM notes")
+      const deleteOwned = db.query("DELETE FROM notes WHERE owner = $owner")
+      const ownerParam = ownerKey(owner)
       db.transaction(() => {
-        deleteAll.run()
-        for (const [key, note] of Object.entries(store)) insert.run(noteParams(key, note))
+        deleteOwned.run({ $owner: ownerParam })
+        for (const [key, note] of Object.entries(store)) insert.run({ $owner: ownerParam, ...noteParams(key, note) })
       })()
     },
 

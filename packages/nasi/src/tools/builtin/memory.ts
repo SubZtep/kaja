@@ -58,7 +58,8 @@ export const rememberNoteTool = tool<{
   },
   execute: async (args, ctx) => {
     const nasi = requireStore(ctx)
-    const store = await nasi.loadMemory()
+    const owner = ctx?.owner ?? null
+    const store = await nasi.loadMemory(owner)
     const now = new Date().toISOString()
     const existing = store[args.key]
     store[args.key] = {
@@ -70,7 +71,7 @@ export const rememberNoteTool = tool<{
       lastUsedAt: now,
       useCount: existing?.useCount ?? 0
     }
-    await nasi.saveMemory(store)
+    await nasi.saveMemory(owner, store)
     return `Remembered "${args.key}".`
   }
 })
@@ -129,7 +130,8 @@ export const recallMemoryTool = tool<{
   },
   execute: async (args, ctx) => {
     const nasi = requireStore(ctx)
-    const store = await nasi.loadMemory()
+    const owner = ctx?.owner ?? null
+    const store = await nasi.loadMemory(owner)
     const tokens = args.query.toLowerCase().split(/\s+/).filter(Boolean)
 
     const scored = Object.entries(store)
@@ -164,7 +166,7 @@ export const recallMemoryTool = tool<{
     for (const { key, note } of scored) {
       store[key] = { ...note, lastUsedAt: now, useCount: note.useCount + 1 }
     }
-    await nasi.saveMemory(store)
+    await nasi.saveMemory(owner, store)
 
     return result
   }
@@ -207,11 +209,12 @@ export const forgetNoteTool = tool<{
     if (selectors.length !== 1) return "Provide exactly one of: key, tag, pattern."
 
     const nasi = requireStore(ctx)
-    const store = await nasi.loadMemory()
+    const owner = ctx?.owner ?? null
+    const store = await nasi.loadMemory(owner)
     const victims = forgetNotes(store, args)
     if (victims.length === 0) return args.key !== undefined ? "(no note with that key)" : "(no matching notes)"
 
-    await nasi.saveMemory(store)
+    await nasi.saveMemory(owner, store)
     return `Forgot: ${victims.join(", ")}`
   }
 })
@@ -238,7 +241,7 @@ export const listNotesTool = tool<{ full?: boolean }>({
     required: []
   },
   execute: async (args, ctx) => {
-    const store = await requireStore(ctx).loadMemory()
+    const store = await requireStore(ctx).loadMemory(ctx?.owner ?? null)
     const entries = Object.entries(store)
     if (entries.length === 0) return "(no notes stored)"
     return entries

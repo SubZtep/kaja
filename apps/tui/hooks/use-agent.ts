@@ -86,7 +86,7 @@ export function useAgent(
         replyLanguageInstruction: replyLanguageInstructionFor(getLanguage()),
         loadStickyNotes: async () => {
           const { loadMemory } = await import("../lib/memory/store")
-          return Object.entries(await loadMemory()).filter(([, note]) => note.sticky)
+          return Object.entries(await loadMemory(LOCAL_OWNER)).filter(([, note]) => note.sticky)
         },
         loadDataset: async topic => {
           const { loadDataset } = await import("../lib/personas/datasets")

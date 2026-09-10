@@ -20,13 +20,13 @@ const configDir = `${tmpdir()}/kaja-test-xdg-config`
 afterEach(async () => {
   process.env.XDG_DATA_HOME = dataDir
   process.env.XDG_CONFIG_HOME = configDir
-  await saveMemory({})
+  await saveMemory(null, {})
 })
 
 test("loadMemory returns {} for a freshly created store", async () => {
   process.env.XDG_DATA_HOME = dataDir
   process.env.XDG_CONFIG_HOME = configDir
-  expect(await loadMemory()).toEqual({})
+  expect(await loadMemory(null)).toEqual({})
 })
 
 test("saveMemory then loadMemory round-trips", async () => {
@@ -41,14 +41,14 @@ test("saveMemory then loadMemory round-trips", async () => {
     lastUsedAt: "2026-01-01T00:00:00.000Z",
     useCount: 0
   }
-  await saveMemory({ "test:key": note })
-  expect(await loadMemory()).toEqual({ "test:key": note })
+  await saveMemory(null, { "test:key": note })
+  expect(await loadMemory(null)).toEqual({ "test:key": note })
 })
 
 test("saveMemory replaces the whole store (removes keys no longer present)", async () => {
   process.env.XDG_DATA_HOME = dataDir
   process.env.XDG_CONFIG_HOME = configDir
-  await saveMemory({
+  await saveMemory(null, {
     "test:a": {
       content: "a",
       importance: "low",
@@ -59,7 +59,7 @@ test("saveMemory replaces the whole store (removes keys no longer present)", asy
       useCount: 0
     }
   })
-  await saveMemory({
+  await saveMemory(null, {
     "test:b": {
       content: "b",
       importance: "low",
@@ -70,8 +70,26 @@ test("saveMemory replaces the whole store (removes keys no longer present)", asy
       useCount: 0
     }
   })
-  const store = await loadMemory()
+  const store = await loadMemory(null)
   expect(Object.keys(store)).toEqual(["test:b"])
+})
+
+test("saveMemory scopes notes by owner (terminal vs a Telegram user)", async () => {
+  process.env.XDG_DATA_HOME = dataDir
+  process.env.XDG_CONFIG_HOME = configDir
+  const note = {
+    content: "local fact",
+    importance: "low" as const,
+    tags: [],
+    sticky: false,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    lastUsedAt: "2026-01-01T00:00:00.000Z",
+    useCount: 0
+  }
+  await saveMemory(null, { "test:local": note })
+  await saveMemory("telegram:1", { "test:telegram": { ...note, content: "telegram fact" } })
+  expect(await loadMemory(null)).toEqual({ "test:local": note })
+  expect(await loadMemory("telegram:1")).toEqual({ "test:telegram": { ...note, content: "telegram fact" } })
 })
 
 test("data persists across a fresh process (module re-import)", async () => {
@@ -86,13 +104,13 @@ test("data persists across a fresh process (module re-import)", async () => {
     lastUsedAt: "2026-01-01T00:00:00.000Z",
     useCount: 0
   }
-  await saveMemory({ "test:persist": note })
+  await saveMemory(null, { "test:persist": note })
   expect(existsSync(getDefaultMemoryDbPath())).toBe(true)
 
   // Simulate a process restart by running a fresh `bun` invocation against the same on-disk database, instead of re-importing within this process (module-level singletons like the cached Database connection would survive a same-process re-import and wouldn't prove real persistence).
   const result = await Bun.$`XDG_DATA_HOME=${dataDir} XDG_CONFIG_HOME=${configDir} bun -e ${`
       import { loadMemory } from "${join(import.meta.dir, "../../../lib/memory/store.ts")}"
-      console.log(JSON.stringify(await loadMemory()))
+      console.log(JSON.stringify(await loadMemory(null)))
     `}`.text()
   expect(JSON.parse(result.trim())).toEqual({ "test:persist": note })
 })

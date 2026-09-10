@@ -352,7 +352,7 @@ export async function* run(
   const messages = session.messages
 
   if (messages.length === 0) {
-    const system = await buildSystemPrompt(agent)
+    const system = await buildSystemPrompt(agent, owner)
     if (system) messages.push({ role: "system", content: system })
   }
 

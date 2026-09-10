@@ -23,7 +23,7 @@ function datasetKey(topic: string, owner: string | null, version: number, field?
 /** In-memory store for tests and hosts that do not persist. */
 export function createMemoryStore(): NasiStore {
   const sessions = new Map<string, PersistedSession>()
-  let memory: MemoryStore = {}
+  const memoryByOwner = new Map<string, MemoryStore>()
   const answers = new Map<string, DatasetAnswer & { topic: string; owner: string | null; version: number }>()
   const versions = new Map<string, { topic: string; owner: string | null; version: number; completedAt: string }>()
 
@@ -97,12 +97,12 @@ export function createMemoryStore(): NasiStore {
       return prompts
     },
 
-    async loadMemory() {
-      return clone(memory)
+    async loadMemory(owner) {
+      return clone(memoryByOwner.get(ownerKey(owner)) ?? {})
     },
 
-    async saveMemory(next) {
-      memory = clone(next)
+    async saveMemory(owner, next) {
+      memoryByOwner.set(ownerKey(owner), clone(next))
     },
 
     async latestDatasetVersion(topic, owner) {
