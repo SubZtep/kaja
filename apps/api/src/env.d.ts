@@ -70,6 +70,8 @@ declare module "bun" {
     NASI_STUB_MODEL?: string
     /** HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely */
     WEB_PROXY?: string
+    /** BotFather token; when set, starts the always-on cloud Telegram bot */
+    TELEGRAM_BOT_TOKEN?: string
   }
 }
 

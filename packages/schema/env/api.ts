@@ -85,5 +85,10 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
   WEB_PROXY: trimmed
     .optional()
     .describe("HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely")
-    .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" })
+    .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" }),
+
+  TELEGRAM_BOT_TOKEN: trimmed
+    .optional()
+    .describe("BotFather token; when set, starts the always-on cloud Telegram bot")
+    .meta({ secret: true, section: "Telegram" })
 })
