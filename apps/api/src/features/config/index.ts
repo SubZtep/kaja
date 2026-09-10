@@ -1,14 +1,15 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { createMiddleware } from "hono/factory"
 import { env } from "../../core/env"
 import { modelService } from "../../services"
-import type { RouteProps } from "../../types"
+import type { RouteProps, RouteVariables } from "../../types"
 import { unauthorized } from "../../types/errors"
 import { registerGetModel } from "./model-route"
 
-const attachServices = async (c: any, next: any) => {
+const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
   c.set("modelService", modelService)
   await next()
-}
+})
 
 /**
  * Shared-secret bearer for /config/* (no per-user auth).
@@ -20,13 +21,13 @@ export function isValidConfigToken(authHeader: string | undefined | null, token:
   return authHeader === `Bearer ${token}`
 }
 
-const configTokenAuth = async (c: any, next: any) => {
+const configTokenAuth = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
   const token = env.CONFIG_API_TOKEN
   if (!isValidConfigToken(c.req.header("authorization"), token)) {
     return unauthorized(c)
   }
   await next()
-}
+})
 
 export const configRoutes = new OpenAPIHono<RouteProps>()
 configRoutes.use("*", configTokenAuth)
