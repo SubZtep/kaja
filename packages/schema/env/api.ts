@@ -85,5 +85,5 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
   WEB_PROXY: trimmed
     .optional()
     .describe("HTTP(S) proxy for hosted fetch_url egress; unset leaves fetch_url out of hosted turns entirely")
-    .meta({ example: "http://user:pass@proxy.example.com:8080" })
+    .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" })
 })
