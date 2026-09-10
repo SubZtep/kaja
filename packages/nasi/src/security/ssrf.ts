@@ -38,6 +38,33 @@ async function fetchHop(url: string, timeoutMs: number, proxy: string | undefine
   }
 }
 
+/** Reads the body, aborting as soon as it exceeds maxBytes so an oversized response is never buffered whole. */
+async function readCapped(res: Response, maxBytes: number): Promise<ArrayBuffer> {
+  if (!res.body) return new ArrayBuffer(0)
+
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > maxBytes) {
+      await reader.cancel()
+      throw new Error(`Response too large (>${maxBytes} bytes)`)
+    }
+    chunks.push(value)
+  }
+
+  const buf = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    buf.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return buf.buffer
+}
+
 /** The redirect target, or undefined when the response isn't a redirect. */
 function redirectTarget(res: Response, current: string): string | undefined {
   if (res.status < 300 || res.status >= 400) return undefined
@@ -70,8 +97,7 @@ export async function fetchPublicHttp(
       continue
     }
 
-    const buf = await res.arrayBuffer()
-    if (buf.byteLength > maxBytes) throw new Error(`Response too large (${buf.byteLength} bytes)`)
+    const buf = await readCapped(res, maxBytes)
     return new Response(buf, { status: res.status, statusText: res.statusText, headers: res.headers })
   }
   throw new Error(`Too many redirects fetching ${url}`)

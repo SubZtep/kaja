@@ -5,6 +5,9 @@ import { ToolError, tool } from "../../agent/agent"
 import { fetchPublicHttp, ProxyUnavailableError, UnsafeUrlError } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
+/** Raised well above the ssrf default: heavy modern pages run past it, and Readability strips the HTML to a few KB of text before the model ever sees it. */
+const MAX_PAGE_BYTES = 2 * 1024 * 1024
+
 /**
  * Fetches a URL and returns its content as plain text.
  *
@@ -35,7 +38,7 @@ export const fetchUrlTool = tool<{ url: string }>({
   execute: async args => {
     let res: Response
     try {
-      res = await fetchPublicHttp(args.url, { proxy: getToolDeps().fetchProxy })
+      res = await fetchPublicHttp(args.url, { maxBytes: MAX_PAGE_BYTES, proxy: getToolDeps().fetchProxy })
     } catch (error) {
       if (error instanceof UnsafeUrlError) throw new ToolError("fetch_url", error.message)
       // The model (and user) can't act on a proxy outage, so they get a generic failure; the operator needs it named.
