@@ -137,7 +137,7 @@ export class ModelService {
     }
   }
 
-  /** A specific free+enabled model by name, with its resolved provider — used to re-resolve a session's previously pinned model. */
+  /** A specific free+enabled chat model by name, with its resolved provider — used to re-resolve a session's previously pinned model. */
   async getModelWithProviderByName(model: string): Promise<{ model: Model; provider: Provider } | null> {
     const { rows } = await this.#db.query(
       `
@@ -149,7 +149,7 @@ export class ModelService {
              p.updated_at AS provider_updated_at
       FROM model m
       JOIN provider p ON p.id = m.provider_id
-      WHERE m.model = $1 AND m.enabled AND m.free
+      WHERE m.model = $1 AND m.enabled AND m.free AND m.tasks @> ARRAY['chat']::text[]
       LIMIT 1
       `,
       [model]
@@ -171,7 +171,7 @@ export class ModelService {
     }
   }
 
-  /** A random free+enabled model with its resolved provider (GET /config/models). */
+  /** A random free+enabled chat model with its resolved provider (GET /config/models). */
   async getRandomModelWithProvider(): Promise<{ model: Model; provider: Provider } | null> {
     const { rows } = await this.#db.query(
       `
@@ -183,7 +183,7 @@ export class ModelService {
              p.updated_at AS provider_updated_at
       FROM model m
       JOIN provider p ON p.id = m.provider_id
-      WHERE m.enabled AND m.free
+      WHERE m.enabled AND m.free AND m.tasks @> ARRAY['chat']::text[]
       ORDER BY random()
       LIMIT 1
       `
