@@ -2,6 +2,7 @@ import { unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { configExportBundleSchema } from "@kaja/schema/api"
 import { file, write } from "bun"
+import { log } from "../logger"
 import { getPaths } from "../paths"
 import { getApiBaseUrl } from "./services"
 
@@ -14,7 +15,8 @@ async function readCachedEtag(): Promise<string | undefined> {
     const f = file(getEtagCachePath())
     if (!(await f.exists())) return undefined
     return (await f.text()).trim() || undefined
-  } catch {
+  } catch (error) {
+    log.warn("Failed to read cached config etag", { error })
     return undefined
   }
 }
@@ -22,7 +24,9 @@ async function readCachedEtag(): Promise<string | undefined> {
 async function writeCachedEtag(etag: string) {
   try {
     await write(getEtagCachePath(), etag)
-  } catch {}
+  } catch (error) {
+    log.warn("Failed to write cached config etag", { error })
+  }
 }
 
 /** Drops the cached ETag so the next fetch always gets a full body. Called by `kaja config wipe` — the cache lives in the temp dir, so wiping the config dir alone would leave a 304 claiming files are up to date when they no longer exist. */

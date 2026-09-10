@@ -1,5 +1,6 @@
 import { type GeoLocation, lookupMyLocation as nasiLookup } from "@kaja/nasi"
 import { services } from "../config/services"
+import { log } from "../logger"
 
 export type { GeoLocation }
 
@@ -12,7 +13,8 @@ export async function lookupMyLocation(): Promise<GeoLocation> {
 export async function tryLookupMyLocation(): Promise<GeoLocation | undefined> {
   try {
     return await lookupMyLocation()
-  } catch {
+  } catch (error) {
+    log.warn("Failed to look up location", { error })
     return undefined
   }
 }
