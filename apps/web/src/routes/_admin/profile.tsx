@@ -1,4 +1,11 @@
-import { changePasswordSchema, type EditEmailInput, editEmailSchema, editSchema } from "@kaja/schema/api"
+import {
+  changePasswordSchema,
+  type EditEmailInput,
+  editEmailSchema,
+  editSchema,
+  type StartTelegramLinkResponse
+} from "@kaja/schema/api"
+import { useMutation } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import type { User } from "better-auth"
 import { useState } from "react"
@@ -7,6 +14,7 @@ import { Button } from "../../components/form/primitives/Button"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
 import { useAuthClient } from "../../hooks/auth-client"
+import { useApiFetch } from "../../lib/api-fetch"
 import { useAppForm } from "../../lib/form"
 import { userRequired } from "../../lib/loaders"
 import { seo } from "../../lib/seo"
@@ -43,7 +51,43 @@ function Profile() {
         <Section title={m.profile_change_password()}>
           <ChangePassword />
         </Section>
+        <Section title={m.profile_connect_telegram()}>
+          <ConnectTelegram />
+        </Section>
       </div>
+    </div>
+  )
+}
+
+function ConnectTelegram() {
+  const apiFetch = useApiFetch()
+  const [link, setLink] = useState<string | null>(null)
+
+  const createLink = useMutation({
+    mutationFn: () => apiFetch<StartTelegramLinkResponse>("/telegram/admin/link", {}),
+    onSuccess: response => setLink(`https://t.me/${response.botUsername}?start=${response.token}`),
+    onError: (err: Error) => toast.error(err.message || m.profile_telegram_error_failed())
+  })
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-muted text-sm">{m.profile_telegram_description()}</p>
+      <Button
+        type="button"
+        className="mt-2 self-start"
+        loading={createLink.isPending}
+        onClick={() => createLink.mutate()}
+      >
+        {m.profile_telegram_button()}
+      </Button>
+      {link && (
+        <div className="mt-2 rounded-lg border border-border bg-surface p-4">
+          <p className="mb-2 text-fg text-sm">{m.profile_telegram_notice()}</p>
+          <a href={link} target="_blank" rel="noreferrer" className="break-all font-mono text-neon text-sm">
+            {link}
+          </a>
+        </div>
+      )}
     </div>
   )
 }
