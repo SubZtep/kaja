@@ -9,8 +9,8 @@ function toLanguage(value: string | undefined): Language | undefined {
 }
 
 /**
- * i18n first: meow builds --help at module load, so the language must be set
- * before the args import. Precedence: saved config, else the system locale.
+ * i18n first: lib/cli/args.ts prints --help at module load, so the language must
+ * be set before the args import. Precedence: saved config, else the system locale.
  */
 export async function detectAndSetLanguage() {
   const loose = await readConfigLoose()

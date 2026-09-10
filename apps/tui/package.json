@@ -26,7 +26,6 @@
     "ink": "^7.1.1",
     "ink-gradient": "^4.0.1",
     "marked": "^18.0.12",
-    "meow": "^14.1.0",
     "node-emoji": "^2.2.0",
     "node-notifier": "^10.0.1",
     "open": "^11.0.2",
