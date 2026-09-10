@@ -1,7 +1,12 @@
 import { error as logError } from "@kaja/logger"
-import { Bot, GrammyError } from "grammy"
+import { Bot, GrammyError, InlineKeyboard } from "grammy"
 import { telegramLinkService } from "../../services"
 import { createCloudTelegramDriver, TelegramRateLimitError } from "./driver"
+
+/** Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits comfortably. */
+function linkCallbackData(action: "confirm" | "cancel", token: string): string {
+  return `link:${action}:${token}`
+}
 
 export type CreateCloudTelegramBotConfig = {
   botToken: string
@@ -34,9 +39,10 @@ async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> {
 /**
  * The only grammy-aware file: constructs the Bot, implements driver.ts's
  * TelegramSender against bot.api, wires the message handler, and owns
- * startup validation (getMe preflight) and shutdown (bot.stop()). No
- * callback_query handler — cloud Nasi never emits confirm_command, so no
- * inline keyboard is ever sent. driver.ts itself never imports grammy.
+ * startup validation (getMe preflight) and shutdown (bot.stop()). The only
+ * inline keyboard/callback_query use is the account-link confirm/cancel
+ * flow below — cloud Nasi itself never emits confirm_command, so the chat
+ * turn loop in driver.ts never needs one and never imports grammy.
  */
 export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   const bot = new Bot(config.botToken)
@@ -71,17 +77,53 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
       return
     }
 
-    const userId = await telegramLinkService.consumeLinkToken(token)
-    if (!userId) {
+    const pending = await telegramLinkService.peekLinkToken(token)
+    if (!pending) {
       await ctx.reply("That link has expired or was already used. Generate a new one from your Kaja profile.")
       return
     }
 
-    const linked = await telegramLinkService.link(ctx.from.id, userId)
-    await ctx.reply(
+    const keyboard = new InlineKeyboard()
+      .text("✅ Confirm", linkCallbackData("confirm", token))
+      .text("❌ Cancel", linkCallbackData("cancel", token))
+    await ctx.reply(`Link this Telegram account to <b>${pending.email}</b>?`, {
+      parse_mode: "HTML",
+      reply_markup: keyboard
+    })
+  })
+
+  bot.on("callback_query:data", async ctx => {
+    const match = /^link:(confirm|cancel):(.+)$/.exec(ctx.callbackQuery.data)
+    if (!match) return
+    await ctx.answerCallbackQuery()
+
+    const action = match[1] as "confirm" | "cancel"
+    const token = match[2]!
+
+    if (action === "cancel") {
+      await telegramLinkService.deleteLinkToken(token)
+      await ctx.editMessageText("Cancelled — no link was made.")
+      return
+    }
+
+    const pending = await telegramLinkService.peekLinkToken(token)
+    if (!pending) {
+      await ctx.editMessageText("This link was already handled or has expired.")
+      return
+    }
+
+    const deleted = await telegramLinkService.deleteLinkToken(token)
+    if (!deleted) {
+      await ctx.editMessageText("This link was already handled or has expired.")
+      return
+    }
+
+    const linked = await telegramLinkService.link(ctx.from.id, pending.userId)
+    await ctx.editMessageText(
       linked
-        ? "✅ Linked to your Kaja account. Send a message to start chatting."
-        : "This Telegram account is already linked to a different Kaja account."
+        ? `✅ Linked to your Kaja account (<b>${pending.email}</b>). Send a message to start chatting.`
+        : "This Telegram account is already linked to a different Kaja account.",
+      { parse_mode: "HTML" }
     )
   })
 
