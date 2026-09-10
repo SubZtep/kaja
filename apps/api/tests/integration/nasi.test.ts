@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
-import { cleanupModel, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
+import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
 
 /** Captures the `messages` array passed to `stream()` (i.e. the system prompt included) so a test can assert on prompt content, while still replying normally. */
 function capturingChatClient(reply: string, onMessages: (messages: unknown[]) => void) {
@@ -84,14 +84,12 @@ describe("nasi", () => {
     setNasiChatResolver(undefined)
   })
 
-  test("unauthenticated turn is 401", async () => {
-    const res = await app.request("/nasi/turn", {
+  test("unauthenticated turn is 401", () =>
+    expectUnauthenticated("/nasi/turn", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: "hi" })
-    })
-    expect(res.status).toBe(401)
-  })
+    }))
 
   test("turn creates a uuidv7 session and returns the reply", async () => {
     const res = await app.request("/nasi/turn", {
@@ -189,14 +187,12 @@ describe("nasi", () => {
       return events
     }
 
-    test("unauthenticated stream is 401", async () => {
-      const res = await app.request("/nasi/turn/stream", {
+    test("unauthenticated stream is 401", () =>
+      expectUnauthenticated("/nasi/turn/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: "hi" })
-      })
-      expect(res.status).toBe(401)
-    })
+      }))
 
     test("streams delta/message/final events then done with a uuidv7 session", async () => {
       const res = await app.request("/nasi/turn/stream", {
@@ -261,10 +257,7 @@ describe("nasi", () => {
       await cleanupModel(providerId)
     })
 
-    test("unauthenticated info is 401", async () => {
-      const res = await app.request("/nasi/info")
-      expect(res.status).toBe(401)
-    })
+    test("unauthenticated info is 401", () => expectUnauthenticated("/nasi/info"))
 
     test("returns persona label, a model, and the cloud tool list", async () => {
       const res = await app.request("/nasi/info", { headers: { Authorization: `Bearer ${token}` } })

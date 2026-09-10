@@ -39,6 +39,12 @@ export async function signUpAndSignIn(email: string, password: string, name: str
   return (await signIn.json()).token
 }
 
+/** Asserts a request without an Authorization header is rejected with 401. */
+export async function expectUnauthenticated(path: string, init?: RequestInit): Promise<void> {
+  const res = await app.request(path, init)
+  expect(res.status).toBe(401)
+}
+
 /** An OpenAI-shaped chat client that streams and finalizes to the same fixed reply. */
 export function fakeChatClient(reply: string) {
   return {
