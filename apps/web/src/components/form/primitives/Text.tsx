@@ -28,6 +28,12 @@ export function DebouncedText({
 >) {
   const [value, setValue] = useState<string | number>(initialValue)
 
+  // Resyncs when the caller changes `value` from outside (e.g. a "clear filters" action) —
+  // otherwise this input would keep showing stale text even after the real value changed.
+  useEffect(() => {
+    setValue(initialValue)
+  }, [initialValue])
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       onChange?.(value)
