@@ -7,7 +7,7 @@ nav_order: 8
 # Tools
 
 Every session starts with the built-in toolset. In [local mode](/modes) that's joined by whatever
-MCP servers and plugin tools you've configured.
+HTTP tools, MCP servers and plugin tools you've configured.
 
 ## Built-ins
 
@@ -113,6 +113,54 @@ export const diceTool = {
 
 `execute` returns a string, or `{ text, images?, displayImage? }` when the result includes images.
 A file that throws on import is logged and skipped.
+
+## HTTP tools
+
+An HTTP tool package describes one web API in TOML: where it lives, how it authenticates, and the
+tools the model can call. Packages live in `~/.config/kaja/marketplace/tools/<name>.toml`, synced
+from the marketplace or written by you, and load only when listed in `packages.toml`
+(`tools = ["open-meteo"]`, or pick them with `kaja pkg`):
+
+```toml
+name = "github-issues"                  # must match the file name
+description = "Read and create GitHub issues"
+baseUrl = "https://api.github.com"
+auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }
+headers = { Accept = "application/vnd.github+json" }
+
+[[tools]]
+name = "create_issue"
+description = "Open an issue in a repository"
+method = "POST"                         # GET (default), POST, PUT, PATCH or DELETE
+path = "/repos/{owner}/{repo}/issues"
+
+[tools.parameters]                      # JSON Schema, passed to the model as-is
+type = "object"
+required = ["owner", "repo", "title"]
+
+[tools.parameters.properties.owner]
+type = "string"
+
+[tools.parameters.properties.repo]
+type = "string"
+
+[tools.parameters.properties.title]
+type = "string"
+```
+
+- `{name}` placeholders in `path` are filled from the arguments, URL-encoded, so they can't change
+  the host. The other arguments go to the query string for GET and DELETE, or a JSON body for POST,
+  PUT and PATCH.
+- `auth = { type = "apiKey", ... }` puts the key in a header or query parameter (`in`), with an
+  optional `prefix`. The key lives in `secrets.toml` as `[packages.github-issues] apiKey = "..."`;
+  `kaja pkg` asks for it when you enable the package. Without a key the package is left out, with a
+  warning.
+- GET tools run straight away. Anything else shows the request (method, URL, body) and waits for
+  your approval, in the terminal and in Telegram, like a shell command.
+- The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same
+  way, so the model can react. Redirects to another host are refused, and the key never appears in
+  what the model sees.
+- In local mode a package may call hosts on your own network (Home Assistant, a NAS, Ollama).
 
 ## Names and origins
 

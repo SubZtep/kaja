@@ -1,4 +1,4 @@
-import { samplingOf } from "@kaja/nasi"
+import { runApprovedTool, samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
 import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "@kaja/shared"
@@ -11,6 +11,11 @@ import { t } from "../i18n"
 import { log } from "../logger"
 import type { Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
+
+/** Plain HTML escaping for text inside <pre>: unlike renderTelegramHtml it leaves URLs as text instead of turning them into links. */
+function escapeHtml(text: string): string {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+}
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
 const MAX_COMMAND_LINES = 6
@@ -78,8 +83,8 @@ export type TelegramDriverConfig = {
   }) => Agent
 }
 
-type PendingCommand = {
-  command: string
+/** A run_command (`command`) or an HTTP tool call (`tool`) waiting on the user's tap. */
+type PendingCommand = ({ kind: "command"; command: string } | { kind: "tool"; name: string; arguments: string }) & {
   /** The message text sent for the approval prompt, so resolving it can append a status line in place. */
   body: string
   messageId: number
@@ -316,7 +321,35 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       replyMarkup: keyboard
     })
     state.pendingCommand = {
+      kind: "command",
       command: event.command,
+      body,
+      messageId: sent.messageId
+    }
+  }
+
+  async function sendConfirmTool(
+    chatId: number,
+    state: UserState,
+    event: { name: string; arguments: string; summary: string }
+  ) {
+    const body = [
+      renderTelegramHtml(t("confirmCommand.toolRequest", { name: event.name })),
+      `<pre><code>→ ${escapeHtml(event.summary)}</code></pre>`
+    ].join("\n")
+    // Same correlator as sendConfirmCommand: the provider's tool_call id, already stored on the session.
+    const token = state.session.pendingToolApprovalId!
+    const keyboard: InlineKeyboardLike = [
+      [
+        { text: `✅ ${t("confirmCommand.yes")}`, callback_data: `tool:approve:${token}` },
+        { text: `❌ ${t("confirmCommand.no")}`, callback_data: `tool:decline:${token}` }
+      ]
+    ]
+    const sent = await sender.sendMessage(chatId, body, { replyMarkup: keyboard })
+    state.pendingCommand = {
+      kind: "tool",
+      name: event.name,
+      arguments: event.arguments,
       body,
       messageId: sent.messageId
     }
@@ -356,6 +389,13 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       throttle.cancel()
       if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
       await sendConfirmCommand(chatId, state, event)
+      return true
+    }
+
+    if (event.type === "confirm_tool") {
+      throttle.cancel()
+      if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
+      await sendConfirmTool(chatId, state, event)
       return true
     }
 
@@ -461,27 +501,36 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     await sender.answerCallbackQuery(callbackQueryId)
     if (!allowedUserIds.has(userId)) return
 
-    const match = /^cmd:(approve|decline):(.+)$/.exec(data)
+    const match = /^(cmd|tool):(approve|decline):(.+)$/.exec(data)
     if (!match) return
-    const action = match[1] as "approve" | "decline"
-    const token = match[2]!
+    const kind = match[1] === "cmd" ? "command" : "tool"
+    const action = match[2] as "approve" | "decline"
+    const token = match[3]!
 
     const state = await getUserState(userId)
+    const pendingId = kind === "command" ? state.session.pendingRunCommandId : state.session.pendingToolApprovalId
     // The pressing user's id comes from the callback source (grammy: ctx.from.id), never from the payload, so this can only ever check against *that same user's* pendingCommand — even a leaked/guessed callback_data from another user's session can't cross over.
-    if (!state.pendingCommand || state.session.pendingRunCommandId !== token) {
+    if (state.pendingCommand?.kind !== kind || pendingId !== token) {
       await editSafely(chatId, messageId, t("telegram.commandExpired"), {
         replyMarkup: []
       })
       return
     }
 
-    const { command, body, messageId: pendingMessageId } = state.pendingCommand
+    const pendingCommand = state.pendingCommand
     state.pendingCommand = undefined
     const approved = action === "approve"
     const statusLine = approved ? `✅ ${t("telegram.approved")}` : `❌ ${t("telegram.declined")}`
-    await editSafely(chatId, pendingMessageId, `${body}\n\n${statusLine}`, { replyMarkup: [] })
+    await editSafely(chatId, pendingCommand.messageId, `${pendingCommand.body}\n\n${statusLine}`, { replyMarkup: [] })
 
-    const result = approved ? await runShellCommand(command) : "User declined to run this command."
+    let result: string
+    if (pendingCommand.kind === "command") {
+      result = approved ? await runShellCommand(pendingCommand.command) : "User declined to run this command."
+    } else {
+      result = approved
+        ? await runApprovedTool(state.agent.tools, pendingCommand.name, pendingCommand.arguments)
+        : "User declined this request."
+    }
     // showUserEvent = false: the synthesized shell result isn't something the human typed, so it drives the next turn without rendering as if they said it — matches hooks/use-agent.ts's resolveCommand.
     await runTurn(userId, chatId, state, result, false)
   }

@@ -91,7 +91,7 @@ function Chrome({
   switchPersona,
   pendingCommand,
   runningCommand = false,
-  resolveCommand
+  resolvePending
 }: Readonly<{
   personaLabel: string
   model: string
@@ -111,9 +111,10 @@ function Chrome({
   personas?: Persona[] | { id: string; label: string }[]
   currentPersonaId?: string
   switchPersona?: (next: { id: string; label: string }) => void
-  pendingCommand?: { command: string; description: string }
+  /** A run_command or an HTTP tool call waiting on approval; `command` is the shell command or the request summary. */
+  pendingCommand?: { command: string; description: string; kind: "command" | "tool" }
   runningCommand?: boolean
-  resolveCommand?: (command: string, approved: boolean) => Promise<void>
+  resolvePending?: (approved: boolean) => Promise<void>
 }>) {
   const { thinking, sounds, voice, hotkeyModifier } = usePreferences(initialPreferences)
   useSound(events, sounds)
@@ -133,7 +134,7 @@ function Chrome({
   })
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
-  const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolveCommand)
+  const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
   const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey)
 
   return (
@@ -167,13 +168,14 @@ function Chrome({
           onCancel={() => setPickingPersona(false)}
         />
       )}
-      {showConfirm && pendingCommand && resolveCommand && (
+      {showConfirm && pendingCommand && resolvePending && (
         <ConfirmCommand
           key="confirm-command"
           command={pendingCommand.command}
           description={pendingCommand.description}
+          kind={pendingCommand.kind}
           running={runningCommand}
-          onResolve={approved => resolveCommand(pendingCommand.command, approved)}
+          onResolve={approved => resolvePending(approved)}
         />
       )}
       {bottomChromeKey !== "persona" && !showConfirm && (
@@ -218,6 +220,7 @@ function LocalApp({
     currentTool,
     send,
     resolveCommand,
+    resolveToolApproval,
     runningCommand,
     promptTokens
   } = useAgent({
@@ -247,7 +250,24 @@ function LocalApp({
   }
 
   const lastEvent = events.at(-1)
-  const pendingCommand = !pending && lastEvent?.type === "confirm_command" ? lastEvent : undefined
+  const pendingEvent =
+    !pending && (lastEvent?.type === "confirm_command" || lastEvent?.type === "confirm_tool") ? lastEvent : undefined
+  const pendingCommand =
+    pendingEvent?.type === "confirm_command"
+      ? { command: pendingEvent.command, description: pendingEvent.description, kind: "command" as const }
+      : pendingEvent?.type === "confirm_tool"
+        ? {
+            command: pendingEvent.summary,
+            description: t("confirmCommand.toolRequest", { name: pendingEvent.name }),
+            kind: "tool" as const
+          }
+        : undefined
+  const resolvePending = pendingEvent
+    ? (approved: boolean) =>
+        pendingEvent.type === "confirm_command"
+          ? resolveCommand(pendingEvent.command, approved)
+          : resolveToolApproval(pendingEvent.name, pendingEvent.arguments, approved)
+    : undefined
   const provider = models.find(m => m.model === displayModel)?.provider
 
   return (
@@ -270,7 +290,7 @@ function LocalApp({
       switchPersona={switchPersona}
       pendingCommand={pendingCommand}
       runningCommand={runningCommand}
-      resolveCommand={resolveCommand}
+      resolvePending={resolvePending}
     />
   )
 }

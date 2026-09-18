@@ -11,6 +11,7 @@ import type { Persona } from "@kaja/schema/cli"
 import { tryLookupMyLocation } from "../lib/agent/geo"
 import { getConfigDir } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
+import { secrets } from "../lib/config/secrets"
 import { services } from "../lib/config/services"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
@@ -41,9 +42,18 @@ export async function getDefaultTools(personas: Persona[]) {
     : undefined
 
   const packagesFile = await loadPackagesFile()
+  const { packages: packageSecrets } = await secrets()
   const packages = await loadPackages(
-    createFolderPackageStore({ root: getMarketplaceDir(), enabled: { skills: packagesFile.skills } }),
-    { personas }
+    createFolderPackageStore({
+      root: getMarketplaceDir(),
+      enabled: { skills: packagesFile.skills, tools: packagesFile.tools }
+    }),
+    {
+      personas,
+      getApiKey: name => packageSecrets[name]?.apiKey,
+      // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
+      allowPrivate: true
+    }
   )
 
   return createTools({

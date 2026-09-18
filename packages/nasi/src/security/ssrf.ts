@@ -36,12 +36,22 @@ async function hasOnlyPublicAddresses(hostname: string): Promise<boolean> {
   }
 }
 
+type HopRequest = { method: string; headers?: Record<string, string>; body?: string }
+
 /** One hop, with its own timeout. Never follows redirects — the caller re-checks each hop's URL before continuing. */
-async function fetchHop(url: string, timeoutMs: number, proxy: string | undefined): Promise<Response> {
+async function fetchHop(
+  url: string,
+  timeoutMs: number,
+  proxy: string | undefined,
+  request: HopRequest
+): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     return await fetch(url, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
       redirect: "manual",
       signal: controller.signal,
       ...(proxy ? { proxy } : {})
@@ -90,27 +100,65 @@ function redirectTarget(res: Response, current: string): string | undefined {
   return new URL(location, current).toString()
 }
 
+function isHttpUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url)
+    return protocol === "http:" || protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+/** 303, and 301/302 after a POST, turn into a body-less GET (what browsers do); 307/308 repeat the request as is. */
+function requestAfterRedirect(status: number, request: HopRequest): HopRequest {
+  if (status === 303 || ((status === 301 || status === 302) && request.method === "POST")) {
+    return { method: "GET", headers: request.headers }
+  }
+  return request
+}
+
+export type FetchPublicHttpOptions = {
+  timeoutMs?: number
+  maxBytes?: number
+  maxRedirects?: number
+  proxy?: string
+  /** Default GET. */
+  method?: string
+  headers?: Record<string, string>
+  body?: string
+  /** Skip the private/loopback checks (local mode only: the user's own network is fair game there). Still http(s) only. */
+  allowPrivate?: boolean
+  /** Refuse a redirect to another origin, so credentials in `headers` never reach a host the caller didn't choose. */
+  sameOriginRedirects?: boolean
+}
+
 /**
- * GET a public http(s) URL. Re-checks each redirect hop against {@link isPublicHttpUrl}.
+ * Fetch a public http(s) URL (GET unless `opts.method` says otherwise). Re-checks each redirect hop against {@link isPublicHttpUrl}.
  *
  * @param opts.proxy - HTTP(S) proxy to egress through. Applies to every redirect hop. Fails closed: if the proxy is unreachable the request throws {@link ProxyUnavailableError} rather than falling back to a direct connection.
  */
-export async function fetchPublicHttp(
-  url: string,
-  opts?: { timeoutMs?: number; maxBytes?: number; maxRedirects?: number; proxy?: string }
-): Promise<Response> {
+export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions): Promise<Response> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxBytes = opts?.maxBytes ?? DEFAULT_MAX_BYTES
   const maxRedirects = opts?.maxRedirects ?? DEFAULT_MAX_REDIRECTS
 
   let current = url
+  let request: HopRequest = { method: opts?.method ?? "GET", headers: opts?.headers, body: opts?.body }
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    if (!isPublicHttpUrl(current)) throw new UnsafeUrlError(current)
-    if (!opts?.proxy && !(await hasOnlyPublicAddresses(new URL(current).hostname))) throw new UnsafeUrlError(current)
+    if (opts?.allowPrivate) {
+      if (!isHttpUrl(current)) throw new UnsafeUrlError(current)
+    } else {
+      if (!isPublicHttpUrl(current)) throw new UnsafeUrlError(current)
+      if (!opts?.proxy && !(await hasOnlyPublicAddresses(new URL(current).hostname))) throw new UnsafeUrlError(current)
+    }
 
-    const res = await fetchHop(current, timeoutMs, opts?.proxy)
+    const res = await fetchHop(current, timeoutMs, opts?.proxy, request)
     const next = redirectTarget(res, current)
     if (next) {
+      if (opts?.sameOriginRedirects && new URL(next).origin !== new URL(current).origin) {
+        throw new Error(`Refused a redirect to another host: ${next}`)
+      }
+      request = requestAfterRedirect(res.status, request)
       current = next
       continue
     }

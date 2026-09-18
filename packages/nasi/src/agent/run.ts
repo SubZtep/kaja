@@ -225,6 +225,13 @@ function pushPromptToMessages(session: Session, prompt: string): void {
       content: prompt
     })
     session.pendingClientToolCallId = undefined
+  } else if (session.pendingToolApprovalId) {
+    session.messages.push({
+      role: "tool",
+      tool_call_id: session.pendingToolApprovalId,
+      content: prompt
+    })
+    session.pendingToolApprovalId = undefined
   } else {
     session.messages.push({ role: "user", content: prompt })
   }
@@ -251,12 +258,14 @@ async function* handleToolCalls(
     ask?: { id: string; question: string; note?: string }
     confirm?: { id: string; command: string; description: string }
     clientTool?: { id: string; name: string; arguments: string }
+    approval?: ToolApproval
   },
   void
 > {
   let ask: { id: string; question: string; note?: string } | undefined
   let confirm: { id: string; command: string; description: string } | undefined
   let clientTool: { id: string; name: string; arguments: string } | undefined
+  let approval: ToolApproval | undefined
   for (const call of toolCalls) {
     if (call.type !== "function") continue
 
@@ -280,9 +289,33 @@ async function* handleToolCalls(
       continue
     }
 
+    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call)
+    if (summary !== undefined) {
+      // Only one approval can pause a turn; a second one in the same round is answered now so every tool call keeps a response.
+      if (approval) messages.push({ role: "tool", tool_call_id: call.id, content: ONE_APPROVAL_AT_A_TIME })
+      else approval = { id: call.id, name: call.function.name, arguments: call.function.arguments, summary }
+      continue
+    }
+
     yield* handleToolCall(agent, toolsByName, messages, owner, call)
   }
-  return { ask, confirm, clientTool }
+  // Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
+  if (approval && (ask || confirm || clientTool)) {
+    messages.push({ role: "tool", tool_call_id: approval.id, content: ONE_APPROVAL_AT_A_TIME })
+    approval = undefined
+  }
+  return { ask, confirm, clientTool, approval }
+}
+
+type ToolApproval = { id: string; name: string; arguments: string; summary: string }
+
+const ONE_APPROVAL_AT_A_TIME = "Not run: another step is waiting on the user first. Call this tool again afterwards."
+
+/** The approval summary when `tool` wants the human to confirm this call first, else undefined. */
+function approvalSummaryFor(tool: Tool<any> | undefined, call: FunctionToolCall): string | undefined {
+  if (!tool?.approval) return undefined
+  const args = parseToolArgs(call.function.arguments)
+  return args === null ? undefined : tool.approval(args)
 }
 
 const TRAILING_TOOL_TAG = /<\/(?:parameter|invoke)>\s*$/
@@ -340,7 +373,8 @@ function* handlePendingHandoff(
   session: Session,
   ask: { id: string; question: string; note?: string } | undefined,
   confirm: { id: string; command: string; description: string } | undefined,
-  clientTool: { id: string; name: string; arguments: string } | undefined
+  clientTool: { id: string; name: string; arguments: string } | undefined,
+  approval: ToolApproval | undefined
 ): Generator<AgentEvent, boolean, void> {
   if (ask) {
     session.pendingAskUserId = ask.id
@@ -361,6 +395,12 @@ function* handlePendingHandoff(
   if (clientTool) {
     session.pendingClientToolCallId = clientTool.id
     yield { type: "client_tool_call", name: clientTool.name, arguments: clientTool.arguments }
+    return true
+  }
+
+  if (approval) {
+    session.pendingToolApprovalId = approval.id
+    yield { type: "confirm_tool", name: approval.name, arguments: approval.arguments, summary: approval.summary }
     return true
   }
 
@@ -411,8 +451,14 @@ export async function* run(
     if (typeof message.content === "string" && message.content.trim())
       yield { type: "message", content: message.content }
 
-    const { ask, confirm, clientTool } = yield* handleToolCalls(agent, messages, owner, toolsByName, message.tool_calls)
+    const { ask, confirm, clientTool, approval } = yield* handleToolCalls(
+      agent,
+      messages,
+      owner,
+      toolsByName,
+      message.tool_calls
+    )
 
-    if (yield* handlePendingHandoff(session, ask, confirm, clientTool)) return
+    if (yield* handlePendingHandoff(session, ask, confirm, clientTool, approval)) return
   }
 }

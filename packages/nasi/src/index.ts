@@ -31,6 +31,7 @@ export { runShellCommand } from "./agent/run-command"
 export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
 export {
   LOCAL_OWNER_CTX,
+  runApprovedTool,
   type Tool,
   type ToolContext,
   ToolError,
@@ -50,16 +51,19 @@ export { Nasi, type NasiOpenOptions, type NasiTurnInput } from "./nasi"
 export {
   createFolderPackageStore,
   type FolderPackageStoreOptions,
+  type HttpToolScanEntry,
   type SkillScanEntry,
+  scanHttpTools,
   scanSkills
 } from "./packages/folder-store"
-export { type LoadedPackages, loadPackages } from "./packages/load"
+export { approvalSummary, buildHttpRequest, createHttpTools, type HttpRequestSpec } from "./packages/http-tool"
+export { type LoadedPackages, type LoadPackagesOptions, loadPackages } from "./packages/load"
 export { parseSkillMd } from "./packages/skill-md"
 export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./packages/skills"
 export { type PackageStore, SkillFileError, type SkillSummary } from "./packages/types"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
-export { fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"
+export { type FetchPublicHttpOptions, fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"
 export {
   createMemoryStore,
   type DatasetAnswer,

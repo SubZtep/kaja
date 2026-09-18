@@ -1,7 +1,7 @@
 import { readdir, readFile, realpath, stat } from "node:fs/promises"
 import { isAbsolute, join, relative, resolve, sep } from "node:path"
 import { warn } from "@kaja/logger"
-import { SkillNameSchema } from "@kaja/schema/packages"
+import { type HttpToolPackage, HttpToolPackageSchema, SkillNameSchema } from "@kaja/schema/packages"
 import { parseSkillMd } from "./skill-md"
 import { type PackageStore, SkillFileError, type SkillSummary } from "./types"
 
@@ -15,7 +15,7 @@ export type FolderPackageStoreOptions = {
   /** The marketplace folder; skills live in `<root>/skills/<name>/`. */
   root: string
   /** Package names the host enabled (packages.toml) — only these load. */
-  enabled: { skills: string[] }
+  enabled: { skills: string[]; tools?: string[] }
 }
 
 /** Every file under a skill folder except SKILL.md and hidden/backup files, relative with `/` separators, sorted and capped. */
@@ -85,6 +85,65 @@ async function readConfinedFile(dir: string, file: string): Promise<string | und
   return bytes.toString("utf8")
 }
 
+async function readHttpToolFile(toolsRoot: string, name: string): Promise<HttpToolPackage> {
+  if (!SkillNameSchema.safeParse(name).success) throw new Error(`"${name}" is not a valid package name`)
+  const path = join(toolsRoot, `${name}.toml`)
+  let text: string
+  try {
+    text = await readFile(path, "utf8")
+  } catch {
+    throw new Error(`no ${path}`)
+  }
+  const parsed = HttpToolPackageSchema.safeParse(Bun.TOML.parse(text))
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map(issue => `${issue.path.join(".") || "file"}: ${issue.message}`)
+    throw new Error(`invalid manifest (${issues.join("; ")})`)
+  }
+  if (parsed.data.name !== name) throw new Error(`name "${parsed.data.name}" doesn't match its file "${name}.toml"`)
+  return parsed.data
+}
+
+/** One HTTP tool package found on disk, loadable or not — what a picker shows. */
+export type HttpToolScanEntry = {
+  name: string
+  description?: string
+  /** Host the package calls, shown before enabling. */
+  domain?: string
+  /** Where its key goes, or undefined when it needs none. */
+  auth?: { in: "header" | "query"; name: string }
+  error?: string
+}
+
+/** Every `<root>/tools/*.toml`, enabled or not, with its domain and auth or why it can't load. Sorted by name. */
+export async function scanHttpTools(root: string): Promise<HttpToolScanEntry[]> {
+  const toolsRoot = join(resolve(root), "tools")
+  let entries
+  try {
+    entries = await readdir(toolsRoot, { withFileTypes: true })
+  } catch {
+    return []
+  }
+  const names = entries
+    .filter(entry => entry.isFile() && entry.name.endsWith(".toml") && !HIDDEN.test(entry.name))
+    .map(entry => entry.name.slice(0, -".toml".length))
+    .sort((a, b) => a.localeCompare(b))
+  return Promise.all(
+    names.map(async name => {
+      try {
+        const pkg = await readHttpToolFile(toolsRoot, name)
+        return {
+          name,
+          description: pkg.description,
+          domain: new URL(pkg.baseUrl).host,
+          auth: pkg.auth.type === "apiKey" ? { in: pkg.auth.in, name: pkg.auth.name } : undefined
+        }
+      } catch (error) {
+        return { name, error: error instanceof Error ? error.message : String(error) }
+      }
+    })
+  )
+}
+
 /** One skill folder found on disk, loadable or not — what a picker shows. */
 export type SkillScanEntry = { name: string; description?: string; error?: string }
 
@@ -115,6 +174,7 @@ export async function scanSkills(root: string): Promise<SkillScanEntry[]> {
 /** {@link PackageStore} over a marketplace folder on disk — the CLI's store. */
 export function createFolderPackageStore(opts: FolderPackageStoreOptions): PackageStore {
   const skillsRoot = join(resolve(opts.root), "skills")
+  const toolsRoot = join(resolve(opts.root), "tools")
   const enabled = new Set(opts.enabled.skills)
 
   return {
@@ -128,6 +188,21 @@ export function createFolderPackageStore(opts: FolderPackageStoreOptions): Packa
         }
       }
       return skills
+    },
+
+    async listHttpTools() {
+      const packages: HttpToolPackage[] = []
+      for (const name of new Set(opts.enabled.tools ?? [])) {
+        try {
+          packages.push(await readHttpToolFile(toolsRoot, name))
+        } catch (error) {
+          warn("Skipping enabled HTTP tool package", {
+            package: name,
+            error: error instanceof Error ? error.message : error
+          })
+        }
+      }
+      return packages
     },
 
     async readSkill(name, file) {

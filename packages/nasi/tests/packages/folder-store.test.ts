@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { createFolderPackageStore, scanSkills } from "../../src/packages/folder-store"
+import { createFolderPackageStore, scanHttpTools, scanSkills } from "../../src/packages/folder-store"
 import { SkillFileError } from "../../src/packages/types"
 
 let root: string
@@ -129,4 +129,38 @@ test("scanSkills lists every skill folder, enabled or not, with descriptions or 
 
 test("scanSkills on a missing folder is an empty list", async () => {
   expect(await scanSkills(join(root, "nope"))).toEqual([])
+})
+
+const manifest = (name: string, extra = "") => `name = "${name}"
+description = "The ${name} API"
+baseUrl = "https://api.${name}.test"
+${extra}
+[[tools]]
+name = "${name.replaceAll("-", "_")}_get"
+description = "Get something"
+path = "/things"
+`
+
+test("listHttpTools reads enabled manifests and skips broken or mismatched ones", async () => {
+  put("tools/good.toml", manifest("good"))
+  put("tools/renamed.toml", manifest("other"))
+  put("tools/broken.toml", 'name = "broken"\n')
+  put("tools/off.toml", manifest("off"))
+  const store = createFolderPackageStore({
+    root,
+    enabled: { skills: [], tools: ["good", "renamed", "broken", "missing", "../x"] }
+  })
+  expect((await store.listHttpTools()).map(p => p.name)).toEqual(["good"])
+})
+
+test("scanHttpTools lists every manifest with its domain and key need, or its error", async () => {
+  put("tools/open.toml", manifest("open"))
+  put("tools/keyed.toml", manifest("keyed", 'auth = { type = "apiKey", in = "header", name = "X-Key" }'))
+  put("tools/broken.toml", "not = [valid")
+  put("tools/.hidden.toml", manifest("hidden"))
+  const entries = await scanHttpTools(root)
+  expect(entries.map(e => e.name)).toEqual(["broken", "keyed", "open"])
+  expect(entries[0]!.error).toBeDefined()
+  expect(entries[1]).toMatchObject({ domain: "api.keyed.test", auth: { in: "header", name: "X-Key" } })
+  expect(entries[2]).toMatchObject({ domain: "api.open.test", auth: undefined })
 })

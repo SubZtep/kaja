@@ -13,7 +13,8 @@ function fakeStore(skills: SkillSummary[], files: Record<string, string> = {}): 
     readSkill: async (name, file) => {
       if (file === "../escape") throw new SkillFileError("outside the skill folder")
       return files[file ? `${name}/${file}` : name]
-    }
+    },
+    listHttpTools: async () => []
   }
 }
 
@@ -59,7 +60,7 @@ test("load_skill refuses skills the active persona may not use", async () => {
 })
 
 test("loadPackages adds no tool when no skill is enabled", async () => {
-  expect(await loadPackages(fakeStore([]))).toEqual({ groups: [], skills: [] })
+  expect(await loadPackages(fakeStore([]))).toEqual({ groups: [], skills: [], httpTools: [], missingKeys: [] })
 })
 
 test("loadPackages survives a store that throws", async () => {
@@ -67,9 +68,12 @@ test("loadPackages survives a store that throws", async () => {
     listSkills: async () => {
       throw new Error("EACCES")
     },
-    readSkill: async () => undefined
+    readSkill: async () => undefined,
+    listHttpTools: async () => {
+      throw new Error("EACCES")
+    }
   }
-  expect(await loadPackages(broken)).toEqual({ groups: [], skills: [] })
+  expect(await loadPackages(broken)).toEqual({ groups: [], skills: [], httpTools: [], missingKeys: [] })
 })
 
 test("loadPackages adds load_skill as an official tool carrying the skill list", async () => {

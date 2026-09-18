@@ -5,6 +5,9 @@
 # Skills, by folder name: marketplace/skills/<name>/SKILL.md
 skills = []
 
+# HTTP tool packages, by file name: marketplace/tools/<name>.toml
+tools = []
+
 # Where `kaja pkg update` fetches the marketplace from. Defaults to the Kaja
 # repo's main branch; a local path works too, for testing your own changes.
 # [source]

@@ -23,7 +23,11 @@ test("returns undefined for an unknown language code", () => {
 
 const pdfSkill: SkillSummary = { name: "pdf", description: "Work with PDF files.", files: [] }
 const notesSkill: SkillSummary = { name: "notes", description: "Keep notes.", files: [] }
-const noStore: PackageStore = { listSkills: async () => [], readSkill: async () => undefined }
+const noStore: PackageStore = {
+  listSkills: async () => [],
+  readSkill: async () => undefined,
+  listHttpTools: async () => []
+}
 
 function skillAgent(opts: { persona?: Persona; withRunCommand?: boolean; skills?: SkillSummary[] }) {
   const personas = opts.persona ? [opts.persona] : []

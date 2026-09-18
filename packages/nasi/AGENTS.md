@@ -21,7 +21,7 @@ src/
   tools/             # builtin tools + createTools({ includeLocalTools })
   mcp/               # includeLocalTools only
   plugin/            # includeLocalTools only
-  packages/          # PackageStore interface, folder store, loadPackages, load_skill (skills)
+  packages/          # PackageStore interface, folder store, loadPackages, load_skill (skills), HTTP tool executor
   client/            # HTTP client for lite CLI: turn() buffered, turn_stream() SSE (no sqlite / loop)
   security/          # SSRF + path guard
 ```
@@ -30,6 +30,7 @@ src/
 
 - No reads of `settings.toml`. Hosts inject store, model client, prompt context.
 - `includeLocalTools` (default false): files, shell, MCP, plugins.
+- A tool may set `approval(args)`: when it returns a summary, run() pauses with `confirm_tool` (`session.pendingToolApprovalId`) instead of executing, and the host runs it via `runApprovedTool` once the human approves — same shape as run_command's `confirm_command`. Non-GET HTTP tools use this.
 - Every tool goes through `mergeTools` (`tools/registry.ts`): one namespace, each tool stamped `origin` (`official` built-ins, `community` packages, `third-party` MCP/plugins) + `source`. Official names are reserved; other clashes keep the first (community before third-party) and land in `skipped`. Host-provided tools come in through `createTools`' `extraTools`, never appended afterwards.
 - Packages come from a host-provided `PackageStore` (`createFolderPackageStore` for the CLI); `loadPackages` returns extra tools the host appends. A broken package is skipped with a warning, never thrown.
 - Parameterized SQL only. Session ids are UUIDv7 text.

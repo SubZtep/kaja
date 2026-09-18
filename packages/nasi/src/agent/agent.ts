@@ -202,6 +202,8 @@ export type Session = {
   pendingAskUserId?: string
   pendingRunCommandId?: string
   pendingClientToolCallId?: string
+  /** A tool call waiting on the human's approval (see `Tool.approval`); the host answers it by running the tool itself. */
+  pendingToolApprovalId?: string
 }
 
 export function createSession(): Session {
@@ -224,6 +226,7 @@ export type AgentEvent =
   | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }
   | { type: "client_tool_call"; name: string; arguments: string }
+  | { type: "confirm_tool"; name: string; arguments: string; summary: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "final"; content: string | null }
   | { type: "usage"; promptTokens?: number; model?: string }

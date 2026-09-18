@@ -364,6 +364,69 @@ test("confirm_command sends an approval keyboard, and approving runs the command
   expect(edited.at(-1)!.text).toBe("Done.")
 })
 
+function approvalTool(executed: unknown[]): Tool<never> {
+  return {
+    ...tool<{ title: string }>({
+      name: "create_issue",
+      description: "Create an issue",
+      parameters: { type: "object", properties: { title: { type: "string" } } },
+      execute: async args => {
+        executed.push(args)
+        return `created ${args.title}`
+      }
+    }),
+    approval: (args: { title: string }) => `POST https://api.example.com/issues {"title":"${args.title}"}`
+  } as unknown as Tool<never>
+}
+
+const approvalScript: FakeMessage[] = [
+  {
+    content: null,
+    tool_calls: [{ id: "call_t", type: "function", function: { name: "create_issue", arguments: '{"title":"Bug"}' } }]
+  },
+  { content: "Filed." }
+]
+
+test("confirm_tool sends the request summary with an approval keyboard, and approving runs the tool", async () => {
+  const { sender, sent, edited } = fakeSender()
+  const executed: unknown[] = []
+  const driver = makeDriver(approvalScript, sender, [42], [approvalTool(executed)])
+
+  await driver.handleMessage(42, 100, "file a bug")
+
+  const confirmMsg = sent.find(s => s.replyMarkup)
+  expect(confirmMsg!.text).toContain("POST https://api.example.com/issues")
+  expect(confirmMsg!.replyMarkup).toEqual([
+    [
+      { text: `✅ ${t("confirmCommand.yes")}`, callback_data: "tool:approve:call_t" },
+      { text: `❌ ${t("confirmCommand.no")}`, callback_data: "tool:decline:call_t" }
+    ]
+  ])
+  expect(executed).toEqual([])
+
+  // A cmd: callback can't resolve a tool approval.
+  await driver.handleCallbackQuery(42, 100, sent.indexOf(confirmMsg!) + 1, "cmd:approve:call_t", "cbq_0")
+  expect(executed).toEqual([])
+
+  await driver.handleCallbackQuery(42, 100, sent.indexOf(confirmMsg!) + 1, "tool:approve:call_t", "cbq_1")
+  expect(executed).toEqual([{ title: "Bug" }])
+  expect(edited.at(-1)!.text).toBe("Filed.")
+})
+
+test("declining a tool request doesn't run it", async () => {
+  const { sender, sent, edited } = fakeSender()
+  const executed: unknown[] = []
+  const driver = makeDriver(approvalScript, sender, [42], [approvalTool(executed)])
+
+  await driver.handleMessage(42, 100, "file a bug")
+  const confirmMsg = sent.find(s => s.replyMarkup)
+  await driver.handleCallbackQuery(42, 100, sent.indexOf(confirmMsg!) + 1, "tool:decline:call_t", "cbq_1")
+
+  expect(executed).toEqual([])
+  expect(edited.some(e => e.text.includes(t("telegram.declined")))).toBe(true)
+  expect(edited.at(-1)!.text).toBe("Filed.")
+})
+
 test("declining a command feeds back a decline notice without a user-role event", async () => {
   const { sender, sent, edited } = fakeSender()
   const driver = makeDriver(

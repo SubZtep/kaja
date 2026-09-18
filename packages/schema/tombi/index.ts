@@ -7,6 +7,7 @@ import { PackagesFileSchema } from "../config/packages"
 import { SecretsFileSchema } from "../config/secrets"
 import { ServicesFileSchema } from "../config/services"
 import { KajaConfigSchema } from "../config/settings"
+import { HttpToolPackageSchema } from "../packages/http-tool"
 
 /**
  * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io),
@@ -25,5 +26,6 @@ export const tombiSchemas = {
   "mcp.json": z.toJSONSchema(McpFileSchema, { io: "input" }),
   "packages.json": z.toJSONSchema(PackagesFileSchema, { io: "input" }),
   "persona.json": z.toJSONSchema(PersonaSchema, { io: "input" }),
-  "dataset.json": z.toJSONSchema(DatasetSchema, { io: "input" })
+  "dataset.json": z.toJSONSchema(DatasetSchema, { io: "input" }),
+  "http-tool.json": z.toJSONSchema(HttpToolPackageSchema, { io: "input" })
 } satisfies Record<string, object>

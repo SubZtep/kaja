@@ -63,7 +63,8 @@ export async function saveSecrets(update: Partial<SecretsFile>): Promise<void> {
     ...current,
     ...update,
     providers: { ...current.providers, ...update.providers },
-    mcp: { ...current.mcp, ...update.mcp }
+    mcp: { ...current.mcp, ...update.mcp },
+    packages: { ...current.packages, ...update.packages }
   }
   await write(getSecretsPath(), TOML.stringify(next)!)
   cached = undefined

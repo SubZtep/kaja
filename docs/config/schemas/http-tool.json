@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "baseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Scheme and host (plus optional base path) every tool calls"
+    },
+    "auth": {
+      "default": {
+        "type": "none"
+      },
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "none"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "apiKey"
+            },
+            "in": {
+              "type": "string",
+              "enum": [
+                "header",
+                "query"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Header or query parameter name"
+            },
+            "prefix": {
+              "description": "Put before the key, e.g. \"Bearer \"",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "in",
+            "name"
+          ]
+        }
+      ]
+    },
+    "headers": {
+      "default": {},
+      "description": "Static headers sent with every request",
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "check": {
+      "description": "A cheap request kaja doctor sends to test the key; 2xx means it works",
+      "type": "object",
+      "properties": {
+        "method": {
+          "default": "GET",
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "format": "starts_with",
+          "pattern": "^\\/.*"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "tools": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,64}$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "method": {
+            "default": "GET",
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "format": "starts_with",
+            "pattern": "^\\/.*",
+            "description": "Appended to baseUrl; {param} placeholders are filled from the arguments"
+          },
+          "parameters": {
+            "default": {
+              "type": "object",
+              "properties": {}
+            },
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "object"
+              },
+              "properties": {
+                "default": {},
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "required": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "path"
+        ]
+      }
+    }
+  },
+  "required": [
+    "name",
+    "description",
+    "baseUrl",
+    "tools"
+  ]
+}

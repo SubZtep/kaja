@@ -9,7 +9,11 @@ export const PackagesSourceSchema = z.object({
 // Only packages listed here are loaded, whether they came from the marketplace or you wrote them.
 export const PackagesFileSchema = z.object({
   source: PackagesSourceSchema.optional().describe("Marketplace repo override"),
-  skills: z.array(z.string().min(1)).default([]).describe("Enabled skills, by folder name under marketplace/skills/")
+  skills: z.array(z.string().min(1)).default([]).describe("Enabled skills, by folder name under marketplace/skills/"),
+  tools: z
+    .array(z.string().min(1))
+    .default([])
+    .describe("Enabled HTTP tool packages, by file name under marketplace/tools/")
 })
 
 export type PackagesFile = z.infer<typeof PackagesFileSchema>

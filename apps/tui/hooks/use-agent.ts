@@ -1,4 +1,4 @@
-import { replyLanguageInstructionFor, samplingOf } from "@kaja/nasi"
+import { replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
@@ -265,6 +265,23 @@ export function useAgent(
     [send, runningCommand]
   )
 
+  // Resolves a pending confirm_tool event the same way: on approval runs the tool from the agent's own list, otherwise a decline notice; session.pendingToolApprovalId routes the result.
+  const resolveToolApproval = useCallback(
+    async (name: string, argumentsJson: string, approved: boolean) => {
+      if (runningCommand) return
+      setRunningCommand(true)
+      try {
+        const result = approved
+          ? await runApprovedTool(agent.tools, name, argumentsJson)
+          : "User declined this request."
+        await send(result, false)
+      } finally {
+        setRunningCommand(false)
+      }
+    },
+    [agent, send, runningCommand]
+  )
+
   return {
     agent,
     model,
@@ -278,6 +295,7 @@ export function useAgent(
     currentTool,
     send,
     resolveCommand,
+    resolveToolApproval,
     runningCommand,
     promptTokens
   }

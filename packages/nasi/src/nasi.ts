@@ -62,7 +62,7 @@ function stepsFromEvents(events: AgentEvent[], includeThinking: boolean): NasiSt
 
 function statusFromEvents(session: Session): NasiTurnStatus {
   if (session.pendingAskUserId) return "needs_input"
-  if (session.pendingRunCommandId) return "needs_approval"
+  if (session.pendingRunCommandId || session.pendingToolApprovalId) return "needs_approval"
   if (session.pendingClientToolCallId) return "needs_client_tool"
   return "completed"
 }

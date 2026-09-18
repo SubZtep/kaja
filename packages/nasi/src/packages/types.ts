@@ -1,3 +1,5 @@
+import type { HttpToolPackage } from "@kaja/schema/packages"
+
 /** An enabled skill's catalog entry — all the model sees of it before calling load_skill. */
 export type SkillSummary = {
   name: string
@@ -21,6 +23,8 @@ export type PackageStore = {
    * Undefined when the skill or file doesn't exist; throws {@link SkillFileError} when the file can't be served.
    */
   readSkill(name: string, file?: string): Promise<string | undefined>
+  /** Enabled, valid HTTP tool packages. Broken ones are skipped with a warning, never thrown. */
+  listHttpTools(): Promise<HttpToolPackage[]>
 }
 
 /** A skill file that exists but can't be handed to the model — outside the skill folder, binary, or too large. */

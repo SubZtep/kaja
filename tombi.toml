@@ -30,3 +30,7 @@ include = ["docs/config/packages.toml", "**/.config/kaja/packages.toml"]
 [[schemas]]
 path = "docs/config/schemas/persona.json"
 include = ["docs/config/personas/*.toml", "**/.config/kaja/personas/*.toml"]
+
+[[schemas]]
+path = "docs/config/schemas/http-tool.json"
+include = ["marketplace/tools/*.toml", "**/.config/kaja/marketplace/tools/*.toml"]
