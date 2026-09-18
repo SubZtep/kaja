@@ -48,6 +48,8 @@ export class ToolError extends Error {
 export type Tool<Args> = {
   definition: ChatCompletionTool
   execute: (args: Args, ctx?: ToolContext) => Promise<string | ToolResult>
+  /** True only for the cloud-registered stub of a tool that must run on the client (see registry.ts's CLIENT_EXECUTABLE). Never set on the real implementation. */
+  requiresClientExecution?: boolean
 }
 
 /**

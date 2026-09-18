@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { setToolDeps } from "@kaja/nasi"
 import App from "../../components/layout/app"
 import { renderForTest } from "../test-utils"
 
@@ -103,4 +107,49 @@ test("a tool error from the server renders as a tool failure, not a network erro
   expect(frame).toContain("fetch_url: Blocked non-public URL: http://localhost/x")
   t.unmount()
   await t.waitUntilExit()
+})
+
+function sseClientToolCallResponse(name: string, args: Record<string, unknown>): Response {
+  const body =
+    `event: client_tool_call\ndata: {"type":"client_tool_call","name":${JSON.stringify(name)},"arguments":${JSON.stringify(JSON.stringify(args))}}\n\n` +
+    'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"needs_client_tool"}\n\n'
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(body))
+      controller.close()
+    }
+  })
+  return new Response(stream, { headers: { "content-type": "text/event-stream" } })
+}
+
+test("a client_tool_call pause reads the local file and resumes the turn automatically", async () => {
+  const workspaceRoot = mkdtempSync(join(tmpdir(), "kaja-cloud-tool-test-"))
+  writeFileSync(join(workspaceRoot, "notes.txt"), "hello from disk")
+  setToolDeps({ workspaceRoot })
+
+  let responseIndex = 0
+  nextTurnResponse = () => {
+    responseIndex++
+    return responseIndex === 1
+      ? sseClientToolCallResponse("read_file", { path: "notes.txt" })
+      : sseResponse("it says hello from disk")
+  }
+
+  try {
+    const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+    await t.tick()
+    await t.press("what does notes.txt say?")
+    await t.press("\r")
+    await t.tick()
+    await t.tick()
+    await t.tick()
+    expect(lastTurnBody?.message).toBe("hello from disk")
+    expect(t.lastFrame()).toContain("it says hello from disk")
+    t.unmount()
+    await t.waitUntilExit()
+  } finally {
+    setToolDeps({})
+    rmSync(workspaceRoot, { recursive: true, force: true })
+  }
 })

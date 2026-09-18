@@ -36,6 +36,19 @@ const CLOUD_SAFE = new Set([
   "generate_image"
 ])
 
+/** Builtins that stay visible to the model in cloud mode but must run on the client, not the server — the server has no access to the user's machine. See `Tool.requiresClientExecution`. */
+const CLIENT_EXECUTABLE = new Set(["read_file", "list_files"])
+
+function toClientExecutableStub(t: Tool<any>): Tool<any> {
+  return {
+    definition: t.definition,
+    requiresClientExecution: true,
+    execute: async () => {
+      throw new Error(`${toolName(t)} should be intercepted by run(), not executed server-side`)
+    }
+  }
+}
+
 export type CreateToolsOptions = {
   /** Files, shell, MCP, and plugins. Default false. */
   includeLocalTools?: boolean
@@ -96,7 +109,11 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     ...(opts.deps?.imageGeneration ? [generateImageTool] : [])
   ]
 
-  const tools = local ? builtin : builtin.filter(t => CLOUD_SAFE.has(toolName(t)))
+  const tools = local
+    ? builtin
+    : builtin
+        .filter(t => CLOUD_SAFE.has(toolName(t)) || CLIENT_EXECUTABLE.has(toolName(t)))
+        .map(t => (CLIENT_EXECUTABLE.has(toolName(t)) ? toClientExecutableStub(t) : t))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
   const mcpConnections = local && opts.mcpServers && tempDir ? await connectMcpServers(opts.mcpServers, tempDir) : []

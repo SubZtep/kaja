@@ -5,6 +5,7 @@ import type { TimelineEvent } from "./use-agent"
 const eventSound = {
   reasoning: "wind",
   tool_call: "magic",
+  client_tool_call: "magic",
   tool_image: "magic",
   display_image: "magic",
   persona_switch: "magic",

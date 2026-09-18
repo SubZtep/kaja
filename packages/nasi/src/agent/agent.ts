@@ -201,6 +201,7 @@ export type Session = {
   messages: import("openai/resources/chat/completions").ChatCompletionMessageParam[]
   pendingAskUserId?: string
   pendingRunCommandId?: string
+  pendingClientToolCallId?: string
 }
 
 export function createSession(): Session {
@@ -222,6 +223,7 @@ export type AgentEvent =
   | { type: "display_image"; url: string; alt: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }
+  | { type: "client_tool_call"; name: string; arguments: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "final"; content: string | null }
   | { type: "usage"; promptTokens?: number; model?: string }

@@ -88,7 +88,8 @@ export async function openNasiFor(opts: {
     deps: nasiToolDeps(),
     promptContext: {
       environment:
-        "You are Kaja cloud chat. You cannot read the user's disk, run a shell, or use MCP. " +
+        "You are Kaja cloud chat. read_file and list_files run on the user's own machine, scoped to " +
+        "their current directory — you cannot run a shell, or use MCP. " +
         "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing.",
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined

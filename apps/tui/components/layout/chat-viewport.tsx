@@ -270,7 +270,7 @@ export function ChatViewport({
   const timelineItems = useMemo(
     () =>
       events
-        .filter(item => item.type !== "tool_call")
+        .filter(item => item.type !== "tool_call" && item.type !== "client_tool_call")
         .map((item, i) => (
           <Box key={idFor(item)} marginTop={i > 0 && item.type === "user" ? 1 : 0}>
             <TimelineItem item={item} thinking={thinking} />

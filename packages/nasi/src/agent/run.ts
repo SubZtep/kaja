@@ -218,6 +218,13 @@ function pushPromptToMessages(session: Session, prompt: string): void {
       content: prompt
     })
     session.pendingRunCommandId = undefined
+  } else if (session.pendingClientToolCallId) {
+    session.messages.push({
+      role: "tool",
+      tool_call_id: session.pendingClientToolCallId,
+      content: prompt
+    })
+    session.pendingClientToolCallId = undefined
   } else {
     session.messages.push({ role: "user", content: prompt })
   }
@@ -243,11 +250,13 @@ async function* handleToolCalls(
   {
     ask?: { id: string; question: string; note?: string }
     confirm?: { id: string; command: string; description: string }
+    clientTool?: { id: string; name: string; arguments: string }
   },
   void
 > {
   let ask: { id: string; question: string; note?: string } | undefined
   let confirm: { id: string; command: string; description: string } | undefined
+  let clientTool: { id: string; name: string; arguments: string } | undefined
   for (const call of toolCalls) {
     if (call.type !== "function") continue
 
@@ -266,9 +275,14 @@ async function* handleToolCalls(
       continue
     }
 
+    if (toolsByName.get(call.function.name)?.requiresClientExecution) {
+      clientTool = { id: call.id, name: call.function.name, arguments: call.function.arguments }
+      continue
+    }
+
     yield* handleToolCall(agent, toolsByName, messages, owner, call)
   }
-  return { ask, confirm }
+  return { ask, confirm, clientTool }
 }
 
 const TRAILING_TOOL_TAG = /<\/(?:parameter|invoke)>\s*$/
@@ -325,7 +339,8 @@ function* roundTelemetry(
 function* handlePendingHandoff(
   session: Session,
   ask: { id: string; question: string; note?: string } | undefined,
-  confirm: { id: string; command: string; description: string } | undefined
+  confirm: { id: string; command: string; description: string } | undefined,
+  clientTool: { id: string; name: string; arguments: string } | undefined
 ): Generator<AgentEvent, boolean, void> {
   if (ask) {
     session.pendingAskUserId = ask.id
@@ -340,6 +355,12 @@ function* handlePendingHandoff(
       command: confirm.command,
       description: confirm.description
     }
+    return true
+  }
+
+  if (clientTool) {
+    session.pendingClientToolCallId = clientTool.id
+    yield { type: "client_tool_call", name: clientTool.name, arguments: clientTool.arguments }
     return true
   }
 
@@ -390,8 +411,8 @@ export async function* run(
     if (typeof message.content === "string" && message.content.trim())
       yield { type: "message", content: message.content }
 
-    const { ask, confirm } = yield* handleToolCalls(agent, messages, owner, toolsByName, message.tool_calls)
+    const { ask, confirm, clientTool } = yield* handleToolCalls(agent, messages, owner, toolsByName, message.tool_calls)
 
-    if (yield* handlePendingHandoff(session, ask, confirm)) return
+    if (yield* handlePendingHandoff(session, ask, confirm, clientTool)) return
   }
 }

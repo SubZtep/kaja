@@ -46,6 +46,8 @@ function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | 
       return { type: "persona_switch", personaId: event.personaId, label: event.label }
     case "confirm_command":
       return { type: "confirm_command", command: event.command, description: event.description }
+    case "client_tool_call":
+      return { type: "client_tool_call", name: event.name, arguments: event.arguments }
     default:
       return undefined
   }
@@ -63,6 +65,7 @@ function stepsFromEvents(events: AgentEvent[], includeThinking: boolean): NasiSt
 function statusFromEvents(session: Session): NasiTurnStatus {
   if (session.pendingAskUserId) return "needs_input"
   if (session.pendingRunCommandId) return "needs_approval"
+  if (session.pendingClientToolCallId) return "needs_client_tool"
   return "completed"
 }
 

@@ -1,3 +1,4 @@
+import { setToolDeps } from "@kaja/nasi"
 import { formatDeviceUserCode } from "@kaja/shared"
 import { color } from "bun"
 import { render } from "ink"
@@ -63,6 +64,8 @@ export async function runCloudSubcommand() {
     const token = await resolveToken(apiUrl)
     // cli.ts guarantees settings.toml exists (via createCloud()) before this subcommand runs.
     const { preferences } = await config()
+    // Scopes read_file/list_files (run client-side when the server hands them back via a client_tool_call pause) to the same directory local mode defaults to.
+    setToolDeps({ workspaceRoot: process.cwd() })
 
     const { waitUntilExit } = render(
       <App mode="cloud" initialPreferences={preferences} apiUrl={apiUrl} token={token} />,
