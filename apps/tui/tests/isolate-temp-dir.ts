@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -8,4 +9,7 @@ import { join } from "node:path"
 // every file in one process, so a per-file TMPDIR would leak whichever file imported it first to
 // all the others — hence one fixed dir set here, before any test module loads. Fixed rather than
 // mkdtemp'd so repeated runs reuse it instead of littering /tmp.
-Bun.env.TMPDIR = join(tmpdir(), "kaja-test-tmp")
+const testTmp = join(tmpdir(), "kaja-test-tmp")
+// Tests call mkdtemp under it directly, so it must exist even on a fresh machine (CI).
+mkdirSync(testTmp, { recursive: true })
+Bun.env.TMPDIR = testTmp
