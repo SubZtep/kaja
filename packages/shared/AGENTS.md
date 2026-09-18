@@ -6,8 +6,9 @@ Pure shared utilities with no I/O and no app-specific business logic.
 
 ```
 index.ts               # getTimeAgo, getDateTime, getFirstName, capitalized, cn, isItTrue,
-                        # isPublicHttpUrl, randomUUIDv7, titleCase — re-exports telegram-markdown.ts
+                        # isPublicHttpUrl, randomUUIDv7, titleCase — re-exports telegram-markdown.ts, locale.ts
 telegram-markdown.ts    # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT
+locale.ts               # locales, Locale, LOCALE_LABELS — supported UI locale codes and display names
 ```
 
 ## Notable helpers
@@ -18,6 +19,7 @@ telegram-markdown.ts    # renderTelegramHtml, splitTelegramMessage, truncateForS
 - **`isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT hosts
 - **`randomUUIDv7`** — time-ordered UUIDv7 generator
 - **`titleCase`** — hyphen/underscore/space-separated label to Title Case
+- **`locales` / `Locale` / `LOCALE_LABELS`** — supported UI locale codes (`en-GB`, `hu-HU`, `nan-TW`) and their native display names
 
 ## Conventions
 

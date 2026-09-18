@@ -28,7 +28,7 @@ cli.ts` directly) for interactive use.
 - Handlers: `lib/telegram/cli.ts`
 - `--headless`: no Ink render, for a subcommand that supports it. `telegram` is the only consumer today (`kaja --local --headless telegram`) — it never rendered Ink to begin with, so this just formalizes it and shares its bootstrap (`lib/cli/headless.ts`'s `bootstrapLocalAgentDeps`/`requireConfiguredProvider`/`installShutdownHandlers`) with the interactive local loop (`subcommands/run.tsx`). Bare `kaja --headless` (no subcommand) exits with an error — there's no headless mode without a consumer yet. Cloud-mode headless (a driver against `createNasiClient`'s SSE stream instead of the local `Agent`) doesn't exist yet.
 - First run under `--local` (no `settings.toml` yet, interactive TTY only): `components/first-run-setup.tsx` asks which provider template to start from. Optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`; "Skip" writes neither, and `subcommands/run.tsx` then exits with an error instead of silently falling back to cloud free chat (`isFreeChat` in `lib/models/openai.ts` — still used internally by `chatModel` resolution, just no longer a reachable default). Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed. Dispatch glue for all of this lives in `lib/cli/` (`args.ts`, `bootstrap.ts`, `first-run.tsx`).
-- First run under cloud mode (no `settings.toml` yet): `lib/config/config.ts`'s `createCloud()` writes a minimal file with just `[preferences]` `language` (detected from the system locale, else `en-GB`) — no `persona` (a local-agent concept) and no `stt`/`tts`/`memory` sections. There's no `--lang` flag; language always comes from this file, set once at startup by `lib/cli/bootstrap.ts`'s `detectAndSetLanguage`.
+- First run under cloud mode (no `settings.toml` yet): `lib/config/config.ts`'s `createCloud()` writes a minimal file with just `[preferences]` `locale` (detected from the system locale, else `en-GB`) — no `persona` (a local-agent concept) and no `stt`/`tts`/`memory` sections. There's no `--lang` flag; language always comes from this file, set once at startup by `lib/cli/bootstrap.ts`'s `detectAndSetLanguage`.
 
 ## Layout
 
@@ -40,7 +40,7 @@ lib/                    # domain subfolders: cli, agent, auth, config, models, p
                         # session, telegram, audio, mcp, image, markdown; cross-cutting utils at lib/ root
 subcommands/            # run.tsx (--local), run-cloud.tsx (cloud)
 tools/                  # LLM tools (files, web, memory, image, summarize, …)
-locales/                # en.toml, hu.toml, nan-TW.toml
+locales/                # en-GB.toml, hu-HU.toml, nan-TW.toml
 assets/                 # sounds, datasets
 tests/                  # mirrors source tree
 ```
@@ -66,7 +66,7 @@ GitHub Pages content is also under monorepo `docs/`.
 
 - Fetch current docs for dependency versions (Context7) when using libraries
 - Run lint before commit (monorepo `bun lint` or package biome if configured)
-- User-facing strings go through `t()` from `lib/i18n.ts` with keys in **all three** of `locales/en-GB.toml`, `locales/hu.toml`, and `locales/nan-TW.toml`
+- User-facing strings go through `t()` from `lib/i18n.ts` with keys in **all three** of `locales/en-GB.toml`, `locales/hu-HU.toml`, and `locales/nan-TW.toml`
 - Write short, explicit TSDoc on non-obvious exports
 
 ### Ask first

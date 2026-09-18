@@ -144,7 +144,7 @@ describe("nasi", () => {
         const res = await app.request("/nasi/turn", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ message: "hi", language: "hu" })
+          body: JSON.stringify({ message: "hi", language: "hu-HU" })
         })
         expect(res.status).toBe(200)
         const system = capturedMessages.find(

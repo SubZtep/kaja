@@ -1,4 +1,5 @@
 import { PasswordInput } from "@inkjs/ui"
+import { LOCALE_LABELS, locales } from "@kaja/shared"
 import { Box, Text, useInput } from "ink"
 import { useState } from "react"
 import type { Language } from "../lib/i18n"
@@ -54,11 +55,14 @@ export function ConfigWizard({
   }
 
   if (step === "language") {
-    const languages: Language[] = ["en-GB", "hu", "nan-TW"]
     return (
       <Box flexDirection="column" gap={1}>
         <Text>{t("wizard.languageTitle")}</Text>
-        <SelectMenu items={languages} onSelect={index => advance({ language: languages[index] })} onClose={onCancel} />
+        <SelectMenu
+          items={locales.map(locale => LOCALE_LABELS[locale])}
+          onSelect={index => advance({ language: locales[index] })}
+          onClose={onCancel}
+        />
       </Box>
     )
   }

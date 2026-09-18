@@ -1,11 +1,12 @@
-// Static i18n: both dictionaries load at import, the active language is set once at startup (cli.ts, from preferences.language). No live switching — a language change takes effect on the next launch.
+// Static i18n: both dictionaries load at import, the active language is set once at startup (cli.ts, from preferences.locale). No live switching — a language change takes effect on the next launch.
 
+import type { Locale } from "@kaja/shared"
 import * as z from "zod"
 import enGb from "../locales/en-GB.toml"
-import hu from "../locales/hu.toml"
+import huHu from "../locales/hu-HU.toml"
 import nanTw from "../locales/nan-TW.toml"
 
-export type Language = "en-GB" | "hu" | "nan-TW"
+export type Language = Locale
 
 function flatten(table: Record<string, unknown>, prefix = "", out = new Map<string, string>()) {
   for (const [key, value] of Object.entries(table)) {
@@ -19,7 +20,7 @@ function flatten(table: Record<string, unknown>, prefix = "", out = new Map<stri
 // Exported for the key-parity test.
 export const dictionaries: Record<Language, Map<string, string>> = {
   "en-GB": flatten(enGb),
-  hu: flatten(hu),
+  "hu-HU": flatten(huHu),
   "nan-TW": flatten(nanTw)
 }
 
@@ -29,17 +30,17 @@ export function getLanguage() {
   return language
 }
 
-/** System locale → supported language: nan-TW for a Taiwanese Hokkien locale, hu for a Hungarian locale, else en-GB. */
+/** System locale → supported language: nan-TW for a Taiwanese Hokkien locale, hu-HU for a Hungarian locale, else en-GB. */
 export function detectLanguage(): Language {
   const locale =
     process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG || Intl.DateTimeFormat().resolvedOptions().locale
   const lower = locale.toLowerCase()
   if (lower.startsWith("nan-tw") || lower.startsWith("nan_tw")) return "nan-TW"
-  return lower.startsWith("hu") ? "hu" : "en-GB"
+  return lower.startsWith("hu") ? "hu-HU" : "en-GB"
 }
 
 // zod has no locale file for nan-TW, so validation messages fall back to its default (English).
-const ZOD_LOCALE: Record<Language, keyof typeof z.locales> = { "en-GB": "en", hu: "hu", "nan-TW": "en" }
+const ZOD_LOCALE: Record<Language, keyof typeof z.locales> = { "en-GB": "en", "hu-HU": "hu", "nan-TW": "en" }
 
 export function setLanguage(next: Language) {
   language = next

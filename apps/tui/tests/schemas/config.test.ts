@@ -22,12 +22,12 @@ test("partial preferences are allowed", () => {
   expect(parsed.preferences).toEqual({ sounds: false })
 })
 
-test("preferences language accepts en and hu only", () => {
+test("preferences locale accepts en-GB, hu-HU, and nan-TW only", () => {
   const parsed = KajaConfigSchema.parse({
-    preferences: { language: "hu" }
+    preferences: { locale: "hu-HU" }
   })
-  expect(parsed.preferences).toEqual({ language: "hu" })
-  expect(() => KajaConfigSchema.parse({ preferences: { language: "de" } })).toThrow()
+  expect(parsed.preferences).toEqual({ locale: "hu-HU" })
+  expect(() => KajaConfigSchema.parse({ preferences: { locale: "de" } })).toThrow()
 })
 
 test("stt, tts are independently optional", () => {

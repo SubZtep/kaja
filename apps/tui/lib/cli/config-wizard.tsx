@@ -14,7 +14,7 @@ async function applyResult(result: WizardResult) {
 
   if (result.language || result.persona) {
     await savePreferences({
-      ...(result.language ? { language: result.language } : {}),
+      ...(result.language ? { locale: result.language } : {}),
       ...(result.persona ? { persona: result.persona } : {})
     })
   }
@@ -48,7 +48,7 @@ export async function runConfigWizard(headless: boolean): Promise<{ code: number
   const [existingConfig, personas] = await Promise.all([readConfigLoose(), loadPersonas()])
 
   const prefill: WizardResult = {
-    language: existingConfig.preferences?.language,
+    language: existingConfig.preferences?.locale,
     persona: existingConfig.preferences?.persona
   }
 

@@ -41,7 +41,7 @@ export function defaultEnvironmentInstructions() {
 
 const LANGUAGE_NAME: Record<string, string> = {
   "en-GB": "English",
-  hu: "Hungarian",
+  "hu-HU": "Hungarian",
   "nan-TW": "Taiwanese Hokkien"
 }
 

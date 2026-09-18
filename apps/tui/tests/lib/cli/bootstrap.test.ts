@@ -20,12 +20,12 @@ afterEach(() => {
 
 test("a saved config preference wins over the OS locale", async () => {
   const dir = `${tmpdir()}/kaja-test-bootstrap-config-${Date.now()}`
-  await write(`${dir}/settings.toml`, TOML.stringify({ preferences: { language: "hu" } })!)
+  await write(`${dir}/settings.toml`, TOML.stringify({ preferences: { locale: "hu-HU" } })!)
   setConfigDirOverride(dir)
   process.env.LANG = "en_US.UTF-8"
 
   await detectAndSetLanguage()
-  expect(getLanguage()).toBe("hu")
+  expect(getLanguage()).toBe("hu-HU")
 })
 
 test("with no config, the OS locale decides", async () => {
@@ -33,5 +33,5 @@ test("with no config, the OS locale decides", async () => {
   process.env.LANG = "hu_HU.UTF-8"
 
   await detectAndSetLanguage()
-  expect(getLanguage()).toBe("hu")
+  expect(getLanguage()).toBe("hu-HU")
 })

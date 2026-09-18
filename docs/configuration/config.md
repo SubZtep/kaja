@@ -15,7 +15,7 @@ Local, install-wide preferences. Which model handles each task lives in
 thinking = false
 sounds = true
 voice = false
-language = "en-GB"
+locale = "en-GB"
 persona = "default"
 
 # Speech-to-text (Speaches AI server).
@@ -40,11 +40,11 @@ persona = "default"
 | `thinking` | show the model's reasoning while it generates |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `[models.tts]` entry) |
-| `language` | `en-GB`, `hu`, or `nan-TW` — affects the UI and the assistant's replies |
+| `locale` | `en-GB`, `hu-HU`, or `nan-TW` — affects the UI and the assistant's replies |
 | `persona` | persona id to open with |
 
 The first four are also togglable at runtime from the `/` menu, which writes the change back to
-this file. `language` is read once at startup; with no saved value the system locale decides.
+this file. `locale` is read once at startup; with no saved value the system locale decides.
 
 ## `[stt]` / `[tts]`
 

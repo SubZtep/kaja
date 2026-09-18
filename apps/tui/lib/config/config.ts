@@ -86,7 +86,7 @@ export async function saveConfig(data: KajaConfig) {
 
 export async function savePreferences(preferences: KajaPreferences) {
   const current = await config()
-  // Merge into the existing block: callers persist only the keys they manage (thinking/sounds/voice) and must not drop others like language.
+  // Merge into the existing block: callers persist only the keys they manage (thinking/sounds/voice) and must not drop others like locale.
   await write(getConfigPath(), TOML.stringify({ ...current, preferences: { ...current.preferences, ...preferences } })!)
   cached = undefined
 }
@@ -97,5 +97,5 @@ export async function create() {
 
 /** Cloud config: just the language preference, detected from the system locale. No persona (personas are a local-agent concept) and no stt/tts/memory sections (those don't apply to the cloud client). */
 export async function createCloud() {
-  await write(getConfigPath(), TOML.stringify({ preferences: { language: detectLanguage() } })!)
+  await write(getConfigPath(), TOML.stringify({ preferences: { locale: detectLanguage() } })!)
 }

@@ -1,15 +1,10 @@
 import { Select } from "@base-ui/react/select"
+import { LOCALE_LABELS } from "@kaja/shared"
 import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast, Zoom } from "react-toastify"
 import { m } from "../../paraglide/messages.js"
 import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
-
-const LOCALE_LABELS: Record<Locale, string> = {
-  "en-GB": "English",
-  hu: "Magyar",
-  "nan-TW": "臺語"
-}
 
 /** Capture the cookie state before any hydration-triggered locale resolution can write it. */
 const hadLocaleCookieBeforeHydration = Boolean(extractLocaleFromCookie())

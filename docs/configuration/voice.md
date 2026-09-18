@@ -55,7 +55,7 @@ values can differ in scheme.
 
 ## Language
 
-The UI and the assistant's replies follow `preferences.language`: `en-GB`, `hu` (Magyar), or
+The UI and the assistant's replies follow `preferences.locale`: `en-GB`, `hu-HU` (Magyar), or
 `nan-TW`. It's read once at startup; with no saved value the system locale decides (a Hungarian
 locale picks Magyar, anything else falls back to English).
 

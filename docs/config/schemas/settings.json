@@ -58,12 +58,12 @@
           "description": "Enable voice output (text-to-speech)",
           "type": "boolean"
         },
-        "language": {
+        "locale": {
           "description": "Language for the chat and application",
           "type": "string",
           "enum": [
             "en-GB",
-            "hu",
+            "hu-HU",
             "nan-TW"
           ]
         },

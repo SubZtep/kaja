@@ -6,7 +6,7 @@ test("returns undefined for English — the model's default, no instruction need
 })
 
 test("returns a reply-language instruction naming the language for a known non-English code", () => {
-  expect(replyLanguageInstructionFor("hu")).toContain("Hungarian")
+  expect(replyLanguageInstructionFor("hu-HU")).toContain("Hungarian")
 })
 
 test("returns a reply-language instruction for nan-TW", () => {

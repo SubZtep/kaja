@@ -5,7 +5,7 @@ import { detectLanguage, type Language, setLanguage } from "../i18n"
 if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
 
 function toLanguage(value: string | undefined): Language | undefined {
-  return value === "hu" || value === "en-GB" || value === "nan-TW" ? value : undefined
+  return value === "hu-HU" || value === "en-GB" || value === "nan-TW" ? value : undefined
 }
 
 /**
@@ -14,5 +14,5 @@ function toLanguage(value: string | undefined): Language | undefined {
  */
 export async function detectAndSetLanguage() {
   const loose = await readConfigLoose()
-  setLanguage(toLanguage(loose.preferences?.language) ?? detectLanguage())
+  setLanguage(toLanguage(loose.preferences?.locale) ?? detectLanguage())
 }
