@@ -4,7 +4,9 @@
 #   - local: spawned over stdio, needs `command` (+ optional `args`/`env`)
 #   - remote: reached over Streamable HTTP, needs `url` (+ optional `headers`)
 # Secret env/header values (e.g. Authorization, CONTEXT7_API_KEY) live in
-# secrets.toml's [mcp.<id>] table, keyed by this entry's id.
+# secrets.toml's [mcp.<id>] table, keyed by this entry's id. List the ones a
+# server can't work without in `secrets`, and `kaja doctor` asks for any
+# that are missing.
 
 [[servers]]
 id = "location"
@@ -19,3 +21,4 @@ url = "https://ip2geo.demo.land/mcp"
 # id = "context7"
 # command = "bunx"
 # args = ["-y", "@upstash/context7-mcp"]
+# secrets = ["CONTEXT7_API_KEY"]

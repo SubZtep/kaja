@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { PackageKeyPrompt, PackagePicker, type PickerItem, type PickerSelection } from "../../components/package-picker"
+import { PackagePicker, type PickerItem, type PickerSelection } from "../../components/package-picker"
 import { renderForTest } from "../test-utils"
 
 const items: PickerItem[] = [
@@ -63,31 +63,6 @@ test("escape cancels without submitting", async () => {
   await t.press("\x1b")
   expect(cancelled).toBe(true)
   expect(submitted).toEqual([])
-  t.unmount()
-  await t.waitUntilExit()
-})
-
-test("the key prompt masks input and submits the trimmed key; an empty Enter skips", async () => {
-  const keys: string[] = []
-  let skipped = 0
-  const t = renderForTest(
-    <PackageKeyPrompt
-      name="github"
-      where="header Authorization"
-      onSubmit={key => keys.push(key)}
-      onSkip={() => {
-        skipped++
-      }}
-    />
-  )
-  await t.tick()
-  expect(t.lastFrame()).toContain("github needs an API key (header Authorization)")
-  await t.press("\r")
-  expect(skipped).toBe(1)
-  for (const ch of "s3cret") await t.press(ch)
-  expect(t.lastFrame()).not.toContain("s3cret")
-  await t.press("\r")
-  expect(keys).toEqual(["s3cret"])
   t.unmount()
   await t.waitUntilExit()
 })

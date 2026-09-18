@@ -99,17 +99,45 @@ export function toolReportLines(tools: Tool<any>[], skipped: SkippedTool[]): str
 }
 
 /**
- * `kaja doctor` — prints the same configuration/connectivity info the old
- * startup panel used to show in the empty chat viewport, but to the console
- * and on demand, so it doesn't clutter every TUI launch.
+ * The keys-and-tokens pass: tests every credential the config relies on and, in a
+ * terminal, asks for anything missing or failing (tested before it's saved). Runs
+ * before the rest of the report so the model and tool checks see the fixes.
+ */
+async function checkCredentials() {
+  const { collectCredentials, outcomeLine, resolveCredentials } = await import("../lib/doctor/credentials")
+  const { askSaveAnyway, askSecret } = await import("../lib/doctor/prompt")
+
+  const items = await collectCredentials()
+  if (items.length === 0) return []
+  console.log(t("doctor.credentials"))
+  const outcomes = await resolveCredentials(
+    items,
+    { interactive: Boolean(process.stdin.isTTY), ask: askSecret, askSaveAnyway },
+    outcome => console.log(outcomeLine(outcome))
+  )
+  console.log()
+  return outcomes
+}
+
+/**
+ * `kaja doctor` — checks keys and tokens (asking for missing ones in a terminal),
+ * then prints the configuration/connectivity info the old startup panel used to
+ * show, and ends with what's still left to fix.
  */
 export async function runDoctorSubcommand() {
   const { bootstrapLocalAgentDeps } = await import("../lib/cli/headless")
   const { listSessions } = await import("../lib/session/store")
   const { loadMemory } = await import("../lib/memory/store")
+  const { summaryLines } = await import("../lib/doctor/credentials")
+  const { getSecretsPath } = await import("../lib/config/secrets")
+  const { invalidateServicesCache } = await import("../lib/config/services")
 
   console.log(t("doctor.cwd") + process.cwd())
   console.log()
+
+  const outcomes = await checkCredentials()
+  // Anything saved above must reach the loaders below; secrets() is already invalidated by saveSecrets.
+  invalidateServicesCache()
 
   const { models, tools, skipped, mcpServers, closeTools } = await bootstrapLocalAgentDeps()
 
@@ -127,6 +155,8 @@ export async function runDoctorSubcommand() {
   const sessionCount = (await listSessions()).length
   const memoryNoteCount = Object.keys(await loadMemory(LOCAL_OWNER)).length
   console.log(t("doctor.stats", { sessionCount, memoryNoteCount }))
+  console.log()
+  for (const line of summaryLines(outcomes, getSecretsPath())) console.log(line)
 
   await closeTools()
   process.exit(0)

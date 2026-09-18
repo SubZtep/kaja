@@ -68,6 +68,14 @@ flowchart LR
 `secrets.toml` is the only file that holds credentials — the others stay safe to share, commit, or
 paste into a bug report.
 
+## Checking keys and tokens
+
+`kaja doctor` tests every credential your config relies on: model providers, HTTP tool packages, MCP
+servers that list `secrets`, and the location, Telegram and web search services. In a terminal it
+asks for anything missing or not working, tests the new value before saving it to `secrets.toml`,
+and only keeps a value that fails its test if you say so. A provider without a key is fine as long
+as its model answers (Ollama needs none). It ends with what's still left to fix and where.
+
 ## Editor support
 
 JSON Schemas for every one of these files ship in

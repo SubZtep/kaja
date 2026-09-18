@@ -1,4 +1,4 @@
-import { MultiSelect, PasswordInput } from "@inkjs/ui"
+import { MultiSelect } from "@inkjs/ui"
 import { Box, Text, useInput, useStdout } from "ink"
 import { t } from "../lib/i18n"
 
@@ -90,34 +90,6 @@ export function PackagePicker({
           ))}
         </Box>
       )}
-    </Box>
-  )
-}
-
-/** Asks for one package's API key, masked. Enter with a value saves it; Esc or an empty Enter skips. */
-export function PackageKeyPrompt({
-  name,
-  where,
-  onSubmit,
-  onSkip
-}: Readonly<{
-  name: string
-  /** Where the key goes, e.g. "header X-Api-Key", so the user knows which key the API expects. */
-  where: string
-  onSubmit: (key: string) => void
-  onSkip: () => void
-}>) {
-  useInput((_input, key) => {
-    if (key.escape) onSkip()
-  })
-  return (
-    <Box flexDirection="column">
-      <Text bold>{t("pkg.keyPrompt", { name, where })}</Text>
-      <Text dimColor>{t("pkg.keyHint")}</Text>
-      <PasswordInput
-        placeholder={t("pkg.keyPlaceholder")}
-        onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())}
-      />
     </Box>
   )
 }

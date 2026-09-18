@@ -58,7 +58,7 @@ export async function runPkgSubcommand(args: typeof Args) {
   }
 
   const { render } = await import("ink")
-  const { PackageKeyPrompt, PackagePicker } = await import("../components/package-picker")
+  const { PackagePicker } = await import("../components/package-picker")
   let picked: { skills: string[]; tools: string[] } | undefined
   const picker = render(
     <PackagePicker
@@ -89,22 +89,11 @@ export async function runPkgSubcommand(args: typeof Args) {
 
   // Ask for keys the enabled tools still lack; a skipped one stays enabled but is left out until its key is set.
   const { saveSecrets, secrets } = await import("../lib/config/secrets")
+  const { askSecret } = await import("../lib/doctor/prompt")
   const known = (await secrets()).packages
   for (const tool of toolScan) {
     if (!(next.tools.includes(tool.name) && tool.auth && !known[tool.name])) continue
-    let key: string | undefined
-    const prompt = render(
-      <PackageKeyPrompt
-        name={tool.name}
-        where={`${tool.auth.in} ${tool.auth.name}`}
-        onSubmit={value => {
-          key = value
-          prompt.unmount()
-        }}
-        onSkip={() => prompt.unmount()}
-      />
-    )
-    await prompt.waitUntilExit()
+    const key = await askSecret(t("pkg.keyPrompt", { name: tool.name, where: `${tool.auth.in} ${tool.auth.name}` }))
     if (key) {
       await saveSecrets({ packages: { [tool.name]: { apiKey: key } } })
       console.log(t("pkg.keySaved", { name: tool.name }))

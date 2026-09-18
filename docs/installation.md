@@ -58,6 +58,7 @@ kaja -c                   # resume the most recent session
 kaja --continue
 kaja -s <id>              # resume a specific session
 kaja --session <id>
+kaja doctor               # test keys, models and tools; asks for missing keys
 kaja telegram             # run as a Telegram bot
 kaja --headless telegram  # same, without rendering the terminal UI
 

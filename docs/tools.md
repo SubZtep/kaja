@@ -87,6 +87,16 @@ Authorization = "Bearer guest"
 ```
 
 Values fold into the server's `env` (stdio) or `headers` (HTTP) by key name.
+List the ones a server can't work without in its entry, and `kaja doctor` asks for any that are
+missing and tests the server once they're all set:
+
+```toml
+[[servers]]
+id = "context7"
+command = "bunx"
+args = ["-y", "@upstash/context7-mcp"]
+secrets = ["CONTEXT7_API_KEY"]
+```
 
 ## Your own tools
 
