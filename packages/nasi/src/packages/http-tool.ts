@@ -58,7 +58,7 @@ export function buildHttpRequest(
     }
   }
 
-  if (pkg.auth.type === "apiKey") {
+  if (pkg.auth.type === "apiKey" && (apiKey || !pkg.auth.optional)) {
     if (!apiKey) throw new Error(`no API key for ${pkg.name}`)
     const value = `${pkg.auth.prefix ?? ""}${apiKey}`
     if (pkg.auth.in === "header") headers[pkg.auth.name] = value
@@ -82,11 +82,16 @@ async function formatResponse(res: Response): Promise<string> {
   return `${status}\n\n${text.slice(0, MAX_RESULT_CHARS)}\n\n[cut: ${text.length} characters in total]`
 }
 
-/** One line for the approval prompt, e.g. `POST https://api.example.com/v1/issues {"title":"…"}`, with the key masked. */
-export function approvalSummary(pkg: HttpToolPackage, def: HttpTool, args: Record<string, unknown>): string {
+/** One line for the approval prompt, e.g. `POST https://api.example.com/v1/issues {"title":"…"}`, with the key masked (and left out when there's none, as for an optional key). */
+export function approvalSummary(
+  pkg: HttpToolPackage,
+  def: HttpTool,
+  args: Record<string, unknown>,
+  hasKey = true
+): string {
   let request: HttpRequestSpec
   try {
-    request = buildHttpRequest(pkg, def, args, KEY_MASK)
+    request = buildHttpRequest(pkg, def, args, hasKey ? KEY_MASK : undefined)
   } catch {
     return `${def.method} ${pkg.baseUrl}${def.path}`
   }
@@ -137,6 +142,9 @@ export function createHttpTools(
       }
     })
     if (def.method === "GET") return httpTool
-    return { ...httpTool, approval: (args: Record<string, unknown>) => approvalSummary(pkg, def, args ?? {}) }
+    return {
+      ...httpTool,
+      approval: (args: Record<string, unknown>) => approvalSummary(pkg, def, args ?? {}, Boolean(opts.apiKey))
+    }
   })
 }

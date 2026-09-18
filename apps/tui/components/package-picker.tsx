@@ -7,26 +7,38 @@ const OPTION_CHROME = 6
 const MAX_VISIBLE = 10
 
 export type PickerItem = {
-  type: "skill" | "tool"
+  type: "skill" | "tool" | "mcp"
   name: string
   description?: string
   /** Why it can't load; shown below the list, not selectable. */
   error?: string
   /** Not from the marketplace sync — written by the user. */
   local: boolean
-  /** Tools only: the host it calls and whether it needs a key, shown before enabling. */
+  /** Tools and MCP servers: the host they call, shown before enabling. */
   domain?: string
-  needsKey?: boolean
+  /** stdio MCP servers: the command they run on this machine, shown before enabling. */
+  runs?: string
+  /** Tools and MCP servers: whether they take a key. */
+  key?: "required" | "optional"
 }
 
-export type PickerSelection = { skills: string[]; tools: string[] }
+export type PickerSelection = { skills: string[]; tools: string[]; mcp: string[] }
+
+const TYPE_LABEL_KEY: Record<PickerItem["type"], string> = {
+  skill: "pkg.typeSkill",
+  tool: "pkg.typeTool",
+  mcp: "pkg.typeMcp"
+}
+
+const KEY_LABEL_KEY = { required: "pkg.needsKey", optional: "pkg.optionalKey", none: "pkg.noKey" } as const
 
 const optionValue = (item: Pick<PickerItem, "type" | "name">) => `${item.type}:${item.name}`
 
-/** One line per package: type, name, a tool's domain and key need, then as much description as fits the terminal. */
+/** One line per package: type, name, where it connects (or what it runs) and its key need, then as much description as fits. */
 function optionLabel(item: PickerItem, columns: number): string {
-  const type = t(item.type === "skill" ? "pkg.typeSkill" : "pkg.typeTool").padEnd(6)
-  const where = item.domain ? `  ${item.domain} · ${t(item.needsKey ? "pkg.needsKey" : "pkg.noKey")}` : ""
+  const type = t(TYPE_LABEL_KEY[item.type]).padEnd(6)
+  const target = item.domain ?? (item.runs ? t("pkg.runs", { command: item.runs }) : undefined)
+  const where = target ? `  ${target} · ${t(KEY_LABEL_KEY[item.key ?? "none"])}` : ""
   const head = `${type}${item.name}${item.local ? ` [${t("pkg.local")}]` : ""}${where}`
   const room = columns - OPTION_CHROME - head.length - 2
   const description = item.description ?? ""
@@ -34,7 +46,7 @@ function optionLabel(item: PickerItem, columns: number): string {
   return `${head}  ${description.length > room ? `${description.slice(0, room - 1)}…` : description}`
 }
 
-/** `kaja pkg`'s checklist of skills and tools: space toggles, Enter submits, Esc cancels. */
+/** `kaja pkg`'s checklist of skills, tools and MCP servers: space toggles, Enter submits, Esc cancels. */
 export function PackagePicker({
   items,
   enabled,
@@ -56,7 +68,8 @@ export function PackagePicker({
   const broken = items.filter(item => item.error)
   const enabledValues = [
     ...enabled.skills.map(name => optionValue({ type: "skill", name })),
-    ...enabled.tools.map(name => optionValue({ type: "tool", name }))
+    ...enabled.tools.map(name => optionValue({ type: "tool", name })),
+    ...enabled.mcp.map(name => optionValue({ type: "mcp", name }))
   ]
 
   return (
@@ -69,12 +82,11 @@ export function PackagePicker({
             options={selectable.map(item => ({ label: optionLabel(item, columns), value: optionValue(item) }))}
             defaultValue={enabledValues.filter(value => selectable.some(item => optionValue(item) === value))}
             visibleOptionCount={Math.min(selectable.length, MAX_VISIBLE)}
-            onSubmit={values =>
-              onSubmit({
-                skills: values.filter(v => v.startsWith("skill:")).map(v => v.slice("skill:".length)),
-                tools: values.filter(v => v.startsWith("tool:")).map(v => v.slice("tool:".length))
-              })
-            }
+            onSubmit={values => {
+              const of = (type: PickerItem["type"]) =>
+                values.filter(v => v.startsWith(`${type}:`)).map(v => v.slice(type.length + 1))
+              onSubmit({ skills: of("skill"), tools: of("tool"), mcp: of("mcp") })
+            }}
           />
         ) : (
           <Text>{t("pkg.empty")}</Text>

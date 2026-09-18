@@ -26,7 +26,8 @@ const notesSkill: SkillSummary = { name: "notes", description: "Keep notes.", fi
 const noStore: PackageStore = {
   listSkills: async () => [],
   readSkill: async () => undefined,
-  listHttpTools: async () => []
+  listHttpTools: async () => [],
+  listMcpPackages: async () => []
 }
 
 function skillAgent(opts: { persona?: Persona; withRunCommand?: boolean; skills?: SkillSummary[] }) {

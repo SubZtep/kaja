@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { createFolderPackageStore, scanHttpTools, scanSkills } from "../../src/packages/folder-store"
+import { createFolderPackageStore, scanHttpTools, scanMcpPackages, scanSkills } from "../../src/packages/folder-store"
 import { SkillFileError } from "../../src/packages/types"
 
 let root: string
@@ -163,4 +163,25 @@ test("scanHttpTools lists every manifest with its domain and key need, or its er
   expect(entries[0]!.error).toBeDefined()
   expect(entries[1]).toMatchObject({ domain: "api.keyed.test", auth: { in: "header", name: "X-Key" } })
   expect(entries[2]).toMatchObject({ domain: "api.open.test", auth: undefined })
+})
+
+test("listMcpPackages reads enabled manifests; scanMcpPackages shows the host or the command", async () => {
+  put("mcp/docs.toml", 'name = "docs"\ndescription = "Docs"\nurl = "https://mcp.docs.test/mcp"\n')
+  put(
+    "mcp/browser.toml",
+    'name = "browser"\ndescription = "Browser"\ntransport = "stdio"\ncommand = "bunx"\nargs = ["browser-mcp", "--headless"]\nauth = { type = "apiKey", in = "env", name = "B_KEY", optional = true }\n'
+  )
+  put("mcp/broken.toml", 'name = "broken"\ndescription = "x"\ntransport = "stdio"\n')
+  const store = createFolderPackageStore({ root, enabled: { skills: [], mcp: ["docs", "broken", "missing"] } })
+  expect((await store.listMcpPackages()).map(p => p.name)).toEqual(["docs"])
+
+  const entries = await scanMcpPackages(root)
+  expect(entries.map(e => e.name)).toEqual(["broken", "browser", "docs"])
+  expect(entries[0]!.error).toContain("command")
+  expect(entries[1]).toMatchObject({
+    transport: "stdio",
+    command: "bunx browser-mcp --headless",
+    auth: { in: "env", name: "B_KEY", optional: true }
+  })
+  expect(entries[2]).toMatchObject({ transport: "http", domain: "mcp.docs.test", auth: undefined })
 })

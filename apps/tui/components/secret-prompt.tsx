@@ -29,20 +29,24 @@ export function SecretPrompt({
   )
 }
 
-/** A value didn't pass its live test: save it anyway (e.g. offline right now) or drop it. Esc drops it. */
-export function SaveAnywayPrompt({
+/** A yes/no question with "no" first, so Enter and Esc both pick the safe answer. */
+export function YesNoPrompt({
   title,
+  yesLabel,
+  noLabel,
   onResolve
 }: Readonly<{
   title: string
-  onResolve: (save: boolean) => void
+  yesLabel: string
+  noLabel: string
+  onResolve: (yes: boolean) => void
 }>) {
   return (
     <Box flexDirection="column">
       <Text color="yellow">{title}</Text>
       <SelectMenu
-        width={40}
-        items={[t("secretPrompt.dontSave"), t("secretPrompt.saveAnyway")]}
+        width={Math.max(yesLabel.length, noLabel.length) + 10}
+        items={[noLabel, yesLabel]}
         onSelect={index => onResolve(index === 1)}
         onClose={() => onResolve(false)}
       />

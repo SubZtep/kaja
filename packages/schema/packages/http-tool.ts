@@ -15,7 +15,8 @@ export const HttpToolAuthSchema = z.discriminatedUnion("type", [
     type: z.literal("apiKey"),
     in: z.enum(["header", "query"]),
     name: z.string().min(1).describe("Header or query parameter name"),
-    prefix: z.string().optional().describe('Put before the key, e.g. "Bearer "')
+    prefix: z.string().optional().describe('Put before the key, e.g. "Bearer "'),
+    optional: z.boolean().default(false).describe("The API works without a key too (e.g. with lower limits)")
   })
 ])
 

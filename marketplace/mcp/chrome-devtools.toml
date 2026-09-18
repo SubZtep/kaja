@@ -1,0 +1,24 @@
+# Drives a headless Chrome through the Chrome DevTools MCP server:
+# https://github.com/ChromeDevTools/chrome-devtools-mcp
+# Runs `bunx chrome-devtools-mcp@latest` on your machine and needs Chrome installed.
+# Reading pages runs straight away; clicking, typing and navigating ask first.
+name = "chrome-devtools"
+description = "Open web pages in a headless Chrome, read them, take screenshots, and click or type when you approve."
+transport = "stdio"
+command = "bunx"
+args = ["chrome-devtools-mcp@latest", "--headless", "--isolated"]
+approval = "writes"
+tools = [
+  "new_page",
+  "navigate_page",
+  "list_pages",
+  "select_page",
+  "take_snapshot",
+  "take_screenshot",
+  "wait_for",
+  "click",
+  "fill",
+  "press_key",
+  "list_console_messages",
+  "list_network_requests",
+]

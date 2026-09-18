@@ -1,4 +1,4 @@
-import { createFolderPackageStore } from "@kaja/nasi"
+import { createFolderPackageStore, mcpPackageTarget } from "@kaja/nasi"
 import type { CliResolvedModel, McpServerEntry } from "@kaja/schema/config"
 import { loadMcpServers } from "../config/mcp-servers"
 import { saveSecrets, secrets } from "../config/secrets"
@@ -62,7 +62,7 @@ function withSecret(server: McpServerEntry, name: string, value: string): McpSer
 
 /**
  * Every credential the current local config relies on: providers used by a configured
- * model, enabled HTTP tool packages with key auth, secrets MCP servers declare, and the
+ * model, enabled HTTP tool and MCP packages with key auth, secrets MCP servers declare, and the
  * location/Telegram services when configured (web search only when a key is set: there's
  * no other sign the user wants it).
  */
@@ -83,8 +83,8 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
     })
   }
 
-  const { tools } = await loadPackagesFile()
-  const store = createFolderPackageStore({ root: getMarketplaceDir(), enabled: { skills: [], tools } })
+  const { tools, mcp } = await loadPackagesFile()
+  const store = createFolderPackageStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
   for (const pkg of await store.listHttpTools()) {
     if (pkg.auth.type !== "apiKey") continue
     const saved = creds.packages[pkg.name]?.apiKey
@@ -93,10 +93,30 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
       where: `[packages.${pkg.name}] apiKey`,
       hint: `${pkg.auth.in} ${pkg.auth.name}`,
       present: Boolean(saved),
-      required: true,
+      required: !pkg.auth.optional,
       check: async value => {
         const key = value ?? saved
         return key ? checkPackageKey(pkg, key) : undefined
+      },
+      save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
+    })
+  }
+  for (const pkg of await store.listMcpPackages()) {
+    const { auth } = pkg
+    if (auth.type !== "apiKey") continue
+    const saved = creds.packages[pkg.name]?.apiKey
+    items.push({
+      label: t("doctor.itemMcpPackage", { name: pkg.name }),
+      where: `[packages.${pkg.name}] apiKey`,
+      hint: `${auth.in} ${auth.name}`,
+      present: Boolean(saved),
+      required: !auth.optional,
+      // Connecting proves the server is up and takes the key; an optional key without a value tests the keyless connection.
+      check: async value => {
+        const key = value ?? saved
+        if (!key && !auth.optional) return undefined
+        const target = mcpPackageTarget(pkg, key)
+        return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
       },
       save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
     })

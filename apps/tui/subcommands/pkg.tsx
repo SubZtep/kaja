@@ -20,7 +20,7 @@ export async function runPkgSubcommand(args: typeof Args) {
     process.exit(1)
   }
 
-  const { scanHttpTools, scanSkills } = await import("@kaja/nasi")
+  const { scanHttpTools, scanMcpPackages, scanSkills } = await import("@kaja/nasi")
   const { getMarketplaceDir, getPackagesPath, loadPackagesFile, savePackagesFile } = await import(
     "../lib/packages/packages-file"
   )
@@ -40,26 +40,37 @@ export async function runPkgSubcommand(args: typeof Args) {
     type: "skill" as const,
     local: !synced.has(`skills/${s.name}`)
   }))
+  const keyNeed = (auth?: { optional: boolean }): "optional" | "required" | undefined =>
+    auth ? (auth.optional ? "optional" : "required") : undefined
   const toolScan = await scanHttpTools(marketplaceDir)
   const tools = toolScan.map(({ auth, ...s }) => ({
     ...s,
     type: "tool" as const,
-    needsKey: auth !== undefined,
+    key: keyNeed(auth),
     local: !synced.has(`tools/${s.name}.toml`)
   }))
-  const items = [...skills, ...tools]
+  const mcpScan = await scanMcpPackages(marketplaceDir)
+  const mcp = mcpScan.map(({ auth, command, transport: _, ...s }) => ({
+    ...s,
+    type: "mcp" as const,
+    runs: command,
+    key: keyNeed(auth),
+    local: !synced.has(`mcp/${s.name}.toml`)
+  }))
+  const items = [...skills, ...tools, ...mcp]
   const enabled = await loadPackagesFile()
 
   if (!process.stdin.isTTY) {
     for (const item of skills) console.log(`${enabled.skills.includes(item.name) ? "[x]" : "[ ]"} skill ${item.name}`)
     for (const item of tools) console.log(`${enabled.tools.includes(item.name) ? "[x]" : "[ ]"} tool  ${item.name}`)
+    for (const item of mcp) console.log(`${enabled.mcp.includes(item.name) ? "[x]" : "[ ]"} mcp   ${item.name}`)
     console.log(t("pkg.notTty", { path: getPackagesPath() }))
     process.exit(0)
   }
 
   const { render } = await import("ink")
   const { PackagePicker } = await import("../components/package-picker")
-  let picked: { skills: string[]; tools: string[] } | undefined
+  let picked: { skills: string[]; tools: string[]; mcp: string[] } | undefined
   const picker = render(
     <PackagePicker
       items={items}
@@ -80,25 +91,46 @@ export async function runPkgSubcommand(args: typeof Args) {
   // Enabled packages that are present but currently broken aren't selectable; keep them on rather than silently dropping them.
   const keepBroken = (names: string[], found: { name: string; error?: string }[]) =>
     names.filter(name => found.some(item => item.name === name && item.error))
+  const { askSecret, askYesNo } = await import("../lib/doctor/prompt")
+
+  // A stdio server runs a command on this machine: newly enabling one asks once, showing exactly what it runs.
+  const confirmedMcp: string[] = []
+  for (const name of picked.mcp) {
+    const command = mcpScan.find(s => s.name === name)?.command
+    const confirmed =
+      !command ||
+      enabled.mcp.includes(name) ||
+      (await askYesNo(t("pkg.confirmStdio", { name, command }), t("pkg.enable"), t("pkg.dontEnable")))
+    if (confirmed) confirmedMcp.push(name)
+  }
+
   const next = {
     skills: [...picked.skills, ...keepBroken(enabled.skills, skills)],
-    tools: [...picked.tools, ...keepBroken(enabled.tools, tools)]
+    tools: [...picked.tools, ...keepBroken(enabled.tools, tools)],
+    mcp: [...confirmedMcp, ...keepBroken(enabled.mcp, mcp)]
   }
   await savePackagesFile(next)
-  console.log(t("pkg.saved", { path: getPackagesPath(), count: next.skills.length + next.tools.length }))
+  const count = next.skills.length + next.tools.length + next.mcp.length
+  console.log(t("pkg.saved", { path: getPackagesPath(), count }))
 
-  // Ask for keys the enabled tools still lack; a skipped one stays enabled but is left out until its key is set.
+  // Ask for keys enabled packages still lack. A skipped required key keeps the package enabled but left out until it's set; an optional one just loads without.
   const { saveSecrets, secrets } = await import("../lib/config/secrets")
-  const { askSecret } = await import("../lib/doctor/prompt")
   const known = (await secrets()).packages
-  for (const tool of toolScan) {
-    if (!(next.tools.includes(tool.name) && tool.auth && !known[tool.name])) continue
-    const key = await askSecret(t("pkg.keyPrompt", { name: tool.name, where: `${tool.auth.in} ${tool.auth.name}` }))
+  const keyed = [
+    ...toolScan.filter(s => next.tools.includes(s.name)),
+    ...mcpScan.filter(s => next.mcp.includes(s.name))
+  ]
+  for (const pkg of keyed) {
+    if (!pkg.auth || known[pkg.name]) continue
+    const where = `${pkg.auth.in} ${pkg.auth.name}`
+    const key = await askSecret(
+      t(pkg.auth.optional ? "pkg.optionalKeyPrompt" : "pkg.keyPrompt", { name: pkg.name, where })
+    )
     if (key) {
-      await saveSecrets({ packages: { [tool.name]: { apiKey: key } } })
-      console.log(t("pkg.keySaved", { name: tool.name }))
-    } else {
-      console.log(t("pkg.keySkipped", { name: tool.name }))
+      await saveSecrets({ packages: { [pkg.name]: { apiKey: key } } })
+      console.log(t("pkg.keySaved", { name: pkg.name }))
+    } else if (!pkg.auth.optional) {
+      console.log(t("pkg.keySkipped", { name: pkg.name }))
     }
   }
   process.exit(0)

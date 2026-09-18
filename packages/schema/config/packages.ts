@@ -13,7 +13,11 @@ export const PackagesFileSchema = z.object({
   tools: z
     .array(z.string().min(1))
     .default([])
-    .describe("Enabled HTTP tool packages, by file name under marketplace/tools/")
+    .describe("Enabled HTTP tool packages, by file name under marketplace/tools/"),
+  mcp: z
+    .array(z.string().min(1))
+    .default([])
+    .describe("Enabled MCP server packages, by file name under marketplace/mcp/")
 })
 
 export type PackagesFile = z.infer<typeof PackagesFileSchema>

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { SaveAnywayPrompt, SecretPrompt } from "../../components/secret-prompt"
+import { SecretPrompt, YesNoPrompt } from "../../components/secret-prompt"
 import { renderForTest } from "../test-utils"
 
 test("masks input and submits the trimmed value; an empty Enter skips", async () => {
@@ -44,15 +44,18 @@ test("escape skips", async () => {
   await t.waitUntilExit()
 })
 
-test("save-anyway defaults to not saving; the second option saves", async () => {
+test("a yes/no prompt defaults to no; the second option is yes", async () => {
   const answers: boolean[] = []
-  const first = renderForTest(<SaveAnywayPrompt title="It didn't work." onResolve={save => answers.push(save)} />)
+  const prompt = (
+    <YesNoPrompt title="It didn't work." yesLabel="Save" noLabel="Don't" onResolve={yes => answers.push(yes)} />
+  )
+  const first = renderForTest(prompt)
   await first.tick()
   await first.press("\r")
   first.unmount()
   await first.waitUntilExit()
 
-  const second = renderForTest(<SaveAnywayPrompt title="It didn't work." onResolve={save => answers.push(save)} />)
+  const second = renderForTest(prompt)
   await second.tick()
   await second.press("\x1b[B")
   await second.press("\r")

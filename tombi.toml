@@ -34,3 +34,7 @@ include = ["docs/config/personas/*.toml", "**/.config/kaja/personas/*.toml"]
 [[schemas]]
 path = "docs/config/schemas/http-tool.json"
 include = ["marketplace/tools/*.toml", "**/.config/kaja/marketplace/tools/*.toml"]
+
+[[schemas]]
+path = "docs/config/schemas/mcp-package.json"
+include = ["marketplace/mcp/*.toml", "**/.config/kaja/marketplace/mcp/*.toml"]

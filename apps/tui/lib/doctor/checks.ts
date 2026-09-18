@@ -1,4 +1,11 @@
-import { buildHttpRequest, connectMcpServer, fetchPublicHttp, lookupMyLocation, resetLocationCache } from "@kaja/nasi"
+import {
+  buildHttpRequest,
+  connectMcpServer,
+  fetchPublicHttp,
+  lookupMyLocation,
+  type McpConnectOptions,
+  resetLocationCache
+} from "@kaja/nasi"
 import type { CliResolvedModel, McpServerEntry } from "@kaja/schema/config"
 import type { HttpToolPackage } from "@kaja/schema/packages"
 import { t } from "../i18n"
@@ -57,9 +64,9 @@ export async function checkPackageKey(pkg: HttpToolPackage, apiKey: string): Pro
 }
 
 /** Connects to the server and lists its tools, then disconnects. */
-export async function checkMcpServer(server: McpServerEntry): Promise<CheckResult> {
+export async function checkMcpServer(server: McpServerEntry, opts?: McpConnectOptions): Promise<CheckResult> {
   try {
-    const { close } = await withTimeout(connectMcpServer(server, getPaths().temp))
+    const { close } = await withTimeout(connectMcpServer(server, getPaths().temp, opts))
     await close()
     return OK
   } catch (error) {

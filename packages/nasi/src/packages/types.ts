@@ -1,4 +1,4 @@
-import type { HttpToolPackage } from "@kaja/schema/packages"
+import type { HttpToolPackage, McpPackage } from "@kaja/schema/packages"
 
 /** An enabled skill's catalog entry — all the model sees of it before calling load_skill. */
 export type SkillSummary = {
@@ -25,6 +25,8 @@ export type PackageStore = {
   readSkill(name: string, file?: string): Promise<string | undefined>
   /** Enabled, valid HTTP tool packages. Broken ones are skipped with a warning, never thrown. */
   listHttpTools(): Promise<HttpToolPackage[]>
+  /** Enabled, valid MCP server packages. Broken ones are skipped with a warning, never thrown. */
+  listMcpPackages(): Promise<McpPackage[]>
 }
 
 /** A skill file that exists but can't be handed to the model — outside the skill folder, binary, or too large. */

@@ -57,6 +57,11 @@
             "prefix": {
               "description": "Put before the key, e.g. \"Bearer \"",
               "type": "string"
+            },
+            "optional": {
+              "default": false,
+              "description": "The API works without a key too (e.g. with lower limits)",
+              "type": "boolean"
             }
           },
           "required": [

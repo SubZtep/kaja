@@ -164,3 +164,31 @@ test("an MCP secret can't be tested while another declared one is still missing"
   const items = await collectCredentials()
   expect(await items[0]!.check?.("value-for-a")).toBeUndefined()
 })
+
+test("MCP packages with key auth become items; optional keys aren't required", async () => {
+  put("packages.toml", `mcp = ["docs", "private", "open"]\ntools = ["weather"]\n`)
+  put(
+    "marketplace/mcp/docs.toml",
+    `name = "docs"\ndescription = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", optional = true }\n`
+  )
+  put(
+    "marketplace/mcp/private.toml",
+    `name = "private"\ndescription = "x"\ntransport = "stdio"\ncommand = "true"\nauth = { type = "apiKey", in = "env", name = "P_KEY" }\n`
+  )
+  put("marketplace/mcp/open.toml", `name = "open"\ndescription = "x"\nurl = "https://mcp.open.test/mcp"\n`)
+  put(
+    "marketplace/tools/weather.toml",
+    `name = "weather"\ndescription = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", optional = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
+  )
+  put("mcp.toml", "servers = []\n")
+  put("services.toml", "")
+  put("secrets.toml", "")
+
+  const items = await collectCredentials()
+  expect(items.map(i => [i.where, i.required, i.hint])).toEqual([
+    ["[packages.weather] apiKey", false, "query key"],
+    ["[packages.docs] apiKey", false, "header Authorization"],
+    ["[packages.private] apiKey", true, "env P_KEY"]
+  ])
+  expect(items[1]!.label).toBe("docs (MCP package)")
+})

@@ -16,12 +16,12 @@ and their [`datasets`](https://github.com/SubZtep/kaja/tree/main/docs/config/dat
 ```ini
 ~/.config/kaja/
 ├─ datasets/*.json  # structured field sets for personas to collect
-├─ marketplace/     # skills and HTTP tools, synced and your own
+├─ marketplace/     # skills, HTTP tools and MCP servers, synced and your own
 ├─ personas/*.toml  # one behaviour per file
 ├─ tools/*.ts       # your own plugin tools
 ├─ mcp.toml         # model context protocol servers
 ├─ models.toml      # model catalog per provider
-├─ packages.toml    # which skills and HTTP tools are loaded
+├─ packages.toml    # which of them are loaded
 ├─ services.toml    # external service definitions and endpoints
 ├─ secrets.toml     # your secret keys and tokens
 └─ settings.toml    # preferences and app settings
@@ -70,8 +70,8 @@ paste into a bug report.
 
 ## Checking keys and tokens
 
-`kaja doctor` tests every credential your config relies on: model providers, HTTP tool packages, MCP
-servers that list `secrets`, and the location, Telegram and web search services. In a terminal it
+`kaja doctor` tests every credential your config relies on: model providers, HTTP tool and MCP
+packages, MCP servers that list `secrets`, and the location, Telegram and web search services. In a terminal it
 asks for anything missing or not working, tests the new value before saving it to `secrets.toml`,
 and only keeps a value that fails its test if you say so. A provider without a key is fine as long
 as its model answers (Ollama needs none). It ends with what's still left to fix and where.

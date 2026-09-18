@@ -12,7 +12,8 @@ marketplace/
 │  ├─ SKILL.md      # frontmatter (name, description) + instructions
 │  ├─ *.md          # optional extra files the instructions point to
 │  └─ scripts/      # optional scripts, run through run_command with the usual approval
-└─ tools/<name>.toml  # an HTTP API: base URL, auth, and the tools the model can call
+├─ tools/<name>.toml  # an HTTP API: base URL, auth, and the tools the model can call
+└─ mcp/<name>.toml    # an MCP server: url (http/sse) or command (stdio), auth, approval, tool allowlist
 ```
 
 - `name` in the frontmatter must match the folder: lowercase letters, digits and single hyphens,
@@ -25,6 +26,9 @@ marketplace/
   specific (`weather_forecast`, not `get`); a name Kaja already uses is skipped. Never put a key in
   the file: `auth` only says where it goes, and the user's key stays in their `secrets.toml`.
 - Anything but GET asks the user first, so read-only endpoints should be GET tools.
+- An MCP package's `tools` allowlist keeps the model's tool list short; list only what's useful.
+  Pick `approval = "writes"` when a server can change things, and say in the description what a
+  stdio server needs installed (it runs on the user's machine).
 
 ## How sync treats local files
 

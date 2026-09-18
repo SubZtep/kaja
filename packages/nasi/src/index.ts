@@ -40,7 +40,7 @@ export {
   tool,
   toolName
 } from "./agent/tools"
-export { connectMcpServer } from "./mcp/client"
+export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
   createOpenAIClient,
   KAJA_MODEL_HEADER,
@@ -52,12 +52,16 @@ export {
   createFolderPackageStore,
   type FolderPackageStoreOptions,
   type HttpToolScanEntry,
+  type McpScanEntry,
+  type PackageKeyNeed,
   type SkillScanEntry,
   scanHttpTools,
+  scanMcpPackages,
   scanSkills
 } from "./packages/folder-store"
 export { approvalSummary, buildHttpRequest, createHttpTools, type HttpRequestSpec } from "./packages/http-tool"
 export { type LoadedPackages, type LoadPackagesOptions, loadPackages } from "./packages/load"
+export { type McpPackageTarget, mcpPackageTarget } from "./packages/mcp-package"
 export { parseSkillMd } from "./packages/skill-md"
 export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./packages/skills"
 export { type PackageStore, SkillFileError, type SkillSummary } from "./packages/types"

@@ -2,7 +2,8 @@ import { warn } from "@kaja/logger"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../agent/agent"
 import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
-import { connectMcpServer } from "../mcp/client"
+import { connectMcpServer, type McpConnectOptions } from "../mcp/client"
+import type { McpPackageTarget } from "../packages/mcp-package"
 import { loadPluginTools } from "../plugin/plugin-tools"
 import { currentTimeTool } from "./builtin/current-time"
 import { datasetInfoTool } from "./builtin/dataset-info"
@@ -58,7 +59,13 @@ export type CreateToolsOptions = {
   tempDir?: string
   /** Tools the host brings in besides the builtins, e.g. `loadPackages`' groups. Merged under the same name rules. */
   extraTools?: ToolGroup[]
+  /** MCP servers from enabled packages (`loadPackages`' `mcp`), connected alongside `mcpServers` as community tools. Local only. */
+  mcpPackages?: McpPackageTarget[]
+  /** How long each MCP server gets to connect and list its tools before it's skipped. Default 10 s. */
+  mcpConnectTimeoutMs?: number
 }
+
+const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 10_000
 
 /** Tools that share an origin (and, for non-official ones, usually a source) on their way into {@link mergeTools}. */
 export type ToolGroup = {
@@ -116,21 +123,33 @@ export function mergeTools(groups: ToolGroup[]): { tools: Tool<any>[]; skipped: 
 
 type McpConnection = { tools: Tool<any>[]; close: () => Promise<void>; failed: boolean; id: string }
 
-async function connectMcpServers(mcpServers: McpServerEntry[], tempDir: string): Promise<McpConnection[]> {
-  const connections: McpConnection[] = []
-  for (const server of mcpServers) {
-    try {
-      const connected = await connectMcpServer(server, tempDir)
-      connections.push({ ...connected, failed: false, id: server.id })
-    } catch (error) {
-      warn("Failed to connect to MCP server", {
-        server: server.id,
-        error: error instanceof Error ? error.message : error
-      })
-      connections.push({ tools: [], close: async () => {}, failed: true, id: server.id })
-    }
+type McpTarget = { id: string; server: McpServerEntry; opts?: McpConnectOptions }
+
+/** Connects one server, giving up after `timeoutMs`; a connection that turns up late is closed rather than left running. */
+async function connectWithTimeout(target: McpTarget, tempDir: string, timeoutMs: number): Promise<McpConnection> {
+  const pending = connectMcpServer(target.server, tempDir, target.opts)
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer in ${Math.round(timeoutMs / 1000)} s`)), timeoutMs)
+  })
+  try {
+    const connected = await Promise.race([pending, timeout])
+    return { ...connected, failed: false, id: target.id }
+  } catch (error) {
+    pending.then(late => late.close()).catch(() => {})
+    warn("Failed to connect to MCP server", {
+      server: target.id,
+      error: error instanceof Error ? error.message : error
+    })
+    return { tools: [], close: async () => {}, failed: true, id: target.id }
+  } finally {
+    clearTimeout(timer)
   }
-  return connections
+}
+
+/** Every server at once, so one slow or offline server can't hold up the others (or startup) past the timeout. */
+function connectMcpServers(targets: McpTarget[], tempDir: string, timeoutMs: number): Promise<McpConnection[]> {
+  return Promise.all(targets.map(target => connectWithTimeout(target, tempDir, timeoutMs)))
 }
 
 /** Names of builtin tools a cloud turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting MCP/plugins (cloud never does). */
@@ -172,14 +191,35 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         .map(t => (CLIENT_EXECUTABLE.has(toolName(t)) ? toClientExecutableStub(t) : t))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
-  const mcpConnections = local && opts.mcpServers && tempDir ? await connectMcpServers(opts.mcpServers, tempDir) : []
+  const packageIds = new Set((opts.mcpPackages ?? []).map(target => `package:${target.name}`))
+  const mcpTargets: McpTarget[] = [
+    ...(opts.mcpServers ?? []).map(server => ({ id: server.id, server })),
+    ...(opts.mcpPackages ?? []).map(target => ({
+      id: `package:${target.name}`,
+      server: target.server,
+      opts: {
+        transport: target.transport === "sse" ? ("sse" as const) : ("http" as const),
+        allow: target.allow,
+        approval: target.approval,
+        label: `package:${target.name}`
+      }
+    }))
+  ]
+  const mcpConnections =
+    local && tempDir && mcpTargets.length > 0
+      ? await connectMcpServers(mcpTargets, tempDir, opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS)
+      : []
 
   const pluginTools = local && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []
 
   const { tools, skipped } = mergeTools([
     { origin: "official", tools: official },
     ...(opts.extraTools ?? []),
-    ...mcpConnections.map(c => ({ origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools })),
+    ...mcpConnections.map(c =>
+      packageIds.has(c.id)
+        ? { origin: "community" as const, source: c.id, tools: c.tools }
+        : { origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools }
+    ),
     // Each plugin tool already carries its own `plugin:<file>` source.
     { origin: "third-party", tools: pluginTools }
   ])

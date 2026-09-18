@@ -1,4 +1,5 @@
 import { render } from "ink"
+import { t } from "../i18n"
 
 /** Asks for a secret in the terminal; resolves to the trimmed value, or undefined when skipped. */
 export async function askSecret(title: string): Promise<string | undefined> {
@@ -20,18 +21,25 @@ export async function askSecret(title: string): Promise<string | undefined> {
   })
 }
 
-/** Asks whether to keep a value that failed its test; false (don't save) is the safe default. */
-export async function askSaveAnyway(title: string): Promise<boolean> {
-  const { SaveAnywayPrompt } = await import("../../components/secret-prompt")
+/** Asks a yes/no question with "no" as the default (first, and what Esc picks). */
+export async function askYesNo(title: string, yesLabel: string, noLabel: string): Promise<boolean> {
+  const { YesNoPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
     const { unmount } = render(
-      <SaveAnywayPrompt
+      <YesNoPrompt
         title={title}
-        onResolve={save => {
+        yesLabel={yesLabel}
+        noLabel={noLabel}
+        onResolve={yes => {
           unmount()
-          resolve(save)
+          resolve(yes)
         }}
       />
     )
   })
+}
+
+/** Asks whether to keep a value that failed its test; not saving is the default. */
+export function askSaveAnyway(title: string): Promise<boolean> {
+  return askYesNo(title, t("secretPrompt.saveAnyway"), t("secretPrompt.dontSave"))
 }

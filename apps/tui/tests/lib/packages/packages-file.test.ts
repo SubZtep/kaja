@@ -20,7 +20,7 @@ function put(path: string, content: string) {
 }
 
 test("a missing packages.toml enables nothing and isn't created", async () => {
-  expect(await loadPackagesFile()).toEqual({ skills: [], tools: [] })
+  expect(await loadPackagesFile()).toEqual({ skills: [], tools: [], mcp: [] })
   expect(await Bun.file(getPackagesPath()).exists()).toBe(false)
 })
 

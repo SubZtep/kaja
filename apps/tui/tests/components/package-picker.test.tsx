@@ -7,12 +7,14 @@ const items: PickerItem[] = [
   { type: "skill", name: "notes", description: "Keep notes.", local: true },
   { type: "skill", name: "broken", error: "no SKILL.md", local: true },
   { type: "tool", name: "open-meteo", description: "Weather.", local: false, domain: "api.open-meteo.com" },
-  { type: "tool", name: "github", description: "Issues.", local: false, domain: "api.github.com", needsKey: true }
+  { type: "tool", name: "github", description: "Issues.", local: false, domain: "api.github.com", key: "required" },
+  { type: "mcp", name: "docs", description: "Docs.", local: false, domain: "mcp.docs.test", key: "optional" },
+  { type: "mcp", name: "browser", description: "Browser.", local: false, runs: "bunx browser-mcp" }
 ]
 
 test("lists skills and tools with tags, domains and key needs, broken ones apart", async () => {
   const t = renderForTest(
-    <PackagePicker items={items} enabled={{ skills: [], tools: [] }} onSubmit={() => {}} onCancel={() => {}} />
+    <PackagePicker items={items} enabled={{ skills: [], tools: [], mcp: [] }} onSubmit={() => {}} onCancel={() => {}} />
   )
   await t.tick()
   const frame = t.lastFrame() ?? ""
@@ -20,6 +22,8 @@ test("lists skills and tools with tags, domains and key needs, broken ones apart
   expect(frame).toContain("notes [local]")
   expect(frame).toContain("tool  open-meteo  api.open-meteo.com · no key")
   expect(frame).toContain("tool  github  api.github.com · needs a key")
+  expect(frame).toContain("mcp   docs  mcp.docs.test · optional key")
+  expect(frame).toContain("mcp   browser  runs: bunx browser-mcp · no key")
   expect(frame).toContain("broken: no SKILL.md")
   t.unmount()
   await t.waitUntilExit()
@@ -30,7 +34,7 @@ test("submits the toggled selection split into skills and tools", async () => {
   const t = renderForTest(
     <PackagePicker
       items={items}
-      enabled={{ skills: ["pdf"], tools: [] }}
+      enabled={{ skills: ["pdf"], tools: [], mcp: [] }}
       onSubmit={selection => submitted.push(selection)}
       onCancel={() => {}}
     />
@@ -41,7 +45,7 @@ test("submits the toggled selection split into skills and tools", async () => {
   await t.press("\x1b[B")
   await t.press(" ")
   await t.press("\r")
-  expect(submitted).toEqual([{ skills: ["pdf"], tools: ["open-meteo"] }])
+  expect(submitted).toEqual([{ skills: ["pdf"], tools: ["open-meteo"], mcp: [] }])
   t.unmount()
   await t.waitUntilExit()
 })
@@ -52,7 +56,7 @@ test("escape cancels without submitting", async () => {
   const t = renderForTest(
     <PackagePicker
       items={items}
-      enabled={{ skills: [], tools: [] }}
+      enabled={{ skills: [], tools: [], mcp: [] }}
       onSubmit={selection => submitted.push(selection)}
       onCancel={() => {
         cancelled = true

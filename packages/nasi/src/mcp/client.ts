@@ -3,18 +3,40 @@ import { join } from "node:path"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { randomUUIDv7 } from "@kaja/shared"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { write } from "bun"
 import { type Tool, type ToolResult, tool } from "../agent/tools"
 
+const MAX_ARGS_PREVIEW = 200
+
+export type McpConnectOptions = {
+  /** For a `url` server: Streamable HTTP (default) or the older SSE transport. */
+  transport?: "http" | "sse"
+  /** Only these of the server's tools (by MCP name) reach the model; unset means all. */
+  allow?: string[]
+  /** When calls ask first (see `Tool.approval`): `writes` asks unless the tool is annotated readOnlyHint. Default never. */
+  approval?: "never" | "writes" | "always"
+  /** Leads the approval summary, e.g. `mcp:context7`. */
+  label?: string
+}
+
+function approvalSummary(label: string, name: string, args: unknown): string {
+  const json = JSON.stringify(args ?? {})
+  return `${label} ${name} ${json.length > MAX_ARGS_PREVIEW ? `${json.slice(0, MAX_ARGS_PREVIEW)}…` : json}`
+}
+
 export async function connectMcpServer(
   server: McpServerEntry,
-  tempDir: string
+  tempDir: string,
+  opts: McpConnectOptions = {}
 ): Promise<{ tools: Tool<any>[]; close: () => Promise<void> }> {
   const transport =
     "url" in server
-      ? new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: server.headers } })
+      ? opts.transport === "sse"
+        ? new SSEClientTransport(new URL(server.url), { requestInit: { headers: server.headers } })
+        : new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: server.headers } })
       : new StdioClientTransport({
           command: server.command,
           args: server.args,
@@ -26,14 +48,22 @@ export async function connectMcpServer(
   await client.connect(transport)
 
   const { tools: mcpTools } = await client.listTools()
-  const tools = mcpTools.map(mcpTool =>
-    tool<Record<string, unknown>>({
-      name: mcpTool.name,
-      description: mcpTool.description ?? mcpTool.name,
-      parameters: mcpTool.inputSchema,
-      execute: args => callTool(client, mcpTool.name, args, tempDir)
+  const label = opts.label ?? `mcp:${server.id}`
+  const tools = mcpTools
+    .filter(mcpTool => !opts.allow || opts.allow.includes(mcpTool.name))
+    .map(mcpTool => {
+      const mcpToolDef = tool<Record<string, unknown>>({
+        name: mcpTool.name,
+        description: mcpTool.description ?? mcpTool.name,
+        parameters: mcpTool.inputSchema,
+        execute: args => callTool(client, mcpTool.name, args, tempDir)
+      })
+      const asks =
+        opts.approval === "always" || (opts.approval === "writes" && mcpTool.annotations?.readOnlyHint !== true)
+      return asks
+        ? { ...mcpToolDef, approval: (args: Record<string, unknown>) => approvalSummary(label, mcpTool.name, args) }
+        : mcpToolDef
     })
-  )
 
   return { tools, close: () => client.close() }
 }

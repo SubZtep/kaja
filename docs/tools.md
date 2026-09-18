@@ -98,6 +98,31 @@ args = ["-y", "@upstash/context7-mcp"]
 secrets = ["CONTEXT7_API_KEY"]
 ```
 
+### MCP packages
+
+An MCP server can also come as a package, picked with `kaja pkg` like skills and HTTP tools. It lives
+in `~/.config/kaja/marketplace/mcp/<name>.toml` and loads when listed in `packages.toml`
+(`mcp = ["context7"]`):
+
+```toml
+name = "context7"
+description = "Up-to-date library docs"
+transport = "http"                  # http (Streamable HTTP), sse, or stdio
+url = "https://mcp.context7.com/mcp"
+auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer ", optional = true }
+tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the model
+approval = "never"                  # never | writes | always
+```
+
+- A `stdio` package runs a local command instead of a `url` (`command`, `args`, `env`), and its key
+  goes in an env var (`in = "env"`). `kaja pkg` shows the command and asks before enabling one.
+- The key lives in `secrets.toml` as `[packages.<name>] apiKey`, like HTTP tools. `optional = true`
+  means the server works without one too.
+- `approval = "writes"` asks before any tool the server doesn't mark read-only; `always` asks before
+  every call.
+- All servers, packages and `mcp.toml` ones, connect in parallel at startup; one that doesn't answer
+  within 10 seconds is skipped with a warning instead of holding up the start.
+
 ## Your own tools
 
 Drop a `.ts` file under `~/.config/kaja/tools/` that exports a tool object — every export with a

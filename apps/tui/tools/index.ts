@@ -46,7 +46,7 @@ export async function getDefaultTools(personas: Persona[]) {
   const packages = await loadPackages(
     createFolderPackageStore({
       root: getMarketplaceDir(),
-      enabled: { skills: packagesFile.skills, tools: packagesFile.tools }
+      enabled: { skills: packagesFile.skills, tools: packagesFile.tools, mcp: packagesFile.mcp }
     }),
     {
       personas,
@@ -59,6 +59,7 @@ export async function getDefaultTools(personas: Persona[]) {
   return createTools({
     includeLocalTools: true,
     extraTools: packages.groups,
+    mcpPackages: packages.mcp,
     mcpServers,
     pluginDir: join(getConfigDir(), "tools"),
     deps: {
