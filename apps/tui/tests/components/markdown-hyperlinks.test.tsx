@@ -15,7 +15,11 @@ const hostileEnv = {
   TERM_PROGRAM_VERSION: "",
   VTE_VERSION: "",
   WT_SESSION: "",
-  FORCE_HYPERLINK: ""
+  FORCE_HYPERLINK: "",
+  // Overrides any color-forcing var from the outer test runner (e.g. VS Code's Bun extension sets FORCE_COLOR=1),
+  // which would wrap the OSC 8 sequence in chalk color codes and break the exact-string assertions below.
+  FORCE_COLOR: "0",
+  NO_COLOR: "1"
 }
 
 async function renderLinkInSubprocess(env: Record<string, string>) {

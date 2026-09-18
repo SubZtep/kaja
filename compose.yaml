@@ -52,6 +52,8 @@ services:
     environment:
       DATABASE_URL: postgresql://testuser:testpass@db:5432/kaja
       SMTP_HOST: mail
+      CORS_ORIGIN: http://localhost:3000
+      BETTER_AUTH_SECRET: 4onfkcE79x1TGznTx8YyRbeUiFsyMREjVPkyGrHPRvI=
 
   web:
     build:

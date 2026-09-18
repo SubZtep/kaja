@@ -1,4 +1,4 @@
-import { afterEach, expect, mock, test } from "bun:test"
+import { afterAll, afterEach, expect, mock, test } from "bun:test"
 
 // A public-looking hostname that resolves to a private/metadata address is exactly the case
 // isPublicHttpUrl's literal-hostname check can't catch (DNS rebinding, attacker-controlled DNS).
@@ -13,6 +13,13 @@ const { fetchPublicHttp, UnsafeUrlError } = await import("../../src/security/ssr
 
 afterEach(() => {
   lookup.mockClear()
+})
+
+// mock.module replaces node:dns in the shared module registry for the rest of the bun test
+// process (not just this file), so later files that import it for real DNS work (e.g. nodemailer)
+// would otherwise get this stub instead — restore it once this file's tests are done.
+afterAll(() => {
+  mock.restore()
 })
 
 test("rejects a hostname that resolves to a private address", async () => {

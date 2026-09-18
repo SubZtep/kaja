@@ -8,6 +8,10 @@ const rootDir = join(import.meta.dir, "..")
 function renderLine(field: FieldInfo): string {
   const comment = field.description ? `   # ${field.description}` : ""
 
+  if (field.devDefault && field.example !== undefined) {
+    return `${field.key}=${field.example}${comment}`
+  }
+
   if (field.secret) {
     const value = field.example ?? ""
     const hint = comment

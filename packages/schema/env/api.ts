@@ -30,7 +30,7 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
   CONFIG_API_TOKEN: trimmed
     .optional()
     .describe("Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes")
-    .meta({ secret: true, example: "kaja", section: "Config API" }),
+    .meta({ example: "kaja", devDefault: true, section: "Config API" }),
 
   BUN_TEST: trimmed.optional().describe("Set by the Bun test runner; disables rate limiting when present"),
   RATE_LIMIT_ENABLED: bool

@@ -4,6 +4,8 @@ export interface EnvFieldMeta {
   description?: string
   example?: string
   secret?: boolean
+  /** Ship `example` uncommented despite being optional — for a real, safe-to-commit working default (as opposed to a rotated secret). */
+  devDefault?: boolean
   section?: string
 }
 
@@ -12,6 +14,7 @@ export interface FieldInfo {
   description: string
   example?: string
   secret?: boolean
+  devDefault?: boolean
   section?: string
   isOptional: boolean
   defaultValue?: string | number | boolean
@@ -36,6 +39,7 @@ export function inspectFields(schema: z.ZodObject<z.ZodRawShape>): FieldInfo[] {
       description: meta?.description ?? "",
       example: meta?.example,
       secret: meta?.secret,
+      devDefault: meta?.devDefault,
       section: meta?.section,
       isOptional: fieldSchema.isOptional(),
       defaultValue: isZodDefault(fieldSchema) ? defaultValueOf(fieldSchema) : undefined
