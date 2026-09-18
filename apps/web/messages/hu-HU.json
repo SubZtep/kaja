@@ -328,6 +328,7 @@
   "models_column_tasks": "Feladatok",
   "models_column_provider": "Szolgáltató",
   "models_column_free": "Ingyenes",
+  "models_column_last_used": "Utoljára használva",
   "models_success_provider_created": "Szolgáltató létrehozva",
   "models_error_provider_create_failed": "Nem sikerült létrehozni a szolgáltatót",
   "models_success_provider_updated": "Szolgáltató frissítve",

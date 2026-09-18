@@ -35,7 +35,8 @@ export const modelSchema = z.object({
   enabled: z.boolean(),
   free: z.boolean(),
   createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date()
+  updatedAt: z.coerce.date(),
+  lastUsedAt: z.coerce.date().nullable()
 })
 
 export const createModelRequestSchema = z.object({

@@ -148,6 +148,11 @@ function ModelCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Model,
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
+function ModelLastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Model, Date | null>) {
+  const value = info.getValue()
+  return <span className="font-mono text-xs text-muted">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
+}
+
 function makeModelActionsCell(onDelete: (id: string) => void) {
   return function ModelActionsCell(info: { row: { original: Model } }) {
     return (
@@ -340,6 +345,11 @@ function ModelsPage() {
     modelColumnHelper.accessor("createdAt", {
       header: m.models_column_created(),
       cell: ModelCreatedAtCell,
+      enableColumnFilter: false
+    }),
+    modelColumnHelper.accessor("lastUsedAt", {
+      header: m.models_column_last_used(),
+      cell: ModelLastUsedAtCell,
       enableColumnFilter: false
     }),
     modelColumnHelper.display({

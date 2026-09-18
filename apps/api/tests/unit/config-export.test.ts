@@ -27,6 +27,7 @@ function makeModel(overrides: Partial<Model> = {}): Model {
     free: true,
     createdAt: new Date(),
     updatedAt: new Date(),
+    lastUsedAt: null,
     ...overrides
   }
 }

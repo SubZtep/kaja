@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS nasi_session (
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   persona text NOT NULL,
+  -- TODO: rethink this — free-text per-session model with no dedicated last-used-per-model tracking
   model text NOT NULL,
   title text NOT NULL,
   owner text,

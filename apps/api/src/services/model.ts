@@ -102,8 +102,21 @@ export class ModelService {
     return result.rowCount !== null && result.rowCount > 0
   }
 
+  // TODO: rethink this — nasi_session.model is free text matched by name, not a foreign key to model.id,
+  // so a renamed/re-added model silently loses its usage history.
   async listModels(): Promise<Model[]> {
-    const { rows } = await this.#db.query(`SELECT * FROM model ORDER BY created_at`)
+    const { rows } = await this.#db.query(
+      `
+      SELECT m.*, s.last_used_at
+      FROM model m
+      LEFT JOIN (
+        SELECT model, MAX(updated_at) AS last_used_at
+        FROM nasi_session
+        GROUP BY model
+      ) s ON s.model = m.model
+      ORDER BY m.created_at
+      `
+    )
     return rows.map(row => this.#rowToModel(row))
   }
 
@@ -256,7 +269,8 @@ export class ModelService {
       enabled: row.enabled,
       free: row.free,
       createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at)
+      updatedAt: new Date(row.updated_at),
+      lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : null
     }
   }
 }

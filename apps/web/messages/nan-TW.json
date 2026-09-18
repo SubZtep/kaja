@@ -328,6 +328,7 @@
   "models_column_tasks": "任務",
   "models_column_provider": "供應商",
   "models_column_free": "免錢",
+  "models_column_last_used": "上一改使用",
   "models_success_provider_created": "供應商已經建立矣",
   "models_error_provider_create_failed": "建立供應商失敗",
   "models_success_provider_updated": "供應商已經更新矣",

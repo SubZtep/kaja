@@ -328,6 +328,7 @@
   "models_column_tasks": "Tasks",
   "models_column_provider": "Provider",
   "models_column_free": "Free",
+  "models_column_last_used": "Last Used",
   "models_success_provider_created": "Provider created",
   "models_error_provider_create_failed": "Failed to create provider",
   "models_success_provider_updated": "Provider updated",
