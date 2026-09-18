@@ -35,8 +35,8 @@ the cloud API's `GET /config/export` and rewrites `models.toml`/`mcp.toml`/`pers
 from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
 the same bundled templates as first run. `kaja config diff` shows what a fetch would change
 without writing anything, and `kaja config wizard` re-runs the interactive first-run setup at any
-time (language, provider, persona). `secrets.toml`, `services.toml`, and `settings.toml` are
-never touched by `fetch` — those stay yours to hand-edit.
+time (language, provider). `secrets.toml`, `services.toml`, and `settings.toml` are never touched
+by `fetch` — those stay yours to hand-edit.
 
 ## Which file does what
 

@@ -3,14 +3,15 @@ import type { CliResolvedModel, KajaPreferences } from "@kaja/schema/config"
 import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
 import notifier from "node-notifier"
+import open from "open"
 import { useState } from "react"
 import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
+import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
-import { savePreferences } from "../../lib/config/config"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel } from "../../lib/models/openai"
@@ -18,108 +19,23 @@ import type { Persona } from "../../lib/personas/personas"
 import { ChatViewport } from "./chat-viewport"
 import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
+import { KeyBar } from "./key-bar"
+import { PersonaPicker } from "./persona-picker"
 import { UserInput } from "./user-input"
 
-type MenuMode = "main" | "persona"
+/** Docs shown by the help keybar entry. */
+const HELP_URL = "https://docs.kaja.io/tui/"
 
-// Slash menu (opened by typing "/" in the input): label + action together. An action returning true keeps the menu open (it swapped in a submenu).
-// biome-ignore lint/suspicious/noConfusingVoidType: matches UserInput's onMenuSelect contract
-type MenuCommand = { label: string; run: () => boolean | void }
-
-/** Which optional chat capabilities the active backend supports — cloud Nasi has no persona catalog to switch between and no local TTS to speak replies with. */
+/** Which optional chat capabilities the active backend supports — cloud Nasi has no local TTS to speak replies with. */
 type Capabilities = { persona: boolean; voice: boolean }
 
-function buildMainMenu({
-  thinking,
-  sounds,
-  voice,
-  toggleThinking,
-  toggleSounds,
-  toggleVoice,
-  setMenuMode,
-  capabilities
-}: {
-  thinking: boolean
-  sounds: boolean
-  voice: boolean
-  toggleThinking: () => void
-  toggleSounds: () => void
-  toggleVoice: () => void
-  setMenuMode: (mode: MenuMode) => void
-  capabilities: Capabilities
-}): MenuCommand[] {
-  const items: MenuCommand[] = [
-    { label: t("menu.toggleThinking", { state: t(thinking ? "menu.on" : "menu.off") }), run: toggleThinking },
-    { label: t("menu.toggleSounds", { state: t(sounds ? "menu.on" : "menu.off") }), run: toggleSounds }
-  ]
-  if (capabilities.voice) {
-    items.push({ label: t("menu.toggleVoice", { state: t(voice ? "menu.on" : "menu.off") }), run: toggleVoice })
-  }
-  if (capabilities.persona) {
-    items.push({
-      label: t("menu.changePersona"),
-      run: () => {
-        setMenuMode("persona")
-        return true
-      }
-    })
-  }
-  return items
-}
-
-function buildCommands({
-  menuMode,
-  thinking,
-  sounds,
-  voice,
-  toggleThinking,
-  toggleSounds,
-  toggleVoice,
-  setMenuMode,
-  capabilities,
-  personas,
-  currentPersonaId,
-  switchPersona
-}: {
-  menuMode: MenuMode
-  thinking: boolean
-  sounds: boolean
-  voice: boolean
-  toggleThinking: () => void
-  toggleSounds: () => void
-  toggleVoice: () => void
-  setMenuMode: (mode: MenuMode) => void
-  capabilities: Capabilities
-  personas: Persona[]
-  currentPersonaId?: string
-  switchPersona: (next: Persona) => void
-}): MenuCommand[] {
-  if (menuMode === "main") {
-    return buildMainMenu({
-      thinking,
-      sounds,
-      voice,
-      toggleThinking,
-      toggleSounds,
-      toggleVoice,
-      setMenuMode,
-      capabilities
-    })
-  }
-  return personas.map(p => ({
-    label: `${p.label}${p.id === currentPersonaId ? " ✓" : ""}`,
-    run: () => {
-      switchPersona(p)
-    }
-  }))
-}
-
 /**
- * Chat chrome (Header/ChatViewport/UserInput/ConfirmCommand) shared by both
- * backends. {@link LocalApp} and {@link CloudApp} each drive their own agent
- * hook and normalize its output into these props, so preferences, menu
- * building, sound/voice, and the confirm-command flow are written once and
- * behave identically regardless of which backend is running.
+ * Chat chrome (Header/ChatViewport/UserInput/ConfirmCommand/PersonaPicker)
+ * shared by both backends. {@link LocalApp} and {@link CloudApp} each drive
+ * their own agent hook and normalize its output into these props, so
+ * preferences, sound/voice, the confirm-command flow, and persona switching
+ * are written once and behave identically regardless of which backend is
+ * running.
  */
 function Chrome({
   personaLabel,
@@ -157,36 +73,53 @@ function Chrome({
   /** Past prompts across all sessions for ↑/↓ recall, newest first. Local only. */
   history?: string[]
   capabilities: Capabilities
-  personas?: Persona[]
+  personas?: Persona[] | { id: string; label: string }[]
   currentPersonaId?: string
-  switchPersona?: (next: Persona) => void
+  switchPersona?: (next: { id: string; label: string }) => void
   pendingCommand?: { command: string; description: string }
   runningCommand?: boolean
   resolveCommand?: (command: string, approved: boolean) => Promise<void>
 }>) {
-  const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = usePreferences(initialPreferences)
+  const { thinking, sounds, voice, hotkeyModifier } = usePreferences(initialPreferences)
   useSound(events, sounds)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
-  const [menuMode, setMenuMode] = useState<MenuMode>("main")
+  const [pickingPersona, setPickingPersona] = useState(false)
 
-  const commands = buildCommands({
-    menuMode,
-    thinking,
-    sounds,
-    voice,
-    toggleThinking,
-    toggleSounds,
-    toggleVoice,
-    setMenuMode,
-    capabilities,
-    personas,
-    currentPersonaId,
-    switchPersona: switchPersona ?? (() => {})
+  useModifierKeys(hotkeyModifier, {
+    // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
+    // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
+    l: () => {
+      open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
+    },
+    p: () => {
+      if (capabilities.persona && !pending) setPickingPersona(true)
+    }
   })
 
-  let bottomChromeKey: "input" | "running" | "confirm" = "input"
-  if (pendingCommand) bottomChromeKey = runningCommand ? "running" : "confirm"
+  let bottomChromeKey: "input" | "running" | "confirm" | "persona" = "input"
+  if (pickingPersona) bottomChromeKey = "persona"
+  else if (pendingCommand) bottomChromeKey = runningCommand ? "running" : "confirm"
+
+  // Esc means something different depending on what's showing — quit while typing, but just
+  // dismiss the picker/confirm prompt over it. While a command is actually running there's
+  // nothing bound to Esc at all (ConfirmCommand shows a status line, not a SelectMenu), so no entry.
+  const escItem =
+    bottomChromeKey === "persona"
+      ? { key: "Esc", label: t("keybar.cancel") }
+      : bottomChromeKey === "confirm"
+        ? { key: "Esc", label: t("keybar.decline") }
+        : bottomChromeKey === "input"
+          ? { key: "Esc", label: t("keybar.quit") }
+          : undefined
+
+  const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
+  const keyBarItems = [
+    { key: `${modifierLabel}+L`, label: t("keybar.help") },
+    ...(capabilities.persona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
+    { key: `${modifierLabel}+R`, label: t("keybar.copy") },
+    ...(escItem ? [escItem] : [])
+  ]
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>
@@ -204,9 +137,21 @@ function Chrome({
         partial={partial}
         pending={pending}
         sounds={sounds}
+        hotkeyModifier={hotkeyModifier}
         bottomChromeKey={bottomChromeKey}
       />
-      {pendingCommand && resolveCommand ? (
+      {bottomChromeKey === "persona" ? (
+        <PersonaPicker
+          key="persona-picker"
+          personas={personas}
+          currentPersonaId={currentPersonaId}
+          onSelect={next => {
+            switchPersona?.(next)
+            setPickingPersona(false)
+          }}
+          onCancel={() => setPickingPersona(false)}
+        />
+      ) : pendingCommand && resolveCommand ? (
         <ConfirmCommand
           key="confirm-command"
           command={pendingCommand.command}
@@ -221,12 +166,10 @@ function Chrome({
           speaking={speaking}
           send={send}
           history={history}
-          menuItems={commands.map(command => command.label)}
-          onMenuSelect={index => commands[index]?.run()}
-          onMenuClose={() => setMenuMode("main")}
           personaModels={personaModels}
         />
       )}
+      <KeyBar items={keyBarItems} />
     </Box>
   )
 }
@@ -267,8 +210,7 @@ function LocalApp({
     tools,
     personas,
     models,
-    // A stored persona/model that no longer exists resolves to undefined and the resume proceeds with defaults — messages restore verbatim anyway.
-    initialPersona: personas.find(p => p.id === initialPreferences?.persona),
+    // Stored session's persona/model may no longer exist; resolves to undefined and the resume proceeds with defaults — messages restore verbatim anyway.
     resume: initialSession && {
       session: initialSession,
       persona: personas.find(p => p.id === initialSession.persona),
@@ -276,18 +218,15 @@ function LocalApp({
     }
   })
 
-  const switchPersona = async (next: Persona) => {
+  const switchPersona = (next: { id: string; label: string }) => {
     if (pending) return
-    switchPersonaAgent(next)
-    try {
-      await savePreferences({ persona: next.id })
-      notifier.notify({
-        title: t("cli.personaSwitchedTitle"),
-        message: t("cli.personaSwitchedMessage", { label: next.label })
-      })
-    } catch (error) {
-      log.warn("Failed to save preferences", { error })
-    }
+    const target = personas.find(p => p.id === next.id)
+    if (!target) return
+    switchPersonaAgent(target)
+    notifier.notify({
+      title: t("cli.personaSwitchedTitle"),
+      message: t("cli.personaSwitchedMessage", { label: target.label })
+    })
   }
 
   const lastEvent = events.at(-1)
@@ -324,7 +263,19 @@ function CloudApp({
   apiUrl,
   token
 }: Readonly<{ initialPreferences?: KajaPreferences; apiUrl: string; token: string }>) {
-  const { model, persona, events, partial, pending, currentTool, send, promptTokens } = useCloudAgent({
+  const {
+    model,
+    persona,
+    personas,
+    currentPersonaId,
+    switchPersona,
+    events,
+    partial,
+    pending,
+    currentTool,
+    send,
+    promptTokens
+  } = useCloudAgent({
     baseUrl: apiUrl,
     getToken: async () => token
   })
@@ -340,7 +291,10 @@ function CloudApp({
       pending={pending}
       send={send}
       initialPreferences={initialPreferences}
-      capabilities={{ persona: false, voice: false }}
+      capabilities={{ persona: true, voice: false }}
+      personas={personas}
+      currentPersonaId={currentPersonaId}
+      switchPersona={switchPersona}
     />
   )
 }
@@ -368,8 +322,9 @@ type CloudAppProps = Readonly<{
 /**
  * The CLI's chat screen, backed by either the local {@link Agent} loop
  * (`mode: "local"`, full tools/persona catalog/run_command) or cloud Nasi
- * over SSE (`mode: "cloud"`, no persona switching, no MCP, no run_command —
- * cloud never emits those). Both render the same chat chrome via {@link Chrome}.
+ * over SSE (`mode: "cloud"`, no MCP, no run_command — cloud never emits
+ * those). Both render the same chat chrome via {@link Chrome}, including
+ * the configurable-modifier keybar (help / persona picker; see use-modifier-keys.ts).
  */
 export default function App(props: LocalAppProps | CloudAppProps) {
   return props.mode === "local" ? <LocalApp {...props} /> : <CloudApp {...props} />

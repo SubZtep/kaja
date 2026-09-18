@@ -58,8 +58,11 @@ const DELTA_INTERVAL_MS = 80
  * Drives cloud Nasi over `/nasi/turn/stream` from React state — the lite
  * CLI's counterpart to `useAgent`, exposing the same event/partial/pending
  * shape so `Header`/`ChatViewport`/`UserInput` render either backend
- * unmodified. Unlike the local agent, there is no persona catalog, no model
- * switching, and no run_command confirm flow: cloud never emits those.
+ * unmodified. Persona switching (like local) is destructive — it starts a
+ * fresh session and pins `personaId` on every subsequent turn, since Nasi
+ * re-resolves the active persona from the request on each call rather than
+ * tracking it durably server-side. Unlike the local agent, there is no model
+ * switching and no run_command confirm flow: cloud never emits those.
  */
 export function useCloudAgent(options: NasiClientOptions) {
   const [client] = useState(() => createNasiClient(options))
@@ -78,6 +81,10 @@ export function useCloudAgent(options: NasiClientOptions) {
   const [responseModel, setResponseModel] = useState<string | null>(null)
   const [info, setInfo] = useState<NasiInfoResponse | null>(null)
 
+  // Selected persona: undefined until either /nasi/info resolves the default, or the user picks one. personaIdRef is the source of truth send() reads synchronously; selectedPersona just mirrors it for display.
+  const [selectedPersona, setSelectedPersona] = useState<{ id: string; label: string } | null>(null)
+  const personaIdRef = useRef<string | undefined>(undefined)
+
   useEffect(() => {
     let cancelled = false
     client.info(sessionRef.current).then(
@@ -90,6 +97,21 @@ export function useCloudAgent(options: NasiClientOptions) {
       cancelled = true
     }
   }, [])
+
+  const switchPersona = useCallback(
+    (next: { id: string; label: string }) => {
+      if (pending) return
+      sessionRef.current = undefined
+      eventsRef.current = []
+      setEvents([])
+      setPartial(null)
+      setPromptTokens(null)
+      setResponseModel(null)
+      personaIdRef.current = next.id
+      setSelectedPersona(next)
+    },
+    [pending]
+  )
 
   const send = useCallback(
     async (prompt: string, showUserEvent = true) => {
@@ -124,7 +146,12 @@ export function useCloudAgent(options: NasiClientOptions) {
           // TODO: forward includeThinking (from the thinking preference) once something depends on the request
           // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
           // display is already gated client-side by the `thinking` prop threaded through Chrome.
-          const gen = client.turn_stream({ session: sessionRef.current, message: nextMessage, language: getLanguage() })
+          const gen = client.turn_stream({
+            session: sessionRef.current,
+            message: nextMessage,
+            language: getLanguage(),
+            personaId: personaIdRef.current
+          })
           let next = await gen.next()
           let pendingClientTool: Extract<CloudTimelineEvent, { type: "client_tool_call" }> | undefined
           while (!next.done) {
@@ -160,7 +187,10 @@ export function useCloudAgent(options: NasiClientOptions) {
 
   return {
     model: responseModel ?? info?.model ?? "kaja",
-    persona: info?.persona,
+    persona: selectedPersona ?? info?.persona,
+    personas: info?.personas ?? [],
+    currentPersonaId: selectedPersona?.id ?? info?.persona?.id,
+    switchPersona,
     tools: info?.tools ?? [],
     events,
     partial,

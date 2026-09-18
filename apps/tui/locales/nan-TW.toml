@@ -91,8 +91,6 @@ providerOllama = "Ollama（本地）"
 providerLlama = "llama.cpp（本地）"
 apiKeyTitle = "輸入你个 Fireworks API 金鎖匙"
 apiKeyPlaceholder = "fw_..."
-personaTitle = "揀預設人設"
-personaSkip = "跳過"
 summaryTitle = "設定完成矣"
 summaryHint = "按 Enter 完成。隨時會使跑 `kaja config diff` 來看會改變啥物。"
 headlessDone = "已經寫入預設設定（非互動作業階段）"
@@ -112,7 +110,15 @@ invalidAt = "services 檔無效（{path}）：{message}"
 invalidAt = "secrets 檔無效（{path}）：{message}"
 
 [input]
-placeholder = "`/` 選單 · PgUp 歷史紀錄 · Alt+Enter 換逝 · Alt+C 拷貝上尾一句回覆"
+placeholder = "PgUp 歷史紀錄 · Alt+Enter 換逝"
+
+[keybar]
+help = "說明"
+persona = "角色"
+copy = "拷貝"
+quit = "退出"
+cancel = "取消"
+decline = "拒絕"
 
 [viewport]
 older = "↑ 較早進前 · PageDown 抑是 Ctrl+End 轉去上新个"
@@ -127,13 +133,8 @@ truncated = "… 猶有 {count} 逝"
 thinking = "咧想… 已經過 {seconds} 秒矣，猶咧推理"
 tokens = " · 這馬已經產生大約 {tokens} 个 token"
 
-[menu]
-on = "開"
-off = "關"
-toggleThinking = "切換思考顯示 [{state}]"
-toggleSounds = "切換音效 [{state}]"
-toggleVoice = "切換語音 [{state}]"
-changePersona = "換角色"
+[persona]
+pickerTitle = "揀角色"
 
 [toolCall]
 webSearch = "咧揣「{query}」..."

@@ -51,7 +51,8 @@ values can differ in scheme.
 ## Using it
 
 - `Ctrl+T` toggles mic dictation while typing.
-- Spoken replies follow `preferences.voice`, togglable from the [`/` menu](/tui#the--menu).
+- Spoken replies follow `preferences.voice` in `settings.toml` — read once at startup, no in-app
+  toggle. Set it and restart to change it.
 
 ## Language
 

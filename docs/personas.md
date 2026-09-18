@@ -33,12 +33,12 @@ Listen first. Reflect back what you heard before offering anything.
 
 Every persona's `when` clause goes into the system prompt as a roster, so the model can call
 `switch_persona` on its own mid-conversation. Personas without a `when` are never auto-selected —
-pick those from the [`/` menu](/tui#the--menu).
+pick those from the [key bar's persona picker](/tui#key-bar).
 
 The two paths differ:
 
 - **automatic** (`switch_persona`) keeps the current conversation going
-- **manual** (`/` menu) starts a fresh one
+- **manual** (persona picker) starts a fresh one
 
 A persona that pins a model swaps the model too; otherwise the current one is kept. An unresolvable
 pin — an id that doesn't exist in this install's `models.toml`, which is expected for a persona
@@ -63,7 +63,7 @@ Get fresh copies any time with `kaja config fetch`, or read them in
 ## Cloud mode
 
 Cloud chat uses a server-side persona catalog managed from the [admin portal](/development/web),
-not your local files. `switch_persona` still works; the `/` menu picker doesn't.
+not your local files. Both `switch_persona` and the key bar's persona picker work in cloud mode.
 
 ---
 

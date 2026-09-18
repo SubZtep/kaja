@@ -5,8 +5,13 @@ export const KajaPreferencesSchema = z.object({
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
   locale: z.enum(["en-GB", "hu-HU", "nan-TW"]).optional().describe("Language for the chat and application"),
-  // Id of the last-selected persona (see @kaja/schema/cli's personas.ts), so the app reopens with it instead of always defaulting to the first one.
-  persona: z.string().min(1).optional().describe("Id of the persona to open with (see personas.toml)")
+  // No modifier is universal in a terminal: Alt can type special characters instead of acting as a modifier on some
+  // macOS terminals (Terminal.app/iTerm2 without "Option as Meta" enabled); Ctrl+<letter> can collide with host-app
+  // global shortcuts (e.g. VS Code's integrated terminal reserves several of them regardless of focus).
+  hotkeyModifier: z
+    .enum(["alt", "ctrl"])
+    .optional()
+    .describe("Modifier key for the help/persona hotkeys (default: alt)")
 })
 
 // Per-feature config blocks; the model itself lives in models.toml's [models.*]/[active].
@@ -33,7 +38,7 @@ export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
   memory: KajaMemorySchema.optional(),
-  preferences: KajaPreferencesSchema.optional().describe("In-app preferences (slash menu)")
+  preferences: KajaPreferencesSchema.optional().describe("In-app preferences")
 })
 
 export type KajaConfig = z.infer<typeof KajaConfigSchema>

@@ -91,8 +91,6 @@ providerOllama = "Ollama (local)"
 providerLlama = "llama.cpp (local)"
 apiKeyTitle = "Enter your Fireworks API key"
 apiKeyPlaceholder = "fw_..."
-personaTitle = "Choose a default persona"
-personaSkip = "Skip"
 summaryTitle = "Setup complete"
 summaryHint = "Press Enter to finish. Run `kaja config diff` any time to see what would change."
 headlessDone = "Wrote default config (non-interactive session)"
@@ -112,7 +110,15 @@ invalidAt = "Invalid services file at {path}: {message}"
 invalidAt = "Invalid secrets file at {path}: {message}"
 
 [input]
-placeholder = "`/` menu · PgUp history · Alt+Enter newline · Alt+C copy last answer"
+placeholder = "PgUp history · Alt+Enter newline"
+
+[keybar]
+help = "Help"
+persona = "Persona"
+copy = "Copy"
+quit = "Quit"
+cancel = "Cancel"
+decline = "Decline"
 
 [viewport]
 older = "↑ older · PageDown or Ctrl+End to follow"
@@ -127,13 +133,8 @@ truncated = "… {count} more lines"
 thinking = "Thinking… {seconds}s elapsed, still reasoning"
 tokens = " · ~{tokens} tokens generated so far"
 
-[menu]
-on = "on"
-off = "off"
-toggleThinking = "Toggle thinking [{state}]"
-toggleSounds = "Toggle sounds [{state}]"
-toggleVoice = "Toggle voice [{state}]"
-changePersona = "Change persona"
+[persona]
+pickerTitle = "Choose a persona"
 
 [toolCall]
 webSearch = "Searching \"{query}\"..."

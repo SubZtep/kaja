@@ -2,6 +2,7 @@ import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
+import type { HotkeyModifier } from "../../hooks/use-modifier-keys"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
@@ -76,8 +77,10 @@ function scrollByClamped(view: VirtualScrollRef, delta: number) {
  * Key ownership (chat vs text field):
  *   PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport
  *   ↑/↓, ←/→, Home/End (no ctrl), Ctrl+←/→ → TextInput cursor
- *   Ctrl+T → mic, `/` at start → menu
- *   Alt+C → copy the most recent message to the clipboard
+ *   Ctrl+T → mic
+ *   <modifier>+R → copy the most recent message to the clipboard ("R", not "C": Ctrl+C is
+ *     reserved globally by Ink to quit the app, so under hotkeyModifier: "ctrl" that letter
+ *     could never fire — "R" has no such collision under either modifier)
  *
  * Stick-to-bottom uses a small slop so streaming near the end stays pinned.
  */
@@ -87,6 +90,7 @@ export function ChatViewport({
   partial,
   pending,
   sounds,
+  hotkeyModifier,
   bottomChromeKey,
   startupPanel
 }: Readonly<{
@@ -95,6 +99,7 @@ export function ChatViewport({
   partial: PartialMessageData | null
   pending: boolean
   sounds: boolean
+  hotkeyModifier: HotkeyModifier
   /** Changes whenever the sibling below (input / confirm prompt) swaps to a
    * differently-sized layout, so the viewport remeasures even though none of
    * the other props changed. */
@@ -238,7 +243,7 @@ export function ChatViewport({
   }
 
   useInput((input, key) => {
-    if (key.meta && input === "c") {
+    if ((hotkeyModifier === "ctrl" ? key.ctrl : key.meta) && input === "r") {
       const text = lastCopyableText(events)
       if (text) {
         writeText(text)

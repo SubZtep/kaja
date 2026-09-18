@@ -43,7 +43,7 @@
       }
     },
     "preferences": {
-      "description": "In-app preferences (slash menu)",
+      "description": "In-app preferences",
       "type": "object",
       "properties": {
         "thinking": {
@@ -67,10 +67,13 @@
             "nan-TW"
           ]
         },
-        "persona": {
-          "description": "Id of the persona to open with (see personas.toml)",
+        "hotkeyModifier": {
+          "description": "Modifier key for the help/persona hotkeys (default: alt)",
           "type": "string",
-          "minLength": 1
+          "enum": [
+            "alt",
+            "ctrl"
+          ]
         }
       }
     }

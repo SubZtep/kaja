@@ -21,9 +21,7 @@ export type NasiOpenOptions = {
   deps?: Omit<NasiToolDeps, "chat">
 }
 
-export type NasiTurnInput = NasiTurnRequest & {
-  personaId?: string
-}
+export type NasiTurnInput = NasiTurnRequest
 
 function lastOf<T extends AgentEvent["type"]>(events: AgentEvent[], type: T) {
   for (let i = events.length - 1; i >= 0; i--) {

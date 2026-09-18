@@ -1,46 +1,16 @@
 import type { KajaPreferences } from "@kaja/schema/config"
-import { useState } from "react"
-import { savePreferences } from "../lib/config/config"
-import { log } from "../lib/logger"
 
 /**
- * In-app preferences (thinking/sounds/voice), seeded from the config file and
- * written back on every toggle. With a live (non-Static) timeline, toggles
- * take effect on the next React render — no terminal wipe required.
+ * In-app preferences (thinking/sounds/voice/hotkeyModifier), read once from
+ * the config file at startup. Not toggleable in-app — edit settings.toml
+ * directly and restart to change them.
  */
 export function usePreferences(initial?: KajaPreferences) {
-  const [thinking, setThinking] = useState(initial?.thinking ?? true)
-  const [sounds, setSounds] = useState(initial?.sounds ?? true)
-  // Spoken replies are opt-in: they need the speaches TTS server running.
-  const [voice, setVoice] = useState(initial?.voice ?? false)
-
-  const persist = (preferences: KajaPreferences) => {
-    savePreferences(preferences).catch(error => {
-      log.warn("Failed to save preferences", { error })
-    })
-  }
-
-  const toggleThinking = () => {
-    persist({ thinking: !thinking, sounds, voice })
-    setThinking(!thinking)
-  }
-
-  const toggleSounds = () => {
-    persist({ thinking, sounds: !sounds, voice })
-    setSounds(!sounds)
-  }
-
-  const toggleVoice = () => {
-    persist({ thinking, sounds, voice: !voice })
-    setVoice(!voice)
-  }
-
   return {
-    thinking,
-    sounds,
-    voice,
-    toggleThinking,
-    toggleSounds,
-    toggleVoice
+    thinking: initial?.thinking ?? true,
+    sounds: initial?.sounds ?? true,
+    // Spoken replies are opt-in: they need the speaches TTS server running.
+    voice: initial?.voice ?? false,
+    hotkeyModifier: initial?.hotkeyModifier ?? "alt"
   }
 }

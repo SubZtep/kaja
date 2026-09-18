@@ -261,6 +261,8 @@ describe("nasi", () => {
       const body = await res.json()
       expect(body.persona.id).toBeString()
       expect(body.persona.label).toBeString()
+      expect(body.personas).toBeArray()
+      expect(body.personas[0]).toEqual(body.persona)
       expect(body.model).toBeString()
       expect(body.tools).toContain("ask_user")
       expect(body.tools).not.toContain("run_command")

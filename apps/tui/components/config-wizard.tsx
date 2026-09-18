@@ -11,12 +11,11 @@ export type WizardResult = {
   language?: Language
   provider?: "fireworks" | "ollama" | "llama" | "fetch"
   apiKey?: string
-  persona?: string
 }
 
-type Step = "language" | "provider" | "apiKey" | "persona" | "summary"
+type Step = "language" | "provider" | "apiKey" | "summary"
 
-const STEP_ORDER: Step[] = ["language", "provider", "apiKey", "persona", "summary"]
+const STEP_ORDER: Step[] = ["language", "provider", "apiKey", "summary"]
 
 /**
  * Multi-step re-runnable setup wizard for `kaja config wizard`. First run has its own narrower
@@ -25,12 +24,10 @@ const STEP_ORDER: Step[] = ["language", "provider", "apiKey", "persona", "summar
  * applies the collected {@link WizardResult} once `onDone` fires, via the existing config/secrets writers.
  */
 export function ConfigWizard({
-  personaChoices,
   prefill,
   onDone,
   onCancel
 }: Readonly<{
-  personaChoices: { id: string; label: string }[]
   prefill?: WizardResult
   onDone: (result: WizardResult) => void
   onCancel: () => void
@@ -50,7 +47,7 @@ export function ConfigWizard({
     // Only fireworks needs a key from this flow; ollama/llama are typically local, and "fetch" takes
     // its provider list from the server. Skipped here rather than mid-render so the step never
     // renders just to immediately advance out of itself.
-    if (nextStep === "apiKey" && next.provider !== "fireworks") nextStep = "persona"
+    if (nextStep === "apiKey" && next.provider !== "fireworks") nextStep = "summary"
     setStep(nextStep)
   }
 
@@ -96,21 +93,6 @@ export function ConfigWizard({
         <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
           <PasswordInput placeholder={t("wizard.apiKeyPlaceholder")} onSubmit={value => advance({ apiKey: value })} />
         </Box>
-      </Box>
-    )
-  }
-
-  if (step === "persona") {
-    const items = [t("wizard.personaSkip"), ...personaChoices.map(p => p.label)]
-    return (
-      <Box flexDirection="column" gap={1}>
-        <Text>{t("wizard.personaTitle")}</Text>
-        <SelectMenu
-          items={items}
-          width={70}
-          onSelect={index => advance({ persona: index === 0 ? undefined : personaChoices[index - 1]?.id })}
-          onClose={onCancel}
-        />
       </Box>
     )
   }

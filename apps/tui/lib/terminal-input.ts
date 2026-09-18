@@ -70,6 +70,18 @@ export function isEscapeByteList(input: string): boolean {
   return parts.every(p => /^\d+$/.test(p) && Number(p) <= 255)
 }
 
+/**
+ * xterm focus-reporting event (DECSET 1004): `[I` on window focus-in, `[O` on
+ * focus-out. Sent unprompted whenever the terminal window's OS focus changes,
+ * once `FOCUS_REPORTING_ENABLE` has been written.
+ */
+export function windowFocusReport(input: string): "in" | "out" | null {
+  const s = stripEsc(input)
+  if (s === "[I") return "in"
+  if (s === "[O") return "out"
+  return null
+}
+
 /** Any non-text terminal sequence that must not be typed into the input. */
 export function isIgnoredTerminalInput(input: string): boolean {
   return (
@@ -77,7 +89,8 @@ export function isIgnoredTerminalInput(input: string): boolean {
     isKittyKeyboardNoise(input) ||
     isDeviceAttributesReply(input) ||
     isWindowReport(input) ||
-    isEscapeByteList(input)
+    isEscapeByteList(input) ||
+    windowFocusReport(input) !== null
   )
 }
 
@@ -116,3 +129,7 @@ export const MOUSE_ENABLE =
   `${ESC}[?1007h` // alternate scroll (wheel → app on alternate screen)
 
 export const MOUSE_DISABLE = `${ESC}[?1007l` + `${ESC}[?1006l` + `${ESC}[?1000l`
+
+/** DECSET 1004: ask the terminal to report window focus in/out events (see {@link windowFocusReport}). */
+export const FOCUS_REPORTING_ENABLE = `${ESC}[?1004h`
+export const FOCUS_REPORTING_DISABLE = `${ESC}[?1004l`

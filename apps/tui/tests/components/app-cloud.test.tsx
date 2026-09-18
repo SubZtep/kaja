@@ -24,7 +24,15 @@ function sseResponse(text: string): Response {
 }
 
 function infoResponse(): Response {
-  return Response.json({ persona: { id: "default", label: "Helpful assistant" }, model: "test-model", tools: [] })
+  return Response.json({
+    persona: { id: "default", label: "Helpful assistant" },
+    personas: [
+      { id: "default", label: "Helpful assistant" },
+      { id: "grumpy", label: "Grumpy Cat" }
+    ],
+    model: "test-model",
+    tools: []
+  })
 }
 
 function sseToolErrorResponse(): Response {
@@ -69,6 +77,38 @@ test("renders the resolved persona label and model from /nasi/info", async () =>
   await t.waitUntilExit()
 })
 
+test("the key bar shows Esc, Help, Persona, and Copy", async () => {
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.tick()
+  const frame = t.lastFrame()
+  expect(frame).toContain("Esc")
+  expect(frame).toContain("Quit")
+  expect(frame).toContain("Alt+L")
+  expect(frame).toContain("Help")
+  expect(frame).toContain("Alt+P")
+  expect(frame).toContain("Persona")
+  expect(frame).toContain("Alt+R")
+  expect(frame).toContain("Copy")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("the key bar's Esc entry becomes Cancel while the persona picker is open", async () => {
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.tick()
+  expect(t.lastFrame()).toContain("Quit")
+
+  await t.press("\x1bp") // Alt+P opens the persona picker
+  const frame = t.lastFrame()
+  expect(frame).toContain("Cancel")
+  expect(frame).not.toContain("Quit")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("sending a message streams the reply into the timeline", async () => {
   const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
@@ -105,6 +145,49 @@ test("a tool error from the server renders as a tool failure, not a network erro
   expect(frame).toContain("Tool failed")
   expect(frame).not.toContain("Network error")
   expect(frame).toContain("fetch_url: Blocked non-public URL: http://localhost/x")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test('hotkeyModifier: "ctrl" in preferences switches the persona-picker hotkey to Ctrl+P', async () => {
+  const t = renderForTest(
+    <App mode="cloud" apiUrl="https://api.kaja.io" token="tok" initialPreferences={{ hotkeyModifier: "ctrl" }} />
+  )
+  await t.tick()
+  await t.tick()
+  expect(t.lastFrame()).toContain("Ctrl+P")
+
+  await t.press("\x1bp") // Alt+P — wrong modifier now, must not open the picker
+  expect(t.lastFrame()).not.toContain("Grumpy Cat")
+
+  await t.press("\x10") // Ctrl+P
+  expect(t.lastFrame()).toContain("Grumpy Cat")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("Alt+P opens the persona picker, and picking a persona resets the session and pins personaId", async () => {
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.tick()
+  expect(t.lastFrame()).toContain("Helpful assistant")
+
+  await t.press("\x1bp")
+  expect(t.lastFrame()).toContain("Grumpy Cat")
+
+  await t.press("\x1b[B")
+  await t.press("\r")
+  expect(t.lastFrame()).toContain("Grumpy Cat")
+  expect(t.lastFrame()).not.toContain("Helpful assistant")
+
+  await t.press("hi there")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  expect(lastTurnBody?.personaId).toBe("grumpy")
+  expect(lastTurnBody?.session).toBeUndefined()
+
   t.unmount()
   await t.waitUntilExit()
 })

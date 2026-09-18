@@ -82,6 +82,24 @@ test("read_file yields needs_client_tool in cloud mode, and the next message bin
   expect(second.message).toBe("The file says hello.")
 })
 
+test("personaId on the request re-resolves the active persona every turn, including on a resumed session", async () => {
+  const personaA = { id: "a", label: "A", instructions: "You are A" }
+  const personaB = { id: "b", label: "B", instructions: "You are B" }
+  const store = createMemoryStore()
+  const nasi = await open([{ content: "first reply" }, { content: "second reply" }], {
+    store,
+    personas: [personaA, personaB]
+  })
+
+  const first = await nasi.turnBuffered({ message: "hi" })
+  expect((await store.loadSession(first.session))?.persona).toBe("a")
+
+  const second = await nasi.turnBuffered({ session: first.session, message: "hi again", personaId: "b" })
+  expect(second.status).toBe("completed")
+  // Without personaId threaded through every turn, loadTurn() would silently re-resolve personas[0] ("a") here instead.
+  expect((await store.loadSession(second.session))?.persona).toBe("b")
+})
+
 test("plain question mark final is completed, not needs_input", async () => {
   const nasi = await open([{ content: "Is it alive?" }])
   const result = await nasi.turnBuffered({ message: "guess" })

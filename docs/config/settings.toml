@@ -3,7 +3,12 @@ thinking = false
 sounds = true
 voice = false
 locale = "en-GB"
-persona = "default"
+# Modifier key for the help/persona hotkeys: "alt" (default) or "ctrl". No choice is
+# universal in a terminal — alt can type special characters instead of acting as a
+# modifier on some macOS terminals, ctrl can collide with host-app shortcuts (e.g. VS
+# Code's integrated terminal reserves several ctrl+<letter> combos). Pick whichever
+# works cleanly in your terminal.
+# hotkeyModifier = "alt"
 
 # Speech-to-text (Speaches AI server).
 # [stt]

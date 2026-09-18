@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { useBlink } from "../../hooks/use-blink"
 import { useDictation } from "../../hooks/use-dictation"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
+import { useWindowFocus } from "../../hooks/use-window-focus"
 import { t } from "../../lib/i18n"
-import { SelectMenu } from "../elem/select-menu"
 import { TextInput } from "../elem/text-input"
 
 /**
@@ -40,9 +40,6 @@ export function UserInput({
   speaking,
   send,
   history: initialHistory,
-  menuItems,
-  onMenuSelect,
-  onMenuClose,
   personaModels
 }: Readonly<{
   pending: boolean
@@ -51,11 +48,6 @@ export function UserInput({
   send: (prompt: string) => Promise<void>
   /** Past prompts for shell-style ↑/↓ recall, newest first. */
   history?: string[]
-  menuItems: string[]
-  /** Return true to keep the menu open (the caller swapped in a submenu). */
-  // biome-ignore lint/suspicious/noConfusingVoidType: most handlers naturally return nothing; only a literal `true` is meaningful
-  onMenuSelect: (index: number) => boolean | void
-  onMenuClose?: () => void
   /** Active persona's per-task model overrides, if any — passed through to dictation's STT resolution. */
   personaModels?: PersonaModels
 }>) {
@@ -71,13 +63,10 @@ export function UserInput({
     setInput(value)
   }
 
-  // Typing "/" as the first character opens the menu; while it's open the text input is unfocused so arrows/return/escape drive the menu instead.
-  const menuOpen = input.startsWith("/")
-
-  // Ctrl+T toggles dictation; Esc quits (menu open → Esc only closes the menu).
+  // Ctrl+T toggles dictation; Esc quits.
   useInput((char, key) => {
     if (key.ctrl && char === "t") setMic(prev => !prev)
-    if (key.escape && !menuOpen) exit()
+    if (key.escape) exit()
   })
   // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.
   const sttState = useDictation(
@@ -90,12 +79,8 @@ export function UserInput({
   )
 
   const prefix = statusPrefix(mic, speaking, sttState)
-  const cursorVisible = useBlink(500, !mic && !pending && !menuOpen)
-
-  const closeMenu = () => {
-    setInput("")
-    onMenuClose?.()
-  }
+  const windowFocused = useWindowFocus()
+  const cursorVisible = useBlink(500, !mic && !pending && windowFocused)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -124,23 +109,10 @@ export function UserInput({
 
   return (
     <Box flexDirection="column" flexShrink={0}>
-      {menuOpen && (
-        <Box flexShrink={0}>
-          <SelectMenu
-            // Remount when the items change (main menu <-> submenu), so the selection starts fresh instead of inheriting the previous one.
-            key={menuItems.join("\n")}
-            items={menuItems}
-            onSelect={index => {
-              if (!onMenuSelect(index)) closeMenu()
-            }}
-            onClose={closeMenu}
-          />
-        </Box>
-      )}
       <Border variant={idle > 30 ? "power" : "solid"}>
         <TextInput
           value={input}
-          focus={!pending && !menuOpen}
+          focus={!pending}
           onChange={editInput}
           onSubmit={handleSubmit}
           onHistory={(dir, current) => {

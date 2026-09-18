@@ -4,7 +4,8 @@ import {
   isIgnoredTerminalInput,
   isKittyKeyboardNoise,
   isTerminalMouseSequence,
-  parseWheelDirection
+  parseWheelDirection,
+  windowFocusReport
 } from "../../lib/terminal-input"
 
 test("detects SGR mouse sequences (ESC stripped as useInput sees them)", () => {
@@ -41,4 +42,14 @@ test("device attributes replies are noise (not typed into the prompt)", () => {
   expect(isDeviceAttributesReply("hello")).toBeFalse()
   expect(isDeviceAttributesReply("")).toBeFalse()
   expect(isIgnoredTerminalInput("[?1;2c")).toBeTrue()
+})
+
+test("window focus-in/out reports are recognized and are noise (not typed into the prompt)", () => {
+  expect(windowFocusReport("[I")).toBe("in")
+  expect(windowFocusReport("[O")).toBe("out")
+  expect(windowFocusReport("\x1b[I")).toBe("in")
+  expect(windowFocusReport("hello")).toBeNull()
+  expect(windowFocusReport("")).toBeNull()
+  expect(isIgnoredTerminalInput("[I")).toBeTrue()
+  expect(isIgnoredTerminalInput("[O")).toBeTrue()
 })

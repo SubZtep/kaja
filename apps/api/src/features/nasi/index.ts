@@ -141,11 +141,13 @@ nasiRoutes.openapi(infoRoute, async c => {
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) return notFound(c, "No model available")
 
-  const persona = (await listPersonas())[0]
+  const personas = await listPersonas()
+  const persona = personas[0]
   const tools = await listCloudToolNames(nasiToolDeps())
 
   return c.json({
     persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },
+    personas: personas.map(p => ({ id: p.id, label: p.label })),
     model: result.model.model,
     tools
   })

@@ -7,16 +7,12 @@ import { fetchRemoteConfigBundle } from "../config/remote-fetch"
 import { saveSecrets } from "../config/secrets"
 import { t } from "../i18n"
 import { writeModelsTemplate } from "../models/models"
-import { loadPersonas } from "../personas/personas"
 
 async function applyResult(result: WizardResult) {
   if (!(await isConfigExists())) await create()
 
-  if (result.language || result.persona) {
-    await savePreferences({
-      ...(result.language ? { locale: result.language } : {}),
-      ...(result.persona ? { persona: result.persona } : {})
-    })
+  if (result.language) {
+    await savePreferences({ locale: result.language })
   }
 
   if (result.provider === "fetch") {
@@ -45,17 +41,15 @@ export async function runConfigWizard(headless: boolean): Promise<{ code: number
   }
 
   const { ConfigWizard } = await import("../../components/config-wizard")
-  const [existingConfig, personas] = await Promise.all([readConfigLoose(), loadPersonas()])
+  const existingConfig = await readConfigLoose()
 
   const prefill: WizardResult = {
-    language: existingConfig.preferences?.locale,
-    persona: existingConfig.preferences?.persona
+    language: existingConfig.preferences?.locale
   }
 
   const result = await new Promise<WizardResult | undefined>(resolve => {
     const { unmount } = render(
       <ConfigWizard
-        personaChoices={personas.map(p => ({ id: p.id, label: p.label }))}
         prefill={prefill}
         onDone={r => {
           unmount()

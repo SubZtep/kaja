@@ -6,12 +6,13 @@ nav_order: 5
 
 # Terminal UI
 
-The chat client: a scrollable transcript, a multi-line input, and a `/` menu. Built with
-[Ink](https://github.com/vadimdemedes/ink), so it's all keyboard-driven.
+The chat client: a scrollable transcript, a multi-line input, and a key bar of hotkeys pinned to
+the bottom of the screen. Built with [Ink](https://github.com/vadimdemedes/ink), so it's all
+keyboard-driven.
 
 Both [modes](/modes) share the same UI shell, but cloud mode runs a lighter version of it — no
-persona/model switching and no shell-command confirmation, because the cloud agent never emits
-those.
+model switching and no shell-command confirmation, because the cloud agent never emits those.
+Persona switching works in both modes.
 
 ## Startup panel
 
@@ -33,7 +34,7 @@ many memory notes are stored.
 | `Backspace` / `Delete` | Delete character before/after cursor |
 | `↑` / `↓` | Recall previous/next prompt from history, when the cursor is on the first/last line; otherwise moves between wrapped lines |
 | `Ctrl+T` | Toggle mic dictation |
-| `Esc` | Quit the app (closes the `/` menu first if one is open) |
+| `Esc` | Quit the app |
 | `Ctrl+C` | Interrupt / exit |
 
 Prompt history spans all past sessions, newest first.
@@ -47,30 +48,44 @@ Prompt history spans all past sessions, newest first.
 | `Ctrl+Home` | Scroll to the top |
 | `Ctrl+End` | Jump to the bottom and resume auto-follow |
 | Mouse wheel | Scroll chat by 3 lines |
-| `Alt+C` (`Meta+C`) | Copy the most recent message to the clipboard |
+| `<modifier>+R` | Copy the most recent message to the clipboard |
 
-### The `/` menu
+`<modifier>+R`, not `<modifier>+C`: plain `Ctrl+C` is reserved globally to quit the app, so `C`
+itself can never be bound to anything else here, under either modifier — see below.
 
-Typing `/` as the first character of an empty input opens the menu. The same picker is reused for
-shell-command approve/decline prompts.
+### Key bar
 
-| Item | Effect |
-|---|---|
-| Toggle thinking | show or hide the model's reasoning |
-| Toggle sounds | UI sound effects |
-| Toggle voice | spoken replies (needs a TTS model) |
-| Change persona | opens a submenu of every loaded [persona](/personas) |
-
-Toggles are written back to `settings.toml`, so they persist. Picking a persona here starts a
-**fresh conversation**; an automatic `switch_persona` mid-chat keeps the current one going.
+A key bar is pinned to the bottom of the screen, showing every available hotkey and the modifier
+key it uses:
 
 | Key | Action |
 |---|---|
+| `Esc` | Quit the app — or, while the persona picker/shell-command confirm prompt is showing over the input, Cancel/Decline it instead (nothing else changes) |
+| `<modifier>+L` | Open the [docs](https://docs.kaja.io/tui/) in your browser |
+| `<modifier>+P` | Open the persona picker (both modes; a submenu of every loaded/server [persona](/personas)) |
+| `<modifier>+R` | Copy the most recent message to the clipboard (see above) |
+
+| Key | Action (persona picker) |
+|---|---|
 | `↑` / `↓` | Move selection |
 | `Enter` | Activate selected item |
-| `Esc` / `Backspace` / `Delete` | Close the menu |
+| `Esc` / `Backspace` / `Delete` | Close the picker without changing persona |
 
-The menu is empty in cloud mode.
+Picking a persona here starts a **fresh conversation**; an automatic `switch_persona` mid-chat
+(model-invoked) keeps the current one going instead. A manually picked persona doesn't persist —
+every launch starts from the default persona again.
+
+`<modifier>` is `Alt` by default, configurable to `Ctrl` via `preferences.hotkeyModifier` in
+`settings.toml`. Neither is universal in every terminal: Alt can type special characters instead
+of acting as a modifier on some macOS terminals (Terminal.app/iTerm2 without "Option as Meta"
+enabled), while `Ctrl+<letter>` can collide with a host application's own global shortcuts (e.g.
+VS Code's integrated terminal reserves several `Ctrl+<letter>` combos regardless of which panel
+has focus). Pick whichever works cleanly for you.
+
+There is no in-app toggle for thinking/sounds/voice — set `preferences.thinking`,
+`preferences.sounds`, `preferences.voice` in `settings.toml` directly and restart. The app never
+writes to `settings.toml` (or any other config file) at runtime; only first-run setup and the
+explicit `kaja config wizard`/`kaja config fetch` subcommands do.
 
 ## Rendering
 

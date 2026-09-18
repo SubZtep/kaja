@@ -16,7 +16,7 @@ thinking = false
 sounds = true
 voice = false
 locale = "en-GB"
-persona = "default"
+# hotkeyModifier = "alt"
 
 # Speech-to-text (Speaches AI server).
 # [stt]
@@ -41,10 +41,11 @@ persona = "default"
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `[models.tts]` entry) |
 | `locale` | `en-GB`, `hu-HU`, or `nan-TW` — affects the UI and the assistant's replies |
-| `persona` | persona id to open with |
+| `hotkeyModifier` | `alt` (default) or `ctrl` — modifier key for the [key bar](/tui#key-bar)'s hotkeys |
 
-The first four are also togglable at runtime from the `/` menu, which writes the change back to
-this file. `locale` is read once at startup; with no saved value the system locale decides.
+All of these are read once at startup — there's no in-app toggle for any of them, and the app never
+writes to this file at runtime. Edit it by hand and restart to change something; a manually picked
+[persona](/personas) is session-only and never saved here either.
 
 ## `[stt]` / `[tts]`
 

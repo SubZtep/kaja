@@ -21,7 +21,6 @@ export async function runTelegramCli(deps: {
   }
 
   const { createTelegramBot } = await import("./bot")
-  const { config: readConfig } = await import("../config/config")
   const { chatModelId, client, clientForModel } = await import("../models/openai")
   const { getStore } = await import("../memory/store")
   const bot = createTelegramBot({
@@ -36,12 +35,7 @@ export async function runTelegramCli(deps: {
       models: deps.models
     },
     personas: deps.personas,
-    models: deps.models,
-    // Re-reads config on every call (readConfig() is cache-invalidated by savePreferences) so /new picks up a persona switched in the terminal after this bot process started, without needing a restart.
-    getInitialPersona: async () => {
-      const current = await readConfig()
-      return deps.personas.find(p => p.id === current?.preferences?.persona)
-    }
+    models: deps.models
   })
 
   const shutdown = installShutdownHandlers(deps.closeTools, {

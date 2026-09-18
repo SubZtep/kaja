@@ -91,8 +91,6 @@ providerOllama = "Ollama (helyi)"
 providerLlama = "llama.cpp (helyi)"
 apiKeyTitle = "Add meg a Fireworks API kulcsodat"
 apiKeyPlaceholder = "fw_..."
-personaTitle = "Válassz alapértelmezett perszónát"
-personaSkip = "Kihagyás"
 summaryTitle = "Beállítás kész"
 summaryHint = "Nyomj Entert a befejezéshez. A `kaja config diff` bármikor megmutatja, mi változna."
 headlessDone = "Alapértelmezett konfiguráció elmentve (nem interaktív munkamenet)"
@@ -112,7 +110,15 @@ invalidAt = "Érvénytelen services fájl ({path}): {message}"
 invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 
 [input]
-placeholder = "`/` menü · PgUp előzmények · Alt+Enter új sor · Alt+C válasz másolása"
+placeholder = "PgUp előzmények · Alt+Enter új sor"
+
+[keybar]
+help = "Súgó"
+persona = "Perszóna"
+copy = "Másolás"
+quit = "Kilépés"
+cancel = "Mégse"
+decline = "Elutasítás"
 
 [viewport]
 older = "↑ régebbi · PageDown vagy Ctrl+End a követéshez"
@@ -127,13 +133,8 @@ truncated = "… még {count} sor"
 thinking = "Gondolkodom… {seconds}s eltelt, még mindig gondolkodom"
 tokens = " · ~{tokens} token eddig"
 
-[menu]
-on = "be"
-off = "ki"
-toggleThinking = "Gondolkodás átkapcsolása [{state}]"
-toggleSounds = "Hangok átkapcsolása [{state}]"
-toggleVoice = "Beszéd átkapcsolása [{state}]"
-changePersona = "Perszónaváltás"
+[persona]
+pickerTitle = "Válassz perszónát"
 
 [toolCall]
 webSearch = "Keresés: \"{query}\"..."
