@@ -10,7 +10,7 @@ function makeProvider(overrides: Partial<Provider> = {}): Provider {
     id: "provider-1",
     name: "fireworks",
     baseUrl: "https://api.fireworks.ai/inference/v1",
-    apiKey: "sk-super-secret",
+    hasApiKey: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides

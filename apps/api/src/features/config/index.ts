@@ -16,6 +16,9 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
  * Fail-closed: missing/empty CONFIG_API_TOKEN denies every request so provider
  * API keys in models.toml / model JSON cannot be scraped when misconfigured.
  */
+// TODO: this only fails closed on a missing/empty token — a deployment left at the
+// .env.example placeholder value still passes. Warn or refuse to boot when CONFIG_API_TOKEN
+// equals the example placeholder.
 export function isValidConfigToken(authHeader: string | undefined | null, token: string | undefined | null): boolean {
   if (!token) return false
   return authHeader === `Bearer ${token}`

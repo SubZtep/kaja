@@ -1,12 +1,19 @@
 import { CheckboxGroup } from "@base-ui/react/checkbox-group"
 import { Field } from "@base-ui/react/field"
-import type { ListModelsResponse, ListProvidersResponse, Model, ModelTask, Provider } from "@kaja/schema/api"
+import type {
+  ListModelsResponse,
+  ListProvidersResponse,
+  Model,
+  ModelTask,
+  Provider,
+  UpdateProviderRequest
+} from "@kaja/schema/api"
 import { modelSchema, providerSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
-import { Trash2 } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
@@ -25,6 +32,7 @@ import { userRequired } from "../../../lib/loaders"
 import { seo } from "../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
 import { m } from "../../../paraglide/messages.js"
+import { EditProviderDialog } from "./-components/EditProviderDialog"
 
 export const Route = createFileRoute("/_admin/models/")({
   component: ModelsPage,
@@ -58,7 +66,7 @@ function ProviderBaseUrlCell(info: CellContext<typeof tableFeaturesConfig, Provi
   return <span className="font-mono text-xs text-muted">{info.getValue()}</span>
 }
 
-function ProviderApiKeyCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
+function ProviderApiKeyCell(info: CellContext<typeof tableFeaturesConfig, Provider, boolean>) {
   return <span className="text-xs text-muted">{info.getValue() ? m.models_column_api_key_set() : "—"}</span>
 }
 
@@ -66,15 +74,25 @@ function ProviderCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Pro
   return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
 }
 
-function makeProviderActionsCell(onDelete: (id: string) => void) {
+function makeProviderActionsCell(
+  onDelete: (id: string) => void,
+  onSave: (id: string, payload: UpdateProviderRequest) => Promise<unknown>,
+  isSaving: boolean
+) {
   return function ProviderActionsCell(info: { row: { original: Provider } }) {
+    const provider = info.row.original
     return (
-      <div className="text-right">
+      <div className="flex justify-end gap-1">
+        <EditProviderDialog provider={provider} isPending={isSaving} onSave={payload => onSave(provider.id, payload)}>
+          <IconButton aria-label={m.models_edit_provider_title()}>
+            <Pencil size={18} />
+          </IconButton>
+        </EditProviderDialog>
         <ConfirmDialog
           title={m.models_delete_provider_confirm_title()}
-          description={m.models_delete_provider_confirm_description({ name: info.row.original.name })}
+          description={m.models_delete_provider_confirm_description({ name: provider.name })}
           confirm={m.models_delete_confirm_button()}
-          onConfirm={() => onDelete(info.row.original.id)}
+          onConfirm={() => onDelete(provider.id)}
         >
           <IconButton variant="danger" aria-label={m.models_delete_confirm_button()}>
             <Trash2 size={18} />
@@ -177,6 +195,16 @@ function ModelsPage() {
     onError: (err: Error) => toast.error(err.message || m.models_error_provider_create_failed())
   })
 
+  const updateProvider = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateProviderRequest }) =>
+      apiFetch(`/admin/providers/${id}`, payload, { method: "PATCH" }).then(r => providerSchema.parse(r)),
+    onSuccess: () => {
+      invalidateProviders()
+      toast.success(m.models_success_provider_updated())
+    },
+    onError: (err: Error) => toast.error(err.message || m.models_error_provider_update_failed())
+  })
+
   const deleteProvider = useMutation({
     mutationFn: (id: string) => apiFetch(`/admin/providers/${id}`, undefined, { method: "DELETE" }),
     onSuccess: () => {
@@ -263,7 +291,7 @@ function ModelsPage() {
       header: m.models_column_base_url(),
       cell: ProviderBaseUrlCell
     }),
-    providerColumnHelper.accessor("apiKey", {
+    providerColumnHelper.accessor("hasApiKey", {
       header: m.models_column_api_key(),
       cell: ProviderApiKeyCell,
       enableColumnFilter: false
@@ -276,7 +304,11 @@ function ModelsPage() {
     providerColumnHelper.display({
       id: "actions",
       header: "",
-      cell: makeProviderActionsCell(id => deleteProvider.mutate(id))
+      cell: makeProviderActionsCell(
+        id => deleteProvider.mutate(id),
+        (id, payload) => updateProvider.mutateAsync({ id, payload }),
+        updateProvider.isPending
+      )
     })
   ])
 

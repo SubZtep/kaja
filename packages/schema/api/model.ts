@@ -6,7 +6,7 @@ export const providerSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
   baseUrl: z.url(),
-  apiKey: z.string().min(1).nullable(),
+  hasApiKey: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date()
 })

@@ -8,6 +8,9 @@ import type {
 } from "@kaja/schema/api"
 import type { Pool } from "pg"
 
+/** `Provider` with the real api_key value — never returned from the admin API, only used to authenticate an actual outbound call to the provider. */
+type ProviderWithSecret = Omit<Provider, "hasApiKey"> & { apiKey: string | null }
+
 export class ModelService {
   readonly #db: Pool
 
@@ -105,7 +108,7 @@ export class ModelService {
   }
 
   /** A single model with its resolved provider, for handing credentials to a caller. */
-  async getModelWithProvider(id: string): Promise<{ model: Model; provider: Provider } | null> {
+  async getModelWithProvider(id: string): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
     const { rows } = await this.#db.query(
       `
       SELECT m.*,
@@ -126,7 +129,7 @@ export class ModelService {
 
     return {
       model: this.#rowToModel(row),
-      provider: this.#rowToProvider({
+      provider: this.#rowToProviderWithSecret({
         id: row.provider_id,
         name: row.provider_name,
         base_url: row.provider_base_url,
@@ -138,7 +141,7 @@ export class ModelService {
   }
 
   /** A specific free+enabled chat model by name, with its resolved provider — used to re-resolve a session's previously pinned model. */
-  async getModelWithProviderByName(model: string): Promise<{ model: Model; provider: Provider } | null> {
+  async getModelWithProviderByName(model: string): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
     const { rows } = await this.#db.query(
       `
       SELECT m.*,
@@ -160,7 +163,7 @@ export class ModelService {
 
     return {
       model: this.#rowToModel(row),
-      provider: this.#rowToProvider({
+      provider: this.#rowToProviderWithSecret({
         id: row.provider_id,
         name: row.provider_name,
         base_url: row.provider_base_url,
@@ -172,7 +175,7 @@ export class ModelService {
   }
 
   /** A random free+enabled chat model with its resolved provider (GET /config/models). */
-  async getRandomModelWithProvider(): Promise<{ model: Model; provider: Provider } | null> {
+  async getRandomModelWithProvider(): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
     const { rows } = await this.#db.query(
       `
       SELECT m.*,
@@ -194,7 +197,7 @@ export class ModelService {
 
     return {
       model: this.#rowToModel(row),
-      provider: this.#rowToProvider({
+      provider: this.#rowToProviderWithSecret({
         id: row.provider_id,
         name: row.provider_name,
         base_url: row.provider_base_url,
@@ -223,6 +226,17 @@ export class ModelService {
   }
 
   #rowToProvider(row: any): Provider {
+    return {
+      id: row.id,
+      name: row.name,
+      baseUrl: row.base_url,
+      hasApiKey: row.api_key != null,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
+    }
+  }
+
+  #rowToProviderWithSecret(row: any): ProviderWithSecret {
     return {
       id: row.id,
       name: row.name,
