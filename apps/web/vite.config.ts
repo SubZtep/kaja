@@ -5,7 +5,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
 import { nitro } from "nitro/vite"
 import { defineConfig } from "vite"
-import { paraglideOptions } from "./paraglide.config"
+import { paraglideOptions } from "./paraglide.config.ts"
 
 const config = defineConfig({
   resolve: {
