@@ -119,7 +119,15 @@ approval = "never"                  # never | writes | always
 - The key lives in `secrets.toml` as `[packages.<name>] apiKey`, like HTTP tools. `optional = true`
   means the server works without one too.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only; `always` asks before
-  every call.
+  every call. For a server that forgets to mark its read-only tools, list them in `readOnly`, with
+  the arguments that turn a call into a write:
+
+  ```toml
+  readOnly = [
+    "list_pages",                                    # always a read
+    { tool = "take_screenshot", unless = ["filePath"] }, # a read, unless it saves a file
+  ]
+  ```
 - All servers, packages and `mcp.toml` ones, connect in parallel at startup; one that doesn't answer
   within 10 seconds is skipped with a warning instead of holding up the start.
 

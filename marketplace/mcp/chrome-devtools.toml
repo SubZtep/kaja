@@ -2,6 +2,7 @@
 # https://github.com/ChromeDevTools/chrome-devtools-mcp
 # Runs `bunx chrome-devtools-mcp@latest` on your machine and needs Chrome installed.
 # Reading pages runs straight away; clicking, typing and navigating ask first.
+# Snapshots and screenshots count as reads too, unless they're asked to save a file.
 name = "chrome-devtools"
 description = "Open web pages in a headless Chrome, read them, take screenshots, and click or type when you approve."
 transport = "stdio"
@@ -21,4 +22,9 @@ tools = [
   "press_key",
   "list_console_messages",
   "list_network_requests",
+]
+# The server doesn't mark these read-only, but they only look at the page unless given a filePath to write.
+readOnly = [
+  { tool = "take_snapshot", unless = ["filePath"] },
+  { tool = "take_screenshot", unless = ["filePath"] },
 ]

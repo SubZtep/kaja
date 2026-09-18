@@ -201,6 +201,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         transport: target.transport === "sse" ? ("sse" as const) : ("http" as const),
         allow: target.allow,
         approval: target.approval,
+        readOnly: target.readOnly,
         label: `package:${target.name}`
       }
     }))

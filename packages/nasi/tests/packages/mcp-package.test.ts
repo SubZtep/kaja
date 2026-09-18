@@ -67,3 +67,15 @@ test("an optional key that isn't set leaves the header out", () => {
   })
   expect(mcpPackageTarget(pkg).server).toEqual({ id: "demo", url: "https://a.test/mcp", headers: {} })
 })
+
+test("readOnly shorthand names expand to rules with no `unless`", () => {
+  const pkg = parse({
+    url: "https://a.test/mcp",
+    approval: "writes",
+    readOnly: ["list_things", { tool: "snapshot", unless: ["filePath"] }]
+  })
+  expect(mcpPackageTarget(pkg).readOnly).toEqual([
+    { tool: "list_things", unless: [] },
+    { tool: "snapshot", unless: ["filePath"] }
+  ])
+})

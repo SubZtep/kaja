@@ -1,6 +1,7 @@
 import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import type { McpServerEntry } from "@kaja/schema/config"
+import type { McpReadOnlyRule } from "@kaja/schema/packages"
 import { randomUUIDv7 } from "@kaja/shared"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
@@ -16,10 +17,18 @@ export type McpConnectOptions = {
   transport?: "http" | "sse"
   /** Only these of the server's tools (by MCP name) reach the model; unset means all. */
   allow?: string[]
-  /** When calls ask first (see `Tool.approval`): `writes` asks unless the tool is annotated readOnlyHint. Default never. */
+  /** When calls ask first (see `Tool.approval`): `writes` asks unless the tool is annotated readOnlyHint (or `readOnly` says so). Default never. */
   approval?: "never" | "writes" | "always"
+  /** Tools to treat as read-only under `writes` when the server doesn't mark them, each unless one of its `unless` arguments is set. */
+  readOnly?: McpReadOnlyRule[]
   /** Leads the approval summary, e.g. `mcp:context7`. */
   label?: string
+}
+
+/** Whether a call counts as read-only under a manifest rule: the tool is listed and none of its `unless` arguments is set. */
+function readOnlyByRule(rule: McpReadOnlyRule | undefined, args: Record<string, unknown> | undefined): boolean {
+  if (!rule) return false
+  return !rule.unless.some(key => args?.[key] !== undefined && args[key] !== null && args[key] !== "")
 }
 
 function approvalSummary(label: string, name: string, args: unknown): string {
@@ -58,11 +67,20 @@ export async function connectMcpServer(
         parameters: mcpTool.inputSchema,
         execute: args => callTool(client, mcpTool.name, args, tempDir)
       })
-      const asks =
+      const rule = opts.readOnly?.find(r => r.tool === mcpTool.name)
+      const mayAsk =
         opts.approval === "always" || (opts.approval === "writes" && mcpTool.annotations?.readOnlyHint !== true)
-      return asks
-        ? { ...mcpToolDef, approval: (args: Record<string, unknown>) => approvalSummary(label, mcpTool.name, args) }
-        : mcpToolDef
+      if (!mayAsk) return mcpToolDef
+      // TODO: smoother approvals: an "allow for this session" answer in the TUI/Telegram prompt, so a tool the user already approved stops asking until restart.
+      // TODO: an "always allow" answer that writes the tool into the package's readOnly (or a per-user override file), instead of hand-editing manifests.
+      // TODO: show the tool's own description and its arguments as a readable list in the prompt, not a raw JSON preview.
+      return {
+        ...mcpToolDef,
+        approval: (args: Record<string, unknown>) =>
+          opts.approval === "writes" && readOnlyByRule(rule, args)
+            ? undefined
+            : approvalSummary(label, mcpTool.name, args)
+      }
     })
 
   return { tools, close: () => client.close() }

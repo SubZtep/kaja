@@ -35,6 +35,30 @@ test("approval: never asks for nothing, writes skips read-only tools, always ask
   expect(tools[0]!.approval?.({ id: "7" })).toBe('package:fixture read_thing {"id":"7"}')
 })
 
+test("readOnly rules stop writes-approval for a listed tool, unless one of its `unless` arguments is set", async () => {
+  const { tools, close } = await connectMcpServer(fixture, tmpdir(), {
+    approval: "writes",
+    readOnly: [
+      { tool: "write_thing", unless: ["id"] },
+      { tool: "echo_key", unless: [] }
+    ]
+  })
+  await close()
+  const byName = new Map(tools.map(t => [toolName(t), t]))
+  expect(byName.get("write_thing")!.approval?.({})).toBeUndefined()
+  expect(byName.get("write_thing")!.approval?.({ id: "" })).toBeUndefined()
+  expect(byName.get("write_thing")!.approval?.({ id: "7" })).toContain("write_thing")
+  expect(byName.get("echo_key")!.approval?.({})).toBeUndefined()
+
+  const always = await connectMcpServer(fixture, tmpdir(), {
+    approval: "always",
+    readOnly: [{ tool: "echo_key", unless: [] }]
+  })
+  await always.close()
+  // "always" means always: readOnly rules only soften "writes".
+  expect(always.tools.find(t => toolName(t) === "echo_key")!.approval?.({})).toContain("echo_key")
+})
+
 test("createTools connects packages as community tools and mcp.toml servers as third-party", async () => {
   const { tools, mcpServers, closeTools } = await createTools({
     includeLocalTools: true,

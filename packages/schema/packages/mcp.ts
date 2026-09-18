@@ -32,7 +32,19 @@ export const McpPackageSchema = z
       .enum(["never", "writes", "always"])
       .default("never")
       .describe("When tool calls ask first: writes = unless the tool is marked read-only"),
-    tools: z.array(z.string().min(1)).optional().describe("Only these of the server's tools reach the model")
+    tools: z.array(z.string().min(1)).optional().describe("Only these of the server's tools reach the model"),
+    readOnly: z
+      .array(
+        z.union([
+          z.string().min(1),
+          z.object({
+            tool: z.string().min(1),
+            unless: z.array(z.string().min(1)).default([]).describe("Arguments that make a call a write when set")
+          })
+        ])
+      )
+      .optional()
+      .describe('Tools to treat as read-only under approval = "writes", for servers that don\'t mark them')
   })
   .superRefine((pkg, ctx) => {
     const issue = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message })
@@ -50,3 +62,5 @@ export const McpPackageSchema = z
 
 export type McpPackage = z.infer<typeof McpPackageSchema>
 export type McpPackageAuth = z.infer<typeof McpPackageAuthSchema>
+/** A readOnly entry with the shorthand expanded: read-only unless one of `unless` is set in the call. */
+export type McpReadOnlyRule = { tool: string; unless: string[] }
