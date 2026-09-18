@@ -2,6 +2,7 @@ import { expect } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
+import { invalidatePersonaCache } from "../../src/features/nasi/personas"
 
 /** Inserts a provider + an enabled/free chat model under it, returning both ids. Caller must `cleanupModel` in `afterAll`. */
 export async function seedModel(namePrefix: string) {
@@ -21,6 +22,23 @@ export async function seedModel(namePrefix: string) {
 
 export async function cleanupModel(providerId: string) {
   await pool.query("DELETE FROM provider WHERE id = $1", [providerId])
+}
+
+/** Inserts an enabled persona sorted first, so tests don't depend on `bun seed:config` having run. Caller must `cleanupPersona` in `afterAll`. */
+export async function seedPersona(namePrefix: string) {
+  const personaId = `${namePrefix}-${faker.string.alphanumeric(8).toLowerCase()}`
+  const persona = await pool.query<{ id: string }>(
+    "INSERT INTO persona (persona_id, label, enabled, sort_order) VALUES ($1, $2, true, -1000) RETURNING id",
+    [personaId, `Test persona ${personaId}`]
+  )
+  // listPersonas caches the catalog for 30 s; drop it so the new row is seen straight away.
+  invalidatePersonaCache()
+  return { id: persona.rows[0]!.id, personaId }
+}
+
+export async function cleanupPersona(id: string) {
+  await pool.query("DELETE FROM persona WHERE id = $1", [id])
+  invalidatePersonaCache()
 }
 
 /** Signs up a fresh user and signs back in, returning the bearer token for authenticated requests. */

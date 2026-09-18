@@ -2,7 +2,15 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
-import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
+import {
+  cleanupModel,
+  cleanupPersona,
+  expectUnauthenticated,
+  fakeChatClient,
+  seedModel,
+  seedPersona,
+  signUpAndSignIn
+} from "./helpers"
 
 const turnRequestInit = {
   method: "POST",
@@ -244,13 +252,17 @@ describe("nasi", () => {
 
   describe("info", () => {
     let providerId: string
+    let personaRowId: string
 
     beforeAll(async () => {
       ;({ providerId } = await seedModel("nasi-info-test"))
+      // /nasi/info lists the persona catalog; a fresh database has none until `bun seed:config`.
+      ;({ id: personaRowId } = await seedPersona("nasi-info-test"))
     })
 
     afterAll(async () => {
       await cleanupModel(providerId)
+      await cleanupPersona(personaRowId)
     })
 
     test("unauthenticated info is 401", () => expectUnauthenticated("/nasi/info"))

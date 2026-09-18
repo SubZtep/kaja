@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-import { fakeChatClient, signUpAndSignIn } from "./helpers"
+import { cleanupPersona, fakeChatClient, seedPersona, signUpAndSignIn } from "./helpers"
 
 describe("widget", () => {
   const email = faker.internet.email()
@@ -101,23 +101,29 @@ describe("widget", () => {
   })
 
   test("a key created with a persona round-trips it through create and list", async () => {
-    const createKey = await app.request("/widget/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        label: "Barkochba widget",
-        allowedOrigins: [allowedOrigin],
-        config: { persona: "barkochba" }
+    // The API only accepts personas that exist, so bring one rather than rely on `bun seed:config`.
+    const persona = await seedPersona("widget-test")
+    try {
+      const createKey = await app.request("/widget/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          label: "Persona widget",
+          allowedOrigins: [allowedOrigin],
+          config: { persona: persona.personaId }
+        })
       })
-    })
-    expect(createKey.status).toBe(201)
-    const created = await createKey.json()
-    expect(created.config.persona).toBe("barkochba")
+      expect(createKey.status).toBe(201)
+      const created = await createKey.json()
+      expect(created.config.persona).toBe(persona.personaId)
 
-    const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
-    const { keys } = await list.json()
-    const found = keys.find((k: { id: string }) => k.id === created.id)
-    expect(found.config.persona).toBe("barkochba")
+      const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
+      const { keys } = await list.json()
+      const found = keys.find((k: { id: string }) => k.id === created.id)
+      expect(found.config.persona).toBe(persona.personaId)
+    } finally {
+      await cleanupPersona(persona.id)
+    }
   })
 
   test("widgetType is independent of persona and defaults to chat", async () => {
