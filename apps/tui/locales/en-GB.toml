@@ -52,6 +52,7 @@ COMMANDS
   config <fetch|paths> Manage config files
   doctor               Print configured models, MCP servers and tools, and check connections
   telegram
+  pkg [update]         Pick which skills load, or fetch the marketplace
   logout               Log out of the cloud account, clearing its stored credential
 
 OPTIONS
@@ -107,6 +108,30 @@ invalidAt = "Invalid MCP servers file at {path}: {message}"
 
 [packages]
 invalidAt = "Invalid packages file at {path}: {message}"
+
+[pkg]
+usage = "Usage: kaja pkg [update]"
+firstSync = "Fetching the marketplace for the first time..."
+synced = "Marketplace synced from {url} ({ref}) at {commit}."
+nothingChanged = "Everything is up to date."
+added = "  added {path}"
+updatedFile = "  updated {path}"
+backedUp = "  replaced {path}, your version saved as {backup}"
+removed = "  removed {path}"
+kept = "  kept {path}: removed upstream, but you edited it"
+fetchFailed = "Could not fetch the marketplace: {message}"
+gitMissing = "git is not installed. Install git to fetch the marketplace."
+gitTimeout = "{command} took too long and was stopped."
+gitFailed = "{command} failed: {message}"
+noMarketplaceFolder = "There is no marketplace/ folder in {url} ({ref})."
+skillsTitle = "Skills"
+pickerHint = "Space toggles, Enter saves, Esc cancels. Packages apply to local mode."
+local = "local"
+empty = "No skills yet. Run `kaja pkg update`, or add your own under marketplace/skills/."
+invalidTitle = "Can't load (fix and run `kaja pkg` again):"
+notTty = "Edit {path} to change which skills load, or run `kaja pkg` in a terminal."
+cancelled = "Nothing changed."
+saved = "Saved {path}: {count} skill(s) enabled."
 
 [services]
 invalidAt = "Invalid services file at {path}: {message}"

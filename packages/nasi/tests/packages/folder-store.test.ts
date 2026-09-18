@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { createFolderPackageStore } from "../../src/packages/folder-store"
+import { createFolderPackageStore, scanSkills } from "../../src/packages/folder-store"
 import { SkillFileError } from "../../src/packages/types"
 
 let root: string
@@ -113,4 +113,20 @@ test("readSkill refuses binary files and hidden files", async () => {
   const store = createFolderPackageStore({ root, enabled: { skills: ["pdf"] } })
   await expect(store.readSkill("pdf", "logo.png")).rejects.toThrow("binary")
   expect(await store.readSkill("pdf", ".env")).toBeUndefined()
+})
+
+test("scanSkills lists every skill folder, enabled or not, with descriptions or load errors", async () => {
+  putSkill("pdf")
+  put("skills/broken/SKILL.md", "---\nname: broken\n---\n")
+  mkdirSync(join(root, "skills", "empty"), { recursive: true })
+  mkdirSync(join(root, "skills", ".hidden"), { recursive: true })
+  const entries = await scanSkills(root)
+  expect(entries.map(e => e.name)).toEqual(["broken", "empty", "pdf"])
+  expect(entries[0]!.error).toContain("description")
+  expect(entries[1]!.error).toContain("no SKILL.md")
+  expect(entries[2]).toEqual({ name: "pdf", description: "The pdf skill." })
+})
+
+test("scanSkills on a missing folder is an empty list", async () => {
+  expect(await scanSkills(join(root, "nope"))).toEqual([])
 })

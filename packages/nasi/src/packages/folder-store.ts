@@ -85,6 +85,33 @@ async function readConfinedFile(dir: string, file: string): Promise<string | und
   return bytes.toString("utf8")
 }
 
+/** One skill folder found on disk, loadable or not — what a picker shows. */
+export type SkillScanEntry = { name: string; description?: string; error?: string }
+
+/** Every folder under `<root>/skills/`, enabled or not, with its description or why it can't load. Sorted by name; a missing root is an empty list. */
+export async function scanSkills(root: string): Promise<SkillScanEntry[]> {
+  const skillsRoot = join(resolve(root), "skills")
+  let entries
+  try {
+    entries = await readdir(skillsRoot, { withFileTypes: true })
+  } catch {
+    return []
+  }
+  const names = entries
+    .filter(entry => (entry.isDirectory() || entry.isSymbolicLink()) && !HIDDEN.test(entry.name))
+    .map(entry => entry.name)
+    .sort((a, b) => a.localeCompare(b))
+  return Promise.all(
+    names.map(async name => {
+      try {
+        return { name, description: (await readSkillFolder(skillsRoot, name)).summary.description }
+      } catch (error) {
+        return { name, error: error instanceof Error ? error.message : String(error) }
+      }
+    })
+  )
+}
+
 /** {@link PackageStore} over a marketplace folder on disk — the CLI's store. */
 export function createFolderPackageStore(opts: FolderPackageStoreOptions): PackageStore {
   const skillsRoot = join(resolve(opts.root), "skills")

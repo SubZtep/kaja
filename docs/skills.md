@@ -37,10 +37,34 @@ For thresholds per filesystem type, read reference.md.
 
 Other frontmatter keys (`license`, `metadata`, …) are allowed and ignored.
 
+## The marketplace
+
+Kaja's own skills live in the [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace)
+folder of its repo. `kaja pkg update` fetches that folder (with `git`, so git must be installed) and
+syncs it into `~/.config/kaja/marketplace/`, next to your own skills:
+
+- files you never touched follow the marketplace, including removals
+- a file you edited is replaced by the new version, and yours is saved next to it as `.bak`
+  (`.bak2`, … when one exists)
+- a file the marketplace removed but you edited stays, as your own
+- files you added yourself are never touched
+
+Only `kaja pkg` and `kaja pkg update` use the network; starting Kaja never does. To fetch from a
+fork, a branch, or a local checkout instead, set a source in `packages.toml`:
+
+```toml
+[source]
+url = "/home/me/src/kaja"   # any git URL or local path
+ref = "my-branch"
+```
+
 ## Turning skills on
 
-Only skills listed in `~/.config/kaja/packages.toml` are loaded, including the ones you wrote
-yourself:
+`kaja pkg` shows every skill in the folder as a checklist (space toggles, Enter saves). Your own
+skills are tagged `local`; skills that can't load are listed underneath with the reason.
+
+It writes `~/.config/kaja/packages.toml`, which you can also edit by hand. Only skills listed there
+are loaded, including the ones you wrote yourself:
 
 ```toml
 skills = ["disk-check"]

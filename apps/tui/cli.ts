@@ -8,6 +8,7 @@ import { hasConfiguredChatModel } from "./lib/models/models"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
 import { runLogoutSubcommand } from "./subcommands/logout"
+import { runPkgSubcommand } from "./subcommands/pkg"
 import { runSubcommand } from "./subcommands/run"
 import { runCloudSubcommand } from "./subcommands/run-cloud"
 import { runTelegramSubcommand } from "./subcommands/telegram"
@@ -28,6 +29,12 @@ try {
   // install with nothing configured yet (e.g. `kaja config wizard` to set one up).
   if (args.input[0] === "config") {
     await runConfigSubcommand(args)
+    process.exit(0)
+  }
+
+  // Same rule as config: local package files only, never a cloud login.
+  if (args.input[0] === "pkg") {
+    await runPkgSubcommand(args)
     process.exit(0)
   }
 

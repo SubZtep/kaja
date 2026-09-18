@@ -52,6 +52,7 @@ PARANCSOK
   config <fetch|paths> Konfigurációs fájlok kezelése
   doctor               Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
   telegram
+  pkg [update]         Betöltendő készségek kiválasztása, vagy a piactér letöltése
   logout               Kijelentkezés a felhő alapú fiókból, a tárolt hitelesítő adat törlésével
 
 OPCIÓK
@@ -107,6 +108,30 @@ invalidAt = "Érvénytelen MCP szerver fájl ({path}): {message}"
 
 [packages]
 invalidAt = "Érvénytelen csomagfájl ({path}): {message}"
+
+[pkg]
+usage = "Használat: kaja pkg [update]"
+firstSync = "A piactér első letöltése..."
+synced = "Piactér szinkronizálva innen: {url} ({ref}), verzió: {commit}."
+nothingChanged = "Minden naprakész."
+added = "  hozzáadva: {path}"
+updatedFile = "  frissítve: {path}"
+backedUp = "  lecserélve: {path}, a te verziód mentve ide: {backup}"
+removed = "  törölve: {path}"
+kept = "  megtartva: {path}: a forrásból törölték, de módosítottad"
+fetchFailed = "Nem sikerült letölteni a piacteret: {message}"
+gitMissing = "A git nincs telepítve. Telepítsd a gitet a piactér letöltéséhez."
+gitTimeout = "A(z) {command} túl sokáig tartott, leállítva."
+gitFailed = "A(z) {command} sikertelen: {message}"
+noMarketplaceFolder = "Nincs marketplace/ mappa itt: {url} ({ref})."
+skillsTitle = "Készségek"
+pickerHint = "Szóköz: kijelölés, Enter: mentés, Esc: mégse. A csomagok helyi módban érvényesek."
+local = "saját"
+empty = "Még nincs készség. Futtasd a `kaja pkg update` parancsot, vagy tegyél sajátot a marketplace/skills/ mappába."
+invalidTitle = "Nem tölthető be (javítsd, majd futtasd újra a `kaja pkg` parancsot):"
+notTty = "A betöltendő készségeket itt módosíthatod: {path}, vagy futtasd a `kaja pkg` parancsot egy terminálban."
+cancelled = "Nem változott semmi."
+saved = "Mentve: {path}, {count} készség bekapcsolva."
 
 [services]
 invalidAt = "Érvénytelen services fájl ({path}): {message}"

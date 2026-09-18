@@ -52,6 +52,7 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   config <fetch|paths> 管理設定檔
   doctor               印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
   telegram
+  pkg [update]         揀欲載入个技能，抑是提市集
   logout               登出雲端帳號，共儲存个憑證清掉
 
 選項
@@ -107,6 +108,30 @@ invalidAt = "MCP 伺服器檔無效（{path}）：{message}"
 
 [packages]
 invalidAt = "套件檔無效（{path}）：{message}"
+
+[pkg]
+usage = "用法：kaja pkg [update]"
+firstSync = "頭一擺提市集..."
+synced = "市集已經對 {url}（{ref}）同步，版本 {commit}。"
+nothingChanged = "攏是上新个。"
+added = "  加入 {path}"
+updatedFile = "  更新 {path}"
+backedUp = "  換掉 {path}，你个版本存佇 {backup}"
+removed = "  刪除 {path}"
+kept = "  留落來 {path}：源頭已經刪掉，毋過你有改過"
+fetchFailed = "提袂著市集：{message}"
+gitMissing = "無安裝 git。請安裝 git 才會當提市集。"
+gitTimeout = "{command} 傷久矣，已經停落來。"
+gitFailed = "{command} 失敗：{message}"
+noMarketplaceFolder = "{url}（{ref}）內底無 marketplace/ 資料夾。"
+skillsTitle = "技能"
+pickerHint = "空白鍵切換，Enter 儲存，Esc 取消。套件佇本機模式才有效。"
+local = "家己个"
+empty = "猶無技能。請執行 `kaja pkg update`，抑是共你家己个囥佇 marketplace/skills/。"
+invalidTitle = "袂當載入（修理了後閣執行 `kaja pkg`）："
+notTty = "欲改載入个技能，請改 {path}，抑是佇終端機執行 `kaja pkg`。"
+cancelled = "無改啥物。"
+saved = "已經儲存 {path}：開 {count} 个技能。"
 
 [services]
 invalidAt = "services 檔無效（{path}）：{message}"

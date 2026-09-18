@@ -38,7 +38,12 @@ export {
   takeLastServedModel
 } from "./models/client"
 export { Nasi, type NasiOpenOptions, type NasiTurnInput } from "./nasi"
-export { createFolderPackageStore, type FolderPackageStoreOptions } from "./packages/folder-store"
+export {
+  createFolderPackageStore,
+  type FolderPackageStoreOptions,
+  type SkillScanEntry,
+  scanSkills
+} from "./packages/folder-store"
 export { type LoadedPackages, loadPackages } from "./packages/load"
 export { parseSkillMd } from "./packages/skill-md"
 export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./packages/skills"

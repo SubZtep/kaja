@@ -64,6 +64,10 @@ kaja --headless telegram  # same, without rendering the terminal UI
 # Config files (local mode)
 kaja config fetch         # rewrite mcp.toml / models.toml / personas from the bundled templates
 kaja config paths         # print where every config file lives
+
+# Skills (local mode)
+kaja pkg                  # pick which skills load (fetches the marketplace the first time)
+kaja pkg update           # fetch the marketplace and sync it into ~/.config/kaja/marketplace
 ```
 
 ## Uninstall
