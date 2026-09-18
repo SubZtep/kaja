@@ -4,9 +4,10 @@ import { render } from "ink"
 import notifier from "node-notifier"
 import open from "open"
 import { writeText } from "tinyclip"
-import LiteApp from "../components/layout/lite-app"
+import App from "../components/layout/app"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
+import { config } from "../lib/config/config"
 import { getApiBaseUrl } from "../lib/config/services"
 import { t } from "../lib/i18n"
 import { log } from "../lib/logger"
@@ -51,8 +52,8 @@ async function resolveToken(apiUrl: string): Promise<string> {
 /**
  * Cloud path: reached via `--cloud`, or by default when no local config
  * exists yet (see cli.ts's useLocal check). Resolves an API token (stored
- * credentials, or device login), then renders LiteApp against cloud Nasi.
- * No local agent, no sqlite, no MCP, no shell tools — talks to
+ * credentials, or device login), then renders App in cloud mode, against
+ * cloud Nasi. No local agent, no sqlite, no MCP, no shell tools — talks to
  * `<apiUrl>/nasi/*` over SSE.
  */
 export async function runCloudSubcommand() {
@@ -60,14 +61,19 @@ export async function runCloudSubcommand() {
 
   try {
     const token = await resolveToken(apiUrl)
+    // cli.ts guarantees settings.toml exists (via createCloud()) before this subcommand runs.
+    const { preferences } = await config()
 
-    const { waitUntilExit } = render(<LiteApp apiUrl={apiUrl} token={token} />, {
-      alternateScreen: true,
-      kittyKeyboard: {
-        mode: "auto",
-        flags: ["disambiguateEscapeCodes"]
+    const { waitUntilExit } = render(
+      <App mode="cloud" initialPreferences={preferences} apiUrl={apiUrl} token={token} />,
+      {
+        alternateScreen: true,
+        kittyKeyboard: {
+          mode: "auto",
+          flags: ["disambiguateEscapeCodes"]
+        }
       }
-    })
+    )
     await waitUntilExit()
     console.log(t("cli.bye"))
   } catch (error) {

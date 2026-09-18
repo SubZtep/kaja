@@ -1,9 +1,11 @@
+import type { PersonaModels } from "@kaja/schema/cli"
 import type { CliResolvedModel, KajaPreferences } from "@kaja/schema/config"
 import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
 import notifier from "node-notifier"
 import { useState } from "react"
-import { useAgent } from "../../hooks/use-agent"
+import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
+import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
 import { useVoice } from "../../hooks/use-voice"
@@ -24,6 +26,9 @@ type MenuMode = "main" | "persona"
 // biome-ignore lint/suspicious/noConfusingVoidType: matches UserInput's onMenuSelect contract
 type MenuCommand = { label: string; run: () => boolean | void }
 
+/** Which optional chat capabilities the active backend supports — cloud Nasi has no persona catalog to switch between and no local TTS to speak replies with. */
+type Capabilities = { persona: boolean; voice: boolean }
+
 function buildMainMenu({
   thinking,
   sounds,
@@ -31,7 +36,8 @@ function buildMainMenu({
   toggleThinking,
   toggleSounds,
   toggleVoice,
-  setMenuMode
+  setMenuMode,
+  capabilities
 }: {
   thinking: boolean
   sounds: boolean
@@ -40,28 +46,25 @@ function buildMainMenu({
   toggleSounds: () => void
   toggleVoice: () => void
   setMenuMode: (mode: MenuMode) => void
+  capabilities: Capabilities
 }): MenuCommand[] {
-  return [
-    {
-      label: t("menu.toggleThinking", { state: t(thinking ? "menu.on" : "menu.off") }),
-      run: toggleThinking
-    },
-    {
-      label: t("menu.toggleSounds", { state: t(sounds ? "menu.on" : "menu.off") }),
-      run: toggleSounds
-    },
-    {
-      label: t("menu.toggleVoice", { state: t(voice ? "menu.on" : "menu.off") }),
-      run: toggleVoice
-    },
-    {
+  const items: MenuCommand[] = [
+    { label: t("menu.toggleThinking", { state: t(thinking ? "menu.on" : "menu.off") }), run: toggleThinking },
+    { label: t("menu.toggleSounds", { state: t(sounds ? "menu.on" : "menu.off") }), run: toggleSounds }
+  ]
+  if (capabilities.voice) {
+    items.push({ label: t("menu.toggleVoice", { state: t(voice ? "menu.on" : "menu.off") }), run: toggleVoice })
+  }
+  if (capabilities.persona) {
+    items.push({
       label: t("menu.changePersona"),
       run: () => {
         setMenuMode("persona")
         return true
       }
-    }
-  ]
+    })
+  }
+  return items
 }
 
 function buildCommands({
@@ -73,8 +76,9 @@ function buildCommands({
   toggleSounds,
   toggleVoice,
   setMenuMode,
+  capabilities,
   personas,
-  persona,
+  currentPersonaId,
   switchPersona
 }: {
   menuMode: MenuMode
@@ -85,8 +89,9 @@ function buildCommands({
   toggleSounds: () => void
   toggleVoice: () => void
   setMenuMode: (mode: MenuMode) => void
+  capabilities: Capabilities
   personas: Persona[]
-  persona: Persona
+  currentPersonaId?: string
   switchPersona: (next: Persona) => void
 }): MenuCommand[] {
   if (menuMode === "main") {
@@ -97,18 +102,136 @@ function buildCommands({
       toggleThinking,
       toggleSounds,
       toggleVoice,
-      setMenuMode
+      setMenuMode,
+      capabilities
     })
   }
   return personas.map(p => ({
-    label: `${p.label}${p.id === persona.id ? " ✓" : ""}`,
+    label: `${p.label}${p.id === currentPersonaId ? " ✓" : ""}`,
     run: () => {
       switchPersona(p)
     }
   }))
 }
 
-export default function App({
+/**
+ * Chat chrome (Header/ChatViewport/UserInput/ConfirmCommand) shared by both
+ * backends. {@link LocalApp} and {@link CloudApp} each drive their own agent
+ * hook and normalize its output into these props, so preferences, menu
+ * building, sound/voice, and the confirm-command flow are written once and
+ * behave identically regardless of which backend is running.
+ */
+function Chrome({
+  personaLabel,
+  model,
+  provider,
+  promptTokens,
+  currentTool,
+  events,
+  partial,
+  pending,
+  send,
+  initialPreferences,
+  personaModels,
+  history,
+  capabilities,
+  personas = [],
+  currentPersonaId,
+  switchPersona,
+  pendingCommand,
+  runningCommand = false,
+  resolveCommand
+}: Readonly<{
+  personaLabel: string
+  model: string
+  /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". Local only — cloud never exposes the resolved provider. */
+  provider?: string
+  promptTokens: number | null
+  currentTool?: { name: string; arguments: string }
+  events: TimelineEvent[]
+  partial: PartialMessage | null
+  pending: boolean
+  send: (prompt: string, showUserEvent?: boolean) => Promise<void>
+  initialPreferences?: KajaPreferences
+  personaModels?: PersonaModels
+  /** Past prompts across all sessions for ↑/↓ recall, newest first. Local only. */
+  history?: string[]
+  capabilities: Capabilities
+  personas?: Persona[]
+  currentPersonaId?: string
+  switchPersona?: (next: Persona) => void
+  pendingCommand?: { command: string; description: string }
+  runningCommand?: boolean
+  resolveCommand?: (command: string, approved: boolean) => Promise<void>
+}>) {
+  const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = usePreferences(initialPreferences)
+  useSound(events, sounds)
+  const speaking = useVoice(events, capabilities.voice && voice, personaModels)
+  const { columns, rows } = useWindowSize()
+  const [menuMode, setMenuMode] = useState<MenuMode>("main")
+
+  const commands = buildCommands({
+    menuMode,
+    thinking,
+    sounds,
+    voice,
+    toggleThinking,
+    toggleSounds,
+    toggleVoice,
+    setMenuMode,
+    capabilities,
+    personas,
+    currentPersonaId,
+    switchPersona: switchPersona ?? (() => {})
+  })
+
+  let bottomChromeKey: "input" | "running" | "confirm" = "input"
+  if (pendingCommand) bottomChromeKey = runningCommand ? "running" : "confirm"
+
+  return (
+    <Box flexDirection="column" width={columns} height={rows}>
+      <Header
+        persona={personaLabel}
+        model={model}
+        provider={provider}
+        promptTokens={promptTokens}
+        currentTool={currentTool}
+        width={columns}
+      />
+      <ChatViewport
+        events={events}
+        thinking={thinking}
+        partial={partial}
+        pending={pending}
+        sounds={sounds}
+        bottomChromeKey={bottomChromeKey}
+      />
+      {pendingCommand && resolveCommand ? (
+        <ConfirmCommand
+          key="confirm-command"
+          command={pendingCommand.command}
+          description={pendingCommand.description}
+          running={runningCommand}
+          onResolve={approved => resolveCommand(pendingCommand.command, approved)}
+        />
+      ) : (
+        <UserInput
+          key="user-input"
+          pending={pending}
+          speaking={speaking}
+          send={send}
+          history={history}
+          menuItems={commands.map(command => command.label)}
+          onMenuSelect={index => commands[index]?.run()}
+          onMenuClose={() => setMenuMode("main")}
+          personaModels={personaModels}
+        />
+      )}
+    </Box>
+  )
+}
+
+function LocalApp({
   initialPreferences,
   models = [],
   personas,
@@ -122,9 +245,7 @@ export default function App({
   personas: Persona[]
   openaiApiModel: string
   tools: Tool<any>[]
-  /** A persisted session to continue (--continue / --session <id>). */
   initialSession?: PersistedSession
-  /** Past prompts across all sessions for ↑/↓ recall, newest first. */
   promptHistory?: string[]
 }>) {
   const {
@@ -154,6 +275,7 @@ export default function App({
       model: models.find(m => m.model === initialSession.model)
     }
   })
+
   const switchPersona = async (next: Persona) => {
     if (pending) return
     switchPersonaAgent(next)
@@ -167,72 +289,88 @@ export default function App({
       log.warn("Failed to save preferences", { error })
     }
   }
+
   const lastEvent = events.at(-1)
   const pendingCommand = !pending && lastEvent?.type === "confirm_command" ? lastEvent : undefined
-  const { thinking, sounds, voice, toggleThinking, toggleSounds, toggleVoice } = usePreferences(initialPreferences)
-  useSound(events, sounds)
-  const speaking = useVoice(events, voice, persona.models)
-  const { columns, rows } = useWindowSize()
-
-  const [menuMode, setMenuMode] = useState<MenuMode>("main")
   const provider = models.find(m => m.model === displayModel)?.provider
 
-  const commands = buildCommands({
-    menuMode,
-    thinking,
-    sounds,
-    voice,
-    toggleThinking,
-    toggleSounds,
-    toggleVoice,
-    setMenuMode,
-    personas,
-    persona,
-    switchPersona
+  return (
+    <Chrome
+      personaLabel={persona.label}
+      model={displayModel}
+      provider={provider}
+      promptTokens={promptTokens}
+      currentTool={currentTool}
+      events={events}
+      partial={partial}
+      pending={pending}
+      send={send}
+      initialPreferences={initialPreferences}
+      personaModels={persona.models}
+      history={promptHistory}
+      capabilities={{ persona: true, voice: true }}
+      personas={personas}
+      currentPersonaId={persona.id}
+      switchPersona={switchPersona}
+      pendingCommand={pendingCommand}
+      runningCommand={runningCommand}
+      resolveCommand={resolveCommand}
+    />
+  )
+}
+
+function CloudApp({
+  initialPreferences,
+  apiUrl,
+  token
+}: Readonly<{ initialPreferences?: KajaPreferences; apiUrl: string; token: string }>) {
+  const { model, persona, events, partial, pending, currentTool, send, promptTokens } = useCloudAgent({
+    baseUrl: apiUrl,
+    getToken: async () => token
   })
 
-  let bottomChromeKey: "input" | "running" | "confirm" = "input"
-  if (pendingCommand) bottomChromeKey = runningCommand ? "running" : "confirm"
-
   return (
-    <Box flexDirection="column" width={columns} height={rows}>
-      <Header
-        persona={persona.label}
-        model={displayModel}
-        provider={provider}
-        promptTokens={promptTokens}
-        currentTool={currentTool}
-        width={columns}
-      />
-      <ChatViewport
-        events={events}
-        thinking={thinking}
-        partial={partial}
-        pending={pending}
-        sounds={sounds}
-        bottomChromeKey={bottomChromeKey}
-      />
-      {pendingCommand ? (
-        <ConfirmCommand
-          key="confirm-command"
-          command={pendingCommand.command}
-          description={pendingCommand.description}
-          running={runningCommand}
-          onResolve={approved => resolveCommand(pendingCommand.command, approved)}
-        />
-      ) : (
-        <UserInput
-          key="user-input"
-          pending={pending}
-          speaking={speaking}
-          send={send}
-          history={promptHistory}
-          menuItems={commands.map(command => command.label)}
-          onMenuSelect={index => commands[index]?.run()}
-          onMenuClose={() => setMenuMode("main")}
-          personaModels={persona.models}
-        />
-      )}
-    </Box>
+    <Chrome
+      personaLabel={persona?.label ?? t("cli.connecting")}
+      model={model}
+      promptTokens={promptTokens}
+      currentTool={currentTool}
+      events={events}
+      partial={partial}
+      pending={pending}
+      send={send}
+      initialPreferences={initialPreferences}
+      capabilities={{ persona: false, voice: false }}
+    />
   )
+}
+
+type LocalAppProps = Readonly<{
+  mode: "local"
+  initialPreferences?: KajaPreferences
+  models?: CliResolvedModel[]
+  personas: Persona[]
+  openaiApiModel: string
+  tools: Tool<any>[]
+  /** A persisted session to continue (--continue / --session <id>). */
+  initialSession?: PersistedSession
+  /** Past prompts across all sessions for ↑/↓ recall, newest first. */
+  promptHistory?: string[]
+}>
+
+type CloudAppProps = Readonly<{
+  mode: "cloud"
+  initialPreferences?: KajaPreferences
+  apiUrl: string
+  token: string
+}>
+
+/**
+ * The CLI's chat screen, backed by either the local {@link Agent} loop
+ * (`mode: "local"`, full tools/persona catalog/run_command) or cloud Nasi
+ * over SSE (`mode: "cloud"`, no persona switching, no MCP, no run_command —
+ * cloud never emits those). Both render the same chat chrome via {@link Chrome}.
+ */
+export default function App(props: LocalAppProps | CloudAppProps) {
+  return props.mode === "local" ? <LocalApp {...props} /> : <CloudApp {...props} />
 }

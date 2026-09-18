@@ -94,6 +94,9 @@ export function useCloudAgent(options: NasiClientOptions) {
       }
 
       try {
+        // TODO: forward includeThinking (from the thinking preference) once something depends on the request
+        // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
+        // display is already gated client-side by the `thinking` prop threaded through Chrome.
         const gen = client.turn_stream({ session: sessionRef.current, message: prompt, language: getLanguage() })
         let next = await gen.next()
         while (!next.done) {
@@ -118,6 +121,10 @@ export function useCloudAgent(options: NasiClientOptions) {
     [client, pushEvent]
   )
 
+  // Mirrors useAgent's currentTool: derived from the last event rather than tracked separately, since a later event naturally supersedes it.
+  const lastEvent = events.at(-1)
+  const currentTool = pending && lastEvent?.type === "tool_call" ? lastEvent : undefined
+
   return {
     model: responseModel ?? info?.model ?? "kaja",
     persona: info?.persona,
@@ -125,6 +132,7 @@ export function useCloudAgent(options: NasiClientOptions) {
     events,
     partial,
     pending,
+    currentTool,
     send,
     promptTokens
   }

@@ -53,6 +53,7 @@ export async function runSubcommand(cli: typeof Cli) {
   // Kitty keyboard (auto): so Shift+Enter is distinct from Enter — plain TTYs send the same `\r` for both
   const { waitUntilExit } = render(
     <App
+      mode="local"
       initialPreferences={preferences}
       models={models}
       personas={personas}

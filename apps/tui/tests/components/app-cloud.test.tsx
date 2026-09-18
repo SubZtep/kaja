@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test"
-import LiteApp from "../../components/layout/lite-app"
+import App from "../../components/layout/app"
 import { renderForTest } from "../test-utils"
 
 const originalFetch = globalThis.fetch
@@ -56,7 +56,7 @@ afterEach(() => {
 })
 
 test("renders the resolved persona label and model from /nasi/info", async () => {
-  const t = renderForTest(<LiteApp apiUrl="https://api.kaja.io" token="tok" />)
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.tick()
   expect(t.lastFrame()).toContain("Helpful assistant")
@@ -66,7 +66,7 @@ test("renders the resolved persona label and model from /nasi/info", async () =>
 })
 
 test("sending a message streams the reply into the timeline", async () => {
-  const t = renderForTest(<LiteApp apiUrl="https://api.kaja.io" token="tok" />)
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.press("hi there")
   await t.press("\r")
@@ -78,7 +78,7 @@ test("sending a message streams the reply into the timeline", async () => {
 })
 
 test("sends the CLI's active language with the turn request", async () => {
-  const t = renderForTest(<LiteApp apiUrl="https://api.kaja.io" token="tok" />)
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.press("hi there")
   await t.press("\r")
@@ -91,7 +91,7 @@ test("sends the CLI's active language with the turn request", async () => {
 
 test("a tool error from the server renders as a tool failure, not a network error", async () => {
   nextTurnResponse = () => sseToolErrorResponse()
-  const t = renderForTest(<LiteApp apiUrl="https://api.kaja.io" token="tok" />)
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
   await t.tick()
   await t.press("fetch that")
   await t.press("\r")
