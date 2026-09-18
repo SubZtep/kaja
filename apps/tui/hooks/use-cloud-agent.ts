@@ -140,6 +140,11 @@ export function useCloudAgent(options: NasiClientOptions) {
         if (event.model) setResponseModel(event.model)
       }
 
+      const handleEvent = (event: CloudTimelineEvent) => {
+        setPartial(null)
+        pushEvent(event)
+      }
+
       try {
         let nextMessage = prompt
         while (true) {
@@ -158,11 +163,8 @@ export function useCloudAgent(options: NasiClientOptions) {
             const event = next.value
             if (event.type === "delta") handleDelta(event)
             else if (event.type === "usage") handleUsage(event)
-            else {
-              setPartial(null)
-              pushEvent(event)
-              if (event.type === "client_tool_call") pendingClientTool = event
-            }
+            else handleEvent(event)
+            if (event.type === "client_tool_call") pendingClientTool = event
             next = await gen.next()
           }
           sessionRef.current = next.value.session

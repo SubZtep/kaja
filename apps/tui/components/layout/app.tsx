@@ -29,6 +29,41 @@ const HELP_URL = "https://docs.kaja.io/tui/"
 /** Which optional chat capabilities the active backend supports — cloud Nasi has no local TTS to speak replies with. */
 type Capabilities = { persona: boolean; voice: boolean }
 
+type BottomChromeKey = "input" | "running" | "confirm" | "persona"
+
+function getBottomChromeKey(
+  pickingPersona: boolean,
+  pendingCommand: unknown,
+  runningCommand: boolean
+): BottomChromeKey {
+  if (pickingPersona) return "persona"
+  if (!pendingCommand) return "input"
+  return runningCommand ? "running" : "confirm"
+}
+
+// Esc means something different depending on what's showing — quit while typing, but just dismiss the
+// picker/confirm prompt over it. While a command is actually running there's nothing bound to Esc (no entry).
+function escKeyBarItem(bottomChromeKey: BottomChromeKey): { key: string; label: string } | undefined {
+  const labels: Partial<Record<BottomChromeKey, string>> = {
+    persona: t("keybar.cancel"),
+    confirm: t("keybar.decline"),
+    input: t("keybar.quit")
+  }
+  const label = labels[bottomChromeKey]
+  return label ? { key: "Esc", label } : undefined
+}
+
+function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolean, bottomChromeKey: BottomChromeKey) {
+  const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
+  const escItem = escKeyBarItem(bottomChromeKey)
+  return [
+    { key: `${modifierLabel}+L`, label: t("keybar.help") },
+    ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
+    { key: `${modifierLabel}+R`, label: t("keybar.copy") },
+    ...(escItem ? [escItem] : [])
+  ]
+}
+
 /**
  * Chat chrome (Header/ChatViewport/UserInput/ConfirmCommand/PersonaPicker)
  * shared by both backends. {@link LocalApp} and {@link CloudApp} each drive
@@ -97,29 +132,9 @@ function Chrome({
     }
   })
 
-  let bottomChromeKey: "input" | "running" | "confirm" | "persona" = "input"
-  if (pickingPersona) bottomChromeKey = "persona"
-  else if (pendingCommand) bottomChromeKey = runningCommand ? "running" : "confirm"
-
-  // Esc means something different depending on what's showing — quit while typing, but just
-  // dismiss the picker/confirm prompt over it. While a command is actually running there's
-  // nothing bound to Esc at all (ConfirmCommand shows a status line, not a SelectMenu), so no entry.
-  const escItem =
-    bottomChromeKey === "persona"
-      ? { key: "Esc", label: t("keybar.cancel") }
-      : bottomChromeKey === "confirm"
-        ? { key: "Esc", label: t("keybar.decline") }
-        : bottomChromeKey === "input"
-          ? { key: "Esc", label: t("keybar.quit") }
-          : undefined
-
-  const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
-  const keyBarItems = [
-    { key: `${modifierLabel}+L`, label: t("keybar.help") },
-    ...(capabilities.persona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
-    { key: `${modifierLabel}+R`, label: t("keybar.copy") },
-    ...(escItem ? [escItem] : [])
-  ]
+  const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
+  const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolveCommand)
+  const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey)
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>
@@ -140,7 +155,7 @@ function Chrome({
         hotkeyModifier={hotkeyModifier}
         bottomChromeKey={bottomChromeKey}
       />
-      {bottomChromeKey === "persona" ? (
+      {bottomChromeKey === "persona" && (
         <PersonaPicker
           key="persona-picker"
           personas={personas}
@@ -151,7 +166,8 @@ function Chrome({
           }}
           onCancel={() => setPickingPersona(false)}
         />
-      ) : pendingCommand && resolveCommand ? (
+      )}
+      {showConfirm && pendingCommand && resolveCommand && (
         <ConfirmCommand
           key="confirm-command"
           command={pendingCommand.command}
@@ -159,7 +175,8 @@ function Chrome({
           running={runningCommand}
           onResolve={approved => resolveCommand(pendingCommand.command, approved)}
         />
-      ) : (
+      )}
+      {bottomChromeKey !== "persona" && !showConfirm && (
         <UserInput
           key="user-input"
           pending={pending}
