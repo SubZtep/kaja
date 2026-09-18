@@ -26,6 +26,7 @@ import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
 import { Route as PublicDeviceApproveRouteImport } from './routes/_public/device/approve'
+import { Route as PublicDeviceDoneRouteImport } from './routes/_public/device/done'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/_admin',
@@ -110,6 +111,11 @@ const PublicDeviceApproveRoute = PublicDeviceApproveRouteImport.update({
   path: '/approve',
   getParentRoute: () => PublicDeviceRoute,
 } as any)
+const PublicDeviceDoneRoute = PublicDeviceDoneRouteImport.update({
+  id: '/done',
+  path: '/done',
+  getParentRoute: () => PublicDeviceRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof PublicSignupRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device/approve': typeof PublicDeviceApproveRoute
+  '/device/done': typeof PublicDeviceDoneRoute
   '/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/models/': typeof AdminModelsIndexRoute
   '/personas/': typeof AdminPersonasIndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/signup': typeof PublicSignupRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device/approve': typeof PublicDeviceApproveRoute
+  '/device/done': typeof PublicDeviceDoneRoute
   '/mcp-servers': typeof AdminMcpServersIndexRoute
   '/models': typeof AdminModelsIndexRoute
   '/personas': typeof AdminPersonasIndexRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_public/': typeof PublicIndexRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
   '/_public/device/approve': typeof PublicDeviceApproveRoute
+  '/_public/device/done': typeof PublicDeviceDoneRoute
   '/_admin/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/_admin/models/': typeof AdminModelsIndexRoute
   '/_admin/personas/': typeof AdminPersonasIndexRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/users/$userId'
     | '/device/approve'
+    | '/device/done'
     | '/mcp-servers/'
     | '/models/'
     | '/personas/'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/users/$userId'
     | '/device/approve'
+    | '/device/done'
     | '/mcp-servers'
     | '/models'
     | '/personas'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/_public/'
     | '/_admin/users/$userId'
     | '/_public/device/approve'
+    | '/_public/device/done'
     | '/_admin/mcp-servers/'
     | '/_admin/models/'
     | '/_admin/personas/'
@@ -345,6 +357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicDeviceApproveRouteImport
       parentRoute: typeof PublicDeviceRoute
     }
+    '/_public/device/done': {
+      id: '/_public/device/done'
+      path: '/done'
+      fullPath: '/device/done'
+      preLoaderRoute: typeof PublicDeviceDoneRouteImport
+      parentRoute: typeof PublicDeviceRoute
+    }
   }
 }
 
@@ -374,11 +393,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface PublicDeviceRouteChildren {
   PublicDeviceApproveRoute: typeof PublicDeviceApproveRoute
+  PublicDeviceDoneRoute: typeof PublicDeviceDoneRoute
   PublicDeviceIndexRoute: typeof PublicDeviceIndexRoute
 }
 
 const PublicDeviceRouteChildren: PublicDeviceRouteChildren = {
   PublicDeviceApproveRoute: PublicDeviceApproveRoute,
+  PublicDeviceDoneRoute: PublicDeviceDoneRoute,
   PublicDeviceIndexRoute: PublicDeviceIndexRoute,
 }
 

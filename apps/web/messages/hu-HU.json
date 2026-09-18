@@ -395,7 +395,10 @@
   "device_approve_approve": "Jóváhagyás",
   "device_approve_deny": "Elutasítás",
   "device_approve_error": "Nem sikerült jóváhagyni",
-  "device_approve_success": "Az eszköz jóváhagyva — visszatérhetsz a TUI-hoz.",
   "device_deny_error": "Nem sikerült elutasítani",
-  "device_deny_success": "A kérés elutasítva."
+  "seo_device_done_title": "Eszköz bejelentkezés kész",
+  "device_done_approved_title": "Az eszköz jóváhagyva",
+  "device_done_approved_desc": "A TUI mostantól hozzáfér a fiókodhoz. Bezárhatod ezt az ablakot, és visszatérhetsz a terminálhoz.",
+  "device_done_denied_title": "A kérés elutasítva",
+  "device_done_denied_desc": "A TUI nem kapott hozzáférést a fiókodhoz. Bezárhatod ezt az ablakot."
 }

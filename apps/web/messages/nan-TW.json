@@ -395,7 +395,10 @@
   "device_approve_approve": "核准",
   "device_approve_deny": "拒絕",
   "device_approve_error": "核准失敗矣",
-  "device_approve_success": "裝置已經核准矣 — 你會使轉去 TUI。",
   "device_deny_error": "拒絕失敗矣",
-  "device_deny_success": "要求已經拒絕矣。"
+  "seo_device_done_title": "裝置登入完成",
+  "device_done_approved_title": "裝置已經核准矣",
+  "device_done_approved_desc": "TUI 現在會使用你的口座矣。你會使關掉這个窗仔，轉去終端機。",
+  "device_done_denied_title": "要求已經拒絕矣",
+  "device_done_denied_desc": "TUI 無得著你口座的權限。你會使關掉這个窗仔。"
 }

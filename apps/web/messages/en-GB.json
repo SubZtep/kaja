@@ -395,7 +395,10 @@
   "device_approve_approve": "Approve",
   "device_approve_deny": "Deny",
   "device_approve_error": "Failed to approve",
-  "device_approve_success": "Device approved — you can return to the TUI.",
   "device_deny_error": "Failed to deny",
-  "device_deny_success": "Request denied."
+  "seo_device_done_title": "Device Login Complete",
+  "device_done_approved_title": "Device approved",
+  "device_done_approved_desc": "The TUI now has access to your account. You can close this window and return to your terminal.",
+  "device_done_denied_title": "Request denied",
+  "device_done_denied_desc": "The TUI was not given access to your account. You can close this window."
 }
