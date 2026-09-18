@@ -208,6 +208,12 @@ mcpServers = "MCP 伺服器"
 mcpServerToolCount = "（{count} 个工具）"
 mcpServerFailed = "（連線失敗）"
 tools = "工具"
+toolsOfficial = "官方"
+toolsCommunity = "社群"
+toolsThirdParty = "第三方"
+toolsSkipped = "跳過"
+skippedReserved = "名予 Kaja 保留矣"
+skippedTaken = "名已經予 {source} 用去矣"
 stats = "工作階段：{sessionCount} · 記智筆記：{memoryNoteCount}"
 
 [telegram]

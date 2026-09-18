@@ -208,6 +208,12 @@ mcpServers = "MCP szerverek"
 mcpServerToolCount = "({count} eszköz)"
 mcpServerFailed = "(sikertelen kapcsolódás)"
 tools = "Eszközök"
+toolsOfficial = "Hivatalos"
+toolsCommunity = "Közösségi"
+toolsThirdParty = "Külső"
+toolsSkipped = "Kihagyva"
+skippedReserved = "a nevet a Kaja foglalja"
+skippedTaken = "a nevet már használja: {source}"
 stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet"
 
 [telegram]

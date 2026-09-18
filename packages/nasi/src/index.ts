@@ -29,7 +29,16 @@ export { samplingOf } from "./agent/persona"
 export { run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
-export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResult, tool, toolName } from "./agent/tools"
+export {
+  LOCAL_OWNER_CTX,
+  type Tool,
+  type ToolContext,
+  ToolError,
+  type ToolOrigin,
+  type ToolResult,
+  tool,
+  toolName
+} from "./agent/tools"
 export { connectMcpServer } from "./mcp/client"
 export {
   createOpenAIClient,
@@ -73,4 +82,11 @@ export { summarizeTool } from "./tools/builtin/summarize"
 export { viewImageTool } from "./tools/builtin/view-image"
 export { webSearchTool } from "./tools/builtin/web-search"
 export { getToolDeps, type ImageGenModel, type NasiToolDeps, type RerankModel, setToolDeps } from "./tools/deps"
-export { type CreateToolsOptions, createTools, listCloudToolNames } from "./tools/registry"
+export {
+  type CreateToolsOptions,
+  createTools,
+  listCloudToolNames,
+  mergeTools,
+  type SkippedTool,
+  type ToolGroup
+} from "./tools/registry"

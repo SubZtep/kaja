@@ -114,6 +114,21 @@ export const diceTool = {
 `execute` returns a string, or `{ text, images?, displayImage? }` when the result includes images.
 A file that throws on import is logged and skipped.
 
+## Names and origins
+
+All tools share one list of names, and each one is marked by where it comes from:
+
+| Origin | What |
+| --- | --- |
+| official | Kaja's built-ins, including `load_skill` |
+| community | packages in `~/.config/kaja/marketplace/`, synced or your own |
+| third-party | MCP servers from `mcp.toml` and your `tools/*.ts` files |
+
+Official names are reserved: an MCP or plugin tool called `read_file` is left out rather than
+replacing the built-in. Between the others, community tools come before third-party ones, and the
+first tool with a name keeps it. `kaja doctor` lists every tool by origin, plus anything left out and
+why. The model only sees the names, never the origin.
+
 ---
 
 Next:

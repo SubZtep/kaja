@@ -12,7 +12,7 @@ function isTool(value: unknown): value is Tool<any> {
   )
 }
 
-/** Loads user-supplied tools from `dir/*.ts`. */
+/** Loads user-supplied tools from `dir/*.ts`, each tagged with its `plugin:<file>` source. */
 export async function loadPluginTools(dir: string): Promise<Tool<any>[]> {
   const glob = new Bun.Glob("*.ts")
   const tools: Tool<any>[] = []
@@ -30,7 +30,7 @@ export async function loadPluginTools(dir: string): Promise<Tool<any>[]> {
     try {
       const exports: Record<string, unknown> = await import(path)
       for (const value of Object.values(exports)) {
-        if (isTool(value)) tools.push(value)
+        if (isTool(value)) tools.push({ ...value, source: `plugin:${entry}` })
       }
     } catch (error) {
       warn("Failed to load plugin tool", { path, error: error instanceof Error ? error.message : error })

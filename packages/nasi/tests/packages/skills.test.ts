@@ -59,7 +59,7 @@ test("load_skill refuses skills the active persona may not use", async () => {
 })
 
 test("loadPackages adds no tool when no skill is enabled", async () => {
-  expect(await loadPackages(fakeStore([]))).toEqual({ tools: [], skills: [] })
+  expect(await loadPackages(fakeStore([]))).toEqual({ groups: [], skills: [] })
 })
 
 test("loadPackages survives a store that throws", async () => {
@@ -69,12 +69,15 @@ test("loadPackages survives a store that throws", async () => {
     },
     readSkill: async () => undefined
   }
-  expect(await loadPackages(broken)).toEqual({ tools: [], skills: [] })
+  expect(await loadPackages(broken)).toEqual({ groups: [], skills: [] })
 })
 
-test("loadPackages adds load_skill carrying the skill list", async () => {
-  const { tools, skills } = await loadPackages(fakeStore([pdf]))
+test("loadPackages adds load_skill as an official tool carrying the skill list", async () => {
+  const { groups, skills } = await loadPackages(fakeStore([pdf]))
   expect(skills).toEqual([pdf])
-  expect(tools).toHaveLength(1)
-  expect(tools[0]!.definition.type === "function" && tools[0]!.definition.function.name).toBe("load_skill")
+  expect(groups).toHaveLength(1)
+  expect(groups[0]!.origin).toBe("official")
+  expect(groups[0]!.tools.map(t => t.definition.type === "function" && t.definition.function.name)).toEqual([
+    "load_skill"
+  ])
 })

@@ -208,6 +208,12 @@ mcpServers = "MCP servers"
 mcpServerToolCount = "({count} tools)"
 mcpServerFailed = "(failed to connect)"
 tools = "Tools"
+toolsOfficial = "Official"
+toolsCommunity = "Community"
+toolsThirdParty = "Third-party"
+toolsSkipped = "Skipped"
+skippedReserved = "name reserved by Kaja"
+skippedTaken = "name taken by {source}"
 stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount}"
 
 [telegram]

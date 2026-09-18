@@ -1,7 +1,7 @@
 import { warn } from "@kaja/logger"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../agent/agent"
-import { type Tool, toolName } from "../agent/tools"
+import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
 import { connectMcpServer } from "../mcp/client"
 import { loadPluginTools } from "../plugin/plugin-tools"
 import { currentTimeTool } from "./builtin/current-time"
@@ -56,6 +56,62 @@ export type CreateToolsOptions = {
   mcpServers?: McpServerEntry[]
   pluginDir?: string
   tempDir?: string
+  /** Tools the host brings in besides the builtins, e.g. `loadPackages`' groups. Merged under the same name rules. */
+  extraTools?: ToolGroup[]
+}
+
+/** Tools that share an origin (and, for non-official ones, usually a source) on their way into {@link mergeTools}. */
+export type ToolGroup = {
+  origin: ToolOrigin
+  /** Stamped on every tool in the group; when unset, each tool keeps its own `source`. */
+  source?: string
+  tools: Tool<any>[]
+}
+
+/** A tool left out of the model's list because its name was already in use. */
+export type SkippedTool = {
+  name: string
+  origin: ToolOrigin
+  source?: string
+  /** `reserved`: an official tool has the name. `taken`: another non-official tool got there first. */
+  reason: "reserved" | "taken"
+  takenBy?: string
+}
+
+const ORIGIN_ORDER: ToolOrigin[] = ["official", "community", "third-party"]
+
+/**
+ * One namespace for every tool: stamps each group's origin/source onto its tools and drops
+ * duplicate names, so the model never gets two functions with the same name. Official names
+ * are reserved; between the others, community beats third-party and the first one in wins.
+ */
+export function mergeTools(groups: ToolGroup[]): { tools: Tool<any>[]; skipped: SkippedTool[] } {
+  const ordered = groups.toSorted((a, b) => ORIGIN_ORDER.indexOf(a.origin) - ORIGIN_ORDER.indexOf(b.origin))
+  const byName = new Map<string, Tool<any>>()
+  const skipped: SkippedTool[] = []
+
+  for (const group of ordered) {
+    for (const t of group.tools) {
+      const stamped: Tool<any> = { ...t, origin: group.origin, source: group.source ?? t.source }
+      const name = toolName(t)
+      const existing = byName.get(name)
+      if (!existing) {
+        byName.set(name, stamped)
+        continue
+      }
+      const entry: SkippedTool = {
+        name,
+        origin: group.origin,
+        source: stamped.source,
+        reason: existing.origin === "official" ? "reserved" : "taken",
+        takenBy: existing.source
+      }
+      skipped.push(entry)
+      warn("Skipping a tool whose name is already in use", entry)
+    }
+  }
+
+  return { tools: [...byName.values()], skipped }
 }
 
 type McpConnection = { tools: Tool<any>[]; close: () => Promise<void>; failed: boolean; id: string }
@@ -109,7 +165,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     ...(opts.deps?.imageGeneration ? [generateImageTool] : [])
   ]
 
-  const tools = local
+  const official = local
     ? builtin
     : builtin
         .filter(t => CLOUD_SAFE.has(toolName(t)) || CLIENT_EXECUTABLE.has(toolName(t)))
@@ -120,8 +176,17 @@ export async function createTools(opts: CreateToolsOptions = {}) {
 
   const pluginTools = local && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []
 
+  const { tools, skipped } = mergeTools([
+    { origin: "official", tools: official },
+    ...(opts.extraTools ?? []),
+    ...mcpConnections.map(c => ({ origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools })),
+    // Each plugin tool already carries its own `plugin:<file>` source.
+    { origin: "third-party", tools: pluginTools }
+  ])
+
   return {
-    tools: [...tools, ...mcpConnections.flatMap(c => c.tools), ...pluginTools],
+    tools,
+    skipped,
     mcpServers: mcpConnections.map(c => ({
       id: c.id,
       toolCount: c.tools.length,

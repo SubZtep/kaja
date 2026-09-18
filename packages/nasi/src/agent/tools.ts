@@ -42,6 +42,13 @@ export class ToolError extends Error {
 }
 
 /**
+ * Who stands behind a tool: Kaja itself (`official`), a package in the marketplace
+ * folder, synced or your own (`community`), or an outside MCP server or tools/*.ts
+ * plugin (`third-party`). Shown in doctor/pkg, never to the model.
+ */
+export type ToolOrigin = "official" | "community" | "third-party"
+
+/**
  * A tool an {@link Agent} can call, pairing the OpenAI function definition
  * with the local implementation that runs when the model calls it.
  */
@@ -50,6 +57,10 @@ export type Tool<Args> = {
   execute: (args: Args, ctx?: ToolContext) => Promise<string | ToolResult>
   /** True only for the cloud-registered stub of a tool that must run on the client (see registry.ts's CLIENT_EXECUTABLE). Never set on the real implementation. */
   requiresClientExecution?: boolean
+  /** Stamped by the registry's `mergeTools`; unset on a tool that hasn't been through it. */
+  origin?: ToolOrigin
+  /** Where a non-official tool came from, e.g. `package:open-meteo`, `mcp:chrome-devtools`, `plugin:ping.ts`. */
+  source?: string
 }
 
 /**

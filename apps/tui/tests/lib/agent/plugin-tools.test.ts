@@ -18,6 +18,7 @@ test("loads a valid exported Tool and ignores non-Tool exports", async () => {
   // @ts-ignore
   expect(tools.map(t => t.definition.function.name)).toEqual(["ping"])
   expect(await tools[0]!.execute({})).toBe("pong")
+  expect(tools[0]!.source).toBe("plugin:ping.ts")
 })
 
 test("skips a plugin file that throws on import, without throwing itself", async () => {

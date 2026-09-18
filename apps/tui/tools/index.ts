@@ -46,8 +46,9 @@ export async function getDefaultTools(personas: Persona[]) {
     { personas }
   )
 
-  const created = await createTools({
+  return createTools({
     includeLocalTools: true,
+    extraTools: packages.groups,
     mcpServers,
     pluginDir: join(getConfigDir(), "tools"),
     deps: {
@@ -60,5 +61,4 @@ export async function getDefaultTools(personas: Persona[]) {
       storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }
   })
-  return { ...created, tools: [...created.tools, ...packages.tools] }
 }
