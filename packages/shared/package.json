@@ -6,7 +6,7 @@
   "main": "index.ts",
   "dependencies": {
     "clsx": "^2.1.1",
-    "marked": "^18.0.12",
-    "tailwind-merge": "^3.6.0"
+    "marked": "^18.0.13",
+    "tailwind-merge": "^3.7.0"
   }
 }
