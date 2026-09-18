@@ -1,5 +1,12 @@
 import { join } from "node:path"
-import { createTools, type ImageGenModel, type RerankModel, setDatasetLoaders } from "@kaja/nasi"
+import {
+  createFolderPackageStore,
+  createTools,
+  type ImageGenModel,
+  loadPackages,
+  type RerankModel,
+  setDatasetLoaders
+} from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
 import { tryLookupMyLocation } from "../lib/agent/geo"
 import { getConfigDir } from "../lib/config/config"
@@ -8,6 +15,7 @@ import { services } from "../lib/config/services"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
 import { chatModelId, client } from "../lib/models/openai"
+import { getMarketplaceDir, loadPackagesFile } from "../lib/packages/packages-file"
 import { getPaths } from "../lib/paths"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
@@ -32,7 +40,13 @@ export async function getDefaultTools(personas: Persona[]) {
       }
     : undefined
 
-  return createTools({
+  const packagesFile = await loadPackagesFile()
+  const packages = await loadPackages(
+    createFolderPackageStore({ root: getMarketplaceDir(), enabled: { skills: packagesFile.skills } }),
+    { personas }
+  )
+
+  const created = await createTools({
     includeLocalTools: true,
     mcpServers,
     pluginDir: join(getConfigDir(), "tools"),
@@ -46,4 +60,5 @@ export async function getDefaultTools(personas: Persona[]) {
       storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }
   })
+  return { ...created, tools: [...created.tools, ...packages.tools] }
 }

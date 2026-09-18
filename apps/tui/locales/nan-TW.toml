@@ -29,6 +29,8 @@ services = "服務"
 personas = "角色"
 datasets = "資料集"
 tools = "工具"
+packages = "套件"
+marketplace = "市集"
 temp = "臨時檔"
 
 [firstRun]
@@ -103,6 +105,9 @@ invalidAt = "模型檔無效（{path}）：{message}"
 [mcp]
 invalidAt = "MCP 伺服器檔無效（{path}）：{message}"
 
+[packages]
+invalidAt = "套件檔無效（{path}）：{message}"
+
 [services]
 invalidAt = "services 檔無效（{path}）：{message}"
 
@@ -150,6 +155,8 @@ forgetNote = "咧刪除筆記..."
 listNotes = "咧列筆記..."
 rerank = "咧共 {n} 筆結果排序..."
 summarize = "咧摘要..."
+loadSkill = "咧載入 {name} 技能..."
+loadSkillFile = "咧讀 {name} 技能內底个 {file}..."
 
 [timeline]
 personaSwitch = "已經換角色：{label}"

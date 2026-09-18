@@ -38,6 +38,11 @@ export {
   takeLastServedModel
 } from "./models/client"
 export { Nasi, type NasiOpenOptions, type NasiTurnInput } from "./nasi"
+export { createFolderPackageStore, type FolderPackageStoreOptions } from "./packages/folder-store"
+export { type LoadedPackages, loadPackages } from "./packages/load"
+export { parseSkillMd } from "./packages/skill-md"
+export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./packages/skills"
+export { type PackageStore, SkillFileError, type SkillSummary } from "./packages/types"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
 export { fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"

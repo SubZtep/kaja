@@ -27,6 +27,7 @@ Listen first. Reflect back what you heard before offering anything.
 | `when` | short clause telling the model when to auto-switch here |
 | `dataset` | id of a [dataset](/memory#datasets) this persona collects |
 | `models` | pin a model id per task, e.g. `chat = "reasoning-chat"` |
+| `skills` | [skills](/skills) this persona may use; unset means every enabled skill, `[]` means none |
 | sampling params | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
 
 ## Switching

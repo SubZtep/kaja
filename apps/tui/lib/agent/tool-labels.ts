@@ -26,7 +26,11 @@ const LABELS: Record<string, (args: any) => string> = {
   forget_note: () => t("toolCall.forgetNote"),
   list_notes: () => t("toolCall.listNotes"),
   rerank: args => t("toolCall.rerank", { n: args.documents?.length ?? 0 }),
-  summarize: () => t("toolCall.summarize")
+  summarize: () => t("toolCall.summarize"),
+  load_skill: args =>
+    args.file
+      ? t("toolCall.loadSkillFile", { name: args.name, file: args.file })
+      : t("toolCall.loadSkill", { name: args.name })
 }
 
 /**

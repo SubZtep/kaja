@@ -24,6 +24,10 @@
       "types": "./nasi/index.ts",
       "default": "./nasi/index.ts"
     },
+    "./packages": {
+      "types": "./packages/index.ts",
+      "default": "./packages/index.ts"
+    },
     "./env": {
       "types": "./env/index.ts",
       "default": "./env/index.ts"

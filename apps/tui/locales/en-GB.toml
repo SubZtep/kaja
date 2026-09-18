@@ -29,6 +29,8 @@ services = "services"
 personas = "personas"
 datasets = "datasets"
 tools = "tools"
+packages = "packages"
+marketplace = "marketplace"
 temp = "temp"
 
 [firstRun]
@@ -103,6 +105,9 @@ invalidAt = "Invalid models file at {path}: {message}"
 [mcp]
 invalidAt = "Invalid MCP servers file at {path}: {message}"
 
+[packages]
+invalidAt = "Invalid packages file at {path}: {message}"
+
 [services]
 invalidAt = "Invalid services file at {path}: {message}"
 
@@ -150,6 +155,8 @@ forgetNote = "Forgetting a note..."
 listNotes = "Listing notes..."
 rerank = "Ranking {n} results..."
 summarize = "Summarizing..."
+loadSkill = "Loading the {name} skill..."
+loadSkillFile = "Reading {file} from the {name} skill..."
 
 [timeline]
 personaSwitch = "Persona switched: {label}"

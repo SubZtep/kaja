@@ -16,10 +16,12 @@ and their [`datasets`](https://github.com/SubZtep/kaja/tree/main/docs/config/dat
 ```ini
 ~/.config/kaja/
 ├─ datasets/*.json  # structured field sets for personas to collect
+├─ marketplace/     # skills, synced and your own
 ├─ personas/*.toml  # one behaviour per file
 ├─ tools/*.ts       # your own plugin tools
 ├─ mcp.toml         # model context protocol servers
 ├─ models.toml      # model catalog per provider
+├─ packages.toml    # which skills are loaded
 ├─ services.toml    # external service definitions and endpoints
 ├─ secrets.toml     # your secret keys and tokens
 └─ settings.toml    # preferences and app settings

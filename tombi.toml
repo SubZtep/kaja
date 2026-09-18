@@ -24,5 +24,9 @@ path = "docs/config/schemas/mcp.json"
 include = ["docs/config/mcp.toml", "**/.config/kaja/mcp.toml"]
 
 [[schemas]]
+path = "docs/config/schemas/packages.json"
+include = ["docs/config/packages.toml", "**/.config/kaja/packages.toml"]
+
+[[schemas]]
 path = "docs/config/schemas/persona.json"
 include = ["docs/config/personas/*.toml", "**/.config/kaja/personas/*.toml"]

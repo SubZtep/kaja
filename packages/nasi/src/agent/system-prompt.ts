@@ -2,6 +2,7 @@ import { homedir } from "node:os"
 import type { Persona } from "@kaja/schema/cli"
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
+import { LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "../packages/skills"
 import { loadDataset as defaultLoadDataset } from "../personas"
 import {
   type Agent,
@@ -145,6 +146,26 @@ function buildPersonasBlock(agent: Agent, toolNames: Set<string>): string | unde
   )
 }
 
+function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefined {
+  const loadSkill = agent.tools.find(t => toolName(t) === LOAD_SKILL_TOOL) as LoadSkillTool | undefined
+  if (!loadSkill?.skills) return undefined
+  const skills = skillsForPersona(
+    loadSkill.skills,
+    agent.personas.find(p => p.id === agent.personaId)
+  )
+  if (skills.length === 0) return undefined
+  const scripts = toolNames.has(RUN_COMMAND_TOOL)
+    ? ` Run a skill's bundled scripts with ${RUN_COMMAND_TOOL}, using their absolute path under the skill directory ${LOAD_SKILL_TOOL} reports.`
+    : ""
+  return (
+    `Skills are packaged instructions for specific tasks. When a request matches a skill's ` +
+    `description, call ${LOAD_SKILL_TOOL} with its name before starting, then follow what it says. ` +
+    `Load its other files with ${LOAD_SKILL_TOOL} and a file only when its instructions point to them.` +
+    `${scripts}\nAvailable skills:\n` +
+    skills.map(s => `- ${s.name}: ${s.description}`).join("\n")
+  )
+}
+
 async function buildDatasetBlock(agent: Agent, toolNames: Set<string>): Promise<string | undefined> {
   if (!(agent.dataset && toolNames.has(DATASET_INFO_TOOL))) return undefined
   const loadDataset = agent.promptContext?.loadDataset ?? defaultLoadDataset
@@ -164,6 +185,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
   const stickyBlock = await buildStickyBlock(agent, hasMemory, owner)
   const environmentBlock = await buildEnvironmentBlock(agent)
   const personasBlock = buildPersonasBlock(agent, toolNames)
+  const skillsBlock = buildSkillsBlock(agent, toolNames)
   const datasetBlock = await buildDatasetBlock(agent, toolNames)
 
   return (
@@ -178,6 +200,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
         : undefined,
       hasMemory ? `## Tool contract: memory\n${MEMORY_INSTRUCTIONS}` : undefined,
       personasBlock ? `## Personas\n${personasBlock}` : undefined,
+      skillsBlock ? `## Skills\n${skillsBlock}` : undefined,
       datasetBlock ? `## Dataset collection\n${datasetBlock}` : undefined,
       stickyBlock,
       ctx.replyLanguageInstruction

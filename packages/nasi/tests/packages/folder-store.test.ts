@@ -1,0 +1,116 @@
+import { afterEach, beforeEach, expect, test } from "bun:test"
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { dirname, join } from "node:path"
+import { createFolderPackageStore } from "../../src/packages/folder-store"
+import { SkillFileError } from "../../src/packages/types"
+
+let root: string
+let outside: string
+
+function put(rel: string, content: string | Uint8Array) {
+  const path = join(root, rel)
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, content)
+}
+
+function putSkill(name: string, description = `The ${name} skill.`, body = `Use ${name} well.`) {
+  put(`skills/${name}/SKILL.md`, `---\nname: ${name}\ndescription: ${description}\n---\n${body}\n`)
+}
+
+beforeEach(() => {
+  root = mkdtempSync(join(tmpdir(), "nasi-packages-"))
+  outside = mkdtempSync(join(tmpdir(), "nasi-packages-outside-"))
+})
+
+afterEach(() => {
+  rmSync(root, { recursive: true, force: true })
+  rmSync(outside, { recursive: true, force: true })
+})
+
+test("a missing marketplace folder lists no skills", async () => {
+  const store = createFolderPackageStore({ root: join(root, "nope"), enabled: { skills: ["pdf"] } })
+  expect(await store.listSkills()).toEqual([])
+})
+
+test("an empty enabled list lists no skills, even with skills on disk", async () => {
+  putSkill("pdf")
+  const store = createFolderPackageStore({ root, enabled: { skills: [] } })
+  expect(await store.listSkills()).toEqual([])
+})
+
+test("lists enabled skills with their folder and other files, skipping hidden and backup files", async () => {
+  putSkill("pdf")
+  put("skills/pdf/reference.md", "ref")
+  put("skills/pdf/scripts/fill.py", "print(1)")
+  put("skills/pdf/SKILL.md.bak", "old")
+  put("skills/pdf/.env", "SECRET=1")
+  putSkill("unlisted")
+
+  const store = createFolderPackageStore({ root, enabled: { skills: ["pdf"] } })
+  expect(await store.listSkills()).toEqual([
+    {
+      name: "pdf",
+      description: "The pdf skill.",
+      dir: join(root, "skills", "pdf"),
+      files: ["reference.md", "scripts/fill.py"]
+    }
+  ])
+})
+
+test("skips broken and missing skills while the others still load", async () => {
+  putSkill("good")
+  put("skills/no-frontmatter/SKILL.md", "# nothing here")
+  put("skills/wrong-name/SKILL.md", "---\nname: other\ndescription: x\n---\n")
+  const store = createFolderPackageStore({
+    root,
+    enabled: { skills: ["no-frontmatter", "wrong-name", "missing", "../escape", "good"] }
+  })
+  expect((await store.listSkills()).map(s => s.name)).toEqual(["good"])
+})
+
+test("readSkill returns the body without frontmatter, and nothing for skills that aren't enabled", async () => {
+  putSkill("pdf", "PDFs.", "Step one.")
+  putSkill("other")
+  const store = createFolderPackageStore({ root, enabled: { skills: ["pdf"] } })
+  expect(await store.readSkill("pdf")).toBe("Step one.")
+  expect(await store.readSkill("other")).toBeUndefined()
+  expect(await store.readSkill("other", "SKILL.md")).toBeUndefined()
+})
+
+test("readSkill reads another file, falling back to a case-insensitive match", async () => {
+  putSkill("pdf")
+  put("skills/pdf/reference.md", "the reference")
+  put("skills/pdf/scripts/fill.py", "print(1)")
+  const store = createFolderPackageStore({ root, enabled: { skills: ["pdf"] } })
+  expect(await store.readSkill("pdf", "reference.md")).toBe("the reference")
+  expect(await store.readSkill("pdf", "REFERENCE.md")).toBe("the reference")
+  expect(await store.readSkill("pdf", "Scripts/Fill.py")).toBe("print(1)")
+  expect(await store.readSkill("pdf", "missing.md")).toBeUndefined()
+})
+
+test("readSkill refuses paths outside the skill folder", async () => {
+  putSkill("pdf")
+  putSkill("other")
+  writeFileSync(join(outside, "secret.txt"), "nope")
+  const store = createFolderPackageStore({ root, enabled: { skills: ["pdf"] } })
+  await expect(store.readSkill("pdf", "../other/SKILL.md")).rejects.toThrow(SkillFileError)
+  await expect(store.readSkill("pdf", join(outside, "secret.txt"))).rejects.toThrow(SkillFileError)
+})
+
+test("readSkill refuses a symlink that points outside the skill folder", async () => {
+  putSkill("pdf")
+  writeFileSync(join(outside, "secret.txt"), "nope")
+  symlinkSync(join(outside, "secret.txt"), join(root, "skills", "pdf", "link.md"))
+  const store = createFolderPackageStore({ root, enabled: { skills: ["pdf"] } })
+  await expect(store.readSkill("pdf", "link.md")).rejects.toThrow(SkillFileError)
+})
+
+test("readSkill refuses binary files and hidden files", async () => {
+  putSkill("pdf")
+  put("skills/pdf/logo.png", new Uint8Array([0x89, 0x50, 0x00, 0x47]))
+  put("skills/pdf/.env", "SECRET=1")
+  const store = createFolderPackageStore({ root, enabled: { skills: ["pdf"] } })
+  await expect(store.readSkill("pdf", "logo.png")).rejects.toThrow("binary")
+  expect(await store.readSkill("pdf", ".env")).toBeUndefined()
+})

@@ -1,0 +1,12 @@
+# Packages Kaja loads in local mode. Packages live in the marketplace/ folder
+# next to this file: both the ones `kaja pkg update` syncs from the Kaja repo
+# and your own. Only what is listed here is loaded, your own skills included.
+
+# Skills, by folder name: marketplace/skills/<name>/SKILL.md
+skills = []
+
+# Where `kaja pkg update` fetches the marketplace from. Defaults to the Kaja
+# repo's main branch; a local path works too, for testing your own changes.
+# [source]
+# url = "https://github.com/SubZtep/kaja.git"
+# ref = "main"

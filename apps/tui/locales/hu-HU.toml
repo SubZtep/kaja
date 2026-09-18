@@ -29,6 +29,8 @@ services = "szolgáltatások"
 personas = "perszónák"
 datasets = "adathalmazok"
 tools = "eszközök"
+packages = "csomagok"
+marketplace = "piactér"
 temp = "ideiglenes"
 
 [firstRun]
@@ -103,6 +105,9 @@ invalidAt = "Érvénytelen modell fájl ({path}): {message}"
 [mcp]
 invalidAt = "Érvénytelen MCP szerver fájl ({path}): {message}"
 
+[packages]
+invalidAt = "Érvénytelen csomagfájl ({path}): {message}"
+
 [services]
 invalidAt = "Érvénytelen services fájl ({path}): {message}"
 
@@ -150,6 +155,8 @@ forgetNote = "Jegyzet törlése..."
 listNotes = "Jegyzetek listázása..."
 rerank = "{n} találat rangsorolása..."
 summarize = "Összegzés..."
+loadSkill = "A(z) {name} készség betöltése..."
+loadSkillFile = "{file} olvasása a(z) {name} készségből..."
 
 [timeline]
 personaSwitch = "Perszóna váltva: {label}"

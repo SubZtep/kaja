@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "source": {
+      "description": "Marketplace repo override",
+      "type": "object",
+      "properties": {
+        "url": {
+          "description": "Git URL (or local path) of the repo holding the marketplace/ folder",
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "description": "Branch or tag to fetch",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "skills": {
+      "default": [],
+      "description": "Enabled skills, by folder name under marketplace/skills/",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

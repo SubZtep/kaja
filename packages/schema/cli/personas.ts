@@ -41,7 +41,9 @@ export const PersonaSchema = z
     // Topic id (datasets.ts filename) this persona collects via dataset_info; optional.
     dataset: z.string().min(1).optional(),
     // Short clause describing when this persona fits; shown in the system-prompt persona roster.
-    when: z.string().min(1).optional()
+    when: z.string().min(1).optional(),
+    // Enabled skills (packages.toml) this persona may use; unset means all of them, [] means none.
+    skills: z.array(z.string().min(1)).optional()
   })
   .extend(SamplingParamsSchema.shape)
 

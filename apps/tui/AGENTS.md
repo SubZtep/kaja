@@ -36,7 +36,7 @@ cli.ts` directly) for interactive use.
 cli.ts                  # entry
 components/             # Ink UI (layout, inputs, timeline, wizard, …)
 hooks/                  # agent, settings, voice, dictation, sounds, …
-lib/                    # domain subfolders: cli, agent, auth, config, models, personas, memory,
+lib/                    # domain subfolders: cli, agent, auth, config, models, personas, memory, packages,
                         # session, telegram, audio, mcp, image, markdown; cross-cutting utils at lib/ root
 subcommands/            # run.tsx (--local), run-cloud.tsx (cloud)
 tools/                  # LLM tools (files, web, memory, image, summarize, …)
@@ -44,6 +44,8 @@ locales/                # en-GB.toml, hu-HU.toml, nan-TW.toml
 assets/                 # sounds, datasets
 tests/                  # mirrors source tree
 ```
+
+Skills (local mode): `~/.config/kaja/marketplace/skills/<name>/` holds every skill (synced or your own), and only names listed in `~/.config/kaja/packages.toml` load. `tools/index.ts`'s `getDefaultTools` builds `@kaja/nasi`'s folder store from `lib/packages/packages-file.ts` and appends `load_skill`, so the TUI and local Telegram both get it. A missing packages.toml means nothing is enabled, and it is never auto-created.
 
 Zod schemas for this app's config/store/domain types live in `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli` (see `packages/schema/AGENTS.md`), not under this package.
 
@@ -56,6 +58,7 @@ Default config **templates** (first-run / wizard) live at **repo root** `docs/co
 - `docs/config/mcp.toml`
 - `docs/config/personas/*.toml`
 - `docs/config/datasets/`
+- `docs/config/packages.toml`
 
 CLI source imports them as `../../../../docs/config/...` from `lib/<domain>/*.ts`.  
 GitHub Pages content is also under monorepo `docs/`.
