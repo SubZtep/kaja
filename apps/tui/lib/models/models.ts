@@ -105,3 +105,15 @@ export async function loadModelsFile(): Promise<ResolvedModelsFile> {
 export async function loadModels(): Promise<CliResolvedModel[]> {
   return resolveModels(await loadModelsFile())
 }
+
+/**
+ * Whether `models.toml` + `secrets.toml` resolves a usable [chat] model.\
+ * Providers without an `api_key` are allowed.
+ */
+export async function hasConfiguredChatModel(): Promise<boolean> {
+  const modelsFile = await loadModelsFile()
+  const chatEntry = findModelById(resolveModels(modelsFile), "chat", "chat")
+  if (!chatEntry) return false
+  const provider = modelsFile.providers[chatEntry.provider]
+  return provider !== undefined && provider.api_key !== undefined
+}

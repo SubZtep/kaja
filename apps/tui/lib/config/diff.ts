@@ -1,6 +1,7 @@
 import { file } from "bun"
 import MCP_TEMPLATE from "../../../../docs/config/mcp.toml" with { type: "text" }
 import MODELS_TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
+import SECRETS_TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
 import { TEMPLATES as PERSONA_TEMPLATES } from "../personas/personas"
 import { pathForBundleKey } from "./cli"
@@ -16,7 +17,10 @@ async function offlineBundle(): Promise<Record<string, string>> {
 
 /** Reports what `kaja config fetch` would change: one line per bundle file (unchanged / new / would update), without writing anything. `offline` compares against the bundled templates instead of the server. */
 export async function diffConfig(offline: boolean): Promise<string[]> {
-  const files = offline ? await offlineBundle() : await remoteOrOfflineBundle()
+  const bundle = offline ? await offlineBundle() : await remoteOrOfflineBundle()
+  // secrets.toml is never in the remote bundle (no user secrets on the server) — fetch always
+  // compares it against the bundled local template, so diff must too.
+  const files: Record<string, string> = { ...bundle, "secrets.toml": SECRETS_TEMPLATE }
 
   const lines: string[] = []
   for (const key of Object.keys(files).sort((a, b) => a.localeCompare(b))) {

@@ -4,6 +4,7 @@ import { runFirstRunIfNeeded } from "./lib/cli/first-run"
 import { createCloud, getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
+import { hasConfiguredChatModel } from "./lib/models/models"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
 import { runLogoutSubcommand } from "./subcommands/logout"
@@ -23,7 +24,14 @@ try {
     process.exit(0)
   }
 
-  const useLocal = args.flags.cloud ? false : args.flags.local || (await isConfigExists())
+  // Manages local config files only — must never trigger cloud login, including on a fresh
+  // install with nothing configured yet (e.g. `kaja config wizard` to set one up).
+  if (args.input[0] === "config") {
+    await runConfigSubcommand(args)
+    process.exit(0)
+  }
+
+  const useLocal = args.flags.cloud ? false : args.flags.local || (await hasConfiguredChatModel())
   if (!useLocal) {
     if (!(await isConfigExists())) await createCloud()
     await runCloudSubcommand()
@@ -42,10 +50,6 @@ try {
   // MARK: Run Commands
 
   const [cmd] = args.input
-
-  if (cmd === "config") {
-    await runConfigSubcommand(args)
-  }
 
   if (cmd === "doctor") {
     await runDoctorSubcommand()

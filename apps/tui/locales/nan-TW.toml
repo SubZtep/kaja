@@ -47,10 +47,10 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   $ kaja [選項] [指令]
 
 指令
-  config <fetch|wipe|paths>  管理設定檔
-  doctor                     印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
+  config <fetch|paths> 管理設定檔
+  doctor               印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
   telegram
-  logout                     登出雲端帳號，共儲存个憑證清掉
+  logout               登出雲端帳號，共儲存个憑證清掉
 
 選項
   --local         用家己个供應商執行本機代理迴圈，代替雲端登入
@@ -71,7 +71,6 @@ usage = """
   $ kaja config fetch   對伺服器下載設定檔（若離線就用內建範本）
   $ kaja config diff    顯示 fetch 會改變啥物，毋寫入任何物件
   $ kaja config wizard  互動式設定：語言、供應商、人設
-  $ kaja config wipe    先備份才共規个設定資料夾清空
   $ kaja config paths   印出 Kaja 讀寫个所有路徑
 """
 fetched = "已經寫入 {path}"
@@ -79,8 +78,6 @@ fetchedWithBackup = "已經寫入 {path}（早前个檔案已經備份去 {backu
 fetchedUnchanged = "{path} 已經是上新版矣"
 fetchAllUpToDate = "全部已經是上新版矣"
 fetchOfflineFallback = "連袂著伺服器（{message}）— 改用內建範本"
-wiped = "已經共 {path} 徙去 {backup}"
-wipeNothing = "無物件通清空：{path} 無存在"
 diffNew = "{path}：新个"
 diffUnchanged = "{path}：無變"
 diffWouldUpdate = "{path}：會更新"

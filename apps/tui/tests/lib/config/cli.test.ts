@@ -68,32 +68,6 @@ test("fetch is a no-op (no new backup) when the file already matches the bundled
   expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
 })
 
-test("wipe backs up the whole config dir to .bak", async () => {
-  await Bun.write(getConfigPath(), 'hello = "world"\n')
-  const { code, text } = await runConfigCli(["wipe"])
-  expect(code).toBe(0)
-  expect(text).toContain(`${getConfigDir()}.bak`)
-  expect(await Bun.file(getConfigPath()).exists()).toBe(false)
-  expect(await Bun.file(`${getConfigDir()}.bak/settings.toml`).text()).toContain("world")
-})
-
-test("a second wipe uses .bak2", async () => {
-  await Bun.write(getConfigPath(), "run = 1\n")
-  await runConfigCli(["wipe"])
-  await Bun.write(getConfigPath(), "run = 2\n")
-  const { code, text } = await runConfigCli(["wipe"])
-  expect(code).toBe(0)
-  expect(text).toContain(`${getConfigDir()}.bak2`)
-  expect(await Bun.file(`${getConfigDir()}.bak/settings.toml`).text()).toContain("run = 1")
-  expect(await Bun.file(`${getConfigDir()}.bak2/settings.toml`).text()).toContain("run = 2")
-})
-
-test("wipe with no existing config dir is a no-op", async () => {
-  const { code, text } = await runConfigCli(["wipe"])
-  expect(code).toBe(0)
-  expect(text).toContain(getConfigDir())
-})
-
 test("unknown or missing subcommand prints usage and exits 1", async () => {
   for (const argv of [[], ["nope"]]) {
     const { code, text } = await runConfigCli(argv)
@@ -165,7 +139,7 @@ test("fetch falls back to bundled templates when the server is unreachable", asy
   }
 })
 
-test("fetch never writes secrets.toml, services.toml, or settings.toml", async () => {
+test("fetch writes secrets.toml from the bundled template, but never services.toml or settings.toml", async () => {
   const restore = mockBundleFetch({ "models.toml": 'label = "x"\n' })
   try {
     await runConfigCli(["fetch"])
@@ -174,9 +148,21 @@ test("fetch never writes secrets.toml, services.toml, or settings.toml", async (
   }
   const { getSecretsPath } = await import("../../../lib/config/secrets")
   const { getServicesPath } = await import("../../../lib/config/services")
-  expect(await Bun.file(getSecretsPath()).exists()).toBe(false)
+  expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
   expect(await Bun.file(getServicesPath()).exists()).toBe(false)
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
+})
+
+test("fetch backs up an existing secrets.toml instead of overwriting it", async () => {
+  const { getSecretsPath } = await import("../../../lib/config/secrets")
+  await Bun.write(getSecretsPath(), 'hello = "world"\n')
+
+  const { code, text } = await runConfigCli(["fetch", "--offline"])
+  expect(code).toBe(0)
+  expect(text).toContain(getSecretsPath())
+  expect(text).toContain(".bak")
+  expect(await Bun.file(`${getSecretsPath()}.bak`).text()).toBe('hello = "world"\n')
+  expect(await Bun.file(getSecretsPath()).text()).not.toBe('hello = "world"\n')
 })
 
 test("wizard --headless writes default config without prompting", async () => {
@@ -184,23 +170,4 @@ test("wizard --headless writes default config without prompting", async () => {
   expect(code).toBe(0)
   expect(text.length).toBeGreaterThan(0)
   expect(await Bun.file(getConfigPath()).exists()).toBe(true)
-})
-
-test("fetch after a wipe re-downloads instead of trusting a 304", async () => {
-  const restore = mockBundleFetch({ "models.toml": 'label = "from-server"\n' })
-  try {
-    await runConfigCli(["fetch"])
-    expect(await Bun.file(getModelsPath()).exists()).toBe(true)
-
-    // Wipe renames the config dir away; the ETag cache lives outside it, so without the fix the
-    // next fetch would get a 304 and report "up to date" while models.toml no longer exists.
-    await runConfigCli(["wipe"])
-    expect(await Bun.file(getModelsPath()).exists()).toBe(false)
-
-    const { code } = await runConfigCli(["fetch"])
-    expect(code).toBe(0)
-    expect(await Bun.file(getModelsPath()).text()).toContain("from-server")
-  } finally {
-    restore()
-  }
 })

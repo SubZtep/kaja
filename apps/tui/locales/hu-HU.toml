@@ -47,10 +47,10 @@ HASZNÁLAT
   $ kaja [OPCIÓK] [PARANCS]
 
 PARANCSOK
-  config <fetch|wipe|paths>  Konfigurációs fájlok kezelése
-  doctor                     Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
+  config <fetch|paths> Konfigurációs fájlok kezelése
+  doctor               Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
   telegram
-  logout                     Kijelentkezés a felhő alapú fiókból, a tárolt hitelesítő adat törlésével
+  logout               Kijelentkezés a felhő alapú fiókból, a tárolt hitelesítő adat törlésével
 
 OPCIÓK
   --local         A helyi ágens futtatása saját szolgáltatóval a felhő alapú bejelentkezés helyett
@@ -71,7 +71,6 @@ Használat
   $ kaja config fetch   Letölti a konfigurációs fájlokat a szerverről (offline: beépített sablonok)
   $ kaja config diff    Megmutatja, mit változtatna a fetch, írás nélkül
   $ kaja config wizard  Interaktív beállítás: nyelv, szolgáltató, perszóna
-  $ kaja config wipe    Biztonsági mentés után törli a teljes konfigurációs könyvtárat
   $ kaja config paths   Mutatja az összes elérési utat, amit a Kaja használ
 """
 fetched = "{path} elmentve"
@@ -79,8 +78,6 @@ fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
 fetchedUnchanged = "{path} már naprakész"
 fetchAllUpToDate = "Minden naprakész"
 fetchOfflineFallback = "Nem sikerült elérni a szervert ({message}) — beépített sablonok használata"
-wiped = "{path} áthelyezve ide: {backup}"
-wipeNothing = "Nincs mit törölni: {path} nem létezik"
 diffNew = "{path}: új"
 diffUnchanged = "{path}: változatlan"
 diffWouldUpdate = "{path}: frissülne"

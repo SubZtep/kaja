@@ -64,7 +64,6 @@ kaja --headless telegram  # same, without rendering the terminal UI
 # Config files (local mode)
 kaja config fetch         # rewrite mcp.toml / models.toml / personas from the bundled templates
 kaja config paths         # print where every config file lives
-kaja config wipe          # back up and clear ~/.config/kaja
 ```
 
 ## Uninstall
@@ -73,8 +72,7 @@ kaja config wipe          # back up and clear ~/.config/kaja
 rm ~/.local/bin/kaja
 ```
 
-Local config and data are left behind — remove them with `kaja config wipe` first (which backs
-them up) or delete `~/.config/kaja` and the SQLite file yourself.
+Local config and data are left behind — delete `~/.config/kaja` and the SQLite file yourself.
 
 ---
 

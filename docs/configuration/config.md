@@ -65,26 +65,17 @@ not sure which file Kaja is actually reading.
 
 ### `kaja config fetch`
 
-Rewrites `mcp.toml`, `models.toml`, and the shipped personas from the templates bundled with your
-Kaja binary, backing up any existing file that differs (an unchanged file is left alone).
+Rewrites `mcp.toml`, `models.toml`, `secrets.toml`, and the shipped personas from the templates
+bundled with your Kaja binary, backing up any existing file that differs (an unchanged file is left
+alone). `secrets.toml` always comes from the bundled template — the server has no user secrets to
+export, so it's never part of the admin-managed bundle `fetch` otherwise downloads.
 
 ```sh
 kaja config fetch
 ```
 
 Use it to pick up new template defaults after an upgrade, or to recover a file you've broken. Your
-`secrets.toml`, `settings.toml`, and `services.toml` are never touched.
-
-### `kaja config wipe`
-
-Renames the whole config directory to `<dir>.bak` (or `.bak2`, `.bak3`, …), leaving a clean slate
-for the next run to recreate:
-
-```sh
-kaja config wipe
-```
-
-Nothing is deleted — recover by renaming the `.bak` directory back.
+`settings.toml` and `services.toml` are never touched.
 
 ---
 

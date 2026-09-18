@@ -47,10 +47,10 @@ USAGE
   $ kaja [OPTIONS] [COMMAND]
 
 COMMANDS
-  config <fetch|wipe|paths>  Manage config files
-  doctor                     Print configured models, MCP servers and tools, and check connections
+  config <fetch|paths> Manage config files
+  doctor               Print configured models, MCP servers and tools, and check connections
   telegram
-  logout                     Log out of the cloud account, clearing its stored credential
+  logout               Log out of the cloud account, clearing its stored credential
 
 OPTIONS
   --local         Run the local agent loop against your own provider instead of cloud login
@@ -71,7 +71,6 @@ Usage
   $ kaja config fetch   Download config files from the server (bundled templates if offline)
   $ kaja config diff    Show what fetch would change, without writing anything
   $ kaja config wizard  Interactive setup for language, provider, and persona
-  $ kaja config wipe    Back up and clear the whole config directory
   $ kaja config paths   Print every path Kaja reads or writes
 """
 fetched = "Wrote {path}"
@@ -79,8 +78,6 @@ fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
 fetchedUnchanged = "{path} is already up to date"
 fetchAllUpToDate = "All up to date"
 fetchOfflineFallback = "Could not reach the server ({message}) — falling back to bundled templates"
-wiped = "Moved {path} to {backup}"
-wipeNothing = "Nothing to wipe: {path} does not exist"
 diffNew = "{path}: new"
 diffUnchanged = "{path}: unchanged"
 diffWouldUpdate = "{path}: would update"

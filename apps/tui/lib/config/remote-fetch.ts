@@ -1,4 +1,3 @@
-import { unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { configExportBundleSchema } from "@kaja/schema/api"
 import { file, write } from "bun"
@@ -27,13 +26,6 @@ async function writeCachedEtag(etag: string) {
   } catch (error) {
     log.warn("Failed to write cached config etag", { error })
   }
-}
-
-/** Drops the cached ETag so the next fetch always gets a full body. Called by `kaja config wipe` — the cache lives in the temp dir, so wiping the config dir alone would leave a 304 claiming files are up to date when they no longer exist. */
-export async function clearCachedEtag() {
-  try {
-    await unlink(getEtagCachePath())
-  } catch {}
 }
 
 export type RemoteBundle = { files: Record<string, string> } | { unchanged: true }

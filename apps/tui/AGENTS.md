@@ -23,8 +23,8 @@ cli.ts` directly) for interactive use.
 ## CLI surface
 
 - Flags: `--local`, `--cloud`, `--headless`, `-c`/`--continue` (`--local` only), `-s`/`--session <id>` (`--local` only)
-- Subcommands, `--local` only (run **before** LLM config guard): `telegram`, `config <fetch|wipe|paths>`
-- `logout` runs before the mode branch (cloud-only concept, clears the keychain token)
+- Subcommands, `--local` only (run **before** LLM config guard): `telegram`
+- `logout` and `config <fetch|paths>` run before the cloud/local mode branch — `logout` is a cloud-only concept (clears the keychain token), `config` only ever touches local files and must never trigger cloud login
 - Handlers: `lib/telegram/cli.ts`
 - `--headless`: no Ink render, for a subcommand that supports it. `telegram` is the only consumer today (`kaja --local --headless telegram`) — it never rendered Ink to begin with, so this just formalizes it and shares its bootstrap (`lib/cli/headless.ts`'s `bootstrapLocalAgentDeps`/`requireConfiguredProvider`/`installShutdownHandlers`) with the interactive local loop (`subcommands/run.tsx`). Bare `kaja --headless` (no subcommand) exits with an error — there's no headless mode without a consumer yet. Cloud-mode headless (a driver against `createNasiClient`'s SSE stream instead of the local `Agent`) doesn't exist yet.
 - First run under `--local` (no `settings.toml` yet, interactive TTY only): `components/first-run-setup.tsx` asks which provider template to start from. Optionally copies `models.fireworks.toml`/`models.ollama.toml` as a starting `models.toml`; "Skip" writes neither, and `subcommands/run.tsx` then exits with an error instead of silently falling back to cloud free chat (`isFreeChat` in `lib/models/openai.ts` — still used internally by `chatModel` resolution, just no longer a reachable default). Non-interactive stdin falls back to writing the template untouched, same as before this prompt existed. Dispatch glue for all of this lives in `lib/cli/` (`args.ts`, `bootstrap.ts`, `first-run.tsx`).

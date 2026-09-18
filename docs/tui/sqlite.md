@@ -75,4 +75,4 @@ erDiagram
 ## Deleting it
 
 Closing Kaja and deleting the file wipes all memory and history — there's nothing else to clean
-up. `kaja config wipe` handles the config directory but leaves this file alone.
+up.

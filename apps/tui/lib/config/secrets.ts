@@ -4,9 +4,15 @@ import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
 import { getConfigDir } from "./config"
+import { writeTemplateConfig } from "./fetch"
 
 export function getSecretsPath() {
   return join(getConfigDir(), "secrets.toml")
+}
+
+/** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/secrets.toml template (all commented-out placeholders), backing up any existing (differing) file first. Never served by the API — admin-managed config has no user secrets to export — so this is the only source `fetch` has for it. */
+export async function fetchSecretsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
+  return writeTemplateConfig(TEMPLATE, getSecretsPath())
 }
 
 /** Tolerant reader: returns whatever is in the file (possibly schema-invalid), or {} when missing/unparseable. */

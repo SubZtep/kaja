@@ -1,5 +1,4 @@
 import { existsSync } from "node:fs"
-import { rename } from "node:fs/promises"
 import { join } from "node:path"
 import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
@@ -7,9 +6,10 @@ import { fetchModelsToml } from "../models/models"
 import { listPaths } from "../paths"
 import { fetchPersonasToml } from "../personas/fetch"
 import { getConfigDir } from "./config"
-import { nextBackupPath, writeTemplateConfig } from "./fetch"
+import { writeTemplateConfig } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
-import { clearCachedEtag, fetchRemoteConfigBundle } from "./remote-fetch"
+import { fetchRemoteConfigBundle } from "./remote-fetch"
+import { fetchSecretsToml } from "./secrets"
 
 type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean }
 
@@ -28,6 +28,7 @@ export function matchesOnly(key: string, only: string | undefined): boolean {
   if (!only) return true
   if (only === "models") return key === "models.toml"
   if (only === "mcp") return key === "mcp.toml"
+  if (only === "secrets") return key === "secrets.toml"
   if (only === "personas") return key.startsWith("personas/")
   return true
 }
@@ -36,13 +37,14 @@ async function runFetchOffline(only?: string): Promise<FetchResult[]> {
   const results: FetchResult[] = []
   if (matchesOnly("mcp.toml", only)) results.push(await fetchMcpToml())
   if (matchesOnly("models.toml", only)) results.push(await fetchModelsToml())
+  if (matchesOnly("secrets.toml", only)) results.push(await fetchSecretsToml())
   if (matchesOnly("personas/", only)) results.push(...(await fetchPersonasToml()))
   return results
 }
 
 async function runFetchOnline(only: string | undefined): Promise<FetchResult[] | undefined> {
   // A 304 only means "same as the last download", not "same as what's on disk" — so when the config
-  // dir is missing entirely (post-wipe, first run) ask for the full body instead of trusting it.
+  // dir is missing entirely (first run) ask for the full body instead of trusting it.
   const bundle = await fetchRemoteConfigBundle(existsSync(getConfigDir()))
   if ("unchanged" in bundle) return undefined
 
@@ -65,8 +67,14 @@ async function runFetch(argv: string[]): Promise<{ code: number; text: string }>
   }
 
   try {
-    const results = await runFetchOnline(only)
-    if (!results) return { code: 0, text: t("config.fetchAllUpToDate") }
+    // secrets.toml is never admin-managed (no user secrets on the server), so it's always fetched
+    // from the bundled local template rather than the remote bundle. Done before runFetchOnline:
+    // that call resolves the API base URL via services()/secrets(), which auto-writes a missing
+    // secrets.toml as a side effect — fetching it explicitly first keeps this status line accurate.
+    const secretsResult = matchesOnly("secrets.toml", only) ? [await fetchSecretsToml()] : []
+    const remoteResults = await runFetchOnline(only)
+    const results = [...secretsResult, ...(remoteResults ?? [])]
+    if (results.length === 0) return { code: 0, text: t("config.fetchAllUpToDate") }
     return { code: 0, text: results.map(fetchResultLine).join("\n") }
   } catch (error: any) {
     console.log(t("config.fetchOfflineFallback", { message: error?.message ?? String(error) }))
@@ -77,15 +85,6 @@ async function runFetch(argv: string[]): Promise<{ code: number; text: string }>
       return { code: 1, text: fallbackError?.message ?? String(fallbackError) }
     }
   }
-}
-
-async function runWipe(): Promise<{ code: number; text: string }> {
-  const dir = getConfigDir()
-  if (!existsSync(dir)) return { code: 0, text: t("config.wipeNothing", { path: dir }) }
-  const backup = await nextBackupPath(dir)
-  await rename(dir, backup)
-  await clearCachedEtag()
-  return { code: 0, text: t("config.wiped", { path: dir, backup }) }
 }
 
 function runPaths(): { code: number; text: string } {
@@ -114,7 +113,7 @@ async function runWizard(argv: string[]): Promise<{ code: number; text: string }
 }
 
 /**
- * Handles `kaja config <fetch|wipe|paths|diff|wizard>`;
+ * Handles `kaja config <fetch|paths|diff|wizard>`;
  *
  * Returns `{ code, text }`
  */
@@ -122,7 +121,6 @@ export async function runConfigCli(argv: string[]): Promise<{ code: number; text
   const [command, ...rest] = argv
 
   if (command === "fetch") return runFetch(rest)
-  if (command === "wipe") return runWipe()
   if (command === "paths") return runPaths()
   if (command === "diff") return runDiff(rest)
   if (command === "wizard") return runWizard(rest)
