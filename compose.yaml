@@ -22,6 +22,8 @@ services:
     ports:
       - "1080:1080"
       - "1025:1025" # expose SMTP to host
+    environment:
+      MAILDEV_MCP: 1
     healthcheck:
       test:
         [
