@@ -8,7 +8,7 @@ const DEVICE_CODE_COOKIE = "kaja_device_code"
 export const stashDeviceCodeAndRedirect = createServerFn({ method: "GET" })
   .validator((userCode: string) => userCode)
   .handler(({ data: userCode }) => {
-    setCookie(DEVICE_CODE_COOKIE, userCode, {
+    setCookie(DEVICE_CODE_COOKIE, userCode.replace(/-/g, ""), {
       httpOnly: true,
       sameSite: "lax",
       maxAge: 1800, // matches the device code's own expiry

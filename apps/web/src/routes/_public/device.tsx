@@ -1,10 +1,12 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { Section } from "../../components/ui/Section"
+import { userRequired } from "../../lib/loaders"
 import { noindexSeo } from "../../lib/seo"
 import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/device")({
   component: DeviceLayout,
+  loader: ({ location }) => userRequired(undefined, location.href),
   head: () => ({ meta: noindexSeo() })
 })
 

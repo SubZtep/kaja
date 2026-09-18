@@ -5,6 +5,7 @@ import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
 import { stashDeviceCodeAndRedirect } from "../../../lib/device-code"
 import { seo } from "../../../lib/seo"
+import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_public/device/")({
   validateSearch: z.object({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/_public/device/")({
     }
   },
   component: DeviceCodePage,
-  head: () => ({ meta: seo({ title: "Device Login" }) })
+  head: () => ({ meta: seo({ title: m.seo_device_title() }) })
 })
 
 function DeviceCodePage() {
@@ -36,8 +37,8 @@ function DeviceCodePage() {
 
   return (
     <>
-      <h1>Connect a device</h1>
-      <p>Enter the code shown in your terminal.</p>
+      <h1>{m.device_title()}</h1>
+      <p>{m.device_description()}</p>
       <form
         className="flex flex-col gap-4"
         onSubmit={async ev => {
@@ -49,13 +50,13 @@ function DeviceCodePage() {
           className="border border-border rounded-md px-3 py-2 bg-surface"
           value={userCode}
           onChange={ev => setUserCode(ev.target.value)}
-          placeholder="e.g. ABCD-1234"
+          placeholder={m.device_code_placeholder()}
           maxLength={16}
           autoComplete="one-time-code"
           minLength={4}
         />
         <Button type="submit" loading={loading} size="lg" variant="primary">
-          Continue
+          {m.device_continue()}
         </Button>
       </form>
     </>

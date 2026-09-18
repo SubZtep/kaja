@@ -1,6 +1,7 @@
 import { Select } from "@base-ui/react/select"
-import { ChevronsUpDown, Languages } from "lucide-react"
-import { useEffect, useState } from "react"
+import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { toast, Zoom } from "react-toastify"
 import { m } from "../../paraglide/messages.js"
 import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
 
@@ -10,11 +11,33 @@ const LOCALE_LABELS: Record<Locale, string> = {
   "nan-TW": "臺語"
 }
 
+/** Capture the cookie state before any hydration-triggered locale resolution can write it. */
+const hadLocaleCookieBeforeHydration = Boolean(extractLocaleFromCookie())
+
 export function LanguageSelect() {
-  const [hasChosenLocale, setHasChosenLocale] = useState(false)
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    setHasChosenLocale(Boolean(extractLocaleFromCookie()))
+    if (!hadLocaleCookieBeforeHydration)
+      toast.info(m.language_select_toast_hint(), {
+        ariaLabel: m.language_select_toast_hint(),
+        autoClose: 10_000,
+        closeButton: false,
+        closeOnClick: true,
+        hideProgressBar: true,
+        icon: <ArrowBigDown strokeWidth={3} color="green" className="animate-bounce" />,
+        pauseOnHover: false,
+        position: "bottom-left",
+        theme: "dark",
+        toastId: "language-select-hint",
+        transition: Zoom,
+        onClick: () => {
+          triggerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+          triggerRef.current?.focus()
+          setOpen(true)
+        }
+      })
   }, [])
 
   return (
@@ -22,14 +45,16 @@ export function LanguageSelect() {
       items={locales.map(locale => ({ label: LOCALE_LABELS[locale], value: locale }))}
       value={getLocale()}
       onValueChange={value => setLocale(value as Locale)}
+      open={open}
+      onOpenChange={setOpen}
     >
       <Select.Trigger
-        aria-label={m.language_select_label()}
-        title={hasChosenLocale ? LOCALE_LABELS[getLocale()] : undefined}
-        className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg cursor-pointer"
+        ref={triggerRef}
+        aria-label={`${m.language_select_label()}: ${LOCALE_LABELS[getLocale()]}`}
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg cursor-pointer"
       >
-        {hasChosenLocale && <Languages size={14} className="hidden md:block" />}
-        <Select.Value className={hasChosenLocale ? "md:hidden" : undefined} />
+        <Languages size={14} />
+        <Select.Value />
         <Select.Icon>
           <ChevronsUpDown size={12} />
         </Select.Icon>

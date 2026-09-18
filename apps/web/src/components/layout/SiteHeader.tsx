@@ -1,7 +1,6 @@
 import { Menu, X } from "lucide-react"
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { m } from "../../paraglide/messages.js"
-import { LanguageSelect } from "../ui/LanguageSelect"
 import { BrandMark } from "./BrandMark"
 import { ContentWidth } from "./ContentWidth"
 
@@ -52,10 +51,7 @@ export function SiteHeader({
       <ContentWidth className="flex items-center justify-between py-3 sm:py-4.5">
         <BrandMark to={brandTo} monster className="text-lg" />
 
-        <nav className="hidden items-center gap-7 text-muted text-sm lg:flex">
-          {desktopNav}
-          <LanguageSelect />
-        </nav>
+        <nav className="hidden items-center gap-7 text-muted text-sm lg:flex">{desktopNav}</nav>
 
         <div className="flex items-center gap-2 lg:hidden">
           <button
@@ -74,7 +70,6 @@ export function SiteHeader({
         <nav className="border-border border-t bg-bg text-muted text-sm md:hidden">
           <ContentWidth className="flex flex-col gap-4 py-3 sm:py-5">
             <CloseMobileNavContext.Provider value={close}>{mobileNav}</CloseMobileNavContext.Provider>
-            <LanguageSelect />
           </ContentWidth>
         </nav>
       ) : null}

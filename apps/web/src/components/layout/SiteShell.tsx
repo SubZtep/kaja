@@ -7,7 +7,7 @@ export function SiteShell({
   children
 }: Readonly<{
   header: ReactNode
-  footer?: ReactNode
+  footer: ReactNode
   children: ReactNode
 }>) {
   return (

@@ -5,6 +5,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
 import { nitro } from "nitro/vite"
 import { defineConfig } from "vite"
+import { paraglideOptions } from "./paraglide.config"
 
 const config = defineConfig({
   resolve: {
@@ -27,22 +28,7 @@ const config = defineConfig({
       }
     }),
     tailwindcss(),
-    paraglideVitePlugin({
-      project: "./project.inlang",
-      outdir: "./src/paraglide",
-      emitTsDeclarations: true,
-      strategy: ["url", "cookie", "preferredLanguage", "baseLocale"],
-      urlPatterns: [
-        {
-          pattern: "/:path(.*)?",
-          localized: [
-            ["hu", "/hu/:path(.*)?"],
-            ["nan-TW", "/nan-TW/:path(.*)?"],
-            ["en-GB", "/:path(.*)?"]
-          ]
-        }
-      ]
-    }),
+    paraglideVitePlugin(paraglideOptions),
     tanstackStart(),
     viteReact(),
     sentryTanstackStart({
