@@ -7,10 +7,10 @@ import { TOML } from "bun"
 import { Pool } from "pg"
 import MCP_TEMPLATE from "../../../docs/config/mcp.toml" with { type: "text" }
 import MODELS_TEMPLATE from "../../../docs/config/models.fireworks.toml" with { type: "text" }
-import BARKOCHBA_TEMPLATE from "../../../docs/config/personas/barkochba.toml" with { type: "text" }
-import CARE_TEMPLATE from "../../../docs/config/personas/care.toml" with { type: "text" }
-import DEFAULT_TEMPLATE from "../../../docs/config/personas/default.toml" with { type: "text" }
-import ONBOARDING_TEMPLATE from "../../../docs/config/personas/onboarding.toml" with { type: "text" }
+import BARKOCHBA_TEMPLATE from "../../../marketplace/personas/barkochba.toml" with { type: "text" }
+import CARE_TEMPLATE from "../../../marketplace/personas/care.toml" with { type: "text" }
+import DEFAULT_TEMPLATE from "../../../marketplace/personas/default.toml" with { type: "text" }
+import ONBOARDING_TEMPLATE from "../../../marketplace/personas/onboarding.toml" with { type: "text" }
 
 /** Minimal surface both `pg`'s Pool and Client satisfy, so migrate.ts can reuse its own connection. */
 type Queryable = { query: (sql: string, values?: unknown[]) => Promise<{ rows: any[]; rowCount: number | null }> }

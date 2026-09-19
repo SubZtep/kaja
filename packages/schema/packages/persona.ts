@@ -31,7 +31,7 @@ const PersonaModelsSchema = z
   })
   .optional()
 
-// persona id comes from its filename, attached by loadPersonas().
+// A marketplace persona, marketplace/personas/<id>.toml; the id comes from the file name (the package name rule), attached by the loader.
 export const PersonaSchema = z
   .object({
     label: z.string().min(1),

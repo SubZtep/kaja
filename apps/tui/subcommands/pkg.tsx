@@ -4,7 +4,7 @@ import type { PickerItem, PickerSelection } from "../components/package-picker"
 import type { args as Args } from "../lib/cli/args"
 
 /**
- * `kaja pkg` (checklist of skills, HTTP tools and MCP servers → packages.toml, then any missing keys → secrets.toml) and
+ * `kaja pkg` (checklist of skills, personas, HTTP tools and MCP servers → packages.toml, then any missing keys → secrets.toml) and
  * `kaja pkg update` (fetch + sync the marketplace), for local mode; a cloud user is pointed to the web instead. Runs
  * before the local/cloud branch like `config`: it never triggers cloud login.
  */
@@ -46,16 +46,17 @@ export async function runPkgSubcommand(args: typeof Args) {
     console.log((await runPkgUpdate()).text)
   }
 
-  const { skills, tools, mcp, toolScan, mcpScan } = await scanMarketplace(marketplaceDir)
+  const { skills, personas, tools, mcp, toolScan, mcpScan } = await scanMarketplace(marketplaceDir)
+  const items = [...skills, ...personas, ...tools, ...mcp]
   const enabled = await loadPackagesFile()
 
   if (!process.stdin.isTTY) {
-    printPackages([...skills, ...tools, ...mcp], enabled)
+    printPackages(items, enabled)
     console.log(t("pkg.notTty", { path: getPackagesPath() }))
     process.exit(0)
   }
 
-  const picked = await pickPackages([...skills, ...tools, ...mcp], enabled)
+  const picked = await pickPackages(items, enabled)
   if (!picked) {
     console.log(t("pkg.cancelled"))
     process.exit(0)
@@ -66,11 +67,12 @@ export async function runPkgSubcommand(args: typeof Args) {
 
   const next = {
     skills: [...picked.skills, ...keepBroken(enabled.skills, skills)],
+    personas: [...picked.personas, ...keepBroken(enabled.personas, personas)],
     tools: [...picked.tools, ...keepBroken(enabled.tools, tools)],
     mcp: [...(await confirmStdioServers(picked.mcp, mcpScan, enabled.mcp)), ...keepBroken(enabled.mcp, mcp)]
   }
   await savePackagesFile(next)
-  const count = next.skills.length + next.tools.length + next.mcp.length
+  const count = next.skills.length + next.personas.length + next.tools.length + next.mcp.length
   console.log(t("pkg.saved", { path: getPackagesPath(), count }))
 
   await askMissingKeys([
@@ -87,7 +89,8 @@ function keyNeed(auth?: PackageKeyNeed): PickerItem["key"] {
 
 // Every package in the marketplace folder as a picker row; `local` marks the ones the sync didn't write.
 async function scanMarketplace(marketplaceDir: string) {
-  const { scanHttpTools, scanMcpPackages, scanSkills } = await import("@kaja/nasi")
+  const { scanHttpTools, scanMcpPackages, scanPersonas, scanSkills } = await import("@kaja/nasi")
+  const { DEFAULT_PERSONA_ID } = await import("../lib/personas/personas")
   const { readSyncLock } = await import("../lib/packages/sync")
   const lockedPaths = Object.keys((await readSyncLock(marketplaceDir))?.files ?? {})
   const synced = new Set(lockedPaths.map(path => path.split("/").slice(0, 2).join("/")))
@@ -96,6 +99,15 @@ async function scanMarketplace(marketplaceDir: string) {
     type: "skill" as const,
     local: !synced.has(`skills/${s.name}`)
   }))
+  // default always loads, so there's nothing to pick.
+  const personas = (await scanPersonas(marketplaceDir))
+    .filter(s => s.name !== DEFAULT_PERSONA_ID)
+    .map(({ label, when: _, ...s }) => ({
+      ...s,
+      description: label,
+      type: "persona" as const,
+      local: !synced.has(`personas/${s.name}.toml`)
+    }))
   const toolScan = await scanHttpTools(marketplaceDir)
   const tools = toolScan.map(({ auth, ...s }) => ({
     ...s,
@@ -111,14 +123,14 @@ async function scanMarketplace(marketplaceDir: string) {
     key: keyNeed(auth),
     local: !synced.has(`mcp/${s.name}.toml`)
   }))
-  return { skills, tools, mcp, toolScan, mcpScan }
+  return { skills, personas, tools, mcp, toolScan, mcpScan }
 }
 
 // Without a terminal to pick in: one `[x] type name` line per package.
 function printPackages(items: PickerItem[], enabled: PackagesFile) {
-  const on = { skill: enabled.skills, tool: enabled.tools, mcp: enabled.mcp }
+  const on = { skill: enabled.skills, persona: enabled.personas, tool: enabled.tools, mcp: enabled.mcp }
   for (const item of items) {
-    console.log(`${on[item.type].includes(item.name) ? "[x]" : "[ ]"} ${item.type.padEnd(5)} ${item.name}`)
+    console.log(`${on[item.type].includes(item.name) ? "[x]" : "[ ]"} ${item.type.padEnd(7)} ${item.name}`)
   }
 }
 

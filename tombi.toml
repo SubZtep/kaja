@@ -1,7 +1,7 @@
 toml-version = "v1.1.0"
 
 # Schemas are generated from @kaja/schema's Zod schemas — run `bun generate:schemas`
-# after changing packages/schema/config/*.ts or packages/schema/cli/{personas,datasets}.ts.
+# after changing packages/schema/config/*.ts, packages/schema/packages/*.ts or packages/schema/cli/datasets.ts.
 
 [[schemas]]
 path = "docs/config/schemas/settings.json"
@@ -29,7 +29,7 @@ include = ["docs/config/packages.toml", "**/.config/kaja/packages.toml"]
 
 [[schemas]]
 path = "docs/config/schemas/persona.json"
-include = ["docs/config/personas/*.toml", "**/.config/kaja/personas/*.toml"]
+include = ["marketplace/personas/*.toml", "**/.config/kaja/marketplace/personas/*.toml"]
 
 [[schemas]]
 path = "docs/config/schemas/http-tool.json"

@@ -9,7 +9,7 @@ import { categorizeError } from "../agent/error-category"
 import { runShellCommand } from "../agent/run-command"
 import { t } from "../i18n"
 import { log } from "../logger"
-import type { Persona } from "../personas/personas"
+import { DEFAULT_PERSONA_ID, type Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
 
 /** Plain HTML escaping for text inside <pre>: unlike renderTelegramHtml it leaves URLs as text instead of turning them into links. */
@@ -35,14 +35,17 @@ function loadedPackages(tools: Tool<any>[]): { skills: string[]; tools: string[]
 }
 
 /** The /packages reply: what this bot loaded, and how to change it (on the computer: this bot builds its tools once, at start). */
-function packagesMessage(tools: Tool<any>[]): string {
+function packagesMessage(tools: Tool<any>[], personas: Persona[]): string {
   const loaded = loadedPackages(tools)
+  // default always loads, so like `kaja pkg` it isn't listed as a package.
+  const picked = personas.map(p => p.id).filter(id => id !== DEFAULT_PERSONA_ID)
   const names = (list: string[]) => list.map(escapeHtml).join(", ")
   return [
     `<b>${t("telegram.packagesTitle")}</b>`,
     ...(loaded.skills.length > 0 ? [t("telegram.packagesSkills", { names: names(loaded.skills) })] : []),
+    ...(picked.length > 0 ? [t("telegram.packagesPersonas", { names: names(picked) })] : []),
     ...(loaded.tools.length > 0 ? [t("telegram.packagesTools", { names: names(loaded.tools) })] : []),
-    ...(loaded.skills.length + loaded.tools.length === 0 ? [t("telegram.packagesNone")] : []),
+    ...(loaded.skills.length + picked.length + loaded.tools.length === 0 ? [t("telegram.packagesNone")] : []),
     "",
     t("telegram.packagesHint")
   ].join("\n")
@@ -496,7 +499,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     if (!allowedUserIds.has(userId)) return
 
     if (isCommand(text, "packages")) {
-      await sender.sendMessage(chatId, packagesMessage(agentConfig.tools ?? []))
+      await sender.sendMessage(chatId, packagesMessage(agentConfig.tools ?? [], personas))
       return
     }
 

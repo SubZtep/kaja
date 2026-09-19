@@ -5,9 +5,12 @@ import { dirname, join } from "node:path"
 import {
   createFolderPackageStore,
   parseHttpToolManifest,
+  parsePersonaManifest,
+  readPersonas,
   readSkillBundle,
   scanHttpTools,
   scanMcpPackages,
+  scanPersonas,
   scanSkills
 } from "../../src/packages/folder-store"
 import { SkillFileError } from "../../src/packages/types"
@@ -198,6 +201,34 @@ test("listMcpPackages reads enabled manifests; scanMcpPackages shows the host or
     auth: { in: "env", name: "B_KEY", optional: true }
   })
   expect(entries[2]).toMatchObject({ transport: "http", domain: "mcp.docs.test", auth: undefined })
+})
+
+test("readPersonas reads the named personas in order, id from the file name; broken, missing and badly named ones are skipped", async () => {
+  put("personas/care.toml", 'label = "Care"\nwhen = "the user is sad"\ntemperature = 0.3\n')
+  put("personas/barkochba.toml", 'label = "Barkochba"\n')
+  put("personas/broken.toml", 'when = "no label"\n')
+  put("personas/Bad_Name.toml", 'label = "Bad"\n')
+  const personas = await readPersonas(root, ["care", "broken", "missing", "Bad_Name", "barkochba"])
+  expect(personas).toEqual([
+    { id: "care", label: "Care", when: "the user is sad", temperature: 0.3 },
+    { id: "barkochba", label: "Barkochba" }
+  ])
+})
+
+test("scanPersonas lists every persona file with its label, or why it can't load", async () => {
+  put("personas/care.toml", 'label = "Care"\nwhen = "the user is sad"\n')
+  put("personas/broken.toml", "label = \n")
+  put("personas/care.toml.bak", 'label = "Old"\n')
+  const entries = await scanPersonas(root)
+  expect(entries.map(e => e.name)).toEqual(["broken", "care"])
+  expect(entries[0]!.error).toContain("invalid TOML")
+  expect(entries[1]).toEqual({ name: "care", label: "Care", when: "the user is sad" })
+  expect(await scanPersonas(join(root, "nope"))).toEqual([])
+})
+
+test("parsePersonaManifest takes the id from its argument and rejects a file without a label", () => {
+  expect(parsePersonaManifest('label = "Care"\n', "care")).toEqual({ id: "care", label: "Care" })
+  expect(() => parsePersonaManifest('when = "x"\n', "care")).toThrow("invalid manifest (label")
 })
 
 test("readSkillBundle reads SKILL.md and the text files, and flags scripts", async () => {

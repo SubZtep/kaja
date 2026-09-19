@@ -12,6 +12,7 @@ marketplace/
 │  ├─ SKILL.md      # frontmatter (name, description) + instructions
 │  ├─ *.md          # optional extra files the instructions point to
 │  └─ scripts/      # optional scripts, run through run_command with the usual approval
+├─ personas/<id>.toml # a persona: label, when to switch to it, instructions, optional sampling
 ├─ tools/<name>.toml  # an HTTP API: base URL, auth, and the tools the model can call
 └─ mcp/<name>.toml    # an MCP server: url (http/sse) or command (stdio), auth, approval, tool allowlist
 ```
@@ -21,6 +22,8 @@ marketplace/
 - `description` (up to 1024 characters) says what the skill does and when to use it. It's all the
   model sees before loading the skill, so make the "when" part concrete.
 - Keep files as text. Binary files, hidden files and `*.bak` files are never shown to the model.
+- A persona's id is its file name, with the same naming rule. `default.toml` is the persona every
+  user always has; the CLI also ships a copy of it, for installs that haven't synced yet.
 - Scripts should work with a plain POSIX `sh` or state what they need in `SKILL.md`. A skill with a
   `scripts/` folder is local-only: the cloud catalog leaves it out, since there's no shell there.
 - A tools file's `name` must match its file name. Tool names are what the model calls, so keep them
@@ -41,4 +44,5 @@ marketplace/
 - A file this folder deleted but you edited stays, as your own.
 - Files you added yourself are never touched.
 
-See [docs/skills.md](../docs/skills.md) for skills and [docs/tools.md](../docs/tools.md) for HTTP tools.
+See [docs/skills.md](../docs/skills.md) for skills, [docs/personas.md](../docs/personas.md) for personas and
+[docs/tools.md](../docs/tools.md) for HTTP tools.

@@ -16,7 +16,7 @@ import — there is no bare `@kaja/schema` import, and no app keeps local schema
 | `@kaja/schema/nasi` | cloud turn request/response, widget turn | `apps/api`, `apps/tui`, `packages/nasi` |
 | `@kaja/schema/config` | the CLI's hand-edited TOML files | `apps/tui` |
 | `@kaja/schema/store` | SQLite/Postgres-backed runtime state | `apps/tui`, `packages/nasi` |
-| `@kaja/schema/cli` | remaining CLI domain concepts: personas, datasets | `apps/tui` |
+| `@kaja/schema/cli` | remaining CLI domain concepts: datasets, plus a re-export of the persona schema | `apps/tui` |
 | `@kaja/schema/env` | env-var schemas — source of truth for every `.env.example` | build scripts |
 | `@kaja/schema/tombi` | JSON Schema generation for the TOML config files | build scripts |
 

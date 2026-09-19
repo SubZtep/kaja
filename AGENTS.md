@@ -115,7 +115,7 @@ bun run --filter @kaja/tui test
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
   - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
-  - `@kaja/schema/cli` — remaining CLI domain concepts (personas, datasets)
+  - `@kaja/schema/cli` — remaining CLI domain concepts (datasets; re-exports the persona schema)
   - `@kaja/schema/nasi` — cloud turn request/response
 - **DB row types**: private to API services; map with private `#rowTo…` helpers
 - **Dates over JSON**: `z.coerce.date()` in schemas

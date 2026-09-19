@@ -7,8 +7,13 @@ nav_order: 7
 # Personas
 
 A persona is a named character the assistant can switch into — its own instructions, and optionally
-its own model and sampling parameters. One file each under `~/.config/kaja/personas/*.toml`; the
-filename is the persona's id.
+its own model and sampling parameters. Personas are [marketplace](/skills#the-marketplace) packages:
+one file each under `~/.config/kaja/marketplace/personas/<id>.toml`, where the file name is the
+persona's id (lowercase letters, digits and single hyphens).
+
+Only the personas `~/.config/kaja/packages.toml` lists load; `kaja pkg` picks them in its Personas
+group. `default` is the exception: it always loads, and a fresh install has it built in. Put a
+`default.toml` in the folder (the marketplace sync brings one) and that one is used instead.
 
 ```toml
 label = "Self-care companion"
@@ -54,8 +59,8 @@ shared from elsewhere — falls back to the default for that task instead of fai
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
 | `onboarding` | walks a new user through the `onboarding` dataset |
 
-Get fresh copies any time with `kaja config fetch`, or read them in
-[`docs/config/personas`](https://github.com/SubZtep/kaja/tree/main/docs/config/personas).
+`kaja pkg update` brings them (and their updates) into the marketplace folder; read them in
+[`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 
 > Two contracts are injected by Kaja itself and should **not** be restated in `instructions`: that
 > questions go through the `ask_user` tool, and the `dataset_info` get-status/answer protocol.

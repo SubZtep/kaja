@@ -6,11 +6,11 @@ import TEMPLATE from "../../../../docs/config/packages.toml" with { type: "text"
 const parse = (toml: string) => PackagesFileSchema.parse(TOML.parse(toml))
 
 test("empty file enables nothing", () => {
-  expect(parse("")).toEqual({ skills: [], tools: [], mcp: [] })
+  expect(parse("")).toEqual({ skills: [], tools: [], mcp: [], personas: [] })
 })
 
 test("the docs/config template parses", () => {
-  expect(parse(TEMPLATE)).toEqual({ skills: [], tools: [], mcp: [] })
+  expect(parse(TEMPLATE)).toEqual({ skills: [], tools: [], mcp: [], personas: [] })
 })
 
 test("skills and a source override round-trip", () => {
@@ -25,6 +25,7 @@ ref = "marketplace-wip"
     skills: ["pdf", "my-notes"],
     tools: [],
     mcp: [],
+    personas: [],
     source: { url: "/home/me/src/kaja", ref: "marketplace-wip" }
   })
 })

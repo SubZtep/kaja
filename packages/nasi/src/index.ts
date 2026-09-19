@@ -54,13 +54,17 @@ export {
   type HttpToolScanEntry,
   type McpScanEntry,
   type PackageKeyNeed,
+  type PersonaScanEntry,
   parseHttpToolManifest,
   parseMcpManifest,
+  parsePersonaManifest,
+  readPersonas,
   readSkillBundle,
   type SkillBundle,
   type SkillScanEntry,
   scanHttpTools,
   scanMcpPackages,
+  scanPersonas,
   scanSkills
 } from "./packages/folder-store"
 export {

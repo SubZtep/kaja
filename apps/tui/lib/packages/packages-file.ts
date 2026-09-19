@@ -34,7 +34,9 @@ export async function loadPackagesFile(): Promise<PackagesFile> {
 }
 
 /** Writes the enabled lists to packages.toml, keeping [source] and any keys this version doesn't know. Only `kaja pkg` calls this. */
-export async function savePackagesFile(update: Partial<Pick<PackagesFile, "skills" | "tools" | "mcp">>): Promise<void> {
+export async function savePackagesFile(
+  update: Partial<Pick<PackagesFile, "skills" | "tools" | "mcp" | "personas">>
+): Promise<void> {
   const path = getPackagesPath()
   const f = file(path)
   const current = (await f.exists()) ? (TOML.parse(await f.text()) as Record<string, unknown>) : {}

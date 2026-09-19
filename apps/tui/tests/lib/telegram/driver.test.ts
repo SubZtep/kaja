@@ -89,6 +89,7 @@ function fakeAgent(script: FakeMessage[], extraTools: Tool<never>[] = []): Agent
 }
 
 const persona: Persona = { id: "kaja", label: "Kaja" }
+const defaultPersona: Persona = { id: "default", label: "Helpful assistant" }
 
 /** Records every call instead of hitting a network; messageIds increment from 1. */
 function fakeSender() {
@@ -591,7 +592,7 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
   expect(system!.content).toContain("You are grumpy.")
 })
 
-test("/packages lists the skills and tool packages the bot loaded, and how to change them", async () => {
+test("/packages lists the skills, personas and tool packages the bot loaded, and how to change them", async () => {
   const { createLoadSkillTool } = await import("@kaja/nasi")
   const loadSkill = createLoadSkillTool({
     store: {
@@ -614,7 +615,7 @@ test("/packages lists the skills and tool packages the bot loaded, and how to ch
   const { sender, sent } = fakeSender()
   const driver = createTelegramDriver({
     agentConfig: { model: "fake-model", tools: [askUserTool, loadSkill, ...packaged], store: peekStore() },
-    personas: [persona],
+    personas: [defaultPersona, persona],
     models: [],
     allowedUserIds: [42],
     sender
@@ -624,10 +625,18 @@ test("/packages lists the skills and tool packages the bot loaded, and how to ch
   const text = sent.at(-1)!.text
   expect(text).toContain(t("telegram.packagesSkills", { names: "disk-check, notes" }))
   expect(text).toContain(t("telegram.packagesTools", { names: "context7, open-meteo" }))
+  // default always loads, so it isn't listed.
+  expect(text).toContain(t("telegram.packagesPersonas", { names: "kaja" }))
   expect(text).not.toContain("my-server")
   expect(text).toContain("kaja pkg")
 
   const empty = fakeSender()
-  await makeDriver([], empty.sender, [42]).handleMessage(42, 100, "/packages")
+  await createTelegramDriver({
+    agentConfig: { model: "fake-model", tools: [askUserTool], store: peekStore() },
+    personas: [defaultPersona],
+    models: [],
+    allowedUserIds: [42],
+    sender: empty.sender
+  }).handleMessage(42, 100, "/packages")
   expect(empty.sent.at(-1)!.text).toContain(t("telegram.packagesNone"))
 })

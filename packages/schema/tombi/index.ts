@@ -1,6 +1,5 @@
 import * as z from "zod"
 import { DatasetSchema } from "../cli/datasets"
-import { PersonaSchema } from "../cli/personas"
 import { McpFileSchema } from "../config/mcp"
 import { ModelsFileSchema } from "../config/models"
 import { PackagesFileSchema } from "../config/packages"
@@ -9,6 +8,7 @@ import { ServicesFileSchema } from "../config/services"
 import { KajaConfigSchema } from "../config/settings"
 import { HttpToolPackageSchema } from "../packages/http-tool"
 import { McpPackageSchema } from "../packages/mcp"
+import { PersonaSchema } from "../packages/persona"
 
 /**
  * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io),

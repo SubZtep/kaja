@@ -17,7 +17,11 @@ export const PackagesFileSchema = z.object({
   mcp: z
     .array(z.string().min(1))
     .default([])
-    .describe("Enabled MCP server packages, by file name under marketplace/mcp/")
+    .describe("Enabled MCP server packages, by file name under marketplace/mcp/"),
+  personas: z
+    .array(z.string().min(1))
+    .default([])
+    .describe("Enabled personas, by file name under marketplace/personas/ (default always loads)")
 })
 
 export type PackagesFile = z.infer<typeof PackagesFileSchema>

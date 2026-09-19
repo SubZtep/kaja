@@ -6,6 +6,8 @@ import {
   HttpToolPackageSchema,
   type McpPackage,
   McpPackageSchema,
+  type Persona,
+  PersonaSchema,
   SkillNameSchema
 } from "@kaja/schema/packages"
 import type * as z from "zod"
@@ -92,8 +94,8 @@ async function readConfinedFile(dir: string, file: string): Promise<string | und
   return bytes.toString("utf8")
 }
 
-/** Parses a `<name>.toml` manifest's text against `schema`; the manifest's own `name` must match the file name. */
-function parseManifest<T extends { name: string }>(text: string, name: string, schema: z.ZodType<T>): T {
+/** Parses a TOML manifest's text against `schema`, throwing with the reason when it's invalid. */
+function parseToml<T>(text: string, schema: z.ZodType<T>): T {
   let data: unknown
   try {
     data = Bun.TOML.parse(text)
@@ -105,8 +107,14 @@ function parseManifest<T extends { name: string }>(text: string, name: string, s
     const issues = parsed.error.issues.map(issue => `${issue.path.join(".") || "file"}: ${issue.message}`)
     throw new Error(`invalid manifest (${issues.join("; ")})`)
   }
-  if (parsed.data.name !== name) throw new Error(`name "${parsed.data.name}" doesn't match its file "${name}.toml"`)
   return parsed.data
+}
+
+/** Parses a `<name>.toml` manifest's text against `schema`; the manifest's own `name` must match the file name. */
+function parseManifest<T extends { name: string }>(text: string, name: string, schema: z.ZodType<T>): T {
+  const data = parseToml(text, schema)
+  if (data.name !== name) throw new Error(`name "${data.name}" doesn't match its file "${name}.toml"`)
+  return data
 }
 
 /** An HTTP tool manifest from its TOML text (the cloud keeps the text, not the file). Throws with the reason when it's invalid. */
@@ -119,17 +127,25 @@ export function parseMcpManifest(text: string, name: string): McpPackage {
   return parseManifest(text, name, McpPackageSchema)
 }
 
-/** Reads `<dir>/<name>.toml` against `schema`; the manifest's own `name` must match the file name. */
-async function readManifest<T extends { name: string }>(dir: string, name: string, schema: z.ZodType<T>): Promise<T> {
+/** A persona from its TOML text (the cloud keeps the text, not the file); personas have no `name`, the id is the file name. */
+export function parsePersonaManifest(text: string, id: string): Persona {
+  return { ...parseToml(text, PersonaSchema), id }
+}
+
+/** The text of `<dir>/<name>.toml`, once `name` passes the package name rule. */
+async function readManifestText(dir: string, name: string): Promise<string> {
   if (!SkillNameSchema.safeParse(name).success) throw new Error(`"${name}" is not a valid package name`)
   const path = join(dir, `${name}.toml`)
-  let text: string
   try {
-    text = await readFile(path, "utf8")
+    return await readFile(path, "utf8")
   } catch {
     throw new Error(`no ${path}`)
   }
-  return parseManifest(text, name, schema)
+}
+
+/** Reads `<dir>/<name>.toml` against `schema`; the manifest's own `name` must match the file name. */
+async function readManifest<T extends { name: string }>(dir: string, name: string, schema: z.ZodType<T>): Promise<T> {
+  return parseManifest(await readManifestText(dir, name), name, schema)
 }
 
 /** Names of the `*.toml` manifests in a folder, sorted, hidden and backup files skipped; empty when the folder is missing. */
@@ -147,16 +163,15 @@ async function manifestNames(dir: string): Promise<string[]> {
 }
 
 /** Enabled manifests that parse; broken ones are skipped with a warning. */
-async function readEnabled<T extends { name: string }>(
-  dir: string,
+async function readEnabled<T>(
   names: string[] | undefined,
-  schema: z.ZodType<T>,
+  read: (name: string) => Promise<T>,
   what: string
 ): Promise<T[]> {
   const found: T[] = []
   for (const name of new Set(names ?? [])) {
     try {
-      found.push(await readManifest(dir, name, schema))
+      found.push(await read(name))
     } catch (error) {
       warn(`Skipping enabled ${what}`, { package: name, error: error instanceof Error ? error.message : error })
     }
@@ -265,6 +280,30 @@ export async function scanSkills(root: string): Promise<SkillScanEntry[]> {
   )
 }
 
+/** The personas in `<root>/personas/` named in `ids`, in that order; broken or missing ones are skipped with a warning. */
+export function readPersonas(root: string, ids: string[]): Promise<Persona[]> {
+  const dir = join(resolve(root), "personas")
+  return readEnabled(ids, async id => parsePersonaManifest(await readManifestText(dir, id), id), "persona")
+}
+
+/** One persona file found on disk, loadable or not — what a picker shows. */
+export type PersonaScanEntry = { name: string; label?: string; when?: string; error?: string }
+
+/** Every `<root>/personas/*.toml`, enabled or not, with its label and `when` or why it can't load. Sorted by id. */
+export async function scanPersonas(root: string): Promise<PersonaScanEntry[]> {
+  const dir = join(resolve(root), "personas")
+  return Promise.all(
+    (await manifestNames(dir)).map(async name => {
+      try {
+        const persona = parsePersonaManifest(await readManifestText(dir, name), name)
+        return { name, label: persona.label, when: persona.when }
+      } catch (error) {
+        return { name, error: error instanceof Error ? error.message : String(error) }
+      }
+    })
+  )
+}
+
 /** A whole skill as text, for storing it somewhere without a disk (the cloud's `package` table). */
 export type SkillBundle = {
   name: string
@@ -311,10 +350,18 @@ export function createFolderPackageStore(opts: FolderPackageStoreOptions): Packa
     },
 
     listHttpTools: () =>
-      readEnabled(join(resolve(opts.root), "tools"), opts.enabled.tools, HttpToolPackageSchema, "HTTP tool package"),
+      readEnabled(
+        opts.enabled.tools,
+        name => readManifest(join(resolve(opts.root), "tools"), name, HttpToolPackageSchema),
+        "HTTP tool package"
+      ),
 
     listMcpPackages: () =>
-      readEnabled(join(resolve(opts.root), "mcp"), opts.enabled.mcp, McpPackageSchema, "MCP package"),
+      readEnabled(
+        opts.enabled.mcp,
+        name => readManifest(join(resolve(opts.root), "mcp"), name, McpPackageSchema),
+        "MCP package"
+      ),
 
     async readSkill(name, file) {
       if (!enabled.has(name) || !SkillNameSchema.safeParse(name).success) return undefined

@@ -7,7 +7,7 @@ const OPTION_CHROME = 6
 const MAX_VISIBLE = 10
 
 export type PickerItem = {
-  type: "skill" | "tool" | "mcp"
+  type: "skill" | "persona" | "tool" | "mcp"
   name: string
   description?: string
   /** Why it can't load; shown below the list, not selectable. */
@@ -22,10 +22,11 @@ export type PickerItem = {
   key?: "required" | "optional"
 }
 
-export type PickerSelection = { skills: string[]; tools: string[]; mcp: string[] }
+export type PickerSelection = { skills: string[]; personas: string[]; tools: string[]; mcp: string[] }
 
 const TYPE_LABEL_KEY: Record<PickerItem["type"], string> = {
   skill: "pkg.typeSkill",
+  persona: "pkg.typePersona",
   tool: "pkg.typeTool",
   mcp: "pkg.typeMcp"
 }
@@ -36,7 +37,9 @@ const optionValue = (item: Pick<PickerItem, "type" | "name">) => `${item.type}:$
 
 /** One line per package: type, name, where it connects (or what it runs) and its key need, then as much description as fits. */
 function optionLabel(item: PickerItem, columns: number): string {
-  const type = t(TYPE_LABEL_KEY[item.type]).padEnd(6)
+  // One column for the type, as wide as the longest type name in this language plus a space.
+  const typeWidth = Math.max(...Object.values(TYPE_LABEL_KEY).map(key => t(key).length)) + 1
+  const type = t(TYPE_LABEL_KEY[item.type]).padEnd(typeWidth)
   const target = item.domain ?? (item.runs ? t("pkg.runs", { command: item.runs }) : undefined)
   const where = target ? `  ${target} · ${t(KEY_LABEL_KEY[item.key ?? "none"])}` : ""
   const localTag = item.local ? ` [${t("pkg.local")}]` : ""
@@ -70,6 +73,7 @@ export function PackagePicker({
   const broken = items.filter(item => item.error)
   const enabledValues = [
     ...enabled.skills.map(name => optionValue({ type: "skill", name })),
+    ...enabled.personas.map(name => optionValue({ type: "persona", name })),
     ...enabled.tools.map(name => optionValue({ type: "tool", name })),
     ...enabled.mcp.map(name => optionValue({ type: "mcp", name }))
   ]
@@ -87,7 +91,7 @@ export function PackagePicker({
             onSubmit={values => {
               const of = (type: PickerItem["type"]) =>
                 values.filter(v => v.startsWith(`${type}:`)).map(v => v.slice(type.length + 1))
-              onSubmit({ skills: of("skill"), tools: of("tool"), mcp: of("mcp") })
+              onSubmit({ skills: of("skill"), personas: of("persona"), tools: of("tool"), mcp: of("mcp") })
             }}
           />
         ) : (
