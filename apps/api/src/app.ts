@@ -13,6 +13,7 @@ import { healthRoutes } from "./features/health"
 import { nasiRoutes } from "./features/nasi"
 import { packageRoutes } from "./features/packages"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
+import { statsRoutes } from "./features/stats"
 import { telegramAdminRoutes } from "./features/telegram-admin"
 import { userRoutes } from "./features/users"
 import { widgetRoutes } from "./features/widget"
@@ -55,6 +56,7 @@ app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
 app.route("/packages", packageRoutes)
+app.route("/stats", statsRoutes)
 app.route("/telegram/admin", telegramAdminRoutes)
 app.route("/users", userRoutes)
 app.route("/widget", widgetRoutes)

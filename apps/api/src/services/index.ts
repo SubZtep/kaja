@@ -5,6 +5,7 @@ import { McpServerService } from "./mcp-server"
 import { ModelService } from "./model"
 import { PackageService } from "./package"
 import { SecretService } from "./secret"
+import { StatsService } from "./stats"
 import { TelegramLinkService } from "./telegram-link"
 import { WidgetService } from "./widget"
 
@@ -13,5 +14,6 @@ export const marketplaceService = new MarketplaceService(pool, { repo: env.MARKE
 export const modelService = new ModelService(pool)
 export const secretService = new SecretService(pool, env.USER_SECRET_KEY)
 export const packageService = new PackageService(pool, secretService)
+export const statsService = new StatsService(pool)
 export const telegramLinkService = new TelegramLinkService(pool)
 export const widgetService = new WidgetService(pool)

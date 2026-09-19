@@ -1,0 +1,161 @@
+import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { faker } from "@faker-js/faker"
+import type { UsageStatsResponse } from "@kaja/schema/api"
+import { app } from "../../src/app"
+import { pool } from "../../src/core/db"
+import { expectUnauthenticated, signUpAndSignIn } from "./helpers"
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const toolCall = (name: string) => ({ id: `call_${name}`, type: "function", function: { name, arguments: "{}" } })
+
+async function signUp(name: string) {
+  const email = faker.internet.email().toLowerCase()
+  const token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), name)
+  const userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
+  return { token, userId }
+}
+
+/** One saved session: `messages` and `events` are stored as the agent writes them. */
+async function seedSession(
+  userId: string,
+  opts: { ageDays: number; owner?: string; persona?: string; model?: string; messages?: unknown[]; events?: unknown[] }
+) {
+  const at = new Date(Date.now() - opts.ageDays * DAY_MS)
+  await pool.query(
+    `INSERT INTO nasi_session (id, user_id, created_at, updated_at, persona, model, title, owner, session, events)
+     VALUES (uuidv7(), $1, $2, $2, $3, $4, 'seed', $5, $6, $7)`,
+    [
+      userId,
+      at,
+      opts.persona ?? "default",
+      opts.model ?? "model-a",
+      opts.owner ?? null,
+      JSON.stringify({ messages: opts.messages ?? [] }),
+      JSON.stringify(opts.events ?? [])
+    ]
+  )
+}
+
+describe("GET /stats", () => {
+  let mine: { token: string; userId: string }
+  let other: { token: string; userId: string }
+
+  const get = async (token: string, query = "") => {
+    const res = await app.request(`/stats${query}`, { headers: { Authorization: `Bearer ${token}` } })
+    return { status: res.status, body: (await res.json()) as UsageStatsResponse }
+  }
+
+  beforeAll(async () => {
+    mine = await signUp("Stats")
+    other = await signUp("Other")
+
+    await seedSession(mine.userId, {
+      ageDays: 0,
+      persona: "care",
+      messages: [
+        { role: "system", content: "x" },
+        { role: "user", content: "hi" },
+        { role: "assistant", content: null, tool_calls: [toolCall("read_thing"), toolCall("write_thing")] },
+        { role: "tool", content: "ok" },
+        { role: "user", content: "again" },
+        { role: "assistant", content: null, tool_calls: [toolCall("read_thing")] }
+      ],
+      events: [
+        { type: "confirm_tool", id: "call_write_thing", name: "write_thing", arguments: "{}", summary: "s" },
+        { type: "tool_approval", approved: true },
+        { type: "confirm_tool", id: "call_write_thing", name: "write_thing", arguments: "{}", summary: "s" },
+        { type: "tool_approval", approved: false }
+      ]
+    })
+    await seedSession(mine.userId, {
+      ageDays: 2,
+      owner: "telegram:99",
+      model: "model-b",
+      messages: [{ role: "user", content: "hello" }]
+    })
+    await seedSession(mine.userId, {
+      ageDays: 2,
+      owner: "widget:visitor",
+      messages: [{ role: "user", content: "hey" }]
+    })
+    // Older than the 7-day window used below.
+    await seedSession(mine.userId, {
+      ageDays: 20,
+      messages: [{ role: "assistant", content: null, tool_calls: [toolCall("old_tool")] }]
+    })
+    // Someone else's session with a tool of their own.
+    await seedSession(other.userId, {
+      ageDays: 0,
+      messages: [{ role: "assistant", content: null, tool_calls: [toolCall("their_tool")] }]
+    })
+  })
+
+  afterAll(async () => {
+    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[mine.userId, other.userId]])
+  })
+
+  test("needs a signed-in user", async () => {
+    await expectUnauthenticated("/stats")
+  })
+
+  test("counts sessions, messages and tool calls in the window, and leaves older sessions out", async () => {
+    const { status, body } = await get(mine.token, "?days=7")
+    expect(status).toBe(200)
+    expect(body.days).toBe(7)
+    expect(body.totals).toEqual({ sessions: 3, messages: 4, toolCalls: 3 })
+    expect(body.tools.map(tool => tool.name)).toEqual(["read_thing", "write_thing"])
+    expect(body.tools[0]).toEqual({ name: "read_thing", calls: 2, approved: 0, declined: 0 })
+  })
+
+  test("pairs each approval with the tool it asked about", async () => {
+    const { body } = await get(mine.token, "?days=7")
+    expect(body.tools.find(tool => tool.name === "write_thing")).toEqual({
+      name: "write_thing",
+      calls: 1,
+      approved: 1,
+      declined: 1
+    })
+  })
+
+  test("has one entry per day, zeros included, oldest first", async () => {
+    const { body } = await get(mine.token, "?days=7")
+    expect(body.perDay).toHaveLength(7)
+    expect(body.perDay.map(day => day.date)).toEqual([...body.perDay.map(day => day.date)].sort())
+    expect(body.perDay.reduce((sum, day) => sum + day.started, 0)).toBe(3)
+    expect(body.perDay.reduce((sum, day) => sum + day.active, 0)).toBe(3)
+    expect(body.perDay.at(-1)?.started).toBeGreaterThanOrEqual(1)
+  })
+
+  test("splits sessions by channel, persona and model", async () => {
+    const { body } = await get(mine.token, "?days=7")
+    expect(Object.fromEntries(body.channels.map(row => [row.channel, row.sessions]))).toEqual({
+      web: 1,
+      telegram: 1,
+      widget: 1
+    })
+    expect(Object.fromEntries(body.personas.map(row => [row.persona, row.sessions]))).toEqual({ care: 1, default: 2 })
+    expect(Object.fromEntries(body.models.map(row => [row.model, row.sessions]))).toEqual({
+      "model-a": 2,
+      "model-b": 1
+    })
+  })
+
+  test("a longer window brings older sessions in", async () => {
+    const { body } = await get(mine.token, "?days=30")
+    expect(body.totals.sessions).toBe(4)
+    expect(body.tools.map(tool => tool.name)).toContain("old_tool")
+  })
+
+  test("never shows another user's sessions or tools", async () => {
+    const { body } = await get(other.token, "?days=30")
+    expect(body.totals).toEqual({ sessions: 1, messages: 0, toolCalls: 1 })
+    expect(body.tools.map(tool => tool.name)).toEqual(["their_tool"])
+    const { body: mineBody } = await get(mine.token, "?days=30")
+    expect(mineBody.tools.map(tool => tool.name)).not.toContain("their_tool")
+  })
+
+  test("rejects a window outside 1-365 days", async () => {
+    const res = await app.request("/stats?days=0", { headers: { Authorization: `Bearer ${mine.token}` } })
+    expect(res.status).toBe(400)
+  })
+})

@@ -84,7 +84,7 @@ bun run --filter @kaja/tui test
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (hourly marketplace sync)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/packages/` (cloud package catalog + users' keys), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/packages/` (cloud package catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
