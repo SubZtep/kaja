@@ -2,6 +2,10 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
 @import "@fontsource-variable/manrope";
+@import "@fontsource-variable/syne";
+@import "@fontsource/silkscreen/400.css";
+@import "@fontsource/silkscreen/700.css";
+@import "@fontsource/share-tech-mono";
 
 :root {
   color-scheme: dark;
@@ -14,6 +18,9 @@
   --radius-full: 1rem;
 
   --font-headline: "Manrope Variable", "Manrope", sans-serif;
+  --font-display: "Syne Variable", "Syne", "Manrope Variable", sans-serif;
+  --font-stamp: "Silkscreen", "Syne Variable", sans-serif;
+  --font-crt: "Share Tech Mono", "JetBrains Mono Variable", monospace;
   --font-body: "Inter Variable", "Inter", sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
 
@@ -48,6 +55,49 @@
     50% {
       opacity: 1;
       transform: scale(1);
+    }
+  }
+
+  @keyframes sticker-wiggle {
+    0%,
+    100% {
+      transform: rotate(var(--sticker-rot, -2deg));
+    }
+    50% {
+      transform: rotate(calc(var(--sticker-rot, -2deg) + 1.6deg));
+    }
+  }
+
+  @keyframes scanline-drift {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100vh);
+    }
+  }
+
+  @keyframes monster-glint {
+    0%,
+    70%,
+    100% {
+      opacity: 0;
+      transform: translate(-30%, -40%) rotate(18deg);
+    }
+    78% {
+      opacity: 0.85;
+      transform: translate(40%, 50%) rotate(18deg);
+    }
+  }
+
+  @keyframes caret-blink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
     }
   }
 }
@@ -198,6 +248,51 @@
   }
 }
 
+@utility nav-stamp {
+  font-family: var(--font-stamp);
+  font-size: 0.8125rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  padding: 0.28rem 0.55rem;
+  border: 1.5px solid transparent;
+  filter: url("#wobble-sm");
+
+  &:hover {
+    border-color: var(--color-fg);
+    background: var(--color-surface);
+    color: var(--color-fg);
+    box-shadow: 2px 3px 0 var(--color-neon);
+    clip-path: polygon(
+      3% 10%,
+      8% 0%,
+      94% 4%,
+      100% 16%,
+      97% 88%,
+      90% 100%,
+      6% 96%,
+      0% 78%
+    );
+  }
+}
+
+@utility nav-stamp-active {
+  border-color: var(--color-fg);
+  background: var(--color-ice);
+  color: var(--color-bg);
+  box-shadow: 2px 3px 0 var(--color-neon);
+  clip-path: polygon(
+    3% 10%,
+    8% 0%,
+    94% 4%,
+    100% 16%,
+    97% 88%,
+    90% 100%,
+    6% 96%,
+    0% 78%
+  );
+}
+
 @keyframes blink {
   0%,
   49% {
@@ -206,6 +301,303 @@
   50%,
   100% {
     opacity: 0;
+  }
+}
+
+/* Public-only CRT overlay. Admin shells must not set this class. */
+.public-grit {
+  position: relative;
+}
+
+.public-grit > header {
+  border-bottom-width: 0;
+  overflow: visible;
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+}
+
+.public-grit > header::after {
+  content: "";
+}
+
+.public-grit > header::after,
+.torn-edge {
+  display: block;
+  height: 14px;
+  background: var(--color-bg);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 35%,
+    96% 100%,
+    91% 28%,
+    85% 92%,
+    78% 18%,
+    71% 100%,
+    64% 40%,
+    56% 88%,
+    48% 12%,
+    40% 96%,
+    32% 22%,
+    24% 80%,
+    16% 8%,
+    8% 72%,
+    3% 24%,
+    0 100%
+  );
+}
+
+.public-grit > footer {
+  border-top-width: 0;
+  position: relative;
+}
+
+.public-grit > footer::before {
+  content: "";
+  display: block;
+  height: 14px;
+  margin-top: -14px;
+  background: var(--color-bg);
+  clip-path: polygon(
+    0 100%,
+    100% 100%,
+    100% 55%,
+    94% 0,
+    88% 70%,
+    80% 8%,
+    72% 82%,
+    64% 4%,
+    55% 76%,
+    46% 12%,
+    38% 90%,
+    29% 6%,
+    21% 68%,
+    12% 16%,
+    5% 84%,
+    0 0
+  );
+}
+
+.public-grit::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  opacity: 0.11;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 2px,
+      rgb(0 0 0 / 0.45) 3px
+    ),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.35'/></svg>");
+  mix-blend-mode: multiply;
+}
+
+.public-grit::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 41;
+  height: 7rem;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--color-neon) 14%, transparent),
+    transparent
+  );
+  animation: scanline-drift 11s linear infinite;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-grit::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+@utility sticker {
+  --sticker-rot: -2deg;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-stamp);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 2px solid var(--color-fg);
+  background: var(--color-ice);
+  color: var(--color-bg);
+  box-shadow: 3px 4px 0 var(--color-neon);
+  padding: 0.25rem 0.6rem 0.2rem;
+  line-height: 1.1;
+  transform: rotate(var(--sticker-rot));
+  transform-origin: center;
+  clip-path: polygon(
+    2% 8%,
+    6% 0%,
+    94% 3%,
+    100% 14%,
+    98% 86%,
+    92% 100%,
+    8% 97%,
+    0% 82%
+  );
+  filter: url("#wobble-sm");
+}
+
+@utility sticker-neon {
+  background: var(--color-neon);
+  color: var(--color-bg);
+  box-shadow: 3px 3px 0 var(--color-ice);
+}
+
+@utility sticker-ink {
+  background: var(--color-fg);
+  color: var(--color-bg);
+  box-shadow: 3px 3px 0 var(--color-border);
+}
+
+@utility sticker-ghost {
+  background: var(--color-surface);
+  color: var(--color-fg);
+  box-shadow: 3px 3px 0 var(--color-border);
+}
+
+@utility sticker-wiggle {
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      animation: sticker-wiggle 0.45s ease-in-out;
+    }
+  }
+}
+
+@utility crt-frame {
+  font-family: var(--font-crt);
+  border: 2px dashed color-mix(in srgb, var(--color-neon) 65%, transparent);
+  background: rgb(0 0 0 / 0.45);
+  box-shadow:
+    inset 0 0 42px color-mix(in srgb, var(--color-neon) 14%, transparent),
+    5px 7px 0 var(--color-border);
+  clip-path: polygon(
+    0.6% 3%,
+    2% 0%,
+    98.5% 1.2%,
+    100% 6%,
+    99.2% 94%,
+    97% 100%,
+    1.8% 98.5%,
+    0% 92%
+  );
+  filter: url("#wobble-sm");
+}
+
+@utility tape-btn {
+  font-family: var(--font-stamp);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--color-ice) 82%, white);
+  color: #1c1406;
+  border: 0;
+  box-shadow: 3px 5px 0 rgb(0 0 0 / 0.35);
+  clip-path: polygon(
+    1% 18%,
+    3% 0%,
+    97% 6%,
+    100% 22%,
+    98% 84%,
+    94% 100%,
+    4% 94%,
+    0% 72%
+  );
+  filter: url("#wobble-sm");
+}
+
+@utility toy-card {
+  position: relative;
+  display: flex;
+  width: min(100%, 22rem);
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface-2);
+  clip-path: polygon(
+    1.4% 1%,
+    98.2% 0.4%,
+    100% 3.2%,
+    99.4% 96.8%,
+    97% 100%,
+    2.4% 99%,
+    0% 95.5%,
+    0.6% 3%
+  );
+  box-shadow: 7px 9px 0 var(--color-border);
+  filter: url("#wobble");
+}
+
+@utility tape {
+  pointer-events: none;
+  position: absolute;
+  height: 1.05rem;
+  background: color-mix(in srgb, var(--color-ice) 55%, transparent);
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+}
+
+@utility burst {
+  clip-path: polygon(
+    50% 0%,
+    62% 32%,
+    98% 35%,
+    70% 57%,
+    79% 94%,
+    50% 72%,
+    21% 94%,
+    30% 57%,
+    2% 35%,
+    38% 32%
+  );
+}
+
+@utility hide-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility monster-glint {
+  position: relative;
+  isolation: isolate;
+
+  &::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: -10%;
+    background: linear-gradient(
+      115deg,
+      transparent 44%,
+      color-mix(in srgb, var(--color-ice) 45%, transparent) 50%,
+      transparent 56%
+    );
+    animation: monster-glint 5.5s ease-in-out infinite;
+    mix-blend-mode: screen;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+      opacity: 0;
+    }
   }
 }
 

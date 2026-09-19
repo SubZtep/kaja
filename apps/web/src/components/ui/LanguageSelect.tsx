@@ -1,5 +1,5 @@
 import { Select } from "@base-ui/react/select"
-import { LOCALE_LABELS } from "@kaja/shared"
+import { cn, LOCALE_LABELS } from "@kaja/shared"
 import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast, Zoom } from "react-toastify"
@@ -9,7 +9,7 @@ import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } f
 /** Capture the cookie state before any hydration-triggered locale resolution can write it. */
 const hadLocaleCookieBeforeHydration = Boolean(extractLocaleFromCookie())
 
-export function LanguageSelect() {
+export function LanguageSelect({ className }: Readonly<{ className?: string }> = {}) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
@@ -46,7 +46,10 @@ export function LanguageSelect() {
       <Select.Trigger
         ref={triggerRef}
         aria-label={`${m.language_select_label()}: ${LOCALE_LABELS[getLocale()]}`}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg cursor-pointer"
+        className={cn(
+          "inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs hover:text-fg",
+          className
+        )}
       >
         <Languages size={14} />
         <Select.Value />
