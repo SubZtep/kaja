@@ -50,22 +50,21 @@ export function TelegramPromo() {
   const [isSpinning, setIsSpinning] = useState(false)
 
   useEffect(() => {
+    const [tick, setTick] = useState(0)
     let idleTimeout: ReturnType<typeof setTimeout>
     let spinTimeout: ReturnType<typeof setTimeout>
 
     const scheduleSpin = () => {
       idleTimeout = setTimeout(
         () => {
+          setTick(t => t + 1)
           setIsSpinning(true)
-          spinTimeout = setTimeout(
-            () => {
-              setIsSpinning(false)
-              scheduleSpin()
-            },
-            1000 + Math.random() * 2000
-          )
+          spinTimeout = setTimeout(() => {
+            setIsSpinning(false)
+            scheduleSpin()
+          }, tick * 1000)
         },
-        10000 + Math.random() * 20000
+        6000 + Math.random() * 9000
       )
     }
 

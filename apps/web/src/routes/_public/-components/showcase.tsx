@@ -65,7 +65,7 @@ function ToyCard({
         >
           {stamp}
         </Sticker>
-        <span className="tape top-2 left-8 w-16 rotate-[-12deg]" />
+        <span className="tape top-2 left-8 w-16 -rotate-12" />
       </article>
       <div className="px-1">
         <h3 className="m-0 font-display font-extrabold text-fg text-xl">{title}</h3>

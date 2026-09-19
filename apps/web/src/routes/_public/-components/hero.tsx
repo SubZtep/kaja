@@ -71,7 +71,7 @@ export function Hero() {
             />
           </svg>
 
-          <p className="mt-4 mb-0 max-w-md font-display text-lg text-muted [overflow-wrap:normal] [word-break:normal] md:text-xl">
+          <p className="mt-4 mb-0 max-w-md font-display text-lg text-muted wrap-normal [word-break:normal] md:text-xl">
             {m.hero_subline()}
           </p>
 
