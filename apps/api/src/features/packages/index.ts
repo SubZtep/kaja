@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import {
+  keyedPackageTypeSchema,
   listCatalogResponseSchema,
   listUserPackagesResponseSchema,
   packageTypeSchema,
@@ -31,7 +32,7 @@ const catalogRoute = createRoute({
   method: "get",
   path: "/",
   tags: ["Packages"],
-  summary: "The cloud catalog: marketplace skills and HTTP tools anyone can enable",
+  summary: "The cloud catalog: marketplace skills, HTTP tools and MCP servers anyone can enable",
   responses: {
     200: { description: "OK", content: { "application/json": { schema: listCatalogResponseSchema } } }
   }
@@ -137,7 +138,8 @@ packageRoutes.openapi(disableRoute, async c => {
   return c.json({ ok: true })
 })
 
-const toolParams = z.object({
+const keyParams = z.object({
+  type: keyedPackageTypeSchema.openapi({ param: { name: "type", in: "path" }, example: "tool" }),
   name: z
     .string()
     .min(1)
@@ -146,19 +148,22 @@ const toolParams = z.object({
 
 const saveKeyRoute = createRoute({
   method: "put",
-  path: "/me/tool/{name}/key",
+  path: "/me/{type}/{name}/key",
   tags: ["Packages"],
-  summary: "Save (or replace) the signed-in user's key for an HTTP tool, and test it",
+  summary: "Save (or replace) the signed-in user's key for an HTTP tool or MCP server, and test it",
   description:
-    "Stored encrypted and never sent back. The key is tested with the package's `check` request; it's saved even when the test fails.",
+    "Stored encrypted and never sent back. A tool's key is tested with its `check` request, an MCP server's by connecting and listing its tools; the key is saved even when the test fails.",
   security: [{ bearerAuth: [] }],
   request: {
-    params: toolParams,
+    params: keyParams,
     body: { content: { "application/json": { schema: savePackageKeyRequestSchema } }, required: true }
   },
   responses: {
     200: { description: "Saved", content: { "application/json": { schema: savePackageKeyResponseSchema } } },
-    400: { description: "`no_key`: this tool takes no key", content: { "application/json": { schema: errorSchema } } },
+    400: {
+      description: "`no_key`: this package takes no key",
+      content: { "application/json": { schema: errorSchema } }
+    },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
     404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } },
     503: {
@@ -172,9 +177,9 @@ packageRoutes.openapi(saveKeyRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   if (!packageService.keysEnabled) return serviceUnavailable(c, "keys_unavailable")
-  const { name } = c.req.valid("param")
+  const { type, name } = c.req.valid("param")
   // Same egress as a turn's tool calls: through WEB_PROXY when set, never to a private host.
-  const result = await packageService.saveKey(user.id, name, c.req.valid("json").apiKey, {
+  const result = await packageService.saveKey(user.id, type, name, c.req.valid("json").apiKey, {
     proxy: nasiToolDeps().fetchProxy
   })
   if (result === "not_found") return notFound(c, "Package not found")
@@ -184,11 +189,12 @@ packageRoutes.openapi(saveKeyRoute, async c => {
 
 const deleteKeyRoute = createRoute({
   method: "delete",
-  path: "/me/tool/{name}/key",
+  path: "/me/{type}/{name}/key",
   tags: ["Packages"],
-  summary: "Remove the signed-in user's key for an HTTP tool (a tool that can't work without it is turned off too)",
+  summary:
+    "Remove the signed-in user's key for an HTTP tool or MCP server (one that can't work without it is turned off too)",
   security: [{ bearerAuth: [] }],
-  request: { params: toolParams },
+  request: { params: keyParams },
   responses: {
     200: { description: "Removed", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
@@ -199,6 +205,7 @@ const deleteKeyRoute = createRoute({
 packageRoutes.openapi(deleteKeyRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  if (!(await packageService.deleteKey(user.id, c.req.valid("param").name))) return notFound(c, "Package not found")
+  const { type, name } = c.req.valid("param")
+  if (!(await packageService.deleteKey(user.id, type, name))) return notFound(c, "Package not found")
   return c.json({ ok: true }, 200)
 })

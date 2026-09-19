@@ -8,10 +8,10 @@ const SKILL_FILE = "SKILL.md"
 export type CloudPackageSource = { userId: string } | { skills: string[] }
 
 /**
- * {@link PackageStore} over the `package` table for one cloud turn: skills and HTTP tools (MCP isn't in
- * the cloud yet). Skill files come from the stored bundle, so there's no disk and no skill folder path,
+ * {@link PackageStore} over the `package` table for one cloud turn: skills, HTTP tools and remote MCP
+ * servers. Skill files come from the stored bundle, so there's no disk and no skill folder path,
  * and skills with scripts never get here (the catalog doesn't offer them). A widget key's list is skills
- * only, so no visitor ever calls a tool with the owner's key.
+ * only, so no visitor ever calls a tool or MCP server with the owner's key.
  */
 export function createPostgresPackageStore(source: CloudPackageSource): PackageStore {
   let loaded: Promise<CloudSkill[]> | undefined
@@ -50,6 +50,6 @@ export function createPostgresPackageStore(source: CloudPackageSource): PackageS
     },
 
     listHttpTools: async () => ("userId" in source ? packageService.httpToolsForUser(source.userId) : []),
-    listMcpPackages: async () => []
+    listMcpPackages: async () => ("userId" in source ? packageService.mcpForUser(source.userId) : [])
   }
 }

@@ -160,14 +160,18 @@ nasiRoutes.openapi(infoRoute, async c => {
   const persona = personas[0]
   const skills = await packageService.skillsForUser(user.id)
   const keys = new Set(await packageService.keyNames(user.id))
-  // Tool packages as a turn loads them: one that requires a key only once the user saved it.
+  // Tool and MCP packages as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP packages in the cloud have a fixed tool list.
+  const loads = (pkg: { name: string; auth: { type: string; optional?: boolean } }) =>
+    pkg.auth.type !== "apiKey" || pkg.auth.optional || keys.has(pkg.name)
   const httpTools = (await packageService.httpToolsForUser(user.id))
-    .filter(pkg => pkg.auth.type !== "apiKey" || pkg.auth.optional || keys.has(pkg.name))
-    .flatMap(pkg => pkg.tools.map(tool => tool.name))
+    .filter(loads)
+    .flatMap(pkg => pkg.tools.map(t => t.name))
+  const mcpTools = (await packageService.mcpForUser(user.id)).filter(loads).flatMap(pkg => pkg.tools ?? [])
   const tools = [
     ...(await listCloudToolNames(nasiToolDeps())),
     ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : []),
-    ...httpTools
+    ...httpTools,
+    ...mcpTools
   ]
 
   return c.json({

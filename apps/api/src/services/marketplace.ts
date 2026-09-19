@@ -3,11 +3,19 @@ import { mkdtemp, readdir, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { info, warn } from "@kaja/logger"
-import { parseHttpToolManifest, readSkillBundle, scanHttpTools, scanSkills } from "@kaja/nasi"
+import {
+  parseHttpToolManifest,
+  parseMcpManifest,
+  readSkillBundle,
+  scanHttpTools,
+  scanMcpPackages,
+  scanSkills
+} from "@kaja/nasi"
 import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/api"
 import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
 import { withLock } from "../core/lock"
+import { cloudMcpProblem } from "./package"
 
 const MAX_TARBALL_BYTES = 50 * 1024 * 1024
 const COMMIT_SHA = /^[0-9a-f]{40}$/
@@ -15,7 +23,7 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/
 export type MarketplaceSource = { repo: string; ref: string }
 
 /**
- * Keeps the `package` table in step with the `marketplace/` folder (skills and HTTP tools) of a GitHub repo. A sync asks
+ * Keeps the `package` table in step with the `marketplace/` folder (skills, HTTP tools, MCP servers) of a GitHub repo. A sync asks
  * GitHub for the branch's commit first and only downloads the tarball when it moved. Packages are
  * never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
@@ -71,7 +79,7 @@ export class MarketplaceService {
     })
   }
 
-  /** Applies a marketplace folder already on disk: upserts every valid skill and HTTP tool, marks the rest removed. No network — the sync and tests both use it. */
+  /** Applies a marketplace folder already on disk: upserts every valid skill, HTTP tool and MCP package, marks the rest removed. No network — the sync and tests both use it. */
   async syncFromDir(
     marketplaceDir: string,
     commit: string
@@ -84,7 +92,9 @@ export class MarketplaceService {
       }
       bundles.push({ type: "skill", ...(await readSkillBundle(marketplaceDir, entry.name)) })
     }
-    bundles.push(...(await readHttpTools(marketplaceDir)))
+    const tools = await readHttpTools(marketplaceDir)
+    bundles.push(...tools)
+    bundles.push(...(await readMcpPackages(marketplaceDir, new Set(tools.map(tool => tool.name)))))
 
     const client = await this.#db.connect()
     try {
@@ -193,7 +203,9 @@ export class MarketplaceService {
 }
 
 /** Package types the sync owns; anything else in the table is left alone. */
-const SYNCED_TYPES = ["skill", "tool"] as const
+const SYNCED_TYPES = ["skill", "tool", "mcp"] as const
+
+const MARKETPLACE_FOLDER: Record<PackageBundle["type"], string> = { skill: "skills", tool: "tools", mcp: "mcp" }
 
 type PackageBundle = {
   type: (typeof SYNCED_TYPES)[number]
@@ -205,7 +217,7 @@ type PackageBundle = {
 
 /** How a package shows in a sync result: skills by name, others by their marketplace path. */
 function reportName(type: PackageBundle["type"], name: string): string {
-  return type === "skill" ? name : `tools/${name}`
+  return type === "skill" ? name : `${MARKETPLACE_FOLDER[type]}/${name}`
 }
 
 /** Every valid `tools/*.toml` as stored text; broken manifests and ones that call a non-public host are skipped with a warning. */
@@ -227,6 +239,39 @@ async function readHttpTools(marketplaceDir: string): Promise<PackageBundle[]> {
       })
     } catch (error) {
       warn("Marketplace HTTP tool skipped", { tool: entry.name, error: error instanceof Error ? error.message : error })
+    }
+  }
+  return bundles
+}
+
+/**
+ * Every `mcp/*.toml` the cloud can run, as stored text. Skipped with a warning: broken manifests, stdio
+ * servers, ones without a `tools` allowlist or on a non-public host, and names a tool already has (keys
+ * share one namespace per name).
+ */
+async function readMcpPackages(marketplaceDir: string, toolNames: Set<string>): Promise<PackageBundle[]> {
+  const bundles: PackageBundle[] = []
+  for (const entry of await scanMcpPackages(marketplaceDir)) {
+    const file = `${entry.name}.toml`
+    try {
+      if (entry.error) throw new Error(entry.error)
+      if (toolNames.has(entry.name)) throw new Error(`an HTTP tool is already called ${entry.name}`)
+      const text = await readFile(join(marketplaceDir, "mcp", file), "utf8")
+      const pkg = parseMcpManifest(text, entry.name)
+      const problem = cloudMcpProblem(pkg)
+      if (problem) throw new Error(problem)
+      bundles.push({
+        type: "mcp",
+        name: pkg.name,
+        description: pkg.description,
+        files: { [file]: text },
+        hasScripts: false
+      })
+    } catch (error) {
+      warn("Marketplace MCP package skipped", {
+        mcp: entry.name,
+        error: error instanceof Error ? error.message : error
+      })
     }
   }
   return bundles

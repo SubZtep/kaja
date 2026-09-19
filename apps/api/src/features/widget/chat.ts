@@ -13,5 +13,9 @@ export async function runWidgetTurn(widgetKey: ResolvedWidgetKey, body: WidgetTu
     // The key's own skill list, not the owner's: visitors get only what this widget was set up with.
     packages: { skills: widgetKey.config.skills ?? [] }
   })
-  return nasi.turnBuffered({ ...turnBody, personaId: widgetKey.config.persona })
+  try {
+    return await nasi.turnBuffered({ ...turnBody, personaId: widgetKey.config.persona })
+  } finally {
+    await nasi.close()
+  }
 }

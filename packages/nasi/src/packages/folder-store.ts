@@ -114,6 +114,11 @@ export function parseHttpToolManifest(text: string, name: string): HttpToolPacka
   return parseManifest(text, name, HttpToolPackageSchema)
 }
 
+/** An MCP package manifest from its TOML text (the cloud keeps the text, not the file). Throws with the reason when it's invalid. */
+export function parseMcpManifest(text: string, name: string): McpPackage {
+  return parseManifest(text, name, McpPackageSchema)
+}
+
 /** Reads `<dir>/<name>.toml` against `schema`; the manifest's own `name` must match the file name. */
 async function readManifest<T extends { name: string }>(dir: string, name: string, schema: z.ZodType<T>): Promise<T> {
   if (!SkillNameSchema.safeParse(name).success) throw new Error(`"${name}" is not a valid package name`)

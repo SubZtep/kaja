@@ -9,6 +9,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { write } from "bun"
 import { type Tool, type ToolResult, tool } from "../agent/tools"
+import type { FetchLike } from "../security/ssrf"
 
 const MAX_ARGS_PREVIEW = 200
 
@@ -23,6 +24,12 @@ export type McpConnectOptions = {
   readOnly?: McpReadOnlyRule[]
   /** Leads the approval summary, e.g. `mcp:context7`. */
   label?: string
+  /** Fetch for a `url` server's transport (the cloud passes its SSRF-guarded one). */
+  fetch?: FetchLike
+  /** Keep image results (saved under the temp dir). False drops them with a note: the cloud has nowhere to show them. Default true. */
+  images?: boolean
+  /** Cut a result's text at this many characters, with a note. Unset keeps it whole. */
+  maxResultChars?: number
 }
 
 /** Whether a call counts as read-only under a manifest rule: the tool is listed and none of its `unless` arguments is set. */
@@ -41,11 +48,15 @@ export async function connectMcpServer(
   tempDir: string,
   opts: McpConnectOptions = {}
 ): Promise<{ tools: Tool<any>[]; close: () => Promise<void> }> {
+  const remote = (headers: Record<string, string>) => ({
+    requestInit: { headers },
+    ...(opts.fetch ? { fetch: opts.fetch } : {})
+  })
   const transport =
     "url" in server
       ? opts.transport === "sse"
-        ? new SSEClientTransport(new URL(server.url), { requestInit: { headers: server.headers } })
-        : new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: server.headers } })
+        ? new SSEClientTransport(new URL(server.url), remote(server.headers))
+        : new StreamableHTTPClientTransport(new URL(server.url), remote(server.headers))
       : new StdioClientTransport({
           command: server.command,
           args: server.args,
@@ -65,7 +76,7 @@ export async function connectMcpServer(
         name: mcpTool.name,
         description: mcpTool.description ?? mcpTool.name,
         parameters: mcpTool.inputSchema,
-        execute: args => callTool(client, mcpTool.name, args, tempDir)
+        execute: args => callTool(client, mcpTool.name, args, tempDir, opts)
       })
       const rule = opts.readOnly?.find(r => r.tool === mcpTool.name)
       const mayAsk =
@@ -86,26 +97,40 @@ export async function connectMcpServer(
   return { tools, close: () => client.close() }
 }
 
+/** `text` cut at `max` characters with a note, or whole when there's no limit. */
+function capText(text: string, max: number | undefined): string {
+  if (max === undefined || text.length <= max) return text
+  return `${text.slice(0, max)}\n\n[cut: ${text.length} characters in total]`
+}
+
 async function callTool(
   client: Client,
   name: string,
   args: Record<string, unknown>,
-  tempDir: string
+  tempDir: string,
+  opts: Pick<McpConnectOptions, "images" | "maxResultChars">
 ): Promise<ToolResult> {
   const result = await client.callTool({ name, arguments: args })
   const content = (result.content ?? []) as Array<
     { type: "text"; text: string } | { type: "image"; data: string; mimeType: string }
   >
 
-  const text = content
-    .filter((block): block is { type: "text"; text: string } => block.type === "text")
-    .map(block => block.text)
-    .join("\n")
+  const text = capText(
+    content
+      .filter((block): block is { type: "text"; text: string } => block.type === "text")
+      .map(block => block.text)
+      .join("\n"),
+    opts.maxResultChars
+  )
 
   const imageBlocks = content.filter(
     (block): block is { type: "image"; data: string; mimeType: string } => block.type === "image"
   )
   if (imageBlocks.length === 0) return { text: text || `${name}: done` }
+  if (opts.images === false) {
+    const note = `(${imageBlocks.length} image${imageBlocks.length === 1 ? "" : "s"} not shown)`
+    return { text: text ? `${text}\n\n${note}` : `${name}: done ${note}` }
+  }
 
   await mkdir(tempDir, { recursive: true })
   const images = await Promise.all(

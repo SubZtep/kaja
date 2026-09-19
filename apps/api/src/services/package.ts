@@ -1,7 +1,23 @@
 import { warn } from "@kaja/logger"
-import { checkHttpToolKey, type KeyCheckResult, parseHttpToolManifest, parseSkillMd } from "@kaja/nasi"
-import type { CatalogPackage, PackageKeyNeed, PackageType, SkillDetail, UserPackage } from "@kaja/schema/api"
-import type { HttpToolPackage } from "@kaja/schema/packages"
+import {
+  checkHttpToolKey,
+  checkMcpPackageKey,
+  createGuardedFetch,
+  type KeyCheckResult,
+  parseHttpToolManifest,
+  parseMcpManifest,
+  parseSkillMd
+} from "@kaja/nasi"
+import type {
+  CatalogPackage,
+  KeyedPackageType,
+  PackageKeyNeed,
+  PackageType,
+  SkillDetail,
+  UserPackage
+} from "@kaja/schema/api"
+import type { HttpToolPackage, McpPackage } from "@kaja/schema/packages"
+import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
 import type { SecretService } from "./secret"
 
@@ -10,8 +26,21 @@ export type CloudSkill = { name: string; description: string; files: Record<stri
 
 export type EnableResult = "enabled" | "not_found" | "key_required"
 
-/** A saved key and its live test (null when the package has no `check`), or why it wasn't saved. */
+/** A saved key and its live test (null when the package has no test), or why it wasn't saved. */
 export type SaveKeyResult = { check: KeyCheckResult | null } | "not_found" | "no_key"
+
+/** A package that can take the user's key, parsed from its stored TOML. */
+type KeyedPackage = { type: "tool"; pkg: HttpToolPackage } | { type: "mcp"; pkg: McpPackage }
+
+type ManifestRow = { type: string; name: string; files: Record<string, string> }
+
+/** Why the cloud can't offer an MCP package, or undefined when it can: remote only, with a fixed tool list, on a public host. */
+export function cloudMcpProblem(pkg: McpPackage): string | undefined {
+  if (pkg.transport === "stdio" || !pkg.url) return "stdio servers only run locally"
+  if (!pkg.tools?.length) return "no `tools` allowlist"
+  if (!isPublicHttpUrl(pkg.url)) return `${pkg.url} isn't a public address`
+  return undefined
+}
 
 // Offered in the cloud: still in the marketplace, and nothing that needs a shell.
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
@@ -22,7 +51,7 @@ export function packageSecretName(name: string): string {
   return `${KEY_PREFIX}${name}`
 }
 
-function keyNeed(pkg: HttpToolPackage): PackageKeyNeed {
+function keyNeed(pkg: HttpToolPackage | McpPackage): PackageKeyNeed {
   if (pkg.auth.type !== "apiKey") return "none"
   return pkg.auth.optional ? "optional" : "required"
 }
@@ -36,16 +65,16 @@ export class PackageService {
     this.#secrets = secrets
   }
 
-  /** Whether users' keys can be stored (USER_SECRET_KEY is set); without it, tools that require a key are left out everywhere. */
+  /** Whether users' keys can be stored (USER_SECRET_KEY is set); without it, packages that require a key are left out everywhere. */
   get keysEnabled(): boolean {
     return this.#secrets.enabled
   }
 
-  /** What users can enable: available skills and HTTP tools, by type and name. */
+  /** What users can enable: available skills, HTTP tools and MCP servers, by type and name. */
   async listCatalog(): Promise<CatalogPackage[]> {
     const { rows } = await this.#db.query(
       `
-      SELECT p.type, p.name, p.description, p.updated_at, CASE WHEN p.type = 'tool' THEN p.files END AS files
+      SELECT p.type, p.name, p.description, p.updated_at, CASE WHEN p.type <> 'skill' THEN p.files END AS files
       FROM package p WHERE ${AVAILABLE} ORDER BY p.type, p.name
       `
     )
@@ -57,13 +86,27 @@ export class PackageService {
         description: row.description,
         updatedAt: new Date(row.updated_at)
       }
-      if (row.type === "tool") {
-        const pkg = this.#usableTool(row)
-        if (!pkg) continue
-        entry.http = {
-          domain: new URL(pkg.baseUrl).host,
-          key: keyNeed(pkg),
-          tools: pkg.tools.map(tool => ({ name: tool.name, method: tool.method, description: tool.description }))
+      if (row.type !== "skill") {
+        const keyed = this.#usable(row)
+        if (!keyed) continue
+        if (keyed.type === "tool") {
+          entry.http = {
+            domain: new URL(keyed.pkg.baseUrl).host,
+            key: keyNeed(keyed.pkg),
+            tools: keyed.pkg.tools.map(tool => ({
+              name: tool.name,
+              method: tool.method,
+              description: tool.description
+            }))
+          }
+        } else {
+          entry.mcp = {
+            domain: new URL(keyed.pkg.url!).host,
+            key: keyNeed(keyed.pkg),
+            transport: keyed.pkg.transport === "sse" ? "sse" : "http",
+            approval: keyed.pkg.approval,
+            tools: keyed.pkg.tools ?? []
+          }
         }
       }
       catalog.push(entry)
@@ -99,7 +142,7 @@ export class PackageService {
     const { rows } = await this.#db.query(
       `
       SELECT p.type, p.name, p.description, up.enabled_at, (${AVAILABLE}) AS available,
-        CASE WHEN p.type = 'tool' THEN p.files END AS files
+        CASE WHEN p.type <> 'skill' THEN p.files END AS files
       FROM user_package up JOIN package p ON p.id = up.package_id
       WHERE up.user_id = $1
       ORDER BY p.type, p.name
@@ -111,7 +154,7 @@ export class PackageService {
       name: row.name,
       description: row.description,
       enabledAt: new Date(row.enabled_at),
-      available: row.available && (row.type !== "tool" || this.#usableTool(row) !== undefined)
+      available: row.available && (row.type === "skill" || this.#usable(row) !== undefined)
     }))
   }
 
@@ -120,12 +163,12 @@ export class PackageService {
     return [...(await this.#secrets.names(userId, KEY_PREFIX))].map(name => name.slice(KEY_PREFIX.length)).sort()
   }
 
-  /** Enables an available package for the user. Enabling twice is fine; a tool that requires a key needs one saved first. */
+  /** Enables an available package for the user. Enabling twice is fine; a tool or MCP server that requires a key needs one saved first. */
   async enable(userId: string, type: PackageType, name: string): Promise<EnableResult> {
-    if (type === "tool") {
-      const pkg = await this.getTool(name)
-      if (!pkg) return "not_found"
-      if (keyNeed(pkg) === "required" && !(await this.#secrets.has(userId, packageSecretName(name)))) {
+    if (type !== "skill") {
+      const keyed = await this.#getKeyed(type, name)
+      if (!keyed) return "not_found"
+      if (keyNeed(keyed.pkg) === "required" && !(await this.#secrets.has(userId, packageSecretName(name)))) {
         return "key_required"
       }
     }
@@ -185,27 +228,14 @@ export class PackageService {
     return names.filter(name => !known.has(name))
   }
 
-  /** An available HTTP tool package that can run here, or undefined. */
-  async getTool(name: string): Promise<HttpToolPackage | undefined> {
-    const { rows } = await this.#db.query(
-      `SELECT p.name, p.files FROM package p WHERE p.type = 'tool' AND p.name = $1 AND ${AVAILABLE}`,
-      [name]
-    )
-    return rows[0] ? this.#usableTool(rows[0]) : undefined
-  }
-
   /** The user's enabled HTTP tool packages that can run here, for the agent's Postgres PackageStore. */
   async httpToolsForUser(userId: string): Promise<HttpToolPackage[]> {
-    const { rows } = await this.#db.query(
-      `
-      SELECT p.name, p.files
-      FROM user_package up JOIN package p ON p.id = up.package_id
-      WHERE up.user_id = $1 AND p.type = 'tool' AND ${AVAILABLE}
-      ORDER BY p.name
-      `,
-      [userId]
-    )
-    return rows.map(row => this.#usableTool(row)).filter(pkg => pkg !== undefined)
+    return (await this.#keyedForUser(userId, "tool")).flatMap(keyed => (keyed.type === "tool" ? [keyed.pkg] : []))
+  }
+
+  /** The user's enabled MCP server packages that can run here, for the agent's Postgres PackageStore. */
+  async mcpForUser(userId: string): Promise<McpPackage[]> {
+    return (await this.#keyedForUser(userId, "mcp")).flatMap(keyed => (keyed.type === "mcp" ? [keyed.pkg] : []))
   }
 
   /** The user's package keys by package name, decrypted, for their own turns only. */
@@ -217,38 +247,79 @@ export class PackageService {
   }
 
   /**
-   * Saves the user's key for an HTTP tool package and tests it with the manifest's `check` request (through
-   * `proxy` when set; private hosts are never reached). The key is kept even when the test fails.
+   * Saves the user's key for an HTTP tool or MCP package and tests it: the tool's `check` request, or
+   * connecting to the MCP server and listing its tools. Tests go through `proxy` when set and never reach a
+   * private host. The key is kept even when the test fails.
    * Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
    */
-  async saveKey(userId: string, name: string, apiKey: string, opts: { proxy?: string } = {}): Promise<SaveKeyResult> {
-    const pkg = await this.getTool(name)
-    if (!pkg) return "not_found"
-    if (pkg.auth.type !== "apiKey") return "no_key"
+  async saveKey(
+    userId: string,
+    type: KeyedPackageType,
+    name: string,
+    apiKey: string,
+    opts: { proxy?: string } = {}
+  ): Promise<SaveKeyResult> {
+    const keyed = await this.#getKeyed(type, name)
+    if (!keyed) return "not_found"
+    if (keyed.pkg.auth.type !== "apiKey") return "no_key"
     await this.#secrets.set(userId, packageSecretName(name), apiKey)
-    return { check: (await checkHttpToolKey(pkg, apiKey, { proxy: opts.proxy })) ?? null }
+    const check =
+      keyed.type === "tool"
+        ? await checkHttpToolKey(keyed.pkg, apiKey, { proxy: opts.proxy })
+        : await checkMcpPackageKey(keyed.pkg, apiKey, { fetch: createGuardedFetch({ proxy: opts.proxy }) })
+    return { check: check ?? null }
   }
 
-  /** Removes the user's key for a tool package; one that can't work without it is turned off too. False when there's no such package. */
-  async deleteKey(userId: string, name: string): Promise<boolean> {
-    const { rows } = await this.#db.query("SELECT id, name, files FROM package WHERE type = 'tool' AND name = $1", [
+  /** Removes the user's key for a tool or MCP package; one that can't work without it is turned off too. False when there's no such package. */
+  async deleteKey(userId: string, type: KeyedPackageType, name: string): Promise<boolean> {
+    const { rows } = await this.#db.query("SELECT id, type, name, files FROM package WHERE type = $1 AND name = $2", [
+      type,
       name
     ])
     const row = rows[0]
     if (!row) return false
     await this.#secrets.delete(userId, packageSecretName(name))
-    const pkg = this.#parseTool(row)
-    if (!pkg || keyNeed(pkg) === "required") {
+    const keyed = this.#parse(row)
+    if (!keyed || keyNeed(keyed.pkg) === "required") {
       await this.#db.query("DELETE FROM user_package WHERE user_id = $1 AND package_id = $2", [userId, row.id])
     }
     return true
   }
 
-  #parseTool(row: { name: string; files: Record<string, string> }): HttpToolPackage | undefined {
+  /** An available tool or MCP package that can run here, or undefined. */
+  async #getKeyed(type: KeyedPackageType, name: string): Promise<KeyedPackage | undefined> {
+    const { rows } = await this.#db.query(
+      `SELECT p.type, p.name, p.files FROM package p WHERE p.type = $1 AND p.name = $2 AND ${AVAILABLE}`,
+      [type, name]
+    )
+    return rows[0] ? this.#usable(rows[0]) : undefined
+  }
+
+  async #keyedForUser(userId: string, type: KeyedPackageType): Promise<KeyedPackage[]> {
+    const { rows } = await this.#db.query(
+      `
+      SELECT p.type, p.name, p.files
+      FROM user_package up JOIN package p ON p.id = up.package_id
+      WHERE up.user_id = $1 AND p.type = $2 AND ${AVAILABLE}
+      ORDER BY p.name
+      `,
+      [userId, type]
+    )
+    return rows.map(row => this.#usable(row)).filter(keyed => keyed !== undefined)
+  }
+
+  /** The stored manifest, parsed; undefined (with a warning) when it no longer parses or the cloud can't run it. */
+  #parse(row: ManifestRow): KeyedPackage | undefined {
     try {
-      return parseHttpToolManifest(row.files[`${row.name}.toml`] ?? "", row.name)
+      const text = row.files[`${row.name}.toml`] ?? ""
+      if (row.type === "tool") return { type: "tool", pkg: parseHttpToolManifest(text, row.name) }
+      const pkg = parseMcpManifest(text, row.name)
+      const problem = cloudMcpProblem(pkg)
+      if (problem) throw new Error(problem)
+      return { type: "mcp", pkg }
     } catch (error) {
-      warn("Stored HTTP tool doesn't parse; leaving it out", {
+      warn("Stored package can't be used; leaving it out", {
+        type: row.type,
         package: row.name,
         error: error instanceof Error ? error.message : error
       })
@@ -256,10 +327,10 @@ export class PackageService {
     }
   }
 
-  /** The stored manifest, unless it no longer parses or requires a key while keys can't be stored. */
-  #usableTool(row: { name: string; files: Record<string, string> }): HttpToolPackage | undefined {
-    const pkg = this.#parseTool(row)
-    if (pkg && keyNeed(pkg) === "required" && !this.#secrets.enabled) return undefined
-    return pkg
+  /** {@link #parse}, but also undefined when it requires a key while keys can't be stored. */
+  #usable(row: ManifestRow): KeyedPackage | undefined {
+    const keyed = this.#parse(row)
+    if (keyed && keyNeed(keyed.pkg) === "required" && !this.#secrets.enabled) return undefined
+    return keyed
   }
 }

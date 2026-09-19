@@ -5,6 +5,7 @@ import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
 import { connectMcpServer, type McpConnectOptions } from "../mcp/client"
 import type { McpPackageTarget } from "../packages/mcp-package"
 import { loadPluginTools } from "../plugin/plugin-tools"
+import type { FetchLike } from "../security/ssrf"
 import { currentTimeTool } from "./builtin/current-time"
 import { datasetInfoTool } from "./builtin/dataset-info"
 import { fetchUrlTool } from "./builtin/fetch-url"
@@ -59,13 +60,21 @@ export type CreateToolsOptions = {
   tempDir?: string
   /** Tools the host brings in besides the builtins, e.g. `loadPackages`' groups. Merged under the same name rules. */
   extraTools?: ToolGroup[]
-  /** MCP servers from enabled packages (`loadPackages`' `mcp`), connected alongside `mcpServers` as community tools. Local only. */
+  /**
+   * MCP servers from enabled packages (`loadPackages`' `mcp`), connected alongside `mcpServers` as community tools.
+   * In the cloud (`includeLocalTools` false) only these connect, and only remote (http/sse) ones, through `mcpFetch`,
+   * with images dropped and results capped.
+   */
   mcpPackages?: McpPackageTarget[]
   /** How long each MCP server gets to connect and list its tools before it's skipped. Default 10 s. */
   mcpConnectTimeoutMs?: number
+  /** Fetch for cloud MCP connections (the SSRF-guarded one); cloud MCP packages don't connect without it. */
+  mcpFetch?: FetchLike
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 10_000
+/** What a cloud MCP result may hand the model, like an HTTP tool's body. */
+const CLOUD_MCP_MAX_RESULT_CHARS = 32 * 1024
 
 /** Tools that share an origin (and, for non-official ones, usually a source) on their way into {@link mergeTools}. */
 export type ToolGroup = {
@@ -152,7 +161,7 @@ function connectMcpServers(targets: McpTarget[], tempDir: string, timeoutMs: num
   return Promise.all(targets.map(target => connectWithTimeout(target, tempDir, timeoutMs)))
 }
 
-/** Names of builtin tools a cloud turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting MCP/plugins (cloud never does). */
+/** Names of builtin tools a cloud turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting anything. */
 export async function listCloudToolNames(deps?: NasiToolDeps): Promise<string[]> {
   const { tools } = await createTools({ deps })
   return tools.map(toolName)
@@ -191,10 +200,16 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         .map(t => (CLIENT_EXECUTABLE.has(toolName(t)) ? toClientExecutableStub(t) : t))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
-  const packageIds = new Set((opts.mcpPackages ?? []).map(target => `package:${target.name}`))
+  // The cloud never runs a command on the server, and never connects without the guarded fetch.
+  const packages = local
+    ? (opts.mcpPackages ?? [])
+    : opts.mcpFetch
+      ? (opts.mcpPackages ?? []).filter(target => "url" in target.server)
+      : []
+  const packageIds = new Set(packages.map(target => `package:${target.name}`))
   const mcpTargets: McpTarget[] = [
-    ...(opts.mcpServers ?? []).map(server => ({ id: server.id, server })),
-    ...(opts.mcpPackages ?? []).map(target => ({
+    ...(local ? (opts.mcpServers ?? []) : []).map(server => ({ id: server.id, server })),
+    ...packages.map(target => ({
       id: `package:${target.name}`,
       server: target.server,
       opts: {
@@ -202,13 +217,15 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         allow: target.allow,
         approval: target.approval,
         readOnly: target.readOnly,
-        label: `package:${target.name}`
+        label: `package:${target.name}`,
+        ...(local ? {} : { fetch: opts.mcpFetch, images: false, maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS })
       }
     }))
   ]
+  // Local image results land in the temp dir; the cloud drops them, so it needs none.
   const mcpConnections =
-    local && tempDir && mcpTargets.length > 0
-      ? await connectMcpServers(mcpTargets, tempDir, opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS)
+    mcpTargets.length > 0 && (!local || tempDir)
+      ? await connectMcpServers(mcpTargets, tempDir ?? "", opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS)
       : []
 
   const pluginTools = local && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []

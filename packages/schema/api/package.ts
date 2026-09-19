@@ -1,7 +1,10 @@
 import { z } from "zod"
 
-/** Package types the cloud serves: skills and HTTP tools (MCP isn't in the cloud yet). */
-export const packageTypeSchema = z.enum(["skill", "tool"])
+/** Package types the cloud serves: skills, HTTP tools and remote MCP servers. */
+export const packageTypeSchema = z.enum(["skill", "tool", "mcp"])
+
+/** Package types that can take the user's API key. */
+export const keyedPackageTypeSchema = z.enum(["tool", "mcp"])
 
 /** Whether a package needs the user's own API key: not at all, to work at all, or only for more (e.g. higher limits). */
 export const packageKeyNeedSchema = z.enum(["none", "required", "optional"])
@@ -14,6 +17,18 @@ export const httpToolDetailSchema = z.object({
   tools: z.array(z.object({ name: z.string(), method: z.string(), description: z.string() }))
 })
 
+/** What a remote MCP server package connects to and offers, shown before enabling it. */
+export const mcpDetailSchema = z.object({
+  /** The host the server runs on. */
+  domain: z.string(),
+  key: packageKeyNeedSchema,
+  transport: z.enum(["http", "sse"]),
+  /** When its calls wait for the user's OK: never, for changes only, or every time. */
+  approval: z.enum(["never", "writes", "always"]),
+  /** The tools it may use (the cloud only offers packages with a fixed list). */
+  tools: z.array(z.string())
+})
+
 /** One entry of the cloud catalog: what a user can enable. */
 export const catalogPackageSchema = z.object({
   type: packageTypeSchema,
@@ -21,7 +36,9 @@ export const catalogPackageSchema = z.object({
   description: z.string(),
   updatedAt: z.coerce.date(),
   /** HTTP tools only. */
-  http: httpToolDetailSchema.optional()
+  http: httpToolDetailSchema.optional(),
+  /** MCP servers only. */
+  mcp: mcpDetailSchema.optional()
 })
 
 export const listCatalogResponseSchema = z.object({
@@ -76,7 +93,7 @@ export const marketplaceSyncResultSchema = z.object({
   commit: z.string(),
   /** False when the branch hadn't moved since the last sync, so nothing was downloaded. */
   changed: z.boolean(),
-  /** Skill names; other packages as their marketplace path (`tools/<name>`). */
+  /** Skill names; other packages as their marketplace path (`tools/<name>`, `mcp/<name>`). */
   added: z.array(z.string()),
   updated: z.array(z.string()),
   removed: z.array(z.string())
@@ -84,7 +101,9 @@ export const marketplaceSyncResultSchema = z.object({
 
 export type PackageType = z.infer<typeof packageTypeSchema>
 export type PackageKeyNeed = z.infer<typeof packageKeyNeedSchema>
+export type KeyedPackageType = z.infer<typeof keyedPackageTypeSchema>
 export type HttpToolDetail = z.infer<typeof httpToolDetailSchema>
+export type McpDetail = z.infer<typeof mcpDetailSchema>
 export type CatalogPackage = z.infer<typeof catalogPackageSchema>
 export type ListCatalogResponse = z.infer<typeof listCatalogResponseSchema>
 export type SkillDetail = z.infer<typeof skillDetailSchema>

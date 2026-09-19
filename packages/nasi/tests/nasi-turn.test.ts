@@ -1,8 +1,9 @@
 import { afterEach, expect, test } from "bun:test"
-import { HttpToolPackageSchema } from "@kaja/schema/packages"
+import { HttpToolPackageSchema, McpPackageSchema } from "@kaja/schema/packages"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import type { PackageStore } from "../src/packages/types"
 import { createMemoryStore } from "../src/store"
+import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
 
 type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
 
@@ -302,4 +303,51 @@ test("an approval with nothing waiting for one is refused", async () => {
   await expect(nasi.turnBuffered({ session: first.session, approval: "approve" })).rejects.toMatchObject({
     name: "NasiNothingToApprove"
   })
+})
+
+test("a cloud user's MCP package connects with their key when the turn opens; a write waits for approval", async () => {
+  const fixture = startHttpMcpFixture({ apiKey: "mcp-key" })
+  // The guarded fetch goes through the proxy, which here hands the fake host to the local fixture.
+  globalThis.fetch = routeHostTo(fixture, "mcp.example.test", realFetch)
+  const things = McpPackageSchema.parse({
+    name: "things",
+    description: "Things",
+    transport: "http",
+    url: "https://mcp.example.test/mcp",
+    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " },
+    approval: "writes",
+    tools: ["read_thing", "write_thing"]
+  })
+  const call = (id: string, name: string, args: object) => ({
+    id,
+    type: "function",
+    function: { name, arguments: JSON.stringify(args) }
+  })
+  const sent: SentMessage[][] = []
+  const nasi = await open(
+    [
+      { content: null, tool_calls: [call("c1", "read_thing", { id: "1" })] },
+      { content: null, tool_calls: [call("c2", "write_thing", { id: "2" })] },
+      { content: "Done." }
+    ],
+    {
+      packages: { ...packages, listHttpTools: async () => [], listMcpPackages: async () => [things] },
+      packageKey: name => (name === "things" ? "mcp-key" : undefined),
+      deps: { fetchProxy: "http://proxy.test:3128" }
+    },
+    sent
+  )
+  try {
+    const first = await nasi.turnBuffered({ message: "read one, write two" })
+    expect(first.status).toBe("needs_approval")
+    expect(sent[1]!.at(-1)).toMatchObject({ role: "tool", tool_call_id: "c1", content: "thing 1" })
+    expect(first.steps).toContainEqual(expect.objectContaining({ type: "confirm_tool", name: "write_thing" }))
+
+    const second = await nasi.turnBuffered({ session: first.session, approval: "approve" })
+    expect(second.message).toBe("Done.")
+    expect(sent[2]!.at(-1)).toMatchObject({ role: "tool", tool_call_id: "c2", content: "wrote 2" })
+  } finally {
+    await nasi.close()
+    fixture.stop()
+  }
 })

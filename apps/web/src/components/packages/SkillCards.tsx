@@ -104,7 +104,7 @@ export function SkillCards() {
           ))}
         </div>
       )}
-      <UnavailablePackages type="skill" />
+      <UnavailablePackages types={["skill"]} />
     </>
   )
 }

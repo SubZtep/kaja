@@ -7,6 +7,7 @@ import { run } from "./agent/run"
 import { runApprovedTool, type Tool } from "./agent/tools"
 import { loadPackages } from "./packages/load"
 import type { PackageStore } from "./packages/types"
+import { createGuardedFetch } from "./security/ssrf"
 import type { NasiStore } from "./store/types"
 import type { NasiToolDeps } from "./tools/deps"
 import { createTools } from "./tools/registry"
@@ -25,7 +26,11 @@ export type NasiOpenOptions = {
   packages?: PackageStore
   /** A package's API key (the cloud decrypts the caller's own up front). Never shown to the model. */
   packageKey?: (packageName: string) => string | undefined
+  /** How long each MCP package gets to connect when the turn opens before it's left out. Default 5 s. */
+  mcpConnectTimeoutMs?: number
 }
+
+const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
 
 export type NasiTurnInput = NasiTurnRequest
 
@@ -157,10 +162,12 @@ function responseFromEvents(
 export class Nasi {
   readonly opts: NasiOpenOptions
   private readonly tools: Tool<any>[]
+  private readonly closeTools: () => Promise<void>
 
-  private constructor(opts: NasiOpenOptions, tools: Tool<any>[]) {
+  private constructor(opts: NasiOpenOptions, tools: Tool<any>[], closeTools: () => Promise<void>) {
     this.opts = opts
     this.tools = tools
+    this.closeTools = closeTools
   }
 
   static async open(opts: NasiOpenOptions) {
@@ -171,12 +178,21 @@ export class Nasi {
           proxy: opts.deps?.fetchProxy
         })
       : undefined
-    const { tools } = await createTools({
+    const { tools, closeTools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       deps: { ...opts.deps, chat: opts.chat },
-      extraTools: packages?.groups
+      extraTools: packages?.groups,
+      // MCP packages connect when the instance opens, through the same egress rules as every other cloud request.
+      mcpPackages: packages?.mcp,
+      mcpFetch: createGuardedFetch({ proxy: opts.deps?.fetchProxy }),
+      mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
     })
-    return new Nasi(opts, tools)
+    return new Nasi(opts, tools, closeTools)
+  }
+
+  /** Closes the instance's MCP connections. Hosts that open one per turn call it once the turn is over. */
+  close(): Promise<void> {
+    return this.closeTools()
   }
 
   private async loadTurn(input: NasiTurnInput): Promise<LoadedTurn> {

@@ -231,19 +231,23 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         owner,
         pinnedModel: await pinnedModelFor(ownerUserId, resumeRow?.id)
       })
-      let ended = false
-      for await (const event of nasi.turn({ session: resumeRow?.id, ...input })) {
-        // Read to the end even after the reply is out: the turn is only saved once the generator finishes.
-        if (ended) continue
-        if (event.type === "delta") {
-          if (event.channel === "content") {
-            accumulated.content += event.text
-            throttle.request(renderCurrent)
+      try {
+        let ended = false
+        for await (const event of nasi.turn({ session: resumeRow?.id, ...input })) {
+          // Read to the end even after the reply is out: the turn is only saved once the generator finishes.
+          if (ended) continue
+          if (event.type === "delta") {
+            if (event.channel === "content") {
+              accumulated.content += event.text
+              throttle.request(renderCurrent)
+            }
+            continue
           }
-          continue
+          if (event.type === "usage") continue
+          ended = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, event)
         }
-        if (event.type === "usage") continue
-        ended = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, event)
+      } finally {
+        await nasi.close()
       }
     } catch (error) {
       logWarn("Telegram agent turn failed", { error })

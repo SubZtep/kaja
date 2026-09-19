@@ -55,6 +55,7 @@ export {
   type McpScanEntry,
   type PackageKeyNeed,
   parseHttpToolManifest,
+  parseMcpManifest,
   readSkillBundle,
   type SkillBundle,
   type SkillScanEntry,
@@ -71,13 +72,19 @@ export {
   type KeyCheckResult
 } from "./packages/http-tool"
 export { type LoadedPackages, type LoadPackagesOptions, loadPackages } from "./packages/load"
-export { type McpPackageTarget, mcpPackageTarget } from "./packages/mcp-package"
+export { checkMcpPackageKey, type McpPackageTarget, mcpPackageTarget } from "./packages/mcp-package"
 export { parseSkillMd } from "./packages/skill-md"
 export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./packages/skills"
 export { type PackageStore, SkillFileError, type SkillSummary } from "./packages/types"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
-export { type FetchPublicHttpOptions, fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"
+export {
+  createGuardedFetch,
+  type FetchLike,
+  type FetchPublicHttpOptions,
+  fetchPublicHttp,
+  UnsafeUrlError
+} from "./security/ssrf"
 export {
   createMemoryStore,
   type DatasetAnswer,

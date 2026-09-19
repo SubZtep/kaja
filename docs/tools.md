@@ -8,7 +8,8 @@ nav_order: 8
 
 Every session starts with the built-in toolset. In [local mode](/modes) that's joined by whatever
 HTTP tools, MCP servers and plugin tools you've configured; in the cloud, by the marketplace HTTP
-tools you turned on ([HTTP tools in the cloud](#http-tools-in-the-cloud)).
+tools and MCP servers you turned on ([HTTP tools in the cloud](#http-tools-in-the-cloud),
+[MCP servers in the cloud](#mcp-servers-in-the-cloud)).
 
 ## Built-ins
 
@@ -42,8 +43,9 @@ local mode sees your address, and the proxy provider's dashboard records nothing
 `kaja --cloud` if you want the fetch to leave through the server's proxy.
 
 The **Cloud** column is an explicit allowlist, not a side effect — anything touching your
-filesystem or shell is unavailable when the loop runs on the server, and MCP and plugin tools are
-never attached there. Marketplace HTTP tools are the one addition, and only the ones you turn on.
+filesystem or shell is unavailable when the loop runs on the server, and your `mcp.toml` servers and
+plugin tools are never attached there. Marketplace HTTP tools and remote MCP servers are the
+exception, and only the ones you turn on.
 
 ## Shell commands
 
@@ -131,6 +133,23 @@ approval = "never"                  # never | writes | always
   ```
 - All servers, packages and `mcp.toml` ones, connect in parallel at startup; one that doesn't answer
   within 10 seconds is skipped with a warning instead of holding up the start.
+
+### MCP servers in the cloud
+
+Marketplace MCP packages work in cloud chat and the cloud Telegram bot too. They sit in the Tools tab
+of the [Packages page](https://kaja.io/packages), marked "MCP server", with their host, key need,
+tool list and when they ask first. Keys, egress and approvals work as for
+[HTTP tools in the cloud](#http-tools-in-the-cloud); on top of that:
+
+- Only remote servers (`http` or `sse`) with a `tools = [...]` list: you see exactly what a server can
+  do before turning it on, and it can't add tools later. `stdio` packages stay local.
+- A saved key is tested by connecting and listing the server's tools.
+- Each turn connects your servers when it starts (in parallel, giving up on one after 5 seconds) and
+  closes them when it ends; nothing is kept between turns or shared with other users.
+- The manifest's `approval` and `readOnly` apply, so a `writes` server asks before anything that
+  changes something. Image results are left out with a note, and long results are cut at about 32 KB.
+- A server that works without a key (like context7) is shared by everyone on the server's IP and its
+  rate limits; add your own key to get yours.
 
 ## Your own tools
 

@@ -37,7 +37,7 @@ src/
 public/      favicons, install scripts, PWA bits
 ```
 
-Packages: `/packages` (every signed-in user; `?tab=skills|tools`, `/skills` redirects there) and `/welcome` (right after signup) share `components/packages/PackageTabs.tsx` — `SkillCards` (toggle saved via `/packages/me`, instructions loaded on demand from `/packages/skill/{name}`) and `ToolCards` (host, key need, tools with methods; a tool that requires a key opens `KeyDialog` first, which saves the key write-only and shows the server's check). Queries live in `components/packages/queries.ts`. Admins also get the marketplace sync panel on `/packages`. The widget page picks each key's own skills (`SkillChecklist`) and edits keys through `PATCH /widget/admin/{id}`; its persona list comes from `/nasi/personas`, not the admin-only `/admin/personas`.
+Packages: `/packages` (every signed-in user; `?tab=skills|tools`, `/skills` redirects there) and `/welcome` (right after signup) share `components/packages/PackageTabs.tsx` — `SkillCards` (toggle saved via `/packages/me`, instructions loaded on demand from `/packages/skill/{name}`) and `ToolCards` (HTTP tools and MCP servers: host, key need, tools; one that requires a key opens `KeyDialog` first, which saves the key write-only and shows the server's check). Queries live in `components/packages/queries.ts`. Admins also get the marketplace sync panel on `/packages`. The widget page picks each key's own skills (`SkillChecklist`) and edits keys through `PATCH /widget/admin/{id}`; its persona list comes from `/nasi/personas`, not the admin-only `/admin/personas`.
 
 Shared layout primitives: `SiteShell` + `SiteHeader` + `BrandMark` + `ContentWidth`.
 Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).

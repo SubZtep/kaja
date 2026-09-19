@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog"
 import { Field } from "@base-ui/react/field"
-import type { SavePackageKeyResponse } from "@kaja/schema/api"
+import type { KeyedPackageType, SavePackageKeyResponse } from "@kaja/schema/api"
 import { savePackageKeyResponseSchema } from "@kaja/schema/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
@@ -12,17 +12,19 @@ import { Text } from "../form/primitives/Text"
 import { MY_PACKAGES_QUERY_KEY } from "./queries"
 
 /**
- * Asks for an HTTP tool's API key, saves it (encrypted on the server, never shown again) and reports the
+ * Asks for an HTTP tool's or MCP server's API key, saves it (encrypted on the server, never shown again) and reports the
  * server's live test. With `enableAfter` the tool is turned on once the key works (or has no test); a
  * failed test keeps the dialog open so another key can be tried. The key is saved either way.
  */
 export function KeyDialog({
+  type,
   name,
   domain,
   open,
   onOpenChange,
   enableAfter = false
 }: Readonly<{
+  type: KeyedPackageType
   name: string
   domain: string
   open: boolean
@@ -38,14 +40,14 @@ export function KeyDialog({
     mutationFn: async () => {
       const result = savePackageKeyResponseSchema.parse(
         await apiFetch<SavePackageKeyResponse>(
-          `/packages/me/tool/${encodeURIComponent(name)}/key`,
+          `/packages/me/${type}/${encodeURIComponent(name)}/key`,
           { apiKey },
           { method: "PUT" }
         )
       )
       const works = result.check === null || result.check.ok
       if (works && enableAfter) {
-        await apiFetch(`/packages/me/tool/${encodeURIComponent(name)}`, undefined, { method: "PUT" })
+        await apiFetch(`/packages/me/${type}/${encodeURIComponent(name)}`, undefined, { method: "PUT" })
       }
       return result
     },

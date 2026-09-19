@@ -72,7 +72,7 @@ export function nasiToolDeps() {
   return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
 
-/** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. */
+/** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. The caller closes it after the turn (its MCP connections). */
 export async function openNasiFor(opts: {
   userId: string
   owner?: string | null
@@ -97,7 +97,7 @@ export async function openNasiFor(opts: {
     promptContext: {
       environment:
         "You are Kaja cloud chat. read_file and list_files run on the user's own machine, scoped to " +
-        "their current directory — you cannot run a shell, or use MCP. " +
+        "their current directory — you cannot run a shell. " +
         "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing.",
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
@@ -127,7 +127,11 @@ export async function runUserTurn(userId: string, body: NasiTurnRequest): Promis
       pinnedModel: await pinnedModelFor(userId, body.session),
       language: body.language
     })
-    return nasi.turnBuffered(body)
+    try {
+      return await nasi.turnBuffered(body)
+    } finally {
+      await nasi.close()
+    }
   })
 }
 
@@ -138,7 +142,12 @@ export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
       pinnedModel: await pinnedModelFor(userId, body.session),
       language: body.language
     })
-    return yield* nasi.turn(body)
+    // Also runs when the client goes away mid-stream, so a dropped turn never leaves its MCP connections open.
+    try {
+      return yield* nasi.turn(body)
+    } finally {
+      await nasi.close()
+    }
   }
   return body.session ? withLockGenerator(`${userId}:${body.session}`, run) : run()
 }

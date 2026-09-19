@@ -117,6 +117,16 @@ function requestAfterRedirect(status: number, request: HopRequest): HopRequest {
   return request
 }
 
+/** Throws {@link UnsafeUrlError} unless `url` may be fetched: http(s) only, and (without `allowPrivate`) a public host whose DNS answers are public too (skipped behind a proxy, which resolves for itself). */
+async function assertHopAllowed(url: string, opts: { allowPrivate?: boolean; proxy?: string }): Promise<void> {
+  if (opts.allowPrivate) {
+    if (!isHttpUrl(url)) throw new UnsafeUrlError(url)
+    return
+  }
+  if (!isPublicHttpUrl(url)) throw new UnsafeUrlError(url)
+  if (!opts.proxy && !(await hasOnlyPublicAddresses(new URL(url).hostname))) throw new UnsafeUrlError(url)
+}
+
 export type FetchPublicHttpOptions = {
   timeoutMs?: number
   maxBytes?: number
@@ -145,12 +155,7 @@ export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions
   let current = url
   let request: HopRequest = { method: opts?.method ?? "GET", headers: opts?.headers, body: opts?.body }
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    if (opts?.allowPrivate) {
-      if (!isHttpUrl(current)) throw new UnsafeUrlError(current)
-    } else {
-      if (!isPublicHttpUrl(current)) throw new UnsafeUrlError(current)
-      if (!opts?.proxy && !(await hasOnlyPublicAddresses(new URL(current).hostname))) throw new UnsafeUrlError(current)
-    }
+    await assertHopAllowed(current, opts ?? {})
 
     const res = await fetchHop(current, timeoutMs, opts?.proxy, request)
     const next = redirectTarget(res, current)
@@ -167,4 +172,43 @@ export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions
     return new Response(buf, { status: res.status, statusText: res.statusText, headers: res.headers })
   }
   throw new Error(`Too many redirects fetching ${url}`)
+}
+
+/** The `fetch` shape long-lived HTTP clients take (the MCP SDK's transports among them). */
+export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Response>
+
+/**
+ * A `fetch` for long-lived clients such as the MCP SDK's transports: every hop gets the same checks as
+ * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are
+ * followed here and only within the same origin (headers may carry the user's key), and the body is
+ * streamed rather than buffered, so an SSE stream stays open. Egresses through `proxy` when set, failing
+ * closed with {@link ProxyUnavailableError} rather than going direct.
+ */
+export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number } = {}): FetchLike {
+  const maxRedirects = opts.maxRedirects ?? DEFAULT_MAX_REDIRECTS
+  return async (input, init) => {
+    let current = String(input)
+    let request: RequestInit = init ?? {}
+    for (let hop = 0; hop <= maxRedirects; hop++) {
+      await assertHopAllowed(current, opts)
+      let res: Response
+      try {
+        res = await fetch(current, { ...request, redirect: "manual", ...(opts.proxy ? { proxy: opts.proxy } : {}) })
+      } catch (error) {
+        if (opts.proxy && !request.signal?.aborted) throw new ProxyUnavailableError(current, error)
+        throw error
+      }
+      const next = redirectTarget(res, current)
+      if (!next) return res
+      await res.body?.cancel()
+      if (new URL(next).origin !== new URL(current).origin)
+        throw new Error(`Refused a redirect to another host: ${next}`)
+      const method = (request.method ?? "GET").toUpperCase()
+      if (res.status === 303 || ((res.status === 301 || res.status === 302) && method === "POST")) {
+        request = { ...request, method: "GET", body: undefined }
+      }
+      current = next
+    }
+    throw new Error(`Too many redirects fetching ${String(input)}`)
+  }
 }
