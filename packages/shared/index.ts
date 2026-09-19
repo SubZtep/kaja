@@ -174,3 +174,9 @@ export function trimTrailingSlashes(value: string) {
   while (end > 0 && value[end - 1] === "/") end--
   return value.slice(0, end)
 }
+
+/** The text of a turn that ends on a question: what streamed, plus the question unless the streamed text already ends with it (a reply ending in "?" streams and then arrives as the question). */
+export function withQuestion(streamed: string, question: string) {
+  if (!streamed.trim()) return question
+  return streamed.trimEnd().endsWith(question.trim()) ? streamed : `${streamed}\n\n${question}`
+}

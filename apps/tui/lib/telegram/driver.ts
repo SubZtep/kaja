@@ -1,7 +1,7 @@
 import { LOAD_SKILL_TOOL, type LoadSkillTool, runApprovedTool, samplingOf, type Tool, toolName } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
-import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "@kaja/shared"
+import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming, withQuestion } from "@kaja/shared"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"
@@ -435,7 +435,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
     if (event.type === "ask_user") {
       throttle.cancel()
-      const text = accumulated.content.trim() ? `${accumulated.content}\n\n${event.question}` : event.question
+      const text = withQuestion(accumulated.content, event.question)
       await finalizeMessage(editIfChanged, chatId, text)
       return true
     }

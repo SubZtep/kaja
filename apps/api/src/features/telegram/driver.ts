@@ -8,7 +8,7 @@ import {
   type Session
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
-import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "@kaja/shared"
+import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming, withQuestion } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { withLock } from "../../core/lock"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
@@ -192,7 +192,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   ): Promise<boolean> | boolean {
     if (event.type === "ask_user") {
       throttle.cancel()
-      const text = accumulated.content.trim() ? `${accumulated.content}\n\n${event.question}` : event.question
+      const text = withQuestion(accumulated.content, event.question)
       return finalizeMessage(editIfChanged, chatId, text).then(() => true)
     }
 

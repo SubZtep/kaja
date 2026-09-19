@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { titleCase, trimTrailingSlashes } from "../"
+import { titleCase, trimTrailingSlashes, withQuestion } from "../"
 
 test("titleCase keeps plain ids", () => {
   expect(titleCase("kaja-free-chat")).toBe("Kaja Free Chat")
@@ -22,4 +22,14 @@ test("trimTrailingSlashes drops every trailing slash and keeps inner ones", () =
   expect(trimTrailingSlashes("/v1/api")).toBe("/v1/api")
   expect(trimTrailingSlashes("/")).toBe("")
   expect(trimTrailingSlashes("a//b")).toBe("a//b")
+})
+
+test("withQuestion adds a question the stream didn't already show", () => {
+  expect(withQuestion("", "Which one?")).toBe("Which one?")
+  expect(withQuestion("Two options.", "Which one?")).toBe("Two options.\n\nWhich one?")
+})
+
+test("withQuestion doesn't repeat a question that ended the streamed text", () => {
+  expect(withQuestion("Two options. Which one?", "Two options. Which one?")).toBe("Two options. Which one?")
+  expect(withQuestion("Which one?\n", "Which one?")).toBe("Which one?\n")
 })
