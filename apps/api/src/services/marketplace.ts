@@ -337,8 +337,9 @@ async function readMcpPackages(marketplaceDir: string, toolNames: Set<string>): 
 
 /** Stable hash of what the agent sees of a package, so an unchanged one keeps its updated_at. */
 function contentHash(bundle: { description: string; files: Record<string, string>; hasScripts: boolean }): string {
+  // Code-unit order, not localeCompare: the hash mustn't change with the server's locale. Keys are unique, so never equal.
   const files = Object.keys(bundle.files)
-    .sort()
+    .sort((a, b) => (a < b ? -1 : 1))
     .map(path => [path, bundle.files[path]])
   return createHash("sha256")
     .update(JSON.stringify([bundle.description, bundle.hasScripts, files]))

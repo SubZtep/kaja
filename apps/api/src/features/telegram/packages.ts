@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 import type { PackageType } from "@kaja/schema/api"
+import { trimTrailingSlashes } from "@kaja/shared"
 import { env } from "../../core/env"
 import { packageService } from "../../services"
 import type { TelegramButton } from "./driver"
@@ -24,7 +25,7 @@ function nameHash(name: string): string {
 
 /** Where keys are added and packages read in full. */
 export function packagesWebUrl(tab?: "tools"): string {
-  const base = (env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN).replace(/\/+$/, "")
+  const base = trimTrailingSlashes(env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN)
   const query = tab ? `?tab=${tab}` : ""
   return `${base}/packages${query}`
 }

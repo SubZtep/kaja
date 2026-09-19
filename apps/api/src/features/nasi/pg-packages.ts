@@ -26,7 +26,7 @@ export function createPostgresPackageStore(source: CloudPackageSource): PackageS
         description: skill.description,
         files: Object.keys(skill.files)
           .filter(path => path !== SKILL_FILE)
-          .sort()
+          .sort((a, b) => a.localeCompare(b))
       }))
     },
 

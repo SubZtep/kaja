@@ -30,7 +30,7 @@ const ParametersSchema = z.looseObject({
   required: z.array(z.string()).optional()
 })
 
-const PLACEHOLDER = /\{([^}]+)\}/g
+const PLACEHOLDER = /\{([^{}]+)\}/g
 
 /** `{name}` placeholders in a path template, in order. */
 function pathPlaceholders(path: string): string[] {

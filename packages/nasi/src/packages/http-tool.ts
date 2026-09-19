@@ -1,4 +1,5 @@
 import type { HttpTool, HttpToolPackage } from "@kaja/schema/packages"
+import { trimTrailingSlashes } from "@kaja/shared"
 import { type Tool, tool } from "../agent/tools"
 import { fetchPublicHttp } from "../security/ssrf"
 
@@ -9,7 +10,7 @@ const MAX_RESULT_CHARS = 32 * 1024
 const MAX_BODY_PREVIEW = 200
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH"])
 const TEXT_CONTENT = /json|text|xml|javascript|x-www-form-urlencoded/i
-const PLACEHOLDER = /\{([^}]+)\}/g
+const PLACEHOLDER = /\{([^{}]+)\}/g
 /** Stands in for the key wherever a request is shown instead of sent. */
 const KEY_MASK = "•••"
 
@@ -35,7 +36,7 @@ export function buildHttpRequest(
   const [path = "", staticQuery] = filled.split("?", 2)
 
   const url = new URL(pkg.baseUrl)
-  url.pathname = `${url.pathname.replace(/\/+$/, "")}${path}`
+  url.pathname = `${trimTrailingSlashes(url.pathname)}${path}`
   for (const [key, value] of new URLSearchParams(staticQuery ?? "")) url.searchParams.append(key, value)
 
   const headers: Record<string, string> = { ...pkg.headers }

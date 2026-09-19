@@ -151,7 +151,7 @@ export class PackageService {
       instructions,
       files: Object.keys(row.files)
         .filter(path => path !== "SKILL.md")
-        .sort(),
+        .sort((a, b) => a.localeCompare(b)),
       updatedAt: new Date(row.updated_at)
     }
   }
@@ -179,7 +179,9 @@ export class PackageService {
 
   /** Packages the user saved a key for, on or off. */
   async keyNames(userId: string): Promise<string[]> {
-    return [...(await this.#secrets.names(userId, KEY_PREFIX))].map(name => name.slice(KEY_PREFIX.length)).sort()
+    return [...(await this.#secrets.names(userId, KEY_PREFIX))]
+      .map(name => name.slice(KEY_PREFIX.length))
+      .sort((a, b) => a.localeCompare(b))
   }
 
   /** Enables an available package for the user. Enabling twice is fine; a tool or MCP server that requires a key needs one saved first. */

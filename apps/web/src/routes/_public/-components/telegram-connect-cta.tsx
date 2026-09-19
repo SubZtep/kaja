@@ -50,19 +50,20 @@ export function TelegramPromo() {
   const [isSpinning, setIsSpinning] = useState(false)
 
   useEffect(() => {
-    const [tick, setTick] = useState(0)
+    // A local count, not state: hooks can't be called inside an effect, and the timers need the current value.
+    let spins = 0
     let idleTimeout: ReturnType<typeof setTimeout>
     let spinTimeout: ReturnType<typeof setTimeout>
 
     const scheduleSpin = () => {
       idleTimeout = setTimeout(
         () => {
-          setTick(t => t + 1)
+          spins++
           setIsSpinning(true)
           spinTimeout = setTimeout(() => {
             setIsSpinning(false)
             scheduleSpin()
-          }, tick * 1000)
+          }, spins * 1000)
         },
         6000 + Math.random() * 9000
       )

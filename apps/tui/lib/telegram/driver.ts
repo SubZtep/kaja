@@ -29,8 +29,8 @@ function loadedPackages(tools: Tool<any>[]): { skills: string[]; tools: string[]
     tool.origin === "community" && tool.source?.startsWith("package:") ? [tool.source.slice("package:".length)] : []
   )
   return {
-    skills: (loadSkill?.skills ?? []).map(skill => skill.name).sort(),
-    tools: [...new Set(packages)].sort()
+    skills: (loadSkill?.skills ?? []).map(skill => skill.name).sort((a, b) => a.localeCompare(b)),
+    tools: [...new Set(packages)].sort((a, b) => a.localeCompare(b))
   }
 }
 

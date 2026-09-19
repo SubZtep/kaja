@@ -39,34 +39,30 @@ function ToyCard({
   onClick?: () => void
   children?: ReactNode
 }>) {
+  const card = "toy-card min-h-72 bg-surface-2 p-0 text-left"
+  const face = (
+    <>
+      {children ?? <img src={src} alt="" className="h-72 w-full object-cover" style={{ imageRendering: "auto" }} />}
+      <Sticker
+        tone={live ? "neon" : "ice"}
+        rotate={rotate > 0 ? -8 : 7}
+        className="pointer-events-none absolute top-3 right-3 z-1"
+      >
+        {stamp}
+      </Sticker>
+      <span className="tape top-2 left-8 w-16 -rotate-12" />
+    </>
+  )
   return (
     <div className="flex w-[min(100%,22rem)] shrink-0 snap-start flex-col gap-2">
-      <article
-        onClick={onClick}
-        onKeyDown={
-          onClick
-            ? e => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault()
-                  onClick()
-                }
-              }
-            : undefined
-        }
-        role={onClick ? "button" : undefined}
-        tabIndex={onClick ? 0 : undefined}
-        className={cn("toy-card min-h-72 bg-surface-2 p-0 text-left", onClick && "cursor-pointer")}
-      >
-        {children ?? <img src={src} alt="" className="h-72 w-full object-cover" style={{ imageRendering: "auto" }} />}
-        <Sticker
-          tone={live ? "neon" : "ice"}
-          rotate={rotate > 0 ? -8 : 7}
-          className="pointer-events-none absolute top-3 right-3 z-1"
-        >
-          {stamp}
-        </Sticker>
-        <span className="tape top-2 left-8 w-16 -rotate-12" />
-      </article>
+      {/* A clickable card is a real button, so Enter and Space work without a key handler. */}
+      {onClick ? (
+        <button type="button" onClick={onClick} className={cn(card, "cursor-pointer")}>
+          {face}
+        </button>
+      ) : (
+        <article className={card}>{face}</article>
+      )}
       <div className="px-1">
         <h3 className="m-0 font-display font-extrabold text-fg text-xl">{title}</h3>
         <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{meta}</p>

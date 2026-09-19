@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS "user_secret" (
 );
 
 -- The marketplace sync now reads tools/ too; forget the last commit so the next sync applies it even if the branch hasn't moved.
-UPDATE "marketplace_sync" SET "commit" = NULL;
+UPDATE "marketplace_sync" SET "commit" = NULL WHERE "commit" IS NOT NULL;
