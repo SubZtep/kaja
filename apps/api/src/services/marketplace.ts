@@ -8,6 +8,7 @@ import {
   parseMcpManifest,
   parsePersonaManifest,
   readSkillBundle,
+  scanDatasets,
   scanHttpTools,
   scanMcpPackages,
   scanPersonas,
@@ -25,7 +26,7 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/
 export type MarketplaceSource = { repo: string; ref: string }
 
 /**
- * Keeps the `package` table in step with the `marketplace/` folder (skills, personas, HTTP tools, MCP servers) of a GitHub repo. A sync asks
+ * Keeps the `package` table in step with the `marketplace/` folder (skills, personas, datasets, HTTP tools, MCP servers) of a GitHub repo. A sync asks
  * GitHub for the branch's commit first and only downloads the tarball when it moved. Packages are
  * never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
@@ -95,6 +96,7 @@ export class MarketplaceService {
       bundles.push({ type: "skill", ...(await readSkillBundle(marketplaceDir, entry.name)) })
     }
     bundles.push(...(await readPersonaFiles(marketplaceDir)))
+    bundles.push(...(await readDatasetFiles(marketplaceDir)))
     const tools = await readHttpTools(marketplaceDir)
     bundles.push(...tools)
     bundles.push(...(await readMcpPackages(marketplaceDir, new Set(tools.map(tool => tool.name)))))
@@ -206,11 +208,12 @@ export class MarketplaceService {
 }
 
 /** Package types the sync owns; anything else in the table is left alone. */
-const SYNCED_TYPES = ["skill", "persona", "tool", "mcp"] as const
+const SYNCED_TYPES = ["skill", "persona", "dataset", "tool", "mcp"] as const
 
 const MARKETPLACE_FOLDER: Record<PackageBundle["type"], string> = {
   skill: "skills",
   persona: "personas",
+  dataset: "datasets",
   tool: "tools",
   mcp: "mcp"
 }
@@ -250,6 +253,27 @@ async function readPersonaFiles(marketplaceDir: string): Promise<PackageBundle[]
         error: error instanceof Error ? error.message : error
       })
     }
+  }
+  return bundles
+}
+
+/** Every valid `datasets/*.json` as stored text, with its label as the description; broken ones are skipped with a warning. */
+async function readDatasetFiles(marketplaceDir: string): Promise<PackageBundle[]> {
+  const bundles: PackageBundle[] = []
+  for (const entry of await scanDatasets(marketplaceDir)) {
+    if (entry.error || !entry.label) {
+      warn("Marketplace dataset skipped", { dataset: entry.name, error: entry.error })
+      continue
+    }
+    const file = `${entry.name}.json`
+    const text = await readFile(join(marketplaceDir, "datasets", file), "utf8")
+    bundles.push({
+      type: "dataset",
+      name: entry.name,
+      description: entry.label,
+      files: { [file]: text },
+      hasScripts: false
+    })
   }
   return bundles
 }

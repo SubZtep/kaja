@@ -13,6 +13,7 @@ marketplace/
 │  ├─ *.md          # optional extra files the instructions point to
 │  └─ scripts/      # optional scripts, run through run_command with the usual approval
 ├─ personas/<id>.toml # a persona: label, when to switch to it, instructions, optional sampling
+├─ datasets/<id>.json # a questionnaire a persona fills in (`profile: true`: every persona sees the answers)
 ├─ tools/<name>.toml  # an HTTP API: base URL, auth, and the tools the model can call
 └─ mcp/<name>.toml    # an MCP server: url (http/sse) or command (stdio), auth, approval, tool allowlist
 ```

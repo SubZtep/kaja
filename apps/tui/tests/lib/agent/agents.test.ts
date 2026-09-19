@@ -423,7 +423,7 @@ test("dataset instructions block appears only when agent.dataset is set and the 
   // Module side effect: wires @kaja/nasi's pluggable dataset loader to read from this test's XDG-isolated config dir.
   await import("../../../lib/personas/datasets")
   const { datasetInfoTool } = await import("@kaja/nasi")
-  const datasetsDir = join(configKajaDir, "datasets")
+  const datasetsDir = join(configKajaDir, "marketplace", "datasets")
   mkdirSync(datasetsDir, { recursive: true })
   writeFileSync(
     join(datasetsDir, "onboarding.json"),

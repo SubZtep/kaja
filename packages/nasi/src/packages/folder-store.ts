@@ -2,6 +2,8 @@ import { readdir, readFile, realpath, stat } from "node:fs/promises"
 import { isAbsolute, join, relative, resolve, sep } from "node:path"
 import { warn } from "@kaja/logger"
 import {
+  type Dataset,
+  DatasetSchema,
   type HttpToolPackage,
   HttpToolPackageSchema,
   type McpPackage,
@@ -148,8 +150,8 @@ async function readManifest<T extends { name: string }>(dir: string, name: strin
   return parseManifest(await readManifestText(dir, name), name, schema)
 }
 
-/** Names of the `*.toml` manifests in a folder, sorted, hidden and backup files skipped; empty when the folder is missing. */
-async function manifestNames(dir: string): Promise<string[]> {
+/** Names of the `*<ext>` manifests in a folder, sorted, hidden and backup files skipped; empty when the folder is missing. */
+async function manifestNames(dir: string, ext = ".toml"): Promise<string[]> {
   let entries
   try {
     entries = await readdir(dir, { withFileTypes: true })
@@ -157,8 +159,8 @@ async function manifestNames(dir: string): Promise<string[]> {
     return []
   }
   return entries
-    .filter(entry => entry.isFile() && entry.name.endsWith(".toml") && !HIDDEN.test(entry.name))
-    .map(entry => entry.name.slice(0, -".toml".length))
+    .filter(entry => entry.isFile() && entry.name.endsWith(ext) && !HIDDEN.test(entry.name))
+    .map(entry => entry.name.slice(0, -ext.length))
     .sort((a, b) => a.localeCompare(b))
 }
 
@@ -284,6 +286,58 @@ export async function scanSkills(root: string): Promise<SkillScanEntry[]> {
 export function readPersonas(root: string, ids: string[]): Promise<Persona[]> {
   const dir = join(resolve(root), "personas")
   return readEnabled(ids, async id => parsePersonaManifest(await readManifestText(dir, id), id), "persona")
+}
+
+/** A dataset from its JSON text (the cloud keeps the text, not the file). Throws with the reason when it's invalid. */
+export function parseDatasetManifest(text: string): Dataset {
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch (error) {
+    throw new Error(`invalid JSON (${error instanceof Error ? error.message : String(error)})`)
+  }
+  const parsed = DatasetSchema.safeParse(data)
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map(issue => `${issue.path.join(".") || "file"}: ${issue.message}`)
+    throw new Error(`invalid dataset (${issues.join("; ")})`)
+  }
+  return parsed.data
+}
+
+/** One dataset file found on disk, loadable or not. */
+export type DatasetScanEntry = { name: string; label?: string; error?: string }
+
+/** Every `<root>/datasets/*.json`, with its label or why it can't load. Sorted by topic; a missing folder is an empty list. */
+export async function scanDatasets(root: string): Promise<DatasetScanEntry[]> {
+  const dir = join(resolve(root), "datasets")
+  return Promise.all(
+    (await manifestNames(dir, ".json")).map(async name => {
+      try {
+        return { name, label: (await readDatasetFile(dir, name)).label }
+      } catch (error) {
+        return { name, error: error instanceof Error ? error.message : String(error) }
+      }
+    })
+  )
+}
+
+/** Every valid dataset in `<root>/datasets/`, by topic (the file name); broken ones are skipped with a warning. */
+export async function readDatasets(root: string): Promise<Map<string, Dataset>> {
+  const dir = join(resolve(root), "datasets")
+  const datasets = new Map<string, Dataset>()
+  for (const name of await manifestNames(dir, ".json")) {
+    try {
+      datasets.set(name, await readDatasetFile(dir, name))
+    } catch (error) {
+      warn("Skipping dataset", { dataset: name, error: error instanceof Error ? error.message : error })
+    }
+  }
+  return datasets
+}
+
+async function readDatasetFile(dir: string, name: string): Promise<Dataset> {
+  if (!SkillNameSchema.safeParse(name).success) throw new Error(`"${name}" is not a valid package name`)
+  return parseDatasetManifest(await readFile(join(dir, `${name}.json`), "utf8"))
 }
 
 /** One persona file found on disk, loadable or not — what a picker shows. */

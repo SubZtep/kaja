@@ -52,7 +52,7 @@ NAT doesn't starve everyone.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/packages` | the catalog; personas include their label, `when` and instructions (never `default`, which is always on); HTTP tools and MCP servers their host, key need and tools |
+| `GET` | `/packages` | the catalog; personas include their label, `when` and instructions (never `default`, which is always on); HTTP tools and MCP servers their host, key need and tools. Datasets are synced too but never listed: they come with the personas that use them |
 | `GET` | `/packages/me` | the user's packages, which ones have a saved key, and whether keys can be saved |
 | `PUT` / `DELETE` | `/packages/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
 | `PUT` / `DELETE` | `/packages/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |

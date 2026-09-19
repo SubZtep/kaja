@@ -1,9 +1,9 @@
 import { homedir } from "node:os"
-import type { Persona } from "@kaja/schema/cli"
+import { type Dataset, DECLINED_ANSWER, normalizeAnswer, type Persona } from "@kaja/schema/cli"
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "../packages/skills"
-import { loadDataset as defaultLoadDataset } from "../personas"
+import { loadDataset as defaultLoadDataset, loadDatasets as defaultLoadDatasets } from "../personas"
 import {
   type Agent,
   ASK_USER_TOOL,
@@ -174,6 +174,57 @@ async function buildDatasetBlock(agent: Agent, toolNames: Set<string>): Promise<
   return dataset ? datasetInstructions(agent.dataset, dataset.label) : undefined
 }
 
+/** "About the user" from every profile dataset: what the user already shared, and how the rest gets filled in. Owner-scoped like memory. */
+async function buildProfileBlock(
+  agent: Agent,
+  toolNames: Set<string>,
+  owner: string | null
+): Promise<string | undefined> {
+  if (!(toolNames.has(DATASET_INFO_TOOL) && agent.store)) return undefined
+  const loadDatasets = agent.promptContext?.loadDatasets ?? defaultLoadDatasets
+  const sections: string[] = []
+  for (const [topic, dataset] of await loadDatasets()) {
+    if (dataset.profile) sections.push(await profileSection(agent, topic, dataset, owner))
+  }
+  return sections.length > 0 ? sections.join("\n\n") : undefined
+}
+
+async function profileSection(agent: Agent, topic: string, dataset: Dataset, owner: string | null): Promise<string> {
+  const store = agent.store!
+  const version = await store.latestDatasetVersion(topic, owner)
+  const answers = new Map(
+    (version > 0 ? await store.loadDatasetAnswers(topic, owner, version) : []).map(a => [a.field, a.value])
+  )
+  // A declined field counts as answered (never asked again) but isn't shown.
+  const shared = dataset.fields.filter(f => {
+    const value = answers.get(f.name)
+    return value !== undefined && normalizeAnswer(value) !== DECLINED_ANSWER
+  })
+  const missing = dataset.fields.filter(f => !answers.has(f.name))
+  const lines = [
+    shared.length > 0
+      ? `What the user shared in their "${dataset.label}" profile (dataset "${topic}"); use it naturally:\n` +
+        shared.map(f => `- ${f.name}: ${(answers.get(f.name) ?? "").replaceAll(/\s+/g, " ")}`).join("\n")
+      : `The user hasn't shared anything in their "${dataset.label}" profile (dataset "${topic}") yet.`
+  ]
+  // The persona collecting this dataset asks for everything anyway; the others only pick up what comes along.
+  if (agent.dataset !== topic && missing.length > 0) {
+    lines.push(
+      `When they mention something the profile is still missing (${missing.map(f => f.name).join(", ")}), ` +
+        `record it with ${DATASET_INFO_TOOL} (action "answer", dataset "${topic}") without making a fuss, ` +
+        `but don't quiz them for the rest.`
+    )
+    const first = dataset.fields[0]!
+    if (!answers.has(first.name)) {
+      lines.push(
+        `You don't know their ${first.name} yet: early in the conversation, kindly ask once ("${first.prompt}") ` +
+          `and record the answer.`
+      )
+    }
+  }
+  return lines.join("\n")
+}
+
 /**
  * Assembles the system prompt for a fresh session with the given agent.
  * Returns `undefined` if every block is empty.
@@ -188,6 +239,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
   const personasBlock = buildPersonasBlock(agent, toolNames)
   const skillsBlock = buildSkillsBlock(agent, toolNames)
   const datasetBlock = await buildDatasetBlock(agent, toolNames)
+  const profileBlock = await buildProfileBlock(agent, toolNames, owner)
 
   return (
     [
@@ -203,6 +255,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
       personasBlock ? `## Personas\n${personasBlock}` : undefined,
       skillsBlock ? `## Skills\n${skillsBlock}` : undefined,
       datasetBlock ? `## Dataset collection\n${datasetBlock}` : undefined,
+      profileBlock ? `## About the user\n${profileBlock}` : undefined,
       stickyBlock,
       ctx.replyLanguageInstruction
     ]

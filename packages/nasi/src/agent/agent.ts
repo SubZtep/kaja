@@ -1,4 +1,4 @@
-import type { Persona, SamplingParams } from "@kaja/schema/cli"
+import type { Dataset, Persona, SamplingParams } from "@kaja/schema/cli"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import type OpenAI from "openai"
 import type { NasiStore } from "../store/types"
@@ -19,6 +19,8 @@ export type PromptContext = {
   replyLanguageInstruction?: string
   loadStickyNotes?: () => Promise<[string, { content: string }][]>
   loadDataset?: (topic: string) => Promise<{ label: string } | undefined>
+  /** Every dataset by topic; profile ones feed the "About the user" section. Defaults to the host's registered loaders. */
+  loadDatasets?: () => Promise<Map<string, Dataset>>
 }
 
 /**

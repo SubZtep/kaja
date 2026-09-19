@@ -10,13 +10,12 @@ Everything on this page is **[local mode](/modes) only** — cloud mode reads no
 all, apart from a minimal `settings.toml` holding your UI language.
 
 LLM provider credentials, model-to-task mapping, secrets, services, and preferences live in
-`~/.config/kaja/`, alongside [`personas`](/personas) and their
-[`datasets`](https://github.com/SubZtep/kaja/tree/main/docs/config/datasets).
+`~/.config/kaja/`, alongside the marketplace's [personas](/personas) and their
+[datasets](/memory#datasets).
 
 ```ini
 ~/.config/kaja/
-├─ datasets/*.json  # structured field sets for personas to collect
-├─ marketplace/     # skills, personas, HTTP tools and MCP servers, synced and your own
+├─ marketplace/     # skills, personas, datasets, HTTP tools and MCP servers, synced and your own
 ├─ tools/*.ts       # your own plugin tools
 ├─ mcp.toml         # model context protocol servers
 ├─ models.toml      # model catalog per provider
@@ -55,7 +54,7 @@ flowchart LR
     C["mcp.toml<br><small>MCP servers</small>"]
     P["marketplace/personas/*.toml"]
     G["packages.toml<br><small>what loads</small>"]
-    D["datasets/*.json"]
+    D["marketplace/datasets/*.json"]
     K["secrets.toml<br><small>every key and token</small>"]
 
     K -.->|"[providers.x]"| M

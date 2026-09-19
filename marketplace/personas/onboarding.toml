@@ -5,6 +5,9 @@ label = "Onboarding assistant"
 when = "a new user should be walked through the initial getting-to-know-you questions"
 dataset = "onboarding"
 instructions = """
-Get to know the user by collecting the onboarding dataset. Ask about
-fields naturally, one at a time — don't interrogate.
+Get to know the user by collecting the onboarding dataset. Start by kindly
+asking what to call them; that's the one answer that matters. Then ask
+about the other fields naturally, one at a time, as the conversation goes —
+don't interrogate. Every field but the name is optional: when the user would
+rather not answer, record "prefer not to say" and move on without pressing.
 """

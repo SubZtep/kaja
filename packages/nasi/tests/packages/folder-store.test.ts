@@ -4,10 +4,13 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import {
   createFolderPackageStore,
+  parseDatasetManifest,
   parseHttpToolManifest,
   parsePersonaManifest,
+  readDatasets,
   readPersonas,
   readSkillBundle,
+  scanDatasets,
   scanHttpTools,
   scanMcpPackages,
   scanPersonas,
@@ -229,6 +232,32 @@ test("scanPersonas lists every persona file with its label, or why it can't load
 test("parsePersonaManifest takes the id from its argument and rejects a file without a label", () => {
   expect(parsePersonaManifest('label = "Care"\n', "care")).toEqual({ id: "care", label: "Care" })
   expect(() => parsePersonaManifest('when = "x"\n', "care")).toThrow("invalid manifest (label")
+})
+
+test("readDatasets loads every valid datasets/*.json by topic; broken, badly named and backup files are left out", async () => {
+  const onboarding = {
+    label: "Onboarding",
+    profile: true,
+    fields: [{ name: "name", prompt: "What should I call you?" }]
+  }
+  put("datasets/onboarding.json", JSON.stringify(onboarding))
+  put("datasets/broken.json", '{ "label": "No fields" }')
+  put("datasets/Bad_Name.json", JSON.stringify(onboarding))
+  put("datasets/onboarding.json.bak", "{}")
+  const datasets = await readDatasets(root)
+  expect([...datasets.keys()]).toEqual(["onboarding"])
+  expect(datasets.get("onboarding")).toEqual(onboarding)
+
+  const entries = await scanDatasets(root)
+  expect(entries.map(e => e.name)).toEqual(["Bad_Name", "broken", "onboarding"])
+  expect(entries[1]!.error).toContain("invalid dataset (fields")
+  expect(entries[2]).toEqual({ name: "onboarding", label: "Onboarding" })
+  expect(await readDatasets(join(root, "nope"))).toEqual(new Map())
+})
+
+test("parseDatasetManifest says why a dataset's text is invalid", () => {
+  expect(() => parseDatasetManifest("{ nope")).toThrow("invalid JSON")
+  expect(() => parseDatasetManifest('{ "label": "x", "fields": [] }')).toThrow("invalid dataset (fields")
 })
 
 test("readSkillBundle reads SKILL.md and the text files, and flags scripts", async () => {

@@ -4,6 +4,7 @@ import {
   checkMcpPackageKey,
   createGuardedFetch,
   type KeyCheckResult,
+  parseDatasetManifest,
   parseHttpToolManifest,
   parseMcpManifest,
   parsePersonaManifest,
@@ -15,10 +16,11 @@ import {
   type KeyedPackageType,
   type PackageKeyNeed,
   type PackageType,
+  packageTypeSchema,
   type SkillDetail,
   type UserPackage
 } from "@kaja/schema/api"
-import type { HttpToolPackage, McpPackage, Persona } from "@kaja/schema/packages"
+import type { Dataset, HttpToolPackage, McpPackage, Persona } from "@kaja/schema/packages"
 import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
 // Built in, so the cloud has its default persona before the first sync brings the same file.
@@ -86,8 +88,10 @@ export class PackageService {
     const { rows } = await this.#db.query(
       `
       SELECT p.type, p.name, p.description, p.updated_at, CASE WHEN p.type <> 'skill' THEN p.files END AS files
-      FROM package p WHERE ${AVAILABLE} ORDER BY p.type, p.name
-      `
+      FROM package p WHERE ${AVAILABLE} AND p.type = ANY($1) ORDER BY p.type, p.name
+      `,
+      // Datasets come with the personas that use them; they're never listed or toggled.
+      [packageTypeSchema.options]
     )
     const catalog: CatalogPackage[] = []
     for (const row of rows) {
@@ -263,6 +267,25 @@ export class PackageService {
       [userId, DEFAULT_PERSONA]
     )
     return withDefaultFirst(rows.map(row => this.#parsePersona(row)).filter(persona => persona !== undefined))
+  }
+
+  /** Every dataset in the marketplace by topic, for nasi's dataset loaders; one that no longer parses is left out with a warning. */
+  async datasets(): Promise<Map<string, Dataset>> {
+    const { rows } = await this.#db.query(
+      `SELECT p.name, p.files FROM package p WHERE p.type = 'dataset' AND ${AVAILABLE} ORDER BY p.name`
+    )
+    const datasets = new Map<string, Dataset>()
+    for (const row of rows) {
+      try {
+        datasets.set(row.name, parseDatasetManifest(row.files[`${row.name}.json`] ?? ""))
+      } catch (error) {
+        warn("Stored dataset can't be used; leaving it out", {
+          dataset: row.name,
+          error: error instanceof Error ? error.message : error
+        })
+      }
+    }
+    return datasets
   }
 
   /** The user's enabled HTTP tool packages that can run here, for the agent's Postgres PackageStore. */

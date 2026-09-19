@@ -1,9 +1,11 @@
 import { expect, test } from "bun:test"
-import type { Persona } from "@kaja/schema/cli"
+import type { Dataset, Persona } from "@kaja/schema/cli"
 import { Agent, runCommandTool, switchPersonaTool } from "../../src/agent/agent"
 import { buildSystemPrompt, refreshPackagesInPrompt, replyLanguageInstructionFor } from "../../src/agent/system-prompt"
 import { createLoadSkillTool } from "../../src/packages/skills"
 import type { PackageStore, SkillSummary } from "../../src/packages/types"
+import { createMemoryStore } from "../../src/store"
+import { datasetInfoTool } from "../../src/tools/builtin/dataset-info"
 
 test("returns undefined for English — the model's default, no instruction needed", () => {
   expect(replyLanguageInstructionFor("en-GB")).toBeUndefined()
@@ -143,4 +145,68 @@ test("an unchanged persona roster leaves the system prompt exactly as it was", a
   const before = messages[0]!.content
   await refreshPackagesInPrompt(agent, messages, null)
   expect(messages[0]!.content).toBe(before)
+})
+
+const profile: Dataset = {
+  label: "Onboarding",
+  profile: true,
+  fields: [
+    { name: "name", prompt: "What should I call you?" },
+    { name: "pronouns", prompt: "Which pronouns?" },
+    { name: "home", prompt: "Where do you live?" },
+    { name: "pets", prompt: "Any pets?" }
+  ]
+}
+
+/** An agent with dataset_info and a store holding `answers` for `owner` in the onboarding profile. */
+async function profileAgent(answers: Record<string, string>, opts: { dataset?: string; owner?: string | null } = {}) {
+  const store = createMemoryStore()
+  for (const [field, value] of Object.entries(answers))
+    await store.saveDatasetAnswer("onboarding", opts.owner ?? null, 1, field, value)
+  return new Agent({
+    model: "m",
+    tools: [datasetInfoTool],
+    store,
+    dataset: opts.dataset,
+    promptContext: { environment: "test", loadDatasets: async () => new Map([["onboarding", profile]]) }
+  })
+}
+
+test("## About the user lists what the user shared, hides what they declined, and names what's still missing", async () => {
+  const prompt =
+    (await buildSystemPrompt(
+      await profileAgent({ name: "Andras", pronouns: "Prefer not to say", home: "Budapest" }),
+      null
+    )) ?? ""
+  expect(prompt).toContain("## About the user")
+  expect(prompt).toContain("- name: Andras\n- home: Budapest")
+  expect(prompt).not.toContain("pronouns:")
+  // Declined counts as answered: only pets is left to pick up, and the name isn't asked for again.
+  expect(prompt).toContain("still missing (pets)")
+  expect(prompt).not.toContain("kindly ask")
+})
+
+test("## About the user asks for the name once while it's unknown", async () => {
+  const prompt = (await buildSystemPrompt(await profileAgent({}), null)) ?? ""
+  expect(prompt).toContain("hasn't shared anything")
+  expect(prompt).toContain('kindly ask once ("What should I call you?")')
+})
+
+test("the persona collecting the profile gets what's known, without the pick-it-up-as-you-go rules", async () => {
+  const prompt =
+    (await buildSystemPrompt(await profileAgent({ name: "Andras" }, { dataset: "onboarding" }), null)) ?? ""
+  expect(prompt).toContain("- name: Andras")
+  expect(prompt).not.toContain("still missing")
+})
+
+test("## About the user only shows the answers of the owner the prompt is for", async () => {
+  const agent = await profileAgent({ name: "Andras" }, { owner: "telegram:1" })
+  expect((await buildSystemPrompt(agent, "telegram:1")) ?? "").toContain("- name: Andras")
+  expect((await buildSystemPrompt(agent, "telegram:2")) ?? "").not.toContain("Andras")
+})
+
+test("a dataset that isn't a profile adds no About the user section", async () => {
+  const agent = await profileAgent({ name: "Andras" })
+  agent.promptContext.loadDatasets = async () => new Map([["onboarding", { ...profile, profile: false }]])
+  expect((await buildSystemPrompt(agent, null)) ?? "").not.toContain("## About the user")
 })

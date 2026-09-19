@@ -1,4 +1,4 @@
-import { ASK_USER_TOOL, createOpenAIClient, Nasi, replyLanguageInstructionFor } from "@kaja/nasi"
+import { ASK_USER_TOOL, createOpenAIClient, Nasi, replyLanguageInstructionFor, setDatasetLoaders } from "@kaja/nasi"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import type { Persona } from "@kaja/schema/packages"
 import { isPublicHttpUrl } from "@kaja/shared"
@@ -59,6 +59,12 @@ const CLOUD_ASK_USER_INSTRUCTION =
   `if..." — the conversation is over the moment you send plain text, so ` +
   `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
   `just state the result and stop.`
+
+// dataset_info and the "About the user" section read the marketplace's datasets from the package table.
+setDatasetLoaders({
+  loadDatasets: () => packageService.datasets(),
+  loadDataset: async topic => (await packageService.datasets()).get(topic)
+})
 
 let fetchProxyOverride: string | undefined
 

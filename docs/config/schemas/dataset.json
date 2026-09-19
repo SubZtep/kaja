@@ -38,6 +38,10 @@
       "type": "integer",
       "exclusiveMinimum": 0,
       "maximum": 9007199254740991
+    },
+    "profile": {
+      "description": "About the user: every persona sees the answers, and asks for the first field while it's missing",
+      "type": "boolean"
     }
   },
   "required": [

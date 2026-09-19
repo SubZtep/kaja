@@ -12,7 +12,7 @@ afterEach(() => {
   delete process.env.XDG_CONFIG_HOME
 })
 
-test("loads valid dataset files, keyed by topic (filename minus extension)", async () => {
+test("loads valid dataset files from the marketplace folder, keyed by topic (filename minus extension)", async () => {
   process.env.XDG_CONFIG_HOME = fixtureConfigDir
   const datasets = await loadDatasets()
   expect(datasets.has("onboarding")).toBe(true)
