@@ -162,7 +162,8 @@ function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefi
     `description, call ${LOAD_SKILL_TOOL} with its name before starting, then follow what it says. ` +
     `Load its other files with ${LOAD_SKILL_TOOL} and a file only when its instructions point to them.` +
     `${scripts}\nAvailable skills:\n` +
-    skills.map(s => `- ${s.name}: ${s.description}`).join("\n")
+    // One line each, so the section never holds a blank line (refreshSkillsInPrompt relies on that).
+    skills.map(s => `- ${s.name}: ${s.description.replace(/\s+/g, " ").trim()}`).join("\n")
   )
 }
 
@@ -208,6 +209,35 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
       .filter(Boolean)
       .join("\n\n") || undefined
   )
+}
+
+/**
+ * Keeps a running conversation in step with the skills enabled now: the list is written into the system
+ * prompt when the conversation starts, so a skill turned on or off since (on the web, in Telegram) would
+ * otherwise never reach it. When the `## Skills` section no longer matches, the prompt is rebuilt in place,
+ * as a persona switch does; an unchanged list leaves the message untouched, so prompt caching holds.
+ */
+export async function refreshSkillsInPrompt(
+  agent: Agent,
+  messages: ChatCompletionMessageParam[],
+  owner: string | null = LOCAL_OWNER
+): Promise<void> {
+  const system = messages[0]
+  if (system?.role !== "system" || typeof system.content !== "string") return
+  const block = buildSkillsBlock(agent, new Set(agent.tools.map(t => toolName(t))))
+  const current = system.content
+  let upToDate: boolean
+  if (block) {
+    const section = `## Skills\n${block}`
+    const at = current.indexOf(section)
+    const end = at + section.length
+    upToDate = at >= 0 && (end === current.length || current.startsWith("\n\n", end))
+  } else {
+    upToDate = !current.includes("## Skills\n")
+  }
+  if (upToDate) return
+  const rebuilt = await buildSystemPrompt(agent, owner)
+  if (rebuilt) system.content = rebuilt
 }
 
 /**

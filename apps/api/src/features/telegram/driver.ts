@@ -13,12 +13,23 @@ import { pool } from "../../core/db"
 import { withLock } from "../../core/lock"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
+import {
+  findEntry,
+  needsKeyMessage,
+  PACKAGE_CALLBACK,
+  PACKAGE_PAGE_CALLBACK,
+  packageEntries,
+  renderPackageList,
+  togglePackage
+} from "./packages"
 
 const NOT_LINKED_MESSAGE =
   "This Telegram account isn't linked to a Kaja account yet. Go to your profile on the Kaja web app and tap " +
   '"Connect Telegram" to get a link.'
 
 const APPROVAL_EXPIRED_MESSAGE = "This request was already answered or has expired."
+/** A bot command, with or without the `@botname` Telegram adds in groups. */
+const command = (name: string) => new RegExp(`^/${name}(@\\w+)?$`)
 const TOOL_CALLBACK = /^tool:(approve|decline):([0-9a-f]{16})$/
 
 /** Plain HTML escaping for text inside <pre> (same as apps/tui/lib/telegram/driver.ts's). */
@@ -51,12 +62,13 @@ export type TelegramButton = { text: string; data: string }
  * Abstraction over the actual Telegram API calls, so the driver has zero
  * import of grammy itself. bot.ts implements this against the real bot.api,
  * translating grammy's own errors (429s, "message is not modified") at that
- * boundary. Buttons are only for tool approvals (`confirm_tool`); cloud Nasi
- * never emits confirm_command. Editing a message without `buttons` removes its buttons.
+ * boundary. Buttons (rows of them) serve tool approvals (`confirm_tool`) and
+ * the /packages list; cloud Nasi never emits confirm_command. Editing a
+ * message without `rows` removes its buttons.
  */
 export type TelegramSender = {
-  sendMessage(chatId: number, text: string, buttons?: TelegramButton[]): Promise<{ messageId: number }>
-  editMessageText(chatId: number, messageId: number, text: string, buttons?: TelegramButton[]): Promise<void>
+  sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
+  editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
 }
 
 export type CloudTelegramDriverConfig = {
@@ -134,9 +146,9 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   // state exists — session content itself always round-trips through Postgres.
   const forceNew = new Set<number>()
 
-  async function editSafely(chatId: number, messageId: number, text: string) {
+  async function editSafely(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]) {
     try {
-      await sender.editMessageText(chatId, messageId, text)
+      await sender.editMessageText(chatId, messageId, text, rows)
     } catch (error) {
       logWarn("Telegram edit failed", { error })
     }
@@ -167,7 +179,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     ]
     if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
     else await editIfChanged("…")
-    await sender.sendMessage(chatId, text.join("\n"), buttons)
+    await sender.sendMessage(chatId, text.join("\n"), [buttons])
   }
 
   /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. Local-only events (tool_image, display_image, confirm_command) are ignored — cloud Nasi never emits them. */
@@ -265,9 +277,15 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
     const owner = telegramOwner(telegramUserId)
 
-    if (text.trim() === "/new") {
+    if (command("new").test(text.trim())) {
       forceNew.add(telegramUserId)
       await sender.sendMessage(chatId, "🆕 Started a new session.")
+      return
+    }
+
+    if (command("packages").test(text.trim())) {
+      const { text: list, rows } = renderPackageList(await packageEntries(ownerUserId), 0)
+      await sender.sendMessage(chatId, list, rows)
       return
     }
 
@@ -280,16 +298,55 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   }
 
   /**
-   * An Approve/Decline press. The pressing user comes from Telegram (never the payload), and the button
-   * must match the call their latest session is still waiting on, so an old or foreign button does nothing.
-   * The server then runs (or skips) the call it saved. Returns false for callback data that isn't ours.
+   * A tap in the /packages list: a package button turns it on or off for the pressing user's own account
+   * and redraws the list; one that needs a key gets a link to the web instead. Page arrows just redraw.
+   */
+  async function handlePackageCallback(
+    ownerUserId: string,
+    chatId: number,
+    messageId: number,
+    target: { page: number; typeCode?: string; hash?: string }
+  ) {
+    let entries = await packageEntries(ownerUserId)
+    const entry = target.typeCode && target.hash ? findEntry(entries, target.typeCode, target.hash) : undefined
+    if (entry) {
+      if ((await togglePackage(ownerUserId, entry)) === "needs_key") {
+        await sender.sendMessage(chatId, needsKeyMessage(entry.name))
+        return
+      }
+      entries = await packageEntries(ownerUserId)
+    }
+    const { text, rows } = renderPackageList(entries, target.page)
+    await editSafely(chatId, messageId, text, rows)
+  }
+
+  /**
+   * A button press: Approve/Decline on a tool call, or a tap in the /packages list. The pressing user comes
+   * from Telegram (never the payload). An approval must match the call their latest session is still waiting
+   * on, so an old or foreign button does nothing; the server then runs (or skips) the call it saved.
+   * Returns false for callback data that isn't ours.
    */
   async function handleCallback(telegramUserId: number, chatId: number, messageId: number, data: string) {
     const match = TOOL_CALLBACK.exec(data)
-    if (!match) return false
+    const packageMatch = PACKAGE_CALLBACK.exec(data)
+    const pageMatch = PACKAGE_PAGE_CALLBACK.exec(data)
+    if (!match && !packageMatch && !pageMatch) return false
     const ownerUserId = await resolveLinkedUserId(telegramUserId)
     if (!ownerUserId) {
       await sender.sendMessage(chatId, NOT_LINKED_MESSAGE)
+      return true
+    }
+
+    if (!match) {
+      try {
+        await handlePackageCallback(ownerUserId, chatId, messageId, {
+          page: Number(packageMatch?.[3] ?? pageMatch?.[1] ?? 0),
+          typeCode: packageMatch?.[1],
+          hash: packageMatch?.[2]
+        })
+      } catch (error) {
+        logError("Telegram package toggle crashed", { error })
+      }
       return true
     }
     const owner = telegramOwner(telegramUserId)

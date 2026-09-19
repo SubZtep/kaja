@@ -590,3 +590,44 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
   expect(system!.role).toBe("system")
   expect(system!.content).toContain("You are grumpy.")
 })
+
+test("/packages lists the skills and tool packages the bot loaded, and how to change them", async () => {
+  const { createLoadSkillTool } = await import("@kaja/nasi")
+  const loadSkill = createLoadSkillTool({
+    store: {
+      listSkills: async () => [],
+      readSkill: async () => undefined,
+      listHttpTools: async () => [],
+      listMcpPackages: async () => []
+    },
+    skills: [
+      { name: "notes", description: "Keep notes.", files: [] },
+      { name: "disk-check", description: "Check disks.", files: [] }
+    ]
+  })
+  const forecast = tool({ name: "weather_forecast", description: "x", parameters: {}, execute: async () => "ok" })
+  const packaged = [
+    { ...forecast, origin: "community" as const, source: "package:open-meteo" },
+    { ...forecast, origin: "community" as const, source: "package:context7" },
+    { ...forecast, origin: "third-party" as const, source: "mcp:my-server" }
+  ]
+  const { sender, sent } = fakeSender()
+  const driver = createTelegramDriver({
+    agentConfig: { model: "fake-model", tools: [askUserTool, loadSkill, ...packaged], store: peekStore() },
+    personas: [persona],
+    models: [],
+    allowedUserIds: [42],
+    sender
+  })
+
+  await driver.handleMessage(42, 100, "/packages@kaja_bot")
+  const text = sent.at(-1)!.text
+  expect(text).toContain(t("telegram.packagesSkills", { names: "disk-check, notes" }))
+  expect(text).toContain(t("telegram.packagesTools", { names: "context7, open-meteo" }))
+  expect(text).not.toContain("my-server")
+  expect(text).toContain("kaja pkg")
+
+  const empty = fakeSender()
+  await makeDriver([], empty.sender, [42]).handleMessage(42, 100, "/packages")
+  expect(empty.sent.at(-1)!.text).toContain(t("telegram.packagesNone"))
+})

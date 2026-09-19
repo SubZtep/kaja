@@ -255,7 +255,7 @@ describe("HTTP tools in the cloud", () => {
   test("the Telegram bot asks with buttons; only a matching press from the same user runs the call", async () => {
     useScript([{ content: null, tool_calls: [createIssueCall("call_t")] }, { content: "Filed from Telegram." }])
     requests.length = 0
-    const messages: { id: number; text: string; buttons?: TelegramButton[] }[] = []
+    const messages: { id: number; text: string; buttons?: TelegramButton[][] }[] = []
     const edits: { id: number; text: string }[] = []
     const driver = createCloudTelegramDriver({
       resolveLinkedUserId: async telegramUserId => (telegramUserId === 1001 ? userId : undefined),
@@ -273,11 +273,11 @@ describe("HTTP tools in the cloud", () => {
     await driver.handleMessage(1001, 55, "file a bug")
     const prompt = messages.find(message => message.buttons)!
     expect(prompt.text).toContain(createIssueTool)
-    expect(prompt.buttons!.map(button => button.data)).toEqual([
+    expect(prompt.buttons!.flat().map(button => button.data)).toEqual([
       expect.stringMatching(/^tool:approve:[0-9a-f]{16}$/),
       expect.stringMatching(/^tool:decline:[0-9a-f]{16}$/)
     ])
-    const approve = prompt.buttons![0]!.data
+    const approve = prompt.buttons![0]![0]!.data
 
     // Someone else pressing it, or a made-up token, does nothing.
     expect(await driver.handleCallback(2002, 55, prompt.id, approve)).toBe(true)

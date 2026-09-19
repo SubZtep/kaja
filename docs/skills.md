@@ -95,7 +95,9 @@ before turning it on; new accounts get the same picker right after signing up. T
 marketplace's [HTTP tools](/tools#http-tools-in-the-cloud) and
 [MCP servers](/tools#mcp-servers-in-the-cloud). Each widget key has its own list,
 set when you create or edit the key on the Widget page, so a site's visitors get only what that
-widget was set up with. `kaja pkg` in cloud mode points you to the web page.
+widget was set up with. `kaja pkg` in cloud mode points you to the web page, and the cloud Telegram
+bot's `/packages` turns them on and off too. A change reaches a conversation that's already going
+from its next message.
 
 The cloud only offers skills without a `scripts/` folder: there's no shell there to run them. Your
 own local skills stay on your machine.

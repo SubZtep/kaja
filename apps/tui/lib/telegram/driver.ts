@@ -1,4 +1,4 @@
-import { runApprovedTool, samplingOf } from "@kaja/nasi"
+import { LOAD_SKILL_TOOL, type LoadSkillTool, runApprovedTool, samplingOf, type Tool, toolName } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
 import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "@kaja/shared"
@@ -15,6 +15,37 @@ import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from
 /** Plain HTML escaping for text inside <pre>: unlike renderTelegramHtml it leaves URLs as text instead of turning them into links. */
 function escapeHtml(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+}
+
+/** A bot command, with or without the `@botname` Telegram adds in groups. */
+function isCommand(text: string, name: string): boolean {
+  return new RegExp(`^/${name}(@\\w+)?$`).test(text.trim())
+}
+
+/** What the running bot loaded: skills (load_skill's list) and tool packages (community tools' `package:<name>` source), by name. */
+function loadedPackages(tools: Tool<any>[]): { skills: string[]; tools: string[] } {
+  const loadSkill = tools.find(tool => toolName(tool) === LOAD_SKILL_TOOL) as LoadSkillTool | undefined
+  const packages = tools.flatMap(tool =>
+    tool.origin === "community" && tool.source?.startsWith("package:") ? [tool.source.slice("package:".length)] : []
+  )
+  return {
+    skills: (loadSkill?.skills ?? []).map(skill => skill.name).sort(),
+    tools: [...new Set(packages)].sort()
+  }
+}
+
+/** The /packages reply: what this bot loaded, and how to change it (on the computer: this bot builds its tools once, at start). */
+function packagesMessage(tools: Tool<any>[]): string {
+  const loaded = loadedPackages(tools)
+  const names = (list: string[]) => list.map(escapeHtml).join(", ")
+  return [
+    `<b>${t("telegram.packagesTitle")}</b>`,
+    ...(loaded.skills.length > 0 ? [t("telegram.packagesSkills", { names: names(loaded.skills) })] : []),
+    ...(loaded.tools.length > 0 ? [t("telegram.packagesTools", { names: names(loaded.tools) })] : []),
+    ...(loaded.skills.length + loaded.tools.length === 0 ? [t("telegram.packagesNone")] : []),
+    "",
+    t("telegram.packagesHint")
+  ].join("\n")
 }
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
@@ -464,7 +495,12 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   async function handleMessage(userId: number, chatId: number, text: string) {
     if (!allowedUserIds.has(userId)) return
 
-    if (text.trim() === "/new") {
+    if (isCommand(text, "packages")) {
+      await sender.sendMessage(chatId, packagesMessage(agentConfig.tools ?? []))
+      return
+    }
+
+    if (isCommand(text, "new")) {
       const existing = users.get(userId)
       if (existing?.busy) {
         await sender.sendMessage(chatId, t("telegram.stillWorking"))

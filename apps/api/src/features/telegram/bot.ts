@@ -36,13 +36,17 @@ async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> {
   }
 }
 
-/** One row of inline buttons, or undefined for none. */
-function keyboardFor(buttons: TelegramButton[] | undefined): InlineKeyboard | undefined {
-  if (!buttons?.length) return undefined
-  const keyboard = new InlineKeyboard()
-  for (const button of buttons) keyboard.text(button.text, button.data)
-  return keyboard
+/** Rows of inline buttons, or undefined for none. */
+function keyboardFor(rows: TelegramButton[][] | undefined): InlineKeyboard | undefined {
+  if (!rows?.length) return undefined
+  return new InlineKeyboard(rows.map(row => row.map(button => InlineKeyboard.text(button.text, button.data))))
 }
+
+/** The command menu Telegram shows next to the message box. */
+const COMMANDS = [
+  { command: "new", description: "Start a new conversation" },
+  { command: "packages", description: "Turn skills and tools on or off" }
+]
 
 /**
  * The only grammy-aware file: constructs the Bot, implements driver.ts's
@@ -57,17 +61,20 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   const driver = createCloudTelegramDriver({
     resolveLinkedUserId: telegramUserId => telegramLinkService.resolveUserId(telegramUserId),
     sender: {
-      async sendMessage(chatId, text, buttons) {
+      async sendMessage(chatId, text, rows) {
         const message = await withRateLimitRetry(() =>
-          bot.api.sendMessage(chatId, text, { parse_mode: "HTML", reply_markup: keyboardFor(buttons) })
+          bot.api.sendMessage(chatId, text, {
+            parse_mode: "HTML",
+            reply_markup: keyboardFor(rows)
+          })
         )
         return { messageId: message.message_id }
       },
-      async editMessageText(chatId, messageId, text, buttons) {
+      async editMessageText(chatId, messageId, text, rows) {
         try {
           await bot.api.editMessageText(chatId, messageId, text, {
             parse_mode: "HTML",
-            reply_markup: keyboardFor(buttons) ?? { inline_keyboard: [] }
+            reply_markup: keyboardFor(rows) ?? { inline_keyboard: [] }
           })
         } catch (error) {
           if (isNotModifiedError(error)) return
@@ -106,7 +113,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   bot.on("callback_query:data", async ctx => {
     const message = ctx.callbackQuery.message
-    if (ctx.callbackQuery.data.startsWith("tool:") && message) {
+    if (/^(tool|pkg|pkgp):/.test(ctx.callbackQuery.data) && message) {
       await ctx.answerCallbackQuery()
       void driver.handleCallback(ctx.from.id, message.chat.id, message.message_id, ctx.callbackQuery.data)
       return
@@ -167,6 +174,8 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
       } catch (error) {
         throw new Error("Invalid Telegram bot token — check TELEGRAM_BOT_TOKEN.", { cause: error })
       }
+      // The menu next to the message box; a failure only costs the menu.
+      await bot.api.setMyCommands(COMMANDS).catch(error => logError("Telegram command menu not set", { error }))
       void bot.start()
     },
     async stop() {
