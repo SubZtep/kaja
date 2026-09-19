@@ -13,6 +13,7 @@ import { m } from "../../paraglide/messages.js"
 import { localizeHref } from "../../paraglide/runtime.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
+import { GoogleSoonButton } from "./-components/google-soon-button"
 
 const signinSearchSchema = z.object({
   redirect: z.string().optional()
@@ -84,6 +85,10 @@ function SignIn() {
           </>
         }
       >
+        <GoogleSoonButton className="mb-5" />
+        <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+          {m.auth_or_email()}
+        </p>
         <form
           onSubmit={event => {
             event.preventDefault()

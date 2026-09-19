@@ -12,7 +12,10 @@ export function BrandMark({
   className?: string
 }>) {
   return (
-    <Link to={to} className={cn("font-mono font-bold text-fg flex gap-2 items-center", className)}>
+    <Link
+      to={to}
+      className={cn("font-display font-extrabold text-fg flex gap-2 items-center tracking-tight", className)}
+    >
       {monster ? (
         <img src="/monster.gif" alt={m.brand_monster_alt()} className="h-7 opacity-90" />
       ) : (

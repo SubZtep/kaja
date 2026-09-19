@@ -1,4 +1,5 @@
 import type { NasiTurnResponse, WidgetTurnRequest } from "@kaja/schema/nasi"
+import { cn } from "@kaja/shared"
 import { useLoaderData } from "@tanstack/react-router"
 import {
   BrainCircuit,
@@ -14,6 +15,7 @@ import {
   X
 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { toast } from "react-toastify"
 import { m } from "../../../paraglide/messages.js"
 import { getLocale } from "../../../paraglide/runtime.js"
 
@@ -145,7 +147,7 @@ function TitleBarDots({ variant }: Readonly<{ variant: DotVariant }>) {
   )
 }
 
-export function BarkochbaGame() {
+export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
   const { apiUrl, barkochbaWidgetKey } = useLoaderData({ from: "__root__" })
   const [phase, setPhase] = useState<GameState["phase"]>(IDLE_STATE.phase)
   const [visitorId] = useState(() => loadState().visitorId ?? crypto.randomUUID())
@@ -160,6 +162,13 @@ export function BarkochbaGame() {
   // Resume from sessionStorage only after mount — reading it during the initial
   // render would desync from the server-rendered idle markup and trigger a hydration error.
   useEffect(() => {
+    if (!barkochbaWidgetKey) {
+      try {
+        sessionStorage.removeItem(STATE_STORAGE_KEY)
+      } catch {}
+      setHydrated(true)
+      return
+    }
     const stored = loadState()
     setPhase(stored.phase)
     setSession(stored.session)
@@ -168,7 +177,7 @@ export function BarkochbaGame() {
     setQuestionCount(stored.questionCount)
     setWon(stored.won)
     setHydrated(true)
-  }, [])
+  }, [barkochbaWidgetKey])
 
   useEffect(() => {
     if (hydrated) saveState({ phase, visitorId, session, current, aside, questionCount, won })
@@ -201,6 +210,10 @@ export function BarkochbaGame() {
   }
 
   function start() {
+    if (!barkochbaWidgetKey) {
+      toast.info(m.carousel_demo_missing())
+      return
+    }
     setPhase("playing")
     setCurrent("")
     setAside("")
@@ -220,7 +233,12 @@ export function BarkochbaGame() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]">
+    <div
+      className={cn(
+        "overflow-hidden rounded-xl border border-border bg-surface-2 shadow-[0_24px_60px_-20px_#000a]",
+        className
+      )}
+    >
       <div className="flex items-center gap-2 border-border border-b bg-surface px-3.5 py-2.5">
         <TitleBarDots variant={dotVariantFor(won, pending, phase)} />
         <span className="ml-1.5 font-mono text-muted text-xs">{m.barkochba_title_bar()}</span>
