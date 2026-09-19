@@ -31,7 +31,7 @@ src/
     cron.ts              # Bun.cron jobs: hourly marketplace sync
   features/              # one folder per URL mount prefix
     auth/                # Better Auth config + routes + middleware
-    admin/               # /admin — mcp-servers, providers, models, personas, packages/sync
+    admin/               # /admin — mcp-servers, providers, models, packages/sync
     config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
     users/               # /users
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)

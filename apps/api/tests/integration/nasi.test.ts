@@ -2,15 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
-import {
-  cleanupModel,
-  cleanupPersona,
-  expectUnauthenticated,
-  fakeChatClient,
-  seedModel,
-  seedPersona,
-  signUpAndSignIn
-} from "./helpers"
+import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
 
 const turnRequestInit = {
   method: "POST",
@@ -252,28 +244,24 @@ describe("nasi", () => {
 
   describe("info", () => {
     let providerId: string
-    let personaRowId: string
 
     beforeAll(async () => {
       ;({ providerId } = await seedModel("nasi-info-test"))
-      // /nasi/info lists the persona catalog; a fresh database has none until `bun seed:config`.
-      ;({ id: personaRowId } = await seedPersona("nasi-info-test"))
     })
 
     afterAll(async () => {
       await cleanupModel(providerId)
-      await cleanupPersona(personaRowId)
     })
 
     test("unauthenticated info is 401", () => expectUnauthenticated("/nasi/info"))
 
-    test("any signed-in user can list the personas; the admin list stays admin-only", async () => {
+    test("any signed-in user can list the persona catalog, default first", async () => {
       const res = await app.request("/nasi/personas", { headers: { Authorization: `Bearer ${token}` } })
       expect(res.status).toBe(200)
       const { personas } = await res.json()
-      expect(personas.length).toBeGreaterThan(0)
-      expect(Object.keys(personas[0]).sort()).toEqual(["id", "label"])
-      expect((await app.request("/admin/personas", { headers: { Authorization: `Bearer ${token}` } })).status).toBe(403)
+      // default is always there, built in until a marketplace sync brings it.
+      expect(personas[0]).toEqual({ id: "default", label: "Helpful assistant" })
+      expect((await app.request("/admin/personas", { headers: { Authorization: `Bearer ${token}` } })).status).toBe(404)
     })
 
     test("returns persona label, a model, and the cloud tool list", async () => {

@@ -15,7 +15,6 @@ import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
 import { nasiToolDeps, openUserTurnStream, pinnedModelFor, resolveModelWithProvider, runUserTurn } from "./chat"
-import { listPersonas } from "./personas"
 import { createPostgresStore } from "./pg-store"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
@@ -148,7 +147,7 @@ nasiRoutes.openapi(infoRoute, async c => {
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) return notFound(c, "No model available")
 
-  const personas = await listPersonas()
+  const personas = await packageService.personasForUser(user.id)
   const persona = personas[0]
   const skills = await packageService.skillsForUser(user.id)
   const keys = new Set(await packageService.keyNames(user.id))
@@ -178,7 +177,7 @@ const personasRoute = createRoute({
   method: "get",
   path: "/personas",
   tags: ["Nasi"],
-  summary: "The cloud persona catalog (id and label), for pickers like the widget form",
+  summary: "Every persona in the cloud catalog (id and label), default first, for pickers like the widget form",
   security: [{ bearerAuth: [] }],
   responses: {
     200: { description: "OK", content: { "application/json": { schema: NasiPersonasResponseSchema } } },
@@ -188,7 +187,7 @@ const personasRoute = createRoute({
 
 nasiRoutes.openapi(personasRoute, async c => {
   if (!c.get("user")) return unauthorized(c)
-  const personas = await listPersonas()
+  const personas = await packageService.personaCatalog()
   return c.json({ personas: personas.map(p => ({ id: p.id, label: p.label })) }, 200)
 })
 

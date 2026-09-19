@@ -2,14 +2,12 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
-import { mcpServerService, personaService } from "../../src/services"
+import { mcpServerService } from "../../src/services"
 import { cleanupModel, seedModel } from "./helpers"
 
 describe("config export", () => {
   let providerId: string
   let mcpServerId: string
-  let personaRowId: string
-  const personaId = `export-test-${faker.string.alphanumeric(8)}`
 
   beforeAll(async () => {
     ;({ providerId } = await seedModel("export-test"))
@@ -22,21 +20,11 @@ describe("config export", () => {
       enabled: true
     })
     mcpServerId = mcpServer.id
-
-    const persona = await personaService.create({
-      personaId,
-      label: "Export test persona",
-      instructions: "Say hi.",
-      enabled: true,
-      sortOrder: 0
-    })
-    personaRowId = persona.id
   })
 
   afterAll(async () => {
     await cleanupModel(providerId)
     await pool.query("DELETE FROM mcp_server WHERE id = $1", [mcpServerId])
-    await pool.query("DELETE FROM persona WHERE id = $1", [personaRowId])
   })
 
   test("GET /config/export requires no auth and returns a TOML bundle", async () => {
@@ -45,7 +33,8 @@ describe("config export", () => {
     const body = await res.json()
     expect(body.files["models.toml"]).toContain("provider")
     expect(body.files["mcp.toml"]).toContain("export-test")
-    expect(body.files[`personas/${personaId}.toml`]).toContain("Export test persona")
+    // Personas are marketplace packages; `kaja pkg update` brings them, not the export.
+    expect(Object.keys(body.files).sort()).toEqual(["mcp.toml", "models.toml"])
   })
 
   test("strips secret-shaped header values", async () => {
@@ -78,11 +67,9 @@ describe("config export", () => {
     expect(text).toContain("provider")
   })
 
-  test("GET /config/export/personas/<id>.toml returns that persona", async () => {
-    const res = await app.request(`/config/export/personas/${personaId}.toml`)
-    expect(res.status).toBe(200)
-    const text = await res.text()
-    expect(text).toContain("Export test persona")
+  test("GET /config/export/personas/<id>.toml is gone", async () => {
+    // Unmatched, it falls through to the signed-in /config routes; either way no persona is served.
+    expect((await app.request("/config/export/personas/default.toml")).status).not.toBe(200)
   })
 
   test("GET /config/export/<unknown> returns 404", async () => {

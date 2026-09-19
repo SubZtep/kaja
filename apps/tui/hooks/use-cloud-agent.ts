@@ -59,9 +59,9 @@ const DELTA_INTERVAL_MS = 80
  * CLI's counterpart to `useAgent`, exposing the same event/partial/pending
  * shape so `Header`/`ChatViewport`/`UserInput` render either backend
  * unmodified. Persona switching (like local) is destructive — it starts a
- * fresh session and pins `personaId` on every subsequent turn, since Nasi
- * re-resolves the active persona from the request on each call rather than
- * tracking it durably server-side. Unlike the local agent, there is no model
+ * fresh session and pins `personaId` on every subsequent turn, which wins over
+ * the persona Nasi keeps with the session; the model's own `switch_persona`
+ * moves the pin along. Unlike the local agent, there is no model
  * switching and no run_command confirm flow: cloud never emits those. Tool
  * approvals (`confirm_tool`) are answered with `resolveToolApproval`.
  */
@@ -114,6 +114,13 @@ export function useCloudAgent(options: NasiClientOptions) {
     [pending]
   )
 
+  // The model switched persona: the header shows it, and later turns ask for the same one rather than an earlier pick.
+  const followPersonaSwitch = useCallback((event: CloudTimelineEvent) => {
+    if (event.type !== "persona_switch") return
+    personaIdRef.current = event.personaId
+    setSelectedPersona({ id: event.personaId, label: event.label })
+  }, [])
+
   /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while the server hands back client tools. */
   const runTurns = useCallback(
     async (first: { message: string } | { approval: "approve" | "decline" }) => {
@@ -144,6 +151,7 @@ export function useCloudAgent(options: NasiClientOptions) {
       const handleEvent = (event: CloudTimelineEvent) => {
         setPartial(null)
         pushEvent(event)
+        followPersonaSwitch(event)
       }
 
       try {
@@ -180,7 +188,7 @@ export function useCloudAgent(options: NasiClientOptions) {
         setPending(false)
       }
     },
-    [client, pushEvent]
+    [client, pushEvent, followPersonaSwitch]
   )
 
   const send = useCallback(

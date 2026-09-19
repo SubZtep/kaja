@@ -1,11 +1,11 @@
 import { ASK_USER_TOOL, createOpenAIClient, Nasi, replyLanguageInstructionFor } from "@kaja/nasi"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
+import type { Persona } from "@kaja/schema/packages"
 import { isPublicHttpUrl } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { modelService, packageService } from "../../services"
-import { listPersonas } from "./personas"
 import { type CloudPackageSource, createPostgresPackageStore } from "./pg-packages"
 import { createPostgresStore } from "./pg-store"
 
@@ -82,8 +82,8 @@ export async function openNasiFor(opts: {
   packages?: CloudPackageSource
 }): Promise<Nasi> {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
-  const personas = await listPersonas()
   const source = opts.packages ?? { userId: opts.userId }
+  const personas = await personasFor(source)
   // Only the user's own turns get their keys; a widget's skills-only source never needs one.
   const keys = "userId" in source ? await packageService.keysForUser(source.userId) : new Map<string, string>()
   return Nasi.open({
@@ -103,6 +103,11 @@ export async function openNasiFor(opts: {
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })
+}
+
+/** The turn's roster: the user's own personas, or for a widget the whole catalog (its key's persona is where a turn starts). */
+function personasFor(source: CloudPackageSource): Promise<Persona[]> {
+  return "userId" in source ? packageService.personasForUser(source.userId) : packageService.personaCatalog()
 }
 
 /** Serializes turns on an existing session so overlapping requests (retries, duplicate tabs) can't race the read-modify-write around session persistence; a new session (no id yet) has no shared row to race on. */

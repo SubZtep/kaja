@@ -162,7 +162,7 @@ function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefi
     `description, call ${LOAD_SKILL_TOOL} with its name before starting, then follow what it says. ` +
     `Load its other files with ${LOAD_SKILL_TOOL} and a file only when its instructions point to them.` +
     `${scripts}\nAvailable skills:\n` +
-    // One line each, so the section never holds a blank line (refreshSkillsInPrompt relies on that).
+    // One line each, so the section never holds a blank line (refreshPackagesInPrompt relies on that).
     skills.map(s => `- ${s.name}: ${s.description.replace(/\s+/g, " ").trim()}`).join("\n")
   )
 }
@@ -212,32 +212,35 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
 }
 
 /**
- * Keeps a running conversation in step with the skills enabled now: the list is written into the system
- * prompt when the conversation starts, so a skill turned on or off since (on the web, in Telegram) would
- * otherwise never reach it. When the `## Skills` section no longer matches, the prompt is rebuilt in place,
- * as a persona switch does; an unchanged list leaves the message untouched, so prompt caching holds.
+ * Keeps a running conversation in step with the skills and personas enabled now: both lists are written into
+ * the system prompt when the conversation starts, so one turned on or off since (on the web, in Telegram)
+ * would otherwise never reach it. When the `## Skills` or `## Personas` section no longer matches, the prompt
+ * is rebuilt in place, as a persona switch does; unchanged lists leave the message untouched, so prompt
+ * caching holds.
  */
-export async function refreshSkillsInPrompt(
+export async function refreshPackagesInPrompt(
   agent: Agent,
   messages: ChatCompletionMessageParam[],
   owner: string | null = LOCAL_OWNER
 ): Promise<void> {
   const system = messages[0]
   if (system?.role !== "system" || typeof system.content !== "string") return
-  const block = buildSkillsBlock(agent, new Set(agent.tools.map(t => toolName(t))))
-  const current = system.content
-  let upToDate: boolean
-  if (block) {
-    const section = `## Skills\n${block}`
-    const at = current.indexOf(section)
-    const end = at + section.length
-    upToDate = at >= 0 && (end === current.length || current.startsWith("\n\n", end))
-  } else {
-    upToDate = !current.includes("## Skills\n")
-  }
+  const toolNames = new Set(agent.tools.map(t => toolName(t)))
+  const upToDate =
+    hasSection(system.content, "Skills", buildSkillsBlock(agent, toolNames)) &&
+    hasSection(system.content, "Personas", buildPersonasBlock(agent, toolNames))
   if (upToDate) return
   const rebuilt = await buildSystemPrompt(agent, owner)
   if (rebuilt) system.content = rebuilt
+}
+
+// Whether `content` holds exactly this `## <title>` section, or no such section when there's no block.
+function hasSection(content: string, title: string, block: string | undefined): boolean {
+  if (!block) return !content.includes(`## ${title}\n`)
+  const section = `## ${title}\n${block}`
+  const at = content.indexOf(section)
+  const end = at + section.length
+  return at >= 0 && (end === content.length || content.startsWith("\n\n", end))
 }
 
 /**

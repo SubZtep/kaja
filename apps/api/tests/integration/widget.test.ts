@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
-import { cleanupPersona, fakeChatClient, seedPersona, signUpAndSignIn } from "./helpers"
+import { fakeChatClient, signUpAndSignIn } from "./helpers"
 
 describe("widget", () => {
   const email = faker.internet.email()
@@ -101,29 +101,24 @@ describe("widget", () => {
   })
 
   test("a key created with a persona round-trips it through create and list", async () => {
-    // The API only accepts personas that exist, so bring one rather than rely on `bun seed:config`.
-    const persona = await seedPersona("widget-test")
-    try {
-      const createKey = await app.request("/widget/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          label: "Persona widget",
-          allowedOrigins: [allowedOrigin],
-          config: { persona: persona.personaId }
-        })
+    // The API only accepts catalog personas; `default` is always there, built in until a sync brings it.
+    const createKey = await app.request("/widget/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        label: "Persona widget",
+        allowedOrigins: [allowedOrigin],
+        config: { persona: "default" }
       })
-      expect(createKey.status).toBe(201)
-      const created = await createKey.json()
-      expect(created.config.persona).toBe(persona.personaId)
+    })
+    expect(createKey.status).toBe(201)
+    const created = await createKey.json()
+    expect(created.config.persona).toBe("default")
 
-      const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
-      const { keys } = await list.json()
-      const found = keys.find((k: { id: string }) => k.id === created.id)
-      expect(found.config.persona).toBe(persona.personaId)
-    } finally {
-      await cleanupPersona(persona.id)
-    }
+    const list = await app.request("/widget/admin", { headers: { Authorization: `Bearer ${token}` } })
+    const { keys } = await list.json()
+    const found = keys.find((k: { id: string }) => k.id === created.id)
+    expect(found.config.persona).toBe("default")
   })
 
   test("a key can be edited by its owner only", async () => {

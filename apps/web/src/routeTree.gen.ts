@@ -24,7 +24,6 @@ import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as AdminMcpServersIndexRouteImport } from './routes/_admin/mcp-servers/index'
 import { Route as AdminModelsIndexRouteImport } from './routes/_admin/models/index'
-import { Route as AdminPersonasIndexRouteImport } from './routes/_admin/personas/index'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
@@ -104,11 +103,6 @@ const AdminModelsIndexRoute = AdminModelsIndexRouteImport.update({
   path: '/models/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminPersonasIndexRoute = AdminPersonasIndexRouteImport.update({
-  id: '/personas/',
-  path: '/personas/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -152,7 +146,6 @@ export interface FileRoutesByFullPath {
   '/device/done': typeof PublicDeviceDoneRoute
   '/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/models/': typeof AdminModelsIndexRoute
-  '/personas/': typeof AdminPersonasIndexRoute
   '/users/': typeof AdminUsersIndexRoute
   '/device/': typeof PublicDeviceIndexRoute
 }
@@ -172,7 +165,6 @@ export interface FileRoutesByTo {
   '/device/done': typeof PublicDeviceDoneRoute
   '/mcp-servers': typeof AdminMcpServersIndexRoute
   '/models': typeof AdminModelsIndexRoute
-  '/personas': typeof AdminPersonasIndexRoute
   '/users': typeof AdminUsersIndexRoute
   '/device': typeof PublicDeviceIndexRoute
 }
@@ -196,7 +188,6 @@ export interface FileRoutesById {
   '/_public/device/done': typeof PublicDeviceDoneRoute
   '/_admin/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/_admin/models/': typeof AdminModelsIndexRoute
-  '/_admin/personas/': typeof AdminPersonasIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
   '/_public/device/': typeof PublicDeviceIndexRoute
 }
@@ -219,7 +210,6 @@ export interface FileRouteTypes {
     | '/device/done'
     | '/mcp-servers/'
     | '/models/'
-    | '/personas/'
     | '/users/'
     | '/device/'
   fileRoutesByTo: FileRoutesByTo
@@ -239,7 +229,6 @@ export interface FileRouteTypes {
     | '/device/done'
     | '/mcp-servers'
     | '/models'
-    | '/personas'
     | '/users'
     | '/device'
   id:
@@ -262,7 +251,6 @@ export interface FileRouteTypes {
     | '/_public/device/done'
     | '/_admin/mcp-servers/'
     | '/_admin/models/'
-    | '/_admin/personas/'
     | '/_admin/users/'
     | '/_public/device/'
   fileRoutesById: FileRoutesById
@@ -379,13 +367,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminModelsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/personas/': {
-      id: '/_admin/personas/'
-      path: '/personas'
-      fullPath: '/personas/'
-      preLoaderRoute: typeof AdminPersonasIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_admin/users/': {
       id: '/_admin/users/'
       path: '/users'
@@ -434,7 +415,6 @@ interface AdminRouteChildren {
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminMcpServersIndexRoute: typeof AdminMcpServersIndexRoute
   AdminModelsIndexRoute: typeof AdminModelsIndexRoute
-  AdminPersonasIndexRoute: typeof AdminPersonasIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
@@ -448,7 +428,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminMcpServersIndexRoute: AdminMcpServersIndexRoute,
   AdminModelsIndexRoute: AdminModelsIndexRoute,
-  AdminPersonasIndexRoute: AdminPersonasIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 
@@ -496,3 +475,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

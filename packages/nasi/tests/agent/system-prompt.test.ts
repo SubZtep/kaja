@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import type { Persona } from "@kaja/schema/cli"
-import { Agent, runCommandTool } from "../../src/agent/agent"
-import { buildSystemPrompt, refreshSkillsInPrompt, replyLanguageInstructionFor } from "../../src/agent/system-prompt"
+import { Agent, runCommandTool, switchPersonaTool } from "../../src/agent/agent"
+import { buildSystemPrompt, refreshPackagesInPrompt, replyLanguageInstructionFor } from "../../src/agent/system-prompt"
 import { createLoadSkillTool } from "../../src/packages/skills"
 import type { PackageStore, SkillSummary } from "../../src/packages/types"
 
@@ -81,19 +81,19 @@ async function conversationWith(agent: Agent) {
 
 test("a running conversation picks up a skill turned on since it started", async () => {
   const messages = await conversationWith(skillAgent({ skills: [pdfSkill] }))
-  await refreshSkillsInPrompt(skillAgent({ skills: [pdfSkill, notesSkill] }), messages, null)
+  await refreshPackagesInPrompt(skillAgent({ skills: [pdfSkill, notesSkill] }), messages, null)
   expect(messages[0]!.content).toContain("- notes: Keep notes.")
   expect(messages[0]!.content).toContain("- pdf: Work with PDF files.")
 })
 
 test("a skill turned off leaves the list, and the section goes when none are left", async () => {
   const messages = await conversationWith(skillAgent({ skills: [pdfSkill, notesSkill] }))
-  await refreshSkillsInPrompt(skillAgent({ skills: [pdfSkill] }), messages, null)
+  await refreshPackagesInPrompt(skillAgent({ skills: [pdfSkill] }), messages, null)
   expect(messages[0]!.content).toContain("- pdf: Work with PDF files.")
   expect(messages[0]!.content).not.toContain("- notes:")
 
   const noSkills = new Agent({ model: "m", tools: [], personas: [], promptContext: { environment: "test" } })
-  await refreshSkillsInPrompt(noSkills, messages, null)
+  await refreshPackagesInPrompt(noSkills, messages, null)
   expect(messages[0]!.content).not.toContain("## Skills")
 })
 
@@ -103,7 +103,7 @@ test("an unchanged skill list leaves the system prompt exactly as it was", async
   // Something else in the prompt that a rebuild would change: it must survive untouched.
   messages[0]!.content += "\n\nmarker from an earlier turn"
   const before = messages[0]!.content
-  await refreshSkillsInPrompt(agent, messages, null)
+  await refreshPackagesInPrompt(agent, messages, null)
   expect(messages[0]!.content).toBe(before)
 })
 
@@ -111,4 +111,36 @@ test("a multi-line skill description is listed on one line", async () => {
   const wordy = { name: "wordy", description: "Line one.\n\nLine two.", files: [] }
   const prompt = (await buildSystemPrompt(skillAgent({ skills: [wordy] }))) ?? ""
   expect(prompt).toContain("- wordy: Line one. Line two.")
+})
+
+const helper: Persona = { id: "default", label: "Helpful assistant" }
+const care: Persona = { id: "care", label: "Care", when: "the user is sad" }
+const quiz: Persona = { id: "quiz", label: "Quiz", when: "the user wants a game" }
+
+function personaAgent(personas: Persona[], personaId = "default") {
+  return new Agent({
+    model: "m",
+    tools: [switchPersonaTool],
+    personas,
+    personaId,
+    promptContext: { environment: "test" }
+  })
+}
+
+test("a running conversation's persona roster follows personas turned on or off since it started", async () => {
+  const messages = await conversationWith(personaAgent([helper, care]))
+  await refreshPackagesInPrompt(personaAgent([helper, care, quiz]), messages, null)
+  expect(messages[0]!.content).toContain("- quiz (Quiz): use when the user wants a game")
+
+  await refreshPackagesInPrompt(personaAgent([helper]), messages, null)
+  expect(messages[0]!.content).not.toContain("## Personas")
+})
+
+test("an unchanged persona roster leaves the system prompt exactly as it was", async () => {
+  const agent = personaAgent([helper, care], "care")
+  const messages = await conversationWith(agent)
+  messages[0]!.content += "\n\nmarker from an earlier turn"
+  const before = messages[0]!.content
+  await refreshPackagesInPrompt(agent, messages, null)
+  expect(messages[0]!.content).toBe(before)
 })

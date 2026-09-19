@@ -16,10 +16,11 @@ const tag = faker.string.alphanumeric(6).toLowerCase()
 const skills = Array.from({ length: 9 }, (_, i) => `s${i}-${tag}`)
 const keyless = `keyless-${tag}`
 const keyed = `keyed-${tag}`
+const persona = `persona-${tag}`
 const LINKED = 3001
 const STRANGER = 3002
 
-/** A marketplace folder with nine skills and two HTTP tools (one needs a key), minus any in `leave`. */
+/** A marketplace folder with nine skills, a persona and two HTTP tools (one needs a key), minus any in `leave`. */
 function marketplace(base: string, leave: string[] = []) {
   const root = mkdtempSync(join(base, "mp-"))
   const put = (rel: string, content: string) => {
@@ -31,6 +32,7 @@ function marketplace(base: string, leave: string[] = []) {
   const tool = (name: string, auth = "") =>
     `name = "${name}"\ndescription = "Tool ${name}"\nbaseUrl = "https://api.${name}.test"\n${auth}` +
     `[[tools]]\nname = "${name.replaceAll("-", "_")}"\ndescription = "x"\npath = "/"\n`
+  put(`personas/${persona}.toml`, 'label = "Test persona"\n')
   if (!leave.includes(keyless)) put(`tools/${keyless}.toml`, tool(keyless))
   put(`tools/${keyed}.toml`, tool(keyed, `auth = { type = "apiKey", in = "header", name = "X-Key" }\n`))
   return root
@@ -77,7 +79,7 @@ describe("the cloud bot's /packages", () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("lists the catalog as buttons, skills first, with a key marker, a web link and pages", async () => {
+  test("lists the catalog as buttons, skills then personas then tools, with a key marker, a web link and pages", async () => {
     await driver.handleMessage(LINKED, 1, "/packages@kaja_bot")
     const first = list()
     expect(first.text).toContain("/packages")
@@ -91,6 +93,7 @@ describe("the cloud bot's /packages", () => {
     expect(second.text).toContain("Page 2 of 2")
     expect(second.rows!.flat().map(b => b.text)).toEqual([
       `▫️ ${skills[8]} · skill`,
+      `▫️ ${persona} · persona`,
       `🔑 ${keyed} · tool`,
       `▫️ ${keyless} · tool`,
       "‹ Previous"
@@ -106,6 +109,14 @@ describe("the cloud bot's /packages", () => {
     await tap(keyless)
     expect(await enabled()).not.toContain(keyless)
     expect(button(keyless)!.text).toBe(`▫️ ${keyless} · tool`)
+  })
+
+  test("a persona toggles like any other package", async () => {
+    await tap(persona)
+    expect(await enabled()).toContain(persona)
+    expect(button(persona)!.text).toBe(`✅ ${persona} · persona`)
+    await tap(persona)
+    expect(await enabled()).not.toContain(persona)
   })
 
   test("someone who isn't linked can't change anything", async () => {

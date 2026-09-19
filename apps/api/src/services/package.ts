@@ -6,19 +6,23 @@ import {
   type KeyCheckResult,
   parseHttpToolManifest,
   parseMcpManifest,
+  parsePersonaManifest,
   parseSkillMd
 } from "@kaja/nasi"
-import type {
-  CatalogPackage,
-  KeyedPackageType,
-  PackageKeyNeed,
-  PackageType,
-  SkillDetail,
-  UserPackage
+import {
+  type CatalogPackage,
+  DEFAULT_PERSONA,
+  type KeyedPackageType,
+  type PackageKeyNeed,
+  type PackageType,
+  type SkillDetail,
+  type UserPackage
 } from "@kaja/schema/api"
-import type { HttpToolPackage, McpPackage } from "@kaja/schema/packages"
+import type { HttpToolPackage, McpPackage, Persona } from "@kaja/schema/packages"
 import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
+// Built in, so the cloud has its default persona before the first sync brings the same file.
+import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml" with { type: "text" }
 import type { SecretService } from "./secret"
 
 /** An enabled skill with its files, for the agent's Postgres PackageStore. */
@@ -56,6 +60,13 @@ function keyNeed(pkg: HttpToolPackage | McpPackage): PackageKeyNeed {
   return pkg.auth.optional ? "optional" : "required"
 }
 
+/** `default` first: the catalog's own, or the built-in one when the catalog has none. */
+function withDefaultFirst(personas: Persona[]): Persona[] {
+  const own = personas.find(persona => persona.id === DEFAULT_PERSONA)
+  const others = personas.filter(persona => persona.id !== DEFAULT_PERSONA)
+  return [own ?? parsePersonaManifest(DEFAULT_PERSONA_TOML, DEFAULT_PERSONA), ...others]
+}
+
 export class PackageService {
   readonly #db: Pool
   readonly #secrets: SecretService
@@ -70,7 +81,7 @@ export class PackageService {
     return this.#secrets.enabled
   }
 
-  /** What users can enable: available skills, HTTP tools and MCP servers, by type and name. */
+  /** What users can enable: available skills, personas (not `default`, which everyone always has), HTTP tools and MCP servers, by type and name. */
   async listCatalog(): Promise<CatalogPackage[]> {
     const { rows } = await this.#db.query(
       `
@@ -86,7 +97,11 @@ export class PackageService {
         description: row.description,
         updatedAt: new Date(row.updated_at)
       }
-      if (row.type !== "skill") {
+      if (row.type === "persona") {
+        const persona = row.name === DEFAULT_PERSONA ? undefined : this.#parsePersona(row)
+        if (!persona) continue
+        entry.persona = { label: persona.label, when: persona.when, instructions: persona.instructions }
+      } else if (row.type !== "skill") {
         const keyed = this.#usable(row)
         if (!keyed) continue
         if (keyed.type === "tool") {
@@ -154,7 +169,7 @@ export class PackageService {
       name: row.name,
       description: row.description,
       enabledAt: new Date(row.enabled_at),
-      available: row.available && (row.type === "skill" || this.#usable(row) !== undefined)
+      available: row.available && this.#runs(row)
     }))
   }
 
@@ -165,7 +180,7 @@ export class PackageService {
 
   /** Enables an available package for the user. Enabling twice is fine; a tool or MCP server that requires a key needs one saved first. */
   async enable(userId: string, type: PackageType, name: string): Promise<EnableResult> {
-    if (type !== "skill") {
+    if (type === "tool" || type === "mcp") {
       const keyed = await this.#getKeyed(type, name)
       if (!keyed) return "not_found"
       if (keyNeed(keyed.pkg) === "required" && !(await this.#secrets.has(userId, packageSecretName(name)))) {
@@ -226,6 +241,28 @@ export class PackageService {
   async unknownSkills(names: string[]): Promise<string[]> {
     const known = new Set((await this.skillsByName(names)).map(skill => skill.name))
     return names.filter(name => !known.has(name))
+  }
+
+  /** Every persona in the catalog, `default` first (the built-in one until a sync brings it). */
+  async personaCatalog(): Promise<Persona[]> {
+    const { rows } = await this.#db.query(
+      `SELECT p.type, p.name, p.files FROM package p WHERE p.type = 'persona' AND ${AVAILABLE} ORDER BY p.name`
+    )
+    return withDefaultFirst(rows.map(row => this.#parsePersona(row)).filter(persona => persona !== undefined))
+  }
+
+  /** The user's roster: `default` first, then the personas they enabled that are still available. */
+  async personasForUser(userId: string): Promise<Persona[]> {
+    const { rows } = await this.#db.query(
+      `
+      SELECT p.type, p.name, p.files FROM package p
+      WHERE p.type = 'persona' AND ${AVAILABLE}
+        AND (p.name = $2 OR EXISTS (SELECT 1 FROM user_package up WHERE up.package_id = p.id AND up.user_id = $1))
+      ORDER BY p.name
+      `,
+      [userId, DEFAULT_PERSONA]
+    )
+    return withDefaultFirst(rows.map(row => this.#parsePersona(row)).filter(persona => persona !== undefined))
   }
 
   /** The user's enabled HTTP tool packages that can run here, for the agent's Postgres PackageStore. */
@@ -325,6 +362,26 @@ export class PackageService {
       })
       return undefined
     }
+  }
+
+  /** A stored persona, parsed; undefined (with a warning) when it no longer parses. */
+  #parsePersona(row: ManifestRow): Persona | undefined {
+    try {
+      return parsePersonaManifest(row.files[`${row.name}.toml`] ?? "", row.name)
+    } catch (error) {
+      warn("Stored persona can't be used; leaving it out", {
+        persona: row.name,
+        error: error instanceof Error ? error.message : error
+      })
+      return undefined
+    }
+  }
+
+  /** Whether an available package can actually run here: its stored manifest still parses (and a keyed one can get its key). */
+  #runs(row: ManifestRow): boolean {
+    if (row.type === "skill") return true
+    if (row.type === "persona") return this.#parsePersona(row) !== undefined
+    return this.#usable(row) !== undefined
   }
 
   /** {@link #parse}, but also undefined when it requires a key while keys can't be stored. */

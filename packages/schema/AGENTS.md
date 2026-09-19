@@ -10,7 +10,6 @@ api/         # API contracts: shared by API, web, and CLI device auth
   auth.ts      # auth-related payloads
   mcp-server.ts  # MCP server admin CRUD schemas
   model.ts       # provider/model admin CRUD schemas
-  persona-toml.ts  # persona admin CRUD schemas
   widget-key.ts    # widget key admin CRUD schemas
 config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml, secrets.toml, packages.toml)
 store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi

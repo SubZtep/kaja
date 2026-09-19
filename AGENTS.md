@@ -128,10 +128,11 @@ bun run --filter @kaja/tui test
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
 5. `2026-09-07-nasi.sql` — cloud agent state (sessions, memory, datasets)
-6. `2026-09-08-persona.sql` — `persona` table (admin-managed persona catalog; seed via `bun seed:config`, see `apps/api/scripts/seed-config.ts`)
+6. `2026-09-08-persona.sql` — `persona` table (the old admin-managed persona catalog; dropped by `2026-09-19-persona-package.sql`)
 7. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
 8. `2026-09-19-package.sql` — `package`, `user_package`, `marketplace_sync` (cloud package catalog synced from `marketplace/`)
-9. `2026-09-19-user-secret.sql` — `user_secret` (users' package API keys, AES-256-GCM with `USER_SECRET_KEY`)
+9. `2026-09-19-persona-package.sql` — drops `persona`: personas are `package` rows of type `persona` now
+10. `2026-09-19-user-secret.sql` — `user_secret` (users' package API keys, AES-256-GCM with `USER_SECRET_KEY`)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 

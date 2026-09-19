@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import {
+  DEFAULT_PERSONA,
   keyedPackageTypeSchema,
   listCatalogResponseSchema,
   listUserPackagesResponseSchema,
@@ -15,6 +16,8 @@ import { requireAuthMiddleware } from "../auth"
 import { nasiToolDeps } from "../nasi/chat"
 
 const errorSchema = z.object({ error: z.string() })
+const ALWAYS_ON = "The default persona is always on"
+const isDefaultPersona = (type: string, name: string) => type === "persona" && name === DEFAULT_PERSONA
 const packageParams = z.object({
   type: packageTypeSchema.openapi({ param: { name: "type", in: "path" }, example: "skill" }),
   name: z
@@ -32,7 +35,7 @@ const catalogRoute = createRoute({
   method: "get",
   path: "/",
   tags: ["Packages"],
-  summary: "The cloud catalog: marketplace skills, HTTP tools and MCP servers anyone can enable",
+  summary: "The cloud catalog: marketplace skills, personas, HTTP tools and MCP servers anyone can enable",
   responses: {
     200: { description: "OK", content: { "application/json": { schema: listCatalogResponseSchema } } }
   }
@@ -98,7 +101,7 @@ const enableRoute = createRoute({
   responses: {
     200: { description: "Enabled", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
     400: {
-      description: "`key_required`: save the tool's key first",
+      description: "`key_required`: save the tool's key first; or the default persona, which is always on",
       content: { "application/json": { schema: errorSchema } }
     },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
@@ -110,6 +113,7 @@ packageRoutes.openapi(enableRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { type, name } = c.req.valid("param")
+  if (isDefaultPersona(type, name)) return badRequest(c, ALWAYS_ON)
   const result = await packageService.enable(user.id, type, name)
   if (result === "not_found") return notFound(c, "Package not found")
   if (result === "key_required") return badRequest(c, "key_required")
@@ -125,6 +129,10 @@ const disableRoute = createRoute({
   request: { params: packageParams },
   responses: {
     200: { description: "Disabled", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
+    400: {
+      description: "The default persona, which is always on",
+      content: { "application/json": { schema: errorSchema } }
+    },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
     404: { description: "No such package", content: { "application/json": { schema: errorSchema } } }
   }
@@ -134,6 +142,7 @@ packageRoutes.openapi(disableRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   const { type, name } = c.req.valid("param")
+  if (isDefaultPersona(type, name)) return badRequest(c, ALWAYS_ON)
   if (!(await packageService.disable(user.id, type, name))) return notFound(c, "Package not found")
   return c.json({ ok: true })
 })

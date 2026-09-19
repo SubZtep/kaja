@@ -18,7 +18,7 @@ import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/packages")({
-  validateSearch: z.object({ tab: z.enum(["skills", "tools"]).optional() }),
+  validateSearch: z.object({ tab: z.enum(["skills", "personas", "tools"]).optional() }),
   component: PackagesPage,
   head: () => ({ meta: seo({ title: m.nav_packages() }) })
 })
@@ -96,7 +96,7 @@ function PackagesPage() {
         <ValueBox label={m.skills_enabled()}>{enabledCount}</ValueBox>
       </PageHeader>
       {user?.role === "admin" && <MarketplaceSyncPanel />}
-      <PackageTabs tab={tab} onTabChange={next => navigate({ search: { tab: next }, replace: true })} />
+      <PackageTabs personas tab={tab} onTabChange={next => navigate({ search: { tab: next }, replace: true })} />
     </>
   )
 }

@@ -20,9 +20,9 @@ always-current list. This page is the map.
 | --- | --- | --- |
 | `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
 | `/users/me` | session | the signed-in user |
-| `/admin/*` | session + `admin` role | MCP servers, providers, models, personas |
+| `/admin/*` | session + `admin` role | MCP servers, providers, models, marketplace sync |
 | `/widget/admin/*` | session | list, create, and delete [widget](/widget) keys |
-| `/packages`, `/packages/skill/{name}` | none | the marketplace catalog (skills, HTTP tools, MCP servers) |
+| `/packages`, `/packages/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
 | `/packages/me/*` | session | the user's own packages and their write-only API keys |
 | `/nasi/*` | bearer | cloud agent — turns and sessions |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
@@ -52,9 +52,9 @@ NAT doesn't starve everyone.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/packages` | the catalog; HTTP tools and MCP servers include their host, key need and tools |
+| `GET` | `/packages` | the catalog; personas include their label, `when` and instructions (never `default`, which is always on); HTTP tools and MCP servers their host, key need and tools |
 | `GET` | `/packages/me` | the user's packages, which ones have a saved key, and whether keys can be saved |
-| `PUT` / `DELETE` | `/packages/me/{type}/{name}` | turn a skill, tool or MCP server on or off (`key_required` until one that needs a key has it) |
+| `PUT` / `DELETE` | `/packages/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
 | `PUT` / `DELETE` | `/packages/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
 
 Keys live in `user_secret`, AES-256-GCM encrypted with `USER_SECRET_KEY`; the user id and the name

@@ -69,8 +69,8 @@ What cloud mode **does not** have:
 `read_file`/`list_files` do work in cloud mode: the server can't touch your disk, so it pauses the
 turn and the CLI runs them locally (scoped to the directory you launched it from) before resuming
 — transparent, no confirmation prompt. Persona switching also works, both automatically
-(`switch_persona`, mid-conversation) and manually (the key bar's persona picker), from an
-admin-managed persona catalog on the server.
+(`switch_persona`, mid-conversation) and manually (the key bar's persona picker), among the
+personas you turned on at [kaja.io/packages](https://kaja.io/packages).
 
 Marketplace skills, HTTP tools and remote MCP servers you turned on at
 [kaja.io/packages](https://kaja.io/packages) work too; a call that changes something asks for your

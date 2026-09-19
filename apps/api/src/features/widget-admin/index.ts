@@ -11,7 +11,6 @@ import { packageService, widgetService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth"
-import { listPersonas } from "../nasi/personas"
 
 const errorSchema = z.object({ error: z.string() })
 const idParam = z.object({
@@ -20,7 +19,7 @@ const idParam = z.object({
 
 /** Why a config can't be saved (unknown persona or skills), or undefined when it's fine. */
 async function configError(config: WidgetConfig | undefined): Promise<string | undefined> {
-  if (config?.persona && !(await listPersonas()).some(p => p.id === config.persona)) {
+  if (config?.persona && !(await packageService.personaCatalog()).some(p => p.id === config.persona)) {
     return `Unknown persona "${config.persona}"`
   }
   const unknownSkills = config?.skills ? await packageService.unknownSkills(config.skills) : []

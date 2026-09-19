@@ -110,6 +110,30 @@ test("personaId on the request re-resolves the active persona every turn, includ
   expect((await store.loadSession(second.session))?.persona).toBe("b")
 })
 
+test("a resumed session without personaId keeps the persona the model switched to", async () => {
+  const personaA = { id: "a", label: "A", instructions: "You are A", when: "anything" }
+  const personaB = { id: "b", label: "B", instructions: "You are B", when: "games" }
+  const store = createMemoryStore()
+  const sent: SentMessage[][] = []
+  const switchToB = {
+    id: "call_1",
+    type: "function",
+    function: { name: "switch_persona", arguments: JSON.stringify({ persona: "b" }) }
+  }
+  const nasi = await open(
+    [{ content: null, tool_calls: [switchToB] }, { content: "now B" }, { content: "still B" }],
+    { store, personas: [personaA, personaB] },
+    sent
+  )
+
+  const first = await nasi.turnBuffered({ message: "let's play" })
+  expect((await store.loadSession(first.session))?.persona).toBe("b")
+
+  await nasi.turnBuffered({ session: first.session, message: "again" })
+  expect((await store.loadSession(first.session))?.persona).toBe("b")
+  expect(String(sent.at(-1)![0]!.content)).toContain("You are B")
+})
+
 test("plain question mark final is completed, not needs_input", async () => {
   const nasi = await open([{ content: "Is it alive?" }])
   const result = await nasi.turnBuffered({ message: "guess" })

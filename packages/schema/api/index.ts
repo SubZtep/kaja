@@ -3,8 +3,6 @@ export * from "./config-export"
 export * from "./mcp-server"
 export * from "./model"
 export * from "./package"
-export * from "./persona"
-export * from "./persona-toml"
 export * from "./telegram-link"
 export * from "./widget-key"
 

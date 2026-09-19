@@ -197,12 +197,12 @@ export class Nasi {
 
   private async loadTurn(input: NasiTurnInput): Promise<LoadedTurn> {
     const personas = this.opts.personas ?? []
-    const persona = personas.find(p => p.id === input.personaId) ?? personas[0]
 
     const sessionId = input.session
     let session = createSession()
     let events: unknown[] = []
     let title = (input.message ?? "").split(/[\r\n]/)[0]!.slice(0, 60)
+    let storedPersona: string | undefined
 
     if (sessionId) {
       const row = await this.opts.store.loadSession(sessionId)
@@ -216,7 +216,10 @@ export class Nasi {
       session = row.session as Session
       events = row.events
       title = row.title
+      storedPersona = row.persona
     }
+    // The request's pick wins; otherwise a resumed session keeps its persona, one the model switched to included.
+    const persona = personas.find(p => p.id === (input.personaId ?? storedPersona)) ?? personas[0]
 
     const agent = new Agent({
       model: this.opts.chat.model,

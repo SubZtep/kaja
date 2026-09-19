@@ -6,9 +6,11 @@ import { info, warn } from "@kaja/logger"
 import {
   parseHttpToolManifest,
   parseMcpManifest,
+  parsePersonaManifest,
   readSkillBundle,
   scanHttpTools,
   scanMcpPackages,
+  scanPersonas,
   scanSkills
 } from "@kaja/nasi"
 import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/api"
@@ -23,7 +25,7 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/
 export type MarketplaceSource = { repo: string; ref: string }
 
 /**
- * Keeps the `package` table in step with the `marketplace/` folder (skills, HTTP tools, MCP servers) of a GitHub repo. A sync asks
+ * Keeps the `package` table in step with the `marketplace/` folder (skills, personas, HTTP tools, MCP servers) of a GitHub repo. A sync asks
  * GitHub for the branch's commit first and only downloads the tarball when it moved. Packages are
  * never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
@@ -79,7 +81,7 @@ export class MarketplaceService {
     })
   }
 
-  /** Applies a marketplace folder already on disk: upserts every valid skill, HTTP tool and MCP package, marks the rest removed. No network — the sync and tests both use it. */
+  /** Applies a marketplace folder already on disk: upserts every valid skill, persona, HTTP tool and MCP package, marks the rest removed. No network — the sync and tests both use it. */
   async syncFromDir(
     marketplaceDir: string,
     commit: string
@@ -92,6 +94,7 @@ export class MarketplaceService {
       }
       bundles.push({ type: "skill", ...(await readSkillBundle(marketplaceDir, entry.name)) })
     }
+    bundles.push(...(await readPersonaFiles(marketplaceDir)))
     const tools = await readHttpTools(marketplaceDir)
     bundles.push(...tools)
     bundles.push(...(await readMcpPackages(marketplaceDir, new Set(tools.map(tool => tool.name)))))
@@ -203,9 +206,14 @@ export class MarketplaceService {
 }
 
 /** Package types the sync owns; anything else in the table is left alone. */
-const SYNCED_TYPES = ["skill", "tool", "mcp"] as const
+const SYNCED_TYPES = ["skill", "persona", "tool", "mcp"] as const
 
-const MARKETPLACE_FOLDER: Record<PackageBundle["type"], string> = { skill: "skills", tool: "tools", mcp: "mcp" }
+const MARKETPLACE_FOLDER: Record<PackageBundle["type"], string> = {
+  skill: "skills",
+  persona: "personas",
+  tool: "tools",
+  mcp: "mcp"
+}
 
 type PackageBundle = {
   type: (typeof SYNCED_TYPES)[number]
@@ -218,6 +226,32 @@ type PackageBundle = {
 /** How a package shows in a sync result: skills by name, others by their marketplace path. */
 function reportName(type: PackageBundle["type"], name: string): string {
   return type === "skill" ? name : `${MARKETPLACE_FOLDER[type]}/${name}`
+}
+
+/** Every valid `personas/*.toml` as stored text, with its label as the description; broken ones are skipped with a warning. */
+async function readPersonaFiles(marketplaceDir: string): Promise<PackageBundle[]> {
+  const bundles: PackageBundle[] = []
+  for (const entry of await scanPersonas(marketplaceDir)) {
+    const file = `${entry.name}.toml`
+    try {
+      if (entry.error) throw new Error(entry.error)
+      const text = await readFile(join(marketplaceDir, "personas", file), "utf8")
+      const persona = parsePersonaManifest(text, entry.name)
+      bundles.push({
+        type: "persona",
+        name: entry.name,
+        description: persona.label,
+        files: { [file]: text },
+        hasScripts: false
+      })
+    } catch (error) {
+      warn("Marketplace persona skipped", {
+        persona: entry.name,
+        error: error instanceof Error ? error.message : error
+      })
+    }
+  }
+  return bundles
 }
 
 /** Every valid `tools/*.toml` as stored text; broken manifests and ones that call a non-public host are skipped with a warning. */

@@ -1,23 +1,21 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { createMiddleware } from "hono/factory"
-import { mcpServerService, modelService, personaService } from "../../services"
+import { mcpServerService, modelService } from "../../services"
 import type { RouteProps, RouteVariables } from "../../types"
 import { adminMiddleware, requireAuthMiddleware } from "../auth"
 import { registerAdminMcpServers } from "./mcp-server"
 import { registerAdminModels } from "./model"
 import { registerAdminPackages } from "./package"
-import { registerAdminPersonas } from "./persona"
 
 const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
   c.set("mcpServerService", mcpServerService)
   c.set("modelService", modelService)
-  c.set("personaService", personaService)
   await next()
 })
 
 /**
  * Platform-admin-only: /admin/mcp-servers/*, /admin/providers/*, /admin/models/*,
- * /admin/personas/*, /admin/packages/sync (registered before parameterized routes).
+ * /admin/packages/sync (registered before parameterized routes).
  */
 export const adminRoutes = new OpenAPIHono<RouteProps>()
 adminRoutes.use("*", requireAuthMiddleware)
@@ -29,9 +27,6 @@ registerAdminMcpServers(adminRoutes)
 adminRoutes.use("/providers/*", adminMiddleware)
 adminRoutes.use("/models/*", adminMiddleware)
 registerAdminModels(adminRoutes)
-
-adminRoutes.use("/personas/*", adminMiddleware)
-registerAdminPersonas(adminRoutes)
 
 adminRoutes.use("/packages/*", adminMiddleware)
 registerAdminPackages(adminRoutes)

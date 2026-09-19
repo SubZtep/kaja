@@ -6,13 +6,13 @@ import type { TelegramButton } from "./driver"
 
 /** Buttons per page, so the list stays one screen tall. */
 const PAGE_SIZE = 8
-const TYPE_ORDER: PackageType[] = ["skill", "tool", "mcp"]
-const TYPE_LABEL: Record<PackageType, string> = { skill: "skill", tool: "tool", mcp: "MCP" }
-const TYPE_CODE: Record<PackageType, string> = { skill: "s", tool: "t", mcp: "m" }
+const TYPE_ORDER: PackageType[] = ["skill", "persona", "tool", "mcp"]
+const TYPE_LABEL: Record<PackageType, string> = { skill: "skill", persona: "persona", tool: "tool", mcp: "MCP" }
+const TYPE_CODE: Record<PackageType, string> = { skill: "s", persona: "p", tool: "t", mcp: "m" }
 const STATE_ICON = { on: "✅", off: "▫️", key: "🔑", gone: "⚠️" } as const
 
 /** `pkg:<type>:<name hash>:<page>` toggles one package; `pkgp:<page>` turns the page. Both stay under the Bot API's 64-byte cap. */
-export const PACKAGE_CALLBACK = /^pkg:([stm]):([0-9a-f]{12}):(\d+)$/
+export const PACKAGE_CALLBACK = /^pkg:([sptm]):([0-9a-f]{12}):(\d+)$/
 export const PACKAGE_PAGE_CALLBACK = /^pkgp:(\d+)$/
 
 /** One row of the list: on, off, off because it needs a key the user hasn't saved, or on but gone from the marketplace. */
@@ -29,7 +29,7 @@ export function packagesWebUrl(tab?: "tools"): string {
   return `${base}/packages${query}`
 }
 
-/** The catalog as the user sees it (skills, then tools, then MCP servers), plus enabled packages that left it. */
+/** The catalog as the user sees it (skills, personas, tools, then MCP servers), plus enabled packages that left it. */
 export async function packageEntries(userId: string): Promise<PackageEntry[]> {
   const [catalog, mine, keys] = await Promise.all([
     packageService.listCatalog(),

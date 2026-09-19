@@ -1,4 +1,4 @@
-import type { McpServer, Model, Persona, Provider } from "@kaja/schema/api"
+import type { McpServer, Model, Provider } from "@kaja/schema/api"
 import { TOML } from "bun"
 
 // GET /config/export is public, so this is the only thing standing between an admin-entered MCP
@@ -53,18 +53,4 @@ export function renderMcpToml(servers: McpServer[]): string {
     )
 
   return generatedHeader() + TOML.stringify({ servers: serversData })
-}
-
-/** One persona/<id>.toml file. */
-export function renderPersonaToml(persona: Persona): string {
-  const data: Record<string, unknown> = {
-    label: persona.label,
-    ...(persona.when ? { when: persona.when } : {}),
-    ...(persona.instructions ? { instructions: persona.instructions } : {}),
-    ...(persona.dataset ? { dataset: persona.dataset } : {}),
-    ...(Object.keys(persona.models).length > 0 ? { models: persona.models } : {}),
-    ...persona.sampling
-  }
-
-  return generatedHeader() + TOML.stringify(data)
 }

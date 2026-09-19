@@ -1,7 +1,10 @@
 import { z } from "zod"
 
-/** Package types the cloud serves: skills, HTTP tools and remote MCP servers. */
-export const packageTypeSchema = z.enum(["skill", "tool", "mcp"])
+/** Package types the cloud serves: skills, personas, HTTP tools and remote MCP servers. */
+export const packageTypeSchema = z.enum(["skill", "persona", "tool", "mcp"])
+
+/** The persona every user always has; it's never enabled or disabled. */
+export const DEFAULT_PERSONA = "default"
 
 /** Package types that can take the user's API key. */
 export const keyedPackageTypeSchema = z.enum(["tool", "mcp"])
@@ -29,6 +32,15 @@ export const mcpDetailSchema = z.object({
   tools: z.array(z.string())
 })
 
+/** Who a persona is, shown before enabling it. */
+export const personaDetailSchema = z.object({
+  label: z.string(),
+  /** When the model switches to it on its own; without one, only a manual pick does. */
+  when: z.string().optional(),
+  /** Its system prompt. */
+  instructions: z.string().optional()
+})
+
 /** One entry of the cloud catalog: what a user can enable. */
 export const catalogPackageSchema = z.object({
   type: packageTypeSchema,
@@ -38,7 +50,9 @@ export const catalogPackageSchema = z.object({
   /** HTTP tools only. */
   http: httpToolDetailSchema.optional(),
   /** MCP servers only. */
-  mcp: mcpDetailSchema.optional()
+  mcp: mcpDetailSchema.optional(),
+  /** Personas only. */
+  persona: personaDetailSchema.optional()
 })
 
 export const listCatalogResponseSchema = z.object({
@@ -93,7 +107,7 @@ export const marketplaceSyncResultSchema = z.object({
   commit: z.string(),
   /** False when the branch hadn't moved since the last sync, so nothing was downloaded. */
   changed: z.boolean(),
-  /** Skill names; other packages as their marketplace path (`tools/<name>`, `mcp/<name>`). */
+  /** Skill names; other packages as their marketplace path (`personas/<name>`, `tools/<name>`, `mcp/<name>`). */
   added: z.array(z.string()),
   updated: z.array(z.string()),
   removed: z.array(z.string())
@@ -104,6 +118,7 @@ export type PackageKeyNeed = z.infer<typeof packageKeyNeedSchema>
 export type KeyedPackageType = z.infer<typeof keyedPackageTypeSchema>
 export type HttpToolDetail = z.infer<typeof httpToolDetailSchema>
 export type McpDetail = z.infer<typeof mcpDetailSchema>
+export type PersonaDetail = z.infer<typeof personaDetailSchema>
 export type CatalogPackage = z.infer<typeof catalogPackageSchema>
 export type ListCatalogResponse = z.infer<typeof listCatalogResponseSchema>
 export type SkillDetail = z.infer<typeof skillDetailSchema>

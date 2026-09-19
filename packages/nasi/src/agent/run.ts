@@ -13,7 +13,7 @@ import {
 } from "./agent"
 import { isDangerousCommand } from "./command-risk"
 import { runShellCommand } from "./run-command"
-import { applyPersonaToMessages, buildSystemPrompt, refreshSkillsInPrompt } from "./system-prompt"
+import { applyPersonaToMessages, buildSystemPrompt, refreshPackagesInPrompt } from "./system-prompt"
 import { type Tool, toolName } from "./tools"
 
 type FunctionToolCall = {
@@ -441,7 +441,7 @@ export async function* run(
     const system = await buildSystemPrompt(agent, owner)
     if (system) messages.push({ role: "system", content: system })
   } else {
-    await refreshSkillsInPrompt(agent, messages, owner)
+    await refreshPackagesInPrompt(agent, messages, owner)
   }
 
   pushPromptToMessages(session, prompt)
