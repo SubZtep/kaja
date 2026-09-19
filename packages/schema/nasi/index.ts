@@ -50,9 +50,15 @@ export const NasiInfoResponseSchema = z.object({
   tools: z.array(z.string())
 })
 
+/** The cloud persona catalog as any signed-in user sees it: enough to pick one (e.g. for a widget). */
+export const NasiPersonasResponseSchema = z.object({
+  personas: z.array(z.object({ id: z.string(), label: z.string() }))
+})
+
 export type NasiTurnRequest = z.infer<typeof NasiTurnRequestSchema>
 export type WidgetTurnRequest = z.infer<typeof WidgetTurnRequestSchema>
 export type NasiStep = z.infer<typeof NasiStepSchema>
 export type NasiTurnResponse = z.infer<typeof NasiTurnResponseSchema>
 export type NasiTurnStatus = z.infer<typeof NasiTurnStatusSchema>
 export type NasiInfoResponse = z.infer<typeof NasiInfoResponseSchema>
+export type NasiPersonasResponse = z.infer<typeof NasiPersonasResponseSchema>

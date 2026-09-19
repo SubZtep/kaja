@@ -1,14 +1,25 @@
 import type { args as Args } from "../lib/cli/args"
 
 /**
- * `kaja pkg` (checklist of skills and HTTP tools → packages.toml, then any missing tool keys → secrets.toml) and `kaja pkg update` (fetch + sync the
- * marketplace). Runs before the local/cloud branch like `config`: it only touches local
- * files and must never trigger cloud login.
+ * `kaja pkg` (checklist of skills, HTTP tools and MCP servers → packages.toml, then any missing keys → secrets.toml) and
+ * `kaja pkg update` (fetch + sync the marketplace), for local mode; a cloud user is pointed to the web instead. Runs
+ * before the local/cloud branch like `config`: it never triggers cloud login.
  */
+/** Where cloud users pick their skills (the web app's /skills page). */
+const CLOUD_SKILLS_URL = "https://kaja.io/skills"
+
 export async function runPkgSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")
   const { runPkgUpdate } = await import("../lib/packages/cli")
+  const { hasConfiguredChatModel } = await import("../lib/models/models")
   const [, sub] = args.input
+
+  // Same mode rule as cli.ts. A cloud user's skills live in their account, so point them to the web instead of editing files that cloud chat never reads.
+  const useLocal = args.flags.cloud ? false : args.flags.local || (await hasConfiguredChatModel())
+  if (!useLocal) {
+    console.log(t("pkg.cloudHint", { url: CLOUD_SKILLS_URL }))
+    process.exit(0)
+  }
 
   if (sub === "update") {
     const { code, text } = await runPkgUpdate()

@@ -126,6 +126,30 @@ describe("widget", () => {
     }
   })
 
+  test("a key can be edited by its owner only", async () => {
+    const created = await (
+      await app.request("/widget/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ label: "Before", allowedOrigins: [allowedOrigin] })
+      })
+    ).json()
+    const patch = (bearer: string, body: object) =>
+      app.request(`/widget/admin/${created.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${bearer}` },
+        body: JSON.stringify(body)
+      })
+
+    const renamed = await patch(token, { label: "After", config: { widgetType: "barkochba" } })
+    expect(renamed.status).toBe(200)
+    expect(await renamed.json()).toMatchObject({ label: "After", config: { widgetType: "barkochba" } })
+    expect((await patch(token, { config: { widgetType: "chat", persona: "no-such-persona" } })).status).toBe(400)
+
+    const otherToken = await signUpAndSignIn(faker.internet.email(), password, "Other")
+    expect((await patch(otherToken, { label: "Hijacked" })).status).toBe(404)
+  })
+
   test("widgetType is independent of persona and defaults to chat", async () => {
     const createKey = await app.request("/widget/admin", {
       method: "POST",

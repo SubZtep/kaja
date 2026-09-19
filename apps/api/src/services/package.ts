@@ -1,4 +1,5 @@
-import type { CatalogPackage, PackageType, UserPackage } from "@kaja/schema/api"
+import { parseSkillMd } from "@kaja/nasi"
+import type { CatalogPackage, PackageType, SkillDetail, UserPackage } from "@kaja/schema/api"
 import type { Pool } from "pg"
 
 /** An enabled skill with its files, for the agent's Postgres PackageStore. */
@@ -20,6 +21,29 @@ export class PackageService {
       `SELECT p.type, p.name, p.description, p.updated_at FROM package p WHERE ${AVAILABLE} ORDER BY p.type, p.name`
     )
     return rows.map(row => this.#rowToCatalog(row))
+  }
+
+  /** One available skill in full (instructions and file names), or null when it isn't in the catalog. */
+  async getSkill(name: string): Promise<SkillDetail | null> {
+    const { rows } = await this.#db.query(
+      `SELECT p.name, p.description, p.files, p.updated_at FROM package p WHERE p.type = 'skill' AND p.name = $1 AND ${AVAILABLE}`,
+      [name]
+    )
+    const row = rows[0]
+    if (!row) return null
+    let instructions = ""
+    try {
+      instructions = parseSkillMd(row.files["SKILL.md"] ?? "", row.name).body
+    } catch {}
+    return {
+      name: row.name,
+      description: row.description,
+      instructions,
+      files: Object.keys(row.files)
+        .filter(path => path !== "SKILL.md")
+        .sort(),
+      updatedAt: new Date(row.updated_at)
+    }
   }
 
   /** The user's selections, including ones that left the marketplace (`available: false`). */

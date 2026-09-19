@@ -267,6 +267,15 @@ describe("nasi", () => {
 
     test("unauthenticated info is 401", () => expectUnauthenticated("/nasi/info"))
 
+    test("any signed-in user can list the personas; the admin list stays admin-only", async () => {
+      const res = await app.request("/nasi/personas", { headers: { Authorization: `Bearer ${token}` } })
+      expect(res.status).toBe(200)
+      const { personas } = await res.json()
+      expect(personas.length).toBeGreaterThan(0)
+      expect(Object.keys(personas[0]).sort()).toEqual(["id", "label"])
+      expect((await app.request("/admin/personas", { headers: { Authorization: `Bearer ${token}` } })).status).toBe(403)
+    })
+
     test("returns persona label, a model, and the cloud tool list", async () => {
       const res = await app.request("/nasi/info", { headers: { Authorization: `Bearer ${token}` } })
       expect(res.status).toBe(200)

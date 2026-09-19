@@ -1,7 +1,12 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { error as logError } from "@kaja/logger"
 import { categorizeError, LOAD_SKILL_TOOL, listCloudToolNames } from "@kaja/nasi"
-import { NasiInfoResponseSchema, NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
+import {
+  NasiInfoResponseSchema,
+  NasiPersonasResponseSchema,
+  NasiTurnRequestSchema,
+  NasiTurnResponseSchema
+} from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
@@ -153,6 +158,24 @@ nasiRoutes.openapi(infoRoute, async c => {
     model: result.model.model,
     tools
   })
+})
+
+const personasRoute = createRoute({
+  method: "get",
+  path: "/personas",
+  tags: ["Nasi"],
+  summary: "The cloud persona catalog (id and label), for pickers like the widget form",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: NasiPersonasResponseSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+nasiRoutes.openapi(personasRoute, async c => {
+  if (!c.get("user")) return unauthorized(c)
+  const personas = await listPersonas()
+  return c.json({ personas: personas.map(p => ({ id: p.id, label: p.label })) }, 200)
 })
 
 const listRoute = createRoute({

@@ -15,6 +15,17 @@ export const listCatalogResponseSchema = z.object({
   packages: z.array(catalogPackageSchema)
 })
 
+/** One catalog skill in full, for reading before enabling it. */
+export const skillDetailSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  /** SKILL.md without its frontmatter: what the model reads when it loads the skill. */
+  instructions: z.string(),
+  /** The skill's other files, which the model can open on demand. */
+  files: z.array(z.string()),
+  updatedAt: z.coerce.date()
+})
+
 /** A package the user enabled; `available` is false once it left the marketplace (the choice is kept in case it returns). */
 export const userPackageSchema = z.object({
   type: packageTypeSchema,
@@ -46,6 +57,7 @@ export const marketplaceSyncResultSchema = z.object({
 export type PackageType = z.infer<typeof packageTypeSchema>
 export type CatalogPackage = z.infer<typeof catalogPackageSchema>
 export type ListCatalogResponse = z.infer<typeof listCatalogResponseSchema>
+export type SkillDetail = z.infer<typeof skillDetailSchema>
 export type UserPackage = z.infer<typeof userPackageSchema>
 export type ListUserPackagesResponse = z.infer<typeof listUserPackagesResponseSchema>
 export type MarketplaceSyncStatus = z.infer<typeof marketplaceSyncStatusSchema>

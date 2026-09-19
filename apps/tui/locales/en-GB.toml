@@ -111,6 +111,7 @@ invalidAt = "Invalid packages file at {path}: {message}"
 
 [pkg]
 usage = "Usage: kaja pkg [update]"
+cloudHint = "You're using Kaja cloud: pick your skills at {url}. Packages on this machine are for local mode: `kaja --local pkg`."
 firstSync = "Fetching the marketplace for the first time..."
 synced = "Marketplace synced from {url} ({ref}) at {commit}."
 nothingChanged = "Everything is up to date."

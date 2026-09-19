@@ -1,5 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import { listCatalogResponseSchema, listUserPackagesResponseSchema, packageTypeSchema } from "@kaja/schema/api"
+import {
+  listCatalogResponseSchema,
+  listUserPackagesResponseSchema,
+  packageTypeSchema,
+  skillDetailSchema
+} from "@kaja/schema/api"
 import { packageService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { notFound, unauthorized } from "../../types/errors"
@@ -14,7 +19,7 @@ const packageParams = z.object({
     .openapi({ param: { name: "name", in: "path" }, example: "system-report" })
 })
 
-/** /packages: the public cloud catalog, and each signed-in user's own selections under /packages/me. */
+/** /packages: the public cloud catalog (and each skill in full), and each signed-in user's own selections under /packages/me. */
 export const packageRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 packageRoutes.use("/me", requireAuthMiddleware)
 packageRoutes.use("/me/*", requireAuthMiddleware)
@@ -30,6 +35,31 @@ const catalogRoute = createRoute({
 })
 
 packageRoutes.openapi(catalogRoute, async c => c.json({ packages: await packageService.listCatalog() }))
+
+const skillRoute = createRoute({
+  method: "get",
+  path: "/skill/{name}",
+  tags: ["Packages"],
+  summary: "One catalog skill in full: its instructions and other files",
+  request: {
+    params: z.object({
+      name: z
+        .string()
+        .min(1)
+        .openapi({ param: { name: "name", in: "path" } })
+    })
+  },
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: skillDetailSchema } } },
+    404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+packageRoutes.openapi(skillRoute, async c => {
+  const skill = await packageService.getSkill(c.req.valid("param").name)
+  if (!skill) return notFound(c, "Skill not found")
+  return c.json(skill, 200)
+})
 
 const mineRoute = createRoute({
   method: "get",

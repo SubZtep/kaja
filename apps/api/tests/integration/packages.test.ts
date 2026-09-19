@@ -82,6 +82,19 @@ describe("packages", () => {
     expect(names).not.toContain(scripted)
   })
 
+  test("a catalog skill can be read in full before enabling; scripted ones can't", async () => {
+    const res = await app.request(`/packages/skill/${plain}`)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({
+      name: plain,
+      description: `The ${plain} skill.`,
+      instructions: `Use ${plain}.`,
+      files: ["reference.md"]
+    })
+    expect((await app.request(`/packages/skill/${scripted}`)).status).toBe(404)
+    expect((await app.request("/packages/skill/nope-nope")).status).toBe(404)
+  })
+
   test("the catalog is public; /packages/me needs sign-in", async () => {
     expect((await app.request("/packages")).status).toBe(200)
     expect((await app.request("/packages/me")).status).toBe(401)
@@ -185,6 +198,24 @@ describe("packages", () => {
       expect(res.status).toBe(200)
       return calls[0]!.tools.map(t => t.function.name)
     }
+    // Editing a key: skills can be added later, and unknown ones are still rejected.
+    const keys = (await (await app.request("/widget/admin", { headers: auth() })).json()).keys as {
+      id: string
+      config: { skills?: string[] }
+    }[]
+    const withoutId = keys.find(k => k.config.skills?.length === 0)!.id
+    const patch = (id: string, config: object) =>
+      app.request(`/widget/admin/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...auth() },
+        body: JSON.stringify({ config })
+      })
+    expect((await patch(withoutId, { widgetType: "chat", skills: ["nope-nope"] })).status).toBe(400)
+    const patched = await patch(withoutId, { widgetType: "chat", skills: [plain] })
+    expect(patched.status).toBe(200)
+    expect((await patched.json()).config.skills).toEqual([plain])
+    expect(await turnTools(without)).toContain("load_skill")
+    await patch(withoutId, { widgetType: "chat", skills: [] })
     expect(await turnTools(withSkill)).toContain("load_skill")
     // The owner has the skill enabled, but this key didn't pick it.
     expect(await turnTools(without)).not.toContain("load_skill")

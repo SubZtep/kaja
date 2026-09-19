@@ -28,7 +28,7 @@ src/
     _admin.tsx                    # private shell (auth-gated; same max-w-280 + sticky header pattern)
     _admin/
       -components/header.tsx      # admin nav (mirrors public Header)
-      dashboard|users|profile|models|mcp-servers|widget
+      dashboard|users|profile|models|mcp-servers|widget|skills|welcome
   components/
     layout/  SiteShell, SiteHeader, ContentWidth, BrandMark, SignOutButton, nav-items
     ui/      Section, PageHeader, LandingSection, Table, ValueBox, ...
@@ -36,6 +36,8 @@ src/
   hooks/ lib/ styles.css
 public/      favicons, install scripts, PWA bits
 ```
+
+Skills: `/skills` (every signed-in user) and `/welcome` (right after signup) share `components/skills/SkillCards.tsx` — catalog cards with a toggle saved via `/packages/me` and instructions loaded on demand from `/packages/skill/{name}`; admins also get the marketplace sync panel on `/skills`. The widget page picks each key's own skills (`SkillChecklist`) and edits keys through `PATCH /widget/admin/{id}`; its persona list comes from `/nasi/personas`, not the admin-only `/admin/personas`.
 
 Shared layout primitives: `SiteShell` + `SiteHeader` + `BrandMark` + `ContentWidth`.
 Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).

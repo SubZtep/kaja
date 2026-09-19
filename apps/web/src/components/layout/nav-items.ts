@@ -1,4 +1,14 @@
-import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, UserSquare, Users } from "lucide-react"
+import {
+  Cpu,
+  LayoutDashboard,
+  type LucideIcon,
+  MessageCircle,
+  Plug,
+  Shield,
+  Sparkles,
+  UserSquare,
+  Users
+} from "lucide-react"
 import { m } from "../../paraglide/messages.js"
 
 /** "public" matches signed-out visitors; "all" matches every signed-in role plus "public". */
@@ -82,6 +92,15 @@ const navItems: NavItem[] = [
     icon: UserSquare
   },
   {
+    to: "/skills",
+    label: "Skills",
+    description: "Skills your cloud assistant can use",
+    internal: true,
+    roles: ["admin", "user"],
+    sections: ["header", "admin"],
+    icon: Sparkles
+  },
+  {
     to: "/widget",
     label: "Widget",
     description: "Embeddable chat widget keys",
@@ -108,6 +127,7 @@ const LABEL_OVERRIDES: Record<string, () => string> = {
   "/mcp-servers": m.nav_mcp_servers,
   "/models": m.nav_models,
   "/personas": m.nav_personas,
+  "/skills": m.nav_skills,
   "/widget": m.nav_widget
 }
 
@@ -119,6 +139,7 @@ const DESCRIPTION_OVERRIDES: Record<string, () => string> = {
   "/mcp-servers": m.nav_mcp_servers_desc,
   "/models": m.nav_models_desc,
   "/personas": m.nav_personas_desc,
+  "/skills": m.nav_skills_desc,
   "/widget": m.nav_widget_desc
 }
 

@@ -111,6 +111,7 @@ invalidAt = "套件檔無效（{path}）：{message}"
 
 [pkg]
 usage = "用法：kaja pkg [update]"
+cloudHint = "你咧用 Kaja 雲端：請佇 {url} 揀你个技能。這台電腦頂懸个套件是本機模式咧用个：`kaja --local pkg`。"
 firstSync = "頭一擺提市集..."
 synced = "市集已經對 {url}（{ref}）同步，版本 {commit}。"
 nothingChanged = "攏是上新个。"
