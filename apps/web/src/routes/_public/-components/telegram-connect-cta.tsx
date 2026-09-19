@@ -45,6 +45,9 @@ export function TelegramConnectCta({ className }: Readonly<{ className?: string 
   )
 }
 
+// Uneven 6-15 s pauses between spins. A fixed list, not random: Sonar flags Math.random and CodeQL flags crypto random scaled down.
+const IDLE_GAPS_MS = [9000, 6500, 13000, 7500, 15000, 11000]
+
 /** Signed-out promo for the desktop hero column under the monster. */
 export function TelegramPromo() {
   const [isSpinning, setIsSpinning] = useState(false)
@@ -65,8 +68,7 @@ export function TelegramPromo() {
             scheduleSpin()
           }, spins * 1000)
         },
-        // 6-15 s. crypto rather than Math.random only because Sonar flags every Math.random (S2245); this is animation timing.
-        6000 + (crypto.getRandomValues(new Uint16Array(1))[0]! % 9000)
+        IDLE_GAPS_MS[spins % IDLE_GAPS_MS.length]
       )
     }
 
