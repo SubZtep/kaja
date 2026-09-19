@@ -8,8 +8,7 @@ nav_order: 7.5
 
 A skill is a folder of instructions for one kind of task: how to fill a PDF form, how to write a
 changelog, how to check disk space. The model only sees each skill's name and description until a
-request matches one; then it loads the full instructions with the `load_skill` tool. Local mode
-only for now.
+request matches one; then it loads the full instructions with the `load_skill` tool.
 
 Skills use the Agent Skills folder format (see [anthropics/skills](https://github.com/anthropics/skills) for examples):
 
@@ -86,3 +85,13 @@ others still load.
 A persona can limit which skills it offers with a `skills` list in its
 [persona file](/personas). Leave it out to allow every enabled skill; `skills = []` turns skills off
 for that persona.
+
+## In the cloud
+
+Cloud chat, the cloud Telegram bot and the widget can use marketplace skills too. The API keeps its
+own copy of the marketplace, refreshed every hour, and each account enables the skills it wants
+(`GET /packages` lists them, `PUT /packages/me/skill/<name>` turns one on). Each widget key has its
+own list (`config.skills`), so a site's visitors get only what that widget was set up with.
+
+The cloud only offers skills without a `scripts/` folder: there's no shell there to run them. Your
+own local skills stay on your machine.

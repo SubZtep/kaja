@@ -6,6 +6,7 @@ import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { modelService } from "../../services"
 import { listPersonas } from "./personas"
+import { type CloudPackageSource, createPostgresPackageStore } from "./pg-packages"
 import { createPostgresStore } from "./pg-store"
 
 export type ChatResolver = () => Promise<{ client: ReturnType<typeof createOpenAIClient>; model: string }>
@@ -77,6 +78,8 @@ export async function openNasiFor(opts: {
   owner?: string | null
   pinnedModel?: string
   language?: string
+  /** Whose skills the turn gets; defaults to the user's own selections (a widget passes its key's list). */
+  packages?: CloudPackageSource
 }): Promise<Nasi> {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
   const personas = await listPersonas()
@@ -86,6 +89,7 @@ export async function openNasiFor(opts: {
     personas,
     owner: opts.owner,
     deps: nasiToolDeps(),
+    packages: createPostgresPackageStore(opts.packages ?? { userId: opts.userId }),
     promptContext: {
       environment:
         "You are Kaja cloud chat. read_file and list_files run on the user's own machine, scoped to " +

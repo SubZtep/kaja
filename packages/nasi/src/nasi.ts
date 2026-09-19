@@ -5,6 +5,8 @@ import { Agent, type AgentEvent, createSession, type PromptContext, type Session
 import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
 import type { Tool } from "./agent/tools"
+import { loadPackages } from "./packages/load"
+import type { PackageStore } from "./packages/types"
 import type { NasiStore } from "./store/types"
 import type { NasiToolDeps } from "./tools/deps"
 import { createTools } from "./tools/registry"
@@ -19,6 +21,8 @@ export type NasiOpenOptions = {
   owner?: string | null
   /** Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `fetch_url` needs `fetchProxy`). */
   deps?: Omit<NasiToolDeps, "chat">
+  /** Where this caller's enabled packages come from (the cloud: Postgres); their tools join through `loadPackages`. */
+  packages?: PackageStore
 }
 
 export type NasiTurnInput = NasiTurnRequest
@@ -141,9 +145,11 @@ export class Nasi {
   }
 
   static async open(opts: NasiOpenOptions) {
+    const packages = opts.packages ? await loadPackages(opts.packages, { personas: opts.personas }) : undefined
     const { tools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
-      deps: { ...opts.deps, chat: opts.chat }
+      deps: { ...opts.deps, chat: opts.chat },
+      extraTools: packages?.groups
     })
     return new Nasi(opts, tools)
   }

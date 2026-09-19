@@ -54,6 +54,8 @@ export {
   type HttpToolScanEntry,
   type McpScanEntry,
   type PackageKeyNeed,
+  readSkillBundle,
+  type SkillBundle,
   type SkillScanEntry,
   scanHttpTools,
   scanMcpPackages,

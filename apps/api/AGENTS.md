@@ -24,20 +24,21 @@ DB migration builder for Docker/Disco (stays here — path-coupled to `./migrati
 src/
   app.ts                 # OpenAPIHono app, CORS, route mounts
   core/                  # process infrastructure only
-    server.ts            # process entry: cron + export default
+    server.ts            # process entry: cron, startup marketplace sync, export default
     db.ts                # pg Pool
     logger.ts            # traffic logger for hono/logger
     rate-limit.ts        # global + auth + nasi turn limiters (off under bun test)
-    cron.ts              # Bun.CronJob shell (intentionally no jobs)
+    cron.ts              # Bun.cron jobs: hourly marketplace sync
   features/              # one folder per URL mount prefix
     auth/                # Better Auth config + routes + middleware
-    admin/               # /admin — mcp-servers, providers, models
+    admin/               # /admin — mcp-servers, providers, models, personas, packages/sync
     config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
     users/               # /users
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
+    packages/            # /packages — public skill catalog; /packages/me — the user's enabled skills
     health/              # /health
     reference/           # /reference (dev OpenAPI UI)
-  services/              # shared domain logic (mcp-server, model)
+  services/              # shared domain logic (mcp-server, model, package, marketplace sync, …)
   emails/                # React Email templates
   types.ts / types/      # Hono env types, error helpers
 migrations/              # raw SQL, applied on first Postgres boot via compose
@@ -66,6 +67,10 @@ widgets/                 # embeddable browser widget bundle source, own tsconfig
 - OpenAPI UI only when `NODE_ENV === "development"` (`/reference`)
 - Rate limit middleware is mounted (global + `/auth/*` + `/nasi/turn(/stream)`, the last keyed by user id not IP); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
 - `/admin/*` requires a signed-in non-banned user; `mcp-servers`/`providers`/`models` routes require Better Auth `admin` role
+
+## Marketplace skills
+
+`services/marketplace.ts` keeps the `package` table in step with `marketplace/` in `MARKETPLACE_REPO`@`MARKETPLACE_REF` (default SubZtep/kaja@main): at startup, hourly, and on `POST /admin/packages/sync`. It asks GitHub for the branch's commit and only downloads the tarball (extracted with the image's `tar`) when it moved. Rows are never deleted — a package that leaves the marketplace gets `removed_at`, keeping users' selections. The cloud offers skills only, and never ones with a `scripts/` folder. Cloud turns load the user's enabled skills through `features/nasi/pg-packages.ts` (a `PackageStore` over the table); a widget key uses its own `config.skills` instead.
 
 ## Env
 

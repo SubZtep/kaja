@@ -21,7 +21,8 @@ marketplace/
 - `description` (up to 1024 characters) says what the skill does and when to use it. It's all the
   model sees before loading the skill, so make the "when" part concrete.
 - Keep files as text. Binary files, hidden files and `*.bak` files are never shown to the model.
-- Scripts should work with a plain POSIX `sh` or state what they need in `SKILL.md`.
+- Scripts should work with a plain POSIX `sh` or state what they need in `SKILL.md`. A skill with a
+  `scripts/` folder is local-only: the cloud catalog leaves it out, since there's no shell there.
 - A tools file's `name` must match its file name. Tool names are what the model calls, so keep them
   specific (`weather_forecast`, not `get`); a name Kaja already uses is skipped. Never put a key in
   the file: `auth` only says where it goes, and the user's key stays in their `secrets.toml`.

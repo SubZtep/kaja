@@ -4,7 +4,7 @@ import {
   createWidgetKeyResponseSchema,
   listWidgetKeysResponseSchema
 } from "@kaja/schema/api"
-import { widgetService } from "../../services"
+import { packageService, widgetService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth"
@@ -60,6 +60,8 @@ widgetAdminRoutes.openapi(createRouteDef, async c => {
   if (config?.persona && !(await listPersonas()).some(p => p.id === config.persona)) {
     return badRequest(c, `Unknown persona "${config.persona}"`)
   }
+  const unknownSkills = config?.skills ? await packageService.unknownSkills(config.skills) : []
+  if (unknownSkills.length > 0) return badRequest(c, `Unknown skills: ${unknownSkills.join(", ")}`)
   const key = await widgetService.createKey(user.id, label, allowedOrigins, config)
   return c.json(key, 201)
 })

@@ -2,7 +2,13 @@ import { afterEach, beforeEach, expect, test } from "bun:test"
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { createFolderPackageStore, scanHttpTools, scanMcpPackages, scanSkills } from "../../src/packages/folder-store"
+import {
+  createFolderPackageStore,
+  readSkillBundle,
+  scanHttpTools,
+  scanMcpPackages,
+  scanSkills
+} from "../../src/packages/folder-store"
 import { SkillFileError } from "../../src/packages/types"
 
 let root: string
@@ -184,4 +190,23 @@ test("listMcpPackages reads enabled manifests; scanMcpPackages shows the host or
     auth: { in: "env", name: "B_KEY", optional: true }
   })
   expect(entries[2]).toMatchObject({ transport: "http", domain: "mcp.docs.test", auth: undefined })
+})
+
+test("readSkillBundle reads SKILL.md and the text files, and flags scripts", async () => {
+  putSkill("pdf", "PDFs.", "Body.")
+  put("skills/pdf/reference.md", "ref")
+  put("skills/pdf/logo.png", new Uint8Array([0x89, 0x00, 0x01]))
+  put("skills/pdf/SKILL.md.bak", "old")
+  const bundle = await readSkillBundle(root, "pdf")
+  expect(bundle).toEqual({
+    name: "pdf",
+    description: "PDFs.",
+    files: { "SKILL.md": "---\nname: pdf\ndescription: PDFs.\n---\nBody.\n", "reference.md": "ref" },
+    hasScripts: false
+  })
+
+  putSkill("tool")
+  put("skills/tool/scripts/run.sh", "echo hi")
+  expect((await readSkillBundle(root, "tool")).hasScripts).toBe(true)
+  await expect(readSkillBundle(root, "missing")).rejects.toThrow("no SKILL.md")
 })

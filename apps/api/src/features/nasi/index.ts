@@ -1,10 +1,11 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { error as logError } from "@kaja/logger"
-import { categorizeError, listCloudToolNames } from "@kaja/nasi"
+import { categorizeError, LOAD_SKILL_TOOL, listCloudToolNames } from "@kaja/nasi"
 import { NasiInfoResponseSchema, NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
+import { packageService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
@@ -143,7 +144,8 @@ nasiRoutes.openapi(infoRoute, async c => {
 
   const personas = await listPersonas()
   const persona = personas[0]
-  const tools = await listCloudToolNames(nasiToolDeps())
+  const skills = await packageService.skillsForUser(user.id)
+  const tools = [...(await listCloudToolNames(nasiToolDeps())), ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : [])]
 
   return c.json({
     persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },

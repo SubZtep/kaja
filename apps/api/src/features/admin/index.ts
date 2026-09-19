@@ -5,6 +5,7 @@ import type { RouteProps, RouteVariables } from "../../types"
 import { adminMiddleware, requireAuthMiddleware } from "../auth"
 import { registerAdminMcpServers } from "./mcp-server"
 import { registerAdminModels } from "./model"
+import { registerAdminPackages } from "./package"
 import { registerAdminPersonas } from "./persona"
 
 const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
@@ -16,7 +17,7 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
 
 /**
  * Platform-admin-only: /admin/mcp-servers/*, /admin/providers/*, /admin/models/*,
- * /admin/personas/* (registered before parameterized routes).
+ * /admin/personas/*, /admin/packages/sync (registered before parameterized routes).
  */
 export const adminRoutes = new OpenAPIHono<RouteProps>()
 adminRoutes.use("*", requireAuthMiddleware)
@@ -31,3 +32,6 @@ registerAdminModels(adminRoutes)
 
 adminRoutes.use("/personas/*", adminMiddleware)
 registerAdminPersonas(adminRoutes)
+
+adminRoutes.use("/packages/*", adminMiddleware)
+registerAdminPackages(adminRoutes)

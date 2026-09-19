@@ -238,6 +238,33 @@ export async function scanSkills(root: string): Promise<SkillScanEntry[]> {
   )
 }
 
+/** A whole skill as text, for storing it somewhere without a disk (the cloud's `package` table). */
+export type SkillBundle = {
+  name: string
+  description: string
+  /** Relative path → text, SKILL.md included; binary, hidden and oversized files are left out. */
+  files: Record<string, string>
+  /** Has a scripts/ folder: it needs a shell, so hosts without one (the cloud) shouldn't offer it. */
+  hasScripts: boolean
+}
+
+/** Reads `<root>/skills/<name>/` into a {@link SkillBundle}. Throws when SKILL.md is missing or invalid. */
+export async function readSkillBundle(root: string, name: string): Promise<SkillBundle> {
+  const { summary } = await readSkillFolder(join(resolve(root), "skills"), name)
+  const dir = summary.dir!
+  const files: Record<string, string> = { [SKILL_FILE]: await readFile(join(dir, SKILL_FILE), "utf8") }
+  for (const path of summary.files) {
+    const bytes = await readFile(join(dir, path)).catch(() => undefined)
+    if (bytes && bytes.byteLength <= MAX_FILE_BYTES && !bytes.includes(0)) files[path] = bytes.toString("utf8")
+  }
+  return {
+    name,
+    description: summary.description,
+    files,
+    hasScripts: summary.files.some(path => path.startsWith("scripts/"))
+  }
+}
+
 /** {@link PackageStore} over a marketplace folder on disk — the CLI's store. */
 export function createFolderPackageStore(opts: FolderPackageStoreOptions): PackageStore {
   const skillsRoot = join(resolve(opts.root), "skills")

@@ -87,6 +87,15 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
     .describe("HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely")
     .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" }),
 
+  MARKETPLACE_REPO: trimmed
+    .default("SubZtep/kaja")
+    .describe("GitHub owner/repo whose marketplace/ folder the cloud skill catalog is synced from")
+    .meta({ section: "Marketplace" }),
+  MARKETPLACE_REF: trimmed
+    .default("main")
+    .describe("Branch (or tag) of MARKETPLACE_REPO to sync")
+    .meta({ section: "Marketplace" }),
+
   TELEGRAM_BOT_TOKEN: trimmed
     .optional()
     .describe("BotFather token; when set, starts the always-on cloud Telegram bot")
