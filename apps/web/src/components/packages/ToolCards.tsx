@@ -82,7 +82,7 @@ function ToolCard({
 
   const removeKey = useMutation({
     mutationFn: () =>
-      apiFetch(`/packages/me/tool/${encodeURIComponent(tool.name)}/key`, undefined, { method: "DELETE" }),
+      apiFetch(`/packages/me/${type}/${encodeURIComponent(tool.name)}/key`, undefined, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MY_PACKAGES_QUERY_KEY })
       toast.success(m.tools_key_removed({ name: tool.name }))
