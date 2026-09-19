@@ -6,6 +6,7 @@ import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
+import { createPostgresPackageStore } from "../../src/features/nasi/pg-packages"
 import { marketplaceService } from "../../src/services"
 import { MarketplaceService } from "../../src/services/marketplace"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
@@ -121,6 +122,15 @@ describe("packages", () => {
     expect((await marketplaceService.syncFromDir(marketplace([plain, scripted]), "c4")).updated).not.toContain(plain)
     const changed = await marketplaceService.syncFromDir(marketplace([plain, scripted], "New body."), "c5")
     expect(changed.updated).toContain(plain)
+  })
+
+  test("the cloud store serves a skill's body and its other files, case-insensitively", async () => {
+    const store = createPostgresPackageStore({ skills: [plain, scripted] })
+    expect((await store.listSkills()).map(s => [s.name, s.files])).toEqual([[plain, ["reference.md"]]])
+    expect(await store.readSkill(plain)).toStartWith("New body.")
+    expect(await store.readSkill(plain, "REFERENCE.md")).toBe("the reference")
+    expect(await store.readSkill(plain, "../other.md")).toBeUndefined()
+    expect(await store.readSkill(scripted)).toBeUndefined()
   })
 
   test("a cloud turn gets load_skill and the skill in the system prompt; info lists load_skill", async () => {
