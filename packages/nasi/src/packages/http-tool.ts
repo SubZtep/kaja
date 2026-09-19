@@ -148,3 +148,30 @@ export function createHttpTools(
     }
   })
 }
+
+/** A key's live test: it works, or why not. */
+export type KeyCheckResult = { ok: true } | { ok: false; reason: string }
+
+/** Sends the manifest's `check` request with `apiKey` (2xx = it works); undefined when the manifest has no `check`. The key never appears in the reason. */
+export async function checkHttpToolKey(
+  pkg: HttpToolPackage,
+  apiKey: string,
+  opts: { allowPrivate?: boolean; proxy?: string } = {}
+): Promise<KeyCheckResult | undefined> {
+  if (!pkg.check) return undefined
+  try {
+    const request = buildHttpRequest(pkg, pkg.check, {}, apiKey)
+    const res = await fetchPublicHttp(request.url, {
+      method: request.method,
+      headers: request.headers,
+      allowPrivate: opts.allowPrivate,
+      proxy: opts.proxy,
+      sameOriginRedirects: true,
+      timeoutMs: TIMEOUT_MS
+    })
+    return res.ok ? { ok: true } : { ok: false, reason: `HTTP ${res.status}` }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { ok: false, reason: message.replaceAll(apiKey, KEY_MASK) }
+  }
+}

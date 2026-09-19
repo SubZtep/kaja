@@ -4,7 +4,7 @@ import type OpenAI from "openai"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
-import type { Tool } from "./agent/tools"
+import { runApprovedTool, type Tool } from "./agent/tools"
 import { loadPackages } from "./packages/load"
 import type { PackageStore } from "./packages/types"
 import type { NasiStore } from "./store/types"
@@ -21,8 +21,10 @@ export type NasiOpenOptions = {
   owner?: string | null
   /** Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `fetch_url` needs `fetchProxy`). */
   deps?: Omit<NasiToolDeps, "chat">
-  /** Where this caller's enabled packages come from (the cloud: Postgres); their tools join through `loadPackages`. */
+  /** Where this caller's enabled packages come from (the cloud: Postgres); their tools join through `loadPackages`, egressing through `deps.fetchProxy` when set. */
   packages?: PackageStore
+  /** A package's API key (the cloud decrypts the caller's own up front). Never shown to the model. */
+  packageKey?: (packageName: string) => string | undefined
 }
 
 export type NasiTurnInput = NasiTurnRequest
@@ -50,6 +52,8 @@ function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | 
       return { type: "confirm_command", command: event.command, description: event.description }
     case "client_tool_call":
       return { type: "client_tool_call", name: event.name, arguments: event.arguments }
+    case "confirm_tool":
+      return { type: "confirm_tool", name: event.name, arguments: event.arguments, summary: event.summary }
     default:
       return undefined
   }
@@ -79,6 +83,19 @@ function messageFromEvents(events: AgentEvent[], status: NasiTurnStatus): string
   return lastOf(events, "ask_user")?.question ?? lastOf(events, "message")?.content ?? ""
 }
 
+/** The tool result a declined approval leaves, same wording as the CLI's. */
+const TOOL_DECLINED = "User declined this request."
+
+/** The saved function call a pending approval refers to, from the assistant message that made it. */
+export function pendingToolCall(session: Session, id: string) {
+  for (let i = session.messages.length - 1; i >= 0; i--) {
+    const message = session.messages[i]!
+    if (message.role !== "assistant") continue
+    const call = message.tool_calls?.find(candidate => candidate.id === id)
+    if (call?.type === "function") return call
+  }
+}
+
 type LoadedTurn = {
   agent: Agent
   session: Session
@@ -95,7 +112,9 @@ async function persistTurn(
 ): Promise<string> {
   const persistedEvents = [
     ...loaded.events,
-    { type: "user", text: input.message },
+    input.approval
+      ? { type: "tool_approval", approved: input.approval === "approve" }
+      : { type: "user", text: input.message },
     ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
   ]
   const row = {
@@ -145,7 +164,13 @@ export class Nasi {
   }
 
   static async open(opts: NasiOpenOptions) {
-    const packages = opts.packages ? await loadPackages(opts.packages, { personas: opts.personas }) : undefined
+    const packages = opts.packages
+      ? await loadPackages(opts.packages, {
+          personas: opts.personas,
+          getApiKey: opts.packageKey,
+          proxy: opts.deps?.fetchProxy
+        })
+      : undefined
     const { tools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       deps: { ...opts.deps, chat: opts.chat },
@@ -161,7 +186,7 @@ export class Nasi {
     const sessionId = input.session
     let session = createSession()
     let events: unknown[] = []
-    let title = input.message.split(/[\r\n]/)[0]!.slice(0, 60)
+    let title = (input.message ?? "").split(/[\r\n]/)[0]!.slice(0, 60)
 
     if (sessionId) {
       const row = await this.opts.store.loadSession(sessionId)
@@ -192,6 +217,27 @@ export class Nasi {
     return { agent, session, sessionId, events, title }
   }
 
+  /**
+   * What the turn feeds the loop. A pending tool approval is answered here, on the server: `approve` runs
+   * the call the session saved (never one the client describes), `decline` or a plain message skips it.
+   */
+  private async promptFor(session: Session, input: NasiTurnInput): Promise<string> {
+    const pendingId = session.pendingToolApprovalId
+    if (input.approval) {
+      if (!pendingId) {
+        const err = new Error("nothing_to_approve")
+        err.name = "NasiNothingToApprove"
+        throw err
+      }
+      if (input.approval === "decline") return TOOL_DECLINED
+      const call = pendingToolCall(session, pendingId)
+      if (!call) return "Error: the call waiting for approval is gone."
+      return runApprovedTool(this.tools, call.function.name, call.function.arguments)
+    }
+    const message = input.message ?? ""
+    return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
+  }
+
   async turnBuffered(input: NasiTurnInput): Promise<NasiTurnResponse> {
     const gen = this.turn(input)
     let next = await gen.next()
@@ -210,9 +256,10 @@ export class Nasi {
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
     const loaded = await this.loadTurn(input)
+    const prompt = await this.promptFor(loaded.session, input)
 
     const turnEvents: AgentEvent[] = []
-    for await (const event of run(loaded.agent, input.message, loaded.session, this.opts.owner ?? null)) {
+    for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null)) {
       turnEvents.push(event)
       yield event
     }

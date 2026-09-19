@@ -72,6 +72,10 @@ turn and the CLI runs them locally (scoped to the directory you launched it from
 (`switch_persona`, mid-conversation) and manually (the key bar's persona picker), from an
 admin-managed persona catalog on the server.
 
+Marketplace skills and HTTP tools you turned on at [kaja.io/packages](https://kaja.io/packages) work
+too; an HTTP tool that changes something asks for your approval in the terminal first
+([HTTP tools in the cloud](/tools#http-tools-in-the-cloud)).
+
 Everything else — memory notes, datasets, `ask_user`, web search, image generation — works, scoped
 to your account. See [Cloud API](/development/api) for the endpoints.
 

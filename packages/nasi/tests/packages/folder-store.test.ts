@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import {
   createFolderPackageStore,
+  parseHttpToolManifest,
   readSkillBundle,
   scanHttpTools,
   scanMcpPackages,
@@ -169,6 +170,13 @@ test("scanHttpTools lists every manifest with its domain and key need, or its er
   expect(entries[0]!.error).toBeDefined()
   expect(entries[1]).toMatchObject({ domain: "api.keyed.test", auth: { in: "header", name: "X-Key" } })
   expect(entries[2]).toMatchObject({ domain: "api.open.test", auth: undefined })
+})
+
+test("parseHttpToolManifest reads a manifest's text and says why a bad one is rejected", () => {
+  expect(parseHttpToolManifest(manifest("text"), "text").baseUrl).toBe("https://api.text.test")
+  expect(() => parseHttpToolManifest(manifest("text"), "other")).toThrow("doesn't match")
+  expect(() => parseHttpToolManifest("not = [valid", "x")).toThrow("invalid TOML")
+  expect(() => parseHttpToolManifest('name = "x"', "x")).toThrow("invalid manifest")
 })
 
 test("listMcpPackages reads enabled manifests; scanMcpPackages shows the host or the command", async () => {

@@ -89,9 +89,10 @@ for that persona.
 ## In the cloud
 
 Cloud chat, the cloud Telegram bot and the widget can use marketplace skills too. The API keeps its
-own copy of the marketplace, refreshed every hour. Pick the skills your account uses on the
-[Skills page](https://kaja.io/skills), where you can also read each one's instructions before turning
-it on; new accounts get the same picker right after signing up. Each widget key has its own list,
+own copy of the marketplace, refreshed every hour. Pick the skills your account uses in the Skills
+tab of the [Packages page](https://kaja.io/packages), where you can also read each one's instructions
+before turning it on; new accounts get the same picker right after signing up. The Tools tab has the
+marketplace's [HTTP tools](/tools#http-tools-in-the-cloud). Each widget key has its own list,
 set when you create or edit the key on the Widget page, so a site's visitors get only what that
 widget was set up with. `kaja pkg` in cloud mode points you to the web page.
 

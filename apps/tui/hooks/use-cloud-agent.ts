@@ -44,7 +44,7 @@ function categorizeCloudError(error: unknown): { category: CloudErrorCategory; m
   return { category: "unknown", message: String(error) }
 }
 
-/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no tool_image/display_image/confirm_command — those are local-only). */
+/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no tool_image/display_image/confirm_command — those are local-only; confirm_tool comes from the user's HTTP tools). */
 export type CloudTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: CloudErrorCategory }
@@ -62,7 +62,8 @@ const DELTA_INTERVAL_MS = 80
  * fresh session and pins `personaId` on every subsequent turn, since Nasi
  * re-resolves the active persona from the request on each call rather than
  * tracking it durably server-side. Unlike the local agent, there is no model
- * switching and no run_command confirm flow: cloud never emits those.
+ * switching and no run_command confirm flow: cloud never emits those. Tool
+ * approvals (`confirm_tool`) are answered with `resolveToolApproval`.
  */
 export function useCloudAgent(options: NasiClientOptions) {
   const [client] = useState(() => createNasiClient(options))
@@ -113,10 +114,10 @@ export function useCloudAgent(options: NasiClientOptions) {
     [pending]
   )
 
-  const send = useCallback(
-    async (prompt: string, showUserEvent = true) => {
+  /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while the server hands back client tools. */
+  const runTurns = useCallback(
+    async (first: { message: string } | { approval: "approve" | "decline" }) => {
       setPending(true)
-      if (showUserEvent) pushEvent({ type: "user", text: prompt })
 
       const accumulated: CloudPartialMessage = { reasoning: "", content: "" }
       let hasPartial = false
@@ -146,14 +147,14 @@ export function useCloudAgent(options: NasiClientOptions) {
       }
 
       try {
-        let nextMessage = prompt
+        let request = first
         while (true) {
           // TODO: forward includeThinking (from the thinking preference) once something depends on the request
           // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
           // display is already gated client-side by the `thinking` prop threaded through Chrome.
           const gen = client.turn_stream({
             session: sessionRef.current,
-            message: nextMessage,
+            ...request,
             language: getLanguage(),
             personaId: personaIdRef.current
           })
@@ -169,7 +170,7 @@ export function useCloudAgent(options: NasiClientOptions) {
           }
           sessionRef.current = next.value.session
           if (next.value.status !== "needs_client_tool" || !pendingClientTool) break
-          nextMessage = await executeClientTool(pendingClientTool.name, pendingClientTool.arguments)
+          request = { message: await executeClientTool(pendingClientTool.name, pendingClientTool.arguments) }
         }
       } catch (error) {
         const { category, message } = categorizeCloudError(error)
@@ -180,6 +181,20 @@ export function useCloudAgent(options: NasiClientOptions) {
       }
     },
     [client, pushEvent]
+  )
+
+  const send = useCallback(
+    async (prompt: string, showUserEvent = true) => {
+      if (showUserEvent) pushEvent({ type: "user", text: prompt })
+      await runTurns({ message: prompt })
+    },
+    [pushEvent, runTurns]
+  )
+
+  /** Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent back. */
+  const resolveToolApproval = useCallback(
+    (approved: boolean) => runTurns({ approval: approved ? "approve" : "decline" }),
+    [runTurns]
   )
 
   // Mirrors useAgent's currentTool: derived from the last event rather than tracked separately, since a later event naturally supersedes it.
@@ -199,6 +214,7 @@ export function useCloudAgent(options: NasiClientOptions) {
     pending,
     currentTool,
     send,
+    resolveToolApproval,
     promptTokens
   }
 }

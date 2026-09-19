@@ -76,6 +76,7 @@ test("a tool with an approval summary pauses the turn instead of running", async
   const events = await collect(run(agent, "file a bug", session))
   expect(events.at(-1)).toEqual({
     type: "confirm_tool",
+    id: "c1",
     name: "create_issue",
     arguments: '{"title":"Bug"}',
     summary: 'POST https://api.example.com/issues {"title":"Bug"}'

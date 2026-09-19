@@ -311,11 +311,15 @@ function CloudApp({
     pending,
     currentTool,
     send,
+    resolveToolApproval,
     promptTokens
   } = useCloudAgent({
     baseUrl: apiUrl,
     getToken: async () => token
   })
+
+  const lastEvent = events.at(-1)
+  const pendingEvent = !pending && lastEvent?.type === "confirm_tool" ? lastEvent : undefined
 
   return (
     <Chrome
@@ -332,6 +336,15 @@ function CloudApp({
       personas={personas}
       currentPersonaId={currentPersonaId}
       switchPersona={switchPersona}
+      pendingCommand={
+        pendingEvent && {
+          command: pendingEvent.summary,
+          description: t("confirmCommand.toolRequest", { name: pendingEvent.name }),
+          kind: "tool"
+        }
+      }
+      runningCommand={false}
+      resolvePending={pendingEvent ? resolveToolApproval : undefined}
     />
   )
 }
@@ -360,7 +373,7 @@ type CloudAppProps = Readonly<{
  * The CLI's chat screen, backed by either the local {@link Agent} loop
  * (`mode: "local"`, full tools/persona catalog/run_command) or cloud Nasi
  * over SSE (`mode: "cloud"`, no MCP, no run_command — cloud never emits
- * those). Both render the same chat chrome via {@link Chrome}, including
+ * those — but the user's HTTP tools may ask for approval). Both render the same chat chrome via {@link Chrome}, including
  * the configurable-modifier keybar (help / persona picker; see use-modifier-keys.ts).
  */
 export default function App(props: LocalAppProps | CloudAppProps) {

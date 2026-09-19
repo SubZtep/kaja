@@ -26,6 +26,8 @@ export type LoadPackagesOptions = {
   getApiKey?: (packageName: string) => string | undefined
   /** Let HTTP tools reach private/loopback hosts. Local mode only. */
   allowPrivate?: boolean
+  /** HTTP(S) proxy HTTP tools egress through (the cloud's WEB_PROXY); unset goes direct. */
+  proxy?: string
 }
 
 /**
@@ -78,7 +80,7 @@ export async function loadPackages(store: PackageStore, opts: LoadPackagesOption
     groups.push({
       origin: "community",
       source: `package:${pkg.name}`,
-      tools: createHttpTools(pkg, { apiKey, allowPrivate: opts.allowPrivate })
+      tools: createHttpTools(pkg, { apiKey, allowPrivate: opts.allowPrivate, proxy: opts.proxy })
     })
   }
 

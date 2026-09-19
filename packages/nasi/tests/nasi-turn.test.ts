@@ -1,13 +1,18 @@
-import { expect, test } from "bun:test"
+import { afterEach, expect, test } from "bun:test"
+import { HttpToolPackageSchema } from "@kaja/schema/packages"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
+import type { PackageStore } from "../src/packages/types"
 import { createMemoryStore } from "../src/store"
 
-function fakeClient(script: { content: string | null; tool_calls?: unknown[] }[]) {
+type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
+
+function fakeClient(script: { content: string | null; tool_calls?: unknown[] }[], sent?: SentMessage[][]) {
   let i = 0
   return {
     chat: {
       completions: {
-        stream: () => {
+        stream: (params: { messages: SentMessage[] }) => {
+          sent?.push(structuredClone(params.messages))
           const message = script[i++]
           if (!message) throw new Error("script exhausted")
           return {
@@ -24,10 +29,14 @@ function fakeClient(script: { content: string | null; tool_calls?: unknown[] }[]
   }
 }
 
-function open(script: { content: string | null; tool_calls?: unknown[] }[], extra?: Partial<NasiOpenOptions>) {
+function open(
+  script: { content: string | null; tool_calls?: unknown[] }[],
+  extra?: Partial<NasiOpenOptions>,
+  sent?: SentMessage[][]
+) {
   return Nasi.open({
     store: extra?.store ?? createMemoryStore(),
-    chat: { client: fakeClient(script) as never, model: "fake" },
+    chat: { client: fakeClient(script, sent) as never, model: "fake" },
     ...extra
   })
 }
@@ -173,4 +182,124 @@ test("a session id cannot be resumed by a different owner sharing the same store
 
   const nasiOwnerB = await open([{ content: "should not be reached" }], { store, owner: "widget:key1:visitorB" })
   await expect(nasiOwnerB.turnBuffered({ session: first.session, message: "hijack attempt" })).rejects.toThrow()
+})
+
+// A cloud user's HTTP tool with a key; a proxy is set so the (faked) request skips the DNS check.
+const issuesPackage = HttpToolPackageSchema.parse({
+  name: "issues",
+  description: "Issue tracker",
+  baseUrl: "https://api.issues.test",
+  auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " },
+  tools: [
+    {
+      name: "create_issue",
+      description: "File an issue",
+      method: "POST",
+      path: "/issues",
+      parameters: { type: "object", properties: { title: { type: "string" } } }
+    }
+  ]
+})
+
+const packages: PackageStore = {
+  listSkills: async () => [],
+  readSkill: async () => undefined,
+  listHttpTools: async () => [issuesPackage],
+  listMcpPackages: async () => []
+}
+
+const createIssueCall = {
+  id: "call_issue",
+  type: "function",
+  function: { name: "create_issue", arguments: JSON.stringify({ title: "Bug" }) }
+}
+
+const realFetch = globalThis.fetch
+let requests: { url: string; method?: string; headers: Headers; body?: string }[] = []
+
+/** Answers every request like the issue tracker would, and records it. */
+function fakeIssueTracker() {
+  requests = []
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    requests.push({
+      url: String(input),
+      method: init?.method,
+      headers: new Headers(init?.headers),
+      body: init?.body as string
+    })
+    return new Response('{"id":7}', { status: 201, headers: { "content-type": "application/json" } })
+  }) as typeof fetch
+}
+
+afterEach(() => {
+  globalThis.fetch = realFetch
+})
+
+function openWithIssues(script: { content: string | null; tool_calls?: unknown[] }[], sent: SentMessage[][]) {
+  fakeIssueTracker()
+  return open(
+    script,
+    {
+      packages,
+      packageKey: name => (name === "issues" ? "user-key" : undefined),
+      deps: { fetchProxy: "http://proxy.test:3128" }
+    },
+    sent
+  )
+}
+
+test("a tool that asks first pauses the turn; approving runs the call the session saved, with the user's key", async () => {
+  const sent: SentMessage[][] = []
+  const nasi = await openWithIssues([{ content: null, tool_calls: [createIssueCall] }, { content: "Filed #7." }], sent)
+
+  const first = await nasi.turnBuffered({ message: "file a bug" })
+  expect(first.status).toBe("needs_approval")
+  const confirm = first.steps.find(step => step.type === "confirm_tool")
+  expect(confirm).toMatchObject({ name: "create_issue", arguments: '{"title":"Bug"}' })
+  expect(confirm?.type === "confirm_tool" && confirm.summary).toBe(
+    'POST https://api.issues.test/issues {"title":"Bug"}'
+  )
+  expect(JSON.stringify(first)).not.toContain("user-key")
+  expect(requests).toEqual([])
+
+  const second = await nasi.turnBuffered({ session: first.session, approval: "approve" })
+  expect(second).toMatchObject({ status: "completed", message: "Filed #7." })
+  expect(requests).toHaveLength(1)
+  expect(requests[0]).toMatchObject({ url: "https://api.issues.test/issues", method: "POST", body: '{"title":"Bug"}' })
+  expect(requests[0]!.headers.get("authorization")).toBe("Bearer user-key")
+  expect(sent[1]!.at(-1)).toMatchObject({ role: "tool", tool_call_id: "call_issue", content: 'HTTP 201\n\n{"id":7}' })
+})
+
+test("declining skips the call, and so does writing a message instead", async () => {
+  const sent: SentMessage[][] = []
+  const nasi = await openWithIssues(
+    [
+      { content: null, tool_calls: [createIssueCall] },
+      { content: "Okay, not filed." },
+      { content: null, tool_calls: [createIssueCall] },
+      { content: "Understood." }
+    ],
+    sent
+  )
+
+  const declined = await nasi.turnBuffered({ message: "file a bug" })
+  await nasi.turnBuffered({ session: declined.session, approval: "decline" })
+  expect(sent[1]!.at(-1)).toMatchObject({ role: "tool", content: "User declined this request." })
+
+  const again = await nasi.turnBuffered({ session: declined.session, message: "try again" })
+  expect(again.status).toBe("needs_approval")
+  await nasi.turnBuffered({ session: again.session, message: "never mind" })
+  expect(sent[3]!.at(-1)).toMatchObject({
+    role: "tool",
+    content: "Not run: the user didn't approve it and wrote instead: never mind"
+  })
+  expect(requests).toEqual([])
+})
+
+test("an approval with nothing waiting for one is refused", async () => {
+  const nasi = await open([{ content: "hi" }])
+  const first = await nasi.turnBuffered({ message: "hello" })
+  await expect(nasi.turnBuffered({ session: first.session, approval: "approve" })).rejects.toMatchObject({
+    name: "NasiNothingToApprove"
+  })
 })

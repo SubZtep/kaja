@@ -4,7 +4,7 @@ import { widgetTypeSchema } from "@kaja/schema/api"
 import { useState } from "react"
 import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
-import { SkillChecklist } from "../../../components/skills/SkillChecklist"
+import { SkillChecklist } from "../../../components/packages/SkillChecklist"
 import { useAppForm } from "../../../lib/form"
 import { m } from "../../../paraglide/messages.js"
 

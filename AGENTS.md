@@ -84,7 +84,7 @@ bun run --filter @kaja/tui test
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (hourly marketplace sync)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/packages/` (cloud skill catalog), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/packages/` (cloud package catalog + users' keys), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
@@ -130,7 +130,8 @@ bun run --filter @kaja/tui test
 5. `2026-09-07-nasi.sql` — cloud agent state (sessions, memory, datasets)
 6. `2026-09-08-persona.sql` — `persona` table (admin-managed persona catalog; seed via `bun seed:config`, see `apps/api/scripts/seed-config.ts`)
 7. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
-8. `2026-09-19-package.sql` — `package`, `user_package`, `marketplace_sync` (cloud skill catalog synced from `marketplace/`)
+8. `2026-09-19-package.sql` — `package`, `user_package`, `marketplace_sync` (cloud package catalog synced from `marketplace/`)
+9. `2026-09-19-user-secret.sql` — `user_secret` (users' package API keys, AES-256-GCM with `USER_SECRET_KEY`)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 

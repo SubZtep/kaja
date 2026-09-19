@@ -6,7 +6,7 @@ import type * as z from "zod"
 type PackageInput = z.input<typeof HttpToolPackageSchema>
 
 import { toolName } from "../../src/agent/tools"
-import { approvalSummary, buildHttpRequest, createHttpTools } from "../../src/packages/http-tool"
+import { approvalSummary, buildHttpRequest, checkHttpToolKey, createHttpTools } from "../../src/packages/http-tool"
 
 const pkg = (over: Partial<PackageInput> = {}): HttpToolPackage =>
   HttpToolPackageSchema.parse({
@@ -119,6 +119,8 @@ beforeAll(() => {
     port: 0,
     fetch(req) {
       const url = new URL(req.url)
+      if (url.pathname === "/check")
+        return new Response(null, { status: req.headers.get("x-key") === "good" ? 200 : 401 })
       if (url.pathname === "/echo")
         return Response.json({ key: req.headers.get("x-key"), q: url.searchParams.get("q") })
       if (url.pathname === "/missing") return new Response("nope", { status: 404, statusText: "Not Found" })
@@ -177,4 +179,25 @@ test("private hosts are blocked unless allowed, and cross-host redirects are ref
   expect(await blocked!.execute({})).toStartWith("Request failed: Blocked non-public URL")
   const [away] = createHttpTools(localPkg("/away"), { allowPrivate: true })
   expect(await away!.execute({})).toStartWith("Request failed: Refused a redirect to another host")
+})
+
+test("checkHttpToolKey runs the manifest's check: works, rejected, or no check at all", async () => {
+  const keyed = {
+    ...localPkg("/echo", { type: "apiKey", in: "header", name: "X-Key" }),
+    check: { method: "GET" as const, path: "/check" }
+  }
+  expect(await checkHttpToolKey(keyed, "good", { allowPrivate: true })).toEqual({ ok: true })
+  expect(await checkHttpToolKey(keyed, "bad", { allowPrivate: true })).toEqual({ ok: false, reason: "HTTP 401" })
+  expect(await checkHttpToolKey({ ...keyed, check: undefined }, "good", { allowPrivate: true })).toBeUndefined()
+})
+
+test("checkHttpToolKey never reaches a private host from the cloud, and keeps the key out of the reason", async () => {
+  const keyed = HttpToolPackageSchema.parse({
+    ...localPkg("/echo", { type: "apiKey", in: "query", name: "key" }),
+    check: { path: "/check" }
+  })
+  const result = await checkHttpToolKey(keyed, "sekrit-value")
+  expect(result).toMatchObject({ ok: false })
+  expect(result?.ok === false && result.reason).toStartWith("Blocked non-public URL")
+  expect(JSON.stringify(result)).not.toContain("sekrit-value")
 })

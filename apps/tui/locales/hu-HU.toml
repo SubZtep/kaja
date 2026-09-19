@@ -111,7 +111,7 @@ invalidAt = "Érvénytelen csomagfájl ({path}): {message}"
 
 [pkg]
 usage = "Használat: kaja pkg [update]"
-cloudHint = "A Kaja felhőt használod: a készségeidet itt választhatod ki: {url}. A gépeden lévő csomagok helyi módhoz valók: `kaja --local pkg`."
+cloudHint = "A Kaja felhőt használod: a készségeidet és eszközeidet itt választhatod ki: {url}. A gépeden lévő csomagok helyi módhoz valók: `kaja --local pkg`."
 firstSync = "A piactér első letöltése..."
 synced = "Piactér szinkronizálva innen: {url} ({ref}), verzió: {commit}."
 nothingChanged = "Minden naprakész."

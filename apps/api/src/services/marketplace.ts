@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto"
-import { mkdtemp, readdir, rm } from "node:fs/promises"
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { info, warn } from "@kaja/logger"
-import { readSkillBundle, scanSkills } from "@kaja/nasi"
+import { parseHttpToolManifest, readSkillBundle, scanHttpTools, scanSkills } from "@kaja/nasi"
 import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/api"
+import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
 import { withLock } from "../core/lock"
 
@@ -14,7 +15,7 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/
 export type MarketplaceSource = { repo: string; ref: string }
 
 /**
- * Keeps the `package` table in step with the `marketplace/` folder of a GitHub repo. A sync asks
+ * Keeps the `package` table in step with the `marketplace/` folder (skills and HTTP tools) of a GitHub repo. A sync asks
  * GitHub for the branch's commit first and only downloads the tarball when it moved. Packages are
  * never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
@@ -70,39 +71,42 @@ export class MarketplaceService {
     })
   }
 
-  /** Applies a marketplace folder already on disk: upserts every valid skill, marks the rest removed. No network — the sync and tests both use it. */
+  /** Applies a marketplace folder already on disk: upserts every valid skill and HTTP tool, marks the rest removed. No network — the sync and tests both use it. */
   async syncFromDir(
     marketplaceDir: string,
     commit: string
   ): Promise<Omit<MarketplaceSyncResult, "commit" | "changed">> {
-    const bundles = []
+    const bundles: PackageBundle[] = []
     for (const entry of await scanSkills(marketplaceDir)) {
       if (entry.error) {
         warn("Marketplace skill skipped", { skill: entry.name, error: entry.error })
         continue
       }
-      bundles.push(await readSkillBundle(marketplaceDir, entry.name))
+      bundles.push({ type: "skill", ...(await readSkillBundle(marketplaceDir, entry.name)) })
     }
+    bundles.push(...(await readHttpTools(marketplaceDir)))
 
     const client = await this.#db.connect()
     try {
       await client.query("BEGIN")
       const { rows: existing } = await client.query(
-        "SELECT name, content_hash, removed_at FROM package WHERE type = 'skill'"
+        "SELECT type, name, content_hash, removed_at FROM package WHERE type = ANY($1)",
+        [SYNCED_TYPES]
       )
-      const before = new Map(existing.map(row => [row.name as string, row]))
+      const before = new Map(existing.map(row => [`${row.type}:${row.name}`, row]))
       const added: string[] = []
       const updated: string[] = []
 
       for (const bundle of bundles) {
         const hash = contentHash(bundle)
-        const previous = before.get(bundle.name)
-        if (!previous) added.push(bundle.name)
-        else if (previous.content_hash !== hash || previous.removed_at) updated.push(bundle.name)
+        const previous = before.get(`${bundle.type}:${bundle.name}`)
+        if (!previous) added.push(reportName(bundle.type, bundle.name))
+        else if (previous.content_hash !== hash || previous.removed_at)
+          updated.push(reportName(bundle.type, bundle.name))
         await client.query(
           `
           INSERT INTO package (type, name, description, files, has_scripts, content_hash, commit)
-          VALUES ('skill', $1, $2, $3, $4, $5, $6)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
           ON CONFLICT (type, name) DO UPDATE SET
             description = EXCLUDED.description,
             files = EXCLUDED.files,
@@ -115,20 +119,24 @@ export class MarketplaceService {
               ELSE package.updated_at
             END
           `,
-          [bundle.name, bundle.description, JSON.stringify(bundle.files), bundle.hasScripts, hash, commit]
+          [bundle.type, bundle.name, bundle.description, JSON.stringify(bundle.files), bundle.hasScripts, hash, commit]
         )
       }
 
-      const { rows: gone } = await client.query(
-        `
-        UPDATE package SET removed_at = NOW(), updated_at = NOW()
-        WHERE type = 'skill' AND removed_at IS NULL AND NOT (name = ANY($1))
-        RETURNING name
-        `,
-        [bundles.map(bundle => bundle.name)]
-      )
+      const removed: string[] = []
+      for (const type of SYNCED_TYPES) {
+        const { rows: gone } = await client.query(
+          `
+          UPDATE package SET removed_at = NOW(), updated_at = NOW()
+          WHERE type = $1 AND removed_at IS NULL AND NOT (name = ANY($2))
+          RETURNING name
+          `,
+          [type, bundles.filter(bundle => bundle.type === type).map(bundle => bundle.name)]
+        )
+        removed.push(...gone.map(row => reportName(type, row.name as string)))
+      }
       await client.query("COMMIT")
-      return { added, updated, removed: gone.map(row => row.name as string) }
+      return { added, updated, removed }
     } catch (error) {
       await client.query("ROLLBACK")
       throw error
@@ -184,7 +192,47 @@ export class MarketplaceService {
   }
 }
 
-/** Stable hash of what the agent sees of a skill, so an unchanged skill keeps its updated_at. */
+/** Package types the sync owns; anything else in the table is left alone. */
+const SYNCED_TYPES = ["skill", "tool"] as const
+
+type PackageBundle = {
+  type: (typeof SYNCED_TYPES)[number]
+  name: string
+  description: string
+  files: Record<string, string>
+  hasScripts: boolean
+}
+
+/** How a package shows in a sync result: skills by name, others by their marketplace path. */
+function reportName(type: PackageBundle["type"], name: string): string {
+  return type === "skill" ? name : `tools/${name}`
+}
+
+/** Every valid `tools/*.toml` as stored text; broken manifests and ones that call a non-public host are skipped with a warning. */
+async function readHttpTools(marketplaceDir: string): Promise<PackageBundle[]> {
+  const bundles: PackageBundle[] = []
+  for (const entry of await scanHttpTools(marketplaceDir)) {
+    const file = `${entry.name}.toml`
+    try {
+      if (entry.error) throw new Error(entry.error)
+      const text = await readFile(join(marketplaceDir, "tools", file), "utf8")
+      const pkg = parseHttpToolManifest(text, entry.name)
+      if (!isPublicHttpUrl(pkg.baseUrl)) throw new Error(`${pkg.baseUrl} isn't a public address`)
+      bundles.push({
+        type: "tool",
+        name: pkg.name,
+        description: pkg.description,
+        files: { [file]: text },
+        hasScripts: false
+      })
+    } catch (error) {
+      warn("Marketplace HTTP tool skipped", { tool: entry.name, error: error instanceof Error ? error.message : error })
+    }
+  }
+  return bundles
+}
+
+/** Stable hash of what the agent sees of a package, so an unchanged one keeps its updated_at. */
 function contentHash(bundle: { description: string; files: Record<string, string>; hasScripts: boolean }): string {
   const files = Object.keys(bundle.files)
     .sort()

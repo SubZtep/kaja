@@ -1,7 +1,6 @@
 import {
-  buildHttpRequest,
+  checkHttpToolKey,
   connectMcpServer,
-  fetchPublicHttp,
   lookupMyLocation,
   type McpConnectOptions,
   resetLocationCache
@@ -45,22 +44,9 @@ export async function checkProvider(model: CliResolvedModel, apiKey: string | un
   return { ok: false, reason: apiKey ? reason.replaceAll(apiKey, "•••") : reason }
 }
 
-/** Runs the package's `check` request with `apiKey`; undefined when the manifest has no `check`. */
-export async function checkPackageKey(pkg: HttpToolPackage, apiKey: string): Promise<CheckResult | undefined> {
-  if (!pkg.check) return undefined
-  try {
-    const request = buildHttpRequest(pkg, pkg.check, {}, apiKey)
-    const res = await fetchPublicHttp(request.url, {
-      method: request.method,
-      headers: request.headers,
-      allowPrivate: true,
-      sameOriginRedirects: true,
-      timeoutMs: TIMEOUT_MS
-    })
-    return res.ok ? OK : { ok: false, reason: `HTTP ${res.status}` }
-  } catch (error) {
-    return failure(error, apiKey)
-  }
+/** Runs the package's `check` request with `apiKey`; undefined when the manifest has no `check`. Local, so private hosts are fine. */
+export function checkPackageKey(pkg: HttpToolPackage, apiKey: string): Promise<CheckResult | undefined> {
+  return checkHttpToolKey(pkg, apiKey, { allowPrivate: true })
 }
 
 /** Connects to the server and lists its tools, then disconnects. */

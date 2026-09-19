@@ -87,9 +87,21 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
     .describe("HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely")
     .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" }),
 
+  USER_SECRET_KEY: trimmed
+    .refine(value => {
+      try {
+        return atob(value).length === 32
+      } catch {
+        return false
+      }
+    }, "must be 32 bytes, base64-encoded")
+    .optional()
+    .describe("Encrypts users' package API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
+    .meta({ secret: true, section: "Marketplace" }),
+
   MARKETPLACE_REPO: trimmed
     .default("SubZtep/kaja")
-    .describe("GitHub owner/repo whose marketplace/ folder the cloud skill catalog is synced from")
+    .describe("GitHub owner/repo whose marketplace/ folder the cloud package catalog is synced from")
     .meta({ section: "Marketplace" }),
   MARKETPLACE_REF: trimmed
     .default("main")

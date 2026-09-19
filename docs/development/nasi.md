@@ -171,7 +171,7 @@ Over HTTP the same loop is buffered into one response:
 | --- | --- |
 | `completed` | the turn finished; `message` is the reply |
 | `needs_input` | `ask_user` is pending — send the answer as the next `message` |
-| `needs_approval` | `run_command` is waiting — send the approval as the next `message` |
+| `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval: "approve"` or `"decline"` next — the server runs the call it saved, never one the client describes; a plain `message` instead skips it |
 | `error` | the turn failed |
 
 `session` comes back on every response; send it again to continue the conversation.

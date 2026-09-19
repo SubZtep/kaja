@@ -47,13 +47,14 @@ export {
   noteServedModel,
   takeLastServedModel
 } from "./models/client"
-export { Nasi, type NasiOpenOptions, type NasiTurnInput } from "./nasi"
+export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall } from "./nasi"
 export {
   createFolderPackageStore,
   type FolderPackageStoreOptions,
   type HttpToolScanEntry,
   type McpScanEntry,
   type PackageKeyNeed,
+  parseHttpToolManifest,
   readSkillBundle,
   type SkillBundle,
   type SkillScanEntry,
@@ -61,7 +62,14 @@ export {
   scanMcpPackages,
   scanSkills
 } from "./packages/folder-store"
-export { approvalSummary, buildHttpRequest, createHttpTools, type HttpRequestSpec } from "./packages/http-tool"
+export {
+  approvalSummary,
+  buildHttpRequest,
+  checkHttpToolKey,
+  createHttpTools,
+  type HttpRequestSpec,
+  type KeyCheckResult
+} from "./packages/http-tool"
 export { type LoadedPackages, type LoadPackagesOptions, loadPackages } from "./packages/load"
 export { type McpPackageTarget, mcpPackageTarget } from "./packages/mcp-package"
 export { parseSkillMd } from "./packages/skill-md"

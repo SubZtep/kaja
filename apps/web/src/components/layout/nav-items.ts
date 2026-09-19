@@ -92,9 +92,9 @@ const navItems: NavItem[] = [
     icon: UserSquare
   },
   {
-    to: "/skills",
-    label: "Skills",
-    description: "Skills your cloud assistant can use",
+    to: "/packages",
+    label: "Packages",
+    description: "Skills and tools your cloud assistant can use",
     internal: true,
     roles: ["admin", "user"],
     sections: ["header", "admin"],
@@ -127,7 +127,7 @@ const LABEL_OVERRIDES: Record<string, () => string> = {
   "/mcp-servers": m.nav_mcp_servers,
   "/models": m.nav_models,
   "/personas": m.nav_personas,
-  "/skills": m.nav_skills,
+  "/packages": m.nav_packages,
   "/widget": m.nav_widget
 }
 
@@ -139,7 +139,7 @@ const DESCRIPTION_OVERRIDES: Record<string, () => string> = {
   "/mcp-servers": m.nav_mcp_servers_desc,
   "/models": m.nav_models_desc,
   "/personas": m.nav_personas_desc,
-  "/skills": m.nav_skills_desc,
+  "/packages": m.nav_packages_desc,
   "/widget": m.nav_widget_desc
 }
 

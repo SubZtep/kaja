@@ -4,7 +4,7 @@ import { isPublicHttpUrl } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
-import { modelService } from "../../services"
+import { modelService, packageService } from "../../services"
 import { listPersonas } from "./personas"
 import { type CloudPackageSource, createPostgresPackageStore } from "./pg-packages"
 import { createPostgresStore } from "./pg-store"
@@ -67,7 +67,7 @@ export function setNasiFetchProxyOverride(proxy: string | undefined) {
   fetchProxyOverride = proxy
 }
 
-/** Tool deps every cloud turn runs with. `fetchProxy` unset leaves `fetch_url` out of the cloud tool set entirely — cloud fetches egress from the server, so they go through a proxy or not at all. */
+/** Tool deps every cloud turn runs with. `fetchProxy` unset leaves `fetch_url` out of the cloud tool set entirely — cloud fetches egress from the server, so they go through a proxy or not at all. HTTP tool packages use it too when set, and otherwise go direct (their hosts are fixed by reviewed manifests, and private addresses are refused). */
 export function nasiToolDeps() {
   return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
@@ -78,18 +78,22 @@ export async function openNasiFor(opts: {
   owner?: string | null
   pinnedModel?: string
   language?: string
-  /** Whose skills the turn gets; defaults to the user's own selections (a widget passes its key's list). */
+  /** Whose packages the turn gets; defaults to the user's own selections and keys (a widget passes its key's skill list). */
   packages?: CloudPackageSource
 }): Promise<Nasi> {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
   const personas = await listPersonas()
+  const source = opts.packages ?? { userId: opts.userId }
+  // Only the user's own turns get their keys; a widget's skills-only source never needs one.
+  const keys = "userId" in source ? await packageService.keysForUser(source.userId) : new Map<string, string>()
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
     personas,
     owner: opts.owner,
     deps: nasiToolDeps(),
-    packages: createPostgresPackageStore(opts.packages ?? { userId: opts.userId }),
+    packages: createPostgresPackageStore(source),
+    packageKey: name => keys.get(name),
     promptContext: {
       environment:
         "You are Kaja cloud chat. read_file and list_files run on the user's own machine, scoped to " +

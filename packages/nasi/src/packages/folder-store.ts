@@ -1,7 +1,13 @@
 import { readdir, readFile, realpath, stat } from "node:fs/promises"
 import { isAbsolute, join, relative, resolve, sep } from "node:path"
 import { warn } from "@kaja/logger"
-import { HttpToolPackageSchema, type McpPackage, McpPackageSchema, SkillNameSchema } from "@kaja/schema/packages"
+import {
+  type HttpToolPackage,
+  HttpToolPackageSchema,
+  type McpPackage,
+  McpPackageSchema,
+  SkillNameSchema
+} from "@kaja/schema/packages"
 import type * as z from "zod"
 import { parseSkillMd } from "./skill-md"
 import { type PackageStore, SkillFileError, type SkillSummary } from "./types"
@@ -86,6 +92,28 @@ async function readConfinedFile(dir: string, file: string): Promise<string | und
   return bytes.toString("utf8")
 }
 
+/** Parses a `<name>.toml` manifest's text against `schema`; the manifest's own `name` must match the file name. */
+function parseManifest<T extends { name: string }>(text: string, name: string, schema: z.ZodType<T>): T {
+  let data: unknown
+  try {
+    data = Bun.TOML.parse(text)
+  } catch (error) {
+    throw new Error(`invalid TOML (${error instanceof Error ? error.message : String(error)})`)
+  }
+  const parsed = schema.safeParse(data)
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map(issue => `${issue.path.join(".") || "file"}: ${issue.message}`)
+    throw new Error(`invalid manifest (${issues.join("; ")})`)
+  }
+  if (parsed.data.name !== name) throw new Error(`name "${parsed.data.name}" doesn't match its file "${name}.toml"`)
+  return parsed.data
+}
+
+/** An HTTP tool manifest from its TOML text (the cloud keeps the text, not the file). Throws with the reason when it's invalid. */
+export function parseHttpToolManifest(text: string, name: string): HttpToolPackage {
+  return parseManifest(text, name, HttpToolPackageSchema)
+}
+
 /** Reads `<dir>/<name>.toml` against `schema`; the manifest's own `name` must match the file name. */
 async function readManifest<T extends { name: string }>(dir: string, name: string, schema: z.ZodType<T>): Promise<T> {
   if (!SkillNameSchema.safeParse(name).success) throw new Error(`"${name}" is not a valid package name`)
@@ -96,13 +124,7 @@ async function readManifest<T extends { name: string }>(dir: string, name: strin
   } catch {
     throw new Error(`no ${path}`)
   }
-  const parsed = schema.safeParse(Bun.TOML.parse(text))
-  if (!parsed.success) {
-    const issues = parsed.error.issues.map(issue => `${issue.path.join(".") || "file"}: ${issue.message}`)
-    throw new Error(`invalid manifest (${issues.join("; ")})`)
-  }
-  if (parsed.data.name !== name) throw new Error(`name "${parsed.data.name}" doesn't match its file "${name}.toml"`)
-  return parsed.data
+  return parseManifest(text, name, schema)
 }
 
 /** Names of the `*.toml` manifests in a folder, sorted, hidden and backup files skipped; empty when the folder is missing. */

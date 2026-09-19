@@ -38,3 +38,11 @@ export function badGateway(c: Context, message = "Upstream provider error") {
 export function forbidden(c: Context, message = "Forbidden") {
   return c.json({ error: message }, 403) as any
 }
+
+export function conflict(c: Context, message: string) {
+  return c.json({ error: message }, 409) as any
+}
+
+export function serviceUnavailable(c: Context, message: string) {
+  return c.json({ error: message }, 503) as any
+}

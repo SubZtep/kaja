@@ -6,7 +6,7 @@ import type { args as Args } from "../lib/cli/args"
  * before the local/cloud branch like `config`: it never triggers cloud login.
  */
 /** Where cloud users pick their skills (the web app's /skills page). */
-const CLOUD_SKILLS_URL = "https://kaja.io/skills"
+const CLOUD_PACKAGES_URL = "https://kaja.io/packages"
 
 export async function runPkgSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")
@@ -17,7 +17,7 @@ export async function runPkgSubcommand(args: typeof Args) {
   // Same mode rule as cli.ts. A cloud user's skills live in their account, so point them to the web instead of editing files that cloud chat never reads.
   const useLocal = args.flags.cloud ? false : args.flags.local || (await hasConfiguredChatModel())
   if (!useLocal) {
-    console.log(t("pkg.cloudHint", { url: CLOUD_SKILLS_URL }))
+    console.log(t("pkg.cloudHint", { url: CLOUD_PACKAGES_URL }))
     process.exit(0)
   }
 

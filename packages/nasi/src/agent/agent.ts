@@ -226,7 +226,8 @@ export type AgentEvent =
   | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }
   | { type: "client_tool_call"; name: string; arguments: string }
-  | { type: "confirm_tool"; name: string; arguments: string; summary: string }
+  /** `id` is the pending call's id (`session.pendingToolApprovalId`), for hosts that correlate the answer themselves. */
+  | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "final"; content: string | null }
   | { type: "usage"; promptTokens?: number; model?: string }

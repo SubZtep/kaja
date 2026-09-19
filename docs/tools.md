@@ -7,7 +7,8 @@ nav_order: 8
 # Tools
 
 Every session starts with the built-in toolset. In [local mode](/modes) that's joined by whatever
-HTTP tools, MCP servers and plugin tools you've configured.
+HTTP tools, MCP servers and plugin tools you've configured; in the cloud, by the marketplace HTTP
+tools you turned on ([HTTP tools in the cloud](#http-tools-in-the-cloud)).
 
 ## Built-ins
 
@@ -42,7 +43,7 @@ local mode sees your address, and the proxy provider's dashboard records nothing
 
 The **Cloud** column is an explicit allowlist, not a side effect — anything touching your
 filesystem or shell is unavailable when the loop runs on the server, and MCP and plugin tools are
-never attached there.
+never attached there. Marketplace HTTP tools are the one addition, and only the ones you turn on.
 
 ## Shell commands
 
@@ -204,6 +205,26 @@ type = "string"
   way, so the model can react. Redirects to another host are refused, and the key never appears in
   what the model sees.
 - In local mode a package may call hosts on your own network (Home Assistant, a NAS, Ollama).
+
+### HTTP tools in the cloud
+
+Cloud chat and the cloud Telegram bot can use marketplace HTTP tools too. Turn them on in the Tools
+tab of the [Packages page](https://kaja.io/packages), which shows each one's host, whether it needs
+your key, and every tool with its method before you turn it on.
+
+- Only marketplace packages, and never one whose `baseUrl` is a private or local address. Requests
+  go through the server's `WEB_PROXY` when it's set, otherwise straight from the server; either way
+  private addresses are refused, on every redirect too.
+- A tool that needs a key asks for it first. The key is tested with the manifest's `check` request,
+  stored encrypted (AES-256-GCM, with `USER_SECRET_KEY` on the server) and never shown again: the
+  page only says "Key saved", with Replace and Remove. It stays when you turn the tool off; removing
+  it turns off a tool that can't work without it. Your keys are only ever used for your own turns,
+  and never reach the CLI.
+- Anything but GET waits for your approval: `kaja --cloud` asks in the terminal, the Telegram bot
+  sends Approve/Decline buttons. The server runs the call it saved when the model asked, so a client
+  can only say yes or no. Writing a message instead of answering skips the call.
+- Widget keys stay skills-only, so a site's visitors never call anything with your key.
+- If the server has no `USER_SECRET_KEY`, key entry is off and tools that need a key are hidden.
 
 ## Names and origins
 

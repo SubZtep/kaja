@@ -400,7 +400,13 @@ function* handlePendingHandoff(
 
   if (approval) {
     session.pendingToolApprovalId = approval.id
-    yield { type: "confirm_tool", name: approval.name, arguments: approval.arguments, summary: approval.summary }
+    yield {
+      type: "confirm_tool",
+      id: approval.id,
+      name: approval.name,
+      arguments: approval.arguments,
+      summary: approval.summary
+    }
     return true
   }
 

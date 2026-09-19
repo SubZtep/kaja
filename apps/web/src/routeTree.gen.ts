@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
+import { Route as AdminPackagesRouteImport } from './routes/_admin/packages'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
 import { Route as AdminSkillsRouteImport } from './routes/_admin/skills'
 import { Route as AdminWelcomeRouteImport } from './routes/_admin/welcome'
@@ -41,6 +42,11 @@ const PublicRoute = PublicRouteImport.update({
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPackagesRoute = AdminPackagesRouteImport.update({
+  id: '/packages',
+  path: '/packages',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminProfileRoute = AdminProfileRouteImport.update({
@@ -132,6 +138,7 @@ const PublicDeviceDoneRoute = PublicDeviceDoneRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/packages': typeof AdminPackagesRoute
   '/profile': typeof AdminProfileRoute
   '/skills': typeof AdminSkillsRoute
   '/welcome': typeof AdminWelcomeRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/packages': typeof AdminPackagesRoute
   '/profile': typeof AdminProfileRoute
   '/skills': typeof AdminSkillsRoute
   '/welcome': typeof AdminWelcomeRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRoute
+  '/_admin/packages': typeof AdminPackagesRoute
   '/_admin/profile': typeof AdminProfileRoute
   '/_admin/skills': typeof AdminSkillsRoute
   '/_admin/welcome': typeof AdminWelcomeRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/packages'
     | '/profile'
     | '/skills'
     | '/welcome'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/packages'
     | '/profile'
     | '/skills'
     | '/welcome'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/_admin'
     | '/_public'
     | '/_admin/dashboard'
+    | '/_admin/packages'
     | '/_admin/profile'
     | '/_admin/skills'
     | '/_admin/welcome'
@@ -281,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/packages': {
+      id: '/_admin/packages'
+      path: '/packages'
+      fullPath: '/packages'
+      preLoaderRoute: typeof AdminPackagesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/profile': {
@@ -407,6 +426,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminPackagesRoute: typeof AdminPackagesRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminSkillsRoute: typeof AdminSkillsRoute
   AdminWelcomeRoute: typeof AdminWelcomeRoute
@@ -420,6 +440,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminPackagesRoute: AdminPackagesRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminSkillsRoute: AdminSkillsRoute,
   AdminWelcomeRoute: AdminWelcomeRoute,

@@ -23,7 +23,7 @@ const syncNowRoute = createRoute({
   method: "post",
   path: "/packages/sync",
   tags: ["Admin"],
-  summary: "Sync the skill catalog from the marketplace repo now (skipped when the branch hasn't moved)",
+  summary: "Sync the package catalog from the marketplace repo now (skipped when the branch hasn't moved)",
   security: [{ bearerAuth: [] }],
   request: { query: z.object({ force: z.enum(["true", "false"]).optional() }) },
   responses: {

@@ -35,7 +35,7 @@ src/
     config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
     users/               # /users
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
-    packages/            # /packages — public skill catalog; /packages/me — the user's enabled skills
+    packages/            # /packages — public catalog (skills, HTTP tools); /packages/me — the user's packages and write-only keys
     health/              # /health
     reference/           # /reference (dev OpenAPI UI)
   services/              # shared domain logic (mcp-server, model, package, marketplace sync, …)
@@ -68,9 +68,11 @@ widgets/                 # embeddable browser widget bundle source, own tsconfig
 - Rate limit middleware is mounted (global + `/auth/*` + `/nasi/turn(/stream)`, the last keyed by user id not IP); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
 - `/admin/*` requires a signed-in non-banned user; `mcp-servers`/`providers`/`models` routes require Better Auth `admin` role
 
-## Marketplace skills
+## Marketplace packages
 
-`services/marketplace.ts` keeps the `package` table in step with `marketplace/` in `MARKETPLACE_REPO`@`MARKETPLACE_REF` (default SubZtep/kaja@main): at startup, hourly, and on `POST /admin/packages/sync`. It asks GitHub for the branch's commit and only downloads the tarball (extracted with the image's `tar`) when it moved. Rows are never deleted — a package that leaves the marketplace gets `removed_at`, keeping users' selections. The cloud offers skills only, and never ones with a `scripts/` folder. Cloud turns load the user's enabled skills through `features/nasi/pg-packages.ts` (a `PackageStore` over the table); a widget key uses its own `config.skills` instead.
+`services/marketplace.ts` keeps the `package` table in step with `marketplace/` in `MARKETPLACE_REPO`@`MARKETPLACE_REF` (default SubZtep/kaja@main): at startup, hourly, and on `POST /admin/packages/sync`. It asks GitHub for the branch's commit and only downloads the tarball (extracted with the image's `tar`) when it moved. Rows are never deleted — a package that leaves the marketplace gets `removed_at`, keeping users' selections. The cloud offers skills (never ones with a `scripts/` folder) and HTTP tools (`tools/*.toml`, stored as TOML text; ones whose `baseUrl` isn't public are skipped); MCP isn't in the cloud yet. Cloud turns load the user's enabled packages through `features/nasi/pg-packages.ts` (a `PackageStore` over the table) with their decrypted keys and `WEB_PROXY` (else direct, private hosts refused); a widget key uses its own `config.skills` and never gets tools.
+
+Package keys live in `user_secret` via `services/secret.ts`: AES-256-GCM with `USER_SECRET_KEY`, the user id + name as associated data, write-only over the API (`PUT /packages/me/tool/{name}/key` saves and runs the manifest's `check`). Without `USER_SECRET_KEY`, key routes answer 503 and tools that require a key are hidden. A tool that isn't GET pauses the turn (`confirm_tool` step, `needs_approval`); the next turn's `approval: "approve" | "decline"` makes Nasi run or skip the call the session saved. The cloud Telegram bot answers it with inline buttons (`tool:approve|decline:<hash of the call id>`), matched against the pressing user's latest session.
 
 ## Env
 

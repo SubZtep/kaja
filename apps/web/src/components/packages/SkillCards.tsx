@@ -1,40 +1,16 @@
-import type { CatalogPackage, ListCatalogResponse, ListUserPackagesResponse, SkillDetail } from "@kaja/schema/api"
-import { listCatalogResponseSchema, listUserPackagesResponseSchema, skillDetailSchema } from "@kaja/schema/api"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import type { CatalogPackage, SkillDetail } from "@kaja/schema/api"
+import { skillDetailSchema } from "@kaja/schema/api"
+import { useQuery } from "@tanstack/react-query"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { useState } from "react"
-import { toast } from "react-toastify"
 import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
-import { Button } from "../form/primitives/Button"
 import { Checkbox } from "../form/primitives/Checkbox"
 import { ErrorNotice } from "../ui/ErrorNotice"
 import { Loader } from "../ui/Loader"
 import { Section } from "../ui/Section"
-
-export const CATALOG_QUERY_KEY = ["packages", "catalog"]
-export const MY_PACKAGES_QUERY_KEY = ["packages", "me"]
-
-/** The public skill catalog (what anyone can enable, or give a widget key). */
-export function useSkillCatalog() {
-  const apiFetch = useApiFetch()
-  return useQuery({
-    queryKey: CATALOG_QUERY_KEY,
-    queryFn: () => apiFetch<ListCatalogResponse>("/packages").then(r => listCatalogResponseSchema.parse(r).packages)
-  })
-}
-
-/** The public skill catalog and the signed-in user's selections, shared by /skills and /welcome. */
-export function useSkillPackages() {
-  const apiFetch = useApiFetch()
-  const catalog = useSkillCatalog()
-  const mine = useQuery({
-    queryKey: MY_PACKAGES_QUERY_KEY,
-    queryFn: () =>
-      apiFetch<ListUserPackagesResponse>("/packages/me").then(r => listUserPackagesResponseSchema.parse(r).packages)
-  })
-  return { catalog, mine }
-}
+import { useCatalog, useMyPackages, useTogglePackage } from "./queries"
+import { UnavailablePackages } from "./UnavailablePackages"
 
 /** The instructions the model reads, fetched only when the card is opened. */
 function SkillInstructions({ name }: Readonly<{ name: string }>) {
@@ -99,66 +75,36 @@ function SkillCard({
  * demand, followed by any enabled skill that has since left the marketplace, so it can be turned off.
  */
 export function SkillCards() {
-  const apiFetch = useApiFetch()
-  const queryClient = useQueryClient()
-  const { catalog, mine } = useSkillPackages()
-
-  const toggle = useMutation({
-    mutationFn: ({ name, on }: { name: string; on: boolean }) =>
-      apiFetch(`/packages/me/skill/${encodeURIComponent(name)}`, undefined, { method: on ? "PUT" : "DELETE" }),
-    onSuccess: (_, { name, on }) => {
-      queryClient.invalidateQueries({ queryKey: MY_PACKAGES_QUERY_KEY })
-      toast.success(on ? m.skills_turned_on({ name }) : m.skills_turned_off({ name }))
-    },
-    onError: (err: Error) => toast.error(err.message || m.skills_error_toggle())
-  })
+  const catalog = useCatalog()
+  const mine = useMyPackages()
+  const toggle = useTogglePackage()
 
   if (catalog.isLoading || mine.isLoading) return <Loader />
-  const enabled = new Set((mine.data ?? []).map(p => p.name))
-  const unavailable = (mine.data ?? []).filter(p => !p.available)
+  const skills = (catalog.data ?? []).filter(pkg => pkg.type === "skill")
+  const enabled = new Set((mine.data?.packages ?? []).filter(p => p.type === "skill").map(p => p.name))
   const pendingName = toggle.isPending ? toggle.variables?.name : undefined
 
   return (
     <>
       <ErrorNotice error={catalog.error ?? mine.error} />
-      {(catalog.data ?? []).length === 0 ? (
+      {skills.length === 0 ? (
         <Section>
           <p className="m-0 text-muted text-sm">{m.skills_empty()}</p>
         </Section>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {(catalog.data ?? []).map(skill => (
+          {skills.map(skill => (
             <SkillCard
               key={skill.name}
               skill={skill}
               enabled={enabled.has(skill.name)}
               pending={pendingName === skill.name}
-              onToggle={on => toggle.mutate({ name: skill.name, on })}
+              onToggle={on => toggle.mutate({ type: "skill", name: skill.name, on })}
             />
           ))}
         </div>
       )}
-
-      {unavailable.length > 0 && (
-        <Section className="mt-6" title={m.skills_unavailable_title()}>
-          <p className="mt-0 mb-4 text-muted text-sm">{m.skills_unavailable_description()}</p>
-          <ul className="m-0 grid list-none gap-2 p-0">
-            {unavailable.map(pkg => (
-              <li key={pkg.name} className="flex items-center justify-between gap-3">
-                <span className="font-mono text-fg text-sm">{pkg.name}</span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  loading={pendingName === pkg.name}
-                  onClick={() => toggle.mutate({ name: pkg.name, on: false })}
-                >
-                  {m.skills_turn_off()}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+      <UnavailablePackages type="skill" />
     </>
   )
 }

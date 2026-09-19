@@ -12,13 +12,14 @@ import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
 import { packageService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badGateway, badRequest, internalError, notFound, unauthorized } from "../../types/errors"
+import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
 import { nasiToolDeps, openUserTurnStream, pinnedModelFor, resolveModelWithProvider, runUserTurn } from "./chat"
 import { listPersonas } from "./personas"
 import { createPostgresStore } from "./pg-store"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
+const NOTHING_TO_APPROVE = "No tool call is waiting for approval"
 
 export const nasiRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 nasiRoutes.use("*", requireAuthMiddleware)
@@ -40,7 +41,11 @@ const turnRoute = createRoute({
     200: { description: "Turn complete", content: { "application/json": { schema: NasiTurnResponseSchema } } },
     400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } }
+    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
+    409: {
+      description: "`approval` sent, but no tool call is waiting for one",
+      content: { "application/json": { schema: errorSchema } }
+    }
   }
 })
 
@@ -53,6 +58,7 @@ nasiRoutes.openapi(turnRoute, async c => {
     return c.json(result)
   } catch (error) {
     if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
+    if (error instanceof Error && error.name === "NasiNothingToApprove") return conflict(c, NOTHING_TO_APPROVE)
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
     if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
     const { category, message } = categorizeError(error)
@@ -68,6 +74,7 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   message: "message",
   tool_call: "tool_call",
   client_tool_call: "client_tool_call",
+  confirm_tool: "confirm_tool",
   ask_user: "ask_user",
   persona_switch: "persona_switch",
   usage: "usage",
@@ -101,11 +108,13 @@ nasiRoutes.post("/turn/stream", async c => {
       })
     } catch (error) {
       const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
+      const isNothingToApprove = error instanceof Error && error.name === "NasiNothingToApprove"
       const isNoModel = error instanceof Error && error.message === "no_model"
       const isModelUnavailable = error instanceof Error && error.name === "NasiModelUnavailable"
       let errorMessage: string
       let category: string | undefined
       if (isNotFound) errorMessage = "Session not found"
+      else if (isNothingToApprove) errorMessage = NOTHING_TO_APPROVE
       else if (isNoModel) errorMessage = "No model available"
       else if (isModelUnavailable) errorMessage = (error as Error).message
       else {
@@ -150,7 +159,16 @@ nasiRoutes.openapi(infoRoute, async c => {
   const personas = await listPersonas()
   const persona = personas[0]
   const skills = await packageService.skillsForUser(user.id)
-  const tools = [...(await listCloudToolNames(nasiToolDeps())), ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : [])]
+  const keys = new Set(await packageService.keyNames(user.id))
+  // Tool packages as a turn loads them: one that requires a key only once the user saved it.
+  const httpTools = (await packageService.httpToolsForUser(user.id))
+    .filter(pkg => pkg.auth.type !== "apiKey" || pkg.auth.optional || keys.has(pkg.name))
+    .flatMap(pkg => pkg.tools.map(tool => tool.name))
+  const tools = [
+    ...(await listCloudToolNames(nasiToolDeps())),
+    ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : []),
+    ...httpTools
+  ]
 
   return c.json({
     persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },

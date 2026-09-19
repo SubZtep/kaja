@@ -22,6 +22,8 @@ always-current list. This page is the map.
 | `/users/me` | session | the signed-in user |
 | `/admin/*` | session + `admin` role | MCP servers, providers, models, personas |
 | `/widget/admin/*` | session | list, create, and delete [widget](/widget) keys |
+| `/packages`, `/packages/skill/{name}` | none | the marketplace catalog (skills and HTTP tools) |
+| `/packages/me/*` | session | the user's own packages and their write-only API keys |
 | `/nasi/*` | bearer | cloud agent — turns and sessions |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/*` | shared secret | model resolution for tooling |
@@ -45,6 +47,20 @@ Turn requests and responses are the `@kaja/schema/nasi` contracts — see
 [Agent brain](/development/nasi#turn-statuses) for the status values and how `session` threads a
 conversation together. Both turn routes are rate-limited **per user id**, not per IP, so a shared
 NAT doesn't starve everyone.
+
+## Packages and keys — `/packages`
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/packages` | the catalog; HTTP tools include their host, key need and tools with methods |
+| `GET` | `/packages/me` | the user's packages, which ones have a saved key, and whether keys can be saved |
+| `PUT` / `DELETE` | `/packages/me/{type}/{name}` | turn a skill or tool on or off (`key_required` until a tool that needs one has its key) |
+| `PUT` / `DELETE` | `/packages/me/tool/{name}/key` | save (and test) or remove a tool's key |
+
+Keys live in `user_secret`, AES-256-GCM encrypted with `USER_SECRET_KEY`; the user id and the name
+are the cipher's associated data, so a row copied to another user doesn't decrypt. No endpoint
+returns a key. Without `USER_SECRET_KEY` the key routes answer 503 and tools that need a key are
+left out of the catalog and of turns.
 
 ## Auth
 

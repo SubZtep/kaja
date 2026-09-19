@@ -1,7 +1,7 @@
 import { error as logError } from "@kaja/logger"
 import { Bot, GrammyError, InlineKeyboard } from "grammy"
 import { telegramLinkService } from "../../services"
-import { createCloudTelegramDriver, TelegramRateLimitError } from "./driver"
+import { createCloudTelegramDriver, type TelegramButton, TelegramRateLimitError } from "./driver"
 
 /** Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits comfortably. */
 function linkCallbackData(action: "confirm" | "cancel", token: string): string {
@@ -36,13 +36,20 @@ async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> {
   }
 }
 
+/** One row of inline buttons, or undefined for none. */
+function keyboardFor(buttons: TelegramButton[] | undefined): InlineKeyboard | undefined {
+  if (!buttons?.length) return undefined
+  const keyboard = new InlineKeyboard()
+  for (const button of buttons) keyboard.text(button.text, button.data)
+  return keyboard
+}
+
 /**
  * The only grammy-aware file: constructs the Bot, implements driver.ts's
- * TelegramSender against bot.api, wires the message handler, and owns
- * startup validation (getMe preflight) and shutdown (bot.stop()). The only
- * inline keyboard/callback_query use is the account-link confirm/cancel
- * flow below — cloud Nasi itself never emits confirm_command, so the chat
- * turn loop in driver.ts never needs one and never imports grammy.
+ * TelegramSender against bot.api, wires the message and callback handlers,
+ * and owns startup validation (getMe preflight) and shutdown (bot.stop()).
+ * Inline keyboards serve the account-link confirm/cancel flow below and the
+ * driver's tool approvals (`tool:*` callbacks); the driver never imports grammy.
  */
 export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   const bot = new Bot(config.botToken)
@@ -50,13 +57,18 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   const driver = createCloudTelegramDriver({
     resolveLinkedUserId: telegramUserId => telegramLinkService.resolveUserId(telegramUserId),
     sender: {
-      async sendMessage(chatId, text) {
-        const message = await withRateLimitRetry(() => bot.api.sendMessage(chatId, text, { parse_mode: "HTML" }))
+      async sendMessage(chatId, text, buttons) {
+        const message = await withRateLimitRetry(() =>
+          bot.api.sendMessage(chatId, text, { parse_mode: "HTML", reply_markup: keyboardFor(buttons) })
+        )
         return { messageId: message.message_id }
       },
-      async editMessageText(chatId, messageId, text) {
+      async editMessageText(chatId, messageId, text, buttons) {
         try {
-          await bot.api.editMessageText(chatId, messageId, text, { parse_mode: "HTML" })
+          await bot.api.editMessageText(chatId, messageId, text, {
+            parse_mode: "HTML",
+            reply_markup: keyboardFor(buttons) ?? { inline_keyboard: [] }
+          })
         } catch (error) {
           if (isNotModifiedError(error)) return
           const rateLimit = asRateLimitError(error)
@@ -93,6 +105,13 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   })
 
   bot.on("callback_query:data", async ctx => {
+    const message = ctx.callbackQuery.message
+    if (ctx.callbackQuery.data.startsWith("tool:") && message) {
+      await ctx.answerCallbackQuery()
+      void driver.handleCallback(ctx.from.id, message.chat.id, message.message_id, ctx.callbackQuery.data)
+      return
+    }
+
     const match = /^link:(confirm|cancel):(.+)$/.exec(ctx.callbackQuery.data)
     if (!match) return
     await ctx.answerCallbackQuery()
