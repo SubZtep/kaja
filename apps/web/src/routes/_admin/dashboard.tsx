@@ -1,6 +1,7 @@
 import { getFirstName } from "@kaja/shared"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { getDashboardLinks } from "../../components/layout/nav-items"
+import { UsageStats } from "../../components/stats/UsageStats"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
 import { useUser } from "../../hooks/user"
@@ -42,6 +43,8 @@ function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      <UsageStats />
     </>
   )
 }
