@@ -39,11 +39,13 @@ function optionLabel(item: PickerItem, columns: number): string {
   const type = t(TYPE_LABEL_KEY[item.type]).padEnd(6)
   const target = item.domain ?? (item.runs ? t("pkg.runs", { command: item.runs }) : undefined)
   const where = target ? `  ${target} · ${t(KEY_LABEL_KEY[item.key ?? "none"])}` : ""
-  const head = `${type}${item.name}${item.local ? ` [${t("pkg.local")}]` : ""}${where}`
+  const localTag = item.local ? ` [${t("pkg.local")}]` : ""
+  const head = `${type}${item.name}${localTag}${where}`
   const room = columns - OPTION_CHROME - head.length - 2
   const description = item.description ?? ""
   if (room < 8) return head
-  return `${head}  ${description.length > room ? `${description.slice(0, room - 1)}…` : description}`
+  const shown = description.length > room ? `${description.slice(0, room - 1)}…` : description
+  return `${head}  ${shown}`
 }
 
 /** `kaja pkg`'s checklist of skills, tools and MCP servers: space toggles, Enter submits, Esc cancels. */

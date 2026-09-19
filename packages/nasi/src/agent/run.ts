@@ -291,16 +291,19 @@ async function* handleToolCalls(
 
     const summary = approvalSummaryFor(toolsByName.get(call.function.name), call)
     if (summary !== undefined) {
-      // Only one approval can pause a turn; a second one in the same round is answered now so every tool call keeps a response.
-      if (approval) messages.push({ role: "tool", tool_call_id: call.id, content: ONE_APPROVAL_AT_A_TIME })
-      else approval = { id: call.id, name: call.function.name, arguments: call.function.arguments, summary }
+      approval = holdApproval(messages, approval, {
+        id: call.id,
+        name: call.function.name,
+        arguments: call.function.arguments,
+        summary
+      })
       continue
     }
 
     yield* handleToolCall(agent, toolsByName, messages, owner, call)
   }
   // Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
-  if (approval && (ask || confirm || clientTool)) {
+  if (approval && [ask, confirm, clientTool].some(Boolean)) {
     messages.push({ role: "tool", tool_call_id: approval.id, content: ONE_APPROVAL_AT_A_TIME })
     approval = undefined
   }
@@ -310,6 +313,13 @@ async function* handleToolCalls(
 type ToolApproval = { id: string; name: string; arguments: string; summary: string }
 
 const ONE_APPROVAL_AT_A_TIME = "Not run: another step is waiting on the user first. Call this tool again afterwards."
+
+// Only one approval can pause a turn; a second one in the same round is answered now so every tool call keeps a response.
+function holdApproval(messages: ChatCompletionMessageParam[], held: ToolApproval | undefined, next: ToolApproval) {
+  if (!held) return next
+  messages.push({ role: "tool", tool_call_id: next.id, content: ONE_APPROVAL_AT_A_TIME })
+  return held
+}
 
 /** The approval summary when `tool` wants the human to confirm this call first, else undefined. */
 function approvalSummaryFor(tool: Tool<any> | undefined, call: FunctionToolCall): string | undefined {

@@ -25,7 +25,8 @@ function nameHash(name: string): string {
 /** Where keys are added and packages read in full. */
 export function packagesWebUrl(tab?: "tools"): string {
   const base = (env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN).replace(/\/+$/, "")
-  return `${base}/packages${tab ? `?tab=${tab}` : ""}`
+  const query = tab ? `?tab=${tab}` : ""
+  return `${base}/packages${query}`
 }
 
 /** The catalog as the user sees it (skills, then tools, then MCP servers), plus enabled packages that left it. */
@@ -39,8 +40,8 @@ export async function packageEntries(userId: string): Promise<PackageEntry[]> {
   const saved = new Set(keys)
   const listed: PackageEntry[] = catalog.map(pkg => {
     const needsKey = (pkg.http?.key ?? pkg.mcp?.key) === "required" && !saved.has(pkg.name)
-    const state = enabled.has(`${pkg.type}:${pkg.name}`) ? "on" : needsKey ? "key" : "off"
-    return { type: pkg.type, name: pkg.name, state }
+    const offState = needsKey ? "key" : "off"
+    return { type: pkg.type, name: pkg.name, state: enabled.has(`${pkg.type}:${pkg.name}`) ? "on" : offState }
   })
   const gone: PackageEntry[] = mine
     .filter(pkg => !pkg.available)

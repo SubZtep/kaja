@@ -81,6 +81,17 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   final: "final"
 }
 
+/** The `error` event's body for a failed stream: the known failures by name, anything else categorized and logged. */
+function streamErrorBody(error: unknown, userId: string): { error: string; category?: string } {
+  if (error instanceof Error && error.name === "NasiSessionNotFound") return { error: "Session not found" }
+  if (error instanceof Error && error.name === "NasiNothingToApprove") return { error: NOTHING_TO_APPROVE }
+  if (error instanceof Error && error.message === "no_model") return { error: "No model available" }
+  if (error instanceof Error && error.name === "NasiModelUnavailable") return { error: error.message }
+  const { category, message } = categorizeError(error)
+  logError("nasi turn/stream failed", { userId, category, error: String(error) })
+  return { error: message, category }
+}
+
 nasiRoutes.post("/turn/stream", async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
@@ -107,26 +118,7 @@ nasiRoutes.post("/turn/stream", async c => {
         data: JSON.stringify({ session: next.value.session, status: next.value.status })
       })
     } catch (error) {
-      const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
-      const isNothingToApprove = error instanceof Error && error.name === "NasiNothingToApprove"
-      const isNoModel = error instanceof Error && error.message === "no_model"
-      const isModelUnavailable = error instanceof Error && error.name === "NasiModelUnavailable"
-      let errorMessage: string
-      let category: string | undefined
-      if (isNotFound) errorMessage = "Session not found"
-      else if (isNothingToApprove) errorMessage = NOTHING_TO_APPROVE
-      else if (isNoModel) errorMessage = "No model available"
-      else if (isModelUnavailable) errorMessage = (error as Error).message
-      else {
-        const categorized = categorizeError(error)
-        errorMessage = categorized.message
-        category = categorized.category
-        logError("nasi turn/stream failed", { userId: user.id, category, error: String(error) })
-      }
-      await stream.writeSSE({
-        event: "error",
-        data: JSON.stringify({ error: errorMessage, ...(category ? { category } : {}) })
-      })
+      await stream.writeSSE({ event: "error", data: JSON.stringify(streamErrorBody(error, user.id)) })
     } finally {
       clearInterval(heartbeat)
     }

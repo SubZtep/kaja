@@ -53,6 +53,17 @@ function escKeyBarItem(bottomChromeKey: BottomChromeKey): { key: string; label: 
   return label ? { key: "Esc", label } : undefined
 }
 
+/** What the confirm prompt shows for a paused call: the shell command, or the tool's request summary. */
+function confirmPrompt(
+  event:
+    | { type: "confirm_command"; command: string; description: string }
+    | { type: "confirm_tool"; name: string; summary: string }
+): { command: string; description: string; kind: "command" | "tool" } {
+  if (event.type === "confirm_command")
+    return { command: event.command, description: event.description, kind: "command" }
+  return { command: event.summary, description: t("confirmCommand.toolRequest", { name: event.name }), kind: "tool" }
+}
+
 function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolean, bottomChromeKey: BottomChromeKey) {
   const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
   const escItem = escKeyBarItem(bottomChromeKey)
@@ -252,16 +263,7 @@ function LocalApp({
   const lastEvent = events.at(-1)
   const pendingEvent =
     !pending && (lastEvent?.type === "confirm_command" || lastEvent?.type === "confirm_tool") ? lastEvent : undefined
-  const pendingCommand =
-    pendingEvent?.type === "confirm_command"
-      ? { command: pendingEvent.command, description: pendingEvent.description, kind: "command" as const }
-      : pendingEvent?.type === "confirm_tool"
-        ? {
-            command: pendingEvent.summary,
-            description: t("confirmCommand.toolRequest", { name: pendingEvent.name }),
-            kind: "tool" as const
-          }
-        : undefined
+  const pendingCommand = pendingEvent && confirmPrompt(pendingEvent)
   const resolvePending = pendingEvent
     ? (approved: boolean) =>
         pendingEvent.type === "confirm_command"
@@ -336,13 +338,7 @@ function CloudApp({
       personas={personas}
       currentPersonaId={currentPersonaId}
       switchPersona={switchPersona}
-      pendingCommand={
-        pendingEvent && {
-          command: pendingEvent.summary,
-          description: t("confirmCommand.toolRequest", { name: pendingEvent.name }),
-          kind: "tool"
-        }
-      }
+      pendingCommand={pendingEvent && confirmPrompt(pendingEvent)}
       runningCommand={false}
       resolvePending={pendingEvent ? resolveToolApproval : undefined}
     />

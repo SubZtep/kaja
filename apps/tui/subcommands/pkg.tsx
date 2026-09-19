@@ -1,3 +1,6 @@
+import type { HttpToolScanEntry, McpScanEntry, PackageKeyNeed } from "@kaja/nasi"
+import type { PackagesFile } from "@kaja/schema/config"
+import type { PickerItem, PickerSelection } from "../components/package-picker"
 import type { args as Args } from "../lib/cli/args"
 
 /**
@@ -5,7 +8,7 @@ import type { args as Args } from "../lib/cli/args"
  * `kaja pkg update` (fetch + sync the marketplace), for local mode; a cloud user is pointed to the web instead. Runs
  * before the local/cloud branch like `config`: it never triggers cloud login.
  */
-/** Where cloud users pick their skills (the web app's /skills page). */
+/** Where cloud users pick their packages (the web app's /packages page). */
 const CLOUD_PACKAGES_URL = "https://kaja.io/packages"
 
 export async function runPkgSubcommand(args: typeof Args) {
@@ -31,7 +34,6 @@ export async function runPkgSubcommand(args: typeof Args) {
     process.exit(1)
   }
 
-  const { scanHttpTools, scanMcpPackages, scanSkills } = await import("@kaja/nasi")
   const { getMarketplaceDir, getPackagesPath, loadPackagesFile, savePackagesFile } = await import(
     "../lib/packages/packages-file"
   )
@@ -44,6 +46,49 @@ export async function runPkgSubcommand(args: typeof Args) {
     console.log((await runPkgUpdate()).text)
   }
 
+  const { skills, tools, mcp, toolScan, mcpScan } = await scanMarketplace(marketplaceDir)
+  const enabled = await loadPackagesFile()
+
+  if (!process.stdin.isTTY) {
+    printPackages([...skills, ...tools, ...mcp], enabled)
+    console.log(t("pkg.notTty", { path: getPackagesPath() }))
+    process.exit(0)
+  }
+
+  const picked = await pickPackages([...skills, ...tools, ...mcp], enabled)
+  if (!picked) {
+    console.log(t("pkg.cancelled"))
+    process.exit(0)
+  }
+  // Enabled packages that are present but currently broken aren't selectable; keep them on rather than silently dropping them.
+  const keepBroken = (names: string[], found: { name: string; error?: string }[]) =>
+    names.filter(name => found.some(item => item.name === name && item.error))
+
+  const next = {
+    skills: [...picked.skills, ...keepBroken(enabled.skills, skills)],
+    tools: [...picked.tools, ...keepBroken(enabled.tools, tools)],
+    mcp: [...(await confirmStdioServers(picked.mcp, mcpScan, enabled.mcp)), ...keepBroken(enabled.mcp, mcp)]
+  }
+  await savePackagesFile(next)
+  const count = next.skills.length + next.tools.length + next.mcp.length
+  console.log(t("pkg.saved", { path: getPackagesPath(), count }))
+
+  await askMissingKeys([
+    ...toolScan.filter(s => next.tools.includes(s.name)),
+    ...mcpScan.filter(s => next.mcp.includes(s.name))
+  ])
+  process.exit(0)
+}
+
+function keyNeed(auth?: PackageKeyNeed): PickerItem["key"] {
+  if (!auth) return undefined
+  return auth.optional ? "optional" : "required"
+}
+
+// Every package in the marketplace folder as a picker row; `local` marks the ones the sync didn't write.
+async function scanMarketplace(marketplaceDir: string) {
+  const { scanHttpTools, scanMcpPackages, scanSkills } = await import("@kaja/nasi")
+  const { readSyncLock } = await import("../lib/packages/sync")
   const lockedPaths = Object.keys((await readSyncLock(marketplaceDir))?.files ?? {})
   const synced = new Set(lockedPaths.map(path => path.split("/").slice(0, 2).join("/")))
   const skills = (await scanSkills(marketplaceDir)).map(s => ({
@@ -51,8 +96,6 @@ export async function runPkgSubcommand(args: typeof Args) {
     type: "skill" as const,
     local: !synced.has(`skills/${s.name}`)
   }))
-  const keyNeed = (auth?: { optional: boolean }): "optional" | "required" | undefined =>
-    auth ? (auth.optional ? "optional" : "required") : undefined
   const toolScan = await scanHttpTools(marketplaceDir)
   const tools = toolScan.map(({ auth, ...s }) => ({
     ...s,
@@ -68,20 +111,22 @@ export async function runPkgSubcommand(args: typeof Args) {
     key: keyNeed(auth),
     local: !synced.has(`mcp/${s.name}.toml`)
   }))
-  const items = [...skills, ...tools, ...mcp]
-  const enabled = await loadPackagesFile()
+  return { skills, tools, mcp, toolScan, mcpScan }
+}
 
-  if (!process.stdin.isTTY) {
-    for (const item of skills) console.log(`${enabled.skills.includes(item.name) ? "[x]" : "[ ]"} skill ${item.name}`)
-    for (const item of tools) console.log(`${enabled.tools.includes(item.name) ? "[x]" : "[ ]"} tool  ${item.name}`)
-    for (const item of mcp) console.log(`${enabled.mcp.includes(item.name) ? "[x]" : "[ ]"} mcp   ${item.name}`)
-    console.log(t("pkg.notTty", { path: getPackagesPath() }))
-    process.exit(0)
+// Without a terminal to pick in: one `[x] type name` line per package.
+function printPackages(items: PickerItem[], enabled: PackagesFile) {
+  const on = { skill: enabled.skills, tool: enabled.tools, mcp: enabled.mcp }
+  for (const item of items) {
+    console.log(`${on[item.type].includes(item.name) ? "[x]" : "[ ]"} ${item.type.padEnd(5)} ${item.name}`)
   }
+}
 
+// The checklist; undefined when it was cancelled.
+async function pickPackages(items: PickerItem[], enabled: PickerSelection): Promise<PickerSelection | undefined> {
   const { render } = await import("ink")
   const { PackagePicker } = await import("../components/package-picker")
-  let picked: { skills: string[]; tools: string[]; mcp: string[] } | undefined
+  let picked: PickerSelection | undefined
   const picker = render(
     <PackagePicker
       items={items}
@@ -94,43 +139,31 @@ export async function runPkgSubcommand(args: typeof Args) {
     />
   )
   await picker.waitUntilExit()
+  return picked
+}
 
-  if (!picked) {
-    console.log(t("pkg.cancelled"))
-    process.exit(0)
-  }
-  // Enabled packages that are present but currently broken aren't selectable; keep them on rather than silently dropping them.
-  const keepBroken = (names: string[], found: { name: string; error?: string }[]) =>
-    names.filter(name => found.some(item => item.name === name && item.error))
-  const { askSecret, askYesNo } = await import("../lib/doctor/prompt")
-
-  // A stdio server runs a command on this machine: newly enabling one asks once, showing exactly what it runs.
-  const confirmedMcp: string[] = []
-  for (const name of picked.mcp) {
-    const command = mcpScan.find(s => s.name === name)?.command
-    const confirmed =
+// A stdio server runs a command on this machine: newly enabling one asks once, showing exactly what it runs.
+async function confirmStdioServers(picked: string[], scan: McpScanEntry[], wasEnabled: string[]): Promise<string[]> {
+  const { t } = await import("../lib/i18n")
+  const { askYesNo } = await import("../lib/doctor/prompt")
+  const confirmed: string[] = []
+  for (const name of picked) {
+    const command = scan.find(s => s.name === name)?.command
+    const ok =
       !command ||
-      enabled.mcp.includes(name) ||
+      wasEnabled.includes(name) ||
       (await askYesNo(t("pkg.confirmStdio", { name, command }), t("pkg.enable"), t("pkg.dontEnable")))
-    if (confirmed) confirmedMcp.push(name)
+    if (ok) confirmed.push(name)
   }
+  return confirmed
+}
 
-  const next = {
-    skills: [...picked.skills, ...keepBroken(enabled.skills, skills)],
-    tools: [...picked.tools, ...keepBroken(enabled.tools, tools)],
-    mcp: [...confirmedMcp, ...keepBroken(enabled.mcp, mcp)]
-  }
-  await savePackagesFile(next)
-  const count = next.skills.length + next.tools.length + next.mcp.length
-  console.log(t("pkg.saved", { path: getPackagesPath(), count }))
-
-  // Ask for keys enabled packages still lack. A skipped required key keeps the package enabled but left out until it's set; an optional one just loads without.
+// Ask for keys enabled packages still lack. A skipped required key keeps the package enabled but left out until it's set; an optional one just loads without.
+async function askMissingKeys(keyed: (HttpToolScanEntry | McpScanEntry)[]) {
+  const { t } = await import("../lib/i18n")
+  const { askSecret } = await import("../lib/doctor/prompt")
   const { saveSecrets, secrets } = await import("../lib/config/secrets")
   const known = (await secrets()).packages
-  const keyed = [
-    ...toolScan.filter(s => next.tools.includes(s.name)),
-    ...mcpScan.filter(s => next.mcp.includes(s.name))
-  ]
   for (const pkg of keyed) {
     if (!pkg.auth || known[pkg.name]) continue
     const where = `${pkg.auth.in} ${pkg.auth.name}`
@@ -144,5 +177,4 @@ export async function runPkgSubcommand(args: typeof Args) {
       console.log(t("pkg.keySkipped", { name: pkg.name }))
     }
   }
-  process.exit(0)
 }

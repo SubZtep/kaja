@@ -201,11 +201,8 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
   // The cloud never runs a command on the server, and never connects without the guarded fetch.
-  const packages = local
-    ? (opts.mcpPackages ?? [])
-    : opts.mcpFetch
-      ? (opts.mcpPackages ?? []).filter(target => "url" in target.server)
-      : []
+  const cloudPackages = opts.mcpFetch ? (opts.mcpPackages ?? []).filter(target => "url" in target.server) : []
+  const packages = local ? (opts.mcpPackages ?? []) : cloudPackages
   const packageIds = new Set(packages.map(target => `package:${target.name}`))
   const mcpTargets: McpTarget[] = [
     ...(local ? (opts.mcpServers ?? []) : []).map(server => ({ id: server.id, server })),

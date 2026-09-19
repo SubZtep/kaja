@@ -1,5 +1,5 @@
 import { createFolderPackageStore, mcpPackageTarget } from "@kaja/nasi"
-import type { CliResolvedModel, McpServerEntry } from "@kaja/schema/config"
+import type { CliResolvedModel, McpServerEntry, SecretsFile } from "@kaja/schema/config"
 import { loadMcpServers } from "../config/mcp-servers"
 import { saveSecrets, secrets } from "../config/secrets"
 import { readServicesLoose } from "../config/services"
@@ -83,44 +83,7 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
     })
   }
 
-  const { tools, mcp } = await loadPackagesFile()
-  const store = createFolderPackageStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
-  for (const pkg of await store.listHttpTools()) {
-    if (pkg.auth.type !== "apiKey") continue
-    const saved = creds.packages[pkg.name]?.apiKey
-    items.push({
-      label: t("doctor.itemPackage", { name: pkg.name }),
-      where: `[packages.${pkg.name}] apiKey`,
-      hint: `${pkg.auth.in} ${pkg.auth.name}`,
-      present: Boolean(saved),
-      required: !pkg.auth.optional,
-      check: async value => {
-        const key = value ?? saved
-        return key ? checkPackageKey(pkg, key) : undefined
-      },
-      save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
-    })
-  }
-  for (const pkg of await store.listMcpPackages()) {
-    const { auth } = pkg
-    if (auth.type !== "apiKey") continue
-    const saved = creds.packages[pkg.name]?.apiKey
-    items.push({
-      label: t("doctor.itemMcpPackage", { name: pkg.name }),
-      where: `[packages.${pkg.name}] apiKey`,
-      hint: `${auth.in} ${auth.name}`,
-      present: Boolean(saved),
-      required: !auth.optional,
-      // Connecting proves the server is up and takes the key; an optional key without a value tests the keyless connection.
-      check: async value => {
-        const key = value ?? saved
-        if (!key && !auth.optional) return undefined
-        const target = mcpPackageTarget(pkg, key)
-        return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
-      },
-      save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
-    })
-  }
+  items.push(...(await packageItems(creds)))
 
   for (const server of await loadMcpServers()) {
     for (const name of server.secrets ?? []) {
@@ -190,6 +153,50 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
   return items
 }
 
+// Enabled HTTP tool and MCP packages with key auth. An MCP package is tested by connecting to it.
+async function packageItems(creds: SecretsFile): Promise<CredentialItem[]> {
+  const items: CredentialItem[] = []
+  const { tools, mcp } = await loadPackagesFile()
+  const store = createFolderPackageStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
+  for (const pkg of await store.listHttpTools()) {
+    if (pkg.auth.type !== "apiKey") continue
+    const saved = creds.packages[pkg.name]?.apiKey
+    items.push({
+      label: t("doctor.itemPackage", { name: pkg.name }),
+      where: `[packages.${pkg.name}] apiKey`,
+      hint: `${pkg.auth.in} ${pkg.auth.name}`,
+      present: Boolean(saved),
+      required: !pkg.auth.optional,
+      check: async value => {
+        const key = value ?? saved
+        return key ? checkPackageKey(pkg, key) : undefined
+      },
+      save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
+    })
+  }
+  for (const pkg of await store.listMcpPackages()) {
+    const { auth } = pkg
+    if (auth.type !== "apiKey") continue
+    const saved = creds.packages[pkg.name]?.apiKey
+    items.push({
+      label: t("doctor.itemMcpPackage", { name: pkg.name }),
+      where: `[packages.${pkg.name}] apiKey`,
+      hint: `${auth.in} ${auth.name}`,
+      present: Boolean(saved),
+      required: !auth.optional,
+      // Connecting proves the server is up and takes the key; an optional key without a value tests the keyless connection.
+      check: async value => {
+        const key = value ?? saved
+        if (!key && !auth.optional) return undefined
+        const target = mcpPackageTarget(pkg, key)
+        return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
+      },
+      save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
+    })
+  }
+  return items
+}
+
 /** Prompt text for an item that's missing or whose saved value failed its test. */
 function askTitle(item: CredentialItem, failingReason: string | undefined): string {
   const hint = item.hint ? ` (${item.hint})` : ""
@@ -215,45 +222,42 @@ export async function resolveCredentials(
   }
 
   for (const item of items) {
-    const missing = item.required && !item.present
-    const current = missing ? undefined : await item.check?.()
-
-    if (!missing && current?.ok !== false) {
-      let status: "ok" | "keyless" | "untested" = current?.ok ? "ok" : "untested"
-      if (current?.ok && !item.present) status = "keyless"
-      settle({ item, status })
-      continue
-    }
-
-    const reason = missing ? t("doctor.missing") : (current as { reason: string }).reason
-    const problem = { item, status: missing ? "missing" : "failing", reason } as const
-    if (!io.interactive) {
-      settle(problem)
-      continue
-    }
-
-    const value = await io.ask(askTitle(item, missing ? undefined : reason))
-    if (!value) {
-      settle(problem)
-      continue
-    }
-
-    const tested = await item.check?.(value)
-    if (tested?.ok === false) {
-      if (await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason }))) {
-        await item.save(value)
-        settle({ item, status: "saved-failing", reason: tested.reason })
-      } else {
-        settle({ item, status: missing ? "missing" : "failing", reason: tested.reason })
-      }
-      continue
-    }
-
-    await item.save(value)
-    settle({ item, status: tested?.ok ? "saved" : "saved-untested" })
+    const saved = await savedOutcome(item)
+    settle("reason" in saved && io.interactive ? await askAndSave(saved, io) : saved)
   }
 
   return outcomes
+}
+
+// The item as it stands: fine (ok, keyless or untested), or missing or failing its test.
+async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
+  if (item.required && !item.present) return { item, status: "missing", reason: t("doctor.missing") }
+  const current = await item.check?.()
+  if (current?.ok === false) return { item, status: "failing", reason: current.reason }
+  if (!current?.ok) return { item, status: "untested" }
+  return { item, status: item.present ? "ok" : "keyless" }
+}
+
+// Asks for a new value, tests it, and saves it; one that fails its test is saved only if the user says so.
+async function askAndSave(
+  problem: Extract<CredentialOutcome, { reason: string }>,
+  io: CredentialIo
+): Promise<CredentialOutcome> {
+  const { item } = problem
+  const value = await io.ask(askTitle(item, problem.status === "missing" ? undefined : problem.reason))
+  if (!value) return problem
+
+  const tested = await item.check?.(value)
+  if (tested?.ok === false) {
+    if (!(await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason })))) {
+      return { item, status: problem.status, reason: tested.reason }
+    }
+    await item.save(value)
+    return { item, status: "saved-failing", reason: tested.reason }
+  }
+
+  await item.save(value)
+  return { item, status: tested?.ok ? "saved" : "saved-untested" }
 }
 
 /** One result line, e.g. "  ✓ github (package): saved and working" or "  ✗ telegram bot: missing". */

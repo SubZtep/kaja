@@ -64,6 +64,9 @@ const ORIGIN_LABEL_KEY: Record<ToolOrigin, string> = {
   "third-party": "doctor.toolsThirdParty"
 }
 
+// " [source]" after a tool name, or nothing for a tool without one.
+const sourceTag = (source: string | undefined) => (source ? ` [${source}]` : "")
+
 /** Names grouped by source, e.g. "click, fill [mcp:chrome-devtools]"; official tools have no source so they stay one plain list. */
 function namesBySource(tools: Tool<any>[]): string {
   const bySource = new Map<string, string[]>()
@@ -72,15 +75,13 @@ function namesBySource(tools: Tool<any>[]): string {
     names.push(toolName(t))
     bySource.set(t.source ?? "", names)
   }
-  return [...bySource.entries()]
-    .map(([source, names]) => `${names.join(", ")}${source ? ` [${source}]` : ""}`)
-    .join("; ")
+  return [...bySource.entries()].map(([source, names]) => `${names.join(", ")}${sourceTag(source)}`).join("; ")
 }
 
 function skippedLine(skip: SkippedTool): string {
   const reason =
     skip.reason === "reserved" ? t("doctor.skippedReserved") : t("doctor.skippedTaken", { source: skip.takenBy ?? "?" })
-  return `${skip.name}${skip.source ? ` [${skip.source}]` : ""}: ${reason}`
+  return `${skip.name}${sourceTag(skip.source)}: ${reason}`
 }
 
 /** The Tools section of `kaja doctor`: one line per origin that has tools, then anything left out and why. */

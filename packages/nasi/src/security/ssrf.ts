@@ -110,11 +110,12 @@ function isHttpUrl(url: string): boolean {
 }
 
 /** 303, and 301/302 after a POST, turn into a body-less GET (what browsers do); 307/308 repeat the request as is. */
+function becomesGet(status: number, method: string): boolean {
+  return status === 303 || ((status === 301 || status === 302) && method === "POST")
+}
+
 function requestAfterRedirect(status: number, request: HopRequest): HopRequest {
-  if (status === 303 || ((status === 301 || status === 302) && request.method === "POST")) {
-    return { method: "GET", headers: request.headers }
-  }
-  return request
+  return becomesGet(status, request.method) ? { method: "GET", headers: request.headers } : request
 }
 
 /** Throws {@link UnsafeUrlError} unless `url` may be fetched: http(s) only, and (without `allowPrivate`) a public host whose DNS answers are public too (skipped behind a proxy, which resolves for itself). */
@@ -191,24 +192,27 @@ export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number
     let request: RequestInit = init ?? {}
     for (let hop = 0; hop <= maxRedirects; hop++) {
       await assertHopAllowed(current, opts)
-      let res: Response
-      try {
-        res = await fetch(current, { ...request, redirect: "manual", ...(opts.proxy ? { proxy: opts.proxy } : {}) })
-      } catch (error) {
-        if (opts.proxy && !request.signal?.aborted) throw new ProxyUnavailableError(current, error)
-        throw error
-      }
+      const res = await streamHop(current, request, opts.proxy)
       const next = redirectTarget(res, current)
       if (!next) return res
       await res.body?.cancel()
       if (new URL(next).origin !== new URL(current).origin)
         throw new Error(`Refused a redirect to another host: ${next}`)
-      const method = (request.method ?? "GET").toUpperCase()
-      if (res.status === 303 || ((res.status === 301 || res.status === 302) && method === "POST")) {
+      if (becomesGet(res.status, (request.method ?? "GET").toUpperCase())) {
         request = { ...request, method: "GET", body: undefined }
       }
       current = next
     }
     throw new Error(`Too many redirects fetching ${String(input)}`)
+  }
+}
+
+// One hop of the guarded fetch: the body is left to stream, redirects aren't followed, and an unreachable proxy fails closed.
+async function streamHop(url: string, request: RequestInit, proxy: string | undefined): Promise<Response> {
+  try {
+    return await fetch(url, { ...request, redirect: "manual", ...(proxy ? { proxy } : {}) })
+  } catch (error) {
+    if (proxy && !request.signal?.aborted) throw new ProxyUnavailableError(url, error)
+    throw error
   }
 }

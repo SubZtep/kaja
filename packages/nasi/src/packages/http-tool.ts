@@ -31,13 +31,7 @@ export function buildHttpRequest(
   args: Record<string, unknown>,
   apiKey?: string
 ): HttpRequestSpec {
-  const used = new Set<string>()
-  const filled = def.path.replace(PLACEHOLDER, (_, name: string) => {
-    used.add(name)
-    const value = args[name]
-    if (value === undefined || value === null || value === "") throw new Error(`missing value for {${name}}`)
-    return encodeURIComponent(String(value))
-  })
+  const { filled, used } = fillPath(def.path, args)
   const [path = "", staticQuery] = filled.split("?", 2)
 
   const url = new URL(pkg.baseUrl)
@@ -47,30 +41,47 @@ export function buildHttpRequest(
   const headers: Record<string, string> = { ...pkg.headers }
   const rest = Object.entries(args).filter(([key, value]) => !used.has(key) && value !== undefined && value !== null)
   let body: string | undefined
-  if (BODY_METHODS.has(def.method)) {
-    if (rest.length > 0) {
-      body = JSON.stringify(Object.fromEntries(rest))
-      headers["Content-Type"] ??= "application/json"
-    }
-  } else {
-    for (const [key, value] of rest) {
-      for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(key, queryValue(item))
-    }
+  if (!BODY_METHODS.has(def.method)) appendQuery(url, rest)
+  else if (rest.length > 0) {
+    body = JSON.stringify(Object.fromEntries(rest))
+    headers["Content-Type"] ??= "application/json"
   }
 
-  if (pkg.auth.type === "apiKey" && (apiKey || !pkg.auth.optional)) {
-    if (!apiKey) throw new Error(`no API key for ${pkg.name}`)
-    const value = `${pkg.auth.prefix ?? ""}${apiKey}`
-    if (pkg.auth.in === "header") headers[pkg.auth.name] = value
-    else url.searchParams.set(pkg.auth.name, value)
-  }
-
+  applyKey(pkg, apiKey, headers, url)
   return { url: url.toString(), method: def.method, headers, body }
+}
+
+// Fills the path's {placeholders} URL-encoded (so a value can't change the host) and notes which arguments they used.
+function fillPath(template: string, args: Record<string, unknown>): { filled: string; used: Set<string> } {
+  const used = new Set<string>()
+  const filled = template.replace(PLACEHOLDER, (_, name: string) => {
+    used.add(name)
+    const value = args[name]
+    if (value === undefined || value === null || value === "") throw new Error(`missing value for {${name}}`)
+    return encodeURIComponent(String(value))
+  })
+  return { filled, used }
+}
+
+// One query parameter per argument, repeated for each item of an array.
+function appendQuery(url: URL, entries: [string, unknown][]) {
+  for (const [key, value] of entries) {
+    for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(key, queryValue(item))
+  }
+}
+
+// Puts the key in the header or query parameter the package's `auth` names; an optional key may be absent.
+function applyKey(pkg: HttpToolPackage, apiKey: string | undefined, headers: Record<string, string>, url: URL) {
+  if (pkg.auth.type !== "apiKey" || (!apiKey && pkg.auth.optional)) return
+  if (!apiKey) throw new Error(`no API key for ${pkg.name}`)
+  const value = `${pkg.auth.prefix ?? ""}${apiKey}`
+  if (pkg.auth.in === "header") headers[pkg.auth.name] = value
+  else url.searchParams.set(pkg.auth.name, value)
 }
 
 /** The status line plus the body as text, cut at {@link MAX_RESULT_CHARS}; binary bodies are described, not shown. */
 async function formatResponse(res: Response): Promise<string> {
-  const status = `HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}`
+  const status = res.statusText ? `HTTP ${res.status} ${res.statusText}` : `HTTP ${res.status}`
   const contentType = res.headers.get("content-type") ?? ""
   const bytes = await res.arrayBuffer()
   if (bytes.byteLength === 0) return status
@@ -95,10 +106,10 @@ export function approvalSummary(
   } catch {
     return `${def.method} ${pkg.baseUrl}${def.path}`
   }
-  const body = request.body
-    ? ` ${request.body.length > MAX_BODY_PREVIEW ? `${request.body.slice(0, MAX_BODY_PREVIEW)}…` : request.body}`
-    : ""
-  return `${request.method} ${request.url}${body}`
+  const line = `${request.method} ${request.url}`
+  if (!request.body) return line
+  const preview = request.body.length > MAX_BODY_PREVIEW ? `${request.body.slice(0, MAX_BODY_PREVIEW)}…` : request.body
+  return `${line} ${preview}`
 }
 
 /**

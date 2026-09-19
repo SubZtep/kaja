@@ -36,24 +36,9 @@ export type LoadPackagesOptions = {
  * package folder never stops the agent from starting.
  */
 export async function loadPackages(store: PackageStore, opts: LoadPackagesOptions = {}): Promise<LoadedPackages> {
-  let skills: SkillSummary[] = []
-  try {
-    skills = await store.listSkills()
-  } catch (error) {
-    warn("Failed to list skills", { error: error instanceof Error ? error.message : error })
-  }
-  let packages: HttpToolPackage[] = []
-  try {
-    packages = await store.listHttpTools()
-  } catch (error) {
-    warn("Failed to list HTTP tools", { error: error instanceof Error ? error.message : error })
-  }
-  let mcpPackages: McpPackage[] = []
-  try {
-    mcpPackages = await store.listMcpPackages()
-  } catch (error) {
-    warn("Failed to list MCP packages", { error: error instanceof Error ? error.message : error })
-  }
+  const skills = await listOrWarn(() => store.listSkills(), "skills")
+  const packages = await listOrWarn(() => store.listHttpTools(), "HTTP tools")
+  const mcpPackages = await listOrWarn(() => store.listMcpPackages(), "MCP packages")
 
   // load_skill is Kaja's own mechanism, so it's official (and its name reserved) even though packages switch it on.
   const groups: ToolGroup[] =
@@ -91,4 +76,14 @@ export async function loadPackages(store: PackageStore, opts: LoadPackagesOption
   }
 
   return { groups, skills, httpTools, mcp, missingKeys }
+}
+
+// A list the store can't read counts as empty, with a warning, so one broken package type doesn't stop the others.
+async function listOrWarn<T>(list: () => Promise<T[]>, what: string): Promise<T[]> {
+  try {
+    return await list()
+  } catch (error) {
+    warn(`Failed to list ${what}`, { error: error instanceof Error ? error.message : error })
+    return []
+  }
 }

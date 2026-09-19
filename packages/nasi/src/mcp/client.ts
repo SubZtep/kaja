@@ -40,7 +40,24 @@ function readOnlyByRule(rule: McpReadOnlyRule | undefined, args: Record<string, 
 
 function approvalSummary(label: string, name: string, args: unknown): string {
   const json = JSON.stringify(args ?? {})
-  return `${label} ${name} ${json.length > MAX_ARGS_PREVIEW ? `${json.slice(0, MAX_ARGS_PREVIEW)}…` : json}`
+  const preview = json.length > MAX_ARGS_PREVIEW ? `${json.slice(0, MAX_ARGS_PREVIEW)}…` : json
+  return `${label} ${name} ${preview}`
+}
+
+// A `url` server over Streamable HTTP (or SSE when asked), else a command started on this computer.
+function createTransport(server: McpServerEntry, opts: McpConnectOptions) {
+  if (!("url" in server)) {
+    return new StdioClientTransport({
+      command: server.command,
+      args: server.args,
+      env: { ...process.env, ...server.env } as Record<string, string>,
+      stderr: "ignore"
+    })
+  }
+  const init = { requestInit: { headers: server.headers }, ...(opts.fetch ? { fetch: opts.fetch } : {}) }
+  return opts.transport === "sse"
+    ? new SSEClientTransport(new URL(server.url), init)
+    : new StreamableHTTPClientTransport(new URL(server.url), init)
 }
 
 export async function connectMcpServer(
@@ -48,21 +65,7 @@ export async function connectMcpServer(
   tempDir: string,
   opts: McpConnectOptions = {}
 ): Promise<{ tools: Tool<any>[]; close: () => Promise<void> }> {
-  const remote = (headers: Record<string, string>) => ({
-    requestInit: { headers },
-    ...(opts.fetch ? { fetch: opts.fetch } : {})
-  })
-  const transport =
-    "url" in server
-      ? opts.transport === "sse"
-        ? new SSEClientTransport(new URL(server.url), remote(server.headers))
-        : new StreamableHTTPClientTransport(new URL(server.url), remote(server.headers))
-      : new StdioClientTransport({
-          command: server.command,
-          args: server.args,
-          env: { ...process.env, ...server.env } as Record<string, string>,
-          stderr: "ignore"
-        })
+  const transport = createTransport(server, opts)
 
   const client = new Client({ name: "kaja", version: "1.0.0" })
   await client.connect(transport)
