@@ -87,7 +87,7 @@ export function Hero() {
                 kaja
               </Sticker>
             </div>
-            <div className="pointer-events-auto w-64">{user ? <TelegramConnectCta /> : <TelegramPromo />}</div>
+            <div className="pointer-events-auto w-64 mt-16">{user ? <TelegramConnectCta /> : <TelegramPromo />}</div>
           </div>
         </div>
 

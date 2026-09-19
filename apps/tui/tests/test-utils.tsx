@@ -48,12 +48,13 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
    * Waits for output to settle after a keypress: polls until writeCount has
    * stopped growing for a short quiet window, capped by an overall deadline
    * generous enough for a loaded CI runner. A legitimately no-op keypress
-   * (e.g. ↑ at the oldest history entry) never writes, so this returns as
-   * soon as the initial quiet window elapses rather than waiting the full
+   * (e.g. ↑ at the oldest history entry) never writes, so this returns after
+   * the input parser has had time to settle rather than waiting the full
    * deadline.
    */
   const waitForRepaint = async () => {
     const deadline = Date.now() + 2000
+    const inputSettledAt = Date.now() + 100
     let last = writeCount
     let quietSince = Date.now()
     while (Date.now() < deadline) {
@@ -61,7 +62,7 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
       if (writeCount !== last) {
         last = writeCount
         quietSince = Date.now()
-      } else if (Date.now() - quietSince >= 60) {
+      } else if (Date.now() >= inputSettledAt && Date.now() - quietSince >= 60) {
         return
       }
     }

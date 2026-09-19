@@ -66,7 +66,9 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
                 value={locale}
                 className="cursor-pointer px-3 py-1.5 outline-none data-highlighted:bg-surface-2"
               >
-                <Select.ItemText>{LOCALE_LABELS[locale]}</Select.ItemText>
+                <Select.ItemText>
+                  {LOCALE_LABELS[locale]} — {locale}
+                </Select.ItemText>
               </Select.Item>
             ))}
           </Select.Popup>

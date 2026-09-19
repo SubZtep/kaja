@@ -2,7 +2,7 @@ import type { StartTelegramLinkResponse } from "@kaja/schema/api"
 import { useMutation } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Send } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../../components/form/primitives/Button"
 import { useApiFetch } from "../../../lib/api-fetch"
@@ -47,6 +47,36 @@ export function TelegramConnectCta({ className }: Readonly<{ className?: string 
 
 /** Signed-out promo for the desktop hero column under the monster. */
 export function TelegramPromo() {
+  const [isSpinning, setIsSpinning] = useState(false)
+
+  useEffect(() => {
+    let idleTimeout: ReturnType<typeof setTimeout>
+    let spinTimeout: ReturnType<typeof setTimeout>
+
+    const scheduleSpin = () => {
+      idleTimeout = setTimeout(
+        () => {
+          setIsSpinning(true)
+          spinTimeout = setTimeout(
+            () => {
+              setIsSpinning(false)
+              scheduleSpin()
+            },
+            1000 + Math.random() * 2000
+          )
+        },
+        10000 + Math.random() * 20000
+      )
+    }
+
+    scheduleSpin()
+
+    return () => {
+      clearTimeout(idleTimeout)
+      clearTimeout(spinTimeout)
+    }
+  }, [])
+
   return (
     <div className="crt-frame w-full max-w-64 px-4 py-4">
       <Sticker tone="neon" rotate={-4} className="mb-3 text-[10px]">
@@ -55,7 +85,7 @@ export function TelegramPromo() {
       <p className="m-0 font-display font-extrabold text-fg text-lg leading-tight">{m.hero_telegram_title()}</p>
       <p className="mt-2 mb-4 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
       <Link to="/signin" className="inline-flex items-center gap-1.5 font-stamp text-[11px] text-neon uppercase">
-        <Send size={12} />
+        <Send size={12} className={isSpinning ? "animate-spin" : undefined} />
         {m.hero_telegram_action()}
       </Link>
     </div>
