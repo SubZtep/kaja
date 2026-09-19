@@ -11,6 +11,9 @@
   color-scheme: dark;
 }
 
+/* Utilities use @variant instead of nested `&` rules, which have no scoping root outside a style rule (Sonar css:S8776). */
+@custom-variant webkit-scrollbar (&::-webkit-scrollbar);
+
 @theme {
   --radius-DEFAULT: 0.375rem;
   --radius-lg: 0.625rem;
@@ -258,7 +261,7 @@
   border: 1.5px solid transparent;
   filter: url("#wobble-sm");
 
-  &:hover {
+  @variant hover {
     border-color: var(--color-fg);
     background: var(--color-surface);
     color: var(--color-fg);
@@ -471,7 +474,7 @@
 
 @utility sticker-wiggle {
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    &:hover {
+    @variant hover {
       animation: sticker-wiggle 0.45s ease-in-out;
     }
   }
@@ -569,7 +572,7 @@
 
 @utility hide-scrollbar {
   scrollbar-width: none;
-  &::-webkit-scrollbar {
+  @variant webkit-scrollbar {
     display: none;
   }
 }
@@ -578,7 +581,7 @@
   position: relative;
   isolation: isolate;
 
-  &::after {
+  @variant after {
     content: "";
     pointer-events: none;
     position: absolute;
@@ -594,7 +597,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    &::after {
+    @variant after {
       animation: none;
       opacity: 0;
     }

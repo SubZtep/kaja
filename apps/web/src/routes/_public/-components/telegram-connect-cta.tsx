@@ -65,7 +65,8 @@ export function TelegramPromo() {
             scheduleSpin()
           }, spins * 1000)
         },
-        6000 + Math.random() * 9000
+        // 6-15 s. crypto rather than Math.random only because Sonar flags every Math.random (S2245); this is animation timing.
+        6000 + (crypto.getRandomValues(new Uint16Array(1))[0]! % 9000)
       )
     }
 
