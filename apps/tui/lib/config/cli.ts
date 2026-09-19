@@ -4,7 +4,6 @@ import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
 import { fetchModelsToml } from "../models/models"
 import { listPaths } from "../paths"
-import { fetchPersonasToml } from "../personas/fetch"
 import { getConfigDir } from "./config"
 import { writeTemplateConfig } from "./fetch"
 import { fetchMcpToml } from "./mcp-servers"
@@ -13,13 +12,20 @@ import { fetchSecretsToml } from "./secrets"
 
 type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean }
 
+const BUNDLE_FILES = new Set(["models.toml", "mcp.toml"])
+
+/** The server bundle's files that `fetch` writes; personas, like the rest of the marketplace, come from `kaja pkg update`. */
+export function pickBundleFiles(files: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(files).filter(([key]) => BUNDLE_FILES.has(key)))
+}
+
 function fetchResultLine({ path, backedUpTo, unchanged }: FetchResult) {
   if (unchanged) return t("config.fetchedUnchanged", { path })
   if (backedUpTo) return t("config.fetchedWithBackup", { path, backup: backedUpTo })
   return t("config.fetched", { path })
 }
 
-/** Maps a bundle file key ("models.toml", "mcp.toml", "personas/<id>.toml") to its on-disk path under the config dir. */
+/** Maps a bundle file key ("models.toml", "mcp.toml") to its on-disk path under the config dir. */
 export function pathForBundleKey(key: string): string {
   return join(getConfigDir(), key)
 }
@@ -29,7 +35,6 @@ export function matchesOnly(key: string, only: string | undefined): boolean {
   if (only === "models") return key === "models.toml"
   if (only === "mcp") return key === "mcp.toml"
   if (only === "secrets") return key === "secrets.toml"
-  if (only === "personas") return key.startsWith("personas/")
   return true
 }
 
@@ -38,7 +43,6 @@ async function runFetchOffline(only?: string): Promise<FetchResult[]> {
   if (matchesOnly("mcp.toml", only)) results.push(await fetchMcpToml())
   if (matchesOnly("models.toml", only)) results.push(await fetchModelsToml())
   if (matchesOnly("secrets.toml", only)) results.push(await fetchSecretsToml())
-  if (matchesOnly("personas/", only)) results.push(...(await fetchPersonasToml()))
   return results
 }
 
@@ -48,7 +52,7 @@ async function runFetchOnline(only: string | undefined): Promise<FetchResult[] |
   const bundle = await fetchRemoteConfigBundle(existsSync(getConfigDir()))
   if ("unchanged" in bundle) return undefined
 
-  const entries = Object.entries(bundle.files).filter(([key]) => matchesOnly(key, only))
+  const entries = Object.entries(pickBundleFiles(bundle.files)).filter(([key]) => matchesOnly(key, only))
   return Promise.all(entries.map(([key, text]) => writeTemplateConfig(text, pathForBundleKey(key))))
 }
 

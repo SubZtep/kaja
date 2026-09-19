@@ -1,9 +1,8 @@
 import { describe, expect, test } from "bun:test"
-import type { McpServer, Model, Persona, Provider } from "@kaja/schema/api"
-import { PersonaSchema } from "@kaja/schema/cli"
+import type { McpServer, Model, Provider } from "@kaja/schema/api"
 import { McpFileSchema, ModelsFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
-import { renderMcpToml, renderModelsToml, renderPersonaToml } from "../../src/services/config-export"
+import { renderMcpToml, renderModelsToml } from "../../src/services/config-export"
 
 function makeProvider(overrides: Partial<Provider> = {}): Provider {
   return {
@@ -42,24 +41,6 @@ function makeMcpServer(overrides: Partial<McpServer> = {}): McpServer {
     url: "https://mcp.example.com",
     headers: { Authorization: "Bearer sk-secret-token", "X-Region": "eu" },
     enabled: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides
-  }
-}
-
-function makePersona(overrides: Partial<Persona> = {}): Persona {
-  return {
-    id: "persona-1",
-    personaId: "care",
-    label: "Care assistant",
-    when: "the user talks about their day",
-    instructions: "Be warm and grounded.",
-    dataset: null,
-    models: {},
-    sampling: { temperature: 0.3 },
-    enabled: true,
-    sortOrder: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides
@@ -131,13 +112,5 @@ describe("renderMcpToml", () => {
     const toml = renderMcpToml([makeMcpServer({ enabled: false })])
     const parsed = TOML.parse(toml) as { servers: unknown[] }
     expect(parsed.servers).toHaveLength(0)
-  })
-})
-
-describe("renderPersonaToml", () => {
-  test("round-trips through PersonaSchema", () => {
-    const toml = renderPersonaToml(makePersona())
-    const parsed = PersonaSchema.safeParse(TOML.parse(toml))
-    expect(parsed.success).toBeTrue()
   })
 })

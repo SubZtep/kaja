@@ -29,18 +29,70 @@ export { samplingOf } from "./agent/persona"
 export { run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
-export { LOCAL_OWNER_CTX, type Tool, type ToolContext, ToolError, type ToolResult, tool, toolName } from "./agent/tools"
-export { connectMcpServer } from "./mcp/client"
+export {
+  LOCAL_OWNER_CTX,
+  runApprovedTool,
+  type Tool,
+  type ToolContext,
+  ToolError,
+  type ToolOrigin,
+  type ToolResult,
+  tool,
+  toolName
+} from "./agent/tools"
+export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
   createOpenAIClient,
   KAJA_MODEL_HEADER,
   noteServedModel,
   takeLastServedModel
 } from "./models/client"
-export { Nasi, type NasiOpenOptions, type NasiTurnInput } from "./nasi"
+export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall } from "./nasi"
+export {
+  createFolderPackageStore,
+  type DatasetScanEntry,
+  type FolderPackageStoreOptions,
+  type HttpToolScanEntry,
+  type McpScanEntry,
+  type PackageKeyNeed,
+  type PersonaScanEntry,
+  parseDatasetManifest,
+  parseHttpToolManifest,
+  parseMcpManifest,
+  parsePersonaManifest,
+  readDatasets,
+  readPersonas,
+  readSkillBundle,
+  type SkillBundle,
+  type SkillScanEntry,
+  scanDatasets,
+  scanHttpTools,
+  scanMcpPackages,
+  scanPersonas,
+  scanSkills
+} from "./packages/folder-store"
+export {
+  approvalSummary,
+  buildHttpRequest,
+  checkHttpToolKey,
+  createHttpTools,
+  type HttpRequestSpec,
+  type KeyCheckResult
+} from "./packages/http-tool"
+export { type LoadedPackages, type LoadPackagesOptions, loadPackages } from "./packages/load"
+export { checkMcpPackageKey, type McpPackageTarget, mcpPackageTarget } from "./packages/mcp-package"
+export { parseSkillMd } from "./packages/skill-md"
+export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./packages/skills"
+export { type PackageStore, SkillFileError, type SkillSummary } from "./packages/types"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
-export { fetchPublicHttp, UnsafeUrlError } from "./security/ssrf"
+export {
+  createGuardedFetch,
+  type FetchLike,
+  type FetchPublicHttpOptions,
+  fetchPublicHttp,
+  UnsafeUrlError
+} from "./security/ssrf"
 export {
   createMemoryStore,
   type DatasetAnswer,
@@ -63,4 +115,11 @@ export { summarizeTool } from "./tools/builtin/summarize"
 export { viewImageTool } from "./tools/builtin/view-image"
 export { webSearchTool } from "./tools/builtin/web-search"
 export { getToolDeps, type ImageGenModel, type NasiToolDeps, type RerankModel, setToolDeps } from "./tools/deps"
-export { type CreateToolsOptions, createTools, listCloudToolNames } from "./tools/registry"
+export {
+  type CreateToolsOptions,
+  createTools,
+  listCloudToolNames,
+  mergeTools,
+  type SkippedTool,
+  type ToolGroup
+} from "./tools/registry"

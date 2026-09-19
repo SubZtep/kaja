@@ -40,6 +40,27 @@ export class WidgetService {
     return rows.map(row => this.#rowToWidgetKey(row))
   }
 
+  /** Changes a key's label, origins or config (config is replaced whole); null when the key isn't this user's. */
+  async updateKey(
+    userId: string,
+    id: string,
+    patch: { label?: string; allowedOrigins?: string[]; config?: WidgetConfig }
+  ): Promise<WidgetKey | null> {
+    const columns: Record<string, unknown> = {}
+    if (patch.label !== undefined) columns.label = patch.label
+    if (patch.allowedOrigins !== undefined) columns.allowed_origins = patch.allowedOrigins
+    if (patch.config !== undefined) columns.config = JSON.stringify(patch.config)
+    const entries = Object.entries(columns)
+    if (entries.length === 0) return (await this.listKeys(userId)).find(key => key.id === id) ?? null
+
+    const assignments = entries.map(([column], index) => `${column} = $${index + 3}`).join(", ")
+    const { rows } = await this.#db.query(
+      `UPDATE widget SET ${assignments} WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, userId, ...entries.map(([, value]) => value)]
+    )
+    return rows[0] ? this.#rowToWidgetKey(rows[0]) : null
+  }
+
   async revokeKey(userId: string, id: string): Promise<boolean> {
     const result = await this.#db.query(`UPDATE widget SET enabled = false WHERE id = $1 AND user_id = $2`, [
       id,

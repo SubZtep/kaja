@@ -26,6 +26,7 @@ export type NasiStreamEvent =
   | { type: "message"; content: string }
   | { type: "tool_call"; name: string; arguments: string }
   | { type: "client_tool_call"; name: string; arguments: string }
+  | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "usage"; promptTokens?: number; model?: string }

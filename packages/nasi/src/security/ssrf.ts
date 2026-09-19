@@ -36,12 +36,22 @@ async function hasOnlyPublicAddresses(hostname: string): Promise<boolean> {
   }
 }
 
+type HopRequest = { method: string; headers?: Record<string, string>; body?: string }
+
 /** One hop, with its own timeout. Never follows redirects — the caller re-checks each hop's URL before continuing. */
-async function fetchHop(url: string, timeoutMs: number, proxy: string | undefined): Promise<Response> {
+async function fetchHop(
+  url: string,
+  timeoutMs: number,
+  proxy: string | undefined,
+  request: HopRequest
+): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     return await fetch(url, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
       redirect: "manual",
       signal: controller.signal,
       ...(proxy ? { proxy } : {})
@@ -90,27 +100,71 @@ function redirectTarget(res: Response, current: string): string | undefined {
   return new URL(location, current).toString()
 }
 
+function isHttpUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url)
+    return protocol === "http:" || protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+/** 303, and 301/302 after a POST, turn into a body-less GET (what browsers do); 307/308 repeat the request as is. */
+function becomesGet(status: number, method: string): boolean {
+  return status === 303 || ((status === 301 || status === 302) && method === "POST")
+}
+
+function requestAfterRedirect(status: number, request: HopRequest): HopRequest {
+  return becomesGet(status, request.method) ? { method: "GET", headers: request.headers } : request
+}
+
+/** Throws {@link UnsafeUrlError} unless `url` may be fetched: http(s) only, and (without `allowPrivate`) a public host whose DNS answers are public too (skipped behind a proxy, which resolves for itself). */
+async function assertHopAllowed(url: string, opts: { allowPrivate?: boolean; proxy?: string }): Promise<void> {
+  if (opts.allowPrivate) {
+    if (!isHttpUrl(url)) throw new UnsafeUrlError(url)
+    return
+  }
+  if (!isPublicHttpUrl(url)) throw new UnsafeUrlError(url)
+  if (!opts.proxy && !(await hasOnlyPublicAddresses(new URL(url).hostname))) throw new UnsafeUrlError(url)
+}
+
+export type FetchPublicHttpOptions = {
+  timeoutMs?: number
+  maxBytes?: number
+  maxRedirects?: number
+  proxy?: string
+  /** Default GET. */
+  method?: string
+  headers?: Record<string, string>
+  body?: string
+  /** Skip the private/loopback checks (local mode only: the user's own network is fair game there). Still http(s) only. */
+  allowPrivate?: boolean
+  /** Refuse a redirect to another origin, so credentials in `headers` never reach a host the caller didn't choose. */
+  sameOriginRedirects?: boolean
+}
+
 /**
- * GET a public http(s) URL. Re-checks each redirect hop against {@link isPublicHttpUrl}.
+ * Fetch a public http(s) URL (GET unless `opts.method` says otherwise). Re-checks each redirect hop against {@link isPublicHttpUrl}.
  *
  * @param opts.proxy - HTTP(S) proxy to egress through. Applies to every redirect hop. Fails closed: if the proxy is unreachable the request throws {@link ProxyUnavailableError} rather than falling back to a direct connection.
  */
-export async function fetchPublicHttp(
-  url: string,
-  opts?: { timeoutMs?: number; maxBytes?: number; maxRedirects?: number; proxy?: string }
-): Promise<Response> {
+export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions): Promise<Response> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxBytes = opts?.maxBytes ?? DEFAULT_MAX_BYTES
   const maxRedirects = opts?.maxRedirects ?? DEFAULT_MAX_REDIRECTS
 
   let current = url
+  let request: HopRequest = { method: opts?.method ?? "GET", headers: opts?.headers, body: opts?.body }
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    if (!isPublicHttpUrl(current)) throw new UnsafeUrlError(current)
-    if (!opts?.proxy && !(await hasOnlyPublicAddresses(new URL(current).hostname))) throw new UnsafeUrlError(current)
+    await assertHopAllowed(current, opts ?? {})
 
-    const res = await fetchHop(current, timeoutMs, opts?.proxy)
+    const res = await fetchHop(current, timeoutMs, opts?.proxy, request)
     const next = redirectTarget(res, current)
     if (next) {
+      if (opts?.sameOriginRedirects && new URL(next).origin !== new URL(current).origin) {
+        throw new Error(`Refused a redirect to another host: ${next}`)
+      }
+      request = requestAfterRedirect(res.status, request)
       current = next
       continue
     }
@@ -119,4 +173,46 @@ export async function fetchPublicHttp(
     return new Response(buf, { status: res.status, statusText: res.statusText, headers: res.headers })
   }
   throw new Error(`Too many redirects fetching ${url}`)
+}
+
+/** The `fetch` shape long-lived HTTP clients take (the MCP SDK's transports among them). */
+export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Response>
+
+/**
+ * A `fetch` for long-lived clients such as the MCP SDK's transports: every hop gets the same checks as
+ * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are
+ * followed here and only within the same origin (headers may carry the user's key), and the body is
+ * streamed rather than buffered, so an SSE stream stays open. Egresses through `proxy` when set, failing
+ * closed with {@link ProxyUnavailableError} rather than going direct.
+ */
+export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number } = {}): FetchLike {
+  const maxRedirects = opts.maxRedirects ?? DEFAULT_MAX_REDIRECTS
+  return async (input, init) => {
+    let current = String(input)
+    let request: RequestInit = init ?? {}
+    for (let hop = 0; hop <= maxRedirects; hop++) {
+      await assertHopAllowed(current, opts)
+      const res = await streamHop(current, request, opts.proxy)
+      const next = redirectTarget(res, current)
+      if (!next) return res
+      await res.body?.cancel()
+      if (new URL(next).origin !== new URL(current).origin)
+        throw new Error(`Refused a redirect to another host: ${next}`)
+      if (becomesGet(res.status, (request.method ?? "GET").toUpperCase())) {
+        request = { ...request, method: "GET", body: undefined }
+      }
+      current = next
+    }
+    throw new Error(`Too many redirects fetching ${String(input)}`)
+  }
+}
+
+// One hop of the guarded fetch: the body is left to stream, redirects aren't followed, and an unreachable proxy fails closed.
+async function streamHop(url: string, request: RequestInit, proxy: string | undefined): Promise<Response> {
+  try {
+    return await fetch(url, { ...request, redirect: "manual", ...(proxy ? { proxy } : {}) })
+  } catch (error) {
+    if (proxy && !request.signal?.aborted) throw new ProxyUnavailableError(url, error)
+    throw error
+  }
 }

@@ -1,3 +1,4 @@
+import { jest } from "bun:test"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
@@ -26,3 +27,6 @@ const apiDir = join(import.meta.dir, "..")
 const presetKeys = new Set(Object.keys(Bun.env))
 parseEnvFile(join(apiDir, ".env.example"), presetKeys)
 parseEnvFile(join(apiDir, ".env"), presetKeys)
+
+// Bun's 5 s default fails real Postgres calls, password hashing and spawned MCP servers on a busy machine; a real hang still fails, just later.
+jest.setTimeout(15_000)

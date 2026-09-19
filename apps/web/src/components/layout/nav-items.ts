@@ -1,4 +1,4 @@
-import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, UserSquare, Users } from "lucide-react"
+import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, Sparkles, Users } from "lucide-react"
 import { m } from "../../paraglide/messages.js"
 
 /** "public" matches signed-out visitors; "all" matches every signed-in role plus "public". */
@@ -73,13 +73,13 @@ const navItems: NavItem[] = [
     icon: Cpu
   },
   {
-    to: "/personas",
-    label: "Personas",
-    description: "Cloud persona catalog",
+    to: "/packages",
+    label: "Packages",
+    description: "Skills, personas and tools your cloud assistant can use",
     internal: true,
-    roles: ["admin"],
+    roles: ["admin", "user"],
     sections: ["header", "admin"],
-    icon: UserSquare
+    icon: Sparkles
   },
   {
     to: "/widget",
@@ -107,7 +107,7 @@ const LABEL_OVERRIDES: Record<string, () => string> = {
   "/users": m.nav_users,
   "/mcp-servers": m.nav_mcp_servers,
   "/models": m.nav_models,
-  "/personas": m.nav_personas,
+  "/packages": m.nav_packages,
   "/widget": m.nav_widget
 }
 
@@ -118,7 +118,7 @@ const DESCRIPTION_OVERRIDES: Record<string, () => string> = {
   "/users": m.nav_users_desc,
   "/mcp-servers": m.nav_mcp_servers_desc,
   "/models": m.nav_models_desc,
-  "/personas": m.nav_personas_desc,
+  "/packages": m.nav_packages_desc,
   "/widget": m.nav_widget_desc
 }
 

@@ -138,6 +138,13 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
       } catch (error) {
         throw new Error(t("telegram.invalidToken"), { cause: error })
       }
+      // The menu next to the message box; a failure only costs the menu.
+      await bot.api
+        .setMyCommands([
+          { command: "new", description: t("telegram.commandNew") },
+          { command: "packages", description: t("telegram.commandPackages") }
+        ])
+        .catch(error => log.warn("Telegram command menu not set", { error }))
       await bot.start({
         onStart: () => {
           console.log(t("telegram.ready"))

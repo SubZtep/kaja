@@ -75,8 +75,7 @@ function DeviceApprovePage() {
         return
       }
       await clearStashedDeviceCode()
-      toast.success(m.device_approve_success())
-      await navigate({ to: "/dashboard" })
+      await navigate({ to: "/device/done", search: { result: "approved" } })
     } finally {
       setLoading(false)
     }
@@ -91,8 +90,7 @@ function DeviceApprovePage() {
         return
       }
       await clearStashedDeviceCode()
-      toast.info(m.device_deny_success())
-      await navigate({ to: "/dashboard" })
+      await navigate({ to: "/device/done", search: { result: "denied" } })
     } finally {
       setLoading(false)
     }

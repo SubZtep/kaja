@@ -255,6 +255,15 @@ describe("nasi", () => {
 
     test("unauthenticated info is 401", () => expectUnauthenticated("/nasi/info"))
 
+    test("any signed-in user can list the persona catalog, default first", async () => {
+      const res = await app.request("/nasi/personas", { headers: { Authorization: `Bearer ${token}` } })
+      expect(res.status).toBe(200)
+      const { personas } = await res.json()
+      // default is always there, built in until a marketplace sync brings it.
+      expect(personas[0]).toEqual({ id: "default", label: "Helpful assistant" })
+      expect((await app.request("/admin/personas", { headers: { Authorization: `Bearer ${token}` } })).status).toBe(404)
+    })
+
     test("returns persona label, a model, and the cloud tool list", async () => {
       const res = await app.request("/nasi/info", { headers: { Authorization: `Bearer ${token}` } })
       expect(res.status).toBe(200)

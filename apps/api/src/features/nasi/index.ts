@@ -1,18 +1,24 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { error as logError } from "@kaja/logger"
-import { categorizeError, listCloudToolNames } from "@kaja/nasi"
-import { NasiInfoResponseSchema, NasiTurnRequestSchema, NasiTurnResponseSchema } from "@kaja/schema/nasi"
+import { categorizeError, LOAD_SKILL_TOOL, listCloudToolNames } from "@kaja/nasi"
+import {
+  NasiInfoResponseSchema,
+  NasiPersonasResponseSchema,
+  NasiTurnRequestSchema,
+  NasiTurnResponseSchema
+} from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
+import { packageService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badGateway, badRequest, internalError, notFound, unauthorized } from "../../types/errors"
+import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
 import { nasiToolDeps, openUserTurnStream, pinnedModelFor, resolveModelWithProvider, runUserTurn } from "./chat"
-import { listPersonas } from "./personas"
 import { createPostgresStore } from "./pg-store"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
+const NOTHING_TO_APPROVE = "No tool call is waiting for approval"
 
 export const nasiRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 nasiRoutes.use("*", requireAuthMiddleware)
@@ -34,7 +40,11 @@ const turnRoute = createRoute({
     200: { description: "Turn complete", content: { "application/json": { schema: NasiTurnResponseSchema } } },
     400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } }
+    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
+    409: {
+      description: "`approval` sent, but no tool call is waiting for one",
+      content: { "application/json": { schema: errorSchema } }
+    }
   }
 })
 
@@ -47,6 +57,7 @@ nasiRoutes.openapi(turnRoute, async c => {
     return c.json(result)
   } catch (error) {
     if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
+    if (error instanceof Error && error.name === "NasiNothingToApprove") return conflict(c, NOTHING_TO_APPROVE)
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
     if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
     const { category, message } = categorizeError(error)
@@ -62,10 +73,22 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   message: "message",
   tool_call: "tool_call",
   client_tool_call: "client_tool_call",
+  confirm_tool: "confirm_tool",
   ask_user: "ask_user",
   persona_switch: "persona_switch",
   usage: "usage",
   final: "final"
+}
+
+/** The `error` event's body for a failed stream: the known failures by name, anything else categorized and logged. */
+function streamErrorBody(error: unknown, userId: string): { error: string; category?: string } {
+  if (error instanceof Error && error.name === "NasiSessionNotFound") return { error: "Session not found" }
+  if (error instanceof Error && error.name === "NasiNothingToApprove") return { error: NOTHING_TO_APPROVE }
+  if (error instanceof Error && error.message === "no_model") return { error: "No model available" }
+  if (error instanceof Error && error.name === "NasiModelUnavailable") return { error: error.message }
+  const { category, message } = categorizeError(error)
+  logError("nasi turn/stream failed", { userId, category, error: String(error) })
+  return { error: message, category }
 }
 
 nasiRoutes.post("/turn/stream", async c => {
@@ -94,24 +117,7 @@ nasiRoutes.post("/turn/stream", async c => {
         data: JSON.stringify({ session: next.value.session, status: next.value.status })
       })
     } catch (error) {
-      const isNotFound = error instanceof Error && error.name === "NasiSessionNotFound"
-      const isNoModel = error instanceof Error && error.message === "no_model"
-      const isModelUnavailable = error instanceof Error && error.name === "NasiModelUnavailable"
-      let errorMessage: string
-      let category: string | undefined
-      if (isNotFound) errorMessage = "Session not found"
-      else if (isNoModel) errorMessage = "No model available"
-      else if (isModelUnavailable) errorMessage = (error as Error).message
-      else {
-        const categorized = categorizeError(error)
-        errorMessage = categorized.message
-        category = categorized.category
-        logError("nasi turn/stream failed", { userId: user.id, category, error: String(error) })
-      }
-      await stream.writeSSE({
-        event: "error",
-        data: JSON.stringify({ error: errorMessage, ...(category ? { category } : {}) })
-      })
+      await stream.writeSSE({ event: "error", data: JSON.stringify(streamErrorBody(error, user.id)) })
     } finally {
       clearInterval(heartbeat)
     }
@@ -141,9 +147,23 @@ nasiRoutes.openapi(infoRoute, async c => {
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) return notFound(c, "No model available")
 
-  const personas = await listPersonas()
+  const personas = await packageService.personasForUser(user.id)
   const persona = personas[0]
-  const tools = await listCloudToolNames(nasiToolDeps())
+  const skills = await packageService.skillsForUser(user.id)
+  const keys = new Set(await packageService.keyNames(user.id))
+  // Tool and MCP packages as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP packages in the cloud have a fixed tool list.
+  const loads = (pkg: { name: string; auth: { type: string; optional?: boolean } }) =>
+    pkg.auth.type !== "apiKey" || pkg.auth.optional || keys.has(pkg.name)
+  const httpTools = (await packageService.httpToolsForUser(user.id))
+    .filter(loads)
+    .flatMap(pkg => pkg.tools.map(t => t.name))
+  const mcpTools = (await packageService.mcpForUser(user.id)).filter(loads).flatMap(pkg => pkg.tools ?? [])
+  const tools = [
+    ...(await listCloudToolNames(nasiToolDeps())),
+    ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : []),
+    ...httpTools,
+    ...mcpTools
+  ]
 
   return c.json({
     persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },
@@ -151,6 +171,24 @@ nasiRoutes.openapi(infoRoute, async c => {
     model: result.model.model,
     tools
   })
+})
+
+const personasRoute = createRoute({
+  method: "get",
+  path: "/personas",
+  tags: ["Nasi"],
+  summary: "Every persona in the cloud catalog (id and label), default first, for pickers like the widget form",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: NasiPersonasResponseSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+nasiRoutes.openapi(personasRoute, async c => {
+  if (!c.get("user")) return unauthorized(c)
+  const personas = await packageService.personaCatalog()
+  return c.json({ personas: personas.map(p => ({ id: p.id, label: p.label })) }, 200)
 })
 
 const listRoute = createRoute({

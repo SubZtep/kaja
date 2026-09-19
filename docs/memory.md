@@ -14,7 +14,7 @@ Two different kinds of remembering, both persisted in the same
 | Shape | free-form facts | a fixed list of fields |
 | Written by | the agent, unprompted | the user, one answer at a time |
 | Read back | by search (`recall_memory`) | as a completed version |
-| Defined where | nowhere — grows organically | `~/.config/kaja/datasets/*.json` |
+| Defined where | nowhere — grows organically | `marketplace/datasets/*.json` |
 
 ## Notes
 
@@ -57,21 +57,18 @@ note about my old job"*.
 ## Datasets
 
 A dataset is a questionnaire the agent fills in conversationally, across as many sessions as it
-takes. One JSON file per topic in `~/.config/kaja/datasets/`, and a [persona](/personas) opts into
-it with `dataset = "<id>"`.
+takes. Datasets are [marketplace](/skills#the-marketplace) packages: one JSON file per topic in
+`~/.config/kaja/marketplace/datasets/` (synced by `kaja pkg update`, or your own), and a
+[persona](/personas) opts into it with `dataset = "<id>"`. Every dataset there loads; one does
+nothing until a persona names it or it's a profile.
 
 ```json
 {
-  "label": "Onboarding",
-  "revalidateAfterDays": 365,
+  "label": "Mood check-in",
+  "revalidateAfterDays": 7,
   "fields": [
-    { "name": "favorite_color", "prompt": "What's your favorite color?" },
-    { "name": "timezone", "prompt": "What timezone are you in?" },
-    {
-      "name": "notification_pref",
-      "prompt": "How do you want to be notified — email, push, or none?",
-      "accepted": ["email", "push", "none"]
-    }
+    { "name": "mood", "prompt": "How has your week felt overall?" },
+    { "name": "energy", "prompt": "How's your energy been?", "accepted": ["low", "okay", "high"] }
   ]
 }
 ```
@@ -83,6 +80,21 @@ it with `dataset = "<id>"`.
 | `fields[].prompt` | what to ask — the agent rephrases it naturally rather than reading it out |
 | `fields[].accepted` | fixed answer list; anything else is rejected case-insensitively and re-asked |
 | `revalidateAfterDays` | how long a completed set stays fresh before a new version is started |
+| `profile` | it's about the user: every persona sees the answers (see below) |
+
+### The onboarding profile
+
+The shipped `onboarding` dataset is a profile: what to call you, pronouns, age, look, where you
+live, languages, work, interests, household, pets and diet. The `onboarding` persona walks you
+through it, but only the name matters; every other question is fine to skip, and a skipped one is
+recorded as `prefer not to say` so it's never asked again.
+
+Because it's a profile, every persona gets an "About the user" section in its system prompt with
+what you shared (never the skipped fields), and records a missing detail when you happen to mention
+it, without quizzing you for the rest. While your name is still unknown, the assistant asks for it
+once, kindly. The section goes to the model provider with each message, like
+[sticky notes](#notes) do. In cloud chat, Telegram and each widget visitor keep their own answers,
+as with notes.
 
 ### Versions
 

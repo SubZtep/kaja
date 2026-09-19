@@ -58,6 +58,8 @@ function renderItem(item: TimelineEvent, thinking: boolean) {
       )
     case "confirm_command":
       return <Text color="yellow">{`$ ${item.command}`}</Text>
+    case "confirm_tool":
+      return <Text color="yellow">{`→ ${item.summary}`}</Text>
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
     case "error": {

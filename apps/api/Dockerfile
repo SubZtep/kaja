@@ -7,6 +7,7 @@ COPY apps/tui/package.json ./apps/tui/package.json
 COPY packages ./packages
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY docs/config ./docs/config
+COPY marketplace/personas ./marketplace/personas
 COPY apps/api ./apps/api
 RUN bun run --filter @kaja/api build
 RUN bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/migrate.ts

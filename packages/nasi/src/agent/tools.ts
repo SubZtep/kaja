@@ -42,6 +42,13 @@ export class ToolError extends Error {
 }
 
 /**
+ * Who stands behind a tool: Kaja itself (`official`), a package in the marketplace
+ * folder, synced or your own (`community`), or an outside MCP server or tools/*.ts
+ * plugin (`third-party`). Shown in doctor/pkg, never to the model.
+ */
+export type ToolOrigin = "official" | "community" | "third-party"
+
+/**
  * A tool an {@link Agent} can call, pairing the OpenAI function definition
  * with the local implementation that runs when the model calls it.
  */
@@ -50,6 +57,15 @@ export type Tool<Args> = {
   execute: (args: Args, ctx?: ToolContext) => Promise<string | ToolResult>
   /** True only for the cloud-registered stub of a tool that must run on the client (see registry.ts's CLIENT_EXECUTABLE). Never set on the real implementation. */
   requiresClientExecution?: boolean
+  /**
+   * When set and it returns a summary for these arguments, run() pauses before executing and
+   * emits `confirm_tool` with it; the host runs the tool itself once the human approves.
+   */
+  approval?: (args: Args) => string | undefined
+  /** Stamped by the registry's `mergeTools`; unset on a tool that hasn't been through it. */
+  origin?: ToolOrigin
+  /** Where a non-official tool came from, e.g. `package:open-meteo`, `mcp:chrome-devtools`, `plugin:ping.ts`. */
+  source?: string
 }
 
 /**
@@ -74,7 +90,23 @@ export function tool<Args>(config: {
   }
 }
 
-export function toolName(t: Tool<unknown>): string {
+export function toolName(t: Tool<any>): string {
   if (t.definition.type !== "function") throw new Error("tool is missing function definition")
   return t.definition.function.name
+}
+
+/**
+ * Runs a tool call the human approved after a `confirm_tool` pause, returning the text to feed
+ * back as its result. Hosts call this with their own tool list; a missing tool, bad arguments or
+ * a failure come back as text so the model can react.
+ */
+export async function runApprovedTool(tools: Tool<any>[], name: string, argumentsJson: string): Promise<string> {
+  const target = tools.find(t => toolName(t) === name)
+  if (!target) return `Error: unknown tool "${name}"`
+  try {
+    const result = await target.execute(JSON.parse(argumentsJson || "{}"))
+    return typeof result === "string" ? result : result.text
+  } catch (error) {
+    return `Error: ${error instanceof Error ? error.message : String(error)}`
+  }
 }

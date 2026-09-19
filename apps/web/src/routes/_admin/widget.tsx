@@ -1,14 +1,22 @@
-import type { CreateWidgetKeyResponse, ListPersonasResponse, ListWidgetKeysResponse, WidgetKey } from "@kaja/schema/api"
+import type {
+  CreateWidgetKeyResponse,
+  ListWidgetKeysResponse,
+  UpdateWidgetKeyRequest,
+  WidgetKey
+} from "@kaja/schema/api"
 import { widgetKeySchema, widgetTypeSchema } from "@kaja/schema/api"
+import { type NasiPersonasResponse, NasiPersonasResponseSchema } from "@kaja/schema/nasi"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useLoaderData } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
-import { Trash2 } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
 import { Button } from "../../components/form/primitives/Button"
+import { useSkillCatalog } from "../../components/packages/queries"
+import { SkillChecklist } from "../../components/packages/SkillChecklist"
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog"
 import { ErrorNotice } from "../../components/ui/ErrorNotice"
 import { IconButton } from "../../components/ui/IconButton"
@@ -23,6 +31,7 @@ import { userRequired } from "../../lib/loaders"
 import { seo } from "../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"
+import { EditWidgetDialog, parseOrigins } from "./-components/EditWidgetDialog"
 
 export const Route = createFileRoute("/_admin/widget")({
   component: WidgetPage,
@@ -40,14 +49,6 @@ const createFormSchema = z.object({
 const AUTO_SELECT_PERSONA = ""
 const DEFAULT_WIDGET_TYPE = widgetTypeSchema.options[0]
 const WIDGET_TYPE_OPTIONS = widgetTypeSchema.options.map(value => ({ value, label: value }))
-
-/** Comma or newline separated origins, e.g. "https://example.com, https://www.example.com". */
-function parseOrigins(input: string): string[] {
-  return input
-    .split(/[\n,]/)
-    .map(o => o.trim())
-    .filter(Boolean)
-}
 
 const columnHelper = tableColumnHelper<WidgetKey>()
 
@@ -80,11 +81,17 @@ function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey,
   return <span className="font-mono text-xs text-muted">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
-function makeActionsCell(onRevoke: (id: string) => void) {
+function SkillsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string[]>) {
+  const skills = info.getValue()
+  return <span className="font-mono text-xs text-muted">{skills.length > 0 ? skills.join(", ") : "—"}</span>
+}
+
+function makeActionsCell(renderEdit: (key: WidgetKey) => React.ReactNode, onRevoke: (id: string) => void) {
   return function ActionsCell(info: { row: { original: WidgetKey } }) {
     if (!info.row.original.enabled) return null
     return (
-      <div className="text-right">
+      <div className="flex justify-end gap-1">
+        {renderEdit(info.row.original)}
         <ConfirmDialog
           title={m.widget_revoke_confirm_title()}
           description={m.widget_revoke_confirm_description({ label: info.row.original.label })}
@@ -122,10 +129,14 @@ function WidgetPage() {
     queryFn: () => apiFetch<ListWidgetKeysResponse>("/widget/admin").then(r => z.array(widgetKeySchema).parse(r.keys))
   })
 
+  // Not /admin/personas: that's admin-only, and every signed-in user can make widget keys.
   const { data: personas, error: personasError } = useQuery({
-    queryKey: ["personas"],
-    queryFn: () => apiFetch<ListPersonasResponse>("/admin/personas").then(r => r.personas)
+    queryKey: ["nasi", "personas"],
+    queryFn: () =>
+      apiFetch<NasiPersonasResponse>("/nasi/personas").then(r => NasiPersonasResponseSchema.parse(r).personas)
   })
+  const { data: catalog, error: catalogError } = useSkillCatalog()
+  const [createSkills, setCreateSkills] = useState<string[]>([])
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widget-keys"] })
 
@@ -133,7 +144,7 @@ function WidgetPage() {
     mutationFn: (payload: {
       label: string
       allowedOrigins: string[]
-      config?: { widgetType?: string; persona?: string }
+      config?: { widgetType?: string; persona?: string; skills?: string[] }
     }) => apiFetch<CreateWidgetKeyResponse>("/widget/admin", payload),
     onSuccess: response => {
       invalidate()
@@ -141,6 +152,16 @@ function WidgetPage() {
       toast.success(m.widget_success_created())
     },
     onError: (err: Error) => toast.error(err.message || m.widget_error_create_failed())
+  })
+
+  const updateKey = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateWidgetKeyRequest }) =>
+      apiFetch(`/widget/admin/${id}`, payload, { method: "PATCH" }).then(r => widgetKeySchema.parse(r)),
+    onSuccess: () => {
+      invalidate()
+      toast.success(m.widget_success_updated())
+    },
+    onError: (err: Error) => toast.error(err.message || m.widget_error_update_failed())
   })
 
   const revokeKey = useMutation({
@@ -159,9 +180,10 @@ function WidgetPage() {
       await createKey.mutateAsync({
         label: value.label,
         allowedOrigins: parseOrigins(value.allowedOrigins),
-        config: { widgetType: value.widgetType, persona: value.persona || undefined }
+        config: { widgetType: value.widgetType, persona: value.persona || undefined, skills: createSkills }
       })
       formApi.reset()
+      setCreateSkills([])
     }
   })
 
@@ -175,6 +197,12 @@ function WidgetPage() {
     columnHelper.accessor("allowedOrigins", {
       header: m.widget_column_allowed_origins(),
       cell: OriginsCell,
+      enableColumnFilter: false
+    }),
+    columnHelper.accessor(key => key.config.skills ?? [], {
+      id: "skills",
+      header: m.widget_column_skills(),
+      cell: SkillsCell,
       enableColumnFilter: false
     }),
     columnHelper.accessor("enabled", {
@@ -192,7 +220,26 @@ function WidgetPage() {
       cell: LastUsedAtCell,
       enableColumnFilter: false
     }),
-    columnHelper.display({ id: "actions", header: "", cell: makeActionsCell(id => revokeKey.mutate(id)) })
+    columnHelper.display({
+      id: "actions",
+      header: "",
+      cell: makeActionsCell(
+        key => (
+          <EditWidgetDialog
+            widgetKey={key}
+            personas={personas ?? []}
+            skills={catalog ?? []}
+            isPending={updateKey.isPending}
+            onSave={payload => updateKey.mutateAsync({ id: key.id, payload })}
+          >
+            <IconButton aria-label={m.widget_edit_title()}>
+              <Pencil size={18} />
+            </IconButton>
+          </EditWidgetDialog>
+        ),
+        id => revokeKey.mutate(id)
+      )
+    })
   ])
 
   if (isLoading) return <Loader />
@@ -210,7 +257,7 @@ function WidgetPage() {
       </PageHeader>
 
       <ErrorNotice error={error} />
-      <ErrorNotice error={personasError} />
+      <ErrorNotice error={personasError ?? catalogError} />
 
       <Section className="mb-4" title={m.widget_create_title()}>
         <form
@@ -242,11 +289,14 @@ function WidgetPage() {
                 label={m.widget_field_persona()}
                 options={[
                   { value: AUTO_SELECT_PERSONA, label: m.widget_field_persona_auto() },
-                  ...(personas ?? []).map(p => ({ value: p.personaId, label: p.label }))
+                  ...(personas ?? []).map(p => ({ value: p.id, label: p.label }))
                 ]}
               />
             )}
           </form.AppField>
+          <div className="sm:col-span-2">
+            <SkillChecklist skills={catalog ?? []} selected={createSkills} onChange={setCreateSkills} />
+          </div>
           <Button type="submit" className="justify-self-start sm:col-span-2" loading={createKey.isPending}>
             {m.widget_create_button()}
           </Button>

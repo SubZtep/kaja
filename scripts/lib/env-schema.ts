@@ -1,5 +1,7 @@
 import type { z } from "zod"
 
+type EnvDefault = string | number | boolean
+
 export interface EnvFieldMeta {
   description?: string
   example?: string
@@ -17,7 +19,7 @@ export interface FieldInfo {
   devDefault?: boolean
   section?: string
   isOptional: boolean
-  defaultValue?: string | number | boolean
+  defaultValue?: EnvDefault
 }
 
 function isZodDefault(schema: z.ZodTypeAny): boolean {

@@ -1,5 +1,5 @@
 // Plays Barkochba (twenty questions) between two standalone chat-completion
-// loops: a GUESSER driven by docs/config/personas/barkochba.toml (the real
+// loops: a GUESSER driven by marketplace/personas/barkochba.toml (the real
 // persona, using its own ask_user tool contract) and a THINKER that holds a
 // secret and answers yes/no. No workspace deps (@kaja/nasi, openai, zod) —
 // reads models.toml/secrets.toml directly and calls the chat endpoint via fetch.
@@ -83,7 +83,7 @@ const ASK_USER_TOOL = {
 type GuesserPersona = { instructions: string; temperature?: number; max_tokens?: number }
 
 async function loadGuesserPersona(): Promise<GuesserPersona> {
-  const path = join(import.meta.dir, "..", "docs", "config", "personas", "barkochba.toml")
+  const path = join(import.meta.dir, "..", "marketplace", "personas", "barkochba.toml")
   const toml = TOML.parse(await file(path).text()) as GuesserPersona
   return toml
 }

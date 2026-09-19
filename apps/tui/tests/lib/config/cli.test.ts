@@ -7,7 +7,6 @@ const { runConfigCli } = await import("../../../lib/config/cli")
 const { getConfigDir, getConfigPath } = await import("../../../lib/config/config")
 const { getMcpPath } = await import("../../../lib/config/mcp-servers")
 const { getModelsPath } = await import("../../../lib/models/models")
-const { getPersonasDir } = await import("../../../lib/personas/personas")
 const { getPaths } = await import("../../../lib/paths")
 const { join } = await import("node:path")
 
@@ -21,15 +20,14 @@ afterEach(async () => {
   await $`rm -f ${join(getPaths().temp, "kaja-config-fetch-etag")}`.quiet().nothrow()
 })
 
-test("fetch writes mcp.toml, models.toml and persona files from the bundled templates", async () => {
+test("fetch writes mcp.toml and models.toml from the bundled templates, and no personas", async () => {
   const { code, text } = await runConfigCli(["fetch"])
   expect(code).toBe(0)
   expect(text).toContain(getMcpPath())
   expect(text).toContain(getModelsPath())
-  expect(text).toContain(`${getPersonasDir()}/default.toml`)
+  expect(text).not.toContain("personas")
   expect(await Bun.file(getMcpPath()).exists()).toBe(true)
   expect(await Bun.file(getModelsPath()).exists()).toBe(true)
-  expect(await Bun.file(`${getPersonasDir()}/barkochba.toml`).exists()).toBe(true)
 })
 
 test("fetch backs up an existing mcp.toml instead of overwriting it", async () => {
@@ -93,7 +91,7 @@ function mockBundleFetch(files: Record<string, string>, etag = '"abc123"') {
   }
 }
 
-test("fetch downloads the bundle from the server when reachable", async () => {
+test("fetch downloads the bundle from the server when reachable, leaving out personas", async () => {
   const restore = mockBundleFetch({
     "models.toml": 'label = "from-server"\n',
     "mcp.toml": "servers = []\n",
@@ -104,7 +102,8 @@ test("fetch downloads the bundle from the server when reachable", async () => {
     expect(code).toBe(0)
     expect(text).toContain(getModelsPath())
     expect(await Bun.file(getModelsPath()).text()).toContain("from-server")
-    expect(await Bun.file(`${getPersonasDir()}/default.toml`).text()).toContain("server persona")
+    // Personas come from the marketplace sync; a server that still sends them doesn't write them.
+    expect(await Bun.file(join(getConfigDir(), "personas", "default.toml")).exists()).toBe(false)
   } finally {
     restore()
   }

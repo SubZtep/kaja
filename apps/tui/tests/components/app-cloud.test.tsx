@@ -192,6 +192,42 @@ test("Alt+P opens the persona picker, and picking a persona resets the session a
   await t.waitUntilExit()
 })
 
+function ssePersonaSwitchResponse(): Response {
+  const body =
+    'event: persona_switch\ndata: {"type":"persona_switch","personaId":"grumpy","label":"Grumpy Cat"}\n\n' +
+    'event: final\ndata: {"type":"final","content":"Hmph."}\n\n' +
+    'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"completed"}\n\n'
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(body))
+      controller.close()
+    }
+  })
+  return new Response(stream, { headers: { "content-type": "text/event-stream" } })
+}
+
+test("when the model switches persona, the header shows it and the next turn asks for it", async () => {
+  nextTurnResponse = ssePersonaSwitchResponse
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" />)
+  await t.tick()
+  await t.press("I'm grumpy today")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  expect(t.lastFrame()).toContain("Grumpy Cat")
+
+  nextTurnResponse = () => sseResponse("still grumpy")
+  await t.press("and now?")
+  await t.press("\r")
+  await t.tick()
+  await t.tick()
+  expect(lastTurnBody?.personaId).toBe("grumpy")
+  expect(lastTurnBody?.session).toBe("01900000-0000-7000-8000-000000000000")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 function sseClientToolCallResponse(name: string, args: Record<string, unknown>): Response {
   const body =
     `event: client_tool_call\ndata: {"type":"client_tool_call","name":${JSON.stringify(name)},"arguments":${JSON.stringify(JSON.stringify(args))}}\n\n` +

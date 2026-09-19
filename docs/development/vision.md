@@ -74,8 +74,9 @@ an account.
 - **No mobile app.** Terminal, Telegram, and the browser widget cover the ground.
 - **No ORM.** Raw parameterized SQL and hand-written row mappers; the schema is small enough that
   the abstraction would cost more than it saves.
-- **No plugin marketplace.** Tools are a `.ts` file you drop in a directory, and MCP already
-  standardizes the rest.
+- **No open publishing.** Your own tools are a `.ts` file you drop in a directory, and MCP already
+  standardizes the rest. [Skills](/skills) come from a curated `marketplace/` folder in this repo,
+  plus your own; there is no way for anyone else to publish into it.
 
 ---
 

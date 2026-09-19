@@ -1,5 +1,5 @@
 import { registerSchema } from "@kaja/schema/api"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
@@ -9,6 +9,7 @@ import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
+import { GoogleSoonButton } from "./-components/google-soon-button"
 
 export const Route = createFileRoute("/_public/signup")({
   component: SignUp,
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_public/signup")({
 function SignUp() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const router = useRouter()
   const { signUp } = useAuthClient()
 
   const form = useAppForm({
@@ -46,7 +48,9 @@ function SignUp() {
         if (error) toast.error(error.message ?? error.statusText)
         if (data?.user) {
           toast.success(m.signup_success())
-          navigate({ to: "/dashboard" })
+          // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
+          await router.invalidate()
+          navigate({ to: "/welcome" })
         }
       } catch (error: any) {
         toast.error(error.message)
@@ -76,6 +80,10 @@ function SignUp() {
           enter here.
         </p>
 
+        <GoogleSoonButton className="mb-5" />
+        <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+          {m.auth_or_email()}
+        </p>
         <form
           onSubmit={e => {
             e.preventDefault()

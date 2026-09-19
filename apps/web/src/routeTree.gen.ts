@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
+import { Route as AdminPackagesRouteImport } from './routes/_admin/packages'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
+import { Route as AdminSkillsRouteImport } from './routes/_admin/skills'
+import { Route as AdminWelcomeRouteImport } from './routes/_admin/welcome'
 import { Route as AdminWidgetRouteImport } from './routes/_admin/widget'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicDeviceRouteImport } from './routes/_public/device'
@@ -21,11 +24,11 @@ import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as AdminMcpServersIndexRouteImport } from './routes/_admin/mcp-servers/index'
 import { Route as AdminModelsIndexRouteImport } from './routes/_admin/models/index'
-import { Route as AdminPersonasIndexRouteImport } from './routes/_admin/personas/index'
 import { Route as AdminUsersIndexRouteImport } from './routes/_admin/users/index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/_admin/users/$userId'
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
 import { Route as PublicDeviceApproveRouteImport } from './routes/_public/device/approve'
+import { Route as PublicDeviceDoneRouteImport } from './routes/_public/device/done'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/_admin',
@@ -40,9 +43,24 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPackagesRoute = AdminPackagesRouteImport.update({
+  id: '/packages',
+  path: '/packages',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSkillsRoute = AdminSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminWidgetRoute = AdminWidgetRouteImport.update({
@@ -85,11 +103,6 @@ const AdminModelsIndexRoute = AdminModelsIndexRouteImport.update({
   path: '/models/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminPersonasIndexRoute = AdminPersonasIndexRouteImport.update({
-  id: '/personas/',
-  path: '/personas/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -110,11 +123,19 @@ const PublicDeviceApproveRoute = PublicDeviceApproveRouteImport.update({
   path: '/approve',
   getParentRoute: () => PublicDeviceRoute,
 } as any)
+const PublicDeviceDoneRoute = PublicDeviceDoneRouteImport.update({
+  id: '/done',
+  path: '/done',
+  getParentRoute: () => PublicDeviceRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/packages': typeof AdminPackagesRoute
   '/profile': typeof AdminProfileRoute
+  '/skills': typeof AdminSkillsRoute
+  '/welcome': typeof AdminWelcomeRoute
   '/widget': typeof AdminWidgetRoute
   '/device': typeof PublicDeviceRouteWithChildren
   '/reset-password': typeof PublicResetPasswordRoute
@@ -122,25 +143,28 @@ export interface FileRoutesByFullPath {
   '/signup': typeof PublicSignupRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device/approve': typeof PublicDeviceApproveRoute
+  '/device/done': typeof PublicDeviceDoneRoute
   '/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/models/': typeof AdminModelsIndexRoute
-  '/personas/': typeof AdminPersonasIndexRoute
   '/users/': typeof AdminUsersIndexRoute
   '/device/': typeof PublicDeviceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/packages': typeof AdminPackagesRoute
   '/profile': typeof AdminProfileRoute
+  '/skills': typeof AdminSkillsRoute
+  '/welcome': typeof AdminWelcomeRoute
   '/widget': typeof AdminWidgetRoute
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
   '/users/$userId': typeof AdminUsersUserIdRoute
   '/device/approve': typeof PublicDeviceApproveRoute
+  '/device/done': typeof PublicDeviceDoneRoute
   '/mcp-servers': typeof AdminMcpServersIndexRoute
   '/models': typeof AdminModelsIndexRoute
-  '/personas': typeof AdminPersonasIndexRoute
   '/users': typeof AdminUsersIndexRoute
   '/device': typeof PublicDeviceIndexRoute
 }
@@ -149,7 +173,10 @@ export interface FileRoutesById {
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRoute
+  '/_admin/packages': typeof AdminPackagesRoute
   '/_admin/profile': typeof AdminProfileRoute
+  '/_admin/skills': typeof AdminSkillsRoute
+  '/_admin/welcome': typeof AdminWelcomeRoute
   '/_admin/widget': typeof AdminWidgetRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
   '/_public/reset-password': typeof PublicResetPasswordRoute
@@ -158,9 +185,9 @@ export interface FileRoutesById {
   '/_public/': typeof PublicIndexRoute
   '/_admin/users/$userId': typeof AdminUsersUserIdRoute
   '/_public/device/approve': typeof PublicDeviceApproveRoute
+  '/_public/device/done': typeof PublicDeviceDoneRoute
   '/_admin/mcp-servers/': typeof AdminMcpServersIndexRoute
   '/_admin/models/': typeof AdminModelsIndexRoute
-  '/_admin/personas/': typeof AdminPersonasIndexRoute
   '/_admin/users/': typeof AdminUsersIndexRoute
   '/_public/device/': typeof PublicDeviceIndexRoute
 }
@@ -169,7 +196,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/packages'
     | '/profile'
+    | '/skills'
+    | '/welcome'
     | '/widget'
     | '/device'
     | '/reset-password'
@@ -177,25 +207,28 @@ export interface FileRouteTypes {
     | '/signup'
     | '/users/$userId'
     | '/device/approve'
+    | '/device/done'
     | '/mcp-servers/'
     | '/models/'
-    | '/personas/'
     | '/users/'
     | '/device/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
+    | '/packages'
     | '/profile'
+    | '/skills'
+    | '/welcome'
     | '/widget'
     | '/reset-password'
     | '/signin'
     | '/signup'
     | '/users/$userId'
     | '/device/approve'
+    | '/device/done'
     | '/mcp-servers'
     | '/models'
-    | '/personas'
     | '/users'
     | '/device'
   id:
@@ -203,7 +236,10 @@ export interface FileRouteTypes {
     | '/_admin'
     | '/_public'
     | '/_admin/dashboard'
+    | '/_admin/packages'
     | '/_admin/profile'
+    | '/_admin/skills'
+    | '/_admin/welcome'
     | '/_admin/widget'
     | '/_public/device'
     | '/_public/reset-password'
@@ -212,9 +248,9 @@ export interface FileRouteTypes {
     | '/_public/'
     | '/_admin/users/$userId'
     | '/_public/device/approve'
+    | '/_public/device/done'
     | '/_admin/mcp-servers/'
     | '/_admin/models/'
-    | '/_admin/personas/'
     | '/_admin/users/'
     | '/_public/device/'
   fileRoutesById: FileRoutesById
@@ -247,11 +283,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/packages': {
+      id: '/_admin/packages'
+      path: '/packages'
+      fullPath: '/packages'
+      preLoaderRoute: typeof AdminPackagesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/profile': {
       id: '/_admin/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AdminProfileRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/skills': {
+      id: '/_admin/skills'
+      path: '/skills'
+      fullPath: '/skills'
+      preLoaderRoute: typeof AdminSkillsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/welcome': {
+      id: '/_admin/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof AdminWelcomeRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/widget': {
@@ -310,13 +367,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminModelsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/personas/': {
-      id: '/_admin/personas/'
-      path: '/personas'
-      fullPath: '/personas/'
-      preLoaderRoute: typeof AdminPersonasIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_admin/users/': {
       id: '/_admin/users/'
       path: '/users'
@@ -345,28 +395,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicDeviceApproveRouteImport
       parentRoute: typeof PublicDeviceRoute
     }
+    '/_public/device/done': {
+      id: '/_public/device/done'
+      path: '/done'
+      fullPath: '/device/done'
+      preLoaderRoute: typeof PublicDeviceDoneRouteImport
+      parentRoute: typeof PublicDeviceRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminPackagesRoute: typeof AdminPackagesRoute
   AdminProfileRoute: typeof AdminProfileRoute
+  AdminSkillsRoute: typeof AdminSkillsRoute
+  AdminWelcomeRoute: typeof AdminWelcomeRoute
   AdminWidgetRoute: typeof AdminWidgetRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminMcpServersIndexRoute: typeof AdminMcpServersIndexRoute
   AdminModelsIndexRoute: typeof AdminModelsIndexRoute
-  AdminPersonasIndexRoute: typeof AdminPersonasIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminPackagesRoute: AdminPackagesRoute,
   AdminProfileRoute: AdminProfileRoute,
+  AdminSkillsRoute: AdminSkillsRoute,
+  AdminWelcomeRoute: AdminWelcomeRoute,
   AdminWidgetRoute: AdminWidgetRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminMcpServersIndexRoute: AdminMcpServersIndexRoute,
   AdminModelsIndexRoute: AdminModelsIndexRoute,
-  AdminPersonasIndexRoute: AdminPersonasIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 
@@ -374,11 +435,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface PublicDeviceRouteChildren {
   PublicDeviceApproveRoute: typeof PublicDeviceApproveRoute
+  PublicDeviceDoneRoute: typeof PublicDeviceDoneRoute
   PublicDeviceIndexRoute: typeof PublicDeviceIndexRoute
 }
 
 const PublicDeviceRouteChildren: PublicDeviceRouteChildren = {
   PublicDeviceApproveRoute: PublicDeviceApproveRoute,
+  PublicDeviceDoneRoute: PublicDeviceDoneRoute,
   PublicDeviceIndexRoute: PublicDeviceIndexRoute,
 }
 
@@ -412,13 +475,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

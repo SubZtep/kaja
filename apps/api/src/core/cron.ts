@@ -1,4 +1,5 @@
 import { info, warn } from "@kaja/logger"
+import { marketplaceService } from "../services"
 
 export class CronService {
   #jobs: Bun.CronJob[] = []
@@ -13,13 +14,18 @@ export class CronService {
     this.#isRunning = true
     info("starting cron service")
 
-    // Intentionally empty: GeoIP is an external service; node inactivity is handled by SchedulerService.
-    // Register Bun.CronJob entries here when a periodic API job is needed.
+    // Hourly marketplace sync; cheap when the branch hasn't moved (one GitHub call, no download).
+    this.#jobs.push(
+      Bun.cron("0 * * * *", async () => {
+        await marketplaceService.sync().catch(() => {})
+      })
+    )
 
     info("cron jobs scheduled", { jobCount: this.#jobs.length })
   }
 
   stop() {
+    for (const job of this.#jobs) job.stop()
     this.#jobs = []
     this.#isRunning = false
     info("cron service stopped")

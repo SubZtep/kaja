@@ -28,11 +28,12 @@ const sendMessage = mock(async (_chatId: number, _text: string) => ({
   message_id: 1
 }))
 const getMe = mock(async () => ({ id: 1, is_bot: true, first_name: "bot" }))
+const setMyCommands = mock(async (_commands: { command: string; description: string }[]) => true)
 let onStartHandler: (() => void) | undefined
 
 mock.module("grammy", () => ({
   Bot: class {
-    api = { getMe, sendMessage }
+    api = { getMe, sendMessage, setMyCommands }
     on() {}
     catch() {}
     async start(opts?: { onStart?: () => void }) {
@@ -66,6 +67,19 @@ test("start() notifies every allowed user that the bot is online", async () => {
   expect(sendMessage).toHaveBeenCalledTimes(2)
   expect(sendMessage).toHaveBeenCalledWith(111, t("telegram.botOnline"))
   expect(sendMessage).toHaveBeenCalledWith(222, t("telegram.botOnline"))
+})
+
+test("start() sets the command menu, and a failure there doesn't stop the bot", async () => {
+  setMyCommands.mockClear()
+  await makeBot([111]).start()
+  expect(setMyCommands.mock.calls[0]![0].map(c => c.command)).toEqual(["new", "packages"])
+
+  setMyCommands.mockImplementationOnce(async () => {
+    throw new Error("network down")
+  })
+  sendMessage.mockClear()
+  await makeBot([111]).start()
+  expect(sendMessage).toHaveBeenCalledWith(111, t("telegram.botOnline"))
 })
 
 test("stop() notifies every allowed user that the bot is going offline", async () => {

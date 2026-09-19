@@ -11,6 +11,7 @@ const eventSound = {
   persona_switch: "magic",
   ask_user: "bell",
   confirm_command: "bell",
+  confirm_tool: "bell",
   message: "hehe",
   final: "hehe",
   error: "error"

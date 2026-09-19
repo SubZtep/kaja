@@ -58,13 +58,23 @@ id in the [store](/tui/sqlite) — they can't see or resume each other's session
 Then open a DM with your bot and send anything. Messages from accounts not in `allowedUserIds`
 are silently ignored — it must be non-empty, there's no "open to everyone" mode.
 
+### Commands
+
+The bot's menu (next to the message box) has:
+
+- `/new` — start a fresh conversation.
+- `/packages` — the [skills](/skills) and [tool packages](/tools#http-tools) this bot loaded. The
+  bot builds its tools once, when it starts, so to change them run `kaja pkg` on your computer and
+  restart `kaja telegram`.
+
 ## Cloud mode: the always-on API bot
 
 Setting `TELEGRAM_BOT_TOKEN` on the API server starts a second, independent Telegram bot inside
 the API process itself — no `kaja telegram` invocation, no local machine, no local
 `models.toml`. It uses cloud Nasi (the same agent the web/lite clients use), so there's no
-persona catalog, no model switching, and no shell-command approve/decline flow — same
-constraints as the [cloud/lite CLI](/modes).
+model switching and no shell — same constraints as the [cloud/lite CLI](/modes). An
+[HTTP tool](/tools#http-tools-in-the-cloud) or [MCP server](/tools#mcp-servers-in-the-cloud) call
+that changes something comes with Approve/Decline buttons.
 
 There's **no `allowedUserIds`** — instead, each Kaja user links their own Telegram account
 themselves, self-service, with no server restart needed per new user:
@@ -81,8 +91,16 @@ themselves, self-service, with no server restart needed per new user:
 
 A Telegram account that hasn't completed this flow gets a reply pointing back to the profile
 page instead of a real conversation. **Setup**: set `TELEGRAM_BOT_TOKEN` (from BotFather, as
-above) in the API's environment and restart — an invalid token fails fast at startup. Send `/new`
-to a linked conversation to start a fresh session.
+above) in the API's environment and restart — an invalid token fails fast at startup.
+
+### Commands
+
+- `/new` — start a fresh conversation.
+- `/packages` — every skill, tool and MCP server in the catalog as a button: ✅ on, ▫️ off,
+  🔑 needs your API key first, ⚠️ no longer in the marketplace. A tap turns it on or off for your
+  account, from your next message on, even mid-conversation. A package that needs a key links to
+  the [Packages page](https://kaja.io/packages?tab=tools) instead: keys are never typed into
+  Telegram, where they'd stay in the chat history.
 
 ---
 

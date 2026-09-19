@@ -1,0 +1,45 @@
+{
+  "label": "Onboarding",
+  "profile": true,
+  "revalidateAfterDays": 365,
+  "fields": [
+    { "name": "name", "prompt": "What should I call you?" },
+    {
+      "name": "pronouns",
+      "prompt": "Which pronouns should I use for you: he, she, they, or something else? Fine to skip."
+    },
+    {
+      "name": "age",
+      "prompt": "How old are you? A rough range is enough, and it's fine to skip."
+    },
+    {
+      "name": "look",
+      "prompt": "How would you describe your look, so I can picture you (hair, height, style)? Fine to skip."
+    },
+    {
+      "name": "home",
+      "prompt": "Where do you live? A city or just the country is enough; it helps with time, weather and local tips. Fine to skip."
+    },
+    {
+      "name": "languages",
+      "prompt": "Which languages do you speak or read? Fine to skip."
+    },
+    {
+      "name": "work",
+      "prompt": "What do you do: a job, studies, something else? Fine to skip."
+    },
+    {
+      "name": "interests",
+      "prompt": "What are you into: hobbies, topics you enjoy? Fine to skip."
+    },
+    {
+      "name": "household",
+      "prompt": "Who do you live with, if anyone? Fine to skip."
+    },
+    { "name": "pets", "prompt": "Any pets? Fine to skip." },
+    {
+      "name": "diet",
+      "prompt": "Any food preferences or allergies I should keep in mind? Fine to skip."
+    }
+  ]
+}

@@ -1,11 +1,14 @@
 import * as z from "zod"
-import { DatasetSchema } from "../cli/datasets"
-import { PersonaSchema } from "../cli/personas"
 import { McpFileSchema } from "../config/mcp"
 import { ModelsFileSchema } from "../config/models"
+import { PackagesFileSchema } from "../config/packages"
 import { SecretsFileSchema } from "../config/secrets"
 import { ServicesFileSchema } from "../config/services"
 import { KajaConfigSchema } from "../config/settings"
+import { DatasetSchema } from "../packages/dataset"
+import { HttpToolPackageSchema } from "../packages/http-tool"
+import { McpPackageSchema } from "../packages/mcp"
+import { PersonaSchema } from "../packages/persona"
 
 /**
  * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io),
@@ -22,6 +25,9 @@ export const tombiSchemas = {
   "secrets.json": z.toJSONSchema(SecretsFileSchema, { io: "input" }),
   "models.json": z.toJSONSchema(ModelsFileSchema, { io: "input" }),
   "mcp.json": z.toJSONSchema(McpFileSchema, { io: "input" }),
+  "packages.json": z.toJSONSchema(PackagesFileSchema, { io: "input" }),
   "persona.json": z.toJSONSchema(PersonaSchema, { io: "input" }),
-  "dataset.json": z.toJSONSchema(DatasetSchema, { io: "input" })
+  "dataset.json": z.toJSONSchema(DatasetSchema, { io: "input" }),
+  "http-tool.json": z.toJSONSchema(HttpToolPackageSchema, { io: "input" }),
+  "mcp-package.json": z.toJSONSchema(McpPackageSchema, { io: "input" })
 } satisfies Record<string, object>

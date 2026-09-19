@@ -58,12 +58,17 @@ kaja -c                   # resume the most recent session
 kaja --continue
 kaja -s <id>              # resume a specific session
 kaja --session <id>
+kaja doctor               # test keys, models and tools; asks for missing keys
 kaja telegram             # run as a Telegram bot
 kaja --headless telegram  # same, without rendering the terminal UI
 
 # Config files (local mode)
 kaja config fetch         # rewrite mcp.toml / models.toml / personas from the bundled templates
 kaja config paths         # print where every config file lives
+
+# Skills (local mode)
+kaja pkg                  # pick which skills load (fetches the marketplace the first time)
+kaja pkg update           # fetch the marketplace and sync it into ~/.config/kaja/marketplace
 ```
 
 ## Uninstall

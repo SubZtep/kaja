@@ -9,7 +9,13 @@ export async function runWidgetTurn(widgetKey: ResolvedWidgetKey, body: WidgetTu
     userId: widgetKey.userId,
     owner: widgetVisitorOwner(widgetKey.id, visitorId),
     pinnedModel: await pinnedModelFor(widgetKey.userId, turnBody.session),
-    language: turnBody.language
+    language: turnBody.language,
+    // The key's own skill list, not the owner's: visitors get only what this widget was set up with.
+    packages: { skills: widgetKey.config.skills ?? [] }
   })
-  return nasi.turnBuffered({ ...turnBody, personaId: widgetKey.config.persona })
+  try {
+    return await nasi.turnBuffered({ ...turnBody, personaId: widgetKey.config.persona })
+  } finally {
+    await nasi.close()
+  }
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { m } from "../../../paraglide/messages.js"
 
 /** Centers form pages under the shared public Header/Footer shell. */
 export function AuthShell({ children }: Readonly<{ children: ReactNode }>) {
@@ -10,6 +11,12 @@ export function AuthShell({ children }: Readonly<{ children: ReactNode }>) {
           background:
             "radial-gradient(closest-side,color-mix(in srgb, var(--color-neon) 16%, transparent),transparent 70%)"
         }}
+      />
+      <img
+        src="/monster.gif"
+        alt={m.brand_monster_alt()}
+        className="relative mb-6 h-12 opacity-90"
+        style={{ imageRendering: "pixelated" }}
       />
       <div className="relative w-full max-w-md">{children}</div>
     </main>

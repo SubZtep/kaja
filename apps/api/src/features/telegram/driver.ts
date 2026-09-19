@@ -1,15 +1,46 @@
+import { createHash } from "node:crypto"
 import { error as logError, warn as logWarn } from "@kaja/logger"
-import { categorizeError, type FinalizedAgentEvent } from "@kaja/nasi"
+import {
+  categorizeError,
+  type FinalizedAgentEvent,
+  type NasiTurnInput,
+  pendingToolCall,
+  type Session
+} from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
 import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { withLock } from "../../core/lock"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
+import {
+  findEntry,
+  needsKeyMessage,
+  PACKAGE_CALLBACK,
+  PACKAGE_PAGE_CALLBACK,
+  packageEntries,
+  renderPackageList,
+  togglePackage
+} from "./packages"
 
 const NOT_LINKED_MESSAGE =
   "This Telegram account isn't linked to a Kaja account yet. Go to your profile on the Kaja web app and tap " +
   '"Connect Telegram" to get a link.'
+
+const APPROVAL_EXPIRED_MESSAGE = "This request was already answered or has expired."
+/** A bot command, with or without the `@botname` Telegram adds in groups. */
+const command = (name: string) => new RegExp(`^/${name}(@\\w+)?$`)
+const TOOL_CALLBACK = /^tool:(approve|decline):([0-9a-f]{16})$/
+
+/** Plain HTML escaping for text inside <pre> (same as apps/tui/lib/telegram/driver.ts's). */
+function escapeHtml(text: string): string {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+}
+
+/** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
+function approvalToken(callId: string): string {
+  return createHash("sha256").update(callId).digest("hex").slice(0, 16)
+}
 
 const MIN_EDIT_INTERVAL_MS = 1000
 const MAX_EDIT_INTERVAL_MS = 4000
@@ -24,16 +55,20 @@ export class TelegramRateLimitError extends Error {
   }
 }
 
+/** One inline button: its label and the callback data it sends back. */
+export type TelegramButton = { text: string; data: string }
+
 /**
  * Abstraction over the actual Telegram API calls, so the driver has zero
  * import of grammy itself. bot.ts implements this against the real bot.api,
  * translating grammy's own errors (429s, "message is not modified") at that
- * boundary. No inline-keyboard support: unlike the local bot, cloud Nasi
- * never emits confirm_command, so nothing here ever needs one.
+ * boundary. Buttons (rows of them) serve tool approvals (`confirm_tool`) and
+ * the /packages list; cloud Nasi never emits confirm_command. Editing a
+ * message without `rows` removes its buttons.
  */
 export type TelegramSender = {
-  sendMessage(chatId: number, text: string): Promise<{ messageId: number }>
-  editMessageText(chatId: number, messageId: number, text: string): Promise<void>
+  sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
+  editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
 }
 
 export type CloudTelegramDriverConfig = {
@@ -111,9 +146,9 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   // state exists — session content itself always round-trips through Postgres.
   const forceNew = new Set<number>()
 
-  async function editSafely(chatId: number, messageId: number, text: string) {
+  async function editSafely(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]) {
     try {
-      await sender.editMessageText(chatId, messageId, text)
+      await sender.editMessageText(chatId, messageId, text, rows)
     } catch (error) {
       logWarn("Telegram edit failed", { error })
     }
@@ -126,7 +161,28 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     for (const chunk of rest) await sender.sendMessage(chatId, chunk)
   }
 
-  /** Returns true once the event has ended the turn (ask_user, final) so runTurn knows to stop iterating. Local-only events (tool_image, display_image, confirm_command) are ignored — cloud Nasi never emits them. */
+  /** Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays in the placeholder. */
+  async function sendApproval(
+    accumulated: { content: string },
+    editIfChanged: (text: string) => Promise<void>,
+    chatId: number,
+    event: Extract<FinalizedAgentEvent, { type: "confirm_tool" }>
+  ) {
+    const text = [
+      `🔐 <b>${escapeHtml(event.name)}</b> wants to run:`,
+      `<pre><code>${escapeHtml(event.summary)}</code></pre>`
+    ]
+    const token = approvalToken(event.id)
+    const buttons = [
+      { text: "✅ Approve", data: `tool:approve:${token}` },
+      { text: "❌ Decline", data: `tool:decline:${token}` }
+    ]
+    if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
+    else await editIfChanged("…")
+    await sender.sendMessage(chatId, text.join("\n"), [buttons])
+  }
+
+  /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. Local-only events (tool_image, display_image, confirm_command) are ignored — cloud Nasi never emits them. */
   function handleFinalizedEvent(
     accumulated: { content: string },
     throttle: EditThrottle,
@@ -145,6 +201,11 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return finalizeMessage(editIfChanged, chatId, event.content ?? "").then(() => true)
     }
 
+    if (event.type === "confirm_tool") {
+      throttle.cancel()
+      return sendApproval(accumulated, editIfChanged, chatId, event).then(() => true)
+    }
+
     return false
   }
 
@@ -152,10 +213,16 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   // two rapid messages from the same user could both resolve the same "latest session" and race
   // its persistence.
   function runTurn(ownerUserId: string, owner: string, chatId: number, prompt: string, resume: boolean) {
-    return withLock(`telegram:${owner}`, () => runTurnLocked(ownerUserId, owner, chatId, prompt, resume))
+    return withLock(`telegram:${owner}`, () => runTurnLocked(ownerUserId, owner, chatId, { message: prompt }, resume))
   }
 
-  async function runTurnLocked(ownerUserId: string, owner: string, chatId: number, prompt: string, resume: boolean) {
+  async function runTurnLocked(
+    ownerUserId: string,
+    owner: string,
+    chatId: number,
+    input: Pick<NasiTurnInput, "message" | "approval">,
+    resume: boolean
+  ) {
     const placeholder = await sender.sendMessage(chatId, "…")
     const accumulated = { content: "" }
     const renderCurrent = () =>
@@ -176,17 +243,23 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         owner,
         pinnedModel: await pinnedModelFor(ownerUserId, resumeRow?.id)
       })
-      for await (const event of nasi.turn({ session: resumeRow?.id, message: prompt })) {
-        if (event.type === "delta") {
-          if (event.channel === "content") {
-            accumulated.content += event.text
-            throttle.request(renderCurrent)
+      try {
+        let ended = false
+        for await (const event of nasi.turn({ session: resumeRow?.id, ...input })) {
+          // Read to the end even after the reply is out: the turn is only saved once the generator finishes.
+          if (ended) continue
+          if (event.type === "delta") {
+            if (event.channel === "content") {
+              accumulated.content += event.text
+              throttle.request(renderCurrent)
+            }
+            continue
           }
-          continue
+          if (event.type === "usage") continue
+          ended = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, event)
         }
-        if (event.type === "usage") continue
-        const done = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, event)
-        if (done) return
+      } finally {
+        await nasi.close()
       }
     } catch (error) {
       logWarn("Telegram agent turn failed", { error })
@@ -204,9 +277,15 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
     const owner = telegramOwner(telegramUserId)
 
-    if (text.trim() === "/new") {
+    if (command("new").test(text.trim())) {
       forceNew.add(telegramUserId)
       await sender.sendMessage(chatId, "🆕 Started a new session.")
+      return
+    }
+
+    if (command("packages").test(text.trim())) {
+      const { text: list, rows } = renderPackageList(await packageEntries(ownerUserId), 0)
+      await sender.sendMessage(chatId, list, rows)
       return
     }
 
@@ -218,5 +297,80 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  return { handleMessage }
+  /**
+   * A tap in the /packages list: a package button turns it on or off for the pressing user's own account
+   * and redraws the list; one that needs a key gets a link to the web instead. Page arrows just redraw.
+   */
+  async function handlePackageCallback(
+    ownerUserId: string,
+    chatId: number,
+    messageId: number,
+    target: { page: number; typeCode?: string; hash?: string }
+  ) {
+    let entries = await packageEntries(ownerUserId)
+    const entry = target.typeCode && target.hash ? findEntry(entries, target.typeCode, target.hash) : undefined
+    if (entry) {
+      if ((await togglePackage(ownerUserId, entry)) === "needs_key") {
+        await sender.sendMessage(chatId, needsKeyMessage(entry.name))
+        return
+      }
+      entries = await packageEntries(ownerUserId)
+    }
+    const { text, rows } = renderPackageList(entries, target.page)
+    await editSafely(chatId, messageId, text, rows)
+  }
+
+  /**
+   * A button press: Approve/Decline on a tool call, or a tap in the /packages list. The pressing user comes
+   * from Telegram (never the payload). An approval must match the call their latest session is still waiting
+   * on, so an old or foreign button does nothing; the server then runs (or skips) the call it saved.
+   * Returns false for callback data that isn't ours.
+   */
+  async function handleCallback(telegramUserId: number, chatId: number, messageId: number, data: string) {
+    const match = TOOL_CALLBACK.exec(data)
+    const packageMatch = PACKAGE_CALLBACK.exec(data)
+    const pageMatch = PACKAGE_PAGE_CALLBACK.exec(data)
+    if (!match && !packageMatch && !pageMatch) return false
+    const ownerUserId = await resolveLinkedUserId(telegramUserId)
+    if (!ownerUserId) {
+      await sender.sendMessage(chatId, NOT_LINKED_MESSAGE)
+      return true
+    }
+
+    if (!match) {
+      try {
+        await handlePackageCallback(ownerUserId, chatId, messageId, {
+          page: Number(packageMatch?.[3] ?? pageMatch?.[1] ?? 0),
+          typeCode: packageMatch?.[1],
+          hash: packageMatch?.[2]
+        })
+      } catch (error) {
+        logError("Telegram package toggle crashed", { error })
+      }
+      return true
+    }
+    const owner = telegramOwner(telegramUserId)
+    const approval = match[1] as "approve" | "decline"
+
+    try {
+      await withLock(`telegram:${owner}`, async () => {
+        const row = await createPostgresStore(pool, ownerUserId).loadLatestSession(owner)
+        const session = row?.session as Session | undefined
+        const pendingId = session?.pendingToolApprovalId
+        const call = session && pendingId ? pendingToolCall(session, pendingId) : undefined
+        if (!call || approvalToken(pendingId!) !== match[2]) {
+          await editSafely(chatId, messageId, APPROVAL_EXPIRED_MESSAGE)
+          return
+        }
+        const status = approval === "approve" ? "✅ Approved" : "❌ Declined"
+        await editSafely(chatId, messageId, `🔐 <b>${escapeHtml(call.function.name)}</b>: ${status}`)
+        await runTurnLocked(ownerUserId, owner, chatId, { approval }, true)
+      })
+    } catch (error) {
+      logError("Telegram approval crashed", { error })
+    }
+    return true
+  }
+
+  return { handleMessage, handleCallback }
 }

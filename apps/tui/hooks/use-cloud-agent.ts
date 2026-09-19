@@ -44,7 +44,7 @@ function categorizeCloudError(error: unknown): { category: CloudErrorCategory; m
   return { category: "unknown", message: String(error) }
 }
 
-/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no tool_image/display_image/confirm_command — those are local-only). */
+/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no tool_image/display_image/confirm_command — those are local-only; confirm_tool comes from the user's HTTP tools). */
 export type CloudTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: CloudErrorCategory }
@@ -59,10 +59,11 @@ const DELTA_INTERVAL_MS = 80
  * CLI's counterpart to `useAgent`, exposing the same event/partial/pending
  * shape so `Header`/`ChatViewport`/`UserInput` render either backend
  * unmodified. Persona switching (like local) is destructive — it starts a
- * fresh session and pins `personaId` on every subsequent turn, since Nasi
- * re-resolves the active persona from the request on each call rather than
- * tracking it durably server-side. Unlike the local agent, there is no model
- * switching and no run_command confirm flow: cloud never emits those.
+ * fresh session and pins `personaId` on every subsequent turn, which wins over
+ * the persona Nasi keeps with the session; the model's own `switch_persona`
+ * moves the pin along. Unlike the local agent, there is no model
+ * switching and no run_command confirm flow: cloud never emits those. Tool
+ * approvals (`confirm_tool`) are answered with `resolveToolApproval`.
  */
 export function useCloudAgent(options: NasiClientOptions) {
   const [client] = useState(() => createNasiClient(options))
@@ -113,10 +114,17 @@ export function useCloudAgent(options: NasiClientOptions) {
     [pending]
   )
 
-  const send = useCallback(
-    async (prompt: string, showUserEvent = true) => {
+  // The model switched persona: the header shows it, and later turns ask for the same one rather than an earlier pick.
+  const followPersonaSwitch = useCallback((event: CloudTimelineEvent) => {
+    if (event.type !== "persona_switch") return
+    personaIdRef.current = event.personaId
+    setSelectedPersona({ id: event.personaId, label: event.label })
+  }, [])
+
+  /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while the server hands back client tools. */
+  const runTurns = useCallback(
+    async (first: { message: string } | { approval: "approve" | "decline" }) => {
       setPending(true)
-      if (showUserEvent) pushEvent({ type: "user", text: prompt })
 
       const accumulated: CloudPartialMessage = { reasoning: "", content: "" }
       let hasPartial = false
@@ -140,15 +148,21 @@ export function useCloudAgent(options: NasiClientOptions) {
         if (event.model) setResponseModel(event.model)
       }
 
+      const handleEvent = (event: CloudTimelineEvent) => {
+        setPartial(null)
+        pushEvent(event)
+        followPersonaSwitch(event)
+      }
+
       try {
-        let nextMessage = prompt
+        let request = first
         while (true) {
           // TODO: forward includeThinking (from the thinking preference) once something depends on the request
           // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
           // display is already gated client-side by the `thinking` prop threaded through Chrome.
           const gen = client.turn_stream({
             session: sessionRef.current,
-            message: nextMessage,
+            ...request,
             language: getLanguage(),
             personaId: personaIdRef.current
           })
@@ -158,16 +172,13 @@ export function useCloudAgent(options: NasiClientOptions) {
             const event = next.value
             if (event.type === "delta") handleDelta(event)
             else if (event.type === "usage") handleUsage(event)
-            else {
-              setPartial(null)
-              pushEvent(event)
-              if (event.type === "client_tool_call") pendingClientTool = event
-            }
+            else handleEvent(event)
+            if (event.type === "client_tool_call") pendingClientTool = event
             next = await gen.next()
           }
           sessionRef.current = next.value.session
           if (next.value.status !== "needs_client_tool" || !pendingClientTool) break
-          nextMessage = await executeClientTool(pendingClientTool.name, pendingClientTool.arguments)
+          request = { message: await executeClientTool(pendingClientTool.name, pendingClientTool.arguments) }
         }
       } catch (error) {
         const { category, message } = categorizeCloudError(error)
@@ -177,7 +188,21 @@ export function useCloudAgent(options: NasiClientOptions) {
         setPending(false)
       }
     },
-    [client, pushEvent]
+    [client, pushEvent, followPersonaSwitch]
+  )
+
+  const send = useCallback(
+    async (prompt: string, showUserEvent = true) => {
+      if (showUserEvent) pushEvent({ type: "user", text: prompt })
+      await runTurns({ message: prompt })
+    },
+    [pushEvent, runTurns]
+  )
+
+  /** Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent back. */
+  const resolveToolApproval = useCallback(
+    (approved: boolean) => runTurns({ approval: approved ? "approve" : "decline" }),
+    [runTurns]
   )
 
   // Mirrors useAgent's currentTool: derived from the last event rather than tracked separately, since a later event naturally supersedes it.
@@ -197,6 +222,7 @@ export function useCloudAgent(options: NasiClientOptions) {
     pending,
     currentTool,
     send,
+    resolveToolApproval,
     promptTokens
   }
 }

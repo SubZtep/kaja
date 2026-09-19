@@ -15,9 +15,9 @@ export async function bootstrapLocalAgentDeps() {
 
   const models = await loadModels()
   const personas = await loadPersonas()
-  const { tools, mcpServers, closeTools } = await getDefaultTools(personas)
+  const { tools, skipped, mcpServers, closeTools } = await getDefaultTools(personas)
 
-  return { models, personas, tools, mcpServers, closeTools }
+  return { models, personas, tools, skipped, mcpServers, closeTools }
 }
 
 /** Exits the process if no provider is configured — no silent fallback to Kaja's cloud free tier for --local entry points. */

@@ -1,14 +1,16 @@
-import { useLoaderData } from "@tanstack/react-router"
-import { FolderCode } from "lucide-react"
+import { Link, useLoaderData } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
-import { Button } from "../../../components/form/primitives/Button"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
+import { useUser } from "../../../hooks/user"
 import { getInstallCmd } from "../../../lib/vars"
 import { m } from "../../../paraglide/messages.js"
-import { BarkochbaGame } from "./barkochba-game"
+import { GoogleSoonButton } from "./google-soon-button"
+import { Sticker } from "./sticker"
+import { TelegramConnectCta, TelegramPromo } from "./telegram-connect-cta"
 
 export function Hero() {
   const { apiUrl, chatWidgetKey } = useLoaderData({ from: "__root__" })
+  const user = useUser()
   const [copied, setCopied] = useState(false)
   const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/install.sh | bash")
 
@@ -16,8 +18,7 @@ export function Hero() {
     setInstallCmd(getInstallCmd())
   }, [])
 
-  // Embeds the standalone chat widget bubble under a separate account's key, alongside the
-  // barkochba hero card above — demonstrates two independent widget instances on the same page.
+  // Embeds the standalone chat widget bubble so the carousel "Chat" tile has somewhere to go.
   useEffect(() => {
     if (!chatWidgetKey) return
     const script = document.createElement("script")
@@ -38,67 +39,102 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div
-        className="pointer-events-none absolute -top-45 left-1/2 h-125 w-225 -translate-x-1/2"
+        className="pointer-events-none absolute -top-40 left-[20%] h-140 w-160"
         style={{
           background:
-            "radial-gradient(closest-side,color-mix(in srgb, var(--color-neon) 20%, transparent),transparent 70%)"
+            "radial-gradient(closest-side,color-mix(in srgb, var(--color-neon) 28%, transparent),transparent 70%)"
         }}
       />
-      <ContentWidth className="relative flex flex-col gap-14 py-8 md:grid md:grid-cols-[1.1fr_1fr] md:gap-x-14 md:pt-24 md:pb-10">
-        <div className="order-2 hidden mb-6 w-fit md:order-0 md:col-start-1 md:inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 font-mono text-muted text-xs">
-          <span className="size-1.5 rounded-full bg-ice" /> {m.hero_badge()}
-        </div>
+      <div
+        className="pointer-events-none absolute top-20 right-0 h-100 w-100"
+        style={{
+          background:
+            "radial-gradient(closest-side,color-mix(in srgb, var(--color-ice) 16%, transparent),transparent 72%)"
+        }}
+      />
 
-        <h1
-          className="order-2 mb-8 font-extrabold text-balance text-fg opacity-80 text-[36px] leading-10 md:leading-16 tracking-[-0.02em] md:order-0 md:col-span-2 md:mb-8 md:text-[52px]"
-          style={{ textShadow: "0 0 8px rgba(120, 119, 198, 0.18)" }}
-        >
-          <q className="italic">{m.hero_quote()}</q>
-          <span className="ml-4 font-semibold text-gray-50 text-[32px] md:text-[44px] whitespace-nowrap">
-            {m.hero_quote_attribution()}
-          </span>
-        </h1>
+      <ContentWidth className="relative py-10 md:pt-16 md:pb-8">
+        <Sticker rotate={-8} className="mb-8">
+          {m.hero_badge()}
+        </Sticker>
 
-        <div className="order-1 md:order-0 md:col-start-2 md:row-start-3 md:self-start">
-          <BarkochbaGame />
-        </div>
+        <div className="relative md:pr-52 lg:pr-72">
+          <h1 className="m-0 max-w-3xl font-display font-extrabold text-fg text-[40px] leading-[0.92] tracking-[-0.04em] md:text-[72px]">
+            {m.hero_headline()}
+          </h1>
+          <svg className="mt-1 ml-1 w-48 text-neon md:w-72" viewBox="0 0 220 12" fill="none" aria-hidden>
+            <path
+              d="M1 8 C 40 2, 70 11, 110 6 S 180 2, 219 9"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
 
-        <div className="order-3 md:order-0 md:col-start-1">
-          <p className="mb-4 text-lg text-muted">{m.hero_paragraph_1()}</p>
-          <p className="mb-8 text-lg text-muted">{m.hero_paragraph_2()}</p>
-          <div className="mb-7 sm:flex flex-wrap gap-3 hidden w-full">
-            <Button
-              variant="primary"
-              className="flex-1 gap-2 rounded-md! px-5! text-sm transition-colors duration-200 ease-in-out"
-              render={
-                <a
-                  href="https://github.com/SubZtep/kaja"
-                  target="_blank"
-                  rel="noopener"
-                  aria-label={m.hero_cta_source()}
-                />
-              }
-            >
-              <FolderCode size={21} className="pb-0.5" />
-              {m.hero_cta_source()}
-            </Button>
-            <Button
-              variant="secondary"
-              className="flex-1 gap-2 rounded-md! px-5! text-sm transition-colors duration-150 ease-in-out"
-              render={<a href="https://docs.kaja.io" target="_blank" rel="noopener" aria-label={m.hero_cta_docs()} />}
-            >
-              {m.hero_cta_docs()}
-            </Button>
+          <p className="mt-4 mb-0 max-w-md font-display text-lg text-muted wrap-normal [word-break:normal] md:text-xl">
+            {m.hero_subline()}
+          </p>
+
+          <div className="pointer-events-none absolute -right-2 -top-6 hidden md:flex flex-col items-center gap-5 lg:-right-8 lg:-top-10">
+            <div className="monster-glint relative">
+              <img
+                src="/monster.gif"
+                alt={m.brand_monster_alt()}
+                className="h-36 w-auto lg:h-48"
+                style={{ imageRendering: "pixelated" }}
+              />
+              <Sticker tone="neon" rotate={-11} className="absolute -bottom-1 -left-3 text-[11px]">
+                kaja
+              </Sticker>
+            </div>
+            <div className="pointer-events-auto w-64 mt-16">{user ? <TelegramConnectCta /> : <TelegramPromo />}</div>
           </div>
-          <div className="flex items-center gap-2.5 rounded-md border border-border bg-surface-2 px-3.5 py-2.5">
-            <code className="flex-1 overflow-x-hidden whitespace-nowrap font-mono text-fg text-sm">{installCmd}</code>
-            <button
-              type="button"
-              onClick={copyInstall}
-              className="shrink-0 cursor-pointer rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-muted text-xs"
-            >
-              {copied ? m.hero_copy_copied() : m.hero_copy_copy()}
-            </button>
+        </div>
+
+        {user ? null : (
+          <div className="mt-8 max-w-md flex flex-col gap-4">
+            <GoogleSoonButton />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-crt text-base">
+              <Link to="/signin" className="text-fg hover:text-neon">
+                {m.nav_sign_in()}
+              </Link>
+              <span className="text-border">/</span>
+              <Link to="/signup" className="text-fg hover:text-neon">
+                {m.nav_sign_up()}
+              </Link>
+              <span className="text-border">/</span>
+              <a href="https://github.com/SubZtep/kaja" target="_blank" rel="noopener" className="text-muted">
+                {m.hero_cta_source()}
+              </a>
+            </div>
+          </div>
+        )}
+
+        <div className="crt-frame mt-10 flex max-w-xl min-w-0 flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:gap-2.5 sm:px-3.5 sm:py-2.5">
+          <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-crt text-neon text-sm">
+            {installCmd}
+            <span className="ml-0.5 inline-block h-3.5 w-1.5 bg-neon align-[-1px] animate-[caret-blink_1.1s_steps(1)_infinite]" />
+          </code>
+          <button
+            type="button"
+            onClick={copyInstall}
+            className="shrink-0 cursor-pointer self-end border border-ice/70 bg-surface px-2 py-1 font-crt text-[11px] text-ice uppercase sm:self-auto"
+          >
+            {copied ? m.hero_copy_copied() : m.hero_copy_copy()}
+          </button>
+        </div>
+
+        <div className="mt-10 flex justify-center md:hidden">
+          <div className="monster-glint relative">
+            <img
+              src="/monster.gif"
+              alt={m.brand_monster_alt()}
+              className="h-28 w-auto"
+              style={{ imageRendering: "pixelated" }}
+            />
+            <Sticker tone="neon" rotate={9} className="absolute -bottom-1 -left-3 text-[11px]">
+              kaja
+            </Sticker>
           </div>
         </div>
       </ContentWidth>

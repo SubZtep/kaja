@@ -83,8 +83,8 @@ bun run --filter @kaja/tui test
 
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
-- **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (no jobs registered)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
+- **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (hourly marketplace sync)
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/packages/` (cloud package catalog + users' keys), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
@@ -115,7 +115,7 @@ bun run --filter @kaja/tui test
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
   - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
-  - `@kaja/schema/cli` — remaining CLI domain concepts (personas, datasets)
+  - `@kaja/schema/cli` — remaining CLI domain concepts (datasets; re-exports the persona schema)
   - `@kaja/schema/nasi` — cloud turn request/response
 - **DB row types**: private to API services; map with private `#rowTo…` helpers
 - **Dates over JSON**: `z.coerce.date()` in schemas
@@ -128,7 +128,11 @@ bun run --filter @kaja/tui test
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
 5. `2026-09-07-nasi.sql` — cloud agent state (sessions, memory, datasets)
-6. `2026-09-08-persona.sql` — `persona` table (admin-managed persona catalog; seed via `bun seed:config`, see `apps/api/scripts/seed-config.ts`)
+6. `2026-09-08-persona.sql` — `persona` table (the old admin-managed persona catalog; dropped by `2026-09-19-persona-package.sql`)
+7. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
+8. `2026-09-19-package.sql` — `package`, `user_package`, `marketplace_sync` (cloud package catalog synced from `marketplace/`)
+9. `2026-09-19-persona-package.sql` — drops `persona`: personas are `package` rows of type `persona` now
+10. `2026-09-19-user-secret.sql` — `user_secret` (users' package API keys, AES-256-GCM with `USER_SECRET_KEY`)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 

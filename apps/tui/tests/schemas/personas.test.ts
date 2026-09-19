@@ -71,6 +71,15 @@ test("persona without dataset leaves it undefined", () => {
   expect(parsed.dataset).toBeUndefined()
 })
 
+test("persona skills list round-trips, including an empty list (no skills)", () => {
+  expect(PersonaSchema.parse({ label: "Coder", skills: ["pdf", "changelog"] }).skills).toEqual(["pdf", "changelog"])
+  expect(PersonaSchema.parse({ label: "Quiet", skills: [] }).skills).toEqual([])
+})
+
+test("persona without skills leaves it undefined (all enabled skills)", () => {
+  expect(PersonaSchema.parse({ label: "Helpful assistant" }).skills).toBeUndefined()
+})
+
 test("temperature out of range is rejected", () => {
   expect(() => PersonaSchema.parse({ label: "X", temperature: 2.5 })).toThrow()
 })

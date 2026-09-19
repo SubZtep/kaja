@@ -63,14 +63,18 @@ Only one cloud account can be signed in at a time. `kaja logout` clears the toke
 What cloud mode **does not** have:
 
 - no local SQLite
-- no shell (`run_command`), no MCP servers, no plugin tools
+- no shell (`run_command`), no `mcp.toml` servers, no plugin tools
 - no model switching — the server always resolves the model
 
 `read_file`/`list_files` do work in cloud mode: the server can't touch your disk, so it pauses the
 turn and the CLI runs them locally (scoped to the directory you launched it from) before resuming
 — transparent, no confirmation prompt. Persona switching also works, both automatically
-(`switch_persona`, mid-conversation) and manually (the key bar's persona picker), from an
-admin-managed persona catalog on the server.
+(`switch_persona`, mid-conversation) and manually (the key bar's persona picker), among the
+personas you turned on at [kaja.io/packages](https://kaja.io/packages).
+
+Marketplace skills, HTTP tools and remote MCP servers you turned on at
+[kaja.io/packages](https://kaja.io/packages) work too; a call that changes something asks for your
+approval in the terminal first ([HTTP tools in the cloud](/tools#http-tools-in-the-cloud)).
 
 Everything else — memory notes, datasets, `ask_user`, web search, image generation — works, scoped
 to your account. See [Cloud API](/development/api) for the endpoints.

@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "transport": {
+      "default": "http",
+      "description": "http (Streamable HTTP), sse, or stdio",
+      "type": "string",
+      "enum": [
+        "http",
+        "sse",
+        "stdio"
+      ]
+    },
+    "url": {
+      "description": "Server URL (http and sse)",
+      "type": "string",
+      "format": "uri"
+    },
+    "command": {
+      "description": "Command that starts the server (stdio)",
+      "type": "string",
+      "minLength": 1
+    },
+    "args": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "env": {
+      "default": {},
+      "description": "Static env vars for the server (stdio)",
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "headers": {
+      "default": {},
+      "description": "Static headers (http and sse)",
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "auth": {
+      "default": {
+        "type": "none"
+      },
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "none"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "apiKey"
+            },
+            "in": {
+              "type": "string",
+              "enum": [
+                "header",
+                "env"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Header or env var name"
+            },
+            "prefix": {
+              "description": "Put before the key, e.g. \"Bearer \"",
+              "type": "string"
+            },
+            "optional": {
+              "default": false,
+              "description": "The server works without a key too (e.g. with lower limits)",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "in",
+            "name"
+          ]
+        }
+      ]
+    },
+    "approval": {
+      "default": "never",
+      "description": "When tool calls ask first: writes = unless the tool is marked read-only",
+      "type": "string",
+      "enum": [
+        "never",
+        "writes",
+        "always"
+      ]
+    },
+    "tools": {
+      "description": "Only these of the server's tools reach the model",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "readOnly": {
+      "description": "Tools to treat as read-only under approval = \"writes\", for servers that don't mark them",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unless": {
+                "default": [],
+                "description": "Arguments that make a call a write when set",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "tool"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "name",
+    "description"
+  ]
+}

@@ -70,6 +70,12 @@ declare module "bun" {
     NASI_STUB_MODEL?: string
     /** HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely */
     WEB_PROXY?: string
+    /** Encrypts users' package API keys (AES-256-GCM); unset turns key entry off and hides tools that need one */
+    USER_SECRET_KEY?: string
+    /** GitHub owner/repo whose marketplace/ folder the cloud package catalog is synced from */
+    MARKETPLACE_REPO?: string
+    /** Branch (or tag) of MARKETPLACE_REPO to sync */
+    MARKETPLACE_REF?: string
     /** BotFather token; when set, starts the always-on cloud Telegram bot */
     TELEGRAM_BOT_TOKEN?: string
   }
