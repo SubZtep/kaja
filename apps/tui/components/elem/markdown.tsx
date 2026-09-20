@@ -1,8 +1,8 @@
 import chalk from "chalk"
-import dedent from "dedent"
 import { Box, Text } from "ink"
 import { marked } from "marked"
 import { memo } from "react"
+import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
 import { TerminalImage } from "./terminal-image"
 
