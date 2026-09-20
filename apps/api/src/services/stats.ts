@@ -14,30 +14,33 @@ export class StatsService {
     this.#db = db
   }
 
-  /** The user's activity over the last `days` days (UTC, today included). Only ever reads this user's rows. */
-  async usage(userId: string, days: number): Promise<UsageStatsResponse> {
-    const since = new Date()
-    since.setUTCHours(0, 0, 0, 0)
-    since.setUTCDate(since.getUTCDate() - (days - 1))
+  /** The user's activity over the last `days` calendar days in `timeZone` (today included). Only ever reads this user's rows. */
+  async usage(userId: string, days: number, timeZone = "UTC"): Promise<UsageStatsResponse> {
+    // Midnight, in the viewer's zone, of the first day: a wall-clock day count keeps DST days whole.
+    const { rows } = await this.#db.query(
+      "SELECT (date_trunc('day', now() AT TIME ZONE $1) - ($2::int - 1) * interval '1 day') AT TIME ZONE $1 AS since",
+      [timeZone, days]
+    )
+    const since: Date = rows[0].since
     const args = [userId, since]
 
     const [perDay, totals, channels, calls, approvals, personas, models] = await Promise.all([
       this.#db.query(
         `
         WITH days AS (
-          SELECT generate_series(($2::timestamptz AT TIME ZONE 'UTC')::date, ($2::timestamptz AT TIME ZONE 'UTC')::date + ($3::int - 1), interval '1 day')::date AS day
+          SELECT generate_series(($2::timestamptz AT TIME ZONE $4)::date, ($2::timestamptz AT TIME ZONE $4)::date + ($3::int - 1), interval '1 day')::date AS day
         ),
         started AS (
-          SELECT (created_at AT TIME ZONE 'UTC')::date AS day, COUNT(*) AS n FROM nasi_session WHERE user_id = $1 AND created_at >= $2 GROUP BY 1
+          SELECT (created_at AT TIME ZONE $4)::date AS day, COUNT(*) AS n FROM nasi_session WHERE user_id = $1 AND created_at >= $2 GROUP BY 1
         ),
         active AS (
-          SELECT (updated_at AT TIME ZONE 'UTC')::date AS day, COUNT(*) AS n FROM nasi_session WHERE user_id = $1 AND updated_at >= $2 GROUP BY 1
+          SELECT (updated_at AT TIME ZONE $4)::date AS day, COUNT(*) AS n FROM nasi_session WHERE user_id = $1 AND updated_at >= $2 GROUP BY 1
         )
         SELECT to_char(days.day, 'YYYY-MM-DD') AS date, coalesce(started.n, 0)::int AS started, coalesce(active.n, 0)::int AS active
         FROM days LEFT JOIN started USING (day) LEFT JOIN active USING (day)
         ORDER BY days.day
         `,
-        [...args, days]
+        [...args, days, timeZone]
       ),
       this.#db.query(
         `
@@ -120,6 +123,7 @@ export class StatsService {
 
     return {
       days,
+      timeZone,
       totals: {
         sessions: totals.rows[0]?.sessions ?? 0,
         messages: totals.rows[0]?.messages ?? 0,

@@ -67,8 +67,9 @@ left out of the catalog and of turns.
 
 ## Usage stats — `/stats`
 
-`GET /stats?days=30` (1–365) returns the signed-in user's own activity for the [dashboard](/development/web#signed-in):
-totals, one entry per UTC day, sessions per channel (web or CLI, Telegram, widget), and per-tool calls with
+`GET /stats?days=30&tz=Asia/Tokyo` (`days` 1–365; `tz` an IANA timezone, UTC when left out) returns the signed-in
+user's own activity for the [dashboard](/development/web#signed-in): totals, one entry per calendar day in `tz`
+(the web app sends the viewer's own timezone; the database keeps UTC instants either way), sessions per channel (web or CLI, Telegram, widget), and per-tool calls with
 how often they asked first, failed and how long they took. It is computed from the `nasi_message` and
 `nasi_tool_call` rows, so tokens, latencies and per-reply numbers only exist for replies saved after they were
 recorded.

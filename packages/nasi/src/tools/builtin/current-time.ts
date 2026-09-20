@@ -27,17 +27,22 @@ export const currentTimeTool = tool<{ timezone?: string }>({
     const timeZone = args.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
     const now = new Date()
 
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-      timeZoneName: "longOffset"
-    }).formatToParts(now)
+    let parts: Intl.DateTimeFormatPart[]
+    try {
+      parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+        timeZoneName: "longOffset"
+      }).formatToParts(now)
+    } catch {
+      return `Unknown timezone "${timeZone}". Use an IANA name such as "America/New_York".`
+    }
 
     const get = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value
 

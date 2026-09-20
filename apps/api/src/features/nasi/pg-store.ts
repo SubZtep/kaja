@@ -262,8 +262,8 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
           importance: row.importance as MemoryNote["importance"],
           tags: row.tags,
           sticky: row.sticky,
-          createdAt: row.created_at,
-          lastUsedAt: row.last_used_at,
+          createdAt: iso(row.created_at),
+          lastUsedAt: iso(row.last_used_at),
           useCount: row.use_count
         }
       }
@@ -321,7 +321,9 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
          ORDER BY answered_at ASC`,
         [userId, topic, ownerKey(owner), version]
       )
-      return result.rows as DatasetAnswer[]
+      return result.rows.map(
+        (row): DatasetAnswer => ({ field: row.field, value: row.value, answeredAt: iso(row.answeredAt) })
+      )
     },
 
     async saveDatasetAnswer(topic, owner, version, field, value) {
@@ -330,7 +332,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (user_id, topic, owner, version, field)
          DO UPDATE SET value = EXCLUDED.value, answered_at = EXCLUDED.answered_at`,
-        [userId, topic, ownerKey(owner), version, field, value, new Date().toISOString()]
+        [userId, topic, ownerKey(owner), version, field, value, new Date()]
       )
     },
 
@@ -339,7 +341,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
         `INSERT INTO nasi_dataset_version (user_id, topic, owner, version, completed_at)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (user_id, topic, owner, version) DO NOTHING`,
-        [userId, topic, ownerKey(owner), version, new Date().toISOString()]
+        [userId, topic, ownerKey(owner), version, new Date()]
       )
     },
 
@@ -349,7 +351,8 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
          WHERE user_id = $1 AND topic = $2 AND owner = $3 AND version = $4`,
         [userId, topic, ownerKey(owner), version]
       )
-      return result.rows[0]?.completed_at as string | undefined
+      const completedAt = result.rows[0]?.completed_at as Date | undefined
+      return completedAt && iso(completedAt)
     }
   }
 }

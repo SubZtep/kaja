@@ -64,8 +64,8 @@ CREATE TABLE IF NOT EXISTS nasi_note (
   importance text NOT NULL CHECK (importance IN ('low', 'medium', 'high')),
   tags jsonb NOT NULL,
   sticky boolean NOT NULL,
-  created_at text NOT NULL,
-  last_used_at text NOT NULL,
+  created_at timestamptz NOT NULL,
+  last_used_at timestamptz NOT NULL,
   use_count integer NOT NULL,
   PRIMARY KEY (user_id, owner, key)
 );
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS nasi_dataset_answer (
   version integer NOT NULL,
   field text NOT NULL,
   value text NOT NULL,
-  answered_at text NOT NULL,
+  answered_at timestamptz NOT NULL,
   PRIMARY KEY (user_id, topic, owner, version, field)
 );
 
@@ -86,6 +86,6 @@ CREATE TABLE IF NOT EXISTS nasi_dataset_version (
   topic text NOT NULL,
   owner text NOT NULL DEFAULT '',
   version integer NOT NULL,
-  completed_at text NOT NULL,
+  completed_at timestamptz NOT NULL,
   PRIMARY KEY (user_id, topic, owner, version)
 );

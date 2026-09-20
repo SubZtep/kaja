@@ -27,6 +27,7 @@
     "seed:config": "bun run --filter @kaja/api seed:config",
     "lint": "biome check --config-path=. && tombi format --check && tombi lint",
     "lint:fix": "biome check --config-path=. --write --unsafe && tombi format && tombi lint --error-on-warnings",
+    "test:tz": "for tz in Asia/Tokyo America/Los_Angeles Pacific/Kiritimati; do TZ=$tz bun test apps/api/tests/integration/timezone.test.ts apps/api/tests/integration/stats.test.ts apps/api/tests/integration/pg-store.test.ts packages/shared/tests/time.test.ts packages/nasi/tests/tools/current-time.test.ts apps/web/src/lib/period.test.ts apps/tui/tests/lib/session/store.test.ts || exit 1; done",
     "typecheck": "set -e; for pkg in apps/* apps/*/* packages/*; do [ -f \"$pkg/tsconfig.json\" ] || continue; (cd \"$pkg\" && bunx tsc --noEmit); done"
   },
   "workspaces": [

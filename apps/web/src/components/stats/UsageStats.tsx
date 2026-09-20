@@ -36,12 +36,16 @@ const CHANNEL_LABELS: Record<StatsChannel, () => string> = {
   widget: () => m.stats_channel_widget()
 }
 
-/** The signed-in user's own activity numbers for the last `days` days. */
+/** The signed-in user's own activity numbers for the last `days` days, cut into the viewer's own calendar days. */
 function useUsageStats(days: number) {
   const apiFetch = useApiFetch()
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
   return useQuery({
-    queryKey: ["stats", days],
-    queryFn: () => apiFetch<UsageStatsResponse>(`/stats?days=${days}`).then(r => usageStatsResponseSchema.parse(r)),
+    queryKey: ["stats", days, tz],
+    queryFn: () =>
+      apiFetch<UsageStatsResponse>(`/stats?days=${days}&tz=${encodeURIComponent(tz)}`).then(r =>
+        usageStatsResponseSchema.parse(r)
+      ),
     placeholderData: keepPreviousData
   })
 }

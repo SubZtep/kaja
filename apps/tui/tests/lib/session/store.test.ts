@@ -363,3 +363,27 @@ test("loadPromptHistory: newest first across sessions, user events only, consecu
   expect(await loadPromptHistory()).toEqual(["gamma", "beta", "alpha"])
   expect(await loadPromptHistory(2)).toEqual(["gamma", "beta"])
 })
+
+test("timestamps are UTC instants whatever timezone the machine is in, so newest-first order holds across them", async () => {
+  const originalTz = process.env.TZ
+  const created: string[] = []
+  try {
+    for (const zone of ["Asia/Tokyo", "America/Los_Angeles", "Pacific/Kiritimati", "UTC"]) {
+      process.env.TZ = zone
+      const before = Date.now()
+      const id = await createSessionRow(row({ title: zone }))
+      const saved = (await loadSessionRow(id))!
+      for (const stamp of [saved.createdAt, saved.updatedAt]) {
+        expect(stamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+        // generous, the machine can be busy; a local-time stamp would be hours off
+        expect(Math.abs(new Date(stamp).getTime() - before)).toBeLessThan(60_000)
+      }
+      created.push(id)
+      await Bun.sleep(2)
+    }
+    expect((await listSessions()).map(s => s.id)).toEqual(created.toReversed())
+  } finally {
+    if (originalTz === undefined) delete process.env.TZ
+    else process.env.TZ = originalTz
+  }
+})

@@ -1,16 +1,32 @@
 import { z } from "zod"
 
-/** How far back the stats look, in days, today included. */
+const IANA_NAME = /^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/
+
+/** Whether `name` is an IANA timezone such as `Asia/Tokyo`. Offsets like `+09:00` are refused: Postgres reads them as POSIX, with the sign flipped. */
+function isTimeZone(name: string) {
+  if (!IANA_NAME.test(name)) return false
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: name })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** How far back the stats look, in days, today included, and the timezone whose midnights split those days (UTC unless the viewer says otherwise). */
 export const statsQuerySchema = z.object({
-  days: z.coerce.number().int().min(1).max(365).default(30)
+  days: z.coerce.number().int().min(1).max(365).default(30),
+  tz: z.string().refine(isTimeZone, "Not an IANA timezone").default("UTC")
 })
 
 /** Where a session was started: the web app or CLI (`web`), the Telegram bot, or a widget visitor's chat. */
 export const statsChannelSchema = z.enum(["web", "telegram", "widget"])
 
-/** The signed-in user's activity over the last `days` days. Only sessions last active in that range count (all their messages), and days are UTC. Tokens, times and per-reply numbers only exist for replies saved since they were recorded. */
+/** The signed-in user's activity over the last `days` days. Only sessions last active in that range count (all their messages), and days are the viewer's calendar days in `timeZone`. Tokens, times and per-reply numbers only exist for replies saved since they were recorded. */
 export const usageStatsResponseSchema = z.object({
   days: z.number().int(),
+  /** The IANA timezone the days in `perDay` were cut in. */
+  timeZone: z.string(),
   totals: z.object({
     sessions: z.number().int(),
     messages: z.number().int(),
