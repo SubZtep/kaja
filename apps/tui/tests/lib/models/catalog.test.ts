@@ -70,6 +70,7 @@ test("with two providers for one task, the picked one is the default and the oth
 test("a provider serving a task twice gets numbered ids, never a duplicate table", () => {
   const twice: CatalogProvider = {
     id: "custom",
+    name: "Custom",
     kind: "hosted",
     baseUrl: "https://example.test/v1",
     models: [

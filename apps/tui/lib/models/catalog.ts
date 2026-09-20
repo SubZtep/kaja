@@ -7,6 +7,8 @@ export type CatalogModel = { task: ModelTask; model: string }
 export type CatalogProvider = {
   /** The `[providers.<id>]` key, and the name its API key goes under in secrets.toml. */
   id: string
+  /** How it is written on screen; a proper noun, so it is never translated. */
+  name: string
   /** `hosted` is asked for an API key, `local` (a server on this machine) for its address. */
   kind: "hosted" | "local"
   baseUrl: string
@@ -29,6 +31,7 @@ export const TASK_ORDER: ModelTask[] = ["chat", "embedding", "rerank", "image-ge
 export const CATALOG: CatalogProvider[] = [
   {
     id: "fireworks",
+    name: "Fireworks",
     kind: "hosted",
     baseUrl: "https://api.fireworks.ai/inference/v1",
     models: [
@@ -39,12 +42,14 @@ export const CATALOG: CatalogProvider[] = [
   },
   {
     id: "xai",
+    name: "xAI",
     kind: "hosted",
     baseUrl: "https://api.x.ai/v1",
     models: [{ task: "image-generation", model: "grok-imagine-image" }]
   },
   {
     id: "ollama",
+    name: "Ollama",
     kind: "local",
     baseUrl: "http://localhost:11434/v1",
     comment: [
@@ -57,6 +62,7 @@ export const CATALOG: CatalogProvider[] = [
   },
   {
     id: "llama",
+    name: "llama.cpp",
     kind: "local",
     baseUrl: "http://localhost:8080/v1",
     comment: ["# llama.cpp's server doesn't need an API key."],
@@ -64,6 +70,7 @@ export const CATALOG: CatalogProvider[] = [
   },
   {
     id: "speaches",
+    name: "Speaches",
     kind: "local",
     baseUrl: "http://localhost:8000",
     note: "local server, no key needed",

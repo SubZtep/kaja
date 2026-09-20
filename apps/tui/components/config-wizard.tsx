@@ -1,23 +1,22 @@
 import { MultiSelect, PasswordInput, TextInput } from "@inkjs/ui"
-import { LOCALE_LABELS, locales } from "@kaja/shared"
+import type { ModelTask } from "@kaja/schema/config"
+import { capitalized, LOCALE_LABELS, locales } from "@kaja/shared"
 import { Box, Static, Text, useInput } from "ink"
 import { useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
+import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
 import { listPaths } from "../lib/paths"
 import { SelectMenu } from "./elem/select-menu"
 
-export type WizardProvider = "fireworks" | "ollama" | "llama" | "skip"
-
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
-export type WizardExtra = "webSearch" | "voice" | "telegram"
+export type WizardExtra = "webSearch" | "telegram"
 
-const EXTRA_CHOICES: WizardExtra[] = ["webSearch", "voice", "telegram"]
+const EXTRA_CHOICES: WizardExtra[] = ["webSearch", "telegram"]
 
 const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
   webSearch: "wizard.extraWebSearch",
-  voice: "wizard.extraVoice",
   telegram: "wizard.extraTelegram"
 }
 
@@ -32,14 +31,16 @@ const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
-  provider?: WizardProvider
-  /** Where a local provider's server listens; only collected for the ones that run on this machine. */
-  baseUrl?: string
+  /** The ticked catalog providers, in catalog order. Empty means the user sets up models.toml themselves. */
+  providers?: string[]
+  /** Typed API keys by provider id; only hosted providers are asked. */
+  keys?: Record<string, string>
+  /** Where each local provider's server listens. */
+  addresses?: Record<string, string>
+  /** The provider that serves each task more than one ticked provider could. */
+  models?: Partial<Record<ModelTask, string>>
   extras?: WizardExtra[]
-  providerKey?: string
   webSearchKey?: string
-  /** Speaches' address, for voice in and out. Not a secret — it goes to settings.toml. */
-  voiceUrl?: string
   telegramToken?: string
 }
 
@@ -51,91 +52,80 @@ export type WizardSaved = {
   telegram?: boolean
 }
 
+/**
+ * One question. The key, address and model steps repeat, so they carry what they are about:
+ * `key:fireworks`, `address:ollama`, `model:chat`.
+ */
 type Step =
   | "mode"
   | "language"
-  | "provider"
-  | "providerKey"
-  | "baseUrl"
+  | "providers"
+  | `key:${string}`
+  | `address:${string}`
+  | `model:${ModelTask}`
   | "extras"
   | "webSearchKey"
-  | "voiceUrl"
   | "telegramToken"
   | "summary"
 
-const STEP_ORDER: Step[] = [
-  "language",
-  "mode",
-  "provider",
-  "providerKey",
-  "baseUrl",
-  "extras",
-  "webSearchKey",
-  "voiceUrl",
-  "telegramToken",
-  "summary"
-]
+const PROVIDER_LABEL_KEY: Record<string, string> = {
+  fireworks: "wizard.providerFireworks",
+  xai: "wizard.providerXai",
+  ollama: "wizard.providerOllama",
+  llama: "wizard.providerLlama",
+  speaches: "wizard.providerSpeaches"
+}
 
-/** Providers whose follow-up question is an API key, not an address. */
-const KEY_PROVIDERS = new Set<WizardProvider>(["fireworks"])
-
-/** Speaches serves both speech-to-text and text-to-speech, so one URL configures voice in and out. */
-const DEFAULT_SPEACHES_URL = "http://localhost:8000"
-
-/** Providers that are a server on this machine: their setup question is an address, not a key. */
-export const LOCAL_PROVIDER_URLS: Partial<Record<WizardProvider, string>> = {
-  ollama: "http://localhost:11434/v1",
-  llama: "http://localhost:8080/v1"
+const TASK_LABEL_KEY: Record<ModelTask, string> = {
+  chat: "wizard.taskChat",
+  embedding: "wizard.taskEmbedding",
+  rerank: "wizard.taskRerank",
+  "image-generation": "wizard.taskImageGeneration",
+  tts: "wizard.taskTts",
+  stt: "wizard.taskStt"
 }
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
 
-const PROVIDER_CHOICES: WizardProvider[] = ["fireworks", "ollama", "llama", "skip"]
-
-const PROVIDER_LABEL_KEY: Record<WizardProvider, string> = {
-  fireworks: "wizard.providerFireworks",
-  ollama: "wizard.providerOllama",
-  llama: "wizard.providerLlama",
-  skip: "wizard.providerSkip"
+/** The ticked providers as catalog entries, in catalog order. */
+function chosenProviders(result: WizardResult): CatalogProvider[] {
+  return CATALOG.filter(provider => result.providers?.includes(provider.id))
 }
 
-type SkipRule = (result: WizardResult, forcedMode?: KajaMode) => boolean
-
-const isCloud: SkipRule = result => result.mode === "cloud"
-const unticked =
-  (extra: WizardExtra): SkipRule =>
-  result =>
-    !result.extras?.includes(extra)
-
-/** When a step can't apply. A step without a rule is always asked. */
-const SKIP_WHEN: Partial<Record<Step, SkipRule>> = {
-  // `--cloud`/`--local` already answered this one. A prefilled mode does not: that's the current
-  // setting being re-offered, which the user is here to change.
-  mode: (_result, forcedMode) => forcedMode !== undefined,
-  provider: isCloud,
-  providerKey: result => isCloud(result) || !KEY_PROVIDERS.has(result.provider!),
-  baseUrl: result => isCloud(result) || !LOCAL_PROVIDER_URLS[result.provider!],
-  // Every extra is a local-agent feature: the Telegram bot, voice, and the web_search tool.
-  extras: isCloud,
-  webSearchKey: unticked("webSearch"),
-  voiceUrl: unticked("voice"),
-  telegramToken: unticked("telegram")
+/** The tasks more than one ticked provider can serve: the only model questions worth asking. */
+function contestedTasks(result: WizardResult): ModelTask[] {
+  const candidates = candidatesByTask(chosenProviders(result))
+  return TASK_ORDER.filter(task => (candidates[task]?.length ?? 0) > 1)
 }
 
 /**
- * The step a completed one hands off to. Cloud needs no provider; only a provider that runs on this
- * machine is asked for an address, and only one that doesn't is asked for a key. Each extra's
- * follow-up is asked only when that extra was ticked. Resolved here rather than mid-render so a
- * skipped step never mounts just to advance out of itself.
+ * Every question this set of answers leads to, in order. Cloud needs no provider; a hosted provider
+ * is asked for a key and a local one for an address; a model is asked about only where the ticked
+ * providers overlap; and each extra's follow-up only when that extra was ticked. Recomputed after
+ * every answer, so a skipped step never mounts just to advance out of itself.
  */
-function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode): Step {
-  const last = STEP_ORDER.length - 1
+function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
+  // `--cloud`/`--local` already answered the mode. A prefilled mode does not: that's the current
+  // setting being re-offered, which the user is here to change.
+  const steps: Step[] = forcedMode === undefined ? ["language", "mode"] : ["language"]
+  if (result.mode === "cloud") return [...steps, "summary"]
 
-  for (let index = STEP_ORDER.indexOf(step) + 1; index < last; index++) {
-    const candidate = STEP_ORDER[index]!
-    if (!SKIP_WHEN[candidate]?.(result, forcedMode)) return candidate
+  steps.push("providers")
+  for (const provider of chosenProviders(result)) {
+    steps.push(provider.kind === "hosted" ? `key:${provider.id}` : `address:${provider.id}`)
   }
-  return "summary"
+  for (const task of contestedTasks(result)) steps.push(`model:${task}`)
+  // Every extra is a local-agent feature: the Telegram bot and the web_search tool.
+  steps.push("extras")
+  if (result.extras?.includes("webSearch")) steps.push("webSearchKey")
+  if (result.extras?.includes("telegram")) steps.push("telegramToken")
+  steps.push("summary")
+  return steps
+}
+
+function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode): Step {
+  const steps = stepsFor(result, forcedMode)
+  return steps[steps.indexOf(step) + 1] ?? "summary"
 }
 
 /**
@@ -171,8 +161,8 @@ function InputStep({
   )
 }
 
-function providerName(provider: WizardProvider | undefined): string {
-  return provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : ""
+function providerName(id: string): string {
+  return catalogProvider(id)?.name ?? id
 }
 
 /** What happened to a key step: typed, left empty over one already saved, or left empty. Undefined when the step never applied. */
@@ -194,7 +184,8 @@ function answerLine(
   result: WizardResult,
   saved?: WizardSaved
 ): Pick<Answer, "label" | "value"> | undefined {
-  switch (step) {
+  const [kind, subject] = step.split(":") as [string, string | undefined]
+  switch (kind) {
     case "language":
       return result.language ? { label: t("wizard.summaryLanguage"), value: LOCALE_LABELS[result.language] } : undefined
     case "mode":
@@ -204,18 +195,29 @@ function answerLine(
             value: t(result.mode === "cloud" ? "wizard.modeCloudShort" : "wizard.modeLocalShort")
           }
         : undefined
-    case "provider":
-      return result.provider
-        ? { label: t("wizard.summaryProvider"), value: t(PROVIDER_LABEL_KEY[result.provider]) }
-        : undefined
-    case "providerKey": {
-      const value = keyState(result.providerKey, saved?.providers?.includes(result.provider ?? ""))
-      return value
-        ? { label: t("wizard.summaryKeyProvider", { provider: providerName(result.provider) }), value }
+    case "providers":
+      return {
+        label: t("wizard.summaryProvider"),
+        value: result.providers?.length ? result.providers.map(providerName).join(", ") : t("wizard.providersNone")
+      }
+    case "key": {
+      const value = keyState(result.keys?.[subject!], saved?.providers?.includes(subject!))
+      return value ? { label: t("wizard.summaryKeyProvider", { provider: providerName(subject!) }), value } : undefined
+    }
+    case "address": {
+      const value = result.addresses?.[subject!]
+      return value ? { label: t("wizard.summaryAddress", { provider: providerName(subject!) }), value } : undefined
+    }
+    case "model": {
+      const task = subject as ModelTask
+      const picked = candidatesByTask(chosenProviders(result))[task]?.find(c => c.provider === result.models?.[task])
+      return picked
+        ? {
+            label: capitalized(t("wizard.summaryModel", { task: t(TASK_LABEL_KEY[task]) })),
+            value: `${providerName(picked.provider)} (${picked.model})`
+          }
         : undefined
     }
-    case "baseUrl":
-      return result.baseUrl ? { label: t("wizard.summaryBaseUrl"), value: result.baseUrl } : undefined
     case "extras":
       return result.extras?.length
         ? { label: t("wizard.summaryExtras"), value: result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") }
@@ -224,8 +226,6 @@ function answerLine(
       const value = keyState(result.webSearchKey, saved?.webSearch)
       return value ? { label: t("wizard.summaryKeyWebSearch"), value } : undefined
     }
-    case "voiceUrl":
-      return result.voiceUrl ? { label: "Speaches", value: result.voiceUrl } : undefined
     case "telegramToken": {
       const value = keyState(result.telegramToken, saved?.telegram)
       return value ? { label: t("wizard.summaryKeyTelegram"), value } : undefined
@@ -295,8 +295,8 @@ export function ConfigWizard({
 
   useInput((_input, key) => {
     if (step === "summary" && (key.return || key.escape)) onDone(result)
-    // MultiSelect has no dismissal of its own, so the extras step gets the same Esc contract as SelectMenu.
-    else if (step === "extras" && key.escape) onCancel()
+    // MultiSelect has no dismissal of its own, so its steps get the same Esc contract as SelectMenu.
+    else if ((step === "providers" || step === "extras") && key.escape) onCancel()
   })
 
   function advance(patch: Partial<WizardResult>) {
@@ -308,6 +308,50 @@ export function ConfigWizard({
   }
 
   function stepView() {
+    const [kind, subject] = step.split(":") as [string, string | undefined]
+    const provider = subject ? catalogProvider(subject) : undefined
+
+    if (kind === "key" && provider) {
+      return (
+        <InputStep
+          secret
+          title={t("wizard.providerKeyTitle", { provider: provider.name })}
+          hint={t(saved?.providers?.includes(provider.id) ? "wizard.keyHintSaved" : "wizard.keyHint")}
+          onSubmit={value => advance({ keys: { ...result.keys, [provider.id]: value } })}
+        />
+      )
+    }
+
+    if (kind === "address" && provider) {
+      return (
+        <InputStep
+          title={t("wizard.baseUrlTitle", { provider: provider.name })}
+          hint={t("wizard.baseUrlHint")}
+          defaultValue={result.addresses?.[provider.id] ?? provider.baseUrl}
+          onSubmit={value => advance({ addresses: { ...result.addresses, [provider.id]: value || provider.baseUrl } })}
+        />
+      )
+    }
+
+    if (kind === "model") {
+      const task = subject as ModelTask
+      const candidates = candidatesByTask(chosenProviders(result))[task] ?? []
+      const current = candidates.findIndex(candidate => candidate.provider === result.models?.[task])
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Text>{t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}</Text>
+          <SelectMenu
+            items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
+            width={70}
+            initialIndex={current >= 0 ? current : undefined}
+            onSelect={index => advance({ models: { ...result.models, [task]: candidates[index]!.provider } })}
+            onClose={onCancel}
+          />
+          <Text dimColor>{t("wizard.modelHint")}</Text>
+        </Box>
+      )
+    }
+
     switch (step) {
       case "mode": {
         return (
@@ -346,41 +390,23 @@ export function ConfigWizard({
         )
       }
 
-      case "provider": {
+      case "providers": {
         return (
           <Box flexDirection="column" gap={1}>
             <Text>{t("wizard.providerTitle")}</Text>
-            <SelectMenu
-              items={PROVIDER_CHOICES.map(choice => t(PROVIDER_LABEL_KEY[choice]))}
-              width={70}
-              initialIndex={result.provider ? PROVIDER_CHOICES.indexOf(result.provider) : undefined}
-              onSelect={index => advance({ provider: PROVIDER_CHOICES[index] })}
-              onClose={onCancel}
-            />
+            <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+              {/* Nothing ticked by default, so one Enter means "I'll set up models.toml myself". */}
+              <MultiSelect
+                options={CATALOG.map(provider => ({
+                  label: t(PROVIDER_LABEL_KEY[provider.id] ?? provider.id),
+                  value: provider.id
+                }))}
+                defaultValue={result.providers}
+                onSubmit={values => advance({ providers: CATALOG.map(p => p.id).filter(id => values.includes(id)) })}
+              />
+            </Box>
+            <Text dimColor>{t("wizard.providerHint")}</Text>
           </Box>
-        )
-      }
-
-      case "providerKey": {
-        return (
-          <InputStep
-            secret
-            title={t("wizard.providerKeyTitle", { provider: result.provider ?? "" })}
-            hint={t(saved?.providers?.includes(result.provider ?? "") ? "wizard.keyHintSaved" : "wizard.keyHint")}
-            onSubmit={providerKey => advance({ providerKey })}
-          />
-        )
-      }
-
-      case "baseUrl": {
-        const fallback = LOCAL_PROVIDER_URLS[result.provider!] ?? ""
-        return (
-          <InputStep
-            title={t("wizard.baseUrlTitle")}
-            hint={t("wizard.baseUrlHint")}
-            defaultValue={result.baseUrl ?? fallback}
-            onSubmit={value => advance({ baseUrl: value || fallback })}
-          />
         )
       }
 
@@ -412,17 +438,6 @@ export function ConfigWizard({
         )
       }
 
-      case "voiceUrl": {
-        return (
-          <InputStep
-            title={t("wizard.voiceUrlTitle")}
-            hint={t("wizard.voiceUrlHint")}
-            defaultValue={result.voiceUrl ?? DEFAULT_SPEACHES_URL}
-            onSubmit={voiceUrl => advance({ voiceUrl })}
-          />
-        )
-      }
-
       case "telegramToken": {
         return (
           <InputStep
@@ -433,6 +448,7 @@ export function ConfigWizard({
           />
         )
       }
+
       default:
         return <SummaryStep result={result} />
     }
@@ -443,7 +459,8 @@ export function ConfigWizard({
       <Static items={answered}>
         {answer => <AnswerRow key={answer.id} label={answer.label} value={answer.value} />}
       </Static>
-      <Box marginTop={1} flexDirection="column">
+      {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
+      <Box key={step} marginTop={1} flexDirection="column">
         {stepView()}
       </Box>
     </Box>

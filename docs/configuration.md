@@ -27,8 +27,9 @@ LLM provider credentials, model-to-task mapping, secrets, services, and preferen
 Run `kaja config paths` to print the resolved location of each of these on your machine — the
 directory follows XDG, so `$XDG_CONFIG_HOME/kaja` when set.
 
-The first `kaja --local` run opens the [setup wizard](/configuration/wizard), seeding these from the templates in
-[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config). `kaja config fetch`
+The first `kaja --local` run opens the [setup wizard](/configuration/wizard), which writes these from
+the providers you tick (the examples in
+[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config) show what they look like). `kaja config fetch`
 later downloads the current admin-managed model catalog from
 the cloud API's `GET /config/export` and rewrites `models.toml`
 from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
