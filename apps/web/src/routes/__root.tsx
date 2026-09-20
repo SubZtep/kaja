@@ -1,4 +1,3 @@
-import { error } from "@kaja/logger"
 import * as Sentry from "@sentry/tanstackstart-react"
 import type { QueryClient } from "@tanstack/react-query"
 import {
@@ -29,7 +28,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     try {
       session = await getSession()
     } catch (err) {
-      error("Failed to fetch session in root loader", { error: err instanceof Error ? err.message : err })
+      Sentry.captureException(err)
       sessionError = true
     }
     const { apiUrl, barkochbaWidgetKey, chatWidgetKey } = await getRootEnv()
@@ -162,7 +161,6 @@ function NotFound() {
 
 function DefaultError({ error: err }: ErrorComponentProps) {
   useEffect(() => {
-    error(err instanceof Error ? err.message : String(err), { error: err })
     Sentry.captureException(err)
   }, [err])
 

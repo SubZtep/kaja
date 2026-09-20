@@ -7,11 +7,11 @@ nav_order: 7
 # Personas
 
 A persona is a named character the assistant can switch into — its own instructions, and optionally
-its own model and sampling parameters. Personas are [marketplace](/skills#the-marketplace) packages:
+its own model and sampling parameters. Personas are [marketplace](/skills#the-marketplace) abilities:
 one file each under `~/.config/kaja/marketplace/personas/<id>.toml`, where the file name is the
 persona's id (lowercase letters, digits and single hyphens).
 
-Only the personas `~/.config/kaja/packages.toml` lists load; `kaja pkg` picks them in its Personas
+Only the personas `~/.config/kaja/abilities.toml` lists load; `kaja abilities` picks them in its Personas
 group. `default` is the exception: it always loads, and a fresh install has it built in. Put a
 `default.toml` in the folder (the marketplace sync brings one) and that one is used instead.
 
@@ -59,7 +59,7 @@ shared from elsewhere — falls back to the default for that task instead of fai
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
 | `onboarding` | walks a new user through the `onboarding` dataset |
 
-`kaja pkg update` brings them (and their updates) into the marketplace folder; read them in
+`kaja abilities update` brings them (and their updates) into the marketplace folder; read them in
 [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 
 > Two contracts are injected by Kaja itself and should **not** be restated in `instructions`: that
@@ -69,8 +69,8 @@ shared from elsewhere — falls back to the default for that task instead of fai
 ## Cloud mode
 
 Cloud chat reads no local files: it uses the same marketplace personas, kept on the server and
-updated when the marketplace changes. Turn them on at [kaja.io/packages](https://kaja.io/packages)
-(the Personas tab) or with the cloud Telegram bot's `/packages`; `default` is always on. A persona
+updated when the marketplace changes. Turn them on at [kaja.io/abilities](https://kaja.io/abilities)
+(the Personas tab) or with the cloud Telegram bot's `/abilities`; `default` is always on. A persona
 turned on or off mid-conversation reaches the conversation from your next message. Both
 `switch_persona` and the key bar's persona picker work in cloud mode. A [widget](/widget) offers
 every persona in the catalog, starting from the one its key names.

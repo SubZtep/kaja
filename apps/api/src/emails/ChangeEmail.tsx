@@ -6,7 +6,7 @@ import { type ChangeEmailPayload, EmailContainer } from "./template"
 export function ChangeEmail({ user, url, newEmail }: Readonly<ChangeEmailPayload>) {
   return (
     <EmailContainer>
-      <Heading as="h2">Hey-ho {getFirstName(user.name)} 👋</Heading>
+      <Heading as="h2">Hey-ho{getFirstName(user.name)} 👋</Heading>
       <Text>
         Click the link to approve the change from {user.email} to {newEmail}:
         <br />

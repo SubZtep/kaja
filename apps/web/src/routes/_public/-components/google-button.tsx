@@ -1,4 +1,3 @@
-import { error } from "@kaja/logger"
 import { cn } from "@kaja/shared"
 import { useState } from "react"
 import { toast } from "react-toastify"
@@ -50,12 +49,10 @@ export function GoogleButton({
       })
       if (authError) {
         toast.error(authError.message ?? m.signin_error_generic())
-        error("Google sign in failed", { error: authError })
         setLoading(false)
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : m.signin_error_generic())
-      error("Google sign in fail catched", { error: err })
       setLoading(false)
     }
   }

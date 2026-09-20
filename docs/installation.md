@@ -67,8 +67,8 @@ kaja config fetch         # rewrite mcp.toml / models.toml / personas from the b
 kaja config paths         # print where every config file lives
 
 # Skills (local mode)
-kaja pkg                  # pick which skills load (fetches the marketplace the first time)
-kaja pkg update           # fetch the marketplace and sync it into ~/.config/kaja/marketplace
+kaja abilities                  # pick which skills load (fetches the marketplace the first time)
+kaja abilities update           # fetch the marketplace and sync it into ~/.config/kaja/marketplace
 ```
 
 ## Uninstall

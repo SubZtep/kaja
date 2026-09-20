@@ -1,6 +1,6 @@
-import { error } from "@kaja/logger"
 import { Pool } from "pg"
 import { env } from "./env"
+import { reportError } from "./report"
 
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
@@ -14,9 +14,5 @@ export const pool = new Pool({
 })
 
 pool.on("error", err => {
-  error("Database error", { error: err })
+  reportError("Database error", err)
 })
-
-export const db = {
-  query: async (text: string, params: unknown[]) => pool.query(text, params)
-}

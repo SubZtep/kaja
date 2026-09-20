@@ -1,11 +1,13 @@
-import { debug, error, fatal, info, warn } from "@kaja/logger"
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
+import { createAuthMiddleware } from "better-auth/api"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
+import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
+import { blankProfileFields, googleProfileFromIdToken } from "./google-profile"
 
 function deviceVerificationUrl() {
   const fromEnv = [env.WEB_PUBLIC_URL, env.CORS_ORIGIN].find(Boolean)
@@ -23,13 +25,7 @@ function deviceVerificationUrl() {
  */
 function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
   void sendEmail(args).catch(err => {
-    error("Failed to send auth email", {
-      error: err instanceof Error ? err.message : err,
-      type: args.type,
-      userId: args.payload.user.id,
-      email: args.payload.user.email,
-      notify: "ops-log" // structured signal for log shippers / alerts
-    })
+    reportError("Failed to send auth email", err, { type: args.type, userId: args.payload.user.id })
   })
 }
 
@@ -39,10 +35,7 @@ const plugins: BetterAuthPlugin[] = [
   deviceAuthorization({
     schema: {},
     verificationUri: deviceVerificationUrl(),
-    validateClient: clientId => clientId === KAJA_TUI_CLIENT_ID,
-    onDeviceAuthRequest: (clientId, scope) => {
-      debug("Device authorization requested", { clientId, scope })
-    }
+    validateClient: clientId => clientId === KAJA_TUI_CLIENT_ID
   })
 ]
 
@@ -92,16 +85,22 @@ export const auth = betterAuth({
   database: pool,
   basePath: "/auth",
   plugins,
+  hooks: {
+    // A Google sign-in fills a blank name or avatar (say, an email account that linked Google) but never overwrites what the user set.
+    after: createAuthMiddleware(async ctx => {
+      if (ctx.path !== "/callback/:id" || ctx.params?.id !== "google") return
+      const user = ctx.context.newSession?.user
+      if (!user) return
+      const accounts = await ctx.context.internalAdapter.findAccounts(user.id)
+      const google = accounts.find(account => account.providerId === "google")
+      const fill = blankProfileFields(user, googleProfileFromIdToken(google?.idToken))
+      if (Object.keys(fill).length > 0) await ctx.context.internalAdapter.updateUser(user.id, fill)
+    })
+  },
   logger: {
-    log: (level, message, args) => {
-      // Map Better Auth's logger calls to our new logger API
-      const logFn = { trace: debug, debug, info, warn, error, fatal }[level]
-      if (logFn) {
-        logFn(message, args)
-      } else {
-        console[level]?.(message, args)
-      }
-    }
+    // Better Auth's own warnings and errors go to the container log.
+    level: "warn",
+    log: (level, message, ...args) => console[level === "error" ? "error" : "warn"](message, ...args)
   },
   ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
     ? {

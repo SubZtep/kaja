@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from "bun:test"
-import { HttpToolPackageSchema } from "@kaja/schema/packages"
-import { checkLocationKey, checkPackageKey, checkTelegramToken, checkWebSearchKey } from "../../../lib/doctor/checks"
+import { HttpToolAbilitySchema } from "@kaja/schema/abilities"
+import { checkAbilityKey, checkLocationKey, checkTelegramToken, checkWebSearchKey } from "../../../lib/doctor/checks"
 
 let fetchSpy: ReturnType<typeof spyOn> | undefined
 
@@ -71,8 +71,8 @@ afterAll(() => {
   server.stop(true)
 })
 
-test("a package key is tested with the manifest's check request; no check means untestable", async () => {
-  const pkg = HttpToolPackageSchema.parse({
+test("an ability key is tested with the manifest's check request; no check means untestable", async () => {
+  const ability = HttpToolAbilitySchema.parse({
     name: "local",
     description: "x",
     baseUrl: `http://localhost:${server.port}`,
@@ -80,7 +80,7 @@ test("a package key is tested with the manifest's check request; no check means 
     check: { path: "/me" },
     tools: [{ name: "t", description: "x", path: "/t" }]
   })
-  expect(await checkPackageKey(pkg, "good")).toEqual({ ok: true })
-  expect(await checkPackageKey(pkg, "bad")).toEqual({ ok: false, reason: "HTTP 401" })
-  expect(await checkPackageKey({ ...pkg, check: undefined }, "good")).toBeUndefined()
+  expect(await checkAbilityKey(ability, "good")).toEqual({ ok: true })
+  expect(await checkAbilityKey(ability, "bad")).toEqual({ ok: false, reason: "HTTP 401" })
+  expect(await checkAbilityKey({ ...ability, check: undefined }, "good")).toBeUndefined()
 })

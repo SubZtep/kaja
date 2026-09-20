@@ -1,143 +1,32 @@
-import { Cpu, LayoutDashboard, type LucideIcon, MessageCircle, Plug, Shield, Sparkles, Users } from "lucide-react"
 import { m } from "../../paraglide/messages.js"
 
-/** "public" matches signed-out visitors; "all" matches every signed-in role plus "public". */
-export type NavRole = "public" | "all" | "admin" | "user"
+/** An internal link (`to`) or an external one (`href`, opens in a new tab). */
+export type NavItem = { label: string; to?: string; href?: string }
 
-const matchesRole = (roles: NavRole[], role: string | null | undefined) =>
-  roles.includes("all") || (role ? roles.includes(role as NavRole) : roles.includes("public"))
-
-/** "header" items appear in the public site header; "admin" items appear in the admin sidebar/dashboard. */
-export type NavSection = "header" | "admin"
-
-export type NavItem = {
-  label: string
-  roles: NavRole[]
-  sections: NavSection[]
-  to?: string
-  href?: string
-  internal?: boolean
-  desktopOnly?: boolean
-  className?: string
-  description?: string
-  icon?: LucideIcon
+/** Top menu: signed-out visitors get the public links, signed-in users the same list, plus the single Admin item (which holds every admin page) for admins. */
+export const getHeaderItems = (user: { role?: string | null } | null): NavItem[] => {
+  // const home = { to: "/", label: m.nav_home() }
+  if (!user) {
+    return [
+      // home,
+      { to: "/signin", label: m.nav_sign_in() },
+      { to: "/signup", label: m.nav_sign_up() },
+      { href: "https://docs.kaja.io", label: m.nav_docs() }
+    ]
+  }
+  return [
+    // home,
+    { to: "/dashboard", label: m.nav_dashboard() },
+    { to: "/profile", label: m.nav_profile() },
+    { to: "/abilities", label: m.nav_abilities() },
+    { to: "/widget", label: m.nav_widget() },
+    ...(user.role === "admin" ? [{ to: "/admin", label: m.nav_admin() }] : [])
+  ]
 }
 
-const navItems: NavItem[] = [
-  { label: "Home", to: "/", internal: true, roles: ["public"], sections: ["header"] },
-  { label: "Sign In", to: "/signin", internal: true, roles: ["public"], sections: ["header"] },
-  { label: "Sign Up", to: "/signup", internal: true, roles: ["public"], sections: ["header"] },
-  {
-    to: "/dashboard",
-    label: "Dashboard",
-    description: "Overview and shortcuts",
-    internal: true,
-    roles: ["admin", "user"],
-    sections: ["header", "admin"],
-    icon: LayoutDashboard
-  },
-  {
-    to: "/profile",
-    label: "Profile",
-    description: "Account, email, and password",
-    internal: true,
-    roles: ["admin", "user"],
-    sections: ["header", "admin"],
-    icon: Shield
-  },
-  {
-    to: "/users",
-    label: "Users",
-    description: "Directory and access controls",
-    internal: true,
-    roles: ["admin"],
-    sections: ["header", "admin"],
-    icon: Users
-  },
-  {
-    to: "/mcp-servers",
-    label: "MCP Servers",
-    description: "Published mcp.toml servers",
-    internal: true,
-    roles: ["admin"],
-    sections: ["header", "admin"],
-    icon: Plug
-  },
-  {
-    to: "/models",
-    label: "Models",
-    description: "Providers and models.toml",
-    internal: true,
-    roles: ["admin"],
-    sections: ["header", "admin"],
-    icon: Cpu
-  },
-  {
-    to: "/packages",
-    label: "Packages",
-    description: "Skills, personas and tools your cloud assistant can use",
-    internal: true,
-    roles: ["admin", "user"],
-    sections: ["header", "admin"],
-    icon: Sparkles
-  },
-  {
-    to: "/widget",
-    label: "Widget",
-    description: "Embeddable chat widget keys",
-    internal: true,
-    roles: ["admin", "user"],
-    sections: ["header", "admin"],
-    icon: MessageCircle
-  },
-  { label: "Docs", href: "https://docs.kaja.io", roles: ["public"], sections: ["header"] }
+/** Tabs of the admin layout. */
+export const getAdminItems = (): NavItem[] => [
+  { to: "/admin/users", label: m.nav_users() },
+  { to: "/admin/mcp-servers", label: m.nav_mcp_servers() },
+  { to: "/admin/models", label: m.nav_models() }
 ]
-
-const getItems = (section: NavSection, role: string | null | undefined) =>
-  navItems.filter(item => item.sections.includes(section) && matchesRole(item.roles, role))
-
-/** Translated labels for every nav item. */
-const LABEL_OVERRIDES: Record<string, () => string> = {
-  "/": m.nav_home,
-  "/signin": m.nav_sign_in,
-  "/signup": m.nav_sign_up,
-  "https://docs.kaja.io": m.nav_docs,
-  "/dashboard": m.nav_dashboard,
-  "/profile": m.nav_profile,
-  "/users": m.nav_users,
-  "/mcp-servers": m.nav_mcp_servers,
-  "/models": m.nav_models,
-  "/packages": m.nav_packages,
-  "/widget": m.nav_widget
-}
-
-/** Translated descriptions for the admin sidebar/dashboard items. */
-const DESCRIPTION_OVERRIDES: Record<string, () => string> = {
-  "/dashboard": m.nav_dashboard_desc,
-  "/profile": m.nav_profile_desc,
-  "/users": m.nav_users_desc,
-  "/mcp-servers": m.nav_mcp_servers_desc,
-  "/models": m.nav_models_desc,
-  "/packages": m.nav_packages_desc,
-  "/widget": m.nav_widget_desc
-}
-
-export const getHeaderItems = (role: string | null | undefined) =>
-  getItems("header", role).map(item => {
-    const translate = LABEL_OVERRIDES[item.to ?? item.href ?? ""]
-    return translate ? { ...item, label: translate() } : item
-  })
-
-/** Every "admin" section item defines `to`, `description`, and `icon`. */
-export type AdminNavItem = NavItem & { to: string; description: string; icon: LucideIcon }
-
-export const getNavItems = (role: string | null | undefined) =>
-  (getItems("admin", role) as AdminNavItem[]).map(item => ({
-    ...item,
-    label: LABEL_OVERRIDES[item.to]?.() ?? item.label,
-    description: DESCRIPTION_OVERRIDES[item.to]?.() ?? item.description
-  }))
-
-/** Dashboard shortcuts omit the dashboard route itself. */
-export const getDashboardLinks = (role: string | null | undefined) =>
-  getNavItems(role).filter(item => item.to !== "/dashboard")

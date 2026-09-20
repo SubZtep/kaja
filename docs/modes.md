@@ -70,10 +70,10 @@ What cloud mode **does not** have:
 turn and the CLI runs them locally (scoped to the directory you launched it from) before resuming
 — transparent, no confirmation prompt. Persona switching also works, both automatically
 (`switch_persona`, mid-conversation) and manually (the key bar's persona picker), among the
-personas you turned on at [kaja.io/packages](https://kaja.io/packages).
+personas you turned on at [kaja.io/abilities](https://kaja.io/abilities).
 
 Marketplace skills, HTTP tools and remote MCP servers you turned on at
-[kaja.io/packages](https://kaja.io/packages) work too; a call that changes something asks for your
+[kaja.io/abilities](https://kaja.io/abilities) work too; a call that changes something asks for your
 approval in the terminal first ([HTTP tools in the cloud](/tools#http-tools-in-the-cloud)).
 
 Everything else — memory notes, datasets, `ask_user`, web search, image generation — works, scoped

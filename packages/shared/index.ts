@@ -3,6 +3,15 @@ import { twMerge } from "tailwind-merge"
 
 export { LOCALE_LABELS, type Locale, locales } from "./locale"
 export {
+  asRateLimitError,
+  EditThrottle,
+  escapeHtml,
+  isCommand,
+  isNotModifiedError,
+  TelegramRateLimitError,
+  withRateLimitRetry
+} from "./telegram-bot"
+export {
   renderTelegramHtml,
   splitTelegramMessage,
   TELEGRAM_MESSAGE_LIMIT,
@@ -50,6 +59,11 @@ export function getFirstName(fullName?: string, prefix = " ") {
   return fullName ? prefix + fullName.split(" ").shift() : ""
 }
 
+/** A user's name, or their email when the name is blank. */
+export function getDisplayName(user: { name?: string | null; email: string }) {
+  return user.name?.trim() || user.email
+}
+
 /** Capitalize the first letter of the given string. */
 export function capitalized(word: string) {
   return word.charAt(0).toUpperCase() + word.slice(1)
@@ -58,12 +72,6 @@ export function capitalized(word: string) {
 /** Merge CSS class names. */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
-}
-
-/** Determines the boolean value represented by a string. */
-export function isItTrue(value = "") {
-  const normalized = value.trim().toLowerCase()
-  return normalized === "true" || normalized === "1" || normalized === "on" || normalized.startsWith("y")
 }
 
 const PRIVATE_HOSTNAMES = new Set(["localhost", "0.0.0.0", "[::1]", "::1"])

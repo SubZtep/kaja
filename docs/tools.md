@@ -101,10 +101,10 @@ args = ["-y", "@upstash/context7-mcp"]
 secrets = ["CONTEXT7_API_KEY"]
 ```
 
-### MCP packages
+### MCP abilities
 
-An MCP server can also come as a package, picked with `kaja pkg` like skills and HTTP tools. It lives
-in `~/.config/kaja/marketplace/mcp/<name>.toml` and loads when listed in `packages.toml`
+An MCP server can also come as an ability, picked with `kaja abilities` like skills and HTTP tools. It lives
+in `~/.config/kaja/marketplace/mcp/<name>.toml` and loads when listed in `abilities.toml`
 (`mcp = ["context7"]`):
 
 ```toml
@@ -117,9 +117,9 @@ tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the 
 approval = "never"                  # never | writes | always
 ```
 
-- A `stdio` package runs a local command instead of a `url` (`command`, `args`, `env`), and its key
-  goes in an env var (`in = "env"`). `kaja pkg` shows the command and asks before enabling one.
-- The key lives in `secrets.toml` as `[packages.<name>] apiKey`, like HTTP tools. `optional = true`
+- A `stdio` ability runs a local command instead of a `url` (`command`, `args`, `env`), and its key
+  goes in an env var (`in = "env"`). `kaja abilities` shows the command and asks before enabling one.
+- The key lives in `secrets.toml` as `[abilities.<name>] apiKey`, like HTTP tools. `optional = true`
   means the server works without one too.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only; `always` asks before
   every call. For a server that forgets to mark its read-only tools, list them in `readOnly`, with
@@ -131,18 +131,18 @@ approval = "never"                  # never | writes | always
     { tool = "take_screenshot", unless = ["filePath"] }, # a read, unless it saves a file
   ]
   ```
-- All servers, packages and `mcp.toml` ones, connect in parallel at startup; one that doesn't answer
+- All servers, abilities and `mcp.toml` ones, connect in parallel at startup; one that doesn't answer
   within 10 seconds is skipped with a warning instead of holding up the start.
 
 ### MCP servers in the cloud
 
-Marketplace MCP packages work in cloud chat and the cloud Telegram bot too. They sit in the Tools tab
-of the [Packages page](https://kaja.io/packages), marked "MCP server", with their host, key need,
+Marketplace MCP abilities work in cloud chat and the cloud Telegram bot too. They sit in the Tools tab
+of the [Abilities page](https://kaja.io/abilities), marked "MCP server", with their host, key need,
 tool list and when they ask first. Keys, egress and approvals work as for
 [HTTP tools in the cloud](#http-tools-in-the-cloud); on top of that:
 
 - Only remote servers (`http` or `sse`) with a `tools = [...]` list: you see exactly what a server can
-  do before turning it on, and it can't add tools later. `stdio` packages stay local.
+  do before turning it on, and it can't add tools later. `stdio` abilities stay local.
 - A saved key is tested by connecting and listing the server's tools.
 - Each turn connects your servers when it starts (in parallel, giving up on one after 5 seconds) and
   closes them when it ends; nothing is kept between turns or shared with other users.
@@ -179,10 +179,10 @@ A file that throws on import is logged and skipped.
 
 ## HTTP tools
 
-An HTTP tool package describes one web API in TOML: where it lives, how it authenticates, and the
-tools the model can call. Packages live in `~/.config/kaja/marketplace/tools/<name>.toml`, synced
-from the marketplace or written by you, and load only when listed in `packages.toml`
-(`tools = ["open-meteo"]`, or pick them with `kaja pkg`):
+An HTTP tool ability describes one web API in TOML: where it lives, how it authenticates, and the
+tools the model can call. Abilities live in `~/.config/kaja/marketplace/tools/<name>.toml`, synced
+from the marketplace or written by you, and load only when listed in `abilities.toml`
+(`tools = ["open-meteo"]`, or pick them with `kaja abilities`):
 
 ```toml
 name = "github-issues"                  # must match the file name
@@ -215,23 +215,23 @@ type = "string"
   the host. The other arguments go to the query string for GET and DELETE, or a JSON body for POST,
   PUT and PATCH.
 - `auth = { type = "apiKey", ... }` puts the key in a header or query parameter (`in`), with an
-  optional `prefix`. The key lives in `secrets.toml` as `[packages.github-issues] apiKey = "..."`;
-  `kaja pkg` asks for it when you enable the package. Without a key the package is left out, with a
+  optional `prefix`. The key lives in `secrets.toml` as `[abilities.github-issues] apiKey = "..."`;
+  `kaja abilities` asks for it when you enable the ability. Without a key the ability is left out, with a
   warning.
 - GET tools run straight away. Anything else shows the request (method, URL, body) and waits for
   your approval, in the terminal and in Telegram, like a shell command.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same
   way, so the model can react. Redirects to another host are refused, and the key never appears in
   what the model sees.
-- In local mode a package may call hosts on your own network (Home Assistant, a NAS, Ollama).
+- In local mode an ability may call hosts on your own network (Home Assistant, a NAS, Ollama).
 
 ### HTTP tools in the cloud
 
 Cloud chat and the cloud Telegram bot can use marketplace HTTP tools too. Turn them on in the Tools
-tab of the [Packages page](https://kaja.io/packages), which shows each one's host, whether it needs
+tab of the [Abilities page](https://kaja.io/abilities), which shows each one's host, whether it needs
 your key, and every tool with its method before you turn it on.
 
-- Only marketplace packages, and never one whose `baseUrl` is a private or local address. Requests
+- Only marketplace abilities, and never one whose `baseUrl` is a private or local address. Requests
   go through the server's `WEB_PROXY` when it's set, otherwise straight from the server; either way
   private addresses are refused, on every redirect too.
 - A tool that needs a key asks for it first. The key is tested with the manifest's `check` request,
@@ -252,7 +252,7 @@ All tools share one list of names, and each one is marked by where it comes from
 | Origin | What |
 | --- | --- |
 | official | Kaja's built-ins, including `load_skill` |
-| community | packages in `~/.config/kaja/marketplace/`, synced or your own |
+| community | abilities in `~/.config/kaja/marketplace/`, synced or your own |
 | third-party | MCP servers from `mcp.toml` and your `tools/*.ts` files |
 
 Official names are reserved: an MCP or plugin tool called `read_file` is left out rather than

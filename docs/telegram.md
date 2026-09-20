@@ -63,8 +63,8 @@ are silently ignored — it must be non-empty, there's no "open to everyone" mod
 The bot's menu (next to the message box) has:
 
 - `/new` — start a fresh conversation.
-- `/packages` — the [skills](/skills) and [tool packages](/tools#http-tools) this bot loaded. The
-  bot builds its tools once, when it starts, so to change them run `kaja pkg` on your computer and
+- `/abilities` — the [skills](/skills) and [tool abilities](/tools#http-tools) this bot loaded. The
+  bot builds its tools once, when it starts, so to change them run `kaja abilities` on your computer and
   restart `kaja telegram`.
 
 ## Cloud mode: the always-on API bot
@@ -96,10 +96,10 @@ above) in the API's environment and restart — an invalid token fails fast at s
 ### Commands
 
 - `/new` — start a fresh conversation.
-- `/packages` — every skill, tool and MCP server in the catalog as a button: ✅ on, ▫️ off,
+- `/abilities` — every skill, tool and MCP server in the catalog as a button: ✅ on, ▫️ off,
   🔑 needs your API key first, ⚠️ no longer in the marketplace. A tap turns it on or off for your
-  account, from your next message on, even mid-conversation. A package that needs a key links to
-  the [Packages page](https://kaja.io/packages?tab=tools) instead: keys are never typed into
+  account, from your next message on, even mid-conversation. An ability that needs a key links to
+  the [Abilities page](https://kaja.io/abilities) instead: keys are never typed into
   Telegram, where they'd stay in the chat history.
 
 ---

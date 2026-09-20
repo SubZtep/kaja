@@ -1,3 +1,4 @@
+import { setWarnHandler } from "@kaja/nasi"
 import { color } from "bun"
 import { detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { runFirstRunIfNeeded } from "./lib/cli/first-run"
@@ -5,13 +6,16 @@ import { createCloud, getConfigPath, isConfigExists, validate } from "./lib/conf
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
 import { hasConfiguredChatModel } from "./lib/models/models"
+import { runAbilitiesSubcommand } from "./subcommands/abilities"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
 import { runLogoutSubcommand } from "./subcommands/logout"
-import { runPkgSubcommand } from "./subcommands/pkg"
 import { runSubcommand } from "./subcommands/run"
 import { runCloudSubcommand } from "./subcommands/run-cloud"
 import { runTelegramSubcommand } from "./subcommands/telegram"
+
+// The agent brain reports skipped abilities and failed MCP connections here; the TUI keeps them in its opt-in log file.
+setWarnHandler((message, payload) => log.warn(message, payload))
 
 try {
   // MARK: On-Boarding
@@ -32,9 +36,9 @@ try {
     process.exit(0)
   }
 
-  // Same rule as config: local package files only, never a cloud login.
-  if (args.input[0] === "pkg") {
-    await runPkgSubcommand(args)
+  // Same rule as config: local ability files only, never a cloud login.
+  if (args.input[0] === "abilities") {
+    await runAbilitiesSubcommand(args)
     process.exit(0)
   }
 

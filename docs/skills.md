@@ -39,7 +39,7 @@ Other frontmatter keys (`license`, `metadata`, …) are allowed and ignored.
 ## The marketplace
 
 Kaja's own skills live in the [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace)
-folder of its repo. `kaja pkg update` fetches that folder (with `git`, so git must be installed) and
+folder of its repo. `kaja abilities update` fetches that folder (with `git`, so git must be installed) and
 syncs it into `~/.config/kaja/marketplace/`, next to your own skills:
 
 - files you never touched follow the marketplace, including removals
@@ -48,8 +48,8 @@ syncs it into `~/.config/kaja/marketplace/`, next to your own skills:
 - a file the marketplace removed but you edited stays, as your own
 - files you added yourself are never touched
 
-Only `kaja pkg` and `kaja pkg update` use the network; starting Kaja never does. To fetch from a
-fork, a branch, or a local checkout instead, set a source in `packages.toml`:
+Only `kaja abilities` and `kaja abilities update` use the network; starting Kaja never does. To fetch from a
+fork, a branch, or a local checkout instead, set a source in `abilities.toml`:
 
 ```toml
 [source]
@@ -59,10 +59,10 @@ ref = "my-branch"
 
 ## Turning skills on
 
-`kaja pkg` shows every skill in the folder as a checklist (space toggles, Enter saves). Your own
+`kaja abilities` shows every skill in the folder as a checklist (space toggles, Enter saves). Your own
 skills are tagged `local`; skills that can't load are listed underneath with the reason.
 
-It writes `~/.config/kaja/packages.toml`, which you can also edit by hand. Only skills listed there
+It writes `~/.config/kaja/abilities.toml`, which you can also edit by hand. Only skills listed there
 are loaded, including the ones you wrote yourself:
 
 ```toml
@@ -90,13 +90,13 @@ for that persona.
 
 Cloud chat, the cloud Telegram bot and the widget can use marketplace skills too. The API keeps its
 own copy of the marketplace, refreshed every hour. Pick the skills your account uses in the Skills
-tab of the [Packages page](https://kaja.io/packages), where you can also read each one's instructions
+tab of the [Abilities page](https://kaja.io/abilities), where you can also read each one's instructions
 before turning it on; new accounts get the same picker right after signing up. The Tools tab has the
 marketplace's [HTTP tools](/tools#http-tools-in-the-cloud) and
 [MCP servers](/tools#mcp-servers-in-the-cloud). Each widget key has its own list,
 set when you create or edit the key on the Widget page, so a site's visitors get only what that
-widget was set up with. `kaja pkg` in cloud mode points you to the web page, and the cloud Telegram
-bot's `/packages` turns them on and off too. A change reaches a conversation that's already going
+widget was set up with. `kaja abilities` in cloud mode points you to the web page, and the cloud Telegram
+bot's `/abilities` turns them on and off too. A change reaches a conversation that's already going
 from its next message.
 
 The cloud only offers skills without a `scripts/` folder: there's no shell there to run them. Your

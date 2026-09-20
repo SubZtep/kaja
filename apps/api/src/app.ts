@@ -1,21 +1,18 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { sentry } from "@sentry/hono/bun"
 import { cors } from "hono/cors"
-import { logger } from "hono/logger"
 import { env } from "./core/env"
-import { trafficLogger } from "./core/logger"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
+import { abilityRoutes } from "./features/abilities"
 import { adminRoutes } from "./features/admin"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
 import { configExportRoutes } from "./features/config-export"
 import { healthRoutes } from "./features/health"
 import { nasiRoutes } from "./features/nasi"
-import { packageRoutes } from "./features/packages"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { statsRoutes } from "./features/stats"
 import { telegramAdminRoutes } from "./features/telegram-admin"
-import { userRoutes } from "./features/users"
 import { widgetRoutes } from "./features/widget"
 import { widgetAdminRoutes } from "./features/widget-admin"
 import type { RouteProps } from "./types"
@@ -31,7 +28,6 @@ if (env.NODE_ENV === "production") {
     })
   )
 }
-app.use(logger(trafficLogger))
 // /widget/turn and /widget/<key>.js are embedded on arbitrary third-party sites and have their own
 // reflected-origin CORS (features/widget/cors.ts) — the app's single fixed CORS_ORIGIN can't apply
 // there. /widget/admin/* is the authenticated management API and must go through the normal
@@ -55,10 +51,9 @@ app.route("/config", configExportRoutes)
 app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
-app.route("/packages", packageRoutes)
+app.route("/abilities", abilityRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram/admin", telegramAdminRoutes)
-app.route("/users", userRoutes)
 app.route("/widget", widgetRoutes)
 app.route("/widget/admin", widgetAdminRoutes)
 
@@ -66,11 +61,4 @@ app.route("/widget/admin", widgetAdminRoutes)
 if (env.NODE_ENV === "development") {
   setupApiDocs(app)
   app.route("/reference", referenceRoutes)
-}
-
-// Run server
-export default {
-  port: env.PORT,
-  idleTimeout: 30,
-  fetch: app.fetch
 }

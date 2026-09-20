@@ -15,14 +15,6 @@ export type SessionWrite = {
   events: unknown[]
 }
 
-export type DatasetVersionSummary = {
-  topic: string
-  owner: string | null
-  version: number
-  answeredCount: number
-  completedAt: string | undefined
-}
-
 /** Persistence for sessions, memory notes, and dataset answers. Hosts inject an implementation. */
 export type NasiStore = {
   createSession(data: SessionWrite & { title: string }): Promise<string>
@@ -41,6 +33,4 @@ export type NasiStore = {
   saveDatasetAnswer(topic: string, owner: string | null, version: number, field: string, value: string): Promise<void>
   markDatasetVersionComplete(topic: string, owner: string | null, version: number): Promise<void>
   loadDatasetVersionCompletedAt(topic: string, owner: string | null, version: number): Promise<string | undefined>
-  listDatasetVersionsSummary(): Promise<DatasetVersionSummary[]>
-  listAllDatasetAnswers(): Promise<(DatasetAnswer & { topic: string; owner: string | null; version: number })[]>
 }

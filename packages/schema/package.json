@@ -24,9 +24,9 @@
       "types": "./nasi/index.ts",
       "default": "./nasi/index.ts"
     },
-    "./packages": {
-      "types": "./packages/index.ts",
-      "default": "./packages/index.ts"
+    "./abilities": {
+      "types": "./abilities/index.ts",
+      "default": "./abilities/index.ts"
     },
     "./env": {
       "types": "./env/index.ts",

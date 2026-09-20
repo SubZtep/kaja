@@ -23,15 +23,22 @@ export const loginSchema = z.object({
   rememberMe: z.boolean()
 })
 
+/** A blank name is fine (a Google sign-in can fill it later); a given one is at least 2 characters. */
+const nameSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .refine(name => name === "" || name.length >= 2, "Name must be at least 2 characters")
+
 export const registerSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  name: nameSchema,
   email: z.email("Invalid email address").trim().toLowerCase(),
   password: passwordSchema,
   image: z.string()
 })
 
 export const editSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  name: nameSchema,
   image: z.string()
 })
 

@@ -76,7 +76,6 @@ jobs:
             --minify \
             --outfile kaja \
             --target="${{ matrix.bun_target }}" \
-            --define process.env.KAJA_APP_NAME="\"tui\"" \
             --define process.env.KAJA_LOG_LEVEL="\"warn\"" \
             --define process.env.API_URL="\"${API_URL}\""
 

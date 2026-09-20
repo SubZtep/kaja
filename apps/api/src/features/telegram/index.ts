@@ -1,4 +1,3 @@
-import { info as logInfo } from "@kaja/logger"
 import { env } from "../../core/env"
 import { createCloudTelegramBot } from "./bot"
 
@@ -24,7 +23,6 @@ export function createTelegramBotService() {
   return {
     async start() {
       await instance.start()
-      logInfo("Telegram bot ready, long-polling for messages")
     },
     stop: instance.stop
   }

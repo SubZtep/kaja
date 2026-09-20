@@ -1,5 +1,4 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto"
-import { warn } from "@kaja/logger"
 import type { Pool } from "pg"
 
 const ALGORITHM = "aes-256-gcm"
@@ -19,7 +18,7 @@ function associatedData(userId: string, name: string): Buffer {
 }
 
 /**
- * Users' own secrets (package API keys), AES-256-GCM encrypted at rest in `user_secret`. Values are
+ * Users' own secrets (ability API keys), AES-256-GCM encrypted at rest in `user_secret`. Values are
  * decrypted only for the owner's turns and key checks; nothing here ever returns one to a client.
  * Without a key (USER_SECRET_KEY unset) nothing can be written, and reads find nothing.
  */
@@ -80,7 +79,7 @@ export class SecretService {
         decipher.setAuthTag(row.tag)
         secrets.set(row.name, Buffer.concat([decipher.update(row.ciphertext), decipher.final()]).toString("utf8"))
       } catch {
-        warn("User secret doesn't decrypt; ignoring it", { userId, name: row.name })
+        console.warn("User secret doesn't decrypt; ignoring it", { userId, name: row.name })
       }
     }
     return secrets

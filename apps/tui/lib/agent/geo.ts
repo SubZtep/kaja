@@ -4,7 +4,7 @@ import { log } from "../logger"
 
 export type { GeoLocation }
 
-export async function lookupMyLocation(): Promise<GeoLocation> {
+async function lookupMyLocation(): Promise<GeoLocation> {
   const { location } = await services()
   if (!location) throw new Error("Location feature not configured")
   return nasiLookup({ serviceUrl: location.serviceUrl, apiKey: location.apiKey })

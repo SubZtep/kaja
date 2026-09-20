@@ -13,7 +13,7 @@ export interface EnvFieldMeta {
 /** Trims surrounding whitespace from a string env value. */
 export const trimmed = z.string().trim()
 
-/** Loose boolean parse consistent with `@kaja/shared`'s `isItTrue`: `true`/`1`/`on`/`y…`. */
+/** Loose boolean parse: `true`/`1`/`on`/`y…`. */
 export const bool = z.preprocess(val => {
   if (typeof val !== "string") return val
   const normalized = val.trim().toLowerCase()

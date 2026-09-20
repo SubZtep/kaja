@@ -7,7 +7,7 @@ import { env } from "./env"
  * Rate limiting is on by default. Disable with RATE_LIMIT_ENABLED=false
  * or automatically during `bun test` (BUN_TEST is set by the test runner).
  */
-export function isRateLimitEnabled(): boolean {
+function isRateLimitEnabled(): boolean {
   if (env.BUN_TEST === "1" || env.BUN_TEST === "true") return false
   if (env.RATE_LIMIT_ENABLED === false) return false
   return true

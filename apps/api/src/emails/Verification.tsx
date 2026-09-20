@@ -7,7 +7,7 @@ import { EmailContainer } from "./template"
 export function Verification({ user, url }: Readonly<EmailPayload>) {
   return (
     <EmailContainer>
-      <Heading as="h2">Hey-ho {getFirstName(user.name)} 👋</Heading>
+      <Heading as="h2">Hey-ho{getFirstName(user.name)} 👋</Heading>
       <Text>
         Click the link to verify your email:
         <br />

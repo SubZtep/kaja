@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useState } from "react"
+import { AbilitySections } from "../../components/abilities/AbilitySections"
 import { Button } from "../../components/form/primitives/Button"
-import { type PackageTab, PackageTabs } from "../../components/packages/PackageTabs"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
@@ -13,11 +12,10 @@ export const Route = createFileRoute("/_admin/welcome")({
 
 /** Right after signup: pick skills and tools (each toggle saves on its own), then on to the dashboard. */
 function WelcomePage() {
-  const [tab, setTab] = useState<PackageTab>("skills")
   return (
     <>
       <PageHeader title={m.welcome_title()} description={m.welcome_description()} />
-      <PackageTabs tab={tab} onTabChange={setTab} />
+      <AbilitySections />
       <div className="mt-8 flex flex-wrap items-center gap-4">
         <Button variant="primary" render={<Link to="/dashboard" />}>
           {m.welcome_continue()}

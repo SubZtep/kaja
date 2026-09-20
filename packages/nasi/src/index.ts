@@ -1,4 +1,40 @@
 export {
+  type AbilityKeyNeed,
+  createFolderAbilityStore,
+  type DatasetScanEntry,
+  type FolderAbilityStoreOptions,
+  type HttpToolScanEntry,
+  type McpScanEntry,
+  type PersonaScanEntry,
+  parseDatasetManifest,
+  parseHttpToolManifest,
+  parseMcpManifest,
+  parsePersonaManifest,
+  readDatasets,
+  readPersonas,
+  readSkillBundle,
+  type SkillBundle,
+  type SkillScanEntry,
+  scanDatasets,
+  scanHttpTools,
+  scanMcpAbilities,
+  scanPersonas,
+  scanSkills
+} from "./abilities/folder-store"
+export {
+  approvalSummary,
+  buildHttpRequest,
+  checkHttpToolKey,
+  createHttpTools,
+  type HttpRequestSpec,
+  type KeyCheckResult
+} from "./abilities/http-tool"
+export { type LoadAbilitiesOptions, type LoadedAbilities, loadAbilities } from "./abilities/load"
+export { checkMcpAbilityKey, type McpAbilityTarget, mcpAbilityTarget } from "./abilities/mcp-ability"
+export { parseSkillMd } from "./abilities/skill-md"
+export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./abilities/skills"
+export { type AbilityStore, SkillFileError, type SkillSummary } from "./abilities/types"
+export {
   Agent,
   type AgentDelta,
   type AgentEvent,
@@ -53,42 +89,6 @@ export {
   takeLastServedModel
 } from "./models/client"
 export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall } from "./nasi"
-export {
-  createFolderPackageStore,
-  type DatasetScanEntry,
-  type FolderPackageStoreOptions,
-  type HttpToolScanEntry,
-  type McpScanEntry,
-  type PackageKeyNeed,
-  type PersonaScanEntry,
-  parseDatasetManifest,
-  parseHttpToolManifest,
-  parseMcpManifest,
-  parsePersonaManifest,
-  readDatasets,
-  readPersonas,
-  readSkillBundle,
-  type SkillBundle,
-  type SkillScanEntry,
-  scanDatasets,
-  scanHttpTools,
-  scanMcpPackages,
-  scanPersonas,
-  scanSkills
-} from "./packages/folder-store"
-export {
-  approvalSummary,
-  buildHttpRequest,
-  checkHttpToolKey,
-  createHttpTools,
-  type HttpRequestSpec,
-  type KeyCheckResult
-} from "./packages/http-tool"
-export { type LoadedPackages, type LoadPackagesOptions, loadPackages } from "./packages/load"
-export { checkMcpPackageKey, type McpPackageTarget, mcpPackageTarget } from "./packages/mcp-package"
-export { parseSkillMd } from "./packages/skill-md"
-export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./packages/skills"
-export { type PackageStore, SkillFileError, type SkillSummary } from "./packages/types"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
 export {
@@ -104,7 +104,6 @@ export {
   clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
-  type DatasetVersionSummary,
   forgetNotes,
   joinConversation,
   type MessageRow,
@@ -137,3 +136,4 @@ export {
   type SkippedTool,
   type ToolGroup
 } from "./tools/registry"
+export { setWarnHandler, type WarnHandler } from "./warn"

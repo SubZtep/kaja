@@ -15,6 +15,8 @@ export function Footer() {
             <span aria-hidden>·</span>
             <span>{m.footer_license_name()}</span>
             <span aria-hidden>·</span>
+            <span>{new Date().getFullYear()}</span>
+            <span aria-hidden>·</span>
             <span>
               {m.footer_license_by()}{" "}
               <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-neon">
@@ -22,7 +24,11 @@ export function Footer() {
               </a>
             </span>
             <span aria-hidden>·</span>
-            <span>{new Date().getFullYear()}</span>
+            <span>
+              <a href="https://docs.kaja.io" target="_blank" rel="noopener" className="text-muted hover:text-neon">
+                {m.nav_docs()}
+              </a>
+            </span>
             <span aria-hidden>·</span>
             <a href="/llms.txt" className="text-muted hover:text-neon">
               llms.txt

@@ -4,16 +4,6 @@ declare module "bun" {
   interface Env {
     /** Node environment; "development" enables API docs and Better Auth's OpenAPI plugin */
     NODE_ENV?: string
-    /** App name attached to every log line */
-    KAJA_APP_NAME?: string
-    /** Master on/off switch for logging - unset means no log output at all */
-    KAJA_LOG_LEVEL?: string
-    /** Append JSON logs here instead of pretty-printing/Axiom, in any NODE_ENV */
-    KAJA_LOG_FILE?: string
-    /** Axiom dataset to ship logs to (node, NODE_ENV=production, no KAJA_LOG_FILE) */
-    AXIOM_DATASET?: string
-    /** Axiom ingest token (node, NODE_ENV=production, no KAJA_LOG_FILE) */
-    AXIOM_TOKEN?: string
     /** Port the API server listens on */
     PORT?: string
     /** Origin allowed for browser requests (also Better Auth's trusted origin and email callback base) */
@@ -74,9 +64,9 @@ declare module "bun" {
     NASI_STUB_MODEL?: string
     /** HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely */
     WEB_PROXY?: string
-    /** Encrypts users' package API keys (AES-256-GCM); unset turns key entry off and hides tools that need one */
+    /** Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one */
     USER_SECRET_KEY?: string
-    /** GitHub owner/repo whose marketplace/ folder the cloud package catalog is synced from */
+    /** GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from */
     MARKETPLACE_REPO?: string
     /** Branch (or tag) of MARKETPLACE_REPO to sync */
     MARKETPLACE_REF?: string

@@ -1,7 +1,8 @@
-import { error as logError } from "@kaja/logger"
+import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard } from "grammy"
+import { reportError } from "../../core/report"
 import { telegramLinkService } from "../../services"
-import { createCloudTelegramDriver, type TelegramButton, TelegramRateLimitError } from "./driver"
+import { createCloudTelegramDriver, type TelegramButton } from "./driver"
 
 /** Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits comfortably. */
 function linkCallbackData(action: "confirm" | "cancel", token: string): string {
@@ -10,30 +11,6 @@ function linkCallbackData(action: "confirm" | "cancel", token: string): string {
 
 export type CreateCloudTelegramBotConfig = {
   botToken: string
-}
-
-/** Telegram's "message is not modified" 400 is an expected race (see EditThrottle's own dedupe guard), not an error. */
-function isNotModifiedError(error: unknown): boolean {
-  return (
-    error instanceof GrammyError && error.error_code === 400 && error.description.includes("message is not modified")
-  )
-}
-
-function asRateLimitError(error: unknown): TelegramRateLimitError | undefined {
-  if (error instanceof GrammyError && error.error_code === 429)
-    return new TelegramRateLimitError(error.parameters.retry_after)
-  return undefined
-}
-
-async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> {
-  try {
-    return await send()
-  } catch (error) {
-    const rateLimit = asRateLimitError(error)
-    if (!rateLimit?.retryAfterSec) throw error
-    await Bun.sleep(rateLimit.retryAfterSec * 1000)
-    return send()
-  }
 }
 
 /** Rows of inline buttons, or undefined for none. */
@@ -45,7 +22,7 @@ function keyboardFor(rows: TelegramButton[][] | undefined): InlineKeyboard | und
 /** The command menu Telegram shows next to the message box. */
 const COMMANDS = [
   { command: "new", description: "Start a new conversation" },
-  { command: "packages", description: "Turn skills and tools on or off" }
+  { command: "abilities", description: "Turn skills and tools on or off" }
 ]
 
 /**
@@ -113,7 +90,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   bot.on("callback_query:data", async ctx => {
     const message = ctx.callbackQuery.message
-    if (/^(tool|pkg|pkgp):/.test(ctx.callbackQuery.data) && message) {
+    if (/^(tool|ability|abilitypage):/.test(ctx.callbackQuery.data) && message) {
       await ctx.answerCallbackQuery()
       void driver.handleCallback(ctx.from.id, message.chat.id, message.message_id, ctx.callbackQuery.data)
       return
@@ -159,10 +136,10 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   bot.catch(err => {
     if (err.error instanceof GrammyError && err.error.error_code === 401) {
-      logError("Telegram bot token rejected — bot is now unreachable", { error: err.error })
+      reportError("Telegram bot token rejected — bot is now unreachable", err.error)
       return
     }
-    logError("Unhandled error in Telegram update handler", { error: err.error })
+    reportError("Unhandled error in Telegram update handler", err.error)
   })
 
   let username: string | undefined
@@ -175,7 +152,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
         throw new Error("Invalid Telegram bot token — check TELEGRAM_BOT_TOKEN.", { cause: error })
       }
       // The menu next to the message box; a failure only costs the menu.
-      await bot.api.setMyCommands(COMMANDS).catch(error => logError("Telegram command menu not set", { error }))
+      await bot.api.setMyCommands(COMMANDS).catch(error => reportError("Telegram command menu not set", error))
       void bot.start()
     },
     async stop() {

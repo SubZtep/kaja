@@ -1,11 +1,11 @@
-import { warn } from "@kaja/logger"
 import type { McpServerEntry } from "@kaja/schema/config"
+import type { McpAbilityTarget } from "../abilities/mcp-ability"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../agent/agent"
 import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
 import { connectMcpServer, type McpConnectOptions } from "../mcp/client"
-import type { McpPackageTarget } from "../packages/mcp-package"
 import { loadPluginTools } from "../plugin/plugin-tools"
 import type { FetchLike } from "../security/ssrf"
+import { warn } from "../warn"
 import { currentTimeTool } from "./builtin/current-time"
 import { datasetInfoTool } from "./builtin/dataset-info"
 import { fetchUrlTool } from "./builtin/fetch-url"
@@ -58,17 +58,17 @@ export type CreateToolsOptions = {
   mcpServers?: McpServerEntry[]
   pluginDir?: string
   tempDir?: string
-  /** Tools the host brings in besides the builtins, e.g. `loadPackages`' groups. Merged under the same name rules. */
+  /** Tools the host brings in besides the builtins, e.g. `loadAbilities`' groups. Merged under the same name rules. */
   extraTools?: ToolGroup[]
   /**
-   * MCP servers from enabled packages (`loadPackages`' `mcp`), connected alongside `mcpServers` as community tools.
+   * MCP servers from enabled abilities (`loadAbilities`' `mcp`), connected alongside `mcpServers` as community tools.
    * In the cloud (`includeLocalTools` false) only these connect, and only remote (http/sse) ones, through `mcpFetch`,
    * with images dropped and results capped.
    */
-  mcpPackages?: McpPackageTarget[]
+  mcpAbilities?: McpAbilityTarget[]
   /** How long each MCP server gets to connect and list its tools before it's skipped. Default 10 s. */
   mcpConnectTimeoutMs?: number
-  /** Fetch for cloud MCP connections (the SSRF-guarded one); cloud MCP packages don't connect without it. */
+  /** Fetch for cloud MCP connections (the SSRF-guarded one); cloud MCP abilities don't connect without it. */
   mcpFetch?: FetchLike
 }
 
@@ -201,20 +201,20 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
   // The cloud never runs a command on the server, and never connects without the guarded fetch.
-  const cloudPackages = opts.mcpFetch ? (opts.mcpPackages ?? []).filter(target => "url" in target.server) : []
-  const packages = local ? (opts.mcpPackages ?? []) : cloudPackages
-  const packageIds = new Set(packages.map(target => `package:${target.name}`))
+  const cloudAbilities = opts.mcpFetch ? (opts.mcpAbilities ?? []).filter(target => "url" in target.server) : []
+  const abilities = local ? (opts.mcpAbilities ?? []) : cloudAbilities
+  const abilityIds = new Set(abilities.map(target => `ability:${target.name}`))
   const mcpTargets: McpTarget[] = [
     ...(local ? (opts.mcpServers ?? []) : []).map(server => ({ id: server.id, server })),
-    ...packages.map(target => ({
-      id: `package:${target.name}`,
+    ...abilities.map(target => ({
+      id: `ability:${target.name}`,
       server: target.server,
       opts: {
         transport: target.transport === "sse" ? ("sse" as const) : ("http" as const),
         allow: target.allow,
         approval: target.approval,
         readOnly: target.readOnly,
-        label: `package:${target.name}`,
+        label: `ability:${target.name}`,
         ...(local ? {} : { fetch: opts.mcpFetch, images: false, maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS })
       }
     }))
@@ -231,7 +231,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     { origin: "official", tools: official },
     ...(opts.extraTools ?? []),
     ...mcpConnections.map(c =>
-      packageIds.has(c.id)
+      abilityIds.has(c.id)
         ? { origin: "community" as const, source: c.id, tools: c.tools }
         : { origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools }
     ),

@@ -1,8 +1,7 @@
+import * as z from "zod"
 import { bool, positiveInt, trimmed, url } from "./helpers"
-import { LoggerEnvSchema } from "./logger"
 
-export const ApiEnvSchema = LoggerEnvSchema.extend({
-  // Overrides LoggerEnvSchema's generic NODE_ENV description with the API-specific behavior it also gates.
+export const ApiEnvSchema = z.object({
   NODE_ENV: trimmed
     .optional()
     .describe('Node environment; "development" enables API docs and Better Auth\'s OpenAPI plugin'),
@@ -105,12 +104,12 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
       }
     }, "must be 32 bytes, base64-encoded")
     .optional()
-    .describe("Encrypts users' package API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
+    .describe("Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
     .meta({ secret: true, section: "Marketplace" }),
 
   MARKETPLACE_REPO: trimmed
     .default("SubZtep/kaja")
-    .describe("GitHub owner/repo whose marketplace/ folder the cloud package catalog is synced from")
+    .describe("GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from")
     .meta({ section: "Marketplace" }),
   MARKETPLACE_REF: trimmed
     .default("main")

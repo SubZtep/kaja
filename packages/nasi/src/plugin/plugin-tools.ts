@@ -1,6 +1,6 @@
 import { join } from "node:path"
-import { warn } from "@kaja/logger"
 import type { Tool } from "../agent/tools"
+import { warn } from "../warn"
 
 function isTool(value: unknown): value is Tool<any> {
   return (

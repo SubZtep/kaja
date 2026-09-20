@@ -3,9 +3,9 @@ import { createMiddleware } from "hono/factory"
 import { mcpServerService, modelService } from "../../services"
 import type { RouteProps, RouteVariables } from "../../types"
 import { adminMiddleware, requireAuthMiddleware } from "../auth"
+import { registerAdminAbilities } from "./ability"
 import { registerAdminMcpServers } from "./mcp-server"
 import { registerAdminModels } from "./model"
-import { registerAdminPackages } from "./package"
 
 const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
   c.set("mcpServerService", mcpServerService)
@@ -15,7 +15,7 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
 
 /**
  * Platform-admin-only: /admin/mcp-servers/*, /admin/providers/*, /admin/models/*,
- * /admin/packages/sync (registered before parameterized routes).
+ * /admin/abilities/sync (registered before parameterized routes).
  */
 export const adminRoutes = new OpenAPIHono<RouteProps>()
 adminRoutes.use("*", requireAuthMiddleware)
@@ -28,5 +28,5 @@ adminRoutes.use("/providers/*", adminMiddleware)
 adminRoutes.use("/models/*", adminMiddleware)
 registerAdminModels(adminRoutes)
 
-adminRoutes.use("/packages/*", adminMiddleware)
-registerAdminPackages(adminRoutes)
+adminRoutes.use("/abilities/*", adminMiddleware)
+registerAdminAbilities(adminRoutes)

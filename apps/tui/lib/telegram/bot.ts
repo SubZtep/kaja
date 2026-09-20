@@ -1,10 +1,11 @@
 import type { CliResolvedModel, ServicesTelegram } from "@kaja/schema/config"
+import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
 import type { Agent } from "../agent/agents"
 import { t } from "../i18n"
 import { log } from "../logger"
 import type { Persona } from "../personas/personas"
-import { createTelegramDriver, type InlineKeyboardLike, TelegramRateLimitError } from "./driver"
+import { createTelegramDriver, type InlineKeyboardLike } from "./driver"
 
 export type CreateTelegramBotConfig = ServicesTelegram & {
   botToken: string
@@ -16,39 +17,6 @@ export type CreateTelegramBotConfig = ServicesTelegram & {
 
 function buildKeyboard(keyboard: InlineKeyboardLike | undefined) {
   return keyboard ? new InlineKeyboard(keyboard) : undefined
-}
-
-/** Telegram's "message is not modified" 400 is an expected race (see EditThrottle's own client-side guard), not an error. */
-function isNotModifiedError(error: unknown): boolean {
-  return (
-    error instanceof GrammyError && error.error_code === 400 && error.description.includes("message is not modified")
-  )
-}
-
-/** Translates a 429 into the typed error telegram-driver.ts's EditThrottle knows how to back off on. */
-function asRateLimitError(error: unknown): TelegramRateLimitError | undefined {
-  if (error instanceof GrammyError && error.error_code === 429)
-    return new TelegramRateLimitError(error.parameters.retry_after)
-  return undefined
-}
-
-/**
- * Runs `send` once, and on a single 429 sleeps for its retry_after and tries
- * exactly once more — shared by every one-shot sendMessage call site (there's
- * no throttle to defer to for those, unlike editMessageText's stream of
- * edits, which instead lets TelegramRateLimitError propagate to the
- * driver's own EditThrottle backoff). A second failure (or a 429 with no
- * retry_after) always propagates.
- */
-async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> {
-  try {
-    return await send()
-  } catch (error) {
-    const rateLimit = asRateLimitError(error)
-    if (!rateLimit?.retryAfterSec) throw error
-    await Bun.sleep(rateLimit.retryAfterSec * 1000)
-    return send()
-  }
 }
 
 /**
@@ -142,7 +110,7 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
       await bot.api
         .setMyCommands([
           { command: "new", description: t("telegram.commandNew") },
-          { command: "packages", description: t("telegram.commandPackages") }
+          { command: "abilities", description: t("telegram.commandAbilities") }
         ])
         .catch(error => log.warn("Telegram command menu not set", { error }))
       await bot.start({

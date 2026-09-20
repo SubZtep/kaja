@@ -9,7 +9,7 @@ import { log } from "../logger"
 export const SAMPLE_RATE = 24000
 
 /** Drain a ReadableStream as an async iterable (Bun subprocess pipes, fetch bodies, …). */
-export async function* readStream(stream: ReadableStream<Uint8Array>): AsyncIterable<Uint8Array> {
+async function* readStream(stream: ReadableStream<Uint8Array>): AsyncIterable<Uint8Array> {
   const reader = stream.getReader()
   try {
     while (true) {

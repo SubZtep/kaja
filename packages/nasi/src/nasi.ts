@@ -1,13 +1,13 @@
 import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import type OpenAI from "openai"
+import { loadAbilities } from "./abilities/load"
+import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
 import { recordPausedCall } from "./agent/telemetry"
 import { runApprovedTool, type Tool } from "./agent/tools"
-import { loadPackages } from "./packages/load"
-import type { PackageStore } from "./packages/types"
 import { createGuardedFetch } from "./security/ssrf"
 import type { NasiStore } from "./store/types"
 import type { NasiToolDeps } from "./tools/deps"
@@ -23,11 +23,11 @@ export type NasiOpenOptions = {
   owner?: string | null
   /** Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `fetch_url` needs `fetchProxy`). */
   deps?: Omit<NasiToolDeps, "chat">
-  /** Where this caller's enabled packages come from (the cloud: Postgres); their tools join through `loadPackages`, egressing through `deps.fetchProxy` when set. */
-  packages?: PackageStore
-  /** A package's API key (the cloud decrypts the caller's own up front). Never shown to the model. */
-  packageKey?: (packageName: string) => string | undefined
-  /** How long each MCP package gets to connect when the turn opens before it's left out. Default 5 s. */
+  /** Where this caller's enabled abilities come from (the cloud: Postgres); their tools join through `loadAbilities`, egressing through `deps.fetchProxy` when set. */
+  abilities?: AbilityStore
+  /** An ability's API key (the cloud decrypts the caller's own up front). Never shown to the model. */
+  abilityKey?: (abilityName: string) => string | undefined
+  /** How long each MCP ability gets to connect when the turn opens before it's left out. Default 5 s. */
   mcpConnectTimeoutMs?: number
 }
 
@@ -172,19 +172,19 @@ export class Nasi {
   }
 
   static async open(opts: NasiOpenOptions) {
-    const packages = opts.packages
-      ? await loadPackages(opts.packages, {
+    const abilities = opts.abilities
+      ? await loadAbilities(opts.abilities, {
           personas: opts.personas,
-          getApiKey: opts.packageKey,
+          getApiKey: opts.abilityKey,
           proxy: opts.deps?.fetchProxy
         })
       : undefined
     const { tools, closeTools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       deps: { ...opts.deps, chat: opts.chat },
-      extraTools: packages?.groups,
-      // MCP packages connect when the instance opens, through the same egress rules as every other cloud request.
-      mcpPackages: packages?.mcp,
+      extraTools: abilities?.groups,
+      // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request.
+      mcpAbilities: abilities?.mcp,
       mcpFetch: createGuardedFetch({ proxy: opts.deps?.fetchProxy }),
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
     })

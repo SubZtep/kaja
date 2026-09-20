@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto"
-import { error as logError, warn as logWarn } from "@kaja/logger"
 import {
   categorizeError,
   type FinalizedAgentEvent,
@@ -8,51 +7,40 @@ import {
   type Session
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
-import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming, withQuestion } from "@kaja/shared"
+import {
+  EditThrottle,
+  escapeHtml,
+  isCommand,
+  renderTelegramHtml,
+  splitTelegramMessage,
+  truncateForStreaming,
+  withQuestion
+} from "@kaja/shared"
 import { pool } from "../../core/db"
 import { withLock } from "../../core/lock"
+import { reportError } from "../../core/report"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
 import {
+  ABILITY_CALLBACK,
+  ABILITY_PAGE_CALLBACK,
+  abilityEntries,
   findEntry,
   needsKeyMessage,
-  PACKAGE_CALLBACK,
-  PACKAGE_PAGE_CALLBACK,
-  packageEntries,
-  renderPackageList,
-  togglePackage
-} from "./packages"
+  renderAbilityList,
+  toggleAbility
+} from "./abilities"
 
 const NOT_LINKED_MESSAGE =
   "This Telegram account isn't linked to a Kaja account yet. Go to your profile on the Kaja web app and tap " +
   '"Connect Telegram" to get a link.'
 
 const APPROVAL_EXPIRED_MESSAGE = "This request was already answered or has expired."
-/** A bot command, with or without the `@botname` Telegram adds in groups. */
-const command = (name: string) => new RegExp(`^/${name}(@\\w+)?$`)
 const TOOL_CALLBACK = /^tool:(approve|decline):([0-9a-f]{16})$/
-
-/** Plain HTML escaping for text inside <pre> (same as apps/tui/lib/telegram/driver.ts's). */
-function escapeHtml(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
-}
 
 /** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
 function approvalToken(callId: string): string {
   return createHash("sha256").update(callId).digest("hex").slice(0, 16)
-}
-
-const MIN_EDIT_INTERVAL_MS = 1000
-const MAX_EDIT_INTERVAL_MS = 4000
-
-/** Thrown by a TelegramSender implementation on a 429 response, so EditThrottle can back off. */
-export class TelegramRateLimitError extends Error {
-  retryAfterSec: number | undefined
-
-  constructor(retryAfterSec: number | undefined) {
-    super("Telegram rate limit")
-    this.retryAfterSec = retryAfterSec
-  }
 }
 
 /** One inline button: its label and the callback data it sends back. */
@@ -63,7 +51,7 @@ export type TelegramButton = { text: string; data: string }
  * import of grammy itself. bot.ts implements this against the real bot.api,
  * translating grammy's own errors (429s, "message is not modified") at that
  * boundary. Buttons (rows of them) serve tool approvals (`confirm_tool`) and
- * the /packages list; cloud Nasi never emits confirm_command. Editing a
+ * the /abilities list; cloud Nasi never emits confirm_command. Editing a
  * message without `rows` removes its buttons.
  */
 export type TelegramSender = {
@@ -75,57 +63,6 @@ export type CloudTelegramDriverConfig = {
   /** Resolves a Telegram user id to the Kaja account it's linked to, or undefined if unlinked. */
   resolveLinkedUserId: (telegramUserId: number) => Promise<string | undefined>
   sender: TelegramSender
-}
-
-/**
- * Coalesces rapid delta events into at most one Telegram edit per
- * `intervalMs`, using only the latest accumulated text. Copied from
- * apps/tui/lib/telegram/driver.ts's EditThrottle (pure, no grammy coupling).
- */
-class EditThrottle {
-  private intervalMs = MIN_EDIT_INTERVAL_MS
-  private lastEditAt = 0
-  private timer: ReturnType<typeof setTimeout> | undefined
-  private pendingRender: (() => string) | undefined
-  private readonly sendEdit: (text: string) => Promise<void>
-
-  constructor(sendEdit: (text: string) => Promise<void>) {
-    this.sendEdit = sendEdit
-  }
-
-  request(renderText: () => string) {
-    this.pendingRender = renderText
-    if (this.timer) return
-    const elapsed = Date.now() - this.lastEditAt
-    const delay = Math.max(0, this.intervalMs - elapsed)
-    this.timer = setTimeout(() => void this.fire(), delay)
-  }
-
-  private async fire() {
-    this.timer = undefined
-    const render = this.pendingRender
-    this.pendingRender = undefined
-    if (!render) return
-    this.lastEditAt = Date.now()
-    try {
-      await this.sendEdit(render())
-    } catch (error) {
-      if (error instanceof TelegramRateLimitError) {
-        this.intervalMs = Math.min(this.intervalMs * 2, MAX_EDIT_INTERVAL_MS)
-        if (error.retryAfterSec) this.lastEditAt = Date.now() + error.retryAfterSec * 1000
-      } else {
-        logWarn("Telegram edit failed", { error })
-      }
-    }
-  }
-
-  cancel() {
-    if (this.timer) {
-      clearTimeout(this.timer)
-      this.timer = undefined
-    }
-    this.pendingRender = undefined
-  }
 }
 
 /**
@@ -150,7 +87,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     try {
       await sender.editMessageText(chatId, messageId, text, rows)
     } catch (error) {
-      logWarn("Telegram edit failed", { error })
+      console.warn("Telegram edit failed", { error })
     }
   }
 
@@ -233,7 +170,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       lastSentText = text
       await editSafely(chatId, placeholder.messageId, text)
     }
-    const throttle = new EditThrottle(editIfChanged)
+    const throttle = new EditThrottle(editIfChanged, error => console.warn("Telegram edit failed", { error }))
 
     try {
       const store = createPostgresStore(pool, ownerUserId)
@@ -262,7 +199,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         await nasi.close()
       }
     } catch (error) {
-      logWarn("Telegram agent turn failed", { error })
+      console.warn("Telegram agent turn failed", { error })
       const { category, message } = categorizeError(error)
       await editIfChanged(`⚠ ${category}: ${message}`)
     }
@@ -277,14 +214,14 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
     const owner = telegramOwner(telegramUserId)
 
-    if (command("new").test(text.trim())) {
+    if (isCommand(text, "new")) {
       forceNew.add(telegramUserId)
       await sender.sendMessage(chatId, "🆕 Started a new session.")
       return
     }
 
-    if (command("packages").test(text.trim())) {
-      const { text: list, rows } = renderPackageList(await packageEntries(ownerUserId), 0)
+    if (isCommand(text, "abilities")) {
+      const { text: list, rows } = renderAbilityList(await abilityEntries(ownerUserId), 0)
       await sender.sendMessage(chatId, list, rows)
       return
     }
@@ -293,44 +230,44 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     try {
       await runTurn(ownerUserId, owner, chatId, text, resume)
     } catch (error) {
-      logError("Telegram turn crashed", { error })
+      reportError("Telegram turn crashed", error)
     }
   }
 
   /**
-   * A tap in the /packages list: a package button turns it on or off for the pressing user's own account
+   * A tap in the /abilities list: an ability button turns it on or off for the pressing user's own account
    * and redraws the list; one that needs a key gets a link to the web instead. Page arrows just redraw.
    */
-  async function handlePackageCallback(
+  async function handleAbilityCallback(
     ownerUserId: string,
     chatId: number,
     messageId: number,
     target: { page: number; typeCode?: string; hash?: string }
   ) {
-    let entries = await packageEntries(ownerUserId)
+    let entries = await abilityEntries(ownerUserId)
     const entry = target.typeCode && target.hash ? findEntry(entries, target.typeCode, target.hash) : undefined
     if (entry) {
-      if ((await togglePackage(ownerUserId, entry)) === "needs_key") {
+      if ((await toggleAbility(ownerUserId, entry)) === "needs_key") {
         await sender.sendMessage(chatId, needsKeyMessage(entry.name))
         return
       }
-      entries = await packageEntries(ownerUserId)
+      entries = await abilityEntries(ownerUserId)
     }
-    const { text, rows } = renderPackageList(entries, target.page)
+    const { text, rows } = renderAbilityList(entries, target.page)
     await editSafely(chatId, messageId, text, rows)
   }
 
   /**
-   * A button press: Approve/Decline on a tool call, or a tap in the /packages list. The pressing user comes
+   * A button press: Approve/Decline on a tool call, or a tap in the /abilities list. The pressing user comes
    * from Telegram (never the payload). An approval must match the call their latest session is still waiting
    * on, so an old or foreign button does nothing; the server then runs (or skips) the call it saved.
    * Returns false for callback data that isn't ours.
    */
   async function handleCallback(telegramUserId: number, chatId: number, messageId: number, data: string) {
     const match = TOOL_CALLBACK.exec(data)
-    const packageMatch = PACKAGE_CALLBACK.exec(data)
-    const pageMatch = PACKAGE_PAGE_CALLBACK.exec(data)
-    if (!match && !packageMatch && !pageMatch) return false
+    const abilityMatch = ABILITY_CALLBACK.exec(data)
+    const pageMatch = ABILITY_PAGE_CALLBACK.exec(data)
+    if (!match && !abilityMatch && !pageMatch) return false
     const ownerUserId = await resolveLinkedUserId(telegramUserId)
     if (!ownerUserId) {
       await sender.sendMessage(chatId, NOT_LINKED_MESSAGE)
@@ -339,13 +276,13 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
     if (!match) {
       try {
-        await handlePackageCallback(ownerUserId, chatId, messageId, {
-          page: Number(packageMatch?.[3] ?? pageMatch?.[1] ?? 0),
-          typeCode: packageMatch?.[1],
-          hash: packageMatch?.[2]
+        await handleAbilityCallback(ownerUserId, chatId, messageId, {
+          page: Number(abilityMatch?.[3] ?? pageMatch?.[1] ?? 0),
+          typeCode: abilityMatch?.[1],
+          hash: abilityMatch?.[2]
         })
       } catch (error) {
-        logError("Telegram package toggle crashed", { error })
+        reportError("Telegram ability toggle crashed", error)
       }
       return true
     }
@@ -367,7 +304,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         await runTurnLocked(ownerUserId, owner, chatId, { approval }, true)
       })
     } catch (error) {
-      logError("Telegram approval crashed", { error })
+      reportError("Telegram approval crashed", error)
     }
     return true
   }

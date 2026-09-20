@@ -2,7 +2,7 @@ import { createOpenAIClient } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { findModelById, loadModelsFile, resolveModels } from "./models"
 
-export { createOpenAIClient, KAJA_MODEL_HEADER, noteServedModel, takeLastServedModel } from "@kaja/nasi"
+export { createOpenAIClient } from "@kaja/nasi"
 
 const modelsFile = await loadModelsFile()
 const chatEntry = findModelById(resolveModels(modelsFile), "chat", "chat")

@@ -37,7 +37,7 @@ test(
 test(
   "approval: never asks for nothing, writes skips read-only tools, always asks for all",
   async () => {
-    const label = "package:fixture"
+    const label = "ability:fixture"
     const [never, writes, always] = await Promise.all([
       toolsWith({ approval: "never", label }),
       toolsWith({ approval: "writes", label }),
@@ -47,7 +47,7 @@ test(
     expect(asking(never)).toEqual([])
     expect(asking(writes)).toEqual(["write_thing", "echo_key"])
     expect(asking(always)).toEqual(["read_thing", "write_thing", "echo_key"])
-    expect(always[0]!.approval?.({ id: "7" })).toBe('package:fixture read_thing {"id":"7"}')
+    expect(always[0]!.approval?.({ id: "7" })).toBe('ability:fixture read_thing {"id":"7"}')
   },
   SPAWN_TIMEOUT
 )
@@ -75,22 +75,24 @@ test(
 )
 
 test(
-  "createTools connects packages as community tools and mcp.toml servers as third-party",
+  "createTools connects abilities as community tools and mcp.toml servers as third-party",
   async () => {
     const { tools, mcpServers, closeTools } = await createTools({
       includeLocalTools: true,
       tempDir: tmpdir(),
       mcpServers: [{ ...fixture, id: "own" }],
-      mcpPackages: [{ name: "pkg", server: fixture, transport: "stdio", approval: "writes", allow: ["write_thing"] }]
+      mcpAbilities: [
+        { name: "ability", server: fixture, transport: "stdio", approval: "writes", allow: ["write_thing"] }
+      ]
     })
     const byName = new Map(tools.map(t => [toolName(t), t]))
-    // The package's write_thing wins over mcp.toml's (community before third-party); its other tools are filtered out there.
-    expect(byName.get("write_thing")).toMatchObject({ origin: "community", source: "package:pkg" })
+    // The ability's write_thing wins over mcp.toml's (community before third-party); its other tools are filtered out there.
+    expect(byName.get("write_thing")).toMatchObject({ origin: "community", source: "ability:ability" })
     expect(byName.get("write_thing")?.approval).toBeDefined()
     expect(byName.get("read_thing")).toMatchObject({ origin: "third-party", source: "mcp:own" })
     expect(mcpServers).toEqual([
       { id: "own", toolCount: 3, failed: false },
-      { id: "package:pkg", toolCount: 1, failed: false }
+      { id: "ability:ability", toolCount: 1, failed: false }
     ])
     await closeTools()
   },

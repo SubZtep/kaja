@@ -6,7 +6,7 @@ import { EmailContainer, type EmailPayload } from "./template"
 export function ResetPassword({ user, url }: Readonly<EmailPayload>) {
   return (
     <EmailContainer>
-      <Heading as="h2">Hey-ho {getFirstName(user.name)} 👋</Heading>
+      <Heading as="h2">Hey-ho{getFirstName(user.name)} 👋</Heading>
       <Text>
         Click the link to reset your password:
         <br />

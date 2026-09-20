@@ -20,6 +20,16 @@ describe("authentication flow", () => {
       expect(res.ok).toBeTrue()
       expect(res.status).toBe(200)
     })
+
+    test("with email and a blank name", async () => {
+      const res = await app.request("/auth/sign-up/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: faker.internet.email(), password, name: "" })
+      })
+      expect(res.status).toBe(200)
+      expect((await res.json()).user.name).toBe("")
+    })
   })
 
   describe("bearer token", () => {
@@ -47,8 +57,8 @@ describe("authentication flow", () => {
       expect(token).not.toBeEmpty()
     })
 
-    test("request profile", async () => {
-      const res = await app.request("/users/me", {
+    test("call a session route with the bearer token", async () => {
+      const res = await app.request("/abilities/me", {
         headers: { Authorization: `Bearer ${token}` }
       })
       expect(res.status).toBe(200)

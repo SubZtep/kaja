@@ -1,13 +1,14 @@
 import { join } from "node:path"
 import {
-  createFolderPackageStore,
+  createFolderAbilityStore,
   createTools,
   type ImageGenModel,
-  loadPackages,
+  loadAbilities,
   type RerankModel,
   setDatasetLoaders
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
+import { getMarketplaceDir, loadAbilitiesFile } from "../lib/abilities/abilities-file"
 import { tryLookupMyLocation } from "../lib/agent/geo"
 import { getConfigDir } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
@@ -16,7 +17,6 @@ import { services } from "../lib/config/services"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
 import { chatModelId, client } from "../lib/models/openai"
-import { getMarketplaceDir, loadPackagesFile } from "../lib/packages/packages-file"
 import { getPaths } from "../lib/paths"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
@@ -41,16 +41,16 @@ export async function getDefaultTools(personas: Persona[]) {
       }
     : undefined
 
-  const packagesFile = await loadPackagesFile()
-  const { packages: packageSecrets } = await secrets()
-  const packages = await loadPackages(
-    createFolderPackageStore({
+  const abilitiesFile = await loadAbilitiesFile()
+  const { abilities: abilitySecrets } = await secrets()
+  const abilities = await loadAbilities(
+    createFolderAbilityStore({
       root: getMarketplaceDir(),
-      enabled: { skills: packagesFile.skills, tools: packagesFile.tools, mcp: packagesFile.mcp }
+      enabled: { skills: abilitiesFile.skills, tools: abilitiesFile.tools, mcp: abilitiesFile.mcp }
     }),
     {
       personas,
-      getApiKey: name => packageSecrets[name]?.apiKey,
+      getApiKey: name => abilitySecrets[name]?.apiKey,
       // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
       allowPrivate: true
     }
@@ -58,8 +58,8 @@ export async function getDefaultTools(personas: Persona[]) {
 
   return createTools({
     includeLocalTools: true,
-    extraTools: packages.groups,
-    mcpPackages: packages.mcp,
+    extraTools: abilities.groups,
+    mcpAbilities: abilities.mcp,
     mcpServers,
     pluginDir: join(getConfigDir(), "tools"),
     deps: {

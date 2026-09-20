@@ -1,5 +1,3 @@
-import stringWidth from "string-width"
-
 export type VisualLine = {
   /** Inclusive start offset into the original string. */
   start: number
@@ -9,7 +7,7 @@ export type VisualLine = {
 }
 
 /**
- * Soft-wrap `text` to `width` terminal columns (emoji-aware via string-width).
+ * Soft-wrap `text` to `width` terminal columns (emoji-aware via Bun.stringWidth).
  * Hard newlines (`\n`) always break. Empty string yields a single empty line
  * so the cursor has a row to sit on.
  */
@@ -45,7 +43,7 @@ export function softWrapLines(text: string, width: number): VisualLine[] {
       lineStart = i
       continue
     }
-    const cw = Math.max(1, stringWidth(char))
+    const cw = Math.max(1, Bun.stringWidth(char))
     if (lineW + cw > w && lineText.length > 0) {
       lines.push({
         start: lineStart,
@@ -114,13 +112,13 @@ export function layoutLines(text: string, width?: number): VisualLine[] {
 
 /**
  * Display-width column of `cursorOffset` within its visual line
- * (emoji-aware via string-width).
+ * (emoji-aware via Bun.stringWidth).
  */
 export function displayColumnAt(lines: VisualLine[], cursorOffset: number): number {
   if (lines.length === 0) return 0
   const line = lines[cursorLineIndex(lines, cursorOffset)]!
   const within = Math.max(0, Math.min(cursorOffset, line.start + line.text.length) - line.start)
-  return stringWidth(line.text.slice(0, within))
+  return Bun.stringWidth(line.text.slice(0, within))
 }
 
 /**
@@ -131,7 +129,7 @@ export function offsetAtDisplayColumn(line: VisualLine, preferredCol: number): n
   let col = 0
   let i = 0
   for (const char of line.text) {
-    const cw = Math.max(1, stringWidth(char))
+    const cw = Math.max(1, Bun.stringWidth(char))
     if (col + cw > preferredCol) break
     col += cw
     i += char.length

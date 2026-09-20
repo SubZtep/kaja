@@ -592,14 +592,14 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
   expect(system!.content).toContain("You are grumpy.")
 })
 
-test("/packages lists the skills, personas and tool packages the bot loaded, and how to change them", async () => {
+test("/abilities lists the skills, personas and tool abilities the bot loaded, and how to change them", async () => {
   const { createLoadSkillTool } = await import("@kaja/nasi")
   const loadSkill = createLoadSkillTool({
     store: {
       listSkills: async () => [],
       readSkill: async () => undefined,
       listHttpTools: async () => [],
-      listMcpPackages: async () => []
+      listMcpAbilities: async () => []
     },
     skills: [
       { name: "notes", description: "Keep notes.", files: [] },
@@ -608,8 +608,8 @@ test("/packages lists the skills, personas and tool packages the bot loaded, and
   })
   const forecast = tool({ name: "weather_forecast", description: "x", parameters: {}, execute: async () => "ok" })
   const packaged = [
-    { ...forecast, origin: "community" as const, source: "package:open-meteo" },
-    { ...forecast, origin: "community" as const, source: "package:context7" },
+    { ...forecast, origin: "community" as const, source: "ability:open-meteo" },
+    { ...forecast, origin: "community" as const, source: "ability:context7" },
     { ...forecast, origin: "third-party" as const, source: "mcp:my-server" }
   ]
   const { sender, sent } = fakeSender()
@@ -621,14 +621,14 @@ test("/packages lists the skills, personas and tool packages the bot loaded, and
     sender
   })
 
-  await driver.handleMessage(42, 100, "/packages@kaja_bot")
+  await driver.handleMessage(42, 100, "/abilities@kaja_bot")
   const text = sent.at(-1)!.text
-  expect(text).toContain(t("telegram.packagesSkills", { names: "disk-check, notes" }))
-  expect(text).toContain(t("telegram.packagesTools", { names: "context7, open-meteo" }))
+  expect(text).toContain(t("telegram.abilitiesSkills", { names: "disk-check, notes" }))
+  expect(text).toContain(t("telegram.abilitiesTools", { names: "context7, open-meteo" }))
   // default always loads, so it isn't listed.
-  expect(text).toContain(t("telegram.packagesPersonas", { names: "kaja" }))
+  expect(text).toContain(t("telegram.abilitiesPersonas", { names: "kaja" }))
   expect(text).not.toContain("my-server")
-  expect(text).toContain("kaja pkg")
+  expect(text).toContain("kaja abilities")
 
   const empty = fakeSender()
   await createTelegramDriver({
@@ -637,6 +637,6 @@ test("/packages lists the skills, personas and tool packages the bot loaded, and
     models: [],
     allowedUserIds: [42],
     sender: empty.sender
-  }).handleMessage(42, 100, "/packages")
-  expect(empty.sent.at(-1)!.text).toContain(t("telegram.packagesNone"))
+  }).handleMessage(42, 100, "/abilities")
+  expect(empty.sent.at(-1)!.text).toContain(t("telegram.abilitiesNone"))
 })

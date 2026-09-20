@@ -42,9 +42,9 @@ export class ToolError extends Error {
 }
 
 /**
- * Who stands behind a tool: Kaja itself (`official`), a package in the marketplace
+ * Who stands behind a tool: Kaja itself (`official`), an ability in the marketplace
  * folder, synced or your own (`community`), or an outside MCP server or tools/*.ts
- * plugin (`third-party`). Shown in doctor/pkg, never to the model.
+ * plugin (`third-party`). Shown in doctor/ability, never to the model.
  */
 export type ToolOrigin = "official" | "community" | "third-party"
 
@@ -64,7 +64,7 @@ export type Tool<Args> = {
   approval?: (args: Args) => string | undefined
   /** Stamped by the registry's `mergeTools`; unset on a tool that hasn't been through it. */
   origin?: ToolOrigin
-  /** Where a non-official tool came from, e.g. `package:open-meteo`, `mcp:chrome-devtools`, `plugin:ping.ts`. */
+  /** Where a non-official tool came from, e.g. `ability:open-meteo`, `mcp:chrome-devtools`, `plugin:ping.ts`. */
   source?: string
 }
 

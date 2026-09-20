@@ -14,7 +14,7 @@ import {
 } from "./agent"
 import { isDangerousCommand } from "./command-risk"
 import { runShellCommand } from "./run-command"
-import { applyPersonaToMessages, buildSystemPrompt, refreshPackagesInPrompt } from "./system-prompt"
+import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordStep } from "./telemetry"
 import { type Tool, toolName } from "./tools"
 
@@ -489,7 +489,7 @@ export async function* run(
     const system = await buildSystemPrompt(agent, owner)
     if (system) messages.push({ role: "system", content: system })
   } else {
-    await refreshPackagesInPrompt(agent, messages, owner)
+    await refreshAbilitiesInPrompt(agent, messages, owner)
   }
 
   pushPromptToMessages(session, prompt)

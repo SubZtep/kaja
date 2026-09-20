@@ -10,11 +10,11 @@ const named = (name: string, source?: string): Tool<unknown> => ({
 test("stamps each group's origin and source onto its tools", () => {
   const { tools, skipped } = mergeTools([
     { origin: "official", tools: [named("ask_user")] },
-    { origin: "community", source: "package:open-meteo", tools: [named("weather_forecast")] }
+    { origin: "community", source: "ability:open-meteo", tools: [named("weather_forecast")] }
   ])
   expect(tools.map(t => [toolName(t), t.origin, t.source])).toEqual([
     ["ask_user", "official", undefined],
-    ["weather_forecast", "community", "package:open-meteo"]
+    ["weather_forecast", "community", "ability:open-meteo"]
   ])
   expect(skipped).toEqual([])
 })
@@ -37,25 +37,25 @@ test("official names are reserved, whatever order the groups come in", () => {
 test("community beats third-party, and the first community tool beats a later one", () => {
   const { tools, skipped } = mergeTools([
     { origin: "third-party", source: "mcp:weather", tools: [named("forecast")] },
-    { origin: "community", source: "package:a", tools: [named("forecast")] },
-    { origin: "community", source: "package:b", tools: [named("forecast")] }
+    { origin: "community", source: "ability:a", tools: [named("forecast")] },
+    { origin: "community", source: "ability:b", tools: [named("forecast")] }
   ])
-  expect(tools.map(t => t.source)).toEqual(["package:a"])
+  expect(tools.map(t => t.source)).toEqual(["ability:a"])
   expect(skipped).toEqual([
-    { name: "forecast", origin: "community", source: "package:b", reason: "taken", takenBy: "package:a" },
-    { name: "forecast", origin: "third-party", source: "mcp:weather", reason: "taken", takenBy: "package:a" }
+    { name: "forecast", origin: "community", source: "ability:b", reason: "taken", takenBy: "ability:a" },
+    { name: "forecast", origin: "third-party", source: "mcp:weather", reason: "taken", takenBy: "ability:a" }
   ])
 })
 
 test("createTools marks builtins official and drops an extra tool that reuses a builtin name", async () => {
   const { tools, skipped, closeTools } = await createTools({
     includeLocalTools: true,
-    extraTools: [{ origin: "community", source: "package:x", tools: [named("read_file"), named("extra_one")] }]
+    extraTools: [{ origin: "community", source: "ability:x", tools: [named("read_file"), named("extra_one")] }]
   })
   const byName = new Map(tools.map(t => [toolName(t), t]))
   expect(tools.filter(t => toolName(t) === "read_file")).toHaveLength(1)
   expect(byName.get("read_file")?.origin).toBe("official")
-  expect(byName.get("extra_one")?.source).toBe("package:x")
-  expect(skipped).toEqual([{ name: "read_file", origin: "community", source: "package:x", reason: "reserved" }])
+  expect(byName.get("extra_one")?.source).toBe("ability:x")
+  expect(skipped).toEqual([{ name: "read_file", origin: "community", source: "ability:x", reason: "reserved" }])
   await closeTools()
 })

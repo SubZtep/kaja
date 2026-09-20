@@ -16,9 +16,6 @@ import { PersistedSessionSchema } from "@kaja/schema/store"
 function ownerKey(owner: string | null): string {
   return owner ?? ""
 }
-function ownerOf(key: string): string | null {
-  return key === "" ? null : key
-}
 
 // Pre-existing `notes` tables predate the `owner` column (all rows were implicitly local-owner). Add it in place so upgraded installs keep their notes instead of losing them to the new PRIMARY KEY.
 function migrateNotesOwnerColumn(db: Database) {
@@ -511,48 +508,6 @@ export function createSqliteStore(dbPath: string): NasiStore {
         )
         .get({ $topic: topic, $owner: ownerKey(owner), $version: version }) as { completedAt: string } | null
       return row?.completedAt
-    },
-
-    async listDatasetVersionsSummary() {
-      const rows = db
-        .query(
-          `SELECT a.topic AS topic, a.owner AS owner, a.version AS version,
-                  COUNT(*) AS answeredCount, v.completedAt AS completedAt
-           FROM dataset_answers a
-           LEFT JOIN dataset_versions v
-             ON v.topic = a.topic AND v.owner = a.owner AND v.version = a.version
-           GROUP BY a.topic, a.owner, a.version
-           ORDER BY a.topic ASC, a.owner ASC, a.version ASC`
-        )
-        .all() as {
-        topic: string
-        owner: string
-        version: number
-        answeredCount: number
-        completedAt: string | null
-      }[]
-      return rows.map(row => ({
-        ...row,
-        owner: ownerOf(row.owner),
-        completedAt: row.completedAt ?? undefined
-      }))
-    },
-
-    async listAllDatasetAnswers() {
-      const rows = db
-        .query(
-          `SELECT topic, owner, version, field, value, answeredAt FROM dataset_answers
-           ORDER BY topic ASC, owner ASC, version ASC, answeredAt ASC`
-        )
-        .all() as {
-        topic: string
-        owner: string
-        version: number
-        field: string
-        value: string
-        answeredAt: string
-      }[]
-      return rows.map(row => ({ ...row, owner: ownerOf(row.owner) }))
     }
   }
 }

@@ -5,8 +5,8 @@ import {
   type McpConnectOptions,
   resetLocationCache
 } from "@kaja/nasi"
+import type { HttpToolAbility } from "@kaja/schema/abilities"
 import type { CliResolvedModel, McpServerEntry } from "@kaja/schema/config"
-import type { HttpToolPackage } from "@kaja/schema/packages"
 import { t } from "../i18n"
 import { probeModel } from "../models/check"
 import { getPaths } from "../paths"
@@ -44,9 +44,9 @@ export async function checkProvider(model: CliResolvedModel, apiKey: string | un
   return { ok: false, reason: apiKey ? reason.replaceAll(apiKey, "•••") : reason }
 }
 
-/** Runs the package's `check` request with `apiKey`; undefined when the manifest has no `check`. Local, so private hosts are fine. */
-export function checkPackageKey(pkg: HttpToolPackage, apiKey: string): Promise<CheckResult | undefined> {
-  return checkHttpToolKey(pkg, apiKey, { allowPrivate: true })
+/** Runs the ability's `check` request with `apiKey`; undefined when the manifest has no `check`. Local, so private hosts are fine. */
+export function checkAbilityKey(ability: HttpToolAbility, apiKey: string): Promise<CheckResult | undefined> {
+  return checkHttpToolKey(ability, apiKey, { allowPrivate: true })
 }
 
 /** Connects to the server and lists its tools, then disconnects. */

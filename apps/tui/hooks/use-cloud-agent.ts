@@ -28,7 +28,7 @@ async function executeClientTool(name: string, argumentsJson: string): Promise<s
   }
 }
 
-/** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai package into the lite bundle for nothing. */
+/** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai ability into the lite bundle for nothing. */
 export type CloudErrorCategory = "network" | "tool" | "agent" | "unknown"
 
 function isCloudErrorCategory(value: string | undefined): value is CloudErrorCategory {

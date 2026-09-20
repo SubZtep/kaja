@@ -31,7 +31,7 @@ flowchart LR
     W["📁 <b>apps/web</b><br/>TanStack Start<br/>landing + admin"]
     T["📁 <b>apps/tui</b><br/>Ink CLI<br/>+ Telegram bot"]
     N["📁 <b>packages/nasi</b><br/>the agent loop"]
-    P["📁 <b>packages/*</b><br/>schemas · logger · utils"]
+    P["📁 <b>packages/*</b><br/>schemas · utils"]
   end
 
   P -.-> A

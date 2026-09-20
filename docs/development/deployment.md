@@ -56,8 +56,7 @@ cp apps/web/.env.example apps/web/.env
   for every request on the prefix and never serves provider API keys.
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/widget) routes are
   deliberately exempt — they reflect origins and gate on the key's own allowlist instead.
-- `NODE_ENV=production` (JSON logs, no pretty printer, no `/reference` UI).
-- A quieter `KAJA_LOG_LEVEL` (`info` or `warn`).
+- `NODE_ENV=production` (Sentry on, no `/reference` UI).
 - Rate limits left on — they only auto-disable under `bun test`.
 
 ## CLI release automation

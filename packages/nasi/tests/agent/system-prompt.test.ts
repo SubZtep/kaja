@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 import type { Dataset, Persona } from "@kaja/schema/cli"
+import { createLoadSkillTool } from "../../src/abilities/skills"
+import type { AbilityStore, SkillSummary } from "../../src/abilities/types"
 import { Agent, runCommandTool, switchPersonaTool } from "../../src/agent/agent"
-import { buildSystemPrompt, refreshPackagesInPrompt, replyLanguageInstructionFor } from "../../src/agent/system-prompt"
-import { createLoadSkillTool } from "../../src/packages/skills"
-import type { PackageStore, SkillSummary } from "../../src/packages/types"
+import { buildSystemPrompt, refreshAbilitiesInPrompt, replyLanguageInstructionFor } from "../../src/agent/system-prompt"
 import { createMemoryStore } from "../../src/store"
 import { datasetInfoTool } from "../../src/tools/builtin/dataset-info"
 
@@ -25,11 +25,11 @@ test("returns undefined for an unknown language code", () => {
 
 const pdfSkill: SkillSummary = { name: "pdf", description: "Work with PDF files.", files: [] }
 const notesSkill: SkillSummary = { name: "notes", description: "Keep notes.", files: [] }
-const noStore: PackageStore = {
+const noStore: AbilityStore = {
   listSkills: async () => [],
   readSkill: async () => undefined,
   listHttpTools: async () => [],
-  listMcpPackages: async () => []
+  listMcpAbilities: async () => []
 }
 
 function skillAgent(opts: { persona?: Persona; withRunCommand?: boolean; skills?: SkillSummary[] }) {
@@ -83,19 +83,19 @@ async function conversationWith(agent: Agent) {
 
 test("a running conversation picks up a skill turned on since it started", async () => {
   const messages = await conversationWith(skillAgent({ skills: [pdfSkill] }))
-  await refreshPackagesInPrompt(skillAgent({ skills: [pdfSkill, notesSkill] }), messages, null)
+  await refreshAbilitiesInPrompt(skillAgent({ skills: [pdfSkill, notesSkill] }), messages, null)
   expect(messages[0]!.content).toContain("- notes: Keep notes.")
   expect(messages[0]!.content).toContain("- pdf: Work with PDF files.")
 })
 
 test("a skill turned off leaves the list, and the section goes when none are left", async () => {
   const messages = await conversationWith(skillAgent({ skills: [pdfSkill, notesSkill] }))
-  await refreshPackagesInPrompt(skillAgent({ skills: [pdfSkill] }), messages, null)
+  await refreshAbilitiesInPrompt(skillAgent({ skills: [pdfSkill] }), messages, null)
   expect(messages[0]!.content).toContain("- pdf: Work with PDF files.")
   expect(messages[0]!.content).not.toContain("- notes:")
 
   const noSkills = new Agent({ model: "m", tools: [], personas: [], promptContext: { environment: "test" } })
-  await refreshPackagesInPrompt(noSkills, messages, null)
+  await refreshAbilitiesInPrompt(noSkills, messages, null)
   expect(messages[0]!.content).not.toContain("## Skills")
 })
 
@@ -105,7 +105,7 @@ test("an unchanged skill list leaves the system prompt exactly as it was", async
   // Something else in the prompt that a rebuild would change: it must survive untouched.
   messages[0]!.content += "\n\nmarker from an earlier turn"
   const before = messages[0]!.content
-  await refreshPackagesInPrompt(agent, messages, null)
+  await refreshAbilitiesInPrompt(agent, messages, null)
   expect(messages[0]!.content).toBe(before)
 })
 
@@ -131,10 +131,10 @@ function personaAgent(personas: Persona[], personaId = "default") {
 
 test("a running conversation's persona roster follows personas turned on or off since it started", async () => {
   const messages = await conversationWith(personaAgent([helper, care]))
-  await refreshPackagesInPrompt(personaAgent([helper, care, quiz]), messages, null)
+  await refreshAbilitiesInPrompt(personaAgent([helper, care, quiz]), messages, null)
   expect(messages[0]!.content).toContain("- quiz (Quiz): use when the user wants a game")
 
-  await refreshPackagesInPrompt(personaAgent([helper]), messages, null)
+  await refreshAbilitiesInPrompt(personaAgent([helper]), messages, null)
   expect(messages[0]!.content).not.toContain("## Personas")
 })
 
@@ -143,7 +143,7 @@ test("an unchanged persona roster leaves the system prompt exactly as it was", a
   const messages = await conversationWith(agent)
   messages[0]!.content += "\n\nmarker from an earlier turn"
   const before = messages[0]!.content
-  await refreshPackagesInPrompt(agent, messages, null)
+  await refreshAbilitiesInPrompt(agent, messages, null)
   expect(messages[0]!.content).toBe(before)
 })
 

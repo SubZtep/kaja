@@ -40,26 +40,23 @@ jobs:
               - 'apps/web/**'
             shared:
               - 'packages/shared/**'
-            logger:
-              - 'packages/logger/**'
             schema:
               - 'packages/schema/**'
 
       - name: Setup Git
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.schema == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump, commit, tag, and push once
         id: bump
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.logger == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.schema == 'true'
         env:
           FILTER_API: ${{ steps.filter.outputs.api }}
           FILTER_TUI: ${{ steps.filter.outputs.tui }}
           FILTER_WEB: ${{ steps.filter.outputs.web }}
           FILTER_SHARED: ${{ steps.filter.outputs.shared }}
-          FILTER_LOGGER: ${{ steps.filter.outputs.logger }}
           FILTER_SCHEMA: ${{ steps.filter.outputs.schema }}
           BEFORE_SHA: ${{ github.event.before }}
         run: |
@@ -139,9 +136,6 @@ jobs:
           fi
           if [[ "$FILTER_SHARED" == "true" ]]; then
             bump_workspace "shared" "packages/shared"
-          fi
-          if [[ "$FILTER_LOGGER" == "true" ]]; then
-            bump_workspace "logger" "packages/logger"
           fi
           if [[ "$FILTER_SCHEMA" == "true" ]]; then
             bump_workspace "schema" "packages/schema"
