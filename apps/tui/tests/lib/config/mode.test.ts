@@ -1,16 +1,27 @@
-import { afterEach, expect, test } from "bun:test"
+import { afterEach, beforeEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-mode`
 
 const { resolveMode, modeFromFlags } = await import("../../../lib/config/mode")
-const { getConfigDir, getConfigPath } = await import("../../../lib/config/config")
+const { getConfigDir, getConfigPath, setConfigDirOverride } = await import("../../../lib/config/config")
 const { getModelsPath } = await import("../../../lib/models/models")
-const { getSecretsPath } = await import("../../../lib/config/secrets")
+const { getSecretsPath, invalidateSecretsCache } = await import("../../../lib/config/secrets")
+
+// Both of these are module-wide and outlive the spec file that set them, so this one reads its own
+// config only if it clears them first: an override left behind by another spec would point
+// getConfigDir() elsewhere, and a warm secrets() cache would serve that spec's keys. Without this
+// the fallback test passed or failed on spec ordering alone.
+beforeEach(() => {
+  process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-mode`
+  setConfigDirOverride(undefined)
+  invalidateSecretsCache()
+})
 
 afterEach(async () => {
   const { $ } = await import("bun")
   await $`rm -rf ${getConfigDir()}`.quiet().nothrow()
+  invalidateSecretsCache()
 })
 
 async function writeMode(mode: string) {
