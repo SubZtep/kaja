@@ -105,18 +105,9 @@ export function toolReportLines(tools: Tool<any>[], skipped: SkippedTool[]): str
  * before the rest of the report so the model and tool checks see the fixes.
  */
 async function checkCredentials() {
-  const { collectCredentials, outcomeLine, resolveCredentials } = await import("../lib/doctor/credentials")
-  const { askSaveAnyway, askSecret } = await import("../lib/doctor/prompt")
-
-  const items = await collectCredentials()
-  if (items.length === 0) return []
-  console.log(t("doctor.credentials"))
-  const outcomes = await resolveCredentials(
-    items,
-    { interactive: Boolean(process.stdin.isTTY), ask: askSecret, askSaveAnyway },
-    outcome => console.log(outcomeLine(outcome))
-  )
-  console.log()
+  const { runCredentialPass } = await import("../lib/doctor/credentials")
+  const outcomes = await runCredentialPass(line => console.log(line), t("doctor.credentials"))
+  if (outcomes.length > 0) console.log()
   return outcomes
 }
 

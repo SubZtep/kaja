@@ -1,11 +1,10 @@
 import { setWarnHandler } from "@kaja/nasi"
 import { color } from "bun"
 import { detectAndSetLanguage } from "./lib/cli/bootstrap"
-import { runFirstRunIfNeeded } from "./lib/cli/first-run"
 import { createCloud, getConfigPath, isConfigExists, validate } from "./lib/config/config"
+import { modeFromFlags, resolveMode } from "./lib/config/mode"
 import { t } from "./lib/i18n"
 import { log } from "./lib/logger"
-import { hasConfiguredChatModel } from "./lib/models/models"
 import { runAbilitiesSubcommand } from "./subcommands/abilities"
 import { runConfigSubcommand } from "./subcommands/config"
 import { runDoctorSubcommand } from "./subcommands/doctor"
@@ -42,15 +41,25 @@ try {
     process.exit(0)
   }
 
-  const useLocal = args.flags.cloud ? false : args.flags.local || (await hasConfiguredChatModel())
-  if (!useLocal) {
+  // Nothing configured yet: ask how to run before branching. The wizard writes preferences.mode, so
+  // the choice sticks — without it the mode is guessed from "is there a usable chat model?", which
+  // sends anyone who hasn't finished a local setup silently back to cloud login.
+  if (!(await isConfigExists())) {
+    const { runConfigWizard } = await import("./lib/cli/config-wizard")
+    const { text } = await runConfigWizard({ headless: args.flags.headless, mode: modeFromFlags(args.flags) })
+    // Cancelled at some step — nothing was written, so there's no config to start from.
+    if (!(await isConfigExists())) {
+      console.log(text)
+      process.exit(0)
+    }
+    // The wizard may have changed the language; later messages should use the new one.
+    await detectAndSetLanguage()
+  }
+
+  if ((await resolveMode(args.flags)) === "cloud") {
     if (!(await isConfigExists())) await createCloud()
     await runCloudSubcommand()
     process.exit(0)
-  }
-
-  if (!(await isConfigExists())) {
-    await runFirstRunIfNeeded(args.flags.headless)
   }
 
   if (!(await validate())) {

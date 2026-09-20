@@ -280,9 +280,35 @@ export function outcomeLine(outcome: CredentialOutcome): string {
   }
 }
 
+/** Whether an outcome still needs the user's attention — what the to-do list and the wizard's closing line key off. */
+export function isUnresolved(outcome: CredentialOutcome): boolean {
+  return outcome.status === "missing" || outcome.status === "failing" || outcome.status === "saved-failing"
+}
+
+/**
+ * The keys-and-tokens pass, shared by `kaja doctor` and the setup wizard: tests every credential the
+ * current config relies on and, in a terminal, asks for anything missing or failing (tested before
+ * it's saved). Prints `header` only when there's actually something to check. Reads the config from
+ * disk, so a caller that just wrote one must do so before calling this.
+ */
+export async function runCredentialPass(print: (line: string) => void, header?: string): Promise<CredentialOutcome[]> {
+  // Loaded here rather than at module scope so a non-interactive caller never pulls Ink in.
+  const { askSaveAnyway, askSecret } = await import("./prompt")
+
+  const items = await collectCredentials()
+  if (items.length === 0) return []
+  if (header) print(header)
+
+  return resolveCredentials(
+    items,
+    { interactive: Boolean(process.stdin.isTTY), ask: askSecret, askSaveAnyway },
+    outcome => print(outcomeLine(outcome))
+  )
+}
+
 /** The closing to-do list: each unresolved item's secrets.toml entry and why, or an all-clear line. */
 export function summaryLines(outcomes: CredentialOutcome[], secretsPath: string): string[] {
-  const todo = outcomes.filter(o => o.status === "missing" || o.status === "failing" || o.status === "saved-failing")
+  const todo = outcomes.filter(isUnresolved)
   if (todo.length === 0) return [t("doctor.allGood")]
   return [
     t("doctor.todoTitle", { path: secretsPath }),

@@ -65,7 +65,7 @@ kaja --headless telegram  # same, without rendering the terminal UI
 # Config files (local mode)
 kaja config fetch         # rewrite models.toml / secrets.toml (server defaults, or bundled templates offline)
 kaja config diff          # show what fetch would change, without writing anything
-kaja config wizard        # re-run the interactive first-run setup
+kaja config wizard        # re-run the setup wizard, then check the keys it needs
 kaja config paths         # print where every config file lives
 
 # Abilities (local mode)

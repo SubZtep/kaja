@@ -67,6 +67,14 @@
             "nan-TW"
           ]
         },
+        "mode": {
+          "description": "Which backend `kaja` starts: the cloud API, or the local agent against your own provider",
+          "type": "string",
+          "enum": [
+            "cloud",
+            "local"
+          ]
+        },
         "hotkeyModifier": {
           "description": "Modifier key for the help/persona hotkeys (default: alt)",
           "type": "string",

@@ -108,9 +108,10 @@ async function runDiff(argv: string[]): Promise<{ code: number; text: string }> 
 }
 
 async function runWizard(argv: string[]): Promise<{ code: number; text: string }> {
-  const headless = argv.includes("--headless")
+  // No mode is forced here: `kaja config wizard` manages files only and must never start a cloud
+  // login, so picking Cloud saves the preference and leaves signing in to the next bare `kaja`.
   const { runConfigWizard } = await import("../cli/config-wizard")
-  return runConfigWizard(headless)
+  return runConfigWizard({ headless: argv.includes("--headless") })
 }
 
 /**

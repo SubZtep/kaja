@@ -1,6 +1,13 @@
-import type { AbilityKeyNeed, HttpToolScanEntry, McpScanEntry } from "@kaja/nasi"
+import type { HttpToolScanEntry, McpScanEntry } from "@kaja/nasi"
 import type { AbilitiesFile } from "@kaja/schema/config"
-import type { PickerItem, PickerSelection } from "../components/ability-picker"
+import type { PickerItem } from "../components/ability-picker"
+import {
+  allItems,
+  confirmStdioServers,
+  ensureMarketplace,
+  pickAbilities,
+  scanMarketplace
+} from "../lib/abilities/picker"
 import type { args as Args } from "../lib/cli/args"
 
 /**
@@ -14,12 +21,11 @@ const CLOUD_ABILITIES_URL = "https://kaja.io/abilities"
 export async function runAbilitiesSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")
   const { runAbilityUpdate } = await import("../lib/abilities/cli")
-  const { hasConfiguredChatModel } = await import("../lib/models/models")
+  const { resolveMode } = await import("../lib/config/mode")
   const [, sub] = args.input
 
   // Same mode rule as cli.ts. A cloud user's skills live in their account, so point them to the web instead of editing files that cloud chat never reads.
-  const useLocal = args.flags.cloud ? false : args.flags.local || (await hasConfiguredChatModel())
-  if (!useLocal) {
+  if ((await resolveMode(args.flags)) === "cloud") {
     console.log(t("ability.cloudHint", { url: CLOUD_ABILITIES_URL }))
     process.exit(0)
   }
@@ -37,17 +43,13 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
   const { getMarketplaceDir, getAbilitiesPath, loadAbilitiesFile, saveAbilitiesFile } = await import(
     "../lib/abilities/abilities-file"
   )
-  const { readSyncLock } = await import("../lib/abilities/sync")
-  const marketplaceDir = getMarketplaceDir()
 
   // First use: fetch once so there's something to pick from. A failure still opens the picker with your own abilities.
-  if (!(await readSyncLock(marketplaceDir))) {
-    console.log(t("ability.firstSync"))
-    console.log((await runAbilityUpdate()).text)
-  }
+  await ensureMarketplace(line => console.log(line))
 
-  const { skills, personas, tools, mcp, toolScan, mcpScan } = await scanMarketplace(marketplaceDir)
-  const items = [...skills, ...personas, ...tools, ...mcp]
+  const scan = await scanMarketplace(getMarketplaceDir())
+  const { skills, personas, tools, mcp, toolScan, mcpScan } = scan
+  const items = allItems(scan)
   const enabled = await loadAbilitiesFile()
 
   if (!process.stdin.isTTY) {
@@ -82,92 +84,12 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
   process.exit(0)
 }
 
-function keyNeed(auth?: AbilityKeyNeed): PickerItem["key"] {
-  if (!auth) return undefined
-  return auth.optional ? "optional" : "required"
-}
-
-// Every ability in the marketplace folder as a picker row; `local` marks the ones the sync didn't write.
-async function scanMarketplace(marketplaceDir: string) {
-  const { scanHttpTools, scanMcpAbilities, scanPersonas, scanSkills } = await import("@kaja/nasi")
-  const { DEFAULT_PERSONA_ID } = await import("../lib/personas/personas")
-  const { readSyncLock } = await import("../lib/abilities/sync")
-  const lockedPaths = Object.keys((await readSyncLock(marketplaceDir))?.files ?? {})
-  const synced = new Set(lockedPaths.map(path => path.split("/").slice(0, 2).join("/")))
-  const skills = (await scanSkills(marketplaceDir)).map(s => ({
-    ...s,
-    type: "skill" as const,
-    local: !synced.has(`skills/${s.name}`)
-  }))
-  // default always loads, so there's nothing to pick.
-  const personas = (await scanPersonas(marketplaceDir))
-    .filter(s => s.name !== DEFAULT_PERSONA_ID)
-    .map(({ label, when: _, ...s }) => ({
-      ...s,
-      description: label,
-      type: "persona" as const,
-      local: !synced.has(`personas/${s.name}.toml`)
-    }))
-  const toolScan = await scanHttpTools(marketplaceDir)
-  const tools = toolScan.map(({ auth, ...s }) => ({
-    ...s,
-    type: "tool" as const,
-    key: keyNeed(auth),
-    local: !synced.has(`tools/${s.name}.toml`)
-  }))
-  const mcpScan = await scanMcpAbilities(marketplaceDir)
-  const mcp = mcpScan.map(({ auth, command, transport: _, ...s }) => ({
-    ...s,
-    type: "mcp" as const,
-    runs: command,
-    key: keyNeed(auth),
-    local: !synced.has(`mcp/${s.name}.toml`)
-  }))
-  return { skills, personas, tools, mcp, toolScan, mcpScan }
-}
-
 // Without a terminal to pick in: one `[x] type name` line per ability.
 function printAbilities(items: PickerItem[], enabled: AbilitiesFile) {
   const on = { skill: enabled.skills, persona: enabled.personas, tool: enabled.tools, mcp: enabled.mcp }
   for (const item of items) {
     console.log(`${on[item.type].includes(item.name) ? "[x]" : "[ ]"} ${item.type.padEnd(7)} ${item.name}`)
   }
-}
-
-// The checklist; undefined when it was cancelled.
-async function pickAbilities(items: PickerItem[], enabled: PickerSelection): Promise<PickerSelection | undefined> {
-  const { render } = await import("ink")
-  const { AbilityPicker } = await import("../components/ability-picker")
-  let picked: PickerSelection | undefined
-  const picker = render(
-    <AbilityPicker
-      items={items}
-      enabled={enabled}
-      onSubmit={selection => {
-        picked = selection
-        picker.unmount()
-      }}
-      onCancel={() => picker.unmount()}
-    />
-  )
-  await picker.waitUntilExit()
-  return picked
-}
-
-// A stdio server runs a command on this machine: newly enabling one asks once, showing exactly what it runs.
-async function confirmStdioServers(picked: string[], scan: McpScanEntry[], wasEnabled: string[]): Promise<string[]> {
-  const { t } = await import("../lib/i18n")
-  const { askYesNo } = await import("../lib/doctor/prompt")
-  const confirmed: string[] = []
-  for (const name of picked) {
-    const command = scan.find(s => s.name === name)?.command
-    const ok =
-      !command ||
-      wasEnabled.includes(name) ||
-      (await askYesNo(t("ability.confirmStdio", { name, command }), t("ability.enable"), t("ability.dontEnable")))
-    if (ok) confirmed.push(name)
-  }
-  return confirmed
 }
 
 // Ask for keys enabled abilities still lack. A skipped required key keeps the ability enabled but left out until it's set; an optional one just loads without.

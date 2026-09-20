@@ -27,6 +27,38 @@ export async function writeModelsTemplate(which: "fireworks" | "ollama" | "llama
   await write(file(getModelsPath()), MODEL_TEMPLATES[which])
 }
 
+/**
+ * Points `[providers.<name>]`'s base_url at `baseUrl` in models.toml text, for the setup wizard's
+ * "where does your server listen?" step. Edits the one line rather than re-serializing the parsed
+ * file, which would drop the template's comments; unchanged when that table has no base_url.
+ */
+export function setProviderBaseUrl(text: string, provider: string, baseUrl: string): string {
+  const lines = text.split("\n")
+  const start = lines.findIndex(line => line.trim() === `[providers.${provider}]`)
+  if (start === -1) return text
+
+  for (let index = start + 1; index < lines.length; index++) {
+    // Stop at the next table header so a provider without a base_url never rewrites another's.
+    if (lines[index]!.trimStart().startsWith("[")) break
+    const match = lines[index]!.match(/^(\s*base_url\s*=\s*)"[^"]*"(.*)$/)
+    if (match) {
+      // JSON.stringify escapes anything that would break out of the TOML string.
+      lines[index] = `${match[1]}${JSON.stringify(baseUrl)}${match[2]}`
+      return lines.join("\n")
+    }
+  }
+  return text
+}
+
+/** Reads models.toml, repoints a provider's base_url, and writes it back. No-op when the file is missing. */
+export async function saveProviderBaseUrl(provider: string, baseUrl: string) {
+  const f = file(getModelsPath())
+  if (!(await f.exists())) return
+  const text = await f.text()
+  const next = setProviderBaseUrl(text, provider, baseUrl)
+  if (next !== text) await write(f, next)
+}
+
 /** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/models.fireworks.toml template, backing up any existing (differing) file first. */
 export async function fetchModelsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
   return writeTemplateConfig(TEMPLATE, getModelsPath())
