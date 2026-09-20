@@ -9,8 +9,6 @@ import { Checkbox } from "../form/primitives/Checkbox"
 import { ErrorNotice } from "../ui/ErrorNotice"
 import { Loader } from "../ui/Loader"
 import { Section } from "../ui/Section"
-import { useCatalog, useMyAbilities, useToggleAbility } from "./queries"
-import { UnavailableAbilities } from "./UnavailableAbilities"
 
 /** The instructions the model reads, fetched only when the card is opened. */
 function SkillInstructions({ name }: Readonly<{ name: string }>) {
@@ -34,7 +32,7 @@ function SkillInstructions({ name }: Readonly<{ name: string }>) {
   )
 }
 
-function SkillCard({
+export function SkillCard({
   skill,
   enabled,
   pending,
@@ -67,44 +65,5 @@ function SkillCard({
       </button>
       {open && <SkillInstructions name={skill.name} />}
     </Section>
-  )
-}
-
-/**
- * Catalog skills as cards with an on/off toggle (saved immediately) and their instructions on
- * demand, followed by any enabled skill that has since left the marketplace, so it can be turned off.
- */
-export function SkillCards() {
-  const catalog = useCatalog()
-  const mine = useMyAbilities()
-  const toggle = useToggleAbility()
-
-  if (catalog.isLoading || mine.isLoading) return <Loader />
-  const skills = (catalog.data ?? []).filter(ability => ability.type === "skill")
-  const enabled = new Set((mine.data?.abilities ?? []).filter(p => p.type === "skill").map(p => p.name))
-  const pendingName = toggle.isPending ? toggle.variables?.name : undefined
-
-  return (
-    <>
-      <ErrorNotice error={catalog.error ?? mine.error} />
-      {skills.length === 0 ? (
-        <Section>
-          <p className="m-0 text-muted text-sm">{m.skills_empty()}</p>
-        </Section>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {skills.map(skill => (
-            <SkillCard
-              key={skill.name}
-              skill={skill}
-              enabled={enabled.has(skill.name)}
-              pending={pendingName === skill.name}
-              onToggle={on => toggle.mutate({ type: "skill", name: skill.name, on })}
-            />
-          ))}
-        </div>
-      )}
-      <UnavailableAbilities types={["skill"]} />
-    </>
   )
 }

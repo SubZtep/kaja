@@ -7,12 +7,9 @@ import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
 import { Checkbox } from "../form/primitives/Checkbox"
 import { Badge } from "../ui/Badge"
-import { ErrorNotice } from "../ui/ErrorNotice"
-import { Loader } from "../ui/Loader"
 import { Section } from "../ui/Section"
 import { KeyDialog } from "./KeyDialog"
-import { MY_ABILITIES_QUERY_KEY, useCatalog, useMyAbilities, useToggleAbility } from "./queries"
-import { UnavailableAbilities } from "./UnavailableAbilities"
+import { MY_ABILITIES_QUERY_KEY } from "./queries"
 
 const KEY_NEED_LABEL: Record<AbilityKeyNeed, () => string> = {
   none: m.tools_key_none,
@@ -27,7 +24,7 @@ const MCP_APPROVAL_NOTE: Record<McpDetail["approval"], (() => string) | undefine
 }
 
 /** What a card shows of an HTTP tool or MCP server ability. */
-type ToolEntry = {
+export type ToolEntry = {
   ability: CatalogAbility
   type: KeyedAbilityType
   domain: string
@@ -39,7 +36,7 @@ type ToolEntry = {
 }
 
 /** A catalog tool or MCP entry as a card, or undefined for anything else. */
-function toolEntry(ability: CatalogAbility): ToolEntry | undefined {
+export function toolEntry(ability: CatalogAbility): ToolEntry | undefined {
   if (ability.type === "tool" && ability.http) {
     const { domain, key, tools } = ability.http
     return { ability, type: "tool", domain, key, items: tools.map(({ name, method }) => ({ name, method })) }
@@ -60,7 +57,7 @@ function toolEntry(ability: CatalogAbility): ToolEntry | undefined {
 
 const linkButton = "cursor-pointer text-muted text-xs underline-offset-2 hover:text-fg hover:underline"
 
-function ToolCard({
+export function ToolCard({
   entry,
   enabled,
   hasKey,
@@ -170,52 +167,5 @@ function ToolCard({
         enableAfter={dialog === "enable"}
       />
     </Section>
-  )
-}
-
-/**
- * Catalog HTTP tools and MCP servers as cards: where each one connects, whether it needs your key, and
- * what it can do (and when it asks first). Turning on one that requires a key asks for the key first.
- */
-export function ToolCards() {
-  const catalog = useCatalog()
-  const mine = useMyAbilities()
-  const toggle = useToggleAbility()
-
-  if (catalog.isLoading || mine.isLoading) return <Loader />
-  const entries = (catalog.data ?? []).map(toolEntry).filter(entry => entry !== undefined)
-  const enabled = new Set((mine.data?.abilities ?? []).filter(p => p.type !== "skill").map(p => `${p.type}:${p.name}`))
-  const keys = new Set(mine.data?.keys ?? [])
-  const keysEnabled = mine.data?.keysEnabled ?? false
-  const pendingName = toggle.isPending ? `${toggle.variables?.type}:${toggle.variables?.name}` : undefined
-
-  return (
-    <>
-      <ErrorNotice error={catalog.error ?? mine.error} />
-      {mine.data && !keysEnabled && <p className="mt-0 mb-4 text-muted text-sm">{m.tools_keys_unavailable()}</p>}
-      {entries.length === 0 ? (
-        <Section>
-          <p className="m-0 text-muted text-sm">{m.tools_empty()}</p>
-        </Section>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {entries.map(entry => {
-            const id = `${entry.type}:${entry.ability.name}`
-            return (
-              <ToolCard
-                key={id}
-                entry={entry}
-                enabled={enabled.has(id)}
-                hasKey={keys.has(entry.ability.name)}
-                keysEnabled={keysEnabled}
-                pending={pendingName === id}
-                onToggle={on => toggle.mutate({ type: entry.type, name: entry.ability.name, on })}
-              />
-            )
-          })}
-        </div>
-      )}
-      <UnavailableAbilities types={["tool", "mcp"]} />
-    </>
   )
 }

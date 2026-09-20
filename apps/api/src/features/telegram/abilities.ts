@@ -24,10 +24,8 @@ function nameHash(name: string): string {
 }
 
 /** Where keys are added and abilities read in full. */
-function abilitiesWebUrl(tab?: "tools"): string {
-  const base = trimTrailingSlashes(env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN)
-  const query = tab ? `?tab=${tab}` : ""
-  return `${base}/abilities${query}`
+function abilitiesWebUrl(): string {
+  return `${trimTrailingSlashes(env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN)}/abilities`
 }
 
 /** The catalog as the user sees it (skills, personas, tools, then MCP servers), plus enabled abilities that left it. */
@@ -103,6 +101,6 @@ export async function toggleAbility(userId: string, entry: AbilityEntry): Promis
 export function needsKeyMessage(name: string): string {
   return (
     `🔑 <b>${name}</b> needs your API key first. Add it on the web, where it's stored encrypted; ` +
-    `a key typed here would stay in the chat history.\n<a href="${abilitiesWebUrl("tools")}">Abilities → Tools</a>`
+    `a key typed here would stay in the chat history.\n<a href="${abilitiesWebUrl()}">Abilities → Tools</a>`
   )
 }

@@ -99,7 +99,7 @@ above) in the API's environment and restart — an invalid token fails fast at s
 - `/abilities` — every skill, tool and MCP server in the catalog as a button: ✅ on, ▫️ off,
   🔑 needs your API key first, ⚠️ no longer in the marketplace. A tap turns it on or off for your
   account, from your next message on, even mid-conversation. An ability that needs a key links to
-  the [Abilities page](https://kaja.io/abilities?tab=tools) instead: keys are never typed into
+  the [Abilities page](https://kaja.io/abilities) instead: keys are never typed into
   Telegram, where they'd stay in the chat history.
 
 ---

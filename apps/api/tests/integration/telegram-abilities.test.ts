@@ -128,7 +128,7 @@ describe("the cloud bot's /abilities", () => {
   test("an ability that needs a key points to the web instead of asking for it here", async () => {
     await tap(keyed)
     expect(sent.at(-1)!.text).toContain(`${keyed}</b> needs your API key`)
-    expect(sent.at(-1)!.text).toContain("/abilities?tab=tools")
+    expect(sent.at(-1)!.text).toContain("/abilities")
     expect(await enabled()).not.toContain(keyed)
 
     await secretService.set(userId, `ability:${keyed}`, "a-key")

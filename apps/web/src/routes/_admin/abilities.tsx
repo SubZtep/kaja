@@ -2,11 +2,10 @@ import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/
 import { marketplaceSyncResultSchema, marketplaceSyncStatusSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { RefreshCw } from "lucide-react"
 import { toast } from "react-toastify"
-import { z } from "zod"
-import { AbilityTabs } from "../../components/abilities/AbilityTabs"
+import { AbilitySections } from "../../components/abilities/AbilitySections"
 import {
   CATALOG_QUERY_KEY,
   MY_ABILITIES_QUERY_KEY,
@@ -23,7 +22,6 @@ import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_admin/abilities")({
-  validateSearch: z.object({ tab: z.enum(["skills", "personas", "tools"]).optional() }),
   component: AbilitiesPage,
   head: () => ({ meta: seo({ title: m.nav_abilities() }) })
 })
@@ -86,8 +84,6 @@ function MarketplaceSyncPanel() {
 
 function AbilitiesPage() {
   const user = useUser()
-  const { tab = "skills" } = Route.useSearch()
-  const navigate = useNavigate({ from: "/abilities" })
   const catalog = useCatalog()
   const mine = useMyAbilities()
   const enabledCount = (mine.data?.abilities ?? []).filter(p => p.available).length
@@ -101,7 +97,7 @@ function AbilitiesPage() {
         <ValueBox label={m.skills_enabled()}>{enabledCount}</ValueBox>
       </PageHeader>
       {user?.role === "admin" && <MarketplaceSyncPanel />}
-      <AbilityTabs personas tab={tab} onTabChange={next => navigate({ search: { tab: next }, replace: true })} />
+      <AbilitySections personas />
     </>
   )
 }
