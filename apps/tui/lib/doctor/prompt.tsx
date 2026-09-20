@@ -46,8 +46,13 @@ export async function askText(
   })
 }
 
-/** Asks a yes/no question with "no" as the default (first, and what Esc picks). */
-export async function askYesNo(title: string, yesLabel: string, noLabel: string): Promise<boolean> {
+/** Asks a yes/no question with "no" as the default (first, and what Esc picks); `defaultYes` opens on "yes" instead. */
+export async function askYesNo(
+  title: string,
+  yesLabel: string,
+  noLabel: string,
+  opts?: { defaultYes?: boolean }
+): Promise<boolean> {
   const { YesNoPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
     const { unmount } = render(
@@ -55,6 +60,7 @@ export async function askYesNo(title: string, yesLabel: string, noLabel: string)
         title={title}
         yesLabel={yesLabel}
         noLabel={noLabel}
+        defaultYes={opts?.defaultYes}
         onResolve={yes => {
           unmount()
           resolve(yes)

@@ -10,6 +10,7 @@ import { fetchRemoteConfigBundle } from "../config/remote-fetch"
 import type { CredentialItem } from "../doctor/credentials"
 import { t } from "../i18n"
 import { getModelsPath, saveProviderBaseUrl, writeModelsTemplate } from "../models/models"
+import type { PullProgress } from "../models/pull"
 
 const TEMPLATE_PROVIDERS: WizardProvider[] = ["fireworks", "ollama", "llama"]
 
@@ -155,6 +156,65 @@ async function applyExtras(extras: WizardExtra[], print: (line: string) => void)
   return extra
 }
 
+/**
+ * One rewritten line while a model downloads, e.g. "  llama3.2:1b: pulling manifest 42%". Only a
+ * terminal gets it — a redirected log would collect one line per progress update otherwise.
+ */
+function progressLine(model: string) {
+  let width = 0
+  return {
+    update({ status, percent }: PullProgress) {
+      if (!process.stdout.isTTY) return
+      const line = `  ${model}: ${status}${percent === undefined ? "" : ` ${percent}%`}`
+      width = Math.max(width, line.length)
+      process.stdout.write(`\r${line.padEnd(width)}`)
+    },
+    // Wipes the progress line so the result prints on a clean one.
+    clear() {
+      if (process.stdout.isTTY && width > 0) process.stdout.write(`\r${" ".repeat(width)}\r`)
+    }
+  }
+}
+
+/**
+ * Offers to download the models the local server hasn't got. One question for the lot rather than
+ * one per model: nothing about them is a choice — the config already names them, and either the
+ * machine has them or it doesn't. Runs before the credential pass so its probes meet a real model
+ * instead of reporting every task as broken. Servers that can't fetch a model ask nothing.
+ */
+async function offerModelDownloads(print: (line: string) => void) {
+  const { loadModels } = await import("../models/models")
+  const { missingModels, pullModel } = await import("../models/pull")
+  const missing = await missingModels(await loadModels())
+  if (missing.length === 0) return
+
+  const { askYesNo } = await import("../doctor/prompt")
+  const names = missing.map(target => target.model).join(", ")
+  const wanted = await askYesNo(
+    t("wizard.pullTitle", { names }),
+    t("wizard.pullYes"),
+    t("wizard.pullNo"),
+    // Without them the local agent can't answer at all, so "yes" is the safe default here.
+    { defaultYes: true }
+  )
+  if (!wanted) {
+    print(t("wizard.pullSkipped"))
+    return
+  }
+
+  print(t("wizard.pullStarted"))
+  for (const target of missing) {
+    const progress = progressLine(target.model)
+    const result = await pullModel(target, progress.update)
+    progress.clear()
+    print(
+      result.ok
+        ? t("wizard.pullDone", { model: target.model })
+        : t("wizard.pullFailed", { model: target.model, error: result.error })
+    )
+  }
+}
+
 /** The chat model's provider and its base URL from models.toml, for re-offering what the machine already uses. Tolerant: nothing when the file is missing or unparseable. */
 async function currentModels(): Promise<{ provider?: WizardProvider; baseUrl?: string }> {
   try {
@@ -232,6 +292,7 @@ export async function runConfigWizard({
 
   if (result.abilities) await applyAbilities(result.abilities, line => console.log(line))
   const extra = await applyExtras(result.extras ?? [], line => console.log(line))
+  await offerModelDownloads(line => console.log(line))
 
   // Reads the config that applyResult, applyAbilities and applyExtras just wrote, then asks for and
   // tests every key it needs — the provider's included, which is why no step above collects one.

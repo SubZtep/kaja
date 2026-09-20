@@ -55,16 +55,19 @@ export function TextPrompt({
   )
 }
 
-/** A yes/no question with "no" first, so Enter and Esc both pick the safe answer. */
+/** A yes/no question with "no" first, so Enter and Esc both pick the safe answer — unless `defaultYes` says the safe answer is yes. */
 export function YesNoPrompt({
   title,
   yesLabel,
   noLabel,
+  defaultYes,
   onResolve
 }: Readonly<{
   title: string
   yesLabel: string
   noLabel: string
+  /** Opens on "yes", for a question where doing nothing is the worse outcome. Esc still answers no. */
+  defaultYes?: boolean
   onResolve: (yes: boolean) => void
 }>) {
   return (
@@ -73,6 +76,7 @@ export function YesNoPrompt({
       <SelectMenu
         width={Math.max(yesLabel.length, noLabel.length) + 10}
         items={[noLabel, yesLabel]}
+        initialIndex={defaultYes ? 1 : 0}
         onSelect={index => onResolve(index === 1)}
         onClose={() => onResolve(false)}
       />

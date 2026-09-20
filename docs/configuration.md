@@ -40,7 +40,9 @@ language, provider, server address, abilities), each step opening on what you al
 finishes by asking for and testing any keys your config needs, the same pass `kaja doctor` runs.
 The abilities step can enable the recommended set — everything needing no key, minus MCP servers
 that run a command locally — and only ever adds to what you already had enabled. A final step
-offers web search, voice and a Telegram bot, all unticked, so pressing Enter skips them. `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched
+offers web search, voice and a Telegram bot, all unticked, so pressing Enter skips them. If your
+model server is Ollama and hasn't got the models your `models.toml` names, the wizard offers to
+download them — one question for all of them, not one per model — before it tests anything. `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched
 by `fetch` — those stay yours to hand-edit. Personas, like the rest of the marketplace, come from
 `kaja abilities update` instead.
 
