@@ -103,16 +103,24 @@ jobs:
           bump_workspace() {
             local name="$1"
             local dir="$2"
+            local type="$BUMP_TYPE"
+            local current
+            current=$(bun -e "console.log(require('./${dir}/package.json').version)")
+            # Before 1.0.0 a breaking change bumps the minor: 1.0.0 is a deliberate release, made by hand.
+            if [[ "$type" == "major" && "${current%%.*}" == "0" ]]; then
+              echo "${name} is ${current}: bumping minor instead of major, 1.0.0 is a manual release"
+              type="minor"
+            fi
             (
               cd "$dir"
-              bun pm version "$BUMP_TYPE" --no-git-tag-version
+              bun pm version "$type" --no-git-tag-version
             )
             local version
             version=$(bun -e "console.log(require('./${dir}/package.json').version)")
             git add "${dir}/package.json"
-            SUMMARY_PARTS+=("${name}@${version} (${BUMP_TYPE})")
+            SUMMARY_PARTS+=("${name}@${version} (${type})")
             TAGS+=("${name}@${version}")
-            echo "Bumped ${name} → ${version} (${BUMP_TYPE})"
+            echo "Bumped ${name} → ${version} (${type})"
           }
 
           if [[ "$FILTER_API" == "true" ]]; then
