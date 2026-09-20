@@ -1,4 +1,4 @@
-import { PasswordInput } from "@inkjs/ui"
+import { PasswordInput, TextInput } from "@inkjs/ui"
 import { Box, Text, useInput } from "ink"
 import { t } from "../lib/i18n"
 import { SelectMenu } from "./elem/select-menu"
@@ -25,6 +25,32 @@ export function SecretPrompt({
         placeholder={t("secretPrompt.placeholder")}
         onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())}
       />
+    </Box>
+  )
+}
+
+/** Asks for one value that isn't a secret (a server URL, a numeric id), so it stays readable while typing. Enter with a value submits it; Esc or an empty Enter skips. */
+export function TextPrompt({
+  title,
+  hint,
+  defaultValue,
+  onSubmit,
+  onSkip
+}: Readonly<{
+  title: string
+  hint?: string
+  defaultValue?: string
+  onSubmit: (value: string) => void
+  onSkip: () => void
+}>) {
+  useInput((_input, key) => {
+    if (key.escape) onSkip()
+  })
+  return (
+    <Box flexDirection="column">
+      <Text bold>{title}</Text>
+      <Text dimColor>{hint ?? t("secretPrompt.hint")}</Text>
+      <TextInput defaultValue={defaultValue} onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())} />
     </Box>
   )
 }

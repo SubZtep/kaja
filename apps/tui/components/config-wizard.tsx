@@ -1,4 +1,4 @@
-import { TextInput } from "@inkjs/ui"
+import { MultiSelect, TextInput } from "@inkjs/ui"
 import { LOCALE_LABELS, locales } from "@kaja/shared"
 import { Box, Text, useInput } from "ink"
 import { useState } from "react"
@@ -13,6 +13,17 @@ export type WizardProvider = "fireworks" | "ollama" | "llama" | "fetch" | "skip"
 /** What to do about abilities; the marketplace work itself happens after the wizard, not in it. */
 export type WizardAbilities = "starter" | "pick" | "none"
 
+/** Optional features, each needing one more answer afterwards. None is ticked by default. */
+export type WizardExtra = "webSearch" | "voice" | "telegram"
+
+const EXTRA_CHOICES: WizardExtra[] = ["webSearch", "voice", "telegram"]
+
+const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
+  webSearch: "wizard.extraWebSearch",
+  voice: "wizard.extraVoice",
+  telegram: "wizard.extraTelegram"
+}
+
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
@@ -20,11 +31,12 @@ export type WizardResult = {
   /** Where a local provider's server listens; only collected for the ones that run on this machine. */
   baseUrl?: string
   abilities?: WizardAbilities
+  extras?: WizardExtra[]
 }
 
-type Step = "mode" | "language" | "provider" | "baseUrl" | "abilities" | "summary"
+type Step = "mode" | "language" | "provider" | "baseUrl" | "abilities" | "extras" | "summary"
 
-const STEP_ORDER: Step[] = ["mode", "language", "provider", "baseUrl", "abilities", "summary"]
+const STEP_ORDER: Step[] = ["mode", "language", "provider", "baseUrl", "abilities", "extras", "summary"]
 
 const ABILITY_CHOICES: WizardAbilities[] = ["starter", "pick", "none"]
 
@@ -66,6 +78,8 @@ function nextStepAfter(step: Step, result: WizardResult): Step {
     if (candidate === "baseUrl" && (result.mode === "cloud" || !LOCAL_PROVIDER_URLS[result.provider!])) continue
     // Cloud abilities live in the account and are picked on the web, not in files this client reads.
     if (candidate === "abilities" && result.mode === "cloud") continue
+    // Every extra is a local-agent feature: the Telegram bot, voice, and the web_search tool.
+    if (candidate === "extras" && result.mode === "cloud") continue
     return candidate
   }
   return "summary"
@@ -107,6 +121,8 @@ export function ConfigWizard({
 
   useInput((_input, key) => {
     if (step === "summary" && (key.return || key.escape)) onDone(result)
+    // MultiSelect has no dismissal of its own, so the extras step gets the same Esc contract as SelectMenu.
+    else if (step === "extras" && key.escape) onCancel()
   })
 
   function advance(patch: Partial<WizardResult>) {
@@ -190,6 +206,23 @@ export function ConfigWizard({
     )
   }
 
+  if (step === "extras") {
+    return (
+      <Box flexDirection="column" gap={1}>
+        <Text>{t("wizard.extrasTitle")}</Text>
+        <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+          {/* Nothing ticked by default, so one Enter skips the whole step. */}
+          <MultiSelect
+            options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
+            defaultValue={result.extras}
+            onSubmit={values => advance({ extras: values as WizardExtra[] })}
+          />
+        </Box>
+        <Text dimColor>{t("wizard.extrasHint")}</Text>
+      </Box>
+    )
+  }
+
   return (
     <Box flexDirection="column" gap={1}>
       <Text>{t("wizard.summaryTitle")}</Text>
@@ -210,6 +243,10 @@ export function ConfigWizard({
         <SummaryRow
           label={t("wizard.summaryAbilities")}
           value={result.abilities ? t(ABILITY_LABEL_KEY[result.abilities]) : undefined}
+        />
+        <SummaryRow
+          label={t("wizard.summaryExtras")}
+          value={result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined}
         />
       </Box>
       <Box flexDirection="column">

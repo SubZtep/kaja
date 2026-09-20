@@ -1,12 +1,13 @@
 import { file, TOML } from "bun"
 import { render } from "ink"
 import type { PickerSelection } from "../../components/ability-picker"
-import type { WizardAbilities, WizardProvider, WizardResult } from "../../components/config-wizard"
+import type { WizardAbilities, WizardExtra, WizardProvider, WizardResult } from "../../components/config-wizard"
 import { pathForBundleKey } from "../config/cli"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import { writeTemplateConfig } from "../config/fetch"
 import type { KajaMode } from "../config/mode"
 import { fetchRemoteConfigBundle } from "../config/remote-fetch"
+import type { CredentialItem } from "../doctor/credentials"
 import { t } from "../i18n"
 import { getModelsPath, saveProviderBaseUrl, writeModelsTemplate } from "../models/models"
 
@@ -79,6 +80,79 @@ async function applyAbilities(choice: WizardAbilities, print: (line: string) => 
   await saveAbilitiesFile(selection)
   const count = selection.skills.length + selection.personas.length + selection.tools.length + selection.mcp.length
   print(t("ability.saved", { path: getAbilitiesPath(), count }))
+}
+
+/** Speaches serves both speech-to-text and text-to-speech, so one URL configures voice in and out. */
+const DEFAULT_SPEACHES_URL = "http://localhost:8000"
+
+/**
+ * Applies the ticked extras. Each writes only its non-secret config here; the credentials come from
+ * the credential pass that runs next, so they are tested before being saved like every other key.
+ *
+ * Returns the items that pass can't discover on its own: `collectCredentials` finds the Telegram
+ * token via services.toml's `[telegram]`, but web search has no non-secret config to look for, and
+ * a Telegram section we couldn't write leaves its token undiscoverable too.
+ */
+async function applyExtras(extras: WizardExtra[], print: (line: string) => void): Promise<CredentialItem[]> {
+  if (extras.length === 0) return []
+
+  const { askText } = await import("../doctor/prompt")
+  const { checkTelegramToken, checkWebSearchKey } = await import("../doctor/checks")
+  const { saveSecrets } = await import("../config/secrets")
+  const { appendTomlSection } = await import("../config/toml")
+  const extra: CredentialItem[] = []
+
+  if (extras.includes("voice")) {
+    const url = await askText(t("wizard.voiceUrlTitle"), {
+      hint: t("wizard.voiceUrlHint"),
+      defaultValue: DEFAULT_SPEACHES_URL
+    })
+    if (url) {
+      const { getConfigPath, invalidateConfigCache } = await import("../config/config")
+      for (const table of ["stt", "tts"]) {
+        await appendTomlSection(getConfigPath(), table, [`speachesUrl = ${JSON.stringify(url)}`])
+      }
+      invalidateConfigCache()
+      print(t("wizard.voiceSaved", { url }))
+    }
+  }
+
+  if (extras.includes("telegram")) {
+    const { getServicesPath, invalidateServicesCache, readServicesLoose } = await import("../config/services")
+    // allowedUserIds must be non-empty or services.toml fails its schema and every later run exits,
+    // so the section is only written once there's a real id to put in it.
+    const id = await askText(t("wizard.telegramIdTitle"), { hint: t("wizard.telegramIdHint") })
+    if (id && /^\d+$/.test(id)) {
+      await appendTomlSection(getServicesPath(), "telegram", [`allowedUserIds = [${id}]`])
+      invalidateServicesCache()
+    }
+    if (!(await readServicesLoose()).telegram) {
+      // No section for the pass to find, so carry the token itself — it still gets tested and saved.
+      print(t("wizard.telegramNeedsId", { path: getServicesPath() }))
+      extra.push({
+        label: t("doctor.itemTelegram"),
+        where: "[telegram] botToken",
+        present: false,
+        required: true,
+        check: value => (value ? checkTelegramToken(value) : Promise.resolve(undefined)),
+        save: value => saveSecrets({ telegram: { botToken: value } })
+      })
+    }
+  }
+
+  if (extras.includes("webSearch")) {
+    extra.push({
+      label: t("doctor.itemWebSearch"),
+      where: "[webSearch] apiKey",
+      hint: "header X-Subscription-Token",
+      present: false,
+      required: true,
+      check: value => (value ? checkWebSearchKey(value) : Promise.resolve(undefined)),
+      save: value => saveSecrets({ webSearch: { apiKey: value } })
+    })
+  }
+
+  return extra
 }
 
 /** The chat model's provider and its base URL from models.toml, for re-offering what the machine already uses. Tolerant: nothing when the file is missing or unparseable. */
@@ -157,11 +231,12 @@ export async function runConfigWizard({
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
   if (result.abilities) await applyAbilities(result.abilities, line => console.log(line))
+  const extra = await applyExtras(result.extras ?? [], line => console.log(line))
 
-  // Reads the config that applyResult just wrote, then asks for and tests every key it needs —
-  // the provider's included, which is why no step above collects one.
+  // Reads the config that applyResult, applyAbilities and applyExtras just wrote, then asks for and
+  // tests every key it needs — the provider's included, which is why no step above collects one.
   const { isUnresolved, runCredentialPass } = await import("../doctor/credentials")
-  const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"))
+  const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"), extra)
   const unresolved = outcomes.filter(isUnresolved).length
   return { code: 0, text: unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done") }
 }

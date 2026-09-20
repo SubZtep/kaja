@@ -64,6 +64,7 @@ test("Ollama is asked where its server listens, Fireworks is not", async () => {
   expect(fireworks.t.lastFrame()).toContain("abilities")
 
   await fireworks.t.press(ENTER) // abilities
+  await fireworks.t.press(ENTER) // extras: nothing ticked
   await fireworks.t.press(ENTER) // summary
   expect(fireworks.result).toMatchObject({ mode: "local", provider: "fireworks" })
   expect(fireworks.result?.baseUrl).toBeUndefined()
@@ -80,6 +81,7 @@ test("Ollama is asked where its server listens, Fireworks is not", async () => {
   // Submitting the prefilled default keeps it, rather than storing an empty URL.
   await ollama.t.press(ENTER)
   await ollama.t.press(ENTER) // abilities
+  await ollama.t.press(ENTER) // extras: nothing ticked
   await ollama.t.press(ENTER) // summary
   expect(ollama.result).toMatchObject({ mode: "local", provider: "ollama", baseUrl: "http://localhost:11434/v1" })
 
@@ -111,6 +113,7 @@ test("each step opens on the prefilled value", async () => {
 
   await w.t.press(ENTER) // keeps that address
   await w.t.press(ENTER) // abilities
+  await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // summary
   expect(w.result).toMatchObject(prefill)
 
@@ -125,6 +128,7 @@ test("Skip picks no provider template", async () => {
   for (let i = 0; i < 4; i++) await w.t.press(DOWN) // Fireworks → Ollama → llama.cpp → fetch → Skip
   await w.t.press(ENTER) // Skip needs no address, so this lands on abilities
   await w.t.press(ENTER) // abilities
+  await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // summary
 
   expect(w.result).toMatchObject({ mode: "local", provider: "skip" })
@@ -141,6 +145,7 @@ test("local setups are asked about abilities, cloud ones are not", async () => {
   expect(local.t.lastFrame()).toContain("abilities")
 
   await local.t.press(ENTER) // keeps the preselected recommended set
+  await local.t.press(ENTER) // extras: nothing ticked
   await local.t.press(ENTER) // summary
   expect(local.result).toMatchObject({ provider: "fireworks", abilities: "starter" })
   local.t.unmount()
@@ -164,9 +169,42 @@ test('an already-curated machine opens the abilities step on "Not now"', async (
   await w.t.press(ENTER) // language
   await w.t.press(ENTER) // provider: Fireworks
   await w.t.press(ENTER) // abilities: keeps "Not now" rather than adding the starter set
+  await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // summary
 
   expect(w.result).toMatchObject({ abilities: "none" })
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("the extras step starts with nothing ticked, so Enter skips it", async () => {
+  const w = renderWizard({ mode: "local", prefill: { abilities: "none" } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press(ENTER) // abilities
+  expect(w.t.lastFrame()).toContain("Anything else?")
+
+  await w.t.press(ENTER) // nothing ticked
+  await w.t.press(ENTER) // summary
+  expect(w.result?.extras).toEqual([])
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("ticking an extra records it", async () => {
+  const w = renderWizard({ mode: "local", prefill: { abilities: "none" } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press(ENTER) // abilities
+  await w.t.press(" ") // tick the first extra, web search
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // summary
+
+  expect(w.result?.extras).toEqual(["webSearch"])
 
   w.t.unmount()
   await w.t.waitUntilExit()

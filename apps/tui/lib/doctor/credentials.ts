@@ -299,11 +299,18 @@ export function isUnresolved(outcome: CredentialOutcome): boolean {
  * it's saved). Prints `header` only when there's actually something to check. Reads the config from
  * disk, so a caller that just wrote one must do so before calling this.
  */
-export async function runCredentialPass(print: (line: string) => void, header?: string): Promise<CredentialOutcome[]> {
+export async function runCredentialPass(
+  print: (line: string) => void,
+  header?: string,
+  extra: CredentialItem[] = []
+): Promise<CredentialOutcome[]> {
   // Loaded here rather than at module scope so a non-interactive caller never pulls Ink in.
   const { askSaveAnyway, askSecret } = await import("./prompt")
 
-  const items = await collectCredentials()
+  // `extra` carries credentials the config gives no sign of — the setup wizard's freshly ticked
+  // extras. Anything collectCredentials already found wins, so nothing is asked for twice.
+  const collected = await collectCredentials()
+  const items = [...collected, ...extra.filter(e => !collected.some(c => c.where === e.where))]
   if (items.length === 0) return []
   if (header) print(header)
 

@@ -39,7 +39,8 @@ without writing anything, and `kaja config wizard` re-runs the setup wizard at a
 language, provider, server address, abilities), each step opening on what you already have; it
 finishes by asking for and testing any keys your config needs, the same pass `kaja doctor` runs.
 The abilities step can enable the recommended set — everything needing no key, minus MCP servers
-that run a command locally — and only ever adds to what you already had enabled. `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched
+that run a command locally — and only ever adds to what you already had enabled. A final step
+offers web search, voice and a Telegram bot, all unticked, so pressing Enter skips them. `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched
 by `fetch` — those stay yours to hand-edit. Personas, like the rest of the marketplace, come from
 `kaja abilities update` instead.
 
