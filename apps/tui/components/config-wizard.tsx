@@ -238,6 +238,8 @@ export function ConfigWizard({
         <Text>{t("wizard.languageTitle")}</Text>
         <SelectMenu
           items={locales.map(locale => LOCALE_LABELS[locale])}
+          // The code beside the native name, so a language you can't read is still identifiable.
+          hints={[...locales]}
           initialIndex={result.language ? locales.indexOf(result.language) : undefined}
           onSelect={index => {
             const language = locales[index]!

@@ -15,12 +15,15 @@ const VISIBLE_COUNT = 5
  */
 export function SelectMenu({
   items,
+  hints,
   width = 32,
   initialIndex,
   onSelect,
   onClose
 }: Readonly<{
   items: string[]
+  /** Dimmed note pinned to the right edge of each row, e.g. a locale's code beside its name. */
+  hints?: string[]
   width?: number
   /** Option highlighted on open, for menus that re-offer a current value; defaults to the first. */
   initialIndex?: number
@@ -67,10 +70,22 @@ export function SelectMenu({
         {items.slice(from, from + VISIBLE_COUNT).map((item, offset) => {
           const index = from + offset
           const isFocused = index === focused
+          const hint = hints?.[index]
           return (
-            <Box key={index} gap={1} paddingLeft={isFocused ? 0 : 2}>
-              {isFocused && <Text color="blue">❯</Text>}
-              <Text color={isFocused ? "blue" : undefined}>{item}</Text>
+            <Box
+              key={index}
+              // Only a row with something to push right is given a width; the rest size to their
+              // content, as every menu here did before hints existed. Three columns go to the border
+              // and its left padding, and a fourth keeps the hint off the right border.
+              width={hint === undefined ? undefined : width - 4}
+              justifyContent="space-between"
+              paddingLeft={isFocused ? 0 : 2}
+            >
+              <Box gap={1}>
+                {isFocused && <Text color="blue">❯</Text>}
+                <Text color={isFocused ? "blue" : undefined}>{item}</Text>
+              </Box>
+              {hint !== undefined && <Text dimColor>{hint}</Text>}
             </Box>
           )
         })}

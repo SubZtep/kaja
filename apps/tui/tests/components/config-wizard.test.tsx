@@ -27,6 +27,10 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   const w = renderWizard()
   await w.t.tick()
   expect(w.t.lastFrame()).toContain("Choose your language")
+  // Each name carries its code, so a language you can't read is still identifiable.
+  expect(w.t.lastFrame()).toContain("English")
+  expect(w.t.lastFrame()).toContain("en-GB")
+  expect(w.t.lastFrame()).toContain("nan-TW")
 
   await w.t.press(ENTER) // keep English
   expect(w.t.lastFrame()).toContain("Kaja Cloud")
