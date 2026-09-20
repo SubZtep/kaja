@@ -22,8 +22,8 @@ always-current list. This page is the map.
 | `/users/me` | session | the signed-in user |
 | `/admin/*` | session + `admin` role | MCP servers, providers, models, marketplace sync |
 | `/widget/admin/*` | session | list, create, and delete [widget](/widget) keys |
-| `/packages`, `/packages/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
-| `/packages/me/*` | session | the user's own packages and their write-only API keys |
+| `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
+| `/abilities/me/*` | session | the user's own abilities and their write-only API keys |
 | `/nasi/*` | bearer | cloud agent — turns and sessions |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/*` | shared secret | model resolution for tooling |
@@ -48,18 +48,18 @@ Turn requests and responses are the `@kaja/schema/nasi` contracts — see
 conversation together. Both turn routes are rate-limited **per user id**, not per IP, so a shared
 NAT doesn't starve everyone.
 
-## Packages and keys — `/packages`
+## Abilities and keys — `/abilities`
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/packages` | the catalog; personas include their label, `when` and instructions (never `default`, which is always on); HTTP tools and MCP servers their host, key need and tools. Datasets are synced too but never listed: they come with the personas that use them |
-| `GET` | `/packages/me` | the user's packages, which ones have a saved key, and whether keys can be saved |
-| `PUT` / `DELETE` | `/packages/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
-| `PUT` / `DELETE` | `/packages/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
+| `GET` | `/abilities` | the catalog; personas include their label, `when` and instructions (never `default`, which is always on); HTTP tools and MCP servers their host, key need and tools. Datasets are synced too but never listed: they come with the personas that use them |
+| `GET` | `/abilities/me` | the user's abilities, which ones have a saved key, and whether keys can be saved |
+| `PUT` / `DELETE` | `/abilities/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
+| `PUT` / `DELETE` | `/abilities/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
 
 Keys live in `user_secret`, AES-256-GCM encrypted with `USER_SECRET_KEY`; the user id and the name
 are the cipher's associated data, so a row copied to another user doesn't decrypt. No endpoint
-returns a key. Without `USER_SECRET_KEY` the key routes answer 503 and packages that need a key are
+returns a key. Without `USER_SECRET_KEY` the key routes answer 503 and abilities that need a key are
 left out of the catalog and of turns.
 
 ## Auth

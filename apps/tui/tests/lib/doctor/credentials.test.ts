@@ -126,12 +126,12 @@ test("skipping leaves it on the to-do list; an untestable value is saved as unte
   expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
 })
 
-test("collects providers, keyed packages, declared MCP secrets and configured services", async () => {
+test("collects providers, keyed abilities, declared MCP secrets and configured services", async () => {
   put(
     "models.toml",
     `[providers.local]\nbase_url = "http://localhost:11434/v1"\n\n[models.chat]\nmodel = "m"\ntask = "chat"\nprovider = "local"\n`
   )
-  put("packages.toml", `tools = ["gh", "open"]\n`)
+  put("abilities.toml", `tools = ["gh", "open"]\n`)
   put(
     "marketplace/tools/gh.toml",
     `name = "gh"\ndescription = "x"\nbaseUrl = "https://api.github.com"\nauth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\n\n[[tools]]\nname = "gh_get"\ndescription = "x"\npath = "/x"\n`
@@ -150,7 +150,7 @@ test("collects providers, keyed packages, declared MCP secrets and configured se
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.present, i.required, i.hint])).toEqual([
     ["[providers.local] api_key", false, false, undefined],
-    ["[packages.gh] apiKey", false, true, "header Authorization"],
+    ["[abilities.gh] apiKey", false, true, "header Authorization"],
     ["[mcp.ctx] CTX_KEY", true, true, "env CTX_KEY"],
     ["[mcp.ctx] CTX_ID", false, true, "env CTX_ID"],
     ["[location] apiKey", false, true, "header X-API-Key"],
@@ -165,8 +165,8 @@ test("an MCP secret can't be tested while another declared one is still missing"
   expect(await items[0]!.check?.("value-for-a")).toBeUndefined()
 })
 
-test("MCP packages with key auth become items; optional keys aren't required", async () => {
-  put("packages.toml", `mcp = ["docs", "private", "open"]\ntools = ["weather"]\n`)
+test("MCP abilities with key auth become items; optional keys aren't required", async () => {
+  put("abilities.toml", `mcp = ["docs", "private", "open"]\ntools = ["weather"]\n`)
   put(
     "marketplace/mcp/docs.toml",
     `name = "docs"\ndescription = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", optional = true }\n`
@@ -186,9 +186,9 @@ test("MCP packages with key auth become items; optional keys aren't required", a
 
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.required, i.hint])).toEqual([
-    ["[packages.weather] apiKey", false, "query key"],
-    ["[packages.docs] apiKey", false, "header Authorization"],
-    ["[packages.private] apiKey", true, "env P_KEY"]
+    ["[abilities.weather] apiKey", false, "query key"],
+    ["[abilities.docs] apiKey", false, "header Authorization"],
+    ["[abilities.private] apiKey", true, "env P_KEY"]
   ])
-  expect(items[1]!.label).toBe("docs (MCP package)")
+  expect(items[1]!.label).toBe("docs (MCP ability)")
 })

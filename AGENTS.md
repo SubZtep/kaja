@@ -84,12 +84,12 @@ bun run --filter @kaja/tui test
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (hourly marketplace sync)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/packages/` (cloud package catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (cloud ability catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
 
-- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, profile, packages, widget, and the admin-only `/admin/*` layout)
+- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, profile, abilities, widget, and the admin-only `/admin/*` layout)
 - auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 
@@ -128,11 +128,11 @@ bun run --filter @kaja/tui test
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
 5. `2026-09-07-nasi.sql` — cloud agent state (sessions, memory, datasets)
-6. `2026-09-08-persona.sql` — `persona` table (the old admin-managed persona catalog; dropped by `2026-09-19-persona-package.sql`)
+6. `2026-09-08-persona.sql` — `persona` table (the old admin-managed persona catalog; dropped by `2026-09-19-persona-ability.sql`)
 7. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
-8. `2026-09-19-package.sql` — `package`, `user_package`, `marketplace_sync` (cloud package catalog synced from `marketplace/`)
-9. `2026-09-19-persona-package.sql` — drops `persona`: personas are `package` rows of type `persona` now
-10. `2026-09-19-user-secret.sql` — `user_secret` (users' package API keys, AES-256-GCM with `USER_SECRET_KEY`)
+8. `2026-09-19-ability.sql` — `ability`, `user_ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`)
+9. `2026-09-19-persona-ability.sql` — drops `persona`: personas are `ability` rows of type `persona` now
+10. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`)
 11. `2026-09-20-nasi-normalize.sql` — `nasi_session` rebuilt as rows: `nasi_message` (one per message), `nasi_tool_call` (old sessions dropped, not converted)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).

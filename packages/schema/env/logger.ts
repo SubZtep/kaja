@@ -2,7 +2,7 @@ import * as z from "zod"
 import { trimmed } from "./helpers"
 
 /**
- * `@kaja/logger`'s own env contract - read raw via `process.env` inside that package (it can't
+ * `@kaja/logger`'s own env contract - read raw via `process.env` inside that ability (it can't
  * depend on `@kaja/schema`), but declared here once and merged into each app's schema so these
  * vars get real `.env.example` generation, `env.d.ts` typing, and `bun check:env` coverage too.
  */

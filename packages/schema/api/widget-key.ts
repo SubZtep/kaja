@@ -6,7 +6,7 @@ export const widgetTypeSchema = z.enum(["chat", "barkochba"])
 export const widgetConfigSchema = z.object({
   widgetType: widgetTypeSchema.default("chat"),
   persona: z.string().min(1).optional(),
-  /** Catalog skills this key's visitors get — its own list, independent of the owner's enabled packages. */
+  /** Catalog skills this key's visitors get — its own list, independent of the owner's enabled abilities. */
   skills: z.array(z.string().min(1)).optional()
 })
 

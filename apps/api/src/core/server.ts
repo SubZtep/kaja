@@ -12,11 +12,11 @@ info("API is running", { port })
 const cron = new CronService()
 cron.start()
 
-// Sync the package catalog once at startup without holding up the server; failures are logged and recorded in its status.
+// Sync the ability catalog once at startup without holding up the server; failures are logged and recorded in its status.
 marketplaceService.sync().catch(() => {})
 
 if (!env.USER_SECRET_KEY) {
-  warn("USER_SECRET_KEY isn't set: users can't save package keys, and tools that need one are hidden")
+  warn("USER_SECRET_KEY isn't set: users can't save ability keys, and tools that need one are hidden")
 }
 
 // Start the always-on cloud Telegram bot, if configured

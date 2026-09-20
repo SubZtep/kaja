@@ -1,16 +1,16 @@
-import { createFolderPackageStore, mcpPackageTarget } from "@kaja/nasi"
+import { createFolderAbilityStore, mcpAbilityTarget } from "@kaja/nasi"
 import type { CliResolvedModel, McpServerEntry, SecretsFile } from "@kaja/schema/config"
+import { getMarketplaceDir, loadAbilitiesFile } from "../abilities/abilities-file"
 import { loadMcpServers } from "../config/mcp-servers"
 import { saveSecrets, secrets } from "../config/secrets"
 import { readServicesLoose } from "../config/services"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
-import { getMarketplaceDir, loadPackagesFile } from "../packages/packages-file"
 import {
   type CheckResult,
+  checkAbilityKey,
   checkLocationKey,
   checkMcpServer,
-  checkPackageKey,
   checkProvider,
   checkTelegramToken,
   checkWebSearchKey
@@ -62,7 +62,7 @@ function withSecret(server: McpServerEntry, name: string, value: string): McpSer
 
 /**
  * Every credential the current local config relies on: providers used by a configured
- * model, enabled HTTP tool and MCP packages with key auth, secrets MCP servers declare, and the
+ * model, enabled HTTP tool and MCP abilities with key auth, secrets MCP servers declare, and the
  * location/Telegram services when configured (web search only when a key is set: there's
  * no other sign the user wants it).
  */
@@ -83,7 +83,7 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
     })
   }
 
-  items.push(...(await packageItems(creds)))
+  items.push(...(await abilityItems(creds)))
 
   for (const server of await loadMcpServers()) {
     for (const name of server.secrets ?? []) {
@@ -153,34 +153,34 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
   return items
 }
 
-// Enabled HTTP tool and MCP packages with key auth. An MCP package is tested by connecting to it.
-async function packageItems(creds: SecretsFile): Promise<CredentialItem[]> {
+// Enabled HTTP tool and MCP abilities with key auth. An MCP ability is tested by connecting to it.
+async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   const items: CredentialItem[] = []
-  const { tools, mcp } = await loadPackagesFile()
-  const store = createFolderPackageStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
-  for (const pkg of await store.listHttpTools()) {
-    if (pkg.auth.type !== "apiKey") continue
-    const saved = creds.packages[pkg.name]?.apiKey
+  const { tools, mcp } = await loadAbilitiesFile()
+  const store = createFolderAbilityStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
+  for (const ability of await store.listHttpTools()) {
+    if (ability.auth.type !== "apiKey") continue
+    const saved = creds.abilities[ability.name]?.apiKey
     items.push({
-      label: t("doctor.itemPackage", { name: pkg.name }),
-      where: `[packages.${pkg.name}] apiKey`,
-      hint: `${pkg.auth.in} ${pkg.auth.name}`,
+      label: t("doctor.itemAbility", { name: ability.name }),
+      where: `[abilities.${ability.name}] apiKey`,
+      hint: `${ability.auth.in} ${ability.auth.name}`,
       present: Boolean(saved),
-      required: !pkg.auth.optional,
+      required: !ability.auth.optional,
       check: async value => {
         const key = value ?? saved
-        return key ? checkPackageKey(pkg, key) : undefined
+        return key ? checkAbilityKey(ability, key) : undefined
       },
-      save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
+      save: value => saveSecrets({ abilities: { [ability.name]: { apiKey: value } } })
     })
   }
-  for (const pkg of await store.listMcpPackages()) {
-    const { auth } = pkg
+  for (const ability of await store.listMcpAbilities()) {
+    const { auth } = ability
     if (auth.type !== "apiKey") continue
-    const saved = creds.packages[pkg.name]?.apiKey
+    const saved = creds.abilities[ability.name]?.apiKey
     items.push({
-      label: t("doctor.itemMcpPackage", { name: pkg.name }),
-      where: `[packages.${pkg.name}] apiKey`,
+      label: t("doctor.itemMcpAbility", { name: ability.name }),
+      where: `[abilities.${ability.name}] apiKey`,
       hint: `${auth.in} ${auth.name}`,
       present: Boolean(saved),
       required: !auth.optional,
@@ -188,10 +188,10 @@ async function packageItems(creds: SecretsFile): Promise<CredentialItem[]> {
       check: async value => {
         const key = value ?? saved
         if (!key && !auth.optional) return undefined
-        const target = mcpPackageTarget(pkg, key)
+        const target = mcpAbilityTarget(ability, key)
         return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
       },
-      save: value => saveSecrets({ packages: { [pkg.name]: { apiKey: value } } })
+      save: value => saveSecrets({ abilities: { [ability.name]: { apiKey: value } } })
     })
   }
   return items
@@ -260,7 +260,7 @@ async function askAndSave(
   return { item, status: tested?.ok ? "saved" : "saved-untested" }
 }
 
-/** One result line, e.g. "  ✓ github (package): saved and working" or "  ✗ telegram bot: missing". */
+/** One result line, e.g. "  ✓ github (ability): saved and working" or "  ✗ telegram bot: missing". */
 export function outcomeLine(outcome: CredentialOutcome): string {
   switch (outcome.status) {
     case "ok":

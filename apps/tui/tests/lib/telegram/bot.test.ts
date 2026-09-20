@@ -72,7 +72,7 @@ test("start() notifies every allowed user that the bot is online", async () => {
 test("start() sets the command menu, and a failure there doesn't stop the bot", async () => {
   setMyCommands.mockClear()
   await makeBot([111]).start()
-  expect(setMyCommands.mock.calls[0]![0].map(c => c.command)).toEqual(["new", "packages"])
+  expect(setMyCommands.mock.calls[0]![0].map(c => c.command)).toEqual(["new", "abilities"])
 
   setMyCommands.mockImplementationOnce(async () => {
     throw new Error("network down")

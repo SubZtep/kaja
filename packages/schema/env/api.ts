@@ -105,12 +105,12 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
       }
     }, "must be 32 bytes, base64-encoded")
     .optional()
-    .describe("Encrypts users' package API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
+    .describe("Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
     .meta({ secret: true, section: "Marketplace" }),
 
   MARKETPLACE_REPO: trimmed
     .default("SubZtep/kaja")
-    .describe("GitHub owner/repo whose marketplace/ folder the cloud package catalog is synced from")
+    .describe("GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from")
     .meta({ section: "Marketplace" }),
   MARKETPLACE_REF: trimmed
     .default("main")

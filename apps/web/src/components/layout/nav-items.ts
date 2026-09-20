@@ -22,7 +22,7 @@ export const getHeaderItems = (user: { role?: string | null } | null): NavItem[]
     // home,
     { to: "/dashboard", label: m.nav_dashboard() },
     { to: "/profile", label: m.nav_profile() },
-    { to: "/packages", label: m.nav_packages() },
+    { to: "/abilities", label: m.nav_abilities() },
     { to: "/widget", label: m.nav_widget() },
     ...(user.role === "admin" ? [{ to: "/admin", label: m.nav_admin() }] : [])
   ]
@@ -31,7 +31,7 @@ export const getHeaderItems = (user: { role?: string | null } | null): NavItem[]
 /** Dashboard shortcut cards; the Admin card is for admins only. */
 export const getDashboardLinks = (role: string | null | undefined): CardItem[] => [
   { to: "/profile", label: m.nav_profile(), description: m.nav_profile_desc(), icon: Shield },
-  { to: "/packages", label: m.nav_packages(), description: m.nav_packages_desc(), icon: Sparkles },
+  { to: "/abilities", label: m.nav_abilities(), description: m.nav_abilities_desc(), icon: Sparkles },
   { to: "/widget", label: m.nav_widget(), description: m.nav_widget_desc(), icon: MessageCircle },
   ...(role === "admin" ? [{ to: "/admin", label: m.nav_admin(), description: m.nav_admin_desc(), icon: Settings }] : [])
 ]

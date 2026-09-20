@@ -10,7 +10,7 @@ import {
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
-import { packageService } from "../../services"
+import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
@@ -147,17 +147,17 @@ nasiRoutes.openapi(infoRoute, async c => {
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) return notFound(c, "No model available")
 
-  const personas = await packageService.personasForUser(user.id)
+  const personas = await abilityService.personasForUser(user.id)
   const persona = personas[0]
-  const skills = await packageService.skillsForUser(user.id)
-  const keys = new Set(await packageService.keyNames(user.id))
-  // Tool and MCP packages as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP packages in the cloud have a fixed tool list.
-  const loads = (pkg: { name: string; auth: { type: string; optional?: boolean } }) =>
-    pkg.auth.type !== "apiKey" || pkg.auth.optional || keys.has(pkg.name)
-  const httpTools = (await packageService.httpToolsForUser(user.id))
+  const skills = await abilityService.skillsForUser(user.id)
+  const keys = new Set(await abilityService.keyNames(user.id))
+  // Tool and MCP abilities as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP abilities in the cloud have a fixed tool list.
+  const loads = (ability: { name: string; auth: { type: string; optional?: boolean } }) =>
+    ability.auth.type !== "apiKey" || ability.auth.optional || keys.has(ability.name)
+  const httpTools = (await abilityService.httpToolsForUser(user.id))
     .filter(loads)
-    .flatMap(pkg => pkg.tools.map(t => t.name))
-  const mcpTools = (await packageService.mcpForUser(user.id)).filter(loads).flatMap(pkg => pkg.tools ?? [])
+    .flatMap(ability => ability.tools.map(t => t.name))
+  const mcpTools = (await abilityService.mcpForUser(user.id)).filter(loads).flatMap(ability => ability.tools ?? [])
   const tools = [
     ...(await listCloudToolNames(nasiToolDeps())),
     ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : []),
@@ -187,7 +187,7 @@ const personasRoute = createRoute({
 
 nasiRoutes.openapi(personasRoute, async c => {
   if (!c.get("user")) return unauthorized(c)
-  const personas = await packageService.personaCatalog()
+  const personas = await abilityService.personaCatalog()
   return c.json({ personas: personas.map(p => ({ id: p.id, label: p.label })) }, 200)
 })
 

@@ -33,7 +33,7 @@ describe("config export", () => {
     const body = await res.json()
     expect(body.files["models.toml"]).toContain("provider")
     expect(body.files["mcp.toml"]).toContain("export-test")
-    // Personas are marketplace packages; `kaja pkg update` brings them, not the export.
+    // Personas are marketplace abilities; `kaja abilities update` brings them, not the export.
     expect(Object.keys(body.files).sort()).toEqual(["mcp.toml", "models.toml"])
   })
 

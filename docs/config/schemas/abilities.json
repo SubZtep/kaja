@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "source": {
+      "description": "Marketplace repo override",
+      "type": "object",
+      "properties": {
+        "url": {
+          "description": "Git URL (or local path) of the repo holding the marketplace/ folder",
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "description": "Branch or tag to fetch",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "skills": {
+      "default": [],
+      "description": "Enabled skills, by folder name under marketplace/skills/",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "tools": {
+      "default": [],
+      "description": "Enabled HTTP tool abilities, by file name under marketplace/tools/",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "mcp": {
+      "default": [],
+      "description": "Enabled MCP server abilities, by file name under marketplace/mcp/",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "personas": {
+      "default": [],
+      "description": "Enabled personas, by file name under marketplace/personas/ (default always loads)",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

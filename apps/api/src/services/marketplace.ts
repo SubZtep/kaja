@@ -10,7 +10,7 @@ import {
   readSkillBundle,
   scanDatasets,
   scanHttpTools,
-  scanMcpPackages,
+  scanMcpAbilities,
   scanPersonas,
   scanSkills
 } from "@kaja/nasi"
@@ -18,7 +18,7 @@ import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/
 import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
 import { withLock } from "../core/lock"
-import { cloudMcpProblem } from "./package"
+import { cloudMcpProblem } from "./ability"
 
 const MAX_TARBALL_BYTES = 50 * 1024 * 1024
 const COMMIT_SHA = /^[0-9a-f]{40}$/
@@ -26,8 +26,8 @@ const COMMIT_SHA = /^[0-9a-f]{40}$/
 export type MarketplaceSource = { repo: string; ref: string }
 
 /**
- * Keeps the `package` table in step with the `marketplace/` folder (skills, personas, datasets, HTTP tools, MCP servers) of a GitHub repo. A sync asks
- * GitHub for the branch's commit first and only downloads the tarball when it moved. Packages are
+ * Keeps the `ability` table in step with the `marketplace/` folder (skills, personas, datasets, HTTP tools, MCP servers) of a GitHub repo. A sync asks
+ * GitHub for the branch's commit first and only downloads the tarball when it moved. Abilities are
  * never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
 export class MarketplaceService {
@@ -82,12 +82,12 @@ export class MarketplaceService {
     })
   }
 
-  /** Applies a marketplace folder already on disk: upserts every valid skill, persona, HTTP tool and MCP package, marks the rest removed. No network — the sync and tests both use it. */
+  /** Applies a marketplace folder already on disk: upserts every valid skill, persona, HTTP tool and MCP ability, marks the rest removed. No network — the sync and tests both use it. */
   async syncFromDir(
     marketplaceDir: string,
     commit: string
   ): Promise<Omit<MarketplaceSyncResult, "commit" | "changed">> {
-    const bundles: PackageBundle[] = []
+    const bundles: AbilityBundle[] = []
     for (const entry of await scanSkills(marketplaceDir)) {
       if (entry.error) {
         warn("Marketplace skill skipped", { skill: entry.name, error: entry.error })
@@ -99,13 +99,13 @@ export class MarketplaceService {
     bundles.push(...(await readDatasetFiles(marketplaceDir)))
     const tools = await readHttpTools(marketplaceDir)
     bundles.push(...tools)
-    bundles.push(...(await readMcpPackages(marketplaceDir, new Set(tools.map(tool => tool.name)))))
+    bundles.push(...(await readMcpAbilities(marketplaceDir, new Set(tools.map(tool => tool.name)))))
 
     const client = await this.#db.connect()
     try {
       await client.query("BEGIN")
       const { rows: existing } = await client.query(
-        "SELECT type, name, content_hash, removed_at FROM package WHERE type = ANY($1)",
+        "SELECT type, name, content_hash, removed_at FROM ability WHERE type = ANY($1)",
         [SYNCED_TYPES]
       )
       const before = new Map(existing.map(row => [`${row.type}:${row.name}`, row]))
@@ -120,7 +120,7 @@ export class MarketplaceService {
           updated.push(reportName(bundle.type, bundle.name))
         await client.query(
           `
-          INSERT INTO package (type, name, description, files, has_scripts, content_hash, commit)
+          INSERT INTO ability (type, name, description, files, has_scripts, content_hash, commit)
           VALUES ($1, $2, $3, $4, $5, $6, $7)
           ON CONFLICT (type, name) DO UPDATE SET
             description = EXCLUDED.description,
@@ -130,8 +130,8 @@ export class MarketplaceService {
             commit = EXCLUDED.commit,
             removed_at = NULL,
             updated_at = CASE
-              WHEN package.content_hash <> EXCLUDED.content_hash OR package.removed_at IS NOT NULL THEN NOW()
-              ELSE package.updated_at
+              WHEN ability.content_hash <> EXCLUDED.content_hash OR ability.removed_at IS NOT NULL THEN NOW()
+              ELSE ability.updated_at
             END
           `,
           [bundle.type, bundle.name, bundle.description, JSON.stringify(bundle.files), bundle.hasScripts, hash, commit]
@@ -142,7 +142,7 @@ export class MarketplaceService {
       for (const type of SYNCED_TYPES) {
         const { rows: gone } = await client.query(
           `
-          UPDATE package SET removed_at = NOW(), updated_at = NOW()
+          UPDATE ability SET removed_at = NOW(), updated_at = NOW()
           WHERE type = $1 AND removed_at IS NULL AND NOT (name = ANY($2))
           RETURNING name
           `,
@@ -207,10 +207,10 @@ export class MarketplaceService {
   }
 }
 
-/** Package types the sync owns; anything else in the table is left alone. */
+/** Ability types the sync owns; anything else in the table is left alone. */
 const SYNCED_TYPES = ["skill", "persona", "dataset", "tool", "mcp"] as const
 
-const MARKETPLACE_FOLDER: Record<PackageBundle["type"], string> = {
+const MARKETPLACE_FOLDER: Record<AbilityBundle["type"], string> = {
   skill: "skills",
   persona: "personas",
   dataset: "datasets",
@@ -218,7 +218,7 @@ const MARKETPLACE_FOLDER: Record<PackageBundle["type"], string> = {
   mcp: "mcp"
 }
 
-type PackageBundle = {
+type AbilityBundle = {
   type: (typeof SYNCED_TYPES)[number]
   name: string
   description: string
@@ -226,14 +226,14 @@ type PackageBundle = {
   hasScripts: boolean
 }
 
-/** How a package shows in a sync result: skills by name, others by their marketplace path. */
-function reportName(type: PackageBundle["type"], name: string): string {
+/** How an ability shows in a sync result: skills by name, others by their marketplace path. */
+function reportName(type: AbilityBundle["type"], name: string): string {
   return type === "skill" ? name : `${MARKETPLACE_FOLDER[type]}/${name}`
 }
 
 /** Every valid `personas/*.toml` as stored text, with its label as the description; broken ones are skipped with a warning. */
-async function readPersonaFiles(marketplaceDir: string): Promise<PackageBundle[]> {
-  const bundles: PackageBundle[] = []
+async function readPersonaFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
+  const bundles: AbilityBundle[] = []
   for (const entry of await scanPersonas(marketplaceDir)) {
     const file = `${entry.name}.toml`
     try {
@@ -258,8 +258,8 @@ async function readPersonaFiles(marketplaceDir: string): Promise<PackageBundle[]
 }
 
 /** Every valid `datasets/*.json` as stored text, with its label as the description; broken ones are skipped with a warning. */
-async function readDatasetFiles(marketplaceDir: string): Promise<PackageBundle[]> {
-  const bundles: PackageBundle[] = []
+async function readDatasetFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
+  const bundles: AbilityBundle[] = []
   for (const entry of await scanDatasets(marketplaceDir)) {
     if (entry.error || !entry.label) {
       warn("Marketplace dataset skipped", { dataset: entry.name, error: entry.error })
@@ -279,19 +279,19 @@ async function readDatasetFiles(marketplaceDir: string): Promise<PackageBundle[]
 }
 
 /** Every valid `tools/*.toml` as stored text; broken manifests and ones that call a non-public host are skipped with a warning. */
-async function readHttpTools(marketplaceDir: string): Promise<PackageBundle[]> {
-  const bundles: PackageBundle[] = []
+async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
+  const bundles: AbilityBundle[] = []
   for (const entry of await scanHttpTools(marketplaceDir)) {
     const file = `${entry.name}.toml`
     try {
       if (entry.error) throw new Error(entry.error)
       const text = await readFile(join(marketplaceDir, "tools", file), "utf8")
-      const pkg = parseHttpToolManifest(text, entry.name)
-      if (!isPublicHttpUrl(pkg.baseUrl)) throw new Error(`${pkg.baseUrl} isn't a public address`)
+      const ability = parseHttpToolManifest(text, entry.name)
+      if (!isPublicHttpUrl(ability.baseUrl)) throw new Error(`${ability.baseUrl} isn't a public address`)
       bundles.push({
         type: "tool",
-        name: pkg.name,
-        description: pkg.description,
+        name: ability.name,
+        description: ability.description,
         files: { [file]: text },
         hasScripts: false
       })
@@ -307,26 +307,26 @@ async function readHttpTools(marketplaceDir: string): Promise<PackageBundle[]> {
  * servers, ones without a `tools` allowlist or on a non-public host, and names a tool already has (keys
  * share one namespace per name).
  */
-async function readMcpPackages(marketplaceDir: string, toolNames: Set<string>): Promise<PackageBundle[]> {
-  const bundles: PackageBundle[] = []
-  for (const entry of await scanMcpPackages(marketplaceDir)) {
+async function readMcpAbilities(marketplaceDir: string, toolNames: Set<string>): Promise<AbilityBundle[]> {
+  const bundles: AbilityBundle[] = []
+  for (const entry of await scanMcpAbilities(marketplaceDir)) {
     const file = `${entry.name}.toml`
     try {
       if (entry.error) throw new Error(entry.error)
       if (toolNames.has(entry.name)) throw new Error(`an HTTP tool is already called ${entry.name}`)
       const text = await readFile(join(marketplaceDir, "mcp", file), "utf8")
-      const pkg = parseMcpManifest(text, entry.name)
-      const problem = cloudMcpProblem(pkg)
+      const ability = parseMcpManifest(text, entry.name)
+      const problem = cloudMcpProblem(ability)
       if (problem) throw new Error(problem)
       bundles.push({
         type: "mcp",
-        name: pkg.name,
-        description: pkg.description,
+        name: ability.name,
+        description: ability.description,
         files: { [file]: text },
         hasScripts: false
       })
     } catch (error) {
-      warn("Marketplace MCP package skipped", {
+      warn("Marketplace MCP ability skipped", {
         mcp: entry.name,
         error: error instanceof Error ? error.message : error
       })
@@ -335,7 +335,7 @@ async function readMcpPackages(marketplaceDir: string, toolNames: Set<string>): 
   return bundles
 }
 
-/** Stable hash of what the agent sees of a package, so an unchanged one keeps its updated_at. */
+/** Stable hash of what the agent sees of an ability, so an unchanged one keeps its updated_at. */
 function contentHash(bundle: { description: string; files: Record<string, string>; hasScripts: boolean }): string {
   // Code-unit order, not localeCompare: the hash mustn't change with the server's locale. Keys are unique, so never equal.
   const files = Object.keys(bundle.files)

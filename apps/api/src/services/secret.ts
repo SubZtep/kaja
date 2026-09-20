@@ -19,7 +19,7 @@ function associatedData(userId: string, name: string): Buffer {
 }
 
 /**
- * Users' own secrets (package API keys), AES-256-GCM encrypted at rest in `user_secret`. Values are
+ * Users' own secrets (ability API keys), AES-256-GCM encrypted at rest in `user_secret`. Values are
  * decrypted only for the owner's turns and key checks; nothing here ever returns one to a client.
  * Without a key (USER_SECRET_KEY unset) nothing can be written, and reads find nothing.
  */

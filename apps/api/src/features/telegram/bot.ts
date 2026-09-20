@@ -45,7 +45,7 @@ function keyboardFor(rows: TelegramButton[][] | undefined): InlineKeyboard | und
 /** The command menu Telegram shows next to the message box. */
 const COMMANDS = [
   { command: "new", description: "Start a new conversation" },
-  { command: "packages", description: "Turn skills and tools on or off" }
+  { command: "abilities", description: "Turn skills and tools on or off" }
 ]
 
 /**
@@ -113,7 +113,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   bot.on("callback_query:data", async ctx => {
     const message = ctx.callbackQuery.message
-    if (/^(tool|pkg|pkgp):/.test(ctx.callbackQuery.data) && message) {
+    if (/^(tool|ability|abilitypage):/.test(ctx.callbackQuery.data) && message) {
       await ctx.answerCallbackQuery()
       void driver.handleCallback(ctx.from.id, message.chat.id, message.message_id, ctx.callbackQuery.data)
       return

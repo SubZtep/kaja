@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, test } from "bun:test"
 import { join } from "node:path"
-import { McpPackageSchema } from "@kaja/schema/packages"
+import { McpAbilitySchema } from "@kaja/schema/abilities"
+import { checkMcpAbilityKey, mcpAbilityTarget } from "../../src/abilities/mcp-ability"
 import { toolName } from "../../src/agent/tools"
-import { checkMcpPackageKey, mcpPackageTarget } from "../../src/packages/mcp-package"
 import { createTools } from "../../src/tools/registry"
 import { type HttpMcpFixture, routeHostTo, startHttpMcpFixture } from "../fixtures/mcp-http-server"
 
@@ -20,8 +20,8 @@ afterAll(() => {
   keyed.stop()
 })
 
-const remotePackage = (over: Record<string, unknown> = {}) =>
-  McpPackageSchema.parse({
+const remoteAbility = (over: Record<string, unknown> = {}) =>
+  McpAbilitySchema.parse({
     name: "things",
     description: "Things",
     transport: "http",
@@ -31,7 +31,7 @@ const remotePackage = (over: Record<string, unknown> = {}) =>
     ...over
   })
 
-const stdioPackage = McpPackageSchema.parse({
+const stdioAbility = McpAbilitySchema.parse({
   name: "local-things",
   description: "Local things",
   transport: "stdio",
@@ -39,18 +39,18 @@ const stdioPackage = McpPackageSchema.parse({
   args: [join(import.meta.dir, "../fixtures/mcp-server.ts")]
 })
 
-test("the cloud connects only remote packages, through its fetch, never mcp.toml servers or stdio packages", async () => {
+test("the cloud connects only remote abilities, through its fetch, never mcp.toml servers or stdio abilities", async () => {
   const { tools, mcpServers, closeTools } = await createTools({
-    mcpPackages: [mcpPackageTarget(remotePackage()), mcpPackageTarget(stdioPackage)],
+    mcpAbilities: [mcpAbilityTarget(remoteAbility()), mcpAbilityTarget(stdioAbility)],
     mcpServers: [{ id: "configured", url: `https://${HOST}/mcp`, headers: {} }],
     mcpFetch: routeHostTo(open, HOST)
   })
   try {
-    expect(mcpServers).toEqual([{ id: "package:things", toolCount: 4, failed: false }])
+    expect(mcpServers).toEqual([{ id: "ability:things", toolCount: 4, failed: false }])
     const names = tools.map(toolName)
     expect(names).toEqual(expect.arrayContaining(["read_thing", "write_thing", "picture", "long_answer"]))
     const write = tools.find(t => toolName(t) === "write_thing")!
-    expect(write.approval?.({ id: "1" })).toBe('package:things write_thing {"id":"1"}')
+    expect(write.approval?.({ id: "1" })).toBe('ability:things write_thing {"id":"1"}')
     expect(tools.find(t => toolName(t) === "read_thing")!.approval).toBeUndefined()
   } finally {
     await closeTools()
@@ -58,13 +58,13 @@ test("the cloud connects only remote packages, through its fetch, never mcp.toml
 })
 
 test("without the guarded fetch the cloud connects nothing", async () => {
-  const { mcpServers } = await createTools({ mcpPackages: [mcpPackageTarget(remotePackage())] })
+  const { mcpServers } = await createTools({ mcpAbilities: [mcpAbilityTarget(remoteAbility())] })
   expect(mcpServers).toEqual([])
 })
 
 test("cloud results drop images with a note and cut long text", async () => {
   const { tools, closeTools } = await createTools({
-    mcpPackages: [mcpPackageTarget(remotePackage())],
+    mcpAbilities: [mcpAbilityTarget(remoteAbility())],
     mcpFetch: routeHostTo(open, HOST)
   })
   try {
@@ -79,10 +79,10 @@ test("cloud results drop images with a note and cut long text", async () => {
 })
 
 test("a key is checked by connecting and listing tools, and never shows in the reason", async () => {
-  const pkg = remotePackage({ auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " } })
+  const ability = remoteAbility({ auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " } })
   const fetch = routeHostTo(keyed, HOST)
-  expect(await checkMcpPackageKey(pkg, "right-key", { fetch })).toEqual({ ok: true })
-  const wrong = await checkMcpPackageKey(pkg, "wrong-key-123", { fetch })
+  expect(await checkMcpAbilityKey(ability, "right-key", { fetch })).toEqual({ ok: true })
+  const wrong = await checkMcpAbilityKey(ability, "wrong-key-123", { fetch })
   expect(wrong.ok).toBe(false)
   expect(JSON.stringify(wrong)).not.toContain("wrong-key-123")
 })

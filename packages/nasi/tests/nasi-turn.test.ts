@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test"
-import { HttpToolPackageSchema, McpPackageSchema } from "@kaja/schema/packages"
+import { HttpToolAbilitySchema, McpAbilitySchema } from "@kaja/schema/abilities"
+import type { AbilityStore } from "../src/abilities/types"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
-import type { PackageStore } from "../src/packages/types"
 import { createMemoryStore } from "../src/store"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
 
@@ -210,7 +210,7 @@ test("a session id cannot be resumed by a different owner sharing the same store
 })
 
 // A cloud user's HTTP tool with a key; a proxy is set so the (faked) request skips the DNS check.
-const issuesPackage = HttpToolPackageSchema.parse({
+const issuesAbility = HttpToolAbilitySchema.parse({
   name: "issues",
   description: "Issue tracker",
   baseUrl: "https://api.issues.test",
@@ -226,11 +226,11 @@ const issuesPackage = HttpToolPackageSchema.parse({
   ]
 })
 
-const packages: PackageStore = {
+const abilities: AbilityStore = {
   listSkills: async () => [],
   readSkill: async () => undefined,
-  listHttpTools: async () => [issuesPackage],
-  listMcpPackages: async () => []
+  listHttpTools: async () => [issuesAbility],
+  listMcpAbilities: async () => []
 }
 
 const createIssueCall = {
@@ -265,8 +265,8 @@ function openWithIssues(script: { content: string | null; tool_calls?: unknown[]
   return open(
     script,
     {
-      packages,
-      packageKey: name => (name === "issues" ? "user-key" : undefined),
+      abilities,
+      abilityKey: name => (name === "issues" ? "user-key" : undefined),
       deps: { fetchProxy: "http://proxy.test:3128" }
     },
     sent
@@ -329,11 +329,11 @@ test("an approval with nothing waiting for one is refused", async () => {
   })
 })
 
-test("a cloud user's MCP package connects with their key when the turn opens; a write waits for approval", async () => {
+test("a cloud user's MCP ability connects with their key when the turn opens; a write waits for approval", async () => {
   const fixture = startHttpMcpFixture({ apiKey: "mcp-key" })
   // The guarded fetch goes through the proxy, which here hands the fake host to the local fixture.
   globalThis.fetch = routeHostTo(fixture, "mcp.example.test", realFetch)
-  const things = McpPackageSchema.parse({
+  const things = McpAbilitySchema.parse({
     name: "things",
     description: "Things",
     transport: "http",
@@ -355,8 +355,8 @@ test("a cloud user's MCP package connects with their key when the turn opens; a 
       { content: "Done." }
     ],
     {
-      packages: { ...packages, listHttpTools: async () => [], listMcpPackages: async () => [things] },
-      packageKey: name => (name === "things" ? "mcp-key" : undefined),
+      abilities: { ...abilities, listHttpTools: async () => [], listMcpAbilities: async () => [things] },
+      abilityKey: name => (name === "things" ? "mcp-key" : undefined),
       deps: { fetchProxy: "http://proxy.test:3128" }
     },
     sent

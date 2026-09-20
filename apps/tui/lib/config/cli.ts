@@ -14,7 +14,7 @@ type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean }
 
 const BUNDLE_FILES = new Set(["models.toml", "mcp.toml"])
 
-/** The server bundle's files that `fetch` writes; personas, like the rest of the marketplace, come from `kaja pkg update`. */
+/** The server bundle's files that `fetch` writes; personas, like the rest of the marketplace, come from `kaja abilities update`. */
 export function pickBundleFiles(files: Record<string, string>): Record<string, string> {
   return Object.fromEntries(Object.entries(files).filter(([key]) => BUNDLE_FILES.has(key)))
 }

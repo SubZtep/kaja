@@ -7,7 +7,7 @@ import {
   type WidgetConfig,
   widgetKeySchema
 } from "@kaja/schema/api"
-import { packageService, widgetService } from "../../services"
+import { abilityService, widgetService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badRequest, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth"
@@ -19,10 +19,10 @@ const idParam = z.object({
 
 /** Why a config can't be saved (unknown persona or skills), or undefined when it's fine. */
 async function configError(config: WidgetConfig | undefined): Promise<string | undefined> {
-  if (config?.persona && !(await packageService.personaCatalog()).some(p => p.id === config.persona)) {
+  if (config?.persona && !(await abilityService.personaCatalog()).some(p => p.id === config.persona)) {
     return `Unknown persona "${config.persona}"`
   }
-  const unknownSkills = config?.skills ? await packageService.unknownSkills(config.skills) : []
+  const unknownSkills = config?.skills ? await abilityService.unknownSkills(config.skills) : []
   if (unknownSkills.length > 0) return `Unknown skills: ${unknownSkills.join(", ")}`
   return undefined
 }

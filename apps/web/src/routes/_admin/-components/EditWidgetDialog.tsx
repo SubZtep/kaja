@@ -1,10 +1,10 @@
 import { Dialog } from "@base-ui/react/dialog"
-import type { CatalogPackage, UpdateWidgetKeyRequest, WidgetKey } from "@kaja/schema/api"
+import type { CatalogAbility, UpdateWidgetKeyRequest, WidgetKey } from "@kaja/schema/api"
 import { widgetTypeSchema } from "@kaja/schema/api"
 import { useState } from "react"
 import { z } from "zod"
+import { SkillChecklist } from "../../../components/abilities/SkillChecklist"
 import { Button } from "../../../components/form/primitives/Button"
-import { SkillChecklist } from "../../../components/packages/SkillChecklist"
 import { useAppForm } from "../../../lib/form"
 import { m } from "../../../paraglide/messages.js"
 
@@ -37,7 +37,7 @@ export function EditWidgetDialog({
 }: Readonly<{
   widgetKey: WidgetKey
   personas: { id: string; label: string }[]
-  skills: CatalogPackage[]
+  skills: CatalogAbility[]
   onSave: (payload: UpdateWidgetKeyRequest) => Promise<unknown>
   isPending: boolean
   children: React.ReactElement

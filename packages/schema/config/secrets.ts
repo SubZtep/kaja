@@ -20,8 +20,8 @@ const SecretsProviderSchema = z.object({
 // Keyed by the mcp.toml [[servers]] id it credentials; values fold into that server's env (stdio) or headers (HTTP).
 const SecretsMcpServerSchema = z.record(z.string(), z.string())
 
-// Keyed by a marketplace/tools/<name>.toml package; its manifest's `auth` says where the key goes.
-const SecretsPackageSchema = z.object({
+// Keyed by a marketplace/tools/<name>.toml ability; its manifest's `auth` says where the key goes.
+const SecretsAbilitySchema = z.object({
   apiKey: z.string().min(1)
 })
 
@@ -34,11 +34,11 @@ export const SecretsFileSchema = z.object({
   telegram: SecretsTelegramSchema.optional(),
   providers: z.record(z.string(), SecretsProviderSchema).default({}),
   mcp: z.record(z.string(), SecretsMcpServerSchema).default({}),
-  packages: z.record(z.string(), SecretsPackageSchema).default({})
+  abilities: z.record(z.string(), SecretsAbilitySchema).default({})
 })
 
 export type SecretsFile = z.infer<typeof SecretsFileSchema>
 export type SecretsLocation = z.infer<typeof SecretsLocationSchema>
 export type SecretsWebSearch = z.infer<typeof SecretsWebSearchSchema>
 export type SecretsTelegram = z.infer<typeof SecretsTelegramSchema>
-export type SecretsPackage = z.infer<typeof SecretsPackageSchema>
+export type SecretsAbility = z.infer<typeof SecretsAbilitySchema>

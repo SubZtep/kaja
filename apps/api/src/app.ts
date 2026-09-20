@@ -5,13 +5,13 @@ import { logger } from "hono/logger"
 import { env } from "./core/env"
 import { trafficLogger } from "./core/logger"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
+import { abilityRoutes } from "./features/abilities"
 import { adminRoutes } from "./features/admin"
 import { authMiddleware, authRoutes } from "./features/auth"
 import { configRoutes } from "./features/config"
 import { configExportRoutes } from "./features/config-export"
 import { healthRoutes } from "./features/health"
 import { nasiRoutes } from "./features/nasi"
-import { packageRoutes } from "./features/packages"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { statsRoutes } from "./features/stats"
 import { telegramAdminRoutes } from "./features/telegram-admin"
@@ -55,7 +55,7 @@ app.route("/config", configExportRoutes)
 app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
-app.route("/packages", packageRoutes)
+app.route("/abilities", abilityRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram/admin", telegramAdminRoutes)
 app.route("/users", userRoutes)

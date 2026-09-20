@@ -1,12 +1,12 @@
 import { ASK_USER_TOOL, createOpenAIClient, Nasi, replyLanguageInstructionFor, setDatasetLoaders } from "@kaja/nasi"
+import type { Persona } from "@kaja/schema/abilities"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
-import type { Persona } from "@kaja/schema/packages"
 import { isPublicHttpUrl } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
-import { modelService, packageService } from "../../services"
-import { type CloudPackageSource, createPostgresPackageStore } from "./pg-packages"
+import { abilityService, modelService } from "../../services"
+import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
 
 export type ChatResolver = () => Promise<{ client: ReturnType<typeof createOpenAIClient>; model: string }>
@@ -60,10 +60,10 @@ const CLOUD_ASK_USER_INSTRUCTION =
   `either call ${ASK_USER_TOOL} because you genuinely need an answer, or ` +
   `just state the result and stop.`
 
-// dataset_info and the "About the user" section read the marketplace's datasets from the package table.
+// dataset_info and the "About the user" section read the marketplace's datasets from the ability table.
 setDatasetLoaders({
-  loadDatasets: () => packageService.datasets(),
-  loadDataset: async topic => (await packageService.datasets()).get(topic)
+  loadDatasets: () => abilityService.datasets(),
+  loadDataset: async topic => (await abilityService.datasets()).get(topic)
 })
 
 let fetchProxyOverride: string | undefined
@@ -73,7 +73,7 @@ export function setNasiFetchProxyOverride(proxy: string | undefined) {
   fetchProxyOverride = proxy
 }
 
-/** Tool deps every cloud turn runs with. `fetchProxy` unset leaves `fetch_url` out of the cloud tool set entirely — cloud fetches egress from the server, so they go through a proxy or not at all. HTTP tool packages use it too when set, and otherwise go direct (their hosts are fixed by reviewed manifests, and private addresses are refused). */
+/** Tool deps every cloud turn runs with. `fetchProxy` unset leaves `fetch_url` out of the cloud tool set entirely — cloud fetches egress from the server, so they go through a proxy or not at all. HTTP tool abilities use it too when set, and otherwise go direct (their hosts are fixed by reviewed manifests, and private addresses are refused). */
 export function nasiToolDeps() {
   return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
@@ -84,22 +84,22 @@ export async function openNasiFor(opts: {
   owner?: string | null
   pinnedModel?: string
   language?: string
-  /** Whose packages the turn gets; defaults to the user's own selections and keys (a widget passes its key's skill list). */
-  packages?: CloudPackageSource
+  /** Whose abilities the turn gets; defaults to the user's own selections and keys (a widget passes its key's skill list). */
+  abilities?: CloudAbilitySource
 }): Promise<Nasi> {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
-  const source = opts.packages ?? { userId: opts.userId }
+  const source = opts.abilities ?? { userId: opts.userId }
   const personas = await personasFor(source)
   // Only the user's own turns get their keys; a widget's skills-only source never needs one.
-  const keys = "userId" in source ? await packageService.keysForUser(source.userId) : new Map<string, string>()
+  const keys = "userId" in source ? await abilityService.keysForUser(source.userId) : new Map<string, string>()
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
     personas,
     owner: opts.owner,
     deps: nasiToolDeps(),
-    packages: createPostgresPackageStore(source),
-    packageKey: name => keys.get(name),
+    abilities: createPostgresAbilityStore(source),
+    abilityKey: name => keys.get(name),
     promptContext: {
       environment:
         "You are Kaja cloud chat. read_file and list_files run on the user's own machine, scoped to " +
@@ -112,8 +112,8 @@ export async function openNasiFor(opts: {
 }
 
 /** The turn's roster: the user's own personas, or for a widget the whole catalog (its key's persona is where a turn starts). */
-function personasFor(source: CloudPackageSource): Promise<Persona[]> {
-  return "userId" in source ? packageService.personasForUser(source.userId) : packageService.personaCatalog()
+function personasFor(source: CloudAbilitySource): Promise<Persona[]> {
+  return "userId" in source ? abilityService.personasForUser(source.userId) : abilityService.personaCatalog()
 }
 
 /** Serializes turns on an existing session so overlapping requests (retries, duplicate tabs) can't race the read-modify-write around session persistence; a new session (no id yet) has no shared row to race on. */

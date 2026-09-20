@@ -57,8 +57,8 @@ note about my old job"*.
 ## Datasets
 
 A dataset is a questionnaire the agent fills in conversationally, across as many sessions as it
-takes. Datasets are [marketplace](/skills#the-marketplace) packages: one JSON file per topic in
-`~/.config/kaja/marketplace/datasets/` (synced by `kaja pkg update`, or your own), and a
+takes. Datasets are [marketplace](/skills#the-marketplace) abilities: one JSON file per topic in
+`~/.config/kaja/marketplace/datasets/` (synced by `kaja abilities update`, or your own), and a
 [persona](/personas) opts into it with `dataset = "<id>"`. Every dataset there loads; one does
 nothing until a persona names it or it's a profile.
 

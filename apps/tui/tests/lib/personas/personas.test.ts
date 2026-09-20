@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { loadPersonas } from "../../../lib/personas/personas"
 
 // getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it per-test isolates each test from the real ~/.config/kaja — same pattern as tests/lib/personas/datasets.test.ts.
-// The fixture's packages.toml enables unknown-model, barkochba, broken and a missing one; unlisted.toml isn't enabled.
+// The fixture's abilities.toml enables unknown-model, barkochba, broken and a missing one; unlisted.toml isn't enabled.
 const fixtureConfigDir = join(import.meta.dir, "../../fixtures/personas")
 const emptyConfigDir = join(tmpdir(), `kaja-test-personas-empty-${Date.now()}`)
 process.env.NODE_ENV = "test"
@@ -15,7 +15,7 @@ afterEach(async () => {
   await rm(emptyConfigDir, { recursive: true, force: true })
 })
 
-test("loads default first, then the personas packages.toml enables, by id", async () => {
+test("loads default first, then the personas abilities.toml enables, by id", async () => {
   process.env.XDG_CONFIG_HOME = fixtureConfigDir
   const personas = await loadPersonas()
   expect(personas.map(p => p.id)).toEqual(["default", "barkochba", "unknown-model"])

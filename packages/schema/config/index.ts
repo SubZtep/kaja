@@ -1,6 +1,6 @@
+export * from "./abilities"
 export * from "./mcp"
 export * from "./models"
-export * from "./packages"
 export * from "./secrets"
 export * from "./services"
 export * from "./settings"

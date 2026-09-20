@@ -142,7 +142,7 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
       await bot.api
         .setMyCommands([
           { command: "new", description: t("telegram.commandNew") },
-          { command: "packages", description: t("telegram.commandPackages") }
+          { command: "abilities", description: t("telegram.commandAbilities") }
         ])
         .catch(error => log.warn("Telegram command menu not set", { error }))
       await bot.start({

@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
+import type { McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
-import type { McpReadOnlyRule } from "@kaja/schema/packages"
 import { randomUUIDv7 } from "@kaja/shared"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
@@ -86,7 +86,7 @@ export async function connectMcpServer(
         opts.approval === "always" || (opts.approval === "writes" && mcpTool.annotations?.readOnlyHint !== true)
       if (!mayAsk) return mcpToolDef
       // TODO: smoother approvals: an "allow for this session" answer in the TUI/Telegram prompt, so a tool the user already approved stops asking until restart.
-      // TODO: an "always allow" answer that writes the tool into the package's readOnly (or a per-user override file), instead of hand-editing manifests.
+      // TODO: an "always allow" answer that writes the tool into the ability's readOnly (or a per-user override file), instead of hand-editing manifests.
       // TODO: show the tool's own description and its arguments as a readable list in the prompt, not a raw JSON preview.
       return {
         ...mcpToolDef,

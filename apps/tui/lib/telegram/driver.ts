@@ -30,32 +30,32 @@ function isCommand(text: string, name: string): boolean {
   return new RegExp(`^/${name}(@\\w+)?$`).test(text.trim())
 }
 
-/** What the running bot loaded: skills (load_skill's list) and tool packages (community tools' `package:<name>` source), by name. */
-function loadedPackages(tools: Tool<any>[]): { skills: string[]; tools: string[] } {
+/** What the running bot loaded: skills (load_skill's list) and tool abilities (community tools' `ability:<name>` source), by name. */
+function loadedAbilities(tools: Tool<any>[]): { skills: string[]; tools: string[] } {
   const loadSkill = tools.find(tool => toolName(tool) === LOAD_SKILL_TOOL) as LoadSkillTool | undefined
-  const packages = tools.flatMap(tool =>
-    tool.origin === "community" && tool.source?.startsWith("package:") ? [tool.source.slice("package:".length)] : []
+  const abilities = tools.flatMap(tool =>
+    tool.origin === "community" && tool.source?.startsWith("ability:") ? [tool.source.slice("ability:".length)] : []
   )
   return {
     skills: (loadSkill?.skills ?? []).map(skill => skill.name).sort((a, b) => a.localeCompare(b)),
-    tools: [...new Set(packages)].sort((a, b) => a.localeCompare(b))
+    tools: [...new Set(abilities)].sort((a, b) => a.localeCompare(b))
   }
 }
 
-/** The /packages reply: what this bot loaded, and how to change it (on the computer: this bot builds its tools once, at start). */
-function packagesMessage(tools: Tool<any>[], personas: Persona[]): string {
-  const loaded = loadedPackages(tools)
-  // default always loads, so like `kaja pkg` it isn't listed as a package.
+/** The /abilities reply: what this bot loaded, and how to change it (on the computer: this bot builds its tools once, at start). */
+function abilitiesMessage(tools: Tool<any>[], personas: Persona[]): string {
+  const loaded = loadedAbilities(tools)
+  // default always loads, so like `kaja abilities` it isn't listed as an ability.
   const picked = personas.map(p => p.id).filter(id => id !== DEFAULT_PERSONA_ID)
   const names = (list: string[]) => list.map(escapeHtml).join(", ")
   return [
-    `<b>${t("telegram.packagesTitle")}</b>`,
-    ...(loaded.skills.length > 0 ? [t("telegram.packagesSkills", { names: names(loaded.skills) })] : []),
-    ...(picked.length > 0 ? [t("telegram.packagesPersonas", { names: names(picked) })] : []),
-    ...(loaded.tools.length > 0 ? [t("telegram.packagesTools", { names: names(loaded.tools) })] : []),
-    ...(loaded.skills.length + picked.length + loaded.tools.length === 0 ? [t("telegram.packagesNone")] : []),
+    `<b>${t("telegram.abilitiesTitle")}</b>`,
+    ...(loaded.skills.length > 0 ? [t("telegram.abilitiesSkills", { names: names(loaded.skills) })] : []),
+    ...(picked.length > 0 ? [t("telegram.abilitiesPersonas", { names: names(picked) })] : []),
+    ...(loaded.tools.length > 0 ? [t("telegram.abilitiesTools", { names: names(loaded.tools) })] : []),
+    ...(loaded.skills.length + picked.length + loaded.tools.length === 0 ? [t("telegram.abilitiesNone")] : []),
     "",
-    t("telegram.packagesHint")
+    t("telegram.abilitiesHint")
   ].join("\n")
 }
 
@@ -506,8 +506,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   async function handleMessage(userId: number, chatId: number, text: string) {
     if (!allowedUserIds.has(userId)) return
 
-    if (isCommand(text, "packages")) {
-      await sender.sendMessage(chatId, packagesMessage(agentConfig.tools ?? [], personas))
+    if (isCommand(text, "abilities")) {
+      await sender.sendMessage(chatId, abilitiesMessage(agentConfig.tools ?? [], personas))
       return
     }
 

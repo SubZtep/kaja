@@ -2,7 +2,7 @@ import { homedir } from "node:os"
 import { type Dataset, DECLINED_ANSWER, normalizeAnswer, type Persona } from "@kaja/schema/cli"
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
-import { LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "../packages/skills"
+import { LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "../abilities/skills"
 import { loadDataset as defaultLoadDataset, loadDatasets as defaultLoadDatasets } from "../personas"
 import {
   type Agent,
@@ -162,7 +162,7 @@ function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefi
     `description, call ${LOAD_SKILL_TOOL} with its name before starting, then follow what it says. ` +
     `Load its other files with ${LOAD_SKILL_TOOL} and a file only when its instructions point to them.` +
     `${scripts}\nAvailable skills:\n` +
-    // One line each, so the section never holds a blank line (refreshPackagesInPrompt relies on that).
+    // One line each, so the section never holds a blank line (refreshAbilitiesInPrompt relies on that).
     skills.map(s => `- ${s.name}: ${s.description.replace(/\s+/g, " ").trim()}`).join("\n")
   )
 }
@@ -271,7 +271,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
  * is rebuilt in place, as a persona switch does; unchanged lists leave the message untouched, so prompt
  * caching holds.
  */
-export async function refreshPackagesInPrompt(
+export async function refreshAbilitiesInPrompt(
   agent: Agent,
   messages: ChatCompletionMessageParam[],
   owner: string | null = LOCAL_OWNER

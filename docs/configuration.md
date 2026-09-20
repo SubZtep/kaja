@@ -19,7 +19,7 @@ LLM provider credentials, model-to-task mapping, secrets, services, and preferen
 ├─ tools/*.ts       # your own plugin tools
 ├─ mcp.toml         # model context protocol servers
 ├─ models.toml      # model catalog per provider
-├─ packages.toml    # which of them are loaded
+├─ abilities.toml    # which of them are loaded
 ├─ services.toml    # external service definitions and endpoints
 ├─ secrets.toml     # your secret keys and tokens
 └─ settings.toml    # preferences and app settings
@@ -37,7 +37,7 @@ the same bundled templates as first run. `kaja config diff` shows what a fetch w
 without writing anything, and `kaja config wizard` re-runs the interactive first-run setup at any
 time (language, provider). `secrets.toml`, `services.toml`, and `settings.toml` are never touched
 by `fetch` — those stay yours to hand-edit. Personas, like the rest of the marketplace, come from
-`kaja pkg update` instead.
+`kaja abilities update` instead.
 
 ## Which file does what
 
@@ -53,7 +53,7 @@ flowchart LR
     V["services.toml<br><small>URLs, ids, flags</small>"]
     C["mcp.toml<br><small>MCP servers</small>"]
     P["marketplace/personas/*.toml"]
-    G["packages.toml<br><small>what loads</small>"]
+    G["abilities.toml<br><small>what loads</small>"]
     D["marketplace/datasets/*.json"]
     K["secrets.toml<br><small>every key and token</small>"]
 
@@ -71,7 +71,7 @@ paste into a bug report.
 ## Checking keys and tokens
 
 `kaja doctor` tests every credential your config relies on: model providers, HTTP tool and MCP
-packages, MCP servers that list `secrets`, and the location, Telegram and web search services. In a terminal it
+abilities, MCP servers that list `secrets`, and the location, Telegram and web search services. In a terminal it
 asks for anything missing or not working, tests the new value before saving it to `secrets.toml`,
 and only keeps a value that fails its test if you say so. A provider without a key is fine as long
 as its model answers (Ollama needs none). It ends with what's still left to fix and where.

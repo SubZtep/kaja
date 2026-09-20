@@ -11,11 +11,11 @@ api/         # API contracts: shared by API, web, and CLI device auth
   mcp-server.ts  # MCP server admin CRUD schemas
   model.ts       # provider/model admin CRUD schemas
   widget-key.ts    # widget key admin CRUD schemas
-config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml, secrets.toml, packages.toml)
+config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml, secrets.toml, abilities.toml)
 store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi
-cli/         # Datasets (re-exports packages/persona.ts)
+cli/         # Datasets (re-exports abilities/persona.ts)
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
-packages/    # Marketplace package content (SKILL.md frontmatter, HTTP tool, MCP and persona manifests), shared by every host that loads packages
+abilities/    # Marketplace ability content (SKILL.md frontmatter, HTTP tool, MCP and persona manifests), shared by every host that loads abilities
 env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, TuiEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
   index.ts     # re-exports api/web/tui/logger/helpers
   api.ts       # ApiEnvSchema — LoggerEnvSchema.extend() + every other var apps/api reads
@@ -26,7 +26,7 @@ env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, TuiEnvSchema
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```
 
-Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`, `@kaja/schema/packages`, `@kaja/schema/env`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
+Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`, `@kaja/schema/abilities`, `@kaja/schema/env`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
 
 ## Conventions
 
