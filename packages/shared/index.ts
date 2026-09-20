@@ -59,6 +59,11 @@ export function getFirstName(fullName?: string, prefix = " ") {
   return fullName ? prefix + fullName.split(" ").shift() : ""
 }
 
+/** A user's name, or their email when the name is blank. */
+export function getDisplayName(user: { name?: string | null; email: string }) {
+  return user.name?.trim() || user.email
+}
+
 /** Capitalize the first letter of the given string. */
 export function capitalized(word: string) {
   return word.charAt(0).toUpperCase() + word.slice(1)

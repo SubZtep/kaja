@@ -1,4 +1,4 @@
-import { capitalized, getTimeAgo } from "@kaja/shared"
+import { capitalized, getDisplayName, getTimeAgo } from "@kaja/shared"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
@@ -39,7 +39,7 @@ const ROLE_TONES: Record<string, "ice" | "muted"> = {
 
 function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, string>) {
   const user = info.row.original
-  const initials = (user.name ?? "?")
+  const initials = getDisplayName(user)
     .split(" ")
     .map(n => n[0])
     .join("")
@@ -49,7 +49,7 @@ function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns
     <div className="flex items-center gap-4">
       <Avatar src={user.image} alt={user.name ?? ""} initials={initials} />
       <div>
-        <div className="font-medium text-fg text-sm">{info.getValue()}</div>
+        {user.name?.trim() && <div className="font-medium text-fg text-sm">{info.getValue()}</div>}
         <div className="text-muted text-xs">{user.email}</div>
       </div>
     </div>

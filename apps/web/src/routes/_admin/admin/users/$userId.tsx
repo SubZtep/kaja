@@ -1,4 +1,4 @@
-import { getDateTime } from "@kaja/shared"
+import { getDateTime, getDisplayName } from "@kaja/shared"
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import type { UserWithRole } from "better-auth/plugins"
 import { ArrowLeft, Calendar, CheckCircle2, Clock, Mail, Shield } from "lucide-react"
@@ -45,7 +45,7 @@ function UserPageComponent() {
             >
               <ArrowLeft size={18} />
             </Link>
-            {user.name}
+            {getDisplayName(user)}
           </span>
         }
         description={m.user_detail_description()}
@@ -59,10 +59,10 @@ function UserPageComponent() {
               size="lg"
               src={user.image}
               alt={user.name ?? ""}
-              initials={user.name?.charAt(0)?.toUpperCase() ?? "?"}
+              initials={getDisplayName(user).charAt(0).toUpperCase()}
             />
             <div>
-              <h2 className="m-0 font-semibold text-fg text-[15px]">{user.name}</h2>
+              <h2 className="m-0 font-semibold text-fg text-[15px]">{getDisplayName(user)}</h2>
               <span className="text-muted text-sm">{user.email}</span>
             </div>
           </div>

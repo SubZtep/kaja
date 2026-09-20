@@ -1,11 +1,13 @@
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
+import { createAuthMiddleware } from "better-auth/api"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
+import { blankProfileFields, googleProfileFromIdToken } from "./google-profile"
 
 function deviceVerificationUrl() {
   const fromEnv = [env.WEB_PUBLIC_URL, env.CORS_ORIGIN].find(Boolean)
@@ -83,6 +85,18 @@ export const auth = betterAuth({
   database: pool,
   basePath: "/auth",
   plugins,
+  hooks: {
+    // A Google sign-in fills a blank name or avatar (say, an email account that linked Google) but never overwrites what the user set.
+    after: createAuthMiddleware(async ctx => {
+      if (ctx.path !== "/callback/:id" || ctx.params?.id !== "google") return
+      const user = ctx.context.newSession?.user
+      if (!user) return
+      const accounts = await ctx.context.internalAdapter.findAccounts(user.id)
+      const google = accounts.find(account => account.providerId === "google")
+      const fill = blankProfileFields(user, googleProfileFromIdToken(google?.idToken))
+      if (Object.keys(fill).length > 0) await ctx.context.internalAdapter.updateUser(user.id, fill)
+    })
+  },
   logger: {
     // Better Auth's own warnings and errors go to the container log.
     level: "warn",

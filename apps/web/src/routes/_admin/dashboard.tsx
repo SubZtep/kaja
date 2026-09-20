@@ -22,7 +22,7 @@ function DashboardPage() {
         title={
           <>
             {m.dashboard_welcome_back()}
-            {user ? `, ${getFirstName(user.name)}` : ""}
+            {getFirstName(user?.name, ", ")}
           </>
         }
         description={m.dashboard_description()}

@@ -334,7 +334,7 @@
   "auth_field_password": "Jelszó",
   "auth_field_remember_me": "Emlékezz rám",
   "auth_field_forgot_password": "Elfelejtett jelszó?",
-  "auth_field_name": "Név",
+  "auth_field_name": "Név (opcionális)",
   "auth_field_name_placeholder": "A neved",
   "auth_field_image_url": "Kép URL",
   "auth_field_image_url_placeholder": "Opcionális profilkép URL",

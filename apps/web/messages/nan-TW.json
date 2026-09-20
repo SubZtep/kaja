@@ -334,7 +334,7 @@
   "auth_field_password": "密碼",
   "auth_field_remember_me": "共我記牢",
   "auth_field_forgot_password": "袂記得密碼？",
-  "auth_field_name": "名",
+  "auth_field_name": "名（選用）",
   "auth_field_name_placeholder": "你个名",
   "auth_field_image_url": "圖片 URL",
   "auth_field_image_url_placeholder": "選用个頭像 URL",

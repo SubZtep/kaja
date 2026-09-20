@@ -334,7 +334,7 @@
   "auth_field_password": "Password",
   "auth_field_remember_me": "Remember me",
   "auth_field_forgot_password": "Forgot password?",
-  "auth_field_name": "Name",
+  "auth_field_name": "Name (optional)",
   "auth_field_name_placeholder": "Your name",
   "auth_field_image_url": "Image URL",
   "auth_field_image_url_placeholder": "Optional avatar URL",
