@@ -70,6 +70,23 @@ export async function askYesNo(
   })
 }
 
+/** Asks to pick one of a few items; the first is the safe answer, and Esc resolves to undefined. */
+export async function askPick(title: string, items: string[]): Promise<number | undefined> {
+  const { PickPrompt } = await import("../../components/secret-prompt")
+  return new Promise(resolve => {
+    const { unmount } = render(
+      <PickPrompt
+        title={title}
+        items={items}
+        onResolve={index => {
+          unmount()
+          resolve(index)
+        }}
+      />
+    )
+  })
+}
+
 /** Asks whether to keep a value that failed its test; not saving is the default. */
 export function askSaveAnyway(title: string): Promise<boolean> {
   return askYesNo(title, t("secretPrompt.saveAnyway"), t("secretPrompt.dontSave"))

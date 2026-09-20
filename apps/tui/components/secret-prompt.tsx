@@ -83,3 +83,28 @@ export function YesNoPrompt({
     </Box>
   )
 }
+
+/** A short list to pick from, with the first item as the safe answer: Enter on it and Esc both leave things as they are. */
+export function PickPrompt({
+  title,
+  items,
+  onResolve
+}: Readonly<{
+  title: string
+  items: string[]
+  /** The chosen item's index, or undefined when dismissed. */
+  onResolve: (index: number | undefined) => void
+}>) {
+  return (
+    <Box flexDirection="column">
+      <Text color="yellow">{title}</Text>
+      <SelectMenu
+        width={Math.max(...items.map(item => item.length)) + 10}
+        items={items}
+        initialIndex={0}
+        onSelect={index => onResolve(index)}
+        onClose={() => onResolve(undefined)}
+      />
+    </Box>
+  )
+}

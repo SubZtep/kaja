@@ -3,34 +3,6 @@ import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import { type Tool, toolName } from "../lib/agent/agents"
 import { t } from "../lib/i18n"
-import { checkModelAvailability } from "../lib/models/check"
-
-const TASK_ORDER: CliResolvedModel["task"][] = ["chat", "embedding", "rerank", "tts", "stt", "image-generation"]
-
-const TASK_LABEL_KEY: Record<CliResolvedModel["task"], string> = {
-  chat: "doctor.taskChat",
-  tts: "doctor.taskTts",
-  stt: "doctor.taskStt",
-  embedding: "doctor.taskEmbedding",
-  rerank: "doctor.taskRerank",
-  "image-generation": "doctor.taskImageGen"
-}
-
-function groupModelsByTask(models: CliResolvedModel[]): [CliResolvedModel["task"], CliResolvedModel[]][] {
-  const grouped = models.reduce<Map<CliResolvedModel["task"], CliResolvedModel[]>>((acc, model) => {
-    const list = acc.get(model.task) ?? []
-    list.push(model)
-    acc.set(model.task, list)
-    return acc
-  }, new Map())
-
-  return [...grouped.entries()].sort(([a], [b]) => TASK_ORDER.indexOf(a) - TASK_ORDER.indexOf(b))
-}
-
-async function printModelStatus(model: CliResolvedModel) {
-  const available = await checkModelAvailability(model)
-  console.log(`  ${available ? "✓" : "✗"} ${model.model} (${t(available ? "doctor.modelUp" : "doctor.modelDown")})`)
-}
 
 async function printModels(models: CliResolvedModel[]) {
   if (models.length === 0) {
@@ -39,10 +11,8 @@ async function printModels(models: CliResolvedModel[]) {
   }
 
   console.log(t("doctor.checking"))
-  for (const [task, entries] of groupModelsByTask(models)) {
-    console.log(t(TASK_LABEL_KEY[task]))
-    for (const model of entries) await printModelStatus(model)
-  }
+  const { defaultModelIo, runModelPass } = await import("../lib/doctor/models")
+  await runModelPass(models, line => console.log(line), await defaultModelIo())
 }
 
 function printMcpServers(mcpServers: { id: string; failed: boolean; toolCount: number }[]) {

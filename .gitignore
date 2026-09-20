@@ -1,5 +1,3 @@
-.agents/
-.claude/
 .config
 .data/
 .output/
@@ -15,5 +13,4 @@ pgdata/
 *.local.*
 .env*
 !.env.example
-.mcp.json
 skills-lock.json

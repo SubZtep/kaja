@@ -4,12 +4,11 @@ import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type Mode
 import { file, TOML, write } from "bun"
 // Written on first run: an example provider/model catalog, sourced from the same file that documents models.toml on the docs site.
 import TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
-import LLAMA_TEMPLATE from "../../../../docs/config/models.llama.toml" with { type: "text" }
-import OLLAMA_TEMPLATE from "../../../../docs/config/models.ollama.toml" with { type: "text" }
 import { getConfigDir } from "../config/config"
 import { writeTemplateConfig } from "../config/fetch"
 import { secrets } from "../config/secrets"
 import { t } from "../i18n"
+import { buildModelsToml, type ModelsSelection } from "./catalog"
 
 /** models.toml's [providers.*], with secrets.toml's [providers.<name>].api_key folded back in. */
 export type ResolvedModelsFile = Omit<KajaModelsFile, "providers"> & {
@@ -20,11 +19,9 @@ export function getModelsPath() {
   return join(getConfigDir(), "models.toml")
 }
 
-const MODEL_TEMPLATES = { fireworks: TEMPLATE, ollama: OLLAMA_TEMPLATE, llama: LLAMA_TEMPLATE } as const
-
-/** Writes the chosen example template, for the "configure my own provider" first-run choice. */
-export async function writeModelsTemplate(which: "fireworks" | "ollama" | "llama") {
-  await write(file(getModelsPath()), MODEL_TEMPLATES[which])
+/** Writes models.toml for the providers the user ticked, replacing what was there. See {@link buildModelsToml}. */
+export async function writeModelsFromCatalog(selection: ModelsSelection) {
+  await write(file(getModelsPath()), buildModelsToml(selection))
 }
 
 /**
@@ -50,12 +47,40 @@ export function setProviderBaseUrl(text: string, provider: string, baseUrl: stri
   return text
 }
 
-/** Reads models.toml, repoints a provider's base_url, and writes it back. No-op when the file is missing. */
-export async function saveProviderBaseUrl(provider: string, baseUrl: string) {
+/**
+ * Makes `[models.<task>]` use `provider` and `model` in models.toml text, for the doctor switching a
+ * broken model to another that serves the same task. Edits those two lines only: the id stays, so a
+ * persona pin naming it still resolves, and the template's comments survive. Unchanged when the
+ * table is missing.
+ */
+export function setModelFields(text: string, task: string, provider: string, model: string): string {
+  const lines = text.split("\n")
+  const start = lines.findIndex(line => line.trim() === `[models.${task}]`)
+  if (start === -1) return text
+
+  let end = lines.length
+  for (let index = start + 1; index < lines.length; index++) {
+    if (lines[index]!.trimStart().startsWith("[")) {
+      end = index
+      break
+    }
+  }
+  const values = { provider, model }
+  for (let index = start + 1; index < end; index++) {
+    const match = /^(\s*)(provider|model)(\s*=\s*)"[^"]*"(.*)$/.exec(lines[index]!)
+    if (match)
+      lines[index] =
+        `${match[1]}${match[2]}${match[3]}${JSON.stringify(values[match[2] as keyof typeof values])}${match[4]}`
+  }
+  return lines.join("\n")
+}
+
+/** Reads models.toml, points a task's default model at another entry's provider and model, and writes it back. No-op when the file is missing. */
+export async function saveModelFields(task: string, provider: string, model: string) {
   const f = file(getModelsPath())
   if (!(await f.exists())) return
   const text = await f.text()
-  const next = setProviderBaseUrl(text, provider, baseUrl)
+  const next = setModelFields(text, task, provider, model)
   if (next !== text) await write(f, next)
 }
 

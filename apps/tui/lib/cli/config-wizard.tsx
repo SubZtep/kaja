@@ -1,17 +1,32 @@
 import { file, TOML } from "bun"
 import { render } from "ink"
 import type { PickerSelection } from "../../components/ability-picker"
-import type { WizardProvider, WizardResult, WizardSaved } from "../../components/config-wizard"
+import type { WizardResult, WizardSaved } from "../../components/config-wizard"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { t } from "../i18n"
-import { getModelsPath, saveProviderBaseUrl, writeModelsTemplate } from "../models/models"
+import { CATALOG, candidatesByTask, catalogProvider } from "../models/catalog"
+import { getModelsPath, writeModelsFromCatalog } from "../models/models"
 import type { PullProgress } from "../models/pull"
 
-const TEMPLATE_PROVIDERS: WizardProvider[] = ["fireworks", "ollama", "llama"]
+/**
+ * Points speech in and out at one Speaches server. It talks to that server's realtime WebSocket API
+ * for speech-to-text and its plain HTTP one for text-to-speech, so one address is written in both
+ * forms. Sets the value even when the table exists, so an address changed on a re-run takes effect.
+ */
+async function applySpeachesUrl(url: string, print: (line: string) => void) {
+  const { getConfigPath, invalidateConfigCache } = await import("../config/config")
+  const { setTomlValue } = await import("../config/toml")
+  const schemes = { stt: url.replace(/^http/, "ws"), tts: url.replace(/^ws/, "http") }
+  for (const [table, value] of Object.entries(schemes)) {
+    await setTomlValue(getConfigPath(), table, "speachesUrl", JSON.stringify(value))
+  }
+  invalidateConfigCache()
+  print(t("wizard.voiceSaved", { url }))
+}
 
-async function applyResult(result: WizardResult) {
+async function applyResult(result: WizardResult, print: (line: string) => void) {
   const mode: KajaMode = result.mode ?? "local"
 
   // savePreferences merges into a parsed config, so the file has to exist first. Cloud gets the
@@ -24,11 +39,15 @@ async function applyResult(result: WizardResult) {
   await savePreferences({ mode, ...(result.language ? { locale: result.language } : {}) })
   if (mode === "cloud") return
 
-  // The admin-managed models.toml is no longer offered here; `kaja config fetch` still writes it.
-  if (result.provider && TEMPLATE_PROVIDERS.includes(result.provider)) {
-    await writeModelsTemplate(result.provider as "fireworks" | "ollama" | "llama")
-    if (result.baseUrl) await saveProviderBaseUrl(result.provider, result.baseUrl)
-  }
+  // Nothing ticked: models.toml is the user's to write, so it is left exactly as it is.
+  const { chosenProviders } = await import("../../components/config-wizard")
+  const providers = chosenProviders(result)
+  if (providers.length === 0) return
+
+  await writeModelsFromCatalog({ providers, pick: result.models, baseUrls: result.addresses })
+  // Speaches is the one provider that also lives in settings.toml: its address is where voice goes.
+  const speaches = providers.find(provider => provider.id === "speaches")
+  if (speaches) await applySpeachesUrl(result.addresses?.speaches ?? speaches.baseUrl, print)
 }
 
 /**
@@ -67,37 +86,20 @@ function offer(where: string, value: string | undefined): OfferedValues {
 }
 
 /**
- * Applies the ticked extras: writes their non-secret config (Speaches' URL), and hands their keys
- * back for the credential pass rather than saving any here, so every key is still tested before
+ * Applies the ticked extras: hands their keys back for the credential pass rather than saving any here, so every key is still tested before
  * it's written.
  *
  * `extra` is the items that pass can't discover on its own: a token or key that isn't saved yet
  * leaves nothing in the config to look for.
  */
-async function applyExtras(
-  result: WizardResult,
-  print: (line: string) => void
-): Promise<{ extra: CredentialItem[]; offered: OfferedValues }> {
+async function applyExtras(result: WizardResult): Promise<{ extra: CredentialItem[]; offered: OfferedValues }> {
   const extras = result.extras ?? []
   if (extras.length === 0) return { extra: [], offered: {} }
 
   const { checkTelegramToken, checkWebSearchKey } = await import("../doctor/checks")
   const { saveSecrets } = await import("../config/secrets")
-  const { appendTomlSection } = await import("../config/toml")
   const extra: CredentialItem[] = []
   let offered: OfferedValues = {}
-
-  if (extras.includes("voice") && result.voiceUrl) {
-    const { getConfigPath, invalidateConfigCache } = await import("../config/config")
-    // One answer, two schemes: speech-to-text talks to Speaches' realtime WebSocket API and
-    // text-to-speech to its plain HTTP one, which is why the documented example has them differ.
-    const schemes = { stt: result.voiceUrl.replace(/^http/, "ws"), tts: result.voiceUrl.replace(/^ws/, "http") }
-    for (const [table, url] of Object.entries(schemes)) {
-      await appendTomlSection(getConfigPath(), table, [`speachesUrl = ${JSON.stringify(url)}`])
-    }
-    invalidateConfigCache()
-    print(t("wizard.voiceSaved", { url: result.voiceUrl }))
-  }
 
   if (extras.includes("telegram")) {
     offered = { ...offered, ...offer("[telegram] botToken", result.telegramToken) }
@@ -187,16 +189,47 @@ async function offerModelDownloads(print: (line: string) => void) {
   }
 }
 
-/** The chat model's provider and its base URL from models.toml, for re-offering what the machine already uses. Tolerant: nothing when the file is missing or unparseable. */
-async function currentModels(): Promise<{ provider?: WizardProvider; baseUrl?: string }> {
+/**
+ * The providers models.toml already uses, where each local one listens, and which provider serves
+ * each task more than one could — for re-offering what the machine already runs. Tolerant: nothing
+ * when the file is missing or unparseable.
+ */
+async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models" | "custom">> {
   try {
     const f = file(getModelsPath())
     if (!(await f.exists())) return {}
     const data = TOML.parse(await f.text()) as any
-    const provider = TEMPLATE_PROVIDERS.find(name => name === data?.models?.chat?.provider)
-    if (!provider) return {}
-    const baseUrl = data?.providers?.[provider]?.base_url
-    return { provider, baseUrl: typeof baseUrl === "string" ? baseUrl : undefined }
+    const known = CATALOG.filter(provider => data?.providers?.[provider.id])
+
+    const addresses: Record<string, string> = {}
+    for (const provider of known) {
+      const url = data.providers[provider.id].base_url
+      if (provider.kind === "local" && typeof url === "string") addresses[provider.id] = url
+    }
+
+    // A provider the catalog doesn't know is the user's own; the wizard can carry one, so a re-run keeps it.
+    const customName = Object.keys(data?.providers ?? {}).find(name => !catalogProvider(name))
+    const custom: NonNullable<WizardResult["custom"]> | undefined = customName
+      ? {
+          name: customName,
+          baseUrl: data.providers[customName].base_url,
+          models: Object.values<any>(data.models ?? {})
+            .filter(entry => entry.provider === customName)
+            .map(entry => ({ model: entry.model, task: entry.task }))
+        }
+      : undefined
+
+    const providers = [...known.map(provider => provider.id), ...(custom ? ["custom"] : [])]
+    if (providers.length === 0) return {}
+
+    // Which provider serves each task more than one could, judged over everything the file holds.
+    const { chosenProviders } = await import("../../components/config-wizard")
+    const models: NonNullable<WizardResult["models"]> = {}
+    for (const [task, options] of Object.entries(candidatesByTask(chosenProviders({ providers, custom })))) {
+      const active = data?.models?.[task]?.provider
+      if (options.length > 1 && typeof active === "string") models[task as keyof typeof models] = active
+    }
+    return { providers, addresses, models, ...(custom ? { custom } : {}) }
   } catch {
     return {}
   }
@@ -205,15 +238,11 @@ async function currentModels(): Promise<{ provider?: WizardProvider; baseUrl?: s
 /** Every step's current value, so a re-run over a working setup opens on what is already there. */
 async function readPrefill(): Promise<WizardResult> {
   const config = await readConfigLoose()
-  const { provider, baseUrl } = await currentModels()
 
   return {
     mode: config.preferences?.mode,
     language: config.preferences?.locale,
-    provider,
-    baseUrl,
-    // [tts] holds the http:// form, which is what the step offers and what both tables derive from.
-    voiceUrl: config.tts?.speachesUrl ?? config.stt?.speachesUrl
+    ...(await currentModels())
   }
 }
 
@@ -231,6 +260,22 @@ async function readSavedSecrets(): Promise<WizardSaved> {
     webSearch: Boolean(creds.webSearch?.apiKey),
     telegram: Boolean(creds.telegram?.botToken)
   }
+}
+
+/**
+ * Tests the models the wizard just wrote, the same pass `kaja doctor` runs, so a broken one is found
+ * now, while its alternative is one keypress away. Nothing was tested while the questions were being
+ * answered: that kept them quick. Returns how many tasks are still without a working model.
+ */
+async function checkModels(): Promise<number> {
+  const { loadModels } = await import("../models/models")
+  const models = await loadModels()
+  if (models.length === 0) return 0
+
+  const { defaultModelIo, runModelPass } = await import("../doctor/models")
+  console.log(t("wizard.checkingModels"))
+  const outcomes = await runModelPass(models, line => console.log(line), await defaultModelIo())
+  return outcomes.filter(outcome => !outcome.ok).length
 }
 
 /**
@@ -272,11 +317,11 @@ export async function runConfigWizard({
   })
 
   if (!result) return { code: 0, text: t("wizard.cancelled") }
-  await applyResult(result)
+  await applyResult(result, line => console.log(line))
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
   await applyStarterAbilities(line => console.log(line))
-  const { extra, offered } = await applyExtras(result, line => console.log(line))
+  const { extra, offered } = await applyExtras(result)
   await offerModelDownloads(line => console.log(line))
 
   // Reads the config that applyResult, applyStarterAbilities and applyExtras just wrote, then tests
@@ -284,11 +329,15 @@ export async function runConfigWizard({
   // tested and saved without being asked for twice; it still asks for anything only the finished
   // config reveals — an ability's key, an MCP server's declared secret.
   const { isUnresolved, runCredentialPass } = await import("../doctor/credentials")
-  const providerKey = result.provider ? offer(`[providers.${result.provider}] api_key`, result.providerKey) : {}
+  const providerKeys: OfferedValues = {}
+  for (const [id, key] of Object.entries(result.keys ?? {})) {
+    Object.assign(providerKeys, offer(`[providers.${id}] api_key`, key))
+  }
   const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"), extra, {
-    ...providerKey,
+    ...providerKeys,
     ...offered
   })
-  const unresolved = outcomes.filter(isUnresolved).length
+  const failingModels = await checkModels()
+  const unresolved = outcomes.filter(isUnresolved).length + failingModels
   return { code: 0, text: unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done") }
 }

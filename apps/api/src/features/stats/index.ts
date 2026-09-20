@@ -27,5 +27,6 @@ const usageRoute = createRoute({
 statsRoutes.openapi(usageRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
-  return c.json(await statsService.usage(user.id, c.req.valid("query").days), 200)
+  const { days, tz } = c.req.valid("query")
+  return c.json(await statsService.usage(user.id, days, tz), 200)
 })

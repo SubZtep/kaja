@@ -40,7 +40,7 @@ locale = "en-GB"
 | `thinking` | show the model's reasoning while it generates |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `[models.tts]` entry) |
-| `locale` | `en-GB`, `hu-HU`, or `nan-TW` — affects the UI and the assistant's replies |
+| `locale` | `en-GB`, `hu-HU`, `nan-TW`, or `zh-TW` — affects the UI and the assistant's replies |
 | `hotkeyModifier` | `alt` (default) or `ctrl` — modifier key for the [key bar](/tui#key-bar)'s hotkeys |
 
 All of these are read once at startup — there's no in-app toggle for any of them, and the app never

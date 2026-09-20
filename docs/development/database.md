@@ -41,7 +41,7 @@ flowchart LR
 | File | Creates |
 | --- | --- |
 | `2026-03-01-uuidv7.sql` | the `uuidv7()` function (via `pgcrypto`) |
-| `2026-03-03-better-auth.sql` | `user`, `session`, `account`, `verification`, `deviceCode` |
+| `2026-03-03-better-auth.sql` | `user`, `session`, `account`, `verification`, `device_code` |
 | `2026-08-01-config.sql` | `provider`, `model` |
 | `2026-08-31-widget.sql` | `widget` |
 | `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
@@ -59,7 +59,7 @@ Conventions:
 
 - **Primary keys** are UUIDv7 (time-ordered). Most tables default to `uuidv7()`; the `nasi_*` tables take the
   id from the app, which generates it before the insert.
-- **Names** are `snake_case`, except the Better Auth tables, which keep its own camelCase columns.
+- **Names** are `snake_case`, Better Auth's tables included: `auth.ts` maps each of its camelCase fields (`emailVerified` is `email_verified`, the `deviceCode` table is `device_code`).
 - **Types**: `timestamptz` for times, `jsonb` for structured blobs, `text[]` for lists, `boolean` for flags.
 - **Enums are `CHECK` constraints**, not Postgres enum types, so adding a value is a one-line change.
 - **Everything that belongs to a person cascades** from `user`: deleting the account deletes its sessions,
@@ -86,44 +86,44 @@ erDiagram
     uuid id PK "UUIDv7"
     text name "may be empty"
     text email UK
-    boolean emailVerified
+    boolean email_verified
     text image
     text role "admin or user"
     boolean banned
-    timestamptz createdAt
+    timestamptz created_at
   }
 
   session {
     uuid id PK
-    uuid userId FK
+    uuid user_id FK
     text token UK
-    timestamptz expiresAt
-    uuid impersonatedBy "admin acting as this user"
+    timestamptz expires_at
+    uuid impersonated_by "admin acting as this user"
   }
 
   account {
     uuid id PK
-    uuid userId FK
-    text providerId "credential, google"
-    text accountId
+    uuid user_id FK
+    text provider_id "credential, google"
+    text account_id
     text password "hashed, credential accounts"
-    text idToken "kept from Google sign-in"
+    text id_token "kept from Google sign-in"
   }
 
   verification {
     uuid id PK
     text identifier
     text value
-    timestamptz expiresAt
+    timestamptz expires_at
   }
 
-  deviceCode {
+  device_code {
     uuid id PK
-    uuid userId FK "set once approved"
-    text deviceCode UK
-    text userCode UK
+    uuid user_id FK "set once approved"
+    text device_code UK
+    text user_code UK
     text status
-    timestamptz expiresAt
+    timestamptz expires_at
   }
 
   widget {
@@ -158,7 +158,7 @@ erDiagram
 
   user ||--o{ session : has
   user ||--o{ account : "signs in with"
-  user |o--o{ deviceCode : approves
+  user |o--o{ device_code : approves
   user ||--o{ widget : owns
   user ||--o{ telegram_link : connects
   user ||--o{ telegram_link_token : "starts a link with"
@@ -166,7 +166,7 @@ erDiagram
 ```
 
 `verification` stands alone: Better Auth uses it for email and password-reset tokens and looks rows up by
-`identifier`. `deviceCode` is the CLI's device login: the terminal polls it until a signed-in user approves
+`identifier`. `device_code` is the CLI's device login: the terminal polls it until a signed-in user approves
 the code on the web.
 
 `user_secret` holds the API keys people save for abilities. The value never leaves the server: it is
@@ -375,7 +375,7 @@ The local file is the second half of the agent state, documented table by table 
 | **Where** | a server, over a connection pool | one file, `memory.sqlite`, in the XDG data directory (overridable with `[memory] dbPath`) |
 | **Concurrency** | MVCC; many API requests at once | WAL mode with a 5 s `busy_timeout`, so the terminal and the Telegram bot can share the file |
 | **Ids** | `uuid`, app-generated UUIDv7 for `nasi_*` | `TEXT`, app-generated UUIDv7 |
-| **Times** | `timestamptz` (but `text` in `nasi_note` and the dataset tables) | ISO-8601 `TEXT` everywhere |
+| **Times** | `timestamptz`, always UTC instants | ISO-8601 `TEXT` in UTC (`…Z`) |
 | **Structured data** | `jsonb`, `text[]` | JSON in `TEXT` |
 | **Booleans** | `boolean` | `INTEGER` 0/1 |
 | **Column names** | `snake_case` | `camelCase` |

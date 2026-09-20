@@ -19,7 +19,7 @@ locale.ts               # locales, Locale, LOCALE_LABELS — supported UI locale
 - **`isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT hosts
 - **`randomUUIDv7`** — time-ordered UUIDv7 generator
 - **`titleCase`** — hyphen/underscore/space-separated label to Title Case
-- **`locales` / `Locale` / `LOCALE_LABELS`** — supported UI locale codes (`en-GB`, `hu-HU`, `nan-TW`) and their native display names
+- **`locales` / `Locale` / `LOCALE_LABELS`** — supported UI locale codes (`en-GB`, `hu-HU`, `nan-TW`, `zh-TW`) and their native display names
 
 ## Conventions
 

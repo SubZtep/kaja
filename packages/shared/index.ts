@@ -18,20 +18,16 @@ export {
   truncateForStreaming
 } from "./telegram-markdown"
 
-/** Calculates the relative time interval. */
+/** Calculates the relative time interval from elapsed time only, so it reads the same in every timezone. */
 export function getTimeAgo(time: Date, now = new Date(), locale?: Intl.LocalesArgument) {
-  const monthDiff = (dateFrom: Date, dateTo: Date) =>
-    dateTo.getMonth() - dateFrom.getMonth() + 12 * (dateTo.getFullYear() - dateFrom.getFullYear())
-
   let value
   const diff = (now.getTime() - time.getTime()) / 1000
   const seconds = Math.floor(diff)
   const minutes = Math.floor(diff / 60)
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
-  // const months = Math.floor(days / 30)
-  const months = monthDiff(time, now)
-  const years = Math.floor(months / 12)
+  const months = Math.floor(days / 30)
+  const years = Math.floor(days / 365)
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
 
   if (years > 0) {

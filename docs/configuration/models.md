@@ -21,6 +21,12 @@ a different model id instead. It should include:
 - `task`: the task this model serves (`chat`, `embedding`, `image-generation`, `tts`, `stt`, `rerank`).
 - `provider`: the provider key from `[providers.*]` to use.
 
+The entry whose id equals its task is the one used. `kaja doctor` (and the end of the setup wizard)
+tests every model, and when the one in use stops working while another model of the same task
+answers, offers to switch: only that entry's `provider` and `model` change. More models for the same task can sit beside it
+under other ids — the setup wizard writes them as `[models.<provider>-<task>]`, e.g.
+`[models.ollama-chat]` next to `[models.chat]` — and a persona pins one by id.
+
 Example:
 
 ```toml
@@ -66,9 +72,12 @@ Three starting points live in
 
 | Template | Providers | Notes |
 | --- | --- | --- |
-| `models.ollama.toml` | Ollama | chat + embedding, fully local. Offered by the setup wizard. |
-| `models.fireworks.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts. Offered by the setup wizard. |
-| `models.llama.toml` | llama.cpp, xAI | chat against a local `llama-server`. Copy it in manually. |
+| `models.ollama.toml` | Ollama | chat + embedding, fully local. |
+| `models.fireworks.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts. |
+| `models.llama.toml` | llama.cpp, xAI | chat against a local `llama-server`. |
+
+The setup wizard doesn't copy these: it writes `models.toml` from the same providers and models, in
+the combination you choose, so the examples and what it writes stay the same.
 
 To switch which model handles a task, edit or add its `[models.<task>]` entry — or run
 `kaja config fetch` to pull a catalog from a Kaja server.

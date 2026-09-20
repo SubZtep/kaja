@@ -11,6 +11,10 @@ test("en-GB and nan-TW dictionaries have the same keys", () => {
   expect([...dictionaries["nan-TW"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
 })
 
+test("en-GB and zh-TW dictionaries have the same keys", () => {
+  expect([...dictionaries["zh-TW"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
+})
+
 test("interpolates params", () => {
   expect(t("cli.invalidConfig", { path: "/x/settings.toml" })).toBe("Invalid config file: /x/settings.toml")
 })

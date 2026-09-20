@@ -5,7 +5,7 @@ import { detectLanguage, type Language, setLanguage } from "../i18n"
 if (!process.env.FORCE_HYPERLINK) process.env.FORCE_HYPERLINK = "1"
 
 function toLanguage(value: string | undefined): Language | undefined {
-  return value === "hu-HU" || value === "en-GB" || value === "nan-TW" ? value : undefined
+  return value === "hu-HU" || value === "en-GB" || value === "nan-TW" || value === "zh-TW" ? value : undefined
 }
 
 /**

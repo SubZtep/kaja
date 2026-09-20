@@ -7,7 +7,6 @@ import { pool } from "../../src/core/db"
 import { createPostgresStore } from "../../src/features/nasi/pg-store"
 import { expectUnauthenticated, signUpAndSignIn } from "./helpers"
 
-const DAY_MS = 24 * 60 * 60 * 1000
 const toolCall = (name: string, id = `call_${name}`) => ({ id, type: "function", function: { name, arguments: "{}" } })
 
 async function signUp(name: string) {
@@ -38,7 +37,12 @@ async function seedSession(
     session: { messages: opts.messages ?? [], telemetry: { steps: opts.steps ?? [], calls: opts.calls ?? {} } },
     events: []
   })
-  const at = new Date(Date.now() - opts.ageDays * DAY_MS)
+  // Older days sit at noon UTC so a run over midnight cannot move them to another day; today is "now", it cannot be later.
+  const at = new Date()
+  if (opts.ageDays > 0) {
+    at.setUTCHours(12, 0, 0, 0)
+    at.setUTCDate(at.getUTCDate() - opts.ageDays)
+  }
   await pool.query("UPDATE nasi_session SET created_at = $2, updated_at = $2 WHERE id = $1", [id, at])
 }
 
@@ -168,7 +172,8 @@ describe("GET /stats", () => {
     expect(body.perDay.map(day => day.date)).toEqual([...body.perDay.map(day => day.date)].sort())
     expect(body.perDay.reduce((sum, day) => sum + day.started, 0)).toBe(3)
     expect(body.perDay.reduce((sum, day) => sum + day.active, 0)).toBe(3)
-    expect(body.perDay.at(-1)?.started).toBeGreaterThanOrEqual(1)
+    // Today's session is at most a moment old, so it sits in the last bucket, or the one before if the clock passed midnight.
+    expect(body.perDay.slice(-2).reduce((sum, day) => sum + day.started, 0)).toBeGreaterThanOrEqual(1)
   })
 
   test("splits sessions by channel, and replies by persona and model", async () => {

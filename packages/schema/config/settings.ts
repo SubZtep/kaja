@@ -4,7 +4,7 @@ export const KajaPreferencesSchema = z.object({
   thinking: z.boolean().optional().describe("Show thinking indicator when the model is generating a response"),
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
-  locale: z.enum(["en-GB", "hu-HU", "nan-TW"]).optional().describe("Language for the chat and application"),
+  locale: z.enum(["en-GB", "hu-HU", "nan-TW", "zh-TW"]).optional().describe("Language for the chat and application"),
   // Written by the setup wizard. Without it the mode is guessed from "is there a usable chat model?", which
   // silently falls back to cloud when models.toml is missing, broken, or deliberately left for hand-editing.
   mode: z
@@ -20,7 +20,7 @@ export const KajaPreferencesSchema = z.object({
     .describe("Modifier key for the help/persona hotkeys (default: alt)")
 })
 
-// Per-feature config blocks; the model itself lives in models.toml's [models.*]/[active].
+// Per-feature config blocks; the model itself lives in models.toml's [models.*], the entry whose id equals the task.
 export const KajaSttSchema = z.object({
   speachesUrl: z.url().optional().describe("Speaches AI server endpoint (speech-to-text)"),
   language: z.string().min(1).optional().describe("Language hint for speech-to-text, e.g. 'en'")

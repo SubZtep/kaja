@@ -2,6 +2,7 @@ import { capitalized, cn } from "@kaja/shared"
 import { type Column, type ColumnFiltersState, flexRender, useTable } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { type ReactNode, useState } from "react"
+import { periodDay, periodEnd, periodStart } from "../../lib/period"
 import { tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"
 import { DebouncedText } from "../form/primitives/Text"
@@ -306,10 +307,8 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
       )
 
     case "period": {
-      const values = (columnFilterValue ? (columnFilterValue as PeriodFilter) : [undefined, undefined]).map(
-        // Date inputs are calendar days in UTC (API stores timestamps in UTC)
-        (v: any) => (typeof v === "object" ? v.toISOString().slice(0, 10) : undefined)
-      )
+      // Date inputs are calendar days in UTC (API stores timestamps in UTC)
+      const values = (columnFilterValue ? (columnFilterValue as PeriodFilter) : [undefined, undefined]).map(periodDay)
       return (
         <div className="flex flex-col gap-0.5">
           <DebouncedText
@@ -319,10 +318,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
             className="w-34"
             value={values[0] ?? ""}
             onChange={value => {
-              column.setFilterValue((old: PeriodFilter) => [
-                value ? new Date(`${value} 00:00:00`) : undefined,
-                old?.[1]
-              ])
+              column.setFilterValue((old: PeriodFilter) => [value ? periodStart(String(value)) : undefined, old?.[1]])
             }}
           />
           <DebouncedText
@@ -332,10 +328,7 @@ function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig
             className="w-34"
             value={values[1] ?? ""}
             onChange={value =>
-              column.setFilterValue((old: PeriodFilter) => [
-                old?.[0],
-                value ? new Date(`${value} 23:59:59`) : undefined
-              ])
+              column.setFilterValue((old: PeriodFilter) => [old?.[0], value ? periodEnd(String(value)) : undefined])
             }
           />
         </div>

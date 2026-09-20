@@ -27,8 +27,9 @@ LLM provider credentials, model-to-task mapping, secrets, services, and preferen
 Run `kaja config paths` to print the resolved location of each of these on your machine — the
 directory follows XDG, so `$XDG_CONFIG_HOME/kaja` when set.
 
-The first `kaja --local` run opens the [setup wizard](/configuration/wizard), seeding these from the templates in
-[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config). `kaja config fetch`
+The first `kaja --local` run opens the [setup wizard](/configuration/wizard), which writes these from
+the providers you tick (the examples in
+[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config) show what they look like). `kaja config fetch`
 later downloads the current admin-managed model catalog from
 the cloud API's `GET /config/export` and rewrites `models.toml`
 from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
@@ -73,7 +74,10 @@ paste into a bug report.
 abilities, MCP servers that list `secrets`, and the Telegram and web search services. In a terminal it
 asks for anything missing or not working, tests the new value before saving it to `secrets.toml`,
 and only keeps a value that fails its test if you say so. A provider without a key is fine as long
-as its model answers (Ollama needs none). It ends with what's still left to fix and where.
+as its model answers (Ollama needs none). It then tests every model by task. When the model a task
+uses stops answering and another model you have configured for the same task does, it asks whether to
+switch — only that task's `provider` and `model` change in `models.toml`, so a persona pinning it keeps
+working. It ends with what's still left to fix and where.
 
 ## Editor support
 

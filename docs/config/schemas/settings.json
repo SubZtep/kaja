@@ -64,7 +64,8 @@
           "enum": [
             "en-GB",
             "hu-HU",
-            "nan-TW"
+            "nan-TW",
+            "zh-TW"
           ]
         },
         "mode": {

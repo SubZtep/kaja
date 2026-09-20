@@ -25,7 +25,7 @@ export async function cleanupModel(providerId: string) {
 
 /** Marks an account's email as verified, standing in for clicking the link in the verification mail (sign-in is refused until then). */
 export async function verifyEmail(email: string): Promise<void> {
-  await pool.query('UPDATE "user" SET "emailVerified" = true WHERE email = lower($1)', [email])
+  await pool.query('UPDATE "user" SET email_verified = true WHERE email = lower($1)', [email])
 }
 
 /** Signs up a fresh user, verifies their email and signs back in, returning the bearer token for authenticated requests. */
