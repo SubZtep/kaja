@@ -1,0 +1,308 @@
+[cli]
+invalidConfig = "設定檔無效：{path}"
+startupError = "Kaja 發生未預期的錯誤，無法啟動：{message}\n詳細資訊已寫入記錄檔。"
+bye = "掰掰！"
+localNoProvider = "--local 需要先設定好供應商。請再執行一次 `kaja --local` 並選擇 Fireworks/Ollama/llama.cpp，或執行 `kaja --local config fetch`。若想改用雲端聊天，請執行 `kaja --cloud`。"
+headlessNoSubcommand = "--headless 需要搭配支援它的子指令，例如 `telegram`。目前沒有單獨的無介面模式。"
+pleaseSignIn = "請先登入！"
+deviceLoginGoTo = "前往："
+deviceLoginEnterCode = "輸入代碼："
+deviceLoginCodeCopied = "代碼已複製到剪貼簿"
+secretsUnavailable = "無法存取系統金鑰圈來儲存你的登入資訊。請改用 --local 執行，它不需要作業系統的憑證儲存。"
+connecting = "連線中…"
+logoutSuccess = "已登出。"
+logoutNotSignedIn = "你尚未登入。"
+deviceLoginStartFailed = "無法啟動裝置登入"
+deviceLoginDenied = "裝置登入已被拒絕"
+deviceLoginExpired = "裝置登入代碼已過期 — 請重新執行登入"
+deviceLoginFailed = "裝置登入失敗"
+deviceLoginTimedOut = "裝置登入逾時"
+personaSwitchedTitle = "已切換角色"
+personaSwitchedMessage = "已切換為 {label}"
+
+[paths]
+settings = "設定"
+memorySessions = "記憶與對話"
+models = "模型"
+mcpServers = "mcp 伺服器"
+tools = "工具"
+abilities = "能力"
+marketplace = "市集"
+temp = "暫存"
+
+[args]
+help = """
+Kaja 命令列工具 • v{version} • https://kaja.io
+
+用法
+  $ kaja [選項] [指令]
+
+指令
+  config <fetch|paths> 管理設定檔
+  doctor               列出已設定的模型、MCP 伺服器與工具，並檢查連線
+  telegram
+  abilities [update]   選擇要載入的技能，或下載市集內容
+  logout               登出雲端帳號，並清除已儲存的憑證
+
+選項
+  --local         使用你自己的供應商執行本機代理，而非雲端登入
+  --cloud         即使已有本機設定，也強制使用雲端登入（預設）
+  --continue, -c  繼續最近一次的對話（僅限 --local）
+  --headless      不顯示終端機介面；供支援的子指令使用（例如 telegram）
+  --session, -s   依 id 繼續指定的對話（僅限 --local；參見：kaja --local session list）
+  --help          顯示此說明
+  --version       顯示版本
+"""
+unknownFlag = "{message}。執行 `kaja --help` 查看可用的選項。"
+
+[config]
+invalidAt = "{path} 的設定檔無效：{message}"
+notExists = "設定檔不存在：{path}"
+usage = """
+用法
+  $ kaja config fetch   從伺服器下載設定檔（離線時使用內建範本）
+  $ kaja config diff    顯示 fetch 會變更的內容，但不寫入任何檔案
+  $ kaja config wizard  以互動方式設定語言、供應商與角色
+  $ kaja config paths   列出 Kaja 讀取或寫入的所有路徑
+"""
+fetched = "已寫入 {path}"
+fetchedWithBackup = "已寫入 {path}（舊檔已備份至 {backup}）"
+fetchedUnchanged = "{path} 已是最新"
+fetchAllUpToDate = "全部都是最新的"
+fetchOfflineFallback = "無法連上伺服器（{message}）— 改用內建範本"
+diffNew = "{path}：新增"
+diffUnchanged = "{path}：無變更"
+diffWouldUpdate = "{path}：將會更新"
+
+[wizard]
+modeTitle = "歡迎使用 Kaja！你想怎麼執行它？"
+modeCloud = "Kaja Cloud — 登入即可，無需設定"
+modeLocal = "自己的供應商 — 使用你自己的 LLM"
+modeCloudShort = "Kaja Cloud"
+modeLocalShort = "自己的供應商"
+languageTitle = "選擇語言"
+providerTitle = "選擇模型供應商"
+providerFireworks = "Fireworks（雲端，需要 API 金鑰）"
+providerOllama = "Ollama（本機，在這台電腦上執行）"
+providerLlama = "llama.cpp（本機，在這台電腦上執行）"
+providerSkip = "跳過 — 我自己設定 models.toml"
+providerKeyTitle = "貼上你的 {provider} API 金鑰"
+keyHint = "儲存前會先測試。留空即可跳過。"
+keyHintSaved = "已儲存過一組 — 按 Enter 保留。"
+baseUrlTitle = "你的模型伺服器在哪裡監聽？"
+baseUrlHint = "按 Enter 使用預設值。"
+extrasTitle = "還需要其他功能嗎？（空白鍵切換，Enter 繼續）"
+extrasHint = "全部都是選填 — 按 Enter 跳過。"
+extraWebSearch = "網路搜尋（需要 Brave API 金鑰）"
+extraVoice = "語音輸入與輸出（需要 Speaches 伺服器）"
+extraTelegram = "Telegram 機器人（在終端機之外與 Kaja 聊天）"
+webSearchKeyTitle = "貼上你的 Brave Search API 金鑰"
+voiceUrlTitle = "你的 Speaches 伺服器在哪裡監聽？"
+voiceUrlHint = "按 Enter 接受，或清空以跳過語音。"
+voiceSaved = "已在 settings.toml 中將語音設為 {url}。"
+telegramTokenTitle = "貼上你的 Telegram 機器人權杖"
+pullTitle = "你的模型伺服器還沒有這些模型：{names}。現在下載嗎？"
+pullYes = "下載"
+pullNo = "暫時不要"
+pullStarted = "下載中 — 可能需要幾分鐘。"
+pullSkipped = "已跳過 — 需要時再執行 `ollama pull <model>`。"
+pullDone = "{model} 已就緒。"
+pullFailed = "無法下載 {model}：{error}"
+summaryTitle = "設定完成"
+summaryMode = "模式"
+summaryLanguage = "語言"
+summaryProvider = "供應商"
+summaryBaseUrl = "伺服器"
+summaryExtras = "額外功能"
+summaryKeyProvider = "{provider} API 金鑰"
+summaryKeyWebSearch = "Brave Search API 金鑰"
+summaryKeyTelegram = "Telegram 機器人權杖"
+keyStateEntered = "已輸入，完成時會測試"
+keyStateKept = "已儲存，予以保留"
+keyStateSkipped = "已跳過"
+summaryPaths = "Kaja 會使用這些路徑："
+summaryHint = "按 Enter 完成。隨時可執行 `kaja config diff` 查看會有哪些變更。"
+summaryHintCloud = "按 Enter 完成，然後執行 `kaja` 登入。"
+headlessDone = "已寫入預設設定（非互動式工作階段）"
+cancelled = "已取消 — 沒有任何變更"
+checking = "正在檢查你的設定需要什麼："
+done = "設定完成"
+doneWithIssues = "設定完成 — 還有 {count} 項需要處理；`kaja doctor` 會重新檢查"
+doneCloud = "設定完成 — 執行 `kaja` 即可登入"
+
+[models]
+invalidAt = "{path} 的模型檔案無效：{message}"
+
+[mcp]
+invalidAt = "{path} 的 MCP 伺服器檔案無效：{message}"
+
+[abilities]
+invalidAt = "{path} 的能力檔案無效：{message}"
+
+[ability]
+usage = "用法：kaja abilities [update]"
+cloudHint = "你正在使用 Kaja 雲端：請到 {url} 選擇你的技能與工具。這台電腦上的能力僅供本機模式使用：`kaja --local abilities`。"
+firstSync = "正在首次下載市集內容…"
+synced = "已從 {url}（{ref}）同步市集，版本 {commit}。"
+nothingChanged = "全部都是最新的。"
+added = "  已新增 {path}"
+updatedFile = "  已更新 {path}"
+backedUp = "  已取代 {path}，你的版本已存為 {backup}"
+removed = "  已移除 {path}"
+kept = "  保留 {path}：上游已移除，但你曾編輯過"
+fetchFailed = "無法下載市集內容：{message}"
+gitMissing = "尚未安裝 git。請安裝 git 以下載市集內容。"
+gitTimeout = "{command} 花費太久，已停止。"
+gitFailed = "{command} 失敗：{message}"
+noMarketplaceFolder = "{url}（{ref}）中沒有 marketplace/ 資料夾。"
+pickerHint = "空白鍵切換，Enter 儲存，Esc 取消。能力僅適用於本機模式。"
+local = "本機"
+empty = "目前沒有任何能力。請執行 `kaja abilities update`，或在 marketplace/skills/、personas/、tools/ 或 mcp/ 下新增你自己的。"
+invalidTitle = "無法載入（修正後請再次執行 `kaja abilities`）："
+notTty = "請編輯 {path} 來變更要載入的能力，或在終端機中執行 `kaja abilities`。"
+cancelled = "沒有任何變更。"
+saved = "已儲存 {path}：已啟用 {count} 項能力。"
+title = "能力"
+typeSkill = "技能"
+typePersona = "角色"
+typeTool = "工具"
+needsKey = "需要金鑰"
+noKey = "不需金鑰"
+typeMcp = "mcp"
+optionalKey = "金鑰選填"
+runs = "執行：{command}"
+confirmStdio = "{name} 會在你的電腦上執行 `{command}`。要啟用嗎？"
+enable = "啟用"
+dontEnable = "不要啟用"
+optionalKeyPrompt = "{name} 可以使用 API 金鑰（{where}）。這是選填的：沒有也能運作。"
+
+[secrets]
+invalidAt = "{path} 的機密檔案無效：{message}"
+
+[input]
+placeholder = "PgUp 歷史紀錄 · Alt+Enter 換行"
+
+[keybar]
+help = "說明"
+persona = "角色"
+copy = "複製"
+quit = "離開"
+cancel = "取消"
+decline = "拒絕"
+
+[viewport]
+older = "↑ 較早的內容 · 按 PageDown 或 Ctrl+End 跟隨最新"
+
+[confirmCommand]
+yes = "是，執行"
+no = "否，取消"
+running = "執行中…"
+truncated = "… 還有 {count} 行"
+toolRequest = "{name} 想要送出這個請求："
+
+[secretPrompt]
+hint = "貼上後按 Enter。它會儲存到 secrets.toml。按 Esc 或直接按 Enter 可跳過。"
+placeholder = "金鑰或權杖"
+saveAnyway = "仍要儲存"
+dontSave = "不要儲存"
+
+[activity]
+thinking = "思考中… 已過 {seconds} 秒，仍在推理"
+tokens = " · 目前已產生約 {tokens} 個 token"
+
+[persona]
+pickerTitle = "選擇角色"
+
+[toolCall]
+webSearch = "正在搜尋「{query}」..."
+fetchUrl = "正在擷取 {url}..."
+currentTime = "正在查看時間{timezone}..."
+generateImage = "正在產生圖片：「{prompt}」..."
+listFiles = "正在列出 {path} 中的檔案..."
+readFile = "正在讀取 {path}..."
+viewImage = "正在檢視 {path}..."
+rememberNote = "正在記住「{key}」..."
+recallMemory = "正在回想記憶{query}..."
+forgetNote = "正在忘記一則筆記..."
+listNotes = "正在列出筆記..."
+rerank = "正在為 {n} 筆結果排序..."
+summarize = "正在摘要..."
+loadSkill = "正在載入 {name} 技能..."
+loadSkillFile = "正在從 {name} 技能讀取 {file}..."
+
+[timeline]
+personaSwitch = "已切換角色：{label}"
+
+[error]
+network = "網路錯誤"
+tool = "工具執行失敗"
+agent = "發生了一些問題"
+unknown = "未知的錯誤"
+
+[doctor]
+cwd = "目錄："
+noModels = "尚未設定任何模型"
+taskChat = "聊天"
+taskTts = "文字轉語音"
+taskStt = "語音轉文字"
+taskEmbedding = "嵌入"
+taskRerank = "重新排序"
+taskImageGen = "圖片生成"
+checking = "正在檢查模型…"
+modelUp = "正常"
+modelDown = "無法連線"
+mcpServers = "MCP 伺服器"
+mcpServerToolCount = "（{count} 個工具）"
+mcpServerFailed = "（連線失敗）"
+tools = "工具"
+toolsOfficial = "官方"
+toolsCommunity = "社群"
+toolsThirdParty = "第三方"
+toolsSkipped = "已略過"
+skippedReserved = "名稱為 Kaja 保留"
+skippedTaken = "名稱已被 {source} 使用"
+credentials = "金鑰與權杖"
+itemProvider = "{name}（模型供應商）"
+itemAbility = "{name}（工具能力）"
+itemMcp = "{name}（MCP 伺服器）"
+itemMcpAbility = "{name}（MCP 能力）"
+itemTelegram = "Telegram 機器人"
+itemWebSearch = "網路搜尋"
+missing = "缺少"
+askMissing = "{label} 需要金鑰或權杖{hint}。"
+askFailing = "{label} 無法運作：{reason}。請輸入新的金鑰{hint}。"
+askSaveAnyway = "{label} 的新值無法運作：{reason}"
+keyless = "不需金鑰也能運作"
+untested = "已設定，但無法測試"
+savedWorking = "已儲存，且可正常運作"
+savedUntested = "已儲存（無法測試）"
+savedFailing = "已儲存，但無法運作：{reason}"
+allGood = "所有金鑰與權杖都沒問題。"
+todoTitle = "仍需修正，位於 {path}："
+todoUnreachable = "無法連線 — 請確認服務正在執行，並檢查 models.toml 中的網址："
+todoRerun = "請編輯該檔案，或在終端機中執行 `kaja doctor` 以便輸入。"
+checkModelFailed = "{model} 沒有回應（{error}）"
+checkTimeout = "15 秒內沒有回應"
+stats = "對話：{sessionCount} · 記憶筆記：{memoryNoteCount}"
+
+[telegram]
+notConfigured = "請在 secrets.toml 的 `[telegram]` 中儲存機器人權杖（執行 `kaja config paths` 查看檔案路徑）才能使用此指令。"
+invalidToken = "Telegram 機器人權杖無效 — 請檢查 config.telegram.botToken。"
+starting = "正在啟動 Telegram 機器人…"
+ready = "Telegram 機器人已就緒，正在以長輪詢接收訊息。"
+newSession = "🆕 已開始新的對話。"
+stillWorking = "仍在處理你的上一則訊息…"
+pendingCommand = "上方有指令或請求正等待你的核准 — 請先點選「核准」或「拒絕」。"
+commandExpired = "此指令已不再等待處理。"
+approved = "已核准"
+declined = "已拒絕"
+emptyResponse = "（空白回應）"
+genericError = "處理時發生問題 — 請查看記錄檔。"
+abilitiesTitle = "此機器人載入的能力"
+abilitiesSkills = "技能：{names}"
+abilitiesPersonas = "角色：{names}"
+abilitiesTools = "工具：{names}"
+abilitiesNone = "目前沒有啟用任何能力。"
+abilitiesHint = "若要變更，請在你的電腦上執行 <code>kaja abilities</code>，然後重新啟動 <code>kaja telegram</code>。"
+commandNew = "開始新的對話"
+commandAbilities = "顯示此機器人使用的技能與工具"

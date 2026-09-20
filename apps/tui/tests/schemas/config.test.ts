@@ -22,7 +22,7 @@ test("partial preferences are allowed", () => {
   expect(parsed.preferences).toEqual({ sounds: false })
 })
 
-test("preferences locale accepts en-GB, hu-HU, and nan-TW only", () => {
+test("preferences locale accepts en-GB, hu-HU, nan-TW, and zh-TW only", () => {
   const parsed = KajaConfigSchema.parse({
     preferences: { locale: "hu-HU" }
   })
