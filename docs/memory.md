@@ -25,6 +25,9 @@ Each note has a **key** (a stable id like `user:communication-style`), the **con
 **importance** of `low`/`medium`/`high` that weights recall ranking, optional **tags**, and a
 **sticky** flag.
 
+Notes belong to whoever is talking: the terminal, each Telegram user and, in the cloud, each widget visitor
+keep separate sets, so a visitor's notes never reach your own chats or another visitor.
+
 ```mermaid
 ---
 config:
@@ -93,7 +96,7 @@ Because it's a profile, every persona gets an "About the user" section in its sy
 what you shared (never the skipped fields), and records a missing detail when you happen to mention
 it, without quizzing you for the rest. While your name is still unknown, the assistant asks for it
 once, kindly. The section goes to the model provider with each message, like
-[sticky notes](#notes) do. In cloud chat, Telegram and each widget visitor keep their own answers.
+[sticky notes](#notes) do. In cloud chat, Telegram and each widget visitor keep their own answers, as with notes.
 
 ### Versions
 

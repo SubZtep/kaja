@@ -146,6 +146,36 @@ describe("postgres store", () => {
     expect(rows[0].n).toBe(TURN.length - 1)
   })
 
+  test("memory notes belong to their owner: the web app, a Telegram user and a widget visitor keep their own", async () => {
+    const store = createPostgresStore(pool, userId)
+    const note = (content: string) => ({
+      content,
+      importance: "medium" as const,
+      tags: [],
+      sticky: false,
+      createdAt: "2026-09-21T00:00:00.000Z",
+      lastUsedAt: "2026-09-21T00:00:00.000Z",
+      useCount: 0
+    })
+    await store.saveMemory(null, { "user:web": note("web fact") })
+    await store.saveMemory("telegram:7", { "user:tg": note("telegram fact") })
+    await store.saveMemory("widget:abc:visitor-1", { "user:visitor": note("visitor fact") })
+
+    expect(Object.keys(await store.loadMemory(null))).toEqual(["user:web"])
+    expect(Object.keys(await store.loadMemory("telegram:7"))).toEqual(["user:tg"])
+    expect(Object.keys(await store.loadMemory("widget:abc:visitor-1"))).toEqual(["user:visitor"])
+    expect(await store.loadMemory("widget:abc:visitor-2")).toEqual({})
+
+    // Saving one owner's notes replaces only that owner's set.
+    await store.saveMemory("telegram:7", {})
+    expect(await store.loadMemory("telegram:7")).toEqual({})
+    expect(Object.keys(await store.loadMemory(null))).toEqual(["user:web"])
+    expect(Object.keys(await store.loadMemory("widget:abc:visitor-1"))).toEqual(["user:visitor"])
+
+    // Another account never sees them, even for the same owner.
+    expect(await createPostgresStore(pool, otherId).loadMemory(null)).toEqual({})
+  })
+
   test("delete removes the rows and stays inside the account", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })

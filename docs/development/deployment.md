@@ -38,9 +38,10 @@ is for local development only.
 
 ### Recreating the database
 
-Until launch the migrations are edited in place, so a schema change means recreating the database rather
-than patching it. `migrate.ts` only creates what is missing, so it cannot repair an old schema: it would
-leave an old table where the new one changed shape and add the new tables beside the old ones.
+Until v1.0 there is no production data worth keeping, so schema changes are edited into the file that creates
+the table, which means recreating the database rather than patching it. `migrate.ts` only creates what is
+missing, so it cannot repair an old schema: it would leave an old table where the new one changed shape and add
+the new tables beside the old ones.
 
 Drop and recreate the schema **as the database user the API connects with**, or give it the schema
 afterwards. Recreating `public` as an admin role leaves that role as its owner, and the API's own user then
