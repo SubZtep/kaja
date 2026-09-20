@@ -48,54 +48,31 @@ mock.module("grammy", () => ({
 }))
 
 const { createTelegramBot } = await import("../../../lib/telegram/bot")
-const { t } = await import("../../../lib/i18n")
 
-function makeBot(allowedUserIds: number[]) {
+function makeBot() {
   return createTelegramBot({
     botToken: "token",
-    allowedUserIds,
     agentConfig: { model: "m", tools: [] },
     personas: [],
     models: []
   })
 }
 
-test("start() notifies every allowed user that the bot is online", async () => {
-  sendMessage.mockClear()
-  const bot = makeBot([111, 222])
-  await bot.start()
-  expect(sendMessage).toHaveBeenCalledTimes(2)
-  expect(sendMessage).toHaveBeenCalledWith(111, t("telegram.botOnline"))
-  expect(sendMessage).toHaveBeenCalledWith(222, t("telegram.botOnline"))
-})
-
 test("start() sets the command menu, and a failure there doesn't stop the bot", async () => {
   setMyCommands.mockClear()
-  await makeBot([111]).start()
+  await makeBot().start()
   expect(setMyCommands.mock.calls[0]![0].map(c => c.command)).toEqual(["new", "abilities"])
 
   setMyCommands.mockImplementationOnce(async () => {
     throw new Error("network down")
   })
-  sendMessage.mockClear()
-  await makeBot([111]).start()
-  expect(sendMessage).toHaveBeenCalledWith(111, t("telegram.botOnline"))
+  await makeBot().start()
 })
 
-test("stop() notifies every allowed user that the bot is going offline", async () => {
+test("start() and stop() send no lifecycle notices — there is no allowlist to send them to", async () => {
   sendMessage.mockClear()
-  const bot = makeBot([333])
-  await bot.stop()
-  expect(sendMessage).toHaveBeenCalledTimes(1)
-  expect(sendMessage).toHaveBeenCalledWith(333, t("telegram.botOffline"))
-})
-
-test("a rejected send for one user doesn't stop others from being notified", async () => {
-  sendMessage.mockClear()
-  sendMessage.mockImplementationOnce(async () => {
-    throw new Error("blocked by user")
-  })
-  const bot = makeBot([444, 555])
+  const bot = makeBot()
   await bot.start()
-  expect(sendMessage).toHaveBeenCalledTimes(2)
+  await bot.stop()
+  expect(sendMessage).not.toHaveBeenCalled()
 })

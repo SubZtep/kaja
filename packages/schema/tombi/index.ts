@@ -7,7 +7,6 @@ import { AbilitiesFileSchema } from "../config/abilities"
 import { McpFileSchema } from "../config/mcp"
 import { ModelsFileSchema } from "../config/models"
 import { SecretsFileSchema } from "../config/secrets"
-import { ServicesFileSchema } from "../config/services"
 import { KajaConfigSchema } from "../config/settings"
 
 /**
@@ -21,7 +20,6 @@ import { KajaConfigSchema } from "../config/settings"
 // required, matching what a user may actually omit when hand-editing the TOML file.
 export const tombiSchemas = {
   "settings.json": z.toJSONSchema(KajaConfigSchema, { io: "input" }),
-  "services.json": z.toJSONSchema(ServicesFileSchema, { io: "input" }),
   "secrets.json": z.toJSONSchema(SecretsFileSchema, { io: "input" }),
   "models.json": z.toJSONSchema(ModelsFileSchema, { io: "input" }),
   "mcp.json": z.toJSONSchema(McpFileSchema, { io: "input" }),

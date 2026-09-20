@@ -39,7 +39,7 @@ export const KajaMemorySchema = z.object({
     .describe("Absolute path to the SQLite memory database; omit to use the default XDG data location")
 })
 
-/** location/webSearch/telegram/api (external service credentials) live in services.toml */
+/** webSearch/telegram (external service credentials) live in secrets.toml */
 export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),

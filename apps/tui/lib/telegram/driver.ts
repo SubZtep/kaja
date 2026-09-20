@@ -94,7 +94,6 @@ export type TelegramDriverConfig = {
    * the bot process started, without needing a restart.
    */
   getInitialPersona?: () => Persona | undefined | Promise<Persona | undefined>
-  allowedUserIds: number[]
   sender: TelegramSender
   /**
    * Constructs the Agent for a newly-created UserState. Defaults to `new
@@ -139,8 +138,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       dataset?: string
       personaId?: string
     }) => new Agent({ ...agentConfig, ...init }))
-  const allowedUserIds = new Set(config.allowedUserIds)
-  // Never evicted: each allowed user's Agent + full events[] stays live in memory for the process lifetime. Accepted tradeoff for allowedUserIds' small, operator-curated allowlist (KajaTelegramSchema requires it non-empty, i.e. bounded by whoever the operator invites) — not a cache that needs an LRU/TTL at this scale.
+  // Never evicted: each user's Agent + full events[] stays live in memory for the process lifetime. Accepted tradeoff for a personal bot whose chat is with its owner — not a cache that needs an LRU/TTL at this scale.
   const users = new Map<number, UserState>()
   const creating = new Map<number, Promise<UserState>>()
 
@@ -426,8 +424,6 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   }
 
   async function handleMessage(userId: number, chatId: number, text: string) {
-    if (!allowedUserIds.has(userId)) return
-
     if (isCommand(text, "abilities")) {
       await sender.sendMessage(chatId, abilitiesMessage(agentConfig.tools ?? [], personas))
       return
@@ -468,8 +464,6 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   ) {
     // Ack immediately regardless of outcome — Telegram shows a client-side spinner on the pressed button until this call resolves.
     await sender.answerCallbackQuery(callbackQueryId)
-    if (!allowedUserIds.has(userId)) return
-
     const match = /^(cmd|tool):(approve|decline):(.+)$/.exec(data)
     if (!match) return
     const kind = match[1] === "cmd" ? "command" : "tool"

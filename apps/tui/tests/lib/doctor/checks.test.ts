@@ -1,13 +1,7 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from "bun:test"
 import { HttpToolAbilitySchema } from "@kaja/schema/abilities"
 import type { CliResolvedModel } from "@kaja/schema/config"
-import {
-  checkAbilityKey,
-  checkLocationKey,
-  checkProvider,
-  checkTelegramToken,
-  checkWebSearchKey
-} from "../../../lib/doctor/checks"
+import { checkAbilityKey, checkProvider, checkTelegramToken, checkWebSearchKey } from "../../../lib/doctor/checks"
 
 let fetchSpy: ReturnType<typeof spyOn> | undefined
 
@@ -75,18 +69,6 @@ test("web search sends the key as X-Subscription-Token", async () => {
   )
   expect(await checkWebSearchKey("good")).toEqual({ ok: true })
   expect(await checkWebSearchKey("bad")).toEqual({ ok: false, reason: "HTTP 401" })
-})
-
-test("location does a real lookup with the key each time (no cached result)", async () => {
-  const keys: (string | null)[] = []
-  mockFetch((url, init) => {
-    if (url.includes("ipify")) return new Response("1.2.3.4")
-    keys.push(new Headers(init?.headers).get("X-API-Key"))
-    return keys.length === 1 ? Response.json({ city: {} }) : new Response("no", { status: 403 })
-  })
-  expect(await checkLocationKey("https://geo.example.com", "first")).toEqual({ ok: true })
-  expect((await checkLocationKey("https://geo.example.com", "second")).ok).toBe(false)
-  expect(keys).toEqual(["first", "second"])
 })
 
 let server: ReturnType<typeof Bun.serve>

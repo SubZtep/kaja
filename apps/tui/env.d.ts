@@ -2,7 +2,7 @@
 
 declare module "bun" {
   interface Env {
-    /** Overrides [api].baseUrl from services.toml, for pointing the CLI at a local dev API without editing the file */
+    /** The Kaja API the CLI talks to, for pointing it at a local dev API; defaults to https://api.kaja.io */
     KAJA_API_URL?: string
     /** Minimum level written to KAJA_LOG_FILE (trace, debug, info, warn, error, fatal); unset means no log */
     KAJA_LOG_LEVEL?: string

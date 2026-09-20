@@ -275,16 +275,12 @@ test("each ticked extra is asked for what it needs, and untouched ones are not",
   await w.t.press(ENTER)
 
   // Web search and voice weren't ticked, so their questions never appear.
-  expect(w.t.lastFrame()).toContain("Telegram user id")
-  await w.t.press("123456")
-  await w.t.press(ENTER)
-
   expect(w.t.lastFrame()).toContain("Telegram bot token")
   await w.t.press("bot-token")
   await w.t.press(ENTER)
   await w.t.press(ENTER) // summary
 
-  expect(w.result).toMatchObject({ telegramId: "123456", telegramToken: "bot-token" })
+  expect(w.result).toMatchObject({ telegramToken: "bot-token" })
   expect(w.result?.webSearchKey).toBeUndefined()
   expect(w.result?.voiceUrl).toBeUndefined()
 

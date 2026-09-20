@@ -67,7 +67,7 @@ const nasi = await Nasi.open({
   chat: { client, model }, // OpenAI-compatible client + default model id
   includeLocalTools: false,
   personas,               // this account's/persona's roster, or []
-  promptContext,          // environment/askUser/location/language overrides
+  promptContext,          // environment/askUser/language overrides
   owner,                   // null, or a namespaced widget-visitor id
   deps                     // extra tool deps, merged over `chat` — gates dep-conditional tools
 })
@@ -186,8 +186,7 @@ empty — resuming a session reuses what's already there, except a persona switc
 rewrites it in place. It concatenates whichever of these blocks apply, in order:
 
 1. the persona's `instructions` (or none, for the default agent)
-2. `## Environment` — OS/home line, or the host's override (`PromptContext.environment`), plus a
-   resolved location block when geolocation is available
+2. `## Environment` — OS/home line, or the host's override (`PromptContext.environment`)
 3. `## Tool contract: ask_user` — only when that tool is in the registry; cloud hosts override the
    terminal-flavored default via `PromptContext.askUserInstruction`
 4. `## Tool contract: run_command` — only when `includeLocalTools` exposed it

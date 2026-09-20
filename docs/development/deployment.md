@@ -17,7 +17,6 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
   comfortably at modest traffic.
 - **SMTP server** for authentication emails.
-- **Geo-service** endpoint for IP geolocation (see [Services](/configuration/services)).
 
 ## Projects
 

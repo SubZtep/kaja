@@ -112,7 +112,7 @@ bun run --filter @kaja/tui test
 
 - **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
-  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml)
+  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/cli` — remaining CLI domain concepts (datasets; re-exports the persona schema)
   - `@kaja/schema/nasi` — cloud turn request/response

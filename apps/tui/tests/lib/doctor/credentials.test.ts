@@ -192,7 +192,7 @@ test("null means the caller already asked and was turned down, so the pass doesn
   expect(item.saved).toEqual([])
 })
 
-test("collects providers, keyed abilities, declared MCP secrets and configured services", async () => {
+test("collects providers, keyed abilities, declared MCP secrets and a saved Telegram token", async () => {
   put(
     "models.toml",
     `[providers.local]\nbase_url = "http://localhost:11434/v1"\n\n[models.chat]\nmodel = "m"\ntask = "chat"\nprovider = "local"\n`
@@ -210,8 +210,7 @@ test("collects providers, keyed abilities, declared MCP secrets and configured s
     "mcp.toml",
     `[[servers]]\nid = "ctx"\ncommand = "true"\nsecrets = ["CTX_KEY", "CTX_ID"]\n\n[[servers]]\nid = "plain"\nurl = "https://mcp.example.com"\n`
   )
-  put("services.toml", `[location]\nserviceUrl = "https://geo.example.com"\n\n[telegram]\nallowedUserIds = [1]\n`)
-  put("secrets.toml", `[mcp.ctx]\nCTX_KEY = "k"\n\n[webSearch]\napiKey = "b"\n`)
+  put("secrets.toml", `[mcp.ctx]\nCTX_KEY = "k"\n\n[telegram]\nbotToken = "t"\n\n[webSearch]\napiKey = "b"\n`)
 
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.present, i.required, i.hint])).toEqual([
@@ -219,8 +218,7 @@ test("collects providers, keyed abilities, declared MCP secrets and configured s
     ["[abilities.gh] apiKey", false, true, "header Authorization"],
     ["[mcp.ctx] CTX_KEY", true, true, "env CTX_KEY"],
     ["[mcp.ctx] CTX_ID", false, true, "env CTX_ID"],
-    ["[location] apiKey", false, true, "header X-API-Key"],
-    ["[telegram] botToken", false, true, undefined],
+    ["[telegram] botToken", true, true, undefined],
     ["[webSearch] apiKey", true, false, undefined]
   ])
 })
@@ -247,7 +245,6 @@ test("MCP abilities with key auth become items; optional keys aren't required", 
     `name = "weather"\ndescription = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", optional = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
   )
   put("mcp.toml", "servers = []\n")
-  put("services.toml", "")
   put("secrets.toml", "")
 
   const items = await collectCredentials()

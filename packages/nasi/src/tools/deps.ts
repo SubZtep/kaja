@@ -1,5 +1,4 @@
 import type OpenAI from "openai"
-import type { GeoLocation } from "../agent/geo"
 
 export type ImageGenModel = {
   model: string
@@ -22,7 +21,6 @@ export type NasiToolDeps = {
   webSearchApiKey?: string
   /** HTTP(S) proxy for outbound tool fetches. Cloud only — local mode fetches from the user's own machine, with their own network identity. */
   fetchProxy?: string
-  lookupLocation?: () => Promise<GeoLocation | undefined>
   tempDir?: string
   workspaceRoot?: string
   /** Absolute path of the local sqlite file, denied by the path guard. */

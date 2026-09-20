@@ -122,14 +122,11 @@ export async function runDoctorSubcommand() {
   const { loadMemory } = await import("../lib/memory/store")
   const { summaryLines } = await import("../lib/doctor/credentials")
   const { getSecretsPath } = await import("../lib/config/secrets")
-  const { invalidateServicesCache } = await import("../lib/config/services")
 
   console.log(t("doctor.cwd") + process.cwd())
   console.log()
 
   const outcomes = await checkCredentials()
-  // Anything saved above must reach the loaders below; secrets() is already invalidated by saveSecrets.
-  invalidateServicesCache()
 
   const { models, tools, skipped, mcpServers, closeTools } = await bootstrapLocalAgentDeps()
 

@@ -13,7 +13,7 @@ you want. Nothing it writes is special: every file it produces is a plain TOML f
 afterwards, and every step opens on what you already have, so holding <kbd>Enter</kbd> walks a
 configured machine through unchanged.
 
-Depending on your answers it shows between **three and ten screens** — the summary included. Cloud
+Depending on your answers it shows between **three and nine screens** — the summary included. Cloud
 is three.
 
 ## The questions
@@ -42,7 +42,7 @@ flowchart TD
 
     EX["<b>Extras</b><br><small>web search · voice · Telegram<br>nothing ticked by default</small>"] --> FU
 
-    FU["<b>One follow-up per ticked extra</b><br><small>Brave key · Speaches URL · Telegram id + token</small>"] --> SUM
+    FU["<b>One follow-up per ticked extra</b><br><small>Brave key · Speaches URL · Telegram token</small>"] --> SUM
 ```
 
 Language comes first because every question after it is only answerable by someone who can read it —
@@ -53,7 +53,7 @@ just that one.
 
 ## Where each answer ends up
 
-This is the part worth knowing: your answers fan out into five different files, and one of them
+This is the part worth knowing: your answers fan out into four different files, and one of them
 (`secrets.toml`) is never written directly by the wizard at all.
 
 ```mermaid
@@ -77,14 +77,12 @@ flowchart LR
     subgraph OUT["~/.config/kaja/"]
         SET["<b>settings.toml</b><br><small>locale · mode · Speaches URL</small>"]
         MOD["<b>models.toml</b><br><small>provider catalogue · base_url</small>"]
-        SRV["<b>services.toml</b><br><small>Telegram allowedUserIds</small>"]
         ABL["<b>abilities.toml</b><br><small>what loads</small>"]
         SEC["<b>secrets.toml</b><br><small>every key and token</small>"]
     end
 
     YOU --> ASK
     ASK --> SET
-    ASK --> SRV
     TPL --> MOD
     ASK -->|"which provider · which address"| MOD
     MKT --> ABL
@@ -103,7 +101,6 @@ Step by step:
 | Server address | `[providers.<name>] base_url` | `models.toml` |
 | Web search key | `[webSearch] apiKey` | `secrets.toml` |
 | Speaches URL | `[stt] speachesUrl` (as `ws://`), `[tts] speachesUrl` (as `http://`) | `settings.toml` |
-| Telegram user id | `[telegram] allowedUserIds` | `services.toml` |
 | Telegram bot token | `[telegram] botToken` | `secrets.toml` |
 
 The model templates are the same files that document [`models.toml`](/configuration/models) on this
@@ -172,7 +169,7 @@ config:
 ---
 flowchart LR
     S["<b>Summary</b>"] --> A["<b>starter abilities</b><br><small>only if abilities.toml<br>enables nothing yet</small>"]
-    A --> E["<b>extras</b><br><small>writes settings.toml<br>and services.toml</small>"]
+    A --> E["<b>extras</b><br><small>writes settings.toml</small>"]
     E --> D["<b>model downloads</b><br><small>one question for the lot</small>"]
     D --> C["<b>credential pass</b><br><small>tests and saves every key</small>"]
     C --> R(["ready"])

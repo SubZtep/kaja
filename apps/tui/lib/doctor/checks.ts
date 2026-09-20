@@ -1,10 +1,4 @@
-import {
-  checkHttpToolKey,
-  connectMcpServer,
-  lookupMyLocation,
-  type McpConnectOptions,
-  resetLocationCache
-} from "@kaja/nasi"
+import { checkHttpToolKey, connectMcpServer, type McpConnectOptions } from "@kaja/nasi"
 import type { HttpToolAbility } from "@kaja/schema/abilities"
 import type { CliResolvedModel, McpServerEntry } from "@kaja/schema/config"
 import { t } from "../i18n"
@@ -90,18 +84,5 @@ export async function checkWebSearchKey(apiKey: string): Promise<CheckResult> {
     return res.ok ? OK : { ok: false, reason: `HTTP ${res.status}` }
   } catch (error) {
     return failure(error, apiKey)
-  }
-}
-
-/** A real geo lookup of this machine's public IP; the process-wide cache is cleared on both sides so the key is really used. */
-export async function checkLocationKey(serviceUrl: string, apiKey: string): Promise<CheckResult> {
-  resetLocationCache()
-  try {
-    await withTimeout(lookupMyLocation({ serviceUrl, apiKey }))
-    return OK
-  } catch (error) {
-    return failure(error, apiKey)
-  } finally {
-    resetLocationCache()
   }
 }

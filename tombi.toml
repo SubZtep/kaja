@@ -8,10 +8,6 @@ path = "docs/config/schemas/settings.json"
 include = ["docs/config/settings.toml", "**/.config/kaja/settings.toml"]
 
 [[schemas]]
-path = "docs/config/schemas/services.json"
-include = ["docs/config/services.toml", "**/.config/kaja/services.toml"]
-
-[[schemas]]
 path = "docs/config/schemas/secrets.json"
 include = ["docs/config/secrets.toml", "**/.config/kaja/secrets.toml"]
 

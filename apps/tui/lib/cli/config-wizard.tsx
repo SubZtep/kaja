@@ -67,13 +67,12 @@ function offer(where: string, value: string | undefined): OfferedValues {
 }
 
 /**
- * Applies the ticked extras: writes their non-secret config (Speaches' URL, the Telegram account
- * id), and hands their keys back for the credential pass rather than saving any here, so every key
- * is still tested before it's written.
+ * Applies the ticked extras: writes their non-secret config (Speaches' URL), and hands their keys
+ * back for the credential pass rather than saving any here, so every key is still tested before
+ * it's written.
  *
- * `extra` is the items that pass can't discover on its own: `collectCredentials` finds the Telegram
- * token via services.toml's `[telegram]`, but web search has no non-secret config to look for, and
- * a Telegram section we couldn't write leaves its token undiscoverable too.
+ * `extra` is the items that pass can't discover on its own: a token or key that isn't saved yet
+ * leaves nothing in the config to look for.
  */
 async function applyExtras(
   result: WizardResult,
@@ -101,26 +100,15 @@ async function applyExtras(
   }
 
   if (extras.includes("telegram")) {
-    const { getServicesPath, invalidateServicesCache, readServicesLoose } = await import("../config/services")
-    // allowedUserIds must be non-empty or services.toml fails its schema and every later run exits,
-    // so the section is only written once there's a real id to put in it.
-    if (result.telegramId && /^\d+$/.test(result.telegramId)) {
-      await appendTomlSection(getServicesPath(), "telegram", [`allowedUserIds = [${result.telegramId}]`])
-      invalidateServicesCache()
-    }
     offered = { ...offered, ...offer("[telegram] botToken", result.telegramToken) }
-    if (!(await readServicesLoose()).telegram) {
-      // No section for the pass to find, so carry the token itself — it still gets tested and saved.
-      print(t("wizard.telegramNeedsId", { path: getServicesPath() }))
-      extra.push({
-        label: t("doctor.itemTelegram"),
-        where: "[telegram] botToken",
-        present: false,
-        required: true,
-        check: value => (value ? checkTelegramToken(value) : Promise.resolve(undefined)),
-        save: value => saveSecrets({ telegram: { botToken: value } })
-      })
-    }
+    extra.push({
+      label: t("doctor.itemTelegram"),
+      where: "[telegram] botToken",
+      present: false,
+      required: true,
+      check: value => (value ? checkTelegramToken(value) : Promise.resolve(undefined)),
+      save: value => saveSecrets({ telegram: { botToken: value } })
+    })
   }
 
   if (extras.includes("webSearch")) {
@@ -217,8 +205,6 @@ async function currentModels(): Promise<{ provider?: WizardProvider; baseUrl?: s
 async function readPrefill(): Promise<WizardResult> {
   const config = await readConfigLoose()
   const { provider, baseUrl } = await currentModels()
-  const { readServicesLoose } = await import("../config/services")
-  const services = await readServicesLoose()
 
   return {
     mode: config.preferences?.mode,
@@ -226,8 +212,7 @@ async function readPrefill(): Promise<WizardResult> {
     provider,
     baseUrl,
     // [tts] holds the http:// form, which is what the step offers and what both tables derive from.
-    voiceUrl: config.tts?.speachesUrl ?? config.stt?.speachesUrl,
-    telegramId: services.telegram?.allowedUserIds?.[0]?.toString()
+    voiceUrl: config.tts?.speachesUrl ?? config.stt?.speachesUrl
   }
 }
 

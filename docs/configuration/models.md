@@ -77,4 +77,4 @@ To switch which model handles a task, edit or add its `[models.<task>]` entry â€
 
 Next:
 
-[Services](/configuration/services){: .btn .btn-green .fs-5 }
+[Secrets](/configuration/secrets){: .btn .btn-green .fs-5 }

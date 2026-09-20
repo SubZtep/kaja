@@ -66,7 +66,7 @@ async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number;
   try {
     // secrets.toml is never admin-managed (no user secrets on the server), so it's always fetched
     // from the bundled local template rather than the remote bundle. Done before runFetchOnline:
-    // that call resolves the API base URL via services()/secrets(), which auto-writes a missing
+    // that call may read secrets(), which auto-writes a missing
     // secrets.toml as a side effect — fetching it explicitly first keeps this status line accurate.
     const secretsResult = matchesOnly("secrets.toml", only) ? [await fetchSecretsToml()] : []
     const remoteResults = await runFetchOnline(only)

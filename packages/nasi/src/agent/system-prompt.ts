@@ -13,7 +13,6 @@ import {
   RUN_COMMAND_TOOL,
   SWITCH_PERSONA_TOOL
 } from "./agent"
-import type { GeoLocation } from "./geo"
 import { toolName } from "./tools"
 
 const ASK_USER_INSTRUCTIONS =
@@ -58,16 +57,6 @@ export function replyLanguageInstructionFor(language: string): string | undefine
 function personaListItem(p: Persona) {
   const when = p.when ? `: use when ${p.when}` : ""
   return `- ${p.id} (${p.label})${when}`
-}
-
-function locationInstructions(loc: GeoLocation) {
-  return (
-    `The user is located in ${loc.city.name}, ${loc.country.name} ` +
-    `(timezone ${loc.location.timeZone}, lat ${loc.location.latitude}, ` +
-    `lon ${loc.location.longitude}), resolved from their public IP. Use ` +
-    `this as the default for location-specific questions (weather, "near ` +
-    `me", local time) unless the user says otherwise.`
-  )
 }
 
 function datasetInstructions(topic: string, label: string) {
@@ -126,11 +115,8 @@ async function buildStickyBlock(agent: Agent, hasMemory: boolean, owner: string 
     .join("\n")}`
 }
 
-async function buildEnvironmentBlock(agent: Agent): Promise<string> {
-  const ctx = agent.promptContext ?? {}
-  const location = ctx.location ?? (ctx.loadLocation ? await ctx.loadLocation() : undefined)
-  const locationBlock = location ? locationInstructions(location) : undefined
-  return [ctx.environment ?? defaultEnvironmentInstructions(), locationBlock].filter(Boolean).join("\n")
+function buildEnvironmentBlock(agent: Agent): string {
+  return agent.promptContext?.environment ?? defaultEnvironmentInstructions()
 }
 
 function buildPersonasBlock(agent: Agent, toolNames: Set<string>): string | undefined {
@@ -235,7 +221,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
   const hasMemory = toolNames.has(REMEMBER_NOTE_TOOL)
 
   const stickyBlock = await buildStickyBlock(agent, hasMemory, owner)
-  const environmentBlock = await buildEnvironmentBlock(agent)
+  const environmentBlock = buildEnvironmentBlock(agent)
   const personasBlock = buildPersonasBlock(agent, toolNames)
   const skillsBlock = buildSkillsBlock(agent, toolNames)
   const datasetBlock = await buildDatasetBlock(agent, toolNames)

@@ -40,8 +40,6 @@ export type WizardResult = {
   webSearchKey?: string
   /** Speaches' address, for voice in and out. Not a secret — it goes to settings.toml. */
   voiceUrl?: string
-  /** The one Telegram account the bot answers. Not a secret — it goes to services.toml. */
-  telegramId?: string
   telegramToken?: string
 }
 
@@ -62,7 +60,6 @@ type Step =
   | "extras"
   | "webSearchKey"
   | "voiceUrl"
-  | "telegramId"
   | "telegramToken"
   | "summary"
 
@@ -75,7 +72,6 @@ const STEP_ORDER: Step[] = [
   "extras",
   "webSearchKey",
   "voiceUrl",
-  "telegramId",
   "telegramToken",
   "summary"
 ]
@@ -126,7 +122,7 @@ function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode):
     if (candidate === "extras" && cloud) continue
     if (candidate === "webSearchKey" && !ticked("webSearch")) continue
     if (candidate === "voiceUrl" && !ticked("voice")) continue
-    if ((candidate === "telegramId" || candidate === "telegramToken") && !ticked("telegram")) continue
+    if (candidate === "telegramToken" && !ticked("telegram")) continue
     return candidate
   }
   return "summary"
@@ -326,17 +322,6 @@ export function ConfigWizard({
         hint={t("wizard.voiceUrlHint")}
         defaultValue={result.voiceUrl ?? DEFAULT_SPEACHES_URL}
         onSubmit={voiceUrl => advance({ voiceUrl })}
-      />
-    )
-  }
-
-  if (step === "telegramId") {
-    return (
-      <InputStep
-        title={t("wizard.telegramIdTitle")}
-        hint={t("wizard.telegramIdHint")}
-        defaultValue={result.telegramId}
-        onSubmit={telegramId => advance({ telegramId })}
       />
     )
   }

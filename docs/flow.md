@@ -26,7 +26,7 @@ flowchart TD
     Term --> Session
     Tele --> Session
     Widg --> Session
-    Config["⚙️ settings.toml + models.toml\n+ services.toml + mcp.toml"] --> Core
+    Config["⚙️ settings.toml + models.toml\n+ mcp.toml"] --> Core
 
     Session["🔗 Session"] --> Core
     Core["🧠 Agent core (@kaja/nasi)"] --> Agent
@@ -37,7 +37,7 @@ flowchart TD
         Route -->|"no match"| Stay["Stay on persona"]
         Switch --> Prompt
         Stay --> Prompt
-        Prompt["Compose system prompt\nrules + personality + memory\n+ location + language"]
+        Prompt["Compose system prompt\nrules + personality + memory\n+ language"]
     end
 
     Prompt --> CallLLM

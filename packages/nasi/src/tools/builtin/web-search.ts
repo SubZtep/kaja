@@ -63,12 +63,9 @@ interface BraveLLMContextResult {
 async function braveSearch(query: string, freshness?: string, search_lang?: string) {
   const deps = getToolDeps()
   if (!deps.webSearchApiKey) throw new ToolError("web_search", "Web search is not configured")
-  const location = deps.lookupLocation ? await deps.lookupLocation() : undefined
-  const country = location?.country.isoCode
   const params = new URLSearchParams({
     q: query,
     ...(freshness ? { freshness } : {}),
-    ...(country ? { country } : {}),
     search_lang: search_lang ?? "hu"
   })
   const res = await fetch(`https://api.search.brave.com/res/v1/llm/context?${params.toString()}`, {

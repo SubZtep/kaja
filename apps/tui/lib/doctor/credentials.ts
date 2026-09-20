@@ -3,13 +3,11 @@ import type { CliResolvedModel, McpServerEntry, SecretsFile } from "@kaja/schema
 import { getMarketplaceDir, loadAbilitiesFile } from "../abilities/abilities-file"
 import { loadMcpServers } from "../config/mcp-servers"
 import { saveSecrets, secrets } from "../config/secrets"
-import { readServicesLoose } from "../config/services"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
 import {
   type CheckResult,
   checkAbilityKey,
-  checkLocationKey,
   checkMcpServer,
   checkProvider,
   checkTelegramToken,
@@ -77,8 +75,7 @@ function withSecret(server: McpServerEntry, name: string, value: string): McpSer
 /**
  * Every credential the current local config relies on: providers used by a configured
  * model, enabled HTTP tool and MCP abilities with key auth, secrets MCP servers declare, and the
- * location/Telegram services when configured (web search only when a key is set: there's
- * no other sign the user wants it).
+ * Telegram bot when a token is saved (web search likewise: a saved key is the only sign the user wants it).
  */
 export async function collectCredentials(): Promise<CredentialItem[]> {
   const creds = await secrets()
@@ -121,34 +118,14 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
     }
   }
 
-  const services = await readServicesLoose()
-  const serviceUrl = services.location?.serviceUrl
-  if (serviceUrl) {
-    const saved = creds.location?.apiKey
-    items.push({
-      label: t("doctor.itemLocation"),
-      where: "[location] apiKey",
-      hint: "header X-API-Key",
-      present: Boolean(saved),
-      required: true,
-      check: async value => {
-        const key = value ?? saved
-        return key ? checkLocationKey(serviceUrl, key) : undefined
-      },
-      save: value => saveSecrets({ location: { apiKey: value } })
-    })
-  }
-  if (services.telegram) {
-    const saved = creds.telegram?.botToken
+  const telegramToken = creds.telegram?.botToken
+  if (telegramToken) {
     items.push({
       label: t("doctor.itemTelegram"),
       where: "[telegram] botToken",
-      present: Boolean(saved),
+      present: true,
       required: true,
-      check: async value => {
-        const token = value ?? saved
-        return token ? checkTelegramToken(token) : undefined
-      },
+      check: value => checkTelegramToken(value ?? telegramToken),
       save: value => saveSecrets({ telegram: { botToken: value } })
     })
   }

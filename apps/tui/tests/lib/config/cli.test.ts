@@ -148,7 +148,7 @@ test("fetch falls back to bundled templates when the server is unreachable", asy
   }
 })
 
-test("fetch writes secrets.toml from the bundled template, but never services.toml or settings.toml", async () => {
+test("fetch writes secrets.toml from the bundled template, but never settings.toml", async () => {
   const restore = mockBundleFetch({ "models.toml": 'label = "x"\n' })
   try {
     await runConfigCli(["fetch"])
@@ -156,9 +156,7 @@ test("fetch writes secrets.toml from the bundled template, but never services.to
     restore()
   }
   const { getSecretsPath } = await import("../../../lib/config/secrets")
-  const { getServicesPath } = await import("../../../lib/config/services")
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
-  expect(await Bun.file(getServicesPath()).exists()).toBe(false)
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
 })
 
