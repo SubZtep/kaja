@@ -136,7 +136,8 @@ function progressLine(model: string) {
   return {
     update({ status, percent }: PullProgress) {
       if (!process.stdout.isTTY) return
-      const line = `  ${model}: ${status}${percent === undefined ? "" : ` ${percent}%`}`
+      const suffix = percent === undefined ? "" : ` ${percent}%`
+      const line = `  ${model}: ${status}${suffix}`
       width = Math.max(width, line.length)
       process.stdout.write(`\r${line.padEnd(width)}`)
     },

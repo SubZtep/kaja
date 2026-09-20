@@ -10,7 +10,15 @@ const LIST_TIMEOUT_MS = 3_000
 
 /** Ollama's own API sits beside the OpenAI-compatible one models.toml points at, so `.../v1` has to come off first. */
 export function ollamaOrigin(baseUrl: string): string {
-  return baseUrl.replace(/\/+v1\/*$/, "")
+  const trimmed = trimTrailingSlashes(baseUrl)
+  return trimmed.endsWith("/v1") ? trimTrailingSlashes(trimmed.slice(0, -3)) : baseUrl
+}
+
+// A loop rather than /\/+$/, whose backtracking is quadratic on a long run of slashes.
+function trimTrailingSlashes(text: string): string {
+  let end = text.length
+  while (end > 0 && text[end - 1] === "/") end--
+  return text.slice(0, end)
 }
 
 /** `ollama pull llama3.2` installs "llama3.2:latest", which is how /api/tags names it back. */
@@ -97,6 +105,19 @@ async function errorText(res: Response): Promise<string> {
   return typeof body?.error === "string" ? body.error : `HTTP ${res.status}`
 }
 
+/** Forwards each progress event and returns the error the stream ended on, if any: a pull that fails partway still answers 200 and says why in the stream. */
+async function reportPullStream(body: ReadableStream<Uint8Array>, onProgress: (progress: PullProgress) => void) {
+  let failure: string | undefined
+  for await (const event of streamEvents(body)) {
+    if (typeof event.error === "string") failure = event.error
+    if (typeof event.status !== "string") continue
+    const total = typeof event.total === "number" ? event.total : undefined
+    const completed = typeof event.completed === "number" ? event.completed : 0
+    onProgress({ status: event.status, percent: total ? Math.round((completed / total) * 100) : undefined })
+  }
+  return failure
+}
+
 /**
  * Downloads one model, reporting progress as the server sends it. Never throws: a server that goes
  * away mid-download is just another failed model, and the wizard carries on to the next one.
@@ -114,15 +135,7 @@ export async function pullModel(
     if (!res.ok) return { ok: false, error: await errorText(res) }
     if (!res.body) return { ok: false, error: `HTTP ${res.status}` }
 
-    // A pull that fails partway still answers 200 and reports the reason in the stream.
-    let failure: string | undefined
-    for await (const event of streamEvents(res.body)) {
-      if (typeof event.error === "string") failure = event.error
-      if (typeof event.status !== "string") continue
-      const total = typeof event.total === "number" ? event.total : undefined
-      const completed = typeof event.completed === "number" ? event.completed : 0
-      onProgress({ status: event.status, percent: total ? Math.round((completed / total) * 100) : undefined })
-    }
+    const failure = await reportPullStream(res.body, onProgress)
     return failure ? { ok: false, error: failure } : { ok: true }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) }

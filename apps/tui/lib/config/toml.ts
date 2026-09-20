@@ -22,6 +22,6 @@ export async function appendTomlSection(path: string, table: string, lines: stri
   if (table in parsed) return false
 
   const body = `[${table}]\n${lines.join("\n")}\n`
-  await write(f, text.trim().length === 0 ? body : `${text.replace(/\n+$/, "")}\n\n${body}`)
+  await write(f, text.trim().length === 0 ? body : `${text.trimEnd()}\n\n${body}`)
   return true
 }

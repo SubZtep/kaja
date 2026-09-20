@@ -40,7 +40,7 @@ export function setProviderBaseUrl(text: string, provider: string, baseUrl: stri
   for (let index = start + 1; index < lines.length; index++) {
     // Stop at the next table header so a provider without a base_url never rewrites another's.
     if (lines[index]!.trimStart().startsWith("[")) break
-    const match = lines[index]!.match(/^(\s*base_url\s*=\s*)"[^"]*"(.*)$/)
+    const match = /^(\s*base_url\s*=\s*)"[^"]*"(.*)$/.exec(lines[index]!)
     if (match) {
       // JSON.stringify escapes anything that would break out of the TOML string.
       lines[index] = `${match[1]}${JSON.stringify(baseUrl)}${match[2]}`
