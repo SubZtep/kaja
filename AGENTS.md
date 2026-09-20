@@ -127,13 +127,12 @@ bun run --filter @kaja/tui test
 2. `2026-03-03-better-auth.sql` — Better Auth tables
 3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
-5. `2026-09-07-nasi.sql` — cloud agent state (sessions, memory, datasets)
-6. `2026-09-08-persona.sql` — `persona` table (the old admin-managed persona catalog; dropped by `2026-09-19-persona-ability.sql`)
-7. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
-8. `2026-09-19-ability.sql` — `ability`, `user_ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`)
-9. `2026-09-19-persona-ability.sql` — drops `persona`: personas are `ability` rows of type `persona` now
-10. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`)
-11. `2026-09-20-nasi-normalize.sql` — `nasi_session` rebuilt as rows: `nasi_message` (one per message), `nasi_tool_call` (old sessions dropped, not converted)
+5. `2026-09-07-nasi.sql` — cloud agent state: `nasi_session`, `nasi_message` (one per message), `nasi_tool_call`, plus memory notes and dataset answers
+6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
+7. `2026-09-19-ability.sql` — `ability`, `user_ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`)
+8. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`)
+
+Each file only creates; there are no patch migrations yet, so a schema change before launch is edited into the file that creates the table (and existing databases are recreated).
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 
