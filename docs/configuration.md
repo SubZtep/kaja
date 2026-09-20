@@ -36,8 +36,11 @@ from that, backing up anything you'd changed; with no network (or `--offline`), 
 the same bundled templates as first run. It also resets `secrets.toml` to the commented-out template,
 keeping your old one as a `.bak`. `kaja config diff` shows what a fetch would change
 without writing anything, and `kaja config wizard` re-runs the setup wizard at any time (language,
-mode, provider, server address), each step opening on what you already have; it
-finishes by asking for and testing any keys your config needs, the same pass `kaja doctor` runs.
+mode, provider, its API key, server address), each step opening on what you already have. Keys are
+asked for where they belong — the provider's right after you pick it, and each extra's right after
+you tick it — but nothing is written until the end, when the same pass `kaja doctor` runs tests every
+key and saves the ones that work. A key you skip isn't asked for again; it's listed as still to do.
+That pass still asks for anything only the finished config reveals, such as an ability's key.
 The wizard doesn't ask about abilities: a machine with none yet gets the recommended set — everything
 needing no key, minus MCP servers that run a command locally — turned on for it, and one that already
 has some is left exactly as it is. `kaja abilities` is where you choose among the rest. A final step

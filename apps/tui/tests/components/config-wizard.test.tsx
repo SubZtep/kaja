@@ -62,9 +62,10 @@ test("Ollama is asked where its server listens, Fireworks is not", async () => {
   await fireworks.t.tick()
   await fireworks.t.press(ENTER) // language: English
   await fireworks.t.press(ENTER) // provider: Fireworks (first option)
-  // Straight past the address step — Fireworks is a hosted API, not a server on this machine.
-  expect(fireworks.t.lastFrame()).toContain("Anything else?")
+  // Straight past the address step — Fireworks is a hosted API, so it's asked for a key instead.
+  expect(fireworks.t.lastFrame()).toContain("API key")
 
+  await fireworks.t.press(ENTER) // key: skipped
   await fireworks.t.press(ENTER) // extras: nothing ticked
   await fireworks.t.press(ENTER) // summary
   expect(fireworks.result).toMatchObject({ mode: "local", provider: "fireworks" })
@@ -77,6 +78,7 @@ test("Ollama is asked where its server listens, Fireworks is not", async () => {
   await ollama.t.press(ENTER) // language: English
   await ollama.t.press(DOWN) // move to Ollama
   await ollama.t.press(ENTER)
+  // A server on this machine takes no key, so it goes straight to the address.
   expect(ollama.t.lastFrame()).toContain("11434")
 
   // Submitting the prefilled default keeps it, rather than storing an empty URL.
@@ -144,6 +146,7 @@ test("local setups are asked about extras, cloud ones are not", async () => {
   await local.t.tick()
   await local.t.press(ENTER) // language: English
   await local.t.press(ENTER) // provider: Fireworks (no address step)
+  await local.t.press(ENTER) // key: skipped
   expect(local.t.lastFrame()).toContain("Anything else?")
 
   await local.t.press(ENTER) // extras: nothing ticked
@@ -169,6 +172,7 @@ test("the extras step starts with nothing ticked, so Enter skips it", async () =
   await w.t.tick()
   await w.t.press(ENTER) // language
   await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press(ENTER) // key: skipped
   expect(w.t.lastFrame()).toContain("Anything else?")
 
   await w.t.press(ENTER) // nothing ticked
@@ -184,11 +188,101 @@ test("ticking an extra records it", async () => {
   await w.t.tick()
   await w.t.press(ENTER) // language
   await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press(ENTER) // key: skipped
   await w.t.press(" ") // tick the first extra, web search
   await w.t.press(ENTER)
+  await w.t.press(ENTER) // its key: skipped
   await w.t.press(ENTER) // summary
 
   expect(w.result?.extras).toEqual(["webSearch"])
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("a hosted provider is asked for its key, and a typed one is carried out of the wizard", async () => {
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  expect(w.t.lastFrame()).toContain("Paste your fireworks API key")
+
+  await w.t.press("sk-typed-here")
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // extras: nothing ticked
+  await w.t.press(ENTER) // summary
+  // Collected, not saved: the credential pass tests it before it reaches secrets.toml.
+  expect(w.result?.providerKey).toBe("sk-typed-here")
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("skipping a key is recorded as empty, not as never having been asked", async () => {
+  // The caller needs the difference: a key the user has already declined must not be asked for again.
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press(ENTER) // key: nothing typed
+  await w.t.press(ENTER) // extras
+  await w.t.press(ENTER) // summary
+
+  expect(w.result?.providerKey).toBe("")
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("a local provider is never asked for a key", async () => {
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(DOWN) // Ollama
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // keeps the default address
+  await w.t.press(ENTER) // extras
+  await w.t.press(ENTER) // summary
+
+  expect(w.result?.providerKey).toBeUndefined()
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("a step that says a key is already saved offers to keep it", async () => {
+  const w = renderWizard({ mode: "local", saved: { providers: ["fireworks"] } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  expect(w.t.lastFrame()).toContain("already saved")
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("each ticked extra is asked for what it needs, and untouched ones are not", async () => {
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press(ENTER) // key: skipped
+  await w.t.press(DOWN) // past web search
+  await w.t.press(DOWN) // past voice
+  await w.t.press(" ") // tick Telegram only
+  await w.t.press(ENTER)
+
+  // Web search and voice weren't ticked, so their questions never appear.
+  expect(w.t.lastFrame()).toContain("Telegram user id")
+  await w.t.press("123456")
+  await w.t.press(ENTER)
+
+  expect(w.t.lastFrame()).toContain("Telegram bot token")
+  await w.t.press("bot-token")
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // summary
+
+  expect(w.result).toMatchObject({ telegramId: "123456", telegramToken: "bot-token" })
+  expect(w.result?.webSearchKey).toBeUndefined()
+  expect(w.result?.voiceUrl).toBeUndefined()
 
   w.t.unmount()
   await w.t.waitUntilExit()

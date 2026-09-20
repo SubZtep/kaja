@@ -160,6 +160,38 @@ test("skipping leaves it on the to-do list; an untestable value is saved as unte
   expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
 })
 
+test("a value the wizard collected is tested and saved without asking again", async () => {
+  const item = fakeItem({ works: value => value === "good" })
+  const prompts = io([])
+  const outcomes = await resolveCredentials([item.item], prompts.io, () => {}, { "[thing] key": "good" })
+
+  expect(outcomes[0]!.status).toBe("saved")
+  expect(item.saved).toEqual(["good"])
+  expect(prompts.titles).toEqual([])
+})
+
+test("a collected value that fails is kept only when the user says so", async () => {
+  const declined = fakeItem({ works: () => false })
+  const refused = await resolveCredentials([declined.item], io([], false).io, () => {}, { "[thing] key": "bad" })
+  expect(refused[0]!.status).toBe("missing")
+  expect(declined.saved).toEqual([])
+
+  const accepted = fakeItem({ works: () => false })
+  const kept = await resolveCredentials([accepted.item], io([], true).io, () => {}, { "[thing] key": "bad" })
+  expect(kept[0]!.status).toBe("saved-failing")
+  expect(accepted.saved).toEqual(["bad"])
+})
+
+test("null means the caller already asked and was turned down, so the pass doesn't ask twice", async () => {
+  const item = fakeItem({ works: () => true })
+  const prompts = io(["would-be-answered"])
+  const outcomes = await resolveCredentials([item.item], prompts.io, () => {}, { "[thing] key": null })
+
+  expect(outcomes[0]!.status).toBe("missing")
+  expect(prompts.titles).toEqual([])
+  expect(item.saved).toEqual([])
+})
+
 test("collects providers, keyed abilities, declared MCP secrets and configured services", async () => {
   put(
     "models.toml",

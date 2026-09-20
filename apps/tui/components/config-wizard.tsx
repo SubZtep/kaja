@@ -1,4 +1,4 @@
-import { MultiSelect, TextInput } from "@inkjs/ui"
+import { MultiSelect, PasswordInput, TextInput } from "@inkjs/ui"
 import { LOCALE_LABELS, locales } from "@kaja/shared"
 import { Box, Text, useInput } from "ink"
 import { useState } from "react"
@@ -21,6 +21,14 @@ const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
   telegram: "wizard.extraTelegram"
 }
 
+/**
+ * Everything the wizard collects. The typed-in values below are asked for here rather than by the
+ * credential pass afterwards, so a key is typed while its question is still on screen — but nothing
+ * is written here: the caller hands them to that pass, which tests each one before saving it.
+ *
+ * `""` means the step was shown and skipped, `undefined` that it never applied. The caller needs
+ * both: a key the user has already declined must not be asked for a second time.
+ */
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
@@ -28,11 +36,55 @@ export type WizardResult = {
   /** Where a local provider's server listens; only collected for the ones that run on this machine. */
   baseUrl?: string
   extras?: WizardExtra[]
+  providerKey?: string
+  webSearchKey?: string
+  /** Speaches' address, for voice in and out. Not a secret — it goes to settings.toml. */
+  voiceUrl?: string
+  /** The one Telegram account the bot answers. Not a secret — it goes to services.toml. */
+  telegramId?: string
+  telegramToken?: string
 }
 
-type Step = "mode" | "language" | "provider" | "baseUrl" | "extras" | "summary"
+/** Which secrets are already in secrets.toml, so their step can offer to keep what's there. */
+export type WizardSaved = {
+  /** Provider names with an `api_key` already saved — a list, since the step can pick any of them. */
+  providers?: string[]
+  webSearch?: boolean
+  telegram?: boolean
+}
 
-const STEP_ORDER: Step[] = ["language", "mode", "provider", "baseUrl", "extras", "summary"]
+type Step =
+  | "mode"
+  | "language"
+  | "provider"
+  | "providerKey"
+  | "baseUrl"
+  | "extras"
+  | "webSearchKey"
+  | "voiceUrl"
+  | "telegramId"
+  | "telegramToken"
+  | "summary"
+
+const STEP_ORDER: Step[] = [
+  "language",
+  "mode",
+  "provider",
+  "providerKey",
+  "baseUrl",
+  "extras",
+  "webSearchKey",
+  "voiceUrl",
+  "telegramId",
+  "telegramToken",
+  "summary"
+]
+
+/** Providers whose follow-up question is an API key, not an address. "fetch" isn't known until fetched. */
+const KEY_PROVIDERS: WizardProvider[] = ["fireworks"]
+
+/** Speaches serves both speech-to-text and text-to-speech, so one URL configures voice in and out. */
+const DEFAULT_SPEACHES_URL = "http://localhost:8000"
 
 /** Providers that are a server on this machine: their setup question is an address, not a key. */
 export const LOCAL_PROVIDER_URLS: Partial<Record<WizardProvider, string>> = {
@@ -53,25 +105,65 @@ const PROVIDER_LABEL_KEY: Record<WizardProvider, string> = {
 }
 
 /**
- * The step a completed one hands off to. Cloud needs no provider, and only a provider that runs on
- * this machine is asked for an address. No step asks for an API key: the credential pass that runs
- * after the wizard writes its files asks for every key the finished config needs, and tests it.
- * Resolved here rather than mid-render so a skipped step never mounts just to advance out of itself.
+ * The step a completed one hands off to. Cloud needs no provider; only a provider that runs on this
+ * machine is asked for an address, and only one that doesn't is asked for a key. Each extra's
+ * follow-up is asked only when that extra was ticked. Resolved here rather than mid-render so a
+ * skipped step never mounts just to advance out of itself.
  */
 function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode): Step {
+  const cloud = result.mode === "cloud"
+  const ticked = (extra: WizardExtra) => result.extras?.includes(extra) ?? false
   const last = STEP_ORDER.length - 1
+
   for (let index = STEP_ORDER.indexOf(step) + 1; index < last; index++) {
     const candidate = STEP_ORDER[index]!
     // `--cloud`/`--local` already answered this one. A prefilled mode does not: that's the current
     // setting being re-offered, which the user is here to change.
     if (candidate === "mode" && forcedMode) continue
-    if (candidate === "provider" && result.mode === "cloud") continue
-    if (candidate === "baseUrl" && (result.mode === "cloud" || !LOCAL_PROVIDER_URLS[result.provider!])) continue
+    if (candidate === "provider" && cloud) continue
+    if (candidate === "providerKey" && (cloud || !KEY_PROVIDERS.includes(result.provider!))) continue
+    if (candidate === "baseUrl" && (cloud || !LOCAL_PROVIDER_URLS[result.provider!])) continue
     // Every extra is a local-agent feature: the Telegram bot, voice, and the web_search tool.
-    if (candidate === "extras" && result.mode === "cloud") continue
+    if (candidate === "extras" && cloud) continue
+    if (candidate === "webSearchKey" && !ticked("webSearch")) continue
+    if (candidate === "voiceUrl" && !ticked("voice")) continue
+    if ((candidate === "telegramId" || candidate === "telegramToken") && !ticked("telegram")) continue
     return candidate
   }
   return "summary"
+}
+
+/**
+ * One typed answer: an address, an account id, or a key. A key is masked and never prefilled —
+ * `saved` only says whether there is one to keep. Submitting nothing skips the step, which the
+ * caller reads as "asked and declined" rather than "never asked".
+ */
+function InputStep({
+  title,
+  hint,
+  secret,
+  defaultValue,
+  onSubmit
+}: Readonly<{
+  title: string
+  hint: string
+  secret?: boolean
+  defaultValue?: string
+  onSubmit: (value: string) => void
+}>) {
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text>{title}</Text>
+      <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+        {secret ? (
+          <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={value => onSubmit(value.trim())} />
+        ) : (
+          <TextInput defaultValue={defaultValue} onSubmit={value => onSubmit(value.trim())} />
+        )}
+      </Box>
+      <Text dimColor>{hint}</Text>
+    </Box>
+  )
 }
 
 /** One "label: value" line on the summary, or nothing when that step was skipped. */
@@ -95,12 +187,15 @@ function SummaryRow({ label, value }: Readonly<{ label: string; value?: string }
 export function ConfigWizard({
   prefill,
   mode,
+  saved,
   onDone,
   onCancel
 }: Readonly<{
   prefill?: WizardResult
   /** Mode already forced by `--cloud`/`--local`; the mode step is skipped when set. */
   mode?: KajaMode
+  /** Secrets already on disk, so their step offers to keep them instead of demanding a new one. */
+  saved?: WizardSaved
   onDone: (result: WizardResult) => void
   onCancel: () => void
 }>) {
@@ -172,19 +267,26 @@ export function ConfigWizard({
     )
   }
 
+  if (step === "providerKey") {
+    return (
+      <InputStep
+        secret
+        title={t("wizard.providerKeyTitle", { provider: result.provider ?? "" })}
+        hint={t(saved?.providers?.includes(result.provider ?? "") ? "wizard.keyHintSaved" : "wizard.keyHint")}
+        onSubmit={providerKey => advance({ providerKey })}
+      />
+    )
+  }
+
   if (step === "baseUrl") {
     const fallback = LOCAL_PROVIDER_URLS[result.provider!] ?? ""
     return (
-      <Box flexDirection="column" gap={1}>
-        <Text>{t("wizard.baseUrlTitle")}</Text>
-        <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
-          <TextInput
-            defaultValue={result.baseUrl ?? fallback}
-            onSubmit={value => advance({ baseUrl: value.trim() || fallback })}
-          />
-        </Box>
-        <Text dimColor>{t("wizard.baseUrlHint")}</Text>
-      </Box>
+      <InputStep
+        title={t("wizard.baseUrlTitle")}
+        hint={t("wizard.baseUrlHint")}
+        defaultValue={result.baseUrl ?? fallback}
+        onSubmit={value => advance({ baseUrl: value || fallback })}
+      />
     )
   }
 
@@ -202,6 +304,50 @@ export function ConfigWizard({
         </Box>
         <Text dimColor>{t("wizard.extrasHint")}</Text>
       </Box>
+    )
+  }
+
+  if (step === "webSearchKey") {
+    return (
+      <InputStep
+        secret
+        title={t("wizard.webSearchKeyTitle")}
+        hint={t(saved?.webSearch ? "wizard.keyHintSaved" : "wizard.keyHint")}
+        onSubmit={webSearchKey => advance({ webSearchKey })}
+      />
+    )
+  }
+
+  if (step === "voiceUrl") {
+    return (
+      <InputStep
+        title={t("wizard.voiceUrlTitle")}
+        hint={t("wizard.voiceUrlHint")}
+        defaultValue={result.voiceUrl ?? DEFAULT_SPEACHES_URL}
+        onSubmit={voiceUrl => advance({ voiceUrl })}
+      />
+    )
+  }
+
+  if (step === "telegramId") {
+    return (
+      <InputStep
+        title={t("wizard.telegramIdTitle")}
+        hint={t("wizard.telegramIdHint")}
+        defaultValue={result.telegramId}
+        onSubmit={telegramId => advance({ telegramId })}
+      />
+    )
+  }
+
+  if (step === "telegramToken") {
+    return (
+      <InputStep
+        secret
+        title={t("wizard.telegramTokenTitle")}
+        hint={t(saved?.telegram ? "wizard.keyHintSaved" : "wizard.keyHint")}
+        onSubmit={telegramToken => advance({ telegramToken })}
+      />
     )
   }
 

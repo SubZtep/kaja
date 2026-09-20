@@ -1,13 +1,13 @@
 import { file, TOML } from "bun"
 import { render } from "ink"
 import type { PickerSelection } from "../../components/ability-picker"
-import type { WizardExtra, WizardProvider, WizardResult } from "../../components/config-wizard"
+import type { WizardProvider, WizardResult, WizardSaved } from "../../components/config-wizard"
 import { pathForBundleKey } from "../config/cli"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import { writeTemplateConfig } from "../config/fetch"
 import type { KajaMode } from "../config/mode"
 import { fetchRemoteConfigBundle } from "../config/remote-fetch"
-import type { CredentialItem } from "../doctor/credentials"
+import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { t } from "../i18n"
 import { getModelsPath, saveProviderBaseUrl, writeModelsTemplate } from "../models/models"
 import type { PullProgress } from "../models/pull"
@@ -68,50 +68,55 @@ async function applyStarterAbilities(print: (line: string) => void) {
   print(t("ability.saved", { path: getAbilitiesPath(), count: total(selection) }))
 }
 
-/** Speaches serves both speech-to-text and text-to-speech, so one URL configures voice in and out. */
-const DEFAULT_SPEACHES_URL = "http://localhost:8000"
+/**
+ * A value the wizard collected, in the shape the credential pass wants: a key to test and save, or
+ * `null` for one the user was offered and turned down, so it isn't asked for all over again.
+ * An absent value means the step never applied, and the pass behaves as if the wizard hadn't run.
+ */
+function offer(where: string, value: string | undefined): OfferedValues {
+  return value === undefined ? {} : { [where]: value || null }
+}
 
 /**
- * Applies the ticked extras. Each writes only its non-secret config here; the credentials come from
- * the credential pass that runs next, so they are tested before being saved like every other key.
+ * Applies the ticked extras: writes their non-secret config (Speaches' URL, the Telegram account
+ * id), and hands their keys back for the credential pass rather than saving any here, so every key
+ * is still tested before it's written.
  *
- * Returns the items that pass can't discover on its own: `collectCredentials` finds the Telegram
+ * `extra` is the items that pass can't discover on its own: `collectCredentials` finds the Telegram
  * token via services.toml's `[telegram]`, but web search has no non-secret config to look for, and
  * a Telegram section we couldn't write leaves its token undiscoverable too.
  */
-async function applyExtras(extras: WizardExtra[], print: (line: string) => void): Promise<CredentialItem[]> {
-  if (extras.length === 0) return []
+async function applyExtras(
+  result: WizardResult,
+  print: (line: string) => void
+): Promise<{ extra: CredentialItem[]; offered: OfferedValues }> {
+  const extras = result.extras ?? []
+  if (extras.length === 0) return { extra: [], offered: {} }
 
-  const { askText } = await import("../doctor/prompt")
   const { checkTelegramToken, checkWebSearchKey } = await import("../doctor/checks")
   const { saveSecrets } = await import("../config/secrets")
   const { appendTomlSection } = await import("../config/toml")
   const extra: CredentialItem[] = []
+  let offered: OfferedValues = {}
 
-  if (extras.includes("voice")) {
-    const url = await askText(t("wizard.voiceUrlTitle"), {
-      hint: t("wizard.voiceUrlHint"),
-      defaultValue: DEFAULT_SPEACHES_URL
-    })
-    if (url) {
-      const { getConfigPath, invalidateConfigCache } = await import("../config/config")
-      for (const table of ["stt", "tts"]) {
-        await appendTomlSection(getConfigPath(), table, [`speachesUrl = ${JSON.stringify(url)}`])
-      }
-      invalidateConfigCache()
-      print(t("wizard.voiceSaved", { url }))
+  if (extras.includes("voice") && result.voiceUrl) {
+    const { getConfigPath, invalidateConfigCache } = await import("../config/config")
+    for (const table of ["stt", "tts"]) {
+      await appendTomlSection(getConfigPath(), table, [`speachesUrl = ${JSON.stringify(result.voiceUrl)}`])
     }
+    invalidateConfigCache()
+    print(t("wizard.voiceSaved", { url: result.voiceUrl }))
   }
 
   if (extras.includes("telegram")) {
     const { getServicesPath, invalidateServicesCache, readServicesLoose } = await import("../config/services")
     // allowedUserIds must be non-empty or services.toml fails its schema and every later run exits,
     // so the section is only written once there's a real id to put in it.
-    const id = await askText(t("wizard.telegramIdTitle"), { hint: t("wizard.telegramIdHint") })
-    if (id && /^\d+$/.test(id)) {
-      await appendTomlSection(getServicesPath(), "telegram", [`allowedUserIds = [${id}]`])
+    if (result.telegramId && /^\d+$/.test(result.telegramId)) {
+      await appendTomlSection(getServicesPath(), "telegram", [`allowedUserIds = [${result.telegramId}]`])
       invalidateServicesCache()
     }
+    offered = { ...offered, ...offer("[telegram] botToken", result.telegramToken) }
     if (!(await readServicesLoose()).telegram) {
       // No section for the pass to find, so carry the token itself — it still gets tested and saved.
       print(t("wizard.telegramNeedsId", { path: getServicesPath() }))
@@ -127,6 +132,7 @@ async function applyExtras(extras: WizardExtra[], print: (line: string) => void)
   }
 
   if (extras.includes("webSearch")) {
+    offered = { ...offered, ...offer("[webSearch] apiKey", result.webSearchKey) }
     extra.push({
       label: t("doctor.itemWebSearch"),
       where: "[webSearch] apiKey",
@@ -138,7 +144,7 @@ async function applyExtras(extras: WizardExtra[], print: (line: string) => void)
     })
   }
 
-  return extra
+  return { extra, offered }
 }
 
 /**
@@ -219,12 +225,32 @@ async function currentModels(): Promise<{ provider?: WizardProvider; baseUrl?: s
 async function readPrefill(): Promise<WizardResult> {
   const config = await readConfigLoose()
   const { provider, baseUrl } = await currentModels()
+  const { readServicesLoose } = await import("../config/services")
+  const services = await readServicesLoose()
 
   return {
     mode: config.preferences?.mode,
     language: config.preferences?.locale,
     provider,
-    baseUrl
+    baseUrl,
+    voiceUrl: config.stt?.speachesUrl,
+    telegramId: services.telegram?.allowedUserIds?.[0]?.toString()
+  }
+}
+
+/**
+ * Which secrets already exist, for the key steps — the values themselves are never shown or
+ * prefilled, so all a step needs is whether pressing Enter would keep something or skip it.
+ */
+async function readSavedSecrets(): Promise<WizardSaved> {
+  const { secrets } = await import("../config/secrets")
+  const creds = await secrets()
+  return {
+    providers: Object.entries(creds.providers)
+      .filter(([, value]) => value?.api_key)
+      .map(([name]) => name),
+    webSearch: Boolean(creds.webSearch?.apiKey),
+    telegram: Boolean(creds.telegram?.botToken)
   }
 }
 
@@ -246,13 +272,14 @@ export async function runConfigWizard({
   }
 
   const { ConfigWizard } = await import("../../components/config-wizard")
-  const prefill = await readPrefill()
+  const [prefill, saved] = await Promise.all([readPrefill(), readSavedSecrets()])
 
   const result = await new Promise<WizardResult | undefined>(resolve => {
     const { unmount } = render(
       <ConfigWizard
         prefill={prefill}
         mode={mode}
+        saved={saved}
         onDone={r => {
           unmount()
           resolve(r)
@@ -270,13 +297,19 @@ export async function runConfigWizard({
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
   await applyStarterAbilities(line => console.log(line))
-  const extra = await applyExtras(result.extras ?? [], line => console.log(line))
+  const { extra, offered } = await applyExtras(result, line => console.log(line))
   await offerModelDownloads(line => console.log(line))
 
-  // Reads the config that applyResult, applyStarterAbilities and applyExtras just wrote, then asks for and
-  // tests every key it needs — the provider's included, which is why no step above collects one.
+  // Reads the config that applyResult, applyStarterAbilities and applyExtras just wrote, then tests
+  // every key it needs. The keys the wizard already asked for come in as `offered`, so they are
+  // tested and saved without being asked for twice; it still asks for anything only the finished
+  // config reveals — an ability's key, an MCP server's declared secret.
   const { isUnresolved, runCredentialPass } = await import("../doctor/credentials")
-  const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"), extra)
+  const providerKey = result.provider ? offer(`[providers.${result.provider}] api_key`, result.providerKey) : {}
+  const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"), extra, {
+    ...providerKey,
+    ...offered
+  })
   const unresolved = outcomes.filter(isUnresolved).length
   return { code: 0, text: unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done") }
 }

@@ -42,6 +42,14 @@ export type CredentialOutcome =
       kind?: "credential" | "unreachable"
     }
 
+/**
+ * Values the caller collected before this pass ran, keyed by {@link CredentialItem.where}. A string
+ * is tested and saved exactly as one typed at the prompt would be; `null` means the user was already
+ * asked and declined, so it's reported instead of being asked for twice. The setup wizard fills this
+ * from its own key steps — `kaja doctor` has nowhere to have asked, so it never passes one.
+ */
+export type OfferedValues = Record<string, string | null>
+
 /** How resolveCredentials talks to the user; the doctor passes Ink prompts, tests pass fakes. */
 export type CredentialIo = {
   interactive: boolean
@@ -219,7 +227,8 @@ function askTitle(item: CredentialItem, failingReason: string | undefined): stri
 export async function resolveCredentials(
   items: CredentialItem[],
   io: CredentialIo,
-  onOutcome: (outcome: CredentialOutcome) => void = () => {}
+  onOutcome: (outcome: CredentialOutcome) => void = () => {},
+  offered: OfferedValues = {}
 ): Promise<CredentialOutcome[]> {
   const outcomes: CredentialOutcome[] = []
   const settle = (outcome: CredentialOutcome) => {
@@ -228,9 +237,16 @@ export async function resolveCredentials(
   }
 
   for (const item of items) {
+    const offer = offered[item.where]
+    if (typeof offer === "string") {
+      settle(await testAndSave(item, offer, item.present ? "failing" : "missing", io))
+      continue
+    }
+
     const saved = await savedOutcome(item)
     // Nothing rejected the value, so there's nothing for the user to retype — report and move on.
-    const worthAsking = "reason" in saved && io.interactive && saved.kind !== "unreachable"
+    // `null` says the caller already asked and was turned down, which is the same dead end.
+    const worthAsking = "reason" in saved && io.interactive && saved.kind !== "unreachable" && offer !== null
     settle(worthAsking ? await askAndSave(saved as Extract<CredentialOutcome, { reason: string }>, io) : saved)
   }
 
@@ -251,15 +267,28 @@ async function askAndSave(
   problem: Extract<CredentialOutcome, { reason: string }>,
   io: CredentialIo
 ): Promise<CredentialOutcome> {
-  const { item } = problem
-  const value = await io.ask(askTitle(item, problem.status === "missing" ? undefined : problem.reason))
+  const value = await io.ask(askTitle(problem.item, problem.status === "missing" ? undefined : problem.reason))
   if (!value) return problem
+  return testAndSave(problem.item, value, problem.status, io)
+}
 
+/**
+ * Tests a value and saves it, keeping one that fails only if the user says so — `rejected` is the
+ * status to report when they don't. Shared by a value typed at the prompt and one the wizard
+ * collected earlier, so a key gathered up front is still never written untested.
+ */
+async function testAndSave(
+  item: CredentialItem,
+  value: string,
+  rejected: Extract<CredentialOutcome, { reason: string }>["status"],
+  io: CredentialIo
+): Promise<CredentialOutcome> {
   const tested = await item.check?.(value)
   if (tested?.ok === false) {
-    if (!(await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason })))) {
-      return { item, status: problem.status, reason: tested.reason, kind: tested.kind }
-    }
+    const keep =
+      io.interactive &&
+      (await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason })))
+    if (!keep) return { item, status: rejected, reason: tested.reason, kind: tested.kind }
     await item.save(value)
     return { item, status: "saved-failing", reason: tested.reason, kind: tested.kind }
   }
@@ -298,11 +327,14 @@ export function isUnresolved(outcome: CredentialOutcome): boolean {
  * current config relies on and, in a terminal, asks for anything missing or failing (tested before
  * it's saved). Prints `header` only when there's actually something to check. Reads the config from
  * disk, so a caller that just wrote one must do so before calling this.
+ *
+ * `offered` carries values the caller has already collected — see {@link OfferedValues}.
  */
 export async function runCredentialPass(
   print: (line: string) => void,
   header?: string,
-  extra: CredentialItem[] = []
+  extra: CredentialItem[] = [],
+  offered: OfferedValues = {}
 ): Promise<CredentialOutcome[]> {
   // Loaded here rather than at module scope so a non-interactive caller never pulls Ink in.
   const { askSaveAnyway, askSecret } = await import("./prompt")
@@ -317,7 +349,8 @@ export async function runCredentialPass(
   return resolveCredentials(
     items,
     { interactive: Boolean(process.stdin.isTTY), ask: askSecret, askSaveAnyway },
-    outcome => print(outcomeLine(outcome))
+    outcome => print(outcomeLine(outcome)),
+    offered
   )
 }
 
