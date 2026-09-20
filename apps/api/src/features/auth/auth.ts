@@ -103,6 +103,15 @@ export const auth = betterAuth({
       }
     }
   },
+  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? {
+        socialProviders: {
+          google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
+        },
+        // Google verifies emails, so a Google sign-in links to the existing account with the same (verified) email
+        account: { accountLinking: { enabled: true, trustedProviders: ["google"] } }
+      }
+    : {}),
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {

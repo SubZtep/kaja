@@ -74,7 +74,7 @@ bun run --filter @kaja/tui test
 
 ### Authentication
 
-- Better Auth (email/password, verification, reset, admin roles, device authorization)
+- Better Auth (email/password, optional Google sign-in via `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, verification, reset, admin roles, device authorization)
 - CLI client id: `KAJA_TUI_CLIENT_ID` from `@kaja/schema` (`"kaja-tui"`)
 - Device approval UI: web `/device`
 - Session cookies prefixed with `kaja`

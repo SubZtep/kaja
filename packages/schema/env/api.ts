@@ -20,6 +20,15 @@ export const ApiEnvSchema = LoggerEnvSchema.extend({
     .optional()
     .describe("Set when API and web share a parent domain (e.g. ondis.co) to enable cross-subdomain cookies"),
 
+  GOOGLE_CLIENT_ID: trimmed
+    .optional()
+    .describe("Google OAuth client id; Google sign-in is enabled when both id and secret are set")
+    .meta({ section: "Google Sign-in" }),
+  GOOGLE_CLIENT_SECRET: trimmed
+    .optional()
+    .describe("Google OAuth client secret (redirect URI: <BETTER_AUTH_URL>/auth/callback/google)")
+    .meta({ secret: true, section: "Google Sign-in" }),
+
   SMTP_HOST: trimmed.optional().describe("SMTP server hostname"),
   SMTP_PORT: positiveInt.optional().describe("SMTP server port").meta({ example: "1025" }),
   SMTP_SECURE: bool.optional().describe("Use TLS for the SMTP connection"),

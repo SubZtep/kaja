@@ -28,6 +28,10 @@ declare module "bun" {
     WEB_PUBLIC_URL?: string
     /** Set when API and web share a parent domain (e.g. ondis.co) to enable cross-subdomain cookies */
     CROSS_PARENT_DOMAIN?: string
+    /** Google OAuth client id; Google sign-in is enabled when both id and secret are set */
+    GOOGLE_CLIENT_ID?: string
+    /** Google OAuth client secret (redirect URI: <BETTER_AUTH_URL>/auth/callback/google) */
+    GOOGLE_CLIENT_SECRET?: string
     /** SMTP server hostname */
     SMTP_HOST?: string
     /** SMTP server port */
