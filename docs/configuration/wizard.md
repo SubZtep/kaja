@@ -171,7 +171,7 @@ config:
 ---
 flowchart LR
     S["<b>Summary</b>"] --> A["<b>starter abilities</b><br><small>only if abilities.toml<br>enables nothing yet</small>"]
-    A --> E["<b>extras</b><br><small>writes settings.toml</small>"]
+    A --> E["<b>extras</b><br><small>voice: writes the<br>Speaches URL to settings.toml</small>"]
     E --> D["<b>model downloads</b><br><small>one question for the lot</small>"]
     D --> C["<b>credential pass</b><br><small>tests and saves every key</small>"]
     C --> R(["ready"])
