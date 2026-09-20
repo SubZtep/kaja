@@ -4,6 +4,7 @@ import type OpenAI from "openai"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
+import { recordPausedCall } from "./agent/telemetry"
 import { runApprovedTool, type Tool } from "./agent/tools"
 import { loadPackages } from "./packages/load"
 import type { PackageStore } from "./packages/types"
@@ -248,12 +249,22 @@ export class Nasi {
         err.name = "NasiNothingToApprove"
         throw err
       }
-      if (input.approval === "decline") return TOOL_DECLINED
+      if (input.approval === "decline") {
+        recordPausedCall(session, "tool_approval", "declined")
+        return TOOL_DECLINED
+      }
       const call = pendingToolCall(session, pendingId)
       if (!call) return "Error: the call waiting for approval is gone."
-      return runApprovedTool(this.tools, call.function.name, call.function.arguments)
+      const startedAt = performance.now()
+      let status: "ok" | "error" = "ok"
+      const result = await runApprovedTool(this.tools, call.function.name, call.function.arguments, s => {
+        status = s
+      })
+      recordPausedCall(session, "tool_approval", { status, startedAt })
+      return result
     }
     const message = input.message ?? ""
+    if (pendingId) recordPausedCall(session, "tool_approval", "skipped")
     return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
   }
 

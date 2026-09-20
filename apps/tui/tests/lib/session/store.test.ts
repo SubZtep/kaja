@@ -85,14 +85,231 @@ test("loadSessionRow returns undefined for a missing id", async () => {
   expect(await loadSessionRow("01900000-0000-7000-8000-000000000000")).toBeUndefined()
 })
 
-test("a corrupt row loads as undefined instead of crashing", async () => {
-  const id = await createSessionRow(row())
+async function openDb() {
   const { peekStorePath } = await import("../../../lib/memory/store")
   const { Database } = await import("bun:sqlite")
-  const db = new Database(peekStorePath()!)
-  db.query("UPDATE sessions SET session = 'not json' WHERE id = ?").run(id)
+  return new Database(peekStorePath()!)
+}
+
+function count(
+  db: Awaited<ReturnType<typeof openDb>>,
+  table: "messages" | "session_events" | "tool_calls",
+  id: string
+) {
+  const sql =
+    table === "tool_calls"
+      ? "SELECT COUNT(*) AS n FROM tool_calls tc JOIN messages m ON m.id = tc.messageId WHERE m.sessionId = ?"
+      : `SELECT COUNT(*) AS n FROM ${table} WHERE sessionId = ?`
+  return (db.query(sql).get(id) as { n: number }).n
+}
+
+test("a corrupt row loads as undefined instead of crashing", async () => {
+  const id = await createSessionRow(
+    row({
+      session: {
+        messages: [{ role: "user", content: [{ type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } }] }]
+      }
+    })
+  )
+  const db = await openDb()
+  db.query("UPDATE messages SET parts = 'not json' WHERE sessionId = ?").run(id)
   db.close()
   expect(await loadSessionRow(id)).toBeUndefined()
+})
+
+const CALL = { id: "call_1", type: "function", function: { name: "read_thing", arguments: "{}" } }
+const TURN_ONE = [
+  ...SESSION.messages,
+  { role: "assistant", content: null, reasoning_content: "hmm", tool_calls: [CALL] },
+  { role: "tool", tool_call_id: "call_1", content: "ok" },
+  { role: "assistant", content: "done" }
+]
+const TURN_ONE_EVENTS = [
+  { type: "user", text: "hi" },
+  { type: "reasoning", text: "hmm" },
+  { type: "tool_call", name: "read_thing", arguments: "{}" },
+  { type: "final", content: "done" }
+]
+
+test("messages, tool calls and the timeline round-trip, including events no message explains", async () => {
+  const events = [
+    ...TURN_ONE_EVENTS,
+    { type: "persona_switch", personaId: "care", label: "Care" },
+    { type: "display_image", url: "https://example.com/a.png", alt: "a" },
+    { type: "error", text: "boom", category: "unknown" }
+  ]
+  const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events }))
+  const loaded = (await loadSessionRow(id))!
+  expect(loaded.session.messages).toEqual(TURN_ONE)
+  expect(loaded.events).toEqual(events)
+})
+
+test("a save writes only the rows past what is stored", async () => {
+  const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events: TURN_ONE_EVENTS }))
+  const db = await openDb()
+  const before = db.query("SELECT id FROM messages WHERE sessionId = ? ORDER BY seq").all(id)
+
+  const next = [...TURN_ONE, { role: "user", content: "again" }, { role: "assistant", content: "sure" }]
+  await updateSessionRow(
+    id,
+    row({ session: { messages: next }, events: [...TURN_ONE_EVENTS, { type: "user", text: "again" }] })
+  )
+
+  const after = db.query("SELECT id FROM messages WHERE sessionId = ? ORDER BY seq").all(id)
+  expect(after).toHaveLength(before.length + 2)
+  expect(after.slice(0, before.length)).toEqual(before)
+  expect(count(db, "session_events", id)).toBe(TURN_ONE_EVENTS.length + 1)
+  expect(count(db, "tool_calls", id)).toBe(1)
+  db.close()
+  expect((await loadSessionRow(id))!.session.messages).toEqual(next)
+})
+
+test("steps and tool calls keep what the agent recorded, and the session's telemetry is taken off after the save", async () => {
+  const session = {
+    messages: TURN_ONE,
+    telemetry: {
+      steps: [
+        {
+          at: 1,
+          model: "served",
+          persona: "kaja",
+          promptTokens: 10,
+          completionTokens: 4,
+          latencyMs: 120,
+          finishReason: "tool_calls"
+        },
+        { at: 3, latencyMs: 30 }
+      ],
+      calls: { call_1: { status: "ok", durationMs: 7 } }
+    }
+  }
+  const id = await createSessionRow(row({ session }))
+  expect(session).not.toHaveProperty("telemetry")
+
+  const db = await openDb()
+  const steps = db
+    .query(
+      "SELECT seq, persona, model, promptTokens, completionTokens, latencyMs, finishReason FROM messages WHERE sessionId = ? AND latencyMs IS NOT NULL ORDER BY seq"
+    )
+    .all(id)
+  const call = db
+    .query(
+      `SELECT tc.name, tc.status, tc.durationMs, tc.approval, r.role AS resultRole, r.content AS resultContent
+       FROM tool_calls tc JOIN messages m ON m.id = tc.messageId LEFT JOIN messages r ON r.id = tc.resultMessageId
+       WHERE m.sessionId = ?`
+    )
+    .get(id)
+  db.close()
+  expect(steps).toEqual([
+    {
+      seq: 1,
+      persona: "kaja",
+      model: "served",
+      promptTokens: 10,
+      completionTokens: 4,
+      latencyMs: 120,
+      finishReason: "tool_calls"
+    },
+    {
+      seq: 3,
+      persona: null,
+      model: null,
+      promptTokens: null,
+      completionTokens: null,
+      latencyMs: 30,
+      finishReason: null
+    }
+  ])
+  expect(call).toEqual({
+    name: "read_thing",
+    status: "ok",
+    durationMs: 7,
+    approval: null,
+    resultRole: "tool",
+    resultContent: "ok"
+  })
+})
+
+test("a later save can still answer a call stored earlier, without erasing what was recorded before", async () => {
+  const id = await createSessionRow(
+    row({ session: { messages: TURN_ONE, telemetry: { steps: [], calls: { call_1: { durationMs: 7 } } } } })
+  )
+  await updateSessionRow(
+    id,
+    row({
+      session: {
+        messages: TURN_ONE,
+        telemetry: { steps: [], calls: { call_1: { status: "declined", approval: "declined" } } }
+      }
+    })
+  )
+  const db = await openDb()
+  const call = db
+    .query(
+      "SELECT tc.status, tc.durationMs, tc.approval FROM tool_calls tc JOIN messages m ON m.id = tc.messageId WHERE m.sessionId = ?"
+    )
+    .get(id)
+  db.close()
+  expect(call).toEqual({ status: "declined", durationMs: 7, approval: "declined" })
+})
+
+test("a sqlite file from before telemetry is reset when the store opens", async () => {
+  const { Database } = await import("bun:sqlite")
+  const path = `${tmpdir()}/kaja-notelemetry-${Bun.randomUUIDv7()}.sqlite`
+  const old = new Database(path, { create: true })
+  old.run(
+    "CREATE TABLE sessions (id TEXT PRIMARY KEY, createdAt TEXT, updatedAt TEXT, persona TEXT, model TEXT, title TEXT, owner TEXT, systemPrompt TEXT, pendingCallId TEXT, pendingKind TEXT)"
+  )
+  old.run(
+    "CREATE TABLE messages (id TEXT PRIMARY KEY, sessionId TEXT, seq INTEGER, role TEXT, content TEXT, parts TEXT, reasoning TEXT, toolCallId TEXT, createdAt TEXT)"
+  )
+  old.run("INSERT INTO sessions VALUES ('old', 'x', 'x', 'p', 'm', 't', NULL, NULL, NULL, NULL)")
+  old.close()
+  const { createSqliteStore } = await import("../../../lib/store/sqlite")
+  const store = createSqliteStore(path)
+  expect(await store.listSessions()).toEqual([])
+  const id = await store.createSession({ ...row(), title: "new" })
+  expect((await store.loadSession(id))!.session.messages).toEqual(SESSION.messages)
+})
+
+test("the system prompt is rewritten in place while the messages stay untouched", async () => {
+  const id = await createSessionRow(row({ session: { messages: TURN_ONE } }))
+  const rewritten = [{ role: "system", content: "now a different persona" }, ...TURN_ONE.slice(1)]
+  await updateSessionRow(id, row({ session: { messages: rewritten } }))
+  const db = await openDb()
+  expect(count(db, "messages", id)).toBe(TURN_ONE.length - 1)
+  db.close()
+  expect((await loadSessionRow(id))!.session.messages).toEqual(rewritten)
+})
+
+test("deleting a session takes its messages, tool calls and timeline with it", async () => {
+  const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events: TURN_ONE_EVENTS }))
+  expect(await deleteSessionRow(id)).toBe(true)
+  const db = await openDb()
+  expect(count(db, "messages", id)).toBe(0)
+  expect(count(db, "session_events", id)).toBe(0)
+  expect(
+    db.query("SELECT COUNT(*) AS n FROM tool_calls WHERE messageId NOT IN (SELECT id FROM messages)").get()
+  ).toEqual({
+    n: 0
+  })
+  db.close()
+})
+
+test("the old blob-shaped sessions table is dropped when the store opens", async () => {
+  const { Database } = await import("bun:sqlite")
+  const path = `${tmpdir()}/kaja-legacy-sessions-${Bun.randomUUIDv7()}.sqlite`
+  const legacy = new Database(path, { create: true })
+  legacy.run(
+    "CREATE TABLE sessions (id TEXT PRIMARY KEY, createdAt TEXT, updatedAt TEXT, persona TEXT, model TEXT, title TEXT, owner TEXT, session TEXT NOT NULL, events TEXT NOT NULL)"
+  )
+  legacy.run("INSERT INTO sessions VALUES ('old', 'x', 'x', 'p', 'm', 't', NULL, '{}', '[]')")
+  legacy.close()
+  const { createSqliteStore } = await import("../../../lib/store/sqlite")
+  const store = createSqliteStore(path)
+  expect(await store.listSessions()).toEqual([])
+  const id = await store.createSession({ ...row(), title: "new" })
+  expect((await store.loadSession(id))!.session.messages).toEqual(SESSION.messages)
 })
 
 test("listSessions is newest first and carries no payload blobs", async () => {

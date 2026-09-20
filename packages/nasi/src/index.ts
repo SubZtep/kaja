@@ -5,6 +5,8 @@ export {
   ASK_USER_TOOL,
   applyPersona,
   askUserTool,
+  type CallStat,
+  type CallStatus,
   createSession,
   DATASET_INFO_TOOL,
   type FinalizedAgentEvent,
@@ -13,6 +15,8 @@ export {
   RUN_COMMAND_TOOL,
   runCommandTool,
   type Session,
+  type SessionTelemetry,
+  type StepStat,
   SWITCH_PERSONA_TOOL,
   switchPersonaTool
 } from "./agent/agent"
@@ -29,6 +33,7 @@ export { samplingOf } from "./agent/persona"
 export { run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
+export { recordPausedCall } from "./agent/telemetry"
 export {
   LOCAL_OWNER_CTX,
   runApprovedTool,
@@ -94,14 +99,23 @@ export {
   UnsafeUrlError
 } from "./security/ssrf"
 export {
+  type CallUpdate,
+  type ConversationRows,
+  clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
   type DatasetVersionSummary,
   forgetNotes,
+  joinConversation,
+  type MessageRow,
   type NasiStore,
   noteHeader,
+  type PendingKind,
   requireStore,
-  type SessionWrite
+  type SessionWrite,
+  type StepRow,
+  splitConversation,
+  type ToolCallRow
 } from "./store"
 export { currentTimeTool } from "./tools/builtin/current-time"
 export { datasetInfoTool } from "./tools/builtin/dataset-info"

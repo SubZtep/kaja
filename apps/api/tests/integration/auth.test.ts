@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { env } from "../../src/core/env"
+import { verifyEmail } from "./helpers"
 
 describe("authentication flow", () => {
   const firstName = faker.person.firstName()
@@ -23,6 +24,16 @@ describe("authentication flow", () => {
 
   describe("bearer token", () => {
     let token: string
+
+    test("sign in is refused until the email is verified", async () => {
+      const res = await app.request("/auth/sign-in/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      })
+      expect(res.status).toBe(403)
+      await verifyEmail(email)
+    })
 
     test("sign in", async () => {
       const res = await app.request("/auth/sign-in/email", {

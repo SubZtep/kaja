@@ -198,9 +198,31 @@ export function applyPersona(agent: Agent, persona: Persona) {
   }
 }
 
+/** What one model round cost, recorded beside the assistant message it produced; `at` is that message's row index (the system prompt not counted). */
+export type StepStat = {
+  at: number
+  /** The provider-reported model that served the round, else the requested one. */
+  model?: string
+  /** The persona active when the round ran. */
+  persona?: string
+  promptTokens?: number
+  completionTokens?: number
+  latencyMs: number
+  finishReason?: string
+}
+
+/** How a tool call went: `ok`/`error` when it ran, `declined` (the human said no) or `skipped` (they typed instead). Unset when a person or a client answered it. */
+export type CallStatus = "ok" | "error" | "declined" | "skipped"
+
+export type CallStat = { status?: CallStatus; approval?: "approved" | "declined"; durationMs?: number }
+
+/** Numbers {@link run} and the hosts record as they go; a store takes them off the session when it saves (see `clearTelemetry`). Calls are keyed by the provider's call id. */
+export type SessionTelemetry = { steps: StepStat[]; calls: Record<string, CallStat> }
+
 /** Conversation state threaded through repeated {@link run} calls. */
 export type Session = {
   messages: import("openai/resources/chat/completions").ChatCompletionMessageParam[]
+  telemetry?: SessionTelemetry
   pendingAskUserId?: string
   pendingRunCommandId?: string
   pendingClientToolCallId?: string

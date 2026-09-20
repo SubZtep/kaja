@@ -1,6 +1,6 @@
 # @kaja/nasi
 
-The agent brain: OpenAI-compatible tool loop, per-user SQLite (sessions, memory, datasets), built-in tools.
+The agent brain: OpenAI-compatible tool loop, per-user SQLite (sessions as message and tool-call rows, memory, datasets), built-in tools.
 
 Hosts (full CLI, API) construct it and pass a store, model client, prompt context, and `includeLocalTools`. This package has no Ink, Hono, Better Auth, sqlite, or pg.
 
@@ -16,7 +16,7 @@ bun run --filter @kaja/nasi test
 src/
   index.ts           # public API
   agent/             # Agent, run(), system prompt, intercepts
-  store/             # NasiStore interface + in-memory adapter
+  store/             # NasiStore interface + in-memory adapter; rows.ts splits a session into message/tool-call rows (and joins it back) for the sqlite and Postgres stores
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
   mcp/               # includeLocalTools only
@@ -37,3 +37,5 @@ src/
 - Packages come from a host-provided `PackageStore` (`createFolderPackageStore` for the CLI); `loadPackages` returns extra tools the host appends. A broken package is skipped with a warning, never thrown.
 - Parameterized SQL only. Session ids are UUIDv7 text.
 - Do not log prompts, memory content, or API keys.
+- Telemetry: `run()` records each model round (`StepStat`: served model, persona, tokens, latency, finish reason) and each tool call it runs (`CallStat`: status, duration) on `session.telemetry`; a host that answers a paused call itself records it with `recordPausedCall` before the answer reaches `run()`. A store writes it beside the rows it saves and then takes it off the session (`clearTelemetry`), so telemetry always covers what's new since the last save. A call's status stays unset when a person or a client answered it.
+- A tool that throws (or isn't found) never aborts the turn: `run()` answers its call with `Error: <message>` so the model can react and the session stays valid, and records status `error`. Rounds where every call failed are counted, and the run stops after three in a row (`MAX_FAILING_TOOL_ROUNDS`).

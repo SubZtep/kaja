@@ -11,6 +11,7 @@ export type SessionWrite = {
   model: string
   owner: string | null
   session: unknown
+  /** The rendered timeline; a store that keeps none (the cloud's) ignores it. */
   events: unknown[]
 }
 

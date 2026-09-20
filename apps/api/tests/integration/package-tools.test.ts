@@ -95,6 +95,17 @@ const createIssueCall = (id: string) => ({
   function: { name: createIssueTool, arguments: JSON.stringify({ title: "Bug" }) }
 })
 
+/** The stored tool call for a provider call id, with the approval it got and the text of its result message. */
+async function savedCall(callId: string) {
+  const { rows } = await pool.query(
+    `SELECT tc.approval, tc.status, tc.duration_ms IS NOT NULL AS timed, r.content AS result
+     FROM nasi_tool_call tc LEFT JOIN nasi_message r ON r.id = tc.result_message_id
+     WHERE tc.call_id = $1`,
+    [callId]
+  )
+  return rows[0]
+}
+
 describe("HTTP tools in the cloud", () => {
   let base: string
   let token: string
@@ -220,6 +231,12 @@ describe("HTTP tools in the cloud", () => {
       }
     ])
     expect(sent[1]!.messages.at(-1)).toMatchObject({ role: "tool", content: 'HTTP 201\n\n{"id":7}' })
+    expect(await savedCall("call_a")).toEqual({
+      approval: "approved",
+      status: "ok",
+      timed: true,
+      result: 'HTTP 201\n\n{"id":7}'
+    })
 
     const again = await turn({ session: paused.session, approval: "approve" })
     expect(again.status).toBe(409)
@@ -250,6 +267,12 @@ describe("HTTP tools in the cloud", () => {
     expect(declined.message).toBe("Not filed.")
     expect(sent[1]!.messages.at(-1)).toMatchObject({ role: "tool", content: "User declined this request." })
     expect(requests).toEqual([])
+    expect(await savedCall("call_b")).toEqual({
+      approval: "declined",
+      status: "declined",
+      timed: false,
+      result: "User declined this request."
+    })
   })
 
   test("the Telegram bot asks with buttons; only a matching press from the same user runs the call", async () => {
