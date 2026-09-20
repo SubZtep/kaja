@@ -114,8 +114,9 @@ async function* handleToolCall(
   yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
   const t = toolsByName.get(call.function.name)
   if (!t) {
+    messages.push({ role: "tool", tool_call_id: call.id, content: `Error: unknown tool "${call.function.name}"` })
     record(call.id, { status: "error" })
-    throw new Error(`Unknown tool: ${call.function.name}`)
+    return
   }
   const args = parseToolArgs(call.function.arguments)
   if (args === null) {
@@ -132,8 +133,11 @@ async function* handleToolCall(
   try {
     result = await t.execute(args, { owner, personaId: agent.personaId, store: agent.store })
   } catch (error) {
+    // The model gets the failure as the call's result, so the turn goes on and the session stays valid.
+    const reason = error instanceof Error ? error.message : String(error)
+    messages.push({ role: "tool", tool_call_id: call.id, content: `Error: ${reason}` })
     record(call.id, { status: "error", durationMs: msSince(startedAt) })
-    throw error
+    return
   }
   record(call.id, { status: "ok", durationMs: msSince(startedAt) })
 
@@ -397,6 +401,9 @@ function isEmptyRound(message: StreamedRound["message"]): boolean {
   return content.trim().length === 0
 }
 
+/** Stops the run after this many rounds in a row where every tool call failed, so a model can't retry a broken tool forever. */
+const MAX_FAILING_TOOL_ROUNDS = 3
+
 /** Retries an empty round this many times before giving up and yielding it as-is. */
 const MAX_EMPTY_ROUND_RETRIES = 5
 
@@ -488,6 +495,7 @@ export async function* run(
   pushPromptToMessages(session, prompt)
 
   let emptyRoundRetries = 0
+  let failingToolRounds = 0
   while (true) {
     const { message, thinking, usage, model, completionTokens, finishReason, latencyMs } = yield* streamRound(
       agent,
@@ -531,6 +539,12 @@ export async function* run(
       message.tool_calls,
       (callId, stat) => recordCall(session, callId, stat)
     )
+
+    const everyCallFailed = message.tool_calls.every(call => session.telemetry?.calls[call.id]?.status === "error")
+    failingToolRounds = everyCallFailed ? failingToolRounds + 1 : 0
+    if (failingToolRounds >= MAX_FAILING_TOOL_ROUNDS) {
+      throw new Error(`Stopped: every tool call failed ${MAX_FAILING_TOOL_ROUNDS} rounds in a row.`)
+    }
 
     if (yield* handlePendingHandoff(session, ask, confirm, clientTool, approval)) return
   }

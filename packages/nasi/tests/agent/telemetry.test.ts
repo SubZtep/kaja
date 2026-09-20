@@ -118,11 +118,61 @@ test("each round is recorded beside its assistant message, the system prompt not
   expect(session.telemetry!.calls).toEqual({ c1: { status: "ok", durationMs: expect.any(Number) } })
 })
 
-test("a tool that throws is recorded as an error, and the run still aborts as before", async () => {
-  const agent = agentWith([{ content: null, calls: [{ id: "c1", name: "boom", arguments: "{}" }] }])
+test("a tool that throws is recorded as an error and answered with its message, so the turn goes on", async () => {
+  const agent = agentWith([
+    { content: null, calls: [{ id: "c1", name: "boom", arguments: "{}" }] },
+    { content: "It failed, sorry." }
+  ])
   const session = createSession()
-  await expect(drain(run(agent, "go", session))).rejects.toThrow("nope")
+  await drain(run(agent, "go", session))
   expect(session.telemetry!.calls.c1).toEqual({ status: "error", durationMs: expect.any(Number) })
+  expect(session.messages.find(m => m.role === "tool")).toEqual({
+    role: "tool",
+    tool_call_id: "c1",
+    content: "Error: nope"
+  })
+  expect(session.messages.at(-1)).toMatchObject({ role: "assistant", content: "It failed, sorry." })
+})
+
+test("an unknown tool is answered too, never left dangling", async () => {
+  const agent = agentWith([{ content: null, calls: [{ id: "c1", name: "nope", arguments: "{}" }] }, { content: "ok" }])
+  const session = createSession()
+  await drain(run(agent, "go", session))
+  expect(session.messages.find(m => m.role === "tool")).toEqual({
+    role: "tool",
+    tool_call_id: "c1",
+    content: 'Error: unknown tool "nope"'
+  })
+  expect(session.telemetry!.calls.c1).toEqual({ status: "error" })
+})
+
+test("a model that keeps calling a failing tool is stopped, with every call answered", async () => {
+  const failing = { content: null, calls: [{ id: "c1", name: "boom", arguments: "{}" }] }
+  const agent = agentWith([
+    failing,
+    { ...failing, calls: [{ id: "c2", name: "boom", arguments: "{}" }] },
+    { ...failing, calls: [{ id: "c3", name: "boom", arguments: "{}" }] },
+    { content: "never reached" }
+  ])
+  const session = createSession()
+  await expect(drain(run(agent, "go", session))).rejects.toThrow("3 rounds in a row")
+  expect(
+    session.messages.filter(m => m.role === "tool").map(m => (m as { tool_call_id: string }).tool_call_id)
+  ).toEqual(["c1", "c2", "c3"])
+})
+
+test("one good call in a round resets the count of failing rounds", async () => {
+  const both = (a: string, b: string) => ({
+    content: null,
+    calls: [
+      { id: a, name: "boom", arguments: "{}" },
+      { id: b, name: "echo", arguments: '{"text":"x"}' }
+    ]
+  })
+  const agent = agentWith([both("a1", "b1"), both("a2", "b2"), both("a3", "b3"), { content: "done" }])
+  const session = createSession()
+  await drain(run(agent, "go", session))
+  expect(session.messages.at(-1)).toMatchObject({ content: "done" })
 })
 
 test("unparseable arguments are an error, a second held approval is skipped", async () => {

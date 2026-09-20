@@ -38,3 +38,4 @@ src/
 - Parameterized SQL only. Session ids are UUIDv7 text.
 - Do not log prompts, memory content, or API keys.
 - Telemetry: `run()` records each model round (`StepStat`: served model, persona, tokens, latency, finish reason) and each tool call it runs (`CallStat`: status, duration) on `session.telemetry`; a host that answers a paused call itself records it with `recordPausedCall` before the answer reaches `run()`. A store writes it beside the rows it saves and then takes it off the session (`clearTelemetry`), so telemetry always covers what's new since the last save. A call's status stays unset when a person or a client answered it.
+- A tool that throws (or isn't found) never aborts the turn: `run()` answers its call with `Error: <message>` so the model can react and the session stays valid, and records status `error`. Rounds where every call failed are counted, and the run stops after three in a row (`MAX_FAILING_TOOL_ROUNDS`).

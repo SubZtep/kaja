@@ -31,17 +31,17 @@ function capturingChatClient(reply: string, onMessages: (messages: unknown[]) =>
   }
 }
 
-/** A resolver whose one round always calls `fetch_url` on a non-public URL, so `fetchUrlTool` throws `ToolError("fetch_url", …)` uncaught into `run()` — reproducing a tool failure mid-turn. */
-function fetchUrlToolCallChatClient() {
+/** A resolver whose first round calls `fetch_url` on a non-public URL, so `fetchUrlTool` throws `ToolError("fetch_url", …)`; `onMessages` sees what each round was sent, and the second round replies in text. */
+function fetchUrlToolCallChatClient(onMessages: (messages: unknown[]) => void = () => {}) {
+  let round = 0
   return {
     chat: {
       completions: {
-        stream: () => ({
-          async *[Symbol.asyncIterator]() {},
-          finalChatCompletion: async () => ({
-            choices: [
-              {
-                message: {
+        stream: (opts: { messages: unknown[] }) => {
+          onMessages(opts.messages)
+          const message =
+            round++ === 0
+              ? {
                   role: "assistant",
                   content: null,
                   tool_calls: [
@@ -52,10 +52,12 @@ function fetchUrlToolCallChatClient() {
                     }
                   ]
                 }
-              }
-            ]
-          })
-        })
+              : { role: "assistant", content: "I couldn't fetch that." }
+          return {
+            async *[Symbol.asyncIterator]() {},
+            finalChatCompletion: async () => ({ choices: [{ message }] })
+          }
+        }
       }
     }
   }
@@ -121,17 +123,27 @@ describe("nasi", () => {
     expect(res.status).toBe(404)
   })
 
-  test("a tool error surfaces the real reason, not a generic message", async () => {
-    await withStubbedResolver(fetchUrlToolCallChatClient(), async () => {
-      const res = await app.request("/nasi/turn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: "fetch something" })
-      })
-      expect(res.status).toBe(500)
-      const body = await res.json()
-      expect(body.error).toBe("fetch_url: Blocked non-public URL: http://localhost/x")
-    })
+  test("a tool error reaches the model as the call's result, so the turn still completes", async () => {
+    const sent: unknown[][] = []
+    await withStubbedResolver(
+      fetchUrlToolCallChatClient(messages => sent.push(structuredClone(messages))),
+      async () => {
+        const res = await app.request("/nasi/turn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ message: "fetch something" })
+        })
+        expect(res.status).toBe(200)
+        const body = await res.json()
+        expect(body.status).toBe("completed")
+        expect(body.message).toBe("I couldn't fetch that.")
+        expect(sent[1]!.at(-1)).toEqual({
+          role: "tool",
+          tool_call_id: "call_1",
+          content: "Error: Blocked non-public URL: http://localhost/x"
+        })
+      }
+    )
   })
 
   test("a non-English language request adds a reply-language instruction to the system prompt", async () => {
@@ -225,7 +237,7 @@ describe("nasi", () => {
       expect(JSON.parse(events[0]!.data).error).toBe("Session not found")
     })
 
-    test("a tool error on stream emits a categorized error event with the real reason", async () => {
+    test("a tool error on stream is not an error event: the model answers after it", async () => {
       await withStubbedResolver(fetchUrlToolCallChatClient(), async () => {
         const res = await app.request("/nasi/turn/stream", {
           method: "POST",
@@ -234,10 +246,8 @@ describe("nasi", () => {
         })
         expect(res.status).toBe(200)
         const events = parseSse(await res.text())
-        expect(events.map(e => e.event)).toEqual(["tool_call", "error"])
-        const errorBody = JSON.parse(events[1]!.data)
-        expect(errorBody.error).toBe("fetch_url: Blocked non-public URL: http://localhost/x")
-        expect(errorBody.category).toBe("tool")
+        expect(events.map(e => e.event)).toEqual(["tool_call", "final", "done"])
+        expect(JSON.parse(events[1]!.data).content).toBe("I couldn't fetch that.")
       })
     })
   })
