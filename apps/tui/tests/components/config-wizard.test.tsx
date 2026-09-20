@@ -288,7 +288,26 @@ test("each ticked extra is asked for what it needs, and untouched ones are not",
   await w.t.waitUntilExit()
 })
 
-test("the summary says what became of each key, without showing it", async () => {
+test("each answer stays on screen and the next question opens below it", async () => {
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language: English
+  await w.t.press(ENTER) // provider: Fireworks
+
+  // The active question is the only thing in the last frame; what was answered is in the trail above it.
+  expect(w.t.lastFrame()).toContain("Paste your fireworks API key")
+  expect(w.t.lastFrame()).not.toContain("Choose a model provider")
+  const trail = w.t.output()
+  expect(trail).toContain("✓ Language: English")
+  expect(trail).toContain("✓ Provider: Fireworks (cloud, needs an API key)")
+  // A forced mode was never asked, so it leaves no line.
+  expect(trail).not.toContain("Mode:")
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("the trail says what became of each key, without showing it", async () => {
   const w = renderWizard({ mode: "local" })
   await w.t.tick()
   await w.t.press(ENTER) // language
@@ -303,11 +322,14 @@ test("the summary says what became of each key, without showing it", async () =>
   await w.t.press(ENTER) // web search key: skipped
   await w.t.press(ENTER) // telegram token: skipped
 
-  const frame = w.t.lastFrame()!
-  expect(frame).toContain("Fireworks API key: entered, tested when you finish")
-  expect(frame).toContain("Brave Search API key: skipped")
-  expect(frame).toContain("Telegram bot token: skipped")
-  expect(frame).not.toContain("fw-secret-value")
+  const trail = w.t.output()
+  expect(trail).toContain("✓ Fireworks API key: entered, tested when you finish")
+  expect(trail).toContain("✓ Brave Search API key: skipped")
+  expect(trail).toContain("✓ Telegram bot token: skipped")
+  expect(trail).not.toContain("fw-secret-value")
+  // The answers are already on screen, so the last screen doesn't repeat them.
+  expect(w.t.lastFrame()).toContain("Setup complete")
+  expect(w.t.lastFrame()).not.toContain("Brave Search API key")
 
   w.t.unmount()
   await w.t.waitUntilExit()
@@ -321,7 +343,7 @@ test("an empty answer over a saved key is reported as kept, not skipped", async 
   await w.t.press(ENTER) // key: keep the saved one
   await w.t.press(ENTER) // extras: nothing ticked
 
-  expect(w.t.lastFrame()).toContain("Fireworks API key: already saved, kept")
+  expect(w.t.output()).toContain("✓ Fireworks API key: already saved, kept")
 
   w.t.unmount()
   await w.t.waitUntilExit()

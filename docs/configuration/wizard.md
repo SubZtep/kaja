@@ -13,8 +13,9 @@ you want. Nothing it writes is special: every file it produces is a plain TOML f
 afterwards, and every step opens on what you already have, so holding <kbd>Enter</kbd> walks a
 configured machine through unchanged.
 
-Depending on your answers it shows between **three and nine screens** — the summary included. Cloud
-is three.
+Depending on your answers it asks between **three and nine questions** — the closing screen
+included. Cloud is three. Each answer stays on screen as a `✓` line and the next question opens below
+it, so the wizard reads top to bottom instead of replacing one box with the next.
 
 ## The questions
 
@@ -152,7 +153,7 @@ Two consequences worth knowing:
 - **A key you skip is not asked for twice.** The wizard tells the pass you already declined, so it's
   listed as still to do instead of being asked again a minute later.
 
-The summary screen lists what happened to each key — entered, already saved and kept, or skipped — but never shows the key itself.
+The line an answered key leaves behind says what happened to it — entered, already saved and kept, or skipped — but never shows the key itself. The closing screen only lists the files Kaja will use.
 
 The pass also asks for anything only the finished config reveals — an [ability's](/marketplace) key,
 an [MCP server's](/tools) declared secret — because those aren't knowable until `abilities.toml`

@@ -1,6 +1,6 @@
 import { MultiSelect, PasswordInput, TextInput } from "@inkjs/ui"
 import { LOCALE_LABELS, locales } from "@kaja/shared"
-import { Box, Text, useInput } from "ink"
+import { Box, Static, Text, useInput } from "ink"
 import { useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
@@ -171,59 +171,84 @@ function InputStep({
   )
 }
 
-/** One "label: value" line on the summary, or nothing when that step was skipped. */
 function providerName(provider: WizardProvider | undefined): string {
   return provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : ""
 }
 
-/** What happened to a key step, for the summary: typed, left empty over one already saved, or left empty. Undefined when the step never applied. */
+/** What happened to a key step: typed, left empty over one already saved, or left empty. Undefined when the step never applied. */
 function keyState(typed: string | undefined, alreadySaved: boolean | undefined): string | undefined {
   if (typed === undefined) return undefined
   if (typed) return t("wizard.keyStateEntered")
   return t(alreadySaved ? "wizard.keyStateKept" : "wizard.keyStateSkipped")
 }
 
-function SummaryRow({ label, value }: Readonly<{ label: string; value?: string }>) {
-  if (!value) return null
+/** One answered step, kept on screen above the next question. */
+type Answer = { id: string; label: string; value: string }
+
+/**
+ * The line a finished step leaves behind. Never a key's value, only what became of it. A step that
+ * recorded nothing (no extras ticked) leaves no line.
+ */
+function answerLine(
+  step: Step,
+  result: WizardResult,
+  saved?: WizardSaved
+): Pick<Answer, "label" | "value"> | undefined {
+  switch (step) {
+    case "language":
+      return result.language ? { label: t("wizard.summaryLanguage"), value: LOCALE_LABELS[result.language] } : undefined
+    case "mode":
+      return result.mode
+        ? {
+            label: t("wizard.summaryMode"),
+            value: t(result.mode === "cloud" ? "wizard.modeCloudShort" : "wizard.modeLocalShort")
+          }
+        : undefined
+    case "provider":
+      return result.provider
+        ? { label: t("wizard.summaryProvider"), value: t(PROVIDER_LABEL_KEY[result.provider]) }
+        : undefined
+    case "providerKey": {
+      const value = keyState(result.providerKey, saved?.providers?.includes(result.provider ?? ""))
+      return value
+        ? { label: t("wizard.summaryKeyProvider", { provider: providerName(result.provider) }), value }
+        : undefined
+    }
+    case "baseUrl":
+      return result.baseUrl ? { label: t("wizard.summaryBaseUrl"), value: result.baseUrl } : undefined
+    case "extras":
+      return result.extras?.length
+        ? { label: t("wizard.summaryExtras"), value: result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") }
+        : undefined
+    case "webSearchKey": {
+      const value = keyState(result.webSearchKey, saved?.webSearch)
+      return value ? { label: t("wizard.summaryKeyWebSearch"), value } : undefined
+    }
+    case "voiceUrl":
+      return result.voiceUrl ? { label: "Speaches", value: result.voiceUrl } : undefined
+    case "telegramToken": {
+      const value = keyState(result.telegramToken, saved?.telegram)
+      return value ? { label: t("wizard.summaryKeyTelegram"), value } : undefined
+    }
+    default:
+      return undefined
+  }
+}
+
+/** One answered step, dimmed: the wizard's trail, so each question is a step forward and not a replacement. */
+function AnswerRow({ label, value }: Readonly<Pick<Answer, "label" | "value">>) {
   return (
-    <Text>
-      {"  "}
-      {label}: <Text color="green">{value}</Text>
+    <Text dimColor>
+      ✓ {label}: <Text color="green">{value}</Text>
     </Text>
   )
 }
 
-/** The last screen: what was chosen and what became of each key, plus where it all goes. */
-function SummaryStep({ result, saved }: Readonly<{ result: WizardResult; saved?: WizardSaved }>) {
+/** The last screen. The answers are already on screen above, so this only says where it all goes. */
+function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
   return (
     <Box flexDirection="column" gap={1}>
       <Text>{t("wizard.summaryTitle")}</Text>
-      <Box flexDirection="column">
-        <SummaryRow
-          label={t("wizard.summaryMode")}
-          value={result.mode && t(result.mode === "cloud" ? "wizard.modeCloudShort" : "wizard.modeLocalShort")}
-        />
-        <SummaryRow
-          label={t("wizard.summaryLanguage")}
-          value={result.language ? LOCALE_LABELS[result.language] : undefined}
-        />
-        <SummaryRow
-          label={t("wizard.summaryProvider")}
-          value={result.provider ? t(PROVIDER_LABEL_KEY[result.provider]) : undefined}
-        />
-        <SummaryRow label={t("wizard.summaryBaseUrl")} value={result.baseUrl} />
-        <SummaryRow
-          label={t("wizard.summaryExtras")}
-          value={result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined}
-        />
-        {/* The values themselves are never shown; the credential pass tests them after this screen. */}
-        <SummaryRow
-          label={t("wizard.summaryKeyProvider", { provider: providerName(result.provider) })}
-          value={keyState(result.providerKey, saved?.providers?.includes(result.provider ?? ""))}
-        />
-        <SummaryRow label={t("wizard.summaryKeyWebSearch")} value={keyState(result.webSearchKey, saved?.webSearch)} />
-        <SummaryRow label={t("wizard.summaryKeyTelegram")} value={keyState(result.telegramToken, saved?.telegram)} />
-      </Box>
       <Box flexDirection="column">
         <Text dimColor>{t("wizard.summaryPaths")}</Text>
         {listPaths(result.mode === "local").map(({ label, path }) => (
@@ -265,6 +290,8 @@ export function ConfigWizard({
   // someone who can read it.
   const [step, setStep] = useState<Step>("language")
   const [result, setResult] = useState<WizardResult>(initial)
+  // Append-only: <Static> prints each item once and leaves it in the scrollback.
+  const [answered, setAnswered] = useState<Answer[]>([])
 
   useInput((_input, key) => {
     if (step === "summary" && (key.return || key.escape)) onDone(result)
@@ -274,136 +301,151 @@ export function ConfigWizard({
 
   function advance(patch: Partial<WizardResult>) {
     const next = { ...result, ...patch }
+    const line = answerLine(step, next, saved)
+    if (line) setAnswered(list => [...list, { id: step, ...line }])
     setResult(next)
     setStep(nextStepAfter(step, next, mode))
   }
 
-  switch (step) {
-    case "mode": {
-      return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.modeTitle")}</Text>
-          <SelectMenu
-            items={[t("wizard.modeCloud"), t("wizard.modeLocal")]}
-            width={70}
-            initialIndex={Math.max(0, MODE_CHOICES.indexOf(result.mode ?? "cloud"))}
-            onSelect={index => advance({ mode: MODE_CHOICES[index] })}
-            onClose={onCancel}
-          />
-        </Box>
-      )
-    }
-
-    case "language": {
-      return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.languageTitle")}</Text>
-          <SelectMenu
-            items={locales.map(locale => LOCALE_LABELS[locale])}
-            // The code beside the native name, so a language you can't read is still identifiable.
-            hints={[...locales]}
-            initialIndex={result.language ? locales.indexOf(result.language) : undefined}
-            onSelect={index => {
-              const language = locales[index]!
-              // Switching the process language here is the whole point of asking first: every step
-              // after this one renders through `t()`. The caller still saves it to preferences.locale.
-              setLanguage(language)
-              advance({ language })
-            }}
-            onClose={onCancel}
-          />
-        </Box>
-      )
-    }
-
-    case "provider": {
-      return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.providerTitle")}</Text>
-          <SelectMenu
-            items={PROVIDER_CHOICES.map(choice => t(PROVIDER_LABEL_KEY[choice]))}
-            width={70}
-            initialIndex={result.provider ? PROVIDER_CHOICES.indexOf(result.provider) : undefined}
-            onSelect={index => advance({ provider: PROVIDER_CHOICES[index] })}
-            onClose={onCancel}
-          />
-        </Box>
-      )
-    }
-
-    case "providerKey": {
-      return (
-        <InputStep
-          secret
-          title={t("wizard.providerKeyTitle", { provider: result.provider ?? "" })}
-          hint={t(saved?.providers?.includes(result.provider ?? "") ? "wizard.keyHintSaved" : "wizard.keyHint")}
-          onSubmit={providerKey => advance({ providerKey })}
-        />
-      )
-    }
-
-    case "baseUrl": {
-      const fallback = LOCAL_PROVIDER_URLS[result.provider!] ?? ""
-      return (
-        <InputStep
-          title={t("wizard.baseUrlTitle")}
-          hint={t("wizard.baseUrlHint")}
-          defaultValue={result.baseUrl ?? fallback}
-          onSubmit={value => advance({ baseUrl: value || fallback })}
-        />
-      )
-    }
-
-    case "extras": {
-      return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.extrasTitle")}</Text>
-          <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
-            {/* Nothing ticked by default, so one Enter skips the whole step. */}
-            <MultiSelect
-              options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
-              defaultValue={result.extras}
-              onSubmit={values => advance({ extras: values as WizardExtra[] })}
+  function stepView() {
+    switch (step) {
+      case "mode": {
+        return (
+          <Box flexDirection="column" gap={1}>
+            <Text>{t("wizard.modeTitle")}</Text>
+            <SelectMenu
+              items={[t("wizard.modeCloud"), t("wizard.modeLocal")]}
+              width={70}
+              initialIndex={Math.max(0, MODE_CHOICES.indexOf(result.mode ?? "cloud"))}
+              onSelect={index => advance({ mode: MODE_CHOICES[index] })}
+              onClose={onCancel}
             />
           </Box>
-          <Text dimColor>{t("wizard.extrasHint")}</Text>
-        </Box>
-      )
-    }
+        )
+      }
 
-    case "webSearchKey": {
-      return (
-        <InputStep
-          secret
-          title={t("wizard.webSearchKeyTitle")}
-          hint={t(saved?.webSearch ? "wizard.keyHintSaved" : "wizard.keyHint")}
-          onSubmit={webSearchKey => advance({ webSearchKey })}
-        />
-      )
-    }
+      case "language": {
+        return (
+          <Box flexDirection="column" gap={1}>
+            <Text>{t("wizard.languageTitle")}</Text>
+            <SelectMenu
+              items={locales.map(locale => LOCALE_LABELS[locale])}
+              // The code beside the native name, so a language you can't read is still identifiable.
+              hints={[...locales]}
+              initialIndex={result.language ? locales.indexOf(result.language) : undefined}
+              onSelect={index => {
+                const language = locales[index]!
+                // Switching the process language here is the whole point of asking first: every step
+                // after this one renders through `t()`. The caller still saves it to preferences.locale.
+                setLanguage(language)
+                advance({ language })
+              }}
+              onClose={onCancel}
+            />
+          </Box>
+        )
+      }
 
-    case "voiceUrl": {
-      return (
-        <InputStep
-          title={t("wizard.voiceUrlTitle")}
-          hint={t("wizard.voiceUrlHint")}
-          defaultValue={result.voiceUrl ?? DEFAULT_SPEACHES_URL}
-          onSubmit={voiceUrl => advance({ voiceUrl })}
-        />
-      )
-    }
+      case "provider": {
+        return (
+          <Box flexDirection="column" gap={1}>
+            <Text>{t("wizard.providerTitle")}</Text>
+            <SelectMenu
+              items={PROVIDER_CHOICES.map(choice => t(PROVIDER_LABEL_KEY[choice]))}
+              width={70}
+              initialIndex={result.provider ? PROVIDER_CHOICES.indexOf(result.provider) : undefined}
+              onSelect={index => advance({ provider: PROVIDER_CHOICES[index] })}
+              onClose={onCancel}
+            />
+          </Box>
+        )
+      }
 
-    case "telegramToken": {
-      return (
-        <InputStep
-          secret
-          title={t("wizard.telegramTokenTitle")}
-          hint={t(saved?.telegram ? "wizard.keyHintSaved" : "wizard.keyHint")}
-          onSubmit={telegramToken => advance({ telegramToken })}
-        />
-      )
+      case "providerKey": {
+        return (
+          <InputStep
+            secret
+            title={t("wizard.providerKeyTitle", { provider: result.provider ?? "" })}
+            hint={t(saved?.providers?.includes(result.provider ?? "") ? "wizard.keyHintSaved" : "wizard.keyHint")}
+            onSubmit={providerKey => advance({ providerKey })}
+          />
+        )
+      }
+
+      case "baseUrl": {
+        const fallback = LOCAL_PROVIDER_URLS[result.provider!] ?? ""
+        return (
+          <InputStep
+            title={t("wizard.baseUrlTitle")}
+            hint={t("wizard.baseUrlHint")}
+            defaultValue={result.baseUrl ?? fallback}
+            onSubmit={value => advance({ baseUrl: value || fallback })}
+          />
+        )
+      }
+
+      case "extras": {
+        return (
+          <Box flexDirection="column" gap={1}>
+            <Text>{t("wizard.extrasTitle")}</Text>
+            <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+              {/* Nothing ticked by default, so one Enter skips the whole step. */}
+              <MultiSelect
+                options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
+                defaultValue={result.extras}
+                onSubmit={values => advance({ extras: values as WizardExtra[] })}
+              />
+            </Box>
+            <Text dimColor>{t("wizard.extrasHint")}</Text>
+          </Box>
+        )
+      }
+
+      case "webSearchKey": {
+        return (
+          <InputStep
+            secret
+            title={t("wizard.webSearchKeyTitle")}
+            hint={t(saved?.webSearch ? "wizard.keyHintSaved" : "wizard.keyHint")}
+            onSubmit={webSearchKey => advance({ webSearchKey })}
+          />
+        )
+      }
+
+      case "voiceUrl": {
+        return (
+          <InputStep
+            title={t("wizard.voiceUrlTitle")}
+            hint={t("wizard.voiceUrlHint")}
+            defaultValue={result.voiceUrl ?? DEFAULT_SPEACHES_URL}
+            onSubmit={voiceUrl => advance({ voiceUrl })}
+          />
+        )
+      }
+
+      case "telegramToken": {
+        return (
+          <InputStep
+            secret
+            title={t("wizard.telegramTokenTitle")}
+            hint={t(saved?.telegram ? "wizard.keyHintSaved" : "wizard.keyHint")}
+            onSubmit={telegramToken => advance({ telegramToken })}
+          />
+        )
+      }
+      default:
+        return <SummaryStep result={result} />
     }
-    default:
-      return <SummaryStep result={result} saved={saved} />
   }
+
+  return (
+    <Box flexDirection="column">
+      <Static items={answered}>
+        {answer => <AnswerRow key={answer.id} label={answer.label} value={answer.value} />}
+      </Static>
+      <Box marginTop={1} flexDirection="column">
+        {stepView()}
+      </Box>
+    </Box>
+  )
 }
