@@ -68,8 +68,8 @@ Add a server to `~/.config/kaja/mcp.toml` and its tools are folded in automatica
 
 ```toml
 [[servers]]
-id = "location"
-url = "https://ip2geo.demo.land/mcp"
+id = "docs"
+url = "https://docs.example.com/mcp"
 
 [[servers]]
 id = "context7"
@@ -77,7 +77,8 @@ command = "bunx"
 args = ["-y", "@upstash/context7-mcp"]
 ```
 
-The `location` server ships enabled; `chrome-devtools` and `context7` ship commented out. A server
+Both `chrome-devtools` and `context7` ship commented out in the template, and none is enabled by default: the
+marketplace's `geo-service` ability covers geolocation, and the setup wizard turns it on. A server
 that fails to connect is logged and skipped — the session still starts, just without its tools. The
 startup panel shows each connected server and how many tools it contributed.
 
@@ -85,8 +86,8 @@ Needs a header or env var with a secret? Put it in [`secrets.toml`](/configurati
 `[mcp.<id>]`, keyed by that server's `id`:
 
 ```toml
-[mcp.location]
-Authorization = "Bearer guest"
+[mcp.docs]
+Authorization = "Bearer <token>"
 ```
 
 Values fold into the server's `env` (stdio) or `headers` (HTTP) by key name.
