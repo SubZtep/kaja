@@ -8,13 +8,13 @@
 // single-line list item or table cell rendered as literal source instead of being
 // parsed. Its own link/del/heading renderers didn't have this bug. Fixed in place
 // below (see Renderer.prototype.text) instead of patching it externally afterwards.
+//
+// Trimmed from upstream: no :shortcode: emoji replacement (node-emoji), and Bun's
+// stripANSI and a local OSC 8 link helper stand in for ansi-regex and ansi-escapes.
 
-import ansiEscapes from "ansi-escapes"
-import ansiRegex from "ansi-regex"
 import chalk from "chalk"
 import { highlight as highlightCli } from "cli-highlight"
 import Table from "cli-table3"
-import * as emoji from "node-emoji"
 import supportsHyperlinks from "supports-hyperlinks"
 
 const TABLE_CELL_SPLIT = "^*||*^"
@@ -25,8 +25,6 @@ const COLON_REPLACER = "*#COLON|*"
 const COLON_REPLACER_REGEXP = new RegExp(escapeRegExp(COLON_REPLACER), "g")
 
 const TAB_ALLOWED_CHARACTERS = ["\t"]
-
-const ANSI_REGEXP = ansiRegex()
 
 // HARD_RETURN holds a character sequence used to indicate text has a
 // hard (no-reflowing) line break.  Previously \r and \r\n were turned
@@ -55,7 +53,6 @@ const defaultOptions = {
   href: chalk.blue.underline,
   text: identity,
   unescape: true,
-  emoji: true,
   width: 80,
   showSectionPrefix: true,
   reflowText: false,
@@ -67,17 +64,16 @@ function Renderer(this: any, options: any, highlightOptions: any) {
   this.o = { ...defaultOptions, ...options }
   this.tab = sanitizeTab(this.o.tab, defaultOptions.tab)
   this.tableSettings = this.o.tableOptions
-  this.emoji = this.o.emoji ? insertEmojis : identity
   this.unescape = this.o.unescape ? unescapeEntities : identity
   this.highlightOptions = highlightOptions || {}
 
-  this.transform = compose(undoColon, this.unescape, this.emoji)
+  this.transform = compose(undoColon, this.unescape)
 }
 
 // Compute length of str not including ANSI escape codes.
 // See http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
 function textLength(str: string) {
-  return str.replace(ANSI_REGEXP, "").length
+  return Bun.stripANSI(str).length
 }
 
 ;(Renderer.prototype as any).textLength = textLength
@@ -319,17 +315,17 @@ function prependCheckboxToLooseItem(item: any, checkbox: string) {
   if (supportsHyperlinks.stdout) {
     let link = ""
     if (text) {
-      link = this.o.href(this.emoji(text))
+      link = this.o.href(text)
     } else {
       link = this.o.href(href)
     }
-    out = ansiEscapes.link(
+    out = terminalLink(
       link,
       // textLength breaks on '+' in URLs
       href.replaceAll("+", "%20")
     )
   } else {
-    if (hasText) out += `${this.emoji(text)} (`
+    if (hasText) out += `${text} (`
     out += this.o.href(href)
     if (hasText) out += ")"
   }
@@ -596,12 +592,9 @@ function highlight(code: string, language: string, opts: any, hightlightOpts: an
   }
 }
 
-function insertEmojis(text: string) {
-  return text.replace(/:([A-Za-z0-9_\-+]+?):/g, emojiString => {
-    const emojiSign = (emoji as any).get(emojiString)
-    if (!emojiSign) return emojiString
-    return `${emojiSign} `
-  })
+/** An OSC 8 terminal hyperlink: `text` that opens `url` when clicked. */
+function terminalLink(text: string, url: string) {
+  return `\u001B]8;;${url}\u0007${text}\u001B]8;;\u0007`
 }
 
 function hr(inputHrStr: string, length: number) {
