@@ -48,7 +48,7 @@
     },
     "apps/tui": {
       "name": "@kaja/tui",
-      "version": "0.17.4",
+      "version": "0.17.5",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/nasi": "workspace:*",
