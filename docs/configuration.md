@@ -35,8 +35,8 @@ the cloud API's `GET /config/export` and rewrites `models.toml`
 from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
 the same bundled templates as first run. It also resets `secrets.toml` to the commented-out template,
 keeping your old one as a `.bak`. `kaja config diff` shows what a fetch would change
-without writing anything, and `kaja config wizard` re-runs the setup wizard at any time (mode,
-language, provider, server address, abilities), each step opening on what you already have; it
+without writing anything, and `kaja config wizard` re-runs the setup wizard at any time (language,
+mode, provider, server address, abilities), each step opening on what you already have; it
 finishes by asking for and testing any keys your config needs, the same pass `kaja doctor` runs.
 The abilities step can enable the recommended set — everything needing no key, minus MCP servers
 that run a command locally — and only ever adds to what you already had enabled. A final step

@@ -38,13 +38,13 @@ flowchart TD
 With **no flag**, the mode comes from your config:
 
 - `preferences.mode` in `~/.config/kaja/settings.toml` → **that mode**
-- no config at all → the **setup wizard asks**, with Kaja Cloud preselected
+- no config at all → the **setup wizard asks** (after your language), with Kaja Cloud preselected
 - a config predating `preferences.mode` → **local** if it resolves a usable chat model, else **cloud**
 
 The wizard writes `preferences.mode`, so the choice sticks even before a provider works — picking
 local and then "Skip — I'll set up models.toml myself" still starts in local mode next time.
 
-Force either one explicitly, which also skips the wizard's first question:
+Force either one explicitly, which also skips the wizard's mode question:
 
 ```sh
 kaja --local     # local agent loop, even with no config yet

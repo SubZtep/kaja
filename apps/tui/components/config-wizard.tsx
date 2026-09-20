@@ -4,7 +4,7 @@ import { Box, Text, useInput } from "ink"
 import { useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
-import { t } from "../lib/i18n"
+import { setLanguage, t } from "../lib/i18n"
 import { listPaths } from "../lib/paths"
 import { SelectMenu } from "./elem/select-menu"
 
@@ -36,7 +36,7 @@ export type WizardResult = {
 
 type Step = "mode" | "language" | "provider" | "baseUrl" | "abilities" | "extras" | "summary"
 
-const STEP_ORDER: Step[] = ["mode", "language", "provider", "baseUrl", "abilities", "extras", "summary"]
+const STEP_ORDER: Step[] = ["language", "mode", "provider", "baseUrl", "abilities", "extras", "summary"]
 
 const ABILITY_CHOICES: WizardAbilities[] = ["starter", "pick", "none"]
 
@@ -70,10 +70,13 @@ const PROVIDER_LABEL_KEY: Record<WizardProvider, string> = {
  * after the wizard writes its files asks for every key the finished config needs, and tests it.
  * Resolved here rather than mid-render so a skipped step never mounts just to advance out of itself.
  */
-function nextStepAfter(step: Step, result: WizardResult): Step {
+function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode): Step {
   const last = STEP_ORDER.length - 1
   for (let index = STEP_ORDER.indexOf(step) + 1; index < last; index++) {
     const candidate = STEP_ORDER[index]!
+    // `--cloud`/`--local` already answered this one. A prefilled mode does not: that's the current
+    // setting being re-offered, which the user is here to change.
+    if (candidate === "mode" && forcedMode) continue
     if (candidate === "provider" && result.mode === "cloud") continue
     if (candidate === "baseUrl" && (result.mode === "cloud" || !LOCAL_PROVIDER_URLS[result.provider!])) continue
     // Cloud abilities live in the account and are picked on the web, not in files this client reads.
@@ -116,7 +119,9 @@ export function ConfigWizard({
   onCancel: () => void
 }>) {
   const initial: WizardResult = { ...prefill, ...(mode ? { mode } : {}) }
-  const [step, setStep] = useState<Step>(mode ? nextStepAfter("mode", initial) : "mode")
+  // Language is always first and never skipped: every question after it is only answerable by
+  // someone who can read it.
+  const [step, setStep] = useState<Step>("language")
   const [result, setResult] = useState<WizardResult>(initial)
 
   useInput((_input, key) => {
@@ -128,7 +133,7 @@ export function ConfigWizard({
   function advance(patch: Partial<WizardResult>) {
     const next = { ...result, ...patch }
     setResult(next)
-    setStep(nextStepAfter(step, next))
+    setStep(nextStepAfter(step, next, mode))
   }
 
   if (step === "mode") {
@@ -153,7 +158,13 @@ export function ConfigWizard({
         <SelectMenu
           items={locales.map(locale => LOCALE_LABELS[locale])}
           initialIndex={result.language ? locales.indexOf(result.language) : undefined}
-          onSelect={index => advance({ language: locales[index] })}
+          onSelect={index => {
+            const language = locales[index]!
+            // Switching the process language here is the whole point of asking first: every step
+            // after this one renders through `t()`. The caller still saves it to preferences.locale.
+            setLanguage(language)
+            advance({ language })
+          }}
           onClose={onCancel}
         />
       </Box>

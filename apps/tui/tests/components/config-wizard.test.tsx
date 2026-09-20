@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import { ConfigWizard, type WizardResult } from "../../components/config-wizard"
+import { setLanguage } from "../../lib/i18n"
 import { renderForTest } from "../test-utils"
 
 const DOWN = "\x1b[B"
@@ -21,13 +22,16 @@ function renderWizard(props: Partial<Parameters<typeof ConfigWizard>[0]> = {}) {
   }
 }
 
-test("opens on the mode step with Kaja Cloud preselected", async () => {
+test("opens on the language step, then asks the mode with Kaja Cloud preselected", async () => {
+  // Language is first because every question after it is only answerable by someone who can read it.
   const w = renderWizard()
   await w.t.tick()
+  expect(w.t.lastFrame()).toContain("Choose your language")
+
+  await w.t.press(ENTER) // keep English
   expect(w.t.lastFrame()).toContain("Kaja Cloud")
 
-  // Cloud needs no provider or key, so Enter here lands on the language step and then the summary.
-  await w.t.press(ENTER)
+  // Cloud needs no provider or key, so Enter here lands straight on the summary.
   await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("Setup complete")
 
@@ -39,15 +43,13 @@ test("opens on the mode step with Kaja Cloud preselected", async () => {
   await w.t.waitUntilExit()
 })
 
-test("choosing your own provider asks for language, then a provider", async () => {
+test("choosing your own provider leads to the provider step", async () => {
   const w = renderWizard()
   await w.t.tick()
+  await w.t.press(ENTER) // language: keep English
 
   await w.t.press(DOWN) // "Your own provider"
   await w.t.press(ENTER)
-  expect(w.t.lastFrame()).toContain("Choose your language")
-
-  await w.t.press(ENTER) // keep English
   expect(w.t.lastFrame()).toContain("Choose a model provider")
 
   w.t.unmount()
@@ -89,10 +91,14 @@ test("Ollama is asked where its server listens, Fireworks is not", async () => {
   await ollama.t.waitUntilExit()
 })
 
-test("a forced mode skips the mode step", async () => {
+test("a forced mode skips the mode step, but never the language one", async () => {
   const w = renderWizard({ mode: "local" })
   await w.t.tick()
   expect(w.t.lastFrame()).toContain("Choose your language")
+
+  // Straight past the mode question — `--local` already answered it.
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("Choose a model provider")
   expect(w.t.lastFrame()).not.toContain("Kaja Cloud")
 
   w.t.unmount()
@@ -103,9 +109,9 @@ test("each step opens on the prefilled value", async () => {
   const prefill = { mode: "local", language: "en-GB", provider: "llama", baseUrl: "http://box.local:9090/v1" } as const
   const w = renderWizard({ prefill })
   await w.t.tick()
+  await w.t.press(ENTER) // language: keeps English
   // Mode opens on "Your own provider", so Enter keeps it rather than switching to cloud.
   await w.t.press(ENTER)
-  await w.t.press(ENTER) // language: keeps English
   // Provider opens on llama.cpp, the configured one — Enter keeps it instead of picking Fireworks.
   await w.t.press(ENTER)
   // The address step opens on the saved URL, not llama.cpp's default port.
@@ -220,4 +226,18 @@ test("escape cancels without producing a result", async () => {
 
   w.t.unmount()
   await w.t.waitUntilExit()
+})
+
+test("picking a language switches the rest of the wizard into it", async () => {
+  // The point of asking first: the mode question that follows is rendered through `t()`.
+  const w = renderWizard()
+  await w.t.tick()
+  await w.t.press(DOWN) // Magyar
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("Hogyan szeretnéd futtatni?")
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+  // The active language is process-wide, so leave it as the other tests expect to find it.
+  setLanguage("en-GB")
 })
