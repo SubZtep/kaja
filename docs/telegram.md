@@ -79,8 +79,8 @@ that changes something comes with Approve/Decline buttons.
 There's **no `allowedUserIds`** — instead, each Kaja user links their own Telegram account
 themselves, self-service, with no server restart needed per new user:
 
-1. Log into the Kaja web app and open your **Profile** page.
-2. Click **Connect Telegram** — this generates a one-time link
+1. Log into the Kaja web app and open your **Dashboard**.
+2. In the **Connect Telegram** card, click **Get Telegram link** — this generates a one-time link
    (`https://t.me/<bot>?start=<token>`) that's valid for 10 minutes and works once.
 3. Open the link (tap it on your phone, or click it with Telegram Desktop installed). Telegram
    opens a chat with the bot and automatically sends `/start <token>` — the bot resolves the
@@ -89,8 +89,8 @@ themselves, self-service, with no server restart needed per new user:
    conversation history, kept apart from your web/lite sessions by an `owner` id, the same
    mechanism that keeps different [widget](/widget) visitors apart.
 
-A Telegram account that hasn't completed this flow gets a reply pointing back to the profile
-page instead of a real conversation. **Setup**: set `TELEGRAM_BOT_TOKEN` (from BotFather, as
+A Telegram account that hasn't completed this flow gets a reply pointing back to the dashboard
+instead of a real conversation. **Setup**: set `TELEGRAM_BOT_TOKEN` (from BotFather, as
 above) in the API's environment and restart — an invalid token fails fast at startup.
 
 ### Commands

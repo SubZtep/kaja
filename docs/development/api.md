@@ -20,12 +20,15 @@ always-current list. This page is the map.
 | --- | --- | --- |
 | `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
 | `/admin/*` | session + `admin` role | MCP servers, providers, models, marketplace sync |
-| `/widget/admin/*` | session | list, create, and delete [widget](/widget) keys |
+| `/widget/admin/*` | session | list, create, edit and revoke [widget](/widget) keys |
 | `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
 | `/abilities/me/*` | session | the user's own abilities and their write-only API keys |
-| `/nasi/*` | bearer | cloud agent — turns and sessions |
+| `/nasi/*` | bearer | cloud agent: turns, sessions, and the persona catalog |
+| `/stats` | session | the signed-in user's own [usage numbers](#usage-stats--stats) |
+| `/telegram/admin/link` | session | start linking a Telegram account to the cloud bot (`POST`, returns a one-time deep link) |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
-| `/config/*` | shared secret | model resolution for tooling |
+| `/config/models` | shared secret | model resolution for tooling |
+| `/config/export` | none | the bundled config templates that `kaja config fetch` downloads |
 | `/health` | none | liveness |
 | `/reference` | none | OpenAPI UI, development builds only |
 
@@ -38,6 +41,7 @@ The endpoints the CLI uses in [cloud mode](/modes). All require a bearer token f
 | `POST` | `/nasi/turn` | run one turn, buffered — returns the whole response |
 | `POST` | `/nasi/turn/stream` | the same turn as SSE, with token deltas and a heartbeat |
 | `GET` | `/nasi/info` | which persona, model, and tools this account resolves to |
+| `GET` | `/nasi/personas` | every persona in the catalog (id and label, `default` first), for pickers like the widget page's |
 | `GET` | `/nasi/sessions` | list this user's conversations |
 | `GET` | `/nasi/sessions/{id}` | one conversation's metadata |
 | `DELETE` | `/nasi/sessions/{id}` | delete a conversation |
@@ -60,6 +64,14 @@ Keys live in `user_secret`, AES-256-GCM encrypted with `USER_SECRET_KEY`; the us
 are the cipher's associated data, so a row copied to another user doesn't decrypt. No endpoint
 returns a key. Without `USER_SECRET_KEY` the key routes answer 503 and abilities that need a key are
 left out of the catalog and of turns.
+
+## Usage stats — `/stats`
+
+`GET /stats?days=30` (1–365) returns the signed-in user's own activity for the [dashboard](/development/web#signed-in):
+totals, one entry per UTC day, sessions per channel (web or CLI, Telegram, widget), and per-tool calls with
+how often they asked first, failed and how long they took. It is computed from the `nasi_message` and
+`nasi_tool_call` rows, so tokens, latencies and per-reply numbers only exist for replies saved after they were
+recorded.
 
 ## Auth
 
@@ -91,18 +103,28 @@ sequenceDiagram
 
 ## Fail-closed config routes
 
-`/config/*` is authenticated by a shared secret (`CONFIG_API_TOKEN`), not a user session, because
-it can return provider API keys. A missing or empty token denies **every** request on the prefix —
-misconfiguration locks the door rather than opening it.
+`/config/models` is authenticated by a shared secret (`CONFIG_API_TOKEN`), not a user session, because
+it can return provider API keys. A missing or empty token denies **every** request to it —
+misconfiguration locks the door rather than opening it. `/config/export` is separate and public: it only
+serves the template files.
 
 ## Conventions
 
 - routes are declared with `@hono/zod-openapi` and schemas from [`@kaja/schema/api`](/development/schema)
 - SQL is raw and parameterized; user input is never interpolated
 - DB row shapes stay private inside `services/`, mapped to API types by private `#rowTo…` helpers
-- migrations in `apps/api/migrations/` are additive and lexicographically ordered — they run
-  automatically only on a **first** PostgreSQL boot, so an existing volume needs
-  `./scripts/db_migration.sh`
+- migrations in `apps/api/migrations/` are create-only and lexicographically ordered: they run on the first
+  boot of a compose volume, `./scripts/db_migration.sh` runs them by hand, and `migrate.ts` runs them again on
+  every deploy. Before launch a schema change is edited into the file that creates the table, so existing
+  databases are recreated. The [Database](/development/database) page has every table.
+
+## Errors and logging
+
+There is no logger package. A failure the code handles itself (so the Sentry middleware, which only sees
+errors that escape a handler, never would) goes through `reportError`: `console.error` plus
+`Sentry.captureException`, which is a no-op until Sentry is initialised in production. Recoverable problems
+are a plain `console.warn`, and the agent brain's own warnings (a skipped ability, a missing key, a failed
+MCP connection) arrive through `setWarnHandler`, which the server points at `console.warn`.
 
 ## Emails
 

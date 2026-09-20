@@ -38,7 +38,7 @@ Other frontmatter keys (`license`, `metadata`, …) are allowed and ignored.
 
 ## The marketplace
 
-Kaja's own skills live in the [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace)
+The [Marketplace](/marketplace) page covers how the folder is fetched, synced and used in full. In short: Kaja's own skills live in the [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace)
 folder of its repo. `kaja abilities update` fetches that folder (with `git`, so git must be installed) and
 syncs it into `~/.config/kaja/marketplace/`, next to your own skills:
 
@@ -89,11 +89,11 @@ for that persona.
 ## In the cloud
 
 Cloud chat, the cloud Telegram bot and the widget can use marketplace skills too. The API keeps its
-own copy of the marketplace, refreshed every hour. Pick the skills your account uses in the Skills
-tab of the [Abilities page](https://kaja.io/abilities), where you can also read each one's instructions
-before turning it on; new accounts get the same picker right after signing up. The Tools tab has the
-marketplace's [HTTP tools](/tools#http-tools-in-the-cloud) and
-[MCP servers](/tools#mcp-servers-in-the-cloud). Each widget key has its own list,
+own copy of the marketplace, refreshed every hour. Pick what your account uses on the
+[Abilities page](https://kaja.io/abilities), where skills sit in one list with the marketplace's
+[HTTP tools](/tools#http-tools-in-the-cloud) and [MCP servers](/tools#mcp-servers-in-the-cloud). You can
+read a skill's instructions before turning it on; new accounts get the same list right after signing up.
+Each widget key has its own list,
 set when you create or edit the key on the Widget page, so a site's visitors get only what that
 widget was set up with. `kaja abilities` in cloud mode points you to the web page, and the cloud Telegram
 bot's `/abilities` turns them on and off too. A change reaches a conversation that's already going

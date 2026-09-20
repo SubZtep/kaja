@@ -66,10 +66,12 @@ not sure which file Kaja is actually reading.
 
 ### `kaja config fetch`
 
-Rewrites `mcp.toml`, `models.toml`, `secrets.toml`, and the shipped personas from the templates
-bundled with your Kaja binary, backing up any existing file that differs (an unchanged file is left
-alone). `secrets.toml` always comes from the bundled template — the server has no user secrets to
-export, so it's never part of the admin-managed bundle `fetch` otherwise downloads.
+Rewrites `mcp.toml`, `models.toml` and `secrets.toml`, backing up any existing file that differs (an
+unchanged file is left alone). `models.toml` and `mcp.toml` come from the server's admin-managed bundle
+(`GET /config/export`), or from the templates bundled with your Kaja binary when you're offline or pass
+`--offline`. `secrets.toml` always comes from the bundled template — the server has no user secrets to
+export — so it is replaced by the commented-out placeholders and your own keys stay in the `.bak` copy.
+Personas are not part of it: they come from `kaja abilities update`.
 
 ```sh
 kaja config fetch

@@ -18,11 +18,14 @@ renders, which origins may embed it — is bound to the key and resolved server-
 
 ## Getting a key
 
-Create one from the **Widget** page of the [admin portal](/development/web):
+Create one from the **Widget** page of the [web app](/development/web):
 
 1. Give it a **label** (so you can tell your keys apart).
 2. List the **allowed origins** — the sites permitted to embed it. At least one is required.
-3. Pick a **type** (`chat` or `barkochba`) and, optionally, a **persona**.
+3. Pick a **type** (`chat` or `barkochba`) and, optionally, a **persona** and the **skills** it may use.
+
+You can change a key's label, origins, persona and skills later from the same page; the key itself never
+changes.
 
 The raw key is shown **once, at creation**, and never again — the server only stores a hash and a
 short prefix for display. Lose it and you create a new one.
@@ -88,7 +91,7 @@ decides *what the page renders*. `kaja.io` runs the `barkochba` widget on its la
   flow carries no cookies — the key header is the only credential.
 - Both the key lookup and the turn endpoint are rate-limited.
 - Turns for one visitor are serialized, so a fast double-send can't interleave.
-- A key can be disabled or deleted from the admin portal at any time.
+- A key can be disabled or deleted from the Widget page at any time.
 
 ---
 

@@ -16,6 +16,8 @@ It opens in WAL mode, so it's safe to have the terminal chat and the Telegram bo
 In cloud mode there is no local database — the same data lives in the server's Postgres, scoped to
 your account (the cloud keeps the messages and tool calls, but not the terminal's `session_events` timeline).
 
+The [Database](/development/database) page has the Postgres schema and a side-by-side comparison with this file.
+
 ## Tables
 
 | Table | Holds |

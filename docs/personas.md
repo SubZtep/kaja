@@ -70,7 +70,7 @@ shared from elsewhere — falls back to the default for that task instead of fai
 
 Cloud chat reads no local files: it uses the same marketplace personas, kept on the server and
 updated when the marketplace changes. Turn them on at [kaja.io/abilities](https://kaja.io/abilities)
-(the Personas tab) or with the cloud Telegram bot's `/abilities`; `default` is always on. A persona
+(the Personas section) or with the cloud Telegram bot's `/abilities`; `default` is always on. A persona
 turned on or off mid-conversation reaches the conversation from your next message. Both
 `switch_persona` and the key bar's persona picker work in cloud mode. A [widget](/widget) offers
 every persona in the catalog, starting from the one its key names.

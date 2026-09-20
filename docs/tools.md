@@ -136,8 +136,8 @@ approval = "never"                  # never | writes | always
 
 ### MCP servers in the cloud
 
-Marketplace MCP abilities work in cloud chat and the cloud Telegram bot too. They sit in the Tools tab
-of the [Abilities page](https://kaja.io/abilities), marked "MCP server", with their host, key need,
+Marketplace MCP abilities work in cloud chat and the cloud Telegram bot too. They sit in the list on
+the [Abilities page](https://kaja.io/abilities), marked "MCP server", with their host, key need,
 tool list and when they ask first. Keys, egress and approvals work as for
 [HTTP tools in the cloud](#http-tools-in-the-cloud); on top of that:
 
@@ -227,8 +227,8 @@ type = "string"
 
 ### HTTP tools in the cloud
 
-Cloud chat and the cloud Telegram bot can use marketplace HTTP tools too. Turn them on in the Tools
-tab of the [Abilities page](https://kaja.io/abilities), which shows each one's host, whether it needs
+Cloud chat and the cloud Telegram bot can use marketplace HTTP tools too. Turn them on in the list on
+the [Abilities page](https://kaja.io/abilities), which shows each one's host, whether it needs
 your key, and every tool with its method before you turn it on.
 
 - Only marketplace abilities, and never one whose `baseUrl` is a private or local address. Requests

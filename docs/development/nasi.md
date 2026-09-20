@@ -85,7 +85,7 @@ chars), and optional `includeThinking` / `language` / `personaId`.
 | Field | Meaning |
 | --- | --- |
 | `session` | the session id — pass it back on the next turn |
-| `status` | `completed` / `needs_input` / `needs_approval` / `error` |
+| `status` | `completed` / `needs_input` / `needs_approval` / `needs_client_tool` / `error` |
 | `message` | the reply, or the pending question/command when not `completed` |
 | `steps` | ordered `NasiStep[]` — reasoning, messages, tool calls, handoffs — for rendering a transcript |
 | `thinking` | full reasoning text, only when `includeThinking` was set |
@@ -108,6 +108,8 @@ mutates the `Session` you hand it — persistence is the host's job.
 | `tool_image` / `display_image` | an image to feed back as vision / to show in the UI only |
 | `ask_user` | stop and wait — the next prompt becomes the tool result |
 | `confirm_command` | stop and wait for shell approval |
+| `confirm_tool` | stop and wait for approval of an HTTP tool or MCP call that changes something |
+| `client_tool_call` | stop so the client can run `read_file` / `list_files` on the user's own disk (cloud only) |
 | `persona_switch` | the persona (and maybe the model) changed mid-turn |
 | `final` | the turn is done |
 | `usage` | prompt tokens and the model that served the request |
@@ -172,6 +174,7 @@ Over HTTP the same loop is buffered into one response:
 | `completed` | the turn finished; `message` is the reply |
 | `needs_input` | `ask_user` is pending — send the answer as the next `message` |
 | `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval: "approve"` or `"decline"` next — the server runs the call it saved, never one the client describes; a plain `message` instead skips it |
+| `needs_client_tool` | the model asked for `read_file` or `list_files`, which only the client can run on its own disk: the client runs the tool and sends its output as the next `message` |
 | `error` | the turn failed |
 
 `session` comes back on every response; send it again to continue the conversation.
@@ -202,12 +205,27 @@ strictly a subset of what a local `--local` session sees.
 
 `NasiStore` is a plain interface over sessions, memory notes, and dataset answers — nasi never
 opens a database itself. Three implementations exist: SQLite (CLI), Postgres (API), and in-memory
-(tests).
+(tests). A session is stored as rows (a message per row, a row per tool call) with each assistant step's
+model, tokens and latency; the [Database](/development/database) page compares the two real schemas.
 
 `owner` namespaces rows *inside* one store: `null` for a terminal session, a namespaced id for a
 Telegram user or widget visitor. Resuming a session whose owner doesn't match raises
 `NasiSessionNotFound` — that's what stops two widget visitors sharing one account from reading each
 other's chats.
+
+## Abilities
+
+Skills, HTTP tools, MCP servers and personas come from an `AbilityStore` the host provides: the CLI reads the
+`marketplace/` folder through `createFolderAbilityStore`, the API reads its Postgres copy of the catalog.
+`loadAbilities` turns a store's enabled abilities into extra tools for the host to append, and one that
+can't load (a broken manifest, a required key the user hasn't saved) is left out instead of stopping the
+agent. See [Skills](/skills), [Tools](/tools) and [Personas](/personas) for what each kind does.
+
+## Warnings
+
+Nasi never logs. A recoverable problem (a skipped ability, a missing key, a failed MCP connection, an
+unreachable fetch proxy) goes to a handler the host installs with `setWarnHandler`, which is silent until
+set: the API prints them, and the terminal appends them to its opt-in log file, since Ink owns the screen.
 
 ## Tool exposure
 

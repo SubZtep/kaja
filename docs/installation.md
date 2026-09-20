@@ -63,11 +63,13 @@ kaja telegram             # run as a Telegram bot
 kaja --headless telegram  # same, without rendering the terminal UI
 
 # Config files (local mode)
-kaja config fetch         # rewrite mcp.toml / models.toml / personas from the bundled templates
+kaja config fetch         # rewrite models.toml / mcp.toml / secrets.toml (server defaults, or bundled templates offline)
+kaja config diff          # show what fetch would change, without writing anything
+kaja config wizard        # re-run the interactive first-run setup
 kaja config paths         # print where every config file lives
 
-# Skills (local mode)
-kaja abilities                  # pick which skills load (fetches the marketplace the first time)
+# Abilities (local mode)
+kaja abilities                  # pick which skills, tools, MCP servers and personas load (fetches the marketplace the first time)
 kaja abilities update           # fetch the marketplace and sync it into ~/.config/kaja/marketplace
 ```
 

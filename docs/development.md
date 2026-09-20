@@ -6,7 +6,7 @@ nav_order: 12
 
 # Development
 
-The whole project is one Bun monorepo — three apps, four packages, no build orchestrator beyond
+The whole project is one Bun monorepo — three apps, three packages, no build orchestrator beyond
 Bun workspaces.
 
 ## Repository map
@@ -51,11 +51,13 @@ flowchart TD
 | --- | --- |
 | `apps/api` | Hono REST API — auth, admin config, cloud agent (`/nasi`), [widget](/widget) serving, emails |
 | `apps/api/widgets` | the embeddable browser chat bundle, built as part of the API |
-| `apps/web` | TanStack Start — public landing site and the [admin portal](/development/web) |
+| `apps/web` | TanStack Start — the public landing site and the signed-in [web app](/development/web) (dashboard, abilities, widgets, admin) |
 | `apps/tui` | the [terminal client](/tui), Telegram bot, local config and storage |
 | `packages/nasi` | the [agent brain](/development/nasi): loop, tools, store interface |
 | `packages/schema` | every Zod [schema](/development/schema), in role-based subpaths |
-| `packages/shared` | small pure utilities |
+| `packages/shared` | small pure utilities, including the Telegram plumbing both bots share |
+
+The two databases are covered on the [Database](/development/database) page.
 
 There is **no mobile app** in this repo.
 
@@ -84,7 +86,9 @@ docker compose up -d db mail
 
 The database volume lives in `./pgdata` and the migration files in `apps/api/migrations` run
 automatically **on first boot only**. For an existing volume, catch up manually with
-`./scripts/db_migration.sh`.
+`./scripts/db_migration.sh`. Before launch the migrations are edited in place rather than patched, so after
+pulling a schema change, recreate the volume (`docker compose down -v`). Every table is described on the
+[Database](/development/database) page.
 
 Bootstrap the env files and generate a local auth secret:
 
@@ -134,8 +138,9 @@ when their inputs change.
 | Hook | Runs |
 | --- | --- |
 | `commit-msg` | commitlint (conventional commits) |
-| `pre-commit` | `lint:fix`, the generators above (only for changed inputs), `typecheck` |
-| `pre-push` | `lint`, `typecheck`, `test` |
+| `pre-commit` | `lint:fix`, the generators above and the web route tree (only for changed inputs), `typecheck` |
+| `post-commit` | `test`, so a failing suite shows up right after the commit |
+| `pre-push` | `lint`, `typecheck` |
 
 They're the reason you rarely need to run these by hand.
 
@@ -176,8 +181,9 @@ API integration tests need a running PostgreSQL matching `DATABASE_URL`. The tes
 `apps/api/.env.example` then `apps/api/.env` (wired via `bunfig.toml`), and rate limiting turns
 itself off under `bun test`.
 
-CI runs Biome, the env-drift check, and the full test suite against a PostgreSQL service
-(`.github/workflows/ci.yaml`); a separate workflow builds and releases the CLI binaries.
+CI runs Biome, the type checker, the env-drift check, and the full test suite against a PostgreSQL service
+with the migrations applied and the config seeded (`.github/workflows/ci.yaml`); a separate workflow builds
+and releases the CLI binaries.
 
 ---
 

@@ -12,9 +12,10 @@ import — there is no bare `@kaja/schema` import, and no app keeps local schema
 
 | Subpath | Contents | Consumers |
 |---|---|---|
-| `@kaja/schema/api` | REST contracts: `McpServer`, `Provider`/`Model`, `WidgetKey`, auth payloads | `apps/api`, `apps/web` |
+| `@kaja/schema/api` | REST contracts: `McpServer`, `Provider`/`Model`, `WidgetKey`, the ability catalog and users' keys, usage stats, the Telegram link, auth payloads | `apps/api`, `apps/web` |
 | `@kaja/schema/nasi` | cloud turn request/response, widget turn | `apps/api`, `apps/tui`, `packages/nasi` |
-| `@kaja/schema/config` | the CLI's hand-edited TOML files | `apps/tui` |
+| `@kaja/schema/abilities` | marketplace content: skill frontmatter, HTTP tool, MCP server, persona and dataset manifests | `apps/api`, `apps/tui`, `packages/nasi` |
+| `@kaja/schema/config` | the CLI's hand-edited TOML files (settings, models, mcp, services, secrets, abilities) | `apps/tui` |
 | `@kaja/schema/store` | SQLite/Postgres-backed runtime state | `apps/tui`, `packages/nasi` |
 | `@kaja/schema/cli` | remaining CLI domain concepts: datasets, plus a re-export of the persona schema | `apps/tui` |
 | `@kaja/schema/env` | env-var schemas — source of truth for every `.env.example` | build scripts |
@@ -74,8 +75,76 @@ erDiagram
     boolean enabled
   }
 
+  CatalogAbility {
+    string type "skill, persona, tool or mcp"
+    string name
+    string description
+    HttpToolDetail http "tools only"
+    McpDetail mcp "MCP servers only"
+    PersonaDetail persona "personas only"
+  }
+  UserAbility {
+    string type
+    string name
+    boolean available "false once it left the marketplace"
+  }
+
   Provider ||--o{ Model : "providerId"
   Provider ||--o| ResolvedModel : "resolves into"
+  CatalogAbility ||--o{ UserAbility : "type + name"
+```
+
+The same subpath also holds the key routes' payloads (`saveAbilityKeyRequestSchema` and its check result), the
+marketplace sync status, the usage-stats response, the Telegram link response and the config export bundle.
+
+## `@kaja/schema/abilities`
+
+What a marketplace folder contains, read by whichever host loads it: the CLI from `marketplace/` on disk, the
+API when it syncs the folder into Postgres. Each kind of ability has one manifest schema.
+
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neo-dark
+---
+erDiagram
+  direction LR
+  SkillFrontmatter {
+    string name "the folder name"
+    string description
+  }
+  HttpToolAbility {
+    string baseUrl
+    HttpToolAuth auth "none, or an apiKey in a header or query"
+    string_map headers
+    HttpCheck check "optional request that tests a key"
+    HttpTool_array tools "name, method, path, parameters"
+  }
+  McpAbility {
+    string transport "http, sse or stdio"
+    string url "remote servers"
+    string command "stdio, local only"
+    string_array tools "only these reach the model"
+    string approval "never, writes or always"
+    McpAbilityAuth auth
+  }
+  Persona {
+    string label
+    string instructions
+    string when "shown in the roster"
+    string dataset "a dataset id"
+    string_array skills "unset = all enabled"
+    PersonaModels models "per-task overrides"
+  }
+  Dataset {
+    string label
+    DatasetField_array fields
+    integer revalidateAfterDays
+    boolean profile "every persona sees the answers"
+  }
+
+  Persona }o--o| Dataset : "dataset"
 ```
 
 ## `@kaja/schema/nasi`
@@ -155,6 +224,19 @@ erDiagram
     ServicesWebSearch webSearch
     ServicesTelegram telegram
     ServicesApi api
+  }
+
+  AbilitiesFile {
+    string_array skills "enabled, by folder name"
+    string_array tools
+    string_array mcp
+    string_array personas
+  }
+  SecretsFile {
+    ProviderMap providers "apiKey per provider"
+    McpSecretMap mcp
+    AbilitySecretMap abilities "apiKey per ability"
+    SecretsTelegram telegram
   }
 
   KajaModelsFile ||--o{ ModelEntry : "models[id]"
@@ -262,10 +344,11 @@ These aren't type imports (each subpath stays decoupled per `packages/schema/AGE
 
 ## TOML schemas
 
-`bun generate:schemas` turns the `config` and `cli` schemas into the JSON Schemas under
+`bun generate:schemas` turns the `config`, `abilities` and `cli` schemas into the JSON Schemas under
 [`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas), which is
 what gives editors completion and validation for `settings.toml`, `models.toml`, `mcp.toml`,
-`services.toml`, personas, and datasets. The pre-commit hook regenerates them whenever those
+`services.toml`, `secrets.toml`, `abilities.toml`, and the marketplace manifests (personas, datasets, HTTP
+tools and MCP abilities). The pre-commit hook regenerates them whenever those
 schemas change — never edit the JSON by hand.
 
 ---

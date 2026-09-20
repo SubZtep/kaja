@@ -36,6 +36,26 @@ The API config declares a named `nasi-data` volume mounted at `/var/lib/kaja` an
 deploy** before the new container takes traffic. Named volumes, not host bind mounts — `compose.yaml`
 is for local development only.
 
+### Recreating the database
+
+Until launch the migrations are edited in place, so a schema change means recreating the database rather
+than patching it. `migrate.ts` only creates what is missing, so it cannot repair an old schema: it would
+leave an old table where the new one changed shape and add the new tables beside the old ones.
+
+Drop and recreate the schema **as the database user the API connects with**, or give it the schema
+afterwards. Recreating `public` as an admin role leaves that role as its owner, and the API's own user then
+fails the first migration with `no schema has been selected to create in`:
+
+```sql
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public AUTHORIZATION <user in DATABASE_URL>;
+-- or, if it was already recreated as another role:
+ALTER SCHEMA public OWNER TO <user in DATABASE_URL>;
+```
+
+Then deploy: the migrations and the config seed run before the new container takes traffic. Secrets users
+saved before the recreate are gone with it.
+
 ## Environment variables
 
 Docker builds omit `.env` files entirely. **No `.env*` file ships to production** — inject

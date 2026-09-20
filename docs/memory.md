@@ -93,8 +93,7 @@ Because it's a profile, every persona gets an "About the user" section in its sy
 what you shared (never the skipped fields), and records a missing detail when you happen to mention
 it, without quizzing you for the rest. While your name is still unknown, the assistant asks for it
 once, kindly. The section goes to the model provider with each message, like
-[sticky notes](#notes) do. In cloud chat, Telegram and each widget visitor keep their own answers,
-as with notes.
+[sticky notes](#notes) do. In cloud chat, Telegram and each widget visitor keep their own answers.
 
 ### Versions
 
