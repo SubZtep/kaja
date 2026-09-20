@@ -29,9 +29,8 @@ test("missing file: writes the template and returns its active (non-commented) s
   const data = await loadSecretsFile()
 
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
-  // The shipped template's [location] ships active (matching services.toml's defaults);
-  // everything else ships commented out.
-  expect(data.location).toEqual({ apiKey: "kaja" })
+  // The shipped template's guest [mcp.location] ships active; everything else ships commented out.
+  expect(data.mcp).toEqual({ location: { Authorization: "Bearer guest" } })
   expect(data.webSearch).toBeUndefined()
   expect(data.telegram).toBeUndefined()
   expect(data.providers).toEqual({})
@@ -74,13 +73,13 @@ test("readSecretsLoose returns whatever is on disk even if it fails schema valid
   await write(
     join(dir, "secrets.toml"),
     `
-[location]
+[webSearch]
 apiKey = ""
 `
   )
 
-  // Empty string fails SecretsLocationSchema's min(1), but the raw TOML still parses as an object.
-  expect(await readSecretsLoose()).toEqual({ location: { apiKey: "" } })
+  // Empty string fails SecretsWebSearchSchema's min(1), but the raw TOML still parses as an object.
+  expect(await readSecretsLoose()).toEqual({ webSearch: { apiKey: "" } })
 })
 
 test("secrets() caches after the first read; invalidateSecretsCache() forces a reload", async () => {

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from "bun:test"
 import { HttpToolAbilitySchema } from "@kaja/schema/abilities"
-import { checkAbilityKey, checkLocationKey, checkTelegramToken, checkWebSearchKey } from "../../../lib/doctor/checks"
+import type { CliResolvedModel } from "@kaja/schema/config"
+import { checkAbilityKey, checkProvider, checkTelegramToken, checkWebSearchKey } from "../../../lib/doctor/checks"
 
 let fetchSpy: ReturnType<typeof spyOn> | undefined
 
@@ -36,6 +37,30 @@ test("a network error is reported with the secret masked", async () => {
   expect(JSON.stringify(result)).not.toContain("s3cret")
 })
 
+const chatModel: CliResolvedModel = {
+  id: "chat",
+  model: "llama3.2:1b",
+  task: "chat",
+  baseUrl: "http://localhost:11434/v1",
+  provider: "ollama"
+}
+
+test("a rejected key is a credential failure, an unreachable server is not", async () => {
+  // Only the first is worth asking the user to retype — the wizard and doctor key off this.
+  mockFetch(() => Response.json({ error: { message: "Incorrect API key" } }, { status: 401 }))
+  expect(await checkProvider(chatModel, "bad-key")).toMatchObject({ ok: false, kind: "credential" })
+
+  mockFetch(() => {
+    throw new Error("Connection refused")
+  })
+  expect(await checkProvider(chatModel, undefined)).toMatchObject({ ok: false, kind: "unreachable" })
+})
+
+test("a model the provider doesn't have is unreachable, not a key problem", async () => {
+  mockFetch(() => Response.json({ error: { message: "model not found" } }, { status: 404 }))
+  expect(await checkProvider(chatModel, "fine-key")).toMatchObject({ ok: false, kind: "unreachable" })
+})
+
 test("web search sends the key as X-Subscription-Token", async () => {
   mockFetch((_url, init) =>
     new Headers(init?.headers).get("X-Subscription-Token") === "good"
@@ -44,18 +69,6 @@ test("web search sends the key as X-Subscription-Token", async () => {
   )
   expect(await checkWebSearchKey("good")).toEqual({ ok: true })
   expect(await checkWebSearchKey("bad")).toEqual({ ok: false, reason: "HTTP 401" })
-})
-
-test("location does a real lookup with the key each time (no cached result)", async () => {
-  const keys: (string | null)[] = []
-  mockFetch((url, init) => {
-    if (url.includes("ipify")) return new Response("1.2.3.4")
-    keys.push(new Headers(init?.headers).get("X-API-Key"))
-    return keys.length === 1 ? Response.json({ city: {} }) : new Response("no", { status: 403 })
-  })
-  expect(await checkLocationKey("https://geo.example.com", "first")).toEqual({ ok: true })
-  expect((await checkLocationKey("https://geo.example.com", "second")).ok).toBe(false)
-  expect(keys).toEqual(["first", "second"])
 })
 
 let server: ReturnType<typeof Bun.serve>

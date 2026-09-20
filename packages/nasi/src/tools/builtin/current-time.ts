@@ -6,7 +6,7 @@ import { tool } from "../../agent/agent"
  *
  * @param args.timezone - IANA timezone name (e.g. `America/New_York`).
  * Defaults to the host system's local timezone; the model should pass the
- * user's own timezone (from the location grounding in the system prompt)
+ * user's own timezone (if it knows it)
  * when it wants that instead.
  */
 export const currentTimeTool = tool<{ timezone?: string }>({

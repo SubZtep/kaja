@@ -48,7 +48,7 @@ const nasi = await Nasi.open({
   chat: { client, model },         // OpenAI-compatible client
   includeLocalTools?,              // files, shell, MCP, plugins — default false
   personas?,                       // roster for switch_persona
-  promptContext?,                  // system-prompt bits (env, location, sticky notes, …)
+  promptContext?,                  // system-prompt bits (env, sticky notes, …)
   owner?                           // null = terminal; otherwise a namespaced id
 })
 ```

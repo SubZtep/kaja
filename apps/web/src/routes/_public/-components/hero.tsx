@@ -59,7 +59,7 @@ export function Hero() {
         </Sticker>
 
         <div className="relative md:pr-52 lg:pr-72">
-          <h1 className="m-0 max-w-3xl font-display font-extrabold text-fg text-[40px] leading-[0.92] tracking-[-0.04em] md:text-[72px]">
+          <h1 className="m-0 max-w-xl font-display font-extrabold text-fg text-[40px] leading-[0.92] tracking-[-0.04em] md:text-[72px]">
             {m.hero_headline()}
           </h1>
           <svg className="mt-1 ml-1 w-48 text-neon md:w-72" viewBox="0 0 220 12" fill="none" aria-hidden>

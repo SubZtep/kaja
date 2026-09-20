@@ -8,26 +8,18 @@ nav_order: 4.4
 # Secrets
 
 One file to rule your keys. `secrets.toml` is the **only** file you should ever need to paste an
-API key or token into. Everything else — `services.toml`, `models.toml`, `mcp.toml` — stays
+API key or token into. Everything else — `models.toml`, `mcp.toml`, `settings.toml` — stays
 readable, shareable, and safe to screenshot.
 
-Each section mirrors a table elsewhere by name, and gets folded back in automatically when Kaja
-starts. No wiring, no references, no ceremony — just matching names:
+Provider and MCP sections mirror a table elsewhere by name, and get folded back in automatically
+when Kaja starts. No wiring, no references, no ceremony — just matching names:
 
 ```toml
-# Powers services.toml's [api] (the Kaja server this install talks to)
-[api]
-token = "kaja"
-
-# Powers services.toml's [location] (geo lookup for the system prompt)
-[location]
-apiKey = "kaja"
-
-# Powers services.toml's [webSearch] (the web_search tool)
+# The web_search tool
 [webSearch]
 apiKey = "BSA..."
 
-# Powers services.toml's [telegram] (the Telegram bot)
+# The Telegram bot (`kaja telegram`)
 [telegram]
 botToken = "123456:ABC-DEF..."
 
@@ -43,8 +35,8 @@ CONTEXT7_API_KEY = "ctx7sk-..."
 
 ## The rule
 
-**If it's a secret, it lives here. If it's not, it doesn't.** `serviceUrl`, `baseUrl`,
-`allowedUserIds`, model names — all of that stays put in `services.toml`/`models.toml`/`mcp.toml`.
+**If it's a secret, it lives here. If it's not, it doesn't.** `base_url`, server
+addresses, model names — all of that stays put in `models.toml`/`mcp.toml`/`settings.toml`.
 Only the sensitive half moves.
 
 This means you can commit, share, or `cat` your other config files without a second thought — no
@@ -56,8 +48,7 @@ Because "which of these four files has my Brave key in it again?" is not a quest
 have to ask. One file, one job: hold the things you'd rather not lose to a `git add .`.
 
 Missing a section? Kaja just skips that feature — same as an omitted section anywhere else. The
-`[api]` and `[location]` sections ship active by default with Kaja's own demo credentials, so a
-fresh install works immediately with zero edits.
+guest `[mcp.location]` header ships active, so a fresh install has working geolocation with zero edits.
 
 ---
 

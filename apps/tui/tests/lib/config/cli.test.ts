@@ -125,7 +125,7 @@ test("fetch with --offline never touches the network", async () => {
     throw new Error("network should not be used with --offline")
   }) as unknown as typeof fetch
   try {
-    const { code } = await runConfigCli(["fetch", "--offline"])
+    const { code } = await runConfigCli(["fetch"], { offline: true })
     expect(code).toBe(0)
     expect(await Bun.file(getModelsPath()).exists()).toBe(true)
   } finally {
@@ -148,7 +148,7 @@ test("fetch falls back to bundled templates when the server is unreachable", asy
   }
 })
 
-test("fetch writes secrets.toml from the bundled template, but never services.toml or settings.toml", async () => {
+test("fetch writes secrets.toml from the bundled template, but never settings.toml", async () => {
   const restore = mockBundleFetch({ "models.toml": 'label = "x"\n' })
   try {
     await runConfigCli(["fetch"])
@@ -156,9 +156,7 @@ test("fetch writes secrets.toml from the bundled template, but never services.to
     restore()
   }
   const { getSecretsPath } = await import("../../../lib/config/secrets")
-  const { getServicesPath } = await import("../../../lib/config/services")
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
-  expect(await Bun.file(getServicesPath()).exists()).toBe(false)
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
 })
 
@@ -166,7 +164,7 @@ test("fetch backs up an existing secrets.toml instead of overwriting it", async 
   const { getSecretsPath } = await import("../../../lib/config/secrets")
   await Bun.write(getSecretsPath(), 'hello = "world"\n')
 
-  const { code, text } = await runConfigCli(["fetch", "--offline"])
+  const { code, text } = await runConfigCli(["fetch"], { offline: true })
   expect(code).toBe(0)
   expect(text).toContain(getSecretsPath())
   expect(text).toContain(".bak")
@@ -175,7 +173,7 @@ test("fetch backs up an existing secrets.toml instead of overwriting it", async 
 })
 
 test("wizard --headless writes default config without prompting", async () => {
-  const { code, text } = await runConfigCli(["wizard", "--headless"])
+  const { code, text } = await runConfigCli(["wizard"], { headless: true })
   expect(code).toBe(0)
   expect(text.length).toBeGreaterThan(0)
   expect(await Bun.file(getConfigPath()).exists()).toBe(true)

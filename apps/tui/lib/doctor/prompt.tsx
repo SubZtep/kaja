@@ -21,8 +21,38 @@ export async function askSecret(title: string): Promise<string | undefined> {
   })
 }
 
-/** Asks a yes/no question with "no" as the default (first, and what Esc picks). */
-export async function askYesNo(title: string, yesLabel: string, noLabel: string): Promise<boolean> {
+/** Asks for a non-secret value in the terminal; resolves to the trimmed value, or undefined when skipped. */
+export async function askText(
+  title: string,
+  opts?: { hint?: string; defaultValue?: string }
+): Promise<string | undefined> {
+  const { TextPrompt } = await import("../../components/secret-prompt")
+  return new Promise(resolve => {
+    const { unmount } = render(
+      <TextPrompt
+        title={title}
+        hint={opts?.hint}
+        defaultValue={opts?.defaultValue}
+        onSubmit={value => {
+          unmount()
+          resolve(value)
+        }}
+        onSkip={() => {
+          unmount()
+          resolve(undefined)
+        }}
+      />
+    )
+  })
+}
+
+/** Asks a yes/no question with "no" as the default (first, and what Esc picks); `defaultYes` opens on "yes" instead. */
+export async function askYesNo(
+  title: string,
+  yesLabel: string,
+  noLabel: string,
+  opts?: { defaultYes?: boolean }
+): Promise<boolean> {
   const { YesNoPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
     const { unmount } = render(
@@ -30,6 +60,7 @@ export async function askYesNo(title: string, yesLabel: string, noLabel: string)
         title={title}
         yesLabel={yesLabel}
         noLabel={noLabel}
+        defaultYes={opts?.defaultYes}
         onResolve={yes => {
           unmount()
           resolve(yes)

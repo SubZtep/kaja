@@ -365,7 +365,7 @@ The local file is the second half of the agent state, documented table by table 
 | MCP servers | `ability` rows of type `mcp` | `mcp.toml` for your own, and the marketplace folder |
 | Abilities | `ability`, `user_ability`, `marketplace_sync` | the `marketplace/` folder and `abilities.toml` |
 | API keys | `user_secret` (encrypted) | `secrets.toml` |
-| Widgets, Telegram links | `widget`, `telegram_link*` | none (local mode has no widgets; the bot is configured in `services.toml`) |
+| Widgets, Telegram links | `widget`, `telegram_link*` | none (local mode has no widgets; the bot's token is in `secrets.toml`) |
 
 ### How they differ
 

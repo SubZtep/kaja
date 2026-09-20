@@ -58,13 +58,6 @@ export {
 } from "./agent/agent"
 export { isDangerousCommand } from "./agent/command-risk"
 export { categorizeError, type ErrorCategory } from "./agent/error-category"
-export {
-  type GeoLocation,
-  type GeoLookupConfig,
-  lookupMyLocation,
-  resetLocationCache,
-  tryLookupMyLocation
-} from "./agent/geo"
 export { samplingOf } from "./agent/persona"
 export { run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"

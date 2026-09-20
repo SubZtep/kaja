@@ -3,17 +3,10 @@ import { SecretsFileSchema } from "@kaja/schema/config"
 
 test("empty file validates: every section is optional, providers/mcp default to {}", () => {
   const parsed = SecretsFileSchema.parse({})
-  expect(parsed.location).toBeUndefined()
   expect(parsed.webSearch).toBeUndefined()
   expect(parsed.telegram).toBeUndefined()
   expect(parsed.providers).toEqual({})
   expect(parsed.mcp).toEqual({})
-})
-
-test("location group requires apiKey", () => {
-  const parsed = SecretsFileSchema.parse({ location: { apiKey: "key" } })
-  expect(parsed.location).toEqual({ apiKey: "key" })
-  expect(() => SecretsFileSchema.parse({ location: {} })).toThrow()
 })
 
 test("webSearch group requires apiKey", () => {

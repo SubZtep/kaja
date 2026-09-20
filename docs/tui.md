@@ -84,7 +84,7 @@ has focus). Pick whichever works cleanly for you.
 
 There is no in-app toggle for thinking/sounds/voice — set `preferences.thinking`,
 `preferences.sounds`, `preferences.voice` in `settings.toml` directly and restart. The app never
-writes to `settings.toml` (or any other config file) at runtime; only first-run setup and the
+writes to `settings.toml` (or any other config file) at runtime; only the setup wizard and the
 explicit `kaja config wizard`/`kaja config fetch` subcommands do.
 
 ## Rendering

@@ -20,7 +20,6 @@ LLM provider credentials, model-to-task mapping, secrets, services, and preferen
 ├─ mcp.toml         # model context protocol servers
 ├─ models.toml      # model catalog per provider
 ├─ abilities.toml    # which of them are loaded
-├─ services.toml    # external service definitions and endpoints
 ├─ secrets.toml     # your secret keys and tokens
 └─ settings.toml    # preferences and app settings
 ```
@@ -28,15 +27,16 @@ LLM provider credentials, model-to-task mapping, secrets, services, and preferen
 Run `kaja config paths` to print the resolved location of each of these on your machine — the
 directory follows XDG, so `$XDG_CONFIG_HOME/kaja` when set.
 
-The first `kaja --local` run seeds these from the templates in
+The first `kaja --local` run opens the [setup wizard](/configuration/wizard), seeding these from the templates in
 [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config). `kaja config fetch`
 later downloads the current admin-managed model catalog from
 the cloud API's `GET /config/export` and rewrites `models.toml`
 from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
 the same bundled templates as first run. It also resets `secrets.toml` to the commented-out template,
 keeping your old one as a `.bak`. `kaja config diff` shows what a fetch would change
-without writing anything, and `kaja config wizard` re-runs the interactive first-run setup at any
-time (language, provider). `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched
+without writing anything, and `kaja config wizard` re-runs the [setup wizard](/configuration/wizard)
+at any time — the same one a first run walks you through, and the page that traces which answer
+writes which file. `mcp.toml`, `settings.toml` and `abilities.toml` are never touched
 by `fetch` — those stay yours to hand-edit. Personas, like the rest of the marketplace, come from
 `kaja abilities update` instead.
 
@@ -51,7 +51,6 @@ config:
 flowchart LR
     S["settings.toml<br><small>preferences, stt, tts, memory</small>"]
     M["models.toml<br><small>providers + model per task</small>"]
-    V["services.toml<br><small>URLs, ids, flags</small>"]
     C["mcp.toml<br><small>MCP servers</small>"]
     P["marketplace/personas/*.toml"]
     G["abilities.toml<br><small>what loads</small>"]
@@ -59,7 +58,6 @@ flowchart LR
     K["secrets.toml<br><small>every key and token</small>"]
 
     K -.->|"[providers.x]"| M
-    K -.->|"[api] [location] [webSearch] [telegram]"| V
     K -.->|"[mcp.id]"| C
     P -->|"dataset id"| D
     P -.->|"model pin"| M
@@ -72,7 +70,7 @@ paste into a bug report.
 ## Checking keys and tokens
 
 `kaja doctor` tests every credential your config relies on: model providers, HTTP tool and MCP
-abilities, MCP servers that list `secrets`, and the location, Telegram and web search services. In a terminal it
+abilities, MCP servers that list `secrets`, and the Telegram and web search services. In a terminal it
 asks for anything missing or not working, tests the new value before saving it to `secrets.toml`,
 and only keeps a value that fails its test if you say so. A provider without a key is fine as long
 as its model answers (Ollama needs none). It ends with what's still left to fix and where.

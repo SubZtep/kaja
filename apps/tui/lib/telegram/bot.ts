@@ -1,4 +1,4 @@
-import type { CliResolvedModel, ServicesTelegram } from "@kaja/schema/config"
+import type { CliResolvedModel } from "@kaja/schema/config"
 import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
 import type { Agent } from "../agent/agents"
@@ -7,7 +7,7 @@ import { log } from "../logger"
 import type { Persona } from "../personas/personas"
 import { createTelegramDriver, type InlineKeyboardLike } from "./driver"
 
-export type CreateTelegramBotConfig = ServicesTelegram & {
+export type CreateTelegramBotConfig = {
   botToken: string
   agentConfig: ConstructorParameters<typeof Agent>[0]
   personas: Persona[]
@@ -33,7 +33,6 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     personas: config.personas,
     models: config.models,
     getInitialPersona: config.getInitialPersona,
-    allowedUserIds: config.allowedUserIds,
     sender: {
       async sendMessage(chatId, text, opts) {
         const message = await withRateLimitRetry(() =>
@@ -84,7 +83,7 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
   })
 
   bot.catch(err => {
-    // A 401 here (unlike at the getMe() preflight in start()) means the token was revoked mid-session — every future API call will fail the same way, including the notify-the-user sendMessage below, so that failure would otherwise go completely silent. Log it distinctly so an operator watching logs can tell "bot is dead" apart from one bad update.
+    // A 401 here (unlike at the getMe() preflight in start()) means the token was revoked mid-session — every future API call will fail the same way, including the generic-error sendMessage below, so that failure would otherwise go completely silent. Log it distinctly so an operator watching logs can tell "bot is dead" apart from one bad update.
     if (err.error instanceof GrammyError && err.error.error_code === 401) {
       log.error("Telegram bot token rejected — bot is now unreachable", { error: err.error })
       return
@@ -93,11 +92,6 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     const chatId = err.ctx.chat?.id
     if (chatId !== undefined) bot.api.sendMessage(chatId, t("telegram.genericError")).catch(() => {})
   })
-
-  /** Broadcasts a lifecycle notice to every allowed user's DM (chat.id === user id there); one blocked/invalid user can't stop the others from being notified. */
-  async function notifyAll(text: string) {
-    await Promise.allSettled(config.allowedUserIds.map(userId => bot.api.sendMessage(userId, text)))
-  }
 
   return {
     async start() {
@@ -114,14 +108,10 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
         ])
         .catch(error => log.warn("Telegram command menu not set", { error }))
       await bot.start({
-        onStart: () => {
-          console.log(t("telegram.ready"))
-          void notifyAll(t("telegram.botOnline"))
-        }
+        onStart: () => console.log(t("telegram.ready"))
       })
     },
     async stop() {
-      await notifyAll(t("telegram.botOffline"))
       await bot.stop()
     }
   }

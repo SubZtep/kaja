@@ -9,11 +9,9 @@ import {
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
 import { getMarketplaceDir, loadAbilitiesFile } from "../lib/abilities/abilities-file"
-import { tryLookupMyLocation } from "../lib/agent/geo"
 import { getConfigDir } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
 import { secrets } from "../lib/config/secrets"
-import { services } from "../lib/config/services"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
 import { chatModelId, client } from "../lib/models/openai"
@@ -21,7 +19,7 @@ import { getPaths } from "../lib/paths"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
 export async function getDefaultTools(personas: Persona[]) {
-  const { webSearch } = await services()
+  const { webSearch } = await secrets()
   const mcpServers = await loadMcpServers()
   setDatasetLoaders({ loadDataset, loadDatasets })
 
@@ -67,7 +65,6 @@ export async function getDefaultTools(personas: Persona[]) {
       rerank,
       imageGeneration,
       webSearchApiKey: webSearch?.apiKey,
-      lookupLocation: tryLookupMyLocation,
       tempDir: getPaths().temp,
       storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }

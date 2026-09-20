@@ -8,8 +8,8 @@ import { writeText } from "tinyclip"
 import App from "../components/layout/app"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
+import { getApiBaseUrl } from "../lib/config/api-url"
 import { config } from "../lib/config/config"
-import { getApiBaseUrl } from "../lib/config/services"
 import { t } from "../lib/i18n"
 import { log } from "../lib/logger"
 
@@ -58,7 +58,7 @@ async function resolveToken(apiUrl: string): Promise<string> {
  * `<apiUrl>/nasi/*` over SSE.
  */
 export async function runCloudSubcommand() {
-  const apiUrl = await getApiBaseUrl()
+  const apiUrl = getApiBaseUrl()
 
   try {
     const token = await resolveToken(apiUrl)

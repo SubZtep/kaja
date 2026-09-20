@@ -3,13 +3,11 @@ import type { CliResolvedModel, McpServerEntry, SecretsFile } from "@kaja/schema
 import { getMarketplaceDir, loadAbilitiesFile } from "../abilities/abilities-file"
 import { loadMcpServers } from "../config/mcp-servers"
 import { saveSecrets, secrets } from "../config/secrets"
-import { readServicesLoose } from "../config/services"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
 import {
   type CheckResult,
   checkAbilityKey,
-  checkLocationKey,
   checkMcpServer,
   checkProvider,
   checkTelegramToken,
@@ -34,7 +32,34 @@ export type CredentialItem = {
 
 export type CredentialOutcome =
   | { item: CredentialItem; status: "ok" | "keyless" | "untested" | "saved" | "saved-untested" }
-  | { item: CredentialItem; status: "missing" | "failing" | "saved-failing"; reason: string }
+  | {
+      item: CredentialItem
+      status: "missing" | "failing" | "saved-failing"
+      reason: string
+      /** "unreachable": the service never judged the value, so a new one wouldn't help. */
+      kind?: "credential" | "unreachable"
+    }
+
+/**
+ * Values the caller collected before this pass ran, keyed by {@link CredentialItem.where}. A string
+ * is tested and saved exactly as one typed at the prompt would be; `null` means the user was already
+ * asked and declined, so it's reported instead of being asked for twice. The setup wizard fills this
+ * from its own key steps — `kaja doctor` has nowhere to have asked, so it never passes one.
+ */
+export type OfferedValues = Record<string, string | null>
+
+/** Where an ability's key goes in secrets.toml — the identity a {@link CredentialScope} names it by. */
+export function abilityKeyWhere(name: string): string {
+  return `[abilities.${name}] apiKey`
+}
+
+/** Narrows a pass to part of the config, for a caller that just changed only that part. */
+export type CredentialScope = {
+  /** Only these items, by {@link CredentialItem.where}. */
+  only: string[]
+  /** Also ask for a key an item can do without, once — `kaja abilities` does this for what it just enabled. */
+  askOptional?: boolean
+}
 
 /** How resolveCredentials talks to the user; the doctor passes Ink prompts, tests pass fakes. */
 export type CredentialIo = {
@@ -63,8 +88,7 @@ function withSecret(server: McpServerEntry, name: string, value: string): McpSer
 /**
  * Every credential the current local config relies on: providers used by a configured
  * model, enabled HTTP tool and MCP abilities with key auth, secrets MCP servers declare, and the
- * location/Telegram services when configured (web search only when a key is set: there's
- * no other sign the user wants it).
+ * Telegram bot when a token is saved (web search likewise: a saved key is the only sign the user wants it).
  */
 export async function collectCredentials(): Promise<CredentialItem[]> {
   const creds = await secrets()
@@ -107,34 +131,14 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
     }
   }
 
-  const services = await readServicesLoose()
-  const serviceUrl = services.location?.serviceUrl
-  if (serviceUrl) {
-    const saved = creds.location?.apiKey
-    items.push({
-      label: t("doctor.itemLocation"),
-      where: "[location] apiKey",
-      hint: "header X-API-Key",
-      present: Boolean(saved),
-      required: true,
-      check: async value => {
-        const key = value ?? saved
-        return key ? checkLocationKey(serviceUrl, key) : undefined
-      },
-      save: value => saveSecrets({ location: { apiKey: value } })
-    })
-  }
-  if (services.telegram) {
-    const saved = creds.telegram?.botToken
+  const telegramToken = creds.telegram?.botToken
+  if (telegramToken) {
     items.push({
       label: t("doctor.itemTelegram"),
       where: "[telegram] botToken",
-      present: Boolean(saved),
+      present: true,
       required: true,
-      check: async value => {
-        const token = value ?? saved
-        return token ? checkTelegramToken(token) : undefined
-      },
+      check: value => checkTelegramToken(value ?? telegramToken),
       save: value => saveSecrets({ telegram: { botToken: value } })
     })
   }
@@ -163,7 +167,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
     const saved = creds.abilities[ability.name]?.apiKey
     items.push({
       label: t("doctor.itemAbility", { name: ability.name }),
-      where: `[abilities.${ability.name}] apiKey`,
+      where: abilityKeyWhere(ability.name),
       hint: `${ability.auth.in} ${ability.auth.name}`,
       present: Boolean(saved),
       required: !ability.auth.optional,
@@ -180,7 +184,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
     const saved = creds.abilities[ability.name]?.apiKey
     items.push({
       label: t("doctor.itemMcpAbility", { name: ability.name }),
-      where: `[abilities.${ability.name}] apiKey`,
+      where: abilityKeyWhere(ability.name),
       hint: `${auth.in} ${auth.name}`,
       present: Boolean(saved),
       required: !auth.optional,
@@ -213,7 +217,9 @@ function askTitle(item: CredentialItem, failingReason: string | undefined): stri
 export async function resolveCredentials(
   items: CredentialItem[],
   io: CredentialIo,
-  onOutcome: (outcome: CredentialOutcome) => void = () => {}
+  onOutcome: (outcome: CredentialOutcome) => void = () => {},
+  offered: OfferedValues = {},
+  askOptional = false
 ): Promise<CredentialOutcome[]> {
   const outcomes: CredentialOutcome[] = []
   const settle = (outcome: CredentialOutcome) => {
@@ -222,8 +228,27 @@ export async function resolveCredentials(
   }
 
   for (const item of items) {
+    const offer = offered[item.where]
+    if (typeof offer === "string") {
+      settle(await testAndSave(item, offer, item.present ? "failing" : "missing", io))
+      continue
+    }
+
     const saved = await savedOutcome(item)
-    settle("reason" in saved && io.interactive ? await askAndSave(saved, io) : saved)
+    // A key nothing needs isn't a problem to fix, so only a caller that opted in is asking for it.
+    const optionalGap =
+      askOptional && io.interactive && offer === undefined && !item.required && !item.present && !("reason" in saved)
+    if (optionalGap) {
+      const value = await io.ask(t("ability.optionalKeyPrompt", { name: item.label, where: item.hint ?? item.where }))
+      if (value) {
+        settle(await testAndSave(item, value, "missing", io))
+        continue
+      }
+    }
+    // Nothing rejected the value, so there's nothing for the user to retype — report and move on.
+    // `null` says the caller already asked and was turned down, which is the same dead end.
+    const worthAsking = "reason" in saved && io.interactive && saved.kind !== "unreachable" && offer !== null
+    settle(worthAsking ? await askAndSave(saved as Extract<CredentialOutcome, { reason: string }>, io) : saved)
   }
 
   return outcomes
@@ -233,7 +258,7 @@ export async function resolveCredentials(
 async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
   if (item.required && !item.present) return { item, status: "missing", reason: t("doctor.missing") }
   const current = await item.check?.()
-  if (current?.ok === false) return { item, status: "failing", reason: current.reason }
+  if (current?.ok === false) return { item, status: "failing", reason: current.reason, kind: current.kind }
   if (!current?.ok) return { item, status: "untested" }
   return { item, status: item.present ? "ok" : "keyless" }
 }
@@ -243,17 +268,30 @@ async function askAndSave(
   problem: Extract<CredentialOutcome, { reason: string }>,
   io: CredentialIo
 ): Promise<CredentialOutcome> {
-  const { item } = problem
-  const value = await io.ask(askTitle(item, problem.status === "missing" ? undefined : problem.reason))
+  const value = await io.ask(askTitle(problem.item, problem.status === "missing" ? undefined : problem.reason))
   if (!value) return problem
+  return testAndSave(problem.item, value, problem.status, io)
+}
 
+/**
+ * Tests a value and saves it, keeping one that fails only if the user says so — `rejected` is the
+ * status to report when they don't. Shared by a value typed at the prompt and one the wizard
+ * collected earlier, so a key gathered up front is still never written untested.
+ */
+async function testAndSave(
+  item: CredentialItem,
+  value: string,
+  rejected: Extract<CredentialOutcome, { reason: string }>["status"],
+  io: CredentialIo
+): Promise<CredentialOutcome> {
   const tested = await item.check?.(value)
   if (tested?.ok === false) {
-    if (!(await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason })))) {
-      return { item, status: problem.status, reason: tested.reason }
-    }
+    const keep =
+      io.interactive &&
+      (await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason })))
+    if (!keep) return { item, status: rejected, reason: tested.reason, kind: tested.kind }
     await item.save(value)
-    return { item, status: "saved-failing", reason: tested.reason }
+    return { item, status: "saved-failing", reason: tested.reason, kind: tested.kind }
   }
 
   await item.save(value)
@@ -280,13 +318,67 @@ export function outcomeLine(outcome: CredentialOutcome): string {
   }
 }
 
+/** Whether an outcome still needs the user's attention — what the to-do list and the wizard's closing line key off. */
+export function isUnresolved(outcome: CredentialOutcome): boolean {
+  return outcome.status === "missing" || outcome.status === "failing" || outcome.status === "saved-failing"
+}
+
+/**
+ * The keys-and-tokens pass, shared by `kaja doctor` and the setup wizard: tests every credential the
+ * current config relies on and, in a terminal, asks for anything missing or failing (tested before
+ * it's saved). Prints `header` only when there's actually something to check. Reads the config from
+ * disk, so a caller that just wrote one must do so before calling this.
+ *
+ * `offered` carries values the caller has already collected — see {@link OfferedValues}. `scope`
+ * limits the pass to the items a caller just changed — see {@link CredentialScope}.
+ */
+export async function runCredentialPass(
+  print: (line: string) => void,
+  header?: string,
+  extra: CredentialItem[] = [],
+  offered: OfferedValues = {},
+  scope?: CredentialScope
+): Promise<CredentialOutcome[]> {
+  // Loaded here rather than at module scope so a non-interactive caller never pulls Ink in.
+  const { askSaveAnyway, askSecret } = await import("./prompt")
+
+  // `extra` carries credentials the config gives no sign of — the setup wizard's freshly ticked
+  // extras. Anything collectCredentials already found wins, so nothing is asked for twice.
+  const collected = await collectCredentials()
+  const found = [...collected, ...extra.filter(e => !collected.some(c => c.where === e.where))]
+  const items = scope ? found.filter(item => scope.only.includes(item.where)) : found
+  if (items.length === 0) return []
+  if (header) print(header)
+
+  return resolveCredentials(
+    items,
+    { interactive: Boolean(process.stdin.isTTY), ask: askSecret, askSaveAnyway },
+    outcome => print(outcomeLine(outcome)),
+    offered,
+    scope?.askOptional
+  )
+}
+
 /** The closing to-do list: each unresolved item's secrets.toml entry and why, or an all-clear line. */
 export function summaryLines(outcomes: CredentialOutcome[], secretsPath: string): string[] {
-  const todo = outcomes.filter(o => o.status === "missing" || o.status === "failing" || o.status === "saved-failing")
+  const todo = outcomes.filter(isUnresolved)
   if (todo.length === 0) return [t("doctor.allGood")]
+
+  // Pointing at a secrets.toml entry is only advice when a key is actually the problem; an
+  // unreachable service is listed separately, by what it is rather than where its key would go.
+  const keys = todo.filter(o => !("kind" in o) || o.kind !== "unreachable")
+  const unreachable = todo.filter(o => "kind" in o && o.kind === "unreachable")
+
   return [
-    t("doctor.todoTitle", { path: secretsPath }),
-    ...todo.map(o => `  ${o.item.where}: ${"reason" in o ? o.reason : ""}`),
+    ...(keys.length > 0
+      ? [
+          t("doctor.todoTitle", { path: secretsPath }),
+          ...keys.map(o => `  ${o.item.where}: ${"reason" in o ? o.reason : ""}`)
+        ]
+      : []),
+    ...(unreachable.length > 0
+      ? [t("doctor.todoUnreachable"), ...unreachable.map(o => `  ${o.item.label}: ${"reason" in o ? o.reason : ""}`)]
+      : []),
     t("doctor.todoRerun")
   ]
 }

@@ -53,11 +53,7 @@ async function runFetchOnline(only: string | undefined): Promise<FetchResult[] |
   return Promise.all(entries.map(([key, text]) => writeTemplateConfig(text, pathForBundleKey(key))))
 }
 
-async function runFetch(argv: string[]): Promise<{ code: number; text: string }> {
-  const offline = argv.includes("--offline")
-  const onlyIndex = argv.indexOf("--only")
-  const only = onlyIndex >= 0 ? argv[onlyIndex + 1] : undefined
-
+async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number; text: string }> {
   if (offline) {
     try {
       const results = await runFetchOffline(only)
@@ -70,7 +66,7 @@ async function runFetch(argv: string[]): Promise<{ code: number; text: string }>
   try {
     // secrets.toml is never admin-managed (no user secrets on the server), so it's always fetched
     // from the bundled local template rather than the remote bundle. Done before runFetchOnline:
-    // that call resolves the API base URL via services()/secrets(), which auto-writes a missing
+    // that call may read secrets(), which auto-writes a missing
     // secrets.toml as a side effect — fetching it explicitly first keeps this status line accurate.
     const secretsResult = matchesOnly("secrets.toml", only) ? [await fetchSecretsToml()] : []
     const remoteResults = await runFetchOnline(only)
@@ -96,35 +92,38 @@ function runPaths(): { code: number; text: string } {
   return { code: 0, text: markdownToTerminal(md) }
 }
 
-async function runDiff(argv: string[]): Promise<{ code: number; text: string }> {
-  const offline = argv.includes("--offline")
+async function runDiff({ offline }: ConfigFlags): Promise<{ code: number; text: string }> {
   const { diffConfig } = await import("./diff")
   try {
-    const lines = await diffConfig(offline)
+    const lines = await diffConfig(Boolean(offline))
     return { code: 0, text: lines.join("\n") }
   } catch (error: any) {
     return { code: 1, text: error?.message ?? String(error) }
   }
 }
 
-async function runWizard(argv: string[]): Promise<{ code: number; text: string }> {
-  const headless = argv.includes("--headless")
+async function runWizard({ headless }: ConfigFlags): Promise<{ code: number; text: string }> {
+  // No mode is forced here: `kaja config wizard` manages files only and must never start a cloud
+  // login, so picking Cloud saves the preference and leaves signing in to the next bare `kaja`.
   const { runConfigWizard } = await import("../cli/config-wizard")
-  return runConfigWizard(headless)
+  return runConfigWizard({ headless })
 }
+
+/** The parsed flags these subcommands read. They come from `lib/cli/args.ts`, not from the positionals: parseArgs strips flags out of `input`, so scanning it here silently ignored every one of them. */
+export type ConfigFlags = { headless?: boolean; offline?: boolean; only?: string }
 
 /**
  * Handles `kaja config <fetch|paths|diff|wizard>`;
  *
  * Returns `{ code, text }`
  */
-export async function runConfigCli(argv: string[]): Promise<{ code: number; text: string }> {
-  const [command, ...rest] = argv
+export async function runConfigCli(argv: string[], flags: ConfigFlags = {}): Promise<{ code: number; text: string }> {
+  const [command] = argv
 
-  if (command === "fetch") return runFetch(rest)
+  if (command === "fetch") return runFetch(flags)
   if (command === "paths") return runPaths()
-  if (command === "diff") return runDiff(rest)
-  if (command === "wizard") return runWizard(rest)
+  if (command === "diff") return runDiff(flags)
+  if (command === "wizard") return runWizard(flags)
 
   return { code: 1, text: t("config.usage") }
 }

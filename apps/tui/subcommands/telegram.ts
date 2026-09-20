@@ -7,14 +7,14 @@
 export async function runTelegramSubcommand() {
   const { bootstrapLocalAgentDeps, requireConfiguredProvider } = await import("../lib/cli/headless")
   const { runTelegramCli } = await import("../lib/telegram/cli")
-  const { services } = await import("../lib/config/services")
+  const { secrets } = await import("../lib/config/secrets")
 
   await requireConfiguredProvider()
 
   const { models, personas, tools, closeTools } = await bootstrapLocalAgentDeps()
 
   const code = await runTelegramCli({
-    services: await services(),
+    botToken: (await secrets()).telegram?.botToken,
     tools,
     personas,
     models,

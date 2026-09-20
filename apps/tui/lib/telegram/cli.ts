@@ -1,21 +1,20 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import type { Tool } from "../agent/agents"
 import { installShutdownHandlers } from "../cli/headless"
-import type { ResolvedServices } from "../config/services"
 import { t } from "../i18n"
 import type { Persona } from "../personas/personas"
 
 /** Runs `kaja telegram`: a long-polling bot reusing the terminal's tools/personas/models. Returns an exit code once gracefully stopped (SIGINT/SIGTERM). */
 export async function runTelegramCli(deps: {
-  services: Pick<ResolvedServices, "telegram">
+  /** The bot token from secrets.toml's `[telegram]`; without one there is nothing to run. */
+  botToken: string | undefined
   tools: Tool<any>[]
   personas: Persona[]
   models: CliResolvedModel[]
   /** Closes long-lived tool connections (e.g. Playwright MCP subprocess); shared with SIGINT/SIGTERM via installShutdownHandlers. */
   closeTools: () => Promise<void>
 }): Promise<number> {
-  const { telegram } = deps.services
-  if (!telegram) {
+  if (!deps.botToken) {
     console.log(t("telegram.notConfigured"))
     return 1
   }
@@ -24,7 +23,7 @@ export async function runTelegramCli(deps: {
   const { chatModelId, client, clientForModel } = await import("../models/openai")
   const { getStore } = await import("../memory/store")
   const bot = createTelegramBot({
-    ...telegram,
+    botToken: deps.botToken,
     agentConfig: {
       model: chatModelId,
       client,

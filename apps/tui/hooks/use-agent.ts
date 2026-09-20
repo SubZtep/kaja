@@ -91,10 +91,6 @@ export function useAgent(
         loadDataset: async topic => {
           const { loadDataset } = await import("../lib/personas/datasets")
           return loadDataset(topic)
-        },
-        loadLocation: async () => {
-          const { tryLookupMyLocation } = await import("../lib/agent/geo")
-          return tryLookupMyLocation()
         }
       }
     })

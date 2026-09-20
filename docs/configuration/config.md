@@ -78,7 +78,7 @@ kaja config fetch
 ```
 
 Use it to pick up new template defaults after an upgrade, or to recover a file you've broken. Your
-`settings.toml` and `services.toml` are never touched.
+`settings.toml` is never touched.
 
 ---
 

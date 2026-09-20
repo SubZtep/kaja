@@ -23,6 +23,14 @@ const options = {
   headless: {
     type: "boolean"
   },
+  /** `config fetch`/`diff`: use the bundled templates instead of asking the server. */
+  offline: {
+    type: "boolean"
+  },
+  /** `config fetch`: limit it to one file, "models" or "secrets". */
+  only: {
+    type: "string"
+  },
   help: {
     type: "boolean"
   },

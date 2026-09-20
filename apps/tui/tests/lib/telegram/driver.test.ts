@@ -130,26 +130,20 @@ function fakeSender() {
   return { sender, sent, edited, answered, photos }
 }
 
-/** One driver, one scripted fake LLM conversation, one allowlist. */
-function makeDriver(
-  script: FakeMessage[],
-  sender: TelegramSender,
-  allowedUserIds: number[],
-  extraTools: Tool<never>[] = []
-) {
+/** One driver, one scripted fake LLM conversation. */
+function makeDriver(script: FakeMessage[], sender: TelegramSender, extraTools: Tool<never>[] = []) {
   return createTelegramDriver({
     agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool], store: peekStore() },
     personas: [persona],
     models: [],
-    allowedUserIds,
     sender,
     createAgent: () => fakeAgent(script, extraTools)
   })
 }
 
-test("first message from an allowed user creates a session and finalizes the reply", async () => {
+test("first message from a user creates a session and finalizes the reply", async () => {
   const { sender, sent, edited } = fakeSender()
-  const driver = makeDriver([{ content: "Hello there." }], sender, [42])
+  const driver = makeDriver([{ content: "Hello there." }], sender)
 
   await driver.handleMessage(42, 100, "hi")
 
@@ -193,7 +187,6 @@ test("tool_image and display_image events are delivered as photos", async () => 
       { content: "Here is your picture." }
     ],
     sender,
-    [42],
     [imageTool]
   )
 
@@ -204,17 +197,6 @@ test("tool_image and display_image events are delivered as photos", async () => 
   expect(photos[0]!.caption).toBe("a preview")
   expect(photos[1]!.photo).toEqual({ path: imagePath })
   expect(edited.at(-1)!.text).toBe("Here is your picture.")
-})
-
-test("a message from a disallowed user produces zero sender calls", async () => {
-  const { sender, sent, edited, answered } = fakeSender()
-  const driver = makeDriver([{ content: "should never run" }], sender, [42])
-
-  await driver.handleMessage(999, 100, "hi")
-
-  expect(sent).toHaveLength(0)
-  expect(edited).toHaveLength(0)
-  expect(answered).toHaveLength(0)
 })
 
 test("resuming continues a pre-seeded session, scoped to that owner only", async () => {
@@ -237,13 +219,13 @@ test("resuming continues a pre-seeded session, scoped to that owner only", async
   })
 
   const { sender, edited } = fakeSender()
-  const driver = makeDriver([{ content: "continued reply" }], sender, [42, 43])
+  const driver = makeDriver([{ content: "continued reply" }], sender)
   await driver.handleMessage(42, 100, "follow up")
   expect(edited.at(-1)!.text).toBe("continued reply")
 
   // A different user's first message must not see user 42's history — with no pre-seeded row for user 43, this driver starts a fresh session for them regardless.
   const { sender: sender43, edited: edited43 } = fakeSender()
-  const driver43 = makeDriver([{ content: "fresh reply" }], sender43, [42, 43])
+  const driver43 = makeDriver([{ content: "fresh reply" }], sender43)
   await driver43.handleMessage(43, 200, "hello")
   expect(edited43.at(-1)!.text).toBe("fresh reply")
 })
@@ -268,7 +250,7 @@ test("/new bypasses a resumable session and starts a fresh one", async () => {
   })
 
   const { sender, sent, edited } = fakeSender()
-  const driver = makeDriver([{ content: "fresh reply" }], sender, [42])
+  const driver = makeDriver([{ content: "fresh reply" }], sender)
 
   await driver.handleMessage(42, 100, "/new")
   expect(sent.at(-1)!.text).toBe(t("telegram.newSession"))
@@ -294,7 +276,6 @@ test("/new re-resolves getInitialPersona live, picking up a persona switched aft
     agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool], store: peekStore() },
     personas: [kaja, grumpy],
     models: [],
-    allowedUserIds: [42],
     sender,
     getInitialPersona: () => [kaja, grumpy].find(p => p.id === currentPersonaId),
     createAgent: () => fakeAgent([{ content: "reply" }, { content: "reply" }])
@@ -337,8 +318,7 @@ test("confirm_command sends an approval keyboard, and approving runs the command
       },
       { content: "Done." }
     ],
-    sender,
-    [42]
+    sender
   )
 
   await driver.handleMessage(42, 100, "please run true")
@@ -391,7 +371,7 @@ const approvalScript: FakeMessage[] = [
 test("confirm_tool sends the request summary with an approval keyboard, and approving runs the tool", async () => {
   const { sender, sent, edited } = fakeSender()
   const executed: unknown[] = []
-  const driver = makeDriver(approvalScript, sender, [42], [approvalTool(executed)])
+  const driver = makeDriver(approvalScript, sender, [approvalTool(executed)])
 
   await driver.handleMessage(42, 100, "file a bug")
 
@@ -417,7 +397,7 @@ test("confirm_tool sends the request summary with an approval keyboard, and appr
 test("declining a tool request doesn't run it", async () => {
   const { sender, sent, edited } = fakeSender()
   const executed: unknown[] = []
-  const driver = makeDriver(approvalScript, sender, [42], [approvalTool(executed)])
+  const driver = makeDriver(approvalScript, sender, [approvalTool(executed)])
 
   await driver.handleMessage(42, 100, "file a bug")
   const confirmMsg = sent.find(s => s.replyMarkup)
@@ -451,8 +431,7 @@ test("declining a command feeds back a decline notice without a user-role event"
       },
       { content: "Understood." }
     ],
-    sender,
-    [42]
+    sender
   )
 
   await driver.handleMessage(42, 100, "please run true")
@@ -492,8 +471,7 @@ test("a callback with a stale/mismatched token doesn't touch state", async () =>
         ]
       }
     ],
-    sender,
-    [42]
+    sender
   )
 
   await driver.handleMessage(42, 100, "please run true")
@@ -527,8 +505,7 @@ test("a message while busy or a command is pending gets a reminder instead of in
         ]
       }
     ],
-    sender,
-    [42]
+    sender
   )
 
   await driver.handleMessage(42, 100, "please run true")
@@ -553,7 +530,6 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
     agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool], store: peekStore() },
     personas: [kaja, grumpy],
     models: [],
-    allowedUserIds: [42],
     sender,
     createAgent: init =>
       ({
@@ -617,7 +593,6 @@ test("/abilities lists the skills, personas and tool abilities the bot loaded, a
     agentConfig: { model: "fake-model", tools: [askUserTool, loadSkill, ...packaged], store: peekStore() },
     personas: [defaultPersona, persona],
     models: [],
-    allowedUserIds: [42],
     sender
   })
 
@@ -635,7 +610,6 @@ test("/abilities lists the skills, personas and tool abilities the bot loaded, a
     agentConfig: { model: "fake-model", tools: [askUserTool], store: peekStore() },
     personas: [defaultPersona],
     models: [],
-    allowedUserIds: [42],
     sender: empty.sender
   }).handleMessage(42, 100, "/abilities")
   expect(empty.sent.at(-1)!.text).toContain(t("telegram.abilitiesNone"))

@@ -5,6 +5,12 @@ export const KajaPreferencesSchema = z.object({
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
   locale: z.enum(["en-GB", "hu-HU", "nan-TW"]).optional().describe("Language for the chat and application"),
+  // Written by the setup wizard. Without it the mode is guessed from "is there a usable chat model?", which
+  // silently falls back to cloud when models.toml is missing, broken, or deliberately left for hand-editing.
+  mode: z
+    .enum(["cloud", "local"])
+    .optional()
+    .describe("Which backend `kaja` starts: the cloud API, or the local agent against your own provider"),
   // No modifier is universal in a terminal: Alt can type special characters instead of acting as a modifier on some
   // macOS terminals (Terminal.app/iTerm2 without "Option as Meta" enabled); Ctrl+<letter> can collide with host-app
   // global shortcuts (e.g. VS Code's integrated terminal reserves several of them regardless of focus).
@@ -33,7 +39,7 @@ export const KajaMemorySchema = z.object({
     .describe("Absolute path to the SQLite memory database; omit to use the default XDG data location")
 })
 
-/** location/webSearch/telegram/api (external service credentials) live in services.toml */
+/** webSearch/telegram (external service credentials) live in secrets.toml */
 export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),

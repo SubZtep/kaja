@@ -45,15 +45,14 @@ export function TelegramConnectCta({ className }: Readonly<{ className?: string 
   )
 }
 
-// Uneven 6-15 s pauses between spins. A fixed list, not random: Sonar flags Math.random and CodeQL flags crypto random scaled down.
 const IDLE_GAPS_MS = [9000, 6500, 13000, 7500, 15000, 11000]
+const SPIN_DURATIONS_MS = [1000, 1800, 2500, 3000, 1400, 2200]
 
 /** Signed-out promo for the desktop hero column under the monster. */
 export function TelegramPromo() {
   const [isSpinning, setIsSpinning] = useState(false)
 
   useEffect(() => {
-    // A local count, not state: hooks can't be called inside an effect, and the timers need the current value.
     let spins = 0
     let idleTimeout: ReturnType<typeof setTimeout>
     let spinTimeout: ReturnType<typeof setTimeout>
@@ -63,10 +62,13 @@ export function TelegramPromo() {
         () => {
           spins++
           setIsSpinning(true)
-          spinTimeout = setTimeout(() => {
-            setIsSpinning(false)
-            scheduleSpin()
-          }, spins * 1000)
+          spinTimeout = setTimeout(
+            () => {
+              setIsSpinning(false)
+              scheduleSpin()
+            },
+            SPIN_DURATIONS_MS[(spins - 1) % SPIN_DURATIONS_MS.length]
+          )
         },
         IDLE_GAPS_MS[spins % IDLE_GAPS_MS.length]
       )

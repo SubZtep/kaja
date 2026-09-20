@@ -66,8 +66,8 @@ Three starting points live in
 
 | Template | Providers | Notes |
 | --- | --- | --- |
-| `models.ollama.toml` | Ollama | chat + embedding, fully local. Offered by the first-run wizard. |
-| `models.fireworks.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts. Offered by the first-run wizard. |
+| `models.ollama.toml` | Ollama | chat + embedding, fully local. Offered by the setup wizard. |
+| `models.fireworks.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts. Offered by the setup wizard. |
 | `models.llama.toml` | llama.cpp, xAI | chat against a local `llama-server`. Copy it in manually. |
 
 To switch which model handles a task, edit or add its `[models.<task>]` entry â€” or run
@@ -77,4 +77,4 @@ To switch which model handles a task, edit or add its `[models.<task>]` entry â€
 
 Next:
 
-[Services](/configuration/services){: .btn .btn-green .fs-5 }
+[Secrets](/configuration/secrets){: .btn .btn-green .fs-5 }

@@ -18,7 +18,7 @@ chat — including the shell-command approve/decline flow, shown as an inline ke
 > configured `models.toml`.
 {: .note }
 
-Each allowed user gets their own conversation and their own agent state, kept apart by an `owner`
+Each user gets their own conversation and their own agent state, kept apart by an `owner`
 id in the [store](/tui/sqlite) — they can't see or resume each other's sessions.
 
 ### Setup
@@ -27,25 +27,15 @@ id in the [store](/tui/sqlite) — they can't see or resume each other's session
    send `/newbot`, and follow the prompts (name + a unique username ending in `bot`).
    BotFather replies with an API token like `123456789:AAH...`.
 
-2. **Get your numeric Telegram user id.** Message [@userinfobot](https://t.me/userinfobot) (or
-   [@RawDataBot](https://t.me/RawDataBot)) — it replies with your numeric id. That's what goes
-   in `allowedUserIds`, not your `@username`.
-
-3. **Add a `[telegram]` section to `~/.config/kaja/services.toml`** (who's allowed in):
-
-   ```toml
-   [telegram]
-   allowedUserIds = [YOUR_NUMERIC_ID]
-   ```
-
-   **...and one to `~/.config/kaja/secrets.toml`** (the token itself):
+2. **Save the token** in a `[telegram]` section of `~/.config/kaja/secrets.toml` (or let the
+   [setup wizard](/configuration/wizard) ask for it):
 
    ```toml
    [telegram]
    botToken = "123456789:AAH..."
    ```
 
-4. **Run it:**
+3. **Run it:**
 
    ```sh
    kaja telegram              # with the terminal UI shell around it
@@ -55,8 +45,12 @@ id in the [store](/tui/sqlite) — they can't see or resume each other's session
    The bot preflights with `getMe()` — an invalid token fails immediately with a one-line
    error, no stack trace. On success it logs "ready" and starts long-polling.
 
-Then open a DM with your bot and send anything. Messages from accounts not in `allowedUserIds`
-are silently ignored — it must be non-empty, there's no "open to everyone" mode.
+Then open a DM with your bot and send anything.
+
+> The bot has **no allowlist**: it answers whoever messages it, and it runs on your machine with your
+> tools. Keep its username to yourself — anyone who finds it can chat with it, and can approve
+> their own shell commands.
+{: .warning }
 
 ### Commands
 
@@ -76,7 +70,7 @@ model switching and no shell — same constraints as the [cloud/lite CLI](/modes
 [HTTP tool](/tools#http-tools-in-the-cloud) or [MCP server](/tools#mcp-servers-in-the-cloud) call
 that changes something comes with Approve/Decline buttons.
 
-There's **no `allowedUserIds`** — instead, each Kaja user links their own Telegram account
+There's no shared token to guard — each Kaja user links their own Telegram account
 themselves, self-service, with no server restart needed per new user:
 
 1. Log into the Kaja web app and open your **Dashboard**.

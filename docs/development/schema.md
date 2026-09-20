@@ -212,12 +212,6 @@ erDiagram
   McpFile {
     McpServerEntry_array servers
   }
-  ServicesFile {
-    ServicesLocation location
-    ServicesWebSearch webSearch
-    ServicesTelegram telegram
-    ServicesApi api
-  }
 
   AbilitiesFile {
     string_array skills "enabled, by folder name"
@@ -340,7 +334,7 @@ These aren't type imports (each subpath stays decoupled per `packages/schema/AGE
 `bun generate:schemas` turns the `config`, `abilities` and `cli` schemas into the JSON Schemas under
 [`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas), which is
 what gives editors completion and validation for `settings.toml`, `models.toml`, `mcp.toml`,
-`services.toml`, `secrets.toml`, `abilities.toml`, and the marketplace manifests (personas, datasets, HTTP
+`secrets.toml`, `abilities.toml`, and the marketplace manifests (personas, datasets, HTTP
 tools and MCP abilities). The pre-commit hook regenerates them whenever those
 schemas change — never edit the JSON by hand.
 

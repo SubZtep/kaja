@@ -1,13 +1,21 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import OpenAI from "openai"
 
-/** Like {@link checkModelAvailability}, but says why it failed (e.g. "401 Incorrect API key", "Connection error."). */
-export async function probeModel(model: CliResolvedModel): Promise<{ ok: true } | { ok: false; error: string }> {
+/**
+ * Like {@link checkModelAvailability}, but says why it failed (e.g. "401 Incorrect API key",
+ * "Connection error."). `status` is the provider's HTTP status when there was one — absent for a
+ * connection that never landed, which is how callers tell a refused key from an unreachable server.
+ */
+export async function probeModel(
+  model: CliResolvedModel
+): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
   try {
     if (await checkModelAvailabilityOrThrow(model)) return { ok: true }
     return { ok: false, error: "not listed by the provider" }
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    // OpenAI's APIError carries the response status; APIConnectionError leaves it undefined.
+    const status = error instanceof OpenAI.APIError ? error.status : undefined
+    return { ok: false, error: error instanceof Error ? error.message : String(error), status }
   }
 }
 

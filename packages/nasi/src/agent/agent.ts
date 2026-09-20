@@ -2,7 +2,6 @@ import type { Dataset, Persona, SamplingParams } from "@kaja/schema/cli"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import type OpenAI from "openai"
 import type { NasiStore } from "../store/types"
-import type { GeoLocation } from "./geo"
 import { samplingOf } from "./persona"
 import { type Tool, tool } from "./tools"
 
@@ -14,8 +13,6 @@ export type PromptContext = {
   environment?: string
   /** Override the default ask_user tool contract, which assumes a terminal. Hosts with a chat UI should describe that instead. */
   askUserInstruction?: string
-  location?: GeoLocation
-  loadLocation?: () => Promise<GeoLocation | undefined>
   replyLanguageInstruction?: string
   loadStickyNotes?: () => Promise<[string, { content: string }][]>
   loadDataset?: (topic: string) => Promise<{ label: string } | undefined>
