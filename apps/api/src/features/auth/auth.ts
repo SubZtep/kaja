@@ -29,11 +29,32 @@ function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
   })
 }
 
+// Better Auth names its columns in camelCase; the database keeps snake_case like every other table, so each field is mapped here.
+const timestamps = { createdAt: "created_at", updatedAt: "updated_at" }
+
 const plugins: BetterAuthPlugin[] = [
   bearer(),
-  admin(),
+  admin({
+    schema: {
+      user: { fields: { banReason: "ban_reason", banExpires: "ban_expires" } },
+      session: { fields: { impersonatedBy: "impersonated_by" } }
+    }
+  }),
   deviceAuthorization({
-    schema: {},
+    schema: {
+      deviceCode: {
+        modelName: "device_code",
+        fields: {
+          deviceCode: "device_code",
+          userCode: "user_code",
+          userId: "user_id",
+          clientId: "client_id",
+          expiresAt: "expires_at",
+          lastPolledAt: "last_polled_at",
+          pollingInterval: "polling_interval"
+        }
+      }
+    },
     verificationUri: deviceVerificationUrl(),
     validateClient: clientId => clientId === KAJA_TUI_CLIENT_ID
   })
@@ -49,11 +70,7 @@ export const auth = betterAuth({
     cookiePrefix: "kaja",
     database: {
       generateId: () => Bun.randomUUIDv7(),
-      defaultFindManyLimit: 1000,
-      // Better Auth 1.7's schema-check crashes requests on the "deviceCode" table:
-      // its Postgres introspection passes the mixed-case name unquoted to
-      // pg_get_serial_sequence(), which folds it to "devicecode" and fails to resolve.
-      validateSchema: false
+      defaultFindManyLimit: 1000
     },
     ipAddress: {
       ipv6Subnet: 56
@@ -106,9 +123,7 @@ export const auth = betterAuth({
     ? {
         socialProviders: {
           google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
-        },
-        // Google verifies emails, so a Google sign-in links to the existing account with the same (verified) email
-        account: { accountLinking: { enabled: true, trustedProviders: ["google"] } }
+        }
       }
     : {}),
   emailAndPassword: {
@@ -129,7 +144,37 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 3600 * 24 // 1 day
   },
+  session: {
+    fields: {
+      expiresAt: "expires_at",
+      ipAddress: "ip_address",
+      userAgent: "user_agent",
+      userId: "user_id",
+      ...timestamps
+    }
+  },
+  account: {
+    fields: {
+      accountId: "account_id",
+      providerId: "provider_id",
+      userId: "user_id",
+      accessToken: "access_token",
+      refreshToken: "refresh_token",
+      idToken: "id_token",
+      accessTokenExpiresAt: "access_token_expires_at",
+      refreshTokenExpiresAt: "refresh_token_expires_at",
+      ...timestamps
+    },
+    // Google verifies emails, so a Google sign-in links to the existing account with the same (verified) email
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? { accountLinking: { enabled: true, trustedProviders: ["google"] } }
+      : {})
+  },
+  verification: {
+    fields: { expiresAt: "expires_at", ...timestamps }
+  },
   user: {
+    fields: { emailVerified: "email_verified", ...timestamps },
     changeEmail: {
       enabled: true,
       sendChangeEmailConfirmation: async ({ user, url, newEmail }) => {
