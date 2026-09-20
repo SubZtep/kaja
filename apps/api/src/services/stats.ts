@@ -41,10 +41,13 @@ export class StatsService {
       ),
       this.#db.query(
         `
-        SELECT COUNT(*)::int AS sessions,
-          (SELECT COUNT(*) FROM nasi_message m JOIN nasi_session s2 ON s2.id = m.session_id
-           WHERE m.role = 'user' AND s2.user_id = $1 AND s2.updated_at >= $2)::int AS messages
-        FROM nasi_session s WHERE ${ACTIVE}
+        SELECT (SELECT COUNT(*) FROM nasi_session s WHERE ${ACTIVE})::int AS sessions,
+          COUNT(*) FILTER (WHERE m.role = 'user')::int AS messages,
+          COALESCE(SUM(m.prompt_tokens), 0)::float8 AS prompt_tokens,
+          COALESCE(SUM(m.completion_tokens), 0)::float8 AS completion_tokens,
+          ROUND(AVG(m.latency_ms))::int AS avg_latency_ms
+        FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
+        WHERE ${ACTIVE}
         `,
         args
       ),
@@ -54,7 +57,8 @@ export class StatsService {
       ),
       this.#db.query(
         `
-        SELECT tc.name, COUNT(*)::int AS calls
+        SELECT tc.name, COUNT(*)::int AS calls, COUNT(*) FILTER (WHERE tc.status = 'error')::int AS errors,
+          ROUND(AVG(tc.duration_ms))::int AS avg_duration_ms
         FROM nasi_tool_call tc
         JOIN nasi_message m ON m.id = tc.message_id
         JOIN nasi_session s ON s.id = m.session_id
@@ -75,22 +79,38 @@ export class StatsService {
         args
       ),
       this.#db.query(
-        `SELECT s.persona, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${ACTIVE} GROUP BY 1 ORDER BY 2 DESC, 1`,
+        `
+        SELECT COALESCE(m.persona, 'default') AS persona, COUNT(*)::int AS replies, COUNT(DISTINCT m.session_id)::int AS sessions
+        FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
+        WHERE ${ACTIVE} AND m.role = 'assistant' AND m.model IS NOT NULL
+        GROUP BY 1 ORDER BY 2 DESC, 1
+        `,
         args
       ),
       this.#db.query(
-        `SELECT s.model, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${ACTIVE} GROUP BY 1 ORDER BY 2 DESC, 1`,
+        `
+        SELECT m.model, COUNT(*)::int AS replies, COUNT(DISTINCT m.session_id)::int AS sessions,
+          COALESCE(SUM(m.prompt_tokens), 0)::float8 AS prompt_tokens, COALESCE(SUM(m.completion_tokens), 0)::float8 AS completion_tokens
+        FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
+        WHERE ${ACTIVE} AND m.role = 'assistant' AND m.model IS NOT NULL
+        GROUP BY 1 ORDER BY 2 DESC, 1
+        `,
         args
       )
     ])
 
-    const tools = new Map<string, { name: string; calls: number; approved: number; declined: number }>()
+    const tools = new Map<UsageStatsResponse["tools"][number]["name"], UsageStatsResponse["tools"][number]>()
     const tool = (name: string) => {
-      const entry = tools.get(name) ?? { name, calls: 0, approved: 0, declined: 0 }
+      const entry = tools.get(name) ?? { name, calls: 0, approved: 0, declined: 0, errors: 0, avgDurationMs: null }
       tools.set(name, entry)
       return entry
     }
-    for (const row of calls.rows) tool(row.name).calls = row.calls
+    for (const row of calls.rows) {
+      const entry = tool(row.name)
+      entry.calls = row.calls
+      entry.errors = row.errors
+      entry.avgDurationMs = row.avg_duration_ms
+    }
     for (const row of approvals.rows) {
       const entry = tool(row.name)
       entry.approved = row.approved
@@ -103,13 +123,22 @@ export class StatsService {
       totals: {
         sessions: totals.rows[0]?.sessions ?? 0,
         messages: totals.rows[0]?.messages ?? 0,
-        toolCalls: ranked.reduce((sum, entry) => sum + entry.calls, 0)
+        toolCalls: ranked.reduce((sum, entry) => sum + entry.calls, 0),
+        promptTokens: totals.rows[0]?.prompt_tokens ?? 0,
+        completionTokens: totals.rows[0]?.completion_tokens ?? 0,
+        avgLatencyMs: totals.rows[0]?.avg_latency_ms ?? null
       },
       perDay: perDay.rows,
       channels: channels.rows.map(row => ({ channel: row.channel as StatsChannel, sessions: row.sessions })),
       tools: ranked.slice(0, MAX_TOOLS),
       personas: personas.rows,
-      models: models.rows
+      models: models.rows.map(row => ({
+        model: row.model,
+        replies: row.replies,
+        sessions: row.sessions,
+        promptTokens: row.prompt_tokens,
+        completionTokens: row.completion_tokens
+      }))
     }
   }
 }

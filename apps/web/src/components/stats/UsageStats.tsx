@@ -12,6 +12,24 @@ import { ValueBox } from "../ui/ValueBox"
 
 const RANGES = [7, 30, 90] as const
 
+const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
+
+/** 420 ms, or 1.3 s from a second up. */
+function formatDuration(ms: number): string {
+  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`
+}
+
+function toolNote(tool: UsageStatsResponse["tools"][number]): string | undefined {
+  const parts = [
+    tool.approved + tool.declined > 0
+      ? m.stats_tool_approvals({ approved: tool.approved, declined: tool.declined })
+      : "",
+    tool.errors > 0 ? m.stats_tool_errors({ errors: tool.errors }) : "",
+    tool.avgDurationMs !== null ? m.stats_tool_duration({ duration: formatDuration(tool.avgDurationMs) }) : ""
+  ].filter(Boolean)
+  return parts.length > 0 ? parts.join(" · ") : undefined
+}
+
 const CHANNEL_LABELS: Record<StatsChannel, () => string> = {
   web: () => m.stats_channel_web(),
   telegram: () => m.stats_channel_telegram(),
@@ -80,7 +98,7 @@ function BarList({
   )
 }
 
-/** Dashboard section: when the user talked, which tools ran, and which channels, personas and models were used. */
+/** Dashboard section: when the user talked, what it cost in tokens and time, how the tools did, and which channels, personas and models replied. */
 export function UsageStats() {
   const [days, setDays] = useState<(typeof RANGES)[number]>(30)
   const stats = useUsageStats(days)
@@ -118,6 +136,21 @@ export function UsageStats() {
               </ValueBox>
               <ValueBox label={m.stats_messages()}>{data.totals.messages}</ValueBox>
               <ValueBox label={m.stats_tool_calls()}>{data.totals.toolCalls}</ValueBox>
+              {data.totals.promptTokens + data.totals.completionTokens > 0 && (
+                <ValueBox label={m.stats_tokens()}>
+                  <span
+                    title={m.stats_tokens_detail({
+                      prompt: data.totals.promptTokens.toLocaleString(),
+                      completion: data.totals.completionTokens.toLocaleString()
+                    })}
+                  >
+                    {compact.format(data.totals.promptTokens + data.totals.completionTokens)}
+                  </span>
+                </ValueBox>
+              )}
+              {data.totals.avgLatencyMs !== null && (
+                <ValueBox label={m.stats_latency()}>{formatDuration(data.totals.avgLatencyMs)}</ValueBox>
+              )}
             </div>
 
             <Section title={m.stats_per_day_title()}>
@@ -136,10 +169,7 @@ export function UsageStats() {
                   key: tool.name,
                   label: tool.name,
                   value: tool.calls,
-                  note:
-                    tool.approved + tool.declined > 0
-                      ? m.stats_tool_approvals({ approved: tool.approved, declined: tool.declined })
-                      : undefined
+                  note: toolNote(tool)
                 }))}
               />
               <BarList
@@ -152,11 +182,24 @@ export function UsageStats() {
               />
               <BarList
                 title={m.stats_personas_title()}
-                rows={data.personas.map(row => ({ key: row.persona, label: row.persona, value: row.sessions }))}
+                rows={data.personas.map(row => ({
+                  key: row.persona,
+                  label: row.persona,
+                  value: row.replies,
+                  note: m.stats_persona_note({ sessions: row.sessions })
+                }))}
               />
               <BarList
                 title={m.stats_models_title()}
-                rows={data.models.map(row => ({ key: row.model, label: row.model, value: row.sessions }))}
+                rows={data.models.map(row => ({
+                  key: row.model,
+                  label: row.model,
+                  value: row.replies,
+                  note: m.stats_model_note({
+                    sessions: row.sessions,
+                    tokens: compact.format(row.promptTokens + row.completionTokens)
+                  })
+                }))}
               />
             </div>
           </div>

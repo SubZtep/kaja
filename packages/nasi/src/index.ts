@@ -5,6 +5,8 @@ export {
   ASK_USER_TOOL,
   applyPersona,
   askUserTool,
+  type CallStat,
+  type CallStatus,
   createSession,
   DATASET_INFO_TOOL,
   type FinalizedAgentEvent,
@@ -13,6 +15,8 @@ export {
   RUN_COMMAND_TOOL,
   runCommandTool,
   type Session,
+  type SessionTelemetry,
+  type StepStat,
   SWITCH_PERSONA_TOOL,
   switchPersonaTool
 } from "./agent/agent"

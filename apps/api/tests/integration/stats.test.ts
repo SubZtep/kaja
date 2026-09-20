@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
+import type { CallStat, StepStat } from "@kaja/nasi"
 import type { UsageStatsResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
@@ -25,7 +26,8 @@ async function seedSession(
     persona?: string
     model?: string
     messages?: unknown[]
-    calls?: Record<string, { status?: "ok" | "error" | "declined" | "skipped"; approval?: "approved" | "declined" }>
+    steps?: StepStat[]
+    calls?: Record<string, CallStat>
   }
 ) {
   const id = await createPostgresStore(pool, userId).createSession({
@@ -33,7 +35,7 @@ async function seedSession(
     model: opts.model ?? "model-a",
     owner: opts.owner ?? null,
     title: "seed",
-    session: { messages: opts.messages ?? [], telemetry: { steps: [], calls: opts.calls ?? {} } },
+    session: { messages: opts.messages ?? [], telemetry: { steps: opts.steps ?? [], calls: opts.calls ?? {} } },
     events: []
   })
   const at = new Date(Date.now() - opts.ageDays * DAY_MS)
@@ -70,8 +72,15 @@ describe("GET /stats", () => {
         },
         { role: "tool", tool_call_id: "call_w2", content: "User declined this request." }
       ],
+      // rows: user 0, assistant 1, tool 2, tool 3, user 4, assistant 5, tool 6
+      steps: [
+        { at: 1, persona: "care", model: "model-a", promptTokens: 100, completionTokens: 20, latencyMs: 400 },
+        { at: 5, persona: "care", model: "model-a", promptTokens: 50, completionTokens: 10, latencyMs: 200 }
+      ],
       calls: {
-        call_w1: { status: "ok", approval: "approved" },
+        call_read_thing: { status: "ok", durationMs: 100 },
+        call_read_2: { status: "error", durationMs: 300 },
+        call_w1: { status: "ok", approval: "approved", durationMs: 50 },
         call_w2: { status: "declined", approval: "declined" }
       }
     })
@@ -79,12 +88,20 @@ describe("GET /stats", () => {
       ageDays: 2,
       owner: "telegram:99",
       model: "model-b",
-      messages: [{ role: "user", content: "hello" }]
+      messages: [
+        { role: "user", content: "hello" },
+        { role: "assistant", content: "hey" }
+      ],
+      steps: [{ at: 1, persona: "default", model: "model-b", promptTokens: 30, completionTokens: 5, latencyMs: 100 }]
     })
     await seedSession(mine.userId, {
       ageDays: 2,
       owner: "widget:visitor",
-      messages: [{ role: "user", content: "hey" }]
+      messages: [
+        { role: "user", content: "hey" },
+        { role: "assistant", content: "hi" }
+      ],
+      steps: [{ at: 1, persona: "default", model: "model-a", promptTokens: 20, completionTokens: 5, latencyMs: 300 }]
     })
     // Older than the 7-day window used below.
     await seedSession(mine.userId, {
@@ -110,9 +127,27 @@ describe("GET /stats", () => {
     const { status, body } = await get(mine.token, "?days=7")
     expect(status).toBe(200)
     expect(body.days).toBe(7)
-    expect(body.totals).toEqual({ sessions: 3, messages: 4, toolCalls: 4 })
+    expect(body.totals).toEqual({
+      sessions: 3,
+      messages: 4,
+      toolCalls: 4,
+      promptTokens: 200,
+      completionTokens: 40,
+      avgLatencyMs: 250
+    })
     expect(body.tools.map(tool => tool.name)).toEqual(["read_thing", "write_thing"])
-    expect(body.tools[0]).toEqual({ name: "read_thing", calls: 2, approved: 0, declined: 0 })
+  })
+
+  test("says how each tool went: errors and the average time of the calls that were timed", async () => {
+    const { body } = await get(mine.token, "?days=7")
+    expect(body.tools[0]).toEqual({
+      name: "read_thing",
+      calls: 2,
+      approved: 0,
+      declined: 0,
+      errors: 1,
+      avgDurationMs: 200
+    })
   })
 
   test("pairs each approval with the tool it asked about", async () => {
@@ -121,7 +156,9 @@ describe("GET /stats", () => {
       name: "write_thing",
       calls: 2,
       approved: 1,
-      declined: 1
+      declined: 1,
+      errors: 0,
+      avgDurationMs: 50
     })
   })
 
@@ -134,18 +171,21 @@ describe("GET /stats", () => {
     expect(body.perDay.at(-1)?.started).toBeGreaterThanOrEqual(1)
   })
 
-  test("splits sessions by channel, persona and model", async () => {
+  test("splits sessions by channel, and replies by persona and model", async () => {
     const { body } = await get(mine.token, "?days=7")
     expect(Object.fromEntries(body.channels.map(row => [row.channel, row.sessions]))).toEqual({
       web: 1,
       telegram: 1,
       widget: 1
     })
-    expect(Object.fromEntries(body.personas.map(row => [row.persona, row.sessions]))).toEqual({ care: 1, default: 2 })
-    expect(Object.fromEntries(body.models.map(row => [row.model, row.sessions]))).toEqual({
-      "model-a": 2,
-      "model-b": 1
-    })
+    expect(body.personas).toEqual([
+      { persona: "care", replies: 2, sessions: 1 },
+      { persona: "default", replies: 2, sessions: 2 }
+    ])
+    expect(body.models).toEqual([
+      { model: "model-a", replies: 3, sessions: 2, promptTokens: 170, completionTokens: 35 },
+      { model: "model-b", replies: 1, sessions: 1, promptTokens: 30, completionTokens: 5 }
+    ])
   })
 
   test("a longer window brings older sessions in", async () => {
@@ -156,7 +196,14 @@ describe("GET /stats", () => {
 
   test("never shows another user's sessions or tools", async () => {
     const { body } = await get(other.token, "?days=30")
-    expect(body.totals).toEqual({ sessions: 1, messages: 0, toolCalls: 1 })
+    expect(body.totals).toEqual({
+      sessions: 1,
+      messages: 0,
+      toolCalls: 1,
+      promptTokens: 0,
+      completionTokens: 0,
+      avgLatencyMs: null
+    })
     expect(body.tools.map(tool => tool.name)).toEqual(["their_tool"])
     const { body: mineBody } = await get(mine.token, "?days=30")
     expect(mineBody.tools.map(tool => tool.name)).not.toContain("their_tool")
