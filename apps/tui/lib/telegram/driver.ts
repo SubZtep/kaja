@@ -45,7 +45,7 @@ function abilitiesMessage(tools: Tool<any>[], personas: Persona[]): string {
   const loaded = loadedAbilities(tools)
   // default always loads, so like `kaja abilities` it isn't listed as an ability.
   const picked = personas.map(p => p.id).filter(id => id !== DEFAULT_PERSONA_ID)
-  const names = (list: string[]) => list.map(escapeHtml).join(", ")
+  const names = (list: string[]) => list.map(name => escapeHtml(name)).join(", ")
   return [
     `<b>${t("telegram.abilitiesTitle")}</b>`,
     ...(loaded.skills.length > 0 ? [t("telegram.abilitiesSkills", { names: names(loaded.skills) })] : []),
