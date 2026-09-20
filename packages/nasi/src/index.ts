@@ -104,7 +104,6 @@ export {
   clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
-  type DatasetVersionSummary,
   forgetNotes,
   joinConversation,
   type MessageRow,

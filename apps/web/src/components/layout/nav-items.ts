@@ -131,7 +131,7 @@ export const getHeaderItems = (role: string | null | undefined) =>
 /** Every "admin" section item defines `to`, `description`, and `icon`. */
 export type AdminNavItem = NavItem & { to: string; description: string; icon: LucideIcon }
 
-export const getNavItems = (role: string | null | undefined) =>
+const getNavItems = (role: string | null | undefined) =>
   (getItems("admin", role) as AdminNavItem[]).map(item => ({
     ...item,
     label: LABEL_OVERRIDES[item.to]?.() ?? item.label,

@@ -1,6 +1,6 @@
 import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
-import type { DatasetAnswer, DatasetVersionSummary, NasiStore, SessionWrite } from "./types"
+import type { DatasetAnswer, NasiStore, SessionWrite } from "./types"
 
 function ownerKey(owner: string | null): string {
   return owner ?? ""
@@ -142,37 +142,6 @@ export function createMemoryStore(): NasiStore {
 
     async loadDatasetVersionCompletedAt(topic, owner, version) {
       return versions.get(datasetKey(topic, owner, version))?.completedAt
-    },
-
-    async listDatasetVersionsSummary(): Promise<DatasetVersionSummary[]> {
-      const grouped = new Map<string, DatasetVersionSummary>()
-      for (const row of answers.values()) {
-        const key = datasetKey(row.topic, row.owner, row.version)
-        const current = grouped.get(key)
-        if (current) current.answeredCount++
-        else
-          grouped.set(key, {
-            topic: row.topic,
-            owner: row.owner,
-            version: row.version,
-            answeredCount: 1,
-            completedAt: versions.get(key)?.completedAt
-          })
-      }
-      return [...grouped.values()].toSorted(
-        (a, b) =>
-          a.topic.localeCompare(b.topic) || ownerKey(a.owner).localeCompare(ownerKey(b.owner)) || a.version - b.version
-      )
-    },
-
-    async listAllDatasetAnswers() {
-      return [...answers.values()].toSorted(
-        (a, b) =>
-          a.topic.localeCompare(b.topic) ||
-          ownerKey(a.owner).localeCompare(ownerKey(b.owner)) ||
-          a.version - b.version ||
-          a.answeredAt.localeCompare(b.answeredAt)
-      )
     }
   }
 }

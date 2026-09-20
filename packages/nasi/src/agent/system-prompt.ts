@@ -36,7 +36,7 @@ function osName() {
 }
 
 /** Grounds the model in the host OS and home directory. Cloud hosts should override via PromptContext.environment. */
-export function defaultEnvironmentInstructions() {
+function defaultEnvironmentInstructions() {
   return `You are running on ${osName()}. Use ${process.platform === "win32" ? "backslash" : "forward-slash"} paths accordingly. The user's home directory is ${homedir()}.`
 }
 

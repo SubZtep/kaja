@@ -297,7 +297,7 @@ export function cursorCellOffset(opts: {
 }
 
 /** Paint one visual line with optional inverse cursor (chalk, one string). */
-export function paintLineWithCursor(
+function paintLineWithCursor(
   line: VisualLine,
   isLastLine: boolean,
   cursorOffset: number,

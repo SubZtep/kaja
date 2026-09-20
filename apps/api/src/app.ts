@@ -67,10 +67,3 @@ if (env.NODE_ENV === "development") {
   setupApiDocs(app)
   app.route("/reference", referenceRoutes)
 }
-
-// Run server
-export default {
-  port: env.PORT,
-  idleTimeout: 30,
-  fetch: app.fetch
-}

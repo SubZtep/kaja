@@ -50,7 +50,7 @@ export function isDeviceAttributesReply(input: string): boolean {
  * or `[8;40;120t` (char size). Sent in response to a `\x1b[14t` / `\x1b[18t`
  * style query.
  */
-export function isWindowReport(input: string): boolean {
+function isWindowReport(input: string): boolean {
   if (!input) return false
   const s = stripEsc(input)
   return /^\[\d+(;\d+){0,2}t$/.test(s)
@@ -62,7 +62,7 @@ export function isWindowReport(input: string): boolean {
  * `\x1b[?0u`. Any comma-separated byte list starting with 27 (ESC) is noise,
  * not something a human typed.
  */
-export function isEscapeByteList(input: string): boolean {
+function isEscapeByteList(input: string): boolean {
   if (!input) return false
   const parts = input.split(",")
   if (parts.length < 2) return false

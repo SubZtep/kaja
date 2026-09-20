@@ -3,7 +3,7 @@ import type { AuthSessionUser, RouteVariables } from "../../types"
 import { auth } from "./auth"
 
 /** Better Auth may store multi-roles as a comma-separated string. */
-export function userHasRole(user: Pick<AuthSessionUser, "role">, role: string): boolean {
+function userHasRole(user: Pick<AuthSessionUser, "role">, role: string): boolean {
   if (!user.role) return false
   return user.role
     .split(",")

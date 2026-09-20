@@ -5,9 +5,7 @@ import { TextAreaField } from "../components/form/TextAreaField"
 import { TextField } from "../components/form/TextField"
 import { fieldContext, formContext } from "./form-contexts"
 
-export { useFieldContext } from "./form-contexts"
-
-export const { useAppForm, withForm } = createFormHook({
+export const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
   fieldComponents: {

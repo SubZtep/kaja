@@ -60,12 +60,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** Determines the boolean value represented by a string. */
-export function isItTrue(value = "") {
-  const normalized = value.trim().toLowerCase()
-  return normalized === "true" || normalized === "1" || normalized === "on" || normalized.startsWith("y")
-}
-
 const PRIVATE_HOSTNAMES = new Set(["localhost", "0.0.0.0", "[::1]", "::1"])
 
 /** IPv4 ranges not safe to forward to: loopback, link-local (incl. cloud metadata), CGNAT, RFC1918. */

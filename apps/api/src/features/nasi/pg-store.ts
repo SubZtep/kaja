@@ -15,9 +15,6 @@ import type { Pool, PoolClient } from "pg"
 function ownerKey(owner: string | null): string {
   return owner ?? ""
 }
-function ownerOf(key: string): string | null {
-  return key === "" ? null : key
-}
 
 function iso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value
@@ -352,44 +349,6 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
         [userId, topic, ownerKey(owner), version]
       )
       return result.rows[0]?.completed_at as string | undefined
-    },
-
-    async listDatasetVersionsSummary() {
-      const result = await db.query(
-        `SELECT a.topic AS topic, a.owner AS owner, a.version AS version,
-                COUNT(*)::int AS "answeredCount", v.completed_at AS "completedAt"
-         FROM nasi_dataset_answer a
-         LEFT JOIN nasi_dataset_version v
-           ON v.user_id = a.user_id AND v.topic = a.topic AND v.owner = a.owner AND v.version = a.version
-         WHERE a.user_id = $1
-         GROUP BY a.topic, a.owner, a.version, v.completed_at
-         ORDER BY a.topic ASC, a.owner ASC, a.version ASC`,
-        [userId]
-      )
-      return result.rows.map(row => ({
-        topic: row.topic,
-        owner: ownerOf(row.owner),
-        version: row.version,
-        answeredCount: row.answeredCount,
-        completedAt: row.completedAt ?? undefined
-      }))
-    },
-
-    async listAllDatasetAnswers() {
-      const result = await db.query(
-        `SELECT topic, owner, version, field, value, answered_at AS "answeredAt"
-         FROM nasi_dataset_answer WHERE user_id = $1
-         ORDER BY topic ASC, owner ASC, version ASC, answered_at ASC`,
-        [userId]
-      )
-      return result.rows.map(row => ({
-        topic: row.topic,
-        owner: ownerOf(row.owner),
-        version: row.version,
-        field: row.field,
-        value: row.value,
-        answeredAt: row.answeredAt
-      }))
     }
   }
 }

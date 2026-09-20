@@ -53,7 +53,7 @@ const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
 const KEY_PREFIX = "package:"
 
 /** Where a package's API key lives in `user_secret`. */
-export function packageSecretName(name: string): string {
+function packageSecretName(name: string): string {
   return `${KEY_PREFIX}${name}`
 }
 

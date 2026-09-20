@@ -5,7 +5,7 @@ Pure shared utilities with no I/O and no app-specific business logic.
 ## Layout
 
 ```
-index.ts               # getTimeAgo, getDateTime, getFirstName, capitalized, cn, isItTrue,
+index.ts               # getTimeAgo, getDateTime, getFirstName, capitalized, cn,
                         # isPublicHttpUrl, randomUUIDv7, titleCase — re-exports telegram-markdown.ts, locale.ts
 telegram-markdown.ts    # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT
 locale.ts               # locales, Locale, LOCALE_LABELS — supported UI locale codes and display names
@@ -15,7 +15,6 @@ locale.ts               # locales, Locale, LOCALE_LABELS — supported UI locale
 
 - **`cn(...inputs)`** — `clsx` + `tailwind-merge` for class names (web UI)
 - **`getTimeAgo` / `getDateTime`** — locale-aware formatting via `Intl`
-- **`isItTrue`** — loose boolean parse from strings (`true`/`1`/`on`/`y…`)
 - **`isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT hosts
 - **`randomUUIDv7`** — time-ordered UUIDv7 generator
 - **`titleCase`** — hyphen/underscore/space-separated label to Title Case

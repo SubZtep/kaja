@@ -16,7 +16,3 @@ export const pool = new Pool({
 pool.on("error", err => {
   error("Database error", { error: err })
 })
-
-export const db = {
-  query: async (text: string, params: unknown[]) => pool.query(text, params)
-}

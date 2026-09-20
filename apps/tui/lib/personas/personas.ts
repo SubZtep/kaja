@@ -7,7 +7,6 @@ import { TOML } from "bun"
 import DEFAULT_TEMPLATE from "../../../../marketplace/personas/default.toml" with { type: "text" }
 import { getMarketplaceDir, loadPackagesFile } from "../packages/packages-file"
 
-export { samplingOf } from "@kaja/nasi"
 export type { Persona }
 
 /** The persona that always loads, whether or not packages.toml lists it. */

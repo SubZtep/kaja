@@ -6,8 +6,6 @@ import { log } from "../logger"
 import { getPaths } from "../paths"
 import { createSqliteStore } from "../store/sqlite"
 
-export { type DatasetAnswer, forgetNotes, noteHeader } from "@kaja/nasi"
-
 export function getDefaultMemoryDbPath() {
   return join(getPaths().data, "memory.sqlite")
 }
@@ -59,14 +57,6 @@ export async function saveMemory(...args: Parameters<NasiStore["saveMemory"]>) {
 
 export async function latestDatasetVersion(...args: Parameters<NasiStore["latestDatasetVersion"]>) {
   return (await getStore()).latestDatasetVersion(...args)
-}
-
-export async function listAllDatasetAnswers() {
-  return (await getStore()).listAllDatasetAnswers()
-}
-
-export async function listDatasetVersionsSummary() {
-  return (await getStore()).listDatasetVersionsSummary()
 }
 
 export async function loadDatasetAnswers(...args: Parameters<NasiStore["loadDatasetAnswers"]>) {

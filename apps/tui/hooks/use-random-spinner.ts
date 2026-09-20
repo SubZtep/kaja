@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-export const DOTS_SPINNERS = [
+const DOTS_SPINNERS = [
   "dots",
   "dots2",
   "dots3",
@@ -28,14 +28,7 @@ export const DOTS_SPINNERS = [
   "layer"
 ] as const
 
-export const BLOCK_SPINNERS = [
-  "growVertical",
-  "growHorizontal",
-  "noise",
-  "boxBounce",
-  "boxBounce2",
-  "triangle"
-] as const
+const BLOCK_SPINNERS = ["growVertical", "growHorizontal", "noise", "boxBounce", "boxBounce2", "triangle"] as const
 
 /** Block-families are a list of [cli-spinners](https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json)'s SpinnerName. */
 const SPINNER_TEMPLATES = {

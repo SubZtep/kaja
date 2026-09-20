@@ -3,7 +3,7 @@ import { createAuthClientWithUrl } from "../lib/auth"
 
 let authClient: ReturnType<typeof createAuthClientWithUrl> | null = null
 
-export function getAuthClient(apiUrl: string) {
+function getAuthClient(apiUrl: string) {
   if (!authClient) {
     authClient = createAuthClientWithUrl(apiUrl)
   }

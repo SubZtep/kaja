@@ -24,7 +24,7 @@ function nameHash(name: string): string {
 }
 
 /** Where keys are added and packages read in full. */
-export function packagesWebUrl(tab?: "tools"): string {
+function packagesWebUrl(tab?: "tools"): string {
   const base = trimTrailingSlashes(env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN)
   const query = tab ? `?tab=${tab}` : ""
   return `${base}/packages${query}`

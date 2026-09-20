@@ -30,7 +30,7 @@ export function pathForBundleKey(key: string): string {
   return join(getConfigDir(), key)
 }
 
-export function matchesOnly(key: string, only: string | undefined): boolean {
+function matchesOnly(key: string, only: string | undefined): boolean {
   if (!only) return true
   if (only === "models") return key === "models.toml"
   if (only === "mcp") return key === "mcp.toml"

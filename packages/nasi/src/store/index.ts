@@ -12,4 +12,4 @@ export {
   splitConversation,
   type ToolCallRow
 } from "./rows"
-export type { DatasetAnswer, DatasetVersionSummary, NasiStore, SessionWrite } from "./types"
+export type { DatasetAnswer, NasiStore, SessionWrite } from "./types"
