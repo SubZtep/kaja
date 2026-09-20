@@ -4,7 +4,7 @@ import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { useUser } from "../../../hooks/user"
 import { getInstallCmd } from "../../../lib/vars"
 import { m } from "../../../paraglide/messages.js"
-import { GoogleSoonButton } from "./google-soon-button"
+import { GoogleButton } from "./google-button"
 import { Sticker } from "./sticker"
 import { TelegramConnectCta, TelegramPromo } from "./telegram-connect-cta"
 
@@ -93,7 +93,7 @@ export function Hero() {
 
         {user ? null : (
           <div className="mt-8 max-w-md flex flex-col gap-4">
-            <GoogleSoonButton />
+            <GoogleButton />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-crt text-base">
               <Link to="/signin" className="text-fg hover:text-neon">
                 {m.nav_sign_in()}

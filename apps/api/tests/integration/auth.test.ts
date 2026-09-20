@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
+import { env } from "../../src/core/env"
 
 describe("authentication flow", () => {
   const firstName = faker.person.firstName()
@@ -49,5 +50,24 @@ describe("authentication flow", () => {
       })
       expect(res.status).toBe(200)
     })
+  })
+
+  describe("google sign-in", () => {
+    test.skipIf(!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET)(
+      "returns the Google authorization url",
+      async () => {
+        const res = await app.request("/auth/sign-in/social", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Origin: env.CORS_ORIGIN },
+          body: JSON.stringify({ provider: "google", callbackURL: new URL("/dashboard", env.CORS_ORIGIN).toString() })
+        })
+        expect(res.status).toBe(200)
+        const { url } = (await res.json()) as { url: string }
+        const authUrl = new URL(url)
+        expect(authUrl.origin).toBe("https://accounts.google.com")
+        expect(authUrl.searchParams.get("client_id")).toBe(env.GOOGLE_CLIENT_ID as string)
+        expect(authUrl.searchParams.get("redirect_uri")).toEndWith("/auth/callback/google")
+      }
+    )
   })
 })
