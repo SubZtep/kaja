@@ -68,14 +68,14 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     const token = ctx.match
     if (!token) {
       await ctx.reply(
-        'Hi! To use this bot, connect your Kaja account first — go to your profile on the Kaja web app and tap "Connect Telegram" to get a link.'
+        'Hi! To use this bot, connect your Kaja account first — go to your dashboard on the Kaja web app and tap "Get Telegram link".'
       )
       return
     }
 
     const pending = await telegramLinkService.peekLinkToken(token)
     if (!pending) {
-      await ctx.reply("That link has expired or was already used. Generate a new one from your Kaja profile.")
+      await ctx.reply("That link has expired or was already used. Generate a new one from your Kaja dashboard.")
       return
     }
 

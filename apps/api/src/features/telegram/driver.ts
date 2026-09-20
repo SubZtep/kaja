@@ -32,8 +32,8 @@ import {
 } from "./abilities"
 
 const NOT_LINKED_MESSAGE =
-  "This Telegram account isn't linked to a Kaja account yet. Go to your profile on the Kaja web app and tap " +
-  '"Connect Telegram" to get a link.'
+  "This Telegram account isn't linked to a Kaja account yet. Go to your dashboard on the Kaja web app and tap " +
+  '"Get Telegram link".'
 
 const APPROVAL_EXPIRED_MESSAGE = "This request was already answered or has expired."
 const TOOL_CALLBACK = /^tool:(approve|decline):([0-9a-f]{16})$/
