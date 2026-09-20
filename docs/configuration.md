@@ -36,10 +36,11 @@ from that, backing up anything you'd changed; with no network (or `--offline`), 
 the same bundled templates as first run. It also resets `secrets.toml` to the commented-out template,
 keeping your old one as a `.bak`. `kaja config diff` shows what a fetch would change
 without writing anything, and `kaja config wizard` re-runs the setup wizard at any time (language,
-mode, provider, server address, abilities), each step opening on what you already have; it
+mode, provider, server address), each step opening on what you already have; it
 finishes by asking for and testing any keys your config needs, the same pass `kaja doctor` runs.
-The abilities step can enable the recommended set — everything needing no key, minus MCP servers
-that run a command locally — and only ever adds to what you already had enabled. A final step
+The wizard doesn't ask about abilities: a machine with none yet gets the recommended set — everything
+needing no key, minus MCP servers that run a command locally — turned on for it, and one that already
+has some is left exactly as it is. `kaja abilities` is where you choose among the rest. A final step
 offers web search, voice and a Telegram bot, all unticked, so pressing Enter skips them. If your
 model server is Ollama and hasn't got the models your `models.toml` names, the wizard offers to
 download them — one question for all of them, not one per model — before it tests anything. `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched

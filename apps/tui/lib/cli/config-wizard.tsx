@@ -1,7 +1,7 @@
 import { file, TOML } from "bun"
 import { render } from "ink"
 import type { PickerSelection } from "../../components/ability-picker"
-import type { WizardAbilities, WizardExtra, WizardProvider, WizardResult } from "../../components/config-wizard"
+import type { WizardExtra, WizardProvider, WizardResult } from "../../components/config-wizard"
 import { pathForBundleKey } from "../config/cli"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import { writeTemplateConfig } from "../config/fetch"
@@ -43,44 +43,29 @@ async function applyResult(result: WizardResult) {
 }
 
 /**
- * Applies the abilities choice, after the config files exist. "starter" adds the keyless set to
- * whatever is already on, never removing the user's own picks; "pick" opens the same checklist
- * `kaja abilities` uses, and cancelling it leaves abilities.toml alone. Runs before the credential
- * pass so any key the newly enabled abilities need is asked for in the same breath.
+ * Turns on the abilities that need no key, after the config files exist. The wizard doesn't ask:
+ * there is nothing to weigh up, since none of them can cost anything or reach anything on this
+ * machine — `starterSelection` leaves out stdio MCP servers and anything needing a key. Choosing
+ * among the rest is what `kaja abilities` is for.
+ *
+ * A machine with abilities already on is left untouched: its list is the user's own, and silently
+ * re-adding what they turned off would be the one thing this can get wrong. Runs before the
+ * credential pass so an optional key any of them can use is offered in the same breath.
  */
-async function applyAbilities(choice: WizardAbilities, print: (line: string) => void) {
-  if (choice === "none") return
+async function applyStarterAbilities(print: (line: string) => void) {
+  const total = (s: PickerSelection) => s.skills.length + s.personas.length + s.tools.length + s.mcp.length
 
   const { getAbilitiesPath, getMarketplaceDir, loadAbilitiesFile, saveAbilitiesFile } = await import(
     "../abilities/abilities-file"
   )
-  const {
-    allItems,
-    confirmStdioServers,
-    ensureMarketplace,
-    mergeSelection,
-    pickAbilities,
-    scanMarketplace,
-    starterSelection
-  } = await import("../abilities/picker")
+  if (total(await loadAbilitiesFile()) > 0) return
 
+  const { ensureMarketplace, scanMarketplace, starterSelection } = await import("../abilities/picker")
   await ensureMarketplace(print)
-  const scan = await scanMarketplace(getMarketplaceDir())
-  const enabled = await loadAbilitiesFile()
-
-  let selection: PickerSelection
-  if (choice === "starter") {
-    selection = mergeSelection(enabled, starterSelection(scan))
-  } else {
-    const picked = await pickAbilities(allItems(scan), enabled)
-    if (!picked) return
-    // Only the checklist can reach a stdio server; the starter set never contains one.
-    selection = { ...picked, mcp: await confirmStdioServers(picked.mcp, scan.mcpScan, enabled.mcp) }
-  }
+  const selection = starterSelection(await scanMarketplace(getMarketplaceDir()))
 
   await saveAbilitiesFile(selection)
-  const count = selection.skills.length + selection.personas.length + selection.tools.length + selection.mcp.length
-  print(t("ability.saved", { path: getAbilitiesPath(), count }))
+  print(t("ability.saved", { path: getAbilitiesPath(), count: total(selection) }))
 }
 
 /** Speaches serves both speech-to-text and text-to-speech, so one URL configures voice in and out. */
@@ -234,18 +219,12 @@ async function currentModels(): Promise<{ provider?: WizardProvider; baseUrl?: s
 async function readPrefill(): Promise<WizardResult> {
   const config = await readConfigLoose()
   const { provider, baseUrl } = await currentModels()
-  const { loadAbilitiesFile } = await import("../abilities/abilities-file")
-  const enabled = await loadAbilitiesFile()
-  const hasAbilities = enabled.skills.length + enabled.personas.length + enabled.tools.length + enabled.mcp.length > 0
 
   return {
     mode: config.preferences?.mode,
     language: config.preferences?.locale,
     provider,
-    baseUrl,
-    // Someone who has already curated their abilities shouldn't have the starter set added by
-    // holding Enter; a machine with none gets offered it.
-    abilities: hasAbilities ? "none" : "starter"
+    baseUrl
   }
 }
 
@@ -290,11 +269,11 @@ export async function runConfigWizard({
   await applyResult(result)
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
-  if (result.abilities) await applyAbilities(result.abilities, line => console.log(line))
+  await applyStarterAbilities(line => console.log(line))
   const extra = await applyExtras(result.extras ?? [], line => console.log(line))
   await offerModelDownloads(line => console.log(line))
 
-  // Reads the config that applyResult, applyAbilities and applyExtras just wrote, then asks for and
+  // Reads the config that applyResult, applyStarterAbilities and applyExtras just wrote, then asks for and
   // tests every key it needs — the provider's included, which is why no step above collects one.
   const { isUnresolved, runCredentialPass } = await import("../doctor/credentials")
   const outcomes = await runCredentialPass(line => console.log(line), t("wizard.checking"), extra)

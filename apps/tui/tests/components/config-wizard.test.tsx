@@ -63,9 +63,8 @@ test("Ollama is asked where its server listens, Fireworks is not", async () => {
   await fireworks.t.press(ENTER) // language: English
   await fireworks.t.press(ENTER) // provider: Fireworks (first option)
   // Straight past the address step — Fireworks is a hosted API, not a server on this machine.
-  expect(fireworks.t.lastFrame()).toContain("abilities")
+  expect(fireworks.t.lastFrame()).toContain("Anything else?")
 
-  await fireworks.t.press(ENTER) // abilities
   await fireworks.t.press(ENTER) // extras: nothing ticked
   await fireworks.t.press(ENTER) // summary
   expect(fireworks.result).toMatchObject({ mode: "local", provider: "fireworks" })
@@ -82,7 +81,6 @@ test("Ollama is asked where its server listens, Fireworks is not", async () => {
 
   // Submitting the prefilled default keeps it, rather than storing an empty URL.
   await ollama.t.press(ENTER)
-  await ollama.t.press(ENTER) // abilities
   await ollama.t.press(ENTER) // extras: nothing ticked
   await ollama.t.press(ENTER) // summary
   expect(ollama.result).toMatchObject({ mode: "local", provider: "ollama", baseUrl: "http://localhost:11434/v1" })
@@ -118,7 +116,6 @@ test("each step opens on the prefilled value", async () => {
   expect(w.t.lastFrame()).toContain("box.local:9090")
 
   await w.t.press(ENTER) // keeps that address
-  await w.t.press(ENTER) // abilities
   await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // summary
   expect(w.result).toMatchObject(prefill)
@@ -132,8 +129,7 @@ test("Skip picks no provider template", async () => {
   await w.t.tick()
   await w.t.press(ENTER) // language: English
   for (let i = 0; i < 4; i++) await w.t.press(DOWN) // Fireworks → Ollama → llama.cpp → fetch → Skip
-  await w.t.press(ENTER) // Skip needs no address, so this lands on abilities
-  await w.t.press(ENTER) // abilities
+  await w.t.press(ENTER) // Skip needs no address, so this lands on extras
   await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // summary
 
@@ -143,53 +139,36 @@ test("Skip picks no provider template", async () => {
   await w.t.waitUntilExit()
 })
 
-test("local setups are asked about abilities, cloud ones are not", async () => {
+test("local setups are asked about extras, cloud ones are not", async () => {
   const local = renderWizard({ mode: "local" })
   await local.t.tick()
   await local.t.press(ENTER) // language: English
   await local.t.press(ENTER) // provider: Fireworks (no address step)
-  expect(local.t.lastFrame()).toContain("abilities")
+  expect(local.t.lastFrame()).toContain("Anything else?")
 
-  await local.t.press(ENTER) // keeps the preselected recommended set
   await local.t.press(ENTER) // extras: nothing ticked
   await local.t.press(ENTER) // summary
-  expect(local.result).toMatchObject({ provider: "fireworks", abilities: "starter" })
+  expect(local.result).toMatchObject({ provider: "fireworks" })
   local.t.unmount()
   await local.t.waitUntilExit()
 
-  // Cloud abilities live in the account and are picked on the web, so the step never shows.
+  // Every extra is a local-agent feature, so the step never shows for cloud.
   const cloud = renderWizard({ mode: "cloud" })
   await cloud.t.tick()
   await cloud.t.press(ENTER) // language: English
   expect(cloud.t.lastFrame()).toContain("Setup complete")
 
   await cloud.t.press(ENTER)
-  expect(cloud.result?.abilities).toBeUndefined()
+  expect(cloud.result?.extras).toBeUndefined()
   cloud.t.unmount()
   await cloud.t.waitUntilExit()
 })
 
-test('an already-curated machine opens the abilities step on "Not now"', async () => {
-  const w = renderWizard({ mode: "local", prefill: { abilities: "none" } })
-  await w.t.tick()
-  await w.t.press(ENTER) // language
-  await w.t.press(ENTER) // provider: Fireworks
-  await w.t.press(ENTER) // abilities: keeps "Not now" rather than adding the starter set
-  await w.t.press(ENTER) // extras: nothing ticked
-  await w.t.press(ENTER) // summary
-
-  expect(w.result).toMatchObject({ abilities: "none" })
-
-  w.t.unmount()
-  await w.t.waitUntilExit()
-})
-
 test("the extras step starts with nothing ticked, so Enter skips it", async () => {
-  const w = renderWizard({ mode: "local", prefill: { abilities: "none" } })
+  const w = renderWizard({ mode: "local" })
   await w.t.tick()
   await w.t.press(ENTER) // language
   await w.t.press(ENTER) // provider: Fireworks
-  await w.t.press(ENTER) // abilities
   expect(w.t.lastFrame()).toContain("Anything else?")
 
   await w.t.press(ENTER) // nothing ticked
@@ -201,11 +180,10 @@ test("the extras step starts with nothing ticked, so Enter skips it", async () =
 })
 
 test("ticking an extra records it", async () => {
-  const w = renderWizard({ mode: "local", prefill: { abilities: "none" } })
+  const w = renderWizard({ mode: "local" })
   await w.t.tick()
   await w.t.press(ENTER) // language
   await w.t.press(ENTER) // provider: Fireworks
-  await w.t.press(ENTER) // abilities
   await w.t.press(" ") // tick the first extra, web search
   await w.t.press(ENTER)
   await w.t.press(ENTER) // summary

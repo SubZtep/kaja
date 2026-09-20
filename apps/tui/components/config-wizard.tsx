@@ -10,9 +10,6 @@ import { SelectMenu } from "./elem/select-menu"
 
 export type WizardProvider = "fireworks" | "ollama" | "llama" | "fetch" | "skip"
 
-/** What to do about abilities; the marketplace work itself happens after the wizard, not in it. */
-export type WizardAbilities = "starter" | "pick" | "none"
-
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "webSearch" | "voice" | "telegram"
 
@@ -30,21 +27,12 @@ export type WizardResult = {
   provider?: WizardProvider
   /** Where a local provider's server listens; only collected for the ones that run on this machine. */
   baseUrl?: string
-  abilities?: WizardAbilities
   extras?: WizardExtra[]
 }
 
-type Step = "mode" | "language" | "provider" | "baseUrl" | "abilities" | "extras" | "summary"
+type Step = "mode" | "language" | "provider" | "baseUrl" | "extras" | "summary"
 
-const STEP_ORDER: Step[] = ["language", "mode", "provider", "baseUrl", "abilities", "extras", "summary"]
-
-const ABILITY_CHOICES: WizardAbilities[] = ["starter", "pick", "none"]
-
-const ABILITY_LABEL_KEY: Record<WizardAbilities, string> = {
-  starter: "wizard.abilitiesStarter",
-  pick: "wizard.abilitiesPick",
-  none: "wizard.abilitiesNone"
-}
+const STEP_ORDER: Step[] = ["language", "mode", "provider", "baseUrl", "extras", "summary"]
 
 /** Providers that are a server on this machine: their setup question is an address, not a key. */
 export const LOCAL_PROVIDER_URLS: Partial<Record<WizardProvider, string>> = {
@@ -79,8 +67,6 @@ function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode):
     if (candidate === "mode" && forcedMode) continue
     if (candidate === "provider" && result.mode === "cloud") continue
     if (candidate === "baseUrl" && (result.mode === "cloud" || !LOCAL_PROVIDER_URLS[result.provider!])) continue
-    // Cloud abilities live in the account and are picked on the web, not in files this client reads.
-    if (candidate === "abilities" && result.mode === "cloud") continue
     // Every extra is a local-agent feature: the Telegram bot, voice, and the web_search tool.
     if (candidate === "extras" && result.mode === "cloud") continue
     return candidate
@@ -202,21 +188,6 @@ export function ConfigWizard({
     )
   }
 
-  if (step === "abilities") {
-    return (
-      <Box flexDirection="column" gap={1}>
-        <Text>{t("wizard.abilitiesTitle")}</Text>
-        <SelectMenu
-          items={ABILITY_CHOICES.map(choice => t(ABILITY_LABEL_KEY[choice]))}
-          width={70}
-          initialIndex={Math.max(0, ABILITY_CHOICES.indexOf(result.abilities ?? "starter"))}
-          onSelect={index => advance({ abilities: ABILITY_CHOICES[index] })}
-          onClose={onCancel}
-        />
-      </Box>
-    )
-  }
-
   if (step === "extras") {
     return (
       <Box flexDirection="column" gap={1}>
@@ -251,10 +222,6 @@ export function ConfigWizard({
           value={result.provider ? t(PROVIDER_LABEL_KEY[result.provider]) : undefined}
         />
         <SummaryRow label={t("wizard.summaryBaseUrl")} value={result.baseUrl} />
-        <SummaryRow
-          label={t("wizard.summaryAbilities")}
-          value={result.abilities ? t(ABILITY_LABEL_KEY[result.abilities]) : undefined}
-        />
         <SummaryRow
           label={t("wizard.summaryExtras")}
           value={result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined}
