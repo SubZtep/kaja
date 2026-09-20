@@ -6,8 +6,9 @@ Pure shared utilities with no I/O and no app-specific business logic.
 
 ```
 index.ts               # getTimeAgo, getDateTime, getFirstName, capitalized, cn,
-                        # isPublicHttpUrl, randomUUIDv7, titleCase — re-exports telegram-markdown.ts, locale.ts
+                        # isPublicHttpUrl, randomUUIDv7, titleCase — re-exports telegram-bot.ts, telegram-markdown.ts, locale.ts
 telegram-markdown.ts    # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT
+telegram-bot.ts         # plumbing both Telegram bots (apps/tui, apps/api) share: escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency)
 locale.ts               # locales, Locale, LOCALE_LABELS — supported UI locale codes and display names
 ```
 

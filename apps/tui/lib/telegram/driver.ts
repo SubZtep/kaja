@@ -9,7 +9,15 @@ import {
 } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
-import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming, withQuestion } from "@kaja/shared"
+import {
+  EditThrottle,
+  escapeHtml,
+  isCommand,
+  renderTelegramHtml,
+  splitTelegramMessage,
+  truncateForStreaming,
+  withQuestion
+} from "@kaja/shared"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"
@@ -19,16 +27,6 @@ import { t } from "../i18n"
 import { log } from "../logger"
 import { DEFAULT_PERSONA_ID, type Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
-
-/** Plain HTML escaping for text inside <pre>: unlike renderTelegramHtml it leaves URLs as text instead of turning them into links. */
-function escapeHtml(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
-}
-
-/** A bot command, with or without the `@botname` Telegram adds in groups. */
-function isCommand(text: string, name: string): boolean {
-  return new RegExp(`^/${name}(@\\w+)?$`).test(text.trim())
-}
 
 /** What the running bot loaded: skills (load_skill's list) and tool abilities (community tools' `ability:<name>` source), by name. */
 function loadedAbilities(tools: Tool<any>[]): { skills: string[]; tools: string[] } {
@@ -61,19 +59,6 @@ function abilitiesMessage(tools: Tool<any>[], personas: Persona[]): string {
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
 const MAX_COMMAND_LINES = 6
-
-const MIN_EDIT_INTERVAL_MS = 1000
-const MAX_EDIT_INTERVAL_MS = 4000
-
-/** Thrown by a TelegramSender implementation on a 429 response, so EditThrottle can back off. */
-export class TelegramRateLimitError extends Error {
-  retryAfterSec: number | undefined
-
-  constructor(retryAfterSec: number | undefined) {
-    super("Telegram rate limit")
-    this.retryAfterSec = retryAfterSec
-  }
-}
 
 /** A minimal, structural inline-keyboard shape — not grammy's InlineKeyboard class — so this module has no grammy dependency. */
 export type InlineKeyboardLike = { text: string; callback_data: string }[][]
@@ -142,69 +127,6 @@ type UserState = {
   persistChain: Promise<void>
   pendingCommand: PendingCommand | undefined
   busy: boolean
-}
-
-/**
- * Coalesces rapid delta events into at most one Telegram edit per
- * `intervalMs`, using only the latest accumulated text (never queuing
- * multiple edits). Mirrors the trailing-edge throttle hooks/use-agent.ts
- * already uses for its DELTA_INTERVAL_MS flush, tuned for Telegram's ~1
- * edit/sec per-message budget instead of Ink's repaint rate, with 429
- * backoff added since Telegram (unlike a local terminal) can reject bursts.
- */
-class EditThrottle {
-  private intervalMs = MIN_EDIT_INTERVAL_MS
-  private lastEditAt = 0
-  private timer: ReturnType<typeof setTimeout> | undefined
-  private pendingRender: (() => string) | undefined
-  // sendEdit is expected to dedupe identical text itself (see runTurn's
-  // shared editIfChanged) — the throttle only decides *when* to call it.
-  private readonly sendEdit: (text: string) => Promise<void>
-
-  constructor(sendEdit: (text: string) => Promise<void>) {
-    this.sendEdit = sendEdit
-  }
-
-  request(renderText: () => string) {
-    this.pendingRender = renderText
-    if (this.timer) return
-    // Always goes through setTimeout, even at 0ms delay once intervalMs has elapsed — never fires synchronously inline. That guarantees cancel() (called from the same microtask chain that follows a delta, e.g. once run() reaches its final/ask_user/confirm_command event) can always pre-empt a still-pending fire, since a macrotask timer only runs after the current microtask queue has fully drained.
-    const elapsed = Date.now() - this.lastEditAt
-    const delay = Math.max(0, this.intervalMs - elapsed)
-    this.timer = setTimeout(() => void this.fire(), delay)
-  }
-
-  private async fire() {
-    this.timer = undefined
-    const render = this.pendingRender
-    this.pendingRender = undefined
-    if (!render) return
-    this.lastEditAt = Date.now()
-    try {
-      await this.sendEdit(render())
-    } catch (error) {
-      if (error instanceof TelegramRateLimitError) {
-        this.intervalMs = Math.min(this.intervalMs * 2, MAX_EDIT_INTERVAL_MS)
-        if (error.retryAfterSec) this.lastEditAt = Date.now() + error.retryAfterSec * 1000
-      } else {
-        log.warn("Telegram edit failed", { error })
-      }
-    }
-  }
-
-  /**
-   * Cancels any pending trailing-edge edit without sending it — call before
-   * a caller-driven edit that's about to supersede it anyway (final,
-   * ask_user, confirm_command), so the throttle doesn't fire a redundant
-   * edit moments after (or race with) that one.
-   */
-  cancel() {
-    if (this.timer) {
-      clearTimeout(this.timer)
-      this.timer = undefined
-    }
-    this.pendingRender = undefined
-  }
 }
 
 export function createTelegramDriver(config: TelegramDriverConfig) {
@@ -472,7 +394,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       lastSentText = text
       await editSafely(chatId, placeholder.messageId, text)
     }
-    const throttle = new EditThrottle(editIfChanged)
+    const throttle = new EditThrottle(editIfChanged, error => log.warn("Telegram edit failed", { error }))
 
     try {
       for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId))) {

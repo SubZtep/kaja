@@ -3,6 +3,15 @@ import { twMerge } from "tailwind-merge"
 
 export { LOCALE_LABELS, type Locale, locales } from "./locale"
 export {
+  asRateLimitError,
+  EditThrottle,
+  escapeHtml,
+  isCommand,
+  isNotModifiedError,
+  TelegramRateLimitError,
+  withRateLimitRetry
+} from "./telegram-bot"
+export {
   renderTelegramHtml,
   splitTelegramMessage,
   TELEGRAM_MESSAGE_LIMIT,

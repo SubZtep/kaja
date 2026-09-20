@@ -1,7 +1,8 @@
+import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard } from "grammy"
 import { reportError } from "../../core/report"
 import { telegramLinkService } from "../../services"
-import { createCloudTelegramDriver, type TelegramButton, TelegramRateLimitError } from "./driver"
+import { createCloudTelegramDriver, type TelegramButton } from "./driver"
 
 /** Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits comfortably. */
 function linkCallbackData(action: "confirm" | "cancel", token: string): string {
@@ -10,30 +11,6 @@ function linkCallbackData(action: "confirm" | "cancel", token: string): string {
 
 export type CreateCloudTelegramBotConfig = {
   botToken: string
-}
-
-/** Telegram's "message is not modified" 400 is an expected race (see EditThrottle's own dedupe guard), not an error. */
-function isNotModifiedError(error: unknown): boolean {
-  return (
-    error instanceof GrammyError && error.error_code === 400 && error.description.includes("message is not modified")
-  )
-}
-
-function asRateLimitError(error: unknown): TelegramRateLimitError | undefined {
-  if (error instanceof GrammyError && error.error_code === 429)
-    return new TelegramRateLimitError(error.parameters.retry_after)
-  return undefined
-}
-
-async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> {
-  try {
-    return await send()
-  } catch (error) {
-    const rateLimit = asRateLimitError(error)
-    if (!rateLimit?.retryAfterSec) throw error
-    await Bun.sleep(rateLimit.retryAfterSec * 1000)
-    return send()
-  }
 }
 
 /** Rows of inline buttons, or undefined for none. */

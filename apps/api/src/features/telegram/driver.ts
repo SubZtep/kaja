@@ -7,7 +7,15 @@ import {
   type Session
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
-import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming, withQuestion } from "@kaja/shared"
+import {
+  EditThrottle,
+  escapeHtml,
+  isCommand,
+  renderTelegramHtml,
+  splitTelegramMessage,
+  truncateForStreaming,
+  withQuestion
+} from "@kaja/shared"
 import { pool } from "../../core/db"
 import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
@@ -28,31 +36,11 @@ const NOT_LINKED_MESSAGE =
   '"Connect Telegram" to get a link.'
 
 const APPROVAL_EXPIRED_MESSAGE = "This request was already answered or has expired."
-/** A bot command, with or without the `@botname` Telegram adds in groups. */
-const command = (name: string) => new RegExp(`^/${name}(@\\w+)?$`)
 const TOOL_CALLBACK = /^tool:(approve|decline):([0-9a-f]{16})$/
-
-/** Plain HTML escaping for text inside <pre> (same as apps/tui/lib/telegram/driver.ts's). */
-function escapeHtml(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
-}
 
 /** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
 function approvalToken(callId: string): string {
   return createHash("sha256").update(callId).digest("hex").slice(0, 16)
-}
-
-const MIN_EDIT_INTERVAL_MS = 1000
-const MAX_EDIT_INTERVAL_MS = 4000
-
-/** Thrown by a TelegramSender implementation on a 429 response, so EditThrottle can back off. */
-export class TelegramRateLimitError extends Error {
-  retryAfterSec: number | undefined
-
-  constructor(retryAfterSec: number | undefined) {
-    super("Telegram rate limit")
-    this.retryAfterSec = retryAfterSec
-  }
 }
 
 /** One inline button: its label and the callback data it sends back. */
@@ -75,57 +63,6 @@ export type CloudTelegramDriverConfig = {
   /** Resolves a Telegram user id to the Kaja account it's linked to, or undefined if unlinked. */
   resolveLinkedUserId: (telegramUserId: number) => Promise<string | undefined>
   sender: TelegramSender
-}
-
-/**
- * Coalesces rapid delta events into at most one Telegram edit per
- * `intervalMs`, using only the latest accumulated text. Copied from
- * apps/tui/lib/telegram/driver.ts's EditThrottle (pure, no grammy coupling).
- */
-class EditThrottle {
-  private intervalMs = MIN_EDIT_INTERVAL_MS
-  private lastEditAt = 0
-  private timer: ReturnType<typeof setTimeout> | undefined
-  private pendingRender: (() => string) | undefined
-  private readonly sendEdit: (text: string) => Promise<void>
-
-  constructor(sendEdit: (text: string) => Promise<void>) {
-    this.sendEdit = sendEdit
-  }
-
-  request(renderText: () => string) {
-    this.pendingRender = renderText
-    if (this.timer) return
-    const elapsed = Date.now() - this.lastEditAt
-    const delay = Math.max(0, this.intervalMs - elapsed)
-    this.timer = setTimeout(() => void this.fire(), delay)
-  }
-
-  private async fire() {
-    this.timer = undefined
-    const render = this.pendingRender
-    this.pendingRender = undefined
-    if (!render) return
-    this.lastEditAt = Date.now()
-    try {
-      await this.sendEdit(render())
-    } catch (error) {
-      if (error instanceof TelegramRateLimitError) {
-        this.intervalMs = Math.min(this.intervalMs * 2, MAX_EDIT_INTERVAL_MS)
-        if (error.retryAfterSec) this.lastEditAt = Date.now() + error.retryAfterSec * 1000
-      } else {
-        console.warn("Telegram edit failed", { error })
-      }
-    }
-  }
-
-  cancel() {
-    if (this.timer) {
-      clearTimeout(this.timer)
-      this.timer = undefined
-    }
-    this.pendingRender = undefined
-  }
 }
 
 /**
@@ -233,7 +170,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       lastSentText = text
       await editSafely(chatId, placeholder.messageId, text)
     }
-    const throttle = new EditThrottle(editIfChanged)
+    const throttle = new EditThrottle(editIfChanged, error => console.warn("Telegram edit failed", { error }))
 
     try {
       const store = createPostgresStore(pool, ownerUserId)
@@ -277,13 +214,13 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
     const owner = telegramOwner(telegramUserId)
 
-    if (command("new").test(text.trim())) {
+    if (isCommand(text, "new")) {
       forceNew.add(telegramUserId)
       await sender.sendMessage(chatId, "🆕 Started a new session.")
       return
     }
 
-    if (command("abilities").test(text.trim())) {
+    if (isCommand(text, "abilities")) {
       const { text: list, rows } = renderAbilityList(await abilityEntries(ownerUserId), 0)
       await sender.sendMessage(chatId, list, rows)
       return
