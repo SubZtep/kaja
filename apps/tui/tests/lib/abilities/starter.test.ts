@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import type { MarketplaceScan } from "../../../lib/abilities/picker"
-import { mergeSelection, starterSelection } from "../../../lib/abilities/picker"
+import { starterSelection } from "../../../lib/abilities/picker"
 
 /** A scan shaped like the real marketplace: keyless and keyed entries, one stdio server, one broken. */
 function scan(): MarketplaceScan {
@@ -41,12 +41,4 @@ test("a keyless stdio MCP server is still left out", () => {
 
 test("broken entries are skipped", () => {
   expect(starterSelection(scan()).skills).not.toContain("broken-skill")
-})
-
-test("merging adds to what is enabled without dropping or duplicating", () => {
-  const current = { skills: ["mine"], personas: [], tools: ["open-meteo"], mcp: [] }
-  const merged = mergeSelection(current, starterSelection(scan()))
-  expect(merged.skills).toEqual(["mine", "meeting-notes"])
-  // Already on and also in the starter set: kept once.
-  expect(merged.tools).toEqual(["open-meteo"])
 })

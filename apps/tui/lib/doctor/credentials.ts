@@ -48,6 +48,19 @@ export type CredentialOutcome =
  */
 export type OfferedValues = Record<string, string | null>
 
+/** Where an ability's key goes in secrets.toml — the identity a {@link CredentialScope} names it by. */
+export function abilityKeyWhere(name: string): string {
+  return `[abilities.${name}] apiKey`
+}
+
+/** Narrows a pass to part of the config, for a caller that just changed only that part. */
+export type CredentialScope = {
+  /** Only these items, by {@link CredentialItem.where}. */
+  only: string[]
+  /** Also ask for a key an item can do without, once — `kaja abilities` does this for what it just enabled. */
+  askOptional?: boolean
+}
+
 /** How resolveCredentials talks to the user; the doctor passes Ink prompts, tests pass fakes. */
 export type CredentialIo = {
   interactive: boolean
@@ -154,7 +167,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
     const saved = creds.abilities[ability.name]?.apiKey
     items.push({
       label: t("doctor.itemAbility", { name: ability.name }),
-      where: `[abilities.${ability.name}] apiKey`,
+      where: abilityKeyWhere(ability.name),
       hint: `${ability.auth.in} ${ability.auth.name}`,
       present: Boolean(saved),
       required: !ability.auth.optional,
@@ -171,7 +184,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
     const saved = creds.abilities[ability.name]?.apiKey
     items.push({
       label: t("doctor.itemMcpAbility", { name: ability.name }),
-      where: `[abilities.${ability.name}] apiKey`,
+      where: abilityKeyWhere(ability.name),
       hint: `${auth.in} ${auth.name}`,
       present: Boolean(saved),
       required: !auth.optional,
@@ -205,7 +218,8 @@ export async function resolveCredentials(
   items: CredentialItem[],
   io: CredentialIo,
   onOutcome: (outcome: CredentialOutcome) => void = () => {},
-  offered: OfferedValues = {}
+  offered: OfferedValues = {},
+  askOptional = false
 ): Promise<CredentialOutcome[]> {
   const outcomes: CredentialOutcome[] = []
   const settle = (outcome: CredentialOutcome) => {
@@ -221,6 +235,16 @@ export async function resolveCredentials(
     }
 
     const saved = await savedOutcome(item)
+    // A key nothing needs isn't a problem to fix, so only a caller that opted in is asking for it.
+    const optionalGap =
+      askOptional && io.interactive && offer === undefined && !item.required && !item.present && !("reason" in saved)
+    if (optionalGap) {
+      const value = await io.ask(t("ability.optionalKeyPrompt", { name: item.label, where: item.hint ?? item.where }))
+      if (value) {
+        settle(await testAndSave(item, value, "missing", io))
+        continue
+      }
+    }
     // Nothing rejected the value, so there's nothing for the user to retype — report and move on.
     // `null` says the caller already asked and was turned down, which is the same dead end.
     const worthAsking = "reason" in saved && io.interactive && saved.kind !== "unreachable" && offer !== null
@@ -305,13 +329,15 @@ export function isUnresolved(outcome: CredentialOutcome): boolean {
  * it's saved). Prints `header` only when there's actually something to check. Reads the config from
  * disk, so a caller that just wrote one must do so before calling this.
  *
- * `offered` carries values the caller has already collected — see {@link OfferedValues}.
+ * `offered` carries values the caller has already collected — see {@link OfferedValues}. `scope`
+ * limits the pass to the items a caller just changed — see {@link CredentialScope}.
  */
 export async function runCredentialPass(
   print: (line: string) => void,
   header?: string,
   extra: CredentialItem[] = [],
-  offered: OfferedValues = {}
+  offered: OfferedValues = {},
+  scope?: CredentialScope
 ): Promise<CredentialOutcome[]> {
   // Loaded here rather than at module scope so a non-interactive caller never pulls Ink in.
   const { askSaveAnyway, askSecret } = await import("./prompt")
@@ -319,7 +345,8 @@ export async function runCredentialPass(
   // `extra` carries credentials the config gives no sign of — the setup wizard's freshly ticked
   // extras. Anything collectCredentials already found wins, so nothing is asked for twice.
   const collected = await collectCredentials()
-  const items = [...collected, ...extra.filter(e => !collected.some(c => c.where === e.where))]
+  const found = [...collected, ...extra.filter(e => !collected.some(c => c.where === e.where))]
+  const items = scope ? found.filter(item => scope.only.includes(item.where)) : found
   if (items.length === 0) return []
   if (header) print(header)
 
@@ -327,7 +354,8 @@ export async function runCredentialPass(
     items,
     { interactive: Boolean(process.stdin.isTTY), ask: askSecret, askSaveAnyway },
     outcome => print(outcomeLine(outcome)),
-    offered
+    offered,
+    scope?.askOptional
   )
 }
 

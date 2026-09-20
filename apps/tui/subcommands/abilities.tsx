@@ -1,4 +1,3 @@
-import type { HttpToolScanEntry, McpScanEntry } from "@kaja/nasi"
 import type { AbilitiesFile } from "@kaja/schema/config"
 import type { PickerItem } from "../components/ability-picker"
 import {
@@ -11,7 +10,7 @@ import {
 import type { args as Args } from "../lib/cli/args"
 
 /**
- * `kaja abilities` (checklist of skills, personas, HTTP tools and MCP servers → abilities.toml, then any missing keys → secrets.toml) and
+ * `kaja abilities` (checklist of skills, personas, HTTP tools and MCP servers → abilities.toml, then any missing keys, tested and saved to secrets.toml) and
  * `kaja abilities update` (fetch + sync the marketplace), for local mode; a cloud user is pointed to the web instead. Runs
  * before the local/cloud branch like `config`: it never triggers cloud login.
  */
@@ -77,10 +76,24 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
   const count = next.skills.length + next.personas.length + next.tools.length + next.mcp.length
   console.log(t("ability.saved", { path: getAbilitiesPath(), count }))
 
-  await askMissingKeys([
+  // Only the keys still missing for what is now enabled: the rest were set earlier and aren't this command's business.
+  const { secrets } = await import("../lib/config/secrets")
+  const { abilityKeyWhere, runCredentialPass } = await import("../lib/doctor/credentials")
+  const known = (await secrets()).abilities
+  const keyed = [
     ...toolScan.filter(s => next.tools.includes(s.name)),
     ...mcpScan.filter(s => next.mcp.includes(s.name))
-  ])
+  ].filter(s => s.auth && !known[s.name])
+  await runCredentialPass(
+    line => console.log(line),
+    undefined,
+    [],
+    {},
+    {
+      only: keyed.map(s => abilityKeyWhere(s.name)),
+      askOptional: true
+    }
+  )
   process.exit(0)
 }
 
@@ -89,26 +102,5 @@ function printAbilities(items: PickerItem[], enabled: AbilitiesFile) {
   const on = { skill: enabled.skills, persona: enabled.personas, tool: enabled.tools, mcp: enabled.mcp }
   for (const item of items) {
     console.log(`${on[item.type].includes(item.name) ? "[x]" : "[ ]"} ${item.type.padEnd(7)} ${item.name}`)
-  }
-}
-
-// Ask for keys enabled abilities still lack. A skipped required key keeps the ability enabled but left out until it's set; an optional one just loads without.
-async function askMissingKeys(keyed: (HttpToolScanEntry | McpScanEntry)[]) {
-  const { t } = await import("../lib/i18n")
-  const { askSecret } = await import("../lib/doctor/prompt")
-  const { saveSecrets, secrets } = await import("../lib/config/secrets")
-  const known = (await secrets()).abilities
-  for (const ability of keyed) {
-    if (!ability.auth || known[ability.name]) continue
-    const where = `${ability.auth.in} ${ability.auth.name}`
-    const key = await askSecret(
-      t(ability.auth.optional ? "ability.optionalKeyPrompt" : "ability.keyPrompt", { name: ability.name, where })
-    )
-    if (key) {
-      await saveSecrets({ abilities: { [ability.name]: { apiKey: key } } })
-      console.log(t("ability.keySaved", { name: ability.name }))
-    } else if (!ability.auth.optional) {
-      console.log(t("ability.keySkipped", { name: ability.name }))
-    }
   }
 }

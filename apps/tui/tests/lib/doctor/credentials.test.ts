@@ -7,9 +7,8 @@ const configRoot = `${tmpdir()}/kaja-test-xdg-config-doctor-credentials`
 process.env.XDG_CONFIG_HOME = configRoot
 
 const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
-const { collectCredentials, outcomeLine, resolveCredentials, summaryLines } = await import(
-  "../../../lib/doctor/credentials"
-)
+const { abilityKeyWhere, collectCredentials, outcomeLine, resolveCredentials, runCredentialPass, summaryLines } =
+  await import("../../../lib/doctor/credentials")
 type CredentialItem = import("../../../lib/doctor/credentials").CredentialItem
 
 const kajaDir = join(configRoot, "kaja")
@@ -190,6 +189,47 @@ test("null means the caller already asked and was turned down, so the pass doesn
   expect(outcomes[0]!.status).toBe("missing")
   expect(prompts.titles).toEqual([])
   expect(item.saved).toEqual([])
+})
+
+test("a key nothing needs is asked for only when the caller opts in, and is tested before it's saved", async () => {
+  const quiet = fakeItem({ required: false, works: () => true })
+  const outcomes = await resolveCredentials([quiet.item], io(["k"]).io)
+  expect(outcomes[0]!.status).toBe("keyless")
+  expect(quiet.saved).toEqual([])
+
+  const asked = fakeItem({
+    label: "context7 (MCP ability)",
+    hint: "header Authorization",
+    required: false,
+    works: v => v === undefined || v === "k"
+  })
+  const prompts = io(["k"])
+  const opted = await resolveCredentials([asked.item], prompts.io, () => {}, {}, true)
+  expect(prompts.titles).toEqual([
+    "context7 (MCP ability) can use an API key (header Authorization). It's optional: it works without one."
+  ])
+  expect(opted[0]!.status).toBe("saved")
+  expect(asked.saved).toEqual(["k"])
+})
+
+test("declining an optional key leaves the ability as it was", async () => {
+  const item = fakeItem({ required: false, works: () => true })
+  const outcomes = await resolveCredentials([item.item], io([undefined]).io, () => {}, {}, true)
+  expect(outcomes[0]!.status).toBe("keyless")
+  expect(item.saved).toEqual([])
+})
+
+test("a scoped pass looks only at the items it was given", async () => {
+  put("abilities.toml", `tools = ["gh", "open"]\n`)
+  const tool = (name: string) =>
+    `name = "${name}"\ndescription = "x"\nbaseUrl = "https://api.${name}.test"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n\n[[tools]]\nname = "${name}_get"\ndescription = "x"\npath = "/x"\n`
+  put("marketplace/tools/gh.toml", tool("gh"))
+  put("marketplace/tools/open.toml", tool("open"))
+  put("secrets.toml", "")
+  put("mcp.toml", "servers = []\n")
+
+  const outcomes = await runCredentialPass(() => {}, undefined, [], {}, { only: [abilityKeyWhere("gh")] })
+  expect(outcomes.map(o => o.item.where)).toEqual(["[abilities.gh] apiKey"])
 })
 
 test("collects providers, keyed abilities, declared MCP secrets and a saved Telegram token", async () => {

@@ -162,6 +162,17 @@ function InputStep({
 }
 
 /** One "label: value" line on the summary, or nothing when that step was skipped. */
+function providerName(provider: WizardProvider | undefined): string {
+  return provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : ""
+}
+
+/** What happened to a key step, for the summary: typed, left empty over one already saved, or left empty. Undefined when the step never applied. */
+function keyState(typed: string | undefined, alreadySaved: boolean | undefined): string | undefined {
+  if (typed === undefined) return undefined
+  if (typed) return t("wizard.keyStateEntered")
+  return t(alreadySaved ? "wizard.keyStateKept" : "wizard.keyStateSkipped")
+}
+
 function SummaryRow({ label, value }: Readonly<{ label: string; value?: string }>) {
   if (!value) return null
   return (
@@ -358,6 +369,13 @@ export function ConfigWizard({
           label={t("wizard.summaryExtras")}
           value={result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined}
         />
+        {/* The values themselves are never shown; the credential pass tests them after this screen. */}
+        <SummaryRow
+          label={t("wizard.summaryKeyProvider", { provider: providerName(result.provider) })}
+          value={keyState(result.providerKey, saved?.providers?.includes(result.provider ?? ""))}
+        />
+        <SummaryRow label={t("wizard.summaryKeyWebSearch")} value={keyState(result.webSearchKey, saved?.webSearch)} />
+        <SummaryRow label={t("wizard.summaryKeyTelegram")} value={keyState(result.telegramToken, saved?.telegram)} />
       </Box>
       <Box flexDirection="column">
         <Text dimColor>{t("wizard.summaryPaths")}</Text>

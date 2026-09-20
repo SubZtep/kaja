@@ -38,10 +38,10 @@ async function applyResult(result: WizardResult) {
  * among the rest is what `kaja abilities` is for.
  *
  * A machine with abilities already on is left untouched: its list is the user's own, and silently
- * re-adding what they turned off would be the one thing this can get wrong. Runs before the
- * credential pass so an optional key any of them can use is offered in the same breath.
+ * re-adding what they turned off would be the one thing this can get wrong. Optional keys some of
+ * them can use are not asked for: nothing needs them, and `kaja abilities` offers them.
  */
-async function applyStarterAbilities(print: (line: string) => void) {
+export async function applyStarterAbilities(print: (line: string) => void) {
   const total = (s: PickerSelection) => s.skills.length + s.personas.length + s.tools.length + s.mcp.length
 
   const { getAbilitiesPath, getMarketplaceDir, loadAbilitiesFile, saveAbilitiesFile } = await import(

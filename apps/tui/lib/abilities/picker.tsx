@@ -76,17 +76,6 @@ export function starterSelection(scan: MarketplaceScan): PickerSelection {
   }
 }
 
-/** Adds `extra` to what is already enabled, without dropping anything the user turned on themselves. */
-export function mergeSelection(current: PickerSelection, extra: PickerSelection): PickerSelection {
-  const merge = (a: string[], b: string[]) => [...new Set([...a, ...b])]
-  return {
-    skills: merge(current.skills, extra.skills),
-    personas: merge(current.personas, extra.personas),
-    tools: merge(current.tools, extra.tools),
-    mcp: merge(current.mcp, extra.mcp)
-  }
-}
-
 /** The checklist; undefined when it was cancelled. */
 export async function pickAbilities(
   items: PickerItem[],

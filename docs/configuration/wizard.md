@@ -152,6 +152,8 @@ Two consequences worth knowing:
 - **A key you skip is not asked for twice.** The wizard tells the pass you already declined, so it's
   listed as still to do instead of being asked again a minute later.
 
+The summary screen lists what happened to each key — entered, already saved and kept, or skipped — but never shows the key itself.
+
 The pass also asks for anything only the finished config reveals — an [ability's](/marketplace) key,
 an [MCP server's](/tools) declared secret — because those aren't knowable until `abilities.toml`
 exists.

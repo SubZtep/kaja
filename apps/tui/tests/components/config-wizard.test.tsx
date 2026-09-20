@@ -288,6 +288,45 @@ test("each ticked extra is asked for what it needs, and untouched ones are not",
   await w.t.waitUntilExit()
 })
 
+test("the summary says what became of each key, without showing it", async () => {
+  const w = renderWizard({ mode: "local" })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press("fw-secret-value")
+  await w.t.press(ENTER)
+  await w.t.press(" ") // tick web search
+  await w.t.press(DOWN)
+  await w.t.press(DOWN)
+  await w.t.press(" ") // tick Telegram
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // web search key: skipped
+  await w.t.press(ENTER) // telegram token: skipped
+
+  const frame = w.t.lastFrame()!
+  expect(frame).toContain("Fireworks API key: entered, tested when you finish")
+  expect(frame).toContain("Brave Search API key: skipped")
+  expect(frame).toContain("Telegram bot token: skipped")
+  expect(frame).not.toContain("fw-secret-value")
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
+test("an empty answer over a saved key is reported as kept, not skipped", async () => {
+  const w = renderWizard({ mode: "local", saved: { providers: ["fireworks"] } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // provider: Fireworks
+  await w.t.press(ENTER) // key: keep the saved one
+  await w.t.press(ENTER) // extras: nothing ticked
+
+  expect(w.t.lastFrame()).toContain("Fireworks API key: already saved, kept")
+
+  w.t.unmount()
+  await w.t.waitUntilExit()
+})
+
 test("escape cancels without producing a result", async () => {
   const w = renderWizard()
   await w.t.tick()
