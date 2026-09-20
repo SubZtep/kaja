@@ -74,7 +74,10 @@ paste into a bug report.
 abilities, MCP servers that list `secrets`, and the Telegram and web search services. In a terminal it
 asks for anything missing or not working, tests the new value before saving it to `secrets.toml`,
 and only keeps a value that fails its test if you say so. A provider without a key is fine as long
-as its model answers (Ollama needs none). It ends with what's still left to fix and where.
+as its model answers (Ollama needs none). It then tests every model by task. When the model a task
+uses stops answering and another model you have configured for the same task does, it asks whether to
+switch — only that task's `provider` and `model` change in `models.toml`, so a persona pinning it keeps
+working. It ends with what's still left to fix and where.
 
 ## Editor support
 

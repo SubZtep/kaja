@@ -191,7 +191,8 @@ flowchart LR
     A --> E["<b>extras</b><br><small>hand their keys<br>to the credential pass</small>"]
     E --> D["<b>model downloads</b><br><small>one question for the lot</small>"]
     D --> C["<b>credential pass</b><br><small>tests and saves every key</small>"]
-    C --> R(["ready"])
+    C --> M["<b>model check</b><br><small>tries every model, offers<br>a working one when one fails</small>"]
+    M --> R(["ready"])
 ```
 
 - **Starter abilities.** Everything from the [marketplace](/marketplace) that needs no key and runs
@@ -203,6 +204,11 @@ flowchart LR
   isn't running — is skipped silently, so the question only appears when it can be acted on. It runs
   before the credential pass so the provider test meets a model that's really there.
 - **Credential pass.** As above. Ends with a count of anything still unresolved.
+- **Model check.** The same check `kaja doctor` runs: every model you set up is tried once, with the
+  reason next to any that fails. This is where a wrong key or a server that isn't running shows up —
+  nothing was tested while you answered. If a task's model fails and another model for that task
+  answered, you're asked whether to switch to it right there. Failures are counted in the closing
+  line.
 
 ## Cloud mode is three questions
 

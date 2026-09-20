@@ -263,6 +263,22 @@ async function readSavedSecrets(): Promise<WizardSaved> {
 }
 
 /**
+ * Tests the models the wizard just wrote, the same pass `kaja doctor` runs, so a broken one is found
+ * now, while its alternative is one keypress away. Nothing was tested while the questions were being
+ * answered: that kept them quick. Returns how many tasks are still without a working model.
+ */
+async function checkModels(): Promise<number> {
+  const { loadModels } = await import("../models/models")
+  const models = await loadModels()
+  if (models.length === 0) return 0
+
+  const { defaultModelIo, runModelPass } = await import("../doctor/models")
+  console.log(t("wizard.checkingModels"))
+  const outcomes = await runModelPass(models, line => console.log(line), await defaultModelIo())
+  return outcomes.filter(outcome => !outcome.ok).length
+}
+
+/**
  * The setup wizard, for both the first run and `kaja config wizard`. Prefilled from the current config,
  * so Enter at every step keeps what is already set. Non-interactive stdin or `--headless` can't answer a
  * prompt: it writes the bundled templates untouched, no questions, same fallback as before.
@@ -321,6 +337,7 @@ export async function runConfigWizard({
     ...providerKeys,
     ...offered
   })
-  const unresolved = outcomes.filter(isUnresolved).length
+  const failingModels = await checkModels()
+  const unresolved = outcomes.filter(isUnresolved).length + failingModels
   return { code: 0, text: unresolved > 0 ? t("wizard.doneWithIssues", { count: unresolved }) : t("wizard.done") }
 }
