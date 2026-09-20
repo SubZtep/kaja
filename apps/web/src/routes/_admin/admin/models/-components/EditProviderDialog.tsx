@@ -2,9 +2,9 @@ import { Dialog } from "@base-ui/react/dialog"
 import type { Provider, UpdateProviderRequest } from "@kaja/schema/api"
 import { useState } from "react"
 import { z } from "zod"
-import { Button } from "../../../../components/form/primitives/Button"
-import { useAppForm } from "../../../../lib/form"
-import { m } from "../../../../paraglide/messages.js"
+import { Button } from "../../../../../components/form/primitives/Button"
+import { useAppForm } from "../../../../../lib/form"
+import { m } from "../../../../../paraglide/messages.js"
 
 const editFormSchema = z.object({
   name: z.string().min(1, m.models_validation_required()),

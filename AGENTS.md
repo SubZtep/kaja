@@ -89,7 +89,7 @@ bun run --filter @kaja/tui test
 
 ### Web (`apps/web/src/`)
 
-- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, users, profile)
+- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, profile, packages, widget, and the admin-only `/admin/*` layout)
 - auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 

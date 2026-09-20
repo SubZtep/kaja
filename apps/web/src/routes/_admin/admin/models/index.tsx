@@ -16,27 +16,25 @@ import type { CellContext } from "@tanstack/react-table"
 import { Pencil, Trash2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { z } from "zod"
-import { Button } from "../../../components/form/primitives/Button"
-import { Checkbox } from "../../../components/form/primitives/Checkbox"
-import { ConfirmDialog } from "../../../components/ui/ConfirmDialog"
-import { ErrorNotice } from "../../../components/ui/ErrorNotice"
-import { IconButton } from "../../../components/ui/IconButton"
-import { Loader } from "../../../components/ui/Loader"
-import { PageHeader } from "../../../components/ui/PageHeader"
-import { Section } from "../../../components/ui/Section"
-import { Table } from "../../../components/ui/Table"
-import { ValueBox } from "../../../components/ui/ValueBox"
-import { useApiFetch } from "../../../lib/api-fetch"
-import { useAppForm } from "../../../lib/form"
-import { userRequired } from "../../../lib/loaders"
-import { seo } from "../../../lib/seo"
-import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
-import { m } from "../../../paraglide/messages.js"
+import { Button } from "../../../../components/form/primitives/Button"
+import { Checkbox } from "../../../../components/form/primitives/Checkbox"
+import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog"
+import { ErrorNotice } from "../../../../components/ui/ErrorNotice"
+import { IconButton } from "../../../../components/ui/IconButton"
+import { Loader } from "../../../../components/ui/Loader"
+import { PageHeader } from "../../../../components/ui/PageHeader"
+import { Section } from "../../../../components/ui/Section"
+import { Table } from "../../../../components/ui/Table"
+import { ValueBox } from "../../../../components/ui/ValueBox"
+import { useApiFetch } from "../../../../lib/api-fetch"
+import { useAppForm } from "../../../../lib/form"
+import { seo } from "../../../../lib/seo"
+import { tableColumnHelper, type tableFeaturesConfig } from "../../../../lib/table"
+import { m } from "../../../../paraglide/messages.js"
 import { EditProviderDialog } from "./-components/EditProviderDialog"
 
-export const Route = createFileRoute("/_admin/models/")({
+export const Route = createFileRoute("/_admin/admin/models/")({
   component: ModelsPage,
-  loader: () => userRequired("admin"),
   head: () => ({ meta: seo({ title: m.nav_models() }) })
 })
 

@@ -4,24 +4,22 @@ import type { UserWithRole } from "better-auth/plugins"
 import { ArrowLeft, Calendar, CheckCircle2, Clock, Mail, Shield } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
-import { Avatar } from "../../../components/ui/Avatar"
-import { Loader } from "../../../components/ui/Loader"
-import { PageHeader } from "../../../components/ui/PageHeader"
-import { Section } from "../../../components/ui/Section"
-import { UserSessions } from "../../../components/user/UserSessions"
-import { useAuthClient } from "../../../hooks/auth-client"
-import { userRequired } from "../../../lib/loaders"
-import { seo } from "../../../lib/seo"
-import { m } from "../../../paraglide/messages.js"
+import { Avatar } from "../../../../components/ui/Avatar"
+import { Loader } from "../../../../components/ui/Loader"
+import { PageHeader } from "../../../../components/ui/PageHeader"
+import { Section } from "../../../../components/ui/Section"
+import { UserSessions } from "../../../../components/user/UserSessions"
+import { useAuthClient } from "../../../../hooks/auth-client"
+import { seo } from "../../../../lib/seo"
+import { m } from "../../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/users/$userId")({
+export const Route = createFileRoute("/_admin/admin/users/$userId")({
   component: UserPageComponent,
-  loader: () => userRequired("admin"),
   head: () => ({ meta: seo({ title: m.seo_user_title() }) })
 })
 
 function UserPageComponent() {
-  const { userId } = useParams({ from: "/_admin/users/$userId" })
+  const { userId } = useParams({ from: "/_admin/admin/users/$userId" })
   const authClient = useAuthClient()
   const [user, setUser] = useState<UserWithRole>()
 
@@ -41,7 +39,7 @@ function UserPageComponent() {
         title={
           <span className="inline-flex items-center gap-3">
             <Link
-              to="/users"
+              to="/admin/users"
               aria-label={m.users_back_to_list()}
               className="inline-flex rounded-md border border-border bg-surface p-1.5 text-muted transition-colors hover:border-neon/40 hover:text-fg"
             >

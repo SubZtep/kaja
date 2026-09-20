@@ -25,9 +25,10 @@ flowchart TD
     P --> D["/device · /device/approve"]
 
     A --> DA["/dashboard"]
-    A --> U["/users · /users/$userId"]
-    A --> M["/models"]
-    A --> MC["/mcp-servers"]
+    A --> AD["/admin<br><small>admin-only layout</small>"]
+    AD --> U["/admin/users · /admin/users/$userId"]
+    AD --> M["/admin/models"]
+    AD --> MC["/admin/mcp-servers"]
     A --> W["/widget"]
     A --> PR["/profile"]
 ```
@@ -44,15 +45,16 @@ the terminal printed, done.
 
 ## Admin
 
-Everything behind `_admin` requires a signed-in, non-banned user; the config pages additionally
-require the Better Auth `admin` role.
+Everything behind `_admin` requires a signed-in, non-banned user. The top menu is the same for everyone;
+the admin pages sit under `/admin` (one Admin menu item, tabs inside), whose layout requires the Better
+Auth `admin` role and sends anyone else to the dashboard.
 
 | Route | What you manage |
 | --- | --- |
 | `/dashboard` | overview |
-| `/users`, `/users/$userId` | accounts, roles, bans |
-| `/models` | providers and their models, per task |
-| `/mcp-servers` | MCP servers offered to cloud chat |
+| `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |
+| `/admin/models` | providers and their models, per task |
+| `/admin/mcp-servers` | MCP servers offered to cloud chat |
 | `/widget` | [widget keys](/widget#getting-a-key) — create, disable, delete |
 | `/profile` | your own account |
 

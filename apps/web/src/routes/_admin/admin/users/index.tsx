@@ -6,25 +6,23 @@ import type { UserWithRole } from "better-auth/client/plugins"
 import { Eye, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "react-toastify"
-import { Button } from "../../../components/form/primitives/Button"
-import { Avatar } from "../../../components/ui/Avatar"
-import { Badge } from "../../../components/ui/Badge"
-import { IconButton } from "../../../components/ui/IconButton"
-import { Loader } from "../../../components/ui/Loader"
-import { PageHeader } from "../../../components/ui/PageHeader"
-import { Section } from "../../../components/ui/Section"
-import { StatusDot } from "../../../components/ui/StatusDot"
-import { Table } from "../../../components/ui/Table"
-import { ValueBox } from "../../../components/ui/ValueBox"
-import { useAuthClient } from "../../../hooks/auth-client"
-import { userRequired } from "../../../lib/loaders"
-import { seo } from "../../../lib/seo"
-import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
-import { m } from "../../../paraglide/messages.js"
+import { Button } from "../../../../components/form/primitives/Button"
+import { Avatar } from "../../../../components/ui/Avatar"
+import { Badge } from "../../../../components/ui/Badge"
+import { IconButton } from "../../../../components/ui/IconButton"
+import { Loader } from "../../../../components/ui/Loader"
+import { PageHeader } from "../../../../components/ui/PageHeader"
+import { Section } from "../../../../components/ui/Section"
+import { StatusDot } from "../../../../components/ui/StatusDot"
+import { Table } from "../../../../components/ui/Table"
+import { ValueBox } from "../../../../components/ui/ValueBox"
+import { useAuthClient } from "../../../../hooks/auth-client"
+import { seo } from "../../../../lib/seo"
+import { tableColumnHelper, type tableFeaturesConfig } from "../../../../lib/table"
+import { m } from "../../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/users/")({
+export const Route = createFileRoute("/_admin/admin/users/")({
   component: UserList,
-  loader: () => userRequired("admin"),
   head: () => ({ meta: seo({ title: m.nav_users() }) })
 })
 
@@ -78,7 +76,7 @@ function ActionsCell(info: { readonly row: { readonly original: { readonly id: s
       <IconButton
         variant="neutral"
         aria-label={m.users_view_details()}
-        render={<Link to="/users/$userId" params={{ userId: info.row.original.id }} />}
+        render={<Link to="/admin/users/$userId" params={{ userId: info.row.original.id }} />}
       >
         <Eye size={18} />
       </IconButton>
