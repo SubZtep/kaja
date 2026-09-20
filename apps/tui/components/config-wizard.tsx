@@ -8,7 +8,7 @@ import { setLanguage, t } from "../lib/i18n"
 import { listPaths } from "../lib/paths"
 import { SelectMenu } from "./elem/select-menu"
 
-export type WizardProvider = "fireworks" | "ollama" | "llama" | "fetch" | "skip"
+export type WizardProvider = "fireworks" | "ollama" | "llama" | "skip"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "webSearch" | "voice" | "telegram"
@@ -80,7 +80,7 @@ const STEP_ORDER: Step[] = [
   "summary"
 ]
 
-/** Providers whose follow-up question is an API key, not an address. "fetch" isn't known until fetched. */
+/** Providers whose follow-up question is an API key, not an address. */
 const KEY_PROVIDERS: WizardProvider[] = ["fireworks"]
 
 /** Speaches serves both speech-to-text and text-to-speech, so one URL configures voice in and out. */
@@ -94,13 +94,12 @@ export const LOCAL_PROVIDER_URLS: Partial<Record<WizardProvider, string>> = {
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
 
-const PROVIDER_CHOICES: WizardProvider[] = ["fireworks", "ollama", "llama", "fetch", "skip"]
+const PROVIDER_CHOICES: WizardProvider[] = ["fireworks", "ollama", "llama", "skip"]
 
 const PROVIDER_LABEL_KEY: Record<WizardProvider, string> = {
   fireworks: "wizard.providerFireworks",
   ollama: "wizard.providerOllama",
   llama: "wizard.providerLlama",
-  fetch: "wizard.providerFetch",
   skip: "wizard.providerSkip"
 }
 

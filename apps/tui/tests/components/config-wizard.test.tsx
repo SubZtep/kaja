@@ -134,7 +134,7 @@ test("Skip picks no provider template", async () => {
   const w = renderWizard({ mode: "local" })
   await w.t.tick()
   await w.t.press(ENTER) // language: English
-  for (let i = 0; i < 4; i++) await w.t.press(DOWN) // Fireworks → Ollama → llama.cpp → fetch → Skip
+  for (let i = 0; i < 3; i++) await w.t.press(DOWN) // Fireworks → Ollama → llama.cpp → Skip
   await w.t.press(ENTER) // Skip needs no address, so this lands on extras
   await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // summary

@@ -2,11 +2,8 @@ import { file, TOML } from "bun"
 import { render } from "ink"
 import type { PickerSelection } from "../../components/ability-picker"
 import type { WizardProvider, WizardResult, WizardSaved } from "../../components/config-wizard"
-import { pathForBundleKey } from "../config/cli"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
-import { writeTemplateConfig } from "../config/fetch"
 import type { KajaMode } from "../config/mode"
-import { fetchRemoteConfigBundle } from "../config/remote-fetch"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { t } from "../i18n"
 import { getModelsPath, saveProviderBaseUrl, writeModelsTemplate } from "../models/models"
@@ -27,16 +24,8 @@ async function applyResult(result: WizardResult) {
   await savePreferences({ mode, ...(result.language ? { locale: result.language } : {}) })
   if (mode === "cloud") return
 
-  if (result.provider === "fetch") {
-    // Same bundle `kaja config fetch` writes (models.toml) — picking "fetch" means "take the
-    // admin-managed defaults". Personas and MCP servers come from `kaja abilities update` instead.
-    const bundle = await fetchRemoteConfigBundle(false)
-    if (!("unchanged" in bundle)) {
-      await Promise.all(
-        Object.entries(bundle.files).map(([key, text]) => writeTemplateConfig(text, pathForBundleKey(key)))
-      )
-    }
-  } else if (result.provider && TEMPLATE_PROVIDERS.includes(result.provider)) {
+  // The admin-managed models.toml is no longer offered here; `kaja config fetch` still writes it.
+  if (result.provider && TEMPLATE_PROVIDERS.includes(result.provider)) {
     await writeModelsTemplate(result.provider as "fireworks" | "ollama" | "llama")
     if (result.baseUrl) await saveProviderBaseUrl(result.provider, result.baseUrl)
   }
