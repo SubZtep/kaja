@@ -1,6 +1,5 @@
 import { readdir, readFile, realpath, stat } from "node:fs/promises"
 import { isAbsolute, join, relative, resolve, sep } from "node:path"
-import { warn } from "@kaja/logger"
 import {
   type Dataset,
   DatasetSchema,
@@ -13,6 +12,7 @@ import {
   SkillNameSchema
 } from "@kaja/schema/abilities"
 import type * as z from "zod"
+import { warn } from "../warn"
 import { parseSkillMd } from "./skill-md"
 import { type AbilityStore, SkillFileError, type SkillSummary } from "./types"
 

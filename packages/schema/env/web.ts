@@ -1,7 +1,7 @@
+import * as z from "zod"
 import { trimmed, url } from "./helpers"
-import { LoggerEnvSchema } from "./logger"
 
-export const WebEnvSchema = LoggerEnvSchema.extend({
+export const WebEnvSchema = z.object({
   API_URL: url
     .optional()
     .describe(

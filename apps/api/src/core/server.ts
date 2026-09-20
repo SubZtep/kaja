@@ -1,12 +1,15 @@
-import { error, info, warn } from "@kaja/logger"
+import { setWarnHandler } from "@kaja/nasi"
 import { app } from "../app"
 import { createTelegramBotService } from "../features/telegram"
 import { marketplaceService } from "../services"
 import { CronService } from "./cron"
 import { env } from "./env"
+import { reportError } from "./report"
 
 const port = env.PORT
-info("API is running", { port })
+
+// The agent brain reports skipped abilities, missing keys and failed MCP connections here.
+setWarnHandler((message, payload) => console.warn(message, payload))
 
 // Start cron jobs
 const cron = new CronService()
@@ -16,13 +19,13 @@ cron.start()
 marketplaceService.sync().catch(() => {})
 
 if (!env.USER_SECRET_KEY) {
-  warn("USER_SECRET_KEY isn't set: users can't save ability keys, and tools that need one are hidden")
+  console.warn("USER_SECRET_KEY isn't set: users can't save ability keys, and tools that need one are hidden")
 }
 
 // Start the always-on cloud Telegram bot, if configured
 createTelegramBotService()
   ?.start()
-  .catch(err => error("Telegram bot failed to start", { error: String(err) }))
+  .catch(err => reportError("Telegram bot failed to start", err))
 
 export default {
   port,

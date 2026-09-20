@@ -58,8 +58,8 @@ Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).
 
 ## Env
 
-`.env.example`: `VITE_API_URL`, `VITE_APP_URL`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`.  
-Vite uses `import.meta.env.MODE` (not `NODE_ENV`) for browser environment detection in the logger.
+`.env.example`: `VITE_API_URL`, `VITE_APP_URL`.  
+Failures worth knowing about go to Sentry (`Sentry.captureException`); user-facing ones already show a toast. There is no logger package.
 
 ## Boundaries
 

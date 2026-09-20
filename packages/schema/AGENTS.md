@@ -17,11 +17,10 @@ cli/         # Datasets (re-exports abilities/persona.ts)
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
 abilities/    # Marketplace ability content (SKILL.md frontmatter, HTTP tool, MCP and persona manifests), shared by every host that loads abilities
 env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, TuiEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
-  index.ts     # re-exports api/web/tui/logger/helpers
-  api.ts       # ApiEnvSchema — LoggerEnvSchema.extend() + every other var apps/api reads
-  web.ts       # WebEnvSchema — LoggerEnvSchema.extend() + every other var apps/web reads
-  tui.ts       # TuiEnvSchema — LoggerEnvSchema.extend() + KAJA_API_URL (locale vars and a hyperlink-support workaround stay plain process.env reads)
-  logger.ts    # LoggerEnvSchema — @kaja/logger's own contract (KAJA_APP_NAME, KAJA_LOG_LEVEL, KAJA_LOG_FILE, AXIOM_DATASET, AXIOM_TOKEN, NODE_ENV); merged into api/web/tui so it's typed/validated everywhere even though @kaja/logger itself reads these raw via process.env (it can't depend on @kaja/schema)
+  index.ts     # re-exports api/web/tui/helpers
+  api.ts       # ApiEnvSchema — every var apps/api reads
+  web.ts       # WebEnvSchema — every var apps/web reads
+  tui.ts       # TuiEnvSchema — KAJA_API_URL, KAJA_LOG_LEVEL, KAJA_LOG_FILE (locale vars and a hyperlink-support workaround stay plain process.env reads)
   helpers.ts   # trimmed/bool/positiveInt/url field helpers, parseEnv(schema, source)
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```

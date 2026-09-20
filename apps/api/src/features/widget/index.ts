@@ -1,10 +1,10 @@
 import { resolve } from "node:path"
-import { error as logError } from "@kaja/logger"
 import { categorizeError } from "@kaja/nasi"
 import { WidgetTurnRequestSchema } from "@kaja/schema/nasi"
 import { Hono } from "hono"
 import { withLock } from "../../core/lock"
 import { widgetKeyRateLimiter, widgetTurnRateLimiter } from "../../core/rate-limit"
+import { reportError } from "../../core/report"
 import { widgetService } from "../../services"
 import { badGateway, badRequest, internalError, notFound } from "../../types/errors"
 import { type WidgetVariables, widgetKeyAuthMiddleware } from "./auth"
@@ -68,7 +68,7 @@ widgetRoutes.post("/turn", widgetKeyRateLimiter, widgetTurnRateLimiter, widgetKe
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
     if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
     const { category, message } = categorizeError(error)
-    logError("widget turn failed", { widgetKeyId: widgetKey.id, category, error: String(error) })
+    reportError("widget turn failed", error, { widgetKeyId: widgetKey.id, category })
     return internalError(c, message)
   }
 })

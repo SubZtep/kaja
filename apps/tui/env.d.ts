@@ -2,20 +2,12 @@
 
 declare module "bun" {
   interface Env {
-    /** Selects @kaja/logger's node.ts destination: pretty-print in development, Axiom in production */
-    NODE_ENV?: string
-    /** App name attached to every log line */
-    KAJA_APP_NAME?: string
-    /** Master on/off switch for logging - unset means no log output at all */
-    KAJA_LOG_LEVEL?: string
-    /** Append JSON logs here instead of pretty-printing/Axiom, in any NODE_ENV */
-    KAJA_LOG_FILE?: string
-    /** Axiom dataset to ship logs to (node, NODE_ENV=production, no KAJA_LOG_FILE) */
-    AXIOM_DATASET?: string
-    /** Axiom ingest token (node, NODE_ENV=production, no KAJA_LOG_FILE) */
-    AXIOM_TOKEN?: string
     /** Overrides [api].baseUrl from services.toml, for pointing the CLI at a local dev API without editing the file */
     KAJA_API_URL?: string
+    /** Minimum level written to KAJA_LOG_FILE (trace, debug, info, warn, error, fatal); unset means no log */
+    KAJA_LOG_LEVEL?: string
+    /** Append JSON-lines logs here (needs KAJA_LOG_LEVEL); the TUI never logs to the terminal */
+    KAJA_LOG_FILE?: string
   }
 }
 

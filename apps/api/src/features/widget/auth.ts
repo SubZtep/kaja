@@ -1,6 +1,6 @@
-import { error as logError } from "@kaja/logger"
 import type { WidgetConfig } from "@kaja/schema/api"
 import { createMiddleware } from "hono/factory"
+import { reportError } from "../../core/report"
 import { widgetService } from "../../services"
 import { forbidden, unauthorized } from "../../types/errors"
 
@@ -27,7 +27,7 @@ export const widgetKeyAuthMiddleware = createMiddleware<{ Variables: WidgetVaria
   c.set("widgetKey", resolved)
   void widgetService
     .touchLastUsed(resolved.id)
-    .catch(error => logError("widget touchLastUsed failed", { widgetKeyId: resolved.id, error: String(error) }))
+    .catch(error => reportError("widget touchLastUsed failed", error, { widgetKeyId: resolved.id }))
 
   await next()
 })

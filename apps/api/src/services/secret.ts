@@ -1,5 +1,4 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto"
-import { warn } from "@kaja/logger"
 import type { Pool } from "pg"
 
 const ALGORITHM = "aes-256-gcm"
@@ -80,7 +79,7 @@ export class SecretService {
         decipher.setAuthTag(row.tag)
         secrets.set(row.name, Buffer.concat([decipher.update(row.ciphertext), decipher.final()]).toString("utf8"))
       } catch {
-        warn("User secret doesn't decrypt; ignoring it", { userId, name: row.name })
+        console.warn("User secret doesn't decrypt; ignoring it", { userId, name: row.name })
       }
     }
     return secrets

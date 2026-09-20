@@ -1,7 +1,7 @@
-import { warn } from "@kaja/logger"
 import type { HttpToolAbility, McpAbility } from "@kaja/schema/abilities"
 import type { Persona } from "@kaja/schema/cli"
 import type { ToolGroup } from "../tools/registry"
+import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
 import { type McpAbilityTarget, mcpAbilityTarget } from "./mcp-ability"
 import { createLoadSkillTool } from "./skills"

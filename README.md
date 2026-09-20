@@ -56,7 +56,6 @@ bun dev:tui                 # the terminal client
 
 - [`nasi`](./packages/nasi/) – the agent brain: the loop, tools, and memory
 - [`schema`](./packages/schema/) – shared Zod schemas and types
-- [`logger`](./packages/logger/) – Pino logger for backend and frontend
 - [`shared`](./packages/shared/) – small pure utilities
 
 ## Contributing

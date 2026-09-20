@@ -27,7 +27,6 @@ flowchart TD
     subgraph Pkgs["packages/"]
         NASI["<b>nasi</b><br>the agent brain"]
         SCH["<b>schema</b><br>Zod contracts"]
-        LOG["<b>logger</b>"]
         SHR["<b>shared</b>"]
     end
     DB[("PostgreSQL")]
@@ -59,7 +58,6 @@ flowchart TD
 | `apps/tui` | the [terminal client](/tui), Telegram bot, local config and storage |
 | `packages/nasi` | the [agent brain](/development/nasi): loop, tools, store interface |
 | `packages/schema` | every Zod [schema](/development/schema), in role-based subpaths |
-| `packages/logger` | Pino on the server, console in the browser |
 | `packages/shared` | small pure utilities |
 
 There is **no mobile app** in this repo.

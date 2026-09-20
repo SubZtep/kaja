@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
-    "@kaja/logger": "workspace:*",
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",

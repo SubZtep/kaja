@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto"
-import { error as logError, warn as logWarn } from "@kaja/logger"
 import {
   categorizeError,
   type FinalizedAgentEvent,
@@ -11,6 +10,7 @@ import { telegramOwner } from "@kaja/schema/store"
 import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming, withQuestion } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { withLock } from "../../core/lock"
+import { reportError } from "../../core/report"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
 import {
@@ -114,7 +114,7 @@ class EditThrottle {
         this.intervalMs = Math.min(this.intervalMs * 2, MAX_EDIT_INTERVAL_MS)
         if (error.retryAfterSec) this.lastEditAt = Date.now() + error.retryAfterSec * 1000
       } else {
-        logWarn("Telegram edit failed", { error })
+        console.warn("Telegram edit failed", { error })
       }
     }
   }
@@ -150,7 +150,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     try {
       await sender.editMessageText(chatId, messageId, text, rows)
     } catch (error) {
-      logWarn("Telegram edit failed", { error })
+      console.warn("Telegram edit failed", { error })
     }
   }
 
@@ -262,7 +262,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         await nasi.close()
       }
     } catch (error) {
-      logWarn("Telegram agent turn failed", { error })
+      console.warn("Telegram agent turn failed", { error })
       const { category, message } = categorizeError(error)
       await editIfChanged(`⚠ ${category}: ${message}`)
     }
@@ -293,7 +293,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     try {
       await runTurn(ownerUserId, owner, chatId, text, resume)
     } catch (error) {
-      logError("Telegram turn crashed", { error })
+      reportError("Telegram turn crashed", error)
     }
   }
 
@@ -345,7 +345,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
           hash: abilityMatch?.[2]
         })
       } catch (error) {
-        logError("Telegram ability toggle crashed", { error })
+        reportError("Telegram ability toggle crashed", error)
       }
       return true
     }
@@ -367,7 +367,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         await runTurnLocked(ownerUserId, owner, chatId, { approval }, true)
       })
     } catch (error) {
-      logError("Telegram approval crashed", { error })
+      reportError("Telegram approval crashed", error)
     }
     return true
   }

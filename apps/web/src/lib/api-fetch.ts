@@ -1,4 +1,4 @@
-import { error } from "@kaja/logger"
+import * as Sentry from "@sentry/tanstackstart-react"
 import { useLoaderData } from "@tanstack/react-router"
 import { useCallback } from "react"
 import { useAuthClient } from "../hooks/auth-client"
@@ -24,7 +24,7 @@ async function apiFetch<T = unknown>(
     try {
       body = JSON.stringify(payload)
     } catch (err) {
-      error("API request error", { error: err })
+      Sentry.captureException(err)
     }
   }
 
@@ -37,7 +37,6 @@ async function apiFetch<T = unknown>(
   })
 
   if (!response.ok) {
-    error("API requiest failed", { path, response })
     const body = await response.json().catch(() => undefined)
     const message = typeof body?.error === "string" ? body.error : response.statusText
     throw new Error(message)

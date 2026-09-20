@@ -1,9 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { sentry } from "@sentry/hono/bun"
 import { cors } from "hono/cors"
-import { logger } from "hono/logger"
 import { env } from "./core/env"
-import { trafficLogger } from "./core/logger"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { abilityRoutes } from "./features/abilities"
 import { adminRoutes } from "./features/admin"
@@ -31,7 +29,6 @@ if (env.NODE_ENV === "production") {
     })
   )
 }
-app.use(logger(trafficLogger))
 // /widget/turn and /widget/<key>.js are embedded on arbitrary third-party sites and have their own
 // reflected-origin CORS (features/widget/cors.ts) — the app's single fixed CORS_ORIGIN can't apply
 // there. /widget/admin/* is the authenticated management API and must go through the normal

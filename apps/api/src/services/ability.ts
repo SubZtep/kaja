@@ -1,4 +1,3 @@
-import { warn } from "@kaja/logger"
 import {
   checkHttpToolKey,
   checkMcpAbilityKey,
@@ -281,7 +280,7 @@ export class AbilityService {
       try {
         datasets.set(row.name, parseDatasetManifest(row.files[`${row.name}.json`] ?? ""))
       } catch (error) {
-        warn("Stored dataset can't be used; leaving it out", {
+        console.warn("Stored dataset can't be used; leaving it out", {
           dataset: row.name,
           error: error instanceof Error ? error.message : error
         })
@@ -380,7 +379,7 @@ export class AbilityService {
       if (problem) throw new Error(problem)
       return { type: "mcp", ability }
     } catch (error) {
-      warn("Stored ability can't be used; leaving it out", {
+      console.warn("Stored ability can't be used; leaving it out", {
         type: row.type,
         ability: row.name,
         error: error instanceof Error ? error.message : error
@@ -394,7 +393,7 @@ export class AbilityService {
     try {
       return parsePersonaManifest(row.files[`${row.name}.toml`] ?? "", row.name)
     } catch (error) {
-      warn("Stored persona can't be used; leaving it out", {
+      console.warn("Stored persona can't be used; leaving it out", {
         persona: row.name,
         error: error instanceof Error ? error.message : error
       })

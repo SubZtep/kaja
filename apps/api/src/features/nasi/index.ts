@@ -1,5 +1,4 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import { error as logError } from "@kaja/logger"
 import { categorizeError, LOAD_SKILL_TOOL, listCloudToolNames } from "@kaja/nasi"
 import {
   NasiInfoResponseSchema,
@@ -10,6 +9,7 @@ import {
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
 import { nasiTurnRateLimiter } from "../../core/rate-limit"
+import { reportError } from "../../core/report"
 import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
@@ -61,7 +61,7 @@ nasiRoutes.openapi(turnRoute, async c => {
     if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
     if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
     const { category, message } = categorizeError(error)
-    logError("nasi turn failed", { userId: user.id, category, error: String(error) })
+    reportError("nasi turn failed", error, { userId: user.id, category })
     return internalError(c, message)
   }
 })
@@ -87,7 +87,7 @@ function streamErrorBody(error: unknown, userId: string): { error: string; categ
   if (error instanceof Error && error.message === "no_model") return { error: "No model available" }
   if (error instanceof Error && error.name === "NasiModelUnavailable") return { error: error.message }
   const { category, message } = categorizeError(error)
-  logError("nasi turn/stream failed", { userId, category, error: String(error) })
+  reportError("nasi turn/stream failed", error, { userId, category })
   return { error: message, category }
 }
 

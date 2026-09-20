@@ -1,8 +1,8 @@
-import { warn } from "@kaja/logger"
 import { Readability } from "@mozilla/readability"
 import { parseHTML } from "linkedom"
 import { ToolError, tool } from "../../agent/agent"
 import { fetchPublicHttp, ProxyUnavailableError, UnsafeUrlError } from "../../security/ssrf"
+import { warn } from "../../warn"
 import { getToolDeps } from "../deps"
 
 /** Raised well above the ssrf default: heavy modern pages run past it, and Readability strips the HTML to a few KB of text before the model ever sees it. */

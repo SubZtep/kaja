@@ -136,3 +136,4 @@ export {
   type SkippedTool,
   type ToolGroup
 } from "./tools/registry"
+export { setWarnHandler, type WarnHandler } from "./warn"

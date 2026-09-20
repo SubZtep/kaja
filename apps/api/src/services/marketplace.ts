@@ -2,7 +2,6 @@ import { createHash } from "node:crypto"
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { info, warn } from "@kaja/logger"
 import {
   parseHttpToolManifest,
   parseMcpManifest,
@@ -18,6 +17,7 @@ import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/
 import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
 import { withLock } from "../core/lock"
+import { reportError } from "../core/report"
 import { cloudMcpProblem } from "./ability"
 
 const MAX_TARBALL_BYTES = 50 * 1024 * 1024
@@ -65,14 +65,13 @@ export class MarketplaceService {
           const marketplaceDir = await this.#download(commit, dir)
           const result = await this.syncFromDir(marketplaceDir, commit)
           await this.#recordSuccess(commit)
-          info("Marketplace synced", { commit, ...result })
           return { commit, changed: true, ...result }
         } finally {
           await rm(dir, { recursive: true, force: true })
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        warn("Marketplace sync failed", { error: message })
+        reportError("Marketplace sync failed", error)
         await this.#db.query(
           `INSERT INTO marketplace_sync (id, error) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET error = EXCLUDED.error`,
           [message]
@@ -90,7 +89,7 @@ export class MarketplaceService {
     const bundles: AbilityBundle[] = []
     for (const entry of await scanSkills(marketplaceDir)) {
       if (entry.error) {
-        warn("Marketplace skill skipped", { skill: entry.name, error: entry.error })
+        console.warn("Marketplace skill skipped", { skill: entry.name, error: entry.error })
         continue
       }
       bundles.push({ type: "skill", ...(await readSkillBundle(marketplaceDir, entry.name)) })
@@ -248,7 +247,7 @@ async function readPersonaFiles(marketplaceDir: string): Promise<AbilityBundle[]
         hasScripts: false
       })
     } catch (error) {
-      warn("Marketplace persona skipped", {
+      console.warn("Marketplace persona skipped", {
         persona: entry.name,
         error: error instanceof Error ? error.message : error
       })
@@ -262,7 +261,7 @@ async function readDatasetFiles(marketplaceDir: string): Promise<AbilityBundle[]
   const bundles: AbilityBundle[] = []
   for (const entry of await scanDatasets(marketplaceDir)) {
     if (entry.error || !entry.label) {
-      warn("Marketplace dataset skipped", { dataset: entry.name, error: entry.error })
+      console.warn("Marketplace dataset skipped", { dataset: entry.name, error: entry.error })
       continue
     }
     const file = `${entry.name}.json`
@@ -296,7 +295,10 @@ async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
         hasScripts: false
       })
     } catch (error) {
-      warn("Marketplace HTTP tool skipped", { tool: entry.name, error: error instanceof Error ? error.message : error })
+      console.warn("Marketplace HTTP tool skipped", {
+        tool: entry.name,
+        error: error instanceof Error ? error.message : error
+      })
     }
   }
   return bundles
@@ -326,7 +328,7 @@ async function readMcpAbilities(marketplaceDir: string, toolNames: Set<string>):
         hasScripts: false
       })
     } catch (error) {
-      warn("Marketplace MCP ability skipped", {
+      console.warn("Marketplace MCP ability skipped", {
         mcp: entry.name,
         error: error instanceof Error ? error.message : error
       })

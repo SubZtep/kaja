@@ -1,5 +1,5 @@
-import { error as logError } from "@kaja/logger"
 import { Bot, GrammyError, InlineKeyboard } from "grammy"
+import { reportError } from "../../core/report"
 import { telegramLinkService } from "../../services"
 import { createCloudTelegramDriver, type TelegramButton, TelegramRateLimitError } from "./driver"
 
@@ -159,10 +159,10 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   bot.catch(err => {
     if (err.error instanceof GrammyError && err.error.error_code === 401) {
-      logError("Telegram bot token rejected — bot is now unreachable", { error: err.error })
+      reportError("Telegram bot token rejected — bot is now unreachable", err.error)
       return
     }
-    logError("Unhandled error in Telegram update handler", { error: err.error })
+    reportError("Unhandled error in Telegram update handler", err.error)
   })
 
   let username: string | undefined
@@ -175,7 +175,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
         throw new Error("Invalid Telegram bot token — check TELEGRAM_BOT_TOKEN.", { cause: error })
       }
       // The menu next to the message box; a failure only costs the menu.
-      await bot.api.setMyCommands(COMMANDS).catch(error => logError("Telegram command menu not set", { error }))
+      await bot.api.setMyCommands(COMMANDS).catch(error => reportError("Telegram command menu not set", error))
       void bot.start()
     },
     async stop() {

@@ -1,3 +1,4 @@
+import { setWarnHandler } from "@kaja/nasi"
 import { color } from "bun"
 import { detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { runFirstRunIfNeeded } from "./lib/cli/first-run"
@@ -12,6 +13,9 @@ import { runLogoutSubcommand } from "./subcommands/logout"
 import { runSubcommand } from "./subcommands/run"
 import { runCloudSubcommand } from "./subcommands/run-cloud"
 import { runTelegramSubcommand } from "./subcommands/telegram"
+
+// The agent brain reports skipped abilities and failed MCP connections here; the TUI keeps them in its opt-in log file.
+setWarnHandler((message, payload) => log.warn(message, payload))
 
 try {
   // MARK: On-Boarding

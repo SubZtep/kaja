@@ -26,7 +26,7 @@ src/
   core/                  # process infrastructure only
     server.ts            # process entry: cron, startup marketplace sync, export default
     db.ts                # pg Pool
-    logger.ts            # traffic logger for hono/logger
+    report.ts            # reportError: console.error + Sentry for failures the code handles itself
     rate-limit.ts        # global + auth + nasi turn limiters (off under bun test)
     cron.ts              # Bun.cron jobs: hourly marketplace sync
   features/              # one folder per URL mount prefix
@@ -58,7 +58,7 @@ widgets/                 # embeddable browser widget bundle source, own tsconfig
 - **DB**: raw SQL with parameterized queries via `pg` Pool — never string-interpolate user input
 - **Types**: API contracts from `@kaja/schema`; row types stay private in services; map with `#rowTo…` helpers
 - **Auth**: `authMiddleware` on all routes; session/bearer via Better Auth
-- **Logging**: `@kaja/logger` — `info(message, payload?)`
+- **Logging**: no logger package. A failure the code handles itself (so Sentry's Hono middleware never sees it) goes through `core/report.ts`'s `reportError`; a recoverable problem is a `console.warn`; `@kaja/nasi`'s warnings arrive via `setWarnHandler` in `core/server.ts`
 - **Errors**: helpers in `types/errors.ts` (cast responses for Hono typing)
 
 ## Important behaviors
@@ -78,11 +78,11 @@ Ability keys live in `user_secret` via `services/secret.ts`: AES-256-GCM with `U
 
 See `.env.example`.
 
-**Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `KAJA_APP_NAME`, `KAJA_LOG_LEVEL`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`.
+**Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`.
 
 **Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`, `NASI_TURN_RATE_LIMIT_WINDOW_MS` / `NASI_TURN_RATE_LIMIT_MAX`.
 
-**Production:** `NODE_ENV=production` (JSON logs, no pino-pretty), quieter log level, strong secret, real SMTP, `CORS_ORIGIN` matching the public web origin.
+**Production:** `NODE_ENV=production` (turns Sentry on), strong secret, real SMTP, `CORS_ORIGIN` matching the public web origin.
 
 ## Type rules (API layer)
 

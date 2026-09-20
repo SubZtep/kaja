@@ -14,7 +14,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
-- **Packages**: `@kaja/schema`, `@kaja/logger`, `@kaja/shared`, `@kaja/nasi` (agent brain)
+- **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
 
@@ -83,7 +83,7 @@ bun run --filter @kaja/tui test
 
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
-- **Core**: `db.ts` (pg Pool), `logger.ts`, `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (hourly marketplace sync)
+- **Core**: `db.ts` (pg Pool), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `cron.ts` (hourly marketplace sync)
 - **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (cloud ability catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
@@ -105,7 +105,6 @@ bun run --filter @kaja/tui test
 | Package | Role |
 |---------|------|
 | `@kaja/schema` | Zod API contracts + `KAJA_TUI_CLIENT_ID` (single source of truth for API types) |
-| `@kaja/logger` | Pino (node) / console (browser) with `message, payload?` API |
 | `@kaja/shared` | Pure utils (`cn`, dates, strings) |
 | `@kaja/nasi` | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres. |
 
