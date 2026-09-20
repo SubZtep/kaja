@@ -28,11 +28,26 @@ const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
  * `""` means the step was shown and skipped, `undefined` that it never applied. The caller needs
  * both: a key the user has already declined must not be asked for a second time.
  */
+/** A provider that isn't in the catalog: any OpenAI-compatible server the user names. */
+export type WizardCustom = {
+  /** The `[providers.<name>]` key, already reduced to letters, numbers and dashes. */
+  name?: string
+  baseUrl?: string
+  /** Its models. A model waits for its task, which is asked right after the id. */
+  models: { model: string; task?: ModelTask }[]
+  /** The user has listed all the models they want. */
+  done?: boolean
+}
+
+/** What the checklist stores for "a provider that isn't listed". */
+const CUSTOM = "custom"
+
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
-  /** The ticked catalog providers, in catalog order. Empty means the user sets up models.toml themselves. */
+  /** The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Empty means the user sets up models.toml themselves. */
   providers?: string[]
+  custom?: WizardCustom
   /** Typed API keys by provider id; only hosted providers are asked. */
   keys?: Record<string, string>
   /** Where each local provider's server listens. */
@@ -63,6 +78,11 @@ type Step =
   | `key:${string}`
   | `address:${string}`
   | `model:${ModelTask}`
+  | "custom-name"
+  | "custom-url"
+  | "custom-key"
+  | `custom-model:${number}`
+  | `custom-task:${number}`
   | "extras"
   | "webSearchKey"
   | "telegramToken"
@@ -87,9 +107,43 @@ const TASK_LABEL_KEY: Record<ModelTask, string> = {
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
 
-/** The ticked providers as catalog entries, in catalog order. */
-function chosenProviders(result: WizardResult): CatalogProvider[] {
+/** A name reduced to what a TOML table key and a secrets.toml entry can carry; never one the catalog already owns. */
+function customId(name: string): string {
+  const id = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+  return catalogProvider(id) ? `${id}-custom` : id
+}
+
+/** Whether `value` is an http(s) address, the only kind an OpenAI-compatible API can be reached on. */
+function isWebAddress(value: string): boolean {
+  try {
+    const { protocol } = new URL(value)
+    return protocol === "http:" || protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+/** The custom provider as a catalog entry, once it has an address and at least one model with its task. */
+function customProvider(result: WizardResult): CatalogProvider | undefined {
+  const custom = result.custom
+  if (!result.providers?.includes(CUSTOM) || !custom?.name || !custom.baseUrl) return undefined
+  const models = custom.models.flatMap(({ model, task }) => (task ? [{ model, task }] : []))
+  if (models.length === 0) return undefined
+  return { id: custom.name, name: custom.name, kind: "hosted", baseUrl: custom.baseUrl, models }
+}
+
+/** The ticked providers from the catalog, in catalog order. */
+function catalogChoices(result: WizardResult): CatalogProvider[] {
   return CATALOG.filter(provider => result.providers?.includes(provider.id))
+}
+
+/** Every ticked provider, the custom one last. Exported for the runner, which writes models.toml from it. */
+export function chosenProviders(result: WizardResult): CatalogProvider[] {
+  const custom = customProvider(result)
+  return custom ? [...catalogChoices(result), custom] : catalogChoices(result)
 }
 
 /** The tasks more than one ticked provider can serve: the only model questions worth asking. */
@@ -111,8 +165,18 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   if (result.mode === "cloud") return [...steps, "summary"]
 
   steps.push("providers")
-  for (const provider of chosenProviders(result)) {
+  for (const provider of catalogChoices(result)) {
     steps.push(provider.kind === "hosted" ? `key:${provider.id}` : `address:${provider.id}`)
+  }
+  if (result.providers?.includes(CUSTOM)) {
+    steps.push("custom-name", "custom-url", "custom-key")
+    const models = result.custom?.models ?? []
+    models.forEach((_, index) => {
+      steps.push(`custom-model:${index}`, `custom-task:${index}`)
+    })
+    // Ask for another model until the user ends the list, but never while the last one still needs its task.
+    if (!result.custom?.done && models.at(-1)?.task !== undefined) steps.push(`custom-model:${models.length}`)
+    else if (models.length === 0) steps.push("custom-model:0")
   }
   for (const task of contestedTasks(result)) steps.push(`model:${task}`)
   // Every extra is a local-agent feature: the Telegram bot and the web_search tool.
@@ -125,7 +189,11 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
 
 function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode): Step {
   const steps = stepsFor(result, forcedMode)
-  return steps[steps.indexOf(step) + 1] ?? "summary"
+  const at = steps.indexOf(step)
+  if (at !== -1) return steps[at + 1] ?? "summary"
+  // The step that just ended the custom model list is no longer in the list, so carry on after the custom ones.
+  const lastCustom = steps.findLastIndex(candidate => candidate.startsWith("custom"))
+  return steps[lastCustom + 1] ?? "summary"
 }
 
 /**
@@ -138,31 +206,41 @@ function InputStep({
   hint,
   secret,
   defaultValue,
+  validate,
   onSubmit
 }: Readonly<{
   title: string
   hint: string
   secret?: boolean
   defaultValue?: string
+  /** Says what is wrong with an answer, or nothing when it is fine. A wrong answer keeps the question open. */
+  validate?: (value: string) => string | undefined
   onSubmit: (value: string) => void
 }>) {
+  const [problem, setProblem] = useState<string>()
+  const submit = (raw: string) => {
+    const value = raw.trim()
+    const complaint = validate?.(value)
+    setProblem(complaint)
+    if (!complaint) onSubmit(value)
+  }
   return (
     <Box flexDirection="column" gap={1}>
       <Text>{title}</Text>
       <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
         {secret ? (
-          <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={value => onSubmit(value.trim())} />
+          <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={submit} />
         ) : (
-          <TextInput defaultValue={defaultValue} onSubmit={value => onSubmit(value.trim())} />
+          <TextInput defaultValue={defaultValue} onSubmit={submit} />
         )}
       </Box>
-      <Text dimColor>{hint}</Text>
+      {problem ? <Text color="red">{problem}</Text> : <Text dimColor>{hint}</Text>}
     </Box>
   )
 }
 
 function providerName(id: string): string {
-  return catalogProvider(id)?.name ?? id
+  return catalogProvider(id)?.name ?? (id === CUSTOM ? "Custom" : id)
 }
 
 /** What happened to a key step: typed, left empty over one already saved, or left empty. Undefined when the step never applied. */
@@ -216,6 +294,23 @@ function answerLine(
             label: capitalized(t("wizard.summaryModel", { task: t(TASK_LABEL_KEY[task]) })),
             value: `${providerName(picked.provider)} (${picked.model})`
           }
+        : undefined
+    }
+    case "custom-name":
+      return result.custom?.name ? { label: t("wizard.summaryCustom"), value: result.custom.name } : undefined
+    case "custom-url":
+      return result.custom?.baseUrl
+        ? { label: t("wizard.summaryAddress", { provider: result.custom.name ?? "" }), value: result.custom.baseUrl }
+        : undefined
+    case "custom-key": {
+      const id = result.custom?.name ?? ""
+      const value = keyState(result.keys?.[id], saved?.providers?.includes(id))
+      return value ? { label: t("wizard.summaryKeyProvider", { provider: id }), value } : undefined
+    }
+    case "custom-task": {
+      const entry = result.custom?.models[Number(subject)]
+      return entry?.task
+        ? { label: t("wizard.summaryCustomModel"), value: `${entry.model} (${t(TASK_LABEL_KEY[entry.task])})` }
         : undefined
     }
     case "extras":
@@ -333,6 +428,94 @@ export function ConfigWizard({
       )
     }
 
+    const custom = result.custom ?? { models: [] }
+    const nameOf = custom.name ?? ""
+
+    if (step === "custom-name") {
+      return (
+        <InputStep
+          title={t("wizard.customNameTitle")}
+          hint={t("wizard.customNameHint")}
+          defaultValue={custom.name}
+          validate={value => (customId(value) ? undefined : t("wizard.customNameInvalid"))}
+          onSubmit={value => advance({ custom: { ...custom, name: customId(value) } })}
+        />
+      )
+    }
+
+    if (step === "custom-url") {
+      return (
+        <InputStep
+          title={t("wizard.customUrlTitle")}
+          hint={t("wizard.customUrlHint")}
+          defaultValue={custom.baseUrl}
+          validate={value => (isWebAddress(value) ? undefined : t("wizard.customUrlInvalid"))}
+          onSubmit={value => advance({ custom: { ...custom, baseUrl: value } })}
+        />
+      )
+    }
+
+    if (step === "custom-key") {
+      return (
+        <InputStep
+          secret
+          title={t("wizard.providerKeyTitle", { provider: nameOf })}
+          hint={t(saved?.providers?.includes(nameOf) ? "wizard.keyHintSaved" : "wizard.keyHint")}
+          onSubmit={value => advance({ keys: { ...result.keys, [nameOf]: value } })}
+        />
+      )
+    }
+
+    if (kind === "custom-model") {
+      const index = Number(subject)
+      // A model the wizard is re-offering opens on its id; one past the end is a new one, and empty ends the list.
+      const existing = custom.models[index]
+      return (
+        <InputStep
+          title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
+            provider: nameOf
+          })}
+          hint={t("wizard.customModelHint")}
+          defaultValue={existing?.model}
+          // The first model is required, or the provider would serve nothing.
+          validate={value => (!existing && index === 0 && !value ? t("wizard.customModelRequired") : undefined)}
+          onSubmit={value => {
+            if (existing) {
+              const models = custom.models.map((m, i) => (i === index && value ? { ...m, model: value } : m))
+              return advance({ custom: { ...custom, models } })
+            }
+            advance({
+              custom: value ? { ...custom, models: [...custom.models, { model: value }] } : { ...custom, done: true }
+            })
+          }}
+        />
+      )
+    }
+
+    if (kind === "custom-task") {
+      const index = Number(subject)
+      const entry = custom.models[index]
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Text>{t("wizard.customTaskTitle", { model: entry?.model ?? "" })}</Text>
+          <SelectMenu
+            items={TASK_ORDER.map(task => t(TASK_LABEL_KEY[task]))}
+            width={70}
+            initialIndex={entry?.task ? TASK_ORDER.indexOf(entry.task) : undefined}
+            onSelect={choice =>
+              advance({
+                custom: {
+                  ...custom,
+                  models: custom.models.map((m, i) => (i === index ? { ...m, task: TASK_ORDER[choice]! } : m))
+                }
+              })
+            }
+            onClose={onCancel}
+          />
+        </Box>
+      )
+    }
+
     if (kind === "model") {
       const task = subject as ModelTask
       const candidates = candidatesByTask(chosenProviders(result))[task] ?? []
@@ -397,12 +580,17 @@ export function ConfigWizard({
             <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
               {/* Nothing ticked by default, so one Enter means "I'll set up models.toml myself". */}
               <MultiSelect
-                options={CATALOG.map(provider => ({
-                  label: t(PROVIDER_LABEL_KEY[provider.id] ?? provider.id),
-                  value: provider.id
-                }))}
+                options={[
+                  ...CATALOG.map(provider => ({
+                    label: t(PROVIDER_LABEL_KEY[provider.id] ?? provider.id),
+                    value: provider.id
+                  })),
+                  { label: t("wizard.providerCustom"), value: CUSTOM }
+                ]}
                 defaultValue={result.providers}
-                onSubmit={values => advance({ providers: CATALOG.map(p => p.id).filter(id => values.includes(id)) })}
+                onSubmit={values =>
+                  advance({ providers: [...CATALOG.map(p => p.id), CUSTOM].filter(id => values.includes(id)) })
+                }
               />
             </Box>
             <Text dimColor>{t("wizard.providerHint")}</Text>

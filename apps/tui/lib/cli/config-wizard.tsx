@@ -6,7 +6,7 @@ import { create, createCloud, isConfigExists, readConfigLoose, savePreferences }
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { t } from "../i18n"
-import { CATALOG, candidatesByTask } from "../models/catalog"
+import { CATALOG, candidatesByTask, catalogProvider } from "../models/catalog"
 import { getModelsPath, writeModelsFromCatalog } from "../models/models"
 import type { PullProgress } from "../models/pull"
 
@@ -40,7 +40,8 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
   if (mode === "cloud") return
 
   // Nothing ticked: models.toml is the user's to write, so it is left exactly as it is.
-  const providers = CATALOG.filter(provider => result.providers?.includes(provider.id))
+  const { chosenProviders } = await import("../../components/config-wizard")
+  const providers = chosenProviders(result)
   if (providers.length === 0) return
 
   await writeModelsFromCatalog({ providers, pick: result.models, baseUrls: result.addresses })
@@ -193,25 +194,42 @@ async function offerModelDownloads(print: (line: string) => void) {
  * each task more than one could — for re-offering what the machine already runs. Tolerant: nothing
  * when the file is missing or unparseable.
  */
-async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models">> {
+async function currentModels(): Promise<Pick<WizardResult, "providers" | "addresses" | "models" | "custom">> {
   try {
     const f = file(getModelsPath())
     if (!(await f.exists())) return {}
     const data = TOML.parse(await f.text()) as any
     const known = CATALOG.filter(provider => data?.providers?.[provider.id])
-    if (known.length === 0) return {}
 
     const addresses: Record<string, string> = {}
     for (const provider of known) {
       const url = data.providers[provider.id].base_url
       if (provider.kind === "local" && typeof url === "string") addresses[provider.id] = url
     }
+
+    // A provider the catalog doesn't know is the user's own; the wizard can carry one, so a re-run keeps it.
+    const customName = Object.keys(data?.providers ?? {}).find(name => !catalogProvider(name))
+    const custom: NonNullable<WizardResult["custom"]> | undefined = customName
+      ? {
+          name: customName,
+          baseUrl: data.providers[customName].base_url,
+          models: Object.values<any>(data.models ?? {})
+            .filter(entry => entry.provider === customName)
+            .map(entry => ({ model: entry.model, task: entry.task }))
+        }
+      : undefined
+
+    const providers = [...known.map(provider => provider.id), ...(custom ? ["custom"] : [])]
+    if (providers.length === 0) return {}
+
+    // Which provider serves each task more than one could, judged over everything the file holds.
+    const { chosenProviders } = await import("../../components/config-wizard")
     const models: NonNullable<WizardResult["models"]> = {}
-    for (const [task, options] of Object.entries(candidatesByTask(known))) {
+    for (const [task, options] of Object.entries(candidatesByTask(chosenProviders({ providers, custom })))) {
       const active = data?.models?.[task]?.provider
       if (options.length > 1 && typeof active === "string") models[task as keyof typeof models] = active
     }
-    return { providers: known.map(provider => provider.id), addresses, models }
+    return { providers, addresses, models, ...(custom ? { custom } : {}) }
   } catch {
     return {}
   }

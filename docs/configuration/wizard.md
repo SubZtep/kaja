@@ -38,7 +38,8 @@ flowchart TD
 
     P --> KEY["<b>An API key</b><br><small>for each hosted one:<br>Fireworks · xAI</small>"]
     KEY --> URL["<b>A server address</b><br><small>for each local one:<br>Ollama · llama.cpp · Speaches</small>"]
-    URL --> MODEL["<b>Which model</b><br><small>only for a task two of your<br>providers could serve</small>"]
+    URL --> CUS["<b>Your own provider</b><br><small>name · address · key<br>then each model and its task</small>"]
+    CUS --> MODEL["<b>Which model</b><br><small>only for a task two of your<br>providers could serve</small>"]
 
     MODEL --> EX["<b>Extras</b><br><small>web search · Telegram<br>nothing ticked by default</small>"]
     EX --> FU["<b>One follow-up per ticked extra</b><br><small>Brave key · Telegram token</small>"]
@@ -47,6 +48,12 @@ flowchart TD
 
 Language comes first because every question after it is only answerable by someone who can read it —
 picking one switches the rest of the wizard into that language immediately.
+
+**Custom** is for any other OpenAI-compatible server (LM Studio, vLLM, a proxy of your own). It asks
+what to call it, its base URL (a wrong one is refused on the spot), an optional key, and then each
+model's id and what it's used for — one after another until you press <kbd>Enter</kbd> on an empty
+one. Its models join the pick-a-model questions like any other provider's. There is room for one
+custom provider; add more by hand in [`models.toml`](/configuration/models).
 
 Speech in and out is not a separate question: **Speaches** is one of the providers you can tick, and
 it brings its speech-to-text and text-to-speech models with it.
@@ -101,6 +108,7 @@ Step by step:
 | Mode | `[preferences] mode` | `settings.toml` |
 | Providers you tick | a `[providers.<name>]` table and its models | `models.toml` |
 | Which model, per task | the entry named after the task, `[models.chat]`; the others as `[models.<provider>-chat]` | `models.toml` |
+| A custom provider | its own `[providers.<name>]` table and a `[models.*]` entry per model | `models.toml` |
 | A provider's API key | `[providers.<name>] api_key` | `secrets.toml` |
 | A server address | `[providers.<name>] base_url` | `models.toml` |
 | Web search key | `[webSearch] apiKey` | `secrets.toml` |

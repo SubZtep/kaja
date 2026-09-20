@@ -12,6 +12,7 @@ const SPACE = " "
 const FIREWORKS = 0
 const OLLAMA = 2
 const SPEACHES = 4
+const CUSTOM = 5
 
 function renderWizard(props: Partial<Parameters<typeof ConfigWizard>[0]> = {}) {
   let result: WizardResult | undefined
@@ -389,4 +390,168 @@ test("picking a language switches the rest of the wizard into it", async () => {
   await close(w)
   // The active language is process-wide, so leave it as the other tests expect to find it.
   setLanguage("en-GB")
+})
+
+/** Types an answer and submits it. */
+async function type(w: Wizard, text: string) {
+  await w.t.press(text)
+  await w.t.press(ENTER)
+}
+
+/** Empties the input the way a person fixing a wrong answer would: a rejected answer stays in the field. */
+async function erase(w: Wizard, length: number) {
+  for (let i = 0; i < length; i++) await w.t.press("\x7f")
+}
+
+test("a custom provider is asked its name, address, key, then each model and what it is for", async () => {
+  const w = await openProviders()
+  await tick(w, CUSTOM)
+  expect(w.t.lastFrame()).toContain("What should this provider be called?")
+
+  await type(w, "LM Studio")
+  expect(w.t.lastFrame()).toContain("What is its base URL?")
+  await type(w, "http://localhost:1234/v1")
+  expect(w.t.lastFrame()).toContain("Paste your lm-studio API key")
+  await w.t.press(ENTER) // key: skipped, it needs none
+  expect(w.t.lastFrame()).toContain("Which lm-studio model should Kaja use?")
+
+  await type(w, "llama-3.2-1b-instruct")
+  expect(w.t.lastFrame()).toContain("What is llama-3.2-1b-instruct used for?")
+  await w.t.press(ENTER) // chat, the first choice
+  expect(w.t.lastFrame()).toContain("Another lm-studio model?")
+
+  await w.t.press(ENTER) // empty: that's all
+  expect(w.t.lastFrame()).toContain("Anything else?")
+  await w.t.press(ENTER) // extras
+  await w.t.press(ENTER) // last screen
+
+  expect(w.result?.providers).toEqual(["custom"])
+  expect(w.result?.custom).toEqual({
+    name: "lm-studio",
+    baseUrl: "http://localhost:1234/v1",
+    models: [{ model: "llama-3.2-1b-instruct", task: "chat" }],
+    done: true
+  })
+  expect(w.result?.keys).toEqual({ "lm-studio": "" })
+  const trail = w.t.output()
+  expect(trail).toContain("✓ Custom provider: lm-studio")
+  expect(trail).toContain("✓ lm-studio server: http://localhost:1234/v1")
+  expect(trail).toContain("✓ Custom model: llama-3.2-1b-instruct (chat)")
+
+  await close(w)
+})
+
+test("a wrong answer keeps the question open and says what is wrong", async () => {
+  const w = await openProviders()
+  await tick(w, CUSTOM)
+  await type(w, "!!!") // nothing usable in a name like that
+  expect(w.t.lastFrame()).toContain("Use letters, numbers and dashes")
+  expect(w.t.lastFrame()).toContain("What should this provider be called?")
+  await erase(w, 3)
+  await type(w, "vllm")
+
+  await type(w, "not a url")
+  expect(w.t.lastFrame()).toContain("That isn't a web address")
+  expect(w.t.lastFrame()).toContain("What is its base URL?")
+  await erase(w, 9)
+  await type(w, "ftp://box/v1") // a URL, but not one an HTTP API answers on
+  expect(w.t.lastFrame()).toContain("That isn't a web address")
+  await erase(w, 12)
+  await type(w, "http://box:8000/v1")
+
+  await w.t.press(ENTER) // key: skipped
+  await w.t.press(ENTER) // first model, empty
+  expect(w.t.lastFrame()).toContain("Type at least one model id.")
+  expect(w.t.lastFrame()).toContain("Which vllm model should Kaja use?")
+
+  await close(w)
+})
+
+test("models are listed until an empty answer, each with its own task", async () => {
+  const w = await openProviders()
+  await tick(w, CUSTOM)
+  await type(w, "vllm")
+  await type(w, "http://box:8000/v1")
+  await w.t.press(ENTER) // key: skipped
+
+  await type(w, "big-chat")
+  await w.t.press(ENTER) // chat
+  await type(w, "small-embedder")
+  await w.t.press(DOWN) // embedding
+  await w.t.press(ENTER)
+  expect(w.t.lastFrame()).toContain("Another vllm model?")
+  await w.t.press(ENTER) // done
+  await w.t.press(ENTER) // extras
+  await w.t.press(ENTER) // last screen
+
+  expect(w.result?.custom?.models).toEqual([
+    { model: "big-chat", task: "chat" },
+    { model: "small-embedder", task: "embedding" }
+  ])
+
+  await close(w)
+})
+
+test("a name the catalog already uses gets a suffix, so it can't shadow a built-in provider", async () => {
+  const w = await openProviders()
+  await tick(w, CUSTOM)
+  await type(w, "Ollama")
+  expect(w.t.lastFrame()).toContain("What is its base URL?")
+  await type(w, "http://box:11434/v1")
+  expect(w.t.lastFrame()).toContain("Paste your ollama-custom API key")
+
+  await close(w)
+})
+
+test("a custom model that overlaps a built-in provider joins the model question", async () => {
+  const w = await openProviders()
+  await tick(w, OLLAMA, CUSTOM)
+  await w.t.press(ENTER) // Ollama address: default
+  await type(w, "vllm")
+  await type(w, "http://box:8000/v1")
+  await w.t.press(ENTER) // key: skipped
+  await type(w, "big-chat")
+  await w.t.press(ENTER) // chat
+  await w.t.press(ENTER) // that's all
+
+  // Ollama and the custom provider both serve chat, so the user is asked which one Kaja should use.
+  expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
+  expect(w.t.lastFrame()).toContain("Ollama — llama3.2:1b")
+  expect(w.t.lastFrame()).toContain("vllm — big-chat")
+  await w.t.press(DOWN)
+  await w.t.press(ENTER)
+  // Only chat overlaps: Ollama serves embedding too, but the custom provider does not.
+  expect(w.t.lastFrame()).toContain("Anything else?")
+  await w.t.press(ENTER) // extras
+  await w.t.press(ENTER) // last screen
+  expect(w.result?.models).toEqual({ chat: "vllm" })
+
+  await close(w)
+})
+
+test("a custom provider already in models.toml opens on its answers, and Enter keeps them", async () => {
+  const custom = {
+    name: "vllm",
+    baseUrl: "http://box:8000/v1",
+    models: [{ model: "big-chat", task: "chat" as const }]
+  }
+  const w = renderWizard({ mode: "local", prefill: { providers: ["custom"], custom } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // providers: custom still ticked
+  await w.t.press(ENTER) // name: kept
+  expect(w.t.lastFrame()).toContain("http://box:8000/v1")
+  await w.t.press(ENTER) // address: kept
+  await w.t.press(ENTER) // key: skipped
+  expect(w.t.lastFrame()).toContain("big-chat")
+  await w.t.press(ENTER) // model: kept, not duplicated
+  await w.t.press(ENTER) // task: kept
+  expect(w.t.lastFrame()).toContain("Another vllm model?")
+  await w.t.press(ENTER) // that's all
+  await w.t.press(ENTER) // extras
+  await w.t.press(ENTER) // last screen
+
+  expect(w.result?.custom?.models).toEqual([{ model: "big-chat", task: "chat" }])
+
+  await close(w)
 })
