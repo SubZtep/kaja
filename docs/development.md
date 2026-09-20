@@ -38,9 +38,6 @@ flowchart TD
     SCH --> WEB
     SCH --> TUI
     SCH --> NASI
-    LOG --> API
-    LOG --> WEB
-    LOG --> TUI
     SHR --> WEB
     SHR --> TUI
     WID --> API
