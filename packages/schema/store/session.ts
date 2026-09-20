@@ -18,6 +18,7 @@ export const PersistedSessionSchema = z.object({
     pendingAskUserId: z.string().optional(),
     pendingRunCommandId: z.string().optional()
   }),
+  /** Empty when the store keeps no timeline (the cloud's Postgres store never reads one back). */
   events: z.array(z.looseObject({ type: z.string() }))
 })
 
@@ -41,4 +42,10 @@ export function telegramOwner(userId: number): string {
 /** Owner string for one widget embed's visitor — namespaced by key id so two embeds (or a revoked key) never collide. */
 export function widgetVisitorOwner(keyId: string, visitorId: string): string {
   return `widget:${keyId}:${visitorId}`
+}
+
+/** Where a session came from, by its owner's prefix (no owner is the web app or the terminal). */
+export function channelOf(owner: string | null): "web" | "telegram" | "widget" {
+  const prefix = owner?.split(":", 1)[0]
+  return prefix === "telegram" || prefix === "widget" ? prefix : "web"
 }

@@ -133,6 +133,7 @@ bun run --filter @kaja/tui test
 8. `2026-09-19-package.sql` — `package`, `user_package`, `marketplace_sync` (cloud package catalog synced from `marketplace/`)
 9. `2026-09-19-persona-package.sql` — drops `persona`: personas are `package` rows of type `persona` now
 10. `2026-09-19-user-secret.sql` — `user_secret` (users' package API keys, AES-256-GCM with `USER_SECRET_KEY`)
+11. `2026-09-20-nasi-normalize.sql` — `nasi_session` rebuilt as rows: `nasi_message` (one per message), `nasi_tool_call` (old sessions dropped, not converted)
 
 Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
 

@@ -1,7 +1,14 @@
 import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
-import type { NasiStore, SessionWrite } from "@kaja/nasi"
+import {
+  joinConversation,
+  type MessageRow,
+  type NasiStore,
+  type PendingKind,
+  type SessionWrite,
+  splitConversation
+} from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
 
@@ -19,8 +26,15 @@ function migrateNotesOwnerColumn(db: Database) {
   db.run(`ALTER TABLE notes ADD COLUMN owner TEXT NOT NULL DEFAULT ''`)
 }
 
+// Sessions used to be one row holding the whole conversation as two JSON blobs; they are dropped, not converted.
+function dropLegacySessions(db: Database) {
+  const columns = db.query("PRAGMA table_info(sessions)").all() as { name: string }[]
+  if (columns.some(c => c.name === "session")) db.run("DROP TABLE sessions")
+}
+
 function createSchema(db: Database) {
   migrateNotesOwnerColumn(db)
+  dropLegacySessions(db)
   db.run(`
     CREATE TABLE IF NOT EXISTS notes (
       owner       TEXT NOT NULL,
@@ -37,19 +51,58 @@ function createSchema(db: Database) {
   `)
   db.run(`
     CREATE TABLE IF NOT EXISTS sessions (
-      id        TEXT PRIMARY KEY,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL,
-      persona   TEXT NOT NULL,
-      model     TEXT NOT NULL,
-      title     TEXT NOT NULL,
-      owner     TEXT,
-      session   TEXT NOT NULL,
-      events    TEXT NOT NULL
+      id            TEXT PRIMARY KEY,
+      createdAt     TEXT NOT NULL,
+      updatedAt     TEXT NOT NULL,
+      persona       TEXT NOT NULL,
+      model         TEXT NOT NULL,
+      title         TEXT NOT NULL,
+      owner         TEXT,
+      systemPrompt  TEXT,
+      pendingCallId TEXT,
+      pendingKind   TEXT
     )
   `)
   db.run("CREATE INDEX IF NOT EXISTS sessions_updatedAt_idx ON sessions (updatedAt DESC)")
   db.run("CREATE INDEX IF NOT EXISTS sessions_owner_updatedAt_idx ON sessions (owner, updatedAt DESC)")
+  db.run(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id         TEXT PRIMARY KEY,
+      sessionId  TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+      seq        INTEGER NOT NULL,
+      role       TEXT NOT NULL,
+      content    TEXT,
+      parts      TEXT,
+      reasoning  TEXT,
+      toolCallId TEXT,
+      createdAt  TEXT NOT NULL,
+      UNIQUE (sessionId, seq)
+    )
+  `)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS tool_calls (
+      id              TEXT PRIMARY KEY,
+      messageId       TEXT NOT NULL REFERENCES messages (id) ON DELETE CASCADE,
+      position        INTEGER NOT NULL,
+      callId          TEXT NOT NULL,
+      name            TEXT NOT NULL,
+      arguments       TEXT NOT NULL,
+      resultMessageId TEXT REFERENCES messages (id) ON DELETE SET NULL,
+      approval        TEXT CHECK (approval IN ('approved','declined')),
+      UNIQUE (messageId, position)
+    )
+  `)
+  db.run("CREATE INDEX IF NOT EXISTS tool_calls_name_idx ON tool_calls (name)")
+  db.run(`
+    CREATE TABLE IF NOT EXISTS session_events (
+      sessionId TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+      seq       INTEGER NOT NULL,
+      type      TEXT NOT NULL,
+      payload   TEXT NOT NULL,
+      PRIMARY KEY (sessionId, seq)
+    )
+  `)
+  db.run("CREATE INDEX IF NOT EXISTS session_events_type_idx ON session_events (type, sessionId, seq)")
   db.run(`
     CREATE TABLE IF NOT EXISTS dataset_answers (
       topic      TEXT NOT NULL,
@@ -83,21 +136,13 @@ function openDb(dbPath: string): Database {
   return db
 }
 
-type SessionRow = Omit<PersistedSession, "session" | "events"> & { session: string; events: string }
-const SESSION_COLUMNS = "id, createdAt, updatedAt, persona, model, title, owner, session, events"
-
-function rowToSession(row: SessionRow): PersistedSession | undefined {
-  try {
-    const parsed = PersistedSessionSchema.safeParse({
-      ...row,
-      session: JSON.parse(row.session),
-      events: JSON.parse(row.events)
-    })
-    return parsed.success ? parsed.data : undefined
-  } catch {
-    return undefined
-  }
+type SessionRow = Omit<PersistedSession, "session" | "events"> & {
+  systemPrompt: string | null
+  pendingCallId: string | null
+  pendingKind: PendingKind | null
 }
+const SESSION_COLUMNS =
+  "id, createdAt, updatedAt, persona, model, title, owner, systemPrompt, pendingCallId, pendingKind"
 
 function noteParams(key: string, note: MemoryNote) {
   return {
@@ -112,51 +157,177 @@ function noteParams(key: string, note: MemoryNote) {
   }
 }
 
+type MessageDbRow = {
+  role: string
+  content: string | null
+  parts: string | null
+  reasoning: string | null
+  toolCallId: string | null
+}
+
 /** Local CLI persistence: one sqlite file (sessions, notes, datasets). */
 export function createSqliteStore(dbPath: string): NasiStore {
   const db = openDb(dbPath)
+
+  function count(table: "messages" | "session_events", sessionId: string): number {
+    const row = db.query(`SELECT COUNT(*) AS n FROM ${table} WHERE sessionId = $id`).get({ $id: sessionId }) as {
+      n: number
+    }
+    return row.n
+  }
+
+  function insertMessage(sessionId: string, seq: number, row: MessageRow, createdAt: string) {
+    const id = Bun.randomUUIDv7()
+    db.query(
+      `INSERT INTO messages (id, sessionId, seq, role, content, parts, reasoning, toolCallId, createdAt)
+       VALUES ($id, $sessionId, $seq, $role, $content, $parts, $reasoning, $toolCallId, $createdAt)`
+    ).run({
+      $id: id,
+      $sessionId: sessionId,
+      $seq: seq,
+      $role: row.role,
+      $content: row.content,
+      $parts: row.parts ? JSON.stringify(row.parts) : null,
+      $reasoning: row.reasoning,
+      $toolCallId: row.toolCallId,
+      $createdAt: createdAt
+    })
+    row.toolCalls.forEach((call, position) => {
+      db.query(
+        `INSERT INTO tool_calls (id, messageId, position, callId, name, arguments)
+         VALUES ($id, $messageId, $position, $callId, $name, $arguments)`
+      ).run({
+        $id: Bun.randomUUIDv7(),
+        $messageId: id,
+        $position: position,
+        $callId: call.callId,
+        $name: call.name,
+        $arguments: call.arguments
+      })
+    })
+    if (row.role === "tool" && row.toolCallId) {
+      db.query(
+        `UPDATE tool_calls SET resultMessageId = $id
+         WHERE callId = $callId AND messageId IN (SELECT id FROM messages WHERE sessionId = $sessionId)`
+      ).run({ $id: id, $callId: row.toolCallId, $sessionId: sessionId })
+    }
+  }
+
+  // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
+  const saveConversation = db.transaction((id: string, data: SessionWrite) => {
+    const { systemPrompt, pending, messages } = splitConversation(data.session)
+    db.query(
+      "UPDATE sessions SET systemPrompt = $systemPrompt, pendingCallId = $callId, pendingKind = $kind WHERE id = $id"
+    ).run({
+      $id: id,
+      $systemPrompt: systemPrompt,
+      $callId: pending?.callId ?? null,
+      $kind: pending?.kind ?? null
+    })
+    const now = new Date().toISOString()
+    const storedMessages = count("messages", id)
+    messages.slice(storedMessages).forEach((row, i) => insertMessage(id, storedMessages + i, row, now))
+    const storedEvents = count("session_events", id)
+    data.events.slice(storedEvents).forEach((event, i) => {
+      db.query("INSERT INTO session_events (sessionId, seq, type, payload) VALUES ($id, $seq, $type, $payload)").run({
+        $id: id,
+        $seq: storedEvents + i,
+        $type: (event as { type: string }).type,
+        $payload: JSON.stringify(event)
+      })
+    })
+    for (const { callId, approved } of data.approvals ?? []) {
+      db.query(
+        `UPDATE tool_calls SET approval = $approval
+         WHERE callId = $callId AND messageId IN (SELECT id FROM messages WHERE sessionId = $id)`
+      ).run({ $id: id, $callId: callId, $approval: approved ? "approved" : "declined" })
+    }
+  })
+
+  function hydrate(row: SessionRow): PersistedSession | undefined {
+    try {
+      const messageRows = db
+        .query("SELECT role, content, parts, reasoning, toolCallId FROM messages WHERE sessionId = $id ORDER BY seq")
+        .all({ $id: row.id }) as MessageDbRow[]
+      const callRows = db
+        .query(
+          `SELECT m.seq AS seq, tc.callId AS callId, tc.name AS name, tc.arguments AS arguments
+           FROM tool_calls tc JOIN messages m ON m.id = tc.messageId
+           WHERE m.sessionId = $id ORDER BY m.seq, tc.position`
+        )
+        .all({ $id: row.id }) as { seq: number; callId: string; name: string; arguments: string }[]
+      const callsBySeq = Map.groupBy(callRows, call => call.seq)
+      const eventRows = db
+        .query("SELECT payload FROM session_events WHERE sessionId = $id ORDER BY seq")
+        .all({ $id: row.id }) as { payload: string }[]
+      const parsed = PersistedSessionSchema.safeParse({
+        id: row.id,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        persona: row.persona,
+        model: row.model,
+        title: row.title,
+        owner: row.owner,
+        session: joinConversation({
+          systemPrompt: row.systemPrompt,
+          pending: row.pendingCallId && row.pendingKind ? { callId: row.pendingCallId, kind: row.pendingKind } : null,
+          messages: messageRows.map((message, seq) => ({
+            role: message.role,
+            content: message.content,
+            parts: message.parts ? JSON.parse(message.parts) : null,
+            reasoning: message.reasoning,
+            toolCallId: message.toolCallId,
+            toolCalls: (callsBySeq.get(seq) ?? []).map(({ callId, name, arguments: args }) => ({
+              callId,
+              name,
+              arguments: args
+            }))
+          }))
+        }),
+        events: eventRows.map(event => JSON.parse(event.payload))
+      })
+      return parsed.success ? parsed.data : undefined
+    } catch {
+      return undefined
+    }
+  }
 
   return {
     async createSession(data: SessionWrite & { title: string }) {
       const now = new Date().toISOString()
       const id = Bun.randomUUIDv7()
-      db.query(`
-        INSERT INTO sessions (id, createdAt, updatedAt, persona, model, title, owner, session, events)
-        VALUES ($id, $createdAt, $updatedAt, $persona, $model, $title, $owner, $session, $events)
-      `).run({
-        $id: id,
-        $createdAt: now,
-        $updatedAt: now,
-        $persona: data.persona,
-        $model: data.model,
-        $title: data.title,
-        $owner: data.owner,
-        $session: JSON.stringify(data.session),
-        $events: JSON.stringify(data.events)
-      })
+      db.transaction(() => {
+        db.query(`
+          INSERT INTO sessions (id, createdAt, updatedAt, persona, model, title, owner)
+          VALUES ($id, $createdAt, $updatedAt, $persona, $model, $title, $owner)
+        `).run({
+          $id: id,
+          $createdAt: now,
+          $updatedAt: now,
+          $persona: data.persona,
+          $model: data.model,
+          $title: data.title,
+          $owner: data.owner
+        })
+        saveConversation(id, data)
+      })()
       return id
     },
 
     async updateSession(id, data) {
-      db.query(`
-        UPDATE sessions
-        SET updatedAt = $updatedAt, persona = $persona, model = $model, session = $session, events = $events
-        WHERE id = $id
-      `).run({
-        $id: id,
-        $updatedAt: new Date().toISOString(),
-        $persona: data.persona,
-        $model: data.model,
-        $session: JSON.stringify(data.session),
-        $events: JSON.stringify(data.events)
-      })
+      db.transaction(() => {
+        const { changes } = db
+          .query("UPDATE sessions SET updatedAt = $updatedAt, persona = $persona, model = $model WHERE id = $id")
+          .run({ $id: id, $updatedAt: new Date().toISOString(), $persona: data.persona, $model: data.model })
+        if (changes > 0) saveConversation(id, data)
+      })()
     },
 
     async loadSession(id) {
       const row = db
         .query(`SELECT ${SESSION_COLUMNS} FROM sessions WHERE id = $id`)
         .get({ $id: id }) as SessionRow | null
-      return row ? rowToSession(row) : undefined
+      return row ? hydrate(row) : undefined
     },
 
     async loadLatestSession(owner) {
@@ -172,7 +343,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
                 `SELECT ${SESSION_COLUMNS} FROM sessions WHERE owner = $owner ORDER BY updatedAt DESC, id DESC LIMIT 1`
               )
               .get({ $owner: owner }) as SessionRow | null)
-      return row ? rowToSession(row) : undefined
+      return row ? hydrate(row) : undefined
     },
 
     async deleteSession(id) {
@@ -190,10 +361,10 @@ export function createSqliteStore(dbPath: string): NasiStore {
     async loadPromptHistory(limit = 100) {
       const rows = db
         .query(`
-          SELECT je.value ->> 'text' AS text
-          FROM sessions AS s, json_each(s.events) AS je
-          WHERE je.value ->> 'type' = 'user'
-          ORDER BY s.updatedAt DESC, s.id DESC, je.key DESC
+          SELECT e.payload ->> 'text' AS text
+          FROM session_events AS e JOIN sessions AS s ON s.id = e.sessionId
+          WHERE e.type = 'user'
+          ORDER BY s.updatedAt DESC, s.id DESC, e.seq DESC
           LIMIT $limit
         `)
         .all({ $limit: limit }) as { text: unknown }[]

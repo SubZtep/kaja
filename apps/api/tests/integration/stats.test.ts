@@ -3,10 +3,11 @@ import { faker } from "@faker-js/faker"
 import type { UsageStatsResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
+import { createPostgresStore } from "../../src/features/nasi/pg-store"
 import { expectUnauthenticated, signUpAndSignIn } from "./helpers"
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const toolCall = (name: string) => ({ id: `call_${name}`, type: "function", function: { name, arguments: "{}" } })
+const toolCall = (name: string, id = `call_${name}`) => ({ id, type: "function", function: { name, arguments: "{}" } })
 
 async function signUp(name: string) {
   const email = faker.internet.email().toLowerCase()
@@ -15,25 +16,29 @@ async function signUp(name: string) {
   return { token, userId }
 }
 
-/** One saved session: `messages` and `events` are stored as the agent writes them. */
+/** One saved session, written through the store like a real turn and then dated back. */
 async function seedSession(
   userId: string,
-  opts: { ageDays: number; owner?: string; persona?: string; model?: string; messages?: unknown[]; events?: unknown[] }
+  opts: {
+    ageDays: number
+    owner?: string
+    persona?: string
+    model?: string
+    messages?: unknown[]
+    approvals?: { callId: string; approved: boolean }[]
+  }
 ) {
+  const id = await createPostgresStore(pool, userId).createSession({
+    persona: opts.persona ?? "default",
+    model: opts.model ?? "model-a",
+    owner: opts.owner ?? null,
+    title: "seed",
+    session: { messages: opts.messages ?? [] },
+    events: [],
+    approvals: opts.approvals
+  })
   const at = new Date(Date.now() - opts.ageDays * DAY_MS)
-  await pool.query(
-    `INSERT INTO nasi_session (id, user_id, created_at, updated_at, persona, model, title, owner, session, events)
-     VALUES (uuidv7(), $1, $2, $2, $3, $4, 'seed', $5, $6, $7)`,
-    [
-      userId,
-      at,
-      opts.persona ?? "default",
-      opts.model ?? "model-a",
-      opts.owner ?? null,
-      JSON.stringify({ messages: opts.messages ?? [] }),
-      JSON.stringify(opts.events ?? [])
-    ]
-  )
+  await pool.query("UPDATE nasi_session SET created_at = $2, updated_at = $2 WHERE id = $1", [id, at])
 }
 
 describe("GET /stats", () => {
@@ -55,16 +60,20 @@ describe("GET /stats", () => {
       messages: [
         { role: "system", content: "x" },
         { role: "user", content: "hi" },
-        { role: "assistant", content: null, tool_calls: [toolCall("read_thing"), toolCall("write_thing")] },
-        { role: "tool", content: "ok" },
+        { role: "assistant", content: null, tool_calls: [toolCall("read_thing"), toolCall("write_thing", "call_w1")] },
+        { role: "tool", tool_call_id: "call_read_thing", content: "ok" },
+        { role: "tool", tool_call_id: "call_w1", content: "written" },
         { role: "user", content: "again" },
-        { role: "assistant", content: null, tool_calls: [toolCall("read_thing")] }
+        {
+          role: "assistant",
+          content: null,
+          tool_calls: [toolCall("read_thing", "call_read_2"), toolCall("write_thing", "call_w2")]
+        },
+        { role: "tool", tool_call_id: "call_w2", content: "User declined this request." }
       ],
-      events: [
-        { type: "confirm_tool", id: "call_write_thing", name: "write_thing", arguments: "{}", summary: "s" },
-        { type: "tool_approval", approved: true },
-        { type: "confirm_tool", id: "call_write_thing", name: "write_thing", arguments: "{}", summary: "s" },
-        { type: "tool_approval", approved: false }
+      approvals: [
+        { callId: "call_w1", approved: true },
+        { callId: "call_w2", approved: false }
       ]
     })
     await seedSession(mine.userId, {
@@ -102,7 +111,7 @@ describe("GET /stats", () => {
     const { status, body } = await get(mine.token, "?days=7")
     expect(status).toBe(200)
     expect(body.days).toBe(7)
-    expect(body.totals).toEqual({ sessions: 3, messages: 4, toolCalls: 3 })
+    expect(body.totals).toEqual({ sessions: 3, messages: 4, toolCalls: 4 })
     expect(body.tools.map(tool => tool.name)).toEqual(["read_thing", "write_thing"])
     expect(body.tools[0]).toEqual({ name: "read_thing", calls: 2, approved: 0, declined: 0 })
   })
@@ -111,7 +120,7 @@ describe("GET /stats", () => {
     const { body } = await get(mine.token, "?days=7")
     expect(body.tools.find(tool => tool.name === "write_thing")).toEqual({
       name: "write_thing",
-      calls: 1,
+      calls: 2,
       approved: 1,
       declined: 1
     })

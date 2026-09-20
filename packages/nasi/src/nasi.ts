@@ -113,7 +113,8 @@ async function persistTurn(
   opts: NasiOpenOptions,
   loaded: LoadedTurn,
   input: NasiTurnInput,
-  turnEvents: AgentEvent[]
+  turnEvents: AgentEvent[],
+  pendingApprovalId: string | undefined
 ): Promise<string> {
   const persistedEvents = [
     ...loaded.events,
@@ -127,7 +128,10 @@ async function persistTurn(
     model: loaded.agent.model,
     owner: opts.owner ?? null,
     session: loaded.session,
-    events: persistedEvents
+    events: persistedEvents,
+    ...(input.approval && pendingApprovalId
+      ? { approvals: [{ callId: pendingApprovalId, approved: input.approval === "approve" }] }
+      : {})
   }
   if (!loaded.sessionId) return opts.store.createSession({ ...row, title: loaded.title })
   await opts.store.updateSession(loaded.sessionId, row)
@@ -277,13 +281,15 @@ export class Nasi {
     const loaded = await this.loadTurn(input)
     const prompt = await this.promptFor(loaded.session, input)
 
+    // run() clears the pending id while answering it, so read it first.
+    const pendingApprovalId = loaded.session.pendingToolApprovalId
     const turnEvents: AgentEvent[] = []
     for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null)) {
       turnEvents.push(event)
       yield event
     }
 
-    const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
+    const sessionId = await persistTurn(this.opts, loaded, input, turnEvents, pendingApprovalId)
     return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
   }
 }

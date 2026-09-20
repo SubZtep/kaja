@@ -3,12 +3,8 @@ import type { Pool } from "pg"
 
 const MAX_TOOLS = 50
 
-// Sessions active in the range; the channel comes from the session's owner prefix (no owner is the web app or CLI).
+// Sessions active in the range.
 const ACTIVE = "s.user_id = $1 AND s.updated_at >= $2"
-const CHANNEL = `CASE split_part(coalesce(s.owner, ''), ':', 1) WHEN 'telegram' THEN 'telegram' WHEN 'widget' THEN 'widget' ELSE 'web' END`
-// A session's messages as rows; `tool_calls` is only there on assistant messages that called tools.
-const MESSAGES =
-  "jsonb_array_elements(CASE WHEN jsonb_typeof(s.session->'messages') = 'array' THEN s.session->'messages' ELSE '[]' END) m"
 
 /** Activity numbers for one user, straight from their saved sessions — nothing extra is recorded. */
 export class StatsService {
@@ -45,38 +41,35 @@ export class StatsService {
       ),
       this.#db.query(
         `
-        SELECT (SELECT COUNT(*) FROM nasi_session s WHERE ${ACTIVE})::int AS sessions,
-          COUNT(*) FILTER (WHERE m->>'role' = 'user')::int AS messages
-        FROM nasi_session s, ${MESSAGES} WHERE ${ACTIVE}
+        SELECT COUNT(*)::int AS sessions,
+          (SELECT COUNT(*) FROM nasi_message m JOIN nasi_session s2 ON s2.id = m.session_id
+           WHERE m.role = 'user' AND s2.user_id = $1 AND s2.updated_at >= $2)::int AS messages
+        FROM nasi_session s WHERE ${ACTIVE}
         `,
         args
       ),
       this.#db.query(
-        `SELECT ${CHANNEL} AS channel, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${ACTIVE} GROUP BY 1 ORDER BY 2 DESC, 1`,
+        `SELECT s.channel, COUNT(*)::int AS sessions FROM nasi_session s WHERE ${ACTIVE} GROUP BY 1 ORDER BY 2 DESC, 1`,
         args
       ),
       this.#db.query(
         `
-        SELECT tc->'function'->>'name' AS name, COUNT(*)::int AS calls
-        FROM nasi_session s, ${MESSAGES},
-          jsonb_array_elements(CASE WHEN jsonb_typeof(m->'tool_calls') = 'array' THEN m->'tool_calls' ELSE '[]' END) tc
-        WHERE ${ACTIVE} AND tc->'function'->>'name' IS NOT NULL
+        SELECT tc.name, COUNT(*)::int AS calls
+        FROM nasi_tool_call tc
+        JOIN nasi_message m ON m.id = tc.message_id
+        JOIN nasi_session s ON s.id = m.session_id
+        WHERE ${ACTIVE}
         GROUP BY 1
         `,
         args
       ),
-      // An approval event doesn't name its tool; it answers the confirm_tool event just before it.
       this.#db.query(
         `
-        SELECT prev_name AS name, COUNT(*) FILTER (WHERE approved)::int AS approved, COUNT(*) FILTER (WHERE NOT approved)::int AS declined
-        FROM (
-          SELECT e->>'type' AS type, (e->>'approved')::boolean AS approved,
-            LAG(e->>'type') OVER w AS prev_type, LAG(e->>'name') OVER w AS prev_name
-          FROM nasi_session s, jsonb_array_elements(s.events) WITH ORDINALITY AS ev(e, ord)
-          WHERE ${ACTIVE}
-          WINDOW w AS (PARTITION BY s.id ORDER BY ord)
-        ) x
-        WHERE type = 'tool_approval' AND prev_type = 'confirm_tool' AND approved IS NOT NULL
+        SELECT tc.name, COUNT(*) FILTER (WHERE tc.approval = 'approved')::int AS approved, COUNT(*) FILTER (WHERE tc.approval = 'declined')::int AS declined
+        FROM nasi_tool_call tc
+        JOIN nasi_message m ON m.id = tc.message_id
+        JOIN nasi_session s ON s.id = m.session_id
+        WHERE ${ACTIVE} AND tc.approval IS NOT NULL
         GROUP BY 1
         `,
         args

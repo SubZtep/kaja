@@ -94,14 +94,20 @@ export {
   UnsafeUrlError
 } from "./security/ssrf"
 export {
+  type ConversationRows,
   createMemoryStore,
   type DatasetAnswer,
   type DatasetVersionSummary,
   forgetNotes,
+  joinConversation,
+  type MessageRow,
   type NasiStore,
   noteHeader,
+  type PendingKind,
   requireStore,
-  type SessionWrite
+  type SessionWrite,
+  splitConversation,
+  type ToolCallRow
 } from "./store"
 export { currentTimeTool } from "./tools/builtin/current-time"
 export { datasetInfoTool } from "./tools/builtin/dataset-info"
