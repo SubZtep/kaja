@@ -47,8 +47,8 @@ describe("authentication flow", () => {
       expect(token).not.toBeEmpty()
     })
 
-    test("request profile", async () => {
-      const res = await app.request("/users/me", {
+    test("call a session route with the bearer token", async () => {
+      const res = await app.request("/abilities/me", {
         headers: { Authorization: `Bearer ${token}` }
       })
       expect(res.status).toBe(200)

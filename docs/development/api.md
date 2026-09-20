@@ -19,7 +19,6 @@ always-current list. This page is the map.
 | Prefix | Auth | What |
 | --- | --- | --- |
 | `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
-| `/users/me` | session | the signed-in user |
 | `/admin/*` | session + `admin` role | MCP servers, providers, models, marketplace sync |
 | `/widget/admin/*` | session | list, create, and delete [widget](/widget) keys |
 | `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |

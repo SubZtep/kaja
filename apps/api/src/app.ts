@@ -13,7 +13,6 @@ import { nasiRoutes } from "./features/nasi"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
 import { statsRoutes } from "./features/stats"
 import { telegramAdminRoutes } from "./features/telegram-admin"
-import { userRoutes } from "./features/users"
 import { widgetRoutes } from "./features/widget"
 import { widgetAdminRoutes } from "./features/widget-admin"
 import type { RouteProps } from "./types"
@@ -55,7 +54,6 @@ app.route("/nasi", nasiRoutes)
 app.route("/abilities", abilityRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram/admin", telegramAdminRoutes)
-app.route("/users", userRoutes)
 app.route("/widget", widgetRoutes)
 app.route("/widget/admin", widgetAdminRoutes)
 
