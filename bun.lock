@@ -19,7 +19,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.13.2",
+      "version": "0.13.3",
       "dependencies": {
         "@hono/zod-openapi": "^1.6.3",
         "@kaja/nasi": "workspace:*",
