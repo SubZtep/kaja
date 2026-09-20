@@ -29,8 +29,8 @@ test("missing file: writes the template and returns its active (non-commented) s
   const data = await loadSecretsFile()
 
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
-  // The shipped template's guest [mcp.location] ships active; everything else ships commented out.
-  expect(data.mcp).toEqual({ location: { Authorization: "Bearer guest" } })
+  // Every section in the shipped template is commented out.
+  expect(data.mcp).toEqual({})
   expect(data.webSearch).toBeUndefined()
   expect(data.telegram).toBeUndefined()
   expect(data.providers).toEqual({})

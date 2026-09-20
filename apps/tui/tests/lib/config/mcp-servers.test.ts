@@ -27,7 +27,7 @@ async function setup(mcpToml: string, secretsToml: string) {
   await write(join(dir, "secrets.toml"), secretsToml)
 }
 
-test("missing file: writes the template and returns the default location server with its secret folded in", async () => {
+test("missing file: writes the template, which ships no server enabled", async () => {
   const dir = `${tmpdir()}/kaja-test-mcp-servers-missing-${Math.random()}`
   setConfigDirOverride(dir)
 
@@ -35,13 +35,7 @@ test("missing file: writes the template and returns the default location server 
   const servers = await loadMcpServers()
 
   expect(await Bun.file(getMcpPath()).exists()).toBe(true)
-  expect(servers).toEqual([
-    {
-      id: "location",
-      url: "https://ip2geo.demo.land/mcp",
-      headers: { Authorization: "Bearer guest" }
-    }
-  ])
+  expect(servers).toEqual([])
 })
 
 test("HTTP server with a matching secret: folds the secret's keys into headers", async () => {

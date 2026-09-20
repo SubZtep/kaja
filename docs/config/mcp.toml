@@ -8,10 +8,6 @@
 # server can't work without in `secrets`, and `kaja doctor` asks for any
 # that are missing.
 
-[[servers]]
-id = "location"
-url = "https://ip2geo.demo.land/mcp"
-
 # [[servers]]
 # id = "chrome-devtools"
 # command = "bunx"

@@ -48,7 +48,7 @@ Because "which of these four files has my Brave key in it again?" is not a quest
 have to ask. One file, one job: hold the things you'd rather not lose to a `git add .`.
 
 Missing a section? Kaja just skips that feature — same as an omitted section anywhere else. The
-guest `[mcp.location]` header ships active, so a fresh install has working geolocation with zero edits.
+template ships with every section commented out, so nothing in a fresh `secrets.toml` is a secret.
 
 ---
 
