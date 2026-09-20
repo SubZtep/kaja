@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { setProviderBaseUrl } from "../../../lib/models/models"
+import { setModelFields, setProviderBaseUrl } from "../../../lib/models/models"
 
 const TEMPLATE = `# Kaja models — a comment that must survive.
 
@@ -37,4 +37,40 @@ test("leaves the text unchanged when the provider is absent", () => {
 test("escapes a value that would otherwise break out of the string", () => {
   const out = setProviderBaseUrl(TEMPLATE, "ollama", 'http://x/"evil')
   expect(out).toContain('base_url = "http://x/\\"evil"')
+})
+
+const TWO_CHATS = `# Kaja models — a comment that must survive.
+
+[providers.fireworks]
+base_url = "https://api.fireworks.ai/inference/v1"
+
+[providers.ollama]
+base_url = "http://localhost:11434/v1"
+
+[models.chat]
+model = "accounts/fireworks/models/minimax-m3"  # the default
+task = "chat"
+provider = "fireworks"
+
+[models.ollama-chat]
+model = "llama3.2:1b"
+task = "chat"
+provider = "ollama"
+`
+
+test("setModelFields points a task's default at another provider and model, keeping its id", () => {
+  const out = setModelFields(TWO_CHATS, "chat", "ollama", "llama3.2:1b")
+  expect(out).toContain('[models.chat]\nmodel = "llama3.2:1b"  # the default\ntask = "chat"\nprovider = "ollama"')
+  // The id is unchanged, and the alternative entry and the comments are untouched.
+  expect(out).toContain('[models.ollama-chat]\nmodel = "llama3.2:1b"\ntask = "chat"\nprovider = "ollama"')
+  expect(out).toContain("# Kaja models — a comment that must survive.")
+  expect(out).toContain('[providers.fireworks]\nbase_url = "https://api.fireworks.ai/inference/v1"')
+})
+
+test("setModelFields leaves the text alone when the task has no default entry", () => {
+  expect(setModelFields(TWO_CHATS, "embedding", "ollama", "nomic-embed-text")).toBe(TWO_CHATS)
+})
+
+test("setModelFields escapes a value that would break out of the string", () => {
+  expect(setModelFields(TWO_CHATS, "chat", "ollama", 'we"ird')).toContain('model = "we\\"ird"  # the default')
 })

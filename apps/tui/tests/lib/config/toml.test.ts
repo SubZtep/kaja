@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { appendTomlSection } from "../../../lib/config/toml"
+import { appendTomlSection, setTomlValue, setTomlValueInText } from "../../../lib/config/toml"
 
 const path = join(tmpdir(), "kaja-test-append-section.toml")
 
@@ -48,4 +48,52 @@ test("an unparseable file is left alone rather than appended to", async () => {
   await Bun.write(path, broken)
   expect(await appendTomlSection(path, "stt", ["x = 1"])).toBe(false)
   expect(await Bun.file(path).text()).toBe(broken)
+})
+
+const SETTINGS = `# Settings — keep this comment.
+
+[stt]
+speachesUrl = "ws://localhost:8000"  # old address
+language = "en"
+
+[tts]
+voice = "af"
+
+# [memory]
+# dbPath = "x"
+`
+
+test("setTomlValueInText replaces a key that is there and keeps everything around it", () => {
+  const out = setTomlValueInText(SETTINGS, "stt", "speachesUrl", '"ws://box:9000"')
+  expect(out).toContain('[stt]\nspeachesUrl = "ws://box:9000"\nlanguage = "en"')
+  expect(out).toContain("# Settings — keep this comment.")
+  expect(out).toContain('[tts]\nvoice = "af"')
+})
+
+test("setTomlValueInText adds a missing key under its table, not another one", () => {
+  const out = setTomlValueInText(SETTINGS, "tts", "speachesUrl", '"http://box:9000"')
+  expect(out).toContain('[tts]\nspeachesUrl = "http://box:9000"\nvoice = "af"')
+  expect(out).toContain('[stt]\nspeachesUrl = "ws://localhost:8000"')
+})
+
+test("setTomlValueInText appends the table when it is missing, and starts a file that is empty", () => {
+  expect(setTomlValueInText(SETTINGS, "voice", "url", '"x"').trimEnd().endsWith('[voice]\nurl = "x"')).toBe(true)
+  expect(setTomlValueInText("", "stt", "speachesUrl", '"ws://a"')).toBe('[stt]\nspeachesUrl = "ws://a"\n')
+})
+
+test("setTomlValue updates a table that already exists, which appendTomlSection would skip", async () => {
+  await Bun.write(path, SETTINGS)
+  await setTomlValue(path, "stt", "speachesUrl", '"ws://box:9000"')
+  await setTomlValue(path, "stt", "speachesUrl", '"ws://box:9000"')
+  const out = await Bun.file(path).text()
+  // Twice over, still one table with the new value.
+  expect(out.match(/\[stt\]/g)).toHaveLength(1)
+  expect(out).toContain('speachesUrl = "ws://box:9000"')
+  expect(out).not.toContain("old address")
+})
+
+test("setTomlValue leaves a file it cannot parse alone", async () => {
+  await Bun.write(path, "[stt\nbroken")
+  await setTomlValue(path, "stt", "speachesUrl", '"ws://a"')
+  expect(await Bun.file(path).text()).toBe("[stt\nbroken")
 })

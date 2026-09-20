@@ -6,10 +6,16 @@ import { create, createCloud, isConfigExists, readConfigLoose, savePreferences }
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
 import { t } from "../i18n"
-import { getModelsPath, saveProviderBaseUrl, writeModelsTemplate } from "../models/models"
+import { catalogProvider } from "../models/catalog"
+import { getModelsPath, writeModelsFromCatalog } from "../models/models"
 import type { PullProgress } from "../models/pull"
 
-const TEMPLATE_PROVIDERS: WizardProvider[] = ["fireworks", "ollama", "llama"]
+/** What each provider choice sets up, until the wizard lets several be ticked at once: the same providers the bundled docs/config/models.*.toml examples hold. */
+const PROVIDER_BUNDLES: Partial<Record<WizardProvider, string[]>> = {
+  fireworks: ["fireworks", "xai", "speaches"],
+  ollama: ["ollama"],
+  llama: ["llama", "xai"]
+}
 
 async function applyResult(result: WizardResult) {
   const mode: KajaMode = result.mode ?? "local"
@@ -25,9 +31,12 @@ async function applyResult(result: WizardResult) {
   if (mode === "cloud") return
 
   // The admin-managed models.toml is no longer offered here; `kaja config fetch` still writes it.
-  if (result.provider && TEMPLATE_PROVIDERS.includes(result.provider)) {
-    await writeModelsTemplate(result.provider as "fireworks" | "ollama" | "llama")
-    if (result.baseUrl) await saveProviderBaseUrl(result.provider, result.baseUrl)
+  const bundle = result.provider && PROVIDER_BUNDLES[result.provider]
+  if (bundle) {
+    await writeModelsFromCatalog({
+      providers: bundle.map(id => catalogProvider(id)!),
+      baseUrls: result.baseUrl ? { [result.provider!]: result.baseUrl } : undefined
+    })
   }
 }
 
@@ -83,7 +92,7 @@ async function applyExtras(
 
   const { checkTelegramToken, checkWebSearchKey } = await import("../doctor/checks")
   const { saveSecrets } = await import("../config/secrets")
-  const { appendTomlSection } = await import("../config/toml")
+  const { setTomlValue } = await import("../config/toml")
   const extra: CredentialItem[] = []
   let offered: OfferedValues = {}
 
@@ -93,7 +102,7 @@ async function applyExtras(
     // text-to-speech to its plain HTTP one, which is why the documented example has them differ.
     const schemes = { stt: result.voiceUrl.replace(/^http/, "ws"), tts: result.voiceUrl.replace(/^ws/, "http") }
     for (const [table, url] of Object.entries(schemes)) {
-      await appendTomlSection(getConfigPath(), table, [`speachesUrl = ${JSON.stringify(url)}`])
+      await setTomlValue(getConfigPath(), table, "speachesUrl", JSON.stringify(url))
     }
     invalidateConfigCache()
     print(t("wizard.voiceSaved", { url: result.voiceUrl }))
@@ -193,7 +202,9 @@ async function currentModels(): Promise<{ provider?: WizardProvider; baseUrl?: s
     const f = file(getModelsPath())
     if (!(await f.exists())) return {}
     const data = TOML.parse(await f.text()) as any
-    const provider = TEMPLATE_PROVIDERS.find(name => name === data?.models?.chat?.provider)
+    const provider = (Object.keys(PROVIDER_BUNDLES) as WizardProvider[]).find(
+      name => name === data?.models?.chat?.provider
+    )
     if (!provider) return {}
     const baseUrl = data?.providers?.[provider]?.base_url
     return { provider, baseUrl: typeof baseUrl === "string" ? baseUrl : undefined }

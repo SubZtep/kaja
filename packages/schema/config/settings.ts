@@ -20,7 +20,7 @@ export const KajaPreferencesSchema = z.object({
     .describe("Modifier key for the help/persona hotkeys (default: alt)")
 })
 
-// Per-feature config blocks; the model itself lives in models.toml's [models.*]/[active].
+// Per-feature config blocks; the model itself lives in models.toml's [models.*], the entry whose id equals the task.
 export const KajaSttSchema = z.object({
   speachesUrl: z.url().optional().describe("Speaches AI server endpoint (speech-to-text)"),
   language: z.string().min(1).optional().describe("Language hint for speech-to-text, e.g. 'en'")
