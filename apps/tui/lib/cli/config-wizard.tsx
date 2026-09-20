@@ -90,8 +90,11 @@ async function applyExtras(
 
   if (extras.includes("voice") && result.voiceUrl) {
     const { getConfigPath, invalidateConfigCache } = await import("../config/config")
-    for (const table of ["stt", "tts"]) {
-      await appendTomlSection(getConfigPath(), table, [`speachesUrl = ${JSON.stringify(result.voiceUrl)}`])
+    // One answer, two schemes: speech-to-text talks to Speaches' realtime WebSocket API and
+    // text-to-speech to its plain HTTP one, which is why the documented example has them differ.
+    const schemes = { stt: result.voiceUrl.replace(/^http/, "ws"), tts: result.voiceUrl.replace(/^ws/, "http") }
+    for (const [table, url] of Object.entries(schemes)) {
+      await appendTomlSection(getConfigPath(), table, [`speachesUrl = ${JSON.stringify(url)}`])
     }
     invalidateConfigCache()
     print(t("wizard.voiceSaved", { url: result.voiceUrl }))
@@ -222,7 +225,8 @@ async function readPrefill(): Promise<WizardResult> {
     language: config.preferences?.locale,
     provider,
     baseUrl,
-    voiceUrl: config.stt?.speachesUrl,
+    // [tts] holds the http:// form, which is what the step offers and what both tables derive from.
+    voiceUrl: config.tts?.speachesUrl ?? config.stt?.speachesUrl,
     telegramId: services.telegram?.allowedUserIds?.[0]?.toString()
   }
 }

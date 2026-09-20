@@ -28,25 +28,16 @@ LLM provider credentials, model-to-task mapping, secrets, services, and preferen
 Run `kaja config paths` to print the resolved location of each of these on your machine — the
 directory follows XDG, so `$XDG_CONFIG_HOME/kaja` when set.
 
-The first `kaja --local` run seeds these from the templates in
+The first `kaja --local` run opens the [setup wizard](/configuration/wizard), seeding these from the templates in
 [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config). `kaja config fetch`
 later downloads the current admin-managed model catalog from
 the cloud API's `GET /config/export` and rewrites `models.toml`
 from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
 the same bundled templates as first run. It also resets `secrets.toml` to the commented-out template,
 keeping your old one as a `.bak`. `kaja config diff` shows what a fetch would change
-without writing anything, and `kaja config wizard` re-runs the setup wizard at any time (language,
-mode, provider, its API key, server address), each step opening on what you already have. Keys are
-asked for where they belong — the provider's right after you pick it, and each extra's right after
-you tick it — but nothing is written until the end, when the same pass `kaja doctor` runs tests every
-key and saves the ones that work. A key you skip isn't asked for again; it's listed as still to do.
-That pass still asks for anything only the finished config reveals, such as an ability's key.
-The wizard doesn't ask about abilities: a machine with none yet gets the recommended set — everything
-needing no key, minus MCP servers that run a command locally — turned on for it, and one that already
-has some is left exactly as it is. `kaja abilities` is where you choose among the rest. A final step
-offers web search, voice and a Telegram bot, all unticked, so pressing Enter skips them. If your
-model server is Ollama and hasn't got the models your `models.toml` names, the wizard offers to
-download them — one question for all of them, not one per model — before it tests anything. `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched
+without writing anything, and `kaja config wizard` re-runs the [setup wizard](/configuration/wizard)
+at any time — the same one a first run walks you through, and the page that traces which answer
+writes which file. `mcp.toml`, `services.toml`, `settings.toml` and `abilities.toml` are never touched
 by `fetch` — those stay yours to hand-edit. Personas, like the rest of the marketplace, come from
 `kaja abilities update` instead.
 
