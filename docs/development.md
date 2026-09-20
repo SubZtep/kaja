@@ -86,7 +86,7 @@ docker compose up -d db mail
 
 The database volume lives in `./pgdata` and the migration files in `apps/api/migrations` run
 automatically **on first boot only**. For an existing volume, catch up manually with
-`./scripts/db_migration.sh`. Before launch the migrations are edited in place rather than patched, so after
+`./scripts/db_migration.sh`. Until v1.0 the migrations are edited in place rather than patched, so after
 pulling a schema change, recreate the volume (`docker compose down -v`). Every table is described on the
 [Database](/development/database) page.
 

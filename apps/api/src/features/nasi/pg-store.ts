@@ -249,11 +249,11 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
       return prompts
     },
 
-    async loadMemory(_owner) {
+    async loadMemory(owner) {
       const result = await db.query(
         `SELECT key, content, importance, tags, sticky, created_at, last_used_at, use_count
-         FROM nasi_note WHERE user_id = $1`,
-        [userId]
+         FROM nasi_note WHERE user_id = $1 AND owner = $2`,
+        [userId, ownerKey(owner)]
       )
       const store: MemoryStore = {}
       for (const row of result.rows) {
@@ -270,17 +270,18 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
       return store
     },
 
-    async saveMemory(_owner, store) {
+    async saveMemory(owner, store) {
       const client = await db.connect()
       try {
         await client.query("BEGIN")
-        await client.query("DELETE FROM nasi_note WHERE user_id = $1", [userId])
+        await client.query("DELETE FROM nasi_note WHERE user_id = $1 AND owner = $2", [userId, ownerKey(owner)])
         for (const [key, note] of Object.entries(store)) {
           await client.query(
-            `INSERT INTO nasi_note (user_id, key, content, importance, tags, sticky, created_at, last_used_at, use_count)
-             VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)`,
+            `INSERT INTO nasi_note (user_id, owner, key, content, importance, tags, sticky, created_at, last_used_at, use_count)
+             VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10)`,
             [
               userId,
+              ownerKey(owner),
               key,
               note.content,
               note.importance,

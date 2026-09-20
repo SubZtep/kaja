@@ -50,8 +50,8 @@ flowchart LR
 | `2026-09-19-user-secret.sql` | `user_secret` |
 
 Every file only *creates* (`IF NOT EXISTS`), and the API's `migrate.ts` re-runs all of them on every
-deploy, so they have to stay idempotent. There are no patch migrations yet: while the project is
-pre-launch, a schema change is edited into the file that creates the table and existing databases are
+deploy, so they have to stay idempotent. There are no patch migrations: until v1.0 there is no production data
+worth keeping, so a schema change is edited into the file that creates the table and existing databases are
 recreated. The files run on the first boot of the compose volume; for an existing volume use
 `scripts/db_migration.sh`.
 
@@ -290,6 +290,7 @@ erDiagram
 
   nasi_note {
     uuid user_id PK
+    text owner PK "empty string = web app and CLI"
     text key PK
     text content
     text importance "low, medium or high"
@@ -387,11 +388,9 @@ The local file is the second half of the agent state, documented table by table 
 - **`session_events` is SQLite-only.** The terminal stores its rendered timeline so a resumed session looks
   the way it did. The cloud keeps no timeline: `NasiStore` passes `events` in, and the Postgres store ignores
   it and returns an empty list.
-- **Notes: one set per account in the cloud, one per owner locally.** `notes` is keyed by `(owner, key)`, so the
-  Telegram bot's memory is separate from the terminal's. `nasi_note` is keyed by `(user_id, key)` and the
-  Postgres store ignores the `owner` it is given, so every channel of one account shares one set of notes.
 - **`channel` and stricter checks are Postgres-only.** `nasi_session.channel` (`web`, `telegram`, `widget`) is
   derived from the owner's prefix when the row is written, and `pending_kind` has a `CHECK`. SQLite stores
   `pendingKind` as free `TEXT`. Both back ends check `importance`, tool-call `status` and `approval`.
-- **Datasets partition the same way.** Both use `owner` with the empty string for "no owner" (so it can sit in
-  a primary key), and the cloud adds `user_id` in front.
+- **Notes and datasets partition the same way.** Both back ends key them by `owner`, with the empty string for
+  "no owner" (so it can sit in a primary key): the web app, a Telegram user and each widget visitor keep their
+  own notes and answers. The cloud adds `user_id` in front. A save replaces only that owner's set.

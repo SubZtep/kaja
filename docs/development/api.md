@@ -115,8 +115,8 @@ serves the template files.
 - DB row shapes stay private inside `services/`, mapped to API types by private `#rowTo…` helpers
 - migrations in `apps/api/migrations/` are create-only and lexicographically ordered: they run on the first
   boot of a compose volume, `./scripts/db_migration.sh` runs them by hand, and `migrate.ts` runs them again on
-  every deploy. Before launch a schema change is edited into the file that creates the table, so existing
-  databases are recreated. The [Database](/development/database) page has every table.
+  every deploy, so they must be idempotent. Until v1.0 a schema change is edited into the file that creates the
+  table, and existing databases are recreated. The [Database](/development/database) page has every table.
 
 ## Errors and logging
 

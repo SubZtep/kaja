@@ -57,6 +57,8 @@ CREATE INDEX IF NOT EXISTS nasi_tool_call_name_idx ON nasi_tool_call (name);
 
 CREATE TABLE IF NOT EXISTS nasi_note (
   user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
+  -- whose notes: '' is the web app and the CLI, else a Telegram user or a widget visitor (like sessions and datasets)
+  owner text NOT NULL DEFAULT '',
   key text NOT NULL,
   content text NOT NULL,
   importance text NOT NULL CHECK (importance IN ('low', 'medium', 'high')),
@@ -65,7 +67,7 @@ CREATE TABLE IF NOT EXISTS nasi_note (
   created_at text NOT NULL,
   last_used_at text NOT NULL,
   use_count integer NOT NULL,
-  PRIMARY KEY (user_id, key)
+  PRIMARY KEY (user_id, owner, key)
 );
 
 CREATE TABLE IF NOT EXISTS nasi_dataset_answer (

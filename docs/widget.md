@@ -61,8 +61,8 @@ an `X-Kaja-Widget-Key` header. The bundle derives the API origin from its own `s
 nothing else to wire up.
 
 Visitor state (`visitorId`, `session`) is kept in `sessionStorage`, not cookies. Each visitor's
-rows are namespaced by that id inside your account, so visitors can never resume each other's
-conversations.
+sessions, memory notes and dataset answers are namespaced by that id inside your account, so visitors can never
+resume each other's conversations or see each other's notes, and none of it mixes into your own.
 
 ## What the agent can do
 
