@@ -25,7 +25,7 @@ async function seedSession(
     persona?: string
     model?: string
     messages?: unknown[]
-    approvals?: { callId: string; approved: boolean }[]
+    calls?: Record<string, { status?: "ok" | "error" | "declined" | "skipped"; approval?: "approved" | "declined" }>
   }
 ) {
   const id = await createPostgresStore(pool, userId).createSession({
@@ -33,9 +33,8 @@ async function seedSession(
     model: opts.model ?? "model-a",
     owner: opts.owner ?? null,
     title: "seed",
-    session: { messages: opts.messages ?? [] },
-    events: [],
-    approvals: opts.approvals
+    session: { messages: opts.messages ?? [], telemetry: { steps: [], calls: opts.calls ?? {} } },
+    events: []
   })
   const at = new Date(Date.now() - opts.ageDays * DAY_MS)
   await pool.query("UPDATE nasi_session SET created_at = $2, updated_at = $2 WHERE id = $1", [id, at])
@@ -71,10 +70,10 @@ describe("GET /stats", () => {
         },
         { role: "tool", tool_call_id: "call_w2", content: "User declined this request." }
       ],
-      approvals: [
-        { callId: "call_w1", approved: true },
-        { callId: "call_w2", approved: false }
-      ]
+      calls: {
+        call_w1: { status: "ok", approval: "approved" },
+        call_w2: { status: "declined", approval: "declined" }
+      }
     })
     await seedSession(mine.userId, {
       ageDays: 2,

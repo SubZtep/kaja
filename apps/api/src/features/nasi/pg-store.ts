@@ -1,4 +1,5 @@
 import {
+  clearTelemetry,
   type DatasetAnswer,
   joinConversation,
   type MessageRow,
@@ -85,8 +86,9 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
 async function insertMessage(client: PoolClient, sessionId: string, seq: number, row: MessageRow) {
   const id = Bun.randomUUIDv7()
   await client.query(
-    `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id)
-     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)`,
+    `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id,
+                               persona, model, prompt_tokens, completion_tokens, latency_ms, finish_reason)
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12, $13, $14)`,
     [
       id,
       sessionId,
@@ -95,7 +97,13 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
       row.content,
       row.parts ? JSON.stringify(row.parts) : null,
       row.reasoning,
-      row.toolCallId
+      row.toolCallId,
+      row.step?.persona ?? null,
+      row.step?.model ?? null,
+      row.step?.promptTokens ?? null,
+      row.step?.completionTokens ?? null,
+      row.step?.latencyMs ?? null,
+      row.step?.finishReason ?? null
     ]
   )
   for (const [position, call] of row.toolCalls.entries()) {
@@ -116,7 +124,7 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
 
 // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
 async function saveConversation(client: PoolClient, id: string, data: SessionWrite) {
-  const { systemPrompt, pending, messages } = splitConversation(data.session)
+  const { systemPrompt, pending, messages, calls = [] } = splitConversation(data.session)
   await client.query(
     "UPDATE nasi_session SET system_prompt = $2, pending_call_id = $3, pending_kind = $4 WHERE id = $1",
     [id, systemPrompt, pending?.callId ?? null, pending?.kind ?? null]
@@ -126,11 +134,12 @@ async function saveConversation(client: PoolClient, id: string, data: SessionWri
   for (const [i, row] of messages.slice(storedMessages).entries()) {
     await insertMessage(client, id, storedMessages + i, row)
   }
-  for (const { callId, approved } of data.approvals ?? []) {
+  for (const { callId, status, approval, durationMs } of calls) {
     await client.query(
-      `UPDATE nasi_tool_call SET approval = $3
+      `UPDATE nasi_tool_call
+       SET status = COALESCE($3, status), approval = COALESCE($4, approval), duration_ms = COALESCE($5, duration_ms)
        WHERE call_id = $2 AND message_id IN (SELECT id FROM nasi_message WHERE session_id = $1)`,
-      [id, callId, approved ? "approved" : "declined"]
+      [id, callId, status ?? null, approval ?? null, durationMs ?? null]
     )
   }
 }
@@ -163,6 +172,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
         )
         await saveConversation(client, id, data)
       })
+      clearTelemetry(data.session)
       return id
     },
 
@@ -174,6 +184,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
         )
         if ((result.rowCount ?? 0) > 0) await saveConversation(client, id, data)
       })
+      clearTelemetry(data.session)
     },
 
     async loadSession(id) {

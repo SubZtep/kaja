@@ -29,6 +29,7 @@ export { samplingOf } from "./agent/persona"
 export { run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
+export { recordPausedCall } from "./agent/telemetry"
 export {
   LOCAL_OWNER_CTX,
   runApprovedTool,
@@ -94,7 +95,9 @@ export {
   UnsafeUrlError
 } from "./security/ssrf"
 export {
+  type CallUpdate,
   type ConversationRows,
+  clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
   type DatasetVersionSummary,
@@ -106,6 +109,7 @@ export {
   type PendingKind,
   requireStore,
   type SessionWrite,
+  type StepRow,
   splitConversation,
   type ToolCallRow
 } from "./store"

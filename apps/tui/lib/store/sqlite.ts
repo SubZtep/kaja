@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
 import {
+  clearTelemetry,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -26,10 +27,14 @@ function migrateNotesOwnerColumn(db: Database) {
   db.run(`ALTER TABLE notes ADD COLUMN owner TEXT NOT NULL DEFAULT ''`)
 }
 
-// Sessions used to be one row holding the whole conversation as two JSON blobs; they are dropped, not converted.
+// Sessions used to be one row holding the whole conversation as two JSON blobs, then rows without telemetry; they are dropped, not converted.
 function dropLegacySessions(db: Database) {
-  const columns = db.query("PRAGMA table_info(sessions)").all() as { name: string }[]
-  if (columns.some(c => c.name === "session")) db.run("DROP TABLE sessions")
+  const hasColumn = (table: string, column: string) =>
+    (db.query(`PRAGMA table_info(${table})`).all() as { name: string }[]).some(c => c.name === column)
+  const blobs = hasColumn("sessions", "session")
+  const noTelemetry = hasColumn("messages", "toolCallId") && !hasColumn("messages", "finishReason")
+  if (!blobs && !noTelemetry) return
+  for (const table of ["tool_calls", "session_events", "messages", "sessions"]) db.run(`DROP TABLE IF EXISTS ${table}`)
 }
 
 function createSchema(db: Database) {
@@ -75,6 +80,12 @@ function createSchema(db: Database) {
       parts      TEXT,
       reasoning  TEXT,
       toolCallId TEXT,
+      persona    TEXT,
+      model      TEXT,
+      promptTokens     INTEGER,
+      completionTokens INTEGER,
+      latencyMs        INTEGER,
+      finishReason     TEXT,
       createdAt  TEXT NOT NULL,
       UNIQUE (sessionId, seq)
     )
@@ -88,6 +99,8 @@ function createSchema(db: Database) {
       name            TEXT NOT NULL,
       arguments       TEXT NOT NULL,
       resultMessageId TEXT REFERENCES messages (id) ON DELETE SET NULL,
+      status          TEXT CHECK (status IN ('ok','error','declined','skipped')),
+      durationMs      INTEGER,
       approval        TEXT CHECK (approval IN ('approved','declined')),
       UNIQUE (messageId, position)
     )
@@ -179,9 +192,17 @@ export function createSqliteStore(dbPath: string): NasiStore {
   function insertMessage(sessionId: string, seq: number, row: MessageRow, createdAt: string) {
     const id = Bun.randomUUIDv7()
     db.query(
-      `INSERT INTO messages (id, sessionId, seq, role, content, parts, reasoning, toolCallId, createdAt)
-       VALUES ($id, $sessionId, $seq, $role, $content, $parts, $reasoning, $toolCallId, $createdAt)`
+      `INSERT INTO messages (id, sessionId, seq, role, content, parts, reasoning, toolCallId, persona, model,
+                             promptTokens, completionTokens, latencyMs, finishReason, createdAt)
+       VALUES ($id, $sessionId, $seq, $role, $content, $parts, $reasoning, $toolCallId, $persona, $model,
+               $promptTokens, $completionTokens, $latencyMs, $finishReason, $createdAt)`
     ).run({
+      $persona: row.step?.persona ?? null,
+      $model: row.step?.model ?? null,
+      $promptTokens: row.step?.promptTokens ?? null,
+      $completionTokens: row.step?.completionTokens ?? null,
+      $latencyMs: row.step?.latencyMs ?? null,
+      $finishReason: row.step?.finishReason ?? null,
       $id: id,
       $sessionId: sessionId,
       $seq: seq,
@@ -215,7 +236,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
   // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
   const saveConversation = db.transaction((id: string, data: SessionWrite) => {
-    const { systemPrompt, pending, messages } = splitConversation(data.session)
+    const { systemPrompt, pending, messages, calls = [] } = splitConversation(data.session)
     db.query(
       "UPDATE sessions SET systemPrompt = $systemPrompt, pendingCallId = $callId, pendingKind = $kind WHERE id = $id"
     ).run({
@@ -236,11 +257,18 @@ export function createSqliteStore(dbPath: string): NasiStore {
         $payload: JSON.stringify(event)
       })
     })
-    for (const { callId, approved } of data.approvals ?? []) {
+    for (const { callId, status, approval, durationMs } of calls) {
       db.query(
-        `UPDATE tool_calls SET approval = $approval
+        `UPDATE tool_calls
+         SET status = COALESCE($status, status), approval = COALESCE($approval, approval), durationMs = COALESCE($durationMs, durationMs)
          WHERE callId = $callId AND messageId IN (SELECT id FROM messages WHERE sessionId = $id)`
-      ).run({ $id: id, $callId: callId, $approval: approved ? "approved" : "declined" })
+      ).run({
+        $id: id,
+        $callId: callId,
+        $status: status ?? null,
+        $approval: approval ?? null,
+        $durationMs: durationMs ?? null
+      })
     }
   })
 
@@ -311,6 +339,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
         })
         saveConversation(id, data)
       })()
+      clearTelemetry(data.session)
       return id
     },
 
@@ -321,6 +350,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
           .run({ $id: id, $updatedAt: new Date().toISOString(), $persona: data.persona, $model: data.model })
         if (changes > 0) saveConversation(id, data)
       })()
+      clearTelemetry(data.session)
     },
 
     async loadSession(id) {

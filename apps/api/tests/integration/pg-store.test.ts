@@ -84,6 +84,58 @@ describe("postgres store", () => {
     ])
   })
 
+  test("steps and tool calls keep what the agent recorded; a later save can answer an earlier call", async () => {
+    const store = createPostgresStore(pool, userId)
+    const telemetry = {
+      steps: [
+        {
+          at: 1,
+          model: "served",
+          persona: "kaja",
+          promptTokens: 10,
+          completionTokens: 4,
+          latencyMs: 120,
+          finishReason: "tool_calls"
+        }
+      ],
+      calls: { c1: { status: "ok" as const, durationMs: 7 } }
+    }
+    const session = { messages: TURN.slice(0, 4), telemetry }
+    const id = await store.createSession({ ...write([]), session, title: "t" })
+    expect(session).not.toHaveProperty("telemetry")
+
+    await store.updateSession(id, {
+      ...write([]),
+      session: {
+        messages: TURN.slice(0, 4),
+        telemetry: { steps: [], calls: { c2: { status: "declined", approval: "declined" } } }
+      }
+    })
+    const step = await pool.query(
+      `SELECT persona, model, prompt_tokens, completion_tokens, finish_reason, latency_ms IS NOT NULL AS timed
+       FROM nasi_message WHERE session_id = $1 AND latency_ms IS NOT NULL`,
+      [id]
+    )
+    expect(step.rows).toEqual([
+      {
+        persona: "kaja",
+        model: "served",
+        prompt_tokens: 10,
+        completion_tokens: 4,
+        finish_reason: "tool_calls",
+        timed: true
+      }
+    ])
+    const calls = await pool.query(
+      "SELECT tc.call_id, tc.status, tc.duration_ms, tc.approval FROM nasi_tool_call tc JOIN nasi_message m ON m.id = tc.message_id WHERE m.session_id = $1 ORDER BY tc.position",
+      [id]
+    )
+    expect(calls.rows).toEqual([
+      { call_id: "c1", status: "ok", duration_ms: 7, approval: null },
+      { call_id: "c2", status: "declined", duration_ms: null, approval: "declined" }
+    ])
+  })
+
   test("a rewritten system prompt changes no message rows", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })

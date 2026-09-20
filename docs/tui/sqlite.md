@@ -22,8 +22,8 @@ your account (the cloud keeps the messages and tool calls, but not the terminal'
 | --- | --- |
 | `notes` | the agent's long-term [memory](/memory) about you |
 | `sessions` | one row per conversation, resumable with `-c` / `-s` |
-| `messages` | the conversation itself, one row per message (the assistant's rows are its steps) |
-| `tool_calls` | every tool call the assistant made, linked to its result message |
+| `messages` | the conversation itself, one row per message (the assistant's rows are its steps, with model, tokens and latency) |
+| `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took |
 | `session_events` | the terminal timeline (what the screen showed), replayed when you resume |
 | `dataset_answers` | individual answers to a [dataset](/memory#datasets) field |
 | `dataset_versions` | marks a dataset as completed at a point in time |
@@ -66,6 +66,12 @@ erDiagram
     TEXT parts "JSON: image parts"
     TEXT reasoning
     TEXT toolCallId "on tool results"
+    TEXT persona "assistant rows: the round's numbers"
+    TEXT model "the model that served the round"
+    INTEGER promptTokens
+    INTEGER completionTokens
+    INTEGER latencyMs
+    TEXT finishReason
     TEXT createdAt
   }
 
@@ -77,6 +83,8 @@ erDiagram
     TEXT name
     TEXT arguments
     TEXT resultMessageId FK
+    TEXT status "ok | error | declined | skipped"
+    INTEGER durationMs
     TEXT approval "approved | declined"
   }
 

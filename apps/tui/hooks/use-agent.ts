@@ -1,4 +1,4 @@
-import { replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
+import { recordPausedCall, replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { useCallback, useRef, useState } from "react"
@@ -256,7 +256,9 @@ export function useAgent(
       if (runningCommand) return
       setRunningCommand(true)
       try {
+        const startedAt = performance.now()
         const result = approved ? await runShellCommand(command) : "User declined to run this command."
+        recordPausedCall(sessionRef.current!, "run_command", approved ? { status: "ok", startedAt } : "declined")
         await send(result, false)
       } finally {
         setRunningCommand(false)
@@ -271,9 +273,14 @@ export function useAgent(
       if (runningCommand) return
       setRunningCommand(true)
       try {
+        const startedAt = performance.now()
+        let status: "ok" | "error" = "ok"
         const result = approved
-          ? await runApprovedTool(agent.tools, name, argumentsJson)
+          ? await runApprovedTool(agent.tools, name, argumentsJson, s => {
+              status = s
+            })
           : "User declined this request."
+        recordPausedCall(sessionRef.current!, "tool_approval", approved ? { status, startedAt } : "declined")
         await send(result, false)
       } finally {
         setRunningCommand(false)

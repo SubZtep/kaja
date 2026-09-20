@@ -37,3 +37,4 @@ src/
 - Packages come from a host-provided `PackageStore` (`createFolderPackageStore` for the CLI); `loadPackages` returns extra tools the host appends. A broken package is skipped with a warning, never thrown.
 - Parameterized SQL only. Session ids are UUIDv7 text.
 - Do not log prompts, memory content, or API keys.
+- Telemetry: `run()` records each model round (`StepStat`: served model, persona, tokens, latency, finish reason) and each tool call it runs (`CallStat`: status, duration) on `session.telemetry`; a host that answers a paused call itself records it with `recordPausedCall` before the answer reaches `run()`. A store writes it beside the rows it saves and then takes it off the session (`clearTelemetry`), so telemetry always covers what's new since the last save. A call's status stays unset when a person or a client answered it.

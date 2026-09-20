@@ -164,22 +164,112 @@ test("a save writes only the rows past what is stored", async () => {
   expect((await loadSessionRow(id))!.session.messages).toEqual(next)
 })
 
-test("a tool call links to its result message and records an approval", async () => {
-  const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events: [] }))
-  await updateSessionRow(id, {
-    ...row({ session: { messages: TURN_ONE } }),
-    approvals: [{ callId: "call_1", approved: false }]
-  })
+test("steps and tool calls keep what the agent recorded, and the session's telemetry is taken off after the save", async () => {
+  const session = {
+    messages: TURN_ONE,
+    telemetry: {
+      steps: [
+        {
+          at: 1,
+          model: "served",
+          persona: "kaja",
+          promptTokens: 10,
+          completionTokens: 4,
+          latencyMs: 120,
+          finishReason: "tool_calls"
+        },
+        { at: 3, latencyMs: 30 }
+      ],
+      calls: { call_1: { status: "ok", durationMs: 7 } }
+    }
+  }
+  const id = await createSessionRow(row({ session }))
+  expect(session).not.toHaveProperty("telemetry")
+
   const db = await openDb()
+  const steps = db
+    .query(
+      "SELECT seq, persona, model, promptTokens, completionTokens, latencyMs, finishReason FROM messages WHERE sessionId = ? AND latencyMs IS NOT NULL ORDER BY seq"
+    )
+    .all(id)
   const call = db
     .query(
-      `SELECT tc.name, tc.approval, r.role AS resultRole, r.content AS resultContent
+      `SELECT tc.name, tc.status, tc.durationMs, tc.approval, r.role AS resultRole, r.content AS resultContent
        FROM tool_calls tc JOIN messages m ON m.id = tc.messageId LEFT JOIN messages r ON r.id = tc.resultMessageId
        WHERE m.sessionId = ?`
     )
     .get(id)
   db.close()
-  expect(call).toEqual({ name: "read_thing", approval: "declined", resultRole: "tool", resultContent: "ok" })
+  expect(steps).toEqual([
+    {
+      seq: 1,
+      persona: "kaja",
+      model: "served",
+      promptTokens: 10,
+      completionTokens: 4,
+      latencyMs: 120,
+      finishReason: "tool_calls"
+    },
+    {
+      seq: 3,
+      persona: null,
+      model: null,
+      promptTokens: null,
+      completionTokens: null,
+      latencyMs: 30,
+      finishReason: null
+    }
+  ])
+  expect(call).toEqual({
+    name: "read_thing",
+    status: "ok",
+    durationMs: 7,
+    approval: null,
+    resultRole: "tool",
+    resultContent: "ok"
+  })
+})
+
+test("a later save can still answer a call stored earlier, without erasing what was recorded before", async () => {
+  const id = await createSessionRow(
+    row({ session: { messages: TURN_ONE, telemetry: { steps: [], calls: { call_1: { durationMs: 7 } } } } })
+  )
+  await updateSessionRow(
+    id,
+    row({
+      session: {
+        messages: TURN_ONE,
+        telemetry: { steps: [], calls: { call_1: { status: "declined", approval: "declined" } } }
+      }
+    })
+  )
+  const db = await openDb()
+  const call = db
+    .query(
+      "SELECT tc.status, tc.durationMs, tc.approval FROM tool_calls tc JOIN messages m ON m.id = tc.messageId WHERE m.sessionId = ?"
+    )
+    .get(id)
+  db.close()
+  expect(call).toEqual({ status: "declined", durationMs: 7, approval: "declined" })
+})
+
+test("a sqlite file from before telemetry is reset when the store opens", async () => {
+  const { Database } = await import("bun:sqlite")
+  const path = `${tmpdir()}/kaja-notelemetry-${Bun.randomUUIDv7()}.sqlite`
+  const old = new Database(path, { create: true })
+  old.run(
+    "CREATE TABLE sessions (id TEXT PRIMARY KEY, createdAt TEXT, updatedAt TEXT, persona TEXT, model TEXT, title TEXT, owner TEXT, systemPrompt TEXT, pendingCallId TEXT, pendingKind TEXT)"
+  )
+  old.run(
+    "CREATE TABLE messages (id TEXT PRIMARY KEY, sessionId TEXT, seq INTEGER, role TEXT, content TEXT, parts TEXT, reasoning TEXT, toolCallId TEXT, createdAt TEXT)"
+  )
+  old.run("INSERT INTO sessions VALUES ('old', 'x', 'x', 'p', 'm', 't', NULL, NULL, NULL, NULL)")
+  old.close()
+  const { createSqliteStore } = await import("../../../lib/store/sqlite")
+  const store = createSqliteStore(path)
+  expect(await store.listSessions()).toEqual([])
+  const id = await store.createSession({ ...row(), title: "new" })
+  expect((await store.loadSession(id))!.session.messages).toEqual(SESSION.messages)
 })
 
 test("the system prompt is rewritten in place while the messages stay untouched", async () => {

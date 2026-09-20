@@ -7,6 +7,7 @@ import {
   type Agent,
   type AgentEvent,
   ASK_USER_TOOL,
+  type CallStat,
   RUN_COMMAND_TOOL,
   type Session,
   SWITCH_PERSONA_TOOL
@@ -14,7 +15,11 @@ import {
 import { isDangerousCommand } from "./command-risk"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshPackagesInPrompt } from "./system-prompt"
+import { msSince, recordCall, recordStep } from "./telemetry"
 import { type Tool, toolName } from "./tools"
+
+/** Notes how a call went, keyed by its id. */
+type RecordCall = (callId: string, stat: CallStat) => void
 
 type FunctionToolCall = {
   type: "function"
@@ -44,7 +49,8 @@ function isSimpleAllowlistedCommand(command: string): boolean {
 
 async function handleRunCommandCall(
   messages: ChatCompletionMessageParam[],
-  call: FunctionToolCall
+  call: FunctionToolCall,
+  record: RecordCall
 ): Promise<{ id: string; command: string; description: string } | undefined> {
   const args = parseToolArgs(call.function.arguments) as {
     command?: string
@@ -57,13 +63,16 @@ async function handleRunCommandCall(
       tool_call_id: call.id,
       content: "Invalid run_command arguments."
     })
+    record(call.id, { status: "error" })
     return undefined
   }
   const autoApprove =
     args.mutates === false && !isDangerousCommand(args.command) && isSimpleAllowlistedCommand(args.command)
   if (autoApprove) {
+    const startedAt = performance.now()
     const result = await runShellCommand(args.command)
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
+    record(call.id, { status: "ok", durationMs: msSince(startedAt) })
     return undefined
   }
   return { id: call.id, command: args.command, description: args.description ?? "" }
@@ -72,7 +81,8 @@ async function handleRunCommandCall(
 async function* handleSwitchPersonaCall(
   agent: Agent,
   messages: ChatCompletionMessageParam[],
-  call: FunctionToolCall
+  call: FunctionToolCall,
+  record: RecordCall
 ): AsyncGenerator<AgentEvent, void, void> {
   yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
   const args = parseToolArgs(call.function.arguments) as { persona?: string } | null
@@ -90,6 +100,7 @@ async function* handleSwitchPersonaCall(
       `system instructions have been updated — continue in this persona.`
   }
   messages.push({ role: "tool", tool_call_id: call.id, content })
+  record(call.id, { status: target ? "ok" : "error" })
 }
 
 async function* handleToolCall(
@@ -97,11 +108,15 @@ async function* handleToolCall(
   toolsByName: Map<string, Tool<any>>,
   messages: ChatCompletionMessageParam[],
   owner: string | null,
-  call: FunctionToolCall
+  call: FunctionToolCall,
+  record: RecordCall
 ): AsyncGenerator<AgentEvent, void, void> {
   yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
   const t = toolsByName.get(call.function.name)
-  if (!t) throw new Error(`Unknown tool: ${call.function.name}`)
+  if (!t) {
+    record(call.id, { status: "error" })
+    throw new Error(`Unknown tool: ${call.function.name}`)
+  }
   const args = parseToolArgs(call.function.arguments)
   if (args === null) {
     messages.push({
@@ -109,9 +124,18 @@ async function* handleToolCall(
       tool_call_id: call.id,
       content: "Invalid JSON in tool arguments."
     })
+    record(call.id, { status: "error" })
     return
   }
-  const result = await t.execute(args, { owner, personaId: agent.personaId, store: agent.store })
+  const startedAt = performance.now()
+  let result: Awaited<ReturnType<typeof t.execute>>
+  try {
+    result = await t.execute(args, { owner, personaId: agent.personaId, store: agent.store })
+  } catch (error) {
+    record(call.id, { status: "error", durationMs: msSince(startedAt) })
+    throw error
+  }
+  record(call.id, { status: "ok", durationMs: msSince(startedAt) })
 
   if (typeof result === "string") {
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
@@ -140,6 +164,9 @@ type StreamedRound = {
   }
   thinking: string
   usage?: { promptTokens: number }
+  completionTokens?: number
+  finishReason?: string
+  latencyMs: number
   model?: string
 }
 
@@ -148,6 +175,7 @@ async function* streamRound(
   messages: ChatCompletionMessageParam[],
   definitions: import("openai/resources/chat/completions").ChatCompletionTool[]
 ): AsyncGenerator<AgentEvent, StreamedRound, void> {
+  const startedAt = performance.now()
   const stream = agent.client.chat.completions.stream({
     model: agent.model,
     messages,
@@ -159,11 +187,13 @@ async function* streamRound(
   let thinking = ""
   let chunkModel: string | undefined
   let chunkPromptTokens: number | undefined
+  let chunkCompletionTokens: number | undefined
 
   try {
     for await (const chunk of stream) {
       if (chunk.model) chunkModel = chunk.model
       if (chunk.usage?.prompt_tokens != null) chunkPromptTokens = chunk.usage.prompt_tokens
+      if (chunk.usage?.completion_tokens != null) chunkCompletionTokens = chunk.usage.completion_tokens
       const delta = chunk.choices[0]?.delta as
         | { reasoning_content?: string; reasoning?: string; content?: string }
         | undefined
@@ -199,6 +229,9 @@ async function* streamRound(
     message,
     thinking,
     usage: promptTokens != null ? { promptTokens } : undefined,
+    completionTokens: chunkCompletionTokens ?? completion.usage?.completion_tokens,
+    finishReason: completion.choices[0]!.finish_reason ?? undefined,
+    latencyMs: msSince(startedAt),
     model: servedModel
   }
 }
@@ -251,7 +284,8 @@ async function* handleToolCalls(
   messages: ChatCompletionMessageParam[],
   owner: string | null,
   toolsByName: Map<string, Tool<any>>,
-  toolCalls: ChatCompletionMessageToolCall[]
+  toolCalls: ChatCompletionMessageToolCall[],
+  record: RecordCall
 ): AsyncGenerator<
   AgentEvent,
   {
@@ -275,12 +309,12 @@ async function* handleToolCalls(
     }
 
     if (call.function.name === RUN_COMMAND_TOOL) {
-      confirm = await handleRunCommandCall(messages, call)
+      confirm = await handleRunCommandCall(messages, call, record)
       continue
     }
 
     if (call.function.name === SWITCH_PERSONA_TOOL) {
-      yield* handleSwitchPersonaCall(agent, messages, call)
+      yield* handleSwitchPersonaCall(agent, messages, call, record)
       continue
     }
 
@@ -291,7 +325,7 @@ async function* handleToolCalls(
 
     const summary = approvalSummaryFor(toolsByName.get(call.function.name), call)
     if (summary !== undefined) {
-      approval = holdApproval(messages, approval, {
+      approval = holdApproval(messages, record, approval, {
         id: call.id,
         name: call.function.name,
         arguments: call.function.arguments,
@@ -300,11 +334,12 @@ async function* handleToolCalls(
       continue
     }
 
-    yield* handleToolCall(agent, toolsByName, messages, owner, call)
+    yield* handleToolCall(agent, toolsByName, messages, owner, call, record)
   }
   // Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
   if (approval && [ask, confirm, clientTool].some(Boolean)) {
     messages.push({ role: "tool", tool_call_id: approval.id, content: ONE_APPROVAL_AT_A_TIME })
+    record(approval.id, { status: "skipped" })
     approval = undefined
   }
   return { ask, confirm, clientTool, approval }
@@ -315,9 +350,15 @@ type ToolApproval = { id: string; name: string; arguments: string; summary: stri
 const ONE_APPROVAL_AT_A_TIME = "Not run: another step is waiting on the user first. Call this tool again afterwards."
 
 // Only one approval can pause a turn; a second one in the same round is answered now so every tool call keeps a response.
-function holdApproval(messages: ChatCompletionMessageParam[], held: ToolApproval | undefined, next: ToolApproval) {
+function holdApproval(
+  messages: ChatCompletionMessageParam[],
+  record: RecordCall,
+  held: ToolApproval | undefined,
+  next: ToolApproval
+) {
   if (!held) return next
   messages.push({ role: "tool", tool_call_id: next.id, content: ONE_APPROVAL_AT_A_TIME })
+  record(next.id, { status: "skipped" })
   return held
 }
 
@@ -448,7 +489,11 @@ export async function* run(
 
   let emptyRoundRetries = 0
   while (true) {
-    const { message, thinking, usage, model } = yield* streamRound(agent, messages, definitions)
+    const { message, thinking, usage, model, completionTokens, finishReason, latencyMs } = yield* streamRound(
+      agent,
+      messages,
+      definitions
+    )
 
     if (isEmptyRound(message) && emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES) {
       emptyRoundRetries++
@@ -458,6 +503,15 @@ export async function* run(
     }
 
     messages.push(message)
+    recordStep(session, {
+      at: messages.length - 1 - (messages[0]?.role === "system" ? 1 : 0),
+      model: model ?? agent.model,
+      persona: agent.personaId,
+      promptTokens: usage?.promptTokens,
+      completionTokens,
+      latencyMs,
+      finishReason
+    })
 
     yield* roundTelemetry({ thinking, usage, model })
 
@@ -474,7 +528,8 @@ export async function* run(
       messages,
       owner,
       toolsByName,
-      message.tool_calls
+      message.tool_calls,
+      (callId, stat) => recordCall(session, callId, stat)
     )
 
     if (yield* handlePendingHandoff(session, ask, confirm, clientTool, approval)) return

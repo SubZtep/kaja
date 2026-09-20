@@ -1,9 +1,15 @@
-import type { Session } from "../agent/agent"
+import type { CallStat, Session, StepStat } from "../agent/agent"
 
 /** Which kind of pause a session's pending tool call is waiting on. */
 export type PendingKind = "ask_user" | "run_command" | "client_tool" | "tool_approval"
 
 export type ToolCallRow = { callId: string; name: string; arguments: string }
+
+/** What a model round cost, on the assistant message it produced. */
+export type StepRow = Omit<StepStat, "at">
+
+/** What became of a tool call, keyed by the provider's call id. The row may have been stored by an earlier save. */
+export type CallUpdate = CallStat & { callId: string }
 
 /** One conversation message as a table row: text in `content`, image parts in `parts`, assistant calls in `toolCalls`. */
 export type MessageRow = {
@@ -13,6 +19,8 @@ export type MessageRow = {
   reasoning: string | null
   toolCallId: string | null
   toolCalls: ToolCallRow[]
+  /** Set on saving, never read back. */
+  step?: StepRow
 }
 
 /** A conversation split for row storage: the system prompt and pending call live on the session row, the rest is append-only. */
@@ -20,6 +28,8 @@ export type ConversationRows = {
   systemPrompt: string | null
   pending: { callId: string; kind: PendingKind } | null
   messages: MessageRow[]
+  /** Set on saving, never read back. */
+  calls?: CallUpdate[]
 }
 
 const PENDING_FIELDS = [
@@ -51,15 +61,27 @@ function toRow(message: RawMessage): MessageRow {
 
 /** Splits a replayable session into rows. Lossless for what the agent writes; other provider fields on a message are dropped. */
 export function splitConversation(session: unknown): ConversationRows {
-  const { messages: all = [], ...rest } = session as Omit<Session, "messages"> & { messages?: RawMessage[] }
+  const { messages: all = [], telemetry, ...rest } = session as Omit<Session, "messages"> & { messages?: RawMessage[] }
   const [first, ...others] = all
   const hasSystem = first?.role === "system" && typeof first.content === "string"
   const pendingField = PENDING_FIELDS.find(([field]) => typeof rest[field] === "string")
   return {
     systemPrompt: hasSystem ? (first!.content as string) : null,
     pending: pendingField ? { callId: rest[pendingField[0]]!, kind: pendingField[1] } : null,
-    messages: (hasSystem ? others : all).map(toRow)
+    messages: (hasSystem ? others : all).map((message, at) => {
+      const row = toRow(message)
+      const stat = telemetry?.steps.find(step => step.at === at)
+      if (!stat) return row
+      const { at: _at, ...step } = stat
+      return { ...row, step }
+    }),
+    calls: Object.entries(telemetry?.calls ?? {}).map(([callId, stat]) => ({ callId, ...stat }))
   }
+}
+
+/** Takes the telemetry off a session once a store has saved it, so the next save writes only what's new. */
+export function clearTelemetry(session: unknown): void {
+  delete (session as Session).telemetry
 }
 
 function fromRow(row: MessageRow): RawMessage {

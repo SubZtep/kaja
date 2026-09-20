@@ -1,4 +1,12 @@
-import { LOAD_SKILL_TOOL, type LoadSkillTool, runApprovedTool, samplingOf, type Tool, toolName } from "@kaja/nasi"
+import {
+  LOAD_SKILL_TOOL,
+  type LoadSkillTool,
+  recordPausedCall,
+  runApprovedTool,
+  samplingOf,
+  type Tool,
+  toolName
+} from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
 import { renderTelegramHtml, splitTelegramMessage, truncateForStreaming, withQuestion } from "@kaja/shared"
@@ -563,12 +571,18 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     await editSafely(chatId, pendingCommand.messageId, `${pendingCommand.body}\n\n${statusLine}`, { replyMarkup: [] })
 
     let result: string
+    const startedAt = performance.now()
     if (pendingCommand.kind === "command") {
       result = approved ? await runShellCommand(pendingCommand.command) : "User declined to run this command."
+      recordPausedCall(state.session, "run_command", approved ? { status: "ok", startedAt } : "declined")
     } else {
+      let status: "ok" | "error" = "ok"
       result = approved
-        ? await runApprovedTool(state.agent.tools, pendingCommand.name, pendingCommand.arguments)
+        ? await runApprovedTool(state.agent.tools, pendingCommand.name, pendingCommand.arguments, s => {
+            status = s
+          })
         : "User declined this request."
+      recordPausedCall(state.session, "tool_approval", approved ? { status, startedAt } : "declined")
     }
     // showUserEvent = false: the synthesized shell result isn't something the human typed, so it drives the next turn without rendering as if they said it — matches hooks/use-agent.ts's resolveCommand.
     await runTurn(userId, chatId, state, result, false)

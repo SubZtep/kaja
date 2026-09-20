@@ -4,6 +4,7 @@ import type OpenAI from "openai"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import { samplingOf } from "./agent/persona"
 import { run } from "./agent/run"
+import { recordPausedCall } from "./agent/telemetry"
 import { runApprovedTool, type Tool } from "./agent/tools"
 import { loadPackages } from "./packages/load"
 import type { PackageStore } from "./packages/types"
@@ -113,8 +114,7 @@ async function persistTurn(
   opts: NasiOpenOptions,
   loaded: LoadedTurn,
   input: NasiTurnInput,
-  turnEvents: AgentEvent[],
-  pendingApprovalId: string | undefined
+  turnEvents: AgentEvent[]
 ): Promise<string> {
   const persistedEvents = [
     ...loaded.events,
@@ -128,10 +128,7 @@ async function persistTurn(
     model: loaded.agent.model,
     owner: opts.owner ?? null,
     session: loaded.session,
-    events: persistedEvents,
-    ...(input.approval && pendingApprovalId
-      ? { approvals: [{ callId: pendingApprovalId, approved: input.approval === "approve" }] }
-      : {})
+    events: persistedEvents
   }
   if (!loaded.sessionId) return opts.store.createSession({ ...row, title: loaded.title })
   await opts.store.updateSession(loaded.sessionId, row)
@@ -252,12 +249,22 @@ export class Nasi {
         err.name = "NasiNothingToApprove"
         throw err
       }
-      if (input.approval === "decline") return TOOL_DECLINED
+      if (input.approval === "decline") {
+        recordPausedCall(session, "tool_approval", "declined")
+        return TOOL_DECLINED
+      }
       const call = pendingToolCall(session, pendingId)
       if (!call) return "Error: the call waiting for approval is gone."
-      return runApprovedTool(this.tools, call.function.name, call.function.arguments)
+      const startedAt = performance.now()
+      let status: "ok" | "error" = "ok"
+      const result = await runApprovedTool(this.tools, call.function.name, call.function.arguments, s => {
+        status = s
+      })
+      recordPausedCall(session, "tool_approval", { status, startedAt })
+      return result
     }
     const message = input.message ?? ""
+    if (pendingId) recordPausedCall(session, "tool_approval", "skipped")
     return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
   }
 
@@ -281,15 +288,13 @@ export class Nasi {
     const loaded = await this.loadTurn(input)
     const prompt = await this.promptFor(loaded.session, input)
 
-    // run() clears the pending id while answering it, so read it first.
-    const pendingApprovalId = loaded.session.pendingToolApprovalId
     const turnEvents: AgentEvent[] = []
     for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null)) {
       turnEvents.push(event)
       yield event
     }
 
-    const sessionId = await persistTurn(this.opts, loaded, input, turnEvents, pendingApprovalId)
+    const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
     return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
   }
 }

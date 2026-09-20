@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { joinConversation, splitConversation } from "../../src/store/rows"
+import { clearTelemetry, joinConversation, splitConversation } from "../../src/store/rows"
 
 const call = (id: string, name: string) => ({ id, type: "function", function: { name, arguments: `{"a":"${name}"}` } })
 
@@ -69,4 +69,28 @@ test.each([
 test("no pending call leaves no pending field", () => {
   expect(splitConversation({ messages }).pending).toBeNull()
   expect(Object.keys(joinConversation(splitConversation({ messages })))).toEqual(["messages"])
+})
+
+test("telemetry lands on the rows it belongs to; the system prompt is not counted", () => {
+  const rows = splitConversation({
+    messages,
+    telemetry: {
+      steps: [
+        { at: 1, model: "m", promptTokens: 5, latencyMs: 40 },
+        { at: 5, latencyMs: 9 }
+      ],
+      calls: { c1: { status: "ok", durationMs: 3 } }
+    }
+  })
+  expect(rows.messages[1]!.step).toEqual({ model: "m", promptTokens: 5, latencyMs: 40 })
+  expect(rows.messages[5]!.step).toEqual({ latencyMs: 9 })
+  expect(rows.messages[0]!.step).toBeUndefined()
+  expect(rows.calls).toEqual([{ callId: "c1", status: "ok", durationMs: 3 }])
+})
+
+test("a session without telemetry has no calls, and clearing takes it off", () => {
+  expect(splitConversation({ messages }).calls).toEqual([])
+  const session = { messages, telemetry: { steps: [], calls: {} } }
+  clearTelemetry(session)
+  expect(session).not.toHaveProperty("telemetry")
 })

@@ -13,8 +13,6 @@ export type SessionWrite = {
   session: unknown
   /** The rendered timeline; a store that keeps none (the cloud's) ignores it. */
   events: unknown[]
-  /** How pending tool calls were answered this write, by provider call id. */
-  approvals?: { callId: string; approved: boolean }[]
 }
 
 export type DatasetVersionSummary = {

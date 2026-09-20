@@ -98,15 +98,25 @@ export function toolName(t: Tool<any>): string {
 /**
  * Runs a tool call the human approved after a `confirm_tool` pause, returning the text to feed
  * back as its result. Hosts call this with their own tool list; a missing tool, bad arguments or
- * a failure come back as text so the model can react.
+ * a failure come back as text so the model can react, and `onStatus` hears which way it went.
  */
-export async function runApprovedTool(tools: Tool<any>[], name: string, argumentsJson: string): Promise<string> {
+export async function runApprovedTool(
+  tools: Tool<any>[],
+  name: string,
+  argumentsJson: string,
+  onStatus?: (status: "ok" | "error") => void
+): Promise<string> {
   const target = tools.find(t => toolName(t) === name)
-  if (!target) return `Error: unknown tool "${name}"`
+  if (!target) {
+    onStatus?.("error")
+    return `Error: unknown tool "${name}"`
+  }
   try {
     const result = await target.execute(JSON.parse(argumentsJson || "{}"))
+    onStatus?.("ok")
     return typeof result === "string" ? result : result.text
   } catch (error) {
+    onStatus?.("error")
     return `Error: ${error instanceof Error ? error.message : String(error)}`
   }
 }
