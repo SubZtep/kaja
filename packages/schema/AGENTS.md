@@ -8,7 +8,6 @@ Single source of truth for Zod schemas and related TypeScript types across the m
 api/         # API contracts: shared by API, web, and CLI device auth
   index.ts     # re-exports + KAJA_TUI_CLIENT_ID
   auth.ts      # auth-related payloads
-  mcp-server.ts  # MCP server admin CRUD schemas
   model.ts       # provider/model admin CRUD schemas
   widget-key.ts    # widget key admin CRUD schemas
 config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, services.toml, secrets.toml, abilities.toml)

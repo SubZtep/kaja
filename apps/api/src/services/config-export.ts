@@ -1,14 +1,5 @@
-import type { McpServer, Model, Provider } from "@kaja/schema/api"
+import type { Model, Provider } from "@kaja/schema/api"
 import { TOML } from "bun"
-
-// GET /config/export is public, so this is the only thing standing between an admin-entered MCP
-// credential and the open internet. An allowlist fails closed: a key nobody has vetted is dropped,
-// where a "looks secret-shaped" denylist would happily export X-Api, BRAVE_ID or CLIENT_ID.
-const SAFE_KEY_PATTERN = /^(content-type|accept|accept-language|user-agent|node_env|lang|locale|tz|path|home)$/i
-
-function stripSecretEntries(entries: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(Object.entries(entries).filter(([key]) => SAFE_KEY_PATTERN.test(key)))
-}
 
 // Excluded from ETag hashing (the route layer hashes the un-prefixed body): a live timestamp would
 // otherwise make the ETag change on every request, defeating If-None-Match/304.
@@ -40,17 +31,4 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
   )
 
   return generatedHeader() + TOML.stringify({ providers: providersData, models: modelsData })
-}
-
-/** mcp.toml — env/headers entries matching a secret-shaped key are dropped; those live in the CLI's secrets.toml [mcp.<id>]. */
-export function renderMcpToml(servers: McpServer[]): string {
-  const serversData = servers
-    .filter(s => s.enabled)
-    .map(s =>
-      s.url
-        ? { id: s.serverId, url: s.url, headers: stripSecretEntries(s.headers) }
-        : { id: s.serverId, command: s.command, args: s.args, env: stripSecretEntries(s.env) }
-    )
-
-  return generatedHeader() + TOML.stringify({ servers: serversData })
 }

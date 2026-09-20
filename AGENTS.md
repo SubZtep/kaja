@@ -124,7 +124,7 @@ bun run --filter @kaja/tui test
 
 1. `2026-03-01-uuidv7.sql` — UUIDv7() via pgcrypto
 2. `2026-03-03-better-auth.sql` — Better Auth tables
-3. `2026-08-01-config.sql` — `mcp_server`, `provider`, `model` tables
+3. `2026-08-01-config.sql` — `provider`, `model` tables
 4. `2026-08-31-widget.sql` — `widget` table
 5. `2026-09-07-nasi.sql` — cloud agent state: `nasi_session`, `nasi_message` (one per message), `nasi_tool_call`, plus memory notes and dataset answers
 6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)

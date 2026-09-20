@@ -28,7 +28,7 @@ src/
     _admin.tsx                    # private shell (auth-gated; same max-w-280 + sticky header pattern)
     _admin/
       dashboard|profile|widget|abilities|skills (redirect)|welcome
-      admin.tsx + admin/          # admin-only layout (role guard, tab nav): users, models, mcp-servers
+      admin.tsx + admin/          # admin-only layout (role guard, tab nav): users, models
   components/
     layout/  SiteShell, SiteHeader, ContentWidth, BrandMark, SignOutButton, nav-items (one static menu for everyone)
     ui/      Section, PageHeader, LandingSection, Table, ValueBox, ...

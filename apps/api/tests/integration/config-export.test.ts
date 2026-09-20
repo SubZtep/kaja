@@ -1,30 +1,16 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
-import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { pool } from "../../src/core/db"
-import { mcpServerService } from "../../src/services"
 import { cleanupModel, seedModel } from "./helpers"
 
 describe("config export", () => {
   let providerId: string
-  let mcpServerId: string
 
   beforeAll(async () => {
     ;({ providerId } = await seedModel("export-test"))
-    const mcpServer = await mcpServerService.create({
-      serverId: `export-test-${faker.string.alphanumeric(8)}`,
-      url: "https://mcp.example.com/export-test",
-      headers: { Authorization: "Bearer sk-super-secret-token" },
-      args: [],
-      env: {},
-      enabled: true
-    })
-    mcpServerId = mcpServer.id
   })
 
   afterAll(async () => {
     await cleanupModel(providerId)
-    await pool.query("DELETE FROM mcp_server WHERE id = $1", [mcpServerId])
   })
 
   test("GET /config/export requires no auth and returns a TOML bundle", async () => {
@@ -32,16 +18,8 @@ describe("config export", () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.files["models.toml"]).toContain("provider")
-    expect(body.files["mcp.toml"]).toContain("export-test")
-    // Personas are marketplace abilities; `kaja abilities update` brings them, not the export.
-    expect(Object.keys(body.files).sort()).toEqual(["mcp.toml", "models.toml"])
-  })
-
-  test("strips secret-shaped header values", async () => {
-    const res = await app.request("/config/export")
-    const body = await res.json()
-    expect(body.files["mcp.toml"]).not.toContain("sk-super-secret-token")
-    expect(body.files["mcp.toml"]).not.toContain("Authorization")
+    // Personas and MCP servers are marketplace abilities; `kaja abilities update` brings them, not the export.
+    expect(Object.keys(body.files)).toEqual(["models.toml"])
   })
 
   test("never emits provider api_key", async () => {

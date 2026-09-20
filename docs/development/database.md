@@ -42,7 +42,7 @@ flowchart LR
 | --- | --- |
 | `2026-03-01-uuidv7.sql` | the `uuidv7()` function (via `pgcrypto`) |
 | `2026-03-03-better-auth.sql` | `user`, `session`, `account`, `verification`, `deviceCode` |
-| `2026-08-01-config.sql` | `provider`, `model`, `mcp_server` |
+| `2026-08-01-config.sql` | `provider`, `model` |
 | `2026-08-31-widget.sql` | `widget` |
 | `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
 | `2026-09-10-telegram-link.sql` | `telegram_link`, `telegram_link_token` |
@@ -72,7 +72,7 @@ the two earlier session layouts rather than converting them. It opens in WAL mod
 
 ## PostgreSQL
 
-There are 21 tables in three groups.
+There are 20 tables in three groups.
 
 ### Accounts and access
 
@@ -175,7 +175,7 @@ copied to another user or name fails to decrypt.
 
 ### Server config and abilities
 
-The first three tables are what an admin manages at `/admin`; there is no user id, because they configure the
+The first two tables are what an admin manages at `/admin`; there is no user id, because they configure the
 whole deployment. The ability tables are the cloud's copy of the marketplace.
 
 ```mermaid
@@ -194,17 +194,6 @@ erDiagram
     text_array tasks "chat, tts, stt, embedding, rerank..."
     boolean enabled
     boolean free
-  }
-
-  mcp_server {
-    uuid id PK
-    text server_id UK
-    text command "stdio, or"
-    text url "http, never both"
-    jsonb args
-    jsonb env
-    jsonb headers
-    boolean enabled
   }
 
   ability {
@@ -371,7 +360,8 @@ The local file is the second half of the agent state, documented table by table 
 | Completed dataset | `nasi_dataset_version` | `dataset_versions` |
 | What the terminal screen showed | not stored | `session_events` |
 | Accounts, sessions, device login | Better Auth tables | none (the token lives in the OS keychain) |
-| Providers, models, MCP servers | `provider`, `model`, `mcp_server` | `models.toml`, `mcp.toml` |
+| Providers and models | `provider`, `model` | `models.toml` |
+| MCP servers | `ability` rows of type `mcp` | `mcp.toml` for your own, and the marketplace folder |
 | Abilities | `ability`, `user_ability`, `marketplace_sync` | the `marketplace/` folder and `abilities.toml` |
 | API keys | `user_secret` (encrypted) | `secrets.toml` |
 | Widgets, Telegram links | `widget`, `telegram_link*` | none (local mode has no widgets; the bot is configured in `services.toml`) |

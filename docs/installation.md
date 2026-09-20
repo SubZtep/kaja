@@ -63,7 +63,7 @@ kaja telegram             # run as a Telegram bot
 kaja --headless telegram  # same, without rendering the terminal UI
 
 # Config files (local mode)
-kaja config fetch         # rewrite models.toml / mcp.toml / secrets.toml (server defaults, or bundled templates offline)
+kaja config fetch         # rewrite models.toml / secrets.toml (server defaults, or bundled templates offline)
 kaja config diff          # show what fetch would change, without writing anything
 kaja config wizard        # re-run the interactive first-run setup
 kaja config paths         # print where every config file lives

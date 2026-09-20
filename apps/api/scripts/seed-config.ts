@@ -1,11 +1,10 @@
 #!/usr/bin/env bun
-// Idempotent upsert of docs/config/{models.fireworks,mcp}.toml into Postgres —
-// the admin-managed defaults the cloud API and `kaja config fetch` now serve from the DB.
+// Idempotent upsert of docs/config/models.fireworks.toml into Postgres —
+// the admin-managed model defaults the cloud API and `kaja config fetch` serve from the DB.
 // ON CONFLICT DO NOTHING so admin edits made after the first run always survive a re-run.
 // Called by apps/api/migrate.ts after the SQL files, so a deploy seeds a fresh database.
 import { TOML } from "bun"
 import { Pool } from "pg"
-import MCP_TEMPLATE from "../../../docs/config/mcp.toml" with { type: "text" }
 import MODELS_TEMPLATE from "../../../docs/config/models.fireworks.toml" with { type: "text" }
 
 /** Minimal surface both `pg`'s Pool and Client satisfy, so migrate.ts can reuse its own connection. */
@@ -52,34 +51,9 @@ async function seedModels(db: Queryable) {
   console.log(`Seeded ${Object.keys(data.providers).length} providers, ${count} models`)
 }
 
-async function seedMcpServers(db: Queryable) {
-  const data = TOML.parse(MCP_TEMPLATE) as { servers: Array<Record<string, unknown>> }
-  let count = 0
-  for (const server of data.servers ?? []) {
-    const result = await db.query(
-      `
-      INSERT INTO mcp_server (server_id, command, args, env, url, headers, enabled)
-      VALUES ($1, $2, $3, $4, $5, $6, true)
-      ON CONFLICT (server_id) DO NOTHING
-      `,
-      [
-        server.id,
-        server.command ?? null,
-        JSON.stringify(server.args ?? []),
-        JSON.stringify(server.env ?? {}),
-        server.url ?? null,
-        JSON.stringify(server.headers ?? {})
-      ]
-    )
-    if (result.rowCount) count++
-  }
-  console.log(`Seeded ${count} MCP servers`)
-}
-
 /** Seeds the admin-managed defaults onto an existing connection. Safe to re-run — every insert is a no-op once the row exists. */
 export async function seedConfig(db: Queryable) {
   await seedModels(db)
-  await seedMcpServers(db)
 }
 
 // Standalone entry (`bun seed:config`); no-op when imported by migrate.ts.

@@ -3,7 +3,7 @@
 # secrets.toml, not here.
 
 # Kaja server used by `kaja config fetch`/`diff`/`wizard` to download the
-# admin-managed defaults (models, MCP servers). No token needed —
+# admin-managed model defaults. No token needed —
 # GET /config/export is public.
 [api]
 baseUrl = "https://api.kaja.io"

@@ -2,8 +2,8 @@ import { createHash } from "node:crypto"
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { configExportBundleSchema } from "@kaja/schema/api"
 import type { Context } from "hono"
-import { mcpServerService, modelService } from "../../services"
-import { renderMcpToml, renderModelsToml } from "../../services/config-export"
+import { modelService } from "../../services"
+import { renderModelsToml } from "../../services/config-export"
 import type { RouteProps } from "../../types"
 import { notFound } from "../../types/errors"
 
@@ -12,14 +12,10 @@ const errorSchema = z.object({ error: z.string() })
 const BUNDLE_VERSION = 1
 
 async function buildFiles(): Promise<Record<string, string>> {
-  const [{ providers, models }, mcpServers] = await Promise.all([
-    modelService.listEnabledWithProviders(),
-    mcpServerService.list()
-  ])
+  const { providers, models } = await modelService.listEnabledWithProviders()
 
   return {
-    "models.toml": renderModelsToml(providers, models),
-    "mcp.toml": renderMcpToml(mcpServers)
+    "models.toml": renderModelsToml(providers, models)
   }
 }
 
@@ -38,7 +34,7 @@ const exportBundleRoute = createRoute({
   method: "get",
   path: "/export",
   tags: ["Config"],
-  summary: "Download the admin-managed defaults (models, MCP servers) as a TOML bundle",
+  summary: "Download the admin-managed defaults (models) as a TOML bundle",
   responses: {
     200: { description: "OK", content: { "application/json": { schema: configExportBundleSchema } } },
     304: { description: "Not modified" }

@@ -27,6 +27,5 @@ export const getHeaderItems = (user: { role?: string | null } | null): NavItem[]
 /** Tabs of the admin layout. */
 export const getAdminItems = (): NavItem[] => [
   { to: "/admin/users", label: m.nav_users() },
-  { to: "/admin/mcp-servers", label: m.nav_mcp_servers() },
   { to: "/admin/models", label: m.nav_models() }
 ]

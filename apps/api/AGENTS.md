@@ -31,9 +31,8 @@ src/
     cron.ts              # Bun.cron jobs: hourly marketplace sync
   features/              # one folder per URL mount prefix
     auth/                # Better Auth config + routes + middleware
-    admin/               # /admin — mcp-servers, providers, models, abilities/sync
-    config/              # /config — models/MCP TOML + resolve model (CONFIG_API_TOKEN)
-    users/               # /users
+    admin/               # /admin — providers, models, abilities/sync
+    config/              # /config — resolve model (CONFIG_API_TOKEN)
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
     abilities/            # /abilities — public catalog (skills, HTTP tools, MCP); /abilities/me — the user's abilities and write-only keys
     health/              # /health
@@ -66,7 +65,7 @@ widgets/                 # embeddable browser widget bundle source, own tsconfig
 - `/config/*` is fail-closed: requires non-empty `CONFIG_API_TOKEN` Bearer match (leaks provider API keys otherwise)
 - OpenAPI UI only when `NODE_ENV === "development"` (`/reference`)
 - Rate limit middleware is mounted (global + `/auth/*` + `/nasi/turn(/stream)`, the last keyed by user id not IP); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
-- `/admin/*` requires a signed-in non-banned user; `mcp-servers`/`providers`/`models` routes require Better Auth `admin` role
+- `/admin/*` requires a signed-in non-banned user; `providers`/`models` routes require Better Auth `admin` role
 
 ## Marketplace abilities
 

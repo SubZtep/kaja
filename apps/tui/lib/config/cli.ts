@@ -6,15 +6,14 @@ import { fetchModelsToml } from "../models/models"
 import { listPaths } from "../paths"
 import { getConfigDir } from "./config"
 import { writeTemplateConfig } from "./fetch"
-import { fetchMcpToml } from "./mcp-servers"
 import { fetchRemoteConfigBundle } from "./remote-fetch"
 import { fetchSecretsToml } from "./secrets"
 
 type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean }
 
-const BUNDLE_FILES = new Set(["models.toml", "mcp.toml"])
+const BUNDLE_FILES = new Set(["models.toml"])
 
-/** The server bundle's files that `fetch` writes; personas, like the rest of the marketplace, come from `kaja abilities update`. */
+/** The server bundle's files that `fetch` writes; personas and MCP servers, like the rest of the marketplace, come from `kaja abilities update`. */
 export function pickBundleFiles(files: Record<string, string>): Record<string, string> {
   return Object.fromEntries(Object.entries(files).filter(([key]) => BUNDLE_FILES.has(key)))
 }
@@ -25,7 +24,7 @@ function fetchResultLine({ path, backedUpTo, unchanged }: FetchResult) {
   return t("config.fetched", { path })
 }
 
-/** Maps a bundle file key ("models.toml", "mcp.toml") to its on-disk path under the config dir. */
+/** Maps a bundle file key ("models.toml") to its on-disk path under the config dir. */
 export function pathForBundleKey(key: string): string {
   return join(getConfigDir(), key)
 }
@@ -33,14 +32,12 @@ export function pathForBundleKey(key: string): string {
 function matchesOnly(key: string, only: string | undefined): boolean {
   if (!only) return true
   if (only === "models") return key === "models.toml"
-  if (only === "mcp") return key === "mcp.toml"
   if (only === "secrets") return key === "secrets.toml"
   return true
 }
 
 async function runFetchOffline(only?: string): Promise<FetchResult[]> {
   const results: FetchResult[] = []
-  if (matchesOnly("mcp.toml", only)) results.push(await fetchMcpToml())
   if (matchesOnly("models.toml", only)) results.push(await fetchModelsToml())
   if (matchesOnly("secrets.toml", only)) results.push(await fetchSecretsToml())
   return results

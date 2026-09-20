@@ -20,37 +20,46 @@ afterEach(async () => {
   await $`rm -f ${join(getPaths().temp, "kaja-config-fetch-etag")}`.quiet().nothrow()
 })
 
-test("fetch writes mcp.toml and models.toml from the bundled templates, and no personas", async () => {
+test("fetch writes models.toml from the bundled template, and neither personas nor mcp.toml", async () => {
   const { code, text } = await runConfigCli(["fetch"])
   expect(code).toBe(0)
-  expect(text).toContain(getMcpPath())
   expect(text).toContain(getModelsPath())
   expect(text).not.toContain("personas")
-  expect(await Bun.file(getMcpPath()).exists()).toBe(true)
+  expect(text).not.toContain(getMcpPath())
   expect(await Bun.file(getModelsPath()).exists()).toBe(true)
+  // MCP servers come from the marketplace (`kaja abilities`); mcp.toml is the user's own file.
+  expect(await Bun.file(getMcpPath()).exists()).toBe(false)
 })
 
-test("fetch backs up an existing mcp.toml instead of overwriting it", async () => {
+test("fetch leaves an existing mcp.toml alone", async () => {
+  await Bun.write(getMcpPath(), "servers = []\n# mine\n")
+  const { code } = await runConfigCli(["fetch"])
+  expect(code).toBe(0)
+  expect(await Bun.file(getMcpPath()).text()).toBe("servers = []\n# mine\n")
+  expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
+})
+
+test("fetch backs up an existing models.toml instead of overwriting it", async () => {
   // Each fetch needs a fresh etag and body: a repeated etag yields a 304 ("all up to date")
   // and identical content is a no-op, and neither writes the .bak2 this asserts on.
-  let restore = mockBundleFetch({ "mcp.toml": "servers = []\n" }, '"v1"')
+  let restore = mockBundleFetch({ "models.toml": "providers = {}\n" }, '"v1"')
   try {
-    await Bun.write(getMcpPath(), "old content")
+    await Bun.write(getModelsPath(), "old content")
 
     const first = await runConfigCli(["fetch"])
     expect(first.code).toBe(0)
     expect(first.text).toContain(".bak")
-    expect(await Bun.file(`${getMcpPath()}.bak`).text()).toBe("old content")
-    expect(await Bun.file(getMcpPath()).text()).not.toBe("old content")
+    expect(await Bun.file(`${getModelsPath()}.bak`).text()).toBe("old content")
+    expect(await Bun.file(getModelsPath()).text()).not.toBe("old content")
 
-    await Bun.write(getMcpPath(), "newer content")
+    await Bun.write(getModelsPath(), "newer content")
     restore()
-    restore = mockBundleFetch({ "mcp.toml": 'servers = ["changed"]\n' }, '"v2"')
+    restore = mockBundleFetch({ "models.toml": 'label = "changed"\n' }, '"v2"')
     const second = await runConfigCli(["fetch"])
     expect(second.code).toBe(0)
     expect(second.text).toContain(".bak2")
-    expect(await Bun.file(`${getMcpPath()}.bak`).text()).toBe("old content")
-    expect(await Bun.file(`${getMcpPath()}.bak2`).text()).toBe("newer content")
+    expect(await Bun.file(`${getModelsPath()}.bak`).text()).toBe("old content")
+    expect(await Bun.file(`${getModelsPath()}.bak2`).text()).toBe("newer content")
   } finally {
     restore()
   }
@@ -63,7 +72,7 @@ test("fetch is a no-op (no new backup) when the file already matches the bundled
   const { code, text } = await runConfigCli(["fetch"])
   expect(code).toBe(0)
   expect(text).not.toContain(".bak")
-  expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(`${getModelsPath()}.bak`).exists()).toBe(false)
 })
 
 test("unknown or missing subcommand prints usage and exits 1", async () => {
@@ -91,7 +100,7 @@ function mockBundleFetch(files: Record<string, string>, etag = '"abc123"') {
   }
 }
 
-test("fetch downloads the bundle from the server when reachable, leaving out personas", async () => {
+test("fetch downloads the bundle from the server when reachable, leaving out personas and MCP servers", async () => {
   const restore = mockBundleFetch({
     "models.toml": 'label = "from-server"\n',
     "mcp.toml": "servers = []\n",
@@ -102,8 +111,9 @@ test("fetch downloads the bundle from the server when reachable, leaving out per
     expect(code).toBe(0)
     expect(text).toContain(getModelsPath())
     expect(await Bun.file(getModelsPath()).text()).toContain("from-server")
-    // Personas come from the marketplace sync; a server that still sends them doesn't write them.
+    // Personas and MCP servers come from the marketplace sync; a server that still sends them doesn't write them.
     expect(await Bun.file(join(getConfigDir(), "personas", "default.toml")).exists()).toBe(false)
+    expect(await Bun.file(getMcpPath()).exists()).toBe(false)
   } finally {
     restore()
   }

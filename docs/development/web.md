@@ -31,7 +31,6 @@ flowchart TD
     A --> AD["/admin<br><small>admin-only layout</small>"]
     AD --> U["/admin/users · /admin/users/$userId"]
     AD --> M["/admin/models"]
-    AD --> MC["/admin/mcp-servers"]
 ```
 
 ## Public
@@ -62,7 +61,6 @@ role, sending anyone else to the dashboard. The menu hides the item and the layo
 | `/profile` | your own account: name and avatar, email, password |
 | `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |
 | `/admin/models` | providers and their models, per task |
-| `/admin/mcp-servers` | MCP servers offered to cloud chat |
 
 ## Stack notes
 

@@ -12,7 +12,7 @@ import — there is no bare `@kaja/schema` import, and no app keeps local schema
 
 | Subpath | Contents | Consumers |
 |---|---|---|
-| `@kaja/schema/api` | REST contracts: `McpServer`, `Provider`/`Model`, `WidgetKey`, the ability catalog and users' keys, usage stats, the Telegram link, auth payloads | `apps/api`, `apps/web` |
+| `@kaja/schema/api` | REST contracts: `Provider`/`Model`, `WidgetKey`, the ability catalog and users' keys, usage stats, the Telegram link, auth payloads | `apps/api`, `apps/web` |
 | `@kaja/schema/nasi` | cloud turn request/response, widget turn | `apps/api`, `apps/tui`, `packages/nasi` |
 | `@kaja/schema/abilities` | marketplace content: skill frontmatter, HTTP tool, MCP server, persona and dataset manifests | `apps/api`, `apps/tui`, `packages/nasi` |
 | `@kaja/schema/config` | the CLI's hand-edited TOML files (settings, models, mcp, services, secrets, abilities) | `apps/tui` |
@@ -39,13 +39,6 @@ config:
 ---
 erDiagram
   direction LR
-  McpServer {
-    string id
-    string serverId
-    string command
-    string url
-    boolean enabled
-  }
   Provider {
     string id
     string name

@@ -1,5 +1,4 @@
 import { file } from "bun"
-import MCP_TEMPLATE from "../../../../docs/config/mcp.toml" with { type: "text" }
 import MODELS_TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
 import SECRETS_TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
@@ -7,7 +6,7 @@ import { pathForBundleKey, pickBundleFiles } from "./cli"
 import { fetchRemoteConfigBundle } from "./remote-fetch"
 
 async function offlineBundle(): Promise<Record<string, string>> {
-  return { "models.toml": MODELS_TEMPLATE, "mcp.toml": MCP_TEMPLATE }
+  return { "models.toml": MODELS_TEMPLATE }
 }
 
 /** Reports what `kaja config fetch` would change: one line per bundle file (unchanged / new / would update), without writing anything. `offline` compares against the bundled templates instead of the server. */

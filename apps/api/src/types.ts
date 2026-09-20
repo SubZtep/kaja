@@ -1,5 +1,4 @@
 import type { OpenAPIHono } from "@hono/zod-openapi"
-import type { McpServerService } from "./services/mcp-server"
 import type { ModelService } from "./services/model"
 
 // user type from better-auth session (admin plugin adds role / ban fields)
@@ -14,7 +13,6 @@ export type AuthSessionUser = {
 // context variables for Hono
 export type RouteVariables = {
   user: AuthSessionUser | null
-  mcpServerService: McpServerService
   modelService: ModelService
 }
 

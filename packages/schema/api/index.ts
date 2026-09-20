@@ -1,7 +1,6 @@
 export * from "./ability"
 export * from "./auth"
 export * from "./config-export"
-export * from "./mcp-server"
 export * from "./model"
 export * from "./stats"
 export * from "./telegram-link"

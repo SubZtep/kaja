@@ -40,8 +40,8 @@ export const Route = createFileRoute("/_admin/widget")({
 })
 
 const createFormSchema = z.object({
-  label: z.string().min(1, m.mcp_servers_validation_required()),
-  allowedOrigins: z.string().min(1, m.mcp_servers_validation_required()),
+  label: z.string().min(1, m.validation_required()),
+  allowedOrigins: z.string().min(1, m.validation_required()),
   widgetType: widgetTypeSchema,
   persona: z.string()
 })

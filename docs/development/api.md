@@ -19,7 +19,7 @@ always-current list. This page is the map.
 | Prefix | Auth | What |
 | --- | --- | --- |
 | `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
-| `/admin/*` | session + `admin` role | MCP servers, providers, models, marketplace sync |
+| `/admin/*` | session + `admin` role | providers, models, marketplace sync |
 | `/widget/admin/*` | session | list, create, edit and revoke [widget](/widget) keys |
 | `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
 | `/abilities/me/*` | session | the user's own abilities and their write-only API keys |
@@ -28,7 +28,7 @@ always-current list. This page is the map.
 | `/telegram/admin/link` | session | start linking a Telegram account to the cloud bot (`POST`, returns a one-time deep link) |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/models` | shared secret | model resolution for tooling |
-| `/config/export` | none | the bundled config templates that `kaja config fetch` downloads |
+| `/config/export` | none | the model defaults that `kaja config fetch` downloads |
 | `/health` | none | liveness |
 | `/reference` | none | OpenAPI UI, development builds only |
 

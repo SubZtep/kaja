@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test"
-import type { McpServer, Model, Provider } from "@kaja/schema/api"
-import { McpFileSchema, ModelsFileSchema } from "@kaja/schema/config"
+import type { Model, Provider } from "@kaja/schema/api"
+import { ModelsFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
-import { renderMcpToml, renderModelsToml } from "../../src/services/config-export"
+import { renderModelsToml } from "../../src/services/config-export"
 
 function makeProvider(overrides: Partial<Provider> = {}): Provider {
   return {
@@ -27,22 +27,6 @@ function makeModel(overrides: Partial<Model> = {}): Model {
     createdAt: new Date(),
     updatedAt: new Date(),
     lastUsedAt: null,
-    ...overrides
-  }
-}
-
-function makeMcpServer(overrides: Partial<McpServer> = {}): McpServer {
-  return {
-    id: "mcp-1",
-    serverId: "context7",
-    command: null,
-    args: [],
-    env: {},
-    url: "https://mcp.example.com",
-    headers: { Authorization: "Bearer sk-secret-token", "X-Region": "eu" },
-    enabled: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
     ...overrides
   }
 }
@@ -76,41 +60,5 @@ describe("renderModelsToml", () => {
     const toml = renderModelsToml([makeProvider()], [makeModel({ free: false })])
     const parsed = TOML.parse(toml) as { providers: Record<string, unknown> }
     expect(Object.keys(parsed.providers)).toHaveLength(0)
-  })
-})
-
-describe("renderMcpToml", () => {
-  test("strips header/env keys that aren't on the safe allowlist", () => {
-    const toml = renderMcpToml([makeMcpServer()])
-    expect(toml).not.toContain("sk-secret-token")
-    expect(toml).not.toContain("Authorization")
-    // Not obviously secret-shaped, but nobody vetted it either — the allowlist drops it.
-    expect(toml).not.toContain("X-Region")
-  })
-
-  test("keeps allowlisted keys", () => {
-    const toml = renderMcpToml([makeMcpServer({ headers: { "Content-Type": "application/json" } })])
-    expect(toml).toContain("Content-Type")
-  })
-
-  test("drops credentials a secret-shaped denylist would have missed", () => {
-    const toml = renderMcpToml([
-      makeMcpServer({ headers: { "X-Api": "sk-leaky", BRAVE_ID: "id-leaky", CLIENT_ID: "client-leaky" } })
-    ])
-    expect(toml).not.toContain("sk-leaky")
-    expect(toml).not.toContain("id-leaky")
-    expect(toml).not.toContain("client-leaky")
-  })
-
-  test("round-trips through McpFileSchema", () => {
-    const toml = renderMcpToml([makeMcpServer()])
-    const parsed = McpFileSchema.safeParse(TOML.parse(toml))
-    expect(parsed.success).toBeTrue()
-  })
-
-  test("omits disabled servers", () => {
-    const toml = renderMcpToml([makeMcpServer({ enabled: false })])
-    const parsed = TOML.parse(toml) as { servers: unknown[] }
-    expect(parsed.servers).toHaveLength(0)
   })
 })
