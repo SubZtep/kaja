@@ -1,6 +1,13 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from "bun:test"
 import { HttpToolAbilitySchema } from "@kaja/schema/abilities"
-import { checkAbilityKey, checkLocationKey, checkTelegramToken, checkWebSearchKey } from "../../../lib/doctor/checks"
+import type { CliResolvedModel } from "@kaja/schema/config"
+import {
+  checkAbilityKey,
+  checkLocationKey,
+  checkProvider,
+  checkTelegramToken,
+  checkWebSearchKey
+} from "../../../lib/doctor/checks"
 
 let fetchSpy: ReturnType<typeof spyOn> | undefined
 
@@ -34,6 +41,30 @@ test("a network error is reported with the secret masked", async () => {
   const result = await checkTelegramToken("s3cret")
   expect(result.ok).toBe(false)
   expect(JSON.stringify(result)).not.toContain("s3cret")
+})
+
+const chatModel: CliResolvedModel = {
+  id: "chat",
+  model: "llama3.2:1b",
+  task: "chat",
+  baseUrl: "http://localhost:11434/v1",
+  provider: "ollama"
+}
+
+test("a rejected key is a credential failure, an unreachable server is not", async () => {
+  // Only the first is worth asking the user to retype — the wizard and doctor key off this.
+  mockFetch(() => Response.json({ error: { message: "Incorrect API key" } }, { status: 401 }))
+  expect(await checkProvider(chatModel, "bad-key")).toMatchObject({ ok: false, kind: "credential" })
+
+  mockFetch(() => {
+    throw new Error("Connection refused")
+  })
+  expect(await checkProvider(chatModel, undefined)).toMatchObject({ ok: false, kind: "unreachable" })
+})
+
+test("a model the provider doesn't have is unreachable, not a key problem", async () => {
+  mockFetch(() => Response.json({ error: { message: "model not found" } }, { status: 404 }))
+  expect(await checkProvider(chatModel, "fine-key")).toMatchObject({ ok: false, kind: "unreachable" })
 })
 
 test("web search sends the key as X-Subscription-Token", async () => {

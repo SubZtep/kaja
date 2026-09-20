@@ -83,6 +83,40 @@ test("without a terminal, missing and failing items are only reported", async ()
   ])
 })
 
+test("an unreachable service is reported without asking for a key", async () => {
+  // Ollama isn't running: nothing judged a credential, so there is nothing for the user to retype.
+  const down = fakeItem({
+    present: false,
+    required: false,
+    check: async () => ({ ok: false, reason: "Connection error.", kind: "unreachable" })
+  })
+  const { io: prompts, titles } = io(["should-never-be-asked"])
+  const outcomes = await resolveCredentials([down.item], prompts)
+
+  expect(titles).toEqual([])
+  expect(down.saved).toEqual([])
+  expect(outcomes[0]).toMatchObject({ status: "failing", kind: "unreachable" })
+})
+
+test("the to-do list separates unreachable services from keys to set", async () => {
+  const badKey = fakeItem({ present: true, works: () => false })
+  const down = fakeItem({
+    label: "ollama (model provider)",
+    present: false,
+    required: false,
+    check: async () => ({ ok: false, reason: "Connection error.", kind: "unreachable" })
+  })
+  const outcomes = await resolveCredentials([badKey.item, down.item], { ...io([]).io, interactive: false })
+
+  expect(summaryLines(outcomes, "/x/secrets.toml")).toEqual([
+    "Still to fix, in /x/secrets.toml:",
+    "  [thing] key: rejected",
+    "Couldn't be reached — check the service is running and its URL in models.toml:",
+    "  ollama (model provider): Connection error.",
+    "Edit the file, or run `kaja doctor` in a terminal to be asked for them."
+  ])
+})
+
 test("a missing value is asked for, tested, then saved", async () => {
   const { item, saved } = fakeItem({ hint: "header X-Key", works: value => value === "good" })
   const { io: prompts, titles } = io(["good"])

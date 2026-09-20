@@ -34,7 +34,13 @@ export type CredentialItem = {
 
 export type CredentialOutcome =
   | { item: CredentialItem; status: "ok" | "keyless" | "untested" | "saved" | "saved-untested" }
-  | { item: CredentialItem; status: "missing" | "failing" | "saved-failing"; reason: string }
+  | {
+      item: CredentialItem
+      status: "missing" | "failing" | "saved-failing"
+      reason: string
+      /** "unreachable": the service never judged the value, so a new one wouldn't help. */
+      kind?: "credential" | "unreachable"
+    }
 
 /** How resolveCredentials talks to the user; the doctor passes Ink prompts, tests pass fakes. */
 export type CredentialIo = {
@@ -223,7 +229,9 @@ export async function resolveCredentials(
 
   for (const item of items) {
     const saved = await savedOutcome(item)
-    settle("reason" in saved && io.interactive ? await askAndSave(saved, io) : saved)
+    // Nothing rejected the value, so there's nothing for the user to retype — report and move on.
+    const worthAsking = "reason" in saved && io.interactive && saved.kind !== "unreachable"
+    settle(worthAsking ? await askAndSave(saved as Extract<CredentialOutcome, { reason: string }>, io) : saved)
   }
 
   return outcomes
@@ -233,7 +241,7 @@ export async function resolveCredentials(
 async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
   if (item.required && !item.present) return { item, status: "missing", reason: t("doctor.missing") }
   const current = await item.check?.()
-  if (current?.ok === false) return { item, status: "failing", reason: current.reason }
+  if (current?.ok === false) return { item, status: "failing", reason: current.reason, kind: current.kind }
   if (!current?.ok) return { item, status: "untested" }
   return { item, status: item.present ? "ok" : "keyless" }
 }
@@ -250,10 +258,10 @@ async function askAndSave(
   const tested = await item.check?.(value)
   if (tested?.ok === false) {
     if (!(await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason })))) {
-      return { item, status: problem.status, reason: tested.reason }
+      return { item, status: problem.status, reason: tested.reason, kind: tested.kind }
     }
     await item.save(value)
-    return { item, status: "saved-failing", reason: tested.reason }
+    return { item, status: "saved-failing", reason: tested.reason, kind: tested.kind }
   }
 
   await item.save(value)
@@ -310,9 +318,22 @@ export async function runCredentialPass(print: (line: string) => void, header?: 
 export function summaryLines(outcomes: CredentialOutcome[], secretsPath: string): string[] {
   const todo = outcomes.filter(isUnresolved)
   if (todo.length === 0) return [t("doctor.allGood")]
+
+  // Pointing at a secrets.toml entry is only advice when a key is actually the problem; an
+  // unreachable service is listed separately, by what it is rather than where its key would go.
+  const keys = todo.filter(o => !("kind" in o) || o.kind !== "unreachable")
+  const unreachable = todo.filter(o => "kind" in o && o.kind === "unreachable")
+
   return [
-    t("doctor.todoTitle", { path: secretsPath }),
-    ...todo.map(o => `  ${o.item.where}: ${"reason" in o ? o.reason : ""}`),
+    ...(keys.length > 0
+      ? [
+          t("doctor.todoTitle", { path: secretsPath }),
+          ...keys.map(o => `  ${o.item.where}: ${"reason" in o ? o.reason : ""}`)
+        ]
+      : []),
+    ...(unreachable.length > 0
+      ? [t("doctor.todoUnreachable"), ...unreachable.map(o => `  ${o.item.label}: ${"reason" in o ? o.reason : ""}`)]
+      : []),
     t("doctor.todoRerun")
   ]
 }
