@@ -1,5 +1,5 @@
 import { t } from "../i18n"
-import { getMarketplaceDir, loadAbilitiesFile, resolveSource } from "./abilities-file"
+import { getMarketplaceDir, loadAbilitiesFile, marketplaceSettings, resolveSource } from "./abilities-file"
 import { fetchMarketplace } from "./fetch"
 import { type SyncReport, syncMarketplace } from "./sync"
 
@@ -15,6 +15,7 @@ function reportLines(report: SyncReport): string[] {
 
 /** `kaja abilities update`: fetches the marketplace source and syncs it into the local marketplace folder. Returns what to print and the exit code, like `runConfigCli`. */
 export async function runAbilityUpdate(): Promise<{ code: number; text: string }> {
+  if (!(await marketplaceSettings()).enabled) return { code: 1, text: t("ability.disabled") }
   const source = resolveSource((await loadAbilitiesFile()).source)
   try {
     const { dir, commit } = await fetchMarketplace(source)

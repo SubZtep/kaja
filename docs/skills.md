@@ -48,7 +48,7 @@ syncs it into `~/.config/kaja/marketplace/`, next to your own skills:
 - a file the marketplace removed but you edited stays, as your own
 - files you added yourself are never touched
 
-Only `kaja abilities` and `kaja abilities update` use the network; starting Kaja never does. To fetch from a
+Only `kaja abilities`, `kaja abilities update` and the once-a-day background pull at startup (`autoFetch` in settings.toml's [`[marketplace]`](/configuration/config#marketplace)) use the network; `enabled = false` there turns all of it off. To fetch from a
 fork, a branch, or a local checkout instead, set a source in `abilities.toml`:
 
 ```toml

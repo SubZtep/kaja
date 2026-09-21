@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { type AbilitiesFile, AbilitiesFileSchema, type AbilitiesSource } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
-import { getConfigDir } from "../config/config"
+import { getConfigDir, readConfigLoose } from "../config/config"
 import { t } from "../i18n"
 
 /** Where `kaja abilities update` fetches from unless abilities.toml's [source] says otherwise: this repo's marketplace/ folder on main. */
@@ -18,6 +18,13 @@ export function getAbilitiesPath() {
 /** Holds every ability, synced from the marketplace or your own; abilities.toml decides which of them load. */
 export function getMarketplaceDir() {
   return join(getConfigDir(), "marketplace")
+}
+
+/** settings.toml's `[marketplace]`, both switches on unless turned off. Tolerant of a broken file, like the wizard prefill. */
+export async function marketplaceSettings(): Promise<{ enabled: boolean; autoFetch: boolean }> {
+  const { marketplace } = await readConfigLoose()
+  const enabled = marketplace?.enabled !== false
+  return { enabled, autoFetch: enabled && marketplace?.autoFetch !== false }
 }
 
 /** Loads abilities.toml. Missing file: nothing enabled, and no file is written (it's opt-in). Invalid file: prints the error and exits, same policy as {@link import("../config/mcp-servers").loadMcpServers}. */

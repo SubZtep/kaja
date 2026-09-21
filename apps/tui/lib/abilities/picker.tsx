@@ -121,9 +121,9 @@ export async function confirmStdioServers(
 
 /** Syncs the marketplace the first time, so there is something to choose from. A failure is reported and leaves whatever is already on disk. */
 export async function ensureMarketplace(print: (line: string) => void): Promise<void> {
-  const { getMarketplaceDir } = await import("./abilities-file")
+  const { getMarketplaceDir, marketplaceSettings } = await import("./abilities-file")
   const { readSyncLock } = await import("./sync")
-  if (await readSyncLock(getMarketplaceDir())) return
+  if (!(await marketplaceSettings()).enabled || (await readSyncLock(getMarketplaceDir()))) return
 
   const { t } = await import("../i18n")
   const { runAbilityUpdate } = await import("./cli")

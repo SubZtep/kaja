@@ -87,8 +87,8 @@ export async function checkGit(
 
 /**
  * Brings the cache up to date with `source` (cloning on first use, or when the URL changed)
- * and returns the fetched marketplace folder with the commit it came from. Only this and
- * `kaja abilities` touch the network — never startup.
+ * and returns the fetched marketplace folder with the commit it came from. Only this touches the network: `kaja abilities`
+ * and the throttled background pull at local startup (`auto-update.ts`).
  */
 export async function fetchMarketplace(source: Required<AbilitiesSource>): Promise<{ dir: string; commit: string }> {
   const gitCheck = await checkGit()

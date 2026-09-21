@@ -14,6 +14,14 @@ locale = "en-GB"
 # works cleanly in your terminal.
 # hotkeyModifier = "alt"
 
+# Fetching skills, personas, tools and MCP servers from the online marketplace (needs git).
+# enabled = false means Kaja never goes online for abilities: `kaja abilities update` refuses and
+# nothing is pulled at startup. What is already in ~/.config/kaja/marketplace/ still loads.
+# autoFetch pulls at startup when the last sync is over a day old; changes apply on the next launch.
+# [marketplace]
+# enabled = true
+# autoFetch = true
+
 # Speech-to-text (Speaches AI server).
 # [stt]
 # speachesUrl = "http://localhost:8000"

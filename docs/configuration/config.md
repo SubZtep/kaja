@@ -18,6 +18,14 @@ voice = false
 locale = "en-GB"
 # hotkeyModifier = "alt"
 
+# Fetching skills, personas, tools and MCP servers from the online marketplace (needs git).
+# enabled = false means Kaja never goes online for abilities: `kaja abilities update` refuses and
+# nothing is pulled at startup. What is already in ~/.config/kaja/marketplace/ still loads.
+# autoFetch pulls at startup when the last sync is over a day old; changes apply on the next launch.
+# [marketplace]
+# enabled = true
+# autoFetch = true
+
 # Speech-to-text (Speaches AI server).
 # [stt]
 # speachesUrl = "http://localhost:8000"
@@ -46,6 +54,16 @@ locale = "en-GB"
 All of these are read once at startup — there's no in-app toggle for any of them, and the app never
 writes to this file at runtime. Edit it by hand and restart to change something; a manually picked
 [persona](/personas) is session-only and never saved here either.
+
+## `[marketplace]`
+
+| Field | Purpose |
+| --- | --- |
+| `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. Abilities already in `~/.config/kaja/marketplace/` still load. Default `true`. |
+| `autoFetch` | pull the [marketplace](/marketplace) at startup when the last sync is over a day old (a background `kaja abilities update`, silent on failure; changes apply on the next launch). Default `true`. |
+
+The setup wizard asks both questions: whether to use the marketplace at all (it checks git, then fetches once), and
+afterwards whether to keep it updated automatically.
 
 ## `[stt]` / `[tts]`
 

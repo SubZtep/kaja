@@ -7,7 +7,6 @@ import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
 import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
-import { listPaths } from "../lib/paths"
 import { SelectMenu } from "./elem/select-menu"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
@@ -339,20 +338,11 @@ function AnswerRow({ label, value }: Readonly<Pick<Answer, "label" | "value">>) 
   )
 }
 
-/** The last screen. The answers are already on screen above, so this only says where it all goes. */
+/** The last screen. The answers are already on screen above, so this only says what to do next. */
 function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
   return (
     <Box flexDirection="column" gap={1}>
       <Text>{t("wizard.summaryTitle")}</Text>
-      <Box flexDirection="column">
-        <Text dimColor>{t("wizard.summaryPaths")}</Text>
-        {listPaths(result.mode === "local").map(({ label, path }) => (
-          <Text key={path} dimColor>
-            {"  "}
-            {label}: {path}
-          </Text>
-        ))}
-      </Box>
       <Text dimColor>{t(result.mode === "cloud" ? "wizard.summaryHintCloud" : "wizard.summaryHint")}</Text>
     </Box>
   )
@@ -389,7 +379,8 @@ export function ConfigWizard({
   const [answered, setAnswered] = useState<Answer[]>([])
 
   useInput((_input, key) => {
-    if (step === "summary" && (key.return || key.escape)) onDone(result)
+    if (step === "summary" && key.return) onDone(result)
+    else if (step === "summary" && key.escape) onCancel()
     // MultiSelect has no dismissal of its own, so its steps get the same Esc contract as SelectMenu.
     else if ((step === "providers" || step === "extras") && key.escape) onCancel()
   })

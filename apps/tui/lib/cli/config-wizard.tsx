@@ -63,10 +63,9 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
 export async function applyStarterAbilities(print: (line: string) => void) {
   const total = (s: PickerSelection) => s.skills.length + s.personas.length + s.tools.length + s.mcp.length
 
-  const { getAbilitiesPath, getMarketplaceDir, loadAbilitiesFile, saveAbilitiesFile } = await import(
-    "../abilities/abilities-file"
-  )
-  if (total(await loadAbilitiesFile()) > 0) return
+  const { getAbilitiesPath, getMarketplaceDir, loadAbilitiesFile, marketplaceSettings, saveAbilitiesFile } =
+    await import("../abilities/abilities-file")
+  if (!(await marketplaceSettings()).enabled || total(await loadAbilitiesFile()) > 0) return
 
   const { ensureMarketplace, scanMarketplace, starterSelection } = await import("../abilities/picker")
   await ensureMarketplace(print)
@@ -74,6 +73,53 @@ export async function applyStarterAbilities(print: (line: string) => void) {
 
   await saveAbilitiesFile(selection)
   print(t("ability.saved", { path: getAbilitiesPath(), count: total(selection) }))
+}
+
+async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boolean) {
+  const { getConfigPath, invalidateConfigCache } = await import("../config/config")
+  const { setTomlValue } = await import("../config/toml")
+  await setTomlValue(getConfigPath(), "marketplace", key, String(value))
+  invalidateConfigCache()
+}
+
+/**
+ * Asks whether to use the online marketplace and records it in settings.toml's `[marketplace]`. "No" means
+ * Kaja never goes online for abilities. "Yes" checks git (the one thing the fetch needs), fetches once, and only
+ * then asks about fetching periodically, so the question comes with something the user has seen work. A git that
+ * can't fetch leaves the marketplace off rather than on and failing at every start.
+ */
+export async function offerMarketplace(print: (line: string) => void) {
+  const { marketplaceSettings } = await import("../abilities/abilities-file")
+  const { askYesNo } = await import("../doctor/prompt")
+  const current = await marketplaceSettings()
+
+  const wanted = await askYesNo(t("wizard.marketplaceTitle"), t("wizard.marketplaceYes"), t("wizard.marketplaceNo"), {
+    defaultYes: current.enabled,
+    yesFirst: true
+  })
+  if (!wanted) {
+    await saveMarketplaceSetting("enabled", false)
+    print(t("wizard.marketplaceOff"))
+    return
+  }
+
+  const { checkGit } = await import("../abilities/fetch")
+  const git = await checkGit()
+  if (!git.ok) {
+    await saveMarketplaceSetting("enabled", false)
+    print(t("wizard.marketplaceNoGit", { reason: git.reason }))
+    return
+  }
+  await saveMarketplaceSetting("enabled", true)
+
+  const { ensureMarketplace } = await import("../abilities/picker")
+  await ensureMarketplace(print)
+
+  const auto = await askYesNo(t("wizard.autoFetchTitle"), t("wizard.autoFetchYes"), t("wizard.autoFetchNo"), {
+    defaultYes: current.autoFetch,
+    yesFirst: true
+  })
+  await saveMarketplaceSetting("autoFetch", auto)
 }
 
 /**
@@ -275,6 +321,7 @@ async function checkModels(): Promise<number> {
   const { defaultModelIo, runModelPass } = await import("../doctor/models")
   console.log(t("wizard.checkingModels"))
   const outcomes = await runModelPass(models, line => console.log(line), await defaultModelIo())
+  console.log()
   return outcomes.filter(outcome => !outcome.ok).length
 }
 
@@ -320,6 +367,7 @@ export async function runConfigWizard({
   await applyResult(result, line => console.log(line))
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
+  await offerMarketplace(line => console.log(line))
   await applyStarterAbilities(line => console.log(line))
   const { extra, offered } = await applyExtras(result)
   await offerModelDownloads(line => console.log(line))
