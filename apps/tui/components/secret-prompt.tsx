@@ -61,6 +61,7 @@ export function YesNoPrompt({
   yesLabel,
   noLabel,
   defaultYes,
+  yesFirst,
   onResolve
 }: Readonly<{
   title: string
@@ -68,6 +69,8 @@ export function YesNoPrompt({
   noLabel: string
   /** Opens on "yes", for a question where doing nothing is the worse outcome. Esc still answers no. */
   defaultYes?: boolean
+  /** Lists "yes" on top, for a question whose expected answer is yes. Esc still answers no. */
+  yesFirst?: boolean
   onResolve: (yes: boolean) => void
 }>) {
   return (
@@ -75,9 +78,9 @@ export function YesNoPrompt({
       <Text color="yellow">{title}</Text>
       <SelectMenu
         width={Math.max(yesLabel.length, noLabel.length) + 10}
-        items={[noLabel, yesLabel]}
-        initialIndex={defaultYes ? 1 : 0}
-        onSelect={index => onResolve(index === 1)}
+        items={yesFirst ? [yesLabel, noLabel] : [noLabel, yesLabel]}
+        initialIndex={(defaultYes ? 1 : 0) ^ (yesFirst ? 1 : 0)}
+        onSelect={index => onResolve((index === 1) !== Boolean(yesFirst))}
         onClose={() => onResolve(false)}
       />
     </Box>

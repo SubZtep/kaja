@@ -51,7 +51,7 @@ export async function askYesNo(
   title: string,
   yesLabel: string,
   noLabel: string,
-  opts?: { defaultYes?: boolean }
+  opts?: { defaultYes?: boolean; yesFirst?: boolean }
 ): Promise<boolean> {
   const { YesNoPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
@@ -61,6 +61,7 @@ export async function askYesNo(
         yesLabel={yesLabel}
         noLabel={noLabel}
         defaultYes={opts?.defaultYes}
+        yesFirst={opts?.yesFirst}
         onResolve={yes => {
           unmount()
           resolve(yes)

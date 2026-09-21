@@ -50,3 +50,13 @@ test("an empty machine gets the keyless starter set", async () => {
   expect(TOML.parse(await Bun.file(getAbilitiesPath()).text())).toMatchObject({ skills: ["meeting-notes"] })
   expect(printed.at(-1)).toContain(getAbilitiesPath())
 })
+
+test("a turned-off marketplace seeds nothing and never syncs", async () => {
+  await write(join(dir, "settings.toml"), TOML.stringify({ marketplace: { enabled: false } })!)
+
+  await applyStarterAbilities(print)
+
+  expect(existsSync(getAbilitiesPath())).toBe(false)
+  expect(existsSync(getMarketplaceDir())).toBe(false)
+  expect(printed).toEqual([])
+})

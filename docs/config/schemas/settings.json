@@ -42,6 +42,20 @@
         }
       }
     },
+    "marketplace": {
+      "description": "Fetching abilities from the online marketplace",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Use the online marketplace; false means Kaja never goes online for abilities (default: true)",
+          "type": "boolean"
+        },
+        "autoFetch": {
+          "description": "Pull the marketplace at startup when the last sync is over a day old (default: true)",
+          "type": "boolean"
+        }
+      }
+    },
     "preferences": {
       "description": "In-app preferences",
       "type": "object",

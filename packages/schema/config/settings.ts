@@ -39,11 +39,23 @@ export const KajaMemorySchema = z.object({
     .describe("Absolute path to the SQLite memory database; omit to use the default XDG data location")
 })
 
+export const KajaMarketplaceSchema = z.object({
+  enabled: z
+    .boolean()
+    .optional()
+    .describe("Use the online marketplace; false means Kaja never goes online for abilities (default: true)"),
+  autoFetch: z
+    .boolean()
+    .optional()
+    .describe("Pull the marketplace at startup when the last sync is over a day old (default: true)")
+})
+
 /** webSearch/telegram (external service credentials) live in secrets.toml */
 export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
   memory: KajaMemorySchema.optional(),
+  marketplace: KajaMarketplaceSchema.optional().describe("Fetching abilities from the online marketplace"),
   preferences: KajaPreferencesSchema.optional().describe("In-app preferences")
 })
 
@@ -52,3 +64,4 @@ export type KajaPreferences = z.infer<typeof KajaPreferencesSchema>
 export type KajaStt = z.infer<typeof KajaSttSchema>
 export type KajaTts = z.infer<typeof KajaTtsSchema>
 export type KajaMemory = z.infer<typeof KajaMemorySchema>
+export type KajaMarketplace = z.infer<typeof KajaMarketplaceSchema>

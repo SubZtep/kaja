@@ -41,6 +41,9 @@ export async function runSubcommand(cli: typeof Cli) {
   const currentConfig = await config()
 
   const { preferences } = currentConfig
+  // Background pull, not awaited: it changes the folder for the next launch, and startup must not wait on the network
+  void import("../lib/abilities/auto-update").then(m => m.autoUpdateAbilities())
+
   const { models, personas, tools, closeTools } = await bootstrapLocalAgentDeps()
 
   // Closes long-lived tool connections (e.g. Playwright MCP subprocess) on SIGINT/normal exit.
