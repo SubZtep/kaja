@@ -1,6 +1,6 @@
 {
   "name": "@kaja/tui",
-  "version": "0.17.6",
+  "version": "0.18.0",
   "type": "module",
   "private": true,
   "scripts": {
