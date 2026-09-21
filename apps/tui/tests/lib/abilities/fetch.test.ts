@@ -7,7 +7,8 @@ const base = mkdtempSync(join(tmpdir(), "kaja-fetch-"))
 process.env.XDG_CACHE_HOME = join(base, "cache")
 process.env.XDG_CONFIG_HOME = join(base, "config")
 
-const { fetchMarketplace, getMarketplaceCacheDir, MarketplaceFetchError } = await import("../../../lib/abilities/fetch")
+const { checkGit, fetchMarketplace, getMarketplaceCacheDir, MarketplaceFetchError, MIN_GIT_VERSION, parseGitVersion } =
+  await import("../../../lib/abilities/fetch")
 const { runAbilityUpdate } = await import("../../../lib/abilities/cli")
 const { getMarketplaceDir, getAbilitiesPath } = await import("../../../lib/abilities/abilities-file")
 
@@ -99,4 +100,37 @@ test("kaja abilities update reports a fetch failure with exit code 1", async () 
   const result = await runAbilityUpdate()
   expect(result.code).toBe(1)
   expect(result.text).toContain("Could not fetch the marketplace")
+})
+
+test("reads the version out of git's own wording, vendor suffixes included", () => {
+  expect(parseGitVersion("git version 2.39.3 (Apple Git-145)")).toEqual([2, 39, 3])
+  expect(parseGitVersion("git version 2.43.0.windows.1")).toEqual([2, 43, 0])
+  expect(parseGitVersion("git version 2.25")).toEqual([2, 25, 0])
+  expect(parseGitVersion("no digits here")).toBeUndefined()
+})
+
+test("a git older than the sparse checkout needs is refused with the versions named", async () => {
+  const old = await checkGit(async () => "git version 2.24.9")
+  expect(old).toMatchObject({ ok: false })
+  expect(old.ok === false && old.reason).toContain("2.24.9")
+  expect(old.ok === false && old.reason).toContain(MIN_GIT_VERSION)
+  expect(await checkGit(async () => "git version 1.9.1")).toMatchObject({ ok: false })
+})
+
+test("the minimum, newer releases and a new major all pass", async () => {
+  expect(await checkGit(async () => "git version 2.25.0")).toEqual({ ok: true, version: "2.25.0" })
+  expect(await checkGit(async () => "git version 2.55.0")).toEqual({ ok: true, version: "2.55.0" })
+  expect(await checkGit(async () => "git version 3.0.0")).toEqual({ ok: true, version: "3.0.0" })
+})
+
+test("a missing git reports the run's own error, and an unreadable version is not held against it", async () => {
+  const missing = await checkGit(async () => {
+    throw new MarketplaceFetchError("git is not installed")
+  })
+  expect(missing).toEqual({ ok: false, reason: "git is not installed" })
+  expect(await checkGit(async () => "git something else")).toEqual({ ok: true })
+})
+
+test("the real git on this machine passes", async () => {
+  expect(await checkGit()).toMatchObject({ ok: true })
 })

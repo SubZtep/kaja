@@ -8,6 +8,8 @@ import { getPaths } from "../paths"
 /** The repo folder that holds the marketplace, the only path the sparse checkout pulls down. */
 const MARKETPLACE_PATH = "marketplace"
 const GIT_TIMEOUT_MS = 120_000
+/** The oldest git with `clone --sparse` and `sparse-checkout`, which the marketplace checkout relies on. */
+export const MIN_GIT_VERSION = "2.25"
 
 /** A fetch problem worth showing the user as-is (git missing, network, no marketplace folder). */
 export class MarketplaceFetchError extends Error {
@@ -53,12 +55,45 @@ async function git(args: string[], cwd?: string): Promise<string> {
   return stdout.trim()
 }
 
+/** The `major.minor.patch` numbers in `git --version` output ("git version 2.39.3 (Apple Git-145)"), or undefined. */
+export function parseGitVersion(output: string): number[] | undefined {
+  const match = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(output)
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)] : undefined
+}
+
+function atLeast(version: number[], min: string) {
+  const [major = 0, minor = 0] = min.split(".").map(Number)
+  return version[0]! > major || (version[0] === major && version[1]! >= minor)
+}
+
+/** Whether the host has a git new enough for the marketplace checkout: its version, or why not. */
+export async function checkGit(
+  run: (args: string[]) => Promise<string> = args => git(args)
+): Promise<{ ok: true; version?: string } | { ok: false; reason: string }> {
+  let output: string
+  try {
+    output = await run(["--version"])
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+  }
+  const version = parseGitVersion(output)
+  // An output we can't read (a vendor build) isn't proof it is too old, so let the real command decide.
+  if (!version) return { ok: true }
+  const text = version.join(".")
+  if (!atLeast(version, MIN_GIT_VERSION))
+    return { ok: false, reason: t("ability.gitTooOld", { version: text, min: MIN_GIT_VERSION }) }
+  return { ok: true, version: text }
+}
+
 /**
  * Brings the cache up to date with `source` (cloning on first use, or when the URL changed)
  * and returns the fetched marketplace folder with the commit it came from. Only this and
  * `kaja abilities` touch the network — never startup.
  */
 export async function fetchMarketplace(source: Required<AbilitiesSource>): Promise<{ dir: string; commit: string }> {
+  const gitCheck = await checkGit()
+  if (!gitCheck.ok) throw new MarketplaceFetchError(gitCheck.reason)
+
   const cache = getMarketplaceCacheDir()
   const origin = existsSync(join(cache, ".git"))
     ? await git(["remote", "get-url", "origin"], cache).catch(() => undefined)

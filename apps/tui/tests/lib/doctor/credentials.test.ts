@@ -228,8 +228,16 @@ test("a scoped pass looks only at the items it was given", async () => {
   put("secrets.toml", "")
   put("mcp.toml", "servers = []\n")
 
-  const outcomes = await runCredentialPass(() => {}, undefined, [], {}, { only: [abilityKeyWhere("gh")] })
-  expect(outcomes.map(o => o.item.where)).toEqual(["[abilities.gh] apiKey"])
+  // runCredentialPass asks only on a terminal; a developer's shell is one, and the missing key would open a real prompt
+  const isTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY")
+  Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true })
+  try {
+    const outcomes = await runCredentialPass(() => {}, undefined, [], {}, { only: [abilityKeyWhere("gh")] })
+    expect(outcomes.map(o => o.item.where)).toEqual(["[abilities.gh] apiKey"])
+  } finally {
+    if (isTTY) Object.defineProperty(process.stdin, "isTTY", isTTY)
+    else delete (process.stdin as { isTTY?: boolean }).isTTY
+  }
 })
 
 test("collects providers, keyed abilities, declared MCP secrets and a saved Telegram token", async () => {

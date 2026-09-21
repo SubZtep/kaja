@@ -117,7 +117,8 @@ sequenceDiagram
     K-->>U: summary and the commit
 ```
 
-- **Needs `git`** on your machine. It runs with prompts off, so a private or mistyped URL fails instead of
+- **Needs `git` 2.25 or newer** on your machine (the checkout uses `clone --sparse`). The fetch checks the version first and
+  says what is wrong; `kaja doctor` shows it too. It runs with prompts off, so a private or mistyped URL fails instead of
   waiting for a password, and every git call has a two-minute timeout.
 - **The source** is the Kaja repo's `main` by default. Override it in [`abilities.toml`](/configuration/config)
   with `[source] url` and `ref`; a local path works too, for testing your own changes. Changing the URL
