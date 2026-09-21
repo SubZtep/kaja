@@ -2,7 +2,7 @@
 invalidConfig = "設定檔無效：{path}"
 startupError = "Kaja 發生未預期的錯誤，無法啟動：{message}\n詳細資訊已寫入記錄檔。"
 bye = "掰掰！"
-localNoProvider = "--local 需要先設定好供應商。請再執行一次 `kaja --local` 並選擇 Fireworks/Ollama/llama.cpp，或執行 `kaja --local config fetch`。若想改用雲端聊天，請執行 `kaja --cloud`。"
+localNoProvider = "--local 需要聊天模型。執行 `kaja config wizard` 來設定，或執行 `kaja --cloud` 改用雲端聊天。"
 headlessNoSubcommand = "--headless 需要搭配支援它的子指令，例如 `telegram`。目前沒有單獨的無介面模式。"
 pleaseSignIn = "請先登入！"
 deviceLoginGoTo = "前往："

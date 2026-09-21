@@ -2,7 +2,7 @@
 invalidConfig = "Invalid config file: {path}"
 startupError = "Kaja hit an unexpected error and couldn't start: {message}\nDetails were written to the log file."
 bye = "Bye, bye!"
-localNoProvider = "--local needs a configured provider. Run `kaja --local` again and choose Fireworks/Ollama/llama.cpp, or run `kaja --local config fetch`. For cloud chat instead, run `kaja --cloud`."
+localNoProvider = "--local needs a chat model. Run `kaja config wizard` to set one up, or `kaja --cloud` for cloud chat."
 headlessNoSubcommand = "--headless needs a subcommand that supports it, like `telegram`. There's no bare headless mode yet."
 pleaseSignIn = "Please sign in!"
 deviceLoginGoTo = "Go to:"
