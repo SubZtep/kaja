@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
 import { useState } from "react"
-import { z } from "zod"
 import { Button } from "../../../components/form/primitives/Button"
 import { stashDeviceCodeAndRedirect } from "../../../lib/device-code"
+import { searchString } from "../../../lib/search"
 import { seo } from "../../../lib/seo"
 import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_public/device/")({
-  validateSearch: z.object({
-    user_code: z.string().optional()
+  validateSearch: (search: Record<string, unknown>): { user_code?: string } => ({
+    user_code: searchString(search.user_code)
   }),
   loaderDeps: ({ search }) => ({ user_code: search.user_code }),
   loader: async ({ deps }) => {

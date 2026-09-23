@@ -2,10 +2,10 @@ import { resetPasswordSchema } from "@kaja/schema/api"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { z } from "zod"
 import { Button } from "../../components/form/primitives/Button"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
+import { searchString } from "../../lib/search"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 import { AuthCard } from "./-components/auth-card"
@@ -13,9 +13,7 @@ import { AuthShell } from "./-components/auth-shell"
 
 export const Route = createFileRoute("/_public/reset-password")({
   component: ResetPassword,
-  validateSearch: z.object({
-    token: z.string().optional()
-  }),
+  validateSearch: (search: Record<string, unknown>): { token?: string } => ({ token: searchString(search.token) }),
   head: () => ({
     meta: seo({ title: m.seo_reset_password_title(), description: m.seo_reset_password_desc() })
   })

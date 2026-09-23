@@ -2,11 +2,11 @@ import { loginSchema } from "@kaja/schema/api"
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { z } from "zod"
 import { Button } from "../../components/form/primitives/Button"
 import { ForgotPassword } from "../../components/user/ForgotPassword"
 import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
+import { searchString } from "../../lib/search"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 import { localizeHref } from "../../paraglide/runtime.js"
@@ -14,10 +14,10 @@ import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 import { GoogleButton } from "./-components/google-button"
 
-const signinSearchSchema = z.object({
-  redirect: z.string().optional(),
+const signinSearchSchema = (search: Record<string, unknown>): { redirect?: string; error?: string } => ({
+  redirect: searchString(search.redirect),
   // Set by Better Auth when a Google sign-in fails; signup_disabled means the address has no account yet
-  error: z.string().optional()
+  error: searchString(search.error)
 })
 
 export const Route = createFileRoute("/_public/signin")({

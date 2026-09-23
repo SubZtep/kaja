@@ -1,11 +1,10 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router"
-import { z } from "zod"
 import { seo } from "../../../lib/seo"
 import { m } from "../../../paraglide/messages.js"
 
 export const Route = createFileRoute("/_public/device/done")({
-  validateSearch: z.object({
-    result: z.enum(["approved", "denied"]).catch("approved")
+  validateSearch: (search: Record<string, unknown>): { result?: "approved" | "denied" } => ({
+    result: search.result === "denied" ? "denied" : "approved"
   }),
   component: DeviceDonePage,
   head: () => ({ meta: seo({ title: m.seo_device_done_title() }) })
