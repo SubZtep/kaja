@@ -91,13 +91,12 @@ Personal data is processed by these service providers, on Kaja's behalf, only as
 |---|---|---|
 | Hetzner Online GmbH | everything stored in cloud mode (hosting and database) | Germany |
 | Brevo | your email address and the account emails sent to you | France |
-| Sentry | error reports from the API and website, which can include request details and your user id; Kaja does not deliberately send prompts, memory content, or API keys | United States |
+| Sentry | error reports from the API and website, which can include request details and your user id; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
 | Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |
 | xAI | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training | United States |
-| Brave | the search query, when the assistant searches the web | United States |
-| Webshare | the address of a web page the assistant fetches for you; cloud page fetches leave through this proxy rather than directly from Kaja's servers | to be confirmed |
+| Brave | the search query, when the assistant searches the web; kept by Brave for up to 90 days for billing and troubleshooting | United States |
+| Webshare | the address of a web page the assistant fetches for you; cloud page fetches leave through this proxy rather than directly from Kaja's servers | United States |
 
-<!-- TODO: confirm where Webshare processes data (company location and proxy exit countries) and its transfer safeguard. -->
 
 Some conversations are answered by models Kaja runs itself, on its own servers in the EU; those don't leave Kaja's infrastructure.
 
@@ -113,9 +112,16 @@ Kaja may also disclose data if required by law, to protect users, or to investig
 
 Kaja is run from the UK, hosted in Germany, and sends email through Brevo in France. The UK recognises the EU as providing adequate protection, so no extra safeguard is needed there.
 
-The providers marked "United States" above receive data outside the UK and EU. For each, Kaja relies on the UK Extension to the EU–US Data Privacy Framework where the provider is certified under it, and otherwise on the provider's standard contractual clauses together with the UK International Data Transfer Addendum. You can ask for details of the safeguard for any provider by email.
+The providers marked "United States" above receive data outside the UK and EU, under these safeguards:
 
-<!-- TODO: check each US provider's current DPF certification (dataprivacyframework.gov) and DPA terms, and name the mechanism per provider. No public DPF claim found yet for Fireworks AI (see trust.fireworks.ai) or xAI (see its DPA). -->
+- **Sentry** is certified under the UK Extension to the EU–US Data Privacy Framework.
+- **Fireworks AI** and **Brave**: standard contractual clauses with the UK Addendum, in their data processing agreements.
+- **xAI**: standard contractual clauses in its data processing agreement.
+- **Webshare**: to be confirmed.
+
+You can ask for details of the safeguard for any provider by email.
+
+<!-- TODO: confirm xAI's DPA (x.ai/legal/data-processing-addendum) includes the UK Addendum; ask Webshare support for a DPA with SCCs and the UK Addendum, and whether it logs proxied URLs. -->
 
 ## Retention
 
@@ -124,10 +130,10 @@ The providers marked "United States" above receive data outside the UK and EU. F
 - **Deleting your account** from your profile page deletes it and everything stored with it straight away, including conversations your widgets' visitors had.
 - **Login session records** (with their IP address and user agent) are kept until the session ends or expires.
 - **Server logs** are kept for up to 30 days, unless a specific entry is needed longer to investigate a security incident.
-- **Error reports** in Sentry are kept for Sentry's standard retention period.
+- **Error reports** in Sentry are kept for 30 days.
 - Kaja does not currently keep database backups. If that changes, this section will say how long they are kept.
 
-<!-- TODO: apply the journald setup in docs/development/deployment.md (Log retention) on the server, and state Sentry's retention for the plan in use. -->
+<!-- Sentry's 30 days is its Developer plan; a paid plan keeps 90, so update this line if the plan changes. -->
 
 ## Security
 
