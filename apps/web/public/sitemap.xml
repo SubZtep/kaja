@@ -120,44 +120,4 @@
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
-  <url>
-    <loc>https://kaja.io/reset-password</loc>
-    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/reset-password"/>
-    <changefreq>monthly</changefreq>
-    <priority>0.1</priority>
-  </url>
-  <url>
-    <loc>https://kaja.io/hu-HU/reset-password</loc>
-    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/reset-password"/>
-    <changefreq>monthly</changefreq>
-    <priority>0.1</priority>
-  </url>
-  <url>
-    <loc>https://kaja.io/nan-TW/reset-password</loc>
-    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/reset-password"/>
-    <changefreq>monthly</changefreq>
-    <priority>0.1</priority>
-  </url>
-  <url>
-    <loc>https://kaja.io/zh-TW/reset-password</loc>
-    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/reset-password"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/reset-password"/>
-    <changefreq>monthly</changefreq>
-    <priority>0.1</priority>
-  </url>
 </urlset>
