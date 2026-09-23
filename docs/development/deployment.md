@@ -88,18 +88,22 @@ month, so entries could outlive the limit by weeks.
 
 Then merge into `/etc/docker/daemon.json`:
 
+{% raw %}
 ```json
 { "log-driver": "journald", "log-opts": { "tag": "{{.Name}}" } }
 ```
+{% endraw %}
 
 Run `systemctl restart docker` (a brief outage) and redeploy every project — containers keep the log
 driver they were created with. Every container should now report `journald`, and the oldest journal
 entry should never be more than 31 days old:
 
+{% raw %}
 ```sh
 docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}}' {}
 journalctl -o short-iso | head -2
 ```
+{% endraw %}
 
 A `disco syslog:add` destination keeps its own copy under its own retention, so it would need a
 matching limit and a line in the Privacy Policy.
