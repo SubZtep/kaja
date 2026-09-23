@@ -24,7 +24,9 @@ const config = defineConfig({
     nitro({
       preset: "bun",
       routeRules: {
-        "/assets/styles.css": { headers: { "cache-control": "public, max-age=3600, must-revalidate" } }
+        "/assets/styles.css": { headers: { "cache-control": "public, max-age=3600, must-revalidate" } },
+        "/art/**": { headers: { "cache-control": "public, max-age=86400, stale-while-revalidate=604800" } },
+        "/monster.gif": { headers: { "cache-control": "public, max-age=86400, stale-while-revalidate=604800" } }
       }
     }),
     tailwindcss(),

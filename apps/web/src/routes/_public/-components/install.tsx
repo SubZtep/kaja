@@ -36,7 +36,12 @@ export function Install() {
 
         <p className="mt-6 font-crt text-muted text-sm">
           {m.install_binary_prefix()}{" "}
-          <a href="https://github.com/SubZtep/kaja/releases" target="_blank" rel="noopener" className="text-neon">
+          <a
+            href="https://github.com/SubZtep/kaja/releases"
+            target="_blank"
+            rel="noopener"
+            className="text-neon underline underline-offset-2"
+          >
             {m.install_binary_link()}
           </a>{" "}
           {m.install_binary_suffix()}

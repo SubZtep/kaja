@@ -80,6 +80,8 @@ export function Hero() {
               <img
                 src="/monster.gif"
                 alt={m.brand_monster_alt()}
+                width={324}
+                height={108}
                 className="h-36 w-auto lg:h-48"
                 style={{ imageRendering: "pixelated" }}
               />
@@ -129,6 +131,8 @@ export function Hero() {
             <img
               src="/monster.gif"
               alt={m.brand_monster_alt()}
+              width={324}
+              height={108}
               className="h-28 w-auto"
               style={{ imageRendering: "pixelated" }}
             />
