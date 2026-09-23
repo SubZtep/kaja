@@ -13,6 +13,8 @@ const config = defineConfig({
   },
   envPrefix: ["VITE_", "KAJA_"],
   build: {
+    // Keep fonts out of the render-blocking stylesheet; they only download when a glyph needs them
+    assetsInlineLimit: file => (/\.woff2?$/.test(file) ? false : undefined),
     rollupOptions: {
       output: {
         assetFileNames: assetInfo =>
