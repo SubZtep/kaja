@@ -1,0 +1,42 @@
+---
+layout: page
+title: Web app
+parent: Using Kaja
+nav_order: 2
+---
+
+# Web app
+
+[kaja.io](https://kaja.io) is where your cloud account lives. You don't chat there: you choose what the
+cloud agent can do, and the terminal, the cloud Telegram bot and your widgets pick that up.
+
+## Signing in
+
+Sign up with an email and password (you'll get a verification email), or with Google where it's
+offered. Forgotten passwords are reset from the sign-in page.
+
+The terminal's [device login](/modes#cloud-mode) also lands here: open
+[kaja.io/device](https://kaja.io/device), sign in, and confirm the code the terminal printed.
+
+## Pages
+
+| Page | What it's for |
+| --- | --- |
+| **Welcome** | shown once after sign-up: the ability list, to pick what you start with |
+| **Dashboard** | your usage — sessions, messages, tokens and latency, broken down by day, channel, tool, persona and model — and the **Connect Telegram** card |
+| **Abilities** | turn skills, HTTP tools and MCP servers on and off, save the keys they need, then pick your personas |
+| **Widget** | create, edit, disable and delete [widget keys](/widget#getting-a-key) |
+| **Profile** | your name and avatar, email and password |
+
+What the Abilities page can offer, and how keys are kept, is on
+[Abilities in the cloud](/abilities#in-the-cloud). A change there reaches a conversation that's already
+going from its next message.
+
+Admins also get an **Admin** menu for users and the model catalogue, and a **Sync now** button for the
+marketplace on the Abilities page.
+
+---
+
+Next:
+
+[Telegram](/telegram){: .btn .btn-green .fs-5 }

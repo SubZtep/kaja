@@ -1,13 +1,14 @@
 ---
 layout: page
-title: Memory & Datasets
-nav_order: 9
+title: Memory & datasets
+parent: Abilities
+nav_order: 6
 ---
 
 # Memory & datasets
 
-Two different kinds of remembering, both persisted in the same
-[store](/tui/sqlite) (SQLite locally, Postgres when cloud).
+Two different kinds of remembering, both kept in the same store: a [SQLite file](/configuration/storage)
+locally, Postgres in the cloud.
 
 | | **Notes** | **Datasets** |
 |---|---|---|
@@ -60,10 +61,10 @@ note about my old job"*.
 ## Datasets
 
 A dataset is a questionnaire the agent fills in conversationally, across as many sessions as it
-takes. Datasets are [marketplace](/skills#the-marketplace) abilities: one JSON file per topic in
-`~/.config/kaja/marketplace/datasets/` (synced by `kaja abilities update`, or your own), and a
-[persona](/personas) opts into it with `dataset = "<id>"`. Every dataset there loads; one does
-nothing until a persona names it or it's a profile.
+takes. Datasets are [abilities](/abilities): one JSON file per topic in
+`~/.config/kaja/marketplace/datasets/`, synced or your own. A [persona](/personas) opts into one with
+`dataset = "<id>"`. Every dataset in the folder loads, but does nothing until a persona names it or it's
+a profile.
 
 ```json
 {
@@ -95,8 +96,7 @@ recorded as `prefer not to say` so it's never asked again.
 Because it's a profile, every persona gets an "About the user" section in its system prompt with
 what you shared (never the skipped fields), and records a missing detail when you happen to mention
 it, without quizzing you for the rest. While your name is still unknown, the assistant asks for it
-once, kindly. The section goes to the model provider with each message, like
-[sticky notes](#notes) do. In cloud chat, Telegram and each widget visitor keep their own answers, as with notes.
+once, kindly. Like [sticky notes](#notes), the section goes to the model provider with each message.
 
 ### Versions
 
@@ -113,4 +113,4 @@ and `start_new_version` (redo the set early, when you ask).
 
 Next:
 
-[Telegram](/telegram){: .btn .btn-green .fs-5 }
+[Configuration](/configuration){: .btn .btn-green .fs-5 }

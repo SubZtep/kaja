@@ -1,12 +1,13 @@
 ---
 layout: page
 title: Installation
-nav_order: 2
+parent: Get started
+nav_order: 1
 ---
 
 # Installation
 
-Run the setup script that finds and installs the correct version.
+Run the setup script, which picks the right binary for your system.
 
 On macOS or Linux:
 
@@ -21,57 +22,29 @@ irm https://kaja.io/install.ps1 | iex
 ```
 
 Or grab a binary directly from [GitHub Releases](https://github.com/SubZtep/kaja/releases)
-— x64 and arm64.
+— x64 and arm64. The script installs to `~/.local/bin` (set `INSTALL_DIR` to change it) and tells you
+if that directory isn't on your `PATH`.
 
 ## First run
 
-Run `kaja`. With no config on disk, it starts in [cloud mode](/modes) and walks you through a
-**device login**: approve the printed code in your browser and you're chatting. Nothing to
-configure, no LLM key of your own.
+Run `kaja`. The [setup wizard](/wizard) asks your language, then where the agent should run:
 
-Want the agent to run on your own machine against your own provider instead?
+- **Kaja Cloud** (preselected) — nothing else to set up. Kaja prints a code, you approve it in the
+  browser, and you're chatting.
+- **Your own providers** — tick the LLM providers you can use, give their keys or addresses, and Kaja
+  writes `~/.config/kaja/` for [local mode](/modes#local-mode).
 
-```sh
-kaja --local
-```
+Your answer is saved, so the next `kaja` starts the same way. `kaja --local` or `kaja --cloud` overrides
+it for one launch.
 
-The first `--local` run asks which provider template to start from (Fireworks AI or a local
-Ollama) and writes `~/.config/kaja/`. Fill in your credentials in
-[`secrets.toml`](/configuration/secrets), then run `kaja` again — from then on the auto-detect
-picks local, because a config now exists.
+## Updating
 
-> In a non-interactive shell (scripts, CI) the setup prompt is skipped and the default template is
-> written untouched.
-{: .note }
+Run the install script again: it downloads the latest release over the old binary. Set `VERSION=v1.2.3`
+to pin a specific release instead.
 
-## Command surface
-
-```sh
-kaja                      # chat — cloud or local, auto-detected
-kaja --local              # force the local agent loop
-kaja --cloud             # force cloud login
-kaja --help               # flags and subcommands
-kaja logout               # clear the stored cloud token
-
-# Local mode only
-kaja -c                   # resume the most recent session
-kaja --continue
-kaja -s <id>              # resume a specific session
-kaja --session <id>
-kaja doctor               # test keys, models and tools; asks for missing keys
-kaja telegram             # run as a Telegram bot
-kaja --headless telegram  # same, without rendering the terminal UI
-
-# Config files (local mode)
-kaja config fetch         # rewrite models.toml / secrets.toml (server defaults, or bundled templates offline)
-kaja config diff          # show what fetch would change, without writing anything
-kaja config wizard        # re-run the setup wizard, then check the keys it needs
-kaja config paths         # print where every config file lives
-
-# Abilities (local mode)
-kaja abilities                  # pick which skills, tools, MCP servers and personas load (fetches the marketplace the first time)
-kaja abilities update           # fetch the marketplace and sync it into ~/.config/kaja/marketplace
-```
+Your config files are left alone. To pick up newer defaults afterwards, `kaja config diff` shows what
+[`kaja config fetch`](/configuration#commands) would change, and `kaja abilities update` refreshes the
+[marketplace](/abilities).
 
 ## Uninstall
 
@@ -79,10 +52,11 @@ kaja abilities update           # fetch the marketplace and sync it into ~/.conf
 rm ~/.local/bin/kaja
 ```
 
-Local config and data are left behind — delete `~/.config/kaja` and the SQLite file yourself.
+Local config and data are left behind — delete `~/.config/kaja` and the
+[SQLite file](/configuration/storage) yourself.
 
 ---
 
 Next:
 
-[Modes](/modes){: .btn .btn-green .fs-5 }
+[Cloud or local](/modes){: .btn .btn-green .fs-5 }

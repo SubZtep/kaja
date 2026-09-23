@@ -2,7 +2,7 @@
 layout: page
 title: API
 parent: Development
-nav_order: 12.2
+nav_order: 2
 ---
 
 # apps/api
@@ -60,9 +60,8 @@ NAT doesn't starve everyone.
 | `PUT` / `DELETE` | `/abilities/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
 | `PUT` / `DELETE` | `/abilities/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
 
-Keys live in `user_secret`, AES-256-GCM encrypted with `USER_SECRET_KEY`; the user id and the name
-are the cipher's associated data, so a row copied to another user doesn't decrypt. No endpoint
-returns a key. Without `USER_SECRET_KEY` the key routes answer 503 and abilities that need a key are
+Keys live [encrypted in `user_secret`](/development/database#accounts-and-access); no endpoint returns
+one. Without `USER_SECRET_KEY` the key routes answer 503 and abilities that need a key are
 left out of the catalog and of turns.
 
 ## Usage stats — `/stats`
@@ -114,10 +113,7 @@ serves the template files.
 - routes are declared with `@hono/zod-openapi` and schemas from [`@kaja/schema/api`](/development/schema)
 - SQL is raw and parameterized; user input is never interpolated
 - DB row shapes stay private inside `services/`, mapped to API types by private `#rowTo…` helpers
-- migrations in `apps/api/migrations/` are create-only and lexicographically ordered: they run on the first
-  boot of a compose volume, `./scripts/db_migration.sh` runs them by hand, and `migrate.ts` runs them again on
-  every deploy, so they must be idempotent. Until v1.0 a schema change is edited into the file that creates the
-  table, and existing databases are recreated. The [Database](/development/database) page has every table.
+- migrations are create-only and idempotent — see [Database](/development/database#how-the-schema-is-managed)
 
 ## Errors and logging
 
@@ -136,4 +132,4 @@ Templates are React Email components under `src/emails/`. Locally, MailDev catch
 
 Next:
 
-[Web](/development/web){: .btn .btn-green .fs-5 }
+[Database](/development/database){: .btn .btn-green .fs-5 }

@@ -1,89 +1,77 @@
 ---
 layout: page
 title: Configuration
-nav_order: 4
+nav_order: 5
+has_children: true
 ---
 
 # Configuration
 
-Everything on this page is **[local mode](/modes) only** — cloud mode reads no config files at
-all, apart from a minimal `settings.toml` holding your UI language.
-
-LLM provider credentials, model-to-task mapping, secrets, services, and preferences live in
-`~/.config/kaja/`, alongside the marketplace's [personas](/personas) and their
-[datasets](/memory#datasets).
+Everything here is **[local mode](/modes#local-mode)**. Cloud mode keeps its settings in your account
+and on disk has only a minimal `settings.toml` with your language and `mode = "cloud"`.
 
 ```ini
 ~/.config/kaja/
-├─ marketplace/     # skills, personas, datasets, HTTP tools and MCP servers, synced and your own
-├─ tools/*.ts       # your own plugin tools
-├─ mcp.toml         # model context protocol servers
-├─ models.toml      # model catalog per provider
-├─ abilities.toml    # which of them are loaded
-├─ secrets.toml     # your secret keys and tokens
-└─ settings.toml    # preferences and app settings
+├─ settings.toml    # preferences, voice, marketplace, storage location
+├─ models.toml      # providers and the model for each task
+├─ secrets.toml     # every key and token, and nothing else
+├─ abilities.toml   # which abilities load
+├─ mcp.toml         # your own MCP servers
+├─ marketplace/     # personas, skills, HTTP tools, MCP servers, datasets
+└─ tools/*.ts       # your own plugin tools
 ```
 
-Run `kaja config paths` to print the resolved location of each of these on your machine — the
-directory follows XDG, so `$XDG_CONFIG_HOME/kaja` when set.
+The directory follows XDG (`$XDG_CONFIG_HOME/kaja` when set). The [setup wizard](/wizard) writes the
+first version; after that they're yours to edit. Kaja reads them once at startup and never writes them
+while running — restart to apply a change.
 
-The first `kaja --local` run opens the [setup wizard](/configuration/wizard), which writes these from
-the providers you tick (the examples in
-[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config) show what they look like). `kaja config fetch`
-later downloads the current admin-managed model catalog from
-the cloud API's `GET /config/export` and rewrites `models.toml`
-from that, backing up anything you'd changed; with no network (or `--offline`), it falls back to
-the same bundled templates as first run. It also resets `secrets.toml` to the commented-out template,
-keeping your old one as a `.bak`. `kaja config diff` shows what a fetch would change
-without writing anything, and `kaja config wizard` re-runs the [setup wizard](/configuration/wizard)
-at any time — the same one a first run walks you through, and the page that traces which answer
-writes which file. `mcp.toml`, `settings.toml` and `abilities.toml` are never touched
-by `fetch` — those stay yours to hand-edit. Personas, like the rest of the marketplace, come from
-`kaja abilities update` instead.
+| File | Reference |
+| --- | --- |
+| `settings.toml` | [Settings](/configuration/config) |
+| `models.toml` | [Models](/configuration/models) |
+| `secrets.toml` | [Secrets](/configuration/secrets) |
+| `abilities.toml` | [abilities.toml](/configuration/abilities) |
+| `mcp.toml` | [MCP servers](/mcp#mcptoml) |
+| `tools/*.ts` | [Your own tools](/tools#your-own-tools) |
+| the SQLite file | [Local storage](/configuration/storage) |
 
-## Which file does what
+`secrets.toml` is the only file that holds credentials, so the others are safe to share or paste into a
+bug report.
 
-```mermaid
----
-config:
-  look: handDrawn
-  theme: neo-dark
----
-flowchart LR
-    S["settings.toml<br><small>preferences, stt, tts, memory</small>"]
-    M["models.toml<br><small>providers + model per task</small>"]
-    C["mcp.toml<br><small>MCP servers</small>"]
-    P["marketplace/personas/*.toml"]
-    G["abilities.toml<br><small>what loads</small>"]
-    D["marketplace/datasets/*.json"]
-    K["secrets.toml<br><small>every key and token</small>"]
+## Commands
 
-    K -.->|"[providers.x]"| M
-    K -.->|"[mcp.id]"| C
-    P -->|"dataset id"| D
-    P -.->|"model pin"| M
-    G -->|"personas = [...]"| P
-```
+| Command | What it does |
+| --- | --- |
+| `kaja config paths` | print where every config file resolves on this machine — start here when unsure which file Kaja reads |
+| `kaja config wizard` | re-run the [setup wizard](/wizard) |
+| `kaja config diff` | show what `fetch` would change, without writing anything |
+| `kaja config fetch` | rewrite `models.toml` and `secrets.toml` from the defaults, backing up any file that differs |
+| `kaja doctor` | test every key, model and tool — see below |
 
-`secrets.toml` is the only file that holds credentials — the others stay safe to share, commit, or
-paste into a bug report.
+`kaja config fetch` takes `models.toml` from the Kaja server's admin-managed catalogue, or from the
+templates bundled in the binary when you're offline or pass `--offline`. `secrets.toml` always comes
+from the bundled template, with every section commented out, so your keys stay only in the `.bak`
+copy. `--only models` or `--only secrets` limits it to one file. It never touches `settings.toml`,
+`abilities.toml` or `mcp.toml`. Use it to pick up new defaults after an upgrade, or to recover a broken
+file.
 
-## Checking keys and tokens
+## Checking keys and models
 
-`kaja doctor` tests every credential your config relies on: model providers, HTTP tool and MCP
-abilities, MCP servers that list `secrets`, and the Telegram and web search services. In a terminal it
-asks for anything missing or not working, tests the new value before saving it to `secrets.toml`,
-and only keeps a value that fails its test if you say so. A provider without a key is fine as long
-as its model answers (Ollama needs none). It then tests every model by task. When the model a task
-uses stops answering and another model you have configured for the same task does, it asks whether to
-switch — only that task's `provider` and `model` change in `models.toml`, so a persona pinning it keeps
-working. It ends with what's still left to fix and where.
+`kaja doctor` tests every credential your config relies on: model providers, HTTP tools and MCP
+servers, the Telegram token and web search. In a terminal it asks for anything missing or failing,
+tests the new value before saving it to `secrets.toml`, and only keeps a failing value if you say so.
+
+It then tries every model by task. When a task's model stops answering and another model you configured
+for that task does, it offers to switch — only that task's `provider` and `model` change, so a persona
+pinning it keeps working. It ends with what's still left to fix, and lists every tool by origin plus
+anything left out and why.
 
 ## Editor support
 
-JSON Schemas for every one of these files ship in
-[`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas). Install the
-recommended VSCode TOML extension and you get completion and validation while editing.
+JSON Schemas for every file ship in
+[`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas), and
+[`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config) has example files. With the
+recommended VS Code TOML extension you get completion and validation while editing.
 
 ---
 

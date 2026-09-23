@@ -1,7 +1,8 @@
 ---
 layout: page
 title: Development
-nav_order: 12
+nav_order: 7
+has_children: true
 ---
 
 # Development
@@ -59,7 +60,22 @@ flowchart TD
 
 The two databases are covered on the [Database](/development/database) page.
 
-There is **no mobile app** in this repo.
+## Design ideas
+
+**One brain, many hosts.** The agent loop lives in `packages/nasi` and knows nothing about terminals,
+HTTP or databases. Every front door constructs it with a store and a model client and drives the same
+loop; adding one means writing a host, not another agent.
+
+**Offline-first is a real option.** In local mode there is no account, no server and no telemetry:
+config is plain TOML, state is one SQLite file, and pointed at Ollama or llama.cpp it needs no internet.
+
+**The cloud is the same product, minus your machine.** Cloud mode exists so someone can try Kaja without
+an API key: same loop, same personas and memory, without the tools that would reach into a server's
+filesystem.
+
+Deliberate non-goals: **no mobile app** (terminal, Telegram and the widget cover it), **no ORM** (raw
+parameterized SQL and hand-written row mappers), and **no open publishing** (the marketplace is a
+curated folder in this repo).
 
 ## Environment
 
@@ -85,10 +101,8 @@ docker compose up -d db mail
 ```
 
 The database volume lives in `./pgdata` and the migration files in `apps/api/migrations` run
-automatically **on first boot only**. For an existing volume, catch up manually with
-`./scripts/db_migration.sh`. Until v1.0 the migrations are edited in place rather than patched, so after
-pulling a schema change, recreate the volume (`docker compose down -v`). Every table is described on the
-[Database](/development/database) page.
+automatically **on first boot only**; after pulling a schema change, see
+[how the schema is managed](/development/database#how-the-schema-is-managed).
 
 Bootstrap the env files and generate a local auth secret:
 
@@ -164,8 +178,9 @@ Each app under `apps/*/` ships two env files:
 | `.env.example` | yes | generated template, no real values |
 | `.env` | no (gitignored) | your local copy with real values |
 
-Compose build args (`VITE_API_URL`, `VITE_APP_URL`) default to `localhost`. Override them with a
-gitignored root `.env`, which `docker compose` auto-loads for interpolation.
+Never edit `.env.example` by hand: it's generated from `packages/schema/env/*` (see
+[code generation](#code-generation)). Compose build args (`VITE_API_URL`, `VITE_APP_URL`) default to
+`localhost`; override them with a gitignored root `.env`, which `docker compose` auto-loads.
 
 **Production ships no `.env*` files at all** — variables are injected by the host or orchestrator.
 
@@ -189,4 +204,4 @@ and releases the CLI binaries.
 
 Next:
 
-[Architecture](/development/nasi){: .btn .btn-green .fs-5 }
+[Agent brain](/development/nasi){: .btn .btn-green .fs-5 }

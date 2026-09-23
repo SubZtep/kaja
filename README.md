@@ -64,4 +64,4 @@ Until it reaches its 1st major version the codebase is under constant refactor. 
 
 ## Documentation
 
-Want the full story? Head to [docs.kaja.io](https://docs.kaja.io).
+Want the full story? 🐓 Head to [docs.kaja.io](https://docs.kaja.io).

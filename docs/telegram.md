@@ -1,34 +1,32 @@
 ---
 layout: page
 title: Telegram
-nav_order: 10
+parent: Using Kaja
+nav_order: 3
 ---
 
 # Telegram
 
-There are two independent Telegram bots: a **local-mode** bot you run yourself (`kaja telegram`),
-and an **always-on cloud bot** that runs as part of the API server.
+There are two independent bots: a **local bot** you run yourself with `kaja telegram`, and the
+**cloud bot** that runs inside the Kaja API and links to your account.
 
-## Local mode: `kaja telegram`
+| | Local bot | Cloud bot |
+| --- | --- | --- |
+| Runs | on your machine, while `kaja telegram` runs | always, on the API |
+| Agent | [local mode](/modes#local-mode): your models, tools and shell | [cloud mode](/modes#cloud-mode) |
+| Who can use it | anyone who finds its username | Kaja users who linked their Telegram account |
+| Abilities | what `abilities.toml` loads | what you turned on in the [web app](/web-app) |
 
-`kaja telegram` runs a bot that uses the same personas, tools, and models as the terminal
-chat — including the shell-command approve/decline flow, shown as an inline keyboard.
+On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart
+from each other and from your terminal. A call that needs approval — a shell command, or an HTTP tool
+or MCP call that changes something — comes with Approve/Decline buttons.
 
-> The bot is **[local mode](/modes) only** — it runs the agent loop on your machine and needs a
-> configured `models.toml`.
-{: .note }
+## Local bot
 
-Each user gets their own conversation and their own agent state, kept apart by an `owner`
-id in the [store](/tui/sqlite) — they can't see or resume each other's sessions.
-
-### Setup
-
-1. **Create a bot and get a token.** In Telegram, message [@BotFather](https://t.me/BotFather),
-   send `/newbot`, and follow the prompts (name + a unique username ending in `bot`).
-   BotFather replies with an API token like `123456789:AAH...`.
-
-2. **Save the token** in a `[telegram]` section of `~/.config/kaja/secrets.toml` (or let the
-   [setup wizard](/configuration/wizard) ask for it):
+1. **Create a bot.** In Telegram, message [@BotFather](https://t.me/BotFather), send `/newbot`, and
+   follow the prompts. It replies with a token like `123456789:AAH...`.
+2. **Save the token** in [`secrets.toml`](/configuration/secrets) (or let the [setup wizard](/wizard)
+   ask for it):
 
    ```toml
    [telegram]
@@ -38,66 +36,46 @@ id in the [store](/tui/sqlite) — they can't see or resume each other's session
 3. **Run it:**
 
    ```sh
-   kaja telegram              # with the terminal UI shell around it
-   kaja --headless telegram   # no Ink render — for services and containers
+   kaja telegram              # with the terminal UI around it
+   kaja --headless telegram   # no terminal UI — for services and containers
    ```
 
-   The bot preflights with `getMe()` — an invalid token fails immediately with a one-line
-   error, no stack trace. On success it logs "ready" and starts long-polling.
+   An invalid token fails straight away with a one-line error. Then open a DM with your bot.
 
-Then open a DM with your bot and send anything.
-
-> The bot has **no allowlist**: it answers whoever messages it, and it runs on your machine with your
-> tools. Keep its username to yourself — anyone who finds it can chat with it, and can approve
-> their own shell commands.
+> The local bot has **no allowlist**: it answers whoever messages it, with your tools, and they can
+> approve their own shell commands. Keep its username to yourself.
 {: .warning }
 
-### Commands
-
-The bot's menu (next to the message box) has:
+Commands in the bot's menu:
 
 - `/new` — start a fresh conversation.
-- `/abilities` — the [skills](/skills) and [tool abilities](/tools#http-tools) this bot loaded. The
-  bot builds its tools once, when it starts, so to change them run `kaja abilities` on your computer and
-  restart `kaja telegram`.
+- `/abilities` — the skills and tools this bot loaded. It loads them once at start, so after
+  `kaja abilities` restart `kaja telegram`.
 
-## Cloud mode: the always-on API bot
+## Cloud bot
 
-Setting `TELEGRAM_BOT_TOKEN` on the API server starts a second, independent Telegram bot inside
-the API process itself — no `kaja telegram` invocation, no local machine, no local
-`models.toml`. It uses cloud Nasi (the same agent the web/lite clients use), so there's no
-model switching and no shell — same constraints as the [cloud/lite CLI](/modes). An
-[HTTP tool](/tools#http-tools-in-the-cloud) or [MCP server](/tools#mcp-servers-in-the-cloud) call
-that changes something comes with Approve/Decline buttons.
+Link your Telegram account once:
 
-There's no shared token to guard — each Kaja user links their own Telegram account
-themselves, self-service, with no server restart needed per new user:
+1. In the [web app](/web-app), open the **Dashboard**.
+2. In the **Connect Telegram** card, click **Get Telegram link**. The link works once, for 10 minutes.
+3. Open it. Telegram opens a chat with the bot and sends `/start` with the token, and the bot replies
+   once you're linked.
 
-1. Log into the Kaja web app and open your **Dashboard**.
-2. In the **Connect Telegram** card, click **Get Telegram link** — this generates a one-time link
-   (`https://t.me/<bot>?start=<token>`) that's valid for 10 minutes and works once.
-3. Open the link (tap it on your phone, or click it with Telegram Desktop installed). Telegram
-   opens a chat with the bot and automatically sends `/start <token>` — the bot resolves the
-   token to your account and replies once linked.
-4. Message the bot normally from then on — it uses your account's models, persona, and
-   conversation history, kept apart from your web/lite sessions by an `owner` id, the same
-   mechanism that keeps different [widget](/widget) visitors apart.
+From then on, message the bot like any chat. An account that isn't linked gets a reply pointing back to
+the dashboard.
 
-A Telegram account that hasn't completed this flow gets a reply pointing back to the dashboard
-instead of a real conversation. **Setup**: set `TELEGRAM_BOT_TOKEN` (from BotFather, as
-above) in the API's environment and restart — an invalid token fails fast at startup.
-
-### Commands
+Commands:
 
 - `/new` — start a fresh conversation.
-- `/abilities` — every skill, tool and MCP server in the catalog as a button: ✅ on, ▫️ off,
-  🔑 needs your API key first, ⚠️ no longer in the marketplace. A tap turns it on or off for your
-  account, from your next message on, even mid-conversation. An ability that needs a key links to
-  the [Abilities page](https://kaja.io/abilities) instead: keys are never typed into
-  Telegram, where they'd stay in the chat history.
+- `/abilities` — every skill, tool and MCP server as a button: ✅ on, ▫️ off, 🔑 needs your API key
+  first, ⚠️ no longer in the marketplace. A tap applies from your next message. Keys are entered on the
+  [Abilities page](https://kaja.io/abilities), never in Telegram, where they'd stay in the chat history.
+
+Running your own Kaja API? Set `TELEGRAM_BOT_TOKEN` in its environment and restart to start the cloud
+bot.
 
 ---
 
 Next:
 
-[Widget](/widget){: .btn .btn-green .fs-5 }
+[Website widget](/widget){: .btn .btn-green .fs-5 }

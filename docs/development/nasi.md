@@ -2,7 +2,7 @@
 layout: page
 title: Agent brain
 parent: Development
-nav_order: 12.1
+nav_order: 1
 ---
 
 # @kaja/nasi
@@ -134,7 +134,7 @@ config:
   theme: neo-dark
 ---
 flowchart TD
-    Start(["turn(agent, prompt, session)"]) --> Sys{"session empty?"}
+    Start(["run(agent, prompt, session, owner)"]) --> Sys{"session empty?"}
     Sys -->|yes| Build["buildSystemPrompt()\ninstructions + env + tool\ncontracts + personas +\nsticky memory + language"]
     Sys -->|no, resuming| Push
     Build --> Push["push prompt\n(or pending tool result)"]
@@ -181,9 +181,10 @@ Over HTTP the same loop is buffered into one response:
 
 ## System prompt
 
-`buildSystemPrompt()` assembles the system message once, when a session's message list is still
-empty — resuming a session reuses what's already there, except a persona switch mid-turn, which
-rewrites it in place. It concatenates whichever of these blocks apply, in order:
+`buildSystemPrompt()` assembles the system message when a session's message list is still empty.
+Resuming a session reuses it, with two exceptions: the skill and persona sections are refreshed at the
+start of every turn (so an ability change applies from the next message), and a persona switch rewrites
+it in place. It concatenates whichever of these blocks apply, in order:
 
 1. the persona's `instructions` (or none, for the default agent)
 2. `## Environment` — OS/home line, or the host's override (`PromptContext.environment`)
@@ -193,9 +194,11 @@ rewrites it in place. It concatenates whichever of these blocks apply, in order:
 5. `## Tool contract: memory` — only when `remember_note` is in the registry
 6. `## Personas` — the roster and switching rules, only with more than one persona and
    `switch_persona` available
-7. `## Dataset collection` — only when the persona is bound to a dataset topic
-8. sticky memory notes (from the store, or `PromptContext.loadStickyNotes`)
-9. a reply-language instruction (`PromptContext.replyLanguageInstruction`)
+7. `## Skills` — the enabled skills' names and descriptions, when `load_skill` is available
+8. `## Dataset collection` — only when the persona is bound to a dataset topic
+9. `## About the user` — the answers to a profile dataset, such as onboarding
+10. sticky memory notes (from the store, or `PromptContext.loadStickyNotes`)
+11. a reply-language instruction (`PromptContext.replyLanguageInstruction`)
 
 Every block is conditional on what's actually wired up, so the prompt a cloud turn sees is
 strictly a subset of what a local `--local` session sees.

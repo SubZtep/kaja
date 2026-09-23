@@ -1,12 +1,24 @@
 ---
 layout: page
-title: Modes
-nav_order: 3
+title: Cloud or local
+parent: Get started
+nav_order: 2
 ---
 
-# Cloud vs local
+# Cloud or local
 
-Kaja is one CLI with two ways to get an answer. The difference is *where the agent loop runs*.
+Kaja is one agent with several front doors — the terminal, Telegram and a website widget.
+The difference between the two modes is *where the agent loop runs*, and so which tools it may use.
+
+| Front door | Loop runs | Store | Your files, shell, own MCP servers and plugins |
+|---|---|---|---|
+| `kaja`, local mode | your machine | SQLite | ✓ |
+| `kaja telegram` | your machine | SQLite | ✓ |
+| `kaja`, cloud mode | the API | Postgres | ✗ (files are [read locally](#cloud-mode)) |
+| cloud [Telegram bot](/telegram#cloud-bot) | the API | Postgres | ✗ |
+| Website [widget](/widget) | the API | Postgres | ✗ |
+
+## Which mode a launch uses
 
 ```mermaid
 ---
@@ -15,36 +27,25 @@ config:
   theme: neo-dark
 ---
 flowchart TD
-    Start(["kaja"]) --> Flag{"--local / --cloud<br>flag given?"}
+    Start(["kaja"]) --> Flag{"--local or --cloud?"}
     Flag -->|"--local"| Local
     Flag -->|"--cloud"| Cloud
-    Flag -->|"neither"| Detect{"~/.config/kaja/<br>settings.toml exists?"}
-    Detect -->|yes| Local
-    Detect -->|no| Cloud
+    Flag -->|"neither"| Pref{"preferences.mode<br>in settings.toml?"}
+    Pref -->|"local"| Local
+    Pref -->|"cloud"| Cloud
+    Pref -->|"no config yet"| Wizard["setup wizard asks"]
+    Wizard --> Pref
+    Pref -->|"older config, no mode"| Guess{"usable chat model?"}
+    Guess -->|yes| Local
+    Guess -->|no| Cloud
 
-    subgraph CloudBox["☁️ Cloud"]
-        Cloud["Device login<br>(token in OS keychain)"] --> NasiHTTP["POST /nasi/turn/stream"]
-        NasiHTTP --> ServerLoop["Agent loop on the API<br>sessions + memory in Postgres"]
-    end
-
-    subgraph LocalBox["💻 Local"]
-        Local["Read ~/.config/kaja/*.toml"] --> LocalLoop["Agent loop in your process<br>sessions + memory in SQLite"]
-        LocalLoop --> Provider["Your LLM provider"]
-    end
+    Cloud(["☁️ Cloud: device login,<br>loop on the API"])
+    Local(["💻 Local: ~/.config/kaja,<br>loop in your process"])
 ```
 
-## Which mode a launch uses
-
-With **no flag**, the mode comes from your config:
-
-- `preferences.mode` in `~/.config/kaja/settings.toml` → **that mode**
-- no config at all → the **setup wizard asks** (after your language), with Kaja Cloud preselected
-- a config predating `preferences.mode` → **local** if it resolves a usable chat model, else **cloud**
-
-The wizard writes `preferences.mode`, so the choice sticks even before a provider works — picking
-local and then "Skip — I'll set up models.toml myself" still starts in local mode next time.
-
-Force either one explicitly, which also skips the wizard's mode question:
+The [setup wizard](/wizard) writes `preferences.mode`, so the choice sticks even before a provider
+works: picking local and then "Skip — I'll set up models.toml myself" still starts in local mode next
+time. A flag overrides it for one launch:
 
 ```sh
 kaja --local     # local agent loop, even with no config yet
@@ -53,54 +54,72 @@ kaja --cloud     # cloud login, even if a local config exists
 
 ## Cloud mode
 
-The default for a fresh install. On first run the CLI does a **device login**: it prints a code,
-you approve it in the browser at [kaja.io/device](https://kaja.io/device), and a single bearer
-token is stored in your OS credential store (`Bun.secrets`, service `kaja-tui`). There is no
-credentials file on disk.
-
-Only one cloud account can be signed in at a time. `kaja logout` clears the token.
+On the first cloud launch Kaja does a **device login**: it prints a code, you approve it in the browser
+at [kaja.io/device](https://kaja.io/device), and a bearer token is stored in your OS credential store.
+There is no credentials file on disk. One account is signed in at a time; `kaja logout` clears it.
 
 > If the OS keychain is unavailable, cloud mode errors out and recommends `--local` — there is no
 > plaintext fallback.
 {: .warning }
 
-What cloud mode **does not** have:
+The server resolves the model and keeps your sessions, memory and dataset answers. What it can use:
 
-- no local SQLite
-- no shell (`run_command`), no `mcp.toml` servers, no plugin tools
-- no model switching — the server always resolves the model
+- the cloud [built-in tools](/tools#built-ins): memory, datasets, `ask_user`, web search, image generation;
+- `read_file` and `list_files`: the server pauses the turn and your terminal runs them, scoped to the
+  directory you launched from, with no confirmation prompt;
+- the personas, skills, HTTP tools and remote MCP servers you turned on — see
+  [Abilities in the cloud](/abilities#in-the-cloud).
 
-`read_file`/`list_files` do work in cloud mode: the server can't touch your disk, so it pauses the
-turn and the CLI runs them locally (scoped to the directory you launched it from) before resuming
-— transparent, no confirmation prompt. Persona switching also works, both automatically
-(`switch_persona`, mid-conversation) and manually (the key bar's persona picker), among the
-personas you turned on at [kaja.io/abilities](https://kaja.io/abilities).
-
-Marketplace skills, HTTP tools and remote MCP servers you turned on at
-[kaja.io/abilities](https://kaja.io/abilities) work too; a call that changes something asks for your
-approval in the terminal first ([HTTP tools in the cloud](/tools#http-tools-in-the-cloud)).
-
-Everything else — memory notes, datasets, `ask_user`, web search, image generation — works, scoped
-to your account. See [Cloud API](/development/api) for the endpoints.
+There is no shell, no `mcp.toml`, no plugin tools and no model switching.
 
 ## Local mode
 
-The full agent. The loop, the tools, and the storage all run in your process:
+The full agent: the loop, the tools and the storage all run in your process.
 
-- config from `~/.config/kaja/` ([Configuration](/configuration))
-- sessions, memory notes, and dataset answers in a SQLite file ([Storage](/tui/sqlite))
-- your own provider from `models.toml` — there is **no** silent fallback to cloud free chat; if
-  no chat model is configured, the CLI exits with an error
-- local tools on: files, shell, MCP, plugins
-- `fetch_url` fetches under your own network identity — the server's `WEB_PROXY` does not apply
-  here ([Tools](/tools#built-ins))
-- `-c` / `--continue` and `-s <id>` / `--session <id>` to resume a conversation
+- config from `~/.config/kaja/` ([Configuration](/configuration));
+- your own provider from `models.toml`. With no chat model configured the CLI exits with an error; it
+  never falls back to cloud;
+- every tool: files, shell, MCP servers, plugins, and hosts on your own network;
+- sessions, memory and dataset answers in a [SQLite file](/configuration/storage);
+- `kaja -c` resumes the most recent session, `kaja -s <id>` a specific one; `kaja sessions` lists
+  them with their ids.
 
-Both modes share the same agent core (`@kaja/nasi`), the same tool contracts, and the same
-[Flow](/flow).
+## How a turn runs
+
+Both modes run the same agent core, `@kaja/nasi`:
+
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neo-dark
+---
+flowchart TD
+    In["💬 your message"] --> Prompt["compose system prompt<br>persona + memory + skills + language"]
+    Prompt --> CallLLM["✨ call the model"]
+    CallLLM --> Decide{"what next?"}
+    Decide -->|"a tool"| RunTool["🛠️ run the tool"]
+    RunTool -->|"result"| CallLLM
+    Decide -->|"switch_persona"| Switch["🎭 swap persona<br>(and its model)"]
+    Switch --> CallLLM
+    Decide -->|"ask_user"| Ask["❓ wait for your answer"]
+    Decide -->|"needs approval"| Approve["✅ approve / decline"]
+    Ask -.->|"answer"| CallLLM
+    Approve -.->|"result"| CallLLM
+    Decide -->|"final answer"| Reply["💬 reply"]
+    Reply --> DB[("SQLite (local)<br>Postgres (cloud)")]
+```
+
+Some tools hand control back to you instead of running straight away:
+
+- **`ask_user`** — the agent needs a clarification. Your next message is its answer, not a new turn.
+- **approvals** — a shell command, or an HTTP tool or MCP call that changes something, waits for you
+  to approve or decline: a prompt above the input in the terminal, buttons in Telegram.
+
+`switch_persona` doesn't stop the loop: it swaps the [persona](/personas) mid-turn and carries on.
 
 ---
 
 Next:
 
-[Configuration](/configuration){: .btn .btn-green .fs-5 }
+[Setup wizard](/wizard){: .btn .btn-green .fs-5 }

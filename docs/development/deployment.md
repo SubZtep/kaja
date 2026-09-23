@@ -2,7 +2,7 @@
 layout: page
 title: Deployment
 parent: Development
-nav_order: 12.5
+nav_order: 7
 ---
 
 # Deployment
@@ -37,10 +37,9 @@ is for local development only.
 
 ### Recreating the database
 
-Until v1.0 there is no production data worth keeping, so schema changes are edited into the file that creates
-the table, which means recreating the database rather than patching it. `migrate.ts` only creates what is
-missing, so it cannot repair an old schema: it would leave an old table where the new one changed shape and add
-the new tables beside the old ones.
+Until v1.0 a schema change means recreating the database (see
+[Database](/development/database#how-the-schema-is-managed)): `migrate.ts` only creates what is missing, so
+it can't repair an old table that changed shape.
 
 Drop and recreate the schema **as the database user the API connects with**, or give it the schema
 afterwards. Recreating `public` as an admin role leaves that role as its owner, and the API's own user then
@@ -59,15 +58,8 @@ saved before the recreate are gone with it.
 ## Environment variables
 
 Docker builds omit `.env` files entirely. **No `.env*` file ships to production** — inject
-variables on the server (Disco's UI, `docker --env-file` outside the image, k8s secrets).
-
-Locally, bootstrap from the generated templates instead:
-
-```sh
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-./scripts/create_local_secrets.sh   # appends BETTER_AUTH_SECRET
-```
+variables on the server (Disco's UI, `docker --env-file` outside the image, k8s secrets). Every variable
+is listed, with its purpose, in the generated `apps/*/.env.example`.
 
 ## Production checklist
 
@@ -100,4 +92,4 @@ You can always run **Build and release TUI** by hand from the Actions tab.
 
 Next:
 
-[Vision](/development/vision){: .btn .btn-green .fs-5 }
+[Back to the start](/){: .btn .btn-green .fs-5 }

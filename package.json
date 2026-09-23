@@ -20,6 +20,7 @@
     "dev:api": "bun run --filter @kaja/api dev",
     "dev:tui": "bun run --env-file=apps/tui/.env apps/tui/cli.ts",
     "dev:web": "bun run --filter @kaja/web dev",
+    "docs": "cd docs && bundle exec jekyll serve",
     "check:env": "bun scripts/env.ts --check",
     "generate:env": "bun scripts/env.ts",
     "generate:env-types": "bun scripts/env-types.ts",
