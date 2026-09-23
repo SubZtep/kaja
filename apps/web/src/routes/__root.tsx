@@ -45,7 +45,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   },
   head: ({ matches }) => {
     // The root match's pathname is always "/"; the leaf holds the page's (de-localized) path, index routes end in "/" so strip it (bar the root) to match the sitemap
-    const pathname = (matches.at(-1)?.pathname ?? "/").replace(/(.)\/+$/, "$1")
+    let pathname = matches.at(-1)?.pathname ?? "/"
+    while (pathname.length > 1 && pathname.endsWith("/")) pathname = pathname.slice(0, -1)
     return {
       meta: [
         {
