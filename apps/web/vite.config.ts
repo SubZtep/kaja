@@ -13,6 +13,8 @@ const config = defineConfig({
   },
   envPrefix: ["VITE_", "KAJA_"],
   build: {
+    // Keep fonts out of the render-blocking stylesheet; they only download when a glyph needs them
+    assetsInlineLimit: file => (/\.woff2?$/.test(file) ? false : undefined),
     rollupOptions: {
       output: {
         assetFileNames: assetInfo =>
@@ -37,7 +39,15 @@ const config = defineConfig({
       org: "kaja-io",
       project: "kaja-web",
       authToken: process.env.SENTRY_AUTH_TOKEN,
-      telemetry: false
+      telemetry: false,
+      // Only error capture is used (no tracesSampleRate, no Replay), so strip the rest from the client bundle
+      bundleSizeOptimizations: {
+        excludeDebugStatements: true,
+        excludeTracing: true,
+        excludeReplayIframe: true,
+        excludeReplayShadowDom: true,
+        excludeReplayWorker: true
+      }
     })
   ]
 })
