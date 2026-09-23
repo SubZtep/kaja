@@ -2,6 +2,7 @@ import type { Context, MiddlewareHandler, Next } from "hono"
 import { rateLimiter } from "hono-rate-limiter"
 import type { RouteVariables } from "../types"
 import { env } from "./env"
+import { trustedSsrClientIp } from "./ssr-client-ip"
 
 /**
  * Rate limiting is on by default. Disable with RATE_LIMIT_ENABLED=false
@@ -14,6 +15,8 @@ function isRateLimitEnabled(): boolean {
 }
 
 function clientIp(c: Context): string {
+  const ssrClientIp = trustedSsrClientIp(c.req.raw.headers)
+  if (ssrClientIp) return ssrClientIp
   const forwarded = c.req.header("x-forwarded-for")
   if (forwarded) {
     const first = forwarded.split(",")[0]?.trim()

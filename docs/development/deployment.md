@@ -113,6 +113,10 @@ matching limit and a line in the Privacy Policy.
   deliberately exempt — they reflect origins and gate on the key's own allowlist instead.
 - `NODE_ENV=production` (Sentry on, no `/reference` UI).
 - Rate limits left on — they only auto-disable under `bun test`.
+- The same `SSR_SECRET` (`openssl rand -base64 32`) on both the API and the web project. Disco
+  projects don't share a private network, so the web's `API_URL` is the public API URL. Without the
+  secret, every visitor's server-side session check counts against the web host's IP, and busy pages
+  start getting 429s (see [rate limits and the visitor's IP](/development/api#rate-limits-and-the-visitors-ip)).
 
 ## CLI release automation
 

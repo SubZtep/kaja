@@ -101,6 +101,19 @@ sequenceDiagram
     Note over C: stored in the OS keychain,<br/>never on disk
 ```
 
+### Rate limits and the visitor's IP
+
+The API's own limiters and Better Auth's both key on the client IP from `X-Forwarded-For`, which the
+reverse proxy sets to whoever opened the connection. The web's server-side session check (`getSession`
+in `apps/web/src/lib/session.ts`) goes back out through that proxy, so to the API every page render
+looks like it came from the web host, and all visitors end up sharing one bucket.
+
+To avoid that, the web sends the visitor's IP in `x-kaja-client-ip` together with the shared `SSR_SECRET`
+in `x-kaja-ssr-secret`. When the secret matches, `core/ssr-client-ip.ts` uses that IP for the Hono
+limiters and rewrites `X-Forwarded-For` before the request reaches Better Auth. The two headers are
+always stripped, and without a matching secret they're ignored, so nobody outside can pick their own
+bucket.
+
 ## Fail-closed config routes
 
 `/config/models` is authenticated by a shared secret (`CONFIG_API_TOKEN`), not a user session, because

@@ -5,8 +5,14 @@ export const WebEnvSchema = z.object({
   API_URL: url
     .optional()
     .describe(
-      "Server-to-server API base URL — set by compose/disco to the container-network address (e.g. http://api:3001); takes precedence over VITE_API_URL when both are set"
+      "Server-to-server API base URL — the container-network address in compose (e.g. http://api:3001), the public API URL on Disco; takes precedence over VITE_API_URL when both are set"
     ),
+  SSR_SECRET: trimmed
+    .optional()
+    .describe(
+      "Shared with the API's SSR_SECRET; server-side session checks send it with the visitor's IP so the API rate-limits per visitor instead of per web host"
+    )
+    .meta({ secret: true }),
   VITE_API_URL: url
     .describe("Browser-facing API base URL, baked into the client bundle")
     .meta({ example: "http://localhost:3001" }),

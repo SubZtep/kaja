@@ -12,6 +12,8 @@ declare module "bun" {
     DATABASE_URL?: string
     /** Better Auth signing secret */
     BETTER_AUTH_SECRET?: string
+    /** Shared with the web's SSR_SECRET; the web's server-side calls send it with the visitor's IP so rate limits key on the visitor, not the web host */
+    SSR_SECRET?: string
     /** Public base URL of this API, used by Better Auth */
     BETTER_AUTH_URL?: string
     /** Public web app URL; falls back to CORS_ORIGIN for the device authorization verification link */
