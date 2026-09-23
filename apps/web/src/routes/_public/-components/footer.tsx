@@ -4,6 +4,10 @@ import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { LanguageSelect } from "../../../components/ui/LanguageSelect"
 import { m } from "../../../paraglide/messages.js"
 
+/** The legal pages live on the docs site (docs/terms.md, docs/privacy.md). */
+export const TERMS_URL = "https://docs.kaja.io/terms/"
+export const PRIVACY_URL = "https://docs.kaja.io/privacy/"
+
 export function Footer() {
   return (
     <footer>
@@ -32,6 +36,14 @@ export function Footer() {
             <span aria-hidden>·</span>
             <a href="/llms.txt" className="text-muted hover:text-neon">
               llms.txt
+            </a>
+            <span aria-hidden>·</span>
+            <a href={TERMS_URL} target="_blank" rel="noopener" className="text-muted hover:text-neon">
+              {m.legal_terms()}
+            </a>
+            <span aria-hidden>·</span>
+            <a href={PRIVACY_URL} target="_blank" rel="noopener" className="text-muted hover:text-neon">
+              {m.legal_privacy()}
             </a>
           </div>
         </div>

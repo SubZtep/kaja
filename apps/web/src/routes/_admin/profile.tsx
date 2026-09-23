@@ -1,9 +1,10 @@
 import { changePasswordSchema, type EditEmailInput, editEmailSchema, editSchema } from "@kaja/schema/api"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import type { User } from "better-auth"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
+import { ConfirmDialog } from "../../components/ui/ConfirmDialog"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
 import { useAuthClient } from "../../hooks/auth-client"
@@ -42,6 +43,9 @@ function Profile() {
         </Section>
         <Section title={m.profile_change_password()}>
           <ChangePassword />
+        </Section>
+        <Section className="sm:col-span-2" title={m.profile_delete_title()}>
+          <DeleteAccount />
         </Section>
       </div>
     </div>
@@ -216,5 +220,45 @@ function ChangePassword() {
         {m.profile_submit()}
       </Button>
     </form>
+  )
+}
+
+// Hard delete (GDPR erasure): everything the user owns cascades from the user row. Better Auth wants a recent sign-in for it.
+function DeleteAccount() {
+  const { deleteUser } = useAuthClient()
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+
+  const onConfirm = async () => {
+    try {
+      setLoading(true)
+      const { error } = await deleteUser()
+      if (error) {
+        toast.error(error.code === "SESSION_EXPIRED" ? m.profile_delete_reauth() : (error.message ?? error.statusText))
+        return
+      }
+      toast.success(m.profile_delete_success())
+      navigate({ to: "/", reloadDocument: true })
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="m-0 text-[14.5px] text-muted">{m.profile_delete_description()}</p>
+      <ConfirmDialog
+        title={m.profile_delete_confirm_title()}
+        description={m.profile_delete_confirm_description()}
+        confirm={m.profile_delete_confirm_button()}
+        onConfirm={onConfirm}
+      >
+        <Button className="shrink-0 text-red-400" loading={loading}>
+          {m.profile_delete_button()}
+        </Button>
+      </ConfirmDialog>
+    </div>
   )
 }

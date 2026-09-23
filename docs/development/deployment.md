@@ -16,7 +16,12 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   triggers deployment on the managed box. Even the smallest
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
   comfortably at modest traffic.
-- **SMTP server** for authentication emails.
+- **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
+- **Outbound HTTP(S) proxy** for the cloud `fetch_url` tool (`WEB_PROXY`); without one the tool is
+  left out of cloud turns. Production uses [Webshare](https://www.webshare.io).
+
+Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data)
+— add, remove or swap a provider there too.
 
 ## Projects
 
@@ -60,6 +65,44 @@ saved before the recreate are gone with it.
 Docker builds omit `.env` files entirely. **No `.env*` file ships to production** — inject
 variables on the server (Disco's UI, `docker --env-file` outside the image, k8s secrets). Every variable
 is listed, with its purpose, in the generated `apps/*/.env.example`.
+
+## Log retention
+
+The [Privacy Policy](/privacy#retention) promises server logs are kept for **up to 30 days**. Disco
+has no retention setting of its own (only `disco logs` and `disco syslog:*` forwarding), so the host
+enforces it: Docker logs to journald, and journald deletes anything older than 30 days.
+
+```sh
+mkdir -p /etc/systemd/journald.conf.d
+cat > /etc/systemd/journald.conf.d/retention.conf <<'EOF'
+[Journal]
+Storage=persistent
+MaxRetentionSec=30day
+MaxFileSec=1day
+EOF
+systemctl restart systemd-journald
+```
+
+`MaxFileSec=1day` matters: journald only removes whole files, and one file otherwise spans up to a
+month, so entries could outlive the limit by weeks.
+
+Then merge into `/etc/docker/daemon.json`:
+
+```json
+{ "log-driver": "journald", "log-opts": { "tag": "{{.Name}}" } }
+```
+
+Run `systemctl restart docker` (a brief outage) and redeploy every project — containers keep the log
+driver they were created with. Every container should now report `journald`, and the oldest journal
+entry should never be more than 31 days old:
+
+```sh
+docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}}' {}
+journalctl -o short-iso | head -2
+```
+
+A `disco syslog:add` destination keeps its own copy under its own retention, so it would need a
+matching limit and a line in the Privacy Policy.
 
 ## Production checklist
 

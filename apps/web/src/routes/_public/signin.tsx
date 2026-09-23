@@ -15,7 +15,9 @@ import { AuthShell } from "./-components/auth-shell"
 import { GoogleButton } from "./-components/google-button"
 
 const signinSearchSchema = z.object({
-  redirect: z.string().optional()
+  redirect: z.string().optional(),
+  // Set by Better Auth when a Google sign-in fails; signup_disabled means the address has no account yet
+  error: z.string().optional()
 })
 
 export const Route = createFileRoute("/_public/signin")({
@@ -27,7 +29,7 @@ export const Route = createFileRoute("/_public/signin")({
 })
 
 function SignIn() {
-  const { redirect } = useSearch({ from: "/_public/signin" })
+  const { redirect, error } = useSearch({ from: "/_public/signin" })
   const authClient = useAuthClient()
   const [loading, setLoading] = useState(false)
 
@@ -80,6 +82,14 @@ function SignIn() {
           </>
         }
       >
+        {error === "signup_disabled" ? (
+          <p className="mb-5 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
+            {m.signin_google_no_account()}{" "}
+            <Link to="/signup" className="font-medium text-neon hover:text-neon-hi">
+              {m.signin_create_one()}
+            </Link>
+          </p>
+        ) : null}
         <GoogleButton className="mb-5" callbackPath={redirect} />
         <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
           {m.auth_or_email()}

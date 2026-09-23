@@ -13,7 +13,10 @@ cloud agent can do, and the terminal, the cloud Telegram bot and your widgets pi
 ## Signing in
 
 Sign up with an email and password (you'll get a verification email), or with Google where it's
-offered. Forgotten passwords are reset from the sign-in page.
+offered. Either way, two boxes come first: that you're 18 or over and accept the [Terms](/terms) and
+[Privacy Policy](/privacy), and consent to Kaja processing any health information you choose to share.
+A Google account can only be created from the sign-up page; on the sign-in page it only signs in.
+Forgotten passwords are reset from the sign-in page.
 
 The terminal's [device login](/modes#cloud-mode) also lands here: open
 [kaja.io/device](https://kaja.io/device), sign in, and confirm the code the terminal printed.
@@ -26,7 +29,7 @@ The terminal's [device login](/modes#cloud-mode) also lands here: open
 | **Dashboard** | your usage — sessions, messages, tokens and latency, broken down by day, channel, tool, persona and model — and the **Connect Telegram** card |
 | **Abilities** | turn skills, HTTP tools and MCP servers on and off, save the keys they need, then pick your personas |
 | **Widget** | create, edit, disable and delete [widget keys](/widget#getting-a-key) |
-| **Profile** | your name and avatar, email and password |
+| **Profile** | your name and avatar, email and password, and deleting your account with everything stored with it |
 
 What the Abilities page can offer, and how keys are kept, is on
 [Abilities in the cloud](/abilities#in-the-cloud). A change there reaches a conversation that's already
