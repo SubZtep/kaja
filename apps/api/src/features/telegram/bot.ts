@@ -19,6 +19,9 @@ function keyboardFor(rows: TelegramButton[][] | undefined): InlineKeyboard | und
   return new InlineKeyboard(rows.map(row => row.map(button => InlineKeyboard.text(button.text, button.data))))
 }
 
+/** How long to wait before polling again while another instance holds the getUpdates connection. */
+const POLL_CONFLICT_RETRY_MS = 10_000
+
 /** The command menu Telegram shows next to the message box. */
 const COMMANDS = [
   { command: "new", description: "Start a new conversation" },
@@ -143,6 +146,23 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   })
 
   let username: string | undefined
+  let stopped = false
+
+  // Long polling; a 409 means another instance still polls (the previous container during a deploy, or a dev machine on the same token), so wait for it to let go.
+  async function poll(): Promise<void> {
+    let warned = false
+    while (!stopped) {
+      try {
+        await bot.start()
+        return
+      } catch (error) {
+        if (!(error instanceof GrammyError && error.error_code === 409)) throw error
+        if (!warned) console.warn("Telegram bot: another instance is polling with this token, retrying")
+        warned = true
+        await Bun.sleep(POLL_CONFLICT_RETRY_MS)
+      }
+    }
+  }
 
   return {
     async start() {
@@ -153,9 +173,10 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
       }
       // The menu next to the message box; a failure only costs the menu.
       await bot.api.setMyCommands(COMMANDS).catch(error => reportError("Telegram command menu not set", error))
-      void bot.start()
+      poll().catch(error => reportError("Telegram bot stopped polling", error))
     },
     async stop() {
+      stopped = true
       await bot.stop()
     },
     /** Set once start() has resolved the getMe() preflight; undefined before that. */

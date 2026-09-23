@@ -23,9 +23,20 @@ if (!env.USER_SECRET_KEY) {
 }
 
 // Start the always-on cloud Telegram bot, if configured
-createTelegramBotService()
-  ?.start()
-  .catch(err => reportError("Telegram bot failed to start", err))
+const telegramBot = createTelegramBotService()
+telegramBot?.start().catch(err => reportError("Telegram bot failed to start", err))
+
+// Release Telegram long polling on shutdown so the next deploy's instance doesn't hit a getUpdates conflict
+if (telegramBot) {
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    process.once(signal, () => {
+      telegramBot
+        .stop()
+        .catch(() => {})
+        .finally(() => process.exit(0))
+    })
+  }
+}
 
 export default {
   port,
