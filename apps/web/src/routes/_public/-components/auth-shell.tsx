@@ -15,7 +15,9 @@ export function AuthShell({ children }: Readonly<{ children: ReactNode }>) {
       <img
         src="/monster.gif"
         alt={m.brand_monster_alt()}
-        className="relative mb-6 h-12 opacity-90"
+        width={324}
+        height={108}
+        className="relative mb-6 h-12 w-auto opacity-90"
         style={{ imageRendering: "pixelated" }}
       />
       <div className="relative w-full max-w-md">{children}</div>

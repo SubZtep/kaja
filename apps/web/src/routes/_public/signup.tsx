@@ -195,7 +195,13 @@ function LegalAgreement() {
       const link = links[part]
       if (!link) return part
       return (
-        <a key={part} href={link.href} target="_blank" rel="noopener" className="text-neon hover:text-neon-hi">
+        <a
+          key={part}
+          href={link.href}
+          target="_blank"
+          rel="noopener"
+          className="text-neon underline underline-offset-2 hover:text-neon-hi"
+        >
           {link.label}
         </a>
       )

@@ -17,7 +17,13 @@ export function BrandMark({
       className={cn("font-display font-extrabold text-fg flex gap-2 items-center tracking-tight", className)}
     >
       {monster ? (
-        <img src="/monster.gif" alt={m.brand_monster_alt()} className="h-7 opacity-90" />
+        <img
+          src="/monster.gif"
+          alt={m.brand_monster_alt()}
+          width={324}
+          height={108}
+          className="h-7 w-auto opacity-90"
+        />
       ) : (
         <span className="text-neon">&gt;</span>
       )}

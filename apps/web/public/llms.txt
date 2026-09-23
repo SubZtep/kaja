@@ -5,29 +5,29 @@
 Kaja is a highly customisable, multi-purpose AI agent: a single executable binary with an event loop, orchestrating various models into context-sensitive, multi-step pipelines. Offline-first — configs are local text files, memory and session data live in a local SQLite database, and it can run entirely without an Internet connection against local models.
 
 ## Documentation
-- Docs home: https://docs.kaja.io/
-- Get started: https://docs.kaja.io/getting-started/
-- Installation: https://docs.kaja.io/installation/
-- Cloud or local: https://docs.kaja.io/modes/
-- Setup wizard: https://docs.kaja.io/wizard/
-- Terminal UI: https://docs.kaja.io/tui/
-- Web app: https://docs.kaja.io/web-app/
-- Telegram: https://docs.kaja.io/telegram/
-- Website widget: https://docs.kaja.io/widget/
-- Voice & language: https://docs.kaja.io/voice/
-- Abilities: https://docs.kaja.io/abilities/
-- Personas: https://docs.kaja.io/personas/
-- Skills: https://docs.kaja.io/skills/
-- Built-in tools: https://docs.kaja.io/tools/
-- HTTP tools: https://docs.kaja.io/http-tools/
-- MCP servers: https://docs.kaja.io/mcp/
-- Memory & datasets: https://docs.kaja.io/memory/
-- Configuration: https://docs.kaja.io/configuration/
-- Troubleshooting: https://docs.kaja.io/troubleshooting/
+- [Docs home](https://docs.kaja.io/)
+- [Get started](https://docs.kaja.io/getting-started/)
+- [Installation](https://docs.kaja.io/installation/)
+- [Cloud or local](https://docs.kaja.io/modes/)
+- [Setup wizard](https://docs.kaja.io/wizard/)
+- [Terminal UI](https://docs.kaja.io/tui/)
+- [Web app](https://docs.kaja.io/web-app/)
+- [Telegram](https://docs.kaja.io/telegram/)
+- [Website widget](https://docs.kaja.io/widget/)
+- [Voice & language](https://docs.kaja.io/voice/)
+- [Abilities](https://docs.kaja.io/abilities/)
+- [Personas](https://docs.kaja.io/personas/)
+- [Skills](https://docs.kaja.io/skills/)
+- [Built-in tools](https://docs.kaja.io/tools/)
+- [HTTP tools](https://docs.kaja.io/http-tools/)
+- [MCP servers](https://docs.kaja.io/mcp/)
+- [Memory & datasets](https://docs.kaja.io/memory/)
+- [Configuration](https://docs.kaja.io/configuration/)
+- [Troubleshooting](https://docs.kaja.io/troubleshooting/)
 
 ## Legal
-- Privacy Policy: https://docs.kaja.io/privacy/
-- Terms of Service: https://docs.kaja.io/terms/
+- [Privacy Policy](https://docs.kaja.io/privacy/)
+- [Terms of Service](https://docs.kaja.io/terms/)
 
 ## Source
-- GitHub: https://github.com/SubZtep/kaja
+- [GitHub](https://github.com/SubZtep/kaja)

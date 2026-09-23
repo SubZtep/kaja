@@ -42,7 +42,18 @@ function ToyCard({
   const card = "toy-card min-h-72 bg-surface-2 p-0 text-left"
   const face = (
     <>
-      {children ?? <img src={src} alt="" className="h-72 w-full object-cover" style={{ imageRendering: "auto" }} />}
+      {children ?? (
+        <img
+          src={src}
+          alt=""
+          width={704}
+          height={704}
+          loading="lazy"
+          decoding="async"
+          className="h-72 w-full object-cover"
+          style={{ imageRendering: "auto" }}
+        />
+      )}
       <Sticker
         tone={live ? "neon" : "ice"}
         rotate={rotate > 0 ? -8 : 7}
@@ -64,7 +75,7 @@ function ToyCard({
         <article className={card}>{face}</article>
       )}
       <div className="px-1">
-        <h3 className="m-0 font-display font-extrabold text-fg text-xl">{title}</h3>
+        <h2 className="m-0 font-display font-extrabold text-fg text-xl">{title}</h2>
         <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{meta}</p>
       </div>
     </div>
@@ -122,13 +133,13 @@ export function Showcase() {
                 <BarkochbaGame className="h-full rounded-none border-0 shadow-none" />
               </div>
               <div className="px-1">
-                <h3 className="m-0 font-display font-extrabold text-fg text-xl">{m.carousel_barkochba_title()}</h3>
+                <h2 className="m-0 font-display font-extrabold text-fg text-xl">{m.carousel_barkochba_title()}</h2>
                 <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{m.carousel_barkochba_meta()}</p>
               </div>
             </div>
           ) : (
             <ToyCard
-              src="/art/tree.jpg"
+              src="/art/tree.webp"
               rotate={-1.8}
               stamp={m.stamp_soon()}
               title={m.carousel_barkochba_title()}
@@ -137,7 +148,7 @@ export function Showcase() {
           )}
 
           <ToyCard
-            src="/art/bubble.jpg"
+            src="/art/bubble.webp"
             rotate={2.2}
             stamp={chatWidgetKey ? m.stamp_live() : m.stamp_soon()}
             live={Boolean(chatWidgetKey)}
@@ -147,7 +158,7 @@ export function Showcase() {
           />
 
           <ToyCard
-            src="/art/cassette.jpg"
+            src="/art/cassette.webp"
             rotate={-2.4}
             stamp={m.stamp_soon()}
             title={m.carousel_voice_title()}
@@ -155,7 +166,7 @@ export function Showcase() {
           />
 
           <ToyCard
-            src="/art/heart.jpg"
+            src="/art/heart.webp"
             rotate={1.6}
             stamp={m.stamp_soon()}
             title={m.carousel_care_title()}
