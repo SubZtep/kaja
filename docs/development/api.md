@@ -114,6 +114,9 @@ limiters and rewrites `X-Forwarded-For` before the request reaches Better Auth. 
 always stripped, and without a matching secret they're ignored, so nobody outside can pick their own
 bucket.
 
+Generate the secret with `openssl rand -base64 32` and set the same value as `SSR_SECRET` on both the API
+and the web.
+
 ## Fail-closed config routes
 
 `/config/models` is authenticated by a shared secret (`CONFIG_API_TOKEN`), not a user session, because
