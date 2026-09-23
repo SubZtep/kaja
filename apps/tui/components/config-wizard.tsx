@@ -111,7 +111,7 @@ function customId(name: string): string {
   const id = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/^-|-$/g, "")
   return catalogProvider(id) ? `${id}-custom` : id
 }
 
@@ -252,81 +252,74 @@ function keyState(typed: string | undefined, alreadySaved: boolean | undefined):
 /** One answered step, kept on screen above the next question. */
 type Answer = { id: string; label: string; value: string }
 
+type AnswerLine = Pick<Answer, "label" | "value"> | undefined
+type AnswerLineFn = (subject: string, result: WizardResult, saved?: WizardSaved) => AnswerLine
+
+// A key step's line: never the key itself, only what became of it.
+function keyLine(label: string, typed: string | undefined, alreadySaved: boolean | undefined): AnswerLine {
+  const value = keyState(typed, alreadySaved)
+  return value ? { label, value } : undefined
+}
+
+// A line only when there is a value to show.
+function lineIf(label: string, value: string | undefined): AnswerLine {
+  return value ? { label, value } : undefined
+}
+
+const ANSWER_LINES: Record<string, AnswerLineFn> = {
+  language: (_, result) => lineIf(t("wizard.summaryLanguage"), result.language && LOCALE_LABELS[result.language]),
+  mode: (_, result) =>
+    lineIf(
+      t("wizard.summaryMode"),
+      result.mode && t(result.mode === "cloud" ? "wizard.modeCloudShort" : "wizard.modeLocalShort")
+    ),
+  providers: (_, result) => ({
+    label: t("wizard.summaryProvider"),
+    value: result.providers?.length ? result.providers.map(providerName).join(", ") : t("wizard.providersNone")
+  }),
+  key: (subject, result, saved) =>
+    keyLine(
+      t("wizard.summaryKeyProvider", { provider: providerName(subject) }),
+      result.keys?.[subject],
+      saved?.providers?.includes(subject)
+    ),
+  address: (subject, result) =>
+    lineIf(t("wizard.summaryAddress", { provider: providerName(subject) }), result.addresses?.[subject]),
+  model: (subject, result) => {
+    const task = subject as ModelTask
+    const picked = candidatesByTask(chosenProviders(result))[task]?.find(c => c.provider === result.models?.[task])
+    return lineIf(
+      capitalized(t("wizard.summaryModel", { task: t(TASK_LABEL_KEY[task]) })),
+      picked && `${providerName(picked.provider)} (${picked.model})`
+    )
+  },
+  "custom-name": (_, result) => lineIf(t("wizard.summaryCustom"), result.custom?.name),
+  "custom-url": (_, result) =>
+    lineIf(t("wizard.summaryAddress", { provider: result.custom?.name ?? "" }), result.custom?.baseUrl),
+  "custom-key": (_, result, saved) => {
+    const id = result.custom?.name ?? ""
+    return keyLine(t("wizard.summaryKeyProvider", { provider: id }), result.keys?.[id], saved?.providers?.includes(id))
+  },
+  "custom-task": (subject, result) => {
+    const entry = result.custom?.models[Number(subject)]
+    return lineIf(t("wizard.summaryCustomModel"), entry?.task && `${entry.model} (${t(TASK_LABEL_KEY[entry.task])})`)
+  },
+  extras: (_, result) =>
+    lineIf(
+      t("wizard.summaryExtras"),
+      result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined
+    ),
+  webSearchKey: (_, result, saved) => keyLine(t("wizard.summaryKeyWebSearch"), result.webSearchKey, saved?.webSearch),
+  telegramToken: (_, result, saved) => keyLine(t("wizard.summaryKeyTelegram"), result.telegramToken, saved?.telegram)
+}
+
 /**
  * The line a finished step leaves behind. Never a key's value, only what became of it. A step that
  * recorded nothing (no extras ticked) leaves no line.
  */
-function answerLine(
-  step: Step,
-  result: WizardResult,
-  saved?: WizardSaved
-): Pick<Answer, "label" | "value"> | undefined {
-  const [kind, subject] = step.split(":") as [string, string | undefined]
-  switch (kind) {
-    case "language":
-      return result.language ? { label: t("wizard.summaryLanguage"), value: LOCALE_LABELS[result.language] } : undefined
-    case "mode":
-      return result.mode
-        ? {
-            label: t("wizard.summaryMode"),
-            value: t(result.mode === "cloud" ? "wizard.modeCloudShort" : "wizard.modeLocalShort")
-          }
-        : undefined
-    case "providers":
-      return {
-        label: t("wizard.summaryProvider"),
-        value: result.providers?.length ? result.providers.map(providerName).join(", ") : t("wizard.providersNone")
-      }
-    case "key": {
-      const value = keyState(result.keys?.[subject!], saved?.providers?.includes(subject!))
-      return value ? { label: t("wizard.summaryKeyProvider", { provider: providerName(subject!) }), value } : undefined
-    }
-    case "address": {
-      const value = result.addresses?.[subject!]
-      return value ? { label: t("wizard.summaryAddress", { provider: providerName(subject!) }), value } : undefined
-    }
-    case "model": {
-      const task = subject as ModelTask
-      const picked = candidatesByTask(chosenProviders(result))[task]?.find(c => c.provider === result.models?.[task])
-      return picked
-        ? {
-            label: capitalized(t("wizard.summaryModel", { task: t(TASK_LABEL_KEY[task]) })),
-            value: `${providerName(picked.provider)} (${picked.model})`
-          }
-        : undefined
-    }
-    case "custom-name":
-      return result.custom?.name ? { label: t("wizard.summaryCustom"), value: result.custom.name } : undefined
-    case "custom-url":
-      return result.custom?.baseUrl
-        ? { label: t("wizard.summaryAddress", { provider: result.custom.name ?? "" }), value: result.custom.baseUrl }
-        : undefined
-    case "custom-key": {
-      const id = result.custom?.name ?? ""
-      const value = keyState(result.keys?.[id], saved?.providers?.includes(id))
-      return value ? { label: t("wizard.summaryKeyProvider", { provider: id }), value } : undefined
-    }
-    case "custom-task": {
-      const entry = result.custom?.models[Number(subject)]
-      return entry?.task
-        ? { label: t("wizard.summaryCustomModel"), value: `${entry.model} (${t(TASK_LABEL_KEY[entry.task])})` }
-        : undefined
-    }
-    case "extras":
-      return result.extras?.length
-        ? { label: t("wizard.summaryExtras"), value: result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") }
-        : undefined
-    case "webSearchKey": {
-      const value = keyState(result.webSearchKey, saved?.webSearch)
-      return value ? { label: t("wizard.summaryKeyWebSearch"), value } : undefined
-    }
-    case "telegramToken": {
-      const value = keyState(result.telegramToken, saved?.telegram)
-      return value ? { label: t("wizard.summaryKeyTelegram"), value } : undefined
-    }
-    default:
-      return undefined
-  }
+function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): AnswerLine {
+  const [kind, subject = ""] = step.split(":") as [string, string | undefined]
+  return ANSWER_LINES[kind]?.(subject, result, saved)
 }
 
 /** One answered step, dimmed: the wizard's trail, so each question is a step forward and not a replacement. */
@@ -395,6 +388,11 @@ export function ConfigWizard({
 
   function stepView() {
     const [kind, subject] = step.split(":") as [string, string | undefined]
+    return providerStepView(kind, subject) ?? customStepView(kind, subject) ?? fixedStepView()
+  }
+
+  // A catalog provider's key and address, and the model picked for a task.
+  function providerStepView(kind: string, subject: string | undefined) {
     const provider = subject ? catalogProvider(subject) : undefined
 
     if (kind === "key" && provider) {
@@ -419,6 +417,30 @@ export function ConfigWizard({
       )
     }
 
+    if (kind === "model") {
+      const task = subject as ModelTask
+      const candidates = candidatesByTask(chosenProviders(result))[task] ?? []
+      const current = candidates.findIndex(candidate => candidate.provider === result.models?.[task])
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Text>{t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}</Text>
+          <SelectMenu
+            items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
+            width={70}
+            initialIndex={current >= 0 ? current : undefined}
+            onSelect={index => advance({ models: { ...result.models, [task]: candidates[index]!.provider } })}
+            onClose={onCancel}
+          />
+          <Text dimColor>{t("wizard.modelHint")}</Text>
+        </Box>
+      )
+    }
+
+    return undefined
+  }
+
+  // The custom OpenAI-compatible provider: its name, address, key, and each model with its task.
+  function customStepView(kind: string, subject: string | undefined) {
     const custom = result.custom ?? { models: [] }
     const nameOf = custom.name ?? ""
 
@@ -507,25 +529,11 @@ export function ConfigWizard({
       )
     }
 
-    if (kind === "model") {
-      const task = subject as ModelTask
-      const candidates = candidatesByTask(chosenProviders(result))[task] ?? []
-      const current = candidates.findIndex(candidate => candidate.provider === result.models?.[task])
-      return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}</Text>
-          <SelectMenu
-            items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
-            width={70}
-            initialIndex={current >= 0 ? current : undefined}
-            onSelect={index => advance({ models: { ...result.models, [task]: candidates[index]!.provider } })}
-            onClose={onCancel}
-          />
-          <Text dimColor>{t("wizard.modelHint")}</Text>
-        </Box>
-      )
-    }
+    return undefined
+  }
 
+  // The steps asked once: language, mode, providers, extras and their keys, then the summary.
+  function fixedStepView() {
     switch (step) {
       case "mode": {
         return (

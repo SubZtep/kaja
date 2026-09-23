@@ -94,11 +94,13 @@ export class MarketplaceService {
       }
       bundles.push({ type: "skill", ...(await readSkillBundle(marketplaceDir, entry.name)) })
     }
-    bundles.push(...(await readPersonaFiles(marketplaceDir)))
-    bundles.push(...(await readDatasetFiles(marketplaceDir)))
     const tools = await readHttpTools(marketplaceDir)
-    bundles.push(...tools)
-    bundles.push(...(await readMcpAbilities(marketplaceDir, new Set(tools.map(tool => tool.name)))))
+    bundles.push(
+      ...(await readPersonaFiles(marketplaceDir)),
+      ...(await readDatasetFiles(marketplaceDir)),
+      ...tools,
+      ...(await readMcpAbilities(marketplaceDir, new Set(tools.map(tool => tool.name))))
+    )
 
     const client = await this.#db.connect()
     try {

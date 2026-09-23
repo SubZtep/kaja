@@ -1,7 +1,11 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import { file } from "bun"
 import OpenAI from "openai"
-import type { ChatCompletionMessageParam, ChatCompletionMessageToolCall } from "openai/resources/chat/completions"
+import type {
+  ChatCompletionChunk,
+  ChatCompletionMessageParam,
+  ChatCompletionMessageToolCall
+} from "openai/resources/chat/completions"
 import { takeLastServedModel } from "../models/client"
 import {
   type Agent,
@@ -174,6 +178,15 @@ type StreamedRound = {
   model?: string
 }
 
+// Model and token counts the stream's chunks report; the last one seen wins.
+type ChunkMeta = { model?: string; promptTokens?: number; completionTokens?: number }
+
+function noteChunk(meta: ChunkMeta, chunk: ChatCompletionChunk): void {
+  if (chunk.model) meta.model = chunk.model
+  if (chunk.usage?.prompt_tokens != null) meta.promptTokens = chunk.usage.prompt_tokens
+  if (chunk.usage?.completion_tokens != null) meta.completionTokens = chunk.usage.completion_tokens
+}
+
 async function* streamRound(
   agent: Agent,
   messages: ChatCompletionMessageParam[],
@@ -189,15 +202,11 @@ async function* streamRound(
   })
 
   let thinking = ""
-  let chunkModel: string | undefined
-  let chunkPromptTokens: number | undefined
-  let chunkCompletionTokens: number | undefined
+  const meta: ChunkMeta = {}
 
   try {
     for await (const chunk of stream) {
-      if (chunk.model) chunkModel = chunk.model
-      if (chunk.usage?.prompt_tokens != null) chunkPromptTokens = chunk.usage.prompt_tokens
-      if (chunk.usage?.completion_tokens != null) chunkCompletionTokens = chunk.usage.completion_tokens
+      noteChunk(meta, chunk)
       const delta = chunk.choices[0]?.delta as
         | { reasoning_content?: string; reasoning?: string; content?: string }
         | undefined
@@ -226,14 +235,14 @@ async function* streamRound(
     ...(thinking ? { reasoning_content: thinking } : {})
   }
 
-  const servedModel = takeLastServedModel() || chunkModel || completion.model || undefined
-  const promptTokens = chunkPromptTokens ?? completion.usage?.prompt_tokens
+  const servedModel = takeLastServedModel() || meta.model || completion.model || undefined
+  const promptTokens = meta.promptTokens ?? completion.usage?.prompt_tokens
 
   return {
     message,
     thinking,
     usage: promptTokens != null ? { promptTokens } : undefined,
-    completionTokens: chunkCompletionTokens ?? completion.usage?.completion_tokens,
+    completionTokens: meta.completionTokens ?? completion.usage?.completion_tokens,
     finishReason: completion.choices[0]!.finish_reason ?? undefined,
     latencyMs: msSince(startedAt),
     model: servedModel
@@ -471,6 +480,32 @@ function* handlePendingHandoff(
   return false
 }
 
+// Seeds a new conversation's system prompt (or refreshes an ongoing one's abilities), then adds the prompt.
+async function openTurn(agent: Agent, session: Session, prompt: string, owner: string | null): Promise<void> {
+  const messages = session.messages
+  if (messages.length === 0) {
+    const system = await buildSystemPrompt(agent, owner)
+    if (system) messages.push({ role: "system", content: system })
+  } else {
+    await refreshAbilitiesInPrompt(agent, messages, owner)
+  }
+  pushPromptToMessages(session, prompt)
+}
+
+// Records the telemetry step for the round whose message was just appended.
+function recordRound(agent: Agent, session: Session, round: StreamedRound): void {
+  const messages = session.messages
+  recordStep(session, {
+    at: messages.length - 1 - (messages[0]?.role === "system" ? 1 : 0),
+    model: round.model ?? agent.model,
+    persona: agent.personaId,
+    promptTokens: round.usage?.promptTokens,
+    completionTokens: round.completionTokens,
+    latencyMs: round.latencyMs,
+    finishReason: round.finishReason
+  })
+}
+
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
@@ -484,24 +519,13 @@ export async function* run(
   const toolsByName = new Map(agent.tools.map(t => [toolName(t), t]))
   const definitions = agent.tools.map(t => t.definition)
   const messages = session.messages
-
-  if (messages.length === 0) {
-    const system = await buildSystemPrompt(agent, owner)
-    if (system) messages.push({ role: "system", content: system })
-  } else {
-    await refreshAbilitiesInPrompt(agent, messages, owner)
-  }
-
-  pushPromptToMessages(session, prompt)
+  await openTurn(agent, session, prompt, owner)
 
   let emptyRoundRetries = 0
   let failingToolRounds = 0
   while (true) {
-    const { message, thinking, usage, model, completionTokens, finishReason, latencyMs } = yield* streamRound(
-      agent,
-      messages,
-      definitions
-    )
+    const round = yield* streamRound(agent, messages, definitions)
+    const { message, thinking, usage, model } = round
 
     if (isEmptyRound(message) && emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES) {
       emptyRoundRetries++
@@ -511,15 +535,7 @@ export async function* run(
     }
 
     messages.push(message)
-    recordStep(session, {
-      at: messages.length - 1 - (messages[0]?.role === "system" ? 1 : 0),
-      model: model ?? agent.model,
-      persona: agent.personaId,
-      promptTokens: usage?.promptTokens,
-      completionTokens,
-      latencyMs,
-      finishReason
-    })
+    recordRound(agent, session, round)
 
     yield* roundTelemetry({ thinking, usage, model })
 

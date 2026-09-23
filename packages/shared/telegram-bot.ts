@@ -8,7 +8,7 @@ export function escapeHtml(text: string): string {
 
 /** A bot command, with or without the `@botname` Telegram adds in groups. */
 export function isCommand(text: string, name: string): boolean {
-  return new RegExp(`^/${name}(@\\w+)?$`).test(text.trim())
+  return new RegExp(String.raw`^/${name}(@\w+)?$`).test(text.trim())
 }
 
 /** Thrown by a bot's sender on a 429 response, so EditThrottle can back off. */

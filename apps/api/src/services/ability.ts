@@ -94,40 +94,15 @@ export class AbilityService {
     )
     const catalog: CatalogAbility[] = []
     for (const row of rows) {
-      const entry: CatalogAbility = {
+      const details = this.#catalogDetails(row)
+      if (!details) continue
+      catalog.push({
         type: row.type,
         name: row.name,
         description: row.description,
-        updatedAt: new Date(row.updated_at)
-      }
-      if (row.type === "persona") {
-        const persona = row.name === DEFAULT_PERSONA ? undefined : this.#parsePersona(row)
-        if (!persona) continue
-        entry.persona = { label: persona.label, when: persona.when, instructions: persona.instructions }
-      } else if (row.type !== "skill") {
-        const keyed = this.#usable(row)
-        if (!keyed) continue
-        if (keyed.type === "tool") {
-          entry.http = {
-            domain: new URL(keyed.ability.baseUrl).host,
-            key: keyNeed(keyed.ability),
-            tools: keyed.ability.tools.map(tool => ({
-              name: tool.name,
-              method: tool.method,
-              description: tool.description
-            }))
-          }
-        } else {
-          entry.mcp = {
-            domain: new URL(keyed.ability.url!).host,
-            key: keyNeed(keyed.ability),
-            transport: keyed.ability.transport === "sse" ? "sse" : "http",
-            approval: keyed.ability.approval,
-            tools: keyed.ability.tools ?? []
-          }
-        }
-      }
-      catalog.push(entry)
+        updatedAt: new Date(row.updated_at),
+        ...details
+      })
     }
     return catalog
   }
@@ -385,6 +360,41 @@ export class AbilityService {
         error: error instanceof Error ? error.message : error
       })
       return undefined
+    }
+  }
+
+  // A catalog entry's type-specific part, or null when the row can't be offered (unparsable, `default`, or unusable).
+  #catalogDetails(row: ManifestRow): Pick<CatalogAbility, "persona" | "http" | "mcp"> | null {
+    if (row.type === "skill") return {}
+    if (row.type === "persona") {
+      const persona = row.name === DEFAULT_PERSONA ? undefined : this.#parsePersona(row)
+      return persona
+        ? { persona: { label: persona.label, when: persona.when, instructions: persona.instructions } }
+        : null
+    }
+    const keyed = this.#usable(row)
+    if (!keyed) return null
+    if (keyed.type === "tool") {
+      return {
+        http: {
+          domain: new URL(keyed.ability.baseUrl).host,
+          key: keyNeed(keyed.ability),
+          tools: keyed.ability.tools.map(tool => ({
+            name: tool.name,
+            method: tool.method,
+            description: tool.description
+          }))
+        }
+      }
+    }
+    return {
+      mcp: {
+        domain: new URL(keyed.ability.url!).host,
+        key: keyNeed(keyed.ability),
+        transport: keyed.ability.transport === "sse" ? "sse" : "http",
+        approval: keyed.ability.approval,
+        tools: keyed.ability.tools ?? []
+      }
     }
   }
 
