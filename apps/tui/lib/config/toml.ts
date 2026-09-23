@@ -42,7 +42,7 @@ export function setTomlValueInText(text: string, table: string, key: string, lit
 
   for (let index = start + 1; index < lines.length; index++) {
     if (lines[index]!.trimStart().startsWith("[")) break
-    if (new RegExp(`^\\s*${key}\\s*=`).test(lines[index]!)) {
+    if (new RegExp(String.raw`^\s*${key}\s*=`).test(lines[index]!)) {
       lines[index] = `${key} = ${literal}`
       return lines.join("\n")
     }

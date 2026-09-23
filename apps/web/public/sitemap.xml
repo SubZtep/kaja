@@ -1,23 +1,123 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://kaja.io/</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/"/>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/hu-HU/</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/"/>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/nan-TW/</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/"/>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/zh-TW/</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/"/>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://kaja.io/signin</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signin"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signin"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signin"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/hu-HU/signin</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signin"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signin"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signin"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/nan-TW/signin</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signin"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signin"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signin"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/zh-TW/signin</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signin"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signin"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signin"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signin"/>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://kaja.io/signup</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signup"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signup"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signup"/>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://kaja.io/reset-password</loc>
+    <loc>https://kaja.io/hu-HU/signup</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signup"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signup"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signup"/>
     <changefreq>monthly</changefreq>
-    <priority>0.1</priority>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/nan-TW/signup</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signup"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signup"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signup"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://kaja.io/zh-TW/signup</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://kaja.io/signup"/>
+    <xhtml:link rel="alternate" hreflang="hu-HU" href="https://kaja.io/hu-HU/signup"/>
+    <xhtml:link rel="alternate" hreflang="nan-TW" href="https://kaja.io/nan-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://kaja.io/zh-TW/signup"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kaja.io/signup"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

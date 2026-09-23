@@ -17,7 +17,9 @@ const KEY_MASK = "•••"
 export type HttpRequestSpec = { url: string; method: string; headers: Record<string, string>; body?: string }
 
 function queryValue(value: unknown): string {
-  return typeof value === "object" ? JSON.stringify(value) : String(value)
+  if (typeof value === "string") return value
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return value.toString()
+  return JSON.stringify(value) ?? ""
 }
 
 /**
@@ -59,7 +61,7 @@ function fillPath(template: string, args: Record<string, unknown>): { filled: st
     used.add(name)
     const value = args[name]
     if (value === undefined || value === null || value === "") throw new Error(`missing value for {${name}}`)
-    return encodeURIComponent(String(value))
+    return encodeURIComponent(queryValue(value))
   })
   return { filled, used }
 }

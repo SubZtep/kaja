@@ -42,6 +42,7 @@ COMMANDS
   doctor               Print configured models, MCP servers and tools, and check connections
   telegram
   abilities [update]   Pick which skills load, or fetch the marketplace
+  sessions             List saved local sessions with their ids
   logout               Log out of the cloud account, clearing its stored credential
 
 OPTIONS
@@ -49,7 +50,7 @@ OPTIONS
   --cloud         Force cloud login even if a local config exists (default)
   --continue, -c  Resume the most recent session (--local only)
   --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
-  --session, -s   Resume a session by id (--local only; see: kaja --local session list)
+  --session, -s   Resume a session by id (--local only; see: kaja sessions)
   --help          Show this help
   --version       Print the version
 """
@@ -323,6 +324,12 @@ todoRerun = "Edit the file, or run `kaja doctor` in a terminal to be asked for t
 checkModelFailed = "{model} didn't answer ({error})"
 checkTimeout = "no answer in 15 seconds"
 stats = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount}"
+
+[session]
+none = "No saved session to continue yet."
+notFound = "No session with id {id}. Run `kaja sessions` to list them."
+listEmpty = "No saved sessions yet."
+listHint = "Resume one with `kaja -s <id>`, or the latest with `kaja -c`."
 
 [telegram]
 notConfigured = "Save a bot token in `[telegram]` of secrets.toml (see `kaja config paths` for the file path) to use this command."

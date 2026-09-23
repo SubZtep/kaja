@@ -119,8 +119,13 @@ const HEADER = `# Kaja models — [models.<task>] entries each pick a [providers
 
 /** A model id nobody has taken yet: `<provider>-<task>`, numbered when a provider serves a task twice. */
 function freeId(taken: Set<string>, provider: string, task: ModelTask): string {
-  let id = `${provider}-${task}`
-  for (let n = 2; taken.has(id); n++) id = `${provider}-${task}-${n}`
+  const base = `${provider}-${task}`
+  let id = base
+  let n = 1
+  while (taken.has(id)) {
+    n++
+    id = `${base}-${n}`
+  }
   return id
 }
 
@@ -136,7 +141,8 @@ export function buildModelsToml({ providers, pick = {}, baseUrls = {} }: ModelsS
   for (const provider of providers) {
     const lines = [...(provider.comment ?? []), `[providers.${provider.id}]`]
     const url = JSON.stringify(baseUrls[provider.id] ?? provider.baseUrl)
-    lines.push(`base_url = ${url}${provider.note ? `  # ${provider.note}` : ""}`)
+    const note = provider.note ? `  # ${provider.note}` : ""
+    lines.push(`base_url = ${url}${note}`)
     out.push(lines.join("\n"))
   }
 

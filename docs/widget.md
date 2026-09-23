@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Widget
-nav_order: 11
+title: Website widget
+parent: Using Kaja
+nav_order: 4
 ---
 
 # Website widget
@@ -18,7 +19,7 @@ renders, which origins may embed it — is bound to the key and resolved server-
 
 ## Getting a key
 
-Create one from the **Widget** page of the [web app](/development/web):
+Create one from the **Widget** page of the [web app](/web-app):
 
 1. Give it a **label** (so you can tell your keys apart).
 2. List the **allowed origins** — the sites permitted to embed it. At least one is required.
@@ -61,15 +62,14 @@ an `X-Kaja-Widget-Key` header. The bundle derives the API origin from its own `s
 nothing else to wire up.
 
 Visitor state (`visitorId`, `session`) is kept in `sessionStorage`, not cookies. Each visitor's
-sessions, memory notes and dataset answers are namespaced by that id inside your account, so visitors can never
-resume each other's conversations or see each other's notes, and none of it mixes into your own.
+sessions, memory notes and dataset answers are kept apart inside your account: visitors never see each
+other's, and none of it mixes into your own.
 
 ## What the agent can do
 
-A widget turn runs with local tools **off** — no shell, no filesystem, no MCP, no plugins. It gets
-the same cloud allowlist as [cloud CLI chat](/tools#built-ins): memory, datasets, `ask_user`,
-`web_search`, `generate_image`, and the rest. `fetch_url` is included only when the server sets
-`WEB_PROXY` — see [Tools](/tools#built-ins).
+A widget turn runs in [cloud mode](/modes#cloud-mode) with the cloud [built-in tools](/tools#built-ins),
+but no HTTP tools or MCP servers: a key's abilities are **skills only**, so a visitor can never make a
+call with your API keys. Every persona in the catalogue is available, starting from the key's own.
 
 ## Types
 
@@ -97,4 +97,4 @@ decides *what the page renders*. `kaja.io` runs the `barkochba` widget on its la
 
 Next:
 
-[Development](/development){: .btn .btn-green .fs-5 }
+[Voice & language](/voice){: .btn .btn-green .fs-5 }

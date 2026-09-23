@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
+import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { verifyEmail } from "./helpers"
+import { signUpAndSignIn, verifyEmail } from "./helpers"
 
 describe("authentication flow", () => {
   const firstName = faker.person.firstName()
@@ -15,7 +16,7 @@ describe("authentication flow", () => {
       const res = await app.request("/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name: `${firstName} ${lastName}` })
+        body: JSON.stringify({ email, password, name: `${firstName} ${lastName}`, consent: true })
       })
       expect(res.ok).toBeTrue()
       expect(res.status).toBe(200)
@@ -25,10 +26,27 @@ describe("authentication flow", () => {
       const res = await app.request("/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: faker.internet.email(), password, name: "" })
+        body: JSON.stringify({ email: faker.internet.email(), password, name: "", consent: true })
       })
       expect(res.status).toBe(200)
       expect((await res.json()).user.name).toBe("")
+    })
+
+    test("records when the user consented", async () => {
+      const { rows } = await pool.query('SELECT consented_at FROM "user" WHERE email = lower($1)', [email])
+      expect(rows[0].consented_at).toBeInstanceOf(Date)
+    })
+
+    test("is refused without the sign-up page's consent", async () => {
+      const refused = faker.internet.email()
+      const res = await app.request("/auth/sign-up/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: refused, password, name: "" })
+      })
+      expect(res.status).toBe(400)
+      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = lower($1)', [refused])
+      expect(rowCount).toBe(0)
     })
   })
 
@@ -70,6 +88,21 @@ describe("authentication flow", () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       expect(res.status).toBe(200)
+    })
+  })
+
+  describe("account deletion", () => {
+    test("a freshly signed-in user can delete their own account", async () => {
+      const doomed = faker.internet.email().toLowerCase()
+      const token = await signUpAndSignIn(doomed, password, "")
+      const res = await app.request("/auth/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({})
+      })
+      expect(res.status).toBe(200)
+      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = $1', [doomed])
+      expect(rowCount).toBe(0)
     })
   })
 

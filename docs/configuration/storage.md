@@ -1,8 +1,8 @@
 ---
 layout: page
-title: Storage
-parent: Terminal UI
-nav_order: 5.1
+title: Local storage
+parent: Configuration
+nav_order: 5
 ---
 
 # Local storage
@@ -13,17 +13,15 @@ In [local mode](/modes) everything Kaja remembers lives in one SQLite file on yo
 
 It opens in WAL mode, so it's safe to have the terminal chat and the Telegram bot running at once.
 
-In cloud mode there is no local database — the same data lives in the server's Postgres, scoped to
-your account (the cloud keeps the messages and tool calls, but not the terminal's `session_events` timeline).
-
-The [Database](/development/database) page has the Postgres schema and a side-by-side comparison with this file.
+In cloud mode there is no local database: the same data lives in the server's Postgres, scoped to your
+account. The [Database](/development/database) page compares the two.
 
 ## Tables
 
 | Table | Holds |
 | --- | --- |
 | `notes` | the agent's long-term [memory](/memory) about you |
-| `sessions` | one row per conversation, resumable with `-c` / `-s` |
+| `sessions` | one row per conversation, listed by `kaja sessions` and resumable with `-c` / `-s` |
 | `messages` | the conversation itself, one row per message (the assistant's rows are its steps, with model, tokens and latency) |
 | `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took |
 | `session_events` | the terminal timeline (what the screen showed), replayed when you resume |
@@ -123,3 +121,9 @@ erDiagram
 
 Closing Kaja and deleting the file wipes all memory and history — there's nothing else to clean
 up.
+
+---
+
+Next:
+
+[Troubleshooting](/troubleshooting){: .btn .btn-green .fs-5 }

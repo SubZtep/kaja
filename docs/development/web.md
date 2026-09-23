@@ -2,7 +2,7 @@
 layout: page
 title: Web
 parent: Development
-nav_order: 12.3
+nav_order: 4
 ---
 
 # apps/web
@@ -55,7 +55,7 @@ role, sending anyone else to the dashboard. The menu hides the item and the layo
 | Route | What it is |
 | --- | --- |
 | `/dashboard` | a welcome, the Telegram connect card, and your [usage stats](/development/api#usage-stats--stats) |
-| `/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in a section of their own; admins also get the marketplace sync panel |
+| `/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in a section of their own; admins also get the marketplace sync panel ([user guide](/web-app)) |
 | `/welcome` | the same list without personas, shown right after sign-up |
 | `/widget` | [widget keys](/widget#getting-a-key): create, edit, disable, delete |
 | `/profile` | your own account: name and avatar, email, password |

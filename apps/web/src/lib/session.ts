@@ -1,3 +1,4 @@
+import { SSR_CLIENT_IP_HEADER, SSR_SECRET_HEADER } from "@kaja/schema/api"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import type { Session } from "better-auth"
@@ -9,13 +10,15 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
 
   const headers = getRequestHeaders()
   const cookie = headers.get("cookie") ?? ""
-  const forwardedFor = headers.get("x-forwarded-for") ?? headers.get("x-real-ip")
+  const clientIp = headers.get("x-forwarded-for")?.split(",")[0]?.trim() || headers.get("x-real-ip")
 
+  // The API sees this server's IP, not the visitor's; the shared secret lets it rate-limit per visitor instead
   const res = await fetch(`${apiUrl}/auth/get-session`, {
     method: "GET",
     headers: {
       ...(cookie ? { cookie } : {}),
-      ...(forwardedFor ? { "x-forwarded-for": forwardedFor } : {})
+      ...(clientIp ? { "x-forwarded-for": clientIp } : {}),
+      ...(clientIp && env.SSR_SECRET ? { [SSR_SECRET_HEADER]: env.SSR_SECRET, [SSR_CLIENT_IP_HEADER]: clientIp } : {})
     },
     credentials: "include"
   })

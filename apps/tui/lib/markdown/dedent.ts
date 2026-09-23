@@ -8,7 +8,7 @@ export function dedent(text: string): string {
   }
   if (indent === Infinity) return text.trim()
   return lines
-    .map(line => (line[0] === " " || line[0] === "\t" ? line.slice(indent) : line))
+    .map(line => (line.startsWith(" ") || line.startsWith("\t") ? line.slice(indent) : line))
     .join("\n")
     .trim()
 }

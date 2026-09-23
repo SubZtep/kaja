@@ -42,6 +42,7 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   doctor               印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
   telegram
   abilities [update]   揀欲載入个技能，抑是提市集
+  sessions             列出存起來个本機工作階段佮伊的 id
   logout               登出雲端帳號，共儲存个憑證清掉
 
 選項
@@ -49,7 +50,7 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   --cloud         強制用雲端登入，就算已經有本機設定嘛仝款（預設）
   --continue, -c  接落去上新个工作階段（干焦 --local 有效）
   --headless      無顯示終端機介面；用佇有支援這个模式个子指令（比如 telegram）
-  --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja --local session list）
+  --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja sessions）
   --help          顯示這个說明
   --version       印出版本
 """
@@ -323,6 +324,12 @@ todoRerun = "改這个檔案，抑是佇終端機執行 `kaja doctor`，伊會�
 checkModelFailed = "{model} 無應（{error}）"
 checkTimeout = "15 秒內無回應"
 stats = "工作階段：{sessionCount} · 記智筆記：{memoryNoteCount}"
+
+[session]
+none = "猶未有通好好的工作階段通接落去。"
+notFound = "無 {id} 个工作階段。執行 `kaja sessions` 來列。"
+listEmpty = "猶未有存的工作階段。"
+listHint = "用 `kaja -s <id>` 來接落去其中一个，抑是用 `kaja -c` 來接上个。"
 
 [telegram]
 notConfigured = "請佇 secrets.toml 个 `[telegram]` 區塊儲存機器人 token（設定檔路徑看 `kaja config paths`），才會使用這个指令。"

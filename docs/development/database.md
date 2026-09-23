@@ -2,7 +2,7 @@
 layout: page
 title: Database
 parent: Development
-nav_order: 12.25
+nav_order: 3
 ---
 
 # Database
@@ -50,10 +50,12 @@ flowchart LR
 | `2026-09-19-user-secret.sql` | `user_secret` |
 
 Every file only *creates* (`IF NOT EXISTS`), and the API's `migrate.ts` re-runs all of them on every
-deploy, so they have to stay idempotent. There are no patch migrations: until v1.0 there is no production data
-worth keeping, so a schema change is edited into the file that creates the table and existing databases are
-recreated. The files run on the first boot of the compose volume; for an existing volume use
-`scripts/db_migration.sh`.
+deploy, so they have to stay idempotent. The files run on the first boot of the compose volume; for an
+existing volume use `scripts/db_migration.sh`.
+
+**Until v1.0 there are no patch migrations.** There is no production data worth keeping, so a schema
+change is edited into the file that creates the table, and existing databases are recreated: locally
+`docker compose down -v`, in production see [Deployment](/development/deployment#recreating-the-database).
 
 Conventions:
 
@@ -230,16 +232,17 @@ erDiagram
   ability ||--o{ user_ability : "enabled as"
 ```
 
-- `ability` rows come from the repo's `marketplace/` folder, synced hourly and on demand (see [Marketplace](/marketplace)). A sync never
+- `ability` rows come from the repo's `marketplace/` folder, synced hourly and on demand (see [Marketplace internals](/development/marketplace)). A sync never
   deletes: an ability that leaves gets `removed_at`, so users' selections survive and come back if it returns.
 - `user_ability` is a user's on/off switches. `marketplace_sync` is a single row that lets an unchanged
   branch skip the download.
-- Personas and datasets are `ability` rows too (type `persona` and `dataset`), synced like skills; a user only
-  switches skills, tools and MCP servers on and off. There is no separate persona table.
+- Personas and datasets are `ability` rows too (type `persona` and `dataset`), synced like skills. A user
+  switches skills, tools, MCP servers and personas; datasets come with the personas that use them. There is
+  no separate persona table.
 
 ### The cloud agent's state
 
-This is the group that mirrors the SQLite file. Everything hangs off one `user`, so a person's web chats,
+This is the group that mirrors the SQLite file. Everything hangs off one `user`, so a person's cloud terminal chats,
 Telegram bot and widget visitors are all partitioned by `user_id`, and by `owner` within it.
 
 ```mermaid
@@ -344,7 +347,7 @@ replies, and the `nasi_dataset_version` row appears only when the topic is compl
 ## SQLite
 
 The local file is the second half of the agent state, documented table by table on
-[Local storage](/tui/sqlite). It has seven tables: `notes`, `sessions`, `messages`, `tool_calls`,
+[Local storage](/configuration/storage). It has seven tables: `notes`, `sessions`, `messages`, `tool_calls`,
 `session_events`, `dataset_answers` and `dataset_versions`.
 
 ## Side by side
@@ -394,3 +397,9 @@ The local file is the second half of the agent state, documented table by table 
 - **Notes and datasets partition the same way.** Both back ends key them by `owner`, with the empty string for
   "no owner" (so it can sit in a primary key): the web app, a Telegram user and each widget visitor keep their
   own notes and answers. The cloud adds `user_id` in front. A save replaces only that owner's set.
+
+---
+
+Next:
+
+[Web](/development/web){: .btn .btn-green .fs-5 }

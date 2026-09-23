@@ -1,6 +1,6 @@
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
-import { createAuthMiddleware } from "better-auth/api"
+import { APIError, createAuthMiddleware, getOAuthState } from "better-auth/api"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
@@ -27,6 +27,13 @@ function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
   void sendEmail(args).catch(err => {
     reportError("Failed to send auth email", err, { type: args.type, userId: args.payload.user.id })
   })
+}
+
+/** True when a new account comes from the sign-up page with its consent boxes ticked: an email sign-up's body, or a Google sign-up's OAuth state (the page passes both). */
+async function signUpConsented(ctx: { path?: string; body?: unknown } | null | undefined): Promise<boolean> {
+  if (ctx?.path === "/sign-up/email") return (ctx.body as { consent?: unknown } | undefined)?.consent === true
+  const state = await getOAuthState()
+  return state?.requestSignUp === true && state.consent === true
 }
 
 // Better Auth names its columns in camelCase; the database keeps snake_case like every other table, so each field is mapped here.
@@ -114,6 +121,18 @@ export const auth = betterAuth({
       if (Object.keys(fill).length > 0) await ctx.context.internalAdapter.updateUser(user.id, fill)
     })
   },
+  databaseHooks: {
+    user: {
+      create: {
+        // No account without the sign-up page's consent (18+, Terms and Privacy Policy, health data); the time is the consent record.
+        before: async (user, ctx) => {
+          if (!(await signUpConsented(ctx)))
+            throw new APIError("BAD_REQUEST", { message: "Consent is required to sign up" })
+          return { data: { ...user, consentedAt: new Date() } }
+        }
+      }
+    }
+  },
   logger: {
     // Better Auth's own warnings and errors go to the container log.
     level: "warn",
@@ -122,7 +141,12 @@ export const auth = betterAuth({
   ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
     ? {
         socialProviders: {
-          google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
+          // A new Google account only comes from the sign-up page (requestSignUp), where the consent boxes are.
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            disableImplicitSignUp: true
+          }
         }
       }
     : {}),
@@ -175,6 +199,11 @@ export const auth = betterAuth({
   },
   user: {
     fields: { emailVerified: "email_verified", ...timestamps },
+    additionalFields: {
+      consentedAt: { type: "date", required: false, input: false, fieldName: "consented_at" }
+    },
+    // Self-service deletion from the profile page; needs a recent sign-in. Everything the user owns cascades from the user row.
+    deleteUser: { enabled: true },
     changeEmail: {
       enabled: true,
       sendChangeEmailConfirmation: async ({ user, url, newEmail }) => {

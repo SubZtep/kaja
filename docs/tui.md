@@ -1,40 +1,66 @@
 ---
 layout: page
 title: Terminal UI
-nav_order: 5
+parent: Using Kaja
+nav_order: 1
+permalink: /tui/
 ---
 
 # Terminal UI
 
-The chat client: a scrollable transcript, a multi-line input, and a key bar of hotkeys pinned to
-the bottom of the screen. Built with [Ink](https://github.com/vadimdemedes/ink), so it's all
-keyboard-driven.
+The chat client: a scrollable transcript, a multi-line input, and a key bar of hotkeys pinned to the
+bottom of the screen. Both [modes](/modes) share it; cloud mode has no model switching and no shell
+approvals, because the cloud agent never needs them.
 
-Both [modes](/modes) share the same UI shell, but cloud mode runs a lighter version of it — no
-model switching and no shell-command confirmation, because the cloud agent never emits those.
-Persona switching works in both modes.
+A local session starts with a summary of what it loaded: the active persona and model, connected MCP
+servers with their tool counts, and how many saved conversations and memory notes exist.
 
-## Startup panel
+Replies are rendered as markdown — headings, lists, tables and syntax-highlighted code. Images are
+drawn inline where the terminal supports graphics, and links are clickable where it supports OSC 8
+hyperlinks.
 
-The first thing a local session prints is a summary of what it loaded: the active persona and
-model, connected MCP servers with their tool counts, how many saved conversations exist, and how
-many memory notes are stored.
+## Commands
+
+```sh
+kaja                      # chat, in the mode your config says
+kaja --local              # force the local agent loop for this launch
+kaja --cloud              # force cloud login for this launch
+kaja --help               # flags and subcommands
+kaja --version
+kaja logout               # clear the stored cloud token
+
+# Local mode only
+kaja -c, --continue       # resume the most recent session
+kaja -s, --session <id>   # resume a specific session
+kaja sessions             # list saved sessions with their ids
+kaja doctor               # test keys, models and tools; asks for missing keys
+kaja telegram             # run as a Telegram bot (add --headless for no terminal UI)
+
+# Config files and abilities
+kaja config paths | fetch | diff | wizard   # see Configuration
+kaja abilities            # pick which skills, tools, MCP servers and personas load
+kaja abilities update     # fetch the marketplace
+```
+
+`config`, `abilities` and `sessions` only touch local files: they never trigger a cloud login. The `config`
+subcommands are explained under [Configuration](/configuration#commands), `abilities` under
+[Abilities](/abilities).
 
 ## Keyboard shortcuts
 
-### Sending & editing
+### Sending and editing
 
 | Key | Action |
 |---|---|
 | `Enter` | Send the prompt |
-| `Shift+Enter` / `Ctrl+Enter` / `Meta+Enter` / `Ctrl+J` | Insert a newline instead of sending |
-| `←` / `→` | Move cursor one character |
-| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move cursor one word |
-| `Home` / `End` | Move cursor to start/end of the current line |
-| `Backspace` / `Delete` | Delete character before/after cursor |
-| `↑` / `↓` | Recall previous/next prompt from history, when the cursor is on the first/last line; otherwise moves between wrapped lines |
-| `Ctrl+T` | Toggle mic dictation |
-| `Esc` | Quit the app |
+| `Shift+Enter` / `Ctrl+Enter` / `Meta+Enter` / `Ctrl+J` | Insert a newline |
+| `←` / `→` | Move one character |
+| `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move one word |
+| `Home` / `End` | Start/end of the current line |
+| `Backspace` / `Delete` | Delete before/after the cursor |
+| `↑` / `↓` | Previous/next prompt from history (on the first/last line); otherwise move between lines |
+| `Ctrl+T` | Toggle mic [dictation](/voice) |
+| `Esc` | Quit — or cancel the persona picker / decline the approval prompt when one is open |
 | `Ctrl+C` | Interrupt / exit |
 
 Prompt history spans all past sessions, newest first.
@@ -43,59 +69,32 @@ Prompt history spans all past sessions, newest first.
 
 | Key | Action |
 |---|---|
-| `PageUp` / `PageDown` | Scroll chat by one page |
-| `Ctrl+↑` / `Ctrl+↓` | Scroll chat by 3 lines |
+| `PageUp` / `PageDown` | Scroll one page |
+| `Ctrl+↑` / `Ctrl+↓`, mouse wheel | Scroll 3 lines |
 | `Ctrl+Home` | Scroll to the top |
 | `Ctrl+End` | Jump to the bottom and resume auto-follow |
-| Mouse wheel | Scroll chat by 3 lines |
-| `<modifier>+R` | Copy the most recent message to the clipboard |
-
-`<modifier>+R`, not `<modifier>+C`: plain `Ctrl+C` is reserved globally to quit the app, so `C`
-itself can never be bound to anything else here, under either modifier — see below.
 
 ### Key bar
 
-A key bar is pinned to the bottom of the screen, showing every available hotkey and the modifier
-key it uses:
-
 | Key | Action |
 |---|---|
-| `Esc` | Quit the app — or, while the persona picker/shell-command confirm prompt is showing over the input, Cancel/Decline it instead (nothing else changes) |
-| `<modifier>+L` | Open the [docs](https://docs.kaja.io/tui/) in your browser |
-| `<modifier>+P` | Open the persona picker (both modes; a submenu of every loaded/server [persona](/personas)) |
-| `<modifier>+R` | Copy the most recent message to the clipboard (see above) |
+| `<modifier>+L` | Open these docs in your browser |
+| `<modifier>+P` | Open the persona picker |
+| `<modifier>+R` | Copy the most recent message (`C` is taken by `Ctrl+C`) |
 
-| Key | Action (persona picker) |
-|---|---|
-| `↑` / `↓` | Move selection |
-| `Enter` | Activate selected item |
-| `Esc` / `Backspace` / `Delete` | Close the picker without changing persona |
+`<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
+[`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS
+Terminal.app/iTerm2 without "Option as Meta"); keep `Alt` if your host app reserves `Ctrl+<letter>`
+(VS Code's integrated terminal does).
 
-Picking a persona here starts a **fresh conversation**; an automatic `switch_persona` mid-chat
-(model-invoked) keeps the current one going instead. A manually picked persona doesn't persist —
-every launch starts from the default persona again.
+In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`/`Backspace`/`Delete` close it. Picking a
+[persona](/personas) here starts a fresh conversation, and lasts until you quit.
 
-`<modifier>` is `Alt` by default, configurable to `Ctrl` via `preferences.hotkeyModifier` in
-`settings.toml`. Neither is universal in every terminal: Alt can type special characters instead
-of acting as a modifier on some macOS terminals (Terminal.app/iTerm2 without "Option as Meta"
-enabled), while `Ctrl+<letter>` can collide with a host application's own global shortcuts (e.g.
-VS Code's integrated terminal reserves several `Ctrl+<letter>` combos regardless of which panel
-has focus). Pick whichever works cleanly for you.
-
-There is no in-app toggle for thinking/sounds/voice — set `preferences.thinking`,
-`preferences.sounds`, `preferences.voice` in `settings.toml` directly and restart. The app never
-writes to `settings.toml` (or any other config file) at runtime; only the setup wizard and the
-explicit `kaja config wizard`/`kaja config fetch` subcommands do.
-
-## Rendering
-
-Assistant replies are rendered as markdown in the terminal — headings, lists, tables, and
-syntax-highlighted code blocks. Images the agent produces or views are drawn inline as terminal
-graphics where the terminal supports it, and links are clickable in terminals that support OSC 8
-hyperlinks.
+There is no in-app toggle for thinking, sounds or voice: set them in
+[`settings.toml`](/configuration/config#preferences) and restart.
 
 ---
 
 Next:
 
-[Flow](/flow){: .btn .btn-green .fs-5 }
+[Web app](/web-app){: .btn .btn-green .fs-5 }

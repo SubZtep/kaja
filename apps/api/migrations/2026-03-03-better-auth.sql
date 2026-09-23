@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS "user" (
   banned BOOLEAN,
   ban_reason TEXT,
   ban_expires TIMESTAMPTZ,
+  -- When they confirmed they're 18+, accepted the Terms and Privacy Policy, and gave explicit consent to health data (UK GDPR Art. 9); set on sign-up
+  consented_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

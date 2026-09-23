@@ -57,8 +57,11 @@ async function git(args: string[], cwd?: string): Promise<string> {
 
 /** The `major.minor.patch` numbers in `git --version` output ("git version 2.39.3 (Apple Git-145)"), or undefined. */
 export function parseGitVersion(output: string): number[] | undefined {
-  const match = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(output)
-  return match ? [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)] : undefined
+  for (const word of output.split(" ")) {
+    const match = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(word)
+    if (match) return [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)]
+  }
+  return undefined
 }
 
 function atLeast(version: number[], min: string) {

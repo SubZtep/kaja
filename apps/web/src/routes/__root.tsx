@@ -15,6 +15,8 @@ import { m } from "../paraglide/messages.js"
 import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
 
+const OG_IMAGE = "https://kaja.io/og-image.png"
+
 const OG_LOCALE: Record<Locale, string> = {
   "en-GB": "en_GB",
   "hu-HU": "hu_HU",
@@ -41,85 +43,97 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       sessionError
     }
   },
-  head: ({ match }) => ({
-    meta: [
-      {
-        charSet: "utf-8"
-      },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1"
-      },
-      {
-        title: getPageTitle()
-      },
-      {
-        property: "og:url",
-        content: `https://kaja.io${match.pathname}`
-      }
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss
-      },
-      {
-        rel: "apple-touch-icon",
-        sizes: "180x180",
-        href: "/apple-touch-icon.png"
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "32x32",
-        href: "/favicon-32x32.png"
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "16x16",
-        href: "/favicon-16x16.png"
-      },
-      {
-        rel: "manifest",
-        href: "/site.webmanifest"
-      },
-      {
-        rel: "alternate",
-        type: "text/markdown",
-        title: "LLM-friendly version",
-        href: "/llms.txt"
-      },
-      ...locales.map(locale => ({
-        rel: "alternate",
-        hrefLang: locale,
-        href: `https://kaja.io${localizeHref(match.pathname, { locale })}`
-      })),
-      {
-        rel: "alternate",
-        hrefLang: "x-default",
-        href: `https://kaja.io${localizeHref(match.pathname, { locale: baseLocale })}`
-      }
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "Kaja",
-          url: "https://kaja.io",
-          publisher: {
-            "@type": "Organization",
+  head: ({ matches }) => {
+    // The root match's pathname is always "/"; the leaf holds the page's (de-localized) path
+    const pathname = matches.at(-1)?.pathname ?? "/"
+    return {
+      meta: [
+        {
+          charSet: "utf-8"
+        },
+        {
+          name: "viewport",
+          content: "width=device-width, initial-scale=1"
+        },
+        {
+          title: getPageTitle()
+        },
+        {
+          name: "theme-color",
+          content: "#9aa88f"
+        },
+        {
+          property: "og:url",
+          content: `https://kaja.io${localizeHref(pathname)}`
+        }
+      ],
+      links: [
+        {
+          rel: "canonical",
+          href: `https://kaja.io${localizeHref(pathname)}`
+        },
+        {
+          rel: "stylesheet",
+          href: appCss
+        },
+        {
+          rel: "apple-touch-icon",
+          sizes: "180x180",
+          href: "/apple-touch-icon.png"
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "32x32",
+          href: "/favicon-32x32.png"
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "16x16",
+          href: "/favicon-16x16.png"
+        },
+        {
+          rel: "manifest",
+          href: "/site.webmanifest"
+        },
+        {
+          rel: "alternate",
+          type: "text/markdown",
+          title: "LLM-friendly version",
+          href: "/llms.txt"
+        },
+        ...locales.map(locale => ({
+          rel: "alternate",
+          hrefLang: locale,
+          href: `https://kaja.io${localizeHref(pathname, { locale })}`
+        })),
+        {
+          rel: "alternate",
+          hrefLang: "x-default",
+          href: `https://kaja.io${localizeHref(pathname, { locale: baseLocale })}`
+        }
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
             name: "Kaja",
             url: "https://kaja.io",
-            logo: "https://kaja.io/android-chrome-512x512.png",
-            sameAs: ["https://github.com/SubZtep/kaja", "https://x.com/SubZtep"]
-          }
-        })
-      }
-    ]
-  }),
+            publisher: {
+              "@type": "Organization",
+              name: "Kaja",
+              url: "https://kaja.io",
+              logo: "https://kaja.io/android-chrome-512x512.png",
+              sameAs: ["https://github.com/SubZtep/kaja", "https://x.com/SubZtep"]
+            }
+          })
+        }
+      ]
+    }
+  },
   shellComponent: RootDocument,
   notFoundComponent: NotFound,
   errorComponent: DefaultError
@@ -135,18 +149,14 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
         <HeadContent />
 
         <meta property="og:type" content="website" />
-        <meta
-          property="og:image"
-          content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
-        />
+        <meta property="og:image" content={OG_IMAGE} />
+        <meta property="og:image:width" content="1280" />
+        <meta property="og:image:height" content="640" />
         <meta property="og:site_name" content="Kaja.io" />
         <meta property="og:locale" content={ogLocale} />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:image"
-          content="https://repository-images.githubusercontent.com/1171733366/7ff88fcc-f2fd-47f6-bfa6-a1888ab73b69"
-        />
+        <meta name="twitter:image" content={OG_IMAGE} />
       </head>
       <body>
         <Providers>{children}</Providers>

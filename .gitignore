@@ -14,3 +14,9 @@ pgdata/
 .env*
 !.env.example
 skills-lock.json
+
+# Jekyll local preview (docs/)
+docs/_site/
+docs/.jekyll-cache/
+docs/.bundle/
+docs/vendor/

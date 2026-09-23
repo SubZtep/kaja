@@ -59,6 +59,34 @@ export async function defaultModelIo(): Promise<ModelIo> {
   return { interactive: Boolean(process.stdin.isTTY), askPick }
 }
 
+type ProbeResult = { model: CliResolvedModel; result: Awaited<ReturnType<typeof probeModel>> }
+
+// Probes each model of one task, printing a line per model.
+async function probeTask(
+  entries: CliResolvedModel[],
+  print: (line: string) => void,
+  probe: typeof probeModel
+): Promise<ProbeResult[]> {
+  const results: ProbeResult[] = []
+  for (const model of entries) {
+    const result = await probe(model)
+    results.push({ model, result })
+    print(
+      result.ok
+        ? `  ✓ ${model.model} (${t("doctor.modelUp")})`
+        : `  ✗ ${model.model} (${t("doctor.modelDown")}): ${result.error}`
+    )
+  }
+  return results
+}
+
+// The error without its closing full stops and whitespace, so it reads mid-sentence.
+function trimTrailingDots(text: string): string {
+  let end = text.length
+  while (end > 0 && (text[end - 1] === "." || text[end - 1]!.trim() === "")) end--
+  return text.slice(0, end)
+}
+
 /**
  * Tests every configured model, task by task, and prints one line each with why it failed. When a
  * task's active model (`[models.<task>]`) fails while another model of the same task answered, and
@@ -76,16 +104,7 @@ export async function runModelPass(
 
   for (const [task, entries] of groupModelsByTask(models)) {
     print(t(TASK_HEADING_KEY[task]))
-    const results: { model: CliResolvedModel; result: Awaited<ReturnType<typeof probeModel>> }[] = []
-    for (const model of entries) {
-      const result = await probe(model)
-      results.push({ model, result })
-      print(
-        result.ok
-          ? `  ✓ ${model.model} (${t("doctor.modelUp")})`
-          : `  ✗ ${model.model} (${t("doctor.modelDown")}): ${result.error}`
-      )
-    }
+    const results = await probeTask(entries, print, probe)
 
     const active = results.find(entry => entry.model.id === task)
     if (!active) continue
@@ -106,7 +125,7 @@ export async function runModelPass(
       t("doctor.modelSwitchTitle", {
         task: noun,
         model: active.model.model,
-        reason: failure.error.replace(/[.\s]+$/, "")
+        reason: trimTrailingDots(failure.error)
       }),
       [
         t("doctor.modelSwitchKeep", { model: active.model.model }),

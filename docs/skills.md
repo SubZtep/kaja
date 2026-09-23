@@ -1,7 +1,8 @@
 ---
 layout: page
 title: Skills
-nav_order: 7.5
+parent: Abilities
+nav_order: 2
 ---
 
 # Skills
@@ -10,7 +11,8 @@ A skill is a folder of instructions for one kind of task: how to fill a PDF form
 changelog, how to check disk space. The model only sees each skill's name and description until a
 request matches one; then it loads the full instructions with the `load_skill` tool.
 
-Skills use the Agent Skills folder format (see [anthropics/skills](https://github.com/anthropics/skills) for examples):
+Skills use the Agent Skills folder format (see [anthropics/skills](https://github.com/anthropics/skills)
+for examples):
 
 ```ini
 ~/.config/kaja/marketplace/skills/disk-check/
@@ -36,68 +38,25 @@ For thresholds per filesystem type, read reference.md.
 
 Other frontmatter keys (`license`, `metadata`, …) are allowed and ignored.
 
-## The marketplace
+## Writing your own
 
-The [Marketplace](/marketplace) page covers how the folder is fetched, synced and used in full. In short: Kaja's own skills live in the [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace)
-folder of its repo. `kaja abilities update` fetches that folder (with `git`, so git must be installed) and
-syncs it into `~/.config/kaja/marketplace/`, next to your own skills:
-
-- files you never touched follow the marketplace, including removals
-- a file you edited is replaced by the new version, and yours is saved next to it as `.bak`
-  (`.bak2`, … when one exists)
-- a file the marketplace removed but you edited stays, as your own
-- files you added yourself are never touched
-
-Only `kaja abilities`, `kaja abilities update` and the once-a-day background pull at startup (`autoFetch` in settings.toml's [`[marketplace]`](/configuration/config#marketplace)) use the network; `enabled = false` there turns all of it off. To fetch from a
-fork, a branch, or a local checkout instead, set a source in `abilities.toml`:
-
-```toml
-[source]
-url = "/home/me/src/kaja"   # any git URL or local path
-ref = "my-branch"
-```
-
-## Turning skills on
-
-`kaja abilities` shows every skill in the folder as a checklist (space toggles, Enter saves). Your own
-skills are tagged `local`; skills that can't load are listed underneath with the reason.
-
-It writes `~/.config/kaja/abilities.toml`, which you can also edit by hand. Only skills listed there
-are loaded, including the ones you wrote yourself:
-
-```toml
-skills = ["disk-check"]
-```
-
-A listed skill that is missing or has broken frontmatter is skipped with a warning in the log; the
-others still load.
+Create the folder under `~/.config/kaja/marketplace/skills/`, then turn it on with `kaja abilities`,
+where your own skills are tagged `local`. A skill that is missing or has broken frontmatter is listed
+with the reason, and the others still load.
 
 ## How the model uses them
 
 - The system prompt lists every enabled skill's name and description.
-- `load_skill(name)` returns the instructions, the skill's absolute folder, and its other files.
+- `load_skill(name)` returns the instructions, the skill's folder, and its other files.
 - `load_skill(name, file)` reads one of those files. Reads stay inside the skill folder, and file
   names match case-insensitively. Binary files, hidden files and `.bak` backups are never served.
-- Scripts run through [`run_command`](/tools), with the same approval rules as any other command.
+- Scripts run through [`run_command`](/tools#shell-commands), with the same approval as any other
+  command — so skills with a `scripts/` folder are local-only.
 
-## Per persona
+A [persona](/personas) can limit which skills it offers with its `skills` list.
 
-A persona can limit which skills it offers with a `skills` list in its
-[persona file](/personas). Leave it out to allow every enabled skill; `skills = []` turns skills off
-for that persona.
+---
 
-## In the cloud
+Next:
 
-Cloud chat, the cloud Telegram bot and the widget can use marketplace skills too. The API keeps its
-own copy of the marketplace, refreshed every hour. Pick what your account uses on the
-[Abilities page](https://kaja.io/abilities), where skills sit in one list with the marketplace's
-[HTTP tools](/tools#http-tools-in-the-cloud) and [MCP servers](/tools#mcp-servers-in-the-cloud). You can
-read a skill's instructions before turning it on; new accounts get the same list right after signing up.
-Each widget key has its own list,
-set when you create or edit the key on the Widget page, so a site's visitors get only what that
-widget was set up with. `kaja abilities` in cloud mode points you to the web page, and the cloud Telegram
-bot's `/abilities` turns them on and off too. A change reaches a conversation that's already going
-from its next message.
-
-The cloud only offers skills without a `scripts/` folder: there's no shell there to run them. Your
-own local skills stay on your machine.
+[Built-in tools](/tools){: .btn .btn-green .fs-5 }

@@ -33,7 +33,7 @@ export async function signUpAndSignIn(email: string, password: string, name: str
   const signUp = await app.request("/auth/sign-up/email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name })
+    body: JSON.stringify({ email, password, name, consent: true })
   })
   expect(signUp.ok).toBeTrue()
   await verifyEmail(email)

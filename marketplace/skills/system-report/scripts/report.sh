@@ -1,7 +1,10 @@
 #!/bin/sh
 # Read-only snapshot of the machine for the system-report skill. Works on Linux and macOS.
 
-section() { printf '\n== %s ==\n' "$1"; }
+section() {
+  printf '\n== %s ==\n' "$1"
+  return 0
+}
 
 section "os"
 uname -srm

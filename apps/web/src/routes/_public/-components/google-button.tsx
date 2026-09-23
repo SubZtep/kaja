@@ -29,11 +29,16 @@ function GoogleMark() {
   )
 }
 
-/** Starts the Google OAuth flow via the API; on success Better Auth redirects back to `callbackPath` on this origin. */
+/**
+ * Starts the Google OAuth flow via the API; on success Better Auth redirects back to `callbackPath` on this origin.
+ * Only `signUp` (the sign-up page, after its consent boxes) may create a new account; elsewhere an unknown Google address comes back to /signin with `error=signup_disabled`.
+ */
 export function GoogleButton({
   className,
-  callbackPath = "/dashboard"
-}: Readonly<{ className?: string; callbackPath?: string }>) {
+  callbackPath = "/dashboard",
+  signUp = false,
+  disabled = false
+}: Readonly<{ className?: string; callbackPath?: string; signUp?: boolean; disabled?: boolean }>) {
   const authClient = useAuthClient()
   const [loading, setLoading] = useState(false)
 
@@ -45,7 +50,8 @@ export function GoogleButton({
       const { error: authError } = await authClient.signIn.social({
         provider: "google",
         callbackURL: new URL(localizeHref(callbackPath), origin).toString(),
-        errorCallbackURL: new URL(localizeHref("/signin"), origin).toString()
+        errorCallbackURL: new URL(localizeHref(signUp ? "/signup" : "/signin"), origin).toString(),
+        ...(signUp ? { requestSignUp: true, additionalData: { consent: true } } : {})
       })
       if (authError) {
         toast.error(authError.message ?? m.signin_error_generic())
@@ -61,7 +67,7 @@ export function GoogleButton({
     <div className={cn("relative inline-flex w-full max-w-sm overflow-visible pt-3", className)}>
       <button
         type="button"
-        disabled={loading}
+        disabled={loading || disabled}
         className="tape-btn flex w-full cursor-pointer items-center justify-center gap-2 px-5 py-3 disabled:opacity-60"
         onClick={signIn}
       >

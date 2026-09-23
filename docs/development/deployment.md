@@ -2,7 +2,7 @@
 layout: page
 title: Deployment
 parent: Development
-nav_order: 12.5
+nav_order: 7
 ---
 
 # Deployment
@@ -16,7 +16,12 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   triggers deployment on the managed box. Even the smallest
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
   comfortably at modest traffic.
-- **SMTP server** for authentication emails.
+- **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
+- **Outbound HTTP(S) proxy** for the cloud `fetch_url` tool (`WEB_PROXY`); without one the tool is
+  left out of cloud turns. Production uses [Webshare](https://www.webshare.io).
+
+Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data)
+— add, remove or swap a provider there too.
 
 ## Projects
 
@@ -37,10 +42,9 @@ is for local development only.
 
 ### Recreating the database
 
-Until v1.0 there is no production data worth keeping, so schema changes are edited into the file that creates
-the table, which means recreating the database rather than patching it. `migrate.ts` only creates what is
-missing, so it cannot repair an old schema: it would leave an old table where the new one changed shape and add
-the new tables beside the old ones.
+Until v1.0 a schema change means recreating the database (see
+[Database](/development/database#how-the-schema-is-managed)): `migrate.ts` only creates what is missing, so
+it can't repair an old table that changed shape.
 
 Drop and recreate the schema **as the database user the API connects with**, or give it the schema
 afterwards. Recreating `public` as an admin role leaves that role as its owner, and the API's own user then
@@ -59,15 +63,50 @@ saved before the recreate are gone with it.
 ## Environment variables
 
 Docker builds omit `.env` files entirely. **No `.env*` file ships to production** — inject
-variables on the server (Disco's UI, `docker --env-file` outside the image, k8s secrets).
+variables on the server (Disco's UI, `docker --env-file` outside the image, k8s secrets). Every variable
+is listed, with its purpose, in the generated `apps/*/.env.example`.
 
-Locally, bootstrap from the generated templates instead:
+## Log retention
+
+The [Privacy Policy](/privacy#retention) promises server logs are kept for **up to 30 days**. Disco
+has no retention setting of its own (only `disco logs` and `disco syslog:*` forwarding), so the host
+enforces it: Docker logs to journald, and journald deletes anything older than 30 days.
 
 ```sh
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-./scripts/create_local_secrets.sh   # appends BETTER_AUTH_SECRET
+mkdir -p /etc/systemd/journald.conf.d
+cat > /etc/systemd/journald.conf.d/retention.conf <<'EOF'
+[Journal]
+Storage=persistent
+MaxRetentionSec=30day
+MaxFileSec=1day
+EOF
+systemctl restart systemd-journald
 ```
+
+`MaxFileSec=1day` matters: journald only removes whole files, and one file otherwise spans up to a
+month, so entries could outlive the limit by weeks.
+
+Then merge into `/etc/docker/daemon.json`:
+
+{% raw %}
+```json
+{ "log-driver": "journald", "log-opts": { "tag": "{{.Name}}" } }
+```
+{% endraw %}
+
+Run `systemctl restart docker` (a brief outage) and redeploy every project — containers keep the log
+driver they were created with. Every container should now report `journald`, and the oldest journal
+entry should never be more than 31 days old:
+
+{% raw %}
+```sh
+docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}}' {}
+journalctl -o short-iso | head -2
+```
+{% endraw %}
+
+A `disco syslog:add` destination keeps its own copy under its own retention, so it would need a
+matching limit and a line in the Privacy Policy.
 
 ## Production checklist
 
@@ -78,6 +117,10 @@ cp apps/web/.env.example apps/web/.env
   deliberately exempt — they reflect origins and gate on the key's own allowlist instead.
 - `NODE_ENV=production` (Sentry on, no `/reference` UI).
 - Rate limits left on — they only auto-disable under `bun test`.
+- The same `SSR_SECRET` (`openssl rand -base64 32`) on both the API and the web project. Disco
+  projects don't share a private network, so the web's `API_URL` is the public API URL. Without the
+  secret, every visitor's server-side session check counts against the web host's IP, and busy pages
+  start getting 429s (see [rate limits and the visitor's IP](/development/api#rate-limits-and-the-visitors-ip)).
 
 ## CLI release automation
 
@@ -100,4 +143,4 @@ You can always run **Build and release TUI** by hand from the Actions tab.
 
 Next:
 
-[Vision](/development/vision){: .btn .btn-green .fs-5 }
+[Back to the start](/){: .btn .btn-green .fs-5 }

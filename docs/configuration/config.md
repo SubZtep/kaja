@@ -2,41 +2,35 @@
 layout: page
 title: Settings
 parent: Configuration
-nav_order: 4.1
+nav_order: 1
 ---
 
 # settings.toml
 
-Local, install-wide preferences. Which model handles each task lives in
-[`models.toml`](/configuration/models) instead.
+Install-wide preferences. Which model handles each task lives in [`models.toml`](/configuration/models)
+instead.
 
 ```toml
 [preferences]
+mode = "local"
+locale = "en-GB"
 thinking = false
 sounds = true
 voice = false
-locale = "en-GB"
 # hotkeyModifier = "alt"
 
-# Fetching skills, personas, tools and MCP servers from the online marketplace (needs git).
-# enabled = false means Kaja never goes online for abilities: `kaja abilities update` refuses and
-# nothing is pulled at startup. What is already in ~/.config/kaja/marketplace/ still loads.
-# autoFetch pulls at startup when the last sync is over a day old; changes apply on the next launch.
 # [marketplace]
 # enabled = true
 # autoFetch = true
 
-# Speech-to-text (Speaches AI server).
 # [stt]
-# speachesUrl = "http://localhost:8000"
+# speachesUrl = "ws://localhost:8000"
 # language = "en"
 
-# Text-to-speech (Speaches AI server).
 # [tts]
 # speachesUrl = "http://localhost:8000"
 # voice = "af_heart"
 
-# Overrides the default XDG data location for the memory database.
 # [memory]
 # dbPath = "/home/user/.local/share/kaja/memory.sqlite"
 ```
@@ -45,58 +39,28 @@ locale = "en-GB"
 
 | Field | Purpose |
 | --- | --- |
+| `mode` | `local` or `cloud` — what a plain `kaja` starts; see [Cloud or local](/modes#which-mode-a-launch-uses) |
+| `locale` | `en-GB`, `hu-HU`, `nan-TW` or `zh-TW` — the UI and the assistant's replies ([Language](/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `[models.tts]` entry) |
-| `locale` | `en-GB`, `hu-HU`, `nan-TW`, or `zh-TW` — affects the UI and the assistant's replies |
-| `hotkeyModifier` | `alt` (default) or `ctrl` — modifier key for the [key bar](/tui#key-bar)'s hotkeys |
-
-All of these are read once at startup — there's no in-app toggle for any of them, and the app never
-writes to this file at runtime. Edit it by hand and restart to change something; a manually picked
-[persona](/personas) is session-only and never saved here either.
+| `hotkeyModifier` | `alt` (default) or `ctrl` — the [key bar](/tui#key-bar)'s modifier |
 
 ## `[marketplace]`
 
 | Field | Purpose |
 | --- | --- |
-| `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. Abilities already in `~/.config/kaja/marketplace/` still load. Default `true`. |
-| `autoFetch` | pull the [marketplace](/marketplace) at startup when the last sync is over a day old (a background `kaja abilities update`, silent on failure; changes apply on the next launch). Default `true`. |
-
-The setup wizard asks both questions: whether to use the marketplace at all (it checks git, then fetches once), and
-afterwards whether to keep it updated automatically.
+| `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. What's already in `marketplace/` still loads. Default `true`. |
+| `autoFetch` | pull the [marketplace](/abilities) in the background at startup when the last sync is over a day old, silently on failure; changes apply on the next launch. Default `true`. |
 
 ## `[stt]` / `[tts]`
 
-Voice endpoints — see [Voice](/configuration/voice). The *models* for these tasks are declared in
-`models.toml`; these blocks hold the server URL and per-feature options.
+The speech server's URL and options — see [Voice](/voice). The models themselves are in `models.toml`.
 
 ## `[memory]`
 
-`dbPath` overrides where the SQLite file lives. Omit it and Kaja uses the XDG data directory. See
-[Storage](/tui/sqlite) for what's in that file.
-
-## Config subcommands
-
-### `kaja config paths`
-
-Prints a table of every config file and where it resolves on this machine. Start here when you're
-not sure which file Kaja is actually reading.
-
-### `kaja config fetch`
-
-Rewrites `models.toml` and `secrets.toml`, backing up any existing file that differs (an unchanged
-file is left alone). `models.toml` comes from the server's admin-managed bundle (`GET /config/export`), or
-from the template bundled with your Kaja binary when you're offline or pass `--offline`. `secrets.toml` always comes from the bundled template — the server has no user secrets to
-export — so it is replaced by the commented-out placeholders and your own keys stay in the `.bak` copy.
-Personas and MCP servers are not part of it: they come from `kaja abilities update`, and `mcp.toml` stays
-yours to edit.
-
-```sh
-kaja config fetch
-```
-
-Use it to pick up new template defaults after an upgrade, or to recover a file you've broken. Your
-`settings.toml` is never touched.
+`dbPath` overrides where the [SQLite file](/configuration/storage) lives. Leave it out and Kaja uses
+the XDG data directory.
 
 ---
 

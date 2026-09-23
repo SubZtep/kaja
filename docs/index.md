@@ -10,27 +10,26 @@ nav_order: 1
 Give it a task and it keeps looping with an LLM — calling tools, switching personas, remembering
 what matters — until the job is done.
 
-There are two ways to run it, and you pick per-invocation:
+There are two ways to run it:
 
-| | **Cloud** (default) | **Local** (`--local`) |
+| | **Cloud** | **Local** |
 |---|---|---|
 | Agent loop runs | on `api.kaja.io` | on your machine |
 | Needs an account | yes (device login) | no |
-| Needs your own LLM key | no | yes |
-| Config files | none | `~/.config/kaja/` |
+| Needs your own LLM | no | yes |
 | Sessions & memory stored | Postgres, server-side | SQLite, in your home dir |
-| Shell, files, MCP, plugins | ✗ | ✓ |
+| Shell, files, your own MCP servers and plugins | ✗ | ✓ |
 
-See [Modes](/modes) for the full comparison and how the auto-detect picks one.
+[Cloud or local](/modes) has the full comparison and how a launch picks one.
 
 ## What's in the box
 
-- **[Terminal UI](/tui)** — the chat client, keyboard-driven.
-- **[Personas](/personas)** — named characters with their own instructions, model, and sampling.
-- **[Tools](/tools)** — built-ins, MCP servers, and your own TypeScript plugins.
+- **[Terminal UI](/tui)** — the keyboard-driven chat client.
+- **[Telegram](/telegram)** and a **[website widget](/widget)** — the same agent, elsewhere.
+- **[Web app](/web-app)** — your kaja.io account: abilities, keys, widgets, Telegram link, usage.
+- **[Abilities](/abilities)** — [personas](/personas), [skills](/skills), [HTTP tools](/http-tools) and
+  [MCP servers](/mcp) from the marketplace, plus the [built-in tools](/tools).
 - **[Memory & datasets](/memory)** — long-term notes and structured questionnaires.
-- **[Telegram](/telegram)** — the same agent as a bot.
-- **[Widget](/widget)** — an embeddable chat bubble for your own website.
 - **[Configuration](/configuration)** — the TOML files behind local mode.
 
 ## Data safety
@@ -41,6 +40,17 @@ internet connection is needed at all.
 
 In **cloud mode**, sessions and memory are stored server-side against your account. See the
 [Privacy Policy](/privacy) for what that means in practice.
+
+## Glossary
+
+| Term | Meaning |
+| --- | --- |
+| **ability** | anything the marketplace adds: a persona, skill, HTTP tool, MCP server or dataset |
+| **persona** | a named character with its own instructions, and optionally its own model |
+| **skill** | a folder of instructions the agent loads when a request matches it |
+| **dataset** | a questionnaire a persona fills in over time |
+| **front door** | a way in to the agent: terminal, Telegram or widget |
+| **Nasi** | the agent core every front door runs, `@kaja/nasi` |
 
 ---
 

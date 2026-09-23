@@ -1,19 +1,19 @@
 ---
 layout: page
 title: Personas
-nav_order: 7
+parent: Abilities
+nav_order: 1
 ---
 
 # Personas
 
 A persona is a named character the assistant can switch into — its own instructions, and optionally
-its own model and sampling parameters. Personas are [marketplace](/skills#the-marketplace) abilities:
-one file each under `~/.config/kaja/marketplace/personas/<id>.toml`, where the file name is the
-persona's id (lowercase letters, digits and single hyphens).
+its own model and sampling parameters. Each one is a file,
+`~/.config/kaja/marketplace/personas/<id>.toml`, where the file name is the persona's id.
 
-Only the personas `~/.config/kaja/abilities.toml` lists load; `kaja abilities` picks them in its Personas
-group. `default` is the exception: it always loads, and a fresh install has it built in. Put a
-`default.toml` in the folder (the marketplace sync brings one) and that one is used instead.
+`default` is always on; the others load when you turn them on (see [Abilities](/abilities)). A fresh
+install has `default` built in, and a `default.toml` in the folder (the marketplace brings one)
+replaces it.
 
 ```toml
 label = "Self-care companion"
@@ -29,54 +29,44 @@ Listen first. Reflect back what you heard before offering anything.
 | --- | --- |
 | `label` | display name (required) |
 | `instructions` | system-prompt text for this persona |
-| `when` | short clause telling the model when to auto-switch here |
+| `when` | short clause telling the model when to switch here on its own |
 | `dataset` | id of a [dataset](/memory#datasets) this persona collects |
-| `models` | pin a model id per task, e.g. `chat = "reasoning-chat"` |
+| `models` | a model id per task from your [`models.toml`](/configuration/models), e.g. `chat = "reasoning-chat"` |
 | `skills` | [skills](/skills) this persona may use; unset means every enabled skill, `[]` means none |
-| sampling params | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
+| sampling | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
+
+> Kaja already tells the model that questions go through the `ask_user` tool, and how to collect a
+> dataset. Don't restate either in `instructions`.
+{: .note }
 
 ## Switching
 
-Every persona's `when` clause goes into the system prompt as a roster, so the model can call
-`switch_persona` on its own mid-conversation. Personas without a `when` are never auto-selected —
-pick those from the [key bar's persona picker](/tui#key-bar).
+Every persona's `when` clause goes into the system prompt, so the model can call `switch_persona` on
+its own mid-conversation. A persona without `when` is only reachable from the
+[persona picker](/tui#key-bar).
 
-The two paths differ:
+- **automatic** (`switch_persona`) keeps the current conversation going;
+- **manual** (the picker) starts a fresh one. It isn't saved: every launch starts from `default`.
 
-- **automatic** (`switch_persona`) keeps the current conversation going
-- **manual** (persona picker) starts a fresh one
+A persona with a `models` pin swaps the model too; otherwise the current one is kept. A pin to an id
+your `models.toml` doesn't have — expected for a persona written elsewhere — falls back to that task's
+default model instead of failing to load.
 
-A persona that pins a model swaps the model too; otherwise the current one is kept. An unresolvable
-pin — an id that doesn't exist in this install's `models.toml`, which is expected for a persona
-shared from elsewhere — falls back to the default for that task instead of failing to load.
+Both work in cloud mode as well, among the personas you turned on in the [web app](/web-app).
 
-## Shipped examples
+## Shipped personas
 
 | Id | What it does |
 | --- | --- |
 | `default` | fallback for anything no other persona fits |
 | `care` | self-care companion — listens, reflects, doesn't lecture |
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
-| `onboarding` | walks a new user through the `onboarding` dataset |
+| `onboarding` | walks a new user through the [`onboarding` profile](/memory#the-onboarding-profile) |
 
-`kaja abilities update` brings them (and their updates) into the marketplace folder; read them in
-[`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
-
-> Two contracts are injected by Kaja itself and should **not** be restated in `instructions`: that
-> questions go through the `ask_user` tool, and the `dataset_info` get-status/answer protocol.
-{: .note }
-
-## Cloud mode
-
-Cloud chat reads no local files: it uses the same marketplace personas, kept on the server and
-updated when the marketplace changes. Turn them on at [kaja.io/abilities](https://kaja.io/abilities)
-(the Personas section) or with the cloud Telegram bot's `/abilities`; `default` is always on. A persona
-turned on or off mid-conversation reaches the conversation from your next message. Both
-`switch_persona` and the key bar's persona picker work in cloud mode. A [widget](/widget) offers
-every persona in the catalog, starting from the one its key names.
+Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 
 ---
 
 Next:
 
-[Tools](/tools){: .btn .btn-green .fs-5 }
+[Skills](/skills){: .btn .btn-green .fs-5 }

@@ -11,6 +11,12 @@ export const ApiEnvSchema = z.object({
   ),
   DATABASE_URL: url.describe("PostgreSQL connection string"),
   BETTER_AUTH_SECRET: trimmed.describe("Better Auth signing secret").meta({ secret: true, section: "Security" }),
+  SSR_SECRET: trimmed
+    .optional()
+    .describe(
+      "Shared with the web's SSR_SECRET; the web's server-side calls send it with the visitor's IP so rate limits key on the visitor, not the web host"
+    )
+    .meta({ secret: true, section: "Security" }),
   BETTER_AUTH_URL: url.optional().describe("Public base URL of this API, used by Better Auth"),
   WEB_PUBLIC_URL: url
     .optional()
