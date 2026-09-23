@@ -11,7 +11,7 @@ Kaja is an AI assistant you talk to from your terminal. Give it a task and it ke
 
 Under the hood it is a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent. All **TypeScript**, all **Bun**, one repo.
 
-## Try it
+## Run build
 
 ```bash
 curl -fsSL https://kaja.io/install.sh | bash   # macOS / Linux
@@ -20,7 +20,7 @@ kaja
 
 That's cloud mode — approve a device code in the browser and start chatting, no API key of your own. Run `kaja --local` instead to run the agent loop on your machine against your own provider; the first run writes `~/.config/kaja/` for you to fill in.
 
-## Hacking on it
+## Run from source
 
 You need [Bun](https://bun.com/docs/installation) and [Docker Compose](https://docs.docker.com/compose/install/).
 
@@ -60,7 +60,7 @@ bun dev:tui                 # the terminal client
 
 ## Contributing
 
-Until it reaches its 1st major version the codebase is under constant refactor. Install the [git hooks](lefthook.toml) with `bunx lefthook install` — they lint on commit and run the tests on push, so the easily forgotten chores take care of themselves.
+Until it reaches its 1st major version the codebase is under constant refactor.
 
 ## Documentation
 
