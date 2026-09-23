@@ -11,6 +11,7 @@ import { runDoctorSubcommand } from "./subcommands/doctor"
 import { runLogoutSubcommand } from "./subcommands/logout"
 import { runSubcommand } from "./subcommands/run"
 import { runCloudSubcommand } from "./subcommands/run-cloud"
+import { runSessionsSubcommand } from "./subcommands/sessions"
 import { runTelegramSubcommand } from "./subcommands/telegram"
 
 // The agent brain reports skipped abilities and failed MCP connections here; the TUI keeps them in its opt-in log file.
@@ -39,6 +40,11 @@ try {
   if (args.input[0] === "abilities") {
     await runAbilitiesSubcommand(args)
     process.exit(0)
+  }
+
+  // Same rule as config: reads the local session file only, never a cloud login.
+  if (args.input[0] === "sessions") {
+    await runSessionsSubcommand()
   }
 
   // Nothing configured yet: ask how to run before branching. The wizard writes preferences.mode, so

@@ -42,6 +42,7 @@ PARANCSOK
   doctor               Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
   telegram
   abilities [update]   Betöltendő készségek kiválasztása, vagy a piactér letöltése
+  sessions             Mentett helyi munkamenetek megjelenítése az azonosítójukkal
   logout               Kijelentkezés a felhő alapú fiókból, a tárolt hitelesítő adat törlésével
 
 OPCIÓK
@@ -49,7 +50,7 @@ OPCIÓK
   --cloud         Felhő alapú bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció (alapértelmezett)
   --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
   --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
-  --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja --local session list)
+  --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja sessions)
   --help          Ennek a súgónak a megjelenítése
   --version       A verziószám kiírása
 """
@@ -323,6 +324,12 @@ todoRerun = "Szerkeszd a fájlt, vagy futtasd a `kaja doctor` parancsot egy term
 checkModelFailed = "a(z) {model} nem válaszolt ({error})"
 checkTimeout = "nem jött válasz 15 másodpercen belül"
 stats = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet"
+
+[session]
+none = "Még nincs folytatható mentett munkamenet."
+notFound = "Nincs {id} azonosítójú munkamenet. Futtasd a `kaja sessions` parancsot a listázáshoz."
+listEmpty = "Még nincs mentett munkamenet."
+listHint = "Folytasd az egyiket a `kaja -s <id>` paranccsal, vagy a legutóbbit a `kaja -c` paranccsal."
 
 [telegram]
 notConfigured = "Mentsd el a bot tokenjét a secrets.toml `[telegram]` blokkjába (a fájl helyéért lásd: `kaja config paths`), hogy használhasd ezt a parancsot."
