@@ -33,9 +33,11 @@
     "*.css": "tailwindcss"
   },
   "files.readonlyInclude": {
+    "**/docs/config/models.*.toml": true,
     "**/routeTree.gen.ts": true
   },
   "files.watcherExclude": {
+    "**/docs/config/models.*.toml": true,
     "**/routeTree.gen.ts": true
   },
   "json.schemaDownload.trustedDomains": {
