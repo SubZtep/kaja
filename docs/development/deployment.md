@@ -19,6 +19,9 @@ How [kaja.io](https://kaja.io) reaches its current environment.
 - **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
 - **Outbound HTTP(S) proxy** for the cloud `fetch_url` tool (`WEB_PROXY`); without one the tool is
   left out of cloud turns. Production uses [Webshare](https://www.webshare.io).
+- **Server-wide ability keys** (`ABILITY_KEYS`, `name=key` pairs separated by commas), shared by every
+  cloud user. Production sets one for web search: `brave-search=` with a
+  [Brave Search API](https://api-dashboard.search.brave.com) key.
 
 Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data)
 — add, remove or swap a provider there too.

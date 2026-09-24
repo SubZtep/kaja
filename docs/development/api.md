@@ -64,6 +64,10 @@ Keys live [encrypted in `user_secret`](/development/database#accounts-and-access
 one. Without `USER_SECRET_KEY` the key routes answer 503 and abilities that need a key are
 left out of the catalog and of turns.
 
+`ABILITY_KEYS` (`brave-search=BSA...,other=...`) is a temporary server-wide key per ability, shared by every
+cloud user: an ability with one counts as needing only an optional key, and a user's own key still wins.
+Admin-managed service keys, like provider keys, are meant to replace it.
+
 ## Usage stats — `/stats`
 
 `GET /stats?days=30&tz=Asia/Tokyo` (`days` 1–365; `tz` an IANA timezone, UTC when left out) returns the signed-in

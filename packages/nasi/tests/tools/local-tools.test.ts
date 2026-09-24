@@ -28,6 +28,14 @@ test("read_file/list_files are exposed in cloud mode as client-execution stubs",
   await closeTools()
 })
 
+test("clientTools: false leaves read_file/list_files out of a cloud turn", async () => {
+  const { tools, closeTools } = await createTools({ clientTools: false })
+  const names = tools.map(t => toolName(t))
+  for (const name of CLIENT_EXECUTABLE) expect(names).not.toContain(name)
+  expect(names).toContain("ask_user")
+  await closeTools()
+})
+
 test("includeLocalTools registers files and shell with their real implementations", async () => {
   const { tools, closeTools } = await createTools({ includeLocalTools: true })
   const byName = new Map(tools.map(t => [toolName(t), t]))

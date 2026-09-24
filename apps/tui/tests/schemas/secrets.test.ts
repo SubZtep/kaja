@@ -3,16 +3,9 @@ import { SecretsFileSchema } from "@kaja/schema/config"
 
 test("empty file validates: every section is optional, providers/mcp default to {}", () => {
   const parsed = SecretsFileSchema.parse({})
-  expect(parsed.webSearch).toBeUndefined()
   expect(parsed.telegram).toBeUndefined()
   expect(parsed.providers).toEqual({})
   expect(parsed.mcp).toEqual({})
-})
-
-test("webSearch group requires apiKey", () => {
-  const parsed = SecretsFileSchema.parse({ webSearch: { apiKey: "key" } })
-  expect(parsed.webSearch).toEqual({ apiKey: "key" })
-  expect(() => SecretsFileSchema.parse({ webSearch: {} })).toThrow()
 })
 
 test("telegram group requires botToken", () => {

@@ -68,6 +68,8 @@ declare module "bun" {
     WEB_PROXY?: string
     /** Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one */
     USER_SECRET_KEY?: string
+    /** Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...); every cloud user shares them, and a user's own key wins */
+    ABILITY_KEYS?: string
     /** GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from */
     MARKETPLACE_REPO?: string
     /** Branch (or tag) of MARKETPLACE_REPO to sync */

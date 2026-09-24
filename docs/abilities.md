@@ -80,7 +80,8 @@ The cloud has no shell and serves many people, so it offers less:
 **Keys.** An ability that needs a key asks for it before you can turn it on. The key is tested, stored
 encrypted, and never shown again — the page only says "Key saved", with Replace and Remove. It's only
 used for your own turns and never reaches the terminal. Removing it turns off an ability that can't
-work without it.
+work without it. Some abilities, such as web search (`brave-search`), come with a key the server
+provides, so they need none from you; your own key, if you add one, is used instead.
 
 **Approvals.** A call that could change something waits for you: the terminal asks, the Telegram bot
 shows Approve/Decline buttons. The server runs the exact call it saved, so a client can only say yes

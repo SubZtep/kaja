@@ -26,12 +26,12 @@ test("a group without a source keeps each tool's own (plugins)", () => {
 
 test("official names are reserved, whatever order the groups come in", () => {
   const { tools, skipped } = mergeTools([
-    { origin: "third-party", source: "mcp:foo", tools: [named("web_search")] },
-    { origin: "official", tools: [named("web_search")] }
+    { origin: "third-party", source: "mcp:foo", tools: [named("summarize")] },
+    { origin: "official", tools: [named("summarize")] }
   ])
   expect(tools).toHaveLength(1)
   expect(tools[0]!.origin).toBe("official")
-  expect(skipped).toEqual([{ name: "web_search", origin: "third-party", source: "mcp:foo", reason: "reserved" }])
+  expect(skipped).toEqual([{ name: "summarize", origin: "third-party", source: "mcp:foo", reason: "reserved" }])
 })
 
 test("community beats third-party, and the first community tool beats a later one", () => {

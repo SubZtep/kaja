@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from "bun:test"
 import { HttpToolAbilitySchema } from "@kaja/schema/abilities"
 import type { CliResolvedModel } from "@kaja/schema/config"
-import { checkAbilityKey, checkProvider, checkTelegramToken, checkWebSearchKey } from "../../../lib/doctor/checks"
+import { checkAbilityKey, checkProvider, checkTelegramToken } from "../../../lib/doctor/checks"
 
 let fetchSpy: ReturnType<typeof spyOn> | undefined
 
@@ -59,16 +59,6 @@ test("a rejected key is a credential failure, an unreachable server is not", asy
 test("a model the provider doesn't have is unreachable, not a key problem", async () => {
   mockFetch(() => Response.json({ error: { message: "model not found" } }, { status: 404 }))
   expect(await checkProvider(chatModel, "fine-key")).toMatchObject({ ok: false, kind: "unreachable" })
-})
-
-test("web search sends the key as X-Subscription-Token", async () => {
-  mockFetch((_url, init) =>
-    new Headers(init?.headers).get("X-Subscription-Token") === "good"
-      ? Response.json({})
-      : new Response("", { status: 401 })
-  )
-  expect(await checkWebSearchKey("good")).toEqual({ ok: true })
-  expect(await checkWebSearchKey("bad")).toEqual({ ok: false, reason: "HTTP 401" })
 })
 
 let server: ReturnType<typeof Bun.serve>

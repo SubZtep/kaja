@@ -31,7 +31,6 @@ test("missing file: writes the template and returns its active (non-commented) s
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
   // Every section in the shipped template is commented out.
   expect(data.mcp).toEqual({})
-  expect(data.webSearch).toBeUndefined()
   expect(data.telegram).toBeUndefined()
   expect(data.providers).toEqual({})
 })
@@ -42,13 +41,13 @@ test("existing file is parsed as-is, not overwritten by the template", async () 
   await write(
     join(dir, "secrets.toml"),
     `
-[webSearch]
-apiKey = "custom-brave-key"
+[telegram]
+botToken = "custom-token"
 `
   )
 
   const data = await loadSecretsFile()
-  expect(data.webSearch).toEqual({ apiKey: "custom-brave-key" })
+  expect(data.telegram).toEqual({ botToken: "custom-token" })
 })
 
 test("readSecretsLoose returns {} when the file is missing, without writing anything", async () => {
@@ -73,13 +72,13 @@ test("readSecretsLoose returns whatever is on disk even if it fails schema valid
   await write(
     join(dir, "secrets.toml"),
     `
-[webSearch]
-apiKey = ""
+[telegram]
+botToken = ""
 `
   )
 
-  // Empty string fails SecretsWebSearchSchema's min(1), but the raw TOML still parses as an object.
-  expect(await readSecretsLoose()).toEqual({ webSearch: { apiKey: "" } })
+  // Empty string fails SecretsTelegramSchema's min(1), but the raw TOML still parses as an object.
+  expect(await readSecretsLoose()).toEqual({ telegram: { botToken: "" } })
 })
 
 test("secrets() caches after the first read; invalidateSecretsCache() forces a reload", async () => {
@@ -88,27 +87,27 @@ test("secrets() caches after the first read; invalidateSecretsCache() forces a r
   await write(
     join(dir, "secrets.toml"),
     `
-[webSearch]
-apiKey = "first"
+[telegram]
+botToken = "first"
 `
   )
 
   const first = await secrets()
-  expect(first.webSearch).toEqual({ apiKey: "first" })
+  expect(first.telegram).toEqual({ botToken: "first" })
 
   await write(
     join(dir, "secrets.toml"),
     `
-[webSearch]
-apiKey = "second"
+[telegram]
+botToken = "second"
 `
   )
   // Still cached: rewriting the file on disk alone must not change what secrets() returns.
-  expect((await secrets()).webSearch).toEqual({ apiKey: "first" })
+  expect((await secrets()).telegram).toEqual({ botToken: "first" })
   expect(await secrets()).toBe(first)
 
   invalidateSecretsCache()
-  expect((await secrets()).webSearch).toEqual({ apiKey: "second" })
+  expect((await secrets()).telegram).toEqual({ botToken: "second" })
 })
 
 test("provider and mcp tables default to {} when absent, never undefined", async () => {

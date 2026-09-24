@@ -16,7 +16,6 @@ import { readFileTool } from "./builtin/read-file"
 import { rerankTool } from "./builtin/rerank"
 import { summarizeTool } from "./builtin/summarize"
 import { viewImageTool } from "./builtin/view-image"
-import { webSearchTool } from "./builtin/web-search"
 import type { NasiToolDeps } from "./deps"
 import { setToolDeps } from "./deps"
 
@@ -34,7 +33,6 @@ const CLOUD_SAFE = new Set([
   "rerank",
   // Only ever reaches a cloud turn with `fetchProxy` set — see the conditional in `builtin` below.
   "fetch_url",
-  "web_search",
   "generate_image"
 ])
 
@@ -54,6 +52,8 @@ function toClientExecutableStub(t: Tool<any>): Tool<any> {
 export type CreateToolsOptions = {
   /** Files, shell, MCP, and plugins. Default false. */
   includeLocalTools?: boolean
+  /** Cloud only: a client can answer a `client_tool_call` pause (the terminal), so `read_file`/`list_files` are offered as stubs. False (widget, Telegram) leaves them out. Default true. */
+  clientTools?: boolean
   deps?: NasiToolDeps
   mcpServers?: McpServerEntry[]
   pluginDir?: string
@@ -189,14 +189,14 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     forgetNoteTool,
     listNotesTool,
     datasetInfoTool,
-    ...(opts.deps?.webSearchApiKey ? [webSearchTool] : []),
     ...(opts.deps?.imageGeneration ? [generateImageTool] : [])
   ]
 
+  const clientTools = opts.clientTools !== false
   const official = local
     ? builtin
     : builtin
-        .filter(t => CLOUD_SAFE.has(toolName(t)) || CLIENT_EXECUTABLE.has(toolName(t)))
+        .filter(t => CLOUD_SAFE.has(toolName(t)) || (clientTools && CLIENT_EXECUTABLE.has(toolName(t))))
         .map(t => (CLIENT_EXECUTABLE.has(toolName(t)) ? toClientExecutableStub(t) : t))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 

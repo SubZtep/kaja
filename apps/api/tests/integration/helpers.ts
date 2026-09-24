@@ -52,18 +52,25 @@ export async function expectUnauthenticated(path: string, init?: RequestInit): P
 }
 
 /** An OpenAI-shaped chat client that streams and finalizes to the same fixed reply. */
-export function fakeChatClient(reply: string) {
+/** A chat client that always streams `reply`; `onRequest` sees each request (e.g. to check the tools a turn offered). */
+export function fakeChatClient(
+  reply: string,
+  onRequest?: (params: { tools?: { function: { name: string } }[] }) => void
+) {
   return {
     chat: {
       completions: {
-        stream: () => ({
-          async *[Symbol.asyncIterator]() {
-            yield { choices: [{ delta: { content: reply } }] }
-          },
-          finalChatCompletion: async () => ({
-            choices: [{ message: { role: "assistant", content: reply } }]
-          })
-        })
+        stream: (params: { tools?: { function: { name: string } }[] }) => {
+          onRequest?.(params)
+          return {
+            async *[Symbol.asyncIterator]() {
+              yield { choices: [{ delta: { content: reply } }] }
+            },
+            finalChatCompletion: async () => ({
+              choices: [{ message: { role: "assistant", content: reply } }]
+            })
+          }
+        }
       }
     }
   }

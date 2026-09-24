@@ -61,6 +61,18 @@ function keyNeed(ability: HttpToolAbility | McpAbility): AbilityKeyNeed {
   return ability.auth.optional ? "optional" : "required"
 }
 
+/** Parses `ABILITY_KEYS` (`name=key,name=key`) into ability name → key; malformed pairs are skipped. */
+export function parseAbilityKeys(value: string | undefined): Map<string, string> {
+  const keys = new Map<string, string>()
+  for (const pair of (value ?? "").split(",")) {
+    const at = pair.indexOf("=")
+    const name = pair.slice(0, at).trim()
+    const key = pair.slice(at + 1).trim()
+    if (at > 0 && name && key) keys.set(name, key)
+  }
+  return keys
+}
+
 /** `default` first: the catalog's own, or the built-in one when the catalog has none. */
 function withDefaultFirst(personas: Persona[]): Persona[] {
   const own = personas.find(persona => persona.id === DEFAULT_PERSONA)
@@ -71,10 +83,13 @@ function withDefaultFirst(personas: Persona[]): Persona[] {
 export class AbilityService {
   readonly #db: Pool
   readonly #secrets: SecretService
+  // TODO: temporary server-wide keys from ABILITY_KEYS, until admin-managed service keys (like providers) replace them.
+  readonly #serviceKeys: Map<string, string>
 
-  constructor(db: Pool, secrets: SecretService) {
+  constructor(db: Pool, secrets: SecretService, serviceKeys = new Map<string, string>()) {
     this.#db = db
     this.#secrets = secrets
+    this.#serviceKeys = serviceKeys
   }
 
   /** Whether users' keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left out everywhere. */
@@ -163,7 +178,7 @@ export class AbilityService {
     if (type === "tool" || type === "mcp") {
       const keyed = await this.#getKeyed(type, name)
       if (!keyed) return "not_found"
-      if (keyNeed(keyed.ability) === "required" && !(await this.#secrets.has(userId, abilitySecretName(name)))) {
+      if (this.#keyNeed(keyed.ability) === "required" && !(await this.#secrets.has(userId, abilitySecretName(name)))) {
         return "key_required"
       }
     }
@@ -276,7 +291,8 @@ export class AbilityService {
 
   /** The user's ability keys by ability name, decrypted, for their own turns only. */
   async keysForUser(userId: string): Promise<Map<string, string>> {
-    const keys = new Map<string, string>()
+    // Server-wide keys first, so the user's own key replaces one.
+    const keys = new Map(this.#serviceKeys)
     for (const [name, value] of await this.#secrets.getAll(userId, KEY_PREFIX))
       keys.set(name.slice(KEY_PREFIX.length), value)
     return keys
@@ -316,7 +332,7 @@ export class AbilityService {
     if (!row) return false
     await this.#secrets.delete(userId, abilitySecretName(name))
     const keyed = this.#parse(row)
-    if (!keyed || keyNeed(keyed.ability) === "required") {
+    if (!keyed || this.#keyNeed(keyed.ability) === "required") {
       await this.#db.query("DELETE FROM user_ability WHERE user_id = $1 AND ability_id = $2", [userId, row.id])
     }
     return true
@@ -378,7 +394,7 @@ export class AbilityService {
       return {
         http: {
           domain: new URL(keyed.ability.baseUrl).host,
-          key: keyNeed(keyed.ability),
+          key: this.#keyNeed(keyed.ability),
           tools: keyed.ability.tools.map(tool => ({
             name: tool.name,
             method: tool.method,
@@ -390,7 +406,7 @@ export class AbilityService {
     return {
       mcp: {
         domain: new URL(keyed.ability.url!).host,
-        key: keyNeed(keyed.ability),
+        key: this.#keyNeed(keyed.ability),
         transport: keyed.ability.transport === "sse" ? "sse" : "http",
         approval: keyed.ability.approval,
         tools: keyed.ability.tools ?? []
@@ -418,10 +434,16 @@ export class AbilityService {
     return this.#usable(row) !== undefined
   }
 
+  /** An ability's key need, where a server-wide key turns a required one optional: the user may still bring their own. */
+  #keyNeed(ability: HttpToolAbility | McpAbility): AbilityKeyNeed {
+    const need = keyNeed(ability)
+    return need === "required" && this.#serviceKeys.has(ability.name) ? "optional" : need
+  }
+
   /** {@link #parse}, but also undefined when it requires a key while keys can't be stored. */
   #usable(row: ManifestRow): KeyedAbility | undefined {
     const keyed = this.#parse(row)
-    if (keyed && keyNeed(keyed.ability) === "required" && !this.#secrets.enabled) return undefined
+    if (keyed && this.#keyNeed(keyed.ability) === "required" && !this.#secrets.enabled) return undefined
     return keyed
   }
 }

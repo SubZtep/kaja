@@ -13,10 +13,6 @@ server addresses, model names — stays in `models.toml`, `mcp.toml` and `settin
 safe to commit or share.
 
 ```toml
-# The web_search tool
-[webSearch]
-apiKey = "BSA..."
-
 # The local Telegram bot (`kaja telegram`)
 [telegram]
 botToken = "123456:ABC-DEF..."
@@ -30,8 +26,8 @@ api_key = "fw_YourSecretKey"
 CONTEXT7_API_KEY = "ctx7sk-..."
 
 # An HTTP tool or MCP ability, by name
-[abilities.github-issues]
-apiKey = "ghp_..."
+[abilities.brave-search]
+apiKey = "BSA..."
 ```
 
 A missing section just turns that feature off. The template ships with every section commented out.

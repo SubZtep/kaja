@@ -19,7 +19,6 @@ import { getPaths } from "../lib/paths"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
 export async function getDefaultTools(personas: Persona[]) {
-  const { webSearch } = await secrets()
   const mcpServers = await loadMcpServers()
   setDatasetLoaders({ loadDataset, loadDatasets })
 
@@ -64,7 +63,6 @@ export async function getDefaultTools(personas: Persona[]) {
       chat: { client, model: chatModelId },
       rerank,
       imageGeneration,
-      webSearchApiKey: webSearch?.apiKey,
       tempDir: getPaths().temp,
       storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }

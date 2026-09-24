@@ -18,6 +18,8 @@ export type NasiOpenOptions = {
   chat: { client: OpenAI; model: string }
   /** Files, shell, MCP, and plugins. Default false. */
   includeLocalTools?: boolean
+  /** Cloud only: whether the caller can run `client_tool_call` tools (`read_file`/`list_files`) on the user's machine. Default true. */
+  clientTools?: boolean
   personas?: Persona[]
   promptContext?: PromptContext
   owner?: string | null
@@ -181,6 +183,7 @@ export class Nasi {
       : undefined
     const { tools, closeTools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
+      clientTools: opts.clientTools,
       deps: { ...opts.deps, chat: opts.chat },
       extraTools: abilities?.groups,
       // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request.

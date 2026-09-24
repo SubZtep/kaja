@@ -56,7 +56,6 @@ just that one. Nothing is tested while you answer.
 | A server address | `[providers.<name>] base_url` | `models.toml` |
 | Speaches address | `[stt] speachesUrl`, `[tts] speachesUrl` | `settings.toml` |
 | A provider's API key | `[providers.<name>] api_key` | `secrets.toml` |
-| Web search key | `[webSearch] apiKey` | `secrets.toml` |
 | Telegram bot token | `[telegram] botToken` | `secrets.toml` |
 
 The provider catalogue is built into the binary, so a first run needs no network. Re-running the

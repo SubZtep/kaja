@@ -51,6 +51,10 @@ type = "string"
   what the model sees.
 - Locally a tool may call hosts on your own network (Home Assistant, a NAS, Ollama).
 
+The marketplace's `brave-search` is a keyed example: it adds `web_search` through the Brave Search API,
+with the key sent as the `X-Subscription-Token` header. Turn it on in `kaja abilities`, which asks for
+the key.
+
 ## In the cloud
 
 Marketplace HTTP tools work in cloud chat and the cloud Telegram bot, never one whose `baseUrl` is a

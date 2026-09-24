@@ -84,6 +84,29 @@ describe("widget", () => {
     expect(body.status).toBe("completed")
   })
 
+  test("a widget turn offers no tools that need the user's machine", async () => {
+    let offered: string[] = []
+    setNasiChatResolver(async () => ({
+      client: fakeChatClient("hello from widget", params => {
+        offered = (params.tools ?? []).map(tool => tool.function.name)
+      }) as never,
+      model: "fake-model"
+    }))
+    try {
+      const res = await app.request("/widget/turn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", origin: allowedOrigin, "x-kaja-widget-key": rawKey },
+        body: JSON.stringify({ message: "read my notes.txt", visitorId: "v-tools" })
+      })
+      expect(res.status).toBe(200)
+    } finally {
+      setNasiChatResolver(async () => ({ client: fakeChatClient("hello from widget") as never, model: "fake-model" }))
+    }
+    expect(offered).toContain("ask_user")
+    expect(offered).not.toContain("read_file")
+    expect(offered).not.toContain("list_files")
+  })
+
   test("two visitors on the same key cannot resume each other's session", async () => {
     const first = await app.request("/widget/turn", {
       method: "POST",

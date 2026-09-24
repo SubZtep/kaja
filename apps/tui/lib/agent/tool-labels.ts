@@ -8,7 +8,7 @@ import { t } from "../i18n"
  * without an entry here fall back to the raw display.
  */
 const LABELS: Record<string, (args: any) => string> = {
-  web_search: args => t("toolCall.webSearch", { query: args.query }),
+  web_search: args => t("toolCall.webSearch", { query: args.q }),
   fetch_url: args => t("toolCall.fetchUrl", { url: args.url }),
   current_time: args =>
     t("toolCall.currentTime", {

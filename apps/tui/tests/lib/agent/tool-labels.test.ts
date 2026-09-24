@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { describeToolCall } from "../../../lib/agent/tool-labels"
 
 test("describes a known tool call in plain language", () => {
-  expect(describeToolCall("web_search", JSON.stringify({ query: "puppies" }))).toBe('Searching "puppies"...')
+  expect(describeToolCall("web_search", JSON.stringify({ q: "puppies" }))).toBe('Searching "puppies"...')
 })
 
 test("omits the optional timezone when absent", () => {
