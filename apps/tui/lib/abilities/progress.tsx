@@ -4,7 +4,7 @@ import { ConsoleTheme } from "../../components/theme"
 
 const BAR_WIDTH = 30
 
-function StepProgress({ label, value }: { label: string; value: number }) {
+function StepProgress({ label, value }: Readonly<{ label: string; value: number }>) {
   return (
     <Box gap={1}>
       <Text>{label}</Text>

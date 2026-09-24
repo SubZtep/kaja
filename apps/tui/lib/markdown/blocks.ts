@@ -7,12 +7,25 @@ const LINK_DEFINITION = /^ {0,3}\[[^\]]+\]:\s/m
 // A list item's first line: a bullet, or a number with "." or ")"
 const LIST_ITEM = /^ {0,3}([-*+]|\d{1,9}[.)])(\s|$)/
 
+const isBlank = (line: string) => line.trim() === ""
+const isIndented = (line: string) => /^\s/.test(line)
+
 // The first non-blank line from `from` on, if any
 function nextContentLine(lines: string[], from: number): string | undefined {
-  for (let j = from; j < lines.length; j++) {
-    if (lines[j]!.trim() !== "") return lines[j]
-  }
-  return undefined
+  return lines.slice(from).find(line => !isBlank(line))
+}
+
+// The fence open after `line`: a marker opens one, and only a marker of the same character, at least as long, closes it
+function fenceAfter(fence: string | undefined, line: string): string | undefined {
+  const marker = FENCE.exec(line)?.[1]
+  if (!fence) return marker
+  return marker?.startsWith(fence[0]!) && marker.length >= fence.length ? undefined : fence
+}
+
+// Whether the blank line at `i` ends a block: not before an indented line (a list item's continuation, an indented code block), nor the next item of this list
+function breaksAt(lines: string[], i: number, inList: boolean): boolean {
+  const next = nextContentLine(lines, i + 1)
+  return next !== undefined && !isIndented(next) && !(inList && LIST_ITEM.test(next))
 }
 
 /**
@@ -31,26 +44,21 @@ export function splitBlocks(source: string): string[] {
   // Inside a list, a blank line between two items doesn't end it
   let inList = false
 
+  const flush = () => {
+    if (current.some(line => !isBlank(line))) blocks.push(current.join("\n").trimEnd())
+    current = []
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    const marker = FENCE.exec(line)?.[1]
-    if (fence) {
-      if (marker && marker[0] === fence[0] && marker.length >= fence.length) fence = undefined
-    } else if (marker) {
-      fence = marker
+    fence = fenceAfter(fence, line)
+    if (!fence && isBlank(line) && breaksAt(lines, i, inList)) {
+      flush()
+      continue
     }
-
-    if (!fence && line.trim() !== "" && !/^\s/.test(line)) inList = LIST_ITEM.test(line)
-
-    const next = !fence && line.trim() === "" ? nextContentLine(lines, i + 1) : undefined
-    // Not before an indented line (a list item's continuation, an indented code block), nor the next item of this list
-    if (next !== undefined && !/^\s/.test(next) && !(inList && LIST_ITEM.test(next))) {
-      if (current.some(l => l.trim() !== "")) blocks.push(current.join("\n").trimEnd())
-      current = []
-    } else {
-      current.push(line)
-    }
+    if (!fence && !isBlank(line) && !isIndented(line)) inList = LIST_ITEM.test(line)
+    current.push(line)
   }
-  if (current.some(l => l.trim() !== "")) blocks.push(current.join("\n").trimEnd())
+  flush()
   return blocks
 }

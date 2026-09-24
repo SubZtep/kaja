@@ -129,9 +129,10 @@ function selectTheme(p: Palette) {
     styles: {
       selectedIndicator: (): TextProps => ({ color: p.success }),
       focusIndicator: (): TextProps => ({ color: p.focus }),
-      label: ({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }): TextProps => ({
-        color: isFocused ? p.focus : isSelected ? p.success : undefined
-      })
+      label: ({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }): TextProps => {
+        if (isFocused) return { color: p.focus }
+        return { color: isSelected ? p.success : undefined }
+      }
     }
   }
 }
