@@ -13,9 +13,10 @@ server addresses, model names — stays in `models.toml`, `mcp.toml` and `settin
 safe to commit or share.
 
 ```toml
-# The local Telegram bot (`kaja telegram`)
+# The local Telegram bot (`kaja telegram`); owner_ids is filled in by pairing
 [telegram]
-botToken = "123456:ABC-DEF..."
+bot_token = "123456:ABC-DEF..."
+owner_ids = [123456789]
 
 # models.toml's [providers.<name>], keyed the same way
 [providers.fireworks]

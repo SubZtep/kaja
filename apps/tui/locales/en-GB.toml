@@ -41,7 +41,7 @@ COMMANDS
   config <wizard|fetch|diff|paths>
                        Set up interactively, or manage config files
   doctor               Print configured models, MCP servers and tools, and check connections
-  telegram
+  telegram [--pair]    Run your Telegram bot; --pair shows a code to pair one more person
   abilities [update]   Pick which skills load, or fetch the marketplace
   sessions             List saved local sessions with their ids
   logout               Log out of the cloud account, clearing its stored credential
@@ -343,9 +343,18 @@ listHint = "Resume one with `kaja -s <id>`, or the latest with `kaja -c`."
 
 [telegram]
 notConfigured = "Save a bot token in `[telegram]` of secrets.toml (see `kaja config paths` for the file path) to use this command."
-invalidToken = "Invalid Telegram bot token — check config.telegram.botToken."
+invalidToken = "Invalid Telegram bot token — check `[telegram] bot_token` in secrets.toml."
 starting = "Starting Telegram bot…"
 ready = "Telegram bot ready, long-polling for messages."
+pairFirst = """
+No one is paired with @{username} yet, and it answers no one until you are.
+Open https://t.me/{username}?start={code}
+or send it: /start {code}"""
+pairAnother = """
+To pair one more person with @{username}, they open https://t.me/{username}?start={code}
+or send it: /start {code}"""
+pairedLog = "Paired {name} ({id}) — saved to secrets.toml."
+paired = "✅ Paired. You can talk to Kaja now."
 newSession = "🆕 Started a new session."
 stillWorking = "Still working on your last message…"
 pendingCommand = "There's a command or request waiting for your approval above — tap Approve or Decline first."

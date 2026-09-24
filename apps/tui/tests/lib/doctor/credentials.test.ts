@@ -259,7 +259,7 @@ test("collects providers, keyed abilities, declared MCP secrets and a saved Tele
     "mcp.toml",
     `[[servers]]\nid = "ctx"\ncommand = "true"\nsecrets = ["CTX_KEY", "CTX_ID"]\n\n[[servers]]\nid = "plain"\nurl = "https://mcp.example.com"\n`
   )
-  put("secrets.toml", `[mcp.ctx]\nCTX_KEY = "k"\n\n[telegram]\nbotToken = "t"\n`)
+  put("secrets.toml", `[mcp.ctx]\nCTX_KEY = "k"\n\n[telegram]\nbot_token = "t"\n`)
 
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.present, i.required, i.hint])).toEqual([
@@ -267,7 +267,7 @@ test("collects providers, keyed abilities, declared MCP secrets and a saved Tele
     ["[abilities.gh] api_key", false, true, "header Authorization"],
     ["[mcp.ctx] CTX_KEY", true, true, "env CTX_KEY"],
     ["[mcp.ctx] CTX_ID", false, true, "env CTX_ID"],
-    ["[telegram] botToken", true, true, undefined]
+    ["[telegram] bot_token", true, true, undefined]
   ])
 })
 

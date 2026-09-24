@@ -6,9 +6,16 @@ import { t } from "../i18n"
 import { log } from "../logger"
 import type { Persona } from "../personas/personas"
 import { createTelegramDriver, type InlineKeyboardLike } from "./driver"
+import { createPairing, generatePairingCode } from "./pairing"
 
 export type CreateTelegramBotConfig = {
   botToken: string
+  /** Telegram user ids allowed to talk to the bot (secrets.toml `owner_ids`). */
+  ownerIds: number[]
+  /** Opens pairing even with owners (`kaja telegram --pair`); with none it's always open. */
+  pair?: boolean
+  /** Saves a newly paired user; the bot has already let them in. */
+  onPaired?: (user: { id: number; name: string }) => Promise<void>
   agentConfig: ConstructorParameters<typeof Agent>[0]
   personas: Persona[]
   models: CliResolvedModel[]
@@ -27,6 +34,10 @@ function buildKeyboard(keyboard: InlineKeyboardLike | undefined) {
  */
 export function createTelegramBot(config: CreateTelegramBotConfig) {
   const bot = new Bot(config.botToken)
+  const pairing = createPairing({
+    ownerIds: config.ownerIds,
+    code: config.pair || config.ownerIds.length === 0 ? generatePairingCode() : undefined
+  })
 
   const driver = createTelegramDriver({
     agentConfig: config.agentConfig,
@@ -71,11 +82,22 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     }
   })
 
-  bot.on("message:text", ctx => {
-    void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text)
+  // Strangers get no reply at all, so the bot doesn't even confirm it's running.
+  bot.on("message:text", async ctx => {
+    const verdict = pairing.check(ctx.from.id, ctx.message.text)
+    if (verdict === "owner") {
+      void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text)
+      return
+    }
+    if (verdict !== "paired") return
+    const name = [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(" ")
+    console.log(t("telegram.pairedLog", { name, id: ctx.from.id }))
+    await config.onPaired?.({ id: ctx.from.id, name })
+    await ctx.reply(t("telegram.paired"))
   })
 
   bot.on("callback_query:data", ctx => {
+    if (!pairing.isOwner(ctx.from.id)) return
     const chatId = ctx.callbackQuery.message?.chat.id
     const messageId = ctx.callbackQuery.message?.message_id
     if (chatId === undefined || messageId === undefined) return
@@ -108,7 +130,13 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
         ])
         .catch(error => log.warn("Telegram command menu not set", { error }))
       await bot.start({
-        onStart: () => console.log(t("telegram.ready"))
+        onStart: botInfo => {
+          if (pairing.code) {
+            const key = config.ownerIds.length === 0 ? "telegram.pairFirst" : "telegram.pairAnother"
+            console.log(t(key, { username: botInfo.username, code: pairing.code }))
+          }
+          console.log(t("telegram.ready"))
+        }
       })
     },
     async stop() {

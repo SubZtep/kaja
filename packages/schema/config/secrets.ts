@@ -1,7 +1,9 @@
 import * as z from "zod"
 
 export const SecretsTelegramSchema = z.object({
-  botToken: z.string().min(1)
+  bot_token: z.string().min(1),
+  // Telegram user ids allowed to use the bot; `kaja telegram` pairs them with a one-time code.
+  owner_ids: z.array(z.number().int().positive()).default([])
 })
 
 // Keyed by the models.toml [providers.<name>] table it credentials.

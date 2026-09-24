@@ -125,15 +125,15 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
     }
   }
 
-  const telegramToken = creds.telegram?.botToken
+  const telegramToken = creds.telegram?.bot_token
   if (telegramToken) {
     items.push({
       label: t("doctor.itemTelegram"),
-      where: "[telegram] botToken",
+      where: "[telegram] bot_token",
       present: true,
       required: true,
       check: value => checkTelegramToken(value ?? telegramToken),
-      save: value => saveSecrets({ telegram: { botToken: value } })
+      save: value => saveSecrets({ telegram: { bot_token: value } })
     })
   }
 
