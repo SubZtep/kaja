@@ -11,6 +11,7 @@ import {
   transcriptOf
 } from "../../src/agent/compaction"
 import { compact, run } from "../../src/agent/run"
+import { tool } from "../../src/agent/tools"
 
 type Sent = ChatCompletionMessageParam[]
 
@@ -18,7 +19,16 @@ type Sent = ChatCompletionMessageParam[]
  * A fake client: `stream()` answers each round with `reply` (or throws the next queued error), `create()` is the
  * summarizer. Records what each round and each summary request was sent.
  */
-function fakeClient(opts: { reply?: string; summary?: string | Error; streamErrors?: Error[] } = {}) {
+function fakeClient(
+  opts: {
+    reply?: string
+    summary?: string | Error
+    streamErrors?: Error[]
+    /** Rounds that call a tool before the plain `reply`, one call per round. */
+    calls?: { name: string; arguments: string }[]
+  } = {}
+) {
+  const calls = [...(opts.calls ?? [])]
   const rounds: Sent[] = []
   const summaries: Sent[] = []
   const streamErrors = [...(opts.streamErrors ?? [])]
@@ -33,9 +43,17 @@ function fakeClient(opts: { reply?: string; summary?: string | Error; streamErro
             async *[Symbol.asyncIterator]() {
               if (error) throw error
             },
-            finalChatCompletion: async () => ({
-              choices: [{ message: { role: "assistant", content: opts.reply ?? "ok" }, finish_reason: "stop" }]
-            })
+            finalChatCompletion: async () => {
+              const call = calls.shift()
+              const message = call
+                ? {
+                    role: "assistant",
+                    content: null,
+                    tool_calls: [{ id: `call_${calls.length}`, type: "function", function: call }]
+                  }
+                : { role: "assistant", content: opts.reply ?? "ok" }
+              return { choices: [{ message, finish_reason: call ? "tool_calls" : "stop" }] }
+            }
           }
         },
         create: async (body: { messages: Sent }) => {
@@ -219,4 +237,59 @@ test("compact() summarises on demand with a focus, using the summarizer when set
   expect(chat.summaries).toHaveLength(0)
   expect(summarizer.summaries[0]![0]!.content).toContain("Pay special attention to: the SQL decisions")
   expect(session.summary).toEqual({ text: "focused notes", from: session.messages.length - 1 })
+})
+
+const bigOutput = `Report for the user: ${words(3000)} The answer is 42.`
+const dump = tool<Record<string, never>>({
+  name: "dump",
+  description: "Returns a lot",
+  parameters: { type: "object", properties: {} },
+  execute: async () => bigOutput
+})
+
+test("an oversized tool result reaches the model condensed, while the log keeps the full output", async () => {
+  const { client, rounds, summaries } = fakeClient({
+    calls: [{ name: "dump", arguments: "{}" }],
+    summary: "The answer is 42.",
+    reply: "It's 42."
+  })
+  const agent = new Agent({ model: "m", client, tools: [dump], contextWindow: 8000 })
+  const session = createSession()
+
+  await collect(run(agent, "what is the answer?", session))
+
+  const toolMessage = session.messages.find(m => m.role === "tool")!
+  expect(toolMessage.content).toBe(bigOutput)
+  const sent = rounds[1]!.find(m => m.role === "tool")!
+  expect(sent.content).toStartWith("[Condensed from about")
+  expect(sent.content).toContain("The answer is 42.")
+  expect(summaries[0]![0]!.content).toContain("dump({})")
+  expect(summaries[0]![0]!.content).toContain("what is the answer?")
+  // Condensed once: later rounds reuse it.
+  expect(Object.keys(session.toolSummaries ?? {})).toHaveLength(1)
+})
+
+test("a tool result that fits is left alone", async () => {
+  const small = tool<Record<string, never>>({
+    name: "small",
+    description: "Returns a little",
+    parameters: { type: "object", properties: {} },
+    execute: async () => "tiny"
+  })
+  const { client, summaries } = fakeClient({ calls: [{ name: "small", arguments: "{}" }] })
+  const session = createSession()
+  await collect(run(new Agent({ model: "m", client, tools: [small], contextWindow: 8000 }), "go", session))
+  expect(summaries).toHaveLength(0)
+  expect(session.toolSummaries).toBeUndefined()
+})
+
+test("when the output can't be condensed, its start is kept with a note", async () => {
+  const { client, rounds } = fakeClient({ calls: [{ name: "dump", arguments: "{}" }], summary: new Error("down") })
+  const session = createSession()
+  await collect(run(new Agent({ model: "m", client, tools: [dump], contextWindow: 8000 }), "go", session))
+  const sent = rounds[1]!.find(m => m.role === "tool")!.content as string
+  expect(sent).toStartWith("[Condensed from about")
+  expect(sent).toContain("Report for the user:")
+  expect(sent).toContain("couldn't be condensed")
+  expect(sent.length).toBeLessThan(bigOutput.length)
 })

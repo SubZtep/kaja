@@ -240,6 +240,8 @@ export type Session = {
   pendingToolApprovalId?: string
   /** Once compacted: the latest summary, which stands in for `messages` before index `from` in what the model is sent. */
   summary?: { text: string; from: number }
+  /** Condensed versions of oversized tool results, by call id, sent to the model in place of the full output. */
+  toolSummaries?: Record<string, string>
 }
 
 export function createSession(): Session {

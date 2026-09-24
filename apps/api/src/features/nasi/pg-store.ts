@@ -44,7 +44,7 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
       [row.id]
     ),
     db.query(
-      `SELECT m.seq, tc.call_id, tc.name, tc.arguments
+      `SELECT m.seq, tc.call_id, tc.name, tc.arguments, tc.result_summary
        FROM nasi_tool_call tc JOIN nasi_message m ON m.id = tc.message_id
        WHERE m.session_id = $1 ORDER BY m.seq, tc.position`,
       [row.id]
@@ -68,6 +68,9 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
       systemPrompt: row.system_prompt,
       pending: row.pending_call_id && row.pending_kind ? { callId: row.pending_call_id, kind: row.pending_kind } : null,
       summary: latest ? { text: latest.summary, from: latest.summary_from } : null,
+      toolSummaries: Object.fromEntries(
+        calls.rows.filter(call => call.result_summary !== null).map(call => [call.call_id, call.result_summary])
+      ),
       messages: messages.rows.map((message, seq) => ({
         role: message.role,
         content: message.content,
@@ -127,7 +130,7 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
 
 // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
 async function saveConversation(client: PoolClient, id: string, data: SessionWrite) {
-  const { systemPrompt, pending, messages, summary, calls = [] } = splitConversation(data.session)
+  const { systemPrompt, pending, messages, summary, toolSummaries, calls = [] } = splitConversation(data.session)
   await client.query(
     "UPDATE nasi_session SET system_prompt = $2, pending_call_id = $3, pending_kind = $4 WHERE id = $1",
     [id, systemPrompt, pending?.callId ?? null, pending?.kind ?? null]
@@ -136,6 +139,13 @@ async function saveConversation(client: PoolClient, id: string, data: SessionWri
   const storedMessages = stored.rows[0].n as number
   for (const [i, row] of messages.slice(storedMessages).entries()) {
     await insertMessage(client, id, storedMessages + i, row)
+  }
+  for (const [callId, text] of Object.entries(toolSummaries)) {
+    await client.query(
+      `UPDATE nasi_tool_call SET result_summary = $3
+       WHERE call_id = $2 AND result_summary IS NULL AND message_id IN (SELECT id FROM nasi_message WHERE session_id = $1)`,
+      [id, callId, text]
+    )
   }
   // Each compaction summarises past a later message, so a summary already stored is never written twice.
   if (summary) {

@@ -35,6 +35,13 @@ function dropLegacySessions(db: Database) {
     db.run(`DROP TABLE IF EXISTS ${table}`)
 }
 
+// tool_calls from before tool results could be condensed lack resultSummary; add it in place, keeping the sessions.
+function migrateToolCallSummaryColumn(db: Database) {
+  const columns = db.query("PRAGMA table_info(tool_calls)").all() as { name: string }[]
+  if (columns.length === 0 || columns.some(c => c.name === "resultSummary")) return
+  db.run("ALTER TABLE tool_calls ADD COLUMN resultSummary TEXT")
+}
+
 function createSchema(db: Database) {
   migrateNotesOwnerColumn(db)
   dropLegacySessions(db)
@@ -100,10 +107,12 @@ function createSchema(db: Database) {
       status          TEXT CHECK (status IN ('ok','error','declined','skipped')),
       durationMs      INTEGER,
       approval        TEXT CHECK (approval IN ('approved','declined')),
+      resultSummary   TEXT,
       UNIQUE (messageId, position)
     )
   `)
   db.run("CREATE INDEX IF NOT EXISTS tool_calls_name_idx ON tool_calls (name)")
+  migrateToolCallSummaryColumn(db)
   db.run(`
     CREATE TABLE IF NOT EXISTS session_events (
       sessionId TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
@@ -244,7 +253,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
   // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
   const saveConversation = db.transaction((id: string, data: SessionWrite) => {
-    const { systemPrompt, pending, messages, summary, calls = [] } = splitConversation(data.session)
+    const { systemPrompt, pending, messages, summary, toolSummaries, calls = [] } = splitConversation(data.session)
     db.query(
       "UPDATE sessions SET systemPrompt = $systemPrompt, pendingCallId = $callId, pendingKind = $kind WHERE id = $id"
     ).run({
@@ -256,6 +265,12 @@ export function createSqliteStore(dbPath: string): NasiStore {
     const now = new Date().toISOString()
     const storedMessages = count("messages", id)
     messages.slice(storedMessages).forEach((row, i) => insertMessage(id, storedMessages + i, row, now))
+    for (const [callId, text] of Object.entries(toolSummaries)) {
+      db.query(
+        `UPDATE tool_calls SET resultSummary = $text
+         WHERE callId = $callId AND resultSummary IS NULL AND messageId IN (SELECT id FROM messages WHERE sessionId = $id)`
+      ).run({ $id: id, $callId: callId, $text: text })
+    }
     // Each compaction summarises past a later message, so a summary already stored is never written twice.
     if (summary) {
       db.query(
@@ -293,11 +308,18 @@ export function createSqliteStore(dbPath: string): NasiStore {
         .all({ $id: row.id }) as MessageDbRow[]
       const callRows = db
         .query(
-          `SELECT m.seq AS seq, tc.callId AS callId, tc.name AS name, tc.arguments AS arguments
+          `SELECT m.seq AS seq, tc.callId AS callId, tc.name AS name, tc.arguments AS arguments,
+                  tc.resultSummary AS resultSummary
            FROM tool_calls tc JOIN messages m ON m.id = tc.messageId
            WHERE m.sessionId = $id ORDER BY m.seq, tc.position`
         )
-        .all({ $id: row.id }) as { seq: number; callId: string; name: string; arguments: string }[]
+        .all({ $id: row.id }) as {
+        seq: number
+        callId: string
+        name: string
+        arguments: string
+        resultSummary: string | null
+      }[]
       const callsBySeq = Map.groupBy(callRows, call => call.seq)
       const eventRows = db
         .query("SELECT payload FROM session_events WHERE sessionId = $id ORDER BY seq")
@@ -319,6 +341,9 @@ export function createSqliteStore(dbPath: string): NasiStore {
           systemPrompt: row.systemPrompt,
           pending: row.pendingCallId && row.pendingKind ? { callId: row.pendingCallId, kind: row.pendingKind } : null,
           summary: latest ? { text: latest.summary, from: latest.summaryFrom } : null,
+          toolSummaries: Object.fromEntries(
+            callRows.flatMap(call => (call.resultSummary !== null ? [[call.callId, call.resultSummary]] : []))
+          ),
           messages: messageRows.map((message, seq) => ({
             role: message.role,
             content: message.content,

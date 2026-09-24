@@ -161,6 +161,19 @@ describe("postgres store", () => {
     ])
   })
 
+  test("a condensed tool result is kept beside its call, and the message keeps the full output", async () => {
+    const store = createPostgresStore(pool, userId)
+    const id = await store.createSession({
+      ...write(TURN),
+      session: { messages: TURN, toolSummaries: { c1: "condensed" } },
+      title: "t"
+    })
+    await store.updateSession(id, write(TURN, { session: { messages: TURN, toolSummaries: { c1: "other" } } }))
+    const loaded = (await store.loadSession(id))!
+    expect(loaded.session.toolSummaries).toEqual({ c1: "condensed" })
+    expect(loaded.session.messages).toEqual(TURN)
+  })
+
   test("a rewritten system prompt changes no message rows", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })
