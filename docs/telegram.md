@@ -14,7 +14,7 @@ There are two independent bots: a **local bot** you run yourself with `kaja tele
 | --- | --- | --- |
 | Runs | on your machine, while `kaja telegram` runs | always, on the API |
 | Agent | [local mode](/modes#local-mode): your models, tools and shell | [cloud mode](/modes#cloud-mode) |
-| Who can use it | anyone who finds its username | Kaja users who linked their Telegram account |
+| Who can use it | people you paired with a one-time code | Kaja users who linked their Telegram account |
 | Abilities | what `abilities.toml` loads | what you turned on in the [web app](/web-app) |
 
 On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart
@@ -30,7 +30,7 @@ or MCP call that changes something — comes with Approve/Decline buttons.
 
    ```toml
    [telegram]
-   botToken = "123456789:AAH..."
+   bot_token = "123456789:AAH..."
    ```
 
 3. **Run it:**
@@ -40,11 +40,26 @@ or MCP call that changes something — comes with Approve/Decline buttons.
    kaja --headless telegram   # no terminal UI — for services and containers
    ```
 
-   An invalid token fails straight away with a one-line error. Then open a DM with your bot.
+   An invalid token fails straight away with a one-line error.
 
-> The local bot has **no allowlist**: it answers whoever messages it, with your tools, and they can
-> approve their own shell commands. Keep its username to yourself.
-{: .warning }
+4. **Pair with it.** The first time, it prints a one-time code and a link:
+
+   ```text
+   No one is paired with @my_kaja_bot yet, and it answers no one until you are.
+   Open https://t.me/my_kaja_bot?start=K7Q2-M9XD
+   or send it: /start K7Q2-M9XD
+   ```
+
+   Open the link on your phone, or send the bot that `/start` line. It replies that you're paired, and
+   your Telegram id is saved to `owner_ids` in `secrets.toml`, so later starts skip this step.
+
+The bot only answers paired people. Anyone else gets no reply at all, and after five wrong codes it
+ignores them until it restarts. A paired person can use your tools and approve shell commands, so only
+pair people you trust.
+
+- **Pair one more person** (a partner, a second account): `kaja telegram --pair` prints a fresh code.
+  Each code works once.
+- **Remove someone:** delete their id from `owner_ids` in `secrets.toml` and restart the bot.
 
 Commands in the bot's menu:
 

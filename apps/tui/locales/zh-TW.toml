@@ -41,7 +41,7 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   config <wizard|fetch|diff|paths>
                        以互動方式設定，或管理設定檔
   doctor               列出已設定的模型、MCP 伺服器與工具，並檢查連線
-  telegram
+  telegram [--pair]    執行你的 Telegram 機器人；--pair 顯示一個代碼以配對另一個人
   abilities [update]   選擇要載入的技能，或下載市集內容
   sessions             列出已儲存的本機對話及其 id
   logout               登出雲端帳號，並清除已儲存的憑證
@@ -343,9 +343,18 @@ listHint = "使用 `kaja -s <id>` 繼續其中一個，或使用 `kaja -c` 繼�
 
 [telegram]
 notConfigured = "請在 secrets.toml 的 `[telegram]` 中儲存機器人權杖（執行 `kaja config paths` 查看檔案路徑）才能使用此指令。"
-invalidToken = "Telegram 機器人權杖無效 — 請檢查 config.telegram.botToken。"
+invalidToken = "Telegram 機器人權杖無效 — 請檢查 secrets.toml 的 `[telegram] bot_token`。"
 starting = "正在啟動 Telegram 機器人…"
 ready = "Telegram 機器人已就緒，正在以長輪詢接收訊息。"
+pairFirst = """
+目前沒有人與 @{username} 配對，機器人無法回應任何人，除非你先配對。
+前往 https://t.me/{username}?start={code}
+或傳送：/start {code}"""
+pairAnother = """
+若要將另一個人與 @{username} 配對，他們請前往 https://t.me/{username}?start={code}
+或傳送：/start {code}"""
+pairedLog = "已配對 {name}（{id}）— 已儲存到 secrets.toml。"
+paired = "✅ 已配對。你現在可以與 Kaja 交談。"
 newSession = "🆕 已開始新的對話。"
 stillWorking = "仍在處理你的上一則訊息…"
 pendingCommand = "上方有指令或請求正等待你的核准 — 請先點選「核准」或「拒絕」。"

@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import { type SecretsFile, SecretsFileSchema } from "@kaja/schema/config"
+import { type SecretsFile, SecretsFileSchema, type SecretsTelegram } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
@@ -78,11 +78,15 @@ export async function secrets(): Promise<SecretsFile> {
 }
 
 /** Merges a partial update into secrets.toml (e.g. a provider's api_key from the wizard) and invalidates the cache. Callers must not drop unrelated sections — pass only the keys being changed. */
-export async function saveSecrets(update: Partial<SecretsFile>): Promise<void> {
+export async function saveSecrets(
+  update: Omit<Partial<SecretsFile>, "telegram"> & { telegram?: Partial<SecretsTelegram> }
+): Promise<void> {
   const current = await loadSecretsFile()
   const next: SecretsFile = {
     ...current,
     ...update,
+    // A new token keeps the paired owners, and pairing keeps the token.
+    telegram: update.telegram ? ({ ...current.telegram, ...update.telegram } as SecretsTelegram) : current.telegram,
     providers: { ...current.providers, ...update.providers },
     mcp: { ...current.mcp, ...update.mcp },
     abilities: { ...current.abilities, ...update.abilities }

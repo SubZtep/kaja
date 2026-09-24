@@ -13,8 +13,13 @@ export async function runTelegramSubcommand() {
 
   const { models, personas, tools, closeTools } = await bootstrapLocalAgentDeps()
 
+  const { args } = await import("../lib/cli/args")
+  const telegram = (await secrets()).telegram
+
   const code = await runTelegramCli({
-    botToken: (await secrets()).telegram?.botToken,
+    botToken: telegram?.bot_token,
+    ownerIds: telegram?.owner_ids ?? [],
+    pair: Boolean(args.flags.pair),
     tools,
     personas,
     models,

@@ -123,7 +123,7 @@ Everything is plain text in `~/.config/kaja/`, which you can edit by hand afterw
 | A server address | `[providers.<name>] base_url` | `models.toml` |
 | Speaches address | `[stt] speachesUrl`, `[tts] speachesUrl` | `settings.toml` |
 | A provider's API key | `[providers.<name>] api_key` | [`secrets.toml`](/configuration/secrets) |
-| Telegram bot token | `[telegram] botToken` | `secrets.toml` |
+| Telegram bot token | `[telegram] bot_token` | `secrets.toml` |
 
 ## Running it again
 

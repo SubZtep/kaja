@@ -159,14 +159,14 @@ async function applyExtras(result: WizardResult): Promise<{ extra: CredentialIte
   let offered: OfferedValues = {}
 
   if (extras.includes("telegram")) {
-    offered = { ...offered, ...offer("[telegram] botToken", result.telegramToken) }
+    offered = { ...offered, ...offer("[telegram] bot_token", result.telegramToken) }
     extra.push({
       label: t("doctor.itemTelegram"),
-      where: "[telegram] botToken",
+      where: "[telegram] bot_token",
       present: false,
       required: true,
       check: value => (value ? checkTelegramToken(value) : Promise.resolve(undefined)),
-      save: value => saveSecrets({ telegram: { botToken: value } })
+      save: value => saveSecrets({ telegram: { bot_token: value } })
     })
   }
 
@@ -304,7 +304,7 @@ async function readSavedSecrets(): Promise<WizardSaved> {
     providers: Object.entries(creds.providers)
       .filter(([, value]) => value?.api_key)
       .map(([name]) => name),
-    telegram: Boolean(creds.telegram?.botToken)
+    telegram: Boolean(creds.telegram?.bot_token)
   }
 }
 

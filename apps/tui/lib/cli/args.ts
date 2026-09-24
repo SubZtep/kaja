@@ -23,6 +23,10 @@ const options = {
   headless: {
     type: "boolean"
   },
+  /** `telegram`: show a one-time code to pair one more Telegram user. */
+  pair: {
+    type: "boolean"
+  },
   /** `config fetch`/`diff`: use the bundled templates instead of asking the server. */
   offline: {
     type: "boolean"

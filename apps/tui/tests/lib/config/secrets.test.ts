@@ -6,9 +6,8 @@ import { write } from "bun"
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-secrets`
 
 const { setConfigDirOverride, getConfigDir } = await import("../../../lib/config/config")
-const { getSecretsPath, loadSecretsFile, readSecretsLoose, secrets, invalidateSecretsCache } = await import(
-  "../../../lib/config/secrets"
-)
+const { getSecretsPath, loadSecretsFile, readSecretsLoose, saveSecrets, secrets, invalidateSecretsCache } =
+  await import("../../../lib/config/secrets")
 
 // Other test files sharing this bun test process may have already cached secrets() with their
 // own fixtures — invalidate before every test, not just after.
@@ -42,12 +41,12 @@ test("existing file is parsed as-is, not overwritten by the template", async () 
     join(dir, "secrets.toml"),
     `
 [telegram]
-botToken = "custom-token"
+bot_token = "custom-token"
 `
   )
 
   const data = await loadSecretsFile()
-  expect(data.telegram).toEqual({ botToken: "custom-token" })
+  expect(data.telegram).toEqual({ bot_token: "custom-token", owner_ids: [] })
 })
 
 test("readSecretsLoose returns {} when the file is missing, without writing anything", async () => {
@@ -73,12 +72,12 @@ test("readSecretsLoose returns whatever is on disk even if it fails schema valid
     join(dir, "secrets.toml"),
     `
 [telegram]
-botToken = ""
+bot_token = ""
 `
   )
 
   // Empty string fails SecretsTelegramSchema's min(1), but the raw TOML still parses as an object.
-  expect(await readSecretsLoose()).toEqual({ telegram: { botToken: "" } })
+  expect<unknown>(await readSecretsLoose()).toEqual({ telegram: { bot_token: "" } })
 })
 
 test("secrets() caches after the first read; invalidateSecretsCache() forces a reload", async () => {
@@ -88,26 +87,26 @@ test("secrets() caches after the first read; invalidateSecretsCache() forces a r
     join(dir, "secrets.toml"),
     `
 [telegram]
-botToken = "first"
+bot_token = "first"
 `
   )
 
   const first = await secrets()
-  expect(first.telegram).toEqual({ botToken: "first" })
+  expect(first.telegram).toEqual({ bot_token: "first", owner_ids: [] })
 
   await write(
     join(dir, "secrets.toml"),
     `
 [telegram]
-botToken = "second"
+bot_token = "second"
 `
   )
   // Still cached: rewriting the file on disk alone must not change what secrets() returns.
-  expect((await secrets()).telegram).toEqual({ botToken: "first" })
+  expect((await secrets()).telegram).toEqual({ bot_token: "first", owner_ids: [] })
   expect(await secrets()).toBe(first)
 
   invalidateSecretsCache()
-  expect((await secrets()).telegram).toEqual({ botToken: "second" })
+  expect((await secrets()).telegram).toEqual({ bot_token: "second", owner_ids: [] })
 })
 
 test("provider and mcp tables default to {} when absent, never undefined", async () => {
@@ -118,6 +117,18 @@ test("provider and mcp tables default to {} when absent, never undefined", async
   const data = await loadSecretsFile()
   expect(data.providers).toEqual({})
   expect(data.mcp).toEqual({})
+})
+
+test("saveSecrets merges [telegram]: a new token keeps the owners, and pairing keeps the token", async () => {
+  const dir = `${tmpdir()}/kaja-test-secrets-telegram-merge-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(join(dir, "secrets.toml"), `[telegram]\nbot_token = "old"\nowner_ids = [42]\n`)
+
+  await saveSecrets({ telegram: { bot_token: "new" } })
+  expect((await loadSecretsFile()).telegram).toEqual({ bot_token: "new", owner_ids: [42] })
+
+  await saveSecrets({ telegram: { owner_ids: [42, 7] } })
+  expect((await loadSecretsFile()).telegram).toEqual({ bot_token: "new", owner_ids: [42, 7] })
 })
 
 test("getConfigDir affects getSecretsPath the same way it affects the other config files", async () => {

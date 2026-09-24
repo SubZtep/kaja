@@ -1,4 +1,4 @@
-import { expect, mock, test } from "bun:test"
+import { expect, mock, spyOn, test } from "bun:test"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -29,16 +29,21 @@ const sendMessage = mock(async (_chatId: number, _text: string) => ({
 }))
 const getMe = mock(async () => ({ id: 1, is_bot: true, first_name: "bot" }))
 const setMyCommands = mock(async (_commands: { command: string; description: string }[]) => true)
-let onStartHandler: (() => void) | undefined
+type Handler = (ctx: any) => unknown
+let handlers: Record<string, Handler> = {}
 
 mock.module("grammy", () => ({
   Bot: class {
     api = { getMe, sendMessage, setMyCommands }
-    on() {}
+    constructor() {
+      handlers = {}
+    }
+    on(filter: string, handler: Handler) {
+      handlers[filter] = handler
+    }
     catch() {}
-    async start(opts?: { onStart?: () => void }) {
-      onStartHandler = opts?.onStart
-      onStartHandler?.()
+    async start(opts?: { onStart?: (botInfo: { username: string }) => void }) {
+      opts?.onStart?.({ username: "my_kaja_bot" })
     }
     async stop() {}
   },
@@ -49,9 +54,11 @@ mock.module("grammy", () => ({
 
 const { createTelegramBot } = await import("../../../lib/telegram/bot")
 
-function makeBot() {
+function makeBot(opts: Partial<Parameters<typeof createTelegramBot>[0]> = {}) {
   return createTelegramBot({
     botToken: "token",
+    ownerIds: [1],
+    ...opts,
     agentConfig: { model: "m", tools: [] },
     personas: [],
     models: []
@@ -75,4 +82,70 @@ test("start() and stop() send no lifecycle notices — there is no allowlist to 
   await bot.start()
   await bot.stop()
   expect(sendMessage).not.toHaveBeenCalled()
+})
+
+function textCtx(fromId: number, text: string) {
+  return {
+    from: { id: fromId, first_name: "Ann", last_name: "Lee" },
+    chat: { id: fromId },
+    message: { text },
+    reply: mock(async (_text: string) => {})
+  }
+}
+
+async function startCapturingLog(bot: ReturnType<typeof makeBot>) {
+  const lines: string[] = []
+  const spy = spyOn(console, "log").mockImplementation((line: string) => void lines.push(line))
+  try {
+    await bot.start()
+  } finally {
+    spy.mockRestore()
+  }
+  return lines.join("\n")
+}
+
+function codeFrom(log: string) {
+  return /start=([A-Z0-9-]+)/.exec(log)![1]!
+}
+
+test("with owners and no --pair, no code is printed and a stranger's /start gets nothing", async () => {
+  const bot = makeBot()
+  expect(await startCapturingLog(bot)).not.toContain("t.me/")
+  const ctx = textCtx(99, "/start")
+  await handlers["message:text"]!(ctx)
+  expect(ctx.reply).not.toHaveBeenCalled()
+})
+
+test("with no owners, start prints a code; sending it pairs, saves and confirms", async () => {
+  const onPaired = mock(async (_user: { id: number; name: string }) => {})
+  const bot = makeBot({ ownerIds: [], onPaired })
+  const log = await startCapturingLog(bot)
+  expect(log).toContain("https://t.me/my_kaja_bot?start=")
+
+  const stranger = textCtx(7, "/start WRONG-CODE")
+  await handlers["message:text"]!(stranger)
+  expect(stranger.reply).not.toHaveBeenCalled()
+
+  const ctx = textCtx(5, `/start ${codeFrom(log)}`)
+  const logSpy = spyOn(console, "log").mockImplementation(() => {})
+  await handlers["message:text"]!(ctx)
+  logSpy.mockRestore()
+  expect(onPaired).toHaveBeenCalledWith({ id: 5, name: "Ann Lee" })
+  expect(ctx.reply).toHaveBeenCalledTimes(1)
+})
+
+test("--pair opens pairing even with owners", async () => {
+  const log = await startCapturingLog(makeBot({ pair: true }))
+  expect(log).toContain("https://t.me/my_kaja_bot?start=")
+})
+
+test("a stranger's button tap is dropped before the driver sees it", async () => {
+  makeBot()
+  const answerCallbackQuery = mock(async () => {})
+  handlers["callback_query:data"]!({
+    from: { id: 99 },
+    callbackQuery: { id: "q", data: "cmd:approve:x", message: { chat: { id: 99 }, message_id: 1 } },
+    answerCallbackQuery
+  })
+  expect(answerCallbackQuery).not.toHaveBeenCalled()
 })

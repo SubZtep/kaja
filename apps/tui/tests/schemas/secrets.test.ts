@@ -8,10 +8,11 @@ test("empty file validates: every section is optional, providers/mcp default to 
   expect(parsed.mcp).toEqual({})
 })
 
-test("telegram group requires botToken", () => {
-  const parsed = SecretsFileSchema.parse({ telegram: { botToken: "123:abc" } })
-  expect(parsed.telegram).toEqual({ botToken: "123:abc" })
+test("telegram group requires bot_token, and owner_ids defaults to none", () => {
+  const parsed = SecretsFileSchema.parse({ telegram: { bot_token: "123:abc" } })
+  expect(parsed.telegram).toEqual({ bot_token: "123:abc", owner_ids: [] })
   expect(() => SecretsFileSchema.parse({ telegram: {} })).toThrow()
+  expect(() => SecretsFileSchema.parse({ telegram: { bot_token: "123:abc", owner_ids: [1.5] } })).toThrow()
 })
 
 test("providers is keyed by provider name, each requiring api_key", () => {

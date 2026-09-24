@@ -41,7 +41,7 @@ PARANCSOK
   config <wizard|fetch|diff|paths>
                        Interaktív beállítás, vagy konfigurációs fájlok kezelése
   doctor               Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
-  telegram
+  telegram [--pair]    Telegram bot futtatása; --pair egy kódot mutat egy másik személy párosításához
   abilities [update]   Betöltendő készségek kiválasztása, vagy a piactér letöltése
   sessions             Mentett helyi munkamenetek megjelenítése az azonosítójukkal
   logout               Kijelentkezés a felhő alapú fiókból, a tárolt hitelesítő adat törlésével
@@ -343,9 +343,18 @@ listHint = "Folytasd az egyiket a `kaja -s <id>` paranccsal, vagy a legutóbbit 
 
 [telegram]
 notConfigured = "Mentsd el a bot tokenjét a secrets.toml `[telegram]` blokkjába (a fájl helyéért lásd: `kaja config paths`), hogy használhasd ezt a parancsot."
-invalidToken = "Érvénytelen Telegram bot token — ellenőrizd a config.telegram.botToken értékét."
+invalidToken = "Érvénytelen Telegram bot token — ellenőrizd a secrets.toml `[telegram] bot_token` értékét."
 starting = "Telegram bot indítása…"
 ready = "Telegram bot kész, üzenetekre vár."
+pairFirst = """
+Még senki sincs párosítva a @{username} bottal, és nem válaszol addig, amíg te nem leszel.
+Nyisd meg a https://t.me/{username}?start={code}
+vagy küld el: /start {code}"""
+pairAnother = """
+Hogy párosítsd még valaki mást a @{username} bottal, nyissa meg a https://t.me/{username}?start={code}
+vagy küldje el: /start {code}"""
+pairedLog = "Párosítva: {name} ({id}) — mentve a secrets.toml-ba."
+paired = "✅ Párosítva. Most már tudsz beszélni a Kajával."
 newSession = "🆕 Új munkamenet elindítva."
 stillWorking = "Még dolgozom az előző üzeneteden…"
 pendingCommand = "Egy parancs vagy kérés a jóváhagyásodra vár fent — nyomd meg a Jóváhagyást vagy az Elutasítást előbb."

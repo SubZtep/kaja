@@ -4,10 +4,21 @@ import { installShutdownHandlers } from "../cli/headless"
 import { getLanguage, t } from "../i18n"
 import type { Persona } from "../personas/personas"
 
+/** Adds a paired user to secrets.toml's `owner_ids`, re-reading the file so ids edited in meanwhile aren't lost. */
+async function savePairedOwner(user: { id: number }) {
+  const { loadSecretsFile, saveSecrets } = await import("../config/secrets")
+  const saved = (await loadSecretsFile()).telegram?.owner_ids ?? []
+  await saveSecrets({ telegram: { owner_ids: [...new Set([...saved, user.id])] } })
+}
+
 /** Runs `kaja telegram`: a long-polling bot reusing the terminal's tools/personas/models. Returns an exit code once gracefully stopped (SIGINT/SIGTERM). */
 export async function runTelegramCli(deps: {
   /** The bot token from secrets.toml's `[telegram]`; without one there is nothing to run. */
   botToken: string | undefined
+  /** Telegram user ids already paired (secrets.toml `owner_ids`). */
+  ownerIds: number[]
+  /** `--pair`: show a code to pair one more person. */
+  pair: boolean
   tools: Tool<any>[]
   personas: Persona[]
   models: CliResolvedModel[]
@@ -25,6 +36,9 @@ export async function runTelegramCli(deps: {
   const { replyLanguageInstructionFor } = await import("@kaja/nasi")
   const bot = createTelegramBot({
     botToken: deps.botToken,
+    ownerIds: deps.ownerIds,
+    pair: deps.pair,
+    onPaired: savePairedOwner,
     agentConfig: {
       model: chatModelId,
       client,
