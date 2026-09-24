@@ -33,7 +33,7 @@ export async function runTelegramCli(deps: {
   const { createTelegramBot } = await import("./bot")
   const { chatModelId, client, clientForModel, compactAt, summarizer } = await import("../models/openai")
   const { getStore } = await import("../memory/store")
-  const { replyLanguageInstructionFor } = await import("@kaja/nasi")
+  const { replyLanguageInstructionFor, TELEGRAM_CHANNEL_INSTRUCTION } = await import("@kaja/nasi")
   const bot = createTelegramBot({
     botToken: deps.botToken,
     ownerIds: deps.ownerIds,
@@ -50,7 +50,10 @@ export async function runTelegramCli(deps: {
       personas: deps.personas,
       models: deps.models,
       // Replies in the language set for the terminal, as its own chat does.
-      promptContext: { replyLanguageInstruction: replyLanguageInstructionFor(getLanguage()) }
+      promptContext: {
+        replyLanguageInstruction: replyLanguageInstructionFor(getLanguage()),
+        channelInstruction: TELEGRAM_CHANNEL_INSTRUCTION
+      }
     },
     personas: deps.personas,
     models: deps.models

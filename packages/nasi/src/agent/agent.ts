@@ -14,6 +14,8 @@ export type PromptContext = {
   /** Override the default ask_user tool contract, which assumes a terminal. Hosts with a chat UI should describe that instead. */
   askUserInstruction?: string
   replyLanguageInstruction?: string
+  /** How replies should read where the human sees them, e.g. {@link TELEGRAM_CHANNEL_INSTRUCTION}; unset means no guidance. */
+  channelInstruction?: string
   loadStickyNotes?: () => Promise<[string, { content: string }][]>
   loadDataset?: (topic: string) => Promise<{ label: string } | undefined>
   /** Every dataset by topic; profile ones feed the "About the user" section. Defaults to the host's registered loaders. */

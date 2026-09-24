@@ -70,7 +70,12 @@ export { categorizeError, type ErrorCategory } from "./agent/error-category"
 export { samplingOf } from "./agent/persona"
 export { compact, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
-export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
+export {
+  applyPersonaToMessages,
+  buildSystemPrompt,
+  replyLanguageInstructionFor,
+  TELEGRAM_CHANNEL_INSTRUCTION
+} from "./agent/system-prompt"
 export { recordPausedCall } from "./agent/telemetry"
 export {
   LOCAL_OWNER_CTX,

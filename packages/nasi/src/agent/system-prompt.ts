@@ -212,6 +212,12 @@ async function profileSection(agent: Agent, topic: string, dataset: Dataset, own
   return lines.join("\n")
 }
 
+/** {@link PromptContext.channelInstruction} for a Telegram chat, where long answers read badly. */
+export const TELEGRAM_CHANNEL_INSTRUCTION =
+  "You are chatting in Telegram, on a phone more often than not. Keep replies short and conversational, like a " +
+  "chat message: a few sentences, no headings, lists only when they really help. Go longer only when the user " +
+  "asks for detail or the task needs it (code, step-by-step instructions)."
+
 /**
  * Assembles the system prompt for a fresh session with the given agent.
  * Returns `undefined` if every block is empty.
@@ -232,6 +238,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
     [
       agent.instructions,
       `## Environment\n${environmentBlock}`,
+      ctx.channelInstruction ? `## Channel\n${ctx.channelInstruction}` : undefined,
       toolNames.has(ASK_USER_TOOL)
         ? `## Tool contract: ${ASK_USER_TOOL}\n${ctx.askUserInstruction ?? ASK_USER_INSTRUCTIONS}`
         : undefined,
