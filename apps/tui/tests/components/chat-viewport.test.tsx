@@ -1,9 +1,9 @@
 import { expect, spyOn, test } from "bun:test"
 import { Box } from "ink"
-import { marked } from "marked"
 import * as tinyclip from "tinyclip"
 import { ChatViewport } from "../../components/layout/chat-viewport"
 import type { TimelineEvent } from "../../hooks/use-agent"
+import * as dedentModule from "../../lib/markdown/dedent"
 import { renderForTest } from "../test-utils"
 
 const many: TimelineEvent[] = Array.from({ length: 40 }, (_, i) => ({
@@ -104,7 +104,8 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
     content: `**msg ${i}** with some *markdown* content, line ${i}`
   }))
 
-  const parseSpy = spyOn(marked, "parse")
+  // Every real parse ends in one dedent call; a cache hit makes none
+  const parseSpy = spyOn(dedentModule, "dedent")
   const t = renderForTest(
     <Box flexDirection="column" width={40} height={12}>
       <ChatViewport

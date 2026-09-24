@@ -1,11 +1,11 @@
 import { setToolDeps } from "@kaja/nasi"
 import { formatDeviceUserCode } from "@kaja/shared"
-import { color } from "bun"
 import { render } from "ink"
 import notifier from "node-notifier"
 import open from "open"
 import { writeText } from "tinyclip"
 import App from "../components/layout/app"
+import { consolePalette, paint } from "../components/theme"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
 import { getApiBaseUrl } from "../lib/config/api-url"
@@ -13,9 +13,6 @@ import { config } from "../lib/config/config"
 import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
 import { resolveTheme } from "../lib/terminal-background"
-
-/** Reset terminal colours */
-const ANSI_RESET = "\x1b[0m"
 
 async function resolveToken(apiUrl: string): Promise<string> {
   try {
@@ -31,12 +28,9 @@ async function resolveToken(apiUrl: string): Promise<string> {
         if (error) log.warn("Device login notification failed", { error })
       })
 
-      console.log(
-        `\n${color("lightgray", "ansi")}${t("cli.deviceLoginGoTo")} ${color("cyan", "ansi")}${prompt.verificationUri}`
-      )
-      console.log(
-        `${color("lightgray", "ansi")}${t("cli.deviceLoginEnterCode")} ${color("yellow", "ansi")}${code}${ANSI_RESET}\n`
-      )
+      const palette = consolePalette()
+      console.log(`\n${t("cli.deviceLoginGoTo")} ${paint(palette.user)(prompt.verificationUri)}`)
+      console.log(`${t("cli.deviceLoginEnterCode")} ${paint(palette.warning).bold(code)}\n`)
 
       const url = prompt.verificationUriComplete ?? prompt.verificationUri
       open(url).catch(error => log.warn("Failed to open browser for device login", { error }))
@@ -64,13 +58,13 @@ export async function runCloudSubcommand() {
   const apiUrl = getApiBaseUrl()
 
   try {
-    const token = await resolveToken(apiUrl)
     // cli.ts guarantees settings.toml exists (via createCloud()) before this subcommand runs.
     const { preferences } = await config()
+    // Before the sign-in prompt, which is coloured by it, and before render: "auto" queries the terminal over stdin, which Ink is about to take over
+    const theme = await resolveTheme(preferences?.theme)
+    const token = await resolveToken(apiUrl)
     // Scopes read_file/list_files (run client-side when the server hands them back via a client_tool_call pause) to the same directory local mode defaults to.
     setToolDeps({ workspaceRoot: process.cwd() })
-    // Before render: "auto" queries the terminal over stdin, which Ink is about to take over
-    const theme = await resolveTheme(preferences?.theme)
 
     const { waitUntilExit } = render(
       <App mode="cloud" initialPreferences={{ ...preferences, theme }} apiUrl={apiUrl} token={token} />,
@@ -86,7 +80,7 @@ export async function runCloudSubcommand() {
     console.log(t("cli.bye"))
   } catch (error) {
     const text = error instanceof Error ? error.message : String(error)
-    console.log(`${color("red", "ansi")}${text}`)
+    console.log(paint(consolePalette().danger)(text))
     process.exit(1)
   }
 }

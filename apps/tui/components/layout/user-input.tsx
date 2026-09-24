@@ -136,7 +136,7 @@ export function UserInput({
 
 function Border({ children, variant = "solid" }: Readonly<{ children: React.ReactNode; variant?: "solid" | "power" }>) {
   const isPower = variant === "power"
-  const { inputBox } = useKajaTheme()
+  const { inputBox, powerBox } = useKajaTheme()
 
   const boxProps: any = {
     ...inputBox(),
@@ -152,7 +152,7 @@ function Border({ children, variant = "solid" }: Readonly<{ children: React.Reac
 
   if (isPower) {
     boxProps.borderStyle = "arrow"
-    boxProps.borderColor = "green"
+    boxProps.borderColor = powerBox().borderColor
     boxProps.borderLeftDimColor = true
     boxProps.borderRightDimColor = true
   }

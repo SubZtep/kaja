@@ -2,7 +2,7 @@ import { MultiSelect, PasswordInput, TextInput, ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
 import { capitalized, LOCALE_LABELS, locales } from "@kaja/shared"
 import { Box, Static, Text, useInput } from "ink"
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
@@ -233,14 +233,14 @@ function InputStep({
   return (
     <Box flexDirection="column" gap={1}>
       <Text>{title}</Text>
-      <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+      <Frame>
         {secret ? (
           <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={submit} />
         ) : (
           <TextInput defaultValue={defaultValue} onSubmit={submit} />
         )}
-      </Box>
-      {problem ? <Text color="red">{problem}</Text> : <Text dimColor>{hint}</Text>}
+      </Frame>
+      {problem ? <Problem>{problem}</Problem> : <Text dimColor>{hint}</Text>}
     </Box>
   )
 }
@@ -329,11 +329,28 @@ function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): Answ
   return ANSWER_LINES[kind]?.(subject, result, saved)
 }
 
+/** The bordered box a wizard input sits in. */
+function Frame({ children }: Readonly<{ children: ReactNode }>) {
+  const { frame } = useKajaTheme()
+  return (
+    <Box {...frame()} borderStyle="classic" width={70} paddingLeft={1}>
+      {children}
+    </Box>
+  )
+}
+
+/** Why Enter didn't move on. */
+function Problem({ children }: Readonly<{ children: string }>) {
+  const { danger } = useKajaTheme()
+  return <Text {...danger()}>{children}</Text>
+}
+
 /** One answered step, dimmed: the wizard's trail, so each question is a step forward and not a replacement. */
 function AnswerRow({ label, value }: Readonly<Pick<Answer, "label" | "value">>) {
+  const { success } = useKajaTheme()
   return (
     <Text dimColor>
-      ✓ {label}: <Text color="green">{value}</Text>
+      ✓ {label}: <Text {...success()}>{value}</Text>
     </Text>
   )
 }
@@ -621,7 +638,7 @@ export function ConfigWizard({
         return (
           <Box flexDirection="column" gap={1}>
             <Text>{t("wizard.providerTitle")}</Text>
-            <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+            <Frame>
               {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
               <MultiSelect
                 options={[
@@ -638,9 +655,9 @@ export function ConfigWizard({
                   if (providers.length > 0) advance({ providers })
                 }}
               />
-            </Box>
+            </Frame>
             {noProvider ? (
-              <Text color="red">{t("wizard.providerRequired")}</Text>
+              <Problem>{t("wizard.providerRequired")}</Problem>
             ) : (
               <Text dimColor>{t("wizard.providerHint")}</Text>
             )}
@@ -652,14 +669,14 @@ export function ConfigWizard({
         return (
           <Box flexDirection="column" gap={1}>
             <Text>{t("wizard.extrasTitle")}</Text>
-            <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+            <Frame>
               {/* Nothing ticked by default, so one Enter skips the whole step. */}
               <MultiSelect
                 options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
                 defaultValue={result.extras}
                 onSubmit={values => advance({ extras: values as WizardExtra[] })}
               />
-            </Box>
+            </Frame>
             <Text dimColor>{t("wizard.extrasHint")}</Text>
           </Box>
         )

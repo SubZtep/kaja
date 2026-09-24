@@ -72,11 +72,11 @@ export function SelectMenu({
     if (key.return) onSelect(focused)
   })
 
-  const { focus } = useKajaTheme()
+  const { focus, frame } = useKajaTheme()
   const focusProps = plain ? { bold: true } : focus()
 
   return (
-    <Box borderStyle="classic" width={width} borderColor={plain ? undefined : "magenta"} paddingLeft={1}>
+    <Box {...(plain ? {} : frame())} borderStyle="classic" width={width} paddingLeft={1}>
       <Box flexDirection="column">
         {items.slice(from, from + VISIBLE_COUNT).map((item, offset) => {
           const index = from + offset

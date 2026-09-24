@@ -100,6 +100,9 @@ export async function runDoctorSubcommand() {
   const { loadMemory } = await import("../lib/memory/store")
   const { summaryLines } = await import("../lib/doctor/credentials")
   const { getSecretsPath } = await import("../lib/config/secrets")
+  const { resolveConsoleTheme } = await import("../lib/terminal-background")
+  // Before any prompt renders: "auto" asks the terminal over stdin
+  await resolveConsoleTheme()
 
   console.log(t("doctor.cwd") + process.cwd())
   console.log(await gitLine())

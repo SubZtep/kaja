@@ -363,6 +363,11 @@ export async function runConfigWizard({
   })
 
   if (!result) return { code: 0, text: t("wizard.cancelled") }
+  // The prompts and progress bars after the wizard follow the theme just picked
+  if (result.theme) {
+    const { setConsoleTheme } = await import("../terminal-background")
+    setConsoleTheme(result.theme)
+  }
   await applyResult(result, line => console.log(line))
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 

@@ -1,46 +1,60 @@
-import chalk from "chalk"
 import { Box, Text } from "ink"
-import { marked } from "marked"
+import { Marked, marked } from "marked"
 import { memo } from "react"
 import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
+import { type Palette, paint, usePalette } from "../theme"
 import { TerminalImage } from "./terminal-image"
 
-// Palette matches the app's own chat colors (timeline.tsx): pink for structure (mirrors the agent's "●" prefix), cyan for emphasis/code/links (mirrors the user's "> " prefix), gray for de-emphasis.
-marked.use(
-  markedTerminal({
-    firstHeading: chalk.hex("#ff1493").bold,
-    heading: chalk.hex("#ff1493").bold,
-    strong: chalk.cyanBright.bold,
-    codespan: chalk.cyanBright,
-    blockquote: chalk.gray.italic,
-    link: chalk.cyanBright,
-    href: chalk.cyanBright.underline,
-    tableOptions: {
-      style: { head: ["magenta"], border: ["gray"] }
-    },
-    tab: 2
-  })
-)
-
 /**
- * Module-level parse cache: parsing is by far the most expensive per-item
- * work, and the same string is parsed again whenever a history item
- * remounts (scrolling brings it back into the virtualized window). Keyed
- * on the source string only — marked-terminal wraps at its own fixed
- * width, so output doesn't depend on the terminal size. Cleared wholesale
- * past a cap to bound memory (streaming partials insert throwaway
- * prefixes).
+ * A markdown-to-ANSI parser in the palette's colours: the accent for structure (mirrors the agent's "●" prefix), the
+ * user colour for emphasis/links (mirrors the user's "> " prefix), muted for de-emphasis.
+ *
+ * Each parser has its own parse cache: parsing is by far the most expensive per-item work, and the same string is
+ * parsed again whenever a history item remounts (scrolling brings it back into the virtualized window). Keyed on the
+ * source string only — marked-terminal wraps at its own fixed width, so output doesn't depend on the terminal size.
+ * Cleared wholesale past a cap to bound memory (streaming partials insert throwaway prefixes).
  */
-const parsed = new Map<string, string>()
+function createParser(p: Palette) {
+  const renderer = new Marked(
+    markedTerminal({
+      firstHeading: paint(p.accent).bold,
+      heading: paint(p.accent).bold,
+      strong: paint(p.user).bold,
+      code: paint(p.code),
+      codespan: paint(p.user),
+      blockquote: paint(p.muted).italic,
+      html: paint(p.muted),
+      del: paint(p.muted).dim.strikethrough,
+      link: paint(p.user),
+      href: paint(p.user).underline,
+      tableOptions: {
+        style: { head: [p.tableHead], border: [p.tableBorder] }
+      },
+      tab: 2
+    })
+  )
+  const parsed = new Map<string, string>()
+  return (source: string) => {
+    const hit = parsed.get(source)
+    if (hit !== undefined) return hit
+    const out = dedent(renderer.parse(source) as string)
+    if (parsed.size > 500) parsed.clear()
+    parsed.set(source, out)
+    return out
+  }
+}
 
-function parseMarkdown(source: string) {
-  const hit = parsed.get(source)
-  if (hit !== undefined) return hit
-  const out = dedent(marked.parse(source) as string)
-  if (parsed.size > 500) parsed.clear()
-  parsed.set(source, out)
-  return out
+const parsers = new WeakMap<Palette, (source: string) => string>()
+
+function useParser() {
+  const palette = usePalette()
+  let parser = parsers.get(palette)
+  if (!parser) {
+    parser = createParser(palette)
+    parsers.set(palette, parser)
+  }
+  return parser
 }
 
 type Segment = { type: "text"; source: string } | { type: "image"; href: string; alt: string }
@@ -80,6 +94,7 @@ function splitSegments(source: string): Segment[] {
 // memo() so scroll ticks (which re-render mounted subtrees) skip items
 // whose text is unchanged entirely.
 export default memo(function Markdown({ children }: { children: string }) {
+  const parseMarkdown = useParser()
   const segments = splitSegments(children)
   if (segments.length === 1 && segments[0]!.type === "text") return <Text>{parseMarkdown(children)}</Text>
   return (

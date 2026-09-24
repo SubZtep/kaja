@@ -2,6 +2,7 @@ import { PasswordInput, TextInput } from "@inkjs/ui"
 import { Box, Text, useInput } from "ink"
 import { t } from "../lib/i18n"
 import { SelectMenu } from "./elem/select-menu"
+import { useKajaTheme } from "./theme"
 
 /** Asks for one secret, masked. Enter with a value submits it; Esc or an empty Enter skips. */
 export function SecretPrompt({
@@ -73,9 +74,10 @@ export function YesNoPrompt({
   yesFirst?: boolean
   onResolve: (yes: boolean) => void
 }>) {
+  const { warning } = useKajaTheme()
   return (
     <Box flexDirection="column">
-      <Text color="yellow">{title}</Text>
+      <Text {...warning()}>{title}</Text>
       <SelectMenu
         width={Math.max(yesLabel.length, noLabel.length) + 10}
         items={yesFirst ? [yesLabel, noLabel] : [noLabel, yesLabel]}
@@ -98,9 +100,10 @@ export function PickPrompt({
   /** The chosen item's index, or undefined when dismissed. */
   onResolve: (index: number | undefined) => void
 }>) {
+  const { warning } = useKajaTheme()
   return (
     <Box flexDirection="column">
-      <Text color="yellow">{title}</Text>
+      <Text {...warning()}>{title}</Text>
       <SelectMenu
         width={Math.max(...items.map(item => item.length)) + 10}
         items={items}

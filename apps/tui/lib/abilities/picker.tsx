@@ -83,17 +83,20 @@ export async function pickAbilities(
 ): Promise<PickerSelection | undefined> {
   const { render } = await import("ink")
   const { AbilityPicker } = await import("../../components/ability-picker")
+  const { ConsoleTheme } = await import("../../components/theme")
   let picked: PickerSelection | undefined
   const picker = render(
-    <AbilityPicker
-      items={items}
-      enabled={enabled}
-      onSubmit={selection => {
-        picked = selection
-        picker.unmount()
-      }}
-      onCancel={() => picker.unmount()}
-    />
+    <ConsoleTheme>
+      <AbilityPicker
+        items={items}
+        enabled={enabled}
+        onSubmit={selection => {
+          picked = selection
+          picker.unmount()
+        }}
+        onCancel={() => picker.unmount()}
+      />
+    </ConsoleTheme>
   )
   await picker.waitUntilExit()
   return picked

@@ -47,7 +47,7 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
     case "message":
       return (
         <Box gap={2}>
-          <Text color="#ff1493">●</Text>
+          <Text {...theme.accent()}>●</Text>
           <Markdown>{item.content}</Markdown>
         </Box>
       )
@@ -59,14 +59,14 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
         </Box>
       )
     case "confirm_command":
-      return <Text color="yellow">{`$ ${item.command}`}</Text>
+      return <Text {...theme.warning()}>{`$ ${item.command}`}</Text>
     case "confirm_tool":
-      return <Text color="yellow">{`→ ${item.summary}`}</Text>
+      return <Text {...theme.warning()}>{`→ ${item.summary}`}</Text>
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
     case "error": {
       const errorLabel = t(`error.${item.category}`)
-      return <Text color="red">{`${ERROR_ICON[item.category]} ${errorLabel}: ${item.text}`}</Text>
+      return <Text {...theme.danger()}>{`${ERROR_ICON[item.category]} ${errorLabel}: ${item.text}`}</Text>
     }
     case "final":
       return <Markdown>{item.content ?? "N/A"}</Markdown>

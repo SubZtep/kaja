@@ -1,5 +1,6 @@
 import { ProgressBar } from "@inkjs/ui"
 import { Box, render, Text } from "ink"
+import { ConsoleTheme } from "../../components/theme"
 
 const BAR_WIDTH = 30
 
@@ -26,7 +27,11 @@ export async function withStepProgress<T>(
   if (!process.stdout.isTTY) return task(() => {})
 
   let done = 0
-  const view = () => <StepProgress label={label} value={(done / steps) * 100} />
+  const view = () => (
+    <ConsoleTheme>
+      <StepProgress label={label} value={(done / steps) * 100} />
+    </ConsoleTheme>
+  )
   const instance = render(view())
   try {
     return await task(() => {

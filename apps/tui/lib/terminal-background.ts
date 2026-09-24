@@ -64,6 +64,26 @@ export function queryTerminalBackground(
  * to `COLORFGBG`, then to dark. Call before Ink renders — the query reads stdin.
  */
 export async function resolveTheme(preference: KajaPreferences["theme"]): Promise<Brightness> {
-  if (preference === "dark" || preference === "light") return preference
-  return (await queryTerminalBackground().catch(() => null)) ?? brightnessFromColorFgBg(Bun.env.COLORFGBG) ?? "dark"
+  if (preference === "dark" || preference === "light") return setConsoleTheme(preference)
+  const detected = await queryTerminalBackground().catch(() => null)
+  return setConsoleTheme(detected ?? brightnessFromColorFgBg(Bun.env.COLORFGBG) ?? "dark")
+}
+
+/** {@link resolveTheme} for settings.toml's preference, read leniently (missing or broken means auto), for commands that print outside the chat screen. Call before Ink renders. */
+export async function resolveConsoleTheme(): Promise<Brightness> {
+  const { readConfigLoose } = await import("./config/config")
+  return resolveTheme((await readConfigLoose()).preferences?.theme)
+}
+
+let consoleBrightness: Brightness | undefined
+
+/** Sets the theme for output printed outside the chat screen (doctor, abilities, sign-in); {@link resolveTheme} sets it too. */
+export function setConsoleTheme(theme: Brightness): Brightness {
+  consoleBrightness = theme
+  return theme
+}
+
+/** The theme for output printed outside the chat screen; undefined until {@link resolveTheme} or {@link setConsoleTheme} ran. */
+export function consoleTheme(): Brightness | undefined {
+  return consoleBrightness
 }

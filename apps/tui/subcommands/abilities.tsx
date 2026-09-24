@@ -29,6 +29,10 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
     process.exit(0)
   }
 
+  // Before the progress bar or picker renders: "auto" asks the terminal over stdin
+  const { resolveConsoleTheme } = await import("../lib/terminal-background")
+  await resolveConsoleTheme()
+
   if (sub === "update") {
     const { withStepProgress } = await import("../lib/abilities/progress")
     const { code, text } = await withStepProgress(t("ability.updating"), UPDATE_STEPS, runAbilityUpdate)

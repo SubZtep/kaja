@@ -2,6 +2,7 @@ import { Box, Text } from "ink"
 import { isDangerousCommand } from "../../lib/agent/command-risk"
 import { t } from "../../lib/i18n"
 import { SelectMenu } from "../elem/select-menu"
+import { useKajaTheme } from "../theme"
 
 const MAX_COMMAND_LINES = 6
 
@@ -32,15 +33,16 @@ export function ConfirmCommand({
   onResolve: (approved: boolean) => void
 }>) {
   const dangerous = kind === "command" && isDangerousCommand(command)
-  const color = dangerous ? "red" : "yellow"
+  const { danger, warning } = useKajaTheme()
+  const tone = dangerous ? danger() : warning()
   const lines = command.split("\n")
   const preview = lines.slice(0, MAX_COMMAND_LINES).join("\n")
   const hiddenLines = lines.length - MAX_COMMAND_LINES
 
   return (
     <Box flexDirection="column" flexShrink={0} width="100%">
-      <Text color={color}>{dangerous ? `⚠ ${description}` : description}</Text>
-      <Text color={color}>{`${kind === "tool" ? "→" : "$"} ${preview}`}</Text>
+      <Text {...tone}>{dangerous ? `⚠ ${description}` : description}</Text>
+      <Text {...tone}>{`${kind === "tool" ? "→" : "$"} ${preview}`}</Text>
       {hiddenLines > 0 && <Text dimColor>{t("confirmCommand.truncated", { count: hiddenLines })}</Text>}
       {running ? (
         <Text dimColor>{t("confirmCommand.running")}</Text>

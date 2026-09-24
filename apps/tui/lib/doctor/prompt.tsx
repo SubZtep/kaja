@@ -1,4 +1,5 @@
 import { render } from "ink"
+import { ConsoleTheme } from "../../components/theme"
 import { t } from "../i18n"
 
 /** Asks for a secret in the terminal; resolves to the trimmed value, or undefined when skipped. */
@@ -6,17 +7,19 @@ export async function askSecret(title: string): Promise<string | undefined> {
   const { SecretPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
     const { unmount } = render(
-      <SecretPrompt
-        title={title}
-        onSubmit={value => {
-          unmount()
-          resolve(value)
-        }}
-        onSkip={() => {
-          unmount()
-          resolve(undefined)
-        }}
-      />
+      <ConsoleTheme>
+        <SecretPrompt
+          title={title}
+          onSubmit={value => {
+            unmount()
+            resolve(value)
+          }}
+          onSkip={() => {
+            unmount()
+            resolve(undefined)
+          }}
+        />
+      </ConsoleTheme>
     )
   })
 }
@@ -29,19 +32,21 @@ export async function askText(
   const { TextPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
     const { unmount } = render(
-      <TextPrompt
-        title={title}
-        hint={opts?.hint}
-        defaultValue={opts?.defaultValue}
-        onSubmit={value => {
-          unmount()
-          resolve(value)
-        }}
-        onSkip={() => {
-          unmount()
-          resolve(undefined)
-        }}
-      />
+      <ConsoleTheme>
+        <TextPrompt
+          title={title}
+          hint={opts?.hint}
+          defaultValue={opts?.defaultValue}
+          onSubmit={value => {
+            unmount()
+            resolve(value)
+          }}
+          onSkip={() => {
+            unmount()
+            resolve(undefined)
+          }}
+        />
+      </ConsoleTheme>
     )
   })
 }
@@ -56,17 +61,19 @@ export async function askYesNo(
   const { YesNoPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
     const { unmount } = render(
-      <YesNoPrompt
-        title={title}
-        yesLabel={yesLabel}
-        noLabel={noLabel}
-        defaultYes={opts?.defaultYes}
-        yesFirst={opts?.yesFirst}
-        onResolve={yes => {
-          unmount()
-          resolve(yes)
-        }}
-      />
+      <ConsoleTheme>
+        <YesNoPrompt
+          title={title}
+          yesLabel={yesLabel}
+          noLabel={noLabel}
+          defaultYes={opts?.defaultYes}
+          yesFirst={opts?.yesFirst}
+          onResolve={yes => {
+            unmount()
+            resolve(yes)
+          }}
+        />
+      </ConsoleTheme>
     )
   })
 }
@@ -76,14 +83,16 @@ export async function askPick(title: string, items: string[]): Promise<number | 
   const { PickPrompt } = await import("../../components/secret-prompt")
   return new Promise(resolve => {
     const { unmount } = render(
-      <PickPrompt
-        title={title}
-        items={items}
-        onResolve={index => {
-          unmount()
-          resolve(index)
-        }}
-      />
+      <ConsoleTheme>
+        <PickPrompt
+          title={title}
+          items={items}
+          onResolve={index => {
+            unmount()
+            resolve(index)
+          }}
+        />
+      </ConsoleTheme>
     )
   })
 }

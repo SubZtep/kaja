@@ -1,24 +1,11 @@
-import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
-import type { TextProps } from "ink"
+import { Spinner, ThemeProvider } from "@inkjs/ui"
 import { useEffect, useState } from "react"
 import type { PartialMessage } from "../hooks/use-agent"
 import { useRandomSpinner } from "../hooks/use-random-spinner"
 import { t } from "../lib/i18n"
+import { useSpinnerTheme } from "./theme"
 
 const TICK_MS = 120
-
-const customTheme = extendTheme(defaultTheme, {
-  components: {
-    Spinner: {
-      styles: {
-        label: (): TextProps => ({
-          color: "magenta",
-          dimColor: true
-        })
-      }
-    }
-  }
-})
 
 /** Rough token estimate from streamed text (~4 characters per token). */
 function estimateTokens(partial: PartialMessage | null) {
@@ -43,6 +30,7 @@ export function Activity({
 }>) {
   const [tick, setTick] = useState(0)
   const spinnerType = useRandomSpinner(pending, "dots")
+  const spinnerTheme = useSpinnerTheme("thinkingLabel")
   useEffect(() => {
     if (!pending) return
     setTick(0)
@@ -58,7 +46,7 @@ export function Activity({
   const tokens = estimateTokens(partial)
 
   return (
-    <ThemeProvider theme={customTheme}>
+    <ThemeProvider theme={spinnerTheme}>
       <Spinner
         type={spinnerType}
         label={`${t("activity.thinking", { seconds })}${tokens ? t("activity.tokens", { tokens }) : ""}`}
