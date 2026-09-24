@@ -27,7 +27,8 @@ if that directory isn't on your `PATH`.
 
 ## First run
 
-Run `kaja`. The [setup wizard](/wizard) asks your language, then where the agent should run:
+Run `kaja`. The [setup wizard](/wizard) asks your language and colours, then where the agent should
+run:
 
 - **Kaja Cloud** (preselected) — nothing else to set up. Kaja prints a code, you approve it in the
   browser, and you're chatting.

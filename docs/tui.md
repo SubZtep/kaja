@@ -15,9 +15,9 @@ approvals, because the cloud agent never needs them.
 A local session starts with a summary of what it loaded: the active persona and model, connected MCP
 servers with their tool counts, and how many saved conversations and memory notes exist.
 
-Replies are rendered as markdown — headings, lists, tables and syntax-highlighted code. Images are
-drawn inline where the terminal supports graphics, and links are clickable where it supports OSC 8
-hyperlinks.
+Replies are rendered as markdown while they arrive: headings, lists, tables that fit the window,
+and syntax-highlighted code. Images are drawn inline in coloured blocks, and links are clickable
+where the terminal supports OSC 8 hyperlinks.
 
 ## Commands
 
@@ -93,6 +93,16 @@ In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`/`Backspace`/`D
 
 There is no in-app toggle for thinking, sounds or voice: set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
+
+## Colours
+
+Kaja has a dark and a light theme. By default (`theme = "auto"`) it asks your terminal which one
+fits when it starts. In terminals that announce it (kitty, Ghostty, Contour, …), it also follows
+along when you switch your system between dark and light mode.
+
+Press `<modifier>+D` to switch it yourself. Your pick is saved in
+[`settings.toml`](/configuration/config#preferences), and Kaja stops following the terminal. To go
+back to automatic, set `theme = "auto"` there.
 
 ---
 
