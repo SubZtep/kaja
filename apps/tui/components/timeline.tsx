@@ -1,3 +1,4 @@
+import { StatusMessage, type StatusMessageProps } from "@inkjs/ui"
 import { Box, Text } from "ink"
 import { memo } from "react"
 import type { TimelineEvent } from "../hooks/use-agent"
@@ -8,11 +9,12 @@ import { ReasoningBox } from "./elem/reasoning-box"
 import { TerminalImage } from "./elem/terminal-image"
 import { useKajaTheme } from "./theme"
 
-const ERROR_ICON: Record<ErrorCategory, string> = {
-  network: "⚠",
-  tool: "✗",
-  agent: "✗",
-  unknown: "✗"
+// A network hiccup is worth retrying, so it's a warning; anything else failed
+const ERROR_VARIANT: Record<ErrorCategory, StatusMessageProps["variant"]> = {
+  network: "warning",
+  tool: "error",
+  agent: "error",
+  unknown: "error"
 }
 
 /**
@@ -66,7 +68,7 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
     case "error": {
       const errorLabel = t(`error.${item.category}`)
-      return <Text {...theme.danger()}>{`${ERROR_ICON[item.category]} ${errorLabel}: ${item.text}`}</Text>
+      return <StatusMessage variant={ERROR_VARIANT[item.category]}>{`${errorLabel}: ${item.text}`}</StatusMessage>
     }
     case "final":
       return <Markdown>{item.content ?? "N/A"}</Markdown>
