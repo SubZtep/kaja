@@ -79,6 +79,7 @@ model per task; the wizard also keeps the models it didn't pick, for pins and sw
 | `models.default.toml` | Fireworks, xAI, Speaches | chat, summarize, embedding, rerank, image-generation, tts, stt — what `kaja config fetch --offline` writes |
 | `models.llama.toml` | llama.cpp | chat against a local `llama-server` |
 | `models.xai.toml` | xAI | chat (`grok-4.3`), image-generation — one hosted key |
+| `models.openrouter.toml` | OpenRouter | chat (`stealth/space-bunny-alpha`) — one hosted key |
 
 ---
 

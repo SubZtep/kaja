@@ -115,7 +115,8 @@ test("choosing your own provider leads to the providers checklist", async () => 
   await w.t.press(ENTER)
   const frame = w.t.lastFrame()
   expect(frame).toContain("Which model providers can you use?")
-  for (const name of ["Fireworks", "xAI", "Ollama", "llama.cpp", "Speaches"]) expect(frame).toContain(name)
+  for (const name of ["Fireworks", "xAI", "OpenRouter", "Ollama", "llama.cpp", "Speaches"])
+    expect(frame).toContain(name)
 
   await close(w)
 })

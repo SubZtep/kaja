@@ -60,7 +60,7 @@ Zod schemas for this app's config/store/domain types live in `@kaja/schema/confi
 Default config **templates** (setup wizard) live at **repo root** `docs/config/`:
 
 - `docs/config/settings.toml`
-- `docs/config/models.default.toml` (what `kaja config fetch --offline` writes and the API seed loads), `models.ollama.toml`, `models.llama.toml`, `models.xai.toml` — generated from `docs/config/catalog.toml` by `bun generate:models`; never edit by hand
+- `docs/config/models.default.toml` (what `kaja config fetch --offline` writes and the API seed loads), `models.ollama.toml`, `models.llama.toml`, `models.xai.toml`, `models.openrouter.toml` — generated from `docs/config/catalog.toml` by `bun generate:models`; never edit by hand
 - `docs/config/mcp.toml`
 - `docs/config/abilities.toml`
 

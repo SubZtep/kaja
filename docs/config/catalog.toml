@@ -49,6 +49,13 @@ models = [
   { task = "image-generation", model = "grok-imagine-image" },
 ]
 
+[[providers]]
+id = "openrouter"
+name = "OpenRouter"
+kind = "hosted"
+base_url = "https://openrouter.ai/api/v1"
+models = [{ task = "chat", model = "stealth/space-bunny-alpha" }]
+
 # Speaches serves both directions, so ticking it sets up voice in and out together.
 [[providers]]
 id = "speaches"
@@ -77,3 +84,7 @@ providers = ["llama"]
 [[examples]]
 file = "models.xai.toml"
 providers = ["xai"]
+
+[[examples]]
+file = "models.openrouter.toml"
+providers = ["openrouter"]

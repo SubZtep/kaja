@@ -16,7 +16,7 @@ choice. When you run the wizard again, it starts on the answers you gave last ti
 ## Before you start
 
 - **For Kaja Cloud** you need nothing. You sign in with your browser once the wizard is done.
-- **For your own provider**, have its API key at hand (Fireworks, xAI), or make sure your local
+- **For your own provider**, have its API key at hand (Fireworks, xAI, OpenRouter), or make sure your local
   server is running (Ollama, llama.cpp, Speaches). You can skip a key and add it later.
 
 ## Moving around
@@ -49,7 +49,7 @@ Your answers stay on screen with a ✓ as you go, so you can see what you've cho
 
    Starting with `kaja --cloud` or `kaja --local` answers this for you, so it isn't asked.
 4. **Providers.** Tick every provider you can use (at least one), then press <kbd>Enter</kbd>:
-   - **Fireworks** and **xAI** run online: you're asked for the API key.
+   - **Fireworks**, **xAI** and **OpenRouter** run online: you're asked for the API key.
    - **Ollama**, **llama.cpp** and **Speaches** run on your machine: you're asked where the server
      listens, with the usual address already filled in. Speaches handles speech in and out, for
      [voice](/voice).
@@ -76,7 +76,7 @@ flowchart TD
     C --> M{"<b>How to run Kaja</b>"}
     M -->|"Kaja Cloud"| SUM["<b>Setup complete</b>"]
     M -->|"your own provider"| P["<b>Providers</b><br><small>tick every one you can use</small>"]
-    P --> KEY["<b>API key</b> for each online one<br><small>Fireworks · xAI</small>"]
+    P --> KEY["<b>API key</b> for each online one<br><small>Fireworks · xAI · OpenRouter</small>"]
     KEY --> URL["<b>Server address</b> for each local one<br><small>Ollama · llama.cpp · Speaches</small>"]
     URL --> CUS["<b>Custom provider</b>, if ticked<br><small>name · address · key · models</small>"]
     CUS --> MODEL["<b>Which model</b><br><small>only where two providers overlap</small>"]

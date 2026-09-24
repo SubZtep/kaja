@@ -1,0 +1,16 @@
+# Kaja models. [tasks] says which model each task uses, by its [models.<id>] id; a task left out
+# is off. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and what it
+# can be used for (`tasks`); models no task uses are kept for a persona's [models] pin, or for
+# `kaja doctor` to switch to when one stops answering. `model` is the literal name sent to the API.
+# Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
+
+[providers.openrouter]
+base_url = "https://openrouter.ai/api/v1"
+
+[tasks]
+chat = "space-bunny-alpha"
+
+[models.space-bunny-alpha]
+model = "stealth/space-bunny-alpha"
+provider = "openrouter"
+tasks = ["chat"]
