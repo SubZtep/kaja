@@ -114,6 +114,29 @@ describe("nasi", () => {
     expect(listed.sessions[0].id).toBe(body.session)
   })
 
+  test("compact summarises a session with more than one turn, and 404s for an unknown one", async () => {
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+    const turn = (body: object) => app.request("/nasi/turn", { method: "POST", headers, body: JSON.stringify(body) })
+    const compact = (body: object) =>
+      app.request("/nasi/compact", { method: "POST", headers, body: JSON.stringify(body) })
+
+    const { session } = await (await turn({ message: "first" })).json()
+    expect(await (await compact({ session })).json()).toEqual({ compacted: null })
+
+    await turn({ session, message: "second" })
+    const res = await compact({ session, focus: "the names" })
+    expect(res.status).toBe(200)
+    const { compacted } = await res.json()
+    // A conversation this short can come out a little longer, the summary's heading included.
+    expect(compacted).toMatchObject({
+      dropped: false,
+      beforeTokens: expect.any(Number),
+      afterTokens: expect.any(Number)
+    })
+
+    expect((await compact({ session: "01900000-0000-7000-8000-00000000dead" })).status).toBe(404)
+  })
+
   test("unknown session is 404", async () => {
     const res = await app.request("/nasi/turn", {
       method: "POST",

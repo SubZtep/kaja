@@ -28,6 +28,8 @@ export type ConversationRows = {
   systemPrompt: string | null
   pending: { callId: string; kind: PendingKind } | null
   messages: MessageRow[]
+  /** The latest compaction summary; `from` is the seq of the first message it doesn't cover. Stores keep every one. */
+  summary: { text: string; from: number } | null
   /** Set on saving, never read back. */
   calls?: CallUpdate[]
 }
@@ -68,6 +70,7 @@ export function splitConversation(session: unknown): ConversationRows {
   return {
     systemPrompt: hasSystem ? (first!.content as string) : null,
     pending: pendingField ? { callId: rest[pendingField[0]]!, kind: pendingField[1] } : null,
+    summary: rest.summary ? { text: rest.summary.text, from: rest.summary.from - (hasSystem ? 1 : 0) } : null,
     messages: (hasSystem ? others : all).map((message, at) => {
       const row = toRow(message)
       const stat = telemetry?.steps.find(step => step.at === at)
@@ -108,5 +111,7 @@ export function joinConversation(rows: ConversationRows): Session {
   }
   const pendingField = rows.pending && PENDING_FIELDS.find(([, kind]) => kind === rows.pending!.kind)
   if (rows.pending && pendingField) session[pendingField[0]] = rows.pending.callId
+  if (rows.summary)
+    session.summary = { text: rows.summary.text, from: rows.summary.from + (rows.systemPrompt !== null ? 1 : 0) }
   return session
 }

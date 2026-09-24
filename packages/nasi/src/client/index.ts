@@ -1,4 +1,8 @@
 import {
+  type NasiCompactRequest,
+  NasiCompactRequestSchema,
+  type NasiCompactResponse,
+  NasiCompactResponseSchema,
   type NasiInfoResponse,
   NasiInfoResponseSchema,
   type NasiTurnRequest,
@@ -29,6 +33,7 @@ export type NasiStreamEvent =
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "persona_switch"; personaId: string; label: string }
+  | { type: "compacted"; beforeTokens: number; afterTokens: number; dropped: boolean }
   | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
   | { type: "final"; content: string | null }
 
@@ -104,6 +109,20 @@ export function createNasiClient(opts: NasiClientOptions) {
         throw new Error(`Nasi info failed: ${res.status} ${text}`)
       }
       return NasiInfoResponseSchema.parse(await res.json())
+    },
+
+    /** `POST /nasi/compact` — summarises a session now; `compacted` is null when there was nothing to summarise. */
+    async compact(body: NasiCompactRequest): Promise<NasiCompactResponse> {
+      const res = await fetch(new URL("/nasi/compact", opts.baseUrl), {
+        method: "POST",
+        headers: await headers(),
+        body: JSON.stringify(NasiCompactRequestSchema.parse(body))
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Nasi compact failed: ${res.status} ${text}`)
+      }
+      return NasiCompactResponseSchema.parse(await res.json())
     },
 
     async turn(body: NasiTurnRequest): Promise<NasiTurnResponse> {

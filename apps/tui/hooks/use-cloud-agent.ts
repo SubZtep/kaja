@@ -1,8 +1,9 @@
 import { listFilesTool, readFileTool, type Tool } from "@kaja/nasi"
 import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStreamEvent } from "@kaja/nasi/client"
 import type { NasiInfoResponse } from "@kaja/schema/nasi"
+import { commandArgument } from "@kaja/shared"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { getLanguage } from "../lib/i18n"
+import { getLanguage, t } from "../lib/i18n"
 
 /** Tools the server hands back to the client to run locally instead of executing itself — see registry.ts's CLIENT_EXECUTABLE. Keyed by tool name from the `client_tool_call` event. */
 const CLIENT_TOOLS: Record<string, Tool<any>> = {
@@ -48,6 +49,7 @@ function categorizeCloudError(error: unknown): { category: CloudErrorCategory; m
 export type CloudTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: CloudErrorCategory }
+  | { type: "notice"; text: string }
   | Exclude<NasiStreamEvent, { type: "delta" | "usage" }>
 
 export type CloudPartialMessage = { reasoning: string; content: string }
@@ -193,12 +195,36 @@ export function useCloudAgent(options: NasiClientOptions) {
     [client, pushEvent, followPersonaSwitch]
   )
 
+  // `/compact [focus]`: the server summarises the session now instead of running a turn.
+  const compactNow = useCallback(
+    async (focus: string) => {
+      const session = sessionRef.current
+      if (!session) return pushEvent({ type: "notice", text: t("timeline.nothingToCompact") })
+      setPending(true)
+      try {
+        const { compacted } = await client.compact({ session, focus: focus || undefined })
+        if (compacted) {
+          pushEvent({ type: "compacted", ...compacted })
+          setPromptTokens(compacted.afterTokens)
+        } else pushEvent({ type: "notice", text: t("timeline.nothingToCompact") })
+      } catch (error) {
+        const { category, message } = categorizeCloudError(error)
+        pushEvent({ type: "error", text: message, category })
+      } finally {
+        setPending(false)
+      }
+    },
+    [client, pushEvent]
+  )
+
   const send = useCallback(
     async (prompt: string, showUserEvent = true) => {
       if (showUserEvent) pushEvent({ type: "user", text: prompt })
+      const focus = showUserEvent ? commandArgument(prompt, "compact") : undefined
+      if (focus !== undefined) return compactNow(focus)
       await runTurns({ message: prompt })
     },
-    [pushEvent, runTurns]
+    [pushEvent, runTurns, compactNow]
   )
 
   /** Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent back. */

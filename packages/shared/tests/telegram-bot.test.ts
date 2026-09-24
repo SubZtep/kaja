@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import {
   asRateLimitError,
+  commandArgument,
   EditThrottle,
   escapeHtml,
   isCommand,
@@ -22,6 +23,14 @@ test("isCommand matches the bare command, with or without @botname, and nothing 
   expect(isCommand(" /new@kaja_bot ", "new")).toBe(true)
   expect(isCommand("/newer", "new")).toBe(false)
   expect(isCommand("please /new", "new")).toBe(false)
+})
+
+test("commandArgument gives the text after the command, empty for a bare one", () => {
+  expect(commandArgument("/compact", "compact")).toBe("")
+  expect(commandArgument("/compact@kaja_bot  keep the SQL decisions ", "compact")).toBe("keep the SQL decisions")
+  expect(commandArgument("/compact line one\nline two", "compact")).toBe("line one\nline two")
+  expect(commandArgument("/compaction", "compact")).toBeUndefined()
+  expect(commandArgument("please /compact", "compact")).toBeUndefined()
 })
 
 test("error helpers recognise a Bot API error by its shape", () => {

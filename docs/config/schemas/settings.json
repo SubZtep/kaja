@@ -56,6 +56,18 @@
         }
       }
     },
+    "context": {
+      "description": "Keeping long conversations inside the model's context window",
+      "type": "object",
+      "properties": {
+        "compact_at": {
+          "description": "How full the chat model's context may get (0.3-0.95) before older messages are summarised (default: 0.8)",
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 0.95
+        }
+      }
+    },
     "preferences": {
       "description": "In-app preferences",
       "type": "object",

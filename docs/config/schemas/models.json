@@ -42,7 +42,8 @@
               "stt",
               "embedding",
               "image-generation",
-              "rerank"
+              "rerank",
+              "summarize"
             ]
           },
           "provider": {

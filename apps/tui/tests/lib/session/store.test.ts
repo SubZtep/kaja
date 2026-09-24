@@ -282,6 +282,31 @@ test("the system prompt is rewritten in place while the messages stay untouched"
   expect((await loadSessionRow(id))!.session.messages).toEqual(rewritten)
 })
 
+test("every compaction summary is kept, the latest comes back, and the messages stay whole", async () => {
+  const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events: TURN_ONE_EVENTS }))
+  const longer = [...TURN_ONE, { role: "user", content: "again" }, { role: "assistant", content: "sure" }]
+  // Session indexes count the system prompt; the stored summaryFrom is the message seq, one less.
+  await updateSessionRow(id, row({ session: { messages: TURN_ONE, summary: { text: "first", from: 2 } } }))
+  await updateSessionRow(id, row({ session: { messages: longer, summary: { text: "first", from: 2 } } }))
+  await updateSessionRow(id, row({ session: { messages: longer, summary: { text: "second", from: 5 } } }))
+
+  const loaded = (await loadSessionRow(id))!
+  expect(loaded.session.summary).toEqual({ text: "second", from: 5 })
+  expect(loaded.session.messages).toEqual(longer)
+  const db = await openDb()
+  expect(
+    db.query("SELECT summaryFrom, summary FROM session_summaries WHERE sessionId = ? ORDER BY summaryFrom").all(id)
+  ).toEqual([
+    { summaryFrom: 1, summary: "first" },
+    { summaryFrom: 4, summary: "second" }
+  ])
+  db.close()
+  expect(await deleteSessionRow(id)).toBe(true)
+  const after = await openDb()
+  expect(after.query("SELECT COUNT(*) AS n FROM session_summaries WHERE sessionId = ?").get(id)).toEqual({ n: 0 })
+  after.close()
+})
+
 test("deleting a session takes its messages, tool calls and timeline with it", async () => {
   const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events: TURN_ONE_EVENTS }))
   expect(await deleteSessionRow(id)).toBe(true)

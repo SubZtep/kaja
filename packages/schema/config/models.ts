@@ -5,7 +5,7 @@ const ProviderSchema = z.object({
   base_url: z.url()
 })
 
-export const TaskSchema = z.enum(["chat", "tts", "stt", "embedding", "image-generation", "rerank"])
+export const TaskSchema = z.enum(["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize"])
 
 const ModelEntrySchema = z.object({
   // The name sent to the provider's API, e.g. "accounts/fireworks/models/minimax-m3".

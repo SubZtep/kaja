@@ -1,4 +1,5 @@
 import {
+  compact,
   LOAD_SKILL_TOOL,
   type LoadSkillTool,
   recordPausedCall,
@@ -10,6 +11,7 @@ import {
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
 import {
+  commandArgument,
   EditThrottle,
   escapeHtml,
   isCommand,
@@ -55,6 +57,14 @@ function abilitiesMessage(tools: Tool<any>[], personas: Persona[]): string {
     "",
     t("telegram.abilitiesHint")
   ].join("\n")
+}
+
+/** The chat line for a compaction, in the bot's language. */
+function compactedLine(result: { beforeTokens: number; afterTokens: number; dropped: boolean }): string {
+  return t(result.dropped ? "telegram.compactedDropped" : "telegram.compacted", {
+    before: result.beforeTokens.toLocaleString(),
+    after: result.afterTokens.toLocaleString()
+  })
 }
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
@@ -330,6 +340,11 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     editIfChanged: (text: string) => Promise<void>,
     event: Exclude<TimelineEvent, { type: "user" | "error" }>
   ): Promise<boolean> {
+    if (event.type === "compacted") {
+      await sender.sendMessage(chatId, compactedLine(event))
+      return false
+    }
+
     if (event.type === "persona_switch") {
       // run() already mutated the agent via applyPersona — mirror it into UserState so persistSession writes the new persona id.
       const next = personas.find(p => p.id === event.personaId)
@@ -452,7 +467,29 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       return
     }
 
+    const focus = commandArgument(text, "compact")
+    if (focus !== undefined) {
+      await compactNow(userId, chatId, state, focus)
+      return
+    }
+
     await runTurn(userId, chatId, state, text, true)
+  }
+
+  // `/compact [focus]`: summarises this user's conversation now instead of running a turn.
+  async function compactNow(userId: number, chatId: number, state: UserState, focus: string) {
+    state.busy = true
+    try {
+      const result = await compact(state.agent, state.session, focus || undefined)
+      if (result) state.events.push({ type: "compacted", ...result })
+      await sender.sendMessage(chatId, result ? compactedLine(result) : t("telegram.nothingToCompact"))
+    } catch (error) {
+      log.warn("Telegram compaction failed", { error })
+      await sender.sendMessage(chatId, t("telegram.genericError"))
+    } finally {
+      state.busy = false
+      await persistSession(userId, state)
+    }
   }
 
   async function handleCallbackQuery(

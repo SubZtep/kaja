@@ -8,6 +8,7 @@ import {
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
 import {
+  commandArgument,
   EditThrottle,
   escapeHtml,
   isCommand,
@@ -74,6 +75,14 @@ export type CloudTelegramDriverConfig = {
  * round-trips through Postgres via the session id instead of living in
  * memory.
  */
+/** The chat line for a compaction, in the user's language. */
+function compactedLine(result: { beforeTokens: number; afterTokens: number; dropped: boolean }, t: Translate): string {
+  return t(result.dropped ? "telegram.compactedDropped" : "telegram.compacted", {
+    before: result.beforeTokens.toLocaleString(),
+    after: result.afterTokens.toLocaleString()
+  })
+}
+
 export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   const { resolveLinkedUser, sender } = config
   // Marks a Telegram user's next message as "don't resume" after /new. No other in-memory
@@ -148,7 +157,38 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return sendApproval(accumulated, editIfChanged, chatId, event, language).then(() => true)
     }
 
+    if (event.type === "compacted")
+      return sender.sendMessage(chatId, compactedLine(event, language.t)).then(() => false)
+
     return false
+  }
+
+  /** `/compact [focus]`: summarises the user's latest conversation now, under the same per-user lock as turns. */
+  function compactNow(
+    ownerUserId: string,
+    owner: string,
+    chatId: number,
+    focus: string,
+    resume: boolean,
+    t: Translate
+  ) {
+    return withLock(`telegram:${owner}`, async () => {
+      try {
+        const latest = resume ? await createPostgresStore(pool, ownerUserId).loadLatestSession(owner) : undefined
+        if (!latest) return void (await sender.sendMessage(chatId, t("telegram.nothingToCompact")))
+        const nasi = await openNasiFor({ userId: ownerUserId, owner, pinnedModel: latest.model })
+        try {
+          const result = await nasi.compact(latest.id, focus || undefined)
+          await sender.sendMessage(chatId, result ? compactedLine(result, t) : t("telegram.nothingToCompact"))
+        } finally {
+          await nasi.close()
+        }
+      } catch (error) {
+        reportError("Telegram compaction failed", error)
+        const { category, message } = categorizeError(error)
+        await sender.sendMessage(chatId, `⚠ ${t(`telegram.error.${category}`)}: ${message}`)
+      }
+    })
   }
 
   // Serializes turns per Telegram user, mirroring nasi/chat.ts's withSessionLock — without it,
@@ -245,6 +285,13 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     if (isCommand(text, "abilities")) {
       const { text: list, rows } = renderAbilityList(await abilityEntries(ownerUserId), 0, t)
       await sender.sendMessage(chatId, list, rows)
+      return
+    }
+
+    const focus = commandArgument(text, "compact")
+    if (focus !== undefined) {
+      // After /new there's no conversation to compact yet, and the next message still starts a fresh one.
+      await compactNow(ownerUserId, owner, chatId, focus, !forceNew.has(telegramUserId), t)
       return
     }
 

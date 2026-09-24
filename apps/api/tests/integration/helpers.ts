@@ -70,7 +70,9 @@ export function fakeChatClient(
               choices: [{ message: { role: "assistant", content: reply } }]
             })
           }
-        }
+        },
+        // The summarizer, for /nasi/compact.
+        create: async () => ({ choices: [{ message: { content: "SUMMARY" } }] })
       }
     }
   }

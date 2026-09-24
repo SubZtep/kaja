@@ -72,6 +72,17 @@ export const NasiPersonasResponseSchema = z.object({
   personas: z.array(z.object({ id: z.string(), label: z.string() }))
 })
 
+/** `/compact`: summarise a session now; `focus` says what the summary should keep in mind. */
+export const NasiCompactRequestSchema = z.object({
+  session: z.uuidv7(),
+  focus: z.string().max(500).optional()
+})
+
+/** `compacted` is null when the session had nothing to summarise yet. */
+export const NasiCompactResponseSchema = z.object({
+  compacted: z.object({ beforeTokens: z.number(), afterTokens: z.number(), dropped: z.boolean() }).nullable()
+})
+
 export type NasiTurnRequest = z.infer<typeof NasiTurnRequestSchema>
 export type WidgetTurnRequest = z.infer<typeof WidgetTurnRequestSchema>
 export type NasiStep = z.infer<typeof NasiStepSchema>
@@ -79,3 +90,5 @@ export type NasiTurnResponse = z.infer<typeof NasiTurnResponseSchema>
 export type NasiTurnStatus = z.infer<typeof NasiTurnStatusSchema>
 export type NasiInfoResponse = z.infer<typeof NasiInfoResponseSchema>
 export type NasiPersonasResponse = z.infer<typeof NasiPersonasResponseSchema>
+export type NasiCompactRequest = z.infer<typeof NasiCompactRequestSchema>
+export type NasiCompactResponse = z.infer<typeof NasiCompactResponseSchema>

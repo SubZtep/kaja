@@ -4,8 +4,9 @@ import type OpenAI from "openai"
 import { loadAbilities } from "./abilities/load"
 import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
+import type { Compaction } from "./agent/compaction"
 import { samplingOf } from "./agent/persona"
-import { run } from "./agent/run"
+import { compact, run } from "./agent/run"
 import { recordPausedCall } from "./agent/telemetry"
 import { runApprovedTool, type Tool } from "./agent/tools"
 import { createGuardedFetch } from "./security/ssrf"
@@ -289,6 +290,24 @@ export class Nasi {
    */
   turn(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
     return this.turnInner(input)
+  }
+
+  /**
+   * `/compact`: summarises a stored session now, keeping only its latest turn word for word, and saves it.
+   * Undefined when there is nothing to summarise yet. Throws like a turn for a session that isn't this caller's.
+   */
+  async compact(sessionId: string, focus?: string): Promise<Compaction | undefined> {
+    const loaded = await this.loadTurn({ session: sessionId })
+    const result = await compact(loaded.agent, loaded.session, focus)
+    if (!result) return undefined
+    await this.opts.store.updateSession(sessionId, {
+      persona: loaded.agent.personaId ?? "default",
+      model: loaded.agent.model,
+      owner: this.opts.owner ?? null,
+      session: loaded.session,
+      events: loaded.events
+    })
+    return result
   }
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {

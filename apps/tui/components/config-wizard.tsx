@@ -104,7 +104,8 @@ const TASK_LABEL_KEY: Record<ModelTask, string> = {
   rerank: "wizard.taskRerank",
   "image-generation": "wizard.taskImageGeneration",
   tts: "wizard.taskTts",
-  stt: "wizard.taskStt"
+  stt: "wizard.taskStt",
+  summarize: "wizard.taskSummarize"
 }
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]

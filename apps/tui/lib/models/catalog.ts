@@ -23,7 +23,7 @@ export type CatalogProvider = {
 }
 
 /** The order tasks appear in models.toml. */
-export const TASK_ORDER: ModelTask[] = ["chat", "embedding", "rerank", "image-generation", "tts", "stt"]
+export const TASK_ORDER: ModelTask[] = ["chat", "embedding", "rerank", "image-generation", "tts", "stt", "summarize"]
 
 const catalogFile = CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
 

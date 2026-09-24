@@ -27,6 +27,12 @@ locale = "en-GB"
 # enabled = true
 # autoFetch = true
 
+# Long conversations: once the chat model's context is this full (0.3-0.95 of its window), the older
+# messages are summarised so the conversation fits. The summary is written by [models.summarize] in
+# models.toml when there is one, else by the chat model. `/compact` does it on demand.
+# [context]
+# compact_at = 0.8
+
 # Speech-to-text (Speaches AI server).
 # [stt]
 # speachesUrl = "http://localhost:8000"

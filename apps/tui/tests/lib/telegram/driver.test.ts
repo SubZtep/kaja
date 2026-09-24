@@ -73,7 +73,9 @@ function fakeClient(script: FakeMessage[]) {
               choices: [{ message: { role: "assistant", ...message } }]
             })
           }
-        }
+        },
+        // The summarizer, for /compact.
+        create: async () => ({ choices: [{ message: { content: "SUMMARY" } }] })
       }
     }
   }
@@ -566,6 +568,22 @@ test("switch_persona mid-turn updates the user's persona and the persisted row",
   const system = (saved!.session as { messages: { role: string; content: string }[] }).messages[0]
   expect(system!.role).toBe("system")
   expect(system!.content).toContain("You are grumpy.")
+})
+
+test("/compact: nothing to do on a fresh chat, then summarises and saves the conversation", async () => {
+  const { sender, sent } = fakeSender()
+  const driver = makeDriver([{ content: "One." }, { content: "Two." }], sender)
+
+  await driver.handleMessage(77, 100, "/compact")
+  expect(sent.at(-1)!.text).toBe("Nothing to compact yet.")
+
+  await driver.handleMessage(77, 100, "first")
+  await driver.handleMessage(77, 100, "second")
+  await driver.handleMessage(77, 100, "/compact keep the numbers")
+
+  expect(sent.at(-1)!.text).toStartWith("🗜 Conversation compacted:")
+  const saved = await loadLatestSessionRowForOwner(telegramOwner(77))
+  expect((saved!.session as { summary?: { text: string } }).summary?.text).toBe("SUMMARY")
 })
 
 test("/abilities lists the skills, personas and tool abilities the bot loaded, and how to change them", async () => {

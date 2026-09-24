@@ -37,6 +37,7 @@ function commandsIn(locale: Locale) {
   const t = translator(locale)
   return [
     { command: "new", description: t("telegram.commandNew") },
+    { command: "compact", description: t("telegram.commandCompact") },
     { command: "abilities", description: t("telegram.commandAbilities") }
   ]
 }

@@ -7,7 +7,7 @@ import type {
   ChatCompletionMessageToolCall
 } from "openai/resources/chat/completions"
 import { takeLastServedModel } from "../models/client"
-import { resolveContextWindow } from "../models/context-window"
+import { lowerContextWindow, resolveContextWindow } from "../models/context-window"
 import {
   type Agent,
   type AgentEvent,
@@ -18,6 +18,7 @@ import {
   SWITCH_PERSONA_TOOL
 } from "./agent"
 import { isDangerousCommand } from "./command-risk"
+import { compactSession, contextMessages, DEFAULT_COMPACT_AT, estimateTokens, isContextOverflow } from "./compaction"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordStep } from "./telemetry"
@@ -221,7 +222,7 @@ async function* streamRound(
   } catch (cause) {
     if (cause instanceof OpenAI.APIError) {
       const err = new Error(`Model provider request failed: ${cause.message}`)
-      err.name = "NasiModelUnavailable"
+      err.name = isContextOverflow(cause) ? "NasiContextOverflow" : "NasiModelUnavailable"
       throw err
     }
     throw cause
@@ -516,6 +517,56 @@ async function ensureContextWindow(agent: Agent): Promise<void> {
   agent.contextWindow = (await resolveContextWindow(entry)).tokens
 }
 
+/** Compacts the session before a round when its estimate passes {@link Agent.compactAt} of the window, or always when `force`d. */
+async function* compactIfNeeded(
+  agent: Agent,
+  session: Session,
+  definitions: readonly unknown[],
+  estimateScale: number,
+  force = false
+): AsyncGenerator<AgentEvent, boolean, void> {
+  await ensureContextWindow(agent)
+  if (!agent.contextWindow) return false
+  const estimate = estimateTokens(contextMessages(session), definitions) * estimateScale
+  if (!force && estimate <= (agent.compactAt ?? DEFAULT_COMPACT_AT) * agent.contextWindow) return false
+  const result = await compactSession(agent, session, { definitions })
+  if (!result) return false
+  yield {
+    type: "compacted",
+    beforeTokens: Math.round(result.beforeTokens * estimateScale),
+    afterTokens: Math.round(result.afterTokens * estimateScale),
+    dropped: result.dropped
+  }
+  return true
+}
+
+// Streams one round; when the provider says the prompt is too long, shrinks the known window below it, compacts and tries once more.
+async function* streamRoundFitting(
+  agent: Agent,
+  session: Session,
+  definitions: import("openai/resources/chat/completions").ChatCompletionTool[],
+  estimateScale: number
+): AsyncGenerator<AgentEvent, StreamedRound, void> {
+  try {
+    return yield* streamRound(agent, contextMessages(session), definitions)
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== "NasiContextOverflow") throw error
+    const sent = Math.round(estimateTokens(contextMessages(session), definitions) * estimateScale)
+    const smaller = Math.floor(Math.min(agent.contextWindow ?? sent, sent) * 0.9)
+    agent.contextWindow = smaller
+    const entry = agent.models?.find(m => m.task === "chat" && m.model === agent.model)
+    if (entry) lowerContextWindow(entry, smaller)
+    if (!(yield* compactIfNeeded(agent, session, definitions, estimateScale, true))) throw error
+    return yield* streamRound(agent, contextMessages(session), definitions)
+  }
+}
+
+/** Compacts the session now (`/compact`), whatever its size, keeping only the latest turn; `focus` steers what the summary keeps. Undefined when there is nothing to summarise yet. */
+export async function compact(agent: Agent, session: Session, focus?: string) {
+  await ensureContextWindow(agent)
+  return compactSession(agent, session, { focus, definitions: agent.tools.map(t => t.definition), lastTurnOnly: true })
+}
+
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
@@ -533,9 +584,15 @@ export async function* run(
 
   let emptyRoundRetries = 0
   let failingToolRounds = 0
+  // Scales the character estimate to what the provider counted last round.
+  let estimateScale = 1
   while (true) {
-    const round = yield* streamRound(agent, messages, definitions)
+    yield* compactIfNeeded(agent, session, definitions, estimateScale)
+    const round = yield* streamRoundFitting(agent, session, definitions, estimateScale)
     const { message, thinking, usage, model } = round
+    // Nothing is appended yet, so this is exactly what was sent.
+    const estimate = estimateTokens(contextMessages(session), definitions)
+    if (usage?.promptTokens && estimate > 0) estimateScale = Math.min(3, Math.max(0.33, usage.promptTokens / estimate))
 
     if (isEmptyRound(message) && emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES) {
       emptyRoundRetries++

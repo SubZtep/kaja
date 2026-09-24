@@ -1,6 +1,7 @@
-import { recordPausedCall, replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
+import { compact, recordPausedCall, replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
+import { commandArgument } from "@kaja/shared"
 import { useCallback, useRef, useState } from "react"
 import {
   Agent,
@@ -13,7 +14,7 @@ import {
 } from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
-import { getLanguage } from "../lib/i18n"
+import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
 import { peekStore } from "../lib/memory/store"
 import type { Persona } from "../lib/personas/personas"
@@ -27,6 +28,8 @@ import { createSessionRow, updateSessionRow } from "../lib/session/store"
 export type TimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: ErrorCategory }
+  /** A line from the app itself, e.g. that `/compact` found nothing to do. */
+  | { type: "notice"; text: string }
   | Exclude<FinalizedAgentEvent, { type: "usage" }>
 
 /**
@@ -204,8 +207,33 @@ export function useAgent(
   )
 
   // showUserEvent is false when the "prompt" isn't something the human typed (e.g. resolveCommand feeding back a shell command's result) — it still drives run() as the next turn, but shouldn't render as if the human said it.
+  // `/compact [focus]`: summarises the conversation now instead of sending a turn.
+  const compactNow = useCallback(
+    async (command: string, focus: string) => {
+      setPending(true)
+      pushEvent({ type: "user", text: command })
+      try {
+        const result = await compact(agent, sessionRef.current!, focus || undefined)
+        if (result) {
+          pushEvent({ type: "compacted", ...result })
+          setPromptTokens(result.afterTokens)
+        } else pushEvent({ type: "notice", text: t("timeline.nothingToCompact") })
+      } catch (error) {
+        log.warn("Compaction failed", { error })
+        const { category, message } = categorizeError(error)
+        pushEvent({ type: "error", text: message, category })
+      } finally {
+        setPending(false)
+        persistSession()
+      }
+    },
+    [agent, pushEvent, persistSession]
+  )
+
   const send = useCallback(
     async (prompt: string, showUserEvent = true) => {
+      const focus = showUserEvent ? commandArgument(prompt, "compact") : undefined
+      if (focus !== undefined) return compactNow(prompt, focus)
       setPending(true)
       if (showUserEvent) pushEvent({ type: "user", text: prompt })
       // Deltas can arrive many times a second; re-rendering (and Ink repainting the whole frame) on every single token makes long streamed responses janky — some terminals (e.g. VS Code's) visibly struggle to keep up once the content is taller than the viewport. Accumulate here and only push to state at most every DELTA_INTERVAL_MS.
@@ -245,7 +273,7 @@ export function useAgent(
         persistSession()
       }
     },
-    [agent, pushEvent, persistSession, handleFinalizedEvent]
+    [agent, pushEvent, persistSession, handleFinalizedEvent, compactNow]
   )
 
   // Resolves a pending confirm_command event: runs the command on approval (or a decline notice otherwise) and feeds the result back to run() as the next prompt — session.pendingRunCommandId routes it as the matching tool response regardless of the prompt's content.

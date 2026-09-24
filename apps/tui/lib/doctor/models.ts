@@ -5,7 +5,7 @@ import { probeModel } from "../models/check"
 import { saveModelFields } from "../models/models"
 import { statusLine } from "./status"
 
-const TASK_ORDER: ModelTask[] = ["chat", "embedding", "rerank", "tts", "stt", "image-generation"]
+const TASK_ORDER: ModelTask[] = ["chat", "summarize", "embedding", "rerank", "tts", "stt", "image-generation"]
 
 /** The heading each task's models are listed under. */
 const TASK_HEADING_KEY: Record<ModelTask, string> = {
@@ -14,7 +14,8 @@ const TASK_HEADING_KEY: Record<ModelTask, string> = {
   stt: "doctor.taskStt",
   embedding: "doctor.taskEmbedding",
   rerank: "doctor.taskRerank",
-  "image-generation": "doctor.taskImageGen"
+  "image-generation": "doctor.taskImageGen",
+  summarize: "doctor.taskSummarize"
 }
 
 /** The task as a noun inside a sentence, e.g. "Use another chat model?". */
@@ -24,7 +25,8 @@ const TASK_NOUN_KEY: Record<ModelTask, string> = {
   stt: "wizard.taskStt",
   embedding: "wizard.taskEmbedding",
   rerank: "wizard.taskRerank",
-  "image-generation": "wizard.taskImageGeneration"
+  "image-generation": "wizard.taskImageGeneration",
+  summarize: "wizard.taskSummarize"
 }
 
 /** The models grouped by task, in the order the report lists them. */

@@ -37,6 +37,10 @@
         "stt": {
           "type": "string",
           "minLength": 1
+        },
+        "summarize": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },

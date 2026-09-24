@@ -116,6 +116,11 @@ export function resolveContextWindow(
   return pending
 }
 
+/** Records that a model's server rejected a prompt of about `tokens` as too long, so later lookups use less. */
+export function lowerContextWindow(target: ContextWindowTarget, tokens: number) {
+  cache.set(`${target.baseUrl}\n${target.model}`, Promise.resolve({ tokens, source: "detected" }))
+}
+
 /** Test seam: forgets every detected window. */
 export function clearContextWindowCache() {
   cache.clear()

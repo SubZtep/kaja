@@ -136,6 +136,31 @@ describe("postgres store", () => {
     ])
   })
 
+  test("every compaction summary is kept and the latest comes back, with the messages whole", async () => {
+    const store = createPostgresStore(pool, userId)
+    const id = await store.createSession({ ...write(TURN), title: "t" })
+    const longer = [...TURN, { role: "assistant", content: "sure" }]
+    // Session indexes count the system prompt; the stored summary_from is the message seq, one less.
+    await store.updateSession(id, write(TURN, { session: { messages: TURN, summary: { text: "first", from: 2 } } }))
+    await store.updateSession(id, write(longer, { session: { messages: longer, summary: { text: "first", from: 2 } } }))
+    await store.updateSession(
+      id,
+      write(longer, { session: { messages: longer, summary: { text: "second", from: 4 } } })
+    )
+
+    const loaded = (await store.loadSession(id))!
+    expect(loaded.session.summary).toEqual({ text: "second", from: 4 })
+    expect(loaded.session.messages).toEqual(longer)
+    const { rows } = await pool.query(
+      "SELECT summary_from, summary FROM nasi_session_summary WHERE session_id = $1 ORDER BY summary_from",
+      [id]
+    )
+    expect(rows).toEqual([
+      { summary_from: 1, summary: "first" },
+      { summary_from: 3, summary: "second" }
+    ])
+  })
+
   test("a rewritten system prompt changes no message rows", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })
