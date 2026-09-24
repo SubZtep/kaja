@@ -45,6 +45,16 @@ describe("renderModelsToml", () => {
     expect(parsed.success).toBeTrue()
   })
 
+  test("keys each model by its name's slug and names it in [tasks] for the tasks it wins", () => {
+    const chat = makeModel({ id: "m1", model: "accounts/fireworks/models/minimax-m3", tasks: ["chat", "summarize"] })
+    const second = makeModel({ id: "m2", model: "other/chat-model", tasks: ["chat", "embedding"] })
+    const parsed = ModelsFileSchema.parse(TOML.parse(renderModelsToml([makeProvider()], [chat, second])))
+    expect(parsed.tasks).toEqual({ chat: "minimax-m3", summarize: "minimax-m3", embedding: "chat-model" })
+    expect(parsed.models["minimax-m3"]?.tasks).toEqual(["chat", "summarize"])
+    // The second model lost chat to the first, so it only lists the task it serves in [tasks].
+    expect(parsed.models["chat-model"]?.tasks).toEqual(["embedding"])
+  })
+
   test("omits models from disabled providers or disabled models", () => {
     const toml = renderModelsToml([makeProvider()], [makeModel({ enabled: false })])
     const parsed = TOML.parse(toml) as { models: Record<string, unknown> }

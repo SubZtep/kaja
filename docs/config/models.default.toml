@@ -1,7 +1,7 @@
-# Kaja models — [models.<task>] entries each pick a [providers.*] table with
-# `provider = "<name>"`. The id equal to the task name (e.g. "chat") is the one used for that task;
-# other models of the same task are kept as [models.<provider>-<task>], and a persona's
-# [models].<task> can pin one of them by id. `model` is the literal name sent to the provider's API.
+# Kaja models. [tasks] says which model each task uses, by its [models.<id>] id; a task left out
+# is off. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and what it
+# can be used for (`tasks`); models no task uses are kept for a persona's [models] pin, or for
+# `kaja doctor` to switch to when one stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
 [providers.fireworks]
@@ -13,37 +13,46 @@ base_url = "https://api.x.ai/v1"
 [providers.speaches]
 base_url = "http://localhost:8000"  # local server, no key needed
 
-[models.chat]
+[tasks]
+chat = "minimax-m3"
+embedding = "qwen3-embedding-8b"
+rerank = "qwen3-reranker-8b"
+image-generation = "grok-imagine-image"
+tts = "kokoro-82m-v1-0-onnx-fp16"
+stt = "faster-whisper-small"
+summarize = "glm-5p3-flash"
+
+[models.minimax-m3]
 model = "accounts/fireworks/models/minimax-m3"
-task = "chat"
 provider = "fireworks"
+tasks = ["chat"]
 
-[models.embedding]
+[models.qwen3-embedding-8b]
 model = "accounts/fireworks/models/qwen3-embedding-8b"
-task = "embedding"
 provider = "fireworks"
+tasks = ["embedding"]
 
-[models.rerank]
+[models.qwen3-reranker-8b]
 model = "accounts/fireworks/models/qwen3-reranker-8b"
-task = "rerank"
 provider = "fireworks"
+tasks = ["rerank"]
 
-[models.image-generation]
+[models.grok-imagine-image]
 model = "grok-imagine-image"
-task = "image-generation"
 provider = "xai"
+tasks = ["image-generation"]
 
-[models.tts]
+[models.kokoro-82m-v1-0-onnx-fp16]
 model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
-task = "tts"
 provider = "speaches"
+tasks = ["tts"]
 
-[models.stt]
+[models.faster-whisper-small]
 model = "Systran/faster-whisper-small"
-task = "stt"
 provider = "speaches"
+tasks = ["stt"]
 
-[models.summarize]
+[models.glm-5p3-flash]
 model = "accounts/fireworks/models/glm-5p3-flash"
-task = "summarize"
 provider = "fireworks"
+tasks = ["summarize"]

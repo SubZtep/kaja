@@ -11,10 +11,12 @@ const model = (id: string, task: CliResolvedModel["task"], provider: string, nam
   baseUrl: `https://${provider}.test/v1`
 })
 
-const FIREWORKS_CHAT = model("chat", "chat", "fireworks", "minimax-m3")
-const OLLAMA_CHAT = model("ollama-chat", "chat", "ollama", "llama3.2:1b")
-const LLAMA_CHAT = model("llama-chat", "chat", "llama", "ministral")
-const EMBEDDING = model("embedding", "embedding", "fireworks", "qwen3-embedding")
+const FIREWORKS_CHAT = model("minimax-m3", "chat", "fireworks", "minimax-m3")
+const OLLAMA_CHAT = model("llama3-2-1b", "chat", "ollama", "llama3.2:1b")
+const LLAMA_CHAT = model("ministral", "chat", "llama", "ministral")
+const EMBEDDING = model("qwen3-embedding", "embedding", "fireworks", "qwen3-embedding")
+/** models.toml's [tasks] for these tests: Fireworks serves chat and embedding. */
+const IN_USE = { chat: "minimax-m3", embedding: "qwen3-embedding" }
 
 type Probe = NonNullable<Parameters<typeof runModelPass>[3]>["probe"]
 
@@ -42,10 +44,10 @@ function io(picks: (number | undefined)[] = [], interactive = true) {
 }
 
 function saver() {
-  const saved: [string, string, string][] = []
+  const saved: [string, string][] = []
   return {
     saved,
-    save: async (task: string, provider: string, name: string) => void saved.push([task, provider, name])
+    save: async (task: string, id: string) => void saved.push([task, id])
   }
 }
 
@@ -62,6 +64,7 @@ async function run(
   const outcomes = await runModelPass(models, line => lines.push(stripVTControlCharacters(line)), fake, {
     probe,
     save,
+    active: async () => IN_USE,
     contextWindow: async m => ({ tokens: m.contextWindow ?? 32_768, source: m.contextWindow ? "config" : "fallback" })
   })
   return { lines, calls, asked, saved, outcomes }
@@ -94,7 +97,7 @@ test("a broken default with a working alternative offers the switch, and choosin
   expect(r.asked[0]!.title).toContain("minimax-m3 didn't work: 401 bad key")
   // The safe answer is first, then only the models that actually answered.
   expect(r.asked[0]!.items).toEqual(["Keep minimax-m3", "ollama — llama3.2:1b"])
-  expect(r.saved).toEqual([["chat", "ollama", "llama3.2:1b"]])
+  expect(r.saved).toEqual([["chat", "llama3-2-1b"]])
   expect(r.lines.at(-1)).toContain("chat now uses ollama — llama3.2:1b")
   expect(r.outcomes[0]).toMatchObject({ ok: true, switchedTo: OLLAMA_CHAT })
 })
@@ -118,7 +121,7 @@ test("keeping the broken model, or dismissing the question, changes nothing", as
 test("only alternatives that answered are offered, and the pick picks among them", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT, LLAMA_CHAT], { "minimax-m3": "down", "llama3.2:1b": "down" }, [1])
   expect(r.asked[0]!.items).toEqual(["Keep minimax-m3", "llama — ministral"])
-  expect(r.saved).toEqual([["chat", "llama", "ministral"]])
+  expect(r.saved).toEqual([["chat", "ministral"]])
 })
 
 test("when nothing else answers either, it says so and asks nothing", async () => {

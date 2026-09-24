@@ -259,7 +259,9 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
           baseUrl: data.providers[customName].base_url,
           models: Object.values<any>(data.models ?? {})
             .filter(entry => entry.provider === customName)
-            .map(entry => ({ model: entry.model, task: entry.task }))
+            .flatMap(entry =>
+              (Array.isArray(entry.tasks) ? entry.tasks : []).map((task: string) => ({ model: entry.model, task }))
+            )
         }
       : undefined
 
@@ -270,7 +272,7 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
     const { chosenProviders } = await import("../../components/config-wizard")
     const models: NonNullable<WizardResult["models"]> = {}
     for (const [task, options] of Object.entries(candidatesByTask(chosenProviders({ providers, custom })))) {
-      const active = data?.models?.[task]?.provider
+      const active = data?.models?.[data?.tasks?.[task]]?.provider
       if (options.length > 1 && typeof active === "string") models[task as keyof typeof models] = active
     }
     return { providers, addresses, models, ...(custom ? { custom } : {}) }

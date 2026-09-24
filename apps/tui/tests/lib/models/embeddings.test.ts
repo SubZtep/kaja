@@ -12,19 +12,23 @@ await Bun.write(
 [providers.default]
 base_url = "http://localhost/v1"
 
+[tasks]
+chat = "chat"
+embedding = "embedding"
+
 [models.chat]
 model = "test-model"
-task = "chat"
+tasks = ["chat"]
 provider = "default"
 
 [models.embedding]
 model = "test-embedding-model"
-task = "embedding"
+tasks = ["embedding"]
 provider = "default"
 
 [models.embedding-alt]
 model = "test-embedding-model-alt"
-task = "embedding"
+tasks = ["embedding"]
 provider = "default"
 `
 )
@@ -115,14 +119,18 @@ base_url = "http://localhost/v1"
 [providers.embed-host]
 base_url = "http://embedding-host/v1"
 
+[tasks]
+chat = "chat"
+embedding = "embedding"
+
 [models.chat]
 model = "test-model"
-task = "chat"
+tasks = ["chat"]
 provider = "default"
 
 [models.embedding]
 model = "custom-embedder"
-task = "embedding"
+tasks = ["embedding"]
 provider = "embed-host"
 `
   )

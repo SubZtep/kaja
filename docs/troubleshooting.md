@@ -16,7 +16,7 @@ actually reading.
 fails but another configured model for that task works, offers to switch. For a local server, check it's
 running at the `base_url` in [`models.toml`](/configuration/models).
 
-**"No chat model" on start in local mode.** Local mode needs a `[models.chat]` entry and never falls
+**"No chat model" on start in local mode.** Local mode needs a `chat` model in `[tasks]` and never falls
 back to cloud. Add one, run `kaja config wizard`, or start with `kaja --cloud`.
 
 **Cloud mode won't sign in: keychain unavailable.** The cloud token is kept only in the OS credential

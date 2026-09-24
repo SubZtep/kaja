@@ -20,17 +20,19 @@ type ModelConfig = { model: string; baseUrl: string; apiKey?: string }
 async function loadChatModel(): Promise<ModelConfig> {
   const modelsToml = TOML.parse(await file(join(CONFIG_DIR, "models.toml")).text()) as {
     providers: Record<string, { base_url: string }>
-    models: Record<string, { model: string; task: string; provider: string }>
+    tasks?: Record<string, string>
+    models: Record<string, { model: string; provider: string }>
   }
   const secretsToml = (await file(join(CONFIG_DIR, "secrets.toml"))
     .text()
     .then(TOML.parse)
     .catch(() => ({}))) as { providers?: Record<string, { api_key?: string }> }
 
-  const entry = modelsToml.models.chat
-  if (!entry) throw new Error(`No [models.chat] entry in ${join(CONFIG_DIR, "models.toml")}`)
+  const id = modelsToml.tasks?.chat
+  const entry = id ? modelsToml.models[id] : undefined
+  if (!entry) throw new Error(`No chat model in [tasks] of ${join(CONFIG_DIR, "models.toml")}`)
   const provider = modelsToml.providers[entry.provider]
-  if (!provider) throw new Error(`Unknown provider "${entry.provider}" for [models.chat]`)
+  if (!provider) throw new Error(`Unknown provider "${entry.provider}" for [models.${id}]`)
 
   return {
     model: entry.model,

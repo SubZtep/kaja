@@ -1,4 +1,5 @@
-import type { Model, Provider } from "@kaja/schema/api"
+import type { Model, ModelTask, Provider } from "@kaja/schema/api"
+import { uniqueModelSlug } from "@kaja/shared"
 import { TOML } from "bun"
 
 // Excluded from ETag hashing (the route layer hashes the un-prefixed body): a live timestamp would
@@ -9,22 +10,32 @@ function generatedHeader(): string {
 
 /** models.toml — provider.api_key is never emitted; secrets live in the CLI's secrets.toml. */
 export function renderModelsToml(providers: Provider[], models: Model[]): string {
-  // One entry per task: first enabled+free model for that task wins (created_at order already applied by the caller).
-  // The `free` filter matters — this endpoint is public, so a paid model here would hand anonymous
-  // CLI users a model id their own credentials can't reach.
-  const modelsData: Record<string, { model: string; task: string; provider: string; context_window?: number }> = {}
+  // [tasks]: per task, the first enabled+free model that serves it wins (created_at order already applied by the
+  // caller). The `free` filter matters — this endpoint is public, so a paid model here would hand anonymous
+  // CLI users a model id their own credentials can't reach. Each winner is one [models.<slug>] entry.
+  const tasks: Partial<Record<ModelTask, string>> = {}
+  const modelsData: Record<string, { model: string; provider: string; tasks: ModelTask[]; context_window?: number }> =
+    {}
+  const idByModel = new Map<string, string>()
   for (const model of models) {
     if (!model.enabled || !model.free) continue
     const providerName = providers.find(p => p.id === model.providerId)?.name
     if (!providerName) continue
     for (const task of model.tasks) {
-      if (modelsData[task]) continue
-      modelsData[task] = {
-        model: model.model,
-        task,
-        provider: providerName,
-        ...(model.contextWindow ? { context_window: model.contextWindow } : {})
+      if (tasks[task]) continue
+      let id = idByModel.get(model.id)
+      if (!id) {
+        id = uniqueModelSlug(new Set(Object.keys(modelsData)), model.model, providerName)
+        idByModel.set(model.id, id)
+        modelsData[id] = {
+          model: model.model,
+          provider: providerName,
+          tasks: [],
+          ...(model.contextWindow ? { context_window: model.contextWindow } : {})
+        }
       }
+      modelsData[id]!.tasks.push(task)
+      tasks[task] = id
     }
   }
 
@@ -35,5 +46,5 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
     providers.filter(p => usedProviderNames.has(p.name)).map(p => [p.name, { base_url: p.baseUrl }])
   )
 
-  return generatedHeader() + TOML.stringify({ providers: providersData, models: modelsData })
+  return generatedHeader() + TOML.stringify({ providers: providersData, tasks, models: modelsData })
 }

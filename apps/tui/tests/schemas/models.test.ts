@@ -12,14 +12,18 @@ base_url = "https://api.fireworks.ai/inference/v1"
 [providers.speaches]
 base_url = "http://localhost:8000"
 
+[tasks]
+chat = "chat"
+tts = "tts"
+
 [models.chat]
 model = "accounts/fireworks/models/deepseek"
-task = "chat"
+tasks = ["chat"]
 provider = "fireworks"
 
 [models.tts]
 model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
-task = "tts"
+tasks = ["tts"]
 provider = "speaches"
 `
 
@@ -46,7 +50,7 @@ test("valid file parses and resolves provider baseUrl (credentials come from sec
 })
 
 test("empty file parses to no providers, no models", () => {
-  expect(parse("")).toEqual({ providers: {}, models: {} })
+  expect(parse("")).toEqual({ providers: {}, tasks: {}, models: {} })
 })
 
 test("unknown provider reference is rejected", () => {
@@ -56,7 +60,7 @@ base_url = "https://api.example.test/v1"
 
 [models.some-chat]
 model = "some/model"
-task = "chat"
+tasks = ["chat"]
 provider = "nope"
 `
   expect(() => parse(toml)).toThrow("Unknown provider")
@@ -69,7 +73,7 @@ base_url = "https://api.example.test/v1"
 
 [models.some-chat]
 model = "some/model"
-task = "chat"
+tasks = ["chat"]
 `
   expect(() => parse(toml)).toThrow()
 })
@@ -81,12 +85,12 @@ base_url = "https://api.example.test/v1"
 
 [models.dup]
 model = "some/model"
-task = "chat"
+tasks = ["chat"]
 provider = "fireworks"
 
 [models.dup]
 model = "other/model"
-task = "embedding"
+tasks = ["embedding"]
 provider = "fireworks"
 `
   expect(() => TOML.parse(toml)).toThrow()
@@ -99,8 +103,23 @@ base_url = "https://api.example.test/v1"
 
 [models.some-chat]
 model = "some/model"
-task = "juggling"
+tasks = ["juggling"]
 provider = "fireworks"
 `
   expect(() => parse(toml)).toThrow()
+})
+
+test("[tasks] must name an existing model that lists that task", () => {
+  const base = `
+[providers.fireworks]
+base_url = "https://api.example.test/v1"
+
+[models.glm]
+model = "some/glm"
+provider = "fireworks"
+tasks = ["summarize"]
+`
+  expect(parse(`[tasks]\nsummarize = "glm"\n${base}`).tasks).toEqual({ summarize: "glm" })
+  expect(() => parse(`[tasks]\nchat = "nope"\n${base}`)).toThrow("No [models.nope]")
+  expect(() => parse(`[tasks]\nchat = "glm"\n${base}`)).toThrow("in its tasks")
 })

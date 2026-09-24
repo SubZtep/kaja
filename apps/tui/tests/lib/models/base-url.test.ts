@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { setModelFields, setProviderBaseUrl } from "../../../lib/models/models"
+import { setProviderBaseUrl, setTaskModel } from "../../../lib/models/models"
 
 const TEMPLATE = `# Kaja models — a comment that must survive.
 
@@ -9,10 +9,13 @@ base_url = "http://localhost:11434/v1"
 [providers.speaches]
 base_url = "http://localhost:8000"  # local server, no key needed
 
-[models.chat]
+[tasks]
+chat = "llama3-2-1b"
+
+[models.llama3-2-1b]
 model = "llama3.2:1b"
-task = "chat"
 provider = "ollama"
+tasks = ["chat"]
 `
 
 test("repoints the named provider and leaves everything else alone", () => {
@@ -47,42 +50,36 @@ base_url = "https://api.fireworks.ai/inference/v1"
 [providers.ollama]
 base_url = "http://localhost:11434/v1"
 
-[models.chat]
-model = "accounts/fireworks/models/minimax-m3"  # the default
-task = "chat"
-provider = "fireworks"
+[tasks]
+chat = "minimax-m3"  # the default
+embedding = "qwen3-embedding-8b"
 
-[models.ollama-chat]
+[models.minimax-m3]
+model = "accounts/fireworks/models/minimax-m3"
+provider = "fireworks"
+tasks = ["chat"]
+
+[models.llama3-2-1b]
 model = "llama3.2:1b"
-task = "chat"
 provider = "ollama"
+tasks = ["chat"]
 `
 
-test("setModelFields points a task's default at another provider and model, keeping its id", () => {
-  const out = setModelFields(TWO_CHATS, "chat", "ollama", "llama3.2:1b")
-  expect(out).toContain('[models.chat]\nmodel = "llama3.2:1b"  # the default\ntask = "chat"\nprovider = "ollama"')
-  // The id is unchanged, and the alternative entry and the comments are untouched.
-  expect(out).toContain('[models.ollama-chat]\nmodel = "llama3.2:1b"\ntask = "chat"\nprovider = "ollama"')
-  expect(out).toContain("# Kaja models — a comment that must survive.")
-  expect(out).toContain('[providers.fireworks]\nbase_url = "https://api.fireworks.ai/inference/v1"')
+test("setTaskModel points a task at another model id and touches nothing else", () => {
+  const out = setTaskModel(TWO_CHATS, "chat", "llama3-2-1b")
+  expect(out).toBe(TWO_CHATS.replace('chat = "minimax-m3"', 'chat = "llama3-2-1b"'))
 })
 
-test("setModelFields drops the old model's context_window but not another entry's", () => {
-  const text = TWO_CHATS.replace(
-    'provider = "fireworks"\n',
-    'provider = "fireworks"\ncontext_window = 200000\n'
-  ).replace('provider = "ollama"\n', 'provider = "ollama"\ncontext_window = 8192\n')
-  const out = setModelFields(text, "chat", "ollama", "llama3.2:1b")
-  expect(out).not.toContain("context_window = 200000")
-  expect(out).toContain(
-    '[models.ollama-chat]\nmodel = "llama3.2:1b"\ntask = "chat"\nprovider = "ollama"\ncontext_window = 8192'
-  )
+test("setTaskModel adds a task [tasks] doesn't have yet, inside the table", () => {
+  const out = setTaskModel(TWO_CHATS, "summarize", "llama3-2-1b")
+  expect(out).toContain('embedding = "qwen3-embedding-8b"\nsummarize = "llama3-2-1b"\n\n[models.minimax-m3]')
 })
 
-test("setModelFields leaves the text alone when the task has no default entry", () => {
-  expect(setModelFields(TWO_CHATS, "embedding", "ollama", "nomic-embed-text")).toBe(TWO_CHATS)
+test("setTaskModel leaves the text alone when there is no [tasks] table", () => {
+  const text = TWO_CHATS.replace("[tasks]", "[other]")
+  expect(setTaskModel(text, "chat", "llama3-2-1b")).toBe(text)
 })
 
-test("setModelFields escapes a value that would break out of the string", () => {
-  expect(setModelFields(TWO_CHATS, "chat", "ollama", 'we"ird')).toContain('model = "we\\"ird"  # the default')
+test("setTaskModel escapes an id that would break out of the string", () => {
+  expect(setTaskModel(TWO_CHATS, "chat", 'we"ird')).toContain('chat = "we\\"ird"  # the default')
 })

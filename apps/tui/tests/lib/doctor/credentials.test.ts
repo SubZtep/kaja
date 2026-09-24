@@ -244,7 +244,7 @@ test("a scoped pass looks only at the items it was given", async () => {
 test("collects providers, keyed abilities, declared MCP secrets and a saved Telegram token", async () => {
   put(
     "models.toml",
-    `[providers.local]\nbase_url = "http://localhost:11434/v1"\n\n[models.chat]\nmodel = "m"\ntask = "chat"\nprovider = "local"\n`
+    `[providers.local]\nbase_url = "http://localhost:11434/v1"\n\n[tasks]\nchat = "m"\n\n[models.m]\nmodel = "m"\ntasks = ["chat"]\nprovider = "local"\n`
   )
   put("abilities.toml", `tools = ["gh", "open"]\n`)
   put(

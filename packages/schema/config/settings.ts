@@ -24,7 +24,7 @@ export const KajaPreferencesSchema = z.object({
     .describe("Colour theme; auto asks the terminal for its background colour (default: auto)")
 })
 
-// Per-feature config blocks; the model itself lives in models.toml's [models.*], the entry whose id equals the task.
+// Per-feature config blocks; the model itself is the one models.toml's [tasks] names.
 export const KajaSttSchema = z.object({
   speachesUrl: z.url().optional().describe("Speaches AI server endpoint (speech-to-text)"),
   language: z.string().min(1).optional().describe("Language hint for speech-to-text, e.g. 'en'")

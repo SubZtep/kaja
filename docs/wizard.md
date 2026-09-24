@@ -119,7 +119,7 @@ Everything is plain text in `~/.config/kaja/`, which you can edit by hand afterw
 | Colours | `[preferences] theme` | `settings.toml` |
 | How to run Kaja | `[preferences] mode` | `settings.toml` |
 | Providers you tick, custom provider | `[providers.<name>]` tables and their models | [`models.toml`](/configuration/models) |
-| Which model, per task | `[models.chat]` etc.; the others stay as `[models.<provider>-chat]` | `models.toml` |
+| Which model, per task | `[tasks]` (`chat = "minimax-m3"` etc.); every model offered stays as `[models.<id>]` | `models.toml` |
 | A server address | `[providers.<name>] base_url` | `models.toml` |
 | Speaches address | `[stt] speachesUrl`, `[tts] speachesUrl` | `settings.toml` |
 | A provider's API key | `[providers.<name>] api_key` | [`secrets.toml`](/configuration/secrets) |

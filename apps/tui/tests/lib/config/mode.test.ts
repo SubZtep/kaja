@@ -32,7 +32,7 @@ async function writeMode(mode: string) {
 async function writeWorkingChatModel() {
   await Bun.write(
     getModelsPath(),
-    '[providers.fireworks]\nbase_url = "https://example.invalid/v1"\n\n[models.chat]\nmodel = "m"\ntask = "chat"\nprovider = "fireworks"\n'
+    '[providers.fireworks]\nbase_url = "https://example.invalid/v1"\n\n[tasks]\nchat = "m"\n\n[models.m]\nmodel = "m"\ntasks = ["chat"]\nprovider = "fireworks"\n'
   )
   await Bun.write(getSecretsPath(), '[providers.fireworks]\napi_key = "fw_test"\n')
 }

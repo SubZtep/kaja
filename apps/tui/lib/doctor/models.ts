@@ -2,7 +2,7 @@ import { resolveContextWindow } from "@kaja/nasi"
 import type { CliResolvedModel, ModelTask } from "@kaja/schema/config"
 import { t } from "../i18n"
 import { probeModel } from "../models/check"
-import { saveModelFields } from "../models/models"
+import { loadModelsFile, saveTaskModel } from "../models/models"
 import { statusLine } from "./status"
 
 const TASK_ORDER: ModelTask[] = ["chat", "summarize", "embedding", "rerank", "tts", "stt", "image-generation"]
@@ -46,7 +46,7 @@ export type ModelIo = {
 /** What became of a task's active model: still fine, still broken, or replaced by another that answered. */
 export type ModelOutcome = {
   task: ModelTask
-  /** The `[models.<task>]` entry, the one the app uses. */
+  /** The model [tasks] names, the one the app uses. */
   active: CliResolvedModel
   ok: boolean
   switchedTo?: CliResolvedModel
@@ -54,8 +54,10 @@ export type ModelOutcome = {
 
 type Deps = {
   probe?: typeof probeModel
-  save?: typeof saveModelFields
+  save?: typeof saveTaskModel
   contextWindow?: typeof resolveContextWindow
+  /** models.toml's [tasks]: the model id each task uses. */
+  active?: () => Promise<Partial<Record<ModelTask, string>>>
 }
 
 /** The model pass's prompt for a real terminal. Loaded here so a non-interactive caller never loads the prompts. */
@@ -105,24 +107,29 @@ function trimTrailingDots(text: string): string {
 
 /**
  * Tests every configured model, task by task, and prints one line each with why it failed. When a
- * task's active model (`[models.<task>]`) fails while another model of the same task answered, and
- * there is a terminal to ask in, offers to switch to it: only `provider` and `model` of the active
- * entry change, so the id and any persona pinning it keep working. A model nothing else can stand
- * in for is only reported.
+ * task's active model (the one [tasks] names) fails while another model of the same task answered, and
+ * there is a terminal to ask in, offers to switch to it: only that task's line in [tasks] changes, so every
+ * model entry and any persona pin stay as they are. A model nothing else can stand in for is only reported.
  */
 export async function runModelPass(
   models: CliResolvedModel[],
   print: (line: string) => void,
   io: ModelIo,
-  { probe = probeModel, save = saveModelFields, contextWindow = resolveContextWindow }: Deps = {}
+  {
+    probe = probeModel,
+    save = saveTaskModel,
+    contextWindow = resolveContextWindow,
+    active: activeIds = async () => (await loadModelsFile()).tasks
+  }: Deps = {}
 ): Promise<ModelOutcome[]> {
   const outcomes: ModelOutcome[] = []
+  const inUse = await activeIds()
 
   for (const [task, entries] of groupModelsByTask(models)) {
     print(t(TASK_HEADING_KEY[task]))
     const results = await probeTask(entries, print, probe, contextWindow)
 
-    const active = results.find(entry => entry.model.id === task)
+    const active = results.find(entry => entry.model.id === inUse[task])
     if (!active) continue
     const outcome: ModelOutcome = { task, active: active.model, ok: active.result.ok }
     outcomes.push(outcome)
@@ -151,7 +158,7 @@ export async function runModelPass(
     if (picked === undefined || picked === 0) continue
 
     const chosen = working[picked - 1]!
-    await save(task, chosen.provider, chosen.model)
+    await save(task, chosen.id)
     outcome.ok = true
     outcome.switchedTo = chosen
     print(
