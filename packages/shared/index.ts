@@ -1,7 +1,7 @@
 import clsx, { type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-export { LOCALE_LABELS, type Locale, locales } from "./locale"
+export { LOCALE_LABELS, type Locale, locales, matchLocale } from "./locale"
 export {
   asRateLimitError,
   EditThrottle,

@@ -1,5 +1,6 @@
 import type { WidgetType } from "@kaja/schema/api"
 import { createVisitorId, sendWidgetTurn, WidgetTurnRateLimitError } from "./client"
+import { widgetLocale, widgetStrings } from "./i18n"
 
 const STATE_STORAGE_KEY = "kaja-widget-state"
 
@@ -82,7 +83,13 @@ function findEmbedScript(): HTMLScriptElement | null {
   return document.querySelector<HTMLScriptElement>('script[src*="/widget/"]')
 }
 
-const BARKOCHBA_ANSWERS = ["Yes", "No", "Sometimes", "Unknown"]
+// The value stays English whatever the label says: the model is told which language to reply in, and reads these as the game's fixed answers.
+const BARKOCHBA_ANSWERS = [
+  { value: "Yes", label: "answerYes" },
+  { value: "No", label: "answerNo" },
+  { value: "Sometimes", label: "answerSometimes" },
+  { value: "Unknown", label: "answerUnknown" }
+] as const
 
 declare global {
   interface Window {
@@ -115,13 +122,17 @@ function init() {
 
   injectStyles()
 
+  // Read once: a page that changes language reloads, and the widget with it.
+  const locale = widgetLocale()
+  const t = widgetStrings(locale)
+
   const state = loadState()
   let pending = false
 
   const bubble = document.createElement("button")
   bubble.className = "kaja-widget-bubble"
   bubble.innerHTML = CHAT_ICON_SVG
-  bubble.setAttribute("aria-label", "Open chat")
+  bubble.setAttribute("aria-label", t.openChat)
 
   const panel = document.createElement("div")
   panel.className = "kaja-widget-panel"
@@ -144,7 +155,8 @@ function init() {
       const data = await sendWidgetTurn(baseUrl, widgetKey, {
         session: state.session,
         message,
-        visitorId: state.visitorId
+        visitorId: state.visitorId,
+        language: locale
       })
       state.session = data.session
       saveState(state)
@@ -153,8 +165,7 @@ function init() {
       if (awaitingAnswer) thinking.classList.add("kaja-widget-msg-question")
       onAwaitingAnswerChange(awaitingAnswer)
     } catch (error) {
-      thinking.textContent =
-        error instanceof WidgetTurnRateLimitError ? error.message : "Something went wrong. Please try again."
+      thinking.textContent = error instanceof WidgetTurnRateLimitError ? t.rateLimited : t.error
     } finally {
       pending = false
       setControlsDisabled(false)
@@ -172,8 +183,8 @@ function init() {
       const button = document.createElement("button")
       button.type = "button"
       button.className = "kaja-barkochba-answer"
-      button.textContent = answer
-      button.addEventListener("click", () => sendMessage(answer))
+      button.textContent = t[answer.label]
+      button.addEventListener("click", () => sendMessage(answer.value))
       buttons.append(button)
     }
     setControlsDisabled = disabled => {
@@ -185,11 +196,11 @@ function init() {
     form.className = "kaja-chat-form"
     const input = document.createElement("input")
     input.className = "kaja-chat-input"
-    input.placeholder = "Ask something…"
+    input.placeholder = t.askPlaceholder
     const send = document.createElement("button")
     send.type = "submit"
     send.className = "kaja-chat-send"
-    send.textContent = "Send"
+    send.textContent = t.send
     form.append(input, send)
 
     form.addEventListener("submit", e => {
@@ -201,7 +212,7 @@ function init() {
     })
 
     onAwaitingAnswerChange = awaitingAnswer => {
-      input.placeholder = awaitingAnswer ? "Your answer…" : "Ask something…"
+      input.placeholder = awaitingAnswer ? t.answerPlaceholder : t.askPlaceholder
     }
 
     setControlsDisabled = disabled => {

@@ -20,8 +20,12 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
   // A signed-in pick is saved first: LocaleSync switches the page back to the saved language after the reload.
   async function pick(locale: Locale) {
     if (signedIn) {
-      const { error } = await authClient.updateUser({ locale })
-      if (error) {
+      // A network failure (offline) throws rather than coming back as `error`.
+      const saved = await authClient
+        .updateUser({ locale })
+        .then(({ error }) => !error)
+        .catch(() => false)
+      if (!saved) {
         toast.error(m.language_select_save_error())
         return
       }

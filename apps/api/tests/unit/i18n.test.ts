@@ -4,9 +4,17 @@ import { dictionaries, toLocale, translator } from "../../src/core/i18n"
 import { getChangeEmailHtml } from "../../src/emails/ChangeEmail"
 import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"
 
+const WIDGET_LOCALES = `${import.meta.dir}/../../widgets/locales`
+
 for (const locale of locales.filter(locale => locale !== "en-GB")) {
   test(`en-GB and ${locale} dictionaries have the same keys`, () => {
     expect([...dictionaries[locale].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
+  })
+
+  test(`the widget's en-GB and ${locale} strings have the same keys`, async () => {
+    const read = async (code: string) =>
+      Object.keys(Bun.TOML.parse(await Bun.file(`${WIDGET_LOCALES}/${code}.toml`).text()))
+    expect((await read(locale)).sort()).toEqual((await read("en-GB")).sort())
   })
 }
 
