@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
-import type { CallStat, StepStat } from "@kaja/nasi"
+import type { CallStat, ModelCallStat, StepStat } from "@kaja/nasi"
 import type { UsageStatsResponse } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
@@ -27,6 +27,7 @@ async function seedSession(
     messages?: unknown[]
     steps?: StepStat[]
     calls?: Record<string, CallStat>
+    modelCalls?: ModelCallStat[]
   }
 ) {
   const id = await createPostgresStore(pool, userId).createSession({
@@ -34,7 +35,10 @@ async function seedSession(
     model: opts.model ?? "model-a",
     owner: opts.owner ?? null,
     title: "seed",
-    session: { messages: opts.messages ?? [], telemetry: { steps: opts.steps ?? [], calls: opts.calls ?? {} } },
+    session: {
+      messages: opts.messages ?? [],
+      telemetry: { steps: opts.steps ?? [], calls: opts.calls ?? {}, modelCalls: opts.modelCalls }
+    },
     events: []
   })
   // Older days sit at noon UTC so a run over midnight cannot move them to another day; today is "now", it cannot be later.
@@ -96,7 +100,9 @@ describe("GET /stats", () => {
         { role: "user", content: "hello" },
         { role: "assistant", content: "hey" }
       ],
-      steps: [{ at: 1, persona: "default", model: "model-b", promptTokens: 30, completionTokens: 5, latencyMs: 100 }]
+      steps: [{ at: 1, persona: "default", model: "model-b", promptTokens: 30, completionTokens: 5, latencyMs: 100 }],
+      // A compaction summary: its tokens count, its time isn't a reply's.
+      modelCalls: [{ kind: "compact", model: "summarizer", promptTokens: 1000, completionTokens: 100, latencyMs: 4000 }]
     })
     await seedSession(mine.userId, {
       ageDays: 2,
@@ -135,8 +141,8 @@ describe("GET /stats", () => {
       sessions: 3,
       messages: 4,
       toolCalls: 4,
-      promptTokens: 200,
-      completionTokens: 40,
+      promptTokens: 1200,
+      completionTokens: 140,
       avgLatencyMs: 250
     })
     expect(body.tools.map(tool => tool.name)).toEqual(["read_thing", "write_thing"])
@@ -176,7 +182,7 @@ describe("GET /stats", () => {
     expect(body.perDay.slice(-2).reduce((sum, day) => sum + day.started, 0)).toBeGreaterThanOrEqual(1)
   })
 
-  test("splits sessions by channel, and replies by persona and model", async () => {
+  test("splits sessions by channel, replies by persona, and replies and summaries by model", async () => {
     const { body } = await get(mine.token, "?days=7")
     expect(Object.fromEntries(body.channels.map(row => [row.channel, row.sessions]))).toEqual({
       web: 1,
@@ -188,8 +194,9 @@ describe("GET /stats", () => {
       { persona: "default", replies: 2, sessions: 2 }
     ])
     expect(body.models).toEqual([
-      { model: "model-a", replies: 3, sessions: 2, promptTokens: 170, completionTokens: 35 },
-      { model: "model-b", replies: 1, sessions: 1, promptTokens: 30, completionTokens: 5 }
+      { model: "model-a", replies: 3, summaries: 0, sessions: 2, promptTokens: 170, completionTokens: 35 },
+      { model: "model-b", replies: 1, summaries: 0, sessions: 1, promptTokens: 30, completionTokens: 5 },
+      { model: "summarizer", replies: 0, summaries: 1, sessions: 1, promptTokens: 1000, completionTokens: 100 }
     ])
   })
 

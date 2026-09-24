@@ -1,6 +1,9 @@
 import {
+  attachImages,
   clearTelemetry,
   type DatasetAnswer,
+  detachImages,
+  hasImageRefs,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -56,6 +59,9 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
   ])
   const latest = summary.rows[0]
   const callsBySeq = Map.groupBy(calls.rows, call => call.seq as number)
+  const images = messages.rows.some(message => hasImageRefs(message.parts))
+    ? await sessionImages(db, row.id)
+    : new Map<string, never>()
   const parsed = PersistedSessionSchema.safeParse({
     id: row.id,
     createdAt: iso(row.created_at),
@@ -74,7 +80,7 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
       messages: messages.rows.map((message, seq) => ({
         role: message.role,
         content: message.content,
-        parts: message.parts,
+        parts: attachImages(message.parts, images),
         reasoning: message.reasoning,
         toolCallId: message.tool_call_id,
         toolCalls: (callsBySeq.get(seq) ?? []).map(call => ({
@@ -89,8 +95,26 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
   return parsed.success ? parsed.data : undefined
 }
 
+// The session's stored images by hash, for the messages that refer to them.
+async function sessionImages(db: Pool, sessionId: string) {
+  const { rows } = await db.query<{ hash: string; mime_type: string; data: Buffer }>(
+    "SELECT hash, mime_type, data FROM nasi_session_image WHERE session_id = $1",
+    [sessionId]
+  )
+  return new Map(rows.map(image => [image.hash, { mimeType: image.mime_type, data: image.data }]))
+}
+
 async function insertMessage(client: PoolClient, sessionId: string, seq: number, row: MessageRow) {
   const id = Bun.randomUUIDv7()
+  // Inline images go in their own table, once per session; the message keeps a reference to each.
+  const { parts, images } = detachImages(row.parts)
+  for (const image of images) {
+    await client.query(
+      `INSERT INTO nasi_session_image (session_id, hash, mime_type, data) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (session_id, hash) DO NOTHING`,
+      [sessionId, image.hash, image.mimeType, image.data]
+    )
+  }
   await client.query(
     `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id,
                                persona, model, prompt_tokens, completion_tokens, latency_ms, finish_reason)
@@ -101,7 +125,7 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
       seq,
       row.role,
       row.content,
-      row.parts ? JSON.stringify(row.parts) : null,
+      parts ? JSON.stringify(parts) : null,
       row.reasoning,
       row.toolCallId,
       row.step?.persona ?? null,
@@ -130,7 +154,15 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
 
 // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
 async function saveConversation(client: PoolClient, id: string, data: SessionWrite) {
-  const { systemPrompt, pending, messages, summary, toolSummaries, calls = [] } = splitConversation(data.session)
+  const {
+    systemPrompt,
+    pending,
+    messages,
+    summary,
+    toolSummaries,
+    calls = [],
+    modelCalls = []
+  } = splitConversation(data.session)
   await client.query(
     "UPDATE nasi_session SET system_prompt = $2, pending_call_id = $3, pending_kind = $4 WHERE id = $1",
     [id, systemPrompt, pending?.callId ?? null, pending?.kind ?? null]
@@ -161,6 +193,13 @@ async function saveConversation(client: PoolClient, id: string, data: SessionWri
        SET status = COALESCE($3, status), approval = COALESCE($4, approval), duration_ms = COALESCE($5, duration_ms)
        WHERE call_id = $2 AND message_id IN (SELECT id FROM nasi_message WHERE session_id = $1)`,
       [id, callId, status ?? null, approval ?? null, durationMs ?? null]
+    )
+  }
+  for (const call of modelCalls) {
+    await client.query(
+      `INSERT INTO nasi_model_call (session_id, kind, model, prompt_tokens, completion_tokens, latency_ms)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, call.kind, call.model, call.promptTokens ?? null, call.completionTokens ?? null, call.latencyMs]
     )
   }
 }

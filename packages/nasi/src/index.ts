@@ -46,6 +46,7 @@ export {
   createSession,
   DATASET_INFO_TOOL,
   type FinalizedAgentEvent,
+  type ModelCallStat,
   type PromptContext,
   REMEMBER_NOTE_TOOL,
   RUN_COMMAND_TOOL,
@@ -70,7 +71,12 @@ export { categorizeError, type ErrorCategory } from "./agent/error-category"
 export { samplingOf } from "./agent/persona"
 export { compact, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
-export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
+export {
+  applyPersonaToMessages,
+  buildSystemPrompt,
+  replyLanguageInstructionFor,
+  TELEGRAM_CHANNEL_INSTRUCTION
+} from "./agent/system-prompt"
 export { recordPausedCall } from "./agent/telemetry"
 export {
   LOCAL_OWNER_CTX,
@@ -109,12 +115,16 @@ export {
   UnsafeUrlError
 } from "./security/ssrf"
 export {
+  attachImages,
   type CallUpdate,
   type ConversationRows,
   clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
+  detachImages,
   forgetNotes,
+  hasImageRefs,
+  IMAGE_REF_PREFIX,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -123,6 +133,7 @@ export {
   requireStore,
   type SessionWrite,
   type StepRow,
+  type StoredImage,
   splitConversation,
   type ToolCallRow
 } from "./store"

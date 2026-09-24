@@ -1,4 +1,4 @@
-import type { CallStat, Session, SessionTelemetry, StepStat } from "./agent"
+import type { CallStat, ModelCallStat, Session, SessionTelemetry, StepStat } from "./agent"
 
 function telemetryOf(session: Session): SessionTelemetry {
   session.telemetry ??= { steps: [], calls: {} }
@@ -12,6 +12,12 @@ export function msSince(startedAt: number): number {
 
 export function recordStep(session: Session, stat: StepStat): void {
   telemetryOf(session).steps.push(stat)
+}
+
+/** Records a summarizer call (compaction, condensing, the summarize tool), so its tokens count too. */
+export function recordModelCall(session: Session, stat: ModelCallStat): void {
+  const telemetry = telemetryOf(session)
+  telemetry.modelCalls = [...(telemetry.modelCalls ?? []), stat]
 }
 
 /** Adds to what's known about a call, so the run that made it and the turn that answers it can each contribute. */

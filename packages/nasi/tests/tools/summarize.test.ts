@@ -41,6 +41,14 @@ test("text too long for one request is summarised in parts, then as a whole", as
   expect(small.asked[0]!.messages[1]!.content).toStartWith("Part 1 of")
 })
 
+test("each request it makes is reported to the host, so its tokens count", async () => {
+  const small = model("small")
+  setToolDeps({ summarizer: small.chat })
+  const calls: unknown[] = []
+  await summarizeTool.execute({ text: "long text" }, { owner: null, onModelCall: call => calls.push(call) })
+  expect(calls).toEqual([{ model: "small", latencyMs: expect.any(Number) }])
+})
+
 test("without any model it says so instead of failing", async () => {
   expect(await summarizeTool.execute({ text: "x" }, {} as never)).toBe("Summarize is not configured.")
 })

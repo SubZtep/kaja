@@ -3,7 +3,12 @@ import type { Dataset, Persona } from "@kaja/schema/cli"
 import { createLoadSkillTool } from "../../src/abilities/skills"
 import type { AbilityStore, SkillSummary } from "../../src/abilities/types"
 import { Agent, runCommandTool, switchPersonaTool } from "../../src/agent/agent"
-import { buildSystemPrompt, refreshAbilitiesInPrompt, replyLanguageInstructionFor } from "../../src/agent/system-prompt"
+import {
+  buildSystemPrompt,
+  refreshAbilitiesInPrompt,
+  replyLanguageInstructionFor,
+  TELEGRAM_CHANNEL_INSTRUCTION
+} from "../../src/agent/system-prompt"
 import { createMemoryStore } from "../../src/store"
 import { datasetInfoTool } from "../../src/tools/builtin/dataset-info"
 
@@ -25,6 +30,17 @@ test("returns a reply-language instruction for nan-TW", () => {
 
 test("returns undefined for an unknown language code", () => {
   expect(replyLanguageInstructionFor("xx")).toBeUndefined()
+})
+
+test("## Channel carries the host's channel instruction, and is absent without one", async () => {
+  const plain = new Agent({ model: "m", tools: [], promptContext: { environment: "test" } })
+  expect((await buildSystemPrompt(plain)) ?? "").not.toContain("## Channel")
+  const telegram = new Agent({
+    model: "m",
+    tools: [],
+    promptContext: { environment: "test", channelInstruction: TELEGRAM_CHANNEL_INSTRUCTION }
+  })
+  expect(await buildSystemPrompt(telegram)).toContain(`## Channel\n${TELEGRAM_CHANNEL_INSTRUCTION}`)
 })
 
 const pdfSkill: SkillSummary = { name: "pdf", description: "Work with PDF files.", files: [] }

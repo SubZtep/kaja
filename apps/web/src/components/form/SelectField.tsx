@@ -1,15 +1,21 @@
 import { Field } from "@base-ui/react/field"
+import { cn } from "@kaja/shared"
 import { useFieldContext } from "../../lib/form-contexts"
 import { FieldErrors } from "./FieldErrors"
 
 export function SelectField({
   label,
   options,
+  layout = "horizontal",
   ...props
 }: Readonly<
-  { label: string; options: { value: string; label: string }[] } & Omit<React.ComponentProps<"select">, "value">
+  { label: string; options: { value: string; label: string }[]; layout?: "horizontal" | "stack" } & Omit<
+    React.ComponentProps<"select">,
+    "value"
+  >
 >) {
   const field = useFieldContext<string>()
+  const isStack = layout === "stack"
 
   return (
     <Field.Root
@@ -18,9 +24,14 @@ export function SelectField({
       dirty={field.state.meta.isDirty}
       touched={field.state.meta.isTouched}
     >
-      <div className="md:flex">
-        <Field.Label htmlFor={field.name} className="flex w-48 align-middle items-center justify-between">
-          {label}:
+      <div className={cn(isStack ? "flex flex-col gap-1.5" : "md:flex")}>
+        <Field.Label
+          htmlFor={field.name}
+          className={cn(
+            isStack ? "font-medium text-[13px] text-muted" : "flex w-48 align-middle items-center justify-between"
+          )}
+        >
+          {isStack ? label : `${label}:`}
         </Field.Label>
         <select
           id={field.name}

@@ -4,7 +4,8 @@ import {
   type FinalizedAgentEvent,
   type NasiTurnInput,
   pendingToolCall,
-  type Session
+  type Session,
+  TELEGRAM_CHANNEL_INSTRUCTION
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
 import {
@@ -234,7 +235,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         userId: ownerUserId,
         owner,
         pinnedModel: await pinnedModelFor(ownerUserId, resumeRow?.id),
-        language: language.locale
+        language: language.locale,
+        channelInstruction: TELEGRAM_CHANNEL_INSTRUCTION
       })
       try {
         let ended = false

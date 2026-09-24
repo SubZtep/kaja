@@ -2,6 +2,8 @@ import type OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { DEFAULT_CONTEXT_WINDOW } from "../models/context-window"
 import type { Agent, Session } from "./agent"
+import { msSince, recordModelCall } from "./telemetry"
+import type { ModelCallUsage } from "./tools"
 
 /** Share of the context window at which a round compacts first, unless the host sets {@link Agent.compactAt}. */
 export const DEFAULT_COMPACT_AT = 0.8
@@ -20,6 +22,9 @@ const CHARS_PER_TOKEN = 4
 
 /** What a compaction did, for the `compacted` event and `/compact`'s reply. */
 export type Compaction = { beforeTokens: number; afterTokens: number; dropped: boolean }
+
+/** How many of the latest user prompts keep their images in what the model is sent; older images become a note. */
+const KEEP_IMAGE_TURNS = 2
 
 // Serializes a message for counting, with inline images as a flat cost instead of their base64.
 function sizeOf(value: unknown): number {
@@ -44,14 +49,37 @@ function condensed(session: Session, messages: ChatCompletionMessageParam[]): Ch
   )
 }
 
+// The messages with images from before the last few user prompts replaced by a note: the model saw them then, and resending them each round costs a lot.
+function withoutOldImages(messages: ChatCompletionMessageParam[]): ChatCompletionMessageParam[] {
+  let prompts = 0
+  const keepFrom = messages.findLastIndex(
+    message => message.role === "user" && typeof message.content === "string" && ++prompts === KEEP_IMAGE_TURNS
+  )
+  const hasImage = (message: ChatCompletionMessageParam) =>
+    message.role === "user" && Array.isArray(message.content) && message.content.some(p => p.type === "image_url")
+  if (keepFrom <= 0 || !messages.slice(0, keepFrom).some(hasImage)) return messages
+  return messages.map((message, at) => {
+    if (at >= keepFrom || message.role !== "user" || !Array.isArray(message.content) || !hasImage(message))
+      return message
+    return {
+      ...message,
+      content: message.content.map(part =>
+        part.type === "image_url"
+          ? { type: "text" as const, text: "[an image shown earlier in the conversation]" }
+          : part
+      )
+    }
+  })
+}
+
 /**
- * What the model is sent: the full log (with oversized tool results condensed), or once compacted the system
- * prompt with the summary appended, then the messages from `summary.from` on. The session's own log is never
- * shortened.
+ * What the model is sent: the full log (with oversized tool results condensed, and images from before the
+ * last {@link KEEP_IMAGE_TURNS} user prompts left out), or once compacted the system prompt with the summary
+ * appended, then the messages from `summary.from` on. The session's own log is never shortened.
  */
 export function contextMessages(session: Session): ChatCompletionMessageParam[] {
   const { summary } = session
-  const messages = condensed(session, session.messages)
+  const messages = withoutOldImages(condensed(session, session.messages))
   if (!summary) return messages
   const block = `## Earlier in this conversation\n\nThe older part of this conversation was summarised to save space:\n\n${summary.text}`
   const first = messages[0]
@@ -151,8 +179,10 @@ async function summarizeOnce(
   chat: { client: OpenAI; model: string },
   text: string,
   focus: string | undefined,
-  style: SummaryStyle
+  style: SummaryStyle,
+  onCall?: (usage: ModelCallUsage) => void
 ): Promise<string> {
+  const startedAt = performance.now()
   const completion = await chat.client.chat.completions.create({
     model: chat.model,
     messages: [
@@ -162,6 +192,12 @@ async function summarizeOnce(
       },
       { role: "user", content: style.reminder ? `${text}\n\n${style.reminder}` : text }
     ]
+  })
+  onCall?.({
+    model: completion.model || chat.model,
+    promptTokens: completion.usage?.prompt_tokens,
+    completionTokens: completion.usage?.completion_tokens,
+    latencyMs: msSince(startedAt)
   })
   const summary = completion.choices[0]?.message.content?.trim()
   if (!summary) throw new Error("The summary came back empty")
@@ -193,7 +229,7 @@ function chunk(entries: string[], limit: number): string[] {
 export async function summarize(
   chat: { client: OpenAI; model: string; contextWindow?: number },
   entries: string[],
-  opts: { previous?: string; focus?: string; style?: SummaryStyle } = {}
+  opts: { previous?: string; focus?: string; style?: SummaryStyle; onCall?: (usage: ModelCallUsage) => void } = {}
 ): Promise<string> {
   const style = opts.style ?? CONVERSATION_STYLE
   const limit = Math.max(
@@ -205,12 +241,18 @@ export async function summarize(
   while (chunks.length > 1) {
     const parts = await Promise.all(
       chunks.map((text, index) =>
-        summarizeOnce(chat, `Part ${index + 1} of ${chunks.length} of ${style.whole}:\n\n${text}`, opts.focus, style)
+        summarizeOnce(
+          chat,
+          `Part ${index + 1} of ${chunks.length} of ${style.whole}:\n\n${text}`,
+          opts.focus,
+          style,
+          opts.onCall
+        )
       )
     )
     chunks = chunk(parts, limit)
   }
-  return summarizeOnce(chat, chunks[0] ?? "", opts.focus, style)
+  return summarizeOnce(chat, chunks[0] ?? "", opts.focus, style, opts.onCall)
 }
 
 /**
@@ -236,7 +278,11 @@ export async function compactSession(
   let text: string
   let dropped = false
   try {
-    text = await summarize(chat, entries, { previous, focus: opts.focus })
+    text = await summarize(chat, entries, {
+      previous,
+      focus: opts.focus,
+      onCall: usage => recordModelCall(session, { kind: "compact", ...usage })
+    })
   } catch {
     dropped = true
     text = [previous, "(Some earlier messages were dropped here without a summary.)"].filter(Boolean).join("\n\n")
@@ -245,32 +291,37 @@ export async function compactSession(
   return { beforeTokens, afterTokens: estimateTokens(contextMessages(session), opts.definitions), dropped }
 }
 
-// The call behind a tool result and the user's request it served, so the condensed output keeps what matters.
-function purposeOf(messages: ChatCompletionMessageParam[], at: number, callId: string): string {
-  const call = messages
+// The assistant's call a tool result answers.
+function callOf(messages: ChatCompletionMessageParam[], at: number, callId: string) {
+  return messages
     .slice(0, at)
     .findLast(m => m.role === "assistant")
     ?.tool_calls?.find(c => c.id === callId)
+}
+
+// The call behind a tool result and the user's request it served, so the condensed output keeps what matters.
+function purposeOf(messages: ChatCompletionMessageParam[], at: number, callId: string): string {
+  const call = callOf(messages, at, callId)
   const request = messages.slice(0, at).findLast(m => m.role === "user")
   const called =
     call?.type === "function" ? `${call.function.name}(${call.function.arguments.slice(0, 300)})` : "a tool"
   return `the assistant called ${called} while working on: ${partText(request?.content).slice(0, 500)}`
 }
 
+/** One tool result {@link condenseOversizedResults} rewrote, for the `condensed` event. */
+export type Condensed = { tool: string; beforeTokens: number; afterTokens: number }
+
 /**
  * Condenses each tool result bigger than a quarter of the window, once: the summarizer rewrites it (in parts
  * when it doesn't fit), and the model is sent that instead of the full output, which stays in the log.
  * When the summarizer fails, the start of the output is kept with a note. Returns what was condensed.
  */
-export async function condenseOversizedResults(
-  agent: Agent,
-  session: Session
-): Promise<{ beforeTokens: number; afterTokens: number }[]> {
+export async function condenseOversizedResults(agent: Agent, session: Session): Promise<Condensed[]> {
   if (!agent.contextWindow) return []
   const limit = Math.floor(agent.contextWindow * OVERSIZED_RESULT_SHARE)
   const chat = agent.summarizer ?? { client: agent.client, model: agent.model, contextWindow: agent.contextWindow }
   const { messages } = session
-  const done: { beforeTokens: number; afterTokens: number }[] = []
+  const done: Condensed[] = []
   for (let at = summarisedUpTo(session); at < messages.length; at++) {
     const message = messages[at]!
     if (message.role !== "tool" || session.toolSummaries?.[message.tool_call_id] !== undefined) continue
@@ -282,14 +333,17 @@ export async function condenseOversizedResults(
     try {
       text = await summarize(chat, [output], {
         style: TOOL_OUTPUT_STYLE,
-        focus: purposeOf(messages, at, message.tool_call_id)
+        focus: purposeOf(messages, at, message.tool_call_id),
+        onCall: usage => recordModelCall(session, { kind: "condense", ...usage })
       })
     } catch {
       text = `${output.slice(0, Math.floor(limit * CHARS_PER_TOKEN * 0.5))}\n[… the rest was cut: it couldn't be condensed]`
     }
     const condensedText = `[Condensed from about ${beforeTokens.toLocaleString("en")} tokens of output]\n${text}`
     session.toolSummaries = { ...session.toolSummaries, [message.tool_call_id]: condensedText }
-    done.push({ beforeTokens, afterTokens: estimateTokens([condensedText]) })
+    const call = callOf(messages, at, message.tool_call_id)
+    const tool = call?.type === "function" ? call.function.name : "tool"
+    done.push({ tool, beforeTokens, afterTokens: estimateTokens([condensedText]) })
   }
   return done
 }

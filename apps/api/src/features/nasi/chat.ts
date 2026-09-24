@@ -124,6 +124,8 @@ export async function openNasiFor(opts: {
   abilities?: CloudAbilitySource
   /** The caller is the terminal, which runs `read_file`/`list_files` on the user's machine; the widget and Telegram have no such client, so they leave it off. */
   clientTools?: boolean
+  /** How replies should read where they're shown (see `PromptContext.channelInstruction`). */
+  channelInstruction?: string
 }): Promise<Nasi> {
   const [chat, summarizer] = await Promise.all([
     chatResolver ? chatResolver() : defaultChatResolver(opts.pinnedModel),
@@ -152,6 +154,7 @@ export async function openNasiFor(opts: {
         "you cannot run a shell. " +
         "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing.",
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
+      channelInstruction: opts.channelInstruction,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })

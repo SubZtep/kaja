@@ -198,11 +198,18 @@ export function UsageStats() {
                 rows={data.models.map(row => ({
                   key: row.model,
                   label: row.model,
-                  value: row.replies,
-                  note: m.stats_model_note({
-                    sessions: row.sessions,
-                    tokens: compact.format(row.promptTokens + row.completionTokens)
-                  })
+                  value: row.replies + row.summaries,
+                  note:
+                    row.summaries > 0
+                      ? m.stats_model_summaries_note({
+                          summaries: row.summaries,
+                          sessions: row.sessions,
+                          tokens: compact.format(row.promptTokens + row.completionTokens)
+                        })
+                      : m.stats_model_note({
+                          sessions: row.sessions,
+                          tokens: compact.format(row.promptTokens + row.completionTokens)
+                        })
                 }))}
               />
             </div>

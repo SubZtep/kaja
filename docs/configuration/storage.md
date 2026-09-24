@@ -25,6 +25,8 @@ account. The [Database](/development/database) page compares the two.
 | `messages` | the conversation itself, one row per message (the assistant's rows are its steps, with model, tokens and latency) |
 | `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took; a result too big for the context also keeps the condensed version the model was sent |
 | `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into; the messages themselves are never deleted |
+| `session_images` | images the conversation showed the model (a screenshot a tool returned, say), once each; the messages refer to them |
+| `model_calls` | each request that wrote a summary (compacting, condensing, the `summarize` tool): model, tokens and time |
 | `session_events` | the terminal timeline (what the screen showed), replayed when you resume |
 | `dataset_answers` | individual answers to a [dataset](/memory#datasets) field |
 | `dataset_versions` | marks a dataset as completed at a point in time |
@@ -97,6 +99,23 @@ erDiagram
     TEXT createdAt
   }
 
+  session_images {
+    TEXT sessionId PK
+    TEXT hash PK "sha256 of the bytes"
+    TEXT mimeType
+    BLOB data
+  }
+
+  model_calls {
+    TEXT sessionId FK
+    TEXT kind "compact | condense | summarize"
+    TEXT model
+    INTEGER promptTokens
+    INTEGER completionTokens
+    INTEGER latencyMs
+    TEXT createdAt
+  }
+
   session_events {
     TEXT sessionId PK
     INTEGER seq PK
@@ -123,6 +142,8 @@ erDiagram
   sessions ||--o{ messages : has
   sessions ||--o{ session_events : has
   sessions ||--o{ session_summaries : "compacted into"
+  sessions ||--o{ model_calls : "summarised with"
+  sessions ||--o{ session_images : shows
   messages ||--o{ tool_calls : makes
   dataset_answers }o--|| dataset_versions : "topic + owner + version"
 ```

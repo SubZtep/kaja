@@ -10,6 +10,7 @@ const eventSound = {
   display_image: "magic",
   persona_switch: "magic",
   compacted: "wind",
+  condensed: "wind",
   notice: "wind",
   ask_user: "bell",
   confirm_command: "bell",

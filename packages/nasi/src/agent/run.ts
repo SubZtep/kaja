@@ -28,8 +28,8 @@ import {
 } from "./compaction"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
-import { msSince, recordCall, recordStep } from "./telemetry"
-import { type Tool, toolName } from "./tools"
+import { msSince, recordCall, recordModelCall, recordStep } from "./telemetry"
+import { type ModelCallUsage, type Tool, toolName } from "./tools"
 
 /** Notes how a call went, keyed by its id. */
 type RecordCall = (callId: string, stat: CallStat) => void
@@ -122,7 +122,8 @@ async function* handleToolCall(
   messages: ChatCompletionMessageParam[],
   owner: string | null,
   call: FunctionToolCall,
-  record: RecordCall
+  record: RecordCall,
+  onModelCall: (usage: ModelCallUsage) => void
 ): AsyncGenerator<AgentEvent, void, void> {
   yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
   const t = toolsByName.get(call.function.name)
@@ -144,7 +145,12 @@ async function* handleToolCall(
   const startedAt = performance.now()
   let result: Awaited<ReturnType<typeof t.execute>>
   try {
-    result = await t.execute(args, { owner, personaId: agent.personaId, store: agent.store })
+    result = await t.execute(args, {
+      owner,
+      personaId: agent.personaId,
+      store: agent.store,
+      onModelCall
+    })
   } catch (error) {
     // The model gets the failure as the call's result, so the turn goes on and the session stays valid.
     const reason = error instanceof Error ? error.message : String(error)
@@ -310,7 +316,8 @@ async function* handleToolCalls(
   owner: string | null,
   toolsByName: Map<string, Tool<any>>,
   toolCalls: ChatCompletionMessageToolCall[],
-  record: RecordCall
+  record: RecordCall,
+  onModelCall: (usage: ModelCallUsage) => void
 ): AsyncGenerator<
   AgentEvent,
   {
@@ -359,7 +366,7 @@ async function* handleToolCalls(
       continue
     }
 
-    yield* handleToolCall(agent, toolsByName, messages, owner, call, record)
+    yield* handleToolCall(agent, toolsByName, messages, owner, call, record, onModelCall)
   }
   // Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
   if (approval && [ask, confirm, clientTool].some(Boolean)) {
@@ -598,7 +605,7 @@ export async function* run(
   let estimateScale = 1
   while (true) {
     await ensureContextWindow(agent)
-    await condenseOversizedResults(agent, session)
+    for (const condensed of await condenseOversizedResults(agent, session)) yield { type: "condensed", ...condensed }
     yield* compactIfNeeded(agent, session, definitions, estimateScale)
     const round = yield* streamRoundFitting(agent, session, definitions, estimateScale)
     const { message, thinking, usage, model } = round
@@ -634,7 +641,8 @@ export async function* run(
       owner,
       toolsByName,
       message.tool_calls,
-      (callId, stat) => recordCall(session, callId, stat)
+      (callId, stat) => recordCall(session, callId, stat),
+      usage => recordModelCall(session, { kind: "summarize", ...usage })
     )
 
     const everyCallFailed = message.tool_calls.every(call => session.telemetry?.calls[call.id]?.status === "error")

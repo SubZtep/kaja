@@ -19,7 +19,8 @@ There are two independent bots: a **local bot** you run yourself with `kaja tele
 
 On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart
 from each other and from your terminal. A call that needs approval — a shell command, or an HTTP tool
-or MCP call that changes something — comes with Approve/Decline buttons.
+or MCP call that changes something — comes with Approve/Decline buttons. Replies are kept short, like
+chat messages, unless you ask for detail.
 
 ## Local bot
 

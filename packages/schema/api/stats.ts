@@ -52,11 +52,12 @@ export const usageStatsResponseSchema = z.object({
   ),
   /** Replies (assistant messages) per persona, most first, and the chats they were in. */
   personas: z.array(z.object({ persona: z.string(), replies: z.number().int(), sessions: z.number().int() })),
-  /** Replies per model, most first, with the chats they were in and the tokens they used. */
+  /** Per model, most used first: replies, summaries (compaction, condensing, the summarize tool), the chats they were in and the tokens both used. */
   models: z.array(
     z.object({
       model: z.string(),
       replies: z.number().int(),
+      summaries: z.number().int(),
       sessions: z.number().int(),
       promptTokens: z.number().int(),
       completionTokens: z.number().int()

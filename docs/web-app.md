@@ -36,8 +36,8 @@ What the Abilities page can offer, and how keys are kept, is on
 going from its next message.
 
 Admins also get an **Admin** menu for users and the model catalog, and a **Sync now** button for the
-marketplace on the Abilities page. A model in the catalog can be given a context window (left blank, it is
-asked from the provider), and a free model with the `summarize` task writes the cloud's
+marketplace on the Abilities page. A model in the catalog can be given a context window when it's added or
+edited (left blank, it is asked from the provider), and a free model with the `summarize` task writes the cloud's
 [summaries](/configuration/config#context).
 
 ---

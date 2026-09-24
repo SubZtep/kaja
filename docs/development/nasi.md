@@ -112,6 +112,7 @@ mutates the `Session` you hand it — persistence is the host's job.
 | `client_tool_call` | stop so the client can run `read_file` / `list_files` on the user's own disk (cloud only) |
 | `persona_switch` | the persona (and maybe the model) changed mid-turn |
 | `compacted` | the conversation was summarised before a round (`beforeTokens`, `afterTokens`, `dropped`); see [Long conversations](#long-conversations) |
+| `condensed` | an oversized tool result was condensed before a round (`tool`, `beforeTokens`, `afterTokens`) |
 | `final` | the turn is done |
 | `usage` | prompt tokens, the model that served the request, and its context window |
 
@@ -175,10 +176,12 @@ never shortened; only what the model is sent changes (`contextMessages()`).
 - **The window** is `Agent.contextWindow`. A host can set it (the cloud does, per model row); otherwise
   `resolveContextWindow()` finds it from the agent's `models` entry: `context_window` from `models.toml`,
   else what the server reports (llama.cpp `/props`, Ollama `/api/ps` and `/api/show`, an OpenAI-compatible
-  `/models` entry, Fireworks' model API), else 32,768. It is cached per server and model.
+  `/models` entry, Fireworks' model API, all asked at once), else 32,768. It is cached per server and model.
 - **Oversized tool results** (over a quarter of the window) are condensed once by
   `condenseOversizedResults()`, told which call produced them and what the user asked. The model gets the
   condensed text (`Session.toolSummaries`, by call id); the tool message keeps the full output.
+- **Images** from before the last two user prompts are sent as a short note instead: the model saw them
+  when they were new, and resending the bytes every round is costly. The log keeps them.
 - **Compaction**: when a character-count estimate, scaled each round to what the provider actually counted,
   passes `Agent.compactAt` (0.8 by default) of the window, `compactSession()` summarises everything before a
   tail that fits a quarter of it. The tail starts at a user turn where it can, never at a tool result.
@@ -186,7 +189,9 @@ never shortened; only what the model is sent changes (`contextMessages()`).
   `messages[from..]`, and a `compacted` event is yielded. If the summary call fails, the older part is dropped
   with a note instead (`dropped: true`).
 - **The summarizer** is `Agent.summarizer` (the `summarize` task's model), else the chat model. Text too big
-  for its window is summarised in parts, then the parts together.
+  for its window is summarised in parts, then the parts together. Every request it makes (compacting,
+  condensing, the `summarize` tool through `ToolContext.onModelCall`) goes into
+  `Session.telemetry.modelCalls`, which the stores save as model call rows.
 - **Too long anyway**: when the provider rejects the prompt as too long, the known window is lowered below
   it (for this process, `lowerContextWindow()`), the session is compacted, and the round is retried once.
   A second failure surfaces as `NasiModelUnavailable`, like any provider error.
