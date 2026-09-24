@@ -31,7 +31,7 @@ locally, your own plugin tools are added on top.
 Locally, `generate_image` needs a `[models.image-generation]` entry in [`models.toml`](/configuration/models).
 
 Web search isn't built in: turn on the marketplace's `brave-search` [HTTP tool](/http-tools), which adds
-`web_search` with your own Brave Search API key, locally and in the cloud.
+`web_search`: locally with your own Brave Search API key, in the cloud with the server's.
 
 In the cloud, `read_file` and `list_files` pause the turn so the cloud-mode terminal can run them on
 your machine, scoped to the directory you launched from. The widget and the cloud Telegram bot have

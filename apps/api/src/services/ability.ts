@@ -1,8 +1,4 @@
 import {
-  checkHttpToolKey,
-  checkMcpAbilityKey,
-  createGuardedFetch,
-  type KeyCheckResult,
   parseDatasetManifest,
   parseHttpToolManifest,
   parseMcpManifest,
@@ -11,12 +7,10 @@ import {
 } from "@kaja/nasi"
 import type { Dataset, HttpToolAbility, McpAbility, Persona } from "@kaja/schema/abilities"
 import {
-  type AbilityKeyNeed,
   type AbilityType,
   abilityTypeSchema,
   type CatalogAbility,
   DEFAULT_PERSONA,
-  type KeyedAbilityType,
   type SkillDetail,
   type UserAbility
 } from "@kaja/schema/api"
@@ -24,17 +18,15 @@ import { isPublicHttpUrl } from "@kaja/shared"
 import type { Pool } from "pg"
 // Built in, so the cloud has its default persona before the first sync brings the same file.
 import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml" with { type: "text" }
-import type { SecretService } from "./secret"
 
 /** An enabled skill with its files, for the agent's Postgres AbilityStore. */
 export type CloudSkill = { name: string; description: string; files: Record<string, string> }
 
-export type EnableResult = "enabled" | "not_found" | "key_required"
+export type EnableResult = "enabled" | "not_found"
 
-/** A saved key and its live test (null when the ability has no test), or why it wasn't saved. */
-export type SaveKeyResult = { check: KeyCheckResult | null } | "not_found" | "no_key"
+type KeyedAbilityType = "tool" | "mcp"
 
-/** An ability that can take the user's key, parsed from its stored TOML. */
+/** An HTTP tool or MCP ability, parsed from its stored TOML. */
 type KeyedAbility = { type: "tool"; ability: HttpToolAbility } | { type: "mcp"; ability: McpAbility }
 
 type ManifestRow = { type: string; name: string; files: Record<string, string> }
@@ -49,16 +41,10 @@ export function cloudMcpProblem(ability: McpAbility): string | undefined {
 
 // Offered in the cloud: still in the marketplace, and nothing that needs a shell.
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
-const KEY_PREFIX = "ability:"
 
-/** Where an ability's API key lives in `user_secret`. */
-function abilitySecretName(name: string): string {
-  return `${KEY_PREFIX}${name}`
-}
-
-function keyNeed(ability: HttpToolAbility | McpAbility): AbilityKeyNeed {
-  if (ability.auth.type !== "apiKey") return "none"
-  return ability.auth.optional ? "optional" : "required"
+/** Whether an ability can't work without an API key. */
+function requiresKey(ability: HttpToolAbility | McpAbility): boolean {
+  return ability.auth.type === "apiKey" && !ability.auth.optional
 }
 
 /** Parses `ABILITY_KEYS` (`name=key,name=key`) into ability name → key; malformed pairs are skipped. */
@@ -82,19 +68,17 @@ function withDefaultFirst(personas: Persona[]): Persona[] {
 
 export class AbilityService {
   readonly #db: Pool
-  readonly #secrets: SecretService
   // TODO: temporary server-wide keys from ABILITY_KEYS, until admin-managed service keys (like providers) replace them.
-  readonly #serviceKeys: Map<string, string>
+  #serviceKeys: Map<string, string>
 
-  constructor(db: Pool, secrets: SecretService, serviceKeys = new Map<string, string>()) {
+  constructor(db: Pool, serviceKeys = new Map<string, string>()) {
     this.#db = db
-    this.#secrets = secrets
     this.#serviceKeys = serviceKeys
   }
 
-  /** Whether users' keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left out everywhere. */
-  get keysEnabled(): boolean {
-    return this.#secrets.enabled
+  /** Test seam: swaps the server-wide keys. */
+  setServiceKeys(keys: Map<string, string>) {
+    this.#serviceKeys = keys
   }
 
   /** What users can enable: available skills, personas (not `default`, which everyone always has), HTTP tools and MCP servers, by type and name. */
@@ -166,22 +150,9 @@ export class AbilityService {
     }))
   }
 
-  /** Abilities the user saved a key for, on or off. */
-  async keyNames(userId: string): Promise<string[]> {
-    return [...(await this.#secrets.names(userId, KEY_PREFIX))]
-      .map(name => name.slice(KEY_PREFIX.length))
-      .sort((a, b) => a.localeCompare(b))
-  }
-
-  /** Enables an available ability for the user. Enabling twice is fine; a tool or MCP server that requires a key needs one saved first. */
+  /** Enables an available ability for the user. Enabling twice is fine; a tool or MCP server must be able to run here. */
   async enable(userId: string, type: AbilityType, name: string): Promise<EnableResult> {
-    if (type === "tool" || type === "mcp") {
-      const keyed = await this.#getKeyed(type, name)
-      if (!keyed) return "not_found"
-      if (this.#keyNeed(keyed.ability) === "required" && !(await this.#secrets.has(userId, abilitySecretName(name)))) {
-        return "key_required"
-      }
-    }
+    if ((type === "tool" || type === "mcp") && !(await this.#getKeyed(type, name))) return "not_found"
     const result = await this.#db.query(
       `
       INSERT INTO user_ability (user_id, ability_id)
@@ -289,53 +260,9 @@ export class AbilityService {
     return (await this.#keyedForUser(userId, "mcp")).flatMap(keyed => (keyed.type === "mcp" ? [keyed.ability] : []))
   }
 
-  /** The user's ability keys by ability name, decrypted, for their own turns only. */
-  async keysForUser(userId: string): Promise<Map<string, string>> {
-    // Server-wide keys first, so the user's own key replaces one.
-    const keys = new Map(this.#serviceKeys)
-    for (const [name, value] of await this.#secrets.getAll(userId, KEY_PREFIX))
-      keys.set(name.slice(KEY_PREFIX.length), value)
-    return keys
-  }
-
-  /**
-   * Saves the user's key for an HTTP tool or MCP ability and tests it: the tool's `check` request, or
-   * connecting to the MCP server and listing its tools. Tests go through `proxy` when set and never reach a
-   * private host. The key is kept even when the test fails.
-   * Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
-   */
-  async saveKey(
-    userId: string,
-    type: KeyedAbilityType,
-    name: string,
-    apiKey: string,
-    opts: { proxy?: string } = {}
-  ): Promise<SaveKeyResult> {
-    const keyed = await this.#getKeyed(type, name)
-    if (!keyed) return "not_found"
-    if (keyed.ability.auth.type !== "apiKey") return "no_key"
-    await this.#secrets.set(userId, abilitySecretName(name), apiKey)
-    const check =
-      keyed.type === "tool"
-        ? await checkHttpToolKey(keyed.ability, apiKey, { proxy: opts.proxy })
-        : await checkMcpAbilityKey(keyed.ability, apiKey, { fetch: createGuardedFetch({ proxy: opts.proxy }) })
-    return { check: check ?? null }
-  }
-
-  /** Removes the user's key for a tool or MCP ability; one that can't work without it is turned off too. False when there's no such ability. */
-  async deleteKey(userId: string, type: KeyedAbilityType, name: string): Promise<boolean> {
-    const { rows } = await this.#db.query("SELECT id, type, name, files FROM ability WHERE type = $1 AND name = $2", [
-      type,
-      name
-    ])
-    const row = rows[0]
-    if (!row) return false
-    await this.#secrets.delete(userId, abilitySecretName(name))
-    const keyed = this.#parse(row)
-    if (!keyed || this.#keyNeed(keyed.ability) === "required") {
-      await this.#db.query("DELETE FROM user_ability WHERE user_id = $1 AND ability_id = $2", [userId, row.id])
-    }
-    return true
+  /** The server-wide key for an ability (ABILITY_KEYS), if it has one. */
+  serviceKey(name: string): string | undefined {
+    return this.#serviceKeys.get(name)
   }
 
   /** An available tool or MCP ability that can run here, or undefined. */
@@ -394,7 +321,6 @@ export class AbilityService {
       return {
         http: {
           domain: new URL(keyed.ability.baseUrl).host,
-          key: this.#keyNeed(keyed.ability),
           tools: keyed.ability.tools.map(tool => ({
             name: tool.name,
             method: tool.method,
@@ -406,7 +332,6 @@ export class AbilityService {
     return {
       mcp: {
         domain: new URL(keyed.ability.url!).host,
-        key: this.#keyNeed(keyed.ability),
         transport: keyed.ability.transport === "sse" ? "sse" : "http",
         approval: keyed.ability.approval,
         tools: keyed.ability.tools ?? []
@@ -434,16 +359,10 @@ export class AbilityService {
     return this.#usable(row) !== undefined
   }
 
-  /** An ability's key need, where a server-wide key turns a required one optional: the user may still bring their own. */
-  #keyNeed(ability: HttpToolAbility | McpAbility): AbilityKeyNeed {
-    const need = keyNeed(ability)
-    return need === "required" && this.#serviceKeys.has(ability.name) ? "optional" : need
-  }
-
-  /** {@link #parse}, but also undefined when it requires a key while keys can't be stored. */
+  /** {@link #parse}, but also undefined when it requires a key the server doesn't have. */
   #usable(row: ManifestRow): KeyedAbility | undefined {
     const keyed = this.#parse(row)
-    if (keyed && this.#keyNeed(keyed.ability) === "required" && !this.#secrets.enabled) return undefined
+    if (keyed && requiresKey(keyed.ability) && !this.#serviceKeys.has(keyed.ability.name)) return undefined
     return keyed
   }
 }

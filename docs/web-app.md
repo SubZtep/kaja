@@ -27,11 +27,11 @@ The terminal's [device login](/modes#cloud-mode) also lands here: open
 | --- | --- |
 | **Welcome** | shown once after sign-up: the ability list, to pick what you start with |
 | **Dashboard** | your usage — sessions, messages, tokens and latency, broken down by day, channel, tool, persona and model — and the **Connect Telegram** card |
-| **Abilities** | turn skills, HTTP tools and MCP servers on and off, save the keys they need, then pick your personas |
+| **Abilities** | turn skills, HTTP tools and MCP servers on and off, then pick your personas |
 | **Widget** | create, edit, disable and delete [widget keys](/widget#getting-a-key) |
 | **Profile** | your name and avatar, email and password, and deleting your account with everything stored with it |
 
-What the Abilities page can offer, and how keys are kept, is on
+What the Abilities page can offer is on
 [Abilities in the cloud](/abilities#in-the-cloud). A change there reaches a conversation that's already
 going from its next message.
 

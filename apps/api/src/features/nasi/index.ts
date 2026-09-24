@@ -150,14 +150,9 @@ nasiRoutes.openapi(infoRoute, async c => {
   const personas = await abilityService.personasForUser(user.id)
   const persona = personas[0]
   const skills = await abilityService.skillsForUser(user.id)
-  const keys = new Set(await abilityService.keyNames(user.id))
-  // Tool and MCP abilities as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP abilities in the cloud have a fixed tool list.
-  const loads = (ability: { name: string; auth: { type: string; optional?: boolean } }) =>
-    ability.auth.type !== "apiKey" || ability.auth.optional || keys.has(ability.name)
-  const httpTools = (await abilityService.httpToolsForUser(user.id))
-    .filter(loads)
-    .flatMap(ability => ability.tools.map(t => t.name))
-  const mcpTools = (await abilityService.mcpForUser(user.id)).filter(loads).flatMap(ability => ability.tools ?? [])
+  // Tool and MCP abilities as a turn loads them, without connecting: MCP abilities in the cloud have a fixed tool list.
+  const httpTools = (await abilityService.httpToolsForUser(user.id)).flatMap(ability => ability.tools.map(t => t.name))
+  const mcpTools = (await abilityService.mcpForUser(user.id)).flatMap(ability => ability.tools ?? [])
   const tools = [
     ...(await listCloudToolNames(nasiToolDeps())),
     ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : []),

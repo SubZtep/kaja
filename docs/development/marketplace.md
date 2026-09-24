@@ -130,8 +130,8 @@ sequenceDiagram
   the agent sees — changes.
 
 An ability that can't run in the cloud is skipped at sync time, and one that stops qualifying is hidden
-from the catalogue: a skill with `scripts/`; an HTTP tool on a non-public host, or needing a key when the
-server has no `USER_SECRET_KEY`; an MCP server that's `stdio`, has no `tools` allowlist, is on a
+from the catalogue: a skill with `scripts/`; an HTTP tool on a non-public host, or needing a key the
+server has none of in `ABILITY_KEYS`; an MCP server that's `stdio`, has no `tools` allowlist, is on a
 non-public host, or shares a name with an HTTP tool (a key belongs to one name); anything whose manifest
 no longer parses.
 

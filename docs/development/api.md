@@ -56,17 +56,13 @@ NAT doesn't starve everyone.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/abilities` | the catalog; personas include their label, `when` and instructions (never `default`, which is always on); HTTP tools and MCP servers their host, key need and tools. Datasets are synced too but never listed: they come with the personas that use them |
-| `GET` | `/abilities/me` | the user's abilities, which ones have a saved key, and whether keys can be saved |
-| `PUT` / `DELETE` | `/abilities/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
-| `PUT` / `DELETE` | `/abilities/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
+| `GET` | `/abilities/me` | the user's abilities |
+| `PUT` / `DELETE` | `/abilities/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (400 for the `default` persona) |
 
-Keys live [encrypted in `user_secret`](/development/database#accounts-and-access); no endpoint returns
-one. Without `USER_SECRET_KEY` the key routes answer 503 and abilities that need a key are
-left out of the catalog and of turns.
-
-`ABILITY_KEYS` (`brave-search=BSA...,other=...`) is a temporary server-wide key per ability, shared by every
-cloud user: an ability with one counts as needing only an optional key, and a user's own key still wins.
-Admin-managed service keys, like provider keys, are meant to replace it.
+Users don't save keys in the cloud. `ABILITY_KEYS` (`brave-search=BSA...,other=...`) is a temporary
+server-wide key per ability, shared by every cloud user and never returned by any endpoint; an ability that
+needs a key and has none there is left out of the catalog and of turns. Admin-managed service keys, like
+provider keys, are meant to replace it.
 
 ## Usage stats — `/stats`
 

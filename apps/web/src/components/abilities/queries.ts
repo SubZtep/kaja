@@ -23,7 +23,7 @@ export function useSkillCatalog() {
   return { ...catalog, data: catalog.data?.filter(ability => ability.type === "skill") }
 }
 
-/** The signed-in user's selections, which abilities have a saved key, and whether keys can be saved at all. */
+/** The signed-in user's selections. */
 export function useMyAbilities() {
   const apiFetch = useApiFetch()
   return useQuery({

@@ -6,17 +6,10 @@ export const abilityTypeSchema = z.enum(["skill", "persona", "tool", "mcp"])
 /** The persona every user always has; it's never enabled or disabled. */
 export const DEFAULT_PERSONA = "default"
 
-/** Ability types that can take the user's API key. */
-export const keyedAbilityTypeSchema = z.enum(["tool", "mcp"])
-
-/** Whether an ability needs the user's own API key: not at all, to work at all, or only for more (e.g. higher limits). */
-export const abilityKeyNeedSchema = z.enum(["none", "required", "optional"])
-
 /** What an HTTP tool ability calls, shown before enabling it. */
 export const httpToolDetailSchema = z.object({
   /** The host every request goes to. */
   domain: z.string(),
-  key: abilityKeyNeedSchema,
   tools: z.array(z.object({ name: z.string(), method: z.string(), description: z.string() }))
 })
 
@@ -24,7 +17,6 @@ export const httpToolDetailSchema = z.object({
 export const mcpDetailSchema = z.object({
   /** The host the server runs on. */
   domain: z.string(),
-  key: abilityKeyNeedSchema,
   transport: z.enum(["http", "sse"]),
   /** When its calls wait for the user's OK: never, for changes only, or every time. */
   approval: z.enum(["never", "writes", "always"]),
@@ -79,22 +71,8 @@ export const userAbilitySchema = z.object({
   available: z.boolean()
 })
 
-/** An ability's key, as the user types it; stored encrypted and never sent back. */
-export const saveAbilityKeyRequestSchema = z.object({
-  apiKey: z.string().trim().min(1).max(4096)
-})
-
-/** A key's live test (the ability's `check` request): it works, or why not. Null when the ability has no check. */
-export const abilityKeyCheckSchema = z.object({ ok: z.boolean(), reason: z.string().optional() }).nullable()
-
-export const saveAbilityKeyResponseSchema = z.object({ check: abilityKeyCheckSchema })
-
 export const listUserAbilitiesResponseSchema = z.object({
-  abilities: z.array(userAbilitySchema),
-  /** Abilities the user saved a key for, on or off (keys stay when an ability is turned off). */
-  keys: z.array(z.string()),
-  /** False when the server can't store keys (USER_SECRET_KEY unset); abilities that need one are then left out. */
-  keysEnabled: z.boolean()
+  abilities: z.array(userAbilitySchema)
 })
 
 export const marketplaceSyncStatusSchema = z.object({
@@ -114,8 +92,6 @@ export const marketplaceSyncResultSchema = z.object({
 })
 
 export type AbilityType = z.infer<typeof abilityTypeSchema>
-export type AbilityKeyNeed = z.infer<typeof abilityKeyNeedSchema>
-export type KeyedAbilityType = z.infer<typeof keyedAbilityTypeSchema>
 export type HttpToolDetail = z.infer<typeof httpToolDetailSchema>
 export type McpDetail = z.infer<typeof mcpDetailSchema>
 export type PersonaDetail = z.infer<typeof personaDetailSchema>
@@ -124,8 +100,5 @@ export type ListCatalogResponse = z.infer<typeof listCatalogResponseSchema>
 export type SkillDetail = z.infer<typeof skillDetailSchema>
 export type UserAbility = z.infer<typeof userAbilitySchema>
 export type ListUserAbilitiesResponse = z.infer<typeof listUserAbilitiesResponseSchema>
-export type SaveAbilityKeyRequest = z.infer<typeof saveAbilityKeyRequestSchema>
-export type AbilityKeyCheck = z.infer<typeof abilityKeyCheckSchema>
-export type SaveAbilityKeyResponse = z.infer<typeof saveAbilityKeyResponseSchema>
 export type MarketplaceSyncStatus = z.infer<typeof marketplaceSyncStatusSchema>
 export type MarketplaceSyncResult = z.infer<typeof marketplaceSyncResultSchema>

@@ -10,7 +10,7 @@ import { UnavailableAbilities } from "./UnavailableAbilities"
 /**
  * Every catalog skill, HTTP tool and MCP server in one list by name (how they run is an implementation
  * detail): an on/off toggle saved immediately, then any enabled one that has since left the marketplace so it
- * can be turned off. Turning on one that requires a key asks for the key first.
+ * can be turned off.
  */
 export function AbilityCards() {
   const catalog = useCatalog()
@@ -22,14 +22,11 @@ export function AbilityCards() {
     .filter(ability => ability.type === "skill" || toolEntry(ability))
     .sort((a, b) => a.name.localeCompare(b.name))
   const enabled = new Set((mine.data?.abilities ?? []).map(p => `${p.type}:${p.name}`))
-  const keys = new Set(mine.data?.keys ?? [])
-  const keysEnabled = mine.data?.keysEnabled ?? false
   const pendingId = toggle.isPending ? `${toggle.variables?.type}:${toggle.variables?.name}` : undefined
 
   return (
     <>
       <ErrorNotice error={catalog.error ?? mine.error} />
-      {mine.data && !keysEnabled && <p className="mt-0 mb-4 text-muted text-sm">{m.tools_keys_unavailable()}</p>}
       {abilities.length === 0 ? (
         <Section>
           <p className="m-0 text-muted text-sm">{m.abilities_empty()}</p>
@@ -44,8 +41,6 @@ export function AbilityCards() {
                 key={id}
                 entry={entry}
                 enabled={enabled.has(id)}
-                hasKey={keys.has(ability.name)}
-                keysEnabled={keysEnabled}
                 pending={pendingId === id}
                 onToggle={on => toggle.mutate({ type: entry.type, name: ability.name, on })}
               />

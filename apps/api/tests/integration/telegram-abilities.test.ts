@@ -6,9 +6,8 @@ import { faker } from "@faker-js/faker"
 // First, like the other API tests: the app sets up zod-openapi before any route module loads.
 import "../../src/app"
 import { pool } from "../../src/core/db"
-import { env } from "../../src/core/env"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
-import { abilityService, marketplaceService, secretService } from "../../src/services"
+import { abilityService, marketplaceService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
@@ -67,19 +66,18 @@ describe("the cloud bot's /abilities", () => {
     const email = faker.internet.email().toLowerCase()
     await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Tg")
     userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
-    secretService.setKey(Buffer.alloc(32, 5).toString("base64"))
     await marketplaceService.syncFromDir(marketplace(base), "tg1")
   })
 
   afterAll(async () => {
-    secretService.setKey(env.USER_SECRET_KEY)
+    abilityService.setServiceKeys(new Map())
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
     // The sync above marked the real marketplace's abilities removed; forget the stored commit so the next real sync re-applies it.
     await pool.query("DELETE FROM marketplace_sync")
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("lists the catalog as buttons, skills then personas then tools, with a key marker, a web link and pages", async () => {
+  test("lists the catalog as buttons, skills then personas then tools, with a web link and pages", async () => {
     await driver.handleMessage(LINKED, 1, "/abilities@kaja_bot")
     const first = list()
     expect(first.text).toContain("/abilities")
@@ -94,7 +92,6 @@ describe("the cloud bot's /abilities", () => {
     expect(second.rows!.flat().map(b => b.text)).toEqual([
       `▫️ ${skills[8]} · skill`,
       `▫️ ${persona} · persona`,
-      `🔑 ${keyed} · tool`,
       `▫️ ${keyless} · tool`,
       "‹ Previous"
     ])
@@ -125,13 +122,8 @@ describe("the cloud bot's /abilities", () => {
     expect(await enabled()).not.toContain(keyless)
   })
 
-  test("an ability that needs a key points to the web instead of asking for it here", async () => {
-    await tap(keyed)
-    expect(sent.at(-1)!.text).toContain(`${keyed}</b> needs your API key`)
-    expect(sent.at(-1)!.text).toContain("/abilities")
-    expect(await enabled()).not.toContain(keyed)
-
-    await secretService.set(userId, `ability:${keyed}`, "a-key")
+  test("an ability that needs a key is listed only once the server has one", async () => {
+    abilityService.setServiceKeys(new Map([[keyed, "a-key"]]))
     await driver.handleMessage(LINKED, 1, "/abilities")
     await driver.handleCallback(LINKED, 1, list().id, "abilitypage:1")
     expect(button(keyed)!.text).toBe(`▫️ ${keyed} · tool`)

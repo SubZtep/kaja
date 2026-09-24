@@ -77,11 +77,8 @@ The cloud has no shell and serves many people, so it offers less:
 | HTTP tool | its `baseUrl` isn't a public address |
 | MCP server | it's `stdio`, has no `tools` allowlist, or isn't on a public host |
 
-**Keys.** An ability that needs a key asks for it before you can turn it on. The key is tested, stored
-encrypted, and never shown again — the page only says "Key saved", with Replace and Remove. It's only
-used for your own turns and never reaches the terminal. Removing it turns off an ability that can't
-work without it. Some abilities, such as web search (`brave-search`), come with a key the server
-provides, so they need none from you; your own key, if you add one, is used instead.
+**Keys.** You never enter a key in the cloud. An ability that needs one, such as web search
+(`brave-search`), is offered only when the server provides a key for it, shared by everyone.
 
 **Approvals.** A call that could change something waits for you: the terminal asks, the Telegram bot
 shows Approve/Decline buttons. The server runs the exact call it saved, so a client can only say yes

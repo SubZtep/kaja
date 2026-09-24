@@ -84,11 +84,10 @@ can't add tools later. `stdio` abilities stay local.
 
 - Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes them
   when it ends; nothing is kept between turns or shared with other users.
-- A saved key is tested by connecting and listing the server's tools.
 - `approval` and `readOnly` apply as above. Image results are left out with a note, and long results
   are cut at about 32 KB.
 - A server that works without a key is shared by everyone on the Kaja server's IP, with its rate
-  limits; add your own key to get yours.
+  limits.
 
 Keys and approvals otherwise work as described on [Abilities in the cloud](/abilities#in-the-cloud).
 
