@@ -256,8 +256,13 @@ test("an oversized tool result reaches the model condensed, while the log keeps 
   const agent = new Agent({ model: "m", client, tools: [dump], contextWindow: 8000 })
   const session = createSession()
 
-  await collect(run(agent, "what is the answer?", session))
+  const events = await collect(run(agent, "what is the answer?", session))
 
+  const condensed = events.filter(e => e.type === "condensed")
+  expect(condensed).toEqual([
+    { type: "condensed", tool: "dump", beforeTokens: expect.any(Number), afterTokens: expect.any(Number) }
+  ])
+  expect(condensed[0]!.afterTokens).toBeLessThan(condensed[0]!.beforeTokens)
   const toolMessage = session.messages.find(m => m.role === "tool")!
   expect(toolMessage.content).toBe(bigOutput)
   const sent = rounds[1]!.find(m => m.role === "tool")!

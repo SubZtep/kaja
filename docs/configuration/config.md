@@ -73,8 +73,9 @@ summary can't be written, the oldest messages are left out instead, and the line
 steer it: `/compact keep the SQL decisions`.
 
 A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed before
-the model sees it, in parts when it's more than the summarising model can take in at once. The full output
-stays in the saved conversation.
+the model sees it, in parts when it's more than the summarising model can take in at once. The terminal
+shows a line such as `web_fetch output condensed: 40,000 → 2,000 tokens`. The full output stays in the
+saved conversation.
 
 The summaries are written by the model `models.toml`'s `[tasks]` picks for `summarize` (a smaller, cheaper
 model works well), else by the chat model. The `summarize` tool uses the same model.

@@ -34,6 +34,7 @@ export type NasiStreamEvent =
   | { type: "ask_user"; question: string; note?: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "compacted"; beforeTokens: number; afterTokens: number; dropped: boolean }
+  | { type: "condensed"; tool: string; beforeTokens: number; afterTokens: number }
   | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
   | { type: "final"; content: string | null }
 

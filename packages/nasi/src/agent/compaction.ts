@@ -245,32 +245,37 @@ export async function compactSession(
   return { beforeTokens, afterTokens: estimateTokens(contextMessages(session), opts.definitions), dropped }
 }
 
-// The call behind a tool result and the user's request it served, so the condensed output keeps what matters.
-function purposeOf(messages: ChatCompletionMessageParam[], at: number, callId: string): string {
-  const call = messages
+// The assistant's call a tool result answers.
+function callOf(messages: ChatCompletionMessageParam[], at: number, callId: string) {
+  return messages
     .slice(0, at)
     .findLast(m => m.role === "assistant")
     ?.tool_calls?.find(c => c.id === callId)
+}
+
+// The call behind a tool result and the user's request it served, so the condensed output keeps what matters.
+function purposeOf(messages: ChatCompletionMessageParam[], at: number, callId: string): string {
+  const call = callOf(messages, at, callId)
   const request = messages.slice(0, at).findLast(m => m.role === "user")
   const called =
     call?.type === "function" ? `${call.function.name}(${call.function.arguments.slice(0, 300)})` : "a tool"
   return `the assistant called ${called} while working on: ${partText(request?.content).slice(0, 500)}`
 }
 
+/** One tool result {@link condenseOversizedResults} rewrote, for the `condensed` event. */
+export type Condensed = { tool: string; beforeTokens: number; afterTokens: number }
+
 /**
  * Condenses each tool result bigger than a quarter of the window, once: the summarizer rewrites it (in parts
  * when it doesn't fit), and the model is sent that instead of the full output, which stays in the log.
  * When the summarizer fails, the start of the output is kept with a note. Returns what was condensed.
  */
-export async function condenseOversizedResults(
-  agent: Agent,
-  session: Session
-): Promise<{ beforeTokens: number; afterTokens: number }[]> {
+export async function condenseOversizedResults(agent: Agent, session: Session): Promise<Condensed[]> {
   if (!agent.contextWindow) return []
   const limit = Math.floor(agent.contextWindow * OVERSIZED_RESULT_SHARE)
   const chat = agent.summarizer ?? { client: agent.client, model: agent.model, contextWindow: agent.contextWindow }
   const { messages } = session
-  const done: { beforeTokens: number; afterTokens: number }[] = []
+  const done: Condensed[] = []
   for (let at = summarisedUpTo(session); at < messages.length; at++) {
     const message = messages[at]!
     if (message.role !== "tool" || session.toolSummaries?.[message.tool_call_id] !== undefined) continue
@@ -289,7 +294,9 @@ export async function condenseOversizedResults(
     }
     const condensedText = `[Condensed from about ${beforeTokens.toLocaleString("en")} tokens of output]\n${text}`
     session.toolSummaries = { ...session.toolSummaries, [message.tool_call_id]: condensedText }
-    done.push({ beforeTokens, afterTokens: estimateTokens([condensedText]) })
+    const call = callOf(messages, at, message.tool_call_id)
+    const tool = call?.type === "function" ? call.function.name : "tool"
+    done.push({ tool, beforeTokens, afterTokens: estimateTokens([condensedText]) })
   }
   return done
 }

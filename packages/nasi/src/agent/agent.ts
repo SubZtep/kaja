@@ -272,6 +272,8 @@ export type AgentEvent =
   | { type: "final"; content: string | null }
   /** The conversation was compacted before a round; `dropped` when the summarizer failed and older messages were cut without one. */
   | { type: "compacted"; beforeTokens: number; afterTokens: number; dropped: boolean }
+  /** A tool result too big for the window was condensed before a round; the model is sent the shorter version. */
+  | { type: "condensed"; tool: string; beforeTokens: number; afterTokens: number }
   /** `contextWindow` is the current model's size in tokens, when known, so hosts can show how full it is. */
   | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
 

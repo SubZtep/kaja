@@ -280,6 +280,7 @@ loadSkillFile = "咧讀 {name} 技能內底个 {file}..."
 personaSwitch = "已經換角色：{label}"
 compacted = "語境精簡：{before} → {after} 个 token"
 compactedDropped = "語境精簡：{before} → {after} 个 token。摘要寫袂落，所以上早个訊息就略掉矣。"
+condensed = "{tool} 輸出精簡：{before} → {after} 个 token"
 nothingToCompact = "猶無啥物通精簡个。"
 
 [error]

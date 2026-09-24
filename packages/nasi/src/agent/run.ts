@@ -598,7 +598,7 @@ export async function* run(
   let estimateScale = 1
   while (true) {
     await ensureContextWindow(agent)
-    await condenseOversizedResults(agent, session)
+    for (const condensed of await condenseOversizedResults(agent, session)) yield { type: "condensed", ...condensed }
     yield* compactIfNeeded(agent, session, definitions, estimateScale)
     const round = yield* streamRoundFitting(agent, session, definitions, estimateScale)
     const { message, thinking, usage, model } = round

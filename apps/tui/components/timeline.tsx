@@ -75,6 +75,16 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
           })}
         </Text>
       )
+    case "condensed":
+      return (
+        <Text dimColor>
+          {t("timeline.condensed", {
+            tool: item.tool,
+            before: item.beforeTokens.toLocaleString(),
+            after: item.afterTokens.toLocaleString()
+          })}
+        </Text>
+      )
     case "notice":
       return <Text dimColor>{item.text}</Text>
     case "error": {
