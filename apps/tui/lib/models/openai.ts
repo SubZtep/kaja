@@ -1,6 +1,6 @@
 import { createOpenAIClient } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
-import { config } from "../config/config"
+import { readConfigLoose } from "../config/config"
 import { findModelById, loadModelsFile, resolveModels } from "./models"
 
 export { createOpenAIClient } from "@kaja/nasi"
@@ -34,5 +34,8 @@ export const summarizer = summarizeEntry && {
   contextWindow: summarizeEntry.contextWindow
 }
 
+// Read leniently: config() exits when settings.toml is missing, and this module loads before any config guard (e.g. in cloud mode).
+const compactSetting = (await readConfigLoose()).context?.compact_at
+
 /** settings.toml `[context] compact_at`: how full the context may get before compacting. */
-export const compactAt = (await config()).context?.compact_at
+export const compactAt = typeof compactSetting === "number" ? compactSetting : undefined
