@@ -265,9 +265,14 @@ function pendingText(row: SessionRow): string {
   return [row.pendingKind, row.pendingCallId].filter(part => part != null).join(" · ")
 }
 
+// Backslashes first, so an escaped pipe can't be undone by a trailing backslash in the value.
+function tableCell(value: string): string {
+  return value.replace(/[\\|]/g, char => `\\${char}`).replace(/\r?\n/g, "<br>")
+}
+
 function metaTable(pairs: [string, string][]): string {
   const lines = ["| | |", "| --- | --- |"]
-  for (const [key, value] of pairs) lines.push(`| ${key} | ${value.replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>")} |`)
+  for (const [key, value] of pairs) lines.push(`| ${key} | ${tableCell(value)} |`)
   return lines.join("\n")
 }
 

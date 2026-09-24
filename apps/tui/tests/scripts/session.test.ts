@@ -208,3 +208,22 @@ test("list, prefix match, and dump cover the terminal session and leave secrets 
   expect(stub).not.toContain("be helpful")
   expect(stub).not.toContain("beta-title")
 })
+
+test("the meta table escapes backslashes and pipes, so a value can't break out of its cell", async () => {
+  const dbPath = join(tempDir(), "memory.sqlite")
+  const store = createSqliteStore(dbPath)
+  const id = await store.createSession({
+    persona: "kaja",
+    model: "a|b\\",
+    owner: null,
+    title: "escape-title",
+    session: { messages: [{ role: "user", content: "hi" }] },
+    events: []
+  })
+
+  const db = openReadonly(dbPath)
+  const markdown = renderSessionMarkdown(db, id, "C:\\kaja\\|memory.sqlite")
+  db.close()
+  expect(markdown).toContain("| model | a\\|b\\\\ |")
+  expect(markdown).toContain("| database | C:\\\\kaja\\\\\\|memory.sqlite |")
+})
