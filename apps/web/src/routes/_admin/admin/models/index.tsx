@@ -1,11 +1,10 @@
-import { CheckboxGroup } from "@base-ui/react/checkbox-group"
-import { Field } from "@base-ui/react/field"
 import type {
   ListModelsResponse,
   ListProvidersResponse,
   Model,
   ModelTask,
   Provider,
+  UpdateModelRequest,
   UpdateProviderRequest
 } from "@kaja/schema/api"
 import { modelSchema, providerSchema } from "@kaja/schema/api"
@@ -31,14 +30,14 @@ import { useAppForm } from "../../../../lib/form"
 import { seo } from "../../../../lib/seo"
 import { tableColumnHelper, type tableFeaturesConfig } from "../../../../lib/table"
 import { m } from "../../../../paraglide/messages.js"
+import { EditModelDialog } from "./-components/EditModelDialog"
 import { EditProviderDialog } from "./-components/EditProviderDialog"
+import { TaskCheckboxes } from "./-components/TaskCheckboxes"
 
 export const Route = createFileRoute("/_admin/admin/models/")({
   component: ModelsPage,
   head: () => ({ meta: seo({ title: m.nav_models() }) })
 })
-
-const MODEL_TASKS: ModelTask[] = ["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize"]
 
 const providerFormSchema = z.object({
   name: z.string().min(1, m.models_validation_required()),
@@ -162,10 +161,26 @@ function ModelLastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Model
   return <span className="font-mono text-xs text-muted">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
-function makeModelActionsCell(onDelete: (id: string) => void) {
+function makeModelActionsCell(
+  providers: Provider[],
+  onDelete: (id: string) => void,
+  onSave: (id: string, payload: UpdateModelRequest) => Promise<unknown>,
+  isSaving: boolean
+) {
   return function ModelActionsCell(info: { row: { original: Model } }) {
+    const model = info.row.original
     return (
-      <div className="text-right">
+      <div className="flex justify-end gap-1">
+        <EditModelDialog
+          model={model}
+          providers={providers}
+          isPending={isSaving}
+          onSave={payload => onSave(model.id, payload)}
+        >
+          <IconButton aria-label={m.models_edit_model_title()}>
+            <Pencil size={18} />
+          </IconButton>
+        </EditModelDialog>
         <ConfirmDialog
           title={m.models_delete_model_confirm_title()}
           description={m.models_delete_model_confirm_description({ model: info.row.original.model })}
@@ -242,6 +257,16 @@ function ModelsPage() {
       toast.success(m.models_success_model_created())
     },
     onError: (err: Error) => toast.error(err.message || m.models_error_model_create_failed())
+  })
+
+  const updateModel = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateModelRequest }) =>
+      apiFetch(`/admin/models/${id}`, payload, { method: "PATCH" }).then(r => modelSchema.parse(r)),
+    onSuccess: () => {
+      invalidateModels()
+      toast.success(m.models_success_model_updated())
+    },
+    onError: (err: Error) => toast.error(err.message || m.models_error_model_update_failed())
   })
 
   const toggleModelEnabled = useMutation({
@@ -376,7 +401,12 @@ function ModelsPage() {
     modelColumnHelper.display({
       id: "actions",
       header: "",
-      cell: makeModelActionsCell(id => deleteModel.mutate(id))
+      cell: makeModelActionsCell(
+        providers,
+        id => deleteModel.mutate(id),
+        (id, payload) => updateModel.mutateAsync({ id, payload }),
+        updateModel.isPending
+      )
     })
   ])
 
@@ -468,20 +498,7 @@ function ModelsPage() {
               {field => (
                 <div className="sm:col-span-3 md:flex">
                   <span className="flex w-48 items-center justify-between align-middle">{m.models_field_tasks()}</span>
-                  <CheckboxGroup
-                    value={field.state.value}
-                    onValueChange={value => field.handleChange(value)}
-                    className="flex flex-wrap gap-x-4 gap-y-2"
-                  >
-                    {MODEL_TASKS.map(task => (
-                      <Field.Root key={task} name={task} className="flex items-center gap-2 text-fg text-sm">
-                        <Field.Label className="flex items-center gap-2">
-                          <Checkbox name={task} />
-                          {task}
-                        </Field.Label>
-                      </Field.Root>
-                    ))}
-                  </CheckboxGroup>
+                  <TaskCheckboxes value={field.state.value} onChange={value => field.handleChange(value)} />
                 </div>
               )}
             </modelForm.AppField>
