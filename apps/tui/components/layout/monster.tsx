@@ -1,6 +1,7 @@
 import { Box, Text } from "ink"
 import Gradient from "ink-gradient"
 import { useEffect, useState } from "react"
+import { usePalette } from "../theme"
 
 const IDLE = "༼☉ɷ⊙༽" as const
 
@@ -28,6 +29,7 @@ type MonsterFrame = (typeof ANIMATIONS)[MonsterAnimation][number][0]
 
 function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnimation | null; onDone: () => void }>) {
   const [frame, setFrame] = useState<MonsterFrame>(IDLE)
+  const { gradient } = usePalette()
 
   useEffect(() => {
     if (!eventName || !ANIMATIONS[eventName]) return
@@ -53,7 +55,7 @@ function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnimation |
 
   return (
     <Box>
-      <Gradient name="instagram">
+      <Gradient colors={gradient}>
         <Text bold>{frame}</Text>
       </Gradient>
     </Box>

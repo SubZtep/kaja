@@ -10,7 +10,7 @@ import { setLanguage, t } from "../lib/i18n"
 import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
 import type { Brightness } from "../lib/terminal-background"
 import { SelectMenu } from "./elem/select-menu"
-import { themes, useKajaTheme } from "./theme"
+import { themes, useKajaTheme, usePalette } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "telegram"
@@ -380,11 +380,12 @@ function Question({ title, plain, children }: Readonly<{ title: string; plain?: 
   )
 }
 
-/** The trail's first line: the mascot and the name, in colours that read on either background. */
+/** The trail's first line: the mascot and the name, in the theme's gradient. */
 function Header() {
+  const { gradient } = usePalette()
   return (
     <RailLine marker={<Text dimColor>┌</Text>}>
-      <Gradient name="instagram">
+      <Gradient colors={gradient}>
         <Text bold>༼–ɷ–༽ kaja🐓</Text>
       </Gradient>
     </RailLine>

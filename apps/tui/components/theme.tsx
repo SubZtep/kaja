@@ -40,6 +40,8 @@ export type Palette = {
   inputBackground: string
   tableHead: string
   tableBorder: string
+  /** The mascot's and the wizard header's gradient, left to right. */
+  gradient: string[]
 }
 
 const darkPalette: Palette = {
@@ -60,7 +62,8 @@ const darkPalette: Palette = {
   keyText: "black",
   inputBackground: "#224",
   tableHead: "magenta",
-  tableBorder: "gray"
+  tableBorder: "gray",
+  gradient: ["#833ab4", "#fd1d1d", "#fcb045"]
 }
 
 // Deeper shades of the dark set: yellow, cyan and bright colours wash out on a white background
@@ -82,7 +85,8 @@ const lightPalette: Palette = {
   keyText: "white",
   inputBackground: "#e8e8f4",
   tableHead: "magenta",
-  tableBorder: "gray"
+  tableBorder: "gray",
+  gradient: ["#6a1b9a", "#c62828", "#b35c00"]
 }
 
 // App-wide colours that aren't an @inkjs/ui component, registered as a custom "Kaja" component so they ride the same ThemeProvider
