@@ -9,6 +9,8 @@
 // parsed. Its own link/del/heading renderers didn't have this bug. Fixed in place
 // below (see Renderer.prototype.text) instead of patching it externally afterwards.
 //
+// A code block with no language is not highlighted (upstream guesses one; see highlight()).
+//
 // Trimmed from upstream: no :shortcode: emoji replacement (node-emoji), and Bun's
 // stripANSI and a local OSC 8 link helper stand in for ansi-regex and ansi-escapes.
 
@@ -584,6 +586,9 @@ function highlight(code: string, language: string, opts: any, hightlightOpts: an
   const style = opts.code
 
   code = fixHardReturn(code, opts.reflowText)
+
+  // No language: cli-highlight would guess one, which costs ~17ms a block and is often wrong
+  if (!language) return style(code)
 
   try {
     return highlightCli(code, { language, ...hightlightOpts })

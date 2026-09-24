@@ -1,48 +1,71 @@
 import { Box, Text } from "ink"
 import { Marked, marked } from "marked"
 import { memo } from "react"
+import { splitBlocks } from "../../lib/markdown/blocks"
 import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
 import { type Palette, paint, usePalette } from "../theme"
 import { TerminalImage } from "./terminal-image"
 
+// cli-highlight's token colours from the palette, in the spirit of its default theme
+function codeTheme(p: Palette) {
+  return {
+    keyword: paint(p.info),
+    literal: paint(p.info),
+    class: paint(p.info),
+    built_in: paint(p.user),
+    type: paint(p.user).dim,
+    number: paint(p.success),
+    comment: paint(p.success),
+    doctag: paint(p.success),
+    string: paint(p.danger),
+    regexp: paint(p.danger),
+    function: paint(p.warning),
+    meta: paint(p.muted)
+  }
+}
+
 /**
  * A markdown-to-ANSI parser in the palette's colours: the accent for structure (mirrors the agent's "●" prefix), the
  * user colour for emphasis/links (mirrors the user's "> " prefix), muted for de-emphasis.
  *
- * Each parser has its own parse cache: parsing is by far the most expensive per-item work, and the same string is
- * parsed again whenever a history item remounts (scrolling brings it back into the virtualized window). Keyed on the
- * source string only — marked-terminal wraps at its own fixed width, so output doesn't depend on the terminal size.
- * Cleared wholesale past a cap to bound memory (streaming partials insert throwaway prefixes).
+ * The source is rendered block by block ({@link splitBlocks}), each block cached on its own: a streaming message only
+ * re-renders its last block, and a history item that remounts on scroll hits the cache. Keyed on the block's text only
+ * — marked-terminal wraps at its own fixed width, so output doesn't depend on the terminal size. Cleared wholesale past
+ * a cap to bound memory (streaming leaves throwaway prefixes of the last block behind).
  */
 function createParser(p: Palette) {
   const renderer = new Marked(
-    markedTerminal({
-      firstHeading: paint(p.accent).bold,
-      heading: paint(p.accent).bold,
-      strong: paint(p.user).bold,
-      code: paint(p.code),
-      codespan: paint(p.user),
-      blockquote: paint(p.muted).italic,
-      html: paint(p.muted),
-      del: paint(p.muted).dim.strikethrough,
-      link: paint(p.user),
-      href: paint(p.user).underline,
-      tableOptions: {
-        style: { head: [p.tableHead], border: [p.tableBorder] }
+    markedTerminal(
+      {
+        firstHeading: paint(p.accent).bold,
+        heading: paint(p.accent).bold,
+        strong: paint(p.user).bold,
+        code: paint(p.code),
+        codespan: paint(p.user),
+        blockquote: paint(p.muted).italic,
+        html: paint(p.muted),
+        del: paint(p.muted).dim.strikethrough,
+        link: paint(p.user),
+        href: paint(p.user).underline,
+        tableOptions: {
+          style: { head: [p.tableHead], border: [p.tableBorder] }
+        },
+        tab: 2
       },
-      tab: 2
-    })
+      { theme: codeTheme(p) }
+    )
   )
-  const parsed = new Map<string, string>()
-  return (source: string) => {
-    const hit = parsed.get(source)
+  const rendered = new Map<string, string>()
+  const renderBlock = (block: string) => {
+    const hit = rendered.get(block)
     if (hit !== undefined) return hit
-    const out = dedent(renderer.parse(source) as string)
-    if (parsed.size > 500) parsed.clear()
-    parsed.set(source, out)
+    const out = dedent(renderer.parse(block) as string)
+    if (rendered.size > 2000) rendered.clear()
+    rendered.set(block, out)
     return out
   }
+  return (source: string) => splitBlocks(source).map(renderBlock).join("\n\n")
 }
 
 const parsers = new WeakMap<Palette, (source: string) => string>()
@@ -71,6 +94,8 @@ const segmentKey = (segment: Segment, i: number) => `${i}-${Bun.hash(JSON.string
  * {@link TerminalImage}.
  */
 function splitSegments(source: string): Segment[] {
+  // Lexing the whole text costs as much as rendering it; with no image syntax there's nothing to find
+  if (!source.includes("![")) return [{ type: "text", source }]
   const images: { raw: string; href: string; alt: string }[] = []
   marked.walkTokens(marked.lexer(source), token => {
     if (token.type === "image") images.push({ raw: token.raw, href: token.href, alt: token.text })
