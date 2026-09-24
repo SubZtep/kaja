@@ -74,12 +74,15 @@ export function renderAbilityList(
     `<a href="${abilitiesWebUrl()}">${t("telegram.abilities.webLink")}</a>`,
     ...(pages > 1 ? [t("telegram.abilities.page", { current: current + 1, total: pages })] : [])
   ]
-  const rows: TelegramButton[][] = entries.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE).map(entry => [
-    {
-      text: `${STATE_ICON[entry.state]} ${entry.name} · ${t(`telegram.abilities.${entry.type}`)}`,
-      data: `ability:${TYPE_CODE[entry.type]}:${nameHash(entry.name)}:${current}`
-    }
-  ])
+  const rows: TelegramButton[][] = entries.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE).map(entry => {
+    const typeLabel = t(`telegram.abilities.${entry.type}`)
+    return [
+      {
+        text: `${STATE_ICON[entry.state]} ${entry.name} · ${typeLabel}`,
+        data: `ability:${TYPE_CODE[entry.type]}:${nameHash(entry.name)}:${current}`
+      }
+    ]
+  })
   if (pages > 1) {
     rows.push([
       ...(current > 0 ? [{ text: t("telegram.abilities.previous"), data: `abilitypage:${current - 1}` }] : []),

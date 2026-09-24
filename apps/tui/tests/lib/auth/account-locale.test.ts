@@ -40,5 +40,5 @@ test("signed out, it makes no request", async () => {
 test("a failed save doesn't throw", async () => {
   await saveToken("tok_abc")
   stubFetch(401)
-  expect(saveAccountLocale("zh-TW")).resolves.toBeUndefined()
+  await expect(saveAccountLocale("zh-TW")).resolves.toBeUndefined()
 })
