@@ -126,7 +126,7 @@ export async function ensureMarketplace(print: (line: string) => void): Promise<
   if (!(await marketplaceSettings()).enabled || (await readSyncLock(getMarketplaceDir()))) return
 
   const { t } = await import("../i18n")
-  const { runAbilityUpdate } = await import("./cli")
-  print(t("ability.firstSync"))
-  print((await runAbilityUpdate()).text)
+  const { runAbilityUpdate, UPDATE_STEPS } = await import("./cli")
+  const { withStepProgress } = await import("./progress")
+  print((await withStepProgress(t("ability.firstSync"), UPDATE_STEPS, runAbilityUpdate)).text)
 }

@@ -2,6 +2,7 @@ import { afterAll, beforeEach, expect, test } from "bun:test"
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { stripVTControlCharacters } from "node:util"
 
 const configRoot = `${tmpdir()}/kaja-test-xdg-config-doctor-credentials`
 process.env.XDG_CONFIG_HOME = configRoot
@@ -123,7 +124,7 @@ test("a missing value is asked for, tested, then saved", async () => {
   expect(titles).toEqual(["thing needs its key or token (header X-Key)."])
   expect(saved).toEqual(["good"])
   expect(outcomes[0]!.status).toBe("saved")
-  expect(outcomeLine(outcomes[0]!)).toBe("  ✓ thing: saved, and it works")
+  expect(stripVTControlCharacters(outcomeLine(outcomes[0]!))).toBe("  ✔ thing: saved, and it works")
 })
 
 test("a failing saved value asks for a new one with the reason", async () => {

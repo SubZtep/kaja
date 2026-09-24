@@ -19,7 +19,7 @@ const CLOUD_ABILITIES_URL = "https://kaja.io/abilities"
 
 export async function runAbilitiesSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")
-  const { runAbilityUpdate } = await import("../lib/abilities/cli")
+  const { runAbilityUpdate, UPDATE_STEPS } = await import("../lib/abilities/cli")
   const { resolveMode } = await import("../lib/config/mode")
   const [, sub] = args.input
 
@@ -30,7 +30,8 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
   }
 
   if (sub === "update") {
-    const { code, text } = await runAbilityUpdate()
+    const { withStepProgress } = await import("../lib/abilities/progress")
+    const { code, text } = await withStepProgress(t("ability.updating"), UPDATE_STEPS, runAbilityUpdate)
     console.log(text)
     process.exit(code)
   }

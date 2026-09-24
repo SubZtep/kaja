@@ -15,15 +15,16 @@ async function printModels(models: CliResolvedModel[]) {
   await runModelPass(models, line => console.log(line), await defaultModelIo())
 }
 
-function printMcpServers(mcpServers: { id: string; failed: boolean; toolCount: number }[]) {
+async function printMcpServers(mcpServers: { id: string; failed: boolean; toolCount: number }[]) {
   if (mcpServers.length === 0) return
+  const { statusLine } = await import("../lib/doctor/status")
 
   console.log(t("doctor.mcpServers"))
   for (const server of mcpServers) {
     const status = server.failed
       ? t("doctor.mcpServerFailed")
       : t("doctor.mcpServerToolCount", { count: server.toolCount })
-    console.log(`  ${server.failed ? "✗" : "✓"} ${server.id} ${status}`)
+    console.log(statusLine(server.failed ? "error" : "success", `${server.id} ${status}`))
   }
   console.log()
 }
@@ -111,7 +112,7 @@ export async function runDoctorSubcommand() {
   await printModels(models)
   console.log()
 
-  printMcpServers(mcpServers)
+  await printMcpServers(mcpServers)
 
   const toolLines = toolReportLines(tools, skipped)
   if (toolLines.length > 0) {

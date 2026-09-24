@@ -88,14 +88,22 @@ export async function checkGit(
   return { ok: true, version: text }
 }
 
+/** How many times {@link fetchMarketplace} calls its `onStep`. */
+export const FETCH_STEPS = 3
+
 /**
  * Brings the cache up to date with `source` (cloning on first use, or when the URL changed)
  * and returns the fetched marketplace folder with the commit it came from. Only this touches the network: `kaja abilities`
- * and the throttled background pull at local startup (`auto-update.ts`).
+ * and the throttled background pull at local startup (`auto-update.ts`). Calls `onStep` after each of its
+ * {@link FETCH_STEPS} steps (git checked, downloaded, checked out), for a progress bar.
  */
-export async function fetchMarketplace(source: Required<AbilitiesSource>): Promise<{ dir: string; commit: string }> {
+export async function fetchMarketplace(
+  source: Required<AbilitiesSource>,
+  onStep: () => void = () => {}
+): Promise<{ dir: string; commit: string }> {
   const gitCheck = await checkGit()
   if (!gitCheck.ok) throw new MarketplaceFetchError(gitCheck.reason)
+  onStep()
 
   const cache = getMarketplaceCacheDir()
   const origin = existsSync(join(cache, ".git"))
@@ -104,6 +112,7 @@ export async function fetchMarketplace(source: Required<AbilitiesSource>): Promi
 
   if (origin === source.url) {
     await git(["fetch", "--depth", "1", "origin", source.ref], cache)
+    onStep()
     await git(["reset", "--hard", "FETCH_HEAD"], cache)
   } else {
     await rm(cache, { recursive: true, force: true })
@@ -119,10 +128,13 @@ export async function fetchMarketplace(source: Required<AbilitiesSource>): Promi
       source.url,
       cache
     ])
+    onStep()
+    // The slow part of a first fetch: with --filter=blob:none the files only arrive here, and git reports no progress for it
     await git(["sparse-checkout", "set", MARKETPLACE_PATH], cache)
   }
 
   const dir = join(cache, MARKETPLACE_PATH)
   if (!existsSync(dir)) throw new MarketplaceFetchError(t("ability.noMarketplaceFolder", source))
+  onStep()
   return { dir, commit: await git(["rev-parse", "HEAD"], cache) }
 }

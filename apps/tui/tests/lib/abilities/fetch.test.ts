@@ -9,7 +9,7 @@ process.env.XDG_CONFIG_HOME = join(base, "config")
 
 const { checkGit, fetchMarketplace, getMarketplaceCacheDir, MarketplaceFetchError, MIN_GIT_VERSION, parseGitVersion } =
   await import("../../../lib/abilities/fetch")
-const { runAbilityUpdate } = await import("../../../lib/abilities/cli")
+const { runAbilityUpdate, UPDATE_STEPS } = await import("../../../lib/abilities/cli")
 const { getMarketplaceDir, getAbilitiesPath } = await import("../../../lib/abilities/abilities-file")
 
 function git(cwd: string, ...args: string[]) {
@@ -85,13 +85,18 @@ test("a missing branch or marketplace folder is a readable error", async () => {
 test("kaja abilities update syncs from abilities.toml's [source] into the marketplace folder", async () => {
   const repo = makeRepo("repo-f")
   put(dirname(getAbilitiesPath()), "abilities.toml", `skills = []\n\n[source]\nurl = "${repo}"\n`)
-  const first = await runAbilityUpdate()
+  let steps = 0
+  const first = await runAbilityUpdate(() => steps++)
   expect(first.code).toBe(0)
+  // Every step reported, so the progress bar ends full
+  expect(steps).toBe(UPDATE_STEPS)
   expect(first.text).toContain("skills/demo/SKILL.md")
   expect(readFileSync(join(getMarketplaceDir(), "skills/demo/SKILL.md"), "utf8")).toContain("v1")
 
-  const again = await runAbilityUpdate()
+  steps = 0
+  const again = await runAbilityUpdate(() => steps++)
   expect(again.code).toBe(0)
+  expect(steps).toBe(UPDATE_STEPS)
   expect(again.text).toContain("up to date")
 })
 

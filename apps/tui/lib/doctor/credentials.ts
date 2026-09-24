@@ -6,6 +6,7 @@ import { saveSecrets, secrets } from "../config/secrets"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
 import { type CheckResult, checkAbilityKey, checkMcpServer, checkProvider, checkTelegramToken } from "./checks"
+import { statusLine } from "./status"
 
 /** One key or token the current config depends on, with how to test and store it. */
 export type CredentialItem = {
@@ -280,23 +281,24 @@ async function testAndSave(
   return { item, status: tested?.ok ? "saved" : "saved-untested" }
 }
 
-/** One result line, e.g. "  ✓ github (ability): saved and working" or "  ✗ telegram bot: missing". */
+/** One result line, e.g. "  ✔ github (ability): saved and working" or "  ✘ telegram bot: missing". */
 export function outcomeLine(outcome: CredentialOutcome): string {
+  const { label } = outcome.item
   switch (outcome.status) {
     case "ok":
-      return `  ✓ ${outcome.item.label}`
+      return statusLine("success", label)
     case "keyless":
-      return `  ✓ ${outcome.item.label}: ${t("doctor.keyless")}`
+      return statusLine("success", `${label}: ${t("doctor.keyless")}`)
     case "untested":
-      return `  ✓ ${outcome.item.label}: ${t("doctor.untested")}`
+      return statusLine("info", `${label}: ${t("doctor.untested")}`)
     case "saved":
-      return `  ✓ ${outcome.item.label}: ${t("doctor.savedWorking")}`
+      return statusLine("success", `${label}: ${t("doctor.savedWorking")}`)
     case "saved-untested":
-      return `  ✓ ${outcome.item.label}: ${t("doctor.savedUntested")}`
+      return statusLine("info", `${label}: ${t("doctor.savedUntested")}`)
     case "saved-failing":
-      return `  ✗ ${outcome.item.label}: ${t("doctor.savedFailing", { reason: outcome.reason })}`
+      return statusLine("error", `${label}: ${t("doctor.savedFailing", { reason: outcome.reason })}`)
     default:
-      return `  ✗ ${outcome.item.label}: ${outcome.reason}`
+      return statusLine("error", `${label}: ${outcome.reason}`)
   }
 }
 
@@ -321,7 +323,7 @@ export async function runCredentialPass(
   offered: OfferedValues = {},
   scope?: CredentialScope
 ): Promise<CredentialOutcome[]> {
-  // Loaded here rather than at module scope so a non-interactive caller never pulls Ink in.
+  // Loaded here rather than at module scope so a non-interactive caller never loads the prompts.
   const { askSaveAnyway, askSecret } = await import("./prompt")
 
   // `extra` carries credentials the config gives no sign of — the setup wizard's freshly ticked

@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { stripVTControlCharacters } from "node:util"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { groupModelsByTask, type ModelIo, runModelPass } from "../../../lib/doctor/models"
 
@@ -58,7 +59,7 @@ async function run(
   const { probe, calls } = probeWith(down)
   const { fake, asked } = io(picks, interactive)
   const { saved, save } = saver()
-  const outcomes = await runModelPass(models, line => lines.push(line), fake, { probe, save })
+  const outcomes = await runModelPass(models, line => lines.push(stripVTControlCharacters(line)), fake, { probe, save })
   return { lines, calls, asked, saved, outcomes }
 }
 
@@ -70,15 +71,15 @@ test("groups models by task in the order the report lists them", () => {
 
 test("a working model is listed and nothing is asked", async () => {
   const r = await run([FIREWORKS_CHAT, EMBEDDING], {})
-  expect(r.lines).toContain("  ✓ minimax-m3 (up)")
-  expect(r.lines).toContain("  ✓ qwen3-embedding (up)")
+  expect(r.lines).toContain("  ✔ minimax-m3 (up)")
+  expect(r.lines).toContain("  ✔ qwen3-embedding (up)")
   expect(r.asked).toEqual([])
   expect(r.outcomes.map(o => o.ok)).toEqual([true, true])
 })
 
 test("a failing model says why", async () => {
   const r = await run([FIREWORKS_CHAT], { "minimax-m3": "401 The API key you provided is invalid." })
-  expect(r.lines).toContain("  ✗ minimax-m3 (down): 401 The API key you provided is invalid.")
+  expect(r.lines).toContain("  ✘ minimax-m3 (down): 401 The API key you provided is invalid.")
   expect(r.outcomes).toMatchObject([{ task: "chat", ok: false }])
 })
 
@@ -136,7 +137,7 @@ test("a working default is never offered a switch, even with alternatives", asyn
 
 test("a broken alternative alone does not fail the task", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "llama3.2:1b": "down" })
-  expect(r.lines).toContain("  ✗ llama3.2:1b (down): down")
+  expect(r.lines).toContain("  ✘ llama3.2:1b (down): down")
   expect(r.outcomes).toHaveLength(1)
   expect(r.outcomes[0]).toMatchObject({ task: "chat", ok: true })
 })
@@ -155,6 +156,6 @@ test("each task decides for itself, and every model is probed exactly once", asy
 
 test("a task with only alternatives and no default is listed but has no outcome", async () => {
   const r = await run([OLLAMA_CHAT], { "llama3.2:1b": "down" })
-  expect(r.lines).toContain("  ✗ llama3.2:1b (down): down")
+  expect(r.lines).toContain("  ✘ llama3.2:1b (down): down")
   expect(r.outcomes).toEqual([])
 })
