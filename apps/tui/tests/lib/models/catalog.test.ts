@@ -169,6 +169,6 @@ test("an address the user typed replaces the default, and is escaped", () => {
 })
 
 test("hosted providers are the ones asked for a key, self-hosted ones for an address", () => {
-  expect(CATALOG.filter(p => p.kind === "hosted").map(p => p.id)).toEqual(["fireworks", "xai"])
+  expect(CATALOG.filter(p => p.kind === "hosted").map(p => p.id)).toEqual(["fireworks", "xai", "openrouter"])
   expect(CATALOG.filter(p => p.kind === "self-hosted").map(p => p.id)).toEqual(["ollama", "llama", "speaches"])
 })

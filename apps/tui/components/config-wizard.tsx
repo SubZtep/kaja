@@ -93,6 +93,7 @@ type Step =
 const PROVIDER_LABEL_KEY: Record<string, string> = {
   fireworks: "wizard.providerFireworks",
   xai: "wizard.providerXai",
+  openrouter: "wizard.providerOpenrouter",
   ollama: "wizard.providerOllama",
   llama: "wizard.providerLlama",
   speaches: "wizard.providerSpeaches"
@@ -662,6 +663,8 @@ export function ConfigWizard({
                   { label: t("wizard.providerCustom"), value: CUSTOM }
                 ]}
                 defaultValue={result.providers}
+                // The whole list, Custom included, rather than the default 5 rows that hide the rest below.
+                visibleOptionCount={CATALOG.length + 1}
                 onSubmit={values => {
                   const providers = [...CATALOG.map(p => p.id), CUSTOM].filter(id => values.includes(id))
                   setNoProvider(providers.length === 0)
