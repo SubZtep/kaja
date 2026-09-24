@@ -2,13 +2,13 @@ import { createHash } from "node:crypto"
 import type { AbilityType } from "@kaja/schema/api"
 import { trimTrailingSlashes } from "@kaja/shared"
 import { env } from "../../core/env"
+import type { Translate } from "../../core/i18n"
 import { abilityService } from "../../services"
 import type { TelegramButton } from "./driver"
 
 /** Buttons per page, so the list stays one screen tall. */
 const PAGE_SIZE = 8
 const TYPE_ORDER: AbilityType[] = ["skill", "persona", "tool", "mcp"]
-const TYPE_LABEL: Record<AbilityType, string> = { skill: "skill", persona: "persona", tool: "tool", mcp: "MCP" }
 const TYPE_CODE: Record<AbilityType, string> = { skill: "s", persona: "p", tool: "t", mcp: "m" }
 const STATE_ICON = { on: "✅", off: "▫️", key: "🔑", gone: "⚠️" } as const
 
@@ -60,28 +60,30 @@ export function findEntry(entries: AbilityEntry[], typeCode: string, hash: strin
 }
 
 /** The /abilities message for one page: a legend, a web link, and one button per ability plus page arrows. */
-export function renderAbilityList(entries: AbilityEntry[], page: number): { text: string; rows: TelegramButton[][] } {
+export function renderAbilityList(
+  entries: AbilityEntry[],
+  page: number,
+  t: Translate
+): { text: string; rows: TelegramButton[][] } {
   const pages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE))
   const current = Math.min(Math.max(page, 0), pages - 1)
   const lines = [
-    "<b>Abilities</b>",
-    entries.length === 0
-      ? "Nothing in the catalog yet."
-      : "Tap one to turn it on or off; it applies from your next message.",
-    "✅ on · ▫️ off · 🔑 needs your API key first · ⚠️ no longer available",
-    `<a href="${abilitiesWebUrl()}">Read them in full and manage keys on the web</a>`,
-    ...(pages > 1 ? [`Page ${current + 1} of ${pages}`] : [])
+    t("telegram.abilities.title"),
+    entries.length === 0 ? t("telegram.abilities.empty") : t("telegram.abilities.hint"),
+    t("telegram.abilities.legend"),
+    `<a href="${abilitiesWebUrl()}">${t("telegram.abilities.webLink")}</a>`,
+    ...(pages > 1 ? [t("telegram.abilities.page", { current: current + 1, total: pages })] : [])
   ]
   const rows: TelegramButton[][] = entries.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE).map(entry => [
     {
-      text: `${STATE_ICON[entry.state]} ${entry.name} · ${TYPE_LABEL[entry.type]}`,
+      text: `${STATE_ICON[entry.state]} ${entry.name} · ${t(`telegram.abilities.${entry.type}`)}`,
       data: `ability:${TYPE_CODE[entry.type]}:${nameHash(entry.name)}:${current}`
     }
   ])
   if (pages > 1) {
     rows.push([
-      ...(current > 0 ? [{ text: "‹ Previous", data: `abilitypage:${current - 1}` }] : []),
-      ...(current < pages - 1 ? [{ text: "Next ›", data: `abilitypage:${current + 1}` }] : [])
+      ...(current > 0 ? [{ text: t("telegram.abilities.previous"), data: `abilitypage:${current - 1}` }] : []),
+      ...(current < pages - 1 ? [{ text: t("telegram.abilities.next"), data: `abilitypage:${current + 1}` }] : [])
     ])
   }
   return { text: lines.join("\n"), rows }
@@ -98,9 +100,6 @@ export async function toggleAbility(userId: string, entry: AbilityEntry): Promis
 }
 
 /** The reply to a tap on an ability that needs a key: keys are never typed into Telegram. */
-export function needsKeyMessage(name: string): string {
-  return (
-    `🔑 <b>${name}</b> needs your API key first. Add it on the web, where it's stored encrypted; ` +
-    `a key typed here would stay in the chat history.\n<a href="${abilitiesWebUrl()}">Abilities → Tools</a>`
-  )
+export function needsKeyMessage(name: string, t: Translate): string {
+  return `${t("telegram.abilities.needsKey", { name })}\n<a href="${abilitiesWebUrl()}">${t("telegram.abilities.needsKeyLink")}</a>`
 }

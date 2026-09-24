@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { locales } from "@kaja/shared"
 import { dictionaries, toLocale, translator } from "../../src/core/i18n"
 import { getChangeEmailHtml } from "../../src/emails/ChangeEmail"
+import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"
 
 for (const locale of locales.filter(locale => locale !== "en-GB")) {
   test(`en-GB and ${locale} dictionaries have the same keys`, () => {
@@ -36,4 +37,17 @@ test("an email renders in the user's language", async () => {
   expect(html).toContain('lang="hu-HU"')
   expect(html).toContain(translator("hu-HU")("email.changeEmailLink"))
   expect(html).not.toContain(translator("en-GB")("email.changeEmailLink"))
+})
+
+test("a Telegram app language maps to a supported locale", () => {
+  expect(localeFromTelegram("hu")).toBe("hu-HU")
+  expect(localeFromTelegram("zh-hant")).toBe("zh-TW")
+  expect(localeFromTelegram("zh-hans")).toBe("zh-TW")
+  expect(localeFromTelegram("de")).toBe("en-GB")
+  expect(localeFromTelegram(undefined)).toBe("en-GB")
+})
+
+test("the bot uses the account's saved language over the Telegram app's", () => {
+  expect(botLanguage("zh-TW", "hu").locale).toBe("zh-TW")
+  expect(botLanguage(null, "hu").locale).toBe("hu-HU")
 })

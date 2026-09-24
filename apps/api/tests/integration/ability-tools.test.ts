@@ -286,7 +286,7 @@ describe("HTTP tools in the cloud", () => {
     const messages: { id: number; text: string; buttons?: TelegramButton[][] }[] = []
     const edits: { id: number; text: string }[] = []
     const driver = createCloudTelegramDriver({
-      resolveLinkedUserId: async telegramUserId => (telegramUserId === 1001 ? userId : undefined),
+      resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),
       sender: {
         async sendMessage(_chatId, text, buttons) {
           messages.push({ id: messages.length + 1, text, buttons })

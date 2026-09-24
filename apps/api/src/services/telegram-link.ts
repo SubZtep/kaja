@@ -29,15 +29,15 @@ export class TelegramLinkService {
   }
 
   /** Read-only lookup, so a link can be shown for confirmation before it's consumed. Returns undefined if unknown/expired. */
-  async peekLinkToken(rawToken: string): Promise<{ userId: string; email: string } | undefined> {
+  async peekLinkToken(rawToken: string): Promise<{ userId: string; email: string; locale: string | null } | undefined> {
     const result = await this.#db.query(
-      `SELECT t.user_id, u.email FROM telegram_link_token t
+      `SELECT t.user_id, u.email, u.locale FROM telegram_link_token t
        JOIN "user" u ON u.id = t.user_id
        WHERE t.token_hash = $1 AND t.expires_at > NOW()`,
       [hashToken(rawToken)]
     )
     const row = result.rows[0]
-    return row ? { userId: row.user_id, email: row.email } : undefined
+    return row ? { userId: row.user_id, email: row.email, locale: row.locale } : undefined
   }
 
   /** Deletes a link token by its raw value. Returns whether a row was actually removed, so a caller can detect a double-confirm race. */
@@ -56,6 +56,16 @@ export class TelegramLinkService {
       [telegramUserId, userId]
     )
     return true
+  }
+
+  /** The Kaja account a Telegram user is linked to, with its saved language (null until a client sets one), or undefined if unlinked. */
+  async resolveUser(telegramUserId: number): Promise<{ userId: string; locale: string | null } | undefined> {
+    const result = await this.#db.query(
+      `SELECT l.user_id, u.locale FROM telegram_link l JOIN "user" u ON u.id = l.user_id WHERE l.telegram_user_id = $1`,
+      [telegramUserId]
+    )
+    const row = result.rows[0]
+    return row ? { userId: row.user_id, locale: row.locale } : undefined
   }
 
   async resolveUserId(telegramUserId: number): Promise<string | undefined> {
