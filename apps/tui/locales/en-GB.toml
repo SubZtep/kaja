@@ -70,6 +70,7 @@ Usage
 fetched = "Wrote {path}"
 fetchedWithBackup = "Wrote {path} (previous file backed up to {backup})"
 fetchedUnchanged = "{path} is already up to date"
+fetchedKept = "{path} holds your keys, so it was left as it is"
 fetchAllUpToDate = "All up to date"
 fetchOfflineFallback = "Could not reach the server ({message}) — falling back to bundled templates"
 diffNew = "{path}: new"

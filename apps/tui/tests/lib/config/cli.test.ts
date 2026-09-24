@@ -160,16 +160,25 @@ test("fetch writes secrets.toml from the bundled template, but never settings.to
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
 })
 
-test("fetch backs up an existing secrets.toml instead of overwriting it", async () => {
+test("fetch leaves a secrets.toml holding keys alone: no backup, nothing overwritten", async () => {
   const { getSecretsPath } = await import("../../../lib/config/secrets")
-  await Bun.write(getSecretsPath(), 'hello = "world"\n')
+  const saved = '[providers.fireworks]\napi_key = "fw-secret"\n'
+  await Bun.write(getSecretsPath(), saved)
 
   const { code, text } = await runConfigCli(["fetch"], { offline: true })
   expect(code).toBe(0)
-  expect(text).toContain(getSecretsPath())
-  expect(text).toContain(".bak")
-  expect(await Bun.file(`${getSecretsPath()}.bak`).text()).toBe('hello = "world"\n')
-  expect(await Bun.file(getSecretsPath()).text()).not.toBe('hello = "world"\n')
+  expect(text).toContain(`${getSecretsPath()} holds your keys`)
+  expect(await Bun.file(`${getSecretsPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(getSecretsPath()).text()).toBe(saved)
+})
+
+test("fetch leaves a secrets.toml that doesn't parse alone too, since it may still hold keys", async () => {
+  const { getSecretsPath } = await import("../../../lib/config/secrets")
+  await Bun.write(getSecretsPath(), 'api_key = "half-typed\n')
+
+  const { text } = await runConfigCli(["fetch"], { offline: true })
+  expect(text).toContain("holds your keys")
+  expect(await Bun.file(getSecretsPath()).text()).toBe('api_key = "half-typed\n')
 })
 
 test("wizard --headless writes default config without prompting", async () => {

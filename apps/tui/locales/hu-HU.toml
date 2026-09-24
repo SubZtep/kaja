@@ -70,6 +70,7 @@ Használat
 fetched = "{path} elmentve"
 fetchedWithBackup = "{path} elmentve (a korábbi fájl mentve ide: {backup})"
 fetchedUnchanged = "{path} már naprakész"
+fetchedKept = "{path} tartalmazza a kulcsaidat, ezért meg lett hagyva"
 fetchAllUpToDate = "Minden naprakész"
 fetchOfflineFallback = "Nem sikerült elérni a szervert ({message}) — beépített sablonok használata"
 diffNew = "{path}: új"

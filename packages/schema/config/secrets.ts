@@ -14,7 +14,7 @@ const SecretsMcpServerSchema = z.record(z.string(), z.string())
 
 // Keyed by a marketplace/tools/<name>.toml ability; its manifest's `auth` says where the key goes.
 const SecretsAbilitySchema = z.object({
-  apiKey: z.string().min(1)
+  api_key: z.string().min(1)
 })
 
 // The only file you should need to hand-edit for credentials. The provider and mcp sections

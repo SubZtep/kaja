@@ -234,7 +234,7 @@ test("a scoped pass looks only at the items it was given", async () => {
   Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true })
   try {
     const outcomes = await runCredentialPass(() => {}, undefined, [], {}, { only: [abilityKeyWhere("gh")] })
-    expect(outcomes.map(o => o.item.where)).toEqual(["[abilities.gh] apiKey"])
+    expect(outcomes.map(o => o.item.where)).toEqual(["[abilities.gh] api_key"])
   } finally {
     if (isTTY) Object.defineProperty(process.stdin, "isTTY", isTTY)
     else delete (process.stdin as { isTTY?: boolean }).isTTY
@@ -264,7 +264,7 @@ test("collects providers, keyed abilities, declared MCP secrets and a saved Tele
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.present, i.required, i.hint])).toEqual([
     ["[providers.local] api_key", false, false, undefined],
-    ["[abilities.gh] apiKey", false, true, "header Authorization"],
+    ["[abilities.gh] api_key", false, true, "header Authorization"],
     ["[mcp.ctx] CTX_KEY", true, true, "env CTX_KEY"],
     ["[mcp.ctx] CTX_ID", false, true, "env CTX_ID"],
     ["[telegram] botToken", true, true, undefined]
@@ -297,9 +297,9 @@ test("MCP abilities with key auth become items; optional keys aren't required", 
 
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.required, i.hint])).toEqual([
-    ["[abilities.weather] apiKey", false, "query key"],
-    ["[abilities.docs] apiKey", false, "header Authorization"],
-    ["[abilities.private] apiKey", true, "env P_KEY"]
+    ["[abilities.weather] api_key", false, "query key"],
+    ["[abilities.docs] api_key", false, "header Authorization"],
+    ["[abilities.private] api_key", true, "env P_KEY"]
   ])
   expect(items[1]!.label).toBe("docs (MCP ability)")
 })

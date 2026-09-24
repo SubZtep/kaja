@@ -42,7 +42,7 @@ type = "string"
   host. The other arguments go to the query string for GET and DELETE, or a JSON body for POST, PUT and
   PATCH.
 - `auth` puts the key in a header or query parameter (`in`), with an optional `prefix`. Locally the key
-  lives in `secrets.toml` as `[abilities.github-issues] apiKey = "..."`; without it the ability is left
+  lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`; without it the ability is left
   out with a warning. An optional `check` request lets Kaja test a key before saving it.
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
   approval, like a shell command.

@@ -10,9 +10,30 @@ export function getSecretsPath() {
   return join(getConfigDir(), "secrets.toml")
 }
 
-/** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/secrets.toml template (all commented-out placeholders), backing up any existing (differing) file first. Never served by the API — admin-managed config has no user secrets to export — so this is the only source `fetch` has for it. */
-export async function fetchSecretsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
-  return writeTemplateConfig(TEMPLATE, getSecretsPath())
+/**
+ * The `kaja config fetch` subcommand: writes the bundled docs/config/secrets.toml template (all commented-out
+ * placeholders) when there's no secrets.toml yet; one with no values already reads the same, so it's left as it is. A file
+ * holding any value, or one that doesn't parse, is `kept` as it is: the template has no keys to offer, so replacing it only ever lost the user's own. Never
+ * served by the API — admin-managed config has no user secrets to export — so this is the only source `fetch` has for it.
+ */
+export async function fetchSecretsToml(): Promise<{
+  path: string
+  backedUpTo?: string
+  unchanged?: boolean
+  kept?: boolean
+}> {
+  const path = getSecretsPath()
+  const f = file(path)
+  if (await f.exists()) {
+    let data: unknown
+    try {
+      data = TOML.parse(await f.text())
+    } catch {
+      return { path, kept: true }
+    }
+    if (data && typeof data === "object" && Object.keys(data).length > 0) return { path, kept: true }
+  }
+  return writeTemplateConfig(TEMPLATE, path)
 }
 
 /** Tolerant reader: returns whatever is in the file (possibly schema-invalid), or {} when missing/unparseable. */

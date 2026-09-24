@@ -9,7 +9,7 @@ import { writeTemplateConfig } from "./fetch"
 import { fetchRemoteConfigBundle } from "./remote-fetch"
 import { fetchSecretsToml } from "./secrets"
 
-type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean }
+type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean; kept?: boolean }
 
 const BUNDLE_FILES = new Set(["models.toml"])
 
@@ -18,7 +18,8 @@ export function pickBundleFiles(files: Record<string, string>): Record<string, s
   return Object.fromEntries(Object.entries(files).filter(([key]) => BUNDLE_FILES.has(key)))
 }
 
-function fetchResultLine({ path, backedUpTo, unchanged }: FetchResult) {
+function fetchResultLine({ path, backedUpTo, unchanged, kept }: FetchResult) {
+  if (kept) return t("config.fetchedKept", { path })
   if (unchanged) return t("config.fetchedUnchanged", { path })
   if (backedUpTo) return t("config.fetchedWithBackup", { path, backup: backedUpTo })
   return t("config.fetched", { path })

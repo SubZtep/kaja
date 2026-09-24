@@ -44,7 +44,7 @@ export type OfferedValues = Record<string, string | null>
 
 /** Where an ability's key goes in secrets.toml — the identity a {@link CredentialScope} names it by. */
 export function abilityKeyWhere(name: string): string {
-  return `[abilities.${name}] apiKey`
+  return `[abilities.${name}] api_key`
 }
 
 /** Narrows a pass to part of the config, for a caller that just changed only that part. */
@@ -147,7 +147,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   const store = createFolderAbilityStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
   for (const ability of await store.listHttpTools()) {
     if (ability.auth.type !== "apiKey") continue
-    const saved = creds.abilities[ability.name]?.apiKey
+    const saved = creds.abilities[ability.name]?.api_key
     items.push({
       label: t("doctor.itemAbility", { name: ability.name }),
       where: abilityKeyWhere(ability.name),
@@ -158,13 +158,13 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
         const key = value ?? saved
         return key ? checkAbilityKey(ability, key) : undefined
       },
-      save: value => saveSecrets({ abilities: { [ability.name]: { apiKey: value } } })
+      save: value => saveSecrets({ abilities: { [ability.name]: { api_key: value } } })
     })
   }
   for (const ability of await store.listMcpAbilities()) {
     const { auth } = ability
     if (auth.type !== "apiKey") continue
-    const saved = creds.abilities[ability.name]?.apiKey
+    const saved = creds.abilities[ability.name]?.api_key
     items.push({
       label: t("doctor.itemMcpAbility", { name: ability.name }),
       where: abilityKeyWhere(ability.name),
@@ -178,7 +178,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
         const target = mcpAbilityTarget(ability, key)
         return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
       },
-      save: value => saveSecrets({ abilities: { [ability.name]: { apiKey: value } } })
+      save: value => saveSecrets({ abilities: { [ability.name]: { api_key: value } } })
     })
   }
   return items
