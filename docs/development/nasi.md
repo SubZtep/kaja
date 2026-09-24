@@ -237,12 +237,16 @@ accident. Turning it on adds file, shell, MCP, and plugin tools. See [Tools](/to
 resulting list.
 
 Some built-ins are gated on a **dep** as well as the allowlist — they only register when the host
-supplies what they need: `web_search` needs `webSearchApiKey`, `generate_image` needs
-`imageGeneration`, and cloud `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`
+supplies what they need: `generate_image` needs `imageGeneration`, and cloud `fetch_url` needs
+`fetchProxy`. A local registry exposes `fetch_url`
 unconditionally, since it fetches from the user's own machine; cloud egresses from the server, so
 without a proxy the tool is left out rather than fetching directly. Failing closed is deliberate —
 a proxied fetch that can't reach its proxy raises `ProxyUnavailableError` instead of retrying
 direct, which would silently defeat the point of configuring one.
+
+`read_file` and `list_files` reach a cloud turn only as stubs that pause it with `client_tool_call`,
+for the terminal to run on the user's machine. `clientTools: false` (on `createTools` and
+`Nasi.open`) leaves them out for hosts with no such client: the API's widget and Telegram turns.
 
 ---
 

@@ -50,7 +50,7 @@ export const KajaMarketplaceSchema = z.object({
     .describe("Pull the marketplace at startup when the last sync is over a day old (default: true)")
 })
 
-/** webSearch/telegram (external service credentials) live in secrets.toml */
+/** telegram (external service credentials) lives in secrets.toml */
 export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),

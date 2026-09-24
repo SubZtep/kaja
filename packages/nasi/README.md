@@ -146,7 +146,7 @@ A trailing `?` on otherwise-final text is also emitted as `ask_user` (no pending
 
 ## Tools
 
-`createTools({ includeLocalTools?, deps?, mcpServers?, pluginDir?, tempDir? })` builds the registry. Default is no files/shell/MCP/plugins; `includeLocalTools: true` adds those. `web_search` / `generate_image` still need a search key / image-gen resolver in `deps`.
+`createTools({ includeLocalTools?, deps?, mcpServers?, pluginDir?, tempDir? })` builds the registry. Default is no files/shell/MCP/plugins; `includeLocalTools: true` adds those. `generate_image` still needs an image-gen resolver in `deps`.
 
 Intercepted by `run()` (never executed as normal tools): `ask_user`, `run_command`, `switch_persona`.
 

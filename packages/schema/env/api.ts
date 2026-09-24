@@ -113,6 +113,14 @@ export const ApiEnvSchema = z.object({
     .describe("Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
     .meta({ secret: true, section: "Marketplace" }),
 
+  // TODO: temporary until admin-managed service keys (like providers) replace it.
+  ABILITY_KEYS: trimmed
+    .optional()
+    .describe(
+      "Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...); every cloud user shares them, and a user's own key wins"
+    )
+    .meta({ secret: true, section: "Marketplace" }),
+
   MARKETPLACE_REPO: trimmed
     .default("SubZtep/kaja")
     .describe("GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from")

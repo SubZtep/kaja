@@ -1,9 +1,5 @@
 import * as z from "zod"
 
-export const SecretsWebSearchSchema = z.object({
-  apiKey: z.string().min(1)
-})
-
 export const SecretsTelegramSchema = z.object({
   botToken: z.string().min(1)
 })
@@ -25,7 +21,6 @@ const SecretsAbilitySchema = z.object({
 // correspond to a table in models.toml or mcp.toml, keyed the same way, and are folded back in
 // by that file's loader.
 export const SecretsFileSchema = z.object({
-  webSearch: SecretsWebSearchSchema.optional(),
   telegram: SecretsTelegramSchema.optional(),
   providers: z.record(z.string(), SecretsProviderSchema).default({}),
   mcp: z.record(z.string(), SecretsMcpServerSchema).default({}),
@@ -33,6 +28,5 @@ export const SecretsFileSchema = z.object({
 })
 
 export type SecretsFile = z.infer<typeof SecretsFileSchema>
-export type SecretsWebSearch = z.infer<typeof SecretsWebSearchSchema>
 export type SecretsTelegram = z.infer<typeof SecretsTelegramSchema>
 export type SecretsAbility = z.infer<typeof SecretsAbilitySchema>

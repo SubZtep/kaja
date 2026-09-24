@@ -23,17 +23,19 @@ locally, your own plugin tools are added on top.
 | `rerank` | rerank passages against a query | ✓ |
 | `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/memory) | ✓ |
 | `dataset_info` | collect answers for a persona's [dataset](/memory#datasets) | ✓ |
-| `web_search` | Brave web search | ✓ |
 | `generate_image` | text-to-image | ✓ |
 | `read_file` / `list_files` | read a file, list a directory | client |
 | `view_image` | look at an image file | ✗ |
 | `run_command` | run a shell command | ✗ |
 
-Locally, `web_search` needs `[webSearch]` in [`secrets.toml`](/configuration/secrets), and
-`generate_image` needs a `[models.image-generation]` entry in [`models.toml`](/configuration/models).
+Locally, `generate_image` needs a `[models.image-generation]` entry in [`models.toml`](/configuration/models).
+
+Web search isn't built in: turn on the marketplace's `brave-search` [HTTP tool](/http-tools), which adds
+`web_search` with your own Brave Search API key, locally and in the cloud.
 
 In the cloud, `read_file` and `list_files` pause the turn so the cloud-mode terminal can run them on
-your machine, scoped to the directory you launched from.
+your machine, scoped to the directory you launched from. The widget and the cloud Telegram bot have
+no such client, so they don't get these two.
 
 `fetch_url` fetches from your own machine, under your own IP, in local mode. In the cloud it goes out
 through the server's proxy, and is left out entirely when the server has none.

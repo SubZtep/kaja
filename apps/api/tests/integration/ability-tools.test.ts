@@ -9,6 +9,7 @@ import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
+import { AbilityService, parseAbilityKeys } from "../../src/services/ability"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
@@ -367,6 +368,21 @@ describe("HTTP tools in the cloud", () => {
     expect(listed.keys).not.toContain(issues)
     expect(listed.abilities.map((ability: { name: string }) => ability.name)).not.toContain(issues)
     expect(listed.abilities.map((ability: { name: string }) => ability.name)).toContain(weather)
+  })
+
+  test("ABILITY_KEYS gives every user a server-wide key; the user's own key still wins", async () => {
+    const service = new AbilityService(pool, secretService, parseAbilityKeys(` ${issues} = server-key ,broken,=x`))
+    const listed = (await service.listCatalog()).find(ability => ability.name === issues)
+    expect(listed?.http?.key).toBe("optional")
+    expect(await service.enable(userId, "tool", issues)).toBe("enabled")
+    try {
+      expect((await service.keysForUser(userId)).get(issues)).toBe("server-key")
+      await secretService.set(userId, `ability:${issues}`, "own-key")
+      expect((await service.keysForUser(userId)).get(issues)).toBe("own-key")
+    } finally {
+      await secretService.delete(userId, `ability:${issues}`)
+      await service.disable(userId, "tool", issues)
+    }
   })
 
   test("without USER_SECRET_KEY, key entry is off and tools that need a key are hidden", async () => {

@@ -247,21 +247,17 @@ test("the trail says what became of each key, without showing it", async () => {
   await tick(w, FIREWORKS)
   await w.t.press("fw-secret-value")
   await w.t.press(ENTER)
-  await w.t.press(SPACE) // tick web search
-  await w.t.press(DOWN)
   await w.t.press(SPACE) // tick Telegram
   await w.t.press(ENTER)
-  await w.t.press(ENTER) // web search key: skipped
   await w.t.press(ENTER) // telegram token: skipped
 
   const trail = w.t.output()
   expect(trail).toContain("✓ Fireworks API key: entered, tested when you finish")
-  expect(trail).toContain("✓ Brave Search API key: skipped")
   expect(trail).toContain("✓ Telegram bot token: skipped")
   expect(trail).not.toContain("fw-secret-value")
   // The answers are already on screen, so the last screen doesn't repeat them.
   expect(w.t.lastFrame()).toContain("Setup complete")
-  expect(w.t.lastFrame()).not.toContain("Brave Search API key")
+  expect(w.t.lastFrame()).not.toContain("Telegram bot token")
 
   await close(w)
 })
@@ -295,21 +291,18 @@ test("the extras step starts with nothing ticked, so Enter skips it", async () =
   await close(w)
 })
 
-test("each ticked extra is asked for what it needs, and untouched ones are not", async () => {
+test("a ticked extra is asked for what it needs", async () => {
   const w = await openProviders()
   await w.t.press(ENTER) // providers: nothing
-  await w.t.press(DOWN) // past web search
-  await w.t.press(SPACE) // tick Telegram only
+  await w.t.press(SPACE) // tick Telegram
   await w.t.press(ENTER)
 
-  // Web search wasn't ticked, so its question never appears.
   expect(w.t.lastFrame()).toContain("Telegram bot token")
   await w.t.press("bot-token")
   await w.t.press(ENTER)
   await w.t.press(ENTER) // last screen
 
   expect(w.result).toMatchObject({ telegramToken: "bot-token" })
-  expect(w.result?.webSearchKey).toBeUndefined()
 
   await close(w)
 })

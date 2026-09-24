@@ -5,14 +5,7 @@ import { loadMcpServers } from "../config/mcp-servers"
 import { saveSecrets, secrets } from "../config/secrets"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
-import {
-  type CheckResult,
-  checkAbilityKey,
-  checkMcpServer,
-  checkProvider,
-  checkTelegramToken,
-  checkWebSearchKey
-} from "./checks"
+import { type CheckResult, checkAbilityKey, checkMcpServer, checkProvider, checkTelegramToken } from "./checks"
 
 /** One key or token the current config depends on, with how to test and store it. */
 export type CredentialItem = {
@@ -140,17 +133,6 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
       required: true,
       check: value => checkTelegramToken(value ?? telegramToken),
       save: value => saveSecrets({ telegram: { botToken: value } })
-    })
-  }
-  const webSearchKey = creds.webSearch?.apiKey
-  if (webSearchKey) {
-    items.push({
-      label: t("doctor.itemWebSearch"),
-      where: "[webSearch] apiKey",
-      present: true,
-      required: false,
-      check: value => checkWebSearchKey(value ?? webSearchKey),
-      save: value => saveSecrets({ webSearch: { apiKey: value } })
     })
   }
 

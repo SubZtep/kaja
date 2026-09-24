@@ -142,7 +142,7 @@ async function applyExtras(result: WizardResult): Promise<{ extra: CredentialIte
   const extras = result.extras ?? []
   if (extras.length === 0) return { extra: [], offered: {} }
 
-  const { checkTelegramToken, checkWebSearchKey } = await import("../doctor/checks")
+  const { checkTelegramToken } = await import("../doctor/checks")
   const { saveSecrets } = await import("../config/secrets")
   const extra: CredentialItem[] = []
   let offered: OfferedValues = {}
@@ -156,19 +156,6 @@ async function applyExtras(result: WizardResult): Promise<{ extra: CredentialIte
       required: true,
       check: value => (value ? checkTelegramToken(value) : Promise.resolve(undefined)),
       save: value => saveSecrets({ telegram: { botToken: value } })
-    })
-  }
-
-  if (extras.includes("webSearch")) {
-    offered = { ...offered, ...offer("[webSearch] apiKey", result.webSearchKey) }
-    extra.push({
-      label: t("doctor.itemWebSearch"),
-      where: "[webSearch] apiKey",
-      hint: "header X-Subscription-Token",
-      present: false,
-      required: true,
-      check: value => (value ? checkWebSearchKey(value) : Promise.resolve(undefined)),
-      save: value => saveSecrets({ webSearch: { apiKey: value } })
     })
   }
 
@@ -303,7 +290,6 @@ async function readSavedSecrets(): Promise<WizardSaved> {
     providers: Object.entries(creds.providers)
       .filter(([, value]) => value?.api_key)
       .map(([name]) => name),
-    webSearch: Boolean(creds.webSearch?.apiKey),
     telegram: Boolean(creds.telegram?.botToken)
   }
 }

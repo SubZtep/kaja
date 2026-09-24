@@ -37,6 +37,17 @@ test("the shipped open-meteo manifest is valid", async () => {
   expect(parsed.tools.map(t => t.name)).toEqual(["weather_forecast"])
 })
 
+test("the shipped brave-search manifest sends the key as a header and the query as q", async () => {
+  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/tools/brave-search.toml")).text()
+  const parsed = HttpToolAbilitySchema.parse(Bun.TOML.parse(text))
+  const def = parsed.tools[0]!
+  expect(def.name).toBe("web_search")
+  const request = buildHttpRequest(parsed, def, { q: "kaja ai", freshness: "pw" }, "brave-key")
+  expect(request.url).toBe("https://api.search.brave.com/res/v1/llm/context?q=kaja+ai&freshness=pw")
+  expect(request.headers["X-Subscription-Token"]).toBe("brave-key")
+  expect(approvalSummary(parsed, def, { q: "kaja" })).not.toContain("brave-key")
+})
+
 test("schema rejects undeclared placeholders, bad names, duplicates and non-http base URLs", () => {
   const bad = HttpToolAbilitySchema.safeParse({
     name: "Bad Name",

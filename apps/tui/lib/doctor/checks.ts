@@ -73,16 +73,3 @@ export async function checkTelegramToken(token: string): Promise<CheckResult> {
     return failure(error, token)
   }
 }
-
-/** One Brave query against the endpoint web_search uses; it counts toward the key's quota. */
-export async function checkWebSearchKey(apiKey: string): Promise<CheckResult> {
-  try {
-    const res = await fetch("https://api.search.brave.com/res/v1/llm/context?q=kaja", {
-      headers: { "X-Subscription-Token": apiKey },
-      signal: AbortSignal.timeout(TIMEOUT_MS)
-    })
-    return res.ok ? OK : { ok: false, reason: `HTTP ${res.status}` }
-  } catch (error) {
-    return failure(error, apiKey)
-  }
-}

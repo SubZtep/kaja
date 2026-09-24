@@ -46,4 +46,4 @@ marketplace/
 - Files you added yourself are never touched.
 
 See [docs/skills.md](../docs/skills.md) for skills, [docs/personas.md](../docs/personas.md) for personas and
-[docs/tools.md](../docs/tools.md) for HTTP tools.
+[docs/http-tools.md](../docs/http-tools.md) for HTTP tools.

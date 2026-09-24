@@ -86,6 +86,8 @@ export async function openNasiFor(opts: {
   language?: string
   /** Whose abilities the turn gets; defaults to the user's own selections and keys (a widget passes its key's skill list). */
   abilities?: CloudAbilitySource
+  /** The caller is the terminal, which runs `read_file`/`list_files` on the user's machine; the widget and Telegram have no such client, so they leave it off. */
+  clientTools?: boolean
 }): Promise<Nasi> {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
   const source = opts.abilities ?? { userId: opts.userId }
@@ -97,13 +99,17 @@ export async function openNasiFor(opts: {
     chat,
     personas,
     owner: opts.owner,
+    clientTools: opts.clientTools === true,
     deps: nasiToolDeps(),
     abilities: createPostgresAbilityStore(source),
     abilityKey: name => keys.get(name),
     promptContext: {
       environment:
-        "You are Kaja cloud chat. read_file and list_files run on the user's own machine, scoped to " +
-        "their current directory — you cannot run a shell. " +
+        "You are Kaja cloud chat. " +
+        (opts.clientTools
+          ? "read_file and list_files run on the user's own machine, scoped to their current directory — "
+          : "You have no access to the user's machine — ") +
+        "you cannot run a shell. " +
         "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing.",
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
@@ -136,7 +142,8 @@ export async function runUserTurn(userId: string, body: NasiTurnRequest): Promis
     const nasi = await openNasiFor({
       userId,
       pinnedModel: await pinnedModelFor(userId, body.session),
-      language: body.language
+      language: body.language,
+      clientTools: true
     })
     try {
       return await nasi.turnBuffered(body)
@@ -151,7 +158,8 @@ export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
     const nasi = await openNasiFor({
       userId,
       pinnedModel: await pinnedModelFor(userId, body.session),
-      language: body.language
+      language: body.language,
+      clientTools: true
     })
     // Also runs when the client goes away mid-stream, so a dropped turn never leaves its MCP connections open.
     try {

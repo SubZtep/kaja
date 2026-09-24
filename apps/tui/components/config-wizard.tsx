@@ -10,12 +10,11 @@ import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_
 import { SelectMenu } from "./elem/select-menu"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
-export type WizardExtra = "webSearch" | "telegram"
+export type WizardExtra = "telegram"
 
-const EXTRA_CHOICES: WizardExtra[] = ["webSearch", "telegram"]
+const EXTRA_CHOICES: WizardExtra[] = ["telegram"]
 
 const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
-  webSearch: "wizard.extraWebSearch",
   telegram: "wizard.extraTelegram"
 }
 
@@ -54,7 +53,6 @@ export type WizardResult = {
   /** The provider that serves each task more than one ticked provider could. */
   models?: Partial<Record<ModelTask, string>>
   extras?: WizardExtra[]
-  webSearchKey?: string
   telegramToken?: string
 }
 
@@ -62,7 +60,6 @@ export type WizardResult = {
 export type WizardSaved = {
   /** Provider names with an `api_key` already saved — a list, since the step can pick any of them. */
   providers?: string[]
-  webSearch?: boolean
   telegram?: boolean
 }
 
@@ -83,7 +80,6 @@ type Step =
   | `custom-model:${number}`
   | `custom-task:${number}`
   | "extras"
-  | "webSearchKey"
   | "telegramToken"
   | "summary"
 
@@ -178,9 +174,8 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
     else if (models.length === 0) steps.push("custom-model:0")
   }
   for (const task of contestedTasks(result)) steps.push(`model:${task}`)
-  // Every extra is a local-agent feature: the Telegram bot and the web_search tool.
+  // Every extra is a local-agent feature: the Telegram bot.
   steps.push("extras")
-  if (result.extras?.includes("webSearch")) steps.push("webSearchKey")
   if (result.extras?.includes("telegram")) steps.push("telegramToken")
   steps.push("summary")
   return steps
@@ -309,7 +304,6 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
       t("wizard.summaryExtras"),
       result.extras?.length ? result.extras.map(e => t(EXTRA_LABEL_KEY[e])).join(", ") : undefined
     ),
-  webSearchKey: (_, result, saved) => keyLine(t("wizard.summaryKeyWebSearch"), result.webSearchKey, saved?.webSearch),
   telegramToken: (_, result, saved) => keyLine(t("wizard.summaryKeyTelegram"), result.telegramToken, saved?.telegram)
 }
 
@@ -611,17 +605,6 @@ export function ConfigWizard({
             </Box>
             <Text dimColor>{t("wizard.extrasHint")}</Text>
           </Box>
-        )
-      }
-
-      case "webSearchKey": {
-        return (
-          <InputStep
-            secret
-            title={t("wizard.webSearchKeyTitle")}
-            hint={t(saved?.webSearch ? "wizard.keyHintSaved" : "wizard.keyHint")}
-            onSubmit={webSearchKey => advance({ webSearchKey })}
-          />
         )
       }
 
