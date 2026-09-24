@@ -81,6 +81,7 @@ Prompt history spans all past sessions, newest first.
 | `<modifier>+L` | Open these docs in your browser |
 | `<modifier>+P` | Open the persona picker |
 | `<modifier>+R` | Copy the most recent message (`C` is taken by `Ctrl+C`) |
+| `<modifier>+D` | Switch between the dark and light theme, and save it |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
 [`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS

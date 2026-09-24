@@ -11,6 +11,7 @@ import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
+import { useTheme } from "../../hooks/use-theme"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
 import { t } from "../../lib/i18n"
@@ -73,6 +74,7 @@ function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolea
     { key: `${modifierLabel}+L`, label: t("keybar.help") },
     ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
     { key: `${modifierLabel}+R`, label: t("keybar.copy") },
+    { key: `${modifierLabel}+D`, label: t("keybar.theme") },
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -129,7 +131,8 @@ function Chrome({
   runningCommand?: boolean
   resolvePending?: (approved: boolean) => Promise<void>
 }>) {
-  const { thinking, sounds, voice, hotkeyModifier, theme } = usePreferences(initialPreferences)
+  const { thinking, sounds, voice, hotkeyModifier, theme: initialTheme } = usePreferences(initialPreferences)
+  const { theme, toggle: toggleTheme } = useTheme(initialTheme)
   useSound(events, sounds)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
@@ -143,7 +146,9 @@ function Chrome({
     },
     p: () => {
       if (capabilities.persona && !pending) setPickingPersona(true)
-    }
+    },
+    // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
+    d: toggleTheme
   })
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)

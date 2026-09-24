@@ -14,7 +14,9 @@ locale = "en-GB"
 # works cleanly in your terminal.
 # hotkeyModifier = "alt"
 # Colour theme: "auto" (default) asks the terminal for its background colour and picks
-# "dark" or "light" to match; set one of those if your terminal doesn't answer.
+# "dark" or "light" to match, then follows the terminal when it switches (where it reports
+# that); set one of those if your terminal doesn't answer. <hotkeyModifier>+D in the chat
+# flips it and saves the choice here.
 # theme = "auto"
 
 # Fetching skills, personas, tools and MCP servers from the online marketplace (needs git).

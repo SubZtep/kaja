@@ -64,7 +64,9 @@ export function queryTerminalBackground(
  * to `COLORFGBG`, then to dark. Call before Ink renders — the query reads stdin.
  */
 export async function resolveTheme(preference: KajaPreferences["theme"]): Promise<Brightness> {
-  if (preference === "dark" || preference === "light") return setConsoleTheme(preference)
+  const fixed = preference === "dark" || preference === "light" ? preference : undefined
+  followsTerminal = !fixed
+  if (fixed) return setConsoleTheme(fixed)
   const detected = await queryTerminalBackground().catch(() => null)
   return setConsoleTheme(detected ?? brightnessFromColorFgBg(Bun.env.COLORFGBG) ?? "dark")
 }
@@ -76,6 +78,12 @@ export async function resolveConsoleTheme(): Promise<Brightness> {
 }
 
 let consoleBrightness: Brightness | undefined
+let followsTerminal = false
+
+/** Whether the last {@link resolveTheme} was for `auto`, so the chat keeps following the terminal's colour scheme. */
+export function themeFollowsTerminal(): boolean {
+  return followsTerminal
+}
 
 /** Sets the theme for output printed outside the chat screen (doctor, abilities, sign-in); {@link resolveTheme} sets it too. */
 export function setConsoleTheme(theme: Brightness): Brightness {

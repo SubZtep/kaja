@@ -82,6 +82,17 @@ export function windowFocusReport(input: string): "in" | "out" | null {
   return null
 }
 
+/**
+ * Colour-scheme report (DECSET 2031): `[?997;1n` when the terminal turns dark, `[?997;2n` when it turns light. Sent
+ * unprompted on every change once `COLOR_SCHEME_REPORTING_ENABLE` has been written (kitty, Ghostty, Contour, …).
+ */
+export function colorSchemeReport(input: string): "dark" | "light" | null {
+  const s = stripEsc(input)
+  if (s === "[?997;1n") return "dark"
+  if (s === "[?997;2n") return "light"
+  return null
+}
+
 /** Any non-text terminal sequence that must not be typed into the input. */
 export function isIgnoredTerminalInput(input: string): boolean {
   return (
@@ -90,7 +101,8 @@ export function isIgnoredTerminalInput(input: string): boolean {
     isDeviceAttributesReply(input) ||
     isWindowReport(input) ||
     isEscapeByteList(input) ||
-    windowFocusReport(input) !== null
+    windowFocusReport(input) !== null ||
+    colorSchemeReport(input) !== null
   )
 }
 
@@ -133,3 +145,7 @@ export const MOUSE_DISABLE = `${ESC}[?1007l` + `${ESC}[?1006l` + `${ESC}[?1000l`
 /** DECSET 1004: ask the terminal to report window focus in/out events (see {@link windowFocusReport}). */
 export const FOCUS_REPORTING_ENABLE = `${ESC}[?1004h`
 export const FOCUS_REPORTING_DISABLE = `${ESC}[?1004l`
+
+/** DECSET 2031: ask the terminal to report colour-scheme changes (see {@link colorSchemeReport}). */
+export const COLOR_SCHEME_REPORTING_ENABLE = `${ESC}[?2031h`
+export const COLOR_SCHEME_REPORTING_DISABLE = `${ESC}[?2031l`
