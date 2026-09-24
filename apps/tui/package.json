@@ -13,7 +13,7 @@
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
-    "better-auth": "^1.7.5",
+    "better-auth": "^1.7.6",
     "chalk": "^6.0.0",
     "cli-highlight": "^2.1.11",
     "env-paths": "^4.0.0",

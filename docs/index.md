@@ -4,7 +4,7 @@ title: Home
 nav_order: 1
 ---
 
-# Kaja Documentation 🦋
+# Welcome to our Documentation 🦋
 
 **Kaja is a highly customisable, multi-purpose AI agent you talk to from your terminal.**
 Give it a task and it keeps looping with an LLM — calling tools, switching personas, remembering

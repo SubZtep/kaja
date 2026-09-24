@@ -1,7 +1,8 @@
 import { MultiSelect, PasswordInput, TextInput, ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
 import { capitalized, LOCALE_LABELS, locales } from "@kaja/shared"
-import { Box, Static, Text, useInput } from "ink"
+import { Box, type BoxProps, Static, Text, useInput } from "ink"
+import Gradient from "ink-gradient"
 import { type ReactNode, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
@@ -231,8 +232,7 @@ function InputStep({
     if (!complaint) onSubmit(value)
   }
   return (
-    <Box flexDirection="column" gap={1}>
-      <Text>{title}</Text>
+    <Question title={title}>
       <Frame>
         {secret ? (
           <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={submit} />
@@ -241,7 +241,7 @@ function InputStep({
         )}
       </Frame>
       {problem ? <Problem>{problem}</Problem> : <Text dimColor>{hint}</Text>}
-    </Box>
+    </Question>
   )
 }
 
@@ -258,6 +258,9 @@ function keyState(typed: string | undefined, alreadySaved: boolean | undefined):
 
 /** One answered step, kept on screen above the next question. */
 type Answer = { id: string; label: string; value: string }
+
+/** What the trail prints, once each: the header, then every answer. */
+type TrailItem = Answer | { id: "header" }
 
 type AnswerLine = Pick<Answer, "label" | "value"> | undefined
 type AnswerLineFn = (subject: string, result: WizardResult, saved?: WizardSaved) => AnswerLine
@@ -339,19 +342,70 @@ function Frame({ children }: Readonly<{ children: ReactNode }>) {
   )
 }
 
+// The line down the wizard's left edge, which ties the trail, the question and its input together
+const RAIL: BoxProps = {
+  borderStyle: "single",
+  borderTop: false,
+  borderRight: false,
+  borderBottom: false,
+  borderDimColor: true
+}
+
+/** A marker in the rail's column, then its text indented past it, so a wrapped line stays clear of the rail. */
+function RailLine({ marker, children }: Readonly<{ marker: ReactNode; children: ReactNode }>) {
+  return (
+    <Box>
+      <Box width={3} flexShrink={0}>
+        {marker}
+      </Box>
+      {children}
+    </Box>
+  )
+}
+
+/** The question on screen: a marker and its title, then its input on the rail, closed off below. */
+function Question({ title, plain, children }: Readonly<{ title: string; plain?: boolean; children: ReactNode }>) {
+  const { accent } = useKajaTheme()
+  return (
+    <Box flexDirection="column">
+      <Text dimColor>│</Text>
+      <RailLine marker={<Text {...(plain ? { bold: true } : accent())}>◆</Text>}>
+        <Text bold>{title}</Text>
+      </RailLine>
+      <Box {...RAIL} flexDirection="column" gap={1} paddingLeft={2}>
+        {children}
+      </Box>
+      <Text dimColor>└</Text>
+    </Box>
+  )
+}
+
+/** The trail's first line: the mascot and the name, in colours that read on either background. */
+function Header() {
+  return (
+    <RailLine marker={<Text dimColor>┌</Text>}>
+      <Gradient name="instagram">
+        <Text bold>༼–ɷ–༽ kaja🐓</Text>
+      </Gradient>
+    </RailLine>
+  )
+}
+
 /** Why Enter didn't move on. */
 function Problem({ children }: Readonly<{ children: string }>) {
   const { danger } = useKajaTheme()
   return <Text {...danger()}>{children}</Text>
 }
 
-/** One answered step, dimmed: the wizard's trail, so each question is a step forward and not a replacement. */
+/** One answered step, its label dimmed: the wizard's trail, so each question is a step forward and not a replacement. */
 function AnswerRow({ label, value }: Readonly<Pick<Answer, "label" | "value">>) {
   const { success } = useKajaTheme()
   return (
-    <Text dimColor>
-      ✓ {label}: <Text {...success()}>{value}</Text>
-    </Text>
+    <RailLine marker={<Text {...success()}>✓</Text>}>
+      <Text>
+        <Text dimColor>{label}:</Text> {value}
+      </Text>
+    </RailLine>
   )
 }
 
@@ -371,10 +425,18 @@ function ThemePreview() {
 
 /** The last screen. The answers are already on screen above, so this only says what to do next. */
 function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
+  const { success } = useKajaTheme()
   return (
-    <Box flexDirection="column" gap={1}>
-      <Text>{t("wizard.summaryTitle")}</Text>
-      <Text dimColor>{t(result.mode === "cloud" ? "wizard.summaryHintCloud" : "wizard.summaryHint")}</Text>
+    <Box flexDirection="column">
+      <Text dimColor>│</Text>
+      <RailLine marker={<Text {...success()}>└</Text>}>
+        <Text bold {...success()}>
+          {t("wizard.summaryTitle")}
+        </Text>
+      </RailLine>
+      <Box paddingLeft={3}>
+        <Text dimColor>{t(result.mode === "cloud" ? "wizard.summaryHintCloud" : "wizard.summaryHint")}</Text>
+      </Box>
     </Box>
   )
 }
@@ -407,7 +469,7 @@ export function ConfigWizard({
   const [step, setStep] = useState<Step>("language")
   const [result, setResult] = useState<WizardResult>(initial)
   // Append-only: <Static> prints each item once and leaves it in the scrollback.
-  const [answered, setAnswered] = useState<Answer[]>([])
+  const [answered, setAnswered] = useState<TrailItem[]>([{ id: "header" }])
   // Set when Enter was pressed on the providers checklist with nothing ticked.
   const [noProvider, setNoProvider] = useState(false)
   // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
@@ -464,8 +526,7 @@ export function ConfigWizard({
       const candidates = candidatesByTask(chosenProviders(result))[task] ?? []
       const current = candidates.findIndex(candidate => candidate.provider === result.models?.[task])
       return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}</Text>
+        <Question title={t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}>
           <SelectMenu
             items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
             width={70}
@@ -474,7 +535,7 @@ export function ConfigWizard({
             onClose={onCancel}
           />
           <Text dimColor>{t("wizard.modelHint")}</Text>
-        </Box>
+        </Question>
       )
     }
 
@@ -551,8 +612,7 @@ export function ConfigWizard({
       const index = Number(subject)
       const entry = custom.models[index]
       return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.customTaskTitle", { model: entry?.model ?? "" })}</Text>
+        <Question title={t("wizard.customTaskTitle", { model: entry?.model ?? "" })}>
           <SelectMenu
             items={TASK_ORDER.map(task => t(TASK_LABEL_KEY[task]))}
             width={70}
@@ -567,7 +627,7 @@ export function ConfigWizard({
             }
             onClose={onCancel}
           />
-        </Box>
+        </Question>
       )
     }
 
@@ -579,8 +639,7 @@ export function ConfigWizard({
     switch (step) {
       case "mode": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.modeTitle")}</Text>
+          <Question title={t("wizard.modeTitle")}>
             <SelectMenu
               items={[t("wizard.modeCloud"), t("wizard.modeLocal")]}
               width={70}
@@ -588,14 +647,13 @@ export function ConfigWizard({
               onSelect={index => advance({ mode: MODE_CHOICES[index] })}
               onClose={onCancel}
             />
-          </Box>
+          </Question>
         )
       }
 
       case "language": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.languageTitle")}</Text>
+          <Question title={t("wizard.languageTitle")} plain>
             <SelectMenu
               items={locales.map(locale => LOCALE_LABELS[locale])}
               // The code beside the native name, so a language you can't read is still identifiable.
@@ -612,14 +670,13 @@ export function ConfigWizard({
               }}
               onClose={onCancel}
             />
-          </Box>
+          </Question>
         )
       }
 
       case "theme": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.themeTitle")}</Text>
+          <Question title={t("wizard.themeTitle")}>
             <SelectMenu
               items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
               width={70}
@@ -630,14 +687,13 @@ export function ConfigWizard({
             />
             <ThemePreview />
             <Text dimColor>{t("wizard.themeHint")}</Text>
-          </Box>
+          </Question>
         )
       }
 
       case "providers": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.providerTitle")}</Text>
+          <Question title={t("wizard.providerTitle")}>
             <Frame>
               {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
               <MultiSelect
@@ -661,14 +717,13 @@ export function ConfigWizard({
             ) : (
               <Text dimColor>{t("wizard.providerHint")}</Text>
             )}
-          </Box>
+          </Question>
         )
       }
 
       case "extras": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.extrasTitle")}</Text>
+          <Question title={t("wizard.extrasTitle")}>
             <Frame>
               {/* Nothing ticked by default, so one Enter skips the whole step. */}
               <MultiSelect
@@ -678,7 +733,7 @@ export function ConfigWizard({
               />
             </Frame>
             <Text dimColor>{t("wizard.extrasHint")}</Text>
-          </Box>
+          </Question>
         )
       }
 
@@ -702,10 +757,16 @@ export function ConfigWizard({
     <ThemeProvider theme={themes[preview]}>
       <Box flexDirection="column">
         <Static items={answered}>
-          {answer => <AnswerRow key={answer.id} label={answer.label} value={answer.value} />}
+          {item =>
+            "label" in item ? (
+              <AnswerRow key={item.id} label={item.label} value={item.value} />
+            ) : (
+              <Header key={item.id} />
+            )
+          }
         </Static>
         {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
-        <Box key={step} marginTop={1} flexDirection="column">
+        <Box key={step} flexDirection="column">
           {stepView()}
         </Box>
       </Box>

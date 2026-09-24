@@ -29,6 +29,9 @@
     "editor.defaultFormatter": "vscode.json-language-features",
     "editor.formatOnSave": true
   },
+  "[scss]": {
+    "editor.defaultFormatter": "vscode.css-language-features"
+  },
   "files.associations": {
     "*.css": "tailwindcss"
   },

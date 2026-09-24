@@ -53,7 +53,7 @@ function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnimation |
 
   return (
     <Box>
-      <Gradient name="rainbow">
+      <Gradient name="instagram">
         <Text bold>{frame}</Text>
       </Gradient>
     </Box>

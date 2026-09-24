@@ -145,7 +145,7 @@ test("the providers step won't continue with nothing ticked: local mode needs a 
   await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // last screen
   expect(w.result).toMatchObject({ mode: "local", providers: ["ollama"] })
-  expect(w.t.output()).toContain("✓ Providers: Ollama")
+  expect(w.t.output()).toContain("✓  Providers: Ollama")
 
   await close(w)
 })
@@ -229,7 +229,7 @@ test("a task two ticked providers can serve asks which one to use, and only that
   await w.t.press(ENTER) // last screen
   expect(w.result?.models).toEqual({ chat: "ollama", embedding: "fireworks" })
   const trail = w.t.output()
-  expect(trail).toContain("✓ Chat model: Ollama (qwen3.5:4b)")
+  expect(trail).toContain("✓  Chat model: Ollama (qwen3.5:4b)")
   expect(trail).not.toContain("Reranking model")
 
   await close(w)
@@ -251,7 +251,7 @@ test("a step that says a key is already saved offers to keep it", async () => {
   expect(w.t.lastFrame()).toContain("already saved")
 
   await w.t.press(ENTER) // keep it
-  expect(w.t.output()).toContain("✓ Fireworks API key: already saved, kept")
+  expect(w.t.output()).toContain("✓  Fireworks API key: already saved, kept")
 
   await close(w)
 })
@@ -264,8 +264,8 @@ test("each answer stays on screen and the next question opens below it", async (
   expect(w.t.lastFrame()).toContain("Paste your Fireworks API key")
   expect(w.t.lastFrame()).not.toContain("Which model providers can you use?")
   const trail = w.t.output()
-  expect(trail).toContain("✓ Language: English")
-  expect(trail).toContain("✓ Providers: Fireworks, Ollama")
+  expect(trail).toContain("✓  Language: English")
+  expect(trail).toContain("✓  Providers: Fireworks, Ollama")
   // A forced mode was never asked, so it leaves no line.
   expect(trail).not.toContain("Mode:")
 
@@ -282,8 +282,8 @@ test("the trail says what became of each key, without showing it", async () => {
   await w.t.press(ENTER) // telegram token: skipped
 
   const trail = w.t.output()
-  expect(trail).toContain("✓ Fireworks API key: entered, tested when you finish")
-  expect(trail).toContain("✓ Telegram bot token: skipped")
+  expect(trail).toContain("✓  Fireworks API key: entered, tested when you finish")
+  expect(trail).toContain("✓  Telegram bot token: skipped")
   expect(trail).not.toContain("fw-secret-value")
   // The answers are already on screen, so the last screen doesn't repeat them.
   expect(w.t.lastFrame()).toContain("Setup complete")
@@ -461,9 +461,9 @@ test("a custom provider is asked its name, address, key, then each model and wha
   })
   expect(w.result?.keys).toEqual({ "lm-studio": "" })
   const trail = w.t.output()
-  expect(trail).toContain("✓ Custom provider: lm-studio")
-  expect(trail).toContain("✓ lm-studio server: http://localhost:1234/v1")
-  expect(trail).toContain("✓ Custom model: llama-3.2-1b-instruct (chat)")
+  expect(trail).toContain("✓  Custom provider: lm-studio")
+  expect(trail).toContain("✓  lm-studio server: http://localhost:1234/v1")
+  expect(trail).toContain("✓  Custom model: llama-3.2-1b-instruct (chat)")
 
   await close(w)
 })

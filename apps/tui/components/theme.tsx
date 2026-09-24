@@ -119,14 +119,14 @@ function kajaTheme(palette: Palette): KajaComponentTheme {
   return { palette, styles: kajaStyles(palette) }
 }
 
-// ink-ui's own select menus: focused row in `info`, ticked rows in `success`
+// ink-ui's own select menus: focused row in `focus`, like SelectMenu's, ticked rows in `success`
 function selectTheme(p: Palette) {
   return {
     styles: {
       selectedIndicator: (): TextProps => ({ color: p.success }),
-      focusIndicator: (): TextProps => ({ color: p.info }),
+      focusIndicator: (): TextProps => ({ color: p.focus }),
       label: ({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }): TextProps => ({
-        color: isFocused ? p.info : isSelected ? p.success : undefined
+        color: isFocused ? p.focus : isSelected ? p.success : undefined
       })
     }
   }
