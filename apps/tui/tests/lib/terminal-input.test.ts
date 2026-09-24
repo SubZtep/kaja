@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import {
+  colorSchemeReport,
   isDeviceAttributesReply,
   isIgnoredTerminalInput,
   isKittyKeyboardNoise,
@@ -52,4 +53,12 @@ test("window focus-in/out reports are recognized and are noise (not typed into t
   expect(windowFocusReport("")).toBeNull()
   expect(isIgnoredTerminalInput("[I")).toBeTrue()
   expect(isIgnoredTerminalInput("[O")).toBeTrue()
+})
+
+test("colour-scheme reports are recognized and are noise (not typed into the prompt)", () => {
+  expect(colorSchemeReport("[?997;1n")).toBe("dark")
+  expect(colorSchemeReport("\x1b[?997;2n")).toBe("light")
+  expect(colorSchemeReport("[?997;3n")).toBeNull()
+  expect(colorSchemeReport("hello")).toBeNull()
+  expect(isIgnoredTerminalInput("[?997;1n")).toBeTrue()
 })

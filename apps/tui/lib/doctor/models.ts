@@ -2,6 +2,7 @@ import type { CliResolvedModel, ModelTask } from "@kaja/schema/config"
 import { t } from "../i18n"
 import { probeModel } from "../models/check"
 import { saveModelFields } from "../models/models"
+import { statusLine } from "./status"
 
 const TASK_ORDER: ModelTask[] = ["chat", "embedding", "rerank", "tts", "stt", "image-generation"]
 
@@ -53,7 +54,7 @@ type Deps = {
   save?: typeof saveModelFields
 }
 
-/** The model pass's prompt for a real terminal. Loaded here so a non-interactive caller never pulls Ink in. */
+/** The model pass's prompt for a real terminal. Loaded here so a non-interactive caller never loads the prompts. */
 export async function defaultModelIo(): Promise<ModelIo> {
   const { askPick } = await import("./prompt")
   return { interactive: Boolean(process.stdin.isTTY), askPick }
@@ -73,8 +74,8 @@ async function probeTask(
     results.push({ model, result })
     print(
       result.ok
-        ? `  ✓ ${model.model} (${t("doctor.modelUp")})`
-        : `  ✗ ${model.model} (${t("doctor.modelDown")}): ${result.error}`
+        ? statusLine("success", `${model.model} (${t("doctor.modelUp")})`)
+        : statusLine("error", `${model.model} (${t("doctor.modelDown")}): ${result.error}`)
     )
   }
   return results
@@ -116,7 +117,7 @@ export async function runModelPass(
     const working = results.filter(entry => entry !== active && entry.result.ok).map(entry => entry.model)
     const noun = t(TASK_NOUN_KEY[task])
     if (results.length > 1 && working.length === 0) {
-      print(`  ${t("doctor.modelAlternativesDown", { task: noun })}`)
+      print(statusLine("warning", t("doctor.modelAlternativesDown", { task: noun })))
       continue
     }
     if (working.length === 0) continue
@@ -138,7 +139,9 @@ export async function runModelPass(
     await save(task, chosen.provider, chosen.model)
     outcome.ok = true
     outcome.switchedTo = chosen
-    print(`  ✓ ${t("doctor.modelSwitched", { task: noun, provider: chosen.provider, model: chosen.model })}`)
+    print(
+      statusLine("success", t("doctor.modelSwitched", { task: noun, provider: chosen.provider, model: chosen.model }))
+    )
   }
   return outcomes
 }

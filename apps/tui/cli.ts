@@ -1,5 +1,5 @@
 import { setWarnHandler } from "@kaja/nasi"
-import { color } from "bun"
+import { consolePalette, paint } from "./components/theme"
 import { detectAndSetLanguage } from "./lib/cli/bootstrap"
 import { createCloud, getConfigPath, isConfigExists, validate } from "./lib/config/config"
 import { modeFromFlags, resolveMode } from "./lib/config/mode"
@@ -52,7 +52,11 @@ try {
   // sends anyone who hasn't finished a local setup silently back to cloud login.
   if (!(await isConfigExists())) {
     const { runConfigWizard } = await import("./lib/cli/config-wizard")
-    const { text } = await runConfigWizard({ headless: args.flags.headless, mode: modeFromFlags(args.flags) })
+    const { text } = await runConfigWizard({
+      headless: args.flags.headless,
+      mode: modeFromFlags(args.flags),
+      firstRun: true
+    })
     // Cancelled at some step — nothing was written, so there's no config to start from.
     if (!(await isConfigExists())) {
       console.log(text)
@@ -69,7 +73,7 @@ try {
   }
 
   if (!(await validate())) {
-    console.log(`${color("red", "ansi")}${t("cli.invalidConfig", { path: getConfigPath() })}`)
+    console.log(paint(consolePalette().danger)(t("cli.invalidConfig", { path: getConfigPath() })))
     process.exit(1)
   }
 
@@ -98,6 +102,6 @@ try {
 } catch (error) {
   log.error("Unhandled startup error", { error })
   const message = error instanceof Error ? error.message : String(error)
-  console.log(`${color("red", "ansi")}${t("cli.startupError", { message })}`)
+  console.log(paint(consolePalette().danger)(t("cli.startupError", { message })))
   process.exit(1)
 }

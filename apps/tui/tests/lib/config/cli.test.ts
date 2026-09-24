@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test"
+import { afterEach, beforeAll, expect, test } from "bun:test"
 import { tmpdir } from "node:os"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
@@ -10,14 +10,22 @@ const { getModelsPath } = await import("../../../lib/models/models")
 const { getPaths } = await import("../../../lib/paths")
 const { join } = await import("node:path")
 
+async function clearEtag() {
+  const { $ } = await import("bun")
+  // fetchRemoteConfigBundle() caches the last seen ETag outside the config dir — clear it so tests don't leak a 304 into each other.
+  await $`rm -f ${join(getPaths().temp, "kaja-config-fetch-etag")}`.quiet().nothrow()
+}
+
+// Also before the first test: the cache may hold an ETag from another test file or a real `kaja config fetch`
+beforeAll(clearEtag)
+
 afterEach(async () => {
   const { $ } = await import("bun")
   await $`rm -f ${getMcpPath()} ${getMcpPath()}.bak ${getMcpPath()}.bak2 ${getModelsPath()} ${getModelsPath()}.bak ${getModelsPath()}.bak2 ${getConfigPath()}`
     .quiet()
     .nothrow()
   await $`rm -rf ${getConfigDir()} ${getConfigDir()}.bak ${getConfigDir()}.bak2`.quiet().nothrow()
-  // fetchRemoteConfigBundle() caches the last seen ETag outside the config dir — clear it so tests don't leak a 304 into each other.
-  await $`rm -f ${join(getPaths().temp, "kaja-config-fetch-etag")}`.quiet().nothrow()
+  await clearEtag()
 })
 
 test("fetch writes models.toml from the bundled template, and neither personas nor mcp.toml", async () => {
@@ -160,16 +168,25 @@ test("fetch writes secrets.toml from the bundled template, but never settings.to
   expect(await Bun.file(getConfigPath()).exists()).toBe(false)
 })
 
-test("fetch backs up an existing secrets.toml instead of overwriting it", async () => {
+test("fetch leaves a secrets.toml holding keys alone: no backup, nothing overwritten", async () => {
   const { getSecretsPath } = await import("../../../lib/config/secrets")
-  await Bun.write(getSecretsPath(), 'hello = "world"\n')
+  const saved = '[providers.fireworks]\napi_key = "fw-secret"\n'
+  await Bun.write(getSecretsPath(), saved)
 
   const { code, text } = await runConfigCli(["fetch"], { offline: true })
   expect(code).toBe(0)
-  expect(text).toContain(getSecretsPath())
-  expect(text).toContain(".bak")
-  expect(await Bun.file(`${getSecretsPath()}.bak`).text()).toBe('hello = "world"\n')
-  expect(await Bun.file(getSecretsPath()).text()).not.toBe('hello = "world"\n')
+  expect(text).toContain(`${getSecretsPath()} holds your keys`)
+  expect(await Bun.file(`${getSecretsPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(getSecretsPath()).text()).toBe(saved)
+})
+
+test("fetch leaves a secrets.toml that doesn't parse alone too, since it may still hold keys", async () => {
+  const { getSecretsPath } = await import("../../../lib/config/secrets")
+  await Bun.write(getSecretsPath(), 'api_key = "half-typed\n')
+
+  const { text } = await runConfigCli(["fetch"], { offline: true })
+  expect(text).toContain("holds your keys")
+  expect(await Bun.file(getSecretsPath()).text()).toBe('api_key = "half-typed\n')
 })
 
 test("wizard --headless writes default config without prompting", async () => {
@@ -177,4 +194,16 @@ test("wizard --headless writes default config without prompting", async () => {
   expect(code).toBe(0)
   expect(text.length).toBeGreaterThan(0)
   expect(await Bun.file(getConfigPath()).exists()).toBe(true)
+})
+
+test("fetch still writes a missing models.toml when the cached ETag would get a 304", async () => {
+  const restore = mockBundleFetch({ "models.toml": 'label = "fresh"\n' }, '"same"')
+  try {
+    await Bun.write(join(getPaths().temp, "kaja-config-fetch-etag"), '"same"')
+    const { code } = await runConfigCli(["fetch"])
+    expect(code).toBe(0)
+    expect(await Bun.file(getModelsPath()).text()).toContain("fresh")
+  } finally {
+    restore()
+  }
 })

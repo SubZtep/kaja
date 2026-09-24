@@ -97,6 +97,15 @@
             "alt",
             "ctrl"
           ]
+        },
+        "theme": {
+          "description": "Colour theme; auto asks the terminal for its background colour (default: auto)",
+          "type": "string",
+          "enum": [
+            "auto",
+            "dark",
+            "light"
+          ]
         }
       }
     }

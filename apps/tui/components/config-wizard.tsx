@@ -1,13 +1,17 @@
-import { MultiSelect, PasswordInput, TextInput } from "@inkjs/ui"
+import { MultiSelect, PasswordInput, TextInput, ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
 import { capitalized, LOCALE_LABELS, locales } from "@kaja/shared"
 import { Box, Static, Text, useInput } from "ink"
+import Gradient from "ink-gradient"
 import { useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
 import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
+import type { Brightness } from "../lib/terminal-background"
+import { Answered, InputFrame, Question, RailLine } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
+import { themes, useKajaTheme, usePalette } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "telegram"
@@ -43,6 +47,8 @@ const CUSTOM = "custom"
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
+  /** Prefilled with the saved theme, else the one detected from the terminal's background. */
+  theme?: Brightness
   /** The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Never empty once asked: local mode can't start without one. */
   providers?: string[]
   custom?: WizardCustom
@@ -70,6 +76,7 @@ export type WizardSaved = {
 type Step =
   | "mode"
   | "language"
+  | "theme"
   | "providers"
   | `key:${string}`
   | `address:${string}`
@@ -101,6 +108,13 @@ const TASK_LABEL_KEY: Record<ModelTask, string> = {
 }
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
+
+const THEME_CHOICES: Brightness[] = ["dark", "light"]
+
+const THEME_LABEL_KEY: Record<Brightness, string> = {
+  dark: "wizard.themeDark",
+  light: "wizard.themeLight"
+}
 
 /** A name reduced to what a TOML table key and a secrets.toml entry can carry; never one the catalog already owns. */
 function customId(name: string): string {
@@ -156,7 +170,7 @@ function contestedTasks(result: WizardResult): ModelTask[] {
 function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   // `--cloud`/`--local` already answered the mode. A prefilled mode does not: that's the current
   // setting being re-offered, which the user is here to change.
-  const steps: Step[] = forcedMode === undefined ? ["language", "mode"] : ["language"]
+  const steps: Step[] = forcedMode === undefined ? ["language", "theme", "mode"] : ["language", "theme"]
   if (result.mode === "cloud") return [...steps, "summary"]
 
   steps.push("providers")
@@ -219,17 +233,16 @@ function InputStep({
     if (!complaint) onSubmit(value)
   }
   return (
-    <Box flexDirection="column" gap={1}>
-      <Text>{title}</Text>
-      <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+    <Question title={title}>
+      <InputFrame>
         {secret ? (
           <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={submit} />
         ) : (
           <TextInput defaultValue={defaultValue} onSubmit={submit} />
         )}
-      </Box>
-      {problem ? <Text color="red">{problem}</Text> : <Text dimColor>{hint}</Text>}
-    </Box>
+      </InputFrame>
+      {problem ? <Problem>{problem}</Problem> : <Text dimColor>{hint}</Text>}
+    </Question>
   )
 }
 
@@ -247,6 +260,9 @@ function keyState(typed: string | undefined, alreadySaved: boolean | undefined):
 /** One answered step, kept on screen above the next question. */
 type Answer = { id: string; label: string; value: string }
 
+/** What the trail prints, once each: the header, then every answer. */
+type TrailItem = Answer | { id: "header" }
+
 type AnswerLine = Pick<Answer, "label" | "value"> | undefined
 type AnswerLineFn = (subject: string, result: WizardResult, saved?: WizardSaved) => AnswerLine
 
@@ -263,6 +279,7 @@ function lineIf(label: string, value: string | undefined): AnswerLine {
 
 const ANSWER_LINES: Record<string, AnswerLineFn> = {
   language: (_, result) => lineIf(t("wizard.summaryLanguage"), result.language && LOCALE_LABELS[result.language]),
+  theme: (_, result) => lineIf(t("wizard.summaryTheme"), result.theme && t(THEME_LABEL_KEY[result.theme])),
   mode: (_, result) =>
     lineIf(
       t("wizard.summaryMode"),
@@ -316,21 +333,58 @@ function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): Answ
   return ANSWER_LINES[kind]?.(subject, result, saved)
 }
 
-/** One answered step, dimmed: the wizard's trail, so each question is a step forward and not a replacement. */
-function AnswerRow({ label, value }: Readonly<Pick<Answer, "label" | "value">>) {
+/** Why Enter didn't move on. */
+function Problem({ children }: Readonly<{ children: string }>) {
+  const { danger } = useKajaTheme()
+  return <Text {...danger()}>{children}</Text>
+}
+
+/** The trail's first line: the mascot and the name, in the theme's gradient. */
+function Header() {
+  const { gradient } = usePalette()
   return (
-    <Text dimColor>
-      ✓ {label}: <Text color="green">{value}</Text>
-    </Text>
+    <RailLine marker={<Text dimColor>┌</Text>}>
+      <Gradient colors={gradient}>
+        <Text bold>༼☉ɷ⊙༽ kaja</Text>
+      </Gradient>
+    </RailLine>
   )
 }
 
-/** The last screen. The answers are already on screen above, so this only says what to do next. */
-function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
+/** A few lines drawn in the highlighted theme's colours, so the choice is made by looking rather than guessing. */
+function ThemePreview() {
+  const { inputBox, userText, muted } = useKajaTheme()
   return (
-    <Box flexDirection="column" gap={1}>
-      <Text>{t("wizard.summaryTitle")}</Text>
-      <Text dimColor>{t(result.mode === "cloud" ? "wizard.summaryHintCloud" : "wizard.summaryHint")}</Text>
+    <Box flexDirection="column" width={70}>
+      <Text {...userText()}>{`> ${t("wizard.themePreviewUser")}`}</Text>
+      <Text {...muted()}>{t("wizard.themePreviewMuted")}</Text>
+      <Box {...inputBox()} borderStyle="classic" paddingLeft={1}>
+        <Text>{t("wizard.themePreviewInput")}</Text>
+      </Box>
+    </Box>
+  )
+}
+
+// What happens after Enter: on the first run Kaja carries straight on into the chat (or the cloud sign-in)
+function summaryHintKey(cloud: boolean, firstRun?: boolean): string {
+  if (firstRun) return cloud ? "wizard.summaryHintFirstRunCloud" : "wizard.summaryHintFirstRun"
+  return cloud ? "wizard.summaryHintCloud" : "wizard.summaryHint"
+}
+
+/** The last screen. The answers are already on screen above, so this only says what to do next. */
+function SummaryStep({ result, firstRun }: Readonly<{ result: WizardResult; firstRun?: boolean }>) {
+  const { success } = useKajaTheme()
+  return (
+    <Box flexDirection="column">
+      <Text dimColor>│</Text>
+      <RailLine marker={<Text {...success()}>└</Text>}>
+        <Text bold {...success()}>
+          {t("wizard.summaryTitle")}
+        </Text>
+      </RailLine>
+      <Box paddingLeft={3}>
+        <Text dimColor>{t(summaryHintKey(result.mode === "cloud", firstRun))}</Text>
+      </Box>
     </Box>
   )
 }
@@ -338,14 +392,15 @@ function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
 /**
  * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`.
  * Every step opens on the current value, so holding Enter walks a configured machine through unchanged.
- * Escape/backspace/delete at any step cancels the whole wizard, the same dismissal contract as
- * {@link SelectMenu}. Nothing is written here — the caller applies the collected {@link WizardResult}
+ * Escape on a list cancels the whole wizard. Backspace/Delete don't, unlike other {@link SelectMenu}s: a
+ * typo-fixing reflex shouldn't throw every answer away. Nothing is written here — the caller applies the collected {@link WizardResult}
  * once `onDone` fires, via the existing config/secrets writers.
  */
 export function ConfigWizard({
   prefill,
   mode,
   saved,
+  firstRun,
   onDone,
   onCancel
 }: Readonly<{
@@ -354,6 +409,8 @@ export function ConfigWizard({
   mode?: KajaMode
   /** Secrets already on disk, so their step offers to keep them instead of demanding a new one. */
   saved?: WizardSaved
+  /** Launched by a plain `kaja` with no config yet, which goes on into the chat afterwards. */
+  firstRun?: boolean
   onDone: (result: WizardResult) => void
   onCancel: () => void
 }>) {
@@ -363,9 +420,11 @@ export function ConfigWizard({
   const [step, setStep] = useState<Step>("language")
   const [result, setResult] = useState<WizardResult>(initial)
   // Append-only: <Static> prints each item once and leaves it in the scrollback.
-  const [answered, setAnswered] = useState<Answer[]>([])
+  const [answered, setAnswered] = useState<TrailItem[]>([{ id: "header" }])
   // Set when Enter was pressed on the providers checklist with nothing ticked.
   const [noProvider, setNoProvider] = useState(false)
+  // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
+  const [preview, setPreview] = useState<Brightness>(initial.theme ?? "dark")
 
   useInput((_input, key) => {
     if (step === "summary" && key.return) onDone(result)
@@ -418,9 +477,9 @@ export function ConfigWizard({
       const candidates = candidatesByTask(chosenProviders(result))[task] ?? []
       const current = candidates.findIndex(candidate => candidate.provider === result.models?.[task])
       return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}</Text>
+        <Question title={t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}>
           <SelectMenu
+            closeOnBackspace={false}
             items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
             width={70}
             initialIndex={current >= 0 ? current : undefined}
@@ -428,7 +487,7 @@ export function ConfigWizard({
             onClose={onCancel}
           />
           <Text dimColor>{t("wizard.modelHint")}</Text>
-        </Box>
+        </Question>
       )
     }
 
@@ -505,9 +564,9 @@ export function ConfigWizard({
       const index = Number(subject)
       const entry = custom.models[index]
       return (
-        <Box flexDirection="column" gap={1}>
-          <Text>{t("wizard.customTaskTitle", { model: entry?.model ?? "" })}</Text>
+        <Question title={t("wizard.customTaskTitle", { model: entry?.model ?? "" })}>
           <SelectMenu
+            closeOnBackspace={false}
             items={TASK_ORDER.map(task => t(TASK_LABEL_KEY[task]))}
             width={70}
             initialIndex={entry?.task ? TASK_ORDER.indexOf(entry.task) : undefined}
@@ -521,7 +580,7 @@ export function ConfigWizard({
             }
             onClose={onCancel}
           />
-        </Box>
+        </Question>
       )
     }
 
@@ -533,27 +592,29 @@ export function ConfigWizard({
     switch (step) {
       case "mode": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.modeTitle")}</Text>
+          <Question title={t("wizard.modeTitle")}>
             <SelectMenu
+              closeOnBackspace={false}
               items={[t("wizard.modeCloud"), t("wizard.modeLocal")]}
               width={70}
               initialIndex={Math.max(0, MODE_CHOICES.indexOf(result.mode ?? "cloud"))}
               onSelect={index => advance({ mode: MODE_CHOICES[index] })}
               onClose={onCancel}
             />
-          </Box>
+          </Question>
         )
       }
 
       case "language": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.languageTitle")}</Text>
+          <Question title={t("wizard.languageTitle")} plain>
             <SelectMenu
+              closeOnBackspace={false}
               items={locales.map(locale => LOCALE_LABELS[locale])}
               // The code beside the native name, so a language you can't read is still identifiable.
               hints={[...locales]}
+              // Asked before the theme, so no colour at all: it has to read on any background
+              plain
               initialIndex={result.language ? locales.indexOf(result.language) : undefined}
               onSelect={index => {
                 const language = locales[index]!
@@ -564,15 +625,32 @@ export function ConfigWizard({
               }}
               onClose={onCancel}
             />
-          </Box>
+          </Question>
+        )
+      }
+
+      case "theme": {
+        return (
+          <Question title={t("wizard.themeTitle")}>
+            <SelectMenu
+              closeOnBackspace={false}
+              items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
+              width={70}
+              initialIndex={THEME_CHOICES.indexOf(result.theme ?? "dark")}
+              onFocus={index => setPreview(THEME_CHOICES[index]!)}
+              onSelect={index => advance({ theme: THEME_CHOICES[index] })}
+              onClose={onCancel}
+            />
+            <ThemePreview />
+            <Text dimColor>{t("wizard.themeHint")}</Text>
+          </Question>
         )
       }
 
       case "providers": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.providerTitle")}</Text>
-            <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+          <Question title={t("wizard.providerTitle")}>
+            <InputFrame>
               {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
               <MultiSelect
                 options={[
@@ -589,30 +667,29 @@ export function ConfigWizard({
                   if (providers.length > 0) advance({ providers })
                 }}
               />
-            </Box>
+            </InputFrame>
             {noProvider ? (
-              <Text color="red">{t("wizard.providerRequired")}</Text>
+              <Problem>{t("wizard.providerRequired")}</Problem>
             ) : (
               <Text dimColor>{t("wizard.providerHint")}</Text>
             )}
-          </Box>
+          </Question>
         )
       }
 
       case "extras": {
         return (
-          <Box flexDirection="column" gap={1}>
-            <Text>{t("wizard.extrasTitle")}</Text>
-            <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
+          <Question title={t("wizard.extrasTitle")}>
+            <InputFrame>
               {/* Nothing ticked by default, so one Enter skips the whole step. */}
               <MultiSelect
                 options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
                 defaultValue={result.extras}
                 onSubmit={values => advance({ extras: values as WizardExtra[] })}
               />
-            </Box>
+            </InputFrame>
             <Text dimColor>{t("wizard.extrasHint")}</Text>
-          </Box>
+          </Question>
         )
       }
 
@@ -628,19 +705,27 @@ export function ConfigWizard({
       }
 
       default:
-        return <SummaryStep result={result} />
+        return <SummaryStep result={result} firstRun={firstRun} />
     }
   }
 
   return (
-    <Box flexDirection="column">
-      <Static items={answered}>
-        {answer => <AnswerRow key={answer.id} label={answer.label} value={answer.value} />}
-      </Static>
-      {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
-      <Box key={step} marginTop={1} flexDirection="column">
-        {stepView()}
+    <ThemeProvider theme={themes[preview]}>
+      <Box flexDirection="column">
+        <Static items={answered}>
+          {item =>
+            "label" in item ? (
+              <Answered key={item.id} label={`${item.label}:`} value={item.value} />
+            ) : (
+              <Header key={item.id} />
+            )
+          }
+        </Static>
+        {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
+        <Box key={step} flexDirection="column">
+          {stepView()}
+        </Box>
       </Box>
-    </Box>
+    </ThemeProvider>
   )
 }

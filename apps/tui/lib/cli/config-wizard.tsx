@@ -5,6 +5,7 @@ import type { WizardResult, WizardSaved } from "../../components/config-wizard"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
+import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { CATALOG, candidatesByTask, catalogProvider } from "../models/catalog"
 import { getModelsPath, writeModelsFromCatalog } from "../models/models"
@@ -23,7 +24,7 @@ async function applySpeachesUrl(url: string, print: (line: string) => void) {
     await setTomlValue(getConfigPath(), table, "speachesUrl", JSON.stringify(value))
   }
   invalidateConfigCache()
-  print(t("wizard.voiceSaved", { url }))
+  print(statusLine("success", t("wizard.voiceSaved", { url })))
 }
 
 async function applyResult(result: WizardResult, print: (line: string) => void) {
@@ -36,7 +37,11 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
     else await create()
   }
 
-  await savePreferences({ mode, ...(result.language ? { locale: result.language } : {}) })
+  await savePreferences({
+    mode,
+    ...(result.language ? { locale: result.language } : {}),
+    ...(result.theme ? { theme: result.theme } : {})
+  })
   if (mode === "cloud") {
     if (result.language) {
       const { saveAccountLocale } = await import("../auth/account-locale")
@@ -78,7 +83,7 @@ export async function applyStarterAbilities(print: (line: string) => void) {
   const selection = starterSelection(await scanMarketplace(getMarketplaceDir()))
 
   await saveAbilitiesFile(selection)
-  print(t("ability.saved", { path: getAbilitiesPath(), count: total(selection) }))
+  print(statusLine("success", t("ability.saved", { path: getAbilitiesPath(), count: total(selection) })))
 }
 
 async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boolean) {
@@ -105,7 +110,7 @@ export async function offerMarketplace(print: (line: string) => void) {
   })
   if (!wanted) {
     await saveMarketplaceSetting("enabled", false)
-    print(t("wizard.marketplaceOff"))
+    print(statusLine("info", t("wizard.marketplaceOff")))
     return
   }
 
@@ -113,7 +118,7 @@ export async function offerMarketplace(print: (line: string) => void) {
   const git = await checkGit()
   if (!git.ok) {
     await saveMarketplaceSetting("enabled", false)
-    print(t("wizard.marketplaceNoGit", { reason: git.reason }))
+    print(statusLine("warning", t("wizard.marketplaceNoGit", { reason: git.reason })))
     return
   }
   await saveMarketplaceSetting("enabled", true)
@@ -211,19 +216,19 @@ async function offerModelDownloads(print: (line: string) => void) {
     { defaultYes: true }
   )
   if (!wanted) {
-    print(t("wizard.pullSkipped"))
+    print(statusLine("info", t("wizard.pullSkipped")))
     return
   }
 
-  print(t("wizard.pullStarted"))
+  print(statusLine("info", t("wizard.pullStarted")))
   for (const target of missing) {
     const progress = progressLine(target.model)
     const result = await pullModel(target, progress.update)
     progress.clear()
     print(
       result.ok
-        ? t("wizard.pullDone", { model: target.model })
-        : t("wizard.pullFailed", { model: target.model, error: result.error })
+        ? statusLine("success", t("wizard.pullDone", { model: target.model }))
+        : statusLine("error", t("wizard.pullFailed", { model: target.model, error: result.error }))
     )
   }
 }
@@ -277,10 +282,13 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
 /** Every step's current value, so a re-run over a working setup opens on what is already there. */
 async function readPrefill(): Promise<WizardResult> {
   const config = await readConfigLoose()
+  const { resolveTheme } = await import("../terminal-background")
 
   return {
     mode: config.preferences?.mode,
     language: config.preferences?.locale,
+    // A saved dark/light as is; otherwise the terminal is asked, which reads stdin, so this has to finish before the wizard renders
+    theme: await resolveTheme(config.preferences?.theme),
     ...(await currentModels())
   }
 }
@@ -324,10 +332,13 @@ async function checkModels(): Promise<number> {
  */
 export async function runConfigWizard({
   headless,
-  mode
+  mode,
+  firstRun
 }: {
   headless?: boolean
   mode?: KajaMode
+  /** A plain `kaja` with no config yet, which starts the chat once the wizard is done. */
+  firstRun?: boolean
 } = {}): Promise<{ code: number; text: string }> {
   if (headless || !process.stdin.isTTY) {
     if (!(await isConfigExists())) await create()
@@ -343,6 +354,7 @@ export async function runConfigWizard({
         prefill={prefill}
         mode={mode}
         saved={saved}
+        firstRun={firstRun}
         onDone={r => {
           unmount()
           resolve(r)
@@ -356,6 +368,11 @@ export async function runConfigWizard({
   })
 
   if (!result) return { code: 0, text: t("wizard.cancelled") }
+  // The prompts and progress bars after the wizard follow the theme just picked
+  if (result.theme) {
+    const { setConsoleTheme } = await import("../terminal-background")
+    setConsoleTheme(result.theme)
+  }
   await applyResult(result, line => console.log(line))
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 

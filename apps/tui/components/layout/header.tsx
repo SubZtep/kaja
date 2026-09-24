@@ -1,22 +1,10 @@
-import { defaultTheme, extendTheme, Spinner, ThemeProvider } from "@inkjs/ui"
+import { Spinner, ThemeProvider } from "@inkjs/ui"
 import { titleCase } from "@kaja/shared"
-import { Box, Text, type TextProps } from "ink"
+import { Box, Text } from "ink"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
+import { useKajaTheme, useSpinnerTheme } from "../theme"
 import { MonsterMate } from "./monster"
-
-const customTheme = extendTheme(defaultTheme, {
-  components: {
-    Spinner: {
-      styles: {
-        label: (): TextProps => ({
-          color: "green",
-          dimColor: true
-        })
-      }
-    }
-  }
-})
 
 /**
  * Live top bar: current persona on the left; on the right, in-flight tool
@@ -45,26 +33,28 @@ export function Header({
 }>) {
   const tokensSuffix = promptTokens != null ? ` · ${promptTokens.toLocaleString()} tokens` : ""
   const spinnerType = useRandomSpinner(!!currentTool, "block")
+  const { muted, accent } = useKajaTheme()
+  const spinnerTheme = useSpinnerTheme("toolLabel")
 
   return (
     <Box width={width} flexShrink={0} justifyContent="space-between" paddingX={1} gap={1}>
       <Box gap={1} flexShrink={1} flexGrow={0} minWidth={0} overflow="hidden">
         <MonsterMate />
         <Box overflow="hidden" flexShrink={1} minWidth={0}>
-          <Text color="#ff1493" wrap="truncate-end">
+          <Text {...accent()} wrap="truncate-end">
             {persona}
           </Text>
         </Box>
       </Box>
       {currentTool ? (
         <Box flexShrink={1} flexGrow={0} gap={1} overflow="hidden" minWidth={0}>
-          <ThemeProvider theme={customTheme}>
+          <ThemeProvider theme={spinnerTheme}>
             <Spinner type={spinnerType} label={describeToolCall(currentTool.name, currentTool.arguments)} />
           </ThemeProvider>
         </Box>
       ) : (
         <Box flexShrink={0} flexGrow={0}>
-          <Text color="gray">
+          <Text {...muted()}>
             {titleCase(model)}
             {provider ? <Text dimColor> {titleCase(provider)}</Text> : null}
             {tokensSuffix}

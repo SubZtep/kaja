@@ -17,7 +17,11 @@ export const KajaPreferencesSchema = z.object({
   hotkeyModifier: z
     .enum(["alt", "ctrl"])
     .optional()
-    .describe("Modifier key for the help/persona hotkeys (default: alt)")
+    .describe("Modifier key for the help/persona hotkeys (default: alt)"),
+  theme: z
+    .enum(["auto", "dark", "light"])
+    .optional()
+    .describe("Colour theme; auto asks the terminal for its background colour (default: auto)")
 })
 
 // Per-feature config blocks; the model itself lives in models.toml's [models.*], the entry whose id equals the task.

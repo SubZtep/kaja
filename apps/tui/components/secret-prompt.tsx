@@ -1,6 +1,7 @@
 import { PasswordInput, TextInput } from "@inkjs/ui"
-import { Box, Text, useInput } from "ink"
+import { Text, useInput } from "ink"
 import { t } from "../lib/i18n"
+import { InputFrame, Question } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 
 /** Asks for one secret, masked. Enter with a value submits it; Esc or an empty Enter skips. */
@@ -18,14 +19,15 @@ export function SecretPrompt({
     if (key.escape) onSkip()
   })
   return (
-    <Box flexDirection="column">
-      <Text bold>{title}</Text>
+    <Question title={title}>
+      <InputFrame>
+        <PasswordInput
+          placeholder={t("secretPrompt.placeholder")}
+          onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())}
+        />
+      </InputFrame>
       <Text dimColor>{t("secretPrompt.hint")}</Text>
-      <PasswordInput
-        placeholder={t("secretPrompt.placeholder")}
-        onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())}
-      />
-    </Box>
+    </Question>
   )
 }
 
@@ -47,11 +49,12 @@ export function TextPrompt({
     if (key.escape) onSkip()
   })
   return (
-    <Box flexDirection="column">
-      <Text bold>{title}</Text>
+    <Question title={title}>
+      <InputFrame>
+        <TextInput defaultValue={defaultValue} onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())} />
+      </InputFrame>
       <Text dimColor>{hint ?? t("secretPrompt.hint")}</Text>
-      <TextInput defaultValue={defaultValue} onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())} />
-    </Box>
+    </Question>
   )
 }
 
@@ -74,8 +77,7 @@ export function YesNoPrompt({
   onResolve: (yes: boolean) => void
 }>) {
   return (
-    <Box flexDirection="column">
-      <Text color="yellow">{title}</Text>
+    <Question title={title}>
       <SelectMenu
         width={Math.max(yesLabel.length, noLabel.length) + 10}
         items={yesFirst ? [yesLabel, noLabel] : [noLabel, yesLabel]}
@@ -83,7 +85,7 @@ export function YesNoPrompt({
         onSelect={index => onResolve((index === 1) !== Boolean(yesFirst))}
         onClose={() => onResolve(false)}
       />
-    </Box>
+    </Question>
   )
 }
 
@@ -99,8 +101,7 @@ export function PickPrompt({
   onResolve: (index: number | undefined) => void
 }>) {
   return (
-    <Box flexDirection="column">
-      <Text color="yellow">{title}</Text>
+    <Question title={title}>
       <SelectMenu
         width={Math.max(...items.map(item => item.length)) + 10}
         items={items}
@@ -108,6 +109,6 @@ export function PickPrompt({
         onSelect={index => onResolve(index)}
         onClose={() => onResolve(undefined)}
       />
-    </Box>
+    </Question>
   )
 }

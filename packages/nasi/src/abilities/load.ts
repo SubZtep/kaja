@@ -52,7 +52,7 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
     if (ability.auth.type !== "apiKey") return undefined
     const apiKey = opts.getApiKey?.(ability.name)
     if (apiKey || ability.auth.optional) return apiKey
-    warn("Ability left out: no API key", { ability: ability.name, secret: `[abilities.${ability.name}] apiKey` })
+    warn("Ability left out: no API key", { ability: ability.name, secret: `[abilities.${ability.name}] api_key` })
     missingKeys.push(ability.name)
     return null
   }

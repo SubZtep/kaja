@@ -13,6 +13,11 @@ locale = "en-GB"
 # Code's integrated terminal reserves several ctrl+<letter> combos). Pick whichever
 # works cleanly in your terminal.
 # hotkeyModifier = "alt"
+# Colour theme: "auto" (default) asks the terminal for its background colour and picks
+# "dark" or "light" to match, then follows the terminal when it switches (where it reports
+# that); set one of those if your terminal doesn't answer. <hotkeyModifier>+D in the chat
+# flips it and saves the choice here.
+# theme = "auto"
 
 # Fetching skills, personas, tools and MCP servers from the online marketplace (needs git).
 # enabled = false means Kaja never goes online for abilities: `kaja abilities update` refuses and

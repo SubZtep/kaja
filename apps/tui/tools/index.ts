@@ -47,7 +47,7 @@ export async function getDefaultTools(personas: Persona[]) {
     }),
     {
       personas,
-      getApiKey: name => abilitySecrets[name]?.apiKey,
+      getApiKey: name => abilitySecrets[name]?.api_key,
       // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
       allowPrivate: true
     }

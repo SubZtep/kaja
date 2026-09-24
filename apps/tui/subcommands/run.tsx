@@ -51,13 +51,16 @@ export async function runSubcommand(cli: typeof Cli) {
 
   // Deferred until here: nothing before this point touches the terminal UI
   const { render } = await import("ink")
+  // Before render: "auto" queries the terminal over stdin, which Ink is about to take over
+  const { resolveTheme } = await import("../lib/terminal-background")
+  const theme = await resolveTheme(preferences?.theme)
 
   // Alternate screen: full-viewport app, restores primary buffer on exit, no scrollback while running
   // Kitty keyboard (auto): so Shift+Enter is distinct from Enter — plain TTYs send the same `\r` for both
   const { waitUntilExit } = render(
     <App
       mode="local"
-      initialPreferences={preferences}
+      initialPreferences={{ ...preferences, theme }}
       models={models}
       personas={personas}
       openaiApiModel={chatModelId}

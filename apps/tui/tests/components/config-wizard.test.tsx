@@ -48,6 +48,7 @@ async function openProviders(props: Partial<Parameters<typeof ConfigWizard>[0]> 
   const w = renderWizard({ mode: "local", ...props })
   await w.t.tick()
   await w.t.press(ENTER) // language: English
+  await w.t.press(ENTER) // theme: keep the highlighted one
   return w
 }
 
@@ -73,6 +74,7 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   expect(w.t.lastFrame()).toContain("nan-TW")
 
   await w.t.press(ENTER) // keep English
+  await w.t.press(ENTER) // theme: keep the highlighted one
   expect(w.t.lastFrame()).toContain("Kaja Cloud")
 
   // Cloud needs no provider or key, so Enter here lands straight on the last screen.
@@ -86,10 +88,28 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   await close(w)
 })
 
+test("the theme step follows the language, opens on the detected theme and is carried out", async () => {
+  const w = renderWizard({ prefill: { theme: "light" } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language: English
+  expect(w.t.lastFrame()).toContain("Which colours read best in this terminal?")
+  expect(w.t.lastFrame()).toContain("❯ Light background")
+
+  // A sample drawn in the highlighted theme sits under the menu
+  expect(w.t.lastFrame()).toContain("Type your message here")
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // mode: cloud
+  await w.t.press(ENTER) // last screen
+  expect(w.result?.theme).toBe("light")
+
+  await close(w)
+})
+
 test("choosing your own provider leads to the providers checklist", async () => {
   const w = renderWizard()
   await w.t.tick()
   await w.t.press(ENTER) // language: keep English
+  await w.t.press(ENTER) // theme: keep the highlighted one
 
   await w.t.press(DOWN) // "Your own provider"
   await w.t.press(ENTER)
@@ -107,6 +127,7 @@ test("a forced mode skips the mode step, but never the language one", async () =
 
   // Straight past the mode question — `--local` already answered it.
   await w.t.press(ENTER)
+  await w.t.press(ENTER) // theme
   expect(w.t.lastFrame()).toContain("Which model providers can you use?")
   expect(w.t.lastFrame()).not.toContain("Kaja Cloud")
 
@@ -124,7 +145,7 @@ test("the providers step won't continue with nothing ticked: local mode needs a 
   await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // last screen
   expect(w.result).toMatchObject({ mode: "local", providers: ["ollama"] })
-  expect(w.t.output()).toContain("✓ Providers: Ollama")
+  expect(w.t.output()).toContain("✓  Providers: Ollama")
 
   await close(w)
 })
@@ -208,7 +229,7 @@ test("a task two ticked providers can serve asks which one to use, and only that
   await w.t.press(ENTER) // last screen
   expect(w.result?.models).toEqual({ chat: "ollama", embedding: "fireworks" })
   const trail = w.t.output()
-  expect(trail).toContain("✓ Chat model: Ollama (qwen3.5:4b)")
+  expect(trail).toContain("✓  Chat model: Ollama (qwen3.5:4b)")
   expect(trail).not.toContain("Reranking model")
 
   await close(w)
@@ -230,7 +251,7 @@ test("a step that says a key is already saved offers to keep it", async () => {
   expect(w.t.lastFrame()).toContain("already saved")
 
   await w.t.press(ENTER) // keep it
-  expect(w.t.output()).toContain("✓ Fireworks API key: already saved, kept")
+  expect(w.t.output()).toContain("✓  Fireworks API key: already saved, kept")
 
   await close(w)
 })
@@ -243,8 +264,8 @@ test("each answer stays on screen and the next question opens below it", async (
   expect(w.t.lastFrame()).toContain("Paste your Fireworks API key")
   expect(w.t.lastFrame()).not.toContain("Which model providers can you use?")
   const trail = w.t.output()
-  expect(trail).toContain("✓ Language: English")
-  expect(trail).toContain("✓ Providers: Fireworks, Ollama")
+  expect(trail).toContain("✓  Language: English")
+  expect(trail).toContain("✓  Providers: Fireworks, Ollama")
   // A forced mode was never asked, so it leaves no line.
   expect(trail).not.toContain("Mode:")
 
@@ -261,8 +282,8 @@ test("the trail says what became of each key, without showing it", async () => {
   await w.t.press(ENTER) // telegram token: skipped
 
   const trail = w.t.output()
-  expect(trail).toContain("✓ Fireworks API key: entered, tested when you finish")
-  expect(trail).toContain("✓ Telegram bot token: skipped")
+  expect(trail).toContain("✓  Fireworks API key: entered, tested when you finish")
+  expect(trail).toContain("✓  Telegram bot token: skipped")
   expect(trail).not.toContain("fw-secret-value")
   // The answers are already on screen, so the last screen doesn't repeat them.
   expect(w.t.lastFrame()).toContain("Setup complete")
@@ -281,6 +302,7 @@ test("local setups are asked about extras, cloud ones are not", async () => {
   const cloud = renderWizard({ mode: "cloud" })
   await cloud.t.tick()
   await cloud.t.press(ENTER) // language: English
+  await cloud.t.press(ENTER) // theme: keep the highlighted one
   expect(cloud.t.lastFrame()).toContain("Setup complete")
 
   await cloud.t.press(ENTER)
@@ -326,6 +348,7 @@ test("each step opens on the prefilled value", async () => {
   const w = renderWizard({ prefill: { ...prefill, providers: ["llama"] } })
   await w.t.tick()
   await w.t.press(ENTER) // language: keeps English
+  await w.t.press(ENTER) // theme: keep the highlighted one
   // Mode opens on "Your own provider", so Enter keeps it rather than switching to cloud.
   await w.t.press(ENTER)
   // llama.cpp is already ticked, so Enter keeps it instead of leaving nothing.
@@ -348,6 +371,7 @@ test("a model question opens on the provider already in use", async () => {
   })
   await w.t.tick()
   await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // theme: keep the highlighted one
   await w.t.press(ENTER) // providers: both still ticked
   await w.t.press(ENTER) // Fireworks key: skipped
   await w.t.press(ENTER) // Ollama address: default
@@ -373,6 +397,33 @@ test("escape cancels without producing a result", async () => {
   await close(w)
 })
 
+test("backspace on a menu doesn't cancel: the wizard stays on the question", async () => {
+  // Backspace is a typo-fixing reflex, and cancelling would throw every answer so far away.
+  const w = renderWizard()
+  await w.t.tick()
+  await w.t.press("\x7f")
+  expect(w.cancelled).toBe(false)
+  expect(w.t.lastFrame()).toContain("Choose your language")
+
+  await close(w)
+})
+
+test("the last screen says what comes next: the chat on a first run, `kaja` on a re-run", async () => {
+  for (const [firstRun, hint] of [
+    [true, "then the chat starts"],
+    [false, "then just run `kaja`"]
+  ] as const) {
+    const w = renderWizard({ mode: "local", firstRun })
+    await w.t.tick()
+    await w.t.press(ENTER) // language
+    await w.t.press(ENTER) // theme
+    await pickOllama(w)
+    await w.t.press(ENTER) // extras: nothing ticked
+    expect(w.t.lastFrame()).toContain(hint)
+    await close(w)
+  }
+})
+
 test("escape on the providers checklist cancels too", async () => {
   const w = await openProviders()
   await w.t.press(ESC)
@@ -387,6 +438,7 @@ test("picking a language switches the rest of the wizard into it", async () => {
   await w.t.tick()
   await w.t.press(DOWN) // Magyar
   await w.t.press(ENTER)
+  await w.t.press(ENTER) // theme
   expect(w.t.lastFrame()).toContain("Hogyan szeretnéd futtatni?")
 
   await close(w)
@@ -436,9 +488,9 @@ test("a custom provider is asked its name, address, key, then each model and wha
   })
   expect(w.result?.keys).toEqual({ "lm-studio": "" })
   const trail = w.t.output()
-  expect(trail).toContain("✓ Custom provider: lm-studio")
-  expect(trail).toContain("✓ lm-studio server: http://localhost:1234/v1")
-  expect(trail).toContain("✓ Custom model: llama-3.2-1b-instruct (chat)")
+  expect(trail).toContain("✓  Custom provider: lm-studio")
+  expect(trail).toContain("✓  lm-studio server: http://localhost:1234/v1")
+  expect(trail).toContain("✓  Custom model: llama-3.2-1b-instruct (chat)")
 
   await close(w)
 })
@@ -540,6 +592,7 @@ test("a custom provider already in models.toml opens on its answers, and Enter k
   const w = renderWizard({ mode: "local", prefill: { providers: ["custom"], custom } })
   await w.t.tick()
   await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // theme: keep the highlighted one
   await w.t.press(ENTER) // providers: custom still ticked
   await w.t.press(ENTER) // name: kept
   expect(w.t.lastFrame()).toContain("http://box:8000/v1")

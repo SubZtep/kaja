@@ -1,0 +1,43 @@
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.main-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.main-content th,
+.main-content td {
+  padding: 0.75rem 1rem;
+  border: 1px solid $grey-dk-200;
+  text-align: left;
+}
+
+.main-content th {
+  background: rebeccapurple;
+  color: $body-heading-color;
+}
+
+.main-content h2 {
+  margin-bottom: 1rem;
+}
+
+.main-content p {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.main-content a:not(.btn) {
+  color: lighten(rebeccapurple, 20%);
+  transition: color 0.1s ease;
+
+  &:hover {
+    color: lighten(rebeccapurple, 28%);
+  }
+}
+
+.main-content code {
+  font-size: 0.95em;
+  padding: 0.22em !important;
+}

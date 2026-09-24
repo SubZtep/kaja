@@ -19,7 +19,8 @@ const CLOUD_ABILITIES_URL = "https://kaja.io/abilities"
 
 export async function runAbilitiesSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")
-  const { runAbilityUpdate } = await import("../lib/abilities/cli")
+  const { statusLine } = await import("../lib/doctor/status")
+  const { runAbilityUpdate, UPDATE_STEPS } = await import("../lib/abilities/cli")
   const { resolveMode } = await import("../lib/config/mode")
   const [, sub] = args.input
 
@@ -29,8 +30,13 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
     process.exit(0)
   }
 
+  // Before the progress bar or picker renders: "auto" asks the terminal over stdin
+  const { resolveConsoleTheme } = await import("../lib/terminal-background")
+  await resolveConsoleTheme()
+
   if (sub === "update") {
-    const { code, text } = await runAbilityUpdate()
+    const { withStepProgress } = await import("../lib/abilities/progress")
+    const { code, text } = await withStepProgress(t("ability.updating"), UPDATE_STEPS, runAbilityUpdate)
     console.log(text)
     process.exit(code)
   }
@@ -53,13 +59,13 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
 
   if (!process.stdin.isTTY) {
     printAbilities(items, enabled)
-    console.log(t("ability.notTty", { path: getAbilitiesPath() }))
+    console.log(statusLine("warning", t("ability.notTty", { path: getAbilitiesPath() })))
     process.exit(0)
   }
 
   const picked = await pickAbilities(items, enabled)
   if (!picked) {
-    console.log(t("ability.cancelled"))
+    console.log(statusLine("info", t("ability.cancelled")))
     process.exit(0)
   }
   // Enabled abilities that are present but currently broken aren't selectable; keep them on rather than silently dropping them.
@@ -74,7 +80,7 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
   }
   await saveAbilitiesFile(next)
   const count = next.skills.length + next.personas.length + next.tools.length + next.mcp.length
-  console.log(t("ability.saved", { path: getAbilitiesPath(), count }))
+  console.log(statusLine("success", t("ability.saved", { path: getAbilitiesPath(), count })))
 
   // Only the keys still missing for what is now enabled: the rest were set earlier and aren't this command's business.
   const { secrets } = await import("../lib/config/secrets")

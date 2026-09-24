@@ -63,7 +63,7 @@ approval = "never"                  # never | writes | always
 
 - A `stdio` ability runs a local `command` (with `args`, `env`) instead of a `url`, and its key goes in
   an env var (`in = "env"`). `kaja abilities` shows the command and asks before enabling one.
-- The key lives in `secrets.toml` as `[abilities.<name>] apiKey`. `optional = true` means the server
+- The key lives in `secrets.toml` as `[abilities.<name>] api_key`. `optional = true` means the server
   works without one too.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only; `always` asks before
   every call. For a server that forgets to mark its read-only tools, list them in `readOnly`, with the

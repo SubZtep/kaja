@@ -45,13 +45,13 @@ bug report.
 | `kaja config paths` | print where every config file resolves on this machine — start here when unsure which file Kaja reads |
 | `kaja config wizard` | re-run the [setup wizard](/wizard) |
 | `kaja config diff` | show what `fetch` would change, without writing anything |
-| `kaja config fetch` | rewrite `models.toml` and `secrets.toml` from the defaults, backing up any file that differs |
+| `kaja config fetch` | rewrite `models.toml` from the defaults (backing it up if it differs), and write `secrets.toml` if you have none |
 | `kaja doctor` | test every key, model and tool — see below |
 
 `kaja config fetch` takes `models.toml` from the Kaja server's admin-managed catalog, or from the
-templates bundled in the binary when you're offline or pass `--offline`. `secrets.toml` always comes
-from the bundled template, with every section commented out, so your keys stay only in the `.bak`
-copy. `--only models` or `--only secrets` limits it to one file. It never touches `settings.toml`,
+templates bundled in the binary when you're offline or pass `--offline`. `secrets.toml` comes from
+the bundled template, with every section commented out, and is only written when you don't have one
+yet: once it holds a key it's left alone, so fetching never loses your keys. `--only models` or `--only secrets` limits it to one file. It never touches `settings.toml`,
 `abilities.toml` or `mcp.toml`. Use it to pick up new defaults after an upgrade, or to recover a broken
 file.
 

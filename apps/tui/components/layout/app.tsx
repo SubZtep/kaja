@@ -1,3 +1,4 @@
+import { ThemeProvider } from "@inkjs/ui"
 import type { PersonaModels } from "@kaja/schema/cli"
 import type { CliResolvedModel, KajaPreferences } from "@kaja/schema/config"
 import type { PersistedSession } from "@kaja/schema/store"
@@ -10,12 +11,14 @@ import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useSound } from "../../hooks/use-sound"
+import { useTheme } from "../../hooks/use-theme"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
+import { themes } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
@@ -71,6 +74,7 @@ function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolea
     { key: `${modifierLabel}+L`, label: t("keybar.help") },
     ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
     { key: `${modifierLabel}+R`, label: t("keybar.copy") },
+    { key: `${modifierLabel}+D`, label: t("keybar.theme") },
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -127,7 +131,8 @@ function Chrome({
   runningCommand?: boolean
   resolvePending?: (approved: boolean) => Promise<void>
 }>) {
-  const { thinking, sounds, voice, hotkeyModifier } = usePreferences(initialPreferences)
+  const { thinking, sounds, voice, hotkeyModifier, theme: initialTheme } = usePreferences(initialPreferences)
+  const { theme, toggle: toggleTheme } = useTheme(initialTheme)
   useSound(events, sounds)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
@@ -141,7 +146,9 @@ function Chrome({
     },
     p: () => {
       if (capabilities.persona && !pending) setPickingPersona(true)
-    }
+    },
+    // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
+    d: toggleTheme
   })
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
@@ -149,58 +156,60 @@ function Chrome({
   const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey)
 
   return (
-    <Box flexDirection="column" width={columns} height={rows}>
-      <Header
-        persona={personaLabel}
-        model={model}
-        provider={provider}
-        promptTokens={promptTokens}
-        currentTool={currentTool}
-        width={columns}
-      />
-      <ChatViewport
-        events={events}
-        thinking={thinking}
-        partial={partial}
-        pending={pending}
-        sounds={sounds}
-        hotkeyModifier={hotkeyModifier}
-        bottomChromeKey={bottomChromeKey}
-      />
-      {bottomChromeKey === "persona" && (
-        <PersonaPicker
-          key="persona-picker"
-          personas={personas}
-          currentPersonaId={currentPersonaId}
-          onSelect={next => {
-            switchPersona?.(next)
-            setPickingPersona(false)
-          }}
-          onCancel={() => setPickingPersona(false)}
+    <ThemeProvider theme={themes[theme]}>
+      <Box flexDirection="column" width={columns} height={rows}>
+        <Header
+          persona={personaLabel}
+          model={model}
+          provider={provider}
+          promptTokens={promptTokens}
+          currentTool={currentTool}
+          width={columns}
         />
-      )}
-      {showConfirm && pendingCommand && resolvePending && (
-        <ConfirmCommand
-          key="confirm-command"
-          command={pendingCommand.command}
-          description={pendingCommand.description}
-          kind={pendingCommand.kind}
-          running={runningCommand}
-          onResolve={approved => resolvePending(approved)}
-        />
-      )}
-      {bottomChromeKey !== "persona" && !showConfirm && (
-        <UserInput
-          key="user-input"
+        <ChatViewport
+          events={events}
+          thinking={thinking}
+          partial={partial}
           pending={pending}
-          speaking={speaking}
-          send={send}
-          history={history}
-          personaModels={personaModels}
+          sounds={sounds}
+          hotkeyModifier={hotkeyModifier}
+          bottomChromeKey={bottomChromeKey}
         />
-      )}
-      <KeyBar items={keyBarItems} />
-    </Box>
+        {bottomChromeKey === "persona" && (
+          <PersonaPicker
+            key="persona-picker"
+            personas={personas}
+            currentPersonaId={currentPersonaId}
+            onSelect={next => {
+              switchPersona?.(next)
+              setPickingPersona(false)
+            }}
+            onCancel={() => setPickingPersona(false)}
+          />
+        )}
+        {showConfirm && pendingCommand && resolvePending && (
+          <ConfirmCommand
+            key="confirm-command"
+            command={pendingCommand.command}
+            description={pendingCommand.description}
+            kind={pendingCommand.kind}
+            running={runningCommand}
+            onResolve={approved => resolvePending(approved)}
+          />
+        )}
+        {bottomChromeKey !== "persona" && !showConfirm && (
+          <UserInput
+            key="user-input"
+            pending={pending}
+            speaking={speaking}
+            send={send}
+            history={history}
+            personaModels={personaModels}
+          />
+        )}
+        <KeyBar items={keyBarItems} />
+      </Box>
+    </ThemeProvider>
   )
 }
 

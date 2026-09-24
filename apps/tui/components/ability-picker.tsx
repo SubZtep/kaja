@@ -1,6 +1,7 @@
 import { MultiSelect } from "@inkjs/ui"
 import { Box, Text, useInput, useStdout } from "ink"
 import { t } from "../lib/i18n"
+import { useKajaTheme } from "./theme"
 
 // Room MultiSelect takes around a label: the ❯ pointer, spacing and the ✔ mark.
 const OPTION_CHROME = 6
@@ -68,6 +69,7 @@ export function AbilityPicker({
   })
   const { stdout } = useStdout()
   const columns = stdout.columns ?? 80
+  const { warning } = useKajaTheme()
 
   const selectable = items.filter(item => !item.error)
   const broken = items.filter(item => item.error)
@@ -100,7 +102,7 @@ export function AbilityPicker({
       </Box>
       {broken.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
-          <Text color="yellow">{t("ability.invalidTitle")}</Text>
+          <Text {...warning()}>{t("ability.invalidTitle")}</Text>
           {broken.map(item => (
             <Text key={optionValue(item)} dimColor>
               {`  ${item.name}: ${item.error}`}

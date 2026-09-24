@@ -27,7 +27,7 @@ CONTEXT7_API_KEY = "ctx7sk-..."
 
 # An HTTP tool or MCP ability, by name
 [abilities.brave-search]
-apiKey = "BSA..."
+api_key = "BSA..."
 ```
 
 A missing section just turns that feature off. The template ships with every section commented out.

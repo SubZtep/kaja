@@ -1,3 +1,4 @@
+import { StatusMessage, type StatusMessageProps } from "@inkjs/ui"
 import { Box, Text } from "ink"
 import { memo } from "react"
 import type { TimelineEvent } from "../hooks/use-agent"
@@ -6,12 +7,14 @@ import { t } from "../lib/i18n"
 import Markdown from "./elem/markdown"
 import { ReasoningBox } from "./elem/reasoning-box"
 import { TerminalImage } from "./elem/terminal-image"
+import { useKajaTheme } from "./theme"
 
-const ERROR_ICON: Record<ErrorCategory, string> = {
-  network: "⚠",
-  tool: "✗",
-  agent: "✗",
-  unknown: "✗"
+// A network hiccup is worth retrying, so it's a warning; anything else failed
+const ERROR_VARIANT: Record<ErrorCategory, StatusMessageProps["variant"]> = {
+  network: "warning",
+  tool: "error",
+  agent: "error",
+  unknown: "error"
 }
 
 /**
@@ -21,7 +24,8 @@ const ERROR_ICON: Record<ErrorCategory, string> = {
  * out here instead of re-rendering every history item.
  */
 export const TimelineItem = memo(function TimelineItem({ item, thinking }: { item: TimelineEvent; thinking: boolean }) {
-  const content = renderItem(item, thinking)
+  const theme = useKajaTheme()
+  const content = renderItem(item, thinking, theme)
   if (content === null) return null
   return (
     <Box flexDirection="column">
@@ -31,10 +35,10 @@ export const TimelineItem = memo(function TimelineItem({ item, thinking }: { ite
   )
 })
 
-function renderItem(item: TimelineEvent, thinking: boolean) {
+function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<typeof useKajaTheme>) {
   switch (item.type) {
     case "user":
-      return <Text color="cyanBright">{`> ${item.text}`}</Text>
+      return <Text {...theme.userText()}>{`> ${item.text}`}</Text>
     case "reasoning":
       if (!thinking) return null
       return <ReasoningBox>{item.text}</ReasoningBox>
@@ -45,26 +49,26 @@ function renderItem(item: TimelineEvent, thinking: boolean) {
     case "message":
       return (
         <Box gap={2}>
-          <Text color="#ff1493">●</Text>
+          <Text {...theme.accent()}>●</Text>
           <Markdown>{item.content}</Markdown>
         </Box>
       )
     case "ask_user":
       return (
         <Box gap={2}>
-          <Text color="cyanBright">●</Text>
+          <Text {...theme.userText()}>●</Text>
           <Markdown>{item.question}</Markdown>
         </Box>
       )
     case "confirm_command":
-      return <Text color="yellow">{`$ ${item.command}`}</Text>
+      return <Text {...theme.warning()}>{`$ ${item.command}`}</Text>
     case "confirm_tool":
-      return <Text color="yellow">{`→ ${item.summary}`}</Text>
+      return <Text {...theme.warning()}>{`→ ${item.summary}`}</Text>
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
     case "error": {
       const errorLabel = t(`error.${item.category}`)
-      return <Text color="red">{`${ERROR_ICON[item.category]} ${errorLabel}: ${item.text}`}</Text>
+      return <StatusMessage variant={ERROR_VARIANT[item.category]}>{`${errorLabel}: ${item.text}`}</StatusMessage>
     }
     case "final":
       return <Markdown>{item.content ?? "N/A"}</Markdown>

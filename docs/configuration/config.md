@@ -18,6 +18,7 @@ thinking = false
 sounds = true
 voice = false
 # hotkeyModifier = "alt"
+# theme = "auto"
 
 # [marketplace]
 # enabled = true
@@ -45,6 +46,7 @@ voice = false
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `[models.tts]` entry) |
 | `hotkeyModifier` | `alt` (default) or `ctrl` — the [key bar](/tui#key-bar)'s modifier |
+| `theme` | `auto` (default), `dark` or `light` — the [colours](/tui#colours); `auto` matches the terminal |
 
 ## `[marketplace]`
 
