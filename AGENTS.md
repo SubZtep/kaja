@@ -34,7 +34,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | Migration runner | `scripts/db_migration.sh` |
 | `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
 | `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
-| Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`) |
+| Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`; also switches to the test database) |
 | Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
 
 ## Development Commands
@@ -152,7 +152,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 ## Testing & CI
 
 - `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
-- API integration tests need a running Postgres matching `DATABASE_URL`
+- API integration tests need a running Postgres matching `DATABASE_URL`, but run against their own database: the preload (`apps/api/tests/test-database.ts`) points them at `<dev database>_test` (or `TEST_DATABASE_URL`) and rebuilds it from `apps/api/migrations` whenever those files change, so a running `bun dev` (its marketplace sync on every hot restart) can't race them
 - CLI has a large unit suite under `apps/tui/tests/`
 - CI (`.github/workflows/ci.yaml`): Biome lint/format + tests with PostgreSQL service
 - Separate workflow builds the CLI
