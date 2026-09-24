@@ -66,6 +66,17 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
       return <Text {...theme.warning()}>{`→ ${item.summary}`}</Text>
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
+    case "compacted":
+      return (
+        <Text dimColor>
+          {t(item.dropped ? "timeline.compactedDropped" : "timeline.compacted", {
+            before: item.beforeTokens.toLocaleString(),
+            after: item.afterTokens.toLocaleString()
+          })}
+        </Text>
+      )
+    case "notice":
+      return <Text dimColor>{item.text}</Text>
     case "error": {
       const errorLabel = t(`error.${item.category}`)
       return <StatusMessage variant={ERROR_VARIANT[item.category]}>{`${errorLabel}: ${item.text}`}</StatusMessage>

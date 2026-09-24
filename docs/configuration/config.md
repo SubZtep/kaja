@@ -24,6 +24,9 @@ voice = false
 # enabled = true
 # autoFetch = true
 
+# [context]
+# compact_at = 0.8
+
 # [stt]
 # speachesUrl = "ws://localhost:8000"
 # language = "en"
@@ -54,6 +57,17 @@ voice = false
 | --- | --- |
 | `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. What's already in `marketplace/` still loads. Default `true`. |
 | `autoFetch` | pull the [marketplace](/abilities) in the background at startup when the last sync is over a day old, silently on failure; changes apply on the next launch. Default `true`. |
+
+## `[context]`
+
+| Field | Purpose |
+| --- | --- |
+| `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before the older messages are summarised so the conversation fits. Default `0.8`. |
+
+The summary is written by `[models.summarize]` in `models.toml` when there is one (a smaller, cheaper
+model works well), else by the chat model. The most recent turns stay word for word; if the summary
+can't be written, the oldest messages are left out instead. The chat shows a line each time it happens,
+and `/compact` does it on demand, optionally with what to keep in mind: `/compact keep the SQL decisions`.
 
 ## `[stt]` / `[tts]`
 

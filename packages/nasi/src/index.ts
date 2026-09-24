@@ -57,9 +57,18 @@ export {
   switchPersonaTool
 } from "./agent/agent"
 export { isDangerousCommand } from "./agent/command-risk"
+export {
+  type Compaction,
+  chooseCut,
+  contextMessages,
+  DEFAULT_COMPACT_AT,
+  estimateTokens,
+  isContextOverflow,
+  summarize
+} from "./agent/compaction"
 export { categorizeError, type ErrorCategory } from "./agent/error-category"
 export { samplingOf } from "./agent/persona"
-export { run } from "./agent/run"
+export { compact, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export { applyPersonaToMessages, buildSystemPrompt, replyLanguageInstructionFor } from "./agent/system-prompt"
 export { recordPausedCall } from "./agent/telemetry"
@@ -86,6 +95,7 @@ export {
   type ContextWindowTarget,
   clearContextWindowCache,
   DEFAULT_CONTEXT_WINDOW,
+  lowerContextWindow,
   resolveContextWindow
 } from "./models/context-window"
 export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall } from "./nasi"

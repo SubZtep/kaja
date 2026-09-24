@@ -54,12 +54,24 @@ export const KajaMarketplaceSchema = z.object({
     .describe("Pull the marketplace at startup when the last sync is over a day old (default: true)")
 })
 
+export const KajaContextSchema = z.object({
+  compact_at: z
+    .number()
+    .min(0.3)
+    .max(0.95)
+    .optional()
+    .describe(
+      "How full the chat model's context may get (0.3-0.95) before older messages are summarised (default: 0.8)"
+    )
+})
+
 /** telegram (external service credentials) lives in secrets.toml */
 export const KajaConfigSchema = z.object({
   stt: KajaSttSchema.optional(),
   tts: KajaTtsSchema.optional(),
   memory: KajaMemorySchema.optional(),
   marketplace: KajaMarketplaceSchema.optional().describe("Fetching abilities from the online marketplace"),
+  context: KajaContextSchema.optional().describe("Keeping long conversations inside the model's context window"),
   preferences: KajaPreferencesSchema.optional().describe("In-app preferences")
 })
 
@@ -69,3 +81,4 @@ export type KajaStt = z.infer<typeof KajaSttSchema>
 export type KajaTts = z.infer<typeof KajaTtsSchema>
 export type KajaMemory = z.infer<typeof KajaMemorySchema>
 export type KajaMarketplace = z.infer<typeof KajaMarketplaceSchema>
+export type KajaContext = z.infer<typeof KajaContextSchema>

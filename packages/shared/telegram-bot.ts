@@ -11,6 +11,12 @@ export function isCommand(text: string, name: string): boolean {
   return new RegExp(String.raw`^/${name}(@\w+)?$`).test(text.trim())
 }
 
+/** The text after `/<name>` (or `/<name>@bot`), trimmed: "" for the bare command, undefined when it's another message. */
+export function commandArgument(text: string, name: string): string | undefined {
+  const match = new RegExp(String.raw`^/${name}(?:@\w+)?(?:\s+([\s\S]*))?$`).exec(text.trim())
+  return match ? (match[1] ?? "").trim() : undefined
+}
+
 /** Thrown by a bot's sender on a 429 response, so EditThrottle can back off. */
 export class TelegramRateLimitError extends Error {
   retryAfterSec: number | undefined

@@ -46,6 +46,11 @@ kaja abilities update     # fetch the marketplace
 subcommands are explained under [Configuration](/configuration#commands), `abilities` under
 [Abilities](/abilities).
 
+In the chat, type `/compact` to summarise the conversation so far and keep only your latest turn word
+for word; add what matters to steer it, e.g. `/compact keep the SQL decisions`. It also happens on its
+own when the context gets full (the header shows how full it is); see
+[`[context]`](/configuration/config#context).
+
 ## Keyboard shortcuts
 
 ### Sending and editing

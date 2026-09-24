@@ -44,6 +44,10 @@ export class Agent {
   store?: NasiStore
   /** The current model's context window in tokens; when unset, {@link run} resolves it from the matching {@link models} entry. */
   contextWindow?: number
+  /** Writes compaction summaries ([models.summarize]); defaults to this agent's own chat model. */
+  summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+  /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
+  compactAt?: number
 
   constructor(config: {
     name?: string
@@ -60,6 +64,8 @@ export class Agent {
     createClient?: (model: CliResolvedModel) => OpenAI
     store?: NasiStore
     contextWindow?: number
+    summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+    compactAt?: number
   }) {
     this.name = config.name ?? "Assistant"
     this.model = config.model
@@ -75,6 +81,8 @@ export class Agent {
     this.createClient = config.createClient
     this.store = config.store
     this.contextWindow = config.contextWindow
+    this.summarizer = config.summarizer
+    this.compactAt = config.compactAt
   }
 
   /** Point the agent at another model, swapping the client when {@link createClient} is set. */
@@ -230,6 +238,8 @@ export type Session = {
   pendingClientToolCallId?: string
   /** A tool call waiting on the human's approval (see `Tool.approval`); the host answers it by running the tool itself. */
   pendingToolApprovalId?: string
+  /** Once compacted: the latest summary, which stands in for `messages` before index `from` in what the model is sent. */
+  summary?: { text: string; from: number }
 }
 
 export function createSession(): Session {
@@ -256,6 +266,8 @@ export type AgentEvent =
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "final"; content: string | null }
+  /** The conversation was compacted before a round; `dropped` when the summarizer failed and older messages were cut without one. */
+  | { type: "compacted"; beforeTokens: number; afterTokens: number; dropped: boolean }
   /** `contextWindow` is the current model's size in tokens, when known, so hosts can show how full it is. */
   | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
 

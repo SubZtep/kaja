@@ -38,7 +38,7 @@ const SESSION_COLUMNS =
 
 /** Rebuilds a session from its rows. The cloud keeps no timeline, so `events` is always empty. */
 async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | undefined> {
-  const [messages, calls] = await Promise.all([
+  const [messages, calls, summary] = await Promise.all([
     db.query(
       "SELECT role, content, parts, reasoning, tool_call_id FROM nasi_message WHERE session_id = $1 ORDER BY seq",
       [row.id]
@@ -48,8 +48,13 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
        FROM nasi_tool_call tc JOIN nasi_message m ON m.id = tc.message_id
        WHERE m.session_id = $1 ORDER BY m.seq, tc.position`,
       [row.id]
+    ),
+    db.query(
+      "SELECT summary, summary_from FROM nasi_session_summary WHERE session_id = $1 ORDER BY summary_from DESC LIMIT 1",
+      [row.id]
     )
   ])
+  const latest = summary.rows[0]
   const callsBySeq = Map.groupBy(calls.rows, call => call.seq as number)
   const parsed = PersistedSessionSchema.safeParse({
     id: row.id,
@@ -62,6 +67,7 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
     session: joinConversation({
       systemPrompt: row.system_prompt,
       pending: row.pending_call_id && row.pending_kind ? { callId: row.pending_call_id, kind: row.pending_kind } : null,
+      summary: latest ? { text: latest.summary, from: latest.summary_from } : null,
       messages: messages.rows.map((message, seq) => ({
         role: message.role,
         content: message.content,
@@ -121,7 +127,7 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
 
 // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
 async function saveConversation(client: PoolClient, id: string, data: SessionWrite) {
-  const { systemPrompt, pending, messages, calls = [] } = splitConversation(data.session)
+  const { systemPrompt, pending, messages, summary, calls = [] } = splitConversation(data.session)
   await client.query(
     "UPDATE nasi_session SET system_prompt = $2, pending_call_id = $3, pending_kind = $4 WHERE id = $1",
     [id, systemPrompt, pending?.callId ?? null, pending?.kind ?? null]
@@ -130,6 +136,14 @@ async function saveConversation(client: PoolClient, id: string, data: SessionWri
   const storedMessages = stored.rows[0].n as number
   for (const [i, row] of messages.slice(storedMessages).entries()) {
     await insertMessage(client, id, storedMessages + i, row)
+  }
+  // Each compaction summarises past a later message, so a summary already stored is never written twice.
+  if (summary) {
+    await client.query(
+      `INSERT INTO nasi_session_summary (session_id, summary_from, summary) VALUES ($1, $2, $3)
+       ON CONFLICT (session_id, summary_from) DO NOTHING`,
+      [id, summary.from, summary.text]
+    )
   }
   for (const { callId, status, approval, durationMs } of calls) {
     await client.query(

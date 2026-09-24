@@ -171,6 +171,22 @@ export async function runUserTurn(userId: string, body: NasiTurnRequest): Promis
   })
 }
 
+/** `/compact` for one of the user's sessions (a Telegram user's too, via `owner`), under the same lock as its turns. */
+export async function compactUserSession(
+  userId: string,
+  body: { session: string; focus?: string },
+  owner: string | null = null
+) {
+  return withLock(`${userId}:${body.session}`, async () => {
+    const nasi = await openNasiFor({ userId, owner, pinnedModel: await pinnedModelFor(userId, body.session) })
+    try {
+      return await nasi.compact(body.session, body.focus || undefined)
+    } finally {
+      await nasi.close()
+    }
+  })
+}
+
 export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
   const run = async function* () {
     const nasi = await openNasiFor({

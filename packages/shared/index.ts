@@ -4,6 +4,7 @@ import { twMerge } from "tailwind-merge"
 export { LOCALE_LABELS, type Locale, locales, matchLocale } from "./locale"
 export {
   asRateLimitError,
+  commandArgument,
   EditThrottle,
   escapeHtml,
   isCommand,

@@ -31,7 +31,7 @@ export async function runTelegramCli(deps: {
   }
 
   const { createTelegramBot } = await import("./bot")
-  const { chatModelId, client, clientForModel } = await import("../models/openai")
+  const { chatModelId, client, clientForModel, compactAt, summarizer } = await import("../models/openai")
   const { getStore } = await import("../memory/store")
   const { replyLanguageInstructionFor } = await import("@kaja/nasi")
   const bot = createTelegramBot({
@@ -43,6 +43,8 @@ export async function runTelegramCli(deps: {
       model: chatModelId,
       client,
       createClient: clientForModel,
+      summarizer,
+      compactAt,
       store: await getStore(),
       tools: deps.tools,
       personas: deps.personas,

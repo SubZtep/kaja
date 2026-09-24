@@ -16,7 +16,7 @@ import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
-import { client, clientForModel } from "../../lib/models/openai"
+import { client, clientForModel, compactAt, summarizer } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
 import { themes } from "../theme"
 import { ChatViewport } from "./chat-viewport"
@@ -251,6 +251,8 @@ function LocalApp({
     model: openaiApiModel,
     client,
     createClient: clientForModel,
+    summarizer,
+    compactAt,
     tools,
     personas,
     models,

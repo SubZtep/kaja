@@ -55,6 +55,16 @@ CREATE TABLE IF NOT EXISTS nasi_tool_call (
 
 CREATE INDEX IF NOT EXISTS nasi_tool_call_name_idx ON nasi_tool_call (name);
 
+-- One row per compaction: the model is sent the latest summary in place of the messages before summary_from.
+CREATE TABLE IF NOT EXISTS nasi_session_summary (
+  session_id uuid NOT NULL REFERENCES nasi_session (id) ON DELETE CASCADE,
+  -- seq of the first message the summary doesn't cover
+  summary_from integer NOT NULL,
+  summary text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (session_id, summary_from)
+);
+
 CREATE TABLE IF NOT EXISTS nasi_note (
   user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
   -- whose notes: '' is the web app and the CLI, else a Telegram user or a widget visitor (like sessions and datasets)

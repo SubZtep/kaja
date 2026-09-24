@@ -24,7 +24,9 @@ provider = "ollama"
 Each `[models.<id>]` entry has:
 
 - `model` — the provider's own model name, sent in API requests;
-- `task` — `chat`, `embedding`, `image-generation`, `tts`, `stt` or `rerank`;
+- `task` — `chat`, `embedding`, `image-generation`, `tts`, `stt`, `rerank` or `summarize` (writes the
+  summary a long conversation is [compacted](/configuration/config#context) into; the chat model does it
+  when there's none);
 - `provider` — a key from `[providers.*]`;
 - `context_window` — optional, how many tokens the model takes in.
 

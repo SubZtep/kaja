@@ -64,6 +64,8 @@ pair people you trust.
 Commands in the bot's menu:
 
 - `/new` — start a fresh conversation.
+- `/compact` — summarise the conversation so far to free up space; add what to keep in mind, e.g.
+  `/compact keep the dates`. It also happens on its own once the conversation gets long.
 - `/abilities` — the skills and tools this bot loaded. It loads them once at start, so after
   `kaja abilities` restart `kaja telegram`.
 
@@ -82,6 +84,8 @@ the dashboard.
 Commands:
 
 - `/new` — start a fresh conversation.
+- `/compact` — summarise the conversation so far to free up space; add what to keep in mind, e.g.
+  `/compact keep the dates`. It also happens on its own once the conversation gets long.
 - `/abilities` — every skill, tool and MCP server as a button: ✅ on, ▫️ off, 🔑 needs your API key
   first, ⚠️ no longer in the marketplace. A tap applies from your next message. Keys are entered on the
   [Abilities page](https://kaja.io/abilities), never in Telegram, where they'd stay in the chat history.

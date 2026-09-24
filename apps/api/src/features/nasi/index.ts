@@ -1,6 +1,8 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { categorizeError, LOAD_SKILL_TOOL, listCloudToolNames } from "@kaja/nasi"
 import {
+  NasiCompactRequestSchema,
+  NasiCompactResponseSchema,
   NasiInfoResponseSchema,
   NasiPersonasResponseSchema,
   NasiTurnRequestSchema,
@@ -14,7 +16,14 @@ import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
-import { nasiToolDeps, openUserTurnStream, pinnedModelFor, resolveModelWithProvider, runUserTurn } from "./chat"
+import {
+  compactUserSession,
+  nasiToolDeps,
+  openUserTurnStream,
+  pinnedModelFor,
+  resolveModelWithProvider,
+  runUserTurn
+} from "./chat"
 import { createPostgresStore } from "./pg-store"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
@@ -24,6 +33,7 @@ export const nasiRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 nasiRoutes.use("*", requireAuthMiddleware)
 nasiRoutes.use("/turn", nasiTurnRateLimiter)
 nasiRoutes.use("/turn/stream", nasiTurnRateLimiter)
+nasiRoutes.use("/compact", nasiTurnRateLimiter)
 
 const errorSchema = z.object({ error: z.string() })
 
@@ -76,6 +86,7 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   confirm_tool: "confirm_tool",
   ask_user: "ask_user",
   persona_switch: "persona_switch",
+  compacted: "compacted",
   usage: "usage",
   final: "final"
 }
@@ -122,6 +133,41 @@ nasiRoutes.post("/turn/stream", async c => {
       clearInterval(heartbeat)
     }
   })
+})
+
+const compactRoute = createRoute({
+  method: "post",
+  path: "/compact",
+  tags: ["Nasi"],
+  summary: "Summarise a session now, keeping its latest turn word for word",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: { content: { "application/json": { schema: NasiCompactRequestSchema } }, required: true }
+  },
+  responses: {
+    200: {
+      description: "Compacted, or `compacted: null` when there was nothing to summarise yet",
+      content: { "application/json": { schema: NasiCompactResponseSchema } }
+    },
+    400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
+    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+nasiRoutes.openapi(compactRoute, async c => {
+  const user = c.get("user")
+  if (!user) return unauthorized(c)
+  const body = c.req.valid("json")
+  try {
+    return c.json({ compacted: (await compactUserSession(user.id, body)) ?? null })
+  } catch (error) {
+    if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
+    if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
+    const { category, message } = categorizeError(error)
+    reportError("nasi compact failed", error, { userId: user.id, category })
+    return internalError(c, message)
+  }
 })
 
 const infoRoute = createRoute({

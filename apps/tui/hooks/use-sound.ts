@@ -9,6 +9,8 @@ const eventSound = {
   tool_image: "magic",
   display_image: "magic",
   persona_switch: "magic",
+  compacted: "wind",
+  notice: "wind",
   ask_user: "bell",
   confirm_command: "bell",
   confirm_tool: "bell",

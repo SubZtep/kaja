@@ -68,7 +68,7 @@ function makeBot(opts: Partial<Parameters<typeof createTelegramBot>[0]> = {}) {
 test("start() sets the command menu, and a failure there doesn't stop the bot", async () => {
   setMyCommands.mockClear()
   await makeBot().start()
-  expect(setMyCommands.mock.calls[0]![0].map(c => c.command)).toEqual(["new", "abilities"])
+  expect(setMyCommands.mock.calls[0]![0].map(c => c.command)).toEqual(["new", "compact", "abilities"])
 
   setMyCommands.mockImplementationOnce(async () => {
     throw new Error("network down")

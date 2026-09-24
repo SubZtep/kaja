@@ -27,7 +27,8 @@ const PersonaModelsSchema = z
     rerank: z.string().min(1).optional(),
     "image-generation": z.string().min(1).optional(),
     tts: z.string().min(1).optional(),
-    stt: z.string().min(1).optional()
+    stt: z.string().min(1).optional(),
+    summarize: z.string().min(1).optional()
   })
   .optional()
 

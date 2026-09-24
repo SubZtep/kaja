@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_admin/admin/models/")({
   head: () => ({ meta: seo({ title: m.nav_models() }) })
 })
 
-const MODEL_TASKS: ModelTask[] = ["chat", "tts", "stt", "embedding", "image-generation", "rerank"]
+const MODEL_TASKS: ModelTask[] = ["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize"]
 
 const providerFormSchema = z.object({
   name: z.string().min(1, m.models_validation_required()),

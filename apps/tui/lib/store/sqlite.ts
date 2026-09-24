@@ -31,7 +31,8 @@ function dropLegacySessions(db: Database) {
   const blobs = hasColumn("sessions", "session")
   const noTelemetry = hasColumn("messages", "toolCallId") && !hasColumn("messages", "finishReason")
   if (!blobs && !noTelemetry) return
-  for (const table of ["tool_calls", "session_events", "messages", "sessions"]) db.run(`DROP TABLE IF EXISTS ${table}`)
+  for (const table of ["session_summaries", "tool_calls", "session_events", "messages", "sessions"])
+    db.run(`DROP TABLE IF EXISTS ${table}`)
 }
 
 function createSchema(db: Database) {
@@ -113,6 +114,16 @@ function createSchema(db: Database) {
     )
   `)
   db.run("CREATE INDEX IF NOT EXISTS session_events_type_idx ON session_events (type, sessionId, seq)")
+  // One row per compaction: the model is sent the latest summary in place of the messages before summaryFrom.
+  db.run(`
+    CREATE TABLE IF NOT EXISTS session_summaries (
+      sessionId   TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+      summaryFrom INTEGER NOT NULL,
+      summary     TEXT NOT NULL,
+      createdAt   TEXT NOT NULL,
+      PRIMARY KEY (sessionId, summaryFrom)
+    )
+  `)
   db.run(`
     CREATE TABLE IF NOT EXISTS dataset_answers (
       topic      TEXT NOT NULL,
@@ -233,7 +244,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
   // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
   const saveConversation = db.transaction((id: string, data: SessionWrite) => {
-    const { systemPrompt, pending, messages, calls = [] } = splitConversation(data.session)
+    const { systemPrompt, pending, messages, summary, calls = [] } = splitConversation(data.session)
     db.query(
       "UPDATE sessions SET systemPrompt = $systemPrompt, pendingCallId = $callId, pendingKind = $kind WHERE id = $id"
     ).run({
@@ -245,6 +256,12 @@ export function createSqliteStore(dbPath: string): NasiStore {
     const now = new Date().toISOString()
     const storedMessages = count("messages", id)
     messages.slice(storedMessages).forEach((row, i) => insertMessage(id, storedMessages + i, row, now))
+    // Each compaction summarises past a later message, so a summary already stored is never written twice.
+    if (summary) {
+      db.query(
+        "INSERT OR IGNORE INTO session_summaries (sessionId, summaryFrom, summary, createdAt) VALUES ($id, $from, $text, $now)"
+      ).run({ $id: id, $from: summary.from, $text: summary.text, $now: now })
+    }
     const storedEvents = count("session_events", id)
     data.events.slice(storedEvents).forEach((event, i) => {
       db.query("INSERT INTO session_events (sessionId, seq, type, payload) VALUES ($id, $seq, $type, $payload)").run({
@@ -285,6 +302,11 @@ export function createSqliteStore(dbPath: string): NasiStore {
       const eventRows = db
         .query("SELECT payload FROM session_events WHERE sessionId = $id ORDER BY seq")
         .all({ $id: row.id }) as { payload: string }[]
+      const latest = db
+        .query(
+          "SELECT summary, summaryFrom FROM session_summaries WHERE sessionId = $id ORDER BY summaryFrom DESC LIMIT 1"
+        )
+        .get({ $id: row.id }) as { summary: string; summaryFrom: number } | null
       const parsed = PersistedSessionSchema.safeParse({
         id: row.id,
         createdAt: row.createdAt,
@@ -296,6 +318,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
         session: joinConversation({
           systemPrompt: row.systemPrompt,
           pending: row.pendingCallId && row.pendingKind ? { callId: row.pendingCallId, kind: row.pendingKind } : null,
+          summary: latest ? { text: latest.summary, from: latest.summaryFrom } : null,
           messages: messageRows.map((message, seq) => ({
             role: message.role,
             content: message.content,
