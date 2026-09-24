@@ -64,6 +64,24 @@ async function defaultChatResolver(pinnedModel?: string) {
   }
 }
 
+/** A free, enabled `summarize` model (the catalog's default is seeded), else undefined and the chat model summarises. */
+async function resolveSummarizer() {
+  if (env.NASI_STUB_MODEL) return undefined
+  const result = await modelService.getRandomModelWithProvider("summarize")
+  if (!result || !isPublicHttpUrl(result.provider.baseUrl)) return undefined
+  const target = {
+    baseUrl: result.provider.baseUrl,
+    apiKey: result.provider.apiKey ?? undefined,
+    model: result.model.model,
+    contextWindow: result.model.contextWindow ?? undefined
+  }
+  return {
+    client: createOpenAIClient({ baseURL: target.baseUrl, apiKey: target.apiKey ?? "unused" }),
+    model: target.model,
+    contextWindow: (await resolveContextWindow(target)).tokens
+  }
+}
+
 /** Host-neutral replacement for the CLI's terminal-flavored ask_user contract — cloud chat is a normal message UI, not a terminal that blocks on tool calls. */
 const CLOUD_ASK_USER_INSTRUCTION =
   `You talk to the human through a chat interface, and they can only reply ` +
@@ -107,7 +125,10 @@ export async function openNasiFor(opts: {
   /** The caller is the terminal, which runs `read_file`/`list_files` on the user's machine; the widget and Telegram have no such client, so they leave it off. */
   clientTools?: boolean
 }): Promise<Nasi> {
-  const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
+  const [chat, summarizer] = await Promise.all([
+    chatResolver ? chatResolver() : defaultChatResolver(opts.pinnedModel),
+    resolveSummarizer()
+  ])
   const source = opts.abilities ?? { userId: opts.userId }
   const personas = await personasFor(source)
   // Only the user's own turns get their keys; a widget's skills-only source never needs one.
@@ -115,6 +136,7 @@ export async function openNasiFor(opts: {
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
+    summarizer,
     personas,
     owner: opts.owner,
     clientTools: opts.clientTools === true,

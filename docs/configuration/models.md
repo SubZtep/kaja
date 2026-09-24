@@ -71,7 +71,7 @@ model per task; the wizard also keeps the models it didn't pick for a task as `[
 | File | Providers | Tasks |
 | --- | --- | --- |
 | `models.ollama.toml` | Ollama | chat (`qwen3.5:4b`), embedding — fully local |
-| `models.default.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts, stt — what `kaja config fetch --offline` writes |
+| `models.default.toml` | Fireworks, xAI, Speaches | chat, summarize, embedding, rerank, image-generation, tts, stt — what `kaja config fetch --offline` writes |
 | `models.llama.toml` | llama.cpp | chat against a local `llama-server` |
 | `models.xai.toml` | xAI | chat (`grok-4.3`), image-generation — one hosted key |
 

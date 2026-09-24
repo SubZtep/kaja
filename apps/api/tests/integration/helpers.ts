@@ -3,8 +3,8 @@ import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 
-/** Inserts a provider + an enabled/free chat model under it, returning both ids. Caller must `cleanupModel` in `afterAll`. */
-export async function seedModel(namePrefix: string) {
+/** Inserts a provider + an enabled/free model (chat unless `tasks` says otherwise) under it, returning both ids. Caller must `cleanupModel` in `afterAll`. */
+export async function seedModel(namePrefix: string, tasks: string[] = ["chat"]) {
   const provider = await pool.query<{ id: string }>(
     "INSERT INTO provider (name, base_url) VALUES ($1, $2) RETURNING id",
     [`${namePrefix}-${faker.string.alphanumeric(8)}`, "http://localhost:1"]
@@ -14,7 +14,7 @@ export async function seedModel(namePrefix: string) {
   await pool.query("INSERT INTO model (provider_id, model, tasks, enabled, free) VALUES ($1, $2, $3, true, true)", [
     providerId,
     modelName,
-    ["chat"]
+    tasks
   ])
   return { providerId, modelName }
 }
