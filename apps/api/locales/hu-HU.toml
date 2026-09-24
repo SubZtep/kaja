@@ -47,3 +47,9 @@ tool = "eszköz"
 mcp = "MCP"
 needsKey = "🔑 <b>{name}</b> először API-kulcsot kér. Adj hozzá a weboldalon, ahol titkosítva tárolódik; az itt beírt kulcs a chat-előzményekben maradna."
 needsKeyLink = "Képességek → Eszközök"
+
+[telegram.error]
+network = "Hálózati hiba"
+tool = "Eszköz hiba"
+agent = "Hiba történt"
+unknown = "Ismeretlen hiba"

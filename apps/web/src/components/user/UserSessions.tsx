@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { UAParser } from "ua-parser-js"
 import { useAuthClient } from "../../hooks/auth-client"
+import { authErrorMessage } from "../../lib/error-messages"
 import { tableColumnHelper, tableFeaturesConfig } from "../../lib/table"
 import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
@@ -65,7 +66,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
   }, [data])
 
   useEffect(() => {
-    if (error) toast.error(error.message)
+    if (error) toast.error(authErrorMessage(error))
   }, [error])
 
   const table = useTable({

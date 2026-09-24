@@ -47,3 +47,9 @@ tool = "tool"
 mcp = "MCP"
 needsKey = "🔑 <b>{name}</b> needs your API key first. Add it on the web, where it's stored encrypted; a key typed here would stay in the chat history."
 needsKeyLink = "Abilities → Tools"
+
+[telegram.error]
+network = "Network error"
+tool = "Tool failed"
+agent = "Something went wrong"
+unknown = "Unknown error"

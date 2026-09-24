@@ -217,7 +217,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     } catch (error) {
       console.warn("Telegram agent turn failed", { error })
       const { category, message } = categorizeError(error)
-      await editIfChanged(`⚠ ${category}: ${message}`)
+      // The category in the user's language, like the terminal shows it; the detail is the provider's own (technical) text.
+      await editIfChanged(`⚠ ${language.t(`telegram.error.${category}`)}: ${message}`)
     }
   }
 

@@ -47,3 +47,9 @@ tool = "工具"
 mcp = "MCP"
 needsKey = "🔑 <b>{name}</b> 需要你的 API 金鑰。請在網站上新增，金鑰會加密儲存；在此輸入的金鑰會留在聊天記錄中。"
 needsKeyLink = "能力 → 工具"
+
+[telegram.error]
+network = "網路錯誤"
+tool = "工具執行失敗"
+agent = "發生了一些問題"
+unknown = "未知的錯誤"
