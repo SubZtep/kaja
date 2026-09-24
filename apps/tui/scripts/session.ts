@@ -325,10 +325,6 @@ function anchor(id: string): string {
   return `<a id="${id}"></a>`
 }
 
-type DiagramGroup = "context" | "input" | "model" | "tools" | "control" | "output"
-
-type StepNode = { id: string; anchor: string; label: string; group: DiagramGroup }
-
 function renderOverview(
   systemPrompt: string | null,
   messages: MessageRow[],
@@ -336,63 +332,45 @@ function renderOverview(
   callsByCallId: Map<string, ToolCallRow>,
   events: EventRow[]
 ): string {
-  const nodes: StepNode[] = []
-  if (systemPrompt != null) nodes.push({ id: "s0", anchor: "step-system", label: "System prompt", group: "context" })
-  if (events.length > 0) {
-    events.forEach((event, index) => {
-      const n = index + 1
-      nodes.push({
-        id: `e${n}`,
-        anchor: `timeline-${n}`,
-        label: `${n} ${event.type}: ${eventBlurb(event)}`,
-        group: eventGroup(event)
-      })
-    })
-  } else {
-    messages.forEach((message, index) => {
-      const n = index + 1
-      const calls = callsByMessage.get(message.id) ?? []
-      nodes.push({
-        id: `s${n}`,
-        anchor: `step-${n}`,
-        label: `${n} ${roleLabel(message.role)}: ${stepBlurb(message, calls, callsByCallId)}`,
-        group: messageGroup(message.role)
-      })
-    })
-  }
-  if (nodes.length === 0) {
-    return ["```mermaid", "%%{init: {'htmlLabels': false}}%%", "flowchart TD", '    empty["No messages"]', "```"].join(
-      "\n"
-    )
-  }
+  const lines = ["```mermaid", "sequenceDiagram", "    autonumber"]
+  lines.push("    box rgba(219, 234, 254, 0.35) Front door")
+  lines.push("    actor User")
+  lines.push("    end")
+  lines.push("    box rgba(254, 243, 199, 0.35) Agent loop")
+  lines.push("    participant Agent")
+  lines.push("    participant Model")
+  lines.push("    end")
+  lines.push("    box rgba(220, 252, 231, 0.35) Execution")
+  lines.push("    participant Tools")
+  lines.push("    participant Host")
+  lines.push("    end")
+  lines.push("    box rgba(229, 231, 235, 0.35) Persistence")
+  lines.push("    participant Store")
+  lines.push("    participant Timeline")
+  lines.push("    end")
 
-  // htmlLabels uses a foreignObject. This preview's renderer crashes on that (getAttribute of null).
-  // Body lines use four spaces. Mermaid Viewer flags any other indent as unformatted.
-  const lines = ["%%{init: {'htmlLabels': false}}%%", "flowchart TD"]
-  const body = (text: string) => `    ${text}`
-  const groups = new Map<DiagramGroup, StepNode[]>()
-  for (const node of nodes) groups.set(node.group, [...(groups.get(node.group) ?? []), node])
-  for (const group of ["context", "input", "model", "tools", "control", "output"] as DiagramGroup[]) {
-    const groupNodes = groups.get(group)
-    if (!groupNodes?.length) continue
-    lines.push(body(`subgraph ${group}["${groupLabel(group)}"]`))
-    for (const node of groupNodes) lines.push(`        ${node.id}["${diagramLabel(node.label)}"]`)
-    lines.push(body("end"))
+  if (systemPrompt != null) lines.push("    Agent->>Model: Build system prompt")
+  if (events.length === 0) {
+    const nodes = messages.map((message, index) => {
+      const calls = callsByMessage.get(message.id) ?? []
+      return `${index + 1} ${roleLabel(message.role)}: ${stepBlurb(message, calls, callsByCallId)}`
+    })
+    if (nodes.length === 0) lines.push("    Note over Agent,Store: No events or messages stored")
+    for (const label of nodes) lines.push(`    Agent->>Model: ${diagramLabel(label)}`)
+  } else {
+    for (const [index, event] of events.entries()) {
+      const label = `${index + 1} ${event.type}: ${eventBlurb(event)}`
+      const target = eventParticipant(event)
+      lines.push(`    Agent->>${target}: ${diagramLabel(label)}`)
+    }
+    lines.push("    Agent->>Store: Persist messages, events, and telemetry")
   }
-  for (let i = 1; i < nodes.length; i++) {
-    const prev = nodes[i - 1]
-    const next = nodes[i]
-    if (prev && next) lines.push(body(`${prev.id} --> ${next.id}`))
+  lines.push("    Agent->>Timeline: Open event details")
+  for (const [index] of events.entries()) {
+    lines.push(`    link Timeline: Event ${index + 1} @ #timeline-${index + 1}`)
   }
-  for (const node of nodes) lines.push(body(`click ${node.id} href "#${node.anchor}" "${diagramLabel(node.label)}"`))
-  lines.push(body("classDef context fill:#e5e7eb,stroke:#4b5563,color:#111827"))
-  lines.push(body("classDef input fill:#dbeafe,stroke:#2563eb,color:#172554"))
-  lines.push(body("classDef model fill:#fef3c7,stroke:#d97706,color:#451a03"))
-  lines.push(body("classDef tools fill:#dcfce7,stroke:#16a34a,color:#052e16"))
-  lines.push(body("classDef control fill:#fce7f3,stroke:#db2777,color:#500724"))
-  lines.push(body("classDef output fill:#ede9fe,stroke:#7c3aed,color:#2e1065"))
-  for (const node of nodes) lines.push(body(`class ${node.id} ${node.group}`))
-  return ["```mermaid", ...lines, "```"].join("\n")
+  lines.push("```")
+  return lines.join("\n")
 }
 
 function stepBlurb(message: MessageRow, calls: ToolCallRow[], callsByCallId: Map<string, ToolCallRow>): string {
@@ -432,31 +410,11 @@ function eventBlurb(event: EventRow): string {
   return event.type
 }
 
-function eventGroup(event: EventRow): DiagramGroup {
-  if (event.type === "user" || event.type === "ask_user") return "input"
-  if (event.type === "reasoning" || event.type === "message" || event.type === "final" || event.type === "usage")
-    return "model"
-  if (event.type === "tool_call" || event.type === "client_tool_call" || event.type === "tool_image") return "tools"
-  if (event.type === "confirm_command" || event.type === "confirm_tool" || event.type === "tool_approval")
-    return "control"
-  if (event.type === "error" || event.type === "display_image") return "output"
-  return "control"
-}
-
-function messageGroup(role: string): DiagramGroup {
-  if (role === "user") return "input"
-  if (role === "assistant") return "model"
-  if (role === "tool") return "tools"
-  return "context"
-}
-
-function groupLabel(group: DiagramGroup): string {
-  if (group === "context") return "Context"
-  if (group === "input") return "Input"
-  if (group === "model") return "Model"
-  if (group === "tools") return "Tools"
-  if (group === "control") return "Control"
-  return "Output"
+function eventParticipant(event: EventRow): string {
+  if (event.type === "user" || event.type === "ask_user") return "User"
+  if (event.type === "tool_call" || event.type === "client_tool_call" || event.type === "tool_image") return "Tools"
+  if (event.type === "confirm_command" || event.type === "confirm_tool" || event.type === "tool_approval") return "Host"
+  return "Model"
 }
 
 function diagramLabel(text: string): string {
