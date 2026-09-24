@@ -48,43 +48,40 @@ export function setProviderBaseUrl(text: string, provider: string, baseUrl: stri
 }
 
 /**
- * Makes `[models.<task>]` use `provider` and `model` in models.toml text, for the doctor switching a
- * broken model to another that serves the same task. Edits those two lines and drops a `context_window`
- * that described the old model; the id stays, so a
- * persona pin naming it still resolves, and the template's comments survive. Unchanged when the
- * table is missing.
+ * Points `[tasks]`'s `task` at another model id in models.toml text, for the doctor switching a broken
+ * model to another that serves the same task. Edits (or adds) that one line, so every model entry and the
+ * template's comments stay as they are.
  */
-export function setModelFields(text: string, task: string, provider: string, model: string): string {
+export function setTaskModel(text: string, task: string, id: string): string {
   const lines = text.split("\n")
-  const start = lines.findIndex(line => line.trim() === `[models.${task}]`)
+  const line = `${task} = ${JSON.stringify(id)}`
+  const start = lines.findIndex(l => l.trim() === "[tasks]")
   if (start === -1) return text
-
   let end = lines.length
   for (let index = start + 1; index < lines.length; index++) {
     if (lines[index]!.trimStart().startsWith("[")) {
       end = index
       break
     }
+    const match = new RegExp(String.raw`^(\s*)"?${task}"?(\s*=\s*)"[^"]*"(.*)$`).exec(lines[index]!)
+    if (match) {
+      lines[index] = `${match[1]}${task}${match[2]}${JSON.stringify(id)}${match[3]}`
+      return lines.join("\n")
+    }
   }
-  const values = { provider, model }
-  for (let index = start + 1; index < end; index++) {
-    const match = /^(\s*)(provider|model)(\s*=\s*)"[^"]*"(.*)$/.exec(lines[index]!)
-    if (match)
-      lines[index] =
-        `${match[1]}${match[2]}${match[3]}${JSON.stringify(values[match[2] as keyof typeof values])}${match[4]}`
-  }
-  // The old model's context_window doesn't describe the new one; without it the new one's is detected.
-  return lines
-    .filter((line, index) => index <= start || index >= end || !/^\s*context_window\s*=/.test(line))
-    .join("\n")
+  // Not there yet: add it after the table's last line.
+  let at = end
+  while (at > start + 1 && lines[at - 1]!.trim() === "") at--
+  lines.splice(at, 0, line)
+  return lines.join("\n")
 }
 
-/** Reads models.toml, points a task's default model at another entry's provider and model, and writes it back. No-op when the file is missing. */
-export async function saveModelFields(task: string, provider: string, model: string) {
+/** Reads models.toml, points a task at another model id, and writes it back. No-op when the file is missing. */
+export async function saveTaskModel(task: string, id: string) {
   const f = file(getModelsPath())
   if (!(await f.exists())) return
   const text = await f.text()
-  const next = setModelFields(text, task, provider, model)
+  const next = setTaskModel(text, task, id)
   if (next !== text) await write(f, next)
 }
 
@@ -93,19 +90,19 @@ export async function fetchModelsToml(): Promise<{ path: string; backedUpTo?: st
   return writeTemplateConfig(TEMPLATE, getModelsPath())
 }
 
-/** Flatten each models.toml entry with its provider's credentials. */
+/** Flattens each models.toml entry with its provider's credentials, once per task it lists. */
 export function resolveModels(data: ResolvedModelsFile): CliResolvedModel[] {
-  return Object.entries(data.models).map(([id, entry]) => {
+  return Object.entries(data.models).flatMap(([id, entry]) => {
     const provider = data.providers[entry.provider]!
-    return {
+    return entry.tasks.map(task => ({
       id,
       model: entry.model,
-      task: entry.task,
+      task,
       baseUrl: provider.base_url,
       apiKey: provider.api_key,
       provider: entry.provider,
       ...(entry.context_window ? { contextWindow: entry.context_window } : {})
-    }
+    }))
   })
 }
 
@@ -123,7 +120,7 @@ export function findModelById(
   return models.find(m => m.id === id && (!task || m.task === task))
 }
 
-/** Resolves the model to use for a task: a persona's pin for that task wins, else the [models.<task>] entry */
+/** Resolves the model to use for a task: a persona's pin for that task wins, else the one [tasks] names. */
 export function resolveActiveModel(
   data: ResolvedModelsFile,
   task: ModelTask,
@@ -132,7 +129,7 @@ export function resolveActiveModel(
   const models = resolveModels(data)
   const pinned = findModelById(models, personaModels?.[task], task)
   if (pinned) return pinned
-  return findModelById(models, task, task)
+  return findModelById(models, data.tasks[task], task)
 }
 
 /**
@@ -169,12 +166,12 @@ export async function loadModels(): Promise<CliResolvedModel[]> {
 }
 
 /**
- * Whether `models.toml` + `secrets.toml` resolves a usable [chat] model.\
+ * Whether `models.toml` + `secrets.toml` resolves a usable chat model (the one [tasks] names).\
  * Providers without an `api_key` are allowed.
  */
 export async function hasConfiguredChatModel(): Promise<boolean> {
   const modelsFile = await loadModelsFile()
-  const chatEntry = findModelById(resolveModels(modelsFile), "chat", "chat")
+  const chatEntry = resolveActiveModel(modelsFile, "chat")
   if (!chatEntry) return false
   const provider = modelsFile.providers[chatEntry.provider]
   return provider !== undefined && provider.api_key !== undefined

@@ -173,6 +173,31 @@ export function titleCase(label?: string) {
     .join(" ")
 }
 
+/**
+ * A models.toml id for a provider's model name: its last path part, lowercased, with every run of other
+ * characters as one dash.
+ * @example "accounts/fireworks/models/glm-5p3-flash" → "glm-5p3-flash", "qwen3.5:4b" → "qwen3-5-4b"
+ */
+export function modelSlug(model: string): string {
+  const last = model.split("/").findLast(Boolean) ?? model
+  return (
+    last
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9]+/g, "-")
+      .replaceAll(/^-|-$/g, "") || "model"
+  )
+}
+
+/** {@link modelSlug}, made unique against `taken`: `-<provider>` for a name another provider already uses, then numbered. */
+export function uniqueModelSlug(taken: ReadonlySet<string>, model: string, provider: string): string {
+  const base = modelSlug(model)
+  if (!taken.has(base)) return base
+  const withProvider = `${base}-${modelSlug(provider)}`
+  let id = withProvider
+  for (let n = 2; taken.has(id); n++) id = `${withProvider}-${n}`
+  return id
+}
+
 /** Drops trailing slashes, e.g. "https://kaja.io//" → "https://kaja.io". A loop, since `/\/+$/` backtracks on long runs of slashes. */
 export function trimTrailingSlashes(value: string) {
   let end = value.length

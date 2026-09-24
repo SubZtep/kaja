@@ -15,6 +15,10 @@ approvals, because the cloud agent never needs them.
 A local session starts with a summary of what it loaded: the active persona and model, connected MCP
 servers with their tool counts, and how many saved conversations and memory notes exist.
 
+The header shows the persona, the model, and after the first reply how full its context window is, e.g.
+`12,345 / 32,768 tokens (38%)`. Long conversations are summarised before they run out of room; see
+`/compact` below.
+
 Replies are rendered as markdown while they arrive: headings, lists, tables that fit the window,
 and syntax-highlighted code. Images are drawn inline in coloured blocks, and links are clickable
 where the terminal supports OSC 8 hyperlinks.

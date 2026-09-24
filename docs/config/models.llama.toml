@@ -1,14 +1,17 @@
-# Kaja models — [models.<task>] entries each pick a [providers.*] table with
-# `provider = "<name>"`. The id equal to the task name (e.g. "chat") is the one used for that task;
-# other models of the same task are kept as [models.<provider>-<task>], and a persona's
-# [models].<task> can pin one of them by id. `model` is the literal name sent to the provider's API.
+# Kaja models. [tasks] says which model each task uses, by its [models.<id>] id; a task left out
+# is off. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and what it
+# can be used for (`tasks`); models no task uses are kept for a persona's [models] pin, or for
+# `kaja doctor` to switch to when one stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
 # llama.cpp's server doesn't need an API key.
 [providers.llama]
 base_url = "http://localhost:8080/v1"
 
-[models.chat]
+[tasks]
+chat = "ministral-3-3b-reasoning-2512-gguf-q4-k-m"
+
+[models.ministral-3-3b-reasoning-2512-gguf-q4-k-m]
 model = "mistralai/Ministral-3-3B-Reasoning-2512-GGUF:Q4_K_M"
-task = "chat"
 provider = "llama"
+tasks = ["chat"]

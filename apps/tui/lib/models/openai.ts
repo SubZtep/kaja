@@ -1,14 +1,13 @@
 import { createOpenAIClient } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { readConfigLoose } from "../config/config"
-import { findModelById, loadModelsFile, resolveModels } from "./models"
+import { loadModelsFile, resolveActiveModel } from "./models"
 
 export { createOpenAIClient } from "@kaja/nasi"
 
 const modelsFile = await loadModelsFile()
-const resolvedModels = resolveModels(modelsFile)
-const chatEntry = findModelById(resolvedModels, "chat", "chat")
-const summarizeEntry = findModelById(resolvedModels, "summarize", "summarize")
+const chatEntry = resolveActiveModel(modelsFile, "chat")
+const summarizeEntry = resolveActiveModel(modelsFile, "summarize")
 export const isFreeChat = !chatEntry
 
 // chatEntry is only undefined when isFreeChat is true, which every caller of chatModelId/client
@@ -27,7 +26,7 @@ export function clientForModel(model: CliResolvedModel) {
   })
 }
 
-/** [models.summarize], which writes the summaries a long conversation is compacted into; unset means the chat model does. */
+/** The model [tasks] picks for summarize, which writes the summaries a long conversation is compacted into; unset means the chat model does. */
 export const summarizer = summarizeEntry && {
   client: clientForModel(summarizeEntry),
   model: summarizeEntry.model,

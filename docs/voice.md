@@ -24,15 +24,19 @@ the [setup wizard](/wizard) writes both for you.
    [providers.speaches]
    base_url = "http://localhost:8000"
 
-   [models.tts]
-   model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
-   task = "tts"
-   provider = "speaches"
+   [tasks]
+   tts = "kokoro-82m-v1-0-onnx-fp16"
+   stt = "faster-distil-whisper-small-en"
 
-   [models.stt]
-   model = "Systran/faster-distil-whisper-small.en"
-   task = "stt"
+   [models.kokoro-82m-v1-0-onnx-fp16]
+   model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
    provider = "speaches"
+   tasks = ["tts"]
+
+   [models.faster-distil-whisper-small-en]
+   model = "Systran/faster-distil-whisper-small.en"
+   provider = "speaches"
+   tasks = ["stt"]
    ```
 
 3. Point [`settings.toml`](/configuration/config) at the server:
@@ -61,9 +65,9 @@ four languages.
 
 Voice lags behind:
 
-- **Dictation** needs a multilingual Whisper model. The default above is English-only: point
-  `[models.stt]` at a multilingual model and set `stt.language`.
-- **Spoken replies** use the configured Kokoro voice, which has no Hungarian, unless `[models.tts]`
+- **Dictation** needs a multilingual Whisper model. The default above is English-only: point `stt` in
+  `[tasks]` at a multilingual model and set `stt.language`.
+- **Spoken replies** use the configured Kokoro voice, which has no Hungarian, unless `tts` in `[tasks]`
   points at something that does.
 
 ---

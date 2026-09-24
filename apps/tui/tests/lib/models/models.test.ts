@@ -17,14 +17,15 @@ const DATA: ResolvedModelsFile = {
     default: { base_url: "https://api.example.test/v1", api_key: "test-key" },
     speaches: { base_url: "http://localhost:8000" }
   },
+  tasks: { chat: "chat", stt: "faster-whisper" },
   models: {
-    chat: { model: "accounts/example/models/chat", task: "chat", provider: "default" },
-    "reasoning-chat": { model: "accounts/example/models/reasoning", task: "chat", provider: "default" },
-    stt: { model: "Systran/faster-whisper", task: "stt", provider: "speaches" }
+    chat: { model: "accounts/example/models/chat", tasks: ["chat"], provider: "default" },
+    "reasoning-chat": { model: "accounts/example/models/reasoning", tasks: ["chat", "summarize"], provider: "default" },
+    "faster-whisper": { model: "Systran/faster-whisper", tasks: ["stt"], provider: "speaches" }
   }
 }
 
-test("resolveModels flattens each models.toml entry with its provider's credentials", () => {
+test("resolveModels flattens each models.toml entry with its provider's credentials, once per task", () => {
   expect(resolveModels(DATA)).toEqual([
     {
       id: "chat",
@@ -43,7 +44,15 @@ test("resolveModels flattens each models.toml entry with its provider's credenti
       provider: "default"
     },
     {
-      id: "stt",
+      id: "reasoning-chat",
+      model: "accounts/example/models/reasoning",
+      task: "summarize",
+      baseUrl: "https://api.example.test/v1",
+      apiKey: "test-key",
+      provider: "default"
+    },
+    {
+      id: "faster-whisper",
       model: "Systran/faster-whisper",
       task: "stt",
       baseUrl: "http://localhost:8000",
@@ -61,18 +70,20 @@ test("findModelById looks up by id, optionally constrained to a task", () => {
   expect(findModelById(resolveModels(DATA), "nope")).toBeUndefined()
 })
 
-test("resolveActiveModel with no personaModels falls back to the [models.<task>] entry", () => {
+test("resolveActiveModel with no personaModels uses the model [tasks] names", () => {
   expect(resolveActiveModel(DATA, "chat")?.id).toBe("chat")
-  expect(resolveActiveModel(DATA, "stt")?.id).toBe("stt")
+  expect(resolveActiveModel(DATA, "stt")?.id).toBe("faster-whisper")
   expect(resolveActiveModel(DATA, "embedding")).toBeUndefined()
+  // A model can serve a task [tasks] leaves out: it's there to pin, but nothing uses it.
+  expect(resolveActiveModel(DATA, "summarize")).toBeUndefined()
 })
 
-test("resolveActiveModel: a persona's pin for a task wins over the [models.<task>] entry", () => {
+test("resolveActiveModel: a persona's pin for a task wins over the model [tasks] names", () => {
   const resolved = resolveActiveModel(DATA, "chat", { chat: "reasoning-chat" })
   expect(resolved?.id).toBe("reasoning-chat")
 })
 
-test("resolveActiveModel: an absent persona pin for a task falls back to the [models.<task>] entry", () => {
+test("resolveActiveModel: an absent persona pin for a task falls back to the model [tasks] names", () => {
   const resolved = resolveActiveModel(DATA, "chat", { embedding: "reasoning-chat" })
   expect(resolved?.id).toBe("chat")
 })
@@ -83,8 +94,8 @@ test("resolveActiveModel: a persona pin naming an unknown id soft-falls-back to 
 })
 
 test("resolveActiveModel: a persona pin whose task doesn't match soft-falls-back to the [models.<task>] entry", () => {
-  // "stt" exists but is an stt entry, not chat.
-  const resolved = resolveActiveModel(DATA, "chat", { chat: "stt" })
+  // "faster-whisper" exists but serves stt, not chat.
+  const resolved = resolveActiveModel(DATA, "chat", { chat: "faster-whisper" })
   expect(resolved?.id).toBe("chat")
 })
 
@@ -104,7 +115,7 @@ test("no models.toml file: loads no models without writing one", async () => {
   setConfigDirOverride(dir)
 
   const data = await loadModelsFile()
-  expect(data).toEqual({ providers: {}, models: {} })
+  expect(data).toEqual({ providers: {}, tasks: {}, models: {} })
   expect(await Bun.file(getModelsPath()).exists()).toBe(false)
 })
 
@@ -119,7 +130,7 @@ base_url = "https://api.fireworks.ai/inference/v1"
 
 [models.fast-chat]
 model = "some/chat-model"
-task = "chat"
+tasks = ["chat"]
 provider = "fireworks"
 `
   )
@@ -146,7 +157,7 @@ base_url = "https://api.fireworks.ai/inference/v1"
 
 [models.fast-chat]
 model = "some/chat-model"
-task = "chat"
+tasks = ["chat"]
 provider = "fireworks"
 `
   )
@@ -167,7 +178,7 @@ base_url = "https://api.fireworks.ai/inference/v1"
 
 [models.fast-chat]
 model = "some/chat-model"
-task = "chat"
+tasks = ["chat"]
 provider = "fireworks"
 `
   )

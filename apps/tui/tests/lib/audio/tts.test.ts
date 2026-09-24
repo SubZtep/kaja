@@ -18,19 +18,23 @@ await Bun.write(
 base_url = "http://localhost/v1"
 api_key = "llm-key"
 
+[tasks]
+chat = "chat"
+tts = "tts"
+
 [models.chat]
 model = "test-model"
-task = "chat"
+tasks = ["chat"]
 provider = "default"
 
 [models.tts]
 model = "test-tts-model"
-task = "tts"
+tasks = ["tts"]
 provider = "default"
 
 [models.tts-alt]
 model = "test-tts-model-alt"
-task = "tts"
+tasks = ["tts"]
 provider = "default"
 `
 )

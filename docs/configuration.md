@@ -61,10 +61,11 @@ file.
 servers, the Telegram token and web search. In a terminal it asks for anything missing or failing,
 tests the new value before saving it to `secrets.toml`, and only keeps a failing value if you say so.
 
-It then tries every model by task. When a task's model stops answering and another model you configured
-for that task does, it offers to switch — only that task's `provider` and `model` change, so a persona
-pinning it keeps working. It ends with what's still left to fix, and lists every tool by origin plus
-anything left out and why.
+It then tries every model by task, and shows each chat model's context window and where the number
+came from (`models.toml`, detected from the server, or assumed). When a task's model stops answering and
+another model you configured for that task does, it offers to switch: only that task's line in `[tasks]`
+changes, so every model entry and any persona pin stay as they are. It ends with what's still left to fix,
+and lists every tool by origin plus anything left out and why.
 
 ## Editor support
 

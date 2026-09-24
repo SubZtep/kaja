@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 // Idempotent upsert of docs/config/models.default.toml (generated from docs/config/catalog.toml) into Postgres —
 // the admin-managed model defaults the cloud API and `kaja config fetch` serve from the DB.
-// Only each task's default ([models.<task>]) is seeded: they are marked free, and free models' credentials are
-// handed out publicly, so an alternative ([models.<provider>-<task>]), should the file ever gain one, is left for an admin to add.
+// Only the models [tasks] picks are seeded, with the tasks it picks them for: they are marked free, and free models'
+// credentials are handed out publicly, so an alternative, should the file ever gain one, is left for an admin to add.
 // Self-hosted providers (the catalog's kind, e.g. Speaches on localhost) are skipped: the server can't reach a user's own machine.
 // ON CONFLICT DO NOTHING so admin edits made after the first run always survive a re-run.
 // Called by apps/api/migrate.ts after the SQL files, so a deploy seeds a fresh database.
-import { CatalogFileSchema } from "@kaja/schema/config"
+import { CatalogFileSchema, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { TOML } from "bun"
 import { Pool } from "pg"
 import CATALOG_TOML from "../../../docs/config/catalog.toml" with { type: "text" }
@@ -16,10 +16,7 @@ import MODELS_TEMPLATE from "../../../docs/config/models.default.toml" with { ty
 type Queryable = { query: (sql: string, values?: unknown[]) => Promise<{ rows: any[]; rowCount: number | null }> }
 
 async function seedModels(db: Queryable) {
-  const data = TOML.parse(MODELS_TEMPLATE) as {
-    providers: Record<string, { base_url: string }>
-    models: Record<string, { model: string; task: string; provider: string }>
-  }
+  const data = ModelsFileSchema.parse(TOML.parse(MODELS_TEMPLATE))
 
   const selfHosted = new Set(
     CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
@@ -27,8 +24,14 @@ async function seedModels(db: Queryable) {
       .map(provider => provider.id)
   )
   const defaults = Object.entries(data.models)
-    .filter(([id, entry]) => id === entry.task && !selfHosted.has(entry.provider))
-    .map(([, entry]) => entry)
+    .filter(([, entry]) => !selfHosted.has(entry.provider))
+    .map(([id, entry]) => ({
+      ...entry,
+      tasks: (Object.entries(data.tasks) as [ModelTask, string][])
+        .filter(([, used]) => used === id)
+        .map(([task]) => task)
+    }))
+    .filter(entry => entry.tasks.length > 0)
   const used = new Set(defaults.map(entry => entry.provider))
 
   const providerIds: Record<string, string> = {}
@@ -60,7 +63,7 @@ async function seedModels(db: Queryable) {
       INSERT INTO model (provider_id, model, tasks, enabled, free)
       VALUES ($1, $2, $3, true, true)
       `,
-      [providerId, entry.model, [entry.task]]
+      [providerId, entry.model, entry.tasks]
     )
     count++
   }

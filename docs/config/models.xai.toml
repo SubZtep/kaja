@@ -1,18 +1,22 @@
-# Kaja models — [models.<task>] entries each pick a [providers.*] table with
-# `provider = "<name>"`. The id equal to the task name (e.g. "chat") is the one used for that task;
-# other models of the same task are kept as [models.<provider>-<task>], and a persona's
-# [models].<task> can pin one of them by id. `model` is the literal name sent to the provider's API.
+# Kaja models. [tasks] says which model each task uses, by its [models.<id>] id; a task left out
+# is off. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and what it
+# can be used for (`tasks`); models no task uses are kept for a persona's [models] pin, or for
+# `kaja doctor` to switch to when one stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
 [providers.xai]
 base_url = "https://api.x.ai/v1"
 
-[models.chat]
-model = "grok-4.3"
-task = "chat"
-provider = "xai"
+[tasks]
+chat = "grok-4-3"
+image-generation = "grok-imagine-image"
 
-[models.image-generation]
-model = "grok-imagine-image"
-task = "image-generation"
+[models.grok-4-3]
+model = "grok-4.3"
 provider = "xai"
+tasks = ["chat"]
+
+[models.grok-imagine-image]
+model = "grok-imagine-image"
+provider = "xai"
+tasks = ["image-generation"]

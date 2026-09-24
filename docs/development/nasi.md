@@ -89,7 +89,7 @@ chars), and optional `includeThinking` / `language` / `personaId`.
 | `message` | the reply, or the pending question/command when not `completed` |
 | `steps` | ordered `NasiStep[]` — reasoning, messages, tool calls, handoffs — for rendering a transcript |
 | `thinking` | full reasoning text, only when `includeThinking` was set |
-| `usage` | `promptTokens` and which `model` actually served the request |
+| `usage` | `promptTokens`, which `model` actually served the request, and its `contextWindow` when known |
 
 `turn()` yields every `AgentEvent` (including token-level `delta`s) as the turn runs, then returns
 that same `NasiTurnResponse` once persistence finishes — that's what lets the API stream SSE and
@@ -111,8 +111,9 @@ mutates the `Session` you hand it — persistence is the host's job.
 | `confirm_tool` | stop and wait for approval of an HTTP tool or MCP call that changes something |
 | `client_tool_call` | stop so the client can run `read_file` / `list_files` on the user's own disk (cloud only) |
 | `persona_switch` | the persona (and maybe the model) changed mid-turn |
+| `compacted` | the conversation was summarised before a round (`beforeTokens`, `afterTokens`, `dropped`); see [Long conversations](#long-conversations) |
 | `final` | the turn is done |
-| `usage` | prompt tokens and the model that served the request |
+| `usage` | prompt tokens, the model that served the request, and its context window |
 
 Three tools are **intercepted** rather than executed normally: `ask_user`, `run_command`, and
 `switch_persona`. They're how the loop hands control back to the host.
@@ -139,11 +140,12 @@ flowchart TD
     Sys -->|no, resuming| Push
     Build --> Push["push prompt\n(or pending tool result)"]
 
-    Push --> Call["streamRound()\nOpenAI chat.completions.stream"]
+    Push --> Fit["condense oversized tool results\ncompact if past compactAt"]
+    Fit --> Call["streamRound()\nOpenAI chat.completions.stream\n(too long: compact, retry once)"]
     Call -->|"delta events"| Call
 
     Call --> Empty{"empty round?"}
-    Empty -->|"yes, retries left"| Nudge["push a nudge message"] --> Call
+    Empty -->|"yes, retries left"| Nudge["push a nudge message"] --> Fit
     Empty -->|no| Calls{"tool_calls present?"}
 
     Calls -->|none| Final["final or ask_user\n(trailing '?' backstop)"] --> Done(["return"])
@@ -151,19 +153,49 @@ flowchart TD
     Calls -->|yes| Dispatch{"which tool?"}
     Dispatch -->|"ask_user"| AskEv["yield ask_user\nset pendingAskUserId"] --> Wait(["return — wait for host"])
     Dispatch -->|"run_command"| Risk{"mutates:false and\nread-only allowlist?"}
-    Risk -->|yes| AutoRun["run immediately\nresult → messages"] --> Call
+    Risk -->|yes| AutoRun["run immediately\nresult → messages"] --> Fit
     Risk -->|no| ConfirmEv["yield confirm_command\nset pendingRunCommandId"] --> Wait
-    Dispatch -->|"switch_persona"| Switch["applyPersona()\nrewrite system message\nmaybe swap model"] --> Call
+    Dispatch -->|"switch_persona"| Switch["applyPersona()\nrewrite system message\nmaybe swap model"] --> Fit
     Dispatch -->|"any other tool"| Exec["tool.execute(args, ctx)\nctx: owner, personaId, store"]
-    Exec -->|"text or images"| Result["result → messages\nimages also yielded for vision"] --> Call
+    Exec -->|"text or images"| Result["result → messages\nimages also yielded for vision"] --> Fit
 
     classDef decision fill:#161b22,stroke:#58a6ff,color:#e6edf3
     classDef action fill:#0d1117,stroke:#1f6feb,color:#e6edf3
     classDef stop fill:#161b22,stroke:#3fb950,color:#e6edf3
     class Sys,Empty,Calls,Dispatch,Risk decision
-    class Build,Push,Call,Nudge,AutoRun,Switch,Exec,Result action
+    class Build,Push,Fit,Call,Nudge,AutoRun,Switch,Exec,Result action
     class Final,Done,AskEv,Wait,ConfirmEv stop
 ```
+
+## Long conversations
+
+Before every round, `run()` keeps the request inside the model's context window. `Session.messages` is
+never shortened; only what the model is sent changes (`contextMessages()`).
+
+- **The window** is `Agent.contextWindow`. A host can set it (the cloud does, per model row); otherwise
+  `resolveContextWindow()` finds it from the agent's `models` entry: `context_window` from `models.toml`,
+  else what the server reports (llama.cpp `/props`, Ollama `/api/ps` and `/api/show`, an OpenAI-compatible
+  `/models` entry, Fireworks' model API), else 32,768. It is cached per server and model.
+- **Oversized tool results** (over a quarter of the window) are condensed once by
+  `condenseOversizedResults()`, told which call produced them and what the user asked. The model gets the
+  condensed text (`Session.toolSummaries`, by call id); the tool message keeps the full output.
+- **Compaction**: when a character-count estimate, scaled each round to what the provider actually counted,
+  passes `Agent.compactAt` (0.8 by default) of the window, `compactSession()` summarises everything before a
+  tail that fits a quarter of it. The tail starts at a user turn where it can, never at a tool result.
+  `Session.summary` (`{ text, from }`) is then sent appended to the system prompt, followed by
+  `messages[from..]`, and a `compacted` event is yielded. If the summary call fails, the older part is dropped
+  with a note instead (`dropped: true`).
+- **The summarizer** is `Agent.summarizer` (the `summarize` task's model), else the chat model. Text too big
+  for its window is summarised in parts, then the parts together.
+- **Too long anyway**: when the provider rejects the prompt as too long, the known window is lowered below
+  it (for this process, `lowerContextWindow()`), the session is compacted, and the round is retried once.
+  A second failure surfaces as `NasiModelUnavailable`, like any provider error.
+- **On demand**: `compact(agent, session, focus?)` (and `Nasi.compact(sessionId, focus?)` for a stored
+  session) summarises everything but the latest turn, with `focus` steering what the summary keeps. It
+  backs `/compact` in the terminal, both Telegram bots and `POST /nasi/compact`.
+
+Stores keep every summary and every condensed result beside the conversation; see
+[Database](/development/database).
 
 ## Turn statuses
 

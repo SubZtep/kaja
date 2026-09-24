@@ -10,9 +10,10 @@ export const TaskSchema = z.enum(["chat", "tts", "stt", "embedding", "image-gene
 const ModelEntrySchema = z.object({
   // The name sent to the provider's API, e.g. "accounts/fireworks/models/minimax-m3".
   model: z.string().min(1),
-  task: TaskSchema,
   // Which [providers.*] table holds the credentials.
   provider: z.string().min(1),
+  // What it can be used for; [tasks] picks which model each task actually uses.
+  tasks: z.array(TaskSchema).min(1),
   // Tokens the model can take in; omit it and Kaja asks the server, else assumes 32768.
   context_window: z.number().int().positive().optional()
 })
@@ -20,7 +21,9 @@ const ModelEntrySchema = z.object({
 export const ModelsFileSchema = z
   .object({
     providers: z.record(z.string(), ProviderSchema).default({}),
-    // Keyed by id, expected to equal the task name, e.g. [models.chat] — referenced by persona [models].<task> pins.
+    // The model each task uses, by [models.<id>] id, e.g. chat = "minimax-m3". A task left out is off.
+    tasks: z.partialRecord(TaskSchema, z.string().min(1)).default({}),
+    // Keyed by an id of your choosing (the wizard uses the model name's slug); persona [models].<task> pins name these too.
     models: z.record(z.string(), ModelEntrySchema).default({})
   })
   .superRefine((data, ctx) => {
@@ -33,17 +36,30 @@ export const ModelsFileSchema = z
         })
       }
     }
+    for (const [task, id] of Object.entries(data.tasks)) {
+      const entry = data.models[id]
+      if (!entry) {
+        ctx.addIssue({ code: "custom", path: ["tasks", task], message: `No [models.${id}]` })
+      } else if (!entry.tasks.includes(task as ModelTask)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["tasks", task],
+          message: `[models.${id}] doesn't list "${task}" in its tasks`
+        })
+      }
+    }
   })
 
 export type KajaModelsFile = z.infer<typeof ModelsFileSchema>
 export type ModelTask = z.infer<typeof TaskSchema>
 
-/** A models.toml entry flattened with its provider's credentials. */
+/** A models.toml entry flattened with its provider's credentials, once per task it lists. */
 export type CliResolvedModel = {
-  /** The `[models.<id>]` key, e.g. "fast-chat". Used for persona/active-ref lookups. */
+  /** The `[models.<id>]` key, e.g. "glm-5p3-flash". Used for [tasks], persona pins and lookups. */
   id: string
   /** The provider-facing model name, sent as the API "model" request parameter. */
   model: string
+  /** One of the entry's `tasks`; a model listing several resolves once for each. */
   task: ModelTask
   baseUrl: string
   apiKey?: string

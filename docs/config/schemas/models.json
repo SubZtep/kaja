@@ -21,6 +21,26 @@
         ]
       }
     },
+    "tasks": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "chat",
+          "tts",
+          "stt",
+          "embedding",
+          "image-generation",
+          "rerank",
+          "summarize"
+        ]
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "models": {
       "default": {},
       "type": "object",
@@ -34,21 +54,25 @@
             "type": "string",
             "minLength": 1
           },
-          "task": {
-            "type": "string",
-            "enum": [
-              "chat",
-              "tts",
-              "stt",
-              "embedding",
-              "image-generation",
-              "rerank",
-              "summarize"
-            ]
-          },
           "provider": {
             "type": "string",
             "minLength": 1
+          },
+          "tasks": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "chat",
+                "tts",
+                "stt",
+                "embedding",
+                "image-generation",
+                "rerank",
+                "summarize"
+              ]
+            }
           },
           "context_window": {
             "type": "integer",
@@ -58,8 +82,8 @@
         },
         "required": [
           "model",
-          "task",
-          "provider"
+          "provider",
+          "tasks"
         ]
       }
     }

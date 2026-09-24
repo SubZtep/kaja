@@ -19,7 +19,7 @@ export const SamplingParamsSchema = z.object({
 })
 
 // Each value is a models.toml [models.<id>] entry's id; unset or unresolved
-// falls back to models.toml's [models.<task>] entry (see resolveActiveModel).
+// falls back to the model models.toml's [tasks] names (see resolveActiveModel).
 const PersonaModelsSchema = z
   .object({
     chat: z.string().min(1).optional(),
@@ -37,7 +37,7 @@ export const PersonaSchema = z
   .object({
     label: z.string().min(1),
     instructions: z.string().min(1).optional().describe("System prompt"),
-    // Per-task model overrides; each optional, falls back to models.toml's [models.<task>] entry.
+    // Per-task model overrides; each optional, falls back to the model models.toml's [tasks] names.
     models: PersonaModelsSchema,
     // Topic id (datasets.ts filename) this persona collects via dataset_info; optional.
     dataset: z.string().min(1).optional(),

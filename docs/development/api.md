@@ -23,7 +23,7 @@ always-current list. This page is the map.
 | `/widget/admin/*` | session | list, create, edit and revoke [widget](/widget) keys |
 | `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
 | `/abilities/me/*` | session | the user's own abilities and their write-only API keys |
-| `/nasi/*` | bearer | cloud agent: turns, sessions, and the persona catalog |
+| `/nasi/*` | bearer | cloud agent: turns, compaction, sessions, and the persona catalog |
 | `/stats` | session | the signed-in user's own [usage numbers](#usage-stats--stats) |
 | `/telegram/admin/link` | session | start linking a Telegram account to the cloud bot (`POST`, returns a one-time deep link) |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
@@ -40,6 +40,7 @@ The endpoints the CLI uses in [cloud mode](/modes). All require a bearer token f
 | --- | --- | --- |
 | `POST` | `/nasi/turn` | run one turn, buffered — returns the whole response |
 | `POST` | `/nasi/turn/stream` | the same turn as SSE, with token deltas and a heartbeat |
+| `POST` | `/nasi/compact` | summarise a session now (`/compact`), keeping its latest turn; `compacted` is null when there was nothing to summarise |
 | `GET` | `/nasi/info` | which persona, model, and tools this account resolves to |
 | `GET` | `/nasi/personas` | every persona in the catalog (id and label, `default` first), for pickers like the widget page's |
 | `GET` | `/nasi/sessions` | list this user's conversations |

@@ -44,7 +44,7 @@ flowchart LR
 | `2026-03-03-better-auth.sql` | `user`, `session`, `account`, `verification`, `device_code` |
 | `2026-08-01-config.sql` | `provider`, `model` |
 | `2026-08-31-widget.sql` | `widget` |
-| `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
+| `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_session_summary`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
 | `2026-09-10-telegram-link.sql` | `telegram_link`, `telegram_link_token` |
 | `2026-09-19-ability.sql` | `ability`, `user_ability`, `marketplace_sync` |
 | `2026-09-19-user-secret.sql` | `user_secret` |
@@ -193,9 +193,10 @@ erDiagram
     uuid id PK
     uuid provider_id FK
     text model
-    text_array tasks "chat, tts, stt, embedding, rerank..."
+    text_array tasks "chat, tts, stt, embedding, rerank, summarize..."
     boolean enabled
     boolean free
+    integer context_window "null = ask the provider"
   }
 
   ability {
@@ -289,6 +290,14 @@ erDiagram
     text status "ok, error, declined or skipped"
     integer duration_ms
     text approval "approved or declined"
+    text result_summary "what the model gets instead of an oversized result"
+  }
+
+  nasi_session_summary {
+    uuid session_id PK
+    integer summary_from PK "seq of the first message it doesn't cover"
+    text summary
+    timestamptz created_at
   }
 
   nasi_note {
@@ -331,6 +340,7 @@ erDiagram
   user ||--o{ nasi_dataset_answer : answers
   user ||--o{ nasi_dataset_version : completes
   nasi_session ||--o{ nasi_message : has
+  nasi_session ||--o{ nasi_session_summary : "compacted into"
   nasi_message ||--o{ nasi_tool_call : makes
   nasi_tool_call }o--o| nasi_message : "result is"
   nasi_dataset_answer }o..o| nasi_dataset_version : "topic, owner, version"
@@ -341,14 +351,20 @@ double as its steps, carrying the model, token counts, latency and finish reason
 what the usage stats on the dashboard are computed from. Deleting a message never leaves a dangling result:
 `result_message_id` is set to null instead.
 
+The message log is append-only and never shortened. When a long conversation is
+[compacted](/configuration/config#context), a `nasi_session_summary` row is added and the model is sent the
+latest summary in place of the messages before `summary_from`; every earlier summary stays. A tool result too
+big for the context keeps its full output in its message, and the condensed version the model gets goes in
+`nasi_tool_call.result_summary`.
+
 Datasets have no foreign key between answers and versions: answers are written field by field as the user
 replies, and the `nasi_dataset_version` row appears only when the topic is complete.
 
 ## SQLite
 
 The local file is the second half of the agent state, documented table by table on
-[Local storage](/configuration/storage). It has seven tables: `notes`, `sessions`, `messages`, `tool_calls`,
-`session_events`, `dataset_answers` and `dataset_versions`.
+[Local storage](/configuration/storage). It has eight tables: `notes`, `sessions`, `messages`, `tool_calls`,
+`session_summaries`, `session_events`, `dataset_answers` and `dataset_versions`.
 
 ## Side by side
 
@@ -359,6 +375,7 @@ The local file is the second half of the agent state, documented table by table 
 | Conversation | `nasi_session` | `sessions` |
 | Message (and step) | `nasi_message` | `messages` |
 | Tool call | `nasi_tool_call` | `tool_calls` |
+| Compaction summary | `nasi_session_summary` | `session_summaries` |
 | Memory note | `nasi_note` | `notes` |
 | Dataset answer | `nasi_dataset_answer` | `dataset_answers` |
 | Completed dataset | `nasi_dataset_version` | `dataset_versions` |
@@ -383,7 +400,7 @@ The local file is the second half of the agent state, documented table by table 
 | **Booleans** | `boolean` | `INTEGER` 0/1 |
 | **Column names** | `snake_case` | `camelCase` |
 | **Foreign keys** | always enforced | enforced only because `PRAGMA foreign_keys = ON` is set on each connection |
-| **Schema changes** | SQL migration files, re-run on every deploy | `createSchema()` on every open; older layouts are dropped, not converted |
+| **Schema changes** | SQL migration files, re-run on every deploy | `createSchema()` on every open; a missing column is added in place, older layouts are dropped, not converted |
 | **Deleting your data** | delete the account and the cascade does it | delete the file |
 
 ### Differences that change behaviour

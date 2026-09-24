@@ -28,7 +28,8 @@ locally, your own plugin tools are added on top.
 | `view_image` | look at an image file | ✗ |
 | `run_command` | run a shell command | ✗ |
 
-Locally, `generate_image` needs a `[models.image-generation]` entry in [`models.toml`](/configuration/models).
+Locally, `generate_image` needs an `image-generation` model picked in `[tasks]` of
+[`models.toml`](/configuration/models).
 
 Web search isn't built in: turn on the marketplace's `brave-search` [HTTP tool](/http-tools), which adds
 `web_search`: locally with your own Brave Search API key; in the cloud with the server's key, or yours if
