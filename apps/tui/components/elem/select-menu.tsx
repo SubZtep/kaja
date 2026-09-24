@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink"
 import { useState } from "react"
+import { useKajaTheme } from "../theme"
 
 const VISIBLE_COUNT = 5
 
@@ -18,6 +19,8 @@ export function SelectMenu({
   hints,
   width = 32,
   initialIndex,
+  plain,
+  onFocus,
   onSelect,
   onClose
 }: Readonly<{
@@ -27,6 +30,10 @@ export function SelectMenu({
   width?: number
   /** Option highlighted on open, for menus that re-offer a current value; defaults to the first. */
   initialIndex?: number
+  /** No colours at all, only the marker and bold: for a question asked before the user has picked a theme. */
+  plain?: boolean
+  /** Called as the highlight moves, e.g. to preview the option under it. */
+  onFocus?: (index: number) => void
   onSelect: (index: number) => void
   onClose: () => void
 }>) {
@@ -50,6 +57,7 @@ export function SelectMenu({
     // No wrapping at either end, matching the list this replaces.
     if (next < 0 || next >= items.length) return
     setFocused(next)
+    onFocus?.(next)
     if (next < from) setFrom(next)
     else if (next >= from + VISIBLE_COUNT) setFrom(next - VISIBLE_COUNT + 1)
   }
@@ -64,8 +72,11 @@ export function SelectMenu({
     if (key.return) onSelect(focused)
   })
 
+  const { focus } = useKajaTheme()
+  const focusProps = plain ? { bold: true } : focus()
+
   return (
-    <Box borderStyle="classic" width={width} borderColor="magenta" paddingLeft={1}>
+    <Box borderStyle="classic" width={width} borderColor={plain ? undefined : "magenta"} paddingLeft={1}>
       <Box flexDirection="column">
         {items.slice(from, from + VISIBLE_COUNT).map((item, offset) => {
           const index = from + offset
@@ -82,8 +93,8 @@ export function SelectMenu({
               paddingLeft={isFocused ? 0 : 2}
             >
               <Box gap={1}>
-                {isFocused && <Text color="blue">❯</Text>}
-                <Text color={isFocused ? "blue" : undefined}>{item}</Text>
+                {isFocused && <Text {...focusProps}>❯</Text>}
+                <Text {...(isFocused ? focusProps : {})}>{item}</Text>
               </Box>
               {hint !== undefined && <Text dimColor>{hint}</Text>}
             </Box>

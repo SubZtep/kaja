@@ -7,6 +7,7 @@ import { usePromptHistory } from "../../hooks/use-prompt-history"
 import { useWindowFocus } from "../../hooks/use-window-focus"
 import { t } from "../../lib/i18n"
 import { TextInput } from "../elem/text-input"
+import { useKajaTheme } from "../theme"
 
 /**
  * Outer box max rows (padding/border included). Content lines for the field
@@ -135,10 +136,10 @@ export function UserInput({
 
 function Border({ children, variant = "solid" }: Readonly<{ children: React.ReactNode; variant?: "solid" | "power" }>) {
   const isPower = variant === "power"
+  const { inputBox } = useKajaTheme()
 
   const boxProps: any = {
-    backgroundColor: "#224",
-    borderColor: "magenta",
+    ...inputBox(),
     borderStyle: "classic",
     borderDimColor: true,
     borderLeftDimColor: false,

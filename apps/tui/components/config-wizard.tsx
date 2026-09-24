@@ -1,4 +1,4 @@
-import { MultiSelect, PasswordInput, TextInput } from "@inkjs/ui"
+import { MultiSelect, PasswordInput, TextInput, ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
 import { capitalized, LOCALE_LABELS, locales } from "@kaja/shared"
 import { Box, Static, Text, useInput } from "ink"
@@ -7,7 +7,9 @@ import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
 import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
+import type { Brightness } from "../lib/terminal-background"
 import { SelectMenu } from "./elem/select-menu"
+import { themes, useKajaTheme } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "telegram"
@@ -43,6 +45,8 @@ const CUSTOM = "custom"
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
+  /** Prefilled with the saved theme, else the one detected from the terminal's background. */
+  theme?: Brightness
   /** The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Never empty once asked: local mode can't start without one. */
   providers?: string[]
   custom?: WizardCustom
@@ -70,6 +74,7 @@ export type WizardSaved = {
 type Step =
   | "mode"
   | "language"
+  | "theme"
   | "providers"
   | `key:${string}`
   | `address:${string}`
@@ -101,6 +106,13 @@ const TASK_LABEL_KEY: Record<ModelTask, string> = {
 }
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
+
+const THEME_CHOICES: Brightness[] = ["dark", "light"]
+
+const THEME_LABEL_KEY: Record<Brightness, string> = {
+  dark: "wizard.themeDark",
+  light: "wizard.themeLight"
+}
 
 /** A name reduced to what a TOML table key and a secrets.toml entry can carry; never one the catalog already owns. */
 function customId(name: string): string {
@@ -156,7 +168,7 @@ function contestedTasks(result: WizardResult): ModelTask[] {
 function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   // `--cloud`/`--local` already answered the mode. A prefilled mode does not: that's the current
   // setting being re-offered, which the user is here to change.
-  const steps: Step[] = forcedMode === undefined ? ["language", "mode"] : ["language"]
+  const steps: Step[] = forcedMode === undefined ? ["language", "theme", "mode"] : ["language", "theme"]
   if (result.mode === "cloud") return [...steps, "summary"]
 
   steps.push("providers")
@@ -263,6 +275,7 @@ function lineIf(label: string, value: string | undefined): AnswerLine {
 
 const ANSWER_LINES: Record<string, AnswerLineFn> = {
   language: (_, result) => lineIf(t("wizard.summaryLanguage"), result.language && LOCALE_LABELS[result.language]),
+  theme: (_, result) => lineIf(t("wizard.summaryTheme"), result.theme && t(THEME_LABEL_KEY[result.theme])),
   mode: (_, result) =>
     lineIf(
       t("wizard.summaryMode"),
@@ -325,6 +338,20 @@ function AnswerRow({ label, value }: Readonly<Pick<Answer, "label" | "value">>) 
   )
 }
 
+/** A few lines drawn in the highlighted theme's colours, so the choice is made by looking rather than guessing. */
+function ThemePreview() {
+  const { inputBox, userText, muted } = useKajaTheme()
+  return (
+    <Box flexDirection="column" width={70}>
+      <Text {...userText()}>{`> ${t("wizard.themePreviewUser")}`}</Text>
+      <Text {...muted()}>{t("wizard.themePreviewMuted")}</Text>
+      <Box {...inputBox()} borderStyle="classic" paddingLeft={1}>
+        <Text>{t("wizard.themePreviewInput")}</Text>
+      </Box>
+    </Box>
+  )
+}
+
 /** The last screen. The answers are already on screen above, so this only says what to do next. */
 function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
   return (
@@ -366,6 +393,8 @@ export function ConfigWizard({
   const [answered, setAnswered] = useState<Answer[]>([])
   // Set when Enter was pressed on the providers checklist with nothing ticked.
   const [noProvider, setNoProvider] = useState(false)
+  // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
+  const [preview, setPreview] = useState<Brightness>(initial.theme ?? "dark")
 
   useInput((_input, key) => {
     if (step === "summary" && key.return) onDone(result)
@@ -554,6 +583,8 @@ export function ConfigWizard({
               items={locales.map(locale => LOCALE_LABELS[locale])}
               // The code beside the native name, so a language you can't read is still identifiable.
               hints={[...locales]}
+              // Asked before the theme, so no colour at all: it has to read on any background
+              plain
               initialIndex={result.language ? locales.indexOf(result.language) : undefined}
               onSelect={index => {
                 const language = locales[index]!
@@ -564,6 +595,24 @@ export function ConfigWizard({
               }}
               onClose={onCancel}
             />
+          </Box>
+        )
+      }
+
+      case "theme": {
+        return (
+          <Box flexDirection="column" gap={1}>
+            <Text>{t("wizard.themeTitle")}</Text>
+            <SelectMenu
+              items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
+              width={70}
+              initialIndex={THEME_CHOICES.indexOf(result.theme ?? "dark")}
+              onFocus={index => setPreview(THEME_CHOICES[index]!)}
+              onSelect={index => advance({ theme: THEME_CHOICES[index] })}
+              onClose={onCancel}
+            />
+            <ThemePreview />
+            <Text dimColor>{t("wizard.themeHint")}</Text>
           </Box>
         )
       }
@@ -633,14 +682,16 @@ export function ConfigWizard({
   }
 
   return (
-    <Box flexDirection="column">
-      <Static items={answered}>
-        {answer => <AnswerRow key={answer.id} label={answer.label} value={answer.value} />}
-      </Static>
-      {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
-      <Box key={step} marginTop={1} flexDirection="column">
-        {stepView()}
+    <ThemeProvider theme={themes[preview]}>
+      <Box flexDirection="column">
+        <Static items={answered}>
+          {answer => <AnswerRow key={answer.id} label={answer.label} value={answer.value} />}
+        </Static>
+        {/* Keyed by step: two questions of one kind in a row (two addresses, two keys) must not share an input's state. */}
+        <Box key={step} marginTop={1} flexDirection="column">
+          {stepView()}
+        </Box>
       </Box>
-    </Box>
+    </ThemeProvider>
   )
 }

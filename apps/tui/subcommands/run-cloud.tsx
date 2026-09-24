@@ -12,6 +12,7 @@ import { getApiBaseUrl } from "../lib/config/api-url"
 import { config } from "../lib/config/config"
 import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
+import { resolveTheme } from "../lib/terminal-background"
 
 /** Reset terminal colours */
 const ANSI_RESET = "\x1b[0m"
@@ -68,9 +69,11 @@ export async function runCloudSubcommand() {
     const { preferences } = await config()
     // Scopes read_file/list_files (run client-side when the server hands them back via a client_tool_call pause) to the same directory local mode defaults to.
     setToolDeps({ workspaceRoot: process.cwd() })
+    // Before render: "auto" queries the terminal over stdin, which Ink is about to take over
+    const theme = await resolveTheme(preferences?.theme)
 
     const { waitUntilExit } = render(
-      <App mode="cloud" initialPreferences={preferences} apiUrl={apiUrl} token={token} />,
+      <App mode="cloud" initialPreferences={{ ...preferences, theme }} apiUrl={apiUrl} token={token} />,
       {
         alternateScreen: true,
         kittyKeyboard: {

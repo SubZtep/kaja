@@ -48,6 +48,7 @@ async function openProviders(props: Partial<Parameters<typeof ConfigWizard>[0]> 
   const w = renderWizard({ mode: "local", ...props })
   await w.t.tick()
   await w.t.press(ENTER) // language: English
+  await w.t.press(ENTER) // theme: keep the highlighted one
   return w
 }
 
@@ -73,6 +74,7 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   expect(w.t.lastFrame()).toContain("nan-TW")
 
   await w.t.press(ENTER) // keep English
+  await w.t.press(ENTER) // theme: keep the highlighted one
   expect(w.t.lastFrame()).toContain("Kaja Cloud")
 
   // Cloud needs no provider or key, so Enter here lands straight on the last screen.
@@ -86,10 +88,28 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   await close(w)
 })
 
+test("the theme step follows the language, opens on the detected theme and is carried out", async () => {
+  const w = renderWizard({ prefill: { theme: "light" } })
+  await w.t.tick()
+  await w.t.press(ENTER) // language: English
+  expect(w.t.lastFrame()).toContain("Which colours read best in this terminal?")
+  expect(w.t.lastFrame()).toContain("❯ Light background")
+
+  // A sample drawn in the highlighted theme sits under the menu
+  expect(w.t.lastFrame()).toContain("Type your message here")
+  await w.t.press(ENTER)
+  await w.t.press(ENTER) // mode: cloud
+  await w.t.press(ENTER) // last screen
+  expect(w.result?.theme).toBe("light")
+
+  await close(w)
+})
+
 test("choosing your own provider leads to the providers checklist", async () => {
   const w = renderWizard()
   await w.t.tick()
   await w.t.press(ENTER) // language: keep English
+  await w.t.press(ENTER) // theme: keep the highlighted one
 
   await w.t.press(DOWN) // "Your own provider"
   await w.t.press(ENTER)
@@ -107,6 +127,7 @@ test("a forced mode skips the mode step, but never the language one", async () =
 
   // Straight past the mode question — `--local` already answered it.
   await w.t.press(ENTER)
+  await w.t.press(ENTER) // theme
   expect(w.t.lastFrame()).toContain("Which model providers can you use?")
   expect(w.t.lastFrame()).not.toContain("Kaja Cloud")
 
@@ -281,6 +302,7 @@ test("local setups are asked about extras, cloud ones are not", async () => {
   const cloud = renderWizard({ mode: "cloud" })
   await cloud.t.tick()
   await cloud.t.press(ENTER) // language: English
+  await cloud.t.press(ENTER) // theme: keep the highlighted one
   expect(cloud.t.lastFrame()).toContain("Setup complete")
 
   await cloud.t.press(ENTER)
@@ -326,6 +348,7 @@ test("each step opens on the prefilled value", async () => {
   const w = renderWizard({ prefill: { ...prefill, providers: ["llama"] } })
   await w.t.tick()
   await w.t.press(ENTER) // language: keeps English
+  await w.t.press(ENTER) // theme: keep the highlighted one
   // Mode opens on "Your own provider", so Enter keeps it rather than switching to cloud.
   await w.t.press(ENTER)
   // llama.cpp is already ticked, so Enter keeps it instead of leaving nothing.
@@ -348,6 +371,7 @@ test("a model question opens on the provider already in use", async () => {
   })
   await w.t.tick()
   await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // theme: keep the highlighted one
   await w.t.press(ENTER) // providers: both still ticked
   await w.t.press(ENTER) // Fireworks key: skipped
   await w.t.press(ENTER) // Ollama address: default
@@ -387,6 +411,7 @@ test("picking a language switches the rest of the wizard into it", async () => {
   await w.t.tick()
   await w.t.press(DOWN) // Magyar
   await w.t.press(ENTER)
+  await w.t.press(ENTER) // theme
   expect(w.t.lastFrame()).toContain("Hogyan szeretnéd futtatni?")
 
   await close(w)
@@ -540,6 +565,7 @@ test("a custom provider already in models.toml opens on its answers, and Enter k
   const w = renderWizard({ mode: "local", prefill: { providers: ["custom"], custom } })
   await w.t.tick()
   await w.t.press(ENTER) // language
+  await w.t.press(ENTER) // theme: keep the highlighted one
   await w.t.press(ENTER) // providers: custom still ticked
   await w.t.press(ENTER) // name: kept
   expect(w.t.lastFrame()).toContain("http://box:8000/v1")

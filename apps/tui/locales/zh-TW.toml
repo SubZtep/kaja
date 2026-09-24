@@ -38,7 +38,8 @@ Kaja 命令列工具 • v{version} • https://kaja.io
   $ kaja [選項] [指令]
 
 指令
-  config <fetch|paths> 管理設定檔
+  config <wizard|fetch|diff|paths>
+                       以互動方式設定，或管理設定檔
   doctor               列出已設定的模型、MCP 伺服器與工具，並檢查連線
   telegram
   abilities [update]   選擇要載入的技能，或下載市集內容
@@ -82,6 +83,13 @@ modeLocal = "自己的供應商 — 使用你自己的 LLM"
 modeCloudShort = "Kaja Cloud"
 modeLocalShort = "自己的供應商"
 languageTitle = "選擇語言"
+themeTitle = "哪種配色在此終端機上最容易閱讀？"
+themeDark = "深色背景"
+themeLight = "淺色背景"
+themeHint = "↑/↓ 預覽各個，Enter 選取。稍後可在 settings.toml 用 theme 修改。"
+themePreviewUser = "今天天氣如何？"
+themePreviewMuted = "模型名稱與其他較淡出的詳細資訊"
+themePreviewInput = "在此輸入你的訊息"
 providerTitle = "你可以使用哪些模型供應商？（空白鍵切換，Enter 繼續）"
 providerFireworks = "Fireworks（雲端，需要 API 金鑰）"
 providerOllama = "Ollama（本機，在這台電腦上執行）"
@@ -138,6 +146,7 @@ pullFailed = "無法下載 {model}：{error}"
 summaryTitle = "設定完成"
 summaryMode = "模式"
 summaryLanguage = "語言"
+summaryTheme = "配色"
 summaryProvider = "供應商"
 summaryAddress = "{provider} 伺服器"
 summaryModel = "{task} 模型"

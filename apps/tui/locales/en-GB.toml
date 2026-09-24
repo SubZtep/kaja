@@ -38,7 +38,8 @@ USAGE
   $ kaja [OPTIONS] [COMMAND]
 
 COMMANDS
-  config <fetch|paths> Manage config files
+  config <wizard|fetch|diff|paths>
+                       Set up interactively, or manage config files
   doctor               Print configured models, MCP servers and tools, and check connections
   telegram
   abilities [update]   Pick which skills load, or fetch the marketplace
@@ -82,6 +83,13 @@ modeLocal = "Your own provider — run against your own LLM"
 modeCloudShort = "Kaja Cloud"
 modeLocalShort = "Your own provider"
 languageTitle = "Choose your language"
+themeTitle = "Which colours read best in this terminal?"
+themeDark = "Dark background"
+themeLight = "Light background"
+themeHint = "↑/↓ previews each one, Enter picks it. Change it later with theme in settings.toml."
+themePreviewUser = "What's the weather like today?"
+themePreviewMuted = "Model name and other quieter details"
+themePreviewInput = "Type your message here"
 providerTitle = "Which model providers can you use? (space toggles, Enter continues)"
 providerFireworks = "Fireworks (cloud, needs an API key)"
 providerOllama = "Ollama (local, runs on this machine)"
@@ -138,6 +146,7 @@ pullFailed = "{model} could not be downloaded: {error}"
 summaryTitle = "Setup complete"
 summaryMode = "Mode"
 summaryLanguage = "Language"
+summaryTheme = "Colours"
 summaryProvider = "Providers"
 summaryAddress = "{provider} server"
 summaryModel = "{task} model"

@@ -36,7 +36,11 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
     else await create()
   }
 
-  await savePreferences({ mode, ...(result.language ? { locale: result.language } : {}) })
+  await savePreferences({
+    mode,
+    ...(result.language ? { locale: result.language } : {}),
+    ...(result.theme ? { theme: result.theme } : {})
+  })
   if (mode === "cloud") {
     if (result.language) {
       const { saveAccountLocale } = await import("../auth/account-locale")
@@ -277,10 +281,13 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
 /** Every step's current value, so a re-run over a working setup opens on what is already there. */
 async function readPrefill(): Promise<WizardResult> {
   const config = await readConfigLoose()
+  const { resolveTheme } = await import("../terminal-background")
 
   return {
     mode: config.preferences?.mode,
     language: config.preferences?.locale,
+    // A saved dark/light as is; otherwise the terminal is asked, which reads stdin, so this has to finish before the wizard renders
+    theme: await resolveTheme(config.preferences?.theme),
     ...(await currentModels())
   }
 }

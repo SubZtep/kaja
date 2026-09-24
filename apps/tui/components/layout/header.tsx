@@ -3,6 +3,7 @@ import { titleCase } from "@kaja/shared"
 import { Box, Text, type TextProps } from "ink"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
+import { useKajaTheme } from "../theme"
 import { MonsterMate } from "./monster"
 
 const customTheme = extendTheme(defaultTheme, {
@@ -45,6 +46,7 @@ export function Header({
 }>) {
   const tokensSuffix = promptTokens != null ? ` · ${promptTokens.toLocaleString()} tokens` : ""
   const spinnerType = useRandomSpinner(!!currentTool, "block")
+  const { muted } = useKajaTheme()
 
   return (
     <Box width={width} flexShrink={0} justifyContent="space-between" paddingX={1} gap={1}>
@@ -64,7 +66,7 @@ export function Header({
         </Box>
       ) : (
         <Box flexShrink={0} flexGrow={0}>
-          <Text color="gray">
+          <Text {...muted()}>
             {titleCase(model)}
             {provider ? <Text dimColor> {titleCase(provider)}</Text> : null}
             {tokensSuffix}
