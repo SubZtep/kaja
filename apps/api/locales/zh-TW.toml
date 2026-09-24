@@ -1,0 +1,11 @@
+[email]
+greeting = "嘿{name} 👋"
+verificationSubject = "[kaja.io] 驗證你的電子郵件"
+verificationText = "點擊以下連結驗證你的電子郵件："
+verificationLink = "驗證電子郵件"
+resetPasswordSubject = "[kaja.io] 重設你的密碼"
+resetPasswordText = "點擊以下連結重設你的密碼："
+resetPasswordLink = "重設密碼"
+changeEmailSubject = "[kaja.io] 更改你的電子郵件"
+changeEmailText = "點擊以下連結批准將你的電子郵件從 {oldEmail} 更改為 {newEmail}："
+changeEmailLink = "更改電子郵件"

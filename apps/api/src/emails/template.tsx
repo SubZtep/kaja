@@ -1,10 +1,13 @@
+import type { Locale } from "@kaja/shared"
 import { Body, Container, Font, Head, Html } from "@react-email/components"
 import type { User } from "better-auth"
+import type { Translate } from "../core/i18n"
 
 export type EmailType = "verification" | "changeEmail" | "resetPassword"
 
 export interface EmailPayload {
-  user: User
+  /** Better Auth hands over the stored user, so it carries the saved `locale` too. */
+  user: User & { locale?: string | null }
   url: string
   [key: string]: string | number | boolean | User | Record<string, unknown>
 }
@@ -18,9 +21,15 @@ export type SendEmailArgs =
   | { type: "verification"; payload: EmailPayload }
   | { type: "resetPassword"; payload: EmailPayload }
 
-export function EmailContainer({ children }: Readonly<{ children: React.ReactNode }>) {
+/** What every template renders with: the user's language and its strings. */
+export type EmailLanguage = {
+  locale: Locale
+  t: Translate
+}
+
+export function EmailContainer({ locale, children }: Readonly<{ locale: Locale; children: React.ReactNode }>) {
   return (
-    <Html lang="en">
+    <Html lang={locale}>
       <Head>
         <Font fontFamily="Trebuchet MS" fallbackFontFamily="Verdana" />
         <style>

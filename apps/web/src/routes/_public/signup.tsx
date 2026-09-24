@@ -9,6 +9,7 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { useAppForm } from "../../lib/form"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
+import { getLocale } from "../../paraglide/runtime.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 import { PRIVACY_URL, TERMS_URL } from "./-components/footer"
@@ -53,8 +54,8 @@ function SignUp() {
 
       try {
         setLoading(true)
-        // The API refuses a sign-up without `consent`; Better Auth's client types don't know the extra body field.
-        const body = { ...parsed.data, consent: true }
+        // The API refuses a sign-up without `consent`; Better Auth's client types don't know the extra body field. The locale is saved now so the verification email is already in it.
+        const body = { ...parsed.data, consent: true, locale: getLocale() }
         const { error, data } = await signUp.email(body)
 
         if (error) toast.error(error.message ?? error.statusText)

@@ -1,6 +1,6 @@
 ---
 name: translate
-description: Propagates a changed or added translation to every other language. Use after editing an en-GB locale file (TUI toml or web json); pass the key(s), old text and new text.
+description: Propagates a changed or added translation to every other language. Use after editing an en-GB locale file (TUI or API toml, web json); pass the key(s), old text and new text.
 model: haiku
 tools: Read, Edit, Grep, Glob
 ---
@@ -11,6 +11,7 @@ Locale files, discovered with Glob (never assume a fixed language list; every fi
 
 - TUI: `apps/tui/locales/*.toml` (sections and keys mirror en-GB)
 - Web: `apps/web/messages/*.json` (flat keys)
+- API: `apps/api/locales/*.toml` (emails and the Telegram bot; sections and keys mirror en-GB)
 
 Language notes for known locales (others: infer the language from the code and from the existing strings): hu-HU is Hungarian, nan-TW is Taiwanese Hokkien in Han-ji as the existing file writes it, zh-TW is Traditional Chinese (Taiwan).
 

@@ -1,0 +1,11 @@
+[email]
+greeting = "Halló{name} 👋"
+verificationSubject = "[kaja.io] Erősítsd meg az e-mail címedet"
+verificationText = "Az e-mail cím megerősítéséhez kattints a linkre:"
+verificationLink = "E-mail megerősítése"
+resetPasswordSubject = "[kaja.io] Jelszó visszaállítása"
+resetPasswordText = "Jelszavad visszaállításához kattints a linkre:"
+resetPasswordLink = "Jelszó visszaállítása"
+changeEmailSubject = "[kaja.io] E-mail cím módosítása"
+changeEmailText = "Az e-mail cím módosítása ({oldEmail} → {newEmail}) jóváhagyásához kattints a linkre:"
+changeEmailLink = "E-mail módosítása"
