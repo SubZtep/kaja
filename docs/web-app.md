@@ -35,7 +35,7 @@ What the Abilities page can offer, and how keys are kept, is on
 [Abilities in the cloud](/abilities#in-the-cloud). A change there reaches a conversation that's already
 going from its next message.
 
-Admins also get an **Admin** menu for users and the model catalogue, and a **Sync now** button for the
+Admins also get an **Admin** menu for users and the model catalog, and a **Sync now** button for the
 marketplace on the Abilities page.
 
 ---

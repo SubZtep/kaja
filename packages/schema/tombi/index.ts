@@ -4,6 +4,7 @@ import { HttpToolAbilitySchema } from "../abilities/http-tool"
 import { McpAbilitySchema } from "../abilities/mcp"
 import { PersonaSchema } from "../abilities/persona"
 import { AbilitiesFileSchema } from "../config/abilities"
+import { CatalogFileSchema } from "../config/catalog"
 import { McpFileSchema } from "../config/mcp"
 import { ModelsFileSchema } from "../config/models"
 import { SecretsFileSchema } from "../config/secrets"
@@ -22,6 +23,7 @@ export const tombiSchemas = {
   "settings.json": z.toJSONSchema(KajaConfigSchema, { io: "input" }),
   "secrets.json": z.toJSONSchema(SecretsFileSchema, { io: "input" }),
   "models.json": z.toJSONSchema(ModelsFileSchema, { io: "input" }),
+  "catalog.json": z.toJSONSchema(CatalogFileSchema, { io: "input" }),
   "mcp.json": z.toJSONSchema(McpFileSchema, { io: "input" }),
   "abilities.json": z.toJSONSchema(AbilitiesFileSchema, { io: "input" }),
   "persona.json": z.toJSONSchema(PersonaSchema, { io: "input" }),

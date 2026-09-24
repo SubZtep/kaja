@@ -58,7 +58,7 @@ just that one. Nothing is tested while you answer.
 | A provider's API key | `[providers.<name>] api_key` | `secrets.toml` |
 | Telegram bot token | `[telegram] botToken` | `secrets.toml` |
 
-The provider catalogue is built into the binary, so a first run needs no network. Re-running the
+The provider catalog is built into the binary, so a first run needs no network. Re-running the
 wizard rewrites `models.toml` from your answers, so keep hand-edits in a copy.
 
 ## After the last question

@@ -88,7 +88,7 @@ shows Approve/Decline buttons. The server runs the exact call it saved, so a cli
 or no. Writing a message instead of answering skips the call.
 
 **Widgets** get skills only, chosen per widget key, so a site's visitors never make a call with your
-keys. Every persona in the catalogue is available to them.
+keys. Every persona in the catalog is available to them.
 
 The `default` persona is always on, and datasets come with the personas that use them, so neither is
 listed.

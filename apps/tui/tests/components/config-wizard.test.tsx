@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { ConfigWizard, type WizardResult } from "../../components/config-wizard"
 import { setLanguage } from "../../lib/i18n"
+import { CATALOG } from "../../lib/models/catalog"
 import { renderForTest } from "../test-utils"
 
 const DOWN = "\x1b[B"
@@ -9,10 +10,11 @@ const ENTER = "\r"
 const SPACE = " "
 
 // The providers in the order the checklist shows them.
-const FIREWORKS = 0
-const OLLAMA = 2
-const SPEACHES = 4
-const CUSTOM = 5
+const at = (id: string) => CATALOG.findIndex(provider => provider.id === id)
+const FIREWORKS = at("fireworks")
+const OLLAMA = at("ollama")
+const SPEACHES = at("speaches")
+const CUSTOM = CATALOG.length
 
 function renderWizard(props: Partial<Parameters<typeof ConfigWizard>[0]> = {}) {
   let result: WizardResult | undefined
@@ -194,7 +196,7 @@ test("a task two ticked providers can serve asks which one to use, and only that
   // Both serve chat and embedding; only Fireworks serves reranking, so that is never asked.
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
   expect(w.t.lastFrame()).toContain("Fireworks — accounts/fireworks/models/minimax-m3")
-  expect(w.t.lastFrame()).toContain("Ollama — llama3.2:1b")
+  expect(w.t.lastFrame()).toContain("Ollama — qwen3.5:4b")
 
   await w.t.press(DOWN) // Ollama
   await w.t.press(ENTER)
@@ -206,7 +208,7 @@ test("a task two ticked providers can serve asks which one to use, and only that
   await w.t.press(ENTER) // last screen
   expect(w.result?.models).toEqual({ chat: "ollama", embedding: "fireworks" })
   const trail = w.t.output()
-  expect(trail).toContain("✓ Chat model: Ollama (llama3.2:1b)")
+  expect(trail).toContain("✓ Chat model: Ollama (qwen3.5:4b)")
   expect(trail).not.toContain("Reranking model")
 
   await close(w)
@@ -516,7 +518,7 @@ test("a custom model that overlaps a built-in provider joins the model question"
 
   // Ollama and the custom provider both serve chat, so the user is asked which one Kaja should use.
   expect(w.t.lastFrame()).toContain("Which chat model should Kaja use?")
-  expect(w.t.lastFrame()).toContain("Ollama — llama3.2:1b")
+  expect(w.t.lastFrame()).toContain("Ollama — qwen3.5:4b")
   expect(w.t.lastFrame()).toContain("vllm — big-chat")
   await w.t.press(DOWN)
   await w.t.press(ENTER)

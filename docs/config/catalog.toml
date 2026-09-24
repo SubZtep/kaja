@@ -1,0 +1,78 @@
+# Kaja's model catalog: the one source of model defaults.
+# - The setup wizard (`kaja config wizard`) writes models.toml from the providers the user ticks here.
+# - `bun generate:models` writes the docs/config/models.*.toml examples from [[examples]]; never edit those by hand.
+# - models.default.toml is what `kaja config fetch --offline` writes; the cloud seed loads its hosted providers.
+# The order of [[providers]] matters: when more than one ticked provider serves a task, the one listed first here
+# is the default, both as the wizard's preselected answer and in the examples (unless an example sets `pick`).
+# kind: "hosted" providers are asked for an API key, "self-hosted" ones (a server you run) for their address.
+
+[[providers]]
+id = "fireworks"
+name = "Fireworks"
+kind = "hosted"
+base_url = "https://api.fireworks.ai/inference/v1"
+models = [
+  { task = "chat", model = "accounts/fireworks/models/minimax-m3" },
+  { task = "embedding", model = "accounts/fireworks/models/qwen3-embedding-8b" },
+  { task = "rerank", model = "accounts/fireworks/models/qwen3-reranker-8b" },
+]
+
+[[providers]]
+id = "ollama"
+name = "Ollama"
+kind = "self-hosted"
+base_url = "http://localhost:11434/v1"
+comment = [
+  'Ollama requires an API key but ignores its value, e.g. [providers.ollama] api_key = "ollama" in secrets.toml.',
+]
+models = [
+  { task = "chat", model = "qwen3.5:4b" },
+  { task = "embedding", model = "qwen3-embedding:0.6b" },
+]
+
+[[providers]]
+id = "llama"
+name = "llama.cpp"
+kind = "self-hosted"
+base_url = "http://localhost:8080/v1"
+comment = ["llama.cpp's server doesn't need an API key."]
+models = [{ task = "chat", model = "mistralai/Ministral-3-3B-Reasoning-2512-GGUF:Q4_K_M" }]
+
+[[providers]]
+id = "xai"
+name = "xAI"
+kind = "hosted"
+base_url = "https://api.x.ai/v1"
+models = [
+  { task = "chat", model = "grok-4.3" },
+  { task = "image-generation", model = "grok-imagine-image" },
+]
+
+# Speaches serves both directions, so ticking it sets up voice in and out together.
+[[providers]]
+id = "speaches"
+name = "Speaches"
+kind = "self-hosted"
+base_url = "http://localhost:8000"
+note = "local server, no key needed"
+models = [
+  { task = "tts", model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16" },
+  { task = "stt", model = "Systran/faster-whisper-small" },
+]
+
+# The example files in docs/config, each showing one model per task for a mix of providers.
+[[examples]]
+file = "models.default.toml"
+providers = ["fireworks", "xai", "speaches"]
+
+[[examples]]
+file = "models.ollama.toml"
+providers = ["ollama"]
+
+[[examples]]
+file = "models.llama.toml"
+providers = ["llama"]
+
+[[examples]]
+file = "models.xai.toml"
+providers = ["xai"]

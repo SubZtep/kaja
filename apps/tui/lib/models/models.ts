@@ -2,8 +2,8 @@ import { join } from "node:path"
 import type { PersonaModels } from "@kaja/schema/cli"
 import { type CliResolvedModel, type KajaModelsFile, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
-// Written on first run: an example provider/model catalog, sourced from the same file that documents models.toml on the docs site.
-import TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
+// What `kaja config fetch --offline` writes: the default example generated from docs/config/catalog.toml.
+import TEMPLATE from "../../../../docs/config/models.default.toml" with { type: "text" }
 import { getConfigDir } from "../config/config"
 import { writeTemplateConfig } from "../config/fetch"
 import { secrets } from "../config/secrets"
@@ -84,7 +84,7 @@ export async function saveModelFields(task: string, provider: string, model: str
   if (next !== text) await write(f, next)
 }
 
-/** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/models.fireworks.toml template, backing up any existing (differing) file first. */
+/** The `kaja config fetch` subcommand: (re-)writes the bundled docs/config/models.default.toml template, backing up any existing (differing) file first. */
 export async function fetchModelsToml(): Promise<{ path: string; backedUpTo?: string; unchanged?: boolean }> {
   return writeTemplateConfig(TEMPLATE, getModelsPath())
 }

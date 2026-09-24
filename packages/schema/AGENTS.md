@@ -10,7 +10,7 @@ api/         # API contracts: shared by API, web, and CLI device auth
   auth.ts      # auth-related payloads
   model.ts       # provider/model admin CRUD schemas
   widget-key.ts    # widget key admin CRUD schemas
-config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml, abilities.toml)
+config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml, abilities.toml), plus docs/config/catalog.toml (the model catalog)
 store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaja/nasi
 cli/         # Datasets (re-exports abilities/persona.ts)
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)

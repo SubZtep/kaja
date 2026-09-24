@@ -48,7 +48,7 @@ bug report.
 | `kaja config fetch` | rewrite `models.toml` and `secrets.toml` from the defaults, backing up any file that differs |
 | `kaja doctor` | test every key, model and tool — see below |
 
-`kaja config fetch` takes `models.toml` from the Kaja server's admin-managed catalogue, or from the
+`kaja config fetch` takes `models.toml` from the Kaja server's admin-managed catalog, or from the
 templates bundled in the binary when you're offline or pass `--offline`. `secrets.toml` always comes
 from the bundled template, with every section commented out, so your keys stay only in the `.bak`
 copy. `--only models` or `--only secrets` limits it to one file. It never touches `settings.toml`,

@@ -16,7 +16,7 @@ provider's `api_key` lives in [`secrets.toml`](/configuration/secrets) under the
 base_url = "http://localhost:11434/v1"
 
 [models.chat]
-model = "llama3.2:1b"
+model = "qwen3.5:4b"
 task = "chat"
 provider = "ollama"
 ```
@@ -45,14 +45,18 @@ api_key = "ollama"
 
 ## Examples
 
-Three example files live in [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config).
-The setup wizard writes `models.toml` from the same provider catalogue, in the combination you tick.
+Four example files live in [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config).
+They are generated from
+[`catalog.toml`](https://github.com/SubZtep/kaja/blob/main/docs/config/catalog.toml), the same provider
+catalog the setup wizard writes `models.toml` from, in the combination you tick. Each example shows one
+model per task; the wizard also keeps the models it didn't pick for a task as `[models.<provider>-<task>]`.
 
 | File | Providers | Tasks |
 | --- | --- | --- |
-| `models.ollama.toml` | Ollama | chat, embedding — fully local |
-| `models.fireworks.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts |
-| `models.llama.toml` | llama.cpp, xAI | chat against a local `llama-server` |
+| `models.ollama.toml` | Ollama | chat (`qwen3.5:4b`), embedding — fully local |
+| `models.default.toml` | Fireworks, xAI, Speaches | chat, embedding, rerank, image-generation, tts, stt — what `kaja config fetch --offline` writes |
+| `models.llama.toml` | llama.cpp | chat against a local `llama-server` |
+| `models.xai.toml` | xAI | chat (`grok-4.3`), image-generation — one hosted key |
 
 ---
 

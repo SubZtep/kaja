@@ -1,11 +1,16 @@
 #!/usr/bin/env bun
-// Idempotent upsert of docs/config/models.fireworks.toml into Postgres —
+// Idempotent upsert of docs/config/models.default.toml (generated from docs/config/catalog.toml) into Postgres —
 // the admin-managed model defaults the cloud API and `kaja config fetch` serve from the DB.
+// Only each task's default ([models.<task>]) is seeded: they are marked free, and free models' credentials are
+// handed out publicly, so an alternative ([models.<provider>-<task>]), should the file ever gain one, is left for an admin to add.
+// Self-hosted providers (the catalog's kind, e.g. Speaches on localhost) are skipped: the server can't reach a user's own machine.
 // ON CONFLICT DO NOTHING so admin edits made after the first run always survive a re-run.
 // Called by apps/api/migrate.ts after the SQL files, so a deploy seeds a fresh database.
+import { CatalogFileSchema } from "@kaja/schema/config"
 import { TOML } from "bun"
 import { Pool } from "pg"
-import MODELS_TEMPLATE from "../../../docs/config/models.fireworks.toml" with { type: "text" }
+import CATALOG_TOML from "../../../docs/config/catalog.toml" with { type: "text" }
+import MODELS_TEMPLATE from "../../../docs/config/models.default.toml" with { type: "text" }
 
 /** Minimal surface both `pg`'s Pool and Client satisfy, so migrate.ts can reuse its own connection. */
 type Queryable = { query: (sql: string, values?: unknown[]) => Promise<{ rows: any[]; rowCount: number | null }> }
@@ -16,8 +21,19 @@ async function seedModels(db: Queryable) {
     models: Record<string, { model: string; task: string; provider: string }>
   }
 
+  const selfHosted = new Set(
+    CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
+      .providers.filter(provider => provider.kind === "self-hosted")
+      .map(provider => provider.id)
+  )
+  const defaults = Object.entries(data.models)
+    .filter(([id, entry]) => id === entry.task && !selfHosted.has(entry.provider))
+    .map(([, entry]) => entry)
+  const used = new Set(defaults.map(entry => entry.provider))
+
   const providerIds: Record<string, string> = {}
   for (const [name, provider] of Object.entries(data.providers)) {
+    if (!used.has(name)) continue
     const result = await db.query(
       `
       INSERT INTO provider (name, base_url)
@@ -31,7 +47,7 @@ async function seedModels(db: Queryable) {
   }
 
   let count = 0
-  for (const entry of Object.values(data.models)) {
+  for (const entry of defaults) {
     const providerId = providerIds[entry.provider]
     if (!providerId) continue
     const existing = await db.query(`SELECT id FROM model WHERE provider_id = $1 AND model = $2`, [
@@ -48,7 +64,7 @@ async function seedModels(db: Queryable) {
     )
     count++
   }
-  console.log(`Seeded ${Object.keys(data.providers).length} providers, ${count} models`)
+  console.log(`Seeded ${used.size} providers, ${count} models`)
 }
 
 /** Seeds the admin-managed defaults onto an existing connection. Safe to re-run — every insert is a no-op once the row exists. */

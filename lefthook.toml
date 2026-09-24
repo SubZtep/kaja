@@ -20,6 +20,10 @@ run = "bun generate:env && git add apps/api/.env.example apps/web/.env.example"
 glob = ["packages/schema/env/*.ts", "**/.env.example", "compose.yaml", "disco.*.json"]
 
 [[pre-commit.jobs.group.jobs]]
+run = "bun generate:models && git add docs/config/models.*.toml"
+glob = ["docs/config/catalog.toml", "apps/tui/lib/models/catalog.ts", "docs/config/models.*.toml"]
+
+[[pre-commit.jobs.group.jobs]]
 run = "bun generate:env-types && git add apps/api/src/env.d.ts apps/web/src/env.d.ts apps/tui/env.d.ts"
 glob = ["packages/schema/env/*.ts"]
 

@@ -243,7 +243,7 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
     const addresses: Record<string, string> = {}
     for (const provider of known) {
       const url = data.providers[provider.id].base_url
-      if (provider.kind === "local" && typeof url === "string") addresses[provider.id] = url
+      if (provider.kind === "self-hosted" && typeof url === "string") addresses[provider.id] = url
     }
 
     // A provider the catalog doesn't know is the user's own; the wizard can carry one, so a re-run keeps it.

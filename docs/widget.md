@@ -69,7 +69,7 @@ other's, and none of it mixes into your own.
 
 A widget turn runs in [cloud mode](/modes#cloud-mode) with the cloud [built-in tools](/tools#built-ins),
 but no HTTP tools or MCP servers: a key's abilities are **skills only**, so a visitor can never make a
-call with your API keys. Every persona in the catalogue is available, starting from the key's own.
+call with your API keys. Every persona in the catalog is available, starting from the key's own.
 
 ## Types
 

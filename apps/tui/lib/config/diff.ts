@@ -1,5 +1,5 @@
 import { file } from "bun"
-import MODELS_TEMPLATE from "../../../../docs/config/models.fireworks.toml" with { type: "text" }
+import MODELS_TEMPLATE from "../../../../docs/config/models.default.toml" with { type: "text" }
 import SECRETS_TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
 import { pathForBundleKey, pickBundleFiles } from "./cli"
