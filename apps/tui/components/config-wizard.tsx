@@ -1,14 +1,15 @@
 import { MultiSelect, PasswordInput, TextInput, ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
 import { capitalized, LOCALE_LABELS, locales } from "@kaja/shared"
-import { Box, type BoxProps, Static, Text, useInput } from "ink"
+import { Box, Static, Text, useInput } from "ink"
 import Gradient from "ink-gradient"
-import { type ReactNode, useState } from "react"
+import { useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
 import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
 import type { Brightness } from "../lib/terminal-background"
+import { Answered, InputFrame, Question, RailLine } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { themes, useKajaTheme, usePalette } from "./theme"
 
@@ -233,13 +234,13 @@ function InputStep({
   }
   return (
     <Question title={title}>
-      <Frame>
+      <InputFrame>
         {secret ? (
           <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={submit} />
         ) : (
           <TextInput defaultValue={defaultValue} onSubmit={submit} />
         )}
-      </Frame>
+      </InputFrame>
       {problem ? <Problem>{problem}</Problem> : <Text dimColor>{hint}</Text>}
     </Question>
   )
@@ -332,52 +333,10 @@ function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): Answ
   return ANSWER_LINES[kind]?.(subject, result, saved)
 }
 
-/** The bordered box a wizard input sits in. */
-function Frame({ children }: Readonly<{ children: ReactNode }>) {
-  const { frame } = useKajaTheme()
-  return (
-    <Box {...frame()} borderStyle="classic" width={70} paddingLeft={1}>
-      {children}
-    </Box>
-  )
-}
-
-// The line down the wizard's left edge, which ties the trail, the question and its input together
-const RAIL: BoxProps = {
-  borderStyle: "single",
-  borderTop: false,
-  borderRight: false,
-  borderBottom: false,
-  borderDimColor: true
-}
-
-/** A marker in the rail's column, then its text indented past it, so a wrapped line stays clear of the rail. */
-function RailLine({ marker, children }: Readonly<{ marker: ReactNode; children: ReactNode }>) {
-  return (
-    <Box>
-      <Box width={3} flexShrink={0}>
-        {marker}
-      </Box>
-      {children}
-    </Box>
-  )
-}
-
-/** The question on screen: a marker and its title, then its input on the rail, closed off below. */
-function Question({ title, plain, children }: Readonly<{ title: string; plain?: boolean; children: ReactNode }>) {
-  const { accent } = useKajaTheme()
-  return (
-    <Box flexDirection="column">
-      <Text dimColor>│</Text>
-      <RailLine marker={<Text {...(plain ? { bold: true } : accent())}>◆</Text>}>
-        <Text bold>{title}</Text>
-      </RailLine>
-      <Box {...RAIL} flexDirection="column" gap={1} paddingLeft={2}>
-        {children}
-      </Box>
-      <Text dimColor>└</Text>
-    </Box>
-  )
+/** Why Enter didn't move on. */
+function Problem({ children }: Readonly<{ children: string }>) {
+  const { danger } = useKajaTheme()
+  return <Text {...danger()}>{children}</Text>
 }
 
 /** The trail's first line: the mascot and the name, in the theme's gradient. */
@@ -386,26 +345,8 @@ function Header() {
   return (
     <RailLine marker={<Text dimColor>┌</Text>}>
       <Gradient colors={gradient}>
-        <Text bold>༼–ɷ–༽ kaja🐓</Text>
+        <Text bold>༼☉ɷ⊙༽ kaja</Text>
       </Gradient>
-    </RailLine>
-  )
-}
-
-/** Why Enter didn't move on. */
-function Problem({ children }: Readonly<{ children: string }>) {
-  const { danger } = useKajaTheme()
-  return <Text {...danger()}>{children}</Text>
-}
-
-/** One answered step, its label dimmed: the wizard's trail, so each question is a step forward and not a replacement. */
-function AnswerRow({ label, value }: Readonly<Pick<Answer, "label" | "value">>) {
-  const { success } = useKajaTheme()
-  return (
-    <RailLine marker={<Text {...success()}>✓</Text>}>
-      <Text>
-        <Text dimColor>{label}:</Text> {value}
-      </Text>
     </RailLine>
   )
 }
@@ -695,7 +636,7 @@ export function ConfigWizard({
       case "providers": {
         return (
           <Question title={t("wizard.providerTitle")}>
-            <Frame>
+            <InputFrame>
               {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
               <MultiSelect
                 options={[
@@ -712,7 +653,7 @@ export function ConfigWizard({
                   if (providers.length > 0) advance({ providers })
                 }}
               />
-            </Frame>
+            </InputFrame>
             {noProvider ? (
               <Problem>{t("wizard.providerRequired")}</Problem>
             ) : (
@@ -725,14 +666,14 @@ export function ConfigWizard({
       case "extras": {
         return (
           <Question title={t("wizard.extrasTitle")}>
-            <Frame>
+            <InputFrame>
               {/* Nothing ticked by default, so one Enter skips the whole step. */}
               <MultiSelect
                 options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
                 defaultValue={result.extras}
                 onSubmit={values => advance({ extras: values as WizardExtra[] })}
               />
-            </Frame>
+            </InputFrame>
             <Text dimColor>{t("wizard.extrasHint")}</Text>
           </Question>
         )
@@ -760,7 +701,7 @@ export function ConfigWizard({
         <Static items={answered}>
           {item =>
             "label" in item ? (
-              <AnswerRow key={item.id} label={item.label} value={item.value} />
+              <Answered key={item.id} label={`${item.label}:`} value={item.value} />
             ) : (
               <Header key={item.id} />
             )

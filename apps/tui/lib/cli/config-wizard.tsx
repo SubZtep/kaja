@@ -5,6 +5,7 @@ import type { WizardResult, WizardSaved } from "../../components/config-wizard"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
 import type { CredentialItem, OfferedValues } from "../doctor/credentials"
+import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { CATALOG, candidatesByTask, catalogProvider } from "../models/catalog"
 import { getModelsPath, writeModelsFromCatalog } from "../models/models"
@@ -23,7 +24,7 @@ async function applySpeachesUrl(url: string, print: (line: string) => void) {
     await setTomlValue(getConfigPath(), table, "speachesUrl", JSON.stringify(value))
   }
   invalidateConfigCache()
-  print(t("wizard.voiceSaved", { url }))
+  print(statusLine("success", t("wizard.voiceSaved", { url })))
 }
 
 async function applyResult(result: WizardResult, print: (line: string) => void) {
@@ -82,7 +83,7 @@ export async function applyStarterAbilities(print: (line: string) => void) {
   const selection = starterSelection(await scanMarketplace(getMarketplaceDir()))
 
   await saveAbilitiesFile(selection)
-  print(t("ability.saved", { path: getAbilitiesPath(), count: total(selection) }))
+  print(statusLine("success", t("ability.saved", { path: getAbilitiesPath(), count: total(selection) })))
 }
 
 async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boolean) {
@@ -109,7 +110,7 @@ export async function offerMarketplace(print: (line: string) => void) {
   })
   if (!wanted) {
     await saveMarketplaceSetting("enabled", false)
-    print(t("wizard.marketplaceOff"))
+    print(statusLine("info", t("wizard.marketplaceOff")))
     return
   }
 
@@ -117,7 +118,7 @@ export async function offerMarketplace(print: (line: string) => void) {
   const git = await checkGit()
   if (!git.ok) {
     await saveMarketplaceSetting("enabled", false)
-    print(t("wizard.marketplaceNoGit", { reason: git.reason }))
+    print(statusLine("warning", t("wizard.marketplaceNoGit", { reason: git.reason })))
     return
   }
   await saveMarketplaceSetting("enabled", true)
@@ -215,19 +216,19 @@ async function offerModelDownloads(print: (line: string) => void) {
     { defaultYes: true }
   )
   if (!wanted) {
-    print(t("wizard.pullSkipped"))
+    print(statusLine("info", t("wizard.pullSkipped")))
     return
   }
 
-  print(t("wizard.pullStarted"))
+  print(statusLine("info", t("wizard.pullStarted")))
   for (const target of missing) {
     const progress = progressLine(target.model)
     const result = await pullModel(target, progress.update)
     progress.clear()
     print(
       result.ok
-        ? t("wizard.pullDone", { model: target.model })
-        : t("wizard.pullFailed", { model: target.model, error: result.error })
+        ? statusLine("success", t("wizard.pullDone", { model: target.model }))
+        : statusLine("error", t("wizard.pullFailed", { model: target.model, error: result.error }))
     )
   }
 }

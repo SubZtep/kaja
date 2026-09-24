@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs"
 import { join } from "node:path"
+import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
 import { fetchModelsToml, getModelsPath } from "../models/models"
@@ -19,10 +20,10 @@ export function pickBundleFiles(files: Record<string, string>): Record<string, s
 }
 
 function fetchResultLine({ path, backedUpTo, unchanged, kept }: FetchResult) {
-  if (kept) return t("config.fetchedKept", { path })
-  if (unchanged) return t("config.fetchedUnchanged", { path })
-  if (backedUpTo) return t("config.fetchedWithBackup", { path, backup: backedUpTo })
-  return t("config.fetched", { path })
+  if (kept) return statusLine("info", t("config.fetchedKept", { path }))
+  if (unchanged) return statusLine("info", t("config.fetchedUnchanged", { path }))
+  if (backedUpTo) return statusLine("success", t("config.fetchedWithBackup", { path, backup: backedUpTo }))
+  return statusLine("success", t("config.fetched", { path }))
 }
 
 /** Maps a bundle file key ("models.toml") to its on-disk path under the config dir. */
@@ -71,10 +72,10 @@ async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number;
     const secretsResult = matchesOnly("secrets.toml", only) ? [await fetchSecretsToml()] : []
     const remoteResults = await runFetchOnline(only)
     const results = [...secretsResult, ...(remoteResults ?? [])]
-    if (results.length === 0) return { code: 0, text: t("config.fetchAllUpToDate") }
+    if (results.length === 0) return { code: 0, text: statusLine("success", t("config.fetchAllUpToDate")) }
     return { code: 0, text: results.map(fetchResultLine).join("\n") }
   } catch (error: any) {
-    console.log(t("config.fetchOfflineFallback", { message: error?.message ?? String(error) }))
+    console.log(statusLine("warning", t("config.fetchOfflineFallback", { message: error?.message ?? String(error) })))
     try {
       const results = await runFetchOffline(only)
       return { code: 0, text: results.map(fetchResultLine).join("\n") }
