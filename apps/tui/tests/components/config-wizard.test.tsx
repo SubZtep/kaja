@@ -49,6 +49,12 @@ async function openProviders(props: Partial<Parameters<typeof ConfigWizard>[0]> 
   return w
 }
 
+/** Ticks Ollama and keeps its default address: the least a local setup can answer on the providers step. */
+async function pickOllama(w: Wizard) {
+  await tick(w, OLLAMA)
+  await w.t.press(ENTER) // address: the default
+}
+
 async function close(w: Wizard) {
   w.t.unmount()
   await w.t.waitUntilExit()
@@ -105,17 +111,18 @@ test("a forced mode skips the mode step, but never the language one", async () =
   await close(w)
 })
 
-test("nothing ticked skips every provider question and leaves models.toml to the user", async () => {
+test("the providers step won't continue with nothing ticked: local mode needs a model", async () => {
   const w = await openProviders()
   await w.t.press(ENTER) // nothing ticked
-  expect(w.t.lastFrame()).toContain("Anything else?")
+  expect(w.t.lastFrame()).toContain("Which model providers can you use?")
+  expect(w.t.lastFrame()).toContain("Tick at least one")
 
+  await pickOllama(w)
+  expect(w.t.lastFrame()).toContain("Anything else?")
   await w.t.press(ENTER) // extras: nothing ticked
   await w.t.press(ENTER) // last screen
-  expect(w.result).toMatchObject({ mode: "local", providers: [] })
-  expect(w.result?.keys).toBeUndefined()
-  expect(w.result?.addresses).toBeUndefined()
-  expect(w.t.output()).toContain("✓ Providers: none")
+  expect(w.result).toMatchObject({ mode: "local", providers: ["ollama"] })
+  expect(w.t.output()).toContain("✓ Providers: Ollama")
 
   await close(w)
 })
@@ -264,7 +271,7 @@ test("the trail says what became of each key, without showing it", async () => {
 
 test("local setups are asked about extras, cloud ones are not", async () => {
   const local = await openProviders()
-  await local.t.press(ENTER) // nothing ticked
+  await pickOllama(local)
   expect(local.t.lastFrame()).toContain("Anything else?")
   await close(local)
 
@@ -281,7 +288,7 @@ test("local setups are asked about extras, cloud ones are not", async () => {
 
 test("the extras step starts with nothing ticked, so Enter skips it", async () => {
   const w = await openProviders()
-  await w.t.press(ENTER) // providers: nothing
+  await pickOllama(w)
   expect(w.t.lastFrame()).toContain("Anything else?")
 
   await w.t.press(ENTER) // nothing ticked
@@ -293,7 +300,7 @@ test("the extras step starts with nothing ticked, so Enter skips it", async () =
 
 test("a ticked extra is asked for what it needs", async () => {
   const w = await openProviders()
-  await w.t.press(ENTER) // providers: nothing
+  await pickOllama(w)
   await w.t.press(SPACE) // tick Telegram
   await w.t.press(ENTER)
 

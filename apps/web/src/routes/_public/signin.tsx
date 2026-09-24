@@ -5,6 +5,7 @@ import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { ForgotPassword } from "../../components/user/ForgotPassword"
 import { useAuthClient } from "../../hooks/auth-client"
+import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { searchString } from "../../lib/search"
 import { seo } from "../../lib/seo"
@@ -45,7 +46,7 @@ function SignIn() {
     onSubmit: async ({ value }) => {
       const parsed = loginSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? m.signin_error_invalid_data())
+        toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
       }
 
@@ -56,7 +57,7 @@ function SignIn() {
           callbackURL: localizeHref(redirect ?? "/dashboard")
         })
         if (authError) {
-          toast.error(authError.message ?? authError.statusText)
+          toast.error(authErrorMessage(authError))
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : m.signin_error_generic())

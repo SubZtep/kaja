@@ -7,7 +7,7 @@ import type { KajaPreferences } from "@kaja/schema/config"
  */
 export function usePreferences(initial?: KajaPreferences) {
   return {
-    thinking: initial?.thinking ?? true,
+    thinking: initial?.thinking ?? false,
     sounds: initial?.sounds ?? true,
     // Spoken replies are opt-in: they need the speaches TTS server running.
     voice: initial?.voice ?? false,

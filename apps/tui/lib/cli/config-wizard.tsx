@@ -37,7 +37,13 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
   }
 
   await savePreferences({ mode, ...(result.language ? { locale: result.language } : {}) })
-  if (mode === "cloud") return
+  if (mode === "cloud") {
+    if (result.language) {
+      const { saveAccountLocale } = await import("../auth/account-locale")
+      await saveAccountLocale(result.language)
+    }
+    return
+  }
 
   // Nothing ticked: models.toml is the user's to write, so it is left exactly as it is.
   const { chosenProviders } = await import("../../components/config-wizard")

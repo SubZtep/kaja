@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer"
 import { env } from "../core/env"
+import { toLocale, translator } from "../core/i18n"
 import { getChangeEmailHtml } from "./ChangeEmail"
 import { getResetPasswordHtml } from "./ResetPassword"
 import type { SendEmailArgs } from "./template"
@@ -28,21 +29,20 @@ if (!env.CI) {
 export async function sendEmail({ type, payload }: Readonly<SendEmailArgs>) {
   const from = "kaja[bot] <noreply@kaja.io>"
   const to = payload.user.email
-  let subject: string
+  const locale = toLocale(payload.user.locale)
+  const language = { locale, t: translator(locale) }
+  const subject = language.t(`email.${type}Subject`)
   let html: string
 
   switch (type) {
     case "changeEmail":
-      html = await getChangeEmailHtml(payload)
-      subject = `[kaja.io] Change your email address`
+      html = await getChangeEmailHtml(payload, language)
       break
     case "verification":
-      html = await getVerificationHtml(payload)
-      subject = `[kaja.io] Verify your email address`
+      html = await getVerificationHtml(payload, language)
       break
     case "resetPassword":
-      html = await getResetPasswordHtml(payload)
-      subject = `[kaja.io] Reset your password`
+      html = await getResetPasswordHtml(payload, language)
       break
   }
 

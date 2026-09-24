@@ -1,7 +1,7 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
 import type { Tool } from "../agent/agents"
 import { installShutdownHandlers } from "../cli/headless"
-import { t } from "../i18n"
+import { getLanguage, t } from "../i18n"
 import type { Persona } from "../personas/personas"
 
 /** Runs `kaja telegram`: a long-polling bot reusing the terminal's tools/personas/models. Returns an exit code once gracefully stopped (SIGINT/SIGTERM). */
@@ -22,6 +22,7 @@ export async function runTelegramCli(deps: {
   const { createTelegramBot } = await import("./bot")
   const { chatModelId, client, clientForModel } = await import("../models/openai")
   const { getStore } = await import("../memory/store")
+  const { replyLanguageInstructionFor } = await import("@kaja/nasi")
   const bot = createTelegramBot({
     botToken: deps.botToken,
     agentConfig: {
@@ -31,7 +32,9 @@ export async function runTelegramCli(deps: {
       store: await getStore(),
       tools: deps.tools,
       personas: deps.personas,
-      models: deps.models
+      models: deps.models,
+      // Replies in the language set for the terminal, as its own chat does.
+      promptContext: { replyLanguageInstruction: replyLanguageInstructionFor(getLanguage()) }
     },
     personas: deps.personas,
     models: deps.models

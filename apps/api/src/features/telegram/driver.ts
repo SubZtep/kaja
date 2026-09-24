@@ -17,6 +17,7 @@ import {
   withQuestion
 } from "@kaja/shared"
 import { pool } from "../../core/db"
+import type { Translate } from "../../core/i18n"
 import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
@@ -30,12 +31,8 @@ import {
   renderAbilityList,
   toggleAbility
 } from "./abilities"
+import { type BotLanguage, botLanguage } from "./language"
 
-const NOT_LINKED_MESSAGE =
-  "This Telegram account isn't linked to a Kaja account yet. Go to your dashboard on the Kaja web app and tap " +
-  '"Get Telegram link".'
-
-const APPROVAL_EXPIRED_MESSAGE = "This request was already answered or has expired."
 const TOOL_CALLBACK = /^tool:(approve|decline):([0-9a-f]{16})$/
 
 /** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
@@ -60,15 +57,15 @@ export type TelegramSender = {
 }
 
 export type CloudTelegramDriverConfig = {
-  /** Resolves a Telegram user id to the Kaja account it's linked to, or undefined if unlinked. */
-  resolveLinkedUserId: (telegramUserId: number) => Promise<string | undefined>
+  /** Resolves a Telegram user id to the Kaja account it's linked to (with its saved language), or undefined if unlinked. */
+  resolveLinkedUser: (telegramUserId: number) => Promise<{ userId: string; locale: string | null } | undefined>
   sender: TelegramSender
 }
 
 /**
  * Cloud counterpart to apps/tui/lib/telegram/driver.ts. Each Telegram user
  * must link their own Kaja account first (see bot.ts's /start handler); the
- * owning `userId` is resolved fresh per message via `resolveLinkedUserId`,
+ * owning `userId` is resolved fresh per message via `resolveLinkedUser`,
  * never fixed. `telegramOwner(userId)` is still used as the `owner` within
  * that account's Postgres partition, so a linked user's bot conversations
  * stay separate from their web/lite ones (same mechanism widget visitors
@@ -78,7 +75,7 @@ export type CloudTelegramDriverConfig = {
  * memory.
  */
 export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
-  const { resolveLinkedUserId, sender } = config
+  const { resolveLinkedUser, sender } = config
   // Marks a Telegram user's next message as "don't resume" after /new. No other in-memory
   // state exists — session content itself always round-trips through Postgres.
   const forceNew = new Set<number>()
@@ -91,8 +88,13 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  async function finalizeMessage(edit: (text: string) => Promise<void>, chatId: number, rawText: string) {
-    const html = renderTelegramHtml(rawText) || "(empty response)"
+  async function finalizeMessage(
+    edit: (text: string) => Promise<void>,
+    chatId: number,
+    rawText: string,
+    { t }: BotLanguage
+  ) {
+    const html = renderTelegramHtml(rawText) || t("telegram.emptyResponse")
     const [first, ...rest] = splitTelegramMessage(html)
     await edit(first!)
     for (const chunk of rest) await sender.sendMessage(chatId, chunk)
@@ -103,18 +105,20 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     accumulated: { content: string },
     editIfChanged: (text: string) => Promise<void>,
     chatId: number,
-    event: Extract<FinalizedAgentEvent, { type: "confirm_tool" }>
+    event: Extract<FinalizedAgentEvent, { type: "confirm_tool" }>,
+    language: BotLanguage
   ) {
+    const { t } = language
     const text = [
-      `🔐 <b>${escapeHtml(event.name)}</b> wants to run:`,
+      t("telegram.toolWantsToRun", { name: escapeHtml(event.name) }),
       `<pre><code>${escapeHtml(event.summary)}</code></pre>`
     ]
     const token = approvalToken(event.id)
     const buttons = [
-      { text: "✅ Approve", data: `tool:approve:${token}` },
-      { text: "❌ Decline", data: `tool:decline:${token}` }
+      { text: t("telegram.approve"), data: `tool:approve:${token}` },
+      { text: t("telegram.decline"), data: `tool:decline:${token}` }
     ]
-    if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
+    if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content, language)
     else await editIfChanged("…")
     await sender.sendMessage(chatId, text.join("\n"), [buttons])
   }
@@ -125,22 +129,23 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     throttle: EditThrottle,
     editIfChanged: (text: string) => Promise<void>,
     chatId: number,
-    event: FinalizedAgentEvent
+    event: FinalizedAgentEvent,
+    language: BotLanguage
   ): Promise<boolean> | boolean {
     if (event.type === "ask_user") {
       throttle.cancel()
       const text = withQuestion(accumulated.content, event.question)
-      return finalizeMessage(editIfChanged, chatId, text).then(() => true)
+      return finalizeMessage(editIfChanged, chatId, text, language).then(() => true)
     }
 
     if (event.type === "final") {
       throttle.cancel()
-      return finalizeMessage(editIfChanged, chatId, event.content ?? "").then(() => true)
+      return finalizeMessage(editIfChanged, chatId, event.content ?? "", language).then(() => true)
     }
 
     if (event.type === "confirm_tool") {
       throttle.cancel()
-      return sendApproval(accumulated, editIfChanged, chatId, event).then(() => true)
+      return sendApproval(accumulated, editIfChanged, chatId, event, language).then(() => true)
     }
 
     return false
@@ -149,8 +154,17 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   // Serializes turns per Telegram user, mirroring nasi/chat.ts's withSessionLock — without it,
   // two rapid messages from the same user could both resolve the same "latest session" and race
   // its persistence.
-  function runTurn(ownerUserId: string, owner: string, chatId: number, prompt: string, resume: boolean) {
-    return withLock(`telegram:${owner}`, () => runTurnLocked(ownerUserId, owner, chatId, { message: prompt }, resume))
+  function runTurn(
+    ownerUserId: string,
+    owner: string,
+    chatId: number,
+    prompt: string,
+    resume: boolean,
+    language: BotLanguage
+  ) {
+    return withLock(`telegram:${owner}`, () =>
+      runTurnLocked(ownerUserId, owner, chatId, { message: prompt }, resume, language)
+    )
   }
 
   async function runTurnLocked(
@@ -158,7 +172,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     owner: string,
     chatId: number,
     input: Pick<NasiTurnInput, "message" | "approval">,
-    resume: boolean
+    resume: boolean,
+    language: BotLanguage
   ) {
     const placeholder = await sender.sendMessage(chatId, "…")
     const accumulated = { content: "" }
@@ -178,7 +193,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       const nasi = await openNasiFor({
         userId: ownerUserId,
         owner,
-        pinnedModel: await pinnedModelFor(ownerUserId, resumeRow?.id)
+        pinnedModel: await pinnedModelFor(ownerUserId, resumeRow?.id),
+        language: language.locale
       })
       try {
         let ended = false
@@ -193,7 +209,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
             continue
           }
           if (event.type === "usage") continue
-          ended = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, event)
+          ended = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, event, language)
         }
       } finally {
         await nasi.close()
@@ -201,34 +217,40 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     } catch (error) {
       console.warn("Telegram agent turn failed", { error })
       const { category, message } = categorizeError(error)
-      await editIfChanged(`⚠ ${category}: ${message}`)
+      // The category in the user's language, like the terminal shows it; the detail is the provider's own (technical) text.
+      const label = language.t(`telegram.error.${category}`)
+      await editIfChanged(`⚠ ${label}: ${message}`)
     }
   }
 
-  async function handleMessage(telegramUserId: number, chatId: number, text: string) {
-    const ownerUserId = await resolveLinkedUserId(telegramUserId)
-    if (!ownerUserId) {
-      await sender.sendMessage(chatId, NOT_LINKED_MESSAGE)
+  /** `telegramLanguage` is the sender's Telegram app language, used only when their account has none saved. */
+  async function handleMessage(telegramUserId: number, chatId: number, text: string, telegramLanguage?: string) {
+    const linked = await resolveLinkedUser(telegramUserId)
+    const language = botLanguage(linked?.locale, telegramLanguage)
+    const { t } = language
+    if (!linked) {
+      await sender.sendMessage(chatId, t("telegram.notLinked"))
       return
     }
+    const ownerUserId = linked.userId
 
     const owner = telegramOwner(telegramUserId)
 
     if (isCommand(text, "new")) {
       forceNew.add(telegramUserId)
-      await sender.sendMessage(chatId, "🆕 Started a new session.")
+      await sender.sendMessage(chatId, t("telegram.newSession"))
       return
     }
 
     if (isCommand(text, "abilities")) {
-      const { text: list, rows } = renderAbilityList(await abilityEntries(ownerUserId), 0)
+      const { text: list, rows } = renderAbilityList(await abilityEntries(ownerUserId), 0, t)
       await sender.sendMessage(chatId, list, rows)
       return
     }
 
     const resume = !forceNew.delete(telegramUserId)
     try {
-      await runTurn(ownerUserId, owner, chatId, text, resume)
+      await runTurn(ownerUserId, owner, chatId, text, resume, language)
     } catch (error) {
       reportError("Telegram turn crashed", error)
     }
@@ -242,18 +264,19 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     ownerUserId: string,
     chatId: number,
     messageId: number,
-    target: { page: number; typeCode?: string; hash?: string }
+    target: { page: number; typeCode?: string; hash?: string },
+    t: Translate
   ) {
     let entries = await abilityEntries(ownerUserId)
     const entry = target.typeCode && target.hash ? findEntry(entries, target.typeCode, target.hash) : undefined
     if (entry) {
       if ((await toggleAbility(ownerUserId, entry)) === "needs_key") {
-        await sender.sendMessage(chatId, needsKeyMessage(entry.name))
+        await sender.sendMessage(chatId, needsKeyMessage(entry.name, t))
         return
       }
       entries = await abilityEntries(ownerUserId)
     }
-    const { text, rows } = renderAbilityList(entries, target.page)
+    const { text, rows } = renderAbilityList(entries, target.page, t)
     await editSafely(chatId, messageId, text, rows)
   }
 
@@ -263,24 +286,39 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
    * on, so an old or foreign button does nothing; the server then runs (or skips) the call it saved.
    * Returns false for callback data that isn't ours.
    */
-  async function handleCallback(telegramUserId: number, chatId: number, messageId: number, data: string) {
+  async function handleCallback(
+    telegramUserId: number,
+    chatId: number,
+    messageId: number,
+    data: string,
+    telegramLanguage?: string
+  ) {
     const match = TOOL_CALLBACK.exec(data)
     const abilityMatch = ABILITY_CALLBACK.exec(data)
     const pageMatch = ABILITY_PAGE_CALLBACK.exec(data)
     if (!match && !abilityMatch && !pageMatch) return false
-    const ownerUserId = await resolveLinkedUserId(telegramUserId)
-    if (!ownerUserId) {
-      await sender.sendMessage(chatId, NOT_LINKED_MESSAGE)
+    const linked = await resolveLinkedUser(telegramUserId)
+    const language = botLanguage(linked?.locale, telegramLanguage)
+    const { t } = language
+    if (!linked) {
+      await sender.sendMessage(chatId, t("telegram.notLinked"))
       return true
     }
+    const ownerUserId = linked.userId
 
     if (!match) {
       try {
-        await handleAbilityCallback(ownerUserId, chatId, messageId, {
-          page: Number(abilityMatch?.[3] ?? pageMatch?.[1] ?? 0),
-          typeCode: abilityMatch?.[1],
-          hash: abilityMatch?.[2]
-        })
+        await handleAbilityCallback(
+          ownerUserId,
+          chatId,
+          messageId,
+          {
+            page: Number(abilityMatch?.[3] ?? pageMatch?.[1] ?? 0),
+            typeCode: abilityMatch?.[1],
+            hash: abilityMatch?.[2]
+          },
+          t
+        )
       } catch (error) {
         reportError("Telegram ability toggle crashed", error)
       }
@@ -296,12 +334,12 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         const pendingId = session?.pendingToolApprovalId
         const call = session && pendingId ? pendingToolCall(session, pendingId) : undefined
         if (!call || approvalToken(pendingId!) !== match[2]) {
-          await editSafely(chatId, messageId, APPROVAL_EXPIRED_MESSAGE)
+          await editSafely(chatId, messageId, t("telegram.approvalExpired"))
           return
         }
-        const status = approval === "approve" ? "✅ Approved" : "❌ Declined"
+        const status = approval === "approve" ? t("telegram.approved") : t("telegram.declined")
         await editSafely(chatId, messageId, `🔐 <b>${escapeHtml(call.function.name)}</b>: ${status}`)
-        await runTurnLocked(ownerUserId, owner, chatId, { approval }, true)
+        await runTurnLocked(ownerUserId, owner, chatId, { approval }, true, language)
       })
     } catch (error) {
       reportError("Telegram approval crashed", error)

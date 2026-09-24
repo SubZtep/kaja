@@ -3,6 +3,7 @@ import { CheckCircle, LoaderCircle } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "../../hooks/auth-client"
+import { authErrorMessage } from "../../lib/error-messages"
 import { m } from "../../paraglide/messages.js"
 import { localizeHref } from "../../paraglide/runtime.js"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
@@ -29,13 +30,13 @@ export function ForgotPassword({
         redirectTo: `${window.location.origin}${localizeHref("/reset-password")}`
       })
       if (error) {
-        toast.error(error.message ?? error.statusText)
+        toast.error(authErrorMessage(error))
         return
       }
-      if (data) toast.info(data.message)
+      if (data) toast.info(m.forgot_password_email_sent())
       setSent(true)
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch {
+      toast.error(m.error_generic())
     } finally {
       setLoading(false)
     }

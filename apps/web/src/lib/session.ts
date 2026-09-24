@@ -1,4 +1,5 @@
 import { SSR_CLIENT_IP_HEADER, SSR_SECRET_HEADER } from "@kaja/schema/api"
+import type { Locale } from "@kaja/shared"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import type { Session } from "better-auth"
@@ -31,5 +32,5 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
     throw new Error(`Failed to fetch session: ${res.status} ${res.statusText}`)
   }
 
-  return res.json() as Promise<{ session: Session; user: UserWithRole }>
+  return res.json() as Promise<{ session: Session; user: UserWithRole & { locale?: Locale | null } }>
 })

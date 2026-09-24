@@ -1,12 +1,15 @@
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
+import { locales } from "@kaja/shared"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { APIError, createAuthMiddleware, getOAuthState } from "better-auth/api"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
+import { z } from "zod"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
+import { abilityService } from "../../services"
 import { blankProfileFields, googleProfileFromIdToken } from "./google-profile"
 
 function deviceVerificationUrl() {
@@ -129,6 +132,12 @@ export const auth = betterAuth({
           if (!(await signUpConsented(ctx)))
             throw new APIError("BAD_REQUEST", { message: "Consent is required to sign up" })
           return { data: { ...user, consentedAt: new Date() } }
+        },
+        // A new account starts with the default abilities on; a failure here must not undo the sign-up.
+        after: async user => {
+          await abilityService.enableDefaults(user.id).catch(err => {
+            reportError("Failed to enable default abilities", err, { userId: user.id })
+          })
         }
       }
     }
@@ -200,7 +209,9 @@ export const auth = betterAuth({
   user: {
     fields: { emailVerified: "email_verified", ...timestamps },
     additionalFields: {
-      consentedAt: { type: "date", required: false, input: false, fieldName: "consented_at" }
+      consentedAt: { type: "date", required: false, input: false, fieldName: "consented_at" },
+      // Better Auth doesn't check an enum type's values on input, so the validator does.
+      locale: { type: [...locales], required: false, validator: { input: z.enum(locales) } }
     },
     // Self-service deletion from the profile page; needs a recent sign-in. Everything the user owns cascades from the user row.
     deleteUser: { enabled: true },

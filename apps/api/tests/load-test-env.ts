@@ -1,6 +1,9 @@
+// First of all: it adds `.openapi()` to zod schemas created after it, so a test loading @kaja/schema/api before the app (the web's, say) can't leave the API routes without it.
+import "@hono/zod-openapi"
 import { jest } from "bun:test"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
+import { useTestDatabase } from "./test-database"
 
 function parseEnvFile(path: string, presetKeys: ReadonlySet<string>) {
   if (!existsSync(path)) return
@@ -27,6 +30,7 @@ const apiDir = join(import.meta.dir, "..")
 const presetKeys = new Set(Object.keys(Bun.env))
 parseEnvFile(join(apiDir, ".env.example"), presetKeys)
 parseEnvFile(join(apiDir, ".env"), presetKeys)
+await useTestDatabase()
 
 // Bun's 5 s default fails real Postgres calls, password hashing and spawned MCP servers on a busy machine; a real hang still fails, just later.
 jest.setTimeout(15_000)

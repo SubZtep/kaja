@@ -7,6 +7,7 @@ import { faker } from "@faker-js/faker"
 import "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
+import { translator } from "../../src/core/i18n"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
 import { abilityService, marketplaceService, secretService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
@@ -43,8 +44,9 @@ describe("the cloud bot's /abilities", () => {
   let userId: string
   const sent: { id: number; text: string; rows?: TelegramButton[][] }[] = []
   const edits: { id: number; text: string; rows?: TelegramButton[][] }[] = []
+  let locale: string | null = null
   const driver = createCloudTelegramDriver({
-    resolveLinkedUserId: async telegramUserId => (telegramUserId === LINKED ? userId : undefined),
+    resolveLinkedUser: async telegramUserId => (telegramUserId === LINKED ? { userId, locale } : undefined),
     sender: {
       async sendMessage(_chatId, text, rows) {
         sent.push({ id: sent.length + 1, text, rows })
@@ -148,5 +150,19 @@ describe("the cloud bot's /abilities", () => {
     await tap(keyless)
     expect(await enabled()).not.toContain(keyless)
     expect(button(keyless)).toBeUndefined()
+  })
+
+  test("replies follow the account's saved language, else the Telegram app's", async () => {
+    const hu = translator("hu-HU")
+    locale = "hu-HU"
+    try {
+      await driver.handleMessage(LINKED, 1, "/abilities", "en")
+      expect(sent.at(-1)!.text).toStartWith(hu("telegram.abilities.title"))
+      expect(sent.at(-1)!.rows!.flat()[0]!.text).toEndWith(hu("telegram.abilities.skill"))
+    } finally {
+      locale = null
+    }
+    await driver.handleMessage(STRANGER, 1, "hello", "hu")
+    expect(sent.at(-1)!.text).toBe(hu("telegram.notLinked"))
   })
 })

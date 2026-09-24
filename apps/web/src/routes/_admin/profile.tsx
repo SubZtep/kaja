@@ -8,6 +8,7 @@ import { ConfirmDialog } from "../../components/ui/ConfirmDialog"
 import { PageHeader } from "../../components/ui/PageHeader"
 import { Section } from "../../components/ui/Section"
 import { useAuthClient } from "../../hooks/auth-client"
+import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { userRequired } from "../../lib/loaders"
 import { seo } from "../../lib/seo"
@@ -67,17 +68,17 @@ function EditUser({ user }: Readonly<{ user: User }>) {
     onSubmit: async ({ value }) => {
       const parsed = editSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? m.profile_error_invalid_data())
+        toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
       }
 
       try {
         setLoading(true)
         const { error, data } = await updateUser(parsed.data)
-        if (error) toast.error(error.message ?? error.statusText)
+        if (error) toast.error(authErrorMessage(error))
         if (data?.status) toast.success(m.profile_success_user_updated())
-      } catch (error: any) {
-        toast.error(error.message)
+      } catch {
+        toast.error(m.error_generic())
       } finally {
         setLoading(false)
       }
@@ -115,17 +116,17 @@ function ChangeEmail() {
     onSubmit: async ({ value }) => {
       const parsed = editEmailSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? m.profile_error_invalid_data())
+        toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
       }
 
       try {
         setLoading(true)
         const { error, data } = await changeEmail(parsed.data)
-        if (error) toast.error(error.message ?? error.statusText)
+        if (error) toast.error(authErrorMessage(error))
         if (data?.status) toast.success(m.profile_success_email_updated())
-      } catch (error: any) {
-        toast.error(error.message)
+      } catch {
+        toast.error(m.error_generic())
       } finally {
         setLoading(false)
       }
@@ -166,7 +167,7 @@ function ChangePassword() {
     onSubmit: async ({ value }) => {
       const parsed = changePasswordSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? m.profile_error_invalid_data())
+        toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
       }
 
@@ -177,10 +178,10 @@ function ChangePassword() {
           currentPassword: parsed.data.currentPassword,
           revokeOtherSessions: parsed.data.revokeOtherSessions
         })
-        if (error) toast.error(error.message ?? error.statusText)
+        if (error) toast.error(authErrorMessage(error))
         if (data?.user) toast.success(m.profile_success_password_changed())
-      } catch (error: any) {
-        toast.error(error.message)
+      } catch {
+        toast.error(m.error_generic())
       } finally {
         setLoading(false)
       }
@@ -234,13 +235,13 @@ function DeleteAccount() {
       setLoading(true)
       const { error } = await deleteUser()
       if (error) {
-        toast.error(error.code === "SESSION_EXPIRED" ? m.profile_delete_reauth() : (error.message ?? error.statusText))
+        toast.error(error.code === "SESSION_EXPIRED" ? m.profile_delete_reauth() : authErrorMessage(error))
         return
       }
       toast.success(m.profile_delete_success())
       navigate({ to: "/", reloadDocument: true })
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch {
+      toast.error(m.error_generic())
     } finally {
       setLoading(false)
     }

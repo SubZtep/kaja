@@ -6,9 +6,11 @@ import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { Checkbox } from "../../components/form/primitives/Checkbox"
 import { useAuthClient } from "../../hooks/auth-client"
+import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
+import { getLocale } from "../../paraglide/runtime.js"
 import { AuthCard } from "./-components/auth-card"
 import { AuthShell } from "./-components/auth-shell"
 import { PRIVACY_URL, TERMS_URL } from "./-components/footer"
@@ -43,7 +45,7 @@ function SignUp() {
     onSubmit: async ({ value }) => {
       const parsed = registerSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? m.signup_error_invalid_data())
+        toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
       }
       if (!consented) {
@@ -53,19 +55,19 @@ function SignUp() {
 
       try {
         setLoading(true)
-        // The API refuses a sign-up without `consent`; Better Auth's client types don't know the extra body field.
-        const body = { ...parsed.data, consent: true }
+        // The API refuses a sign-up without `consent`; Better Auth's client types don't know the extra body field. The locale is saved now so the verification email is already in it.
+        const body = { ...parsed.data, consent: true, locale: getLocale() }
         const { error, data } = await signUp.email(body)
 
-        if (error) toast.error(error.message ?? error.statusText)
+        if (error) toast.error(authErrorMessage(error))
         if (data?.user) {
           toast.success(m.signup_success())
           // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
           await router.invalidate()
           navigate({ to: "/welcome" })
         }
-      } catch (error: any) {
-        toast.error(error.message)
+      } catch {
+        toast.error(m.error_generic())
       } finally {
         setLoading(false)
       }
@@ -88,8 +90,7 @@ function SignUp() {
       >
         {/* Pre-launch notice. Remove before public release. */}
         <p className="animate-pulse mb-6 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
-          This project is under development. The database may be wiped at any time — please don’t rely on any data you
-          enter here.
+          {m.signup_prelaunch_notice()}
         </p>
 
         <div className="mb-5 flex flex-col gap-3 text-[13.5px]">

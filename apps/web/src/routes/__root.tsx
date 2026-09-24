@@ -5,9 +5,11 @@ import {
   ErrorComponent,
   type ErrorComponentProps,
   HeadContent,
+  redirect,
   Scripts
 } from "@tanstack/react-router"
 import { useEffect } from "react"
+import { keepsLinkLanguage, LocaleSync } from "../components/LocaleSync"
 import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
 import { getPageTitle, getRootEnv } from "../lib/vars"
@@ -25,7 +27,7 @@ const OG_LOCALE: Record<Locale, string> = {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  loader: async () => {
+  loader: async ({ location }) => {
     let session: Awaited<ReturnType<typeof getSession>> | null = null
     let sessionError = false
     try {
@@ -34,6 +36,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       Sentry.captureException(err)
       sessionError = true
     }
+    // A signed-in user's saved language, before anything renders; in the browser LocaleSync does it (a full reload).
+    const saved = session?.user.locale
+    if (import.meta.env.SSR && saved && saved !== getLocale() && !keepsLinkLanguage(location.pathname))
+      throw redirect({ href: localizeHref(location.href, { locale: saved }) })
     const { apiUrl, barkochbaWidgetKey, chatWidgetKey } = await getRootEnv()
     return {
       apiUrl,
@@ -160,7 +166,10 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
         <meta name="twitter:image" content={OG_IMAGE} />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <LocaleSync />
+        </Providers>
         <Scripts />
       </body>
     </html>

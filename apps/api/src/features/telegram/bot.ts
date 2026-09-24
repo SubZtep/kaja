@@ -1,8 +1,12 @@
+import type { Locale } from "@kaja/shared"
 import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard } from "grammy"
+import type { LanguageCode } from "grammy/types"
+import { translator } from "../../core/i18n"
 import { reportError } from "../../core/report"
 import { telegramLinkService } from "../../services"
 import { createCloudTelegramDriver, type TelegramButton } from "./driver"
+import { botLanguage } from "./language"
 
 /** Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits comfortably. */
 function linkCallbackData(action: "confirm" | "cancel", token: string): string {
@@ -22,11 +26,20 @@ function keyboardFor(rows: TelegramButton[][] | undefined): InlineKeyboard | und
 /** How long to wait before polling again while another instance holds the getUpdates connection. */
 const POLL_CONFLICT_RETRY_MS = 10_000
 
-/** The command menu Telegram shows next to the message box. */
-const COMMANDS = [
-  { command: "new", description: "Start a new conversation" },
-  { command: "abilities", description: "Turn skills and tools on or off" }
+/** The Telegram app language each translated command menu is for; nan-TW has no two-letter code, so it gets the default (English) one. */
+const MENU_LANGUAGE: [Locale, LanguageCode][] = [
+  ["hu-HU", "hu"],
+  ["zh-TW", "zh"]
 ]
+
+/** The command menu Telegram shows next to the message box, in one language. */
+function commandsIn(locale: Locale) {
+  const t = translator(locale)
+  return [
+    { command: "new", description: t("telegram.commandNew") },
+    { command: "abilities", description: t("telegram.commandAbilities") }
+  ]
+}
 
 /**
  * The only grammy-aware file: constructs the Bot, implements driver.ts's
@@ -39,7 +52,7 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   const bot = new Bot(config.botToken)
 
   const driver = createCloudTelegramDriver({
-    resolveLinkedUserId: telegramUserId => telegramLinkService.resolveUserId(telegramUserId),
+    resolveLinkedUser: telegramUserId => telegramLinkService.resolveUser(telegramUserId),
     sender: {
       async sendMessage(chatId, text, rows) {
         const message = await withRateLimitRetry(() =>
@@ -69,23 +82,23 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   bot.command("start", async ctx => {
     if (!ctx.from) return
     const token = ctx.match
+    // Before linking, the only language known is the Telegram app's; the account being linked has its own saved one.
     if (!token) {
-      await ctx.reply(
-        'Hi! To use this bot, connect your Kaja account first — go to your dashboard on the Kaja web app and tap "Get Telegram link".'
-      )
+      await ctx.reply(botLanguage(null, ctx.from.language_code).t("telegram.startWithoutLink"))
       return
     }
 
     const pending = await telegramLinkService.peekLinkToken(token)
     if (!pending) {
-      await ctx.reply("That link has expired or was already used. Generate a new one from your Kaja dashboard.")
+      await ctx.reply(botLanguage(null, ctx.from.language_code).t("telegram.linkExpired"))
       return
     }
 
+    const { t } = botLanguage(pending.locale, ctx.from.language_code)
     const keyboard = new InlineKeyboard()
-      .text("✅ Confirm", linkCallbackData("confirm", token))
-      .text("❌ Cancel", linkCallbackData("cancel", token))
-    await ctx.reply(`Link this Telegram account to <b>${pending.email}</b>?`, {
+      .text(t("telegram.linkConfirm"), linkCallbackData("confirm", token))
+      .text(t("telegram.linkCancel"), linkCallbackData("cancel", token))
+    await ctx.reply(t("telegram.linkQuestion", { email: pending.email }), {
       parse_mode: "HTML",
       reply_markup: keyboard
     })
@@ -95,7 +108,13 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     const message = ctx.callbackQuery.message
     if (/^(tool|ability|abilitypage):/.test(ctx.callbackQuery.data) && message) {
       await ctx.answerCallbackQuery()
-      void driver.handleCallback(ctx.from.id, message.chat.id, message.message_id, ctx.callbackQuery.data)
+      void driver.handleCallback(
+        ctx.from.id,
+        message.chat.id,
+        message.message_id,
+        ctx.callbackQuery.data,
+        ctx.from.language_code
+      )
       return
     }
 
@@ -105,36 +124,34 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
     const action = match[1] as "confirm" | "cancel"
     const token = match[2]!
+    const pending = await telegramLinkService.peekLinkToken(token)
+    const { t } = botLanguage(pending?.locale, ctx.from.language_code)
 
     if (action === "cancel") {
       await telegramLinkService.deleteLinkToken(token)
-      await ctx.editMessageText("Cancelled — no link was made.")
+      await ctx.editMessageText(t("telegram.linkCancelled"))
       return
     }
 
-    const pending = await telegramLinkService.peekLinkToken(token)
     if (!pending) {
-      await ctx.editMessageText("This link was already handled or has expired.")
+      await ctx.editMessageText(t("telegram.linkHandled"))
       return
     }
 
     const deleted = await telegramLinkService.deleteLinkToken(token)
     if (!deleted) {
-      await ctx.editMessageText("This link was already handled or has expired.")
+      await ctx.editMessageText(t("telegram.linkHandled"))
       return
     }
 
     const linked = await telegramLinkService.link(ctx.from.id, pending.userId)
-    await ctx.editMessageText(
-      linked
-        ? `✅ Linked to your Kaja account (<b>${pending.email}</b>). Send a message to start chatting.`
-        : "This Telegram account is already linked to a different Kaja account.",
-      { parse_mode: "HTML" }
-    )
+    await ctx.editMessageText(linked ? t("telegram.linked", { email: pending.email }) : t("telegram.linkedElsewhere"), {
+      parse_mode: "HTML"
+    })
   })
 
   bot.on("message:text", ctx => {
-    void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text)
+    void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text, ctx.from.language_code)
   })
 
   bot.catch(err => {
@@ -171,8 +188,12 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
       } catch (error) {
         throw new Error("Invalid Telegram bot token — check TELEGRAM_BOT_TOKEN.", { cause: error })
       }
-      // The menu next to the message box; a failure only costs the menu.
-      await bot.api.setMyCommands(COMMANDS).catch(error => reportError("Telegram command menu not set", error))
+      // The menu next to the message box, per Telegram app language (English by default); a failure only costs the menu.
+      const menus = [
+        bot.api.setMyCommands(commandsIn("en-GB")),
+        ...MENU_LANGUAGE.map(([locale, code]) => bot.api.setMyCommands(commandsIn(locale), { language_code: code }))
+      ]
+      await Promise.all(menus).catch(error => reportError("Telegram command menu not set", error))
       poll().catch(error => reportError("Telegram bot stopped polling", error))
     },
     async stop() {

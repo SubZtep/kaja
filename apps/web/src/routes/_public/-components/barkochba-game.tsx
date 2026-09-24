@@ -94,6 +94,9 @@ function saveState(state: GameState) {
   } catch {}
 }
 
+/** A failed turn whose message is already in the visitor's language. */
+class GameError extends Error {}
+
 /** POSTs one turn to `/widget/turn`, same as the embeddable widget bundle does. */
 async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTurnRequest): Promise<NasiTurnResponse> {
   const res = await fetch(`${baseUrl}/widget/turn`, {
@@ -101,13 +104,9 @@ async function sendWidgetTurn(baseUrl: string, widgetKey: string, body: WidgetTu
     headers: { "content-type": "application/json", "x-kaja-widget-key": widgetKey },
     body: JSON.stringify(body)
   })
-  if (res.status === 429) throw new Error(m.barkochba_error_rate_limited())
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => undefined)
-    throw new Error(
-      typeof errorBody?.error === "string" ? errorBody.error : m.barkochba_error_request_failed({ status: res.status })
-    )
-  }
+  if (res.status === 429) throw new GameError(m.barkochba_error_rate_limited())
+  // The server's own reason is English and technical; the visitor gets the status in their language.
+  if (!res.ok) throw new GameError(m.barkochba_error_request_failed({ status: res.status }))
   return res.json()
 }
 
@@ -202,7 +201,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
       const fallback = messageStep?.type === "message" ? withoutQuestion(messageStep.content, data.message) : ""
       setAside(note ?? fallback)
     } catch (error) {
-      setCurrent(error instanceof Error ? error.message : m.barkochba_error_generic())
+      setCurrent(error instanceof GameError ? error.message : m.barkochba_error_generic())
       setAside("")
     } finally {
       setPending(false)

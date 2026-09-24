@@ -1,21 +1,25 @@
 import { getFirstName } from "@kaja/shared"
 import { Heading, Link, Text } from "@react-email/components"
 import { render } from "@react-email/render"
-import { EmailContainer, type EmailPayload } from "./template"
+import { EmailContainer, type EmailLanguage, type EmailPayload } from "./template"
 
-export function ResetPassword({ user, url }: Readonly<EmailPayload>) {
+export function ResetPassword({
+  user,
+  url,
+  language: { locale, t }
+}: Readonly<EmailPayload & { language: EmailLanguage }>) {
   return (
-    <EmailContainer>
-      <Heading as="h2">Hey-ho{getFirstName(user.name)} 👋</Heading>
+    <EmailContainer locale={locale}>
+      <Heading as="h2">{t("email.greeting", { name: getFirstName(user.name) })}</Heading>
       <Text>
-        Click the link to reset your password:
+        {t("email.resetPasswordText")}
         <br />
-        <Link href={url}>Reset Password Link</Link>
+        <Link href={url}>{t("email.resetPasswordLink")}</Link>
       </Text>
     </EmailContainer>
   )
 }
 
-export async function getResetPasswordHtml(payload: Readonly<EmailPayload>) {
-  return await render(<ResetPassword {...payload} />)
+export async function getResetPasswordHtml(payload: Readonly<EmailPayload>, language: EmailLanguage) {
+  return await render(<ResetPassword {...payload} language={language} />)
 }

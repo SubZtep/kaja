@@ -4,6 +4,7 @@ import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { useAuthClient } from "../../hooks/auth-client"
+import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { searchString } from "../../lib/search"
 import { seo } from "../../lib/seo"
@@ -35,7 +36,7 @@ function ResetPassword() {
     onSubmit: async ({ value }) => {
       const parsed = resetPasswordSchema.safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error?.message ?? m.reset_password_error_invalid_data())
+        toast.error(validationMessage(parsed.error.issues[0]?.message))
         return
       }
 
@@ -45,13 +46,13 @@ function ResetPassword() {
           newPassword: parsed.data.newPassword,
           token: search.token
         })
-        if (error) toast.error(error.message)
+        if (error) toast.error(authErrorMessage(error))
         if (data?.status) {
           toast.info(m.reset_password_success())
           navigate({ to: "/signin" })
         }
-      } catch (error: any) {
-        toast.error(error.message)
+      } catch {
+        toast.error(m.error_generic())
       } finally {
         setLoading(false)
       }
