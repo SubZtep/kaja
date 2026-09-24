@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS nasi_tool_call (
   status text CHECK (status IN ('ok', 'error', 'declined', 'skipped')),
   duration_ms integer,
   approval text CHECK (approval IN ('approved', 'declined')),
+  -- what the model is sent instead of an oversized result; the result message keeps the full output
+  result_summary text,
   UNIQUE (message_id, position)
 );
 

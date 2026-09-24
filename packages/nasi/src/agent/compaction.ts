@@ -9,6 +9,9 @@ export const DEFAULT_COMPACT_AT = 0.8
 /** Share of the window the word-for-word recent turns may take after compacting. */
 const KEEP_SHARE = 0.25
 
+/** Share of the window one tool result may take before the model gets it condensed instead. */
+const OVERSIZED_RESULT_SHARE = 0.25
+
 /** Share of the summarizer's window one summary request may fill with conversation text. */
 const SUMMARIZE_INPUT_SHARE = 0.6
 
@@ -30,12 +33,25 @@ export function estimateTokens(messages: readonly unknown[], definitions: readon
   return Math.ceil((sizeOf(messages) + (definitions.length > 0 ? sizeOf(definitions) : 0)) / CHARS_PER_TOKEN)
 }
 
+// The messages with each condensed tool result in place of its full output.
+function condensed(session: Session, messages: ChatCompletionMessageParam[]): ChatCompletionMessageParam[] {
+  const summaries = session.toolSummaries
+  if (!summaries) return messages
+  return messages.map(message =>
+    message.role === "tool" && summaries[message.tool_call_id] !== undefined
+      ? { ...message, content: summaries[message.tool_call_id]! }
+      : message
+  )
+}
+
 /**
- * What the model is sent: the full log, or once compacted the system prompt with the summary appended,
- * then the messages from `summary.from` on. The session's own log is never shortened.
+ * What the model is sent: the full log (with oversized tool results condensed), or once compacted the system
+ * prompt with the summary appended, then the messages from `summary.from` on. The session's own log is never
+ * shortened.
  */
 export function contextMessages(session: Session): ChatCompletionMessageParam[] {
-  const { messages, summary } = session
+  const { summary } = session
+  const messages = condensed(session, session.messages)
   if (!summary) return messages
   const block = `## Earlier in this conversation\n\nThe older part of this conversation was summarised to save space:\n\n${summary.text}`
   const first = messages[0]
@@ -57,7 +73,7 @@ function summarisedUpTo(session: Session): number {
  * keeps its result). Undefined when nothing new can be summarised.
  */
 export function chooseCut(session: Session, budget: number): number | undefined {
-  const { messages } = session
+  const messages = condensed(session, session.messages)
   const start = summarisedUpTo(session)
   const fits = (at: number) => estimateTokens(messages.slice(at)) <= budget
   const candidates = (roles: string[]) =>
@@ -97,6 +113,9 @@ export function transcriptOf(messages: readonly ChatCompletionMessageParam[]): s
   })
 }
 
+/** How a summary request is worded: the instructions, a line repeated after the text, and what a part is a part of. */
+export type SummaryStyle = { instructions: string; reminder?: string; whole: string }
+
 const SUMMARY_INSTRUCTIONS =
   "You compress a conversation between a user and an AI assistant so the assistant can carry on from your notes " +
   "instead of the full text. Write concise notes that keep: what the user wants (including the latest request, if " +
@@ -104,22 +123,44 @@ const SUMMARY_INSTRUCTIONS =
   "what is done and what remains. Leave out pleasantries and repeated tool output. Write notes only, never a reply " +
   "to the user. Write them in the language the user writes in; never translate them into another one."
 
-// Repeated after the text too: some models otherwise drift into their own default language.
-const LANGUAGE_REMINDER = "(Write the notes in the same language as the user's messages above.)"
+/** Notes a conversation can carry on from; the language rule is repeated after the text, since some models otherwise drift into their own default language. */
+export const CONVERSATION_STYLE: SummaryStyle = {
+  instructions: SUMMARY_INSTRUCTIONS,
+  reminder: "(Write the notes in the same language as the user's messages above.)",
+  whole: "the conversation"
+}
+
+/** A tool's output, condensed for the assistant that called it. */
+export const TOOL_OUTPUT_STYLE: SummaryStyle = {
+  instructions:
+    "You condense the output of a tool an AI assistant called, so it can use the output without reading all of it. " +
+    "Keep everything it is likely to need: facts, numbers, names, identifiers, file paths, URLs, error messages and " +
+    "their causes, and anything that answers what it was working on. Keep useful structure such as sections and " +
+    "lists. Drop boilerplate and repetition. Write only the condensed output, in the output's own language.",
+  whole: "the output"
+}
+
+/** Any text, summarised for a reader (the `summarize` tool). */
+export const TEXT_STYLE: SummaryStyle = {
+  instructions:
+    "Summarize the following text concisely, preserving the key facts and any specifics a reader would need.",
+  whole: "the text"
+}
 
 async function summarizeOnce(
   chat: { client: OpenAI; model: string },
   text: string,
-  focus: string | undefined
+  focus: string | undefined,
+  style: SummaryStyle
 ): Promise<string> {
   const completion = await chat.client.chat.completions.create({
     model: chat.model,
     messages: [
       {
         role: "system",
-        content: focus ? `${SUMMARY_INSTRUCTIONS}\n\nPay special attention to: ${focus}` : SUMMARY_INSTRUCTIONS
+        content: focus ? `${style.instructions}\n\nPay special attention to: ${focus}` : style.instructions
       },
-      { role: "user", content: `${text}\n\n${LANGUAGE_REMINDER}` }
+      { role: "user", content: style.reminder ? `${text}\n\n${style.reminder}` : text }
     ]
   })
   const summary = completion.choices[0]?.message.content?.trim()
@@ -152,8 +193,9 @@ function chunk(entries: string[], limit: number): string[] {
 export async function summarize(
   chat: { client: OpenAI; model: string; contextWindow?: number },
   entries: string[],
-  opts: { previous?: string; focus?: string } = {}
+  opts: { previous?: string; focus?: string; style?: SummaryStyle } = {}
 ): Promise<string> {
+  const style = opts.style ?? CONVERSATION_STYLE
   const limit = Math.max(
     2000,
     Math.floor((chat.contextWindow ?? DEFAULT_CONTEXT_WINDOW) * SUMMARIZE_INPUT_SHARE * CHARS_PER_TOKEN)
@@ -163,12 +205,12 @@ export async function summarize(
   while (chunks.length > 1) {
     const parts = await Promise.all(
       chunks.map((text, index) =>
-        summarizeOnce(chat, `Part ${index + 1} of ${chunks.length} of the conversation:\n\n${text}`, opts.focus)
+        summarizeOnce(chat, `Part ${index + 1} of ${chunks.length} of ${style.whole}:\n\n${text}`, opts.focus, style)
       )
     )
     chunks = chunk(parts, limit)
   }
-  return summarizeOnce(chat, chunks[0] ?? "", opts.focus)
+  return summarizeOnce(chat, chunks[0] ?? "", opts.focus, style)
 }
 
 /**
@@ -189,7 +231,7 @@ export async function compactSession(
   const beforeTokens = estimateTokens(contextMessages(session), opts.definitions)
   const chat = agent.summarizer ?? { client: agent.client, model: agent.model, contextWindow: agent.contextWindow }
   const previous = session.summary?.text
-  const entries = transcriptOf(session.messages.slice(summarisedUpTo(session), cut))
+  const entries = transcriptOf(condensed(session, session.messages.slice(summarisedUpTo(session), cut)))
 
   let text: string
   let dropped = false
@@ -201,6 +243,55 @@ export async function compactSession(
   }
   session.summary = { text, from: cut }
   return { beforeTokens, afterTokens: estimateTokens(contextMessages(session), opts.definitions), dropped }
+}
+
+// The call behind a tool result and the user's request it served, so the condensed output keeps what matters.
+function purposeOf(messages: ChatCompletionMessageParam[], at: number, callId: string): string {
+  const call = messages
+    .slice(0, at)
+    .findLast(m => m.role === "assistant")
+    ?.tool_calls?.find(c => c.id === callId)
+  const request = messages.slice(0, at).findLast(m => m.role === "user")
+  const called =
+    call?.type === "function" ? `${call.function.name}(${call.function.arguments.slice(0, 300)})` : "a tool"
+  return `the assistant called ${called} while working on: ${partText(request?.content).slice(0, 500)}`
+}
+
+/**
+ * Condenses each tool result bigger than a quarter of the window, once: the summarizer rewrites it (in parts
+ * when it doesn't fit), and the model is sent that instead of the full output, which stays in the log.
+ * When the summarizer fails, the start of the output is kept with a note. Returns what was condensed.
+ */
+export async function condenseOversizedResults(
+  agent: Agent,
+  session: Session
+): Promise<{ beforeTokens: number; afterTokens: number }[]> {
+  if (!agent.contextWindow) return []
+  const limit = Math.floor(agent.contextWindow * OVERSIZED_RESULT_SHARE)
+  const chat = agent.summarizer ?? { client: agent.client, model: agent.model, contextWindow: agent.contextWindow }
+  const { messages } = session
+  const done: { beforeTokens: number; afterTokens: number }[] = []
+  for (let at = summarisedUpTo(session); at < messages.length; at++) {
+    const message = messages[at]!
+    if (message.role !== "tool" || session.toolSummaries?.[message.tool_call_id] !== undefined) continue
+    const output = partText(message.content)
+    const beforeTokens = estimateTokens([output])
+    if (beforeTokens <= limit) continue
+
+    let text: string
+    try {
+      text = await summarize(chat, [output], {
+        style: TOOL_OUTPUT_STYLE,
+        focus: purposeOf(messages, at, message.tool_call_id)
+      })
+    } catch {
+      text = `${output.slice(0, Math.floor(limit * CHARS_PER_TOKEN * 0.5))}\n[… the rest was cut: it couldn't be condensed]`
+    }
+    const condensedText = `[Condensed from about ${beforeTokens.toLocaleString("en")} tokens of output]\n${text}`
+    session.toolSummaries = { ...session.toolSummaries, [message.tool_call_id]: condensedText }
+    done.push({ beforeTokens, afterTokens: estimateTokens([condensedText]) })
+  }
+  return done
 }
 
 const OVERFLOW_PATTERN =

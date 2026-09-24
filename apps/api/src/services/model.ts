@@ -2,6 +2,7 @@ import type {
   CreateModelRequest,
   CreateProviderRequest,
   Model,
+  ModelTask,
   Provider,
   UpdateModelRequest,
   UpdateProviderRequest
@@ -190,8 +191,10 @@ export class ModelService {
     }
   }
 
-  /** A random free+enabled chat model with its resolved provider (GET /config/models). */
-  async getRandomModelWithProvider(): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
+  /** A random free+enabled model for `task` (chat unless given) with its resolved provider. */
+  async getRandomModelWithProvider(
+    task: ModelTask = "chat"
+  ): Promise<{ model: Model; provider: ProviderWithSecret } | null> {
     const { rows } = await this.#db.query(
       `
       SELECT m.*,
@@ -202,10 +205,11 @@ export class ModelService {
              p.updated_at AS provider_updated_at
       FROM model m
       JOIN provider p ON p.id = m.provider_id
-      WHERE m.enabled AND m.free AND m.tasks @> ARRAY['chat']::text[]
+      WHERE m.enabled AND m.free AND m.tasks @> ARRAY[$1]::text[]
       ORDER BY random()
       LIMIT 1
-      `
+      `,
+      [task]
     )
 
     const row = rows[0]

@@ -18,7 +18,14 @@ import {
   SWITCH_PERSONA_TOOL
 } from "./agent"
 import { isDangerousCommand } from "./command-risk"
-import { compactSession, contextMessages, DEFAULT_COMPACT_AT, estimateTokens, isContextOverflow } from "./compaction"
+import {
+  compactSession,
+  condenseOversizedResults,
+  contextMessages,
+  DEFAULT_COMPACT_AT,
+  estimateTokens,
+  isContextOverflow
+} from "./compaction"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordStep } from "./telemetry"
@@ -587,6 +594,8 @@ export async function* run(
   // Scales the character estimate to what the provider counted last round.
   let estimateScale = 1
   while (true) {
+    await ensureContextWindow(agent)
+    await condenseOversizedResults(agent, session)
     yield* compactIfNeeded(agent, session, definitions, estimateScale)
     const round = yield* streamRoundFitting(agent, session, definitions, estimateScale)
     const { message, thinking, usage, model } = round

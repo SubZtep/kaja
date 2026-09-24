@@ -30,6 +30,8 @@ export type ConversationRows = {
   messages: MessageRow[]
   /** The latest compaction summary; `from` is the seq of the first message it doesn't cover. Stores keep every one. */
   summary: { text: string; from: number } | null
+  /** Condensed oversized tool results by call id, kept beside the call; the message keeps the full output. */
+  toolSummaries: Record<string, string>
   /** Set on saving, never read back. */
   calls?: CallUpdate[]
 }
@@ -71,6 +73,7 @@ export function splitConversation(session: unknown): ConversationRows {
     systemPrompt: hasSystem ? (first!.content as string) : null,
     pending: pendingField ? { callId: rest[pendingField[0]]!, kind: pendingField[1] } : null,
     summary: rest.summary ? { text: rest.summary.text, from: rest.summary.from - (hasSystem ? 1 : 0) } : null,
+    toolSummaries: rest.toolSummaries ?? {},
     messages: (hasSystem ? others : all).map((message, at) => {
       const row = toRow(message)
       const stat = telemetry?.steps.find(step => step.at === at)
@@ -113,5 +116,6 @@ export function joinConversation(rows: ConversationRows): Session {
   if (rows.pending && pendingField) session[pendingField[0]] = rows.pending.callId
   if (rows.summary)
     session.summary = { text: rows.summary.text, from: rows.summary.from + (rows.systemPrompt !== null ? 1 : 0) }
+  if (Object.keys(rows.toolSummaries).length > 0) session.toolSummaries = rows.toolSummaries
   return session
 }

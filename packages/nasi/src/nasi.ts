@@ -18,6 +18,8 @@ export type NasiOpenOptions = {
   store: NasiStore
   /** `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row). */
   chat: { client: OpenAI; model: string; contextWindow?: number }
+  /** Writes compaction summaries, condenses oversized tool results and runs the `summarize` tool; defaults to {@link chat}. */
+  summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Files, shell, MCP, and plugins. Default false. */
   includeLocalTools?: boolean
   /** Cloud only: whether the caller can run `client_tool_call` tools (`read_file`/`list_files`) on the user's machine. Default true. */
@@ -188,7 +190,7 @@ export class Nasi {
     const { tools, closeTools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       clientTools: opts.clientTools,
-      deps: { ...opts.deps, chat: opts.chat },
+      deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer },
       extraTools: abilities?.groups,
       // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request.
       mcpAbilities: abilities?.mcp,
@@ -239,7 +241,8 @@ export class Nasi {
       sampling: samplingOf(persona),
       promptContext: this.opts.promptContext ?? {},
       store: this.opts.store,
-      contextWindow: this.opts.chat.contextWindow
+      contextWindow: this.opts.chat.contextWindow,
+      summarizer: this.opts.summarizer
     })
 
     return { agent, session, sessionId, events, title }

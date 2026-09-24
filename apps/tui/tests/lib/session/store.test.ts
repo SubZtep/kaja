@@ -307,6 +307,24 @@ test("every compaction summary is kept, the latest comes back, and the messages 
   after.close()
 })
 
+test("a condensed tool result is kept beside its call, and the message keeps the full output", async () => {
+  const id = await createSessionRow(
+    row({ session: { messages: TURN_ONE, toolSummaries: { call_1: "condensed" } }, events: TURN_ONE_EVENTS })
+  )
+  // A later save with the same text doesn't write it again, and never replaces it.
+  await updateSessionRow(id, row({ session: { messages: TURN_ONE, toolSummaries: { call_1: "other" } } }))
+  const loaded = (await loadSessionRow(id))!
+  expect(loaded.session.toolSummaries).toEqual({ call_1: "condensed" })
+  expect(loaded.session.messages).toEqual(TURN_ONE)
+})
+
+test("an existing tool_calls table gains the resultSummary column when the store opens", async () => {
+  const db = await openDb()
+  const columns = db.query("PRAGMA table_info(tool_calls)").all() as { name: string }[]
+  db.close()
+  expect(columns.map(c => c.name)).toContain("resultSummary")
+})
+
 test("deleting a session takes its messages, tool calls and timeline with it", async () => {
   const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events: TURN_ONE_EVENTS }))
   expect(await deleteSessionRow(id)).toBe(true)

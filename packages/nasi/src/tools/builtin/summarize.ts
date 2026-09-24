@@ -1,8 +1,9 @@
 import { tool } from "../../agent/agent"
+import { summarize, TEXT_STYLE } from "../../agent/compaction"
 import { getToolDeps } from "../deps"
 
 /**
- * Summarizes a piece of text using the LLM.
+ * Summarizes a piece of text with the summarize model (else the chat model), in parts when it's too long for one request.
  *
  * @param args.text - The text to summarize.
  * @param args.instructions - Optional extra guidance, e.g. "focus on
@@ -35,21 +36,9 @@ export const summarizeTool = tool<{
     required: ["text"]
   },
   execute: async args => {
-    const chat = getToolDeps().chat
-    if (!chat) return "Summarize is not configured."
-    const completion = await chat.client.chat.completions.create({
-      model: chat.model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Summarize the following text concisely, preserving the key " +
-            "facts and any specifics a reader would need." +
-            (args.instructions ? ` ${args.instructions}` : "")
-        },
-        { role: "user", content: args.text }
-      ]
-    })
-    return completion.choices[0]?.message.content ?? ""
+    const { summarizer, chat } = getToolDeps()
+    const model = summarizer ?? chat
+    if (!model) return "Summarize is not configured."
+    return summarize(model, [args.text], { style: TEXT_STYLE, focus: args.instructions })
   }
 })

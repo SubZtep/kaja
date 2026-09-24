@@ -64,8 +64,12 @@ voice = false
 | --- | --- |
 | `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before the older messages are summarised so the conversation fits. Default `0.8`. |
 
+A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed
+before the model sees it, in parts when it's bigger than the summarising model can take in at once. The
+full output stays in the saved conversation.
+
 The summary is written by `[models.summarize]` in `models.toml` when there is one (a smaller, cheaper
-model works well), else by the chat model. The most recent turns stay word for word; if the summary
+model works well), else by the chat model. The `summarize` tool uses the same model. The most recent turns stay word for word; if the summary
 can't be written, the oldest messages are left out instead. The chat shows a line each time it happens,
 and `/compact` does it on demand, optionally with what to keep in mind: `/compact keep the SQL decisions`.
 

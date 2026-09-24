@@ -42,3 +42,8 @@ provider = "speaches"
 model = "Systran/faster-whisper-small"
 task = "stt"
 provider = "speaches"
+
+[models.summarize]
+model = "accounts/fireworks/models/glm-5p3-flash"
+task = "summarize"
+provider = "fireworks"
