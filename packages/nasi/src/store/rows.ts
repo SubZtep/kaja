@@ -1,4 +1,4 @@
-import type { CallStat, Session, StepStat } from "../agent/agent"
+import type { CallStat, ModelCallStat, Session, StepStat } from "../agent/agent"
 
 /** Which kind of pause a session's pending tool call is waiting on. */
 export type PendingKind = "ask_user" | "run_command" | "client_tool" | "tool_approval"
@@ -34,6 +34,8 @@ export type ConversationRows = {
   toolSummaries: Record<string, string>
   /** Set on saving, never read back. */
   calls?: CallUpdate[]
+  /** Summarizer calls made since the last save; set on saving, never read back. */
+  modelCalls?: ModelCallStat[]
 }
 
 const PENDING_FIELDS = [
@@ -81,7 +83,8 @@ export function splitConversation(session: unknown): ConversationRows {
       const { at: _at, ...step } = stat
       return { ...row, step }
     }),
-    calls: Object.entries(telemetry?.calls ?? {}).map(([callId, stat]) => ({ callId, ...stat }))
+    calls: Object.entries(telemetry?.calls ?? {}).map(([callId, stat]) => ({ callId, ...stat })),
+    modelCalls: telemetry?.modelCalls ?? []
   }
 }
 

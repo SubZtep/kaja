@@ -44,10 +44,15 @@ export class StatsService {
       ),
       this.#db.query(
         `
+        WITH summaries AS (
+          SELECT COALESCE(SUM(c.prompt_tokens), 0) AS prompt_tokens, COALESCE(SUM(c.completion_tokens), 0) AS completion_tokens
+          FROM nasi_model_call c JOIN nasi_session s ON s.id = c.session_id
+          WHERE ${ACTIVE}
+        )
         SELECT (SELECT COUNT(*) FROM nasi_session s WHERE ${ACTIVE})::int AS sessions,
           COUNT(*) FILTER (WHERE m.role = 'user')::int AS messages,
-          COALESCE(SUM(m.prompt_tokens), 0)::float8 AS prompt_tokens,
-          COALESCE(SUM(m.completion_tokens), 0)::float8 AS completion_tokens,
+          (COALESCE(SUM(m.prompt_tokens), 0) + (SELECT prompt_tokens FROM summaries))::float8 AS prompt_tokens,
+          (COALESCE(SUM(m.completion_tokens), 0) + (SELECT completion_tokens FROM summaries))::float8 AS completion_tokens,
           ROUND(AVG(m.latency_ms))::int AS avg_latency_ms
         FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
         WHERE ${ACTIVE}
@@ -92,11 +97,19 @@ export class StatsService {
       ),
       this.#db.query(
         `
-        SELECT m.model, COUNT(*)::int AS replies, COUNT(DISTINCT m.session_id)::int AS sessions,
-          COALESCE(SUM(m.prompt_tokens), 0)::float8 AS prompt_tokens, COALESCE(SUM(m.completion_tokens), 0)::float8 AS completion_tokens
-        FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
-        WHERE ${ACTIVE} AND m.role = 'assistant' AND m.model IS NOT NULL
-        GROUP BY 1 ORDER BY 2 DESC, 1
+        WITH used AS (
+          SELECT m.session_id, m.model, 1 AS reply, 0 AS summary, m.prompt_tokens, m.completion_tokens
+          FROM nasi_message m JOIN nasi_session s ON s.id = m.session_id
+          WHERE ${ACTIVE} AND m.role = 'assistant' AND m.model IS NOT NULL
+          UNION ALL
+          SELECT c.session_id, c.model, 0, 1, c.prompt_tokens, c.completion_tokens
+          FROM nasi_model_call c JOIN nasi_session s ON s.id = c.session_id
+          WHERE ${ACTIVE}
+        )
+        SELECT model, SUM(reply)::int AS replies, SUM(summary)::int AS summaries, COUNT(DISTINCT session_id)::int AS sessions,
+          COALESCE(SUM(prompt_tokens), 0)::float8 AS prompt_tokens, COALESCE(SUM(completion_tokens), 0)::float8 AS completion_tokens
+        FROM used
+        GROUP BY 1 ORDER BY SUM(reply) + SUM(summary) DESC, 1
         `,
         args
       )
@@ -139,6 +152,7 @@ export class StatsService {
       models: models.rows.map(row => ({
         model: row.model,
         replies: row.replies,
+        summaries: row.summaries,
         sessions: row.sessions,
         promptTokens: row.prompt_tokens,
         completionTokens: row.completion_tokens

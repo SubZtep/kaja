@@ -130,7 +130,15 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
 
 // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
 async function saveConversation(client: PoolClient, id: string, data: SessionWrite) {
-  const { systemPrompt, pending, messages, summary, toolSummaries, calls = [] } = splitConversation(data.session)
+  const {
+    systemPrompt,
+    pending,
+    messages,
+    summary,
+    toolSummaries,
+    calls = [],
+    modelCalls = []
+  } = splitConversation(data.session)
   await client.query(
     "UPDATE nasi_session SET system_prompt = $2, pending_call_id = $3, pending_kind = $4 WHERE id = $1",
     [id, systemPrompt, pending?.callId ?? null, pending?.kind ?? null]
@@ -161,6 +169,13 @@ async function saveConversation(client: PoolClient, id: string, data: SessionWri
        SET status = COALESCE($3, status), approval = COALESCE($4, approval), duration_ms = COALESCE($5, duration_ms)
        WHERE call_id = $2 AND message_id IN (SELECT id FROM nasi_message WHERE session_id = $1)`,
       [id, callId, status ?? null, approval ?? null, durationMs ?? null]
+    )
+  }
+  for (const call of modelCalls) {
+    await client.query(
+      `INSERT INTO nasi_model_call (session_id, kind, model, prompt_tokens, completion_tokens, latency_ms)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, call.kind, call.model, call.promptTokens ?? null, call.completionTokens ?? null, call.latencyMs]
     )
   }
 }

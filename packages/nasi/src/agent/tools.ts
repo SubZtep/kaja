@@ -3,7 +3,16 @@ import type { ChatCompletionFunctionTool, ChatCompletionTool } from "openai/reso
 import type { NasiStore } from "../store/types"
 
 /** Identifies who's talking to a {@link Tool}'s `execute`, and which persona is active — `owner` is `null` for a terminal session, `"telegram:<id>"` for a Telegram user; `personaId` mirrors {@link Agent.personaId}. Supplied by {@link run}, never by the model. */
-export type ToolContext = { owner: string | null; personaId?: string; store?: NasiStore }
+export type ToolContext = {
+  owner: string | null
+  personaId?: string
+  store?: NasiStore
+  /** Records a model call the tool made itself (the summarize tool's), so the session's usage counts it. */
+  onModelCall?: (usage: ModelCallUsage) => void
+}
+
+/** What one model request cost, as {@link summarize} reports it. */
+export type ModelCallUsage = { model: string; promptTokens?: number; completionTokens?: number; latencyMs: number }
 
 /** Default {@link ToolContext} for tools invoked without one (e.g. directly in tests) — same as a terminal session. */
 export const LOCAL_OWNER_CTX: ToolContext = { owner: LOCAL_OWNER }

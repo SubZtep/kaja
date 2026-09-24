@@ -31,7 +31,7 @@ function dropLegacySessions(db: Database) {
   const blobs = hasColumn("sessions", "session")
   const noTelemetry = hasColumn("messages", "toolCallId") && !hasColumn("messages", "finishReason")
   if (!blobs && !noTelemetry) return
-  for (const table of ["session_summaries", "tool_calls", "session_events", "messages", "sessions"])
+  for (const table of ["model_calls", "session_summaries", "tool_calls", "session_events", "messages", "sessions"])
     db.run(`DROP TABLE IF EXISTS ${table}`)
 }
 
@@ -133,6 +133,19 @@ function createSchema(db: Database) {
       PRIMARY KEY (sessionId, summaryFrom)
     )
   `)
+  // Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool), for their tokens.
+  db.run(`
+    CREATE TABLE IF NOT EXISTS model_calls (
+      sessionId        TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+      kind             TEXT NOT NULL CHECK (kind IN ('compact','condense','summarize')),
+      model            TEXT NOT NULL,
+      promptTokens     INTEGER,
+      completionTokens INTEGER,
+      latencyMs        INTEGER NOT NULL,
+      createdAt        TEXT NOT NULL
+    )
+  `)
+  db.run("CREATE INDEX IF NOT EXISTS model_calls_session_idx ON model_calls (sessionId)")
   db.run(`
     CREATE TABLE IF NOT EXISTS dataset_answers (
       topic      TEXT NOT NULL,
@@ -253,7 +266,15 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
   // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
   const saveConversation = db.transaction((id: string, data: SessionWrite) => {
-    const { systemPrompt, pending, messages, summary, toolSummaries, calls = [] } = splitConversation(data.session)
+    const {
+      systemPrompt,
+      pending,
+      messages,
+      summary,
+      toolSummaries,
+      calls = [],
+      modelCalls = []
+    } = splitConversation(data.session)
     db.query(
       "UPDATE sessions SET systemPrompt = $systemPrompt, pendingCallId = $callId, pendingKind = $kind WHERE id = $id"
     ).run({
@@ -297,6 +318,20 @@ export function createSqliteStore(dbPath: string): NasiStore {
         $status: status ?? null,
         $approval: approval ?? null,
         $durationMs: durationMs ?? null
+      })
+    }
+    for (const call of modelCalls) {
+      db.query(
+        `INSERT INTO model_calls (sessionId, kind, model, promptTokens, completionTokens, latencyMs, createdAt)
+         VALUES ($id, $kind, $model, $promptTokens, $completionTokens, $latencyMs, $now)`
+      ).run({
+        $id: id,
+        $kind: call.kind,
+        $model: call.model,
+        $promptTokens: call.promptTokens ?? null,
+        $completionTokens: call.completionTokens ?? null,
+        $latencyMs: call.latencyMs,
+        $now: now
       })
     }
   })

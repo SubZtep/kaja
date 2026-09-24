@@ -307,6 +307,28 @@ test("every compaction summary is kept, the latest comes back, and the messages 
   after.close()
 })
 
+test("summarizer calls are stored once each, with the session", async () => {
+  const modelCalls = [
+    { kind: "compact" as const, model: "small", promptTokens: 900, completionTokens: 80, latencyMs: 3000 }
+  ]
+  const id = await createSessionRow(
+    row({ session: { messages: TURN_ONE, telemetry: { steps: [], calls: {}, modelCalls } }, events: TURN_ONE_EVENTS })
+  )
+  // The store took the telemetry off, so a later save adds nothing.
+  await updateSessionRow(id, row({ session: { messages: TURN_ONE } }))
+  const db = await openDb()
+  expect(
+    db
+      .query("SELECT kind, model, promptTokens, completionTokens, latencyMs FROM model_calls WHERE sessionId = ?")
+      .all(id)
+  ).toEqual([{ kind: "compact", model: "small", promptTokens: 900, completionTokens: 80, latencyMs: 3000 }])
+  db.close()
+  expect(await deleteSessionRow(id)).toBe(true)
+  const after = await openDb()
+  expect(after.query("SELECT COUNT(*) AS n FROM model_calls WHERE sessionId = ?").get(id)).toEqual({ n: 0 })
+  after.close()
+})
+
 test("a condensed tool result is kept beside its call, and the message keeps the full output", async () => {
   const id = await createSessionRow(
     row({ session: { messages: TURN_ONE, toolSummaries: { call_1: "condensed" } }, events: TURN_ONE_EVENTS })

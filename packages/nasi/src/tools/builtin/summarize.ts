@@ -35,10 +35,10 @@ export const summarizeTool = tool<{
     },
     required: ["text"]
   },
-  execute: async args => {
+  execute: async (args, ctx) => {
     const { summarizer, chat } = getToolDeps()
     const model = summarizer ?? chat
     if (!model) return "Summarize is not configured."
-    return summarize(model, [args.text], { style: TEXT_STYLE, focus: args.instructions })
+    return summarize(model, [args.text], { style: TEXT_STYLE, focus: args.instructions, onCall: ctx?.onModelCall })
   }
 })

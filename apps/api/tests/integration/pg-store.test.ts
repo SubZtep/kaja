@@ -161,6 +161,27 @@ describe("postgres store", () => {
     ])
   })
 
+  test("summarizer calls are stored, one row each", async () => {
+    const store = createPostgresStore(pool, userId)
+    const modelCalls = [
+      { kind: "condense" as const, model: "small", promptTokens: 900, completionTokens: 80, latencyMs: 3000 },
+      { kind: "summarize" as const, model: "small", latencyMs: 1000 }
+    ]
+    const id = await store.createSession({
+      ...write(TURN),
+      session: { messages: TURN, telemetry: { steps: [], calls: {}, modelCalls } },
+      title: "t"
+    })
+    const { rows } = await pool.query(
+      "SELECT kind, model, prompt_tokens, completion_tokens, latency_ms FROM nasi_model_call WHERE session_id = $1 ORDER BY kind",
+      [id]
+    )
+    expect(rows).toEqual([
+      { kind: "condense", model: "small", prompt_tokens: 900, completion_tokens: 80, latency_ms: 3000 },
+      { kind: "summarize", model: "small", prompt_tokens: null, completion_tokens: null, latency_ms: 1000 }
+    ])
+  })
+
   test("a condensed tool result is kept beside its call, and the message keeps the full output", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({

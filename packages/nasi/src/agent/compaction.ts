@@ -2,6 +2,8 @@ import type OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 import { DEFAULT_CONTEXT_WINDOW } from "../models/context-window"
 import type { Agent, Session } from "./agent"
+import { msSince, recordModelCall } from "./telemetry"
+import type { ModelCallUsage } from "./tools"
 
 /** Share of the context window at which a round compacts first, unless the host sets {@link Agent.compactAt}. */
 export const DEFAULT_COMPACT_AT = 0.8
@@ -151,8 +153,10 @@ async function summarizeOnce(
   chat: { client: OpenAI; model: string },
   text: string,
   focus: string | undefined,
-  style: SummaryStyle
+  style: SummaryStyle,
+  onCall?: (usage: ModelCallUsage) => void
 ): Promise<string> {
+  const startedAt = performance.now()
   const completion = await chat.client.chat.completions.create({
     model: chat.model,
     messages: [
@@ -162,6 +166,12 @@ async function summarizeOnce(
       },
       { role: "user", content: style.reminder ? `${text}\n\n${style.reminder}` : text }
     ]
+  })
+  onCall?.({
+    model: completion.model || chat.model,
+    promptTokens: completion.usage?.prompt_tokens,
+    completionTokens: completion.usage?.completion_tokens,
+    latencyMs: msSince(startedAt)
   })
   const summary = completion.choices[0]?.message.content?.trim()
   if (!summary) throw new Error("The summary came back empty")
@@ -193,7 +203,7 @@ function chunk(entries: string[], limit: number): string[] {
 export async function summarize(
   chat: { client: OpenAI; model: string; contextWindow?: number },
   entries: string[],
-  opts: { previous?: string; focus?: string; style?: SummaryStyle } = {}
+  opts: { previous?: string; focus?: string; style?: SummaryStyle; onCall?: (usage: ModelCallUsage) => void } = {}
 ): Promise<string> {
   const style = opts.style ?? CONVERSATION_STYLE
   const limit = Math.max(
@@ -205,12 +215,18 @@ export async function summarize(
   while (chunks.length > 1) {
     const parts = await Promise.all(
       chunks.map((text, index) =>
-        summarizeOnce(chat, `Part ${index + 1} of ${chunks.length} of ${style.whole}:\n\n${text}`, opts.focus, style)
+        summarizeOnce(
+          chat,
+          `Part ${index + 1} of ${chunks.length} of ${style.whole}:\n\n${text}`,
+          opts.focus,
+          style,
+          opts.onCall
+        )
       )
     )
     chunks = chunk(parts, limit)
   }
-  return summarizeOnce(chat, chunks[0] ?? "", opts.focus, style)
+  return summarizeOnce(chat, chunks[0] ?? "", opts.focus, style, opts.onCall)
 }
 
 /**
@@ -236,7 +252,11 @@ export async function compactSession(
   let text: string
   let dropped = false
   try {
-    text = await summarize(chat, entries, { previous, focus: opts.focus })
+    text = await summarize(chat, entries, {
+      previous,
+      focus: opts.focus,
+      onCall: usage => recordModelCall(session, { kind: "compact", ...usage })
+    })
   } catch {
     dropped = true
     text = [previous, "(Some earlier messages were dropped here without a summary.)"].filter(Boolean).join("\n\n")
@@ -287,7 +307,8 @@ export async function condenseOversizedResults(agent: Agent, session: Session): 
     try {
       text = await summarize(chat, [output], {
         style: TOOL_OUTPUT_STYLE,
-        focus: purposeOf(messages, at, message.tool_call_id)
+        focus: purposeOf(messages, at, message.tool_call_id),
+        onCall: usage => recordModelCall(session, { kind: "condense", ...usage })
       })
     } catch {
       text = `${output.slice(0, Math.floor(limit * CHARS_PER_TOKEN * 0.5))}\n[… the rest was cut: it couldn't be condensed]`

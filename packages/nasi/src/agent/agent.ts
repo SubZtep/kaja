@@ -228,8 +228,18 @@ export type CallStatus = "ok" | "error" | "declined" | "skipped"
 
 export type CallStat = { status?: CallStatus; approval?: "approved" | "declined"; durationMs?: number }
 
+/** What one model call besides the conversation's own rounds cost: a summary written for compaction, condensing or the summarize tool. */
+export type ModelCallStat = {
+  kind: "compact" | "condense" | "summarize"
+  /** The provider-reported model, else the requested one. */
+  model: string
+  promptTokens?: number
+  completionTokens?: number
+  latencyMs: number
+}
+
 /** Numbers {@link run} and the hosts record as they go; a store takes them off the session when it saves (see `clearTelemetry`). Calls are keyed by the provider's call id. */
-export type SessionTelemetry = { steps: StepStat[]; calls: Record<string, CallStat> }
+export type SessionTelemetry = { steps: StepStat[]; calls: Record<string, CallStat>; modelCalls?: ModelCallStat[] }
 
 /** Conversation state threaded through repeated {@link run} calls. */
 export type Session = {

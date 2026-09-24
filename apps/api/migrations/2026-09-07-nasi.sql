@@ -67,6 +67,20 @@ CREATE TABLE IF NOT EXISTS nasi_session_summary (
   PRIMARY KEY (session_id, summary_from)
 );
 
+-- Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool), so stats count their tokens.
+CREATE TABLE IF NOT EXISTS nasi_model_call (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  session_id uuid NOT NULL REFERENCES nasi_session (id) ON DELETE CASCADE,
+  kind text NOT NULL CHECK (kind IN ('compact', 'condense', 'summarize')),
+  model text NOT NULL,
+  prompt_tokens integer,
+  completion_tokens integer,
+  latency_ms integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS nasi_model_call_session_idx ON nasi_model_call (session_id);
+
 CREATE TABLE IF NOT EXISTS nasi_note (
   user_id uuid NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
   -- whose notes: '' is the web app and the CLI, else a Telegram user or a widget visitor (like sessions and datasets)

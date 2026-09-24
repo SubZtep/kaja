@@ -59,7 +59,11 @@ function fakeClient(
         create: async (body: { messages: Sent }) => {
           summaries.push(body.messages)
           if (opts.summary instanceof Error) throw opts.summary
-          return { choices: [{ message: { content: opts.summary ?? "SUMMARY" } }] }
+          return {
+            model: "served-summarizer",
+            usage: { prompt_tokens: 500, completion_tokens: 50 },
+            choices: [{ message: { content: opts.summary ?? "SUMMARY" } }]
+          }
         }
       }
     }
@@ -237,6 +241,15 @@ test("compact() summarises on demand with a focus, using the summarizer when set
   expect(chat.summaries).toHaveLength(0)
   expect(summarizer.summaries[0]![0]!.content).toContain("Pay special attention to: the SQL decisions")
   expect(session.summary).toEqual({ text: "focused notes", from: session.messages.length - 1 })
+  expect(session.telemetry?.modelCalls).toEqual([
+    {
+      kind: "compact",
+      model: "served-summarizer",
+      promptTokens: 500,
+      completionTokens: 50,
+      latencyMs: expect.any(Number)
+    }
+  ])
 })
 
 const bigOutput = `Report for the user: ${words(3000)} The answer is 42.`
@@ -272,6 +285,7 @@ test("an oversized tool result reaches the model condensed, while the log keeps 
   expect(summaries[0]![0]!.content).toContain("what is the answer?")
   // Condensed once: later rounds reuse it.
   expect(Object.keys(session.toolSummaries ?? {})).toHaveLength(1)
+  expect(session.telemetry?.modelCalls?.map(call => call.kind)).toEqual(["condense"])
 })
 
 test("a tool result that fits is left alone", async () => {

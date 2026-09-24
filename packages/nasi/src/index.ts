@@ -46,6 +46,7 @@ export {
   createSession,
   DATASET_INFO_TOOL,
   type FinalizedAgentEvent,
+  type ModelCallStat,
   type PromptContext,
   REMEMBER_NOTE_TOOL,
   RUN_COMMAND_TOOL,
