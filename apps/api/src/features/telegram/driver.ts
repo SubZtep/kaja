@@ -26,6 +26,7 @@ import {
   ABILITY_PAGE_CALLBACK,
   abilityEntries,
   findEntry,
+  needsKeyMessage,
   renderAbilityList,
   toggleAbility
 } from "./abilities"
@@ -246,7 +247,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     let entries = await abilityEntries(ownerUserId)
     const entry = target.typeCode && target.hash ? findEntry(entries, target.typeCode, target.hash) : undefined
     if (entry) {
-      await toggleAbility(ownerUserId, entry)
+      if ((await toggleAbility(ownerUserId, entry)) === "needs_key") {
+        await sender.sendMessage(chatId, needsKeyMessage(entry.name))
+        return
+      }
       entries = await abilityEntries(ownerUserId)
     }
     const { text, rows } = renderAbilityList(entries, target.page)

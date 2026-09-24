@@ -92,6 +92,8 @@ export async function openNasiFor(opts: {
   const chat = chatResolver ? await chatResolver() : await defaultChatResolver(opts.pinnedModel)
   const source = opts.abilities ?? { userId: opts.userId }
   const personas = await personasFor(source)
+  // Only the user's own turns get their keys; a widget's skills-only source never needs one.
+  const keys = "userId" in source ? await abilityService.keysForUser(source.userId) : new Map<string, string>()
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
@@ -100,7 +102,7 @@ export async function openNasiFor(opts: {
     clientTools: opts.clientTools === true,
     deps: nasiToolDeps(),
     abilities: createPostgresAbilityStore(source),
-    abilityKey: name => abilityService.serviceKey(name),
+    abilityKey: name => keys.get(name),
     promptContext: {
       environment:
         "You are Kaja cloud chat. " +

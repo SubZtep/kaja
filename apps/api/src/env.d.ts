@@ -66,7 +66,9 @@ declare module "bun" {
     NASI_STUB_MODEL?: string
     /** HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely */
     WEB_PROXY?: string
-    /** Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...), shared by every cloud user; an ability that needs a key and has none here isn't offered in the cloud */
+    /** Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one */
+    USER_SECRET_KEY?: string
+    /** Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...); every cloud user shares them, and a user's own key wins */
     ABILITY_KEYS?: string
     /** GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from */
     MARKETPLACE_REPO?: string

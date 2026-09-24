@@ -33,7 +33,7 @@ When you create or use an account, Kaja collects:
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
 - email data needed to send account emails, such as verification, password reset, and email change messages;
 - if you link Telegram, your Telegram user id, so the bot knows which account you are;
-- which abilities (skills, personas, and tools) you have turned on.
+- which abilities (skills, personas, and tools) you have turned on, and any API keys you save for them. Keys are stored encrypted, are never shown back to you or anyone else, and are only sent to the service that ability calls.
 
 When you use **cloud chat**, Kaja additionally stores, against your account:
 

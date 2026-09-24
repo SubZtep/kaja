@@ -101,11 +101,23 @@ export const ApiEnvSchema = z.object({
     .describe("HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely")
     .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" }),
 
+  USER_SECRET_KEY: trimmed
+    .refine(value => {
+      try {
+        return atob(value).length === 32
+      } catch {
+        return false
+      }
+    }, "must be 32 bytes, base64-encoded")
+    .optional()
+    .describe("Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
+    .meta({ secret: true, section: "Marketplace" }),
+
   // TODO: temporary until admin-managed service keys (like providers) replace it.
   ABILITY_KEYS: trimmed
     .optional()
     .describe(
-      "Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...), shared by every cloud user; an ability that needs a key and has none here isn't offered in the cloud"
+      "Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...); every cloud user shares them, and a user's own key wins"
     )
     .meta({ secret: true, section: "Marketplace" }),
 

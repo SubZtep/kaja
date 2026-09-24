@@ -47,6 +47,7 @@ flowchart LR
 | `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
 | `2026-09-10-telegram-link.sql` | `telegram_link`, `telegram_link_token` |
 | `2026-09-19-ability.sql` | `ability`, `user_ability`, `marketplace_sync` |
+| `2026-09-19-user-secret.sql` | `user_secret` |
 
 Every file only *creates* (`IF NOT EXISTS`), and the API's `migrate.ts` re-runs all of them on every
 deploy, so they have to stay idempotent. The files run on the first boot of the compose volume; for an
@@ -149,17 +150,30 @@ erDiagram
     timestamptz expires_at
   }
 
+  user_secret {
+    uuid user_id PK
+    text name PK "ability:name"
+    bytea ciphertext "AES-256-GCM"
+    bytea iv
+    bytea tag
+  }
+
   user ||--o{ session : has
   user ||--o{ account : "signs in with"
   user |o--o{ device_code : approves
   user ||--o{ widget : owns
   user ||--o{ telegram_link : connects
   user ||--o{ telegram_link_token : "starts a link with"
+  user ||--o{ user_secret : stores
 ```
 
 `verification` stands alone: Better Auth uses it for email and password-reset tokens and looks rows up by
 `identifier`. `device_code` is the CLI's device login: the terminal polls it until a signed-in user approves
 the code on the web.
+
+`user_secret` holds the API keys people save for abilities. The value never leaves the server: it is
+encrypted with `USER_SECRET_KEY`, and the user id and `name` are bound in as associated data, so a row
+copied to another user or name fails to decrypt.
 
 ### Server config and abilities
 
@@ -353,7 +367,7 @@ The local file is the second half of the agent state, documented table by table 
 | Providers and models | `provider`, `model` | `models.toml` |
 | MCP servers | `ability` rows of type `mcp` | `mcp.toml` for your own, and the marketplace folder |
 | Abilities | `ability`, `user_ability`, `marketplace_sync` | the `marketplace/` folder and `abilities.toml` |
-| Ability API keys | `ABILITY_KEYS` env (server-wide) | `secrets.toml` |
+| API keys | `user_secret` (encrypted) | `secrets.toml` |
 | Widgets, Telegram links | `widget`, `telegram_link*` | none (local mode has no widgets; the bot's token is in `secrets.toml`) |
 
 ### How they differ

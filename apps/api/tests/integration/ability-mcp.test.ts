@@ -10,8 +10,9 @@ import {
 } from "../../../../packages/nasi/tests/fixtures/mcp-http-server"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
+import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
-import { abilityService, marketplaceService } from "../../src/services"
+import { marketplaceService, secretService } from "../../src/services"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
@@ -19,6 +20,7 @@ const tag = faker.string.alphanumeric(6).toLowerCase()
 const things = `things-${tag}`
 const host = `mcp-${tag}.test`
 const GOOD_KEY = `mcp-key-${tag}`
+const TEST_SECRET_KEY = Buffer.alloc(32, 9).toString("base64")
 
 /** A marketplace folder with one usable MCP ability and four the cloud must skip. */
 function marketplace(base: string) {
@@ -88,13 +90,15 @@ describe("MCP servers in the cloud", () => {
   let fixture: HttpMcpFixture
   const realFetch = globalThis.fetch
   const auth = () => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
+  const saveKey = (apiKey: string) =>
+    app.request(`/abilities/me/mcp/${things}/key`, { method: "PUT", headers: auth(), body: JSON.stringify({ apiKey }) })
   const turn = (body: object) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify(body) })
 
   beforeAll(async () => {
     base = mkdtempSync(join(tmpdir(), "kaja-ability-mcp-test-"))
     token = await signUpAndSignIn(faker.internet.email(), faker.internet.password({ length: 8, prefix: "P4$s" }), "Mcp")
-    abilityService.setServiceKeys(new Map([[things, GOOD_KEY]]))
+    secretService.setKey(TEST_SECRET_KEY)
     fixture = startHttpMcpFixture({ apiKey: GOOD_KEY })
     // With a proxy set the guard leaves DNS to it; the faked proxy hands the fake host to the local fixture.
     setNasiFetchProxyOverride("http://proxy.test:3128")
@@ -104,7 +108,7 @@ describe("MCP servers in the cloud", () => {
   afterAll(async () => {
     globalThis.fetch = realFetch
     fixture.stop()
-    abilityService.setServiceKeys(new Map())
+    secretService.setKey(env.USER_SECRET_KEY)
     setNasiFetchProxyOverride(undefined)
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
@@ -122,12 +126,13 @@ describe("MCP servers in the cloud", () => {
     }
   })
 
-  test("the catalog shows where an MCP server runs, when it asks, and its tools", async () => {
+  test("the catalog shows where an MCP server runs, its key need, when it asks, and its tools", async () => {
     const { abilities } = await (await app.request("/abilities")).json()
     expect(abilities.find((ability: { name: string }) => ability.name === things)).toMatchObject({
       type: "mcp",
       mcp: {
         domain: host,
+        key: "required",
         transport: "http",
         approval: "writes",
         tools: ["read_thing", "write_thing"]
@@ -135,18 +140,16 @@ describe("MCP servers in the cloud", () => {
     })
   })
 
-  test("one that needs a key is offered only with a server-wide key", async () => {
-    const enable = () => app.request(`/abilities/me/mcp/${things}`, { method: "PUT", headers: auth() })
-    abilityService.setServiceKeys(new Map())
-    try {
-      expect((await enable()).status).toBe(404)
-    } finally {
-      abilityService.setServiceKeys(new Map([[things, GOOD_KEY]]))
-    }
-    expect((await enable()).status).toBe(200)
+  test("it needs a key before it can be turned on; a saved key is tested by connecting", async () => {
+    const refused = await app.request(`/abilities/me/mcp/${things}`, { method: "PUT", headers: auth() })
+    expect(refused.status).toBe(400)
+    const wrong = await (await saveKey("wrong-key")).json()
+    expect(wrong.check.ok).toBe(false)
+    expect(await (await saveKey(GOOD_KEY)).json()).toEqual({ check: { ok: true } })
+    expect((await app.request(`/abilities/me/mcp/${things}`, { method: "PUT", headers: auth() })).status).toBe(200)
   })
 
-  test("a cloud turn connects the server with the server-wide key; a write waits for approval, then runs", async () => {
+  test("a cloud turn connects the server with the user's key; a write waits for approval, then runs", async () => {
     const sent: Parameters<typeof scriptedChat>[1] = []
     const client = scriptedChat(
       [
@@ -183,5 +186,13 @@ describe("MCP servers in the cloud", () => {
     } finally {
       await cleanupModel(providerId)
     }
+  })
+
+  test("removing the key turns off a server that can't work without it", async () => {
+    const removed = await app.request(`/abilities/me/mcp/${things}/key`, { method: "DELETE", headers: auth() })
+    expect(removed.status).toBe(200)
+    const mine = await (await app.request("/abilities/me", { headers: auth() })).json()
+    expect(mine.keys).not.toContain(things)
+    expect(mine.abilities.map((ability: { name: string }) => ability.name)).not.toContain(things)
   })
 })
