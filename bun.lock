@@ -19,7 +19,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.13.9",
+      "version": "0.13.10",
       "dependencies": {
         "@hono/zod-openapi": "^1.6.3",
         "@kaja/nasi": "workspace:*",
@@ -48,7 +48,7 @@
     },
     "apps/tui": {
       "name": "@kaja/tui",
-      "version": "0.19.3",
+      "version": "0.19.4",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/nasi": "workspace:*",
@@ -133,7 +133,7 @@
     },
     "packages/schema": {
       "name": "@kaja/schema",
-      "version": "0.15.3",
+      "version": "0.15.4",
       "dependencies": {
         "zod": "^4.6.5",
       },
