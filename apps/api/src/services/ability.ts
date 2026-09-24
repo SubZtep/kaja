@@ -51,6 +51,15 @@ export function cloudMcpProblem(ability: McpAbility): string | undefined {
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
 const KEY_PREFIX = "ability:"
 
+/** Abilities a new account starts with turned on. */
+const DEFAULT_ABILITIES: { type: AbilityType; name: string }[] = [
+  { type: "tool", name: "brave-search" },
+  { type: "mcp", name: "geo-service" },
+  { type: "tool", name: "open-meteo" },
+  { type: "persona", name: "care" },
+  { type: "persona", name: "onboarding" }
+]
+
 /** Where an ability's API key lives in `user_secret`. */
 function abilitySecretName(name: string): string {
   return `${KEY_PREFIX}${name}`
@@ -171,6 +180,11 @@ export class AbilityService {
     return [...(await this.#secrets.names(userId, KEY_PREFIX))]
       .map(name => name.slice(KEY_PREFIX.length))
       .sort((a, b) => a.localeCompare(b))
+  }
+
+  /** Turns on {@link DEFAULT_ABILITIES} for a new user; one that's missing from the catalog or needs a key they don't have yet is skipped. */
+  async enableDefaults(userId: string): Promise<void> {
+    for (const { type, name } of DEFAULT_ABILITIES) await this.enable(userId, type, name)
   }
 
   /** Enables an available ability for the user. Enabling twice is fine; a tool or MCP server that requires a key needs one saved first. */
