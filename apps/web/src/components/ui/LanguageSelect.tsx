@@ -1,8 +1,10 @@
 import { Select } from "@base-ui/react/select"
 import { cn, LOCALE_LABELS } from "@kaja/shared"
+import { useMatch } from "@tanstack/react-router"
 import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast, Zoom } from "react-toastify"
+import { useAuthClient } from "../../hooks/auth-client"
 import { m } from "../../paraglide/messages.js"
 import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
 
@@ -12,6 +14,20 @@ const hadLocaleCookieBeforeHydration = Boolean(extractLocaleFromCookie())
 export function LanguageSelect({ className }: Readonly<{ className?: string }> = {}) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const signedIn = Boolean(useMatch({ from: "__root__", shouldThrow: false })?.loaderData?.session)
+  const authClient = useAuthClient()
+
+  // A signed-in pick is saved first: LocaleSync switches the page back to the saved language after the reload.
+  async function pick(locale: Locale) {
+    if (signedIn) {
+      const { error } = await authClient.updateUser({ locale })
+      if (error) {
+        toast.error(m.language_select_save_error())
+        return
+      }
+    }
+    setLocale(locale)
+  }
 
   useEffect(() => {
     if (!hadLocaleCookieBeforeHydration)
@@ -39,7 +55,7 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
     <Select.Root
       items={locales.map(locale => ({ label: LOCALE_LABELS[locale], value: locale }))}
       value={getLocale()}
-      onValueChange={value => setLocale(value as Locale)}
+      onValueChange={value => void pick(value as Locale)}
       open={open}
       onOpenChange={setOpen}
     >

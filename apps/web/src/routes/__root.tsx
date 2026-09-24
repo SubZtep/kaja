@@ -8,6 +8,7 @@ import {
   Scripts
 } from "@tanstack/react-router"
 import { useEffect } from "react"
+import { LocaleSync } from "../components/LocaleSync"
 import { Providers } from "../components/Providers"
 import { getSession } from "../lib/session"
 import { getPageTitle, getRootEnv } from "../lib/vars"
@@ -160,7 +161,10 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
         <meta name="twitter:image" content={OG_IMAGE} />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <LocaleSync />
+        </Providers>
         <Scripts />
       </body>
     </html>

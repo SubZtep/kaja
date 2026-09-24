@@ -118,4 +118,21 @@ describe("Better Auth reads and writes the snake_case columns", () => {
     expect(rows).toHaveLength(1)
     await pool.query('DELETE FROM "user" WHERE email = $1', [email])
   })
+
+  test("the user's locale is saved, returned on the session and refused when unsupported", async () => {
+    const user = await signUp("Auth Locale")
+    const saved = await post("/update-user", { locale: "hu-HU" }, user.token)
+    expect(saved.status).toBe(200)
+    const { rows } = await pool.query('SELECT locale FROM "user" WHERE id = $1', [user.id])
+    expect(rows[0].locale).toBe("hu-HU")
+
+    const session = await app.request("/auth/get-session", { headers: { Authorization: `Bearer ${user.token}` } })
+    expect((await session.json()).user.locale).toBe("hu-HU")
+
+    const refused = await post("/update-user", { locale: "xx-XX" }, user.token)
+    expect(refused.status).toBe(400)
+    const after = await pool.query('SELECT locale FROM "user" WHERE id = $1', [user.id])
+    expect(after.rows[0].locale).toBe("hu-HU")
+    await pool.query('DELETE FROM "user" WHERE id = $1', [user.id])
+  })
 })

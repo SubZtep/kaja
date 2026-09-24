@@ -1,7 +1,9 @@
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
+import { locales } from "@kaja/shared"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { APIError, createAuthMiddleware, getOAuthState } from "better-auth/api"
 import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
+import { z } from "zod"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { reportError } from "../../core/report"
@@ -207,7 +209,9 @@ export const auth = betterAuth({
   user: {
     fields: { emailVerified: "email_verified", ...timestamps },
     additionalFields: {
-      consentedAt: { type: "date", required: false, input: false, fieldName: "consented_at" }
+      consentedAt: { type: "date", required: false, input: false, fieldName: "consented_at" },
+      // Better Auth doesn't check an enum type's values on input, so the validator does.
+      locale: { type: [...locales], required: false, validator: { input: z.enum(locales) } }
     },
     // Self-service deletion from the profile page; needs a recent sign-in. Everything the user owns cascades from the user row.
     deleteUser: { enabled: true },
