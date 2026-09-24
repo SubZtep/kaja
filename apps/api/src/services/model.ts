@@ -61,11 +61,11 @@ export class ModelService {
   async createModel(input: CreateModelRequest): Promise<Model> {
     const result = await this.#db.query(
       `
-      INSERT INTO model (provider_id, model, tasks, enabled, free)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO model (provider_id, model, tasks, enabled, free, context_window)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
       `,
-      [input.providerId, input.model, input.tasks, input.enabled, input.free]
+      [input.providerId, input.model, input.tasks, input.enabled, input.free, input.contextWindow]
     )
 
     return this.#rowToModel(result.rows[0])
@@ -80,6 +80,7 @@ export class ModelService {
           tasks = COALESCE($4, tasks),
           enabled = COALESCE($5, enabled),
           free = COALESCE($6, free),
+          context_window = CASE WHEN $7 THEN $8 ELSE context_window END,
           updated_at = NOW()
       WHERE id = $1
       RETURNING *
@@ -90,7 +91,9 @@ export class ModelService {
         input.model ?? null,
         input.tasks ?? null,
         input.enabled ?? null,
-        input.free ?? null
+        input.free ?? null,
+        input.contextWindow !== undefined,
+        input.contextWindow ?? null
       ]
     )
 
@@ -268,6 +271,7 @@ export class ModelService {
       tasks: row.tasks,
       enabled: row.enabled,
       free: row.free,
+      contextWindow: row.context_window,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : null

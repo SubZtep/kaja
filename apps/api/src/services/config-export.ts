@@ -12,14 +12,19 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
   // One entry per task: first enabled+free model for that task wins (created_at order already applied by the caller).
   // The `free` filter matters — this endpoint is public, so a paid model here would hand anonymous
   // CLI users a model id their own credentials can't reach.
-  const modelsData: Record<string, { model: string; task: string; provider: string }> = {}
+  const modelsData: Record<string, { model: string; task: string; provider: string; context_window?: number }> = {}
   for (const model of models) {
     if (!model.enabled || !model.free) continue
     const providerName = providers.find(p => p.id === model.providerId)?.name
     if (!providerName) continue
     for (const task of model.tasks) {
       if (modelsData[task]) continue
-      modelsData[task] = { model: model.model, task, provider: providerName }
+      modelsData[task] = {
+        model: model.model,
+        task,
+        provider: providerName,
+        ...(model.contextWindow ? { context_window: model.contextWindow } : {})
+      }
     }
   }
 

@@ -59,7 +59,11 @@ async function run(
   const { probe, calls } = probeWith(down)
   const { fake, asked } = io(picks, interactive)
   const { saved, save } = saver()
-  const outcomes = await runModelPass(models, line => lines.push(stripVTControlCharacters(line)), fake, { probe, save })
+  const outcomes = await runModelPass(models, line => lines.push(stripVTControlCharacters(line)), fake, {
+    probe,
+    save,
+    contextWindow: async m => ({ tokens: m.contextWindow ?? 32_768, source: m.contextWindow ? "config" : "fallback" })
+  })
   return { lines, calls, asked, saved, outcomes }
 }
 
@@ -71,7 +75,7 @@ test("groups models by task in the order the report lists them", () => {
 
 test("a working model is listed and nothing is asked", async () => {
   const r = await run([FIREWORKS_CHAT, EMBEDDING], {})
-  expect(r.lines).toContain("  ✔ minimax-m3 (up)")
+  expect(r.lines).toContain("  ✔ minimax-m3 (up · 32,768 tokens, assumed)")
   expect(r.lines).toContain("  ✔ qwen3-embedding (up)")
   expect(r.asked).toEqual([])
   expect(r.outcomes.map(o => o.ok)).toEqual([true, true])

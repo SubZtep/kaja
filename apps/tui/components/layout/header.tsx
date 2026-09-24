@@ -14,11 +14,20 @@ import { MonsterMate } from "./monster"
  * track to lay out against — without it Ink can collapse the row and the
  * model/tokens slot never paints.
  */
+/** " · 12,345 tokens", or " · 12,345 / 32,768 tokens (38%)" once the window is known. */
+export function tokensLabel(promptTokens: number | null, contextWindow?: number | null): string {
+  if (promptTokens == null) return ""
+  if (!contextWindow) return ` · ${promptTokens.toLocaleString()} tokens`
+  const percent = Math.round((promptTokens / contextWindow) * 100)
+  return ` · ${promptTokens.toLocaleString()} / ${contextWindow.toLocaleString()} tokens (${percent}%)`
+}
+
 export function Header({
   persona,
   model,
   provider,
   promptTokens,
+  contextWindow,
   currentTool,
   width
 }: Readonly<{
@@ -27,11 +36,13 @@ export function Header({
   /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". */
   provider?: string
   promptTokens: number | null
+  /** The model's context window, when known, so the count reads as how full it is. */
+  contextWindow?: number | null
   currentTool?: { name: string; arguments: string }
   /** Terminal columns (from useWindowSize). */
   width: number
 }>) {
-  const tokensSuffix = promptTokens != null ? ` · ${promptTokens.toLocaleString()} tokens` : ""
+  const tokensSuffix = tokensLabel(promptTokens, contextWindow)
   const spinnerType = useRandomSpinner(!!currentTool, "block")
   const { muted, accent } = useKajaTheme()
   const spinnerTheme = useSpinnerTheme("toolLabel")

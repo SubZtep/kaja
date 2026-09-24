@@ -7,6 +7,7 @@ import type {
   ChatCompletionMessageToolCall
 } from "openai/resources/chat/completions"
 import { takeLastServedModel } from "../models/client"
+import { resolveContextWindow } from "../models/context-window"
 import {
   type Agent,
   type AgentEvent,
@@ -429,10 +430,11 @@ function emptyRoundNudge(retries: number): string {
 
 /** Per-round telemetry: token usage/model, then any reasoning text. */
 function* roundTelemetry(
-  round: Pick<StreamedRound, "thinking" | "usage" | "model">
+  round: Pick<StreamedRound, "thinking" | "usage" | "model">,
+  contextWindow: number | undefined
 ): Generator<AgentEvent, void, void> {
   const { thinking, usage, model } = round
-  if (usage || model) yield { type: "usage", promptTokens: usage?.promptTokens, model }
+  if (usage || model) yield { type: "usage", promptTokens: usage?.promptTokens, model, contextWindow }
   if (thinking) yield { type: "reasoning", text: thinking }
 }
 
@@ -506,6 +508,14 @@ function recordRound(agent: Agent, session: Session, round: StreamedRound): void
   })
 }
 
+/** Fills {@link Agent.contextWindow} from the resolved model entry the agent runs, when the host didn't set it. */
+async function ensureContextWindow(agent: Agent): Promise<void> {
+  if (agent.contextWindow != null) return
+  const entry = agent.models?.find(m => m.task === "chat" && m.model === agent.model)
+  if (!entry) return
+  agent.contextWindow = (await resolveContextWindow(entry)).tokens
+}
+
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
@@ -537,7 +547,9 @@ export async function* run(
     messages.push(message)
     recordRound(agent, session, round)
 
-    yield* roundTelemetry({ thinking, usage, model })
+    // Per round: a persona switch mid-turn can move to a model with another window.
+    await ensureContextWindow(agent)
+    yield* roundTelemetry({ thinking, usage, model }, agent.contextWindow)
 
     if (!message.tool_calls?.length) {
       yield finalEventFor(message)

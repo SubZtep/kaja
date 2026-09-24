@@ -79,6 +79,7 @@ export function useCloudAgent(options: NasiClientOptions) {
   const [partial, setPartial] = useState<CloudPartialMessage | null>(null)
   const [pending, setPending] = useState(false)
   const [promptTokens, setPromptTokens] = useState<number | null>(null)
+  const [contextWindow, setContextWindow] = useState<number | null>(null)
   const [responseModel, setResponseModel] = useState<string | null>(null)
   const [info, setInfo] = useState<NasiInfoResponse | null>(null)
 
@@ -145,6 +146,7 @@ export function useCloudAgent(options: NasiClientOptions) {
 
       const handleUsage = (event: Extract<NasiStreamEvent, { type: "usage" }>) => {
         if (event.promptTokens != null) setPromptTokens(event.promptTokens)
+        if (event.contextWindow != null) setContextWindow(event.contextWindow)
         if (event.model) setResponseModel(event.model)
       }
 
@@ -223,6 +225,7 @@ export function useCloudAgent(options: NasiClientOptions) {
     currentTool,
     send,
     resolveToolApproval,
-    promptTokens
+    promptTokens,
+    contextWindow
   }
 }

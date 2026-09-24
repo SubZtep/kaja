@@ -50,7 +50,9 @@ const modelFormSchema = z.object({
   providerId: z.string().min(1, m.models_validation_required()),
   model: z.string().min(1, m.models_validation_required()),
   tasks: z.array(z.string()).min(1, m.models_validation_select_task()),
-  free: z.boolean()
+  free: z.boolean(),
+  // Blank means detect it from the provider.
+  contextWindow: z.string().regex(/^\d*$/, m.models_validation_context_window())
 })
 
 const providerColumnHelper = tableColumnHelper<Provider>()
@@ -103,6 +105,15 @@ function makeProviderActionsCell(
 
 function ModelNameCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
   return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+}
+
+function ModelContextWindowCell(info: CellContext<typeof tableFeaturesConfig, Model, number | null>) {
+  const value = info.getValue()
+  return (
+    <span className="font-mono text-xs text-muted">
+      {value ? value.toLocaleString() : m.models_context_window_auto()}
+    </span>
+  )
 }
 
 function ModelTasksCell(info: CellContext<typeof tableFeaturesConfig, Model, ModelTask[]>) {
@@ -219,8 +230,13 @@ function ModelsPage() {
   })
 
   const createModel = useMutation({
-    mutationFn: (payload: { providerId: string; model: string; tasks: ModelTask[]; free: boolean }) =>
-      apiFetch("/admin/models", { ...payload, enabled: true }).then(r => modelSchema.parse(r)),
+    mutationFn: (payload: {
+      providerId: string
+      model: string
+      tasks: ModelTask[]
+      free: boolean
+      contextWindow: number | null
+    }) => apiFetch("/admin/models", { ...payload, enabled: true }).then(r => modelSchema.parse(r)),
     onSuccess: () => {
       invalidateModels()
       toast.success(m.models_success_model_created())
@@ -271,7 +287,8 @@ function ModelsPage() {
       providerId: providers[0]?.id ?? "",
       model: "",
       tasks: ["chat"] as string[],
-      free: false
+      free: false,
+      contextWindow: ""
     },
     validators: { onSubmit: modelFormSchema },
     onSubmit: async ({ value, formApi }) => {
@@ -279,7 +296,8 @@ function ModelsPage() {
         providerId: value.providerId,
         model: value.model,
         tasks: value.tasks as ModelTask[],
-        free: value.free
+        free: value.free,
+        contextWindow: Number(value.contextWindow) || null
       })
       formApi.reset()
     }
@@ -338,6 +356,11 @@ function ModelsPage() {
     modelColumnHelper.accessor("free", {
       header: m.models_column_free(),
       cell: makeModelFreeCell(args => toggleModelFree.mutate(args)),
+      enableColumnFilter: false
+    }),
+    modelColumnHelper.accessor("contextWindow", {
+      header: m.models_column_context_window(),
+      cell: ModelContextWindowCell,
       enableColumnFilter: false
     }),
     modelColumnHelper.accessor("createdAt", {
@@ -460,6 +483,15 @@ function ModelsPage() {
                     ))}
                   </CheckboxGroup>
                 </div>
+              )}
+            </modelForm.AppField>
+            <modelForm.AppField name="contextWindow">
+              {field => (
+                <field.TextField
+                  label={m.models_field_context_window()}
+                  placeholder={m.models_field_context_window_placeholder()}
+                  inputMode="numeric"
+                />
               )}
             </modelForm.AppField>
             <modelForm.AppField name="free">

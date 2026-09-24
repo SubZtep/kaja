@@ -1,3 +1,4 @@
+import { resolveContextWindow } from "@kaja/nasi"
 import type { CliResolvedModel, ModelTask } from "@kaja/schema/config"
 import { t } from "../i18n"
 import { probeModel } from "../models/check"
@@ -52,6 +53,7 @@ export type ModelOutcome = {
 type Deps = {
   probe?: typeof probeModel
   save?: typeof saveModelFields
+  contextWindow?: typeof resolveContextWindow
 }
 
 /** The model pass's prompt for a real terminal. Loaded here so a non-interactive caller never loads the prompts. */
@@ -62,11 +64,22 @@ export async function defaultModelIo(): Promise<ModelIo> {
 
 type ProbeResult = { model: CliResolvedModel; result: Awaited<ReturnType<typeof probeModel>> }
 
+// "up", plus a chat model's context window and where that number came from.
+async function upLabel(model: CliResolvedModel, contextWindow: typeof resolveContextWindow): Promise<string> {
+  if (model.task !== "chat") return t("doctor.modelUp")
+  const window = await contextWindow(model)
+  return t("doctor.modelUpWindow", {
+    tokens: window.tokens.toLocaleString(),
+    source: t(`doctor.contextWindow_${window.source}`)
+  })
+}
+
 // Probes each model of one task, printing a line per model.
 async function probeTask(
   entries: CliResolvedModel[],
   print: (line: string) => void,
-  probe: typeof probeModel
+  probe: typeof probeModel,
+  contextWindow: typeof resolveContextWindow
 ): Promise<ProbeResult[]> {
   const results: ProbeResult[] = []
   for (const model of entries) {
@@ -74,7 +87,7 @@ async function probeTask(
     results.push({ model, result })
     print(
       result.ok
-        ? statusLine("success", `${model.model} (${t("doctor.modelUp")})`)
+        ? statusLine("success", `${model.model} (${await upLabel(model, contextWindow)})`)
         : statusLine("error", `${model.model} (${t("doctor.modelDown")}): ${result.error}`)
     )
   }
@@ -99,13 +112,13 @@ export async function runModelPass(
   models: CliResolvedModel[],
   print: (line: string) => void,
   io: ModelIo,
-  { probe = probeModel, save = saveModelFields }: Deps = {}
+  { probe = probeModel, save = saveModelFields, contextWindow = resolveContextWindow }: Deps = {}
 ): Promise<ModelOutcome[]> {
   const outcomes: ModelOutcome[] = []
 
   for (const [task, entries] of groupModelsByTask(models)) {
     print(t(TASK_HEADING_KEY[task]))
-    const results = await probeTask(entries, print, probe)
+    const results = await probeTask(entries, print, probe, contextWindow)
 
     const active = results.find(entry => entry.model.id === task)
     if (!active) continue

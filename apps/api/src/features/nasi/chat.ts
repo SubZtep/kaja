@@ -1,4 +1,11 @@
-import { ASK_USER_TOOL, createOpenAIClient, Nasi, replyLanguageInstructionFor, setDatasetLoaders } from "@kaja/nasi"
+import {
+  ASK_USER_TOOL,
+  createOpenAIClient,
+  Nasi,
+  replyLanguageInstructionFor,
+  resolveContextWindow,
+  setDatasetLoaders
+} from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/abilities"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared"
@@ -9,7 +16,11 @@ import { abilityService, modelService } from "../../services"
 import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
 
-export type ChatResolver = () => Promise<{ client: ReturnType<typeof createOpenAIClient>; model: string }>
+export type ChatResolver = () => Promise<{
+  client: ReturnType<typeof createOpenAIClient>
+  model: string
+  contextWindow?: number
+}>
 
 let chatResolver: ChatResolver | undefined
 
@@ -37,12 +48,19 @@ async function defaultChatResolver(pinnedModel?: string) {
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) throw new Error("no_model")
   if (!isPublicHttpUrl(result.provider.baseUrl)) throw new Error("unsafe_model_url")
+  const window = await resolveContextWindow({
+    baseUrl: result.provider.baseUrl,
+    apiKey: result.provider.apiKey ?? undefined,
+    model: result.model.model,
+    contextWindow: result.model.contextWindow ?? undefined
+  })
   return {
     client: createOpenAIClient({
       baseURL: result.provider.baseUrl,
       apiKey: result.provider.apiKey ?? "unused"
     }),
-    model: result.model.model
+    model: result.model.model,
+    contextWindow: window.tokens
   }
 }
 

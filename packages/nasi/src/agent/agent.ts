@@ -42,6 +42,8 @@ export class Agent {
   /** Builds a client for a resolved model. Required for persona-pinned model swaps. */
   createClient?: (model: CliResolvedModel) => OpenAI
   store?: NasiStore
+  /** The current model's context window in tokens; when unset, {@link run} resolves it from the matching {@link models} entry. */
+  contextWindow?: number
 
   constructor(config: {
     name?: string
@@ -57,6 +59,7 @@ export class Agent {
     promptContext?: PromptContext
     createClient?: (model: CliResolvedModel) => OpenAI
     store?: NasiStore
+    contextWindow?: number
   }) {
     this.name = config.name ?? "Assistant"
     this.model = config.model
@@ -71,11 +74,13 @@ export class Agent {
     this.promptContext = config.promptContext ?? {}
     this.createClient = config.createClient
     this.store = config.store
+    this.contextWindow = config.contextWindow
   }
 
   /** Point the agent at another model, swapping the client when {@link createClient} is set. */
   setModel(model: CliResolvedModel) {
     this.model = model.model
+    this.contextWindow = model.contextWindow
     if (this.createClient) this.client = this.createClient(model)
   }
 }
@@ -251,6 +256,7 @@ export type AgentEvent =
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "persona_switch"; personaId: string; label: string }
   | { type: "final"; content: string | null }
-  | { type: "usage"; promptTokens?: number; model?: string }
+  /** `contextWindow` is the current model's size in tokens, when known, so hosts can show how full it is. */
+  | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
 
 export type FinalizedAgentEvent = Exclude<AgentEvent, AgentDelta>

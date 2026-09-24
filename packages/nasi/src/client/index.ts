@@ -29,7 +29,7 @@ export type NasiStreamEvent =
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "persona_switch"; personaId: string; label: string }
-  | { type: "usage"; promptTokens?: number; model?: string }
+  | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
   | { type: "final"; content: string | null }
 
 export class NasiStreamError extends Error {

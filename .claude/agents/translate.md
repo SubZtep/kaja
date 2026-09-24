@@ -18,6 +18,7 @@ Language notes for known locales (others: infer the language from the code and f
 
 Rules:
 
+- Translations do not need to be professional or publication-ready; prioritize conveying the meaning clearly and consistently. Native speakers will review and refine them later.
 - Read the existing translation of the key in each language and match its tone, terminology and script before editing.
 - Apply the change to every other language file in the same location and order as en-GB. Add, update or remove keys so all files keep identical key sets.
 - Preserve placeholders (`{path}`, `{count}`, ...) exactly, and any markdown, emoji or punctuation structure.

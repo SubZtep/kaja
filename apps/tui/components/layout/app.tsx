@@ -92,6 +92,7 @@ function Chrome({
   model,
   provider,
   promptTokens,
+  contextWindow,
   currentTool,
   events,
   partial,
@@ -113,6 +114,7 @@ function Chrome({
   /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". Local only — cloud never exposes the resolved provider. */
   provider?: string
   promptTokens: number | null
+  contextWindow: number | null
   currentTool?: { name: string; arguments: string }
   events: TimelineEvent[]
   partial: PartialMessage | null
@@ -163,6 +165,7 @@ function Chrome({
           model={model}
           provider={provider}
           promptTokens={promptTokens}
+          contextWindow={contextWindow}
           currentTool={currentTool}
           width={columns}
         />
@@ -242,7 +245,8 @@ function LocalApp({
     resolveCommand,
     resolveToolApproval,
     runningCommand,
-    promptTokens
+    promptTokens,
+    contextWindow
   } = useAgent({
     model: openaiApiModel,
     client,
@@ -287,6 +291,7 @@ function LocalApp({
       model={displayModel}
       provider={provider}
       promptTokens={promptTokens}
+      contextWindow={contextWindow}
       currentTool={currentTool}
       events={events}
       partial={partial}
@@ -323,7 +328,8 @@ function CloudApp({
     currentTool,
     send,
     resolveToolApproval,
-    promptTokens
+    promptTokens,
+    contextWindow
   } = useCloudAgent({
     baseUrl: apiUrl,
     getToken: async () => token
@@ -337,6 +343,7 @@ function CloudApp({
       personaLabel={persona?.label ?? t("cli.connecting")}
       model={model}
       promptTokens={promptTokens}
+      contextWindow={contextWindow}
       currentTool={currentTool}
       events={events}
       partial={partial}

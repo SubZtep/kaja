@@ -1,0 +1,13 @@
+import { expect, test } from "bun:test"
+import { tokensLabel } from "../../components/layout/header"
+
+test("tokensLabel is empty before the first reply", () => {
+  expect(tokensLabel(null, 32_768)).toBe("")
+})
+
+test("tokensLabel shows the count alone until the window is known, then how full it is", () => {
+  expect(tokensLabel(12_345, null)).toBe(` · ${(12_345).toLocaleString()} tokens`)
+  expect(tokensLabel(12_345, 32_768)).toBe(
+    ` · ${(12_345).toLocaleString()} / ${(32_768).toLocaleString()} tokens (38%)`
+  )
+})
