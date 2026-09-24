@@ -14,7 +14,7 @@ export type RerankModel = {
 
 export type NasiToolDeps = {
   chat?: { client: OpenAI; model: string }
-  /** [models.summarize], for the `summarize` tool; falls back to {@link chat}. */
+  /** The summarize task's model, for the `summarize` tool; falls back to {@link chat}. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Resolves the rerank model to use, given the active persona's id (if any) — lets the caller honor a persona's per-task model pin without this package knowing about personas/models.toml. */
   rerank?: (personaId?: string) => RerankModel | undefined

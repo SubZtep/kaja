@@ -44,7 +44,7 @@ export class Agent {
   store?: NasiStore
   /** The current model's context window in tokens; when unset, {@link run} resolves it from the matching {@link models} entry. */
   contextWindow?: number
-  /** Writes compaction summaries ([models.summarize]); defaults to this agent's own chat model. */
+  /** Writes compaction summaries (the summarize task's model); defaults to this agent's own chat model. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
   compactAt?: number

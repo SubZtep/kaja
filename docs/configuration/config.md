@@ -47,7 +47,7 @@ voice = false
 | `locale` | `en-GB`, `hu-HU`, `nan-TW` or `zh-TW` — the UI and the assistant's replies ([Language](/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
 | `sounds` | play UI sounds |
-| `voice` | speak replies aloud (needs a `[models.tts]` entry) |
+| `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |
 | `hotkeyModifier` | `alt` (default) or `ctrl` — the [key bar](/tui#key-bar)'s modifier |
 | `theme` | `auto` (default), `dark` or `light` — the [colours](/tui#colours); `auto` matches the terminal |
 
@@ -64,14 +64,20 @@ voice = false
 | --- | --- |
 | `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before the older messages are summarised so the conversation fits. Default `0.8`. |
 
-A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed
-before the model sees it, in parts when it's bigger than the summarising model can take in at once. The
-full output stays in the saved conversation.
+Once the context gets that full, the older messages are summarised and the model carries on from the
+summary plus the most recent turns, word for word. The chat shows a line each time, like
+`Context compacted: 26,000 → 4,000 tokens`. Nothing is deleted: the whole conversation stays saved. If the
+summary can't be written, the oldest messages are left out instead, and the line says so.
 
-The summary is written by `[models.summarize]` in `models.toml` when there is one (a smaller, cheaper
-model works well), else by the chat model. The `summarize` tool uses the same model. The most recent turns stay word for word; if the summary
-can't be written, the oldest messages are left out instead. The chat shows a line each time it happens,
-and `/compact` does it on demand, optionally with what to keep in mind: `/compact keep the SQL decisions`.
+`/compact` does it on demand and keeps only your latest turn word for word; add what to keep in mind to
+steer it: `/compact keep the SQL decisions`.
+
+A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed before
+the model sees it, in parts when it's more than the summarising model can take in at once. The full output
+stays in the saved conversation.
+
+The summaries are written by the model `models.toml`'s `[tasks]` picks for `summarize` (a smaller, cheaper
+model works well), else by the chat model. The `summarize` tool uses the same model.
 
 ## `[stt]` / `[tts]`
 

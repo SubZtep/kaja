@@ -18,7 +18,7 @@ async function resolveSttSettings(personaModels?: PersonaModels) {
   const { stt } = await config()
   const resolved = resolveActiveModel(await loadModelsFile(), "stt", personaModels)
   if (!resolved) {
-    throw new Error("No STT model configured — set [models.stt] in models.toml")
+    throw new Error("No STT model configured — pick one for stt in [tasks] of models.toml")
   }
   return {
     model: resolved.model,

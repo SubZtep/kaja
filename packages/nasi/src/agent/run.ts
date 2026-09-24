@@ -228,8 +228,11 @@ async function* streamRound(
     }
   } catch (cause) {
     if (cause instanceof OpenAI.APIError) {
-      const err = new Error(`Model provider request failed: ${cause.message}`)
-      err.name = isContextOverflow(cause) ? "NasiContextOverflow" : "NasiModelUnavailable"
+      // Hosts map this name to "the model provider failed"; `contextOverflow` lets run() compact and retry first.
+      const err = Object.assign(new Error(`Model provider request failed: ${cause.message}`), {
+        contextOverflow: isContextOverflow(cause)
+      })
+      err.name = "NasiModelUnavailable"
       throw err
     }
     throw cause
@@ -557,7 +560,7 @@ async function* streamRoundFitting(
   try {
     return yield* streamRound(agent, contextMessages(session), definitions)
   } catch (error) {
-    if (!(error instanceof Error) || error.name !== "NasiContextOverflow") throw error
+    if (!(error as { contextOverflow?: boolean } | undefined)?.contextOverflow) throw error
     const sent = Math.round(estimateTokens(contextMessages(session), definitions) * estimateScale)
     const smaller = Math.floor(Math.min(agent.contextWindow ?? sent, sent) * 0.9)
     agent.contextWindow = smaller

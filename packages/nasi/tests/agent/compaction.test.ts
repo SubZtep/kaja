@@ -293,3 +293,14 @@ test("when the output can't be condensed, its start is kept with a note", async 
   expect(sent).toContain("couldn't be condensed")
   expect(sent.length).toBeLessThan(bigOutput.length)
 })
+
+test("an overflow that survives the retry still reaches the host as a model provider failure", async () => {
+  const overflow = () =>
+    new OpenAI.APIError(400, undefined, "This model's maximum context length is 1000 tokens", new Headers())
+  const { client, rounds } = fakeClient({ streamErrors: [overflow(), overflow()] })
+  const agent = new Agent({ model: "m", client, tools: [], contextWindow: 100_000 })
+  const error = await collect(run(agent, "next", history(10, 60))).catch(e => e)
+  expect(error).toBeInstanceOf(Error)
+  expect(error.name).toBe("NasiModelUnavailable")
+  expect(rounds).toHaveLength(2)
+})
