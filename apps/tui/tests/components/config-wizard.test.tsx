@@ -397,6 +397,33 @@ test("escape cancels without producing a result", async () => {
   await close(w)
 })
 
+test("backspace on a menu doesn't cancel: the wizard stays on the question", async () => {
+  // Backspace is a typo-fixing reflex, and cancelling would throw every answer so far away.
+  const w = renderWizard()
+  await w.t.tick()
+  await w.t.press("\x7f")
+  expect(w.cancelled).toBe(false)
+  expect(w.t.lastFrame()).toContain("Choose your language")
+
+  await close(w)
+})
+
+test("the last screen says what comes next: the chat on a first run, `kaja` on a re-run", async () => {
+  for (const [firstRun, hint] of [
+    [true, "then the chat starts"],
+    [false, "then just run `kaja`"]
+  ] as const) {
+    const w = renderWizard({ mode: "local", firstRun })
+    await w.t.tick()
+    await w.t.press(ENTER) // language
+    await w.t.press(ENTER) // theme
+    await pickOllama(w)
+    await w.t.press(ENTER) // extras: nothing ticked
+    expect(w.t.lastFrame()).toContain(hint)
+    await close(w)
+  }
+})
+
 test("escape on the providers checklist cancels too", async () => {
   const w = await openProviders()
   await w.t.press(ESC)

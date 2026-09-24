@@ -365,8 +365,14 @@ function ThemePreview() {
   )
 }
 
+// What happens after Enter: on the first run Kaja carries straight on into the chat (or the cloud sign-in)
+function summaryHintKey(cloud: boolean, firstRun?: boolean): string {
+  if (firstRun) return cloud ? "wizard.summaryHintFirstRunCloud" : "wizard.summaryHintFirstRun"
+  return cloud ? "wizard.summaryHintCloud" : "wizard.summaryHint"
+}
+
 /** The last screen. The answers are already on screen above, so this only says what to do next. */
-function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
+function SummaryStep({ result, firstRun }: Readonly<{ result: WizardResult; firstRun?: boolean }>) {
   const { success } = useKajaTheme()
   return (
     <Box flexDirection="column">
@@ -377,7 +383,7 @@ function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
         </Text>
       </RailLine>
       <Box paddingLeft={3}>
-        <Text dimColor>{t(result.mode === "cloud" ? "wizard.summaryHintCloud" : "wizard.summaryHint")}</Text>
+        <Text dimColor>{t(summaryHintKey(result.mode === "cloud", firstRun))}</Text>
       </Box>
     </Box>
   )
@@ -386,14 +392,15 @@ function SummaryStep({ result }: Readonly<{ result: WizardResult }>) {
 /**
  * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`.
  * Every step opens on the current value, so holding Enter walks a configured machine through unchanged.
- * Escape/backspace/delete at any step cancels the whole wizard, the same dismissal contract as
- * {@link SelectMenu}. Nothing is written here — the caller applies the collected {@link WizardResult}
+ * Escape on a list cancels the whole wizard. Backspace/Delete don't, unlike other {@link SelectMenu}s: a
+ * typo-fixing reflex shouldn't throw every answer away. Nothing is written here — the caller applies the collected {@link WizardResult}
  * once `onDone` fires, via the existing config/secrets writers.
  */
 export function ConfigWizard({
   prefill,
   mode,
   saved,
+  firstRun,
   onDone,
   onCancel
 }: Readonly<{
@@ -402,6 +409,8 @@ export function ConfigWizard({
   mode?: KajaMode
   /** Secrets already on disk, so their step offers to keep them instead of demanding a new one. */
   saved?: WizardSaved
+  /** Launched by a plain `kaja` with no config yet, which goes on into the chat afterwards. */
+  firstRun?: boolean
   onDone: (result: WizardResult) => void
   onCancel: () => void
 }>) {
@@ -470,6 +479,7 @@ export function ConfigWizard({
       return (
         <Question title={t("wizard.modelTitle", { task: t(TASK_LABEL_KEY[task]) })}>
           <SelectMenu
+            closeOnBackspace={false}
             items={candidates.map(candidate => `${providerName(candidate.provider)} — ${candidate.model}`)}
             width={70}
             initialIndex={current >= 0 ? current : undefined}
@@ -556,6 +566,7 @@ export function ConfigWizard({
       return (
         <Question title={t("wizard.customTaskTitle", { model: entry?.model ?? "" })}>
           <SelectMenu
+            closeOnBackspace={false}
             items={TASK_ORDER.map(task => t(TASK_LABEL_KEY[task]))}
             width={70}
             initialIndex={entry?.task ? TASK_ORDER.indexOf(entry.task) : undefined}
@@ -583,6 +594,7 @@ export function ConfigWizard({
         return (
           <Question title={t("wizard.modeTitle")}>
             <SelectMenu
+              closeOnBackspace={false}
               items={[t("wizard.modeCloud"), t("wizard.modeLocal")]}
               width={70}
               initialIndex={Math.max(0, MODE_CHOICES.indexOf(result.mode ?? "cloud"))}
@@ -597,6 +609,7 @@ export function ConfigWizard({
         return (
           <Question title={t("wizard.languageTitle")} plain>
             <SelectMenu
+              closeOnBackspace={false}
               items={locales.map(locale => LOCALE_LABELS[locale])}
               // The code beside the native name, so a language you can't read is still identifiable.
               hints={[...locales]}
@@ -620,6 +633,7 @@ export function ConfigWizard({
         return (
           <Question title={t("wizard.themeTitle")}>
             <SelectMenu
+              closeOnBackspace={false}
               items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
               width={70}
               initialIndex={THEME_CHOICES.indexOf(result.theme ?? "dark")}
@@ -691,7 +705,7 @@ export function ConfigWizard({
       }
 
       default:
-        return <SummaryStep result={result} />
+        return <SummaryStep result={result} firstRun={firstRun} />
     }
   }
 

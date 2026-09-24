@@ -52,7 +52,11 @@ try {
   // sends anyone who hasn't finished a local setup silently back to cloud login.
   if (!(await isConfigExists())) {
     const { runConfigWizard } = await import("./lib/cli/config-wizard")
-    const { text } = await runConfigWizard({ headless: args.flags.headless, mode: modeFromFlags(args.flags) })
+    const { text } = await runConfigWizard({
+      headless: args.flags.headless,
+      mode: modeFromFlags(args.flags),
+      firstRun: true
+    })
     // Cancelled at some step — nothing was written, so there's no config to start from.
     if (!(await isConfigExists())) {
       console.log(text)

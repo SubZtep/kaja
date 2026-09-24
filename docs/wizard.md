@@ -29,8 +29,7 @@ choice. When you run the wizard again, it starts on the answers you gave last ti
 | <kbd>Esc</kbd> | Cancel the whole wizard (on a list) — nothing is saved |
 
 Where you type an answer, pressing <kbd>Enter</kbd> on an empty field skips it; an address keeps the
-usual one that's already filled in. On a list where you pick just one, <kbd>Backspace</kbd> cancels
-the wizard too, like <kbd>Esc</kbd>.
+usual one that's already filled in.
 
 Your answers stay on screen with a ✓ as you go, so you can see what you've chosen so far.
 
@@ -61,7 +60,7 @@ Your answers stay on screen with a ✓ as you go, so you can see what you've cho
    one does it.
 6. **Extras.** Optional. Tick **Telegram bot** to chat with Kaja from [Telegram](/telegram), and
    paste the bot's token next. Press <kbd>Enter</kbd> with nothing ticked to skip.
-7. **Setup complete.** Press <kbd>Enter</kbd> to finish.
+7. **Setup complete.** Press <kbd>Enter</kbd> to finish. The screen says what happens next.
 
 A key you type is hidden as you type it and never shown again. It's tested before it's saved (see
 below).

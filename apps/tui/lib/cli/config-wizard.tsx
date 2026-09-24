@@ -332,10 +332,13 @@ async function checkModels(): Promise<number> {
  */
 export async function runConfigWizard({
   headless,
-  mode
+  mode,
+  firstRun
 }: {
   headless?: boolean
   mode?: KajaMode
+  /** A plain `kaja` with no config yet, which starts the chat once the wizard is done. */
+  firstRun?: boolean
 } = {}): Promise<{ code: number; text: string }> {
   if (headless || !process.stdin.isTTY) {
     if (!(await isConfigExists())) await create()
@@ -351,6 +354,7 @@ export async function runConfigWizard({
         prefill={prefill}
         mode={mode}
         saved={saved}
+        firstRun={firstRun}
         onDone={r => {
           unmount()
           resolve(r)

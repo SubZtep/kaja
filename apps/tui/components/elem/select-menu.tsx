@@ -20,6 +20,7 @@ export function SelectMenu({
   width = 32,
   initialIndex,
   plain,
+  closeOnBackspace = true,
   onFocus,
   onSelect,
   onClose
@@ -32,6 +33,8 @@ export function SelectMenu({
   initialIndex?: number
   /** No colours at all, only the marker and bold: for a question asked before the user has picked a theme. */
   plain?: boolean
+  /** Backspace/Delete dismiss like Escape; off where dismissing throws away more than this menu (the setup wizard). */
+  closeOnBackspace?: boolean
   /** Called as the highlight moves, e.g. to preview the option under it. */
   onFocus?: (index: number) => void
   onSelect: (index: number) => void
@@ -63,7 +66,7 @@ export function SelectMenu({
   }
 
   useInput((_input, key) => {
-    if (key.escape || key.backspace || key.delete) {
+    if (key.escape || (closeOnBackspace && (key.backspace || key.delete))) {
       onClose()
       return
     }
