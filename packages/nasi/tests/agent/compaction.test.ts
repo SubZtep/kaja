@@ -103,6 +103,27 @@ test("contextMessages: the full log until compacted, then system + summary + the
   expect(session.messages).toHaveLength(7)
 })
 
+test("contextMessages: images before the last two prompts become a note, newer ones are sent", () => {
+  const image = (name: string) => ({
+    role: "user" as const,
+    content: [{ type: "image_url" as const, image_url: { url: `data:image/png;base64,${name}` } }]
+  })
+  const session = createSession()
+  session.messages.push(
+    { role: "user", content: "one" },
+    image("OLD"),
+    { role: "user", content: "two" },
+    image("KEPT"),
+    { role: "user", content: "three" }
+  )
+  const sent = JSON.stringify(contextMessages(session))
+  expect(sent).not.toContain("OLD")
+  expect(sent).toContain("[an image shown earlier in the conversation]")
+  expect(sent).toContain("KEPT")
+  // The log keeps every image.
+  expect(JSON.stringify(session.messages)).toContain("OLD")
+})
+
 test("chooseCut starts the tail at a user turn that fits, never at a tool result", () => {
   const session = history(4)
   const tailOfTwoTurns = estimateTokens(session.messages.slice(5))

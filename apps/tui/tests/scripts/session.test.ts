@@ -178,7 +178,8 @@ test("list, prefix match, and dump cover the terminal session and leave secrets 
   expect(markdown).toContain("file body")
   expect(markdown).toContain("done ``` really")
   expect(markdown).toContain("````")
-  expect(markdown).toContain("data:image/png;base64,AAAA")
+  // Images are stored apart; the dump shows the reference, not the bytes.
+  expect(markdown).toContain("kaja-image:")
   expect(markdown).toContain("10 prompt tokens")
   expect(markdown).toContain("4 completion tokens")
   expect(markdown).toContain("120 ms")

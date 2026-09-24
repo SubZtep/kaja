@@ -1,6 +1,9 @@
 import {
+  attachImages,
   clearTelemetry,
   type DatasetAnswer,
+  detachImages,
+  hasImageRefs,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -56,6 +59,9 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
   ])
   const latest = summary.rows[0]
   const callsBySeq = Map.groupBy(calls.rows, call => call.seq as number)
+  const images = messages.rows.some(message => hasImageRefs(message.parts))
+    ? await sessionImages(db, row.id)
+    : new Map<string, never>()
   const parsed = PersistedSessionSchema.safeParse({
     id: row.id,
     createdAt: iso(row.created_at),
@@ -74,7 +80,7 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
       messages: messages.rows.map((message, seq) => ({
         role: message.role,
         content: message.content,
-        parts: message.parts,
+        parts: attachImages(message.parts, images),
         reasoning: message.reasoning,
         toolCallId: message.tool_call_id,
         toolCalls: (callsBySeq.get(seq) ?? []).map(call => ({
@@ -89,8 +95,26 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
   return parsed.success ? parsed.data : undefined
 }
 
+// The session's stored images by hash, for the messages that refer to them.
+async function sessionImages(db: Pool, sessionId: string) {
+  const { rows } = await db.query<{ hash: string; mime_type: string; data: Buffer }>(
+    "SELECT hash, mime_type, data FROM nasi_session_image WHERE session_id = $1",
+    [sessionId]
+  )
+  return new Map(rows.map(image => [image.hash, { mimeType: image.mime_type, data: image.data }]))
+}
+
 async function insertMessage(client: PoolClient, sessionId: string, seq: number, row: MessageRow) {
   const id = Bun.randomUUIDv7()
+  // Inline images go in their own table, once per session; the message keeps a reference to each.
+  const { parts, images } = detachImages(row.parts)
+  for (const image of images) {
+    await client.query(
+      `INSERT INTO nasi_session_image (session_id, hash, mime_type, data) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (session_id, hash) DO NOTHING`,
+      [sessionId, image.hash, image.mimeType, image.data]
+    )
+  }
   await client.query(
     `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id,
                                persona, model, prompt_tokens, completion_tokens, latency_ms, finish_reason)
@@ -101,7 +125,7 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
       seq,
       row.role,
       row.content,
-      row.parts ? JSON.stringify(row.parts) : null,
+      parts ? JSON.stringify(parts) : null,
       row.reasoning,
       row.toolCallId,
       row.step?.persona ?? null,

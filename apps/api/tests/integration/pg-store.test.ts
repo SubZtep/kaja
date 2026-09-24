@@ -161,6 +161,19 @@ describe("postgres store", () => {
     ])
   })
 
+  test("an inline image is kept in nasi_session_image, with a reference in the message", async () => {
+    const store = createPostgresStore(pool, userId)
+    const id = await store.createSession({ ...write(TURN), title: "t" })
+    const { rows } = await pool.query(
+      "SELECT m.parts::text AS parts, i.mime_type FROM nasi_message m, nasi_session_image i WHERE m.session_id = $1 AND i.session_id = $1 AND m.parts IS NOT NULL",
+      [id]
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0].parts).toContain("kaja-image:")
+    expect(rows[0].mime_type).toBe("image/png")
+    expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
+  })
+
   test("summarizer calls are stored, one row each", async () => {
     const store = createPostgresStore(pool, userId)
     const modelCalls = [

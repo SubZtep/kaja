@@ -180,6 +180,8 @@ never shortened; only what the model is sent changes (`contextMessages()`).
 - **Oversized tool results** (over a quarter of the window) are condensed once by
   `condenseOversizedResults()`, told which call produced them and what the user asked. The model gets the
   condensed text (`Session.toolSummaries`, by call id); the tool message keeps the full output.
+- **Images** from before the last two user prompts are sent as a short note instead: the model saw them
+  when they were new, and resending the bytes every round is costly. The log keeps them.
 - **Compaction**: when a character-count estimate, scaled each round to what the provider actually counted,
   passes `Agent.compactAt` (0.8 by default) of the window, `compactSession()` summarises everything before a
   tail that fits a quarter of it. The tail starts at a user turn where it can, never at a tool result.

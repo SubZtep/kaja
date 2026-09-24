@@ -67,6 +67,16 @@ CREATE TABLE IF NOT EXISTS nasi_session_summary (
   PRIMARY KEY (session_id, summary_from)
 );
 
+-- Images the messages carried inline, once per session; a message part refers to one as kaja-image:<hash>.
+CREATE TABLE IF NOT EXISTS nasi_session_image (
+  session_id uuid NOT NULL REFERENCES nasi_session (id) ON DELETE CASCADE,
+  -- sha256 of the bytes, hex
+  hash text NOT NULL,
+  mime_type text NOT NULL,
+  data bytea NOT NULL,
+  PRIMARY KEY (session_id, hash)
+);
+
 -- Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool), so stats count their tokens.
 CREATE TABLE IF NOT EXISTS nasi_model_call (
   id uuid PRIMARY KEY DEFAULT uuidv7(),

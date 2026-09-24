@@ -1,5 +1,13 @@
 import { expect, test } from "bun:test"
-import { clearTelemetry, joinConversation, splitConversation } from "../../src/store/rows"
+import {
+  attachImages,
+  clearTelemetry,
+  detachImages,
+  hasImageRefs,
+  IMAGE_REF_PREFIX,
+  joinConversation,
+  splitConversation
+} from "../../src/store/rows"
 
 const call = (id: string, name: string) => ({ id, type: "function", function: { name, arguments: `{"a":"${name}"}` } })
 
@@ -93,4 +101,22 @@ test("a session without telemetry has no calls, and clearing takes it off", () =
   const session = { messages, telemetry: { steps: [], calls: {} } }
   clearTelemetry(session)
   expect(session).not.toHaveProperty("telemetry")
+})
+
+test("inline images leave the parts as references, and come back from them", () => {
+  const png = { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } }
+  const linked = { type: "image_url", image_url: { url: "https://example.com/a.png" } }
+  const { parts, images } = detachImages([png, { type: "text", text: "hi" }, linked, png])
+  expect(images).toHaveLength(2)
+  expect(images[0]!.hash).toBe(images[1]!.hash)
+  expect(images[0]!.mimeType).toBe("image/png")
+  const ref = (parts![0] as typeof png).image_url.url
+  expect(ref).toStartWith(IMAGE_REF_PREFIX)
+  expect(parts![2]).toEqual(linked)
+  expect(hasImageRefs(parts)).toBe(true)
+  expect(hasImageRefs([linked])).toBe(false)
+
+  const stored = new Map(images.map(image => [image.hash, image]))
+  expect(attachImages(parts, stored)).toEqual([png, { type: "text", text: "hi" }, linked, png])
+  expect(attachImages(parts, new Map())![0]).toEqual({ type: "text", text: "[an image that is no longer stored]" })
 })

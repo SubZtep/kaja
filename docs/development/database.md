@@ -44,7 +44,7 @@ flowchart LR
 | `2026-03-03-better-auth.sql` | `user`, `session`, `account`, `verification`, `device_code` |
 | `2026-08-01-config.sql` | `provider`, `model` |
 | `2026-08-31-widget.sql` | `widget` |
-| `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_session_summary`, `nasi_model_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
+| `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_session_summary`, `nasi_session_image`, `nasi_model_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
 | `2026-09-10-telegram-link.sql` | `telegram_link`, `telegram_link_token` |
 | `2026-09-19-ability.sql` | `ability`, `user_ability`, `marketplace_sync` |
 | `2026-09-19-user-secret.sql` | `user_secret` |
@@ -300,6 +300,13 @@ erDiagram
     timestamptz created_at
   }
 
+  nasi_session_image {
+    uuid session_id PK
+    text hash PK "sha256 of the bytes"
+    text mime_type
+    bytea data
+  }
+
   nasi_model_call {
     uuid id PK
     uuid session_id FK
@@ -353,6 +360,7 @@ erDiagram
   nasi_session ||--o{ nasi_message : has
   nasi_session ||--o{ nasi_session_summary : "compacted into"
   nasi_session ||--o{ nasi_model_call : "summarised with"
+  nasi_session ||--o{ nasi_session_image : "shows"
   nasi_message ||--o{ nasi_tool_call : makes
   nasi_tool_call }o--o| nasi_message : "result is"
   nasi_dataset_answer }o..o| nasi_dataset_version : "topic, owner, version"
@@ -370,14 +378,19 @@ big for the context keeps its full output in its message, and the condensed vers
 `nasi_tool_call.result_summary`. Each request that wrote a summary (compacting, condensing, or the
 `summarize` tool) is a `nasi_model_call` row, so the stats count its tokens too.
 
+An image a message carries (a screenshot a tool returned, say) is stored once per session in
+`nasi_session_image`, and the message's `parts` refer to it as `kaja-image:<hash>`; loading the session puts
+the image back in place.
+
 Datasets have no foreign key between answers and versions: answers are written field by field as the user
 replies, and the `nasi_dataset_version` row appears only when the topic is complete.
 
 ## SQLite
 
 The local file is the second half of the agent state, documented table by table on
-[Local storage](/configuration/storage). It has nine tables: `notes`, `sessions`, `messages`, `tool_calls`,
-`session_summaries`, `model_calls`, `session_events`, `dataset_answers` and `dataset_versions`.
+[Local storage](/configuration/storage). It has ten tables: `notes`, `sessions`, `messages`, `tool_calls`,
+`session_summaries`, `session_images`, `model_calls`, `session_events`, `dataset_answers` and
+`dataset_versions`.
 
 ## Side by side
 
@@ -390,6 +403,7 @@ The local file is the second half of the agent state, documented table by table 
 | Tool call | `nasi_tool_call` | `tool_calls` |
 | Compaction summary | `nasi_session_summary` | `session_summaries` |
 | Summarizer call | `nasi_model_call` | `model_calls` |
+| Message image | `nasi_session_image` | `session_images` |
 | Memory note | `nasi_note` | `notes` |
 | Dataset answer | `nasi_dataset_answer` | `dataset_answers` |
 | Completed dataset | `nasi_dataset_version` | `dataset_versions` |

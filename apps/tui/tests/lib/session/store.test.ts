@@ -93,7 +93,7 @@ async function openDb() {
 
 function count(
   db: Awaited<ReturnType<typeof openDb>>,
-  table: "messages" | "session_events" | "tool_calls",
+  table: "messages" | "session_events" | "tool_calls" | "session_images",
   id: string
 ) {
   const sql =
@@ -102,6 +102,27 @@ function count(
       : `SELECT COUNT(*) AS n FROM ${table} WHERE sessionId = ?`
   return (db.query(sql).get(id) as { n: number }).n
 }
+
+test("an inline image is stored once in session_images, the message keeps a reference, and it loads back", async () => {
+  const image = { type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } }
+  const messages = [
+    { role: "user", content: [image] },
+    { role: "assistant", content: "a picture" },
+    { role: "user", content: [image] }
+  ]
+  const id = await createSessionRow(row({ session: { messages } }))
+  const db = await openDb()
+  const parts = db.query("SELECT parts FROM messages WHERE sessionId = ? ORDER BY seq").all(id) as { parts: string }[]
+  expect(parts[0]!.parts).toContain("kaja-image:")
+  expect(parts[0]!.parts).not.toContain("iVBORw0KGgo")
+  expect(count(db, "session_images", id)).toBe(1)
+  db.close()
+  expect((await loadSessionRow(id))!.session.messages).toEqual(messages)
+  expect(await deleteSessionRow(id)).toBe(true)
+  const after = await openDb()
+  expect(count(after, "session_images", id)).toBe(0)
+  after.close()
+})
 
 test("a corrupt row loads as undefined instead of crashing", async () => {
   const id = await createSessionRow(

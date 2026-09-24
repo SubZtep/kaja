@@ -23,6 +23,9 @@ const CHARS_PER_TOKEN = 4
 /** What a compaction did, for the `compacted` event and `/compact`'s reply. */
 export type Compaction = { beforeTokens: number; afterTokens: number; dropped: boolean }
 
+/** How many of the latest user prompts keep their images in what the model is sent; older images become a note. */
+const KEEP_IMAGE_TURNS = 2
+
 // Serializes a message for counting, with inline images as a flat cost instead of their base64.
 function sizeOf(value: unknown): number {
   return JSON.stringify(value, (_key, v) =>
@@ -46,14 +49,37 @@ function condensed(session: Session, messages: ChatCompletionMessageParam[]): Ch
   )
 }
 
+// The messages with images from before the last few user prompts replaced by a note: the model saw them then, and resending them each round costs a lot.
+function withoutOldImages(messages: ChatCompletionMessageParam[]): ChatCompletionMessageParam[] {
+  let prompts = 0
+  const keepFrom = messages.findLastIndex(
+    message => message.role === "user" && typeof message.content === "string" && ++prompts === KEEP_IMAGE_TURNS
+  )
+  const hasImage = (message: ChatCompletionMessageParam) =>
+    message.role === "user" && Array.isArray(message.content) && message.content.some(p => p.type === "image_url")
+  if (keepFrom <= 0 || !messages.slice(0, keepFrom).some(hasImage)) return messages
+  return messages.map((message, at) => {
+    if (at >= keepFrom || message.role !== "user" || !Array.isArray(message.content) || !hasImage(message))
+      return message
+    return {
+      ...message,
+      content: message.content.map(part =>
+        part.type === "image_url"
+          ? { type: "text" as const, text: "[an image shown earlier in the conversation]" }
+          : part
+      )
+    }
+  })
+}
+
 /**
- * What the model is sent: the full log (with oversized tool results condensed), or once compacted the system
- * prompt with the summary appended, then the messages from `summary.from` on. The session's own log is never
- * shortened.
+ * What the model is sent: the full log (with oversized tool results condensed, and images from before the
+ * last {@link KEEP_IMAGE_TURNS} user prompts left out), or once compacted the system prompt with the summary
+ * appended, then the messages from `summary.from` on. The session's own log is never shortened.
  */
 export function contextMessages(session: Session): ChatCompletionMessageParam[] {
   const { summary } = session
-  const messages = condensed(session, session.messages)
+  const messages = withoutOldImages(condensed(session, session.messages))
   if (!summary) return messages
   const block = `## Earlier in this conversation\n\nThe older part of this conversation was summarised to save space:\n\n${summary.text}`
   const first = messages[0]

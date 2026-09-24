@@ -2,7 +2,10 @@ import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
 import {
+  attachImages,
   clearTelemetry,
+  detachImages,
+  hasImageRefs,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -31,7 +34,15 @@ function dropLegacySessions(db: Database) {
   const blobs = hasColumn("sessions", "session")
   const noTelemetry = hasColumn("messages", "toolCallId") && !hasColumn("messages", "finishReason")
   if (!blobs && !noTelemetry) return
-  for (const table of ["model_calls", "session_summaries", "tool_calls", "session_events", "messages", "sessions"])
+  for (const table of [
+    "session_images",
+    "model_calls",
+    "session_summaries",
+    "tool_calls",
+    "session_events",
+    "messages",
+    "sessions"
+  ])
     db.run(`DROP TABLE IF EXISTS ${table}`)
 }
 
@@ -133,6 +144,16 @@ function createSchema(db: Database) {
       PRIMARY KEY (sessionId, summaryFrom)
     )
   `)
+  // Images the messages carried inline, once per session; a message part refers to one as kaja-image:<hash>.
+  db.run(`
+    CREATE TABLE IF NOT EXISTS session_images (
+      sessionId TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+      hash      TEXT NOT NULL,
+      mimeType  TEXT NOT NULL,
+      data      BLOB NOT NULL,
+      PRIMARY KEY (sessionId, hash)
+    )
+  `)
   // Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool), for their tokens.
   db.run(`
     CREATE TABLE IF NOT EXISTS model_calls (
@@ -221,6 +242,13 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
   function insertMessage(sessionId: string, seq: number, row: MessageRow, createdAt: string) {
     const id = Bun.randomUUIDv7()
+    // Inline images go in their own table, once per session; the message keeps a reference to each.
+    const { parts, images } = detachImages(row.parts)
+    for (const image of images) {
+      db.query(
+        "INSERT OR IGNORE INTO session_images (sessionId, hash, mimeType, data) VALUES ($sessionId, $hash, $mimeType, $data)"
+      ).run({ $sessionId: sessionId, $hash: image.hash, $mimeType: image.mimeType, $data: image.data })
+    }
     db.query(
       `INSERT INTO messages (id, sessionId, seq, role, content, parts, reasoning, toolCallId, persona, model,
                              promptTokens, completionTokens, latencyMs, finishReason, createdAt)
@@ -238,7 +266,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
       $seq: seq,
       $role: row.role,
       $content: row.content,
-      $parts: row.parts ? JSON.stringify(row.parts) : null,
+      $parts: parts ? JSON.stringify(parts) : null,
       $reasoning: row.reasoning,
       $toolCallId: row.toolCallId,
       $createdAt: createdAt
@@ -356,6 +384,16 @@ export function createSqliteStore(dbPath: string): NasiStore {
         resultSummary: string | null
       }[]
       const callsBySeq = Map.groupBy(callRows, call => call.seq)
+      const parts = messageRows.map(message => (message.parts ? (JSON.parse(message.parts) as unknown[]) : null))
+      const images = parts.some(hasImageRefs)
+        ? new Map(
+            (
+              db
+                .query("SELECT hash, mimeType, data FROM session_images WHERE sessionId = $id")
+                .all({ $id: row.id }) as { hash: string; mimeType: string; data: Uint8Array }[]
+            ).map(image => [image.hash, image])
+          )
+        : new Map<string, never>()
       const eventRows = db
         .query("SELECT payload FROM session_events WHERE sessionId = $id ORDER BY seq")
         .all({ $id: row.id }) as { payload: string }[]
@@ -382,7 +420,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
           messages: messageRows.map((message, seq) => ({
             role: message.role,
             content: message.content,
-            parts: message.parts ? JSON.parse(message.parts) : null,
+            parts: attachImages(parts[seq] ?? null, images),
             reasoning: message.reasoning,
             toolCallId: message.toolCallId,
             toolCalls: (callsBySeq.get(seq) ?? []).map(({ callId, name, arguments: args }) => ({

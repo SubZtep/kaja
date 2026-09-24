@@ -115,12 +115,16 @@ export {
   UnsafeUrlError
 } from "./security/ssrf"
 export {
+  attachImages,
   type CallUpdate,
   type ConversationRows,
   clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
+  detachImages,
   forgetNotes,
+  hasImageRefs,
+  IMAGE_REF_PREFIX,
   joinConversation,
   type MessageRow,
   type NasiStore,
@@ -129,6 +133,7 @@ export {
   requireStore,
   type SessionWrite,
   type StepRow,
+  type StoredImage,
   splitConversation,
   type ToolCallRow
 } from "./store"

@@ -38,6 +38,58 @@ export type ConversationRows = {
   modelCalls?: ModelCallStat[]
 }
 
+/** An image a message carried inline, stored once per session under its hash. */
+export type StoredImage = { hash: string; mimeType: string; data: Uint8Array }
+
+/** What a stored message part's image URL becomes: a reference into the session's images instead of the bytes. */
+export const IMAGE_REF_PREFIX = "kaja-image:"
+
+const DATA_URL = /^data:([^;,]+);base64,(.*)$/s
+
+type ImagePart = { type: "image_url"; image_url: { url: string } }
+
+function isImagePart(part: unknown): part is ImagePart {
+  return (part as ImagePart)?.type === "image_url" && typeof (part as ImagePart).image_url?.url === "string"
+}
+
+/** Takes the inline (base64 data URL) images out of a message's parts, leaving a {@link IMAGE_REF_PREFIX} reference to each; a store saves the images beside the message. */
+export function detachImages(parts: unknown[] | null): { parts: unknown[] | null; images: StoredImage[] } {
+  if (!parts) return { parts, images: [] }
+  const images: StoredImage[] = []
+  const detached = parts.map(part => {
+    const match = isImagePart(part) ? DATA_URL.exec(part.image_url.url) : null
+    if (!match) return part
+    const data = Buffer.from(match[2]!, "base64")
+    const hash = new Bun.CryptoHasher("sha256").update(data).digest("hex")
+    images.push({ hash, mimeType: match[1]!, data })
+    return {
+      ...(part as ImagePart),
+      image_url: { ...(part as ImagePart).image_url, url: `${IMAGE_REF_PREFIX}${hash}` }
+    }
+  })
+  return { parts: detached, images }
+}
+
+/** Whether any part refers to a stored image, so a store knows to load the session's images. */
+export function hasImageRefs(parts: unknown[] | null): boolean {
+  return !!parts?.some(part => isImagePart(part) && part.image_url.url.startsWith(IMAGE_REF_PREFIX))
+}
+
+/** The inverse of {@link detachImages}: each reference becomes its data URL again, or a note when the image is gone. */
+export function attachImages(
+  parts: unknown[] | null,
+  images: Map<string, Omit<StoredImage, "hash">>
+): unknown[] | null {
+  if (!parts) return parts
+  return parts.map(part => {
+    if (!isImagePart(part) || !part.image_url.url.startsWith(IMAGE_REF_PREFIX)) return part
+    const image = images.get(part.image_url.url.slice(IMAGE_REF_PREFIX.length))
+    if (!image) return { type: "text", text: "[an image that is no longer stored]" }
+    const url = `data:${image.mimeType};base64,${Buffer.from(image.data).toString("base64")}`
+    return { ...part, image_url: { ...part.image_url, url } }
+  })
+}
+
 const PENDING_FIELDS = [
   ["pendingAskUserId", "ask_user"],
   ["pendingRunCommandId", "run_command"],
