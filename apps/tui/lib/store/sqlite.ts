@@ -385,7 +385,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
       }[]
       const callsBySeq = Map.groupBy(callRows, call => call.seq)
       const parts = messageRows.map(message => (message.parts ? (JSON.parse(message.parts) as unknown[]) : null))
-      const images = parts.some(hasImageRefs)
+      const images = parts.some(message => hasImageRefs(message))
         ? new Map(
             (
               db
