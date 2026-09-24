@@ -49,7 +49,8 @@ export function setProviderBaseUrl(text: string, provider: string, baseUrl: stri
 
 /**
  * Makes `[models.<task>]` use `provider` and `model` in models.toml text, for the doctor switching a
- * broken model to another that serves the same task. Edits those two lines only: the id stays, so a
+ * broken model to another that serves the same task. Edits those two lines and drops a `context_window`
+ * that described the old model; the id stays, so a
  * persona pin naming it still resolves, and the template's comments survive. Unchanged when the
  * table is missing.
  */
@@ -72,7 +73,10 @@ export function setModelFields(text: string, task: string, provider: string, mod
       lines[index] =
         `${match[1]}${match[2]}${match[3]}${JSON.stringify(values[match[2] as keyof typeof values])}${match[4]}`
   }
-  return lines.join("\n")
+  // The old model's context_window doesn't describe the new one; without it the new one's is detected.
+  return lines
+    .filter((line, index) => index <= start || index >= end || !/^\s*context_window\s*=/.test(line))
+    .join("\n")
 }
 
 /** Reads models.toml, points a task's default model at another entry's provider and model, and writes it back. No-op when the file is missing. */
@@ -99,7 +103,8 @@ export function resolveModels(data: ResolvedModelsFile): CliResolvedModel[] {
       task: entry.task,
       baseUrl: provider.base_url,
       apiKey: provider.api_key,
-      provider: entry.provider
+      provider: entry.provider,
+      ...(entry.context_window ? { contextWindow: entry.context_window } : {})
     }
   })
 }

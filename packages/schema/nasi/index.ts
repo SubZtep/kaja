@@ -43,7 +43,9 @@ export const NasiStepSchema = z.discriminatedUnion("type", [
 
 export const NasiUsageSchema = z.object({
   promptTokens: z.number().optional(),
-  model: z.string().optional()
+  model: z.string().optional(),
+  /** The model's context window in tokens, when known. */
+  contextWindow: z.number().optional()
 })
 
 export const NasiTurnStatusSchema = z.enum(["completed", "needs_input", "needs_approval", "needs_client_tool", "error"])

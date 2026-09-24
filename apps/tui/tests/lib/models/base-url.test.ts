@@ -67,6 +67,18 @@ test("setModelFields points a task's default at another provider and model, keep
   expect(out).toContain('[providers.fireworks]\nbase_url = "https://api.fireworks.ai/inference/v1"')
 })
 
+test("setModelFields drops the old model's context_window but not another entry's", () => {
+  const text = TWO_CHATS.replace(
+    'provider = "fireworks"\n',
+    'provider = "fireworks"\ncontext_window = 200000\n'
+  ).replace('provider = "ollama"\n', 'provider = "ollama"\ncontext_window = 8192\n')
+  const out = setModelFields(text, "chat", "ollama", "llama3.2:1b")
+  expect(out).not.toContain("context_window = 200000")
+  expect(out).toContain(
+    '[models.ollama-chat]\nmodel = "llama3.2:1b"\ntask = "chat"\nprovider = "ollama"\ncontext_window = 8192'
+  )
+})
+
 test("setModelFields leaves the text alone when the task has no default entry", () => {
   expect(setModelFields(TWO_CHATS, "embedding", "ollama", "nomic-embed-text")).toBe(TWO_CHATS)
 })

@@ -25,7 +25,22 @@ Each `[models.<id>]` entry has:
 
 - `model` — the provider's own model name, sent in API requests;
 - `task` — `chat`, `embedding`, `image-generation`, `tts`, `stt` or `rerank`;
-- `provider` — a key from `[providers.*]`.
+- `provider` — a key from `[providers.*]`;
+- `context_window` — optional, how many tokens the model takes in.
+
+The header shows how full the chat model's context is (`12,345 / 32,768 tokens (38%)`). Without
+`context_window`, Kaja asks the server once per run: llama.cpp and Ollama report the size they actually
+run with, and some hosted providers list it with their models. When nothing answers, it assumes
+32,768. `kaja doctor` shows the number each chat model got and where it came from. Set it by hand
+when the guess is wrong, for example when you start Ollama with a bigger `num_ctx`:
+
+```toml
+[models.chat]
+model = "qwen3.5:4b"
+task = "chat"
+provider = "ollama"
+context_window = 65536
+```
 
 **The entry whose id equals its task is the one in use**: `[models.chat]` serves chat. Other models for
 the same task can sit beside it under other ids — the wizard writes them as `[models.<provider>-<task>]`,

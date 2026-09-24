@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS "model" (
   "tasks" text[] not null default '{}',
   "enabled" boolean not null default true,
   "free" boolean not null default false,
+  -- Tokens the model takes in; null means ask its server, else assume 32768.
+  "context_window" integer check ("context_window" > 0),
   "created_at" timestamptz default CURRENT_TIMESTAMP not null,
   "updated_at" timestamptz default CURRENT_TIMESTAMP not null
 );

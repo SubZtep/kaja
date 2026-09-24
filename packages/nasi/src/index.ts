@@ -81,6 +81,13 @@ export {
   noteServedModel,
   takeLastServedModel
 } from "./models/client"
+export {
+  type ContextWindowSource,
+  type ContextWindowTarget,
+  clearContextWindowCache,
+  DEFAULT_CONTEXT_WINDOW,
+  resolveContextWindow
+} from "./models/context-window"
 export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall } from "./nasi"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"

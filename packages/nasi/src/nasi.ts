@@ -15,7 +15,8 @@ import { createTools } from "./tools/registry"
 
 export type NasiOpenOptions = {
   store: NasiStore
-  chat: { client: OpenAI; model: string }
+  /** `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row). */
+  chat: { client: OpenAI; model: string; contextWindow?: number }
   /** Files, shell, MCP, and plugins. Default false. */
   includeLocalTools?: boolean
   /** Cloud only: whether the caller can run `client_tool_call` tools (`read_file`/`list_files`) on the user's machine. Default true. */
@@ -158,7 +159,9 @@ function responseFromEvents(
     message: messageFromEvents(turnEvents, status),
     steps: stepsFromEvents(turnEvents, includeThinking),
     ...(thinking ? { thinking } : {}),
-    ...(usage ? { usage: { promptTokens: usage.promptTokens, model: usage.model } } : {})
+    ...(usage
+      ? { usage: { promptTokens: usage.promptTokens, model: usage.model, contextWindow: usage.contextWindow } }
+      : {})
   }
 }
 
@@ -234,7 +237,8 @@ export class Nasi {
       instructions: persona?.instructions,
       sampling: samplingOf(persona),
       promptContext: this.opts.promptContext ?? {},
-      store: this.opts.store
+      store: this.opts.store,
+      contextWindow: this.opts.chat.contextWindow
     })
 
     return { agent, session, sessionId, events, title }

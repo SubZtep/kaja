@@ -34,6 +34,8 @@ export const modelSchema = z.object({
   tasks: z.array(modelTaskSchema).min(1),
   enabled: z.boolean(),
   free: z.boolean(),
+  /** Tokens the model takes in; null means it's detected from the provider. */
+  contextWindow: z.number().int().positive().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   lastUsedAt: z.coerce.date().nullable()
@@ -44,7 +46,8 @@ export const createModelRequestSchema = z.object({
   model: z.string().min(1),
   tasks: z.array(modelTaskSchema).min(1),
   enabled: z.boolean().default(true),
-  free: z.boolean().default(false)
+  free: z.boolean().default(false),
+  contextWindow: z.number().int().positive().nullable().default(null)
 })
 
 export const updateModelRequestSchema = z.object({
@@ -52,7 +55,9 @@ export const updateModelRequestSchema = z.object({
   model: z.string().min(1).optional(),
   tasks: z.array(modelTaskSchema).min(1).optional(),
   enabled: z.boolean().optional(),
-  free: z.boolean().optional()
+  free: z.boolean().optional(),
+  /** null clears it back to detection. */
+  contextWindow: z.number().int().positive().nullable().optional()
 })
 
 export const listModelsResponseSchema = z.object({

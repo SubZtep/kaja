@@ -24,6 +24,7 @@ function makeModel(overrides: Partial<Model> = {}): Model {
     tasks: ["chat"],
     enabled: true,
     free: true,
+    contextWindow: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastUsedAt: null,

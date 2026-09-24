@@ -129,6 +129,7 @@ export function useAgent(
   const [runningCommand, setRunningCommand] = useState(false)
   // Latest completed turn's prompt token count, for the header's usage display — not part of the visible timeline.
   const [promptTokens, setPromptTokens] = useState<number | null>(null)
+  const [contextWindow, setContextWindow] = useState<number | null>(null)
 
   // Adopting a persona from the menu swaps the agent's instructions and starts a fresh session/timeline — deliberately destructive, since the menu is also the CLI's only "new conversation" affordance. The agent can additionally switch its own persona mid-conversation via the switch_persona tool, which run() handles non-destructively by rewriting the session's system message in place (see the persona_switch event).
   const [persona, setPersona] = useState<Persona>(resume?.persona ?? initialPersona ?? personas[0]!)
@@ -225,6 +226,7 @@ export function useAgent(
       }
       const handleUsage = (event: Extract<FinalizedAgentEvent, { type: "usage" }>) => {
         if (event.promptTokens != null) setPromptTokens(event.promptTokens)
+        if (event.contextWindow != null) setContextWindow(event.contextWindow)
         if (event.model) setResponseModel(event.model)
       }
       try {
@@ -300,6 +302,7 @@ export function useAgent(
     resolveCommand,
     resolveToolApproval,
     runningCommand,
-    promptTokens
+    promptTokens,
+    contextWindow
   }
 }

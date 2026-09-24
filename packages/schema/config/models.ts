@@ -12,7 +12,9 @@ const ModelEntrySchema = z.object({
   model: z.string().min(1),
   task: TaskSchema,
   // Which [providers.*] table holds the credentials.
-  provider: z.string().min(1)
+  provider: z.string().min(1),
+  // Tokens the model can take in; omit it and Kaja asks the server, else assumes 32768.
+  context_window: z.number().int().positive().optional()
 })
 
 export const ModelsFileSchema = z
@@ -47,4 +49,6 @@ export type CliResolvedModel = {
   apiKey?: string
   /** The `[providers.*]` table key this model resolved to, e.g. "fireworks". */
   provider: string
+  /** `context_window` from models.toml; unset means detect it from the server. */
+  contextWindow?: number
 }
