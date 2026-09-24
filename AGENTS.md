@@ -34,6 +34,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | Migration runner | `scripts/db_migration.sh` |
 | `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
 | `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
+| Model defaults | `docs/config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `docs/config/models.*.toml` |
 | Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`; also switches to the test database) |
 | Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
 
@@ -112,7 +113,7 @@ bun run --filter @kaja/tui test
 
 - **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
-  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml)
+  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml), plus the repo's model catalog (`docs/config/catalog.toml`)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/cli` — remaining CLI domain concepts (datasets; re-exports the persona schema)
   - `@kaja/schema/nasi` — cloud turn request/response
@@ -147,6 +148,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 - Git hooks already run `bun lint` and typecheck on commit, `bun test` right after each commit, and lint plus typecheck on push, so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/tui/`).
+- model defaults: edit `docs/config/catalog.toml`, run `bun generate:models`, never edit `docs/config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`).
 - env vars: edit `packages/schema/env/{api,web,tui}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
 ## Testing & CI

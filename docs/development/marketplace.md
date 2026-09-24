@@ -124,13 +124,13 @@ sequenceDiagram
   tarball (capped at 50 MB) is only downloaded when the branch head moved.
 - **Which repo.** `MARKETPLACE_REPO` (default `SubZtep/kaja`) and `MARKETPLACE_REF` (default `main`).
 - **Failures are recorded** in the single `marketplace_sync` row, shown in the admin panel, and
-  reported to Sentry. The previous catalogue stays in place.
+  reported to Sentry. The previous catalog stays in place.
 - **Nothing is deleted.** An ability that leaves the folder gets `removed_at`; users' selections survive
   and come back if it returns. `updated_at` only moves when the content hash — which covers just what
   the agent sees — changes.
 
 An ability that can't run in the cloud is skipped at sync time, and one that stops qualifying is hidden
-from the catalogue: a skill with `scripts/`; an HTTP tool on a non-public host, or needing a key when the
+from the catalog: a skill with `scripts/`; an HTTP tool on a non-public host, or needing a key when the
 server has no `USER_SECRET_KEY`; an MCP server that's `stdio`, has no `tools` allowlist, is on a
 non-public host, or shares a name with an HTTP tool (a key belongs to one name); anything whose manifest
 no longer parses.

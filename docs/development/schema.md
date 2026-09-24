@@ -13,10 +13,10 @@ import — there is no bare `@kaja/schema` import, and no app keeps local schema
 
 | Subpath | Contents | Files | Consumers |
 |---|---|---|---|
-| `@kaja/schema/api` | REST contracts: providers and models, widget keys, the ability catalogue and users' keys, usage stats, the Telegram link, auth payloads, the config export bundle | `api/*.ts` | `apps/api`, `apps/web` |
+| `@kaja/schema/api` | REST contracts: providers and models, widget keys, the ability catalog and users' keys, usage stats, the Telegram link, auth payloads, the config export bundle | `api/*.ts` | `apps/api`, `apps/web` |
 | `@kaja/schema/nasi` | the HTTP turn contract: `NasiTurnRequest`, `WidgetTurnRequest`, `NasiTurnResponse` and its steps | `nasi/index.ts` | `apps/api`, `apps/tui`, `packages/nasi` |
 | `@kaja/schema/abilities` | marketplace manifests: skill frontmatter, persona, dataset, HTTP tool, MCP server | `abilities/*.ts` | `apps/api`, `apps/tui`, `packages/nasi` |
-| `@kaja/schema/config` | the CLI's hand-edited TOML files: `settings`, `models`, `mcp`, `secrets`, `abilities` | `config/*.ts` | `apps/tui` |
+| `@kaja/schema/config` | the CLI's hand-edited TOML files: `settings`, `models`, `mcp`, `secrets`, `abilities`; and `docs/config/catalog.toml`, the model catalog | `config/*.ts` | `apps/tui` |
 | `@kaja/schema/store` | runtime state behind `NasiStore`: sessions and memory notes | `store/*.ts` | `apps/tui`, `packages/nasi` |
 | `@kaja/schema/cli` | a re-export of the persona and dataset schemas, so CLI code keeps one import | `cli/index.ts` | `apps/tui` |
 | `@kaja/schema/env` | env-var schemas, source of truth for every `.env.example` and `env.d.ts` | `env/*.ts` | build scripts |

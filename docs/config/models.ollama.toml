@@ -1,24 +1,19 @@
 # Kaja models — [models.<task>] entries each pick a [providers.*] table with
-# `provider = "<name>"`. The id must match the task name (e.g. "chat"); a
-# persona's [models].<task> can pin a different model id if one exists.
-# `model` is the literal name sent to the provider's API. Provider API keys
-# live in secrets.toml's [providers.<name>] tables, keyed the same way —
-# Ollama requires one but ignores its value, e.g. [providers.ollama] api_key = "ollama".
+# `provider = "<name>"`. The id equal to the task name (e.g. "chat") is the one used for that task;
+# other models of the same task are kept as [models.<provider>-<task>], and a persona's
+# [models].<task> can pin one of them by id. `model` is the literal name sent to the provider's API.
+# Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
+# Ollama requires an API key but ignores its value, e.g. [providers.ollama] api_key = "ollama" in secrets.toml.
 [providers.ollama]
 base_url = "http://localhost:11434/v1"
 
 [models.chat]
-model = "llama3.2:1b"
+model = "qwen3.5:4b"
 task = "chat"
 provider = "ollama"
 
 [models.embedding]
-model = "nomic-embed-text"
+model = "qwen3-embedding:0.6b"
 task = "embedding"
 provider = "ollama"
-
-# [models.stt]
-# model = "<provider-specific model name>"
-# task = "stt"
-# provider = "<name>"

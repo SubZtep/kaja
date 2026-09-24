@@ -7,6 +7,9 @@ nav_order: 5
 
 # Voice & language
 
+> [!CAUTION]
+> **Work in progress:** :lady_beetle:
+
 ## Voice
 
 Mic dictation and spoken replies work in [local mode](/modes#local-mode), through a
