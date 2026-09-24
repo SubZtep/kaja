@@ -1,3 +1,5 @@
+// First of all: it adds `.openapi()` to zod schemas created after it, so a test loading @kaja/schema/api before the app (the web's, say) can't leave the API routes without it.
+import "@hono/zod-openapi"
 import { jest } from "bun:test"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
