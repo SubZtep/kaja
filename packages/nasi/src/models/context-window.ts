@@ -88,12 +88,15 @@ async function fromFireworks(fetchFn: Fetch, target: ContextWindowTarget) {
   return positive(model?.contextLength)
 }
 
+// Every probe at once, so a hosted model doesn't wait on the local-server ones failing; the first in this order that answers wins.
 async function detect(fetchFn: Fetch, target: ContextWindowTarget) {
-  for (const probe of [fromLlamaCpp, fromOllama, fromModelsList, fromFireworks]) {
-    const tokens = await probe(fetchFn, target)
-    if (tokens) return { tokens, source: "detected" as const }
-  }
-  return { tokens: DEFAULT_CONTEXT_WINDOW, source: "fallback" as const }
+  const answers = await Promise.all(
+    [fromLlamaCpp, fromOllama, fromModelsList, fromFireworks].map(probe => probe(fetchFn, target))
+  )
+  const tokens = answers.find(Boolean)
+  return tokens
+    ? { tokens, source: "detected" as const }
+    : { tokens: DEFAULT_CONTEXT_WINDOW, source: "fallback" as const }
 }
 
 /**

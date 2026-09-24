@@ -82,3 +82,27 @@ test("a probe that throws counts as no answer", async () => {
   }
   expect((await resolveContextWindow({ baseUrl: "http://down/v1", model: "m" }, fetchFn)).source).toBe("fallback")
 })
+
+test("the probes run at once, and the earlier one in order wins when several answer", async () => {
+  const started: string[] = []
+  let release!: () => void
+  const gate = new Promise<void>(resolve => {
+    release = resolve
+  })
+  const routes: Record<string, unknown> = {
+    "/fw/props": { n_ctx: 4096 },
+    "/fw/v1/models": { data: [{ id: "accounts/a/models/m", context_length: 200000 }] }
+  }
+  const fetchFn = async (input: string) => {
+    const path = new URL(input).pathname
+    started.push(path)
+    await gate
+    return path in routes ? Response.json(routes[path]) : new Response("not found", { status: 404 })
+  }
+  const pending = resolveContextWindow({ baseUrl: "http://both/fw/v1", model: "accounts/a/models/m" }, fetchFn)
+  await Bun.sleep(0)
+  // llama.cpp, Ollama's /api/ps, the /models list and Fireworks' model API, all before any answered.
+  expect(started).toHaveLength(4)
+  release()
+  expect((await pending).tokens).toBe(4096)
+})
