@@ -2,7 +2,7 @@ import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
-import { fetchModelsToml } from "../models/models"
+import { fetchModelsToml, getModelsPath } from "../models/models"
 import { listPaths } from "../paths"
 import { getConfigDir } from "./config"
 import { writeTemplateConfig } from "./fetch"
@@ -45,9 +45,8 @@ async function runFetchOffline(only?: string): Promise<FetchResult[]> {
 }
 
 async function runFetchOnline(only: string | undefined): Promise<FetchResult[] | undefined> {
-  // A 304 only means "same as the last download", not "same as what's on disk" — so when the config
-  // dir is missing entirely (first run) ask for the full body instead of trusting it.
-  const bundle = await fetchRemoteConfigBundle(existsSync(getConfigDir()))
+  // A 304 only means "same as the last download", not "same as what's on disk", so with no models.toml (the one file the bundle writes) ask for the full body. Not the config dir: fetching secrets.toml has just created it.
+  const bundle = await fetchRemoteConfigBundle(existsSync(getModelsPath()))
   if ("unchanged" in bundle) return undefined
 
   const entries = Object.entries(pickBundleFiles(bundle.files)).filter(([key]) => matchesOnly(key, only))
