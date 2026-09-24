@@ -14,7 +14,7 @@ import { type Brightness, consoleTheme } from "../lib/terminal-background"
 
 export type ThemeName = Brightness
 
-/** Every colour the TUI paints with, named by what it's for. Ink takes colour names or hex; `tableHead` and `tableBorder` go to cli-table3, which only knows names. */
+/** Every colour the TUI paints with, named by what it's for. Ink takes colour names or hex; `tableHead` and `tableBorder` paint markdown tables. */
 export type Palette = {
   /** Kaja's pink: the persona name, the agent's "●", markdown headings. */
   accent: string
@@ -184,7 +184,7 @@ export function useKajaTheme(): KajaStyles {
   return useKajaComponentTheme().styles
 }
 
-/** The raw colours of the nearest theme, for painting outside Ink's props (chalk, cli-table3). */
+/** The raw colours of the nearest theme, for painting outside Ink's props (chalk). */
 export function usePalette(): Palette {
   return useKajaComponentTheme().palette
 }

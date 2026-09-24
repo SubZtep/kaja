@@ -1,4 +1,4 @@
-import { Box, Text } from "ink"
+import { Box, Text, useWindowSize } from "ink"
 import { Marked, marked } from "marked"
 import { memo } from "react"
 import { splitBlocks } from "../../lib/markdown/blocks"
@@ -30,11 +30,13 @@ function codeTheme(p: Palette) {
  * user colour for emphasis/links (mirrors the user's "> " prefix), muted for de-emphasis.
  *
  * The source is rendered block by block ({@link splitBlocks}), each block cached on its own: a streaming message only
- * re-renders its last block, and a history item that remounts on scroll hits the cache. Keyed on the block's text only
- * — marked-terminal wraps at its own fixed width, so output doesn't depend on the terminal size. Cleared wholesale past
- * a cap to bound memory (streaming leaves throwaway prefixes of the last block behind).
+ * re-renders its last block, and a history item that remounts on scroll hits the cache. Keyed on the block's text —
+ * marked-terminal wraps text at its own fixed width — plus the table width for a block that may hold a table, the one
+ * thing sized to the terminal. Cleared wholesale past a cap to bound memory (streaming leaves throwaway prefixes of the
+ * last block behind).
  */
 function createParser(p: Palette) {
+  let tableWidth = 80
   const renderer = new Marked(
     markedTerminal(
       {
@@ -48,9 +50,9 @@ function createParser(p: Palette) {
         del: paint(p.muted).dim.strikethrough,
         link: paint(p.user),
         href: paint(p.user).underline,
-        tableOptions: {
-          style: { head: [p.tableHead], border: [p.tableBorder] }
-        },
+        tableHead: paint(p.tableHead).bold,
+        tableBorder: paint(p.tableBorder),
+        tableWidth: () => tableWidth,
         tab: 2
       },
       { theme: codeTheme(p) }
@@ -58,26 +60,35 @@ function createParser(p: Palette) {
   )
   const rendered = new Map<string, string>()
   const renderBlock = (block: string) => {
-    const hit = rendered.get(block)
+    const key = block.includes("|") ? `${tableWidth}\0${block}` : block
+    const hit = rendered.get(key)
     if (hit !== undefined) return hit
     const out = dedent(renderer.parse(block) as string)
     if (rendered.size > 2000) rendered.clear()
-    rendered.set(block, out)
+    rendered.set(key, out)
     return out
   }
-  return (source: string) => splitBlocks(source).map(renderBlock).join("\n\n")
+  return (source: string, width: number) => {
+    tableWidth = width
+    return splitBlocks(source).map(renderBlock).join("\n\n")
+  }
 }
 
-const parsers = new WeakMap<Palette, (source: string) => string>()
+const parsers = new WeakMap<Palette, (source: string, tableWidth: number) => string>()
+
+// Columns a table leaves free for what Markdown sits in: the agent's "●" and its gap, or the reasoning box's frame
+const TABLE_MARGIN = 6
 
 function useParser() {
   const palette = usePalette()
+  const { columns } = useWindowSize()
   let parser = parsers.get(palette)
   if (!parser) {
     parser = createParser(palette)
     parsers.set(palette, parser)
   }
-  return parser
+  const tableWidth = Math.max(20, columns - TABLE_MARGIN)
+  return (source: string) => parser(source, tableWidth)
 }
 
 type Segment = { type: "text"; source: string } | { type: "image"; href: string; alt: string }

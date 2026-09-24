@@ -13,15 +13,13 @@
 //
 // Trimmed from upstream: no :shortcode: emoji replacement (node-emoji), and Bun's
 // stripANSI and a local OSC 8 link helper stand in for ansi-regex and ansi-escapes.
+//
+// Tables are drawn by ./table instead of cli-table3: rounded, one rule under the header, aligned, fit to a width.
 
 import chalk from "chalk"
 import { highlight as highlightCli } from "cli-highlight"
-import Table from "cli-table3"
 import supportsHyperlinks from "supports-hyperlinks"
-
-const TABLE_CELL_SPLIT = "^*||*^"
-const TABLE_ROW_WRAP = "*|*|*|*"
-const TABLE_ROW_WRAP_REGEXP = new RegExp(escapeRegExp(TABLE_ROW_WRAP), "g")
+import { renderTable } from "./table"
 
 const COLON_REPLACER = "*#COLON|*"
 const COLON_REPLACER_REGEXP = new RegExp(escapeRegExp(COLON_REPLACER), "g")
@@ -59,13 +57,15 @@ const defaultOptions = {
   showSectionPrefix: true,
   reflowText: false,
   tab: 4,
-  tableOptions: {}
+  tableHead: chalk.bold,
+  tableBorder: chalk.gray,
+  // The most columns a table may take; read per table, so it can follow the terminal's width
+  tableWidth: () => 80
 }
 
 function Renderer(this: any, options: any, highlightOptions: any) {
   this.o = { ...defaultOptions, ...options }
   this.tab = sanitizeTab(this.o.tab, defaultOptions.tab)
-  this.tableSettings = this.o.tableOptions
   this.unescape = this.o.unescape ? unescapeEntities : identity
   this.highlightOptions = highlightOptions || {}
 
@@ -208,50 +208,17 @@ function prependCheckboxToLooseItem(item: any, checkbox: string) {
   return section(text)
 }
 
-;(Renderer.prototype as any).table = function (this: any, header: any, body: any) {
-  if (typeof header === "object") {
-    const token = header
-    header = ""
-
-    let cell = ""
-    for (const headerCell of token.header) {
-      cell += this.tablecell(headerCell)
-    }
-    header += this.tablerow({ text: cell })
-
-    body = ""
-    for (const row of token.rows) {
-      cell = ""
-      for (const rowCell of row) {
-        cell += this.tablecell(rowCell)
-      }
-
-      body += this.tablerow({ text: cell })
-    }
-  }
-  const table = new Table({
-    head: generateTableRow(header)[0],
-    ...this.tableSettings
+;(Renderer.prototype as any).table = function (this: any, token: any) {
+  const inline = (cell: any) => this.transform(this.parser.parseInline(cell.tokens))
+  const table = renderTable({
+    head: token.header.map(inline),
+    rows: token.rows.map((row: any[]) => row.map(inline)),
+    align: token.align,
+    maxWidth: this.o.tableWidth(),
+    headStyle: this.o.tableHead,
+    borderStyle: this.o.tableBorder
   })
-
-  generateTableRow(body, this.transform).forEach((row: any) => {
-    table.push(row)
-  })
-  return section(this.o.table(table.toString()))
-}
-
-;(Renderer.prototype as any).tablerow = function (this: any, content: any) {
-  if (typeof content === "object") {
-    content = content.text
-  }
-  return `${TABLE_ROW_WRAP}${content}${TABLE_ROW_WRAP}\n`
-}
-
-;(Renderer.prototype as any).tablecell = function (this: any, content: any) {
-  if (typeof content === "object") {
-    content = this.parser.parseInline(content.tokens)
-  }
-  return content + TABLE_CELL_SPLIT
+  return section(this.o.table(table))
 }
 
 // span level renderer
@@ -366,8 +333,6 @@ export function markedTerminal(options?: any, highlightOptions?: any) {
     "checkbox",
     "paragraph",
     "table",
-    "tablerow",
-    "tablecell",
     "strong",
     "em",
     "codespan",
@@ -609,21 +574,6 @@ function hr(inputHrStr: string, length: number) {
 
 function undoColon(str: string) {
   return str.replace(COLON_REPLACER_REGEXP, ":")
-}
-
-function generateTableRow(text: string, escapeFn?: any) {
-  if (!text) return []
-  escapeFn = escapeFn || identity
-  const lines = escapeFn(text).split("\n")
-
-  const data: string[][] = []
-  lines.forEach((line: string) => {
-    if (!line) return
-    const parsed = line.replace(TABLE_ROW_WRAP_REGEXP, "").split(TABLE_CELL_SPLIT)
-
-    data.push(parsed.splice(0, parsed.length - 1))
-  })
-  return data
 }
 
 function escapeRegExp(str: string) {

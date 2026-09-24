@@ -16,7 +16,6 @@
     "better-auth": "^1.7.5",
     "chalk": "^6.0.0",
     "cli-highlight": "^2.1.11",
-    "cli-table3": "^0.6.5",
     "env-paths": "^4.0.0",
     "grammy": "^1.46.0",
     "ink": "^7.1.1",
