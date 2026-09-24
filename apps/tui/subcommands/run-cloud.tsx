@@ -10,7 +10,7 @@ import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
 import { deviceLogin } from "../lib/auth/device-login"
 import { getApiBaseUrl } from "../lib/config/api-url"
 import { config } from "../lib/config/config"
-import { t } from "../lib/i18n"
+import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
 
 /** Reset terminal colours */
@@ -40,8 +40,8 @@ async function resolveToken(apiUrl: string): Promise<string> {
       const url = prompt.verificationUriComplete ?? prompt.verificationUri
       open(url).catch(error => log.warn("Failed to open browser for device login", { error }))
     })
-    const { syncLocaleAfterLogin } = await import("../lib/auth/account-locale")
-    await syncLocaleAfterLogin(token)
+    const { saveAccountLocale } = await import("../lib/auth/account-locale")
+    await saveAccountLocale(getLanguage())
     return token
   } catch (error) {
     if (error instanceof SecretsAccessError) {
