@@ -43,7 +43,7 @@ const CUSTOM = "custom"
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
-  /** The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Empty means the user sets up models.toml themselves. */
+  /** The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Never empty once asked: local mode can't start without one. */
   providers?: string[]
   custom?: WizardCustom
   /** Typed API keys by provider id; only hosted providers are asked. */
@@ -270,7 +270,7 @@ const ANSWER_LINES: Record<string, AnswerLineFn> = {
     ),
   providers: (_, result) => ({
     label: t("wizard.summaryProvider"),
-    value: result.providers?.length ? result.providers.map(providerName).join(", ") : t("wizard.providersNone")
+    value: (result.providers ?? []).map(providerName).join(", ")
   }),
   key: (subject, result, saved) =>
     keyLine(
@@ -364,6 +364,8 @@ export function ConfigWizard({
   const [result, setResult] = useState<WizardResult>(initial)
   // Append-only: <Static> prints each item once and leaves it in the scrollback.
   const [answered, setAnswered] = useState<Answer[]>([])
+  // Set when Enter was pressed on the providers checklist with nothing ticked.
+  const [noProvider, setNoProvider] = useState(false)
 
   useInput((_input, key) => {
     if (step === "summary" && key.return) onDone(result)
@@ -571,7 +573,7 @@ export function ConfigWizard({
           <Box flexDirection="column" gap={1}>
             <Text>{t("wizard.providerTitle")}</Text>
             <Box borderStyle="classic" width={70} borderColor="magenta" paddingLeft={1}>
-              {/* Nothing ticked by default, so one Enter means "I'll set up models.toml myself". */}
+              {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
               <MultiSelect
                 options={[
                   ...CATALOG.map(provider => ({
@@ -581,12 +583,18 @@ export function ConfigWizard({
                   { label: t("wizard.providerCustom"), value: CUSTOM }
                 ]}
                 defaultValue={result.providers}
-                onSubmit={values =>
-                  advance({ providers: [...CATALOG.map(p => p.id), CUSTOM].filter(id => values.includes(id)) })
-                }
+                onSubmit={values => {
+                  const providers = [...CATALOG.map(p => p.id), CUSTOM].filter(id => values.includes(id))
+                  setNoProvider(providers.length === 0)
+                  if (providers.length > 0) advance({ providers })
+                }}
               />
             </Box>
-            <Text dimColor>{t("wizard.providerHint")}</Text>
+            {noProvider ? (
+              <Text color="red">{t("wizard.providerRequired")}</Text>
+            ) : (
+              <Text dimColor>{t("wizard.providerHint")}</Text>
+            )}
           </Box>
         )
       }
