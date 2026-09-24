@@ -21,7 +21,7 @@
     "@sentry/hono": "^11.0.0",
     "better-auth": "^1.7.5",
     "grammy": "^1.46.0",
-    "hono": "^4.13.8",
+    "hono": "^4.13.9",
     "hono-rate-limiter": "^0.5.4",
     "nodemailer": "^10.0.10",
     "pg": "^8.23.0",
