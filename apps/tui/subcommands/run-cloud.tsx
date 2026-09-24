@@ -40,6 +40,8 @@ async function resolveToken(apiUrl: string): Promise<string> {
       const url = prompt.verificationUriComplete ?? prompt.verificationUri
       open(url).catch(error => log.warn("Failed to open browser for device login", { error }))
     })
+    const { syncLocaleAfterLogin } = await import("../lib/auth/account-locale")
+    await syncLocaleAfterLogin(token)
     return token
   } catch (error) {
     if (error instanceof SecretsAccessError) {
