@@ -66,7 +66,7 @@ export const fetchUrlTool = tool<{ url: string }>({
 // A missing content type is read as text; anything else must name a text format
 function isTextual(contentType: string): boolean {
   if (!contentType) return true
-  return /^text\/|json|xml|javascript|ecmascript|csv|yaml|toml|markdown/i.test(contentType)
+  return /(?:^text\/)|json|xml|javascript|ecmascript|csv|yaml|toml|markdown/i.test(contentType)
 }
 
 function extractArticleText(html: string): string {
