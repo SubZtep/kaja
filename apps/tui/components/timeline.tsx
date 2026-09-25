@@ -43,7 +43,7 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
       if (!thinking) return null
       return <ReasoningBox>{item.text}</ReasoningBox>
     case "tool_image":
-      return <Text dimColor>{`[image: ${item.path}]`}</Text>
+      return <TerminalImage href={item.path} alt={`[image: ${item.path}]`} />
     case "display_image":
       return <TerminalImage href={item.url} alt={item.alt} />
     case "message":
