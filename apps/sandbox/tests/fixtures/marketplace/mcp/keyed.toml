@@ -1,7 +1,15 @@
-name = "keyed"
+name        = "keyed"
 description = "Needs a key, so the sandbox skips it (sandbox test fixture)."
-transport = "stdio"
-command = "bun"
-args = ["../counter-server.ts"]
-tools = ["count"]
-auth = { type = "apiKey", in = "env", name = "KEYED_API_KEY" }
+transport   = "stdio"
+command     = "bun"
+args        = [
+  "../counter-server.ts"
+]
+tools       = [
+  "count"
+]
+auth        = {
+  type = "apiKey",
+  in   = "env",
+  name = "KEYED_API_KEY"
+}

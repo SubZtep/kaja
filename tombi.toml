@@ -3,38 +3,91 @@ toml-version = "v1.1.0"
 # Schemas are generated from @kaja/schema's Zod schemas — run `bun generate:schemas`
 # after changing packages/schema/config/*.ts, packages/schema/abilities/*.ts or packages/schema/cli/datasets.ts.
 
-[[schemas]]
-path = "docs/config/schemas/settings.json"
-include = ["docs/config/settings.toml", "**/.config/kaja/settings.toml"]
+
+[format]
+  [format.rules]
+  indent-sub-tables               = true
+  key-value-equals-sign-alignment = true
+  line-width                      = 1         # all array items on new lines
+  string-quote-style              = "double"
+  table-blank-lines               = 2
+  trailing-comment-alignment      = true
+
 
 [[schemas]]
-path = "docs/config/schemas/secrets.json"
-include = ["docs/config/secrets.toml", "**/.config/kaja/secrets.toml"]
+path    = "docs/config/schemas/settings.json"
+include = [
+  "docs/config/settings.toml",
+  "**/.config/kaja/settings.toml"
+]
+
 
 [[schemas]]
-path = "docs/config/schemas/models.json"
-include = ["docs/config/models*.toml", "**/.config/kaja/models.toml"]
+path    = "docs/config/schemas/secrets.json"
+include = [
+  "docs/config/secrets.toml",
+  "**/.config/kaja/secrets.toml"
+]
+
 
 [[schemas]]
-path = "docs/config/schemas/catalog.json"
-include = ["docs/config/catalog.toml"]
+path    = "docs/config/schemas/models.json"
+include = [
+  "docs/config/models*.toml",
+  "**/.config/kaja/models.toml"
+]
+
 
 [[schemas]]
-path = "docs/config/schemas/mcp.json"
-include = ["docs/config/mcp.toml", "**/.config/kaja/mcp.toml"]
+path    = "docs/config/schemas/catalog.json"
+include = [
+  "docs/config/catalog.toml"
+]
+
 
 [[schemas]]
-path = "docs/config/schemas/abilities.json"
-include = ["docs/config/abilities.toml", "**/.config/kaja/abilities.toml"]
+path    = "docs/config/schemas/mcp.json"
+include = [
+  "docs/config/mcp.toml",
+  "**/.config/kaja/mcp.toml"
+]
+
 
 [[schemas]]
-path = "docs/config/schemas/persona.json"
-include = ["marketplace/personas/*.toml", "**/.config/kaja/marketplace/personas/*.toml"]
+path    = "docs/config/schemas/abilities.json"
+include = [
+  "docs/config/abilities.toml",
+  "**/.config/kaja/abilities.toml"
+]
+
 
 [[schemas]]
-path = "docs/config/schemas/http-tool.json"
-include = ["marketplace/tools/*.toml", "**/.config/kaja/marketplace/tools/*.toml"]
+path    = "docs/config/schemas/persona.json"
+include = [
+  "marketplace/personas/*.toml",
+  "**/.config/kaja/marketplace/personas/*.toml"
+]
+
 
 [[schemas]]
-path = "docs/config/schemas/mcp-ability.json"
-include = ["marketplace/mcp/*.toml", "**/.config/kaja/marketplace/mcp/*.toml"]
+path    = "docs/config/schemas/http-tool.json"
+include = [
+  "marketplace/tools/*.toml",
+  "**/.config/kaja/marketplace/tools/*.toml"
+]
+
+
+[[schemas]]
+path    = "docs/config/schemas/mcp-ability.json"
+include = [
+  "marketplace/mcp/*.toml",
+  "**/.config/kaja/marketplace/mcp/*.toml"
+]
+
+
+# Written by `bun generate:models` (exampleToml), which `bun check:models` and the catalog test compare byte for byte: tombi mustn't reformat them.
+[[overrides]]
+files.include  = [
+  "docs/config/models.*.toml"
+]
+format.enabled = false

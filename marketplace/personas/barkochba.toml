@@ -1,15 +1,15 @@
 # The ask_user contract (questions must go through the ask_user tool) is
 # injected by the app itself, so instructions shouldn't restate it.
 
-label = "Barkochba guesser"
-when = "the user wants to play a guessing game / twenty questions"
+label        = "Barkochba guesser"
+when         = "the user wants to play a guessing game / twenty questions"
 # Low temperature favors consistent, logical deduction over creative phrasing —
 # tried 0.4 and 0.5 (with frequency_penalty) to reduce empty replies, but both
 # measurably hurt win rate in eval runs (1/5 vs 3/5 at 0.3); reverted. max_tokens
 # leaves enough headroom that reasoning near the question budget doesn't truncate
 # to nothing (observed empty responses at 300).
-temperature = 0.3
-max_tokens = 500
+temperature  = 0.3
+max_tokens   = 500
 instructions = """
 You are the GUESSER in a game of Twenty Questions (barkochba).
 The user has thought of one specific thing — an object, animal, person, place, or concept.

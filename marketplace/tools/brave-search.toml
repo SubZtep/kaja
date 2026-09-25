@@ -1,30 +1,50 @@
 # Brave Search API, key from https://api-dashboard.search.brave.com
-name = "brave-search"
+name        = "brave-search"
 description = "Web search through Brave Search, for current information."
-baseUrl = "https://api.search.brave.com"
-auth = { type = "apiKey", in = "header", name = "X-Subscription-Token" }
-headers = { Accept = "application/json" }
-check = { path = "/res/v1/llm/context?q=kaja" }
+baseUrl     = "https://api.search.brave.com"
+auth        = {
+  type = "apiKey",
+  in   = "header",
+  name = "X-Subscription-Token"
+}
+headers     = {
+  Accept = "application/json"
+}
+check       = {
+  path = "/res/v1/llm/context?q=kaja"
+}
+
 
 [[tools]]
-name = "web_search"
+name        = "web_search"
 description = "Search the web for current information. Cite sources in the reply as markdown links, e.g. [title](url)."
-method = "GET"
-path = "/res/v1/llm/context"
+method      = "GET"
+path        = "/res/v1/llm/context"
 
-[tools.parameters]
-type = "object"
-required = ["q"]
 
-[tools.parameters.properties.q]
-type = "string"
-description = "The search query"
+  [tools.parameters]
+  type     = "object"
+  required = [
+    "q"
+  ]
 
-[tools.parameters.properties.freshness]
-type = "string"
-enum = ["pd", "pw", "pm", "py"]
-description = "How recent results must be: past day, week, month, or year. Omit for timeless facts."
 
-[tools.parameters.properties.search_lang]
-type = "string"
-description = "2-letter language code of the query, e.g. hu, en"
+    [tools.parameters.properties.q]
+    type        = "string"
+    description = "The search query"
+
+
+    [tools.parameters.properties.freshness]
+    type        = "string"
+    enum        = [
+      "pd",
+      "pw",
+      "pm",
+      "py"
+    ]
+    description = "How recent results must be: past day, week, month, or year. Omit for timeless facts."
+
+
+    [tools.parameters.properties.search_lang]
+    type        = "string"
+    description = "2-letter language code of the query, e.g. hu, en"
