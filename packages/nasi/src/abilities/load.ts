@@ -3,7 +3,7 @@ import type { Persona } from "@kaja/schema/cli"
 import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
-import { type McpAbilityTarget, mcpAbilityTarget } from "./mcp-ability"
+import { type McpAbilityTarget, type McpSandbox, mcpAbilityTarget, sandboxedMcpTarget } from "./mcp-ability"
 import { createLoadSkillTool } from "./skills"
 import type { AbilityStore, SkillSummary } from "./types"
 
@@ -28,6 +28,8 @@ export type LoadAbilitiesOptions = {
   allowPrivate?: boolean
   /** HTTP(S) proxy HTTP tools egress through (the cloud's WEB_PROXY); unset goes direct. */
   proxy?: string
+  /** Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they are. */
+  mcpSandbox?: McpSandbox
 }
 
 /**
@@ -72,7 +74,12 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   const mcp: McpAbilityTarget[] = []
   for (const ability of mcpAbilities) {
     const apiKey = keyFor(ability)
-    if (apiKey !== null) mcp.push(mcpAbilityTarget(ability, apiKey))
+    if (apiKey === null) continue
+    mcp.push(
+      ability.transport === "stdio" && opts.mcpSandbox
+        ? await sandboxedMcpTarget(ability, opts.mcpSandbox)
+        : mcpAbilityTarget(ability, apiKey)
+    )
   }
 
   return { groups, skills, httpTools, mcp, missingKeys }

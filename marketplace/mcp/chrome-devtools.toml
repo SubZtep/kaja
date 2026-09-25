@@ -1,6 +1,7 @@
 # Drives a headless Chrome through the Chrome DevTools MCP server:
 # https://github.com/ChromeDevTools/chrome-devtools-mcp
 # Runs `bunx chrome-devtools-mcp@latest` on your machine and needs Chrome installed.
+# In the cloud it runs in the MCP sandbox instead (apps/sandbox), one browser per user.
 # Reading pages runs straight away; clicking, typing and navigating ask first.
 # Snapshots and screenshots count as reads too, unless they're asked to save a file.
 name = "chrome-devtools"

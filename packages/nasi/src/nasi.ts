@@ -1,7 +1,11 @@
+import { mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import type OpenAI from "openai"
 import { loadAbilities } from "./abilities/load"
+import type { McpSandbox } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import type { Compaction } from "./agent/compaction"
@@ -35,6 +39,8 @@ export type NasiOpenOptions = {
   abilityKey?: (abilityName: string) => string | undefined
   /** How long each MCP ability gets to connect when the turn opens before it's left out. Default 5 s. */
   mcpConnectTimeoutMs?: number
+  /** Cloud: the MCP sandbox that runs stdio abilities; without it they're left out. */
+  mcpSandbox?: McpSandbox
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
@@ -196,20 +202,32 @@ export class Nasi {
       ? await loadAbilities(opts.abilities, {
           personas: opts.personas,
           getApiKey: opts.abilityKey,
-          proxy: opts.deps?.fetchProxy
+          proxy: opts.deps?.fetchProxy,
+          mcpSandbox: opts.mcpSandbox
         })
       : undefined
+    // Cloud MCP images (screenshots) wait here for the model to see them; the instance removes it on close.
+    const imageDir =
+      !opts.includeLocalTools && abilities?.mcp.length ? await mkdtemp(join(tmpdir(), "kaja-mcp-")) : undefined
     const { tools, closeTools } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       clientTools: opts.clientTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer },
       extraTools: abilities?.groups,
-      // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request.
+      // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
-      mcpFetch: createGuardedFetch({ proxy: opts.deps?.fetchProxy }),
+      mcpFetch: createGuardedFetch({
+        proxy: opts.deps?.fetchProxy,
+        trustedOrigins: opts.mcpSandbox ? [new URL(opts.mcpSandbox.url).origin] : []
+      }),
+      mcpImageDir: imageDir,
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
     })
-    return new Nasi(opts, tools, closeTools)
+    const close = async () => {
+      await closeTools()
+      if (imageDir) await rm(imageDir, { recursive: true, force: true })
+    }
+    return new Nasi(opts, tools, close)
   }
 
   /** Closes the instance's MCP connections. Hosts that open one per turn call it once the turn is over. */

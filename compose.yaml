@@ -56,6 +56,11 @@ services:
       SMTP_HOST: mail
       CORS_ORIGIN: http://localhost:3000
       BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production # local stack only
+      SANDBOX_URL: http://sandbox:3002
+      SANDBOX_SECRET: compose_dev_sandbox_secret_not_for_production # local stack only
+    networks:
+      - default
+      - sandbox
 
   web:
     build:
@@ -73,4 +78,24 @@ services:
     environment:
       API_URL: http://api:3001
 
+  # Runs stdio MCP servers (a headless Chrome among them) for cloud turns. Only the api shares its network, so it can't
+  # reach db or mail by name; it can still reach ports published on the host, so production needs egress rules too.
+  sandbox:
+    build:
+      context: .
+      dockerfile: apps/sandbox/Dockerfile
+    ports:
+      - "3002:3002"
+    shm_size: 1gb
+    env_file:
+      - path: apps/sandbox/.env.example
+        required: true
+      - path: apps/sandbox/.env
+        required: false
+    environment:
+      SANDBOX_SECRET: compose_dev_sandbox_secret_not_for_production # local stack only
+    networks:
+      - sandbox
 
+networks:
+  sandbox:

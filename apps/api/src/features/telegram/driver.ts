@@ -148,7 +148,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     await sender.sendMessage(chatId, text.join("\n"), [buttons])
   }
 
-  /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. Local-only events (tool_image, display_image, confirm_command) are ignored — cloud Nasi never emits them. */
+  /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. Local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them — and so is tool_image, an MCP screenshot the model already sees. */
   function handleFinalizedEvent(
     accumulated: { content: string },
     throttle: EditThrottle,

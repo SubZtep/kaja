@@ -30,6 +30,8 @@ export type McpConnectOptions = {
   images?: boolean
   /** Cut a result's text at this many characters, with a note. Unset keeps it whole. */
   maxResultChars?: number
+  /** Drop an image bigger than this many bytes, with a note. Unset keeps every size. */
+  maxImageBytes?: number
 }
 
 /** Whether a call counts as read-only under a manifest rule: the tool is listed and none of its `unless` arguments is set. */
@@ -111,7 +113,7 @@ async function callTool(
   name: string,
   args: Record<string, unknown>,
   tempDir: string,
-  opts: Pick<McpConnectOptions, "images" | "maxResultChars">
+  opts: Pick<McpConnectOptions, "images" | "maxResultChars" | "maxImageBytes">
 ): Promise<ToolResult> {
   const result = await client.callTool({ name, arguments: args })
   const content = (result.content ?? []) as Array<
@@ -126,14 +128,17 @@ async function callTool(
     opts.maxResultChars
   )
 
-  const imageBlocks = content.filter(
+  const allImages = content.filter(
     (block): block is { type: "image"; data: string; mimeType: string } => block.type === "image"
   )
-  if (imageBlocks.length === 0) return { text: text || `${name}: done` }
-  if (opts.images === false) {
-    const note = `(${imageBlocks.length} image${imageBlocks.length === 1 ? "" : "s"} not shown)`
-    return { text: text ? `${text}\n\n${note}` : `${name}: done ${note}` }
-  }
+  // Base64 is 4 characters per 3 bytes.
+  const fits = (block: { data: string }) =>
+    opts.maxImageBytes === undefined || (block.data.length * 3) / 4 <= opts.maxImageBytes
+  const imageBlocks = opts.images === false ? [] : allImages.filter(fits)
+  const dropped = allImages.length - imageBlocks.length
+  const note = dropped > 0 ? `(${dropped} image${dropped === 1 ? "" : "s"} not shown)` : ""
+  const withNote = note ? (text ? `${text}\n\n${note}` : `${name}: done ${note}`) : text || `${name}: done`
+  if (imageBlocks.length === 0) return { text: withNote }
 
   await mkdir(tempDir, { recursive: true })
   const images = await Promise.all(
@@ -145,5 +150,5 @@ async function callTool(
     })
   )
 
-  return { text: text || `${name}: done`, images }
+  return { text: withNote, images }
 }

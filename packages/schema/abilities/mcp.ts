@@ -74,3 +74,14 @@ export type McpAbility = z.infer<typeof McpAbilitySchema>
 export type McpAbilityAuth = z.infer<typeof McpAbilityAuthSchema>
 /** A readOnly entry with the shorthand expanded: read-only unless one of `unless` is set in the call. */
 export type McpReadOnlyRule = { tool: string; unless: string[] }
+
+/** The MCP sandbox's per-host swap of a stdio manifest's command/args (e.g. a preinstalled binary and Chrome flags), by ability name. */
+export const McpAbilityOverridesSchema = z.record(
+  SkillNameSchema,
+  z.object({
+    command: z.string().min(1).optional().describe("Replaces the manifest's command"),
+    args: z.array(z.string()).optional().describe("Replaces the manifest's args")
+  })
+)
+
+export type McpAbilityOverrides = z.infer<typeof McpAbilityOverridesSchema>

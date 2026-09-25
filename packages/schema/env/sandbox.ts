@@ -1,0 +1,22 @@
+import * as z from "zod"
+import { positiveInt, trimmed } from "./helpers"
+
+export const SandboxEnvSchema = z.object({
+  PORT: positiveInt.default(3002).describe("Port the sandbox listens on"),
+  SANDBOX_SECRET: trimmed
+    .describe("Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns connect with")
+    .meta({ secret: true }),
+  MARKETPLACE_DIR: trimmed
+    .default("../../marketplace")
+    .describe("Folder whose mcp/*.toml stdio manifests are the only servers the sandbox runs"),
+  SANDBOX_OVERRIDES: trimmed
+    .optional()
+    .describe(
+      "JSON file replacing a manifest's command/args for this host, e.g. a preinstalled binary and Chrome flags"
+    )
+    .meta({ example: "overrides.json" }),
+  SANDBOX_IDLE_MS: positiveInt
+    .default(10 * 60 * 1000)
+    .describe("How long an unused server process is kept warm before it's stopped (ms)"),
+  SANDBOX_MAX_PROCESSES: positiveInt.default(8).describe("Most server processes running at once, over all users")
+})

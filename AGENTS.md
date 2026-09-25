@@ -14,6 +14,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
+- **Sandbox** (`apps/sandbox`): Hono service that runs stdio MCP servers (first: chrome-devtools) for cloud turns and serves each over Streamable HTTP; one warm process per (user, ability), reached with an API-signed token (`SANDBOX_URL`/`SANDBOX_SECRET`). Details: `apps/sandbox/AGENTS.md`
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
@@ -47,6 +48,9 @@ docker compose up -d db mail
 # API + web + widget (hot reload)
 bun dev
 
+# MCP sandbox for cloud stdio MCP abilities (needs Chromium; or `docker compose up -d sandbox`)
+bun dev:sandbox
+
 # CLI (entry is apps/tui/cli.ts — NOT apps/tui/src/...)
 bun run --filter @kaja/tui start
 # or: bun run --env-file=apps/tui/.env apps/tui/cli.ts
@@ -69,6 +73,9 @@ bun run --filter @kaja/web build
 
 bun run --filter @kaja/tui start
 bun run --filter @kaja/tui test
+
+bun run --filter @kaja/sandbox dev
+bun run --filter @kaja/sandbox build
 ```
 
 ## Architecture
@@ -93,6 +100,11 @@ bun run --filter @kaja/tui test
 - TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, profile, abilities, widget, and the admin-only `/admin/*` layout)
 - auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
+
+### Sandbox (`apps/sandbox/`)
+
+- `src/server.ts` entry; `app.ts` routes (`/health`, `/mcp/:ability` behind the token), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child
+- Runs only the stdio manifests under its own `marketplace/mcp` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
 
 ### CLI (`apps/tui/`)
 

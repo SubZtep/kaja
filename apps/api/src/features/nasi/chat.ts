@@ -1,6 +1,7 @@
 import {
   ASK_USER_TOOL,
   createOpenAIClient,
+  type McpSandbox,
   Nasi,
   replyLanguageInstructionFor,
   resolveContextWindow,
@@ -8,7 +9,7 @@ import {
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/abilities"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
-import { isPublicHttpUrl } from "@kaja/shared"
+import { isPublicHttpUrl, signSandboxToken } from "@kaja/shared"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
@@ -114,6 +115,29 @@ export function nasiToolDeps() {
   return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
 
+/** How long a sandbox token lasts: well past one turn, which is the most a token is used for. */
+const SANDBOX_TOKEN_TTL_S = 60 * 60
+
+type SandboxConfig = { url: string; secret: string }
+let sandboxOverride: SandboxConfig | undefined
+
+/** Test seam: points cloud turns (and which abilities are offered) at a test MCP sandbox. Pass undefined to restore the env's. */
+export function setNasiSandboxOverride(sandbox: SandboxConfig | undefined) {
+  sandboxOverride = sandbox
+  abilityService.setSandboxUrl(sandbox?.url ?? (env.SANDBOX_SECRET ? env.SANDBOX_URL : undefined))
+}
+
+/** The MCP sandbox for one user's turns, when configured: each ability connects with a token only good for that user and ability. */
+function mcpSandboxFor(userId: string): McpSandbox | undefined {
+  const { url, secret } = sandboxOverride ?? { url: env.SANDBOX_URL, secret: env.SANDBOX_SECRET }
+  if (!url || !secret) return undefined
+  return {
+    url,
+    token: ability =>
+      signSandboxToken({ sub: userId, ability, exp: Math.floor(Date.now() / 1000) + SANDBOX_TOKEN_TTL_S }, secret)
+  }
+}
+
 /** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. The caller closes it after the turn (its MCP connections). */
 export async function openNasiFor(opts: {
   userId: string
@@ -145,6 +169,7 @@ export async function openNasiFor(opts: {
     deps: nasiToolDeps(),
     abilities: createPostgresAbilityStore(source),
     abilityKey: name => keys.get(name),
+    mcpSandbox: "userId" in source ? mcpSandboxFor(source.userId) : undefined,
     promptContext: {
       environment:
         "You are Kaja cloud chat. " +
