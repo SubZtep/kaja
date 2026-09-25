@@ -275,8 +275,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     } catch (error) {
       console.warn("Telegram agent turn failed", { error })
       // A failed turn isn't saved, so the photo doesn't linger in the session; only the reply needs saying
-      if (input.images?.length && isImageRejection(error))
-        return void (await editIfChanged(language.t("telegram.noVision")))
+      if (input.images?.length && isImageRejection(error)) {
+        await editIfChanged(language.t("telegram.noVision"))
+        return
+      }
       const { category, message } = categorizeError(error)
       // The category in the user's language, like the terminal shows it; the detail is the provider's own (technical) text.
       const label = language.t(`telegram.error.${category}`)

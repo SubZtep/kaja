@@ -172,15 +172,22 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     const caption = ctx.message.caption ?? ""
     // An unlinked sender only gets the "link your account" reply; their photo is never downloaded
     const linked = await telegramLinkService.resolveUser(ctx.from.id)
-    if (!linked) return void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code)
+    if (!linked) {
+      void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code)
+      return
+    }
     const { t } = botLanguage(linked.locale, ctx.from.language_code)
-    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT) return void (await ctx.reply(t("telegram.photoTooLarge")))
+    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT) {
+      await ctx.reply(t("telegram.photoTooLarge"))
+      return
+    }
     let dataUrl: string
     try {
       dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
     } catch (error) {
       reportError("Telegram photo download failed", error)
-      return void (await ctx.reply(t("telegram.photoFailed")))
+      await ctx.reply(t("telegram.photoFailed"))
+      return
     }
     void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code, [dataUrl])
   })

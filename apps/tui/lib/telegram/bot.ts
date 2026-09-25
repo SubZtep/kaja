@@ -108,7 +108,10 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     if (!pairing.isOwner(ctx.from.id)) return
     const image = incomingImage(ctx.message)
     if (!image) return
-    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT) return void (await ctx.reply(t("telegram.photoTooLarge")))
+    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT) {
+      await ctx.reply(t("telegram.photoTooLarge"))
+      return
+    }
     const dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
     void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.caption ?? "", [dataUrl])
   })

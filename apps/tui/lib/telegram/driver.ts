@@ -423,6 +423,17 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     return false
   }
 
+  /** Records a failed turn and returns what the reply should say instead. */
+  function turnFailure(state: UserState, error: unknown, hadImages: boolean, turnStart: number): string {
+    log.warn("Telegram agent run failed", { error })
+    const { category, message } = categorizeError(error)
+    state.events.push({ type: "error", text: message, category })
+    if (!hadImages) return `⚠ ${category}: ${message}`
+    // The session lives on in memory: without this, every later turn would send the photo again
+    dropImages(state.session, turnStart)
+    return isImageRejection(error) ? t("telegram.noVision") : `⚠ ${category}: ${message}`
+  }
+
   async function runTurn(
     userId: number,
     chatId: number,
@@ -467,15 +478,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
         if (done) return
       }
     } catch (error) {
-      log.warn("Telegram agent run failed", { error })
-      const { category, message } = categorizeError(error)
-      state.events.push({ type: "error", text: message, category })
-      if (images.length > 0) {
-        // The session lives on in memory: without this, every later turn would send the photo again
-        dropImages(state.session, turnStart)
-        if (isImageRejection(error)) return void (await editIfChanged(t("telegram.noVision")))
-      }
-      await editIfChanged(`⚠ ${category}: ${message}`)
+      await editIfChanged(turnFailure(state, error, images.length > 0, turnStart))
     } finally {
       state.busy = false
       await persistSession(userId, state)
@@ -525,8 +528,10 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
   async function handlePhoto(userId: number, chatId: number, caption: string, images: string[]) {
     const state = await getUserState(userId)
-    if (state.busy) return void (await sender.sendMessage(chatId, t("telegram.stillWorking")))
-    if (state.pendingCommand) return void (await sender.sendMessage(chatId, t("telegram.pendingCommand")))
+    if (state.busy || state.pendingCommand) {
+      await sender.sendMessage(chatId, t(state.busy ? "telegram.stillWorking" : "telegram.pendingCommand"))
+      return
+    }
     await runTurn(userId, chatId, state, caption, true, images)
   }
 
