@@ -14,12 +14,14 @@ import { MonsterMate } from "./monster"
  * track to lay out against — without it Ink can collapse the row and the
  * model/tokens slot never paints.
  */
-/** " · 12,345 tokens", or " · 12,345 / 32,768 tokens (38%)" once the window is known. */
+const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
+
+/** " · 12,345 tokens", or " · 12,345 / 33K tokens (38%)" once the window is known. */
 export function tokensLabel(promptTokens: number | null, contextWindow?: number | null): string {
   if (promptTokens == null) return ""
   if (!contextWindow) return ` · ${promptTokens.toLocaleString()} tokens`
   const percent = Math.round((promptTokens / contextWindow) * 100)
-  return ` · ${promptTokens.toLocaleString()} / ${contextWindow.toLocaleString()} tokens (${percent}%)`
+  return ` · ${promptTokens.toLocaleString()} / ${compact.format(contextWindow)} tokens (${percent}%)`
 }
 
 export function Header({
