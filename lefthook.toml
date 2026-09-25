@@ -45,13 +45,6 @@ stage_fixed = true
 run = "bun typecheck"
 glob = ["*.ts", "*.tsx", "package.json", "bun.lock", "tsconfig*.json"]
 
-# Rebases and merges replay commits; don't run the whole suite once per commit
-[post-commit]
-skip = ["rebase", "merge"]
-
-[[post-commit.jobs]]
-run = "bun test"
-
 [pre-push]
 parallel = true
 
@@ -61,3 +54,6 @@ run = "bun lint"
 [[pre-push.jobs]]
 run = "bun typecheck"
 glob = ["*.ts", "*.tsx", "package.json", "bun.lock", "tsconfig*.json"]
+
+[[pre-push.jobs]]
+run = "bun test"
