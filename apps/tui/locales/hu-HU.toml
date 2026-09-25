@@ -283,6 +283,10 @@ compacted = "Kontextus tömörítve: {before} → {after} token"
 compactedDropped = "Kontextus tömörítve: {before} → {after} token. Az összefoglaló nem írható, így a legrégebbi üzenetek kimaradtak."
 condensed = "{tool} kimenet tömörítve: {before} → {after} token"
 nothingToCompact = "Még nincs tömöríthető."
+imageFailed = "nem tölthető be: {reason}"
+imageMissing = "a fájl nem található"
+imageUnreachable = "nem sikerült csatlakozni"
+imageUnreadable = "nem kép"
 
 [error]
 network = "Hálózati hiba"
