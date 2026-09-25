@@ -19,7 +19,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.20.0",
+      "version": "0.20.1",
       "dependencies": {
         "@hono/zod-openapi": "^1.6.3",
         "@kaja/nasi": "workspace:*",
@@ -48,7 +48,7 @@
     },
     "apps/tui": {
       "name": "@kaja/tui",
-      "version": "0.28.0",
+      "version": "0.28.1",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/nasi": "workspace:*",
