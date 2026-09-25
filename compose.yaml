@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:18.6-alpine
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     restart: unless-stopped
     shm_size: 128mb
     environment:
@@ -20,8 +20,8 @@ services:
     image: maildev/maildev:3.0.0
     restart: unless-stopped
     ports:
-      - "1080:1080"
-      - "1025:1025" # expose SMTP to host
+      - "127.0.0.1:1080:1080"
+      - "127.0.0.1:1025:1025" # expose SMTP to host
     environment:
       MAILDEV_MCP: 1
     healthcheck:
@@ -34,13 +34,14 @@ services:
           "--spider",
           "http://127.0.0.1:1080/index.html",
         ]
+      timeout: 5s
 
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     depends_on:
       db:
         condition: service_healthy
@@ -63,19 +64,22 @@ services:
       - sandbox
     # The image has no curl or wget, so Bun's fetch does the check.
     healthcheck:
-      test: ["CMD", "bun", "-e", "process.exit((await fetch('http://127.0.0.1:3001/health')).ok ? 0 : 1)"]
-      interval: 30s
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "process.exit((await fetch('http://127.0.0.1:3001/health')).ok ? 0 : 1)",
+        ]
       timeout: 5s
-      retries: 3
-      start_period: 15s
-      start_interval: 2s
+      start_period: 10s
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       api:
         condition: service_healthy
@@ -87,21 +91,25 @@ services:
     environment:
       API_URL: http://api:3001
     healthcheck:
-      test: ["CMD", "bun", "-e", "process.exit((await fetch('http://127.0.0.1:3000/')).ok ? 0 : 1)"]
-      interval: 30s
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "process.exit((await fetch('http://127.0.0.1:3000/')).ok ? 0 : 1)",
+        ]
       timeout: 5s
-      retries: 3
-      start_period: 15s
-      start_interval: 2s
+      start_period: 10s
 
   # Runs stdio MCP servers (a headless Chrome among them) for cloud turns. Only the api shares its network, so it can't
-  # reach db or mail by name; it can still reach ports published on the host, so production needs egress rules too.
+  # reach db or mail by name, and every port here is published on 127.0.0.1 only, so not through the host either.
+  # Production still needs its own egress rules (a separate host, or public addresses only).
   sandbox:
     build:
       context: .
       dockerfile: apps/sandbox/Dockerfile
     ports:
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     shm_size: 1gb
     env_file:
       - path: apps/sandbox/.env.example
@@ -112,7 +120,6 @@ services:
       SANDBOX_SECRET: compose_dev_sandbox_secret_not_for_production # local stack only
     networks:
       - sandbox
-    # Node only (no Bun, curl or wget in the image).
     healthcheck:
       test:
         [
@@ -121,11 +128,8 @@ services:
           "-e",
           "fetch('http://127.0.0.1:3002/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
         ]
-      interval: 30s
       timeout: 5s
-      retries: 3
-      start_period: 10s
-      start_interval: 2s
+      start_period: 8s
 
 networks:
   sandbox:

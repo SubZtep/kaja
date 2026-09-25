@@ -37,7 +37,7 @@ Dockerfile        # the sandbox compiled to one binary (bun build --compile) on 
 
 ## Security
 
-Chrome browses anything the container can reach, and the API's SSRF guard doesn't cover it. In `compose.yaml` the sandbox has its own network (only the api joins it), so `db` and `mail` don't resolve, but ports published on the host are still reachable through the gateway. Production needs a separate host or egress rules that allow only the public internet.
+Chrome browses anything the container can reach, and the API's SSRF guard doesn't cover it. In `compose.yaml` the sandbox has its own network (only the api joins it), so `db` and `mail` don't resolve, and every port is published on `127.0.0.1` only, so the host's gateway address doesn't reach them either (a port published on all interfaces would be). Anything else the host or its network serves is still reachable: production needs a separate host or egress rules that allow only the public internet.
 
 ## Not yet
 
