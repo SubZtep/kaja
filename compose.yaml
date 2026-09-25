@@ -17,7 +17,7 @@ services:
       start_period: 3s
 
   mail:
-    image: maildev/maildev:3.0.0-rc.3
+    image: maildev/maildev:3.0.0
     restart: unless-stopped
     ports:
       - "1080:1080"
@@ -61,6 +61,14 @@ services:
     networks:
       - default
       - sandbox
+    # The image has no curl or wget, so Bun's fetch does the check.
+    healthcheck:
+      test: ["CMD", "bun", "-e", "process.exit((await fetch('http://127.0.0.1:3001/health')).ok ? 0 : 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+      start_interval: 2s
 
   web:
     build:
@@ -69,7 +77,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     env_file:
       - path: apps/web/.env.example
         required: true
@@ -77,6 +86,13 @@ services:
         required: false
     environment:
       API_URL: http://api:3001
+    healthcheck:
+      test: ["CMD", "bun", "-e", "process.exit((await fetch('http://127.0.0.1:3000/')).ok ? 0 : 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+      start_interval: 2s
 
   # Runs stdio MCP servers (a headless Chrome among them) for cloud turns. Only the api shares its network, so it can't
   # reach db or mail by name; it can still reach ports published on the host, so production needs egress rules too.
@@ -96,6 +112,20 @@ services:
       SANDBOX_SECRET: compose_dev_sandbox_secret_not_for_production # local stack only
     networks:
       - sandbox
+    # Node only (no Bun, curl or wget in the image).
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3002/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 2s
 
 networks:
   sandbox:
