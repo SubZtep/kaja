@@ -49,11 +49,25 @@ export const fetchUrlTool = tool<{ url: string }>({
       throw new ToolError("fetch_url", error instanceof Error ? error.message : String(error))
     }
     if (!res.ok) throw new ToolError("fetch_url", `Fetch failed: ${res.status} ${args.url}`)
-    const body = await res.text()
     const contentType = res.headers.get("content-type") ?? ""
+    if (!isTextual(contentType)) {
+      await res.body?.cancel()
+      return `${args.url} is not a text page (${contentType.split(";")[0]}), so there is nothing to read.${
+        contentType.startsWith("image/")
+          ? ` To show the image, put it in the reply as ![description](${args.url}).`
+          : ""
+      }`
+    }
+    const body = await res.text()
     return contentType.includes("html") ? extractArticleText(body) : body
   }
 })
+
+// A missing content type is read as text; anything else must name a text format
+function isTextual(contentType: string): boolean {
+  if (!contentType) return true
+  return /(?:^text\/)|json|xml|javascript|ecmascript|csv|yaml|toml|markdown/i.test(contentType)
+}
 
 function extractArticleText(html: string): string {
   const { document } = parseHTML(html)

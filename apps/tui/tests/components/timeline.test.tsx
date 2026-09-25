@@ -1,4 +1,7 @@
 import { expect, test } from "bun:test"
+import { rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { TimelineItem } from "../../components/timeline"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { renderForTest } from "../test-utils"
@@ -40,4 +43,22 @@ test("error events render in the timeline", async () => {
 
   t.unmount()
   await t.waitUntilExit()
+})
+
+test("a tool image renders the picture, not just its path", async () => {
+  const path = join(tmpdir(), `kaja-timeline-${Bun.randomUUIDv7()}.png`)
+  // A 1×1 red PNG
+  await Bun.write(
+    path,
+    Uint8Array.fromBase64(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+    )
+  )
+  const t = renderForTest(<TimelineItem item={{ type: "tool_image", path }} thinking={true} />)
+  for (let i = 0; i < 100 && !t.output().includes("▄"); i++) await t.tick()
+  expect(t.output()).toContain("▄")
+  expect(t.output()).toContain(path)
+  t.unmount()
+  await t.waitUntilExit()
+  await rm(path, { force: true })
 })

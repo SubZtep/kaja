@@ -104,6 +104,9 @@ async function sessionImages(db: Pool, sessionId: string) {
   return new Map(rows.map(image => [image.hash, { mimeType: image.mime_type, data: image.data }]))
 }
 
+// Postgres text can't hold a NUL byte; a tool that returned binary data (a fetched image, say) would fail the whole turn's save
+const pgText = (text: string | null | undefined) => text?.replaceAll("\0", "") ?? null
+
 async function insertMessage(client: PoolClient, sessionId: string, seq: number, row: MessageRow) {
   const id = Bun.randomUUIDv7()
   // Inline images go in their own table, once per session; the message keeps a reference to each.
@@ -124,9 +127,9 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
       sessionId,
       seq,
       row.role,
-      row.content,
-      parts ? JSON.stringify(parts) : null,
-      row.reasoning,
+      pgText(row.content),
+      parts ? JSON.stringify(parts).replaceAll(String.raw`\u0000`, "") : null,
+      pgText(row.reasoning),
       row.toolCallId,
       row.step?.persona ?? null,
       row.step?.model ?? null,

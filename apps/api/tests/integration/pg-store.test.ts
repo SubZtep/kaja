@@ -174,6 +174,20 @@ describe("postgres store", () => {
     expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
   })
 
+  test("a NUL byte in a message (a binary tool result) is dropped instead of failing the save", async () => {
+    const store = createPostgresStore(pool, userId)
+    const messages = [
+      { role: "user", content: "hi" },
+      { role: "assistant", content: null, tool_calls: [call("c1", "fetch_url")] },
+      { role: "tool", tool_call_id: "c1", content: "\xff\xd8\0JFIF" },
+      { role: "user", content: [{ type: "text", text: "a\0b" }] }
+    ]
+    const id = await store.createSession({ ...write(messages), title: "t" })
+    const loaded = (await store.loadSession(id))!.session.messages
+    expect(loaded[2]).toMatchObject({ content: "\xff\xd8JFIF" })
+    expect(loaded[3]).toMatchObject({ content: [{ type: "text", text: "ab" }] })
+  })
+
   test("summarizer calls are stored, one row each", async () => {
     const store = createPostgresStore(pool, userId)
     const modelCalls = [
