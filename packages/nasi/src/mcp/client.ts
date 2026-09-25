@@ -32,6 +32,22 @@ export type McpConnectOptions = {
   maxResultChars?: number
   /** Drop an image bigger than this many bytes, with a note. Unset keeps every size. */
   maxImageBytes?: number
+  /** Arguments left out of every tool's schema, and dropped from calls, e.g. a file path that would land on the server. */
+  hideArgs?: string[]
+}
+
+/** The tool's input schema without `hide` among its properties or required ones. */
+function withoutArgs(schema: Record<string, unknown>, hide: string[] | undefined): Record<string, unknown> {
+  if (!hide?.length) return schema
+  const properties = schema.properties as Record<string, unknown> | undefined
+  const required = schema.required as string[] | undefined
+  return {
+    ...schema,
+    ...(properties
+      ? { properties: Object.fromEntries(Object.entries(properties).filter(([key]) => !hide.includes(key))) }
+      : {}),
+    ...(required ? { required: required.filter(key => !hide.includes(key)) } : {})
+  }
 }
 
 /** Whether a call counts as read-only under a manifest rule: the tool is listed and none of its `unless` arguments is set. */
@@ -80,8 +96,15 @@ export async function connectMcpServer(
       const mcpToolDef = tool<Record<string, unknown>>({
         name: mcpTool.name,
         description: mcpTool.description ?? mcpTool.name,
-        parameters: mcpTool.inputSchema,
-        execute: args => callTool(client, mcpTool.name, args, tempDir, opts)
+        parameters: withoutArgs(mcpTool.inputSchema, opts.hideArgs),
+        execute: args =>
+          callTool(
+            client,
+            mcpTool.name,
+            Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key))),
+            tempDir,
+            opts
+          )
       })
       const rule = opts.readOnly?.find(r => r.tool === mcpTool.name)
       const mayAsk =

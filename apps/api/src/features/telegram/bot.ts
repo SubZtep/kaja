@@ -7,7 +7,7 @@ import {
   TELEGRAM_IMAGE_LIMIT,
   withRateLimitRetry
 } from "@kaja/shared"
-import { Bot, GrammyError, InlineKeyboard } from "grammy"
+import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
 import type { LanguageCode } from "grammy/types"
 import { translator } from "../../core/i18n"
 import { reportError } from "../../core/report"
@@ -84,8 +84,9 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
           throw error
         }
       },
-      async sendPhoto(chatId, url, caption) {
-        await withRateLimitRetry(() => bot.api.sendPhoto(chatId, url, caption ? { caption } : undefined))
+      async sendPhoto(chatId, photo, caption) {
+        const input = typeof photo === "string" ? photo : new InputFile(photo)
+        await withRateLimitRetry(() => bot.api.sendPhoto(chatId, input, caption ? { caption } : undefined))
       }
     }
   })

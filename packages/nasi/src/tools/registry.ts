@@ -232,7 +232,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         approval: target.approval,
         readOnly: target.readOnly,
         label: `ability:${target.name}`,
-        ...(local ? {} : cloudOpts)
+        ...(local ? {} : { ...cloudOpts, hideArgs: target.localOnlyArgs })
       },
       ...(target.sandboxed
         ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) }

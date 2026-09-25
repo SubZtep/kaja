@@ -14,6 +14,8 @@ export type McpAbilityTarget = {
   approval: McpAbility["approval"]
   allow?: string[]
   readOnly?: McpReadOnlyRule[]
+  /** Arguments the cloud hides from the model (the manifest's `localOnlyArgs`). */
+  localOnlyArgs?: string[]
   /** A stdio ability the host's MCP sandbox runs for it, reached over Streamable HTTP. */
   sandboxed?: boolean
 }
@@ -36,7 +38,8 @@ export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbili
     transport: ability.transport,
     approval: ability.approval,
     allow: ability.tools,
-    ...(readOnly ? { readOnly } : {})
+    ...(readOnly ? { readOnly } : {}),
+    ...(ability.localOnlyArgs?.length ? { localOnlyArgs: ability.localOnlyArgs } : {})
   }
 }
 

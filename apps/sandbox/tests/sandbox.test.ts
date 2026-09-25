@@ -90,7 +90,7 @@ describe("relay", () => {
     async () => {
       const { app, pool } = sandbox()
       const first = await connect(app, "u1")
-      expect((await first.listTools()).tools.map(tool => tool.name).sort()).toEqual(["count", "whoami"])
+      expect((await first.listTools()).tools.map(tool => tool.name).sort()).toEqual(["count", "picture", "whoami"])
       expect(await callText(first, "count")).toBe("1")
       await first.close()
 

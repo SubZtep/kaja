@@ -50,7 +50,7 @@ function marketplace(base: string) {
   )
   put(
     `mcp/counter-${tag}.toml`,
-    `name = "counter-${tag}"\ndescription = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count"]\n`
+    `name = "counter-${tag}"\ndescription = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count", "picture"]\n`
   )
   // Keys aren't forwarded to the MCP sandbox yet, so a stdio server that takes one never reaches the cloud.
   put(
@@ -248,6 +248,22 @@ describe("MCP servers in the cloud", () => {
         expect(sent[1]!.messages.at(-1)).toMatchObject({ role: "tool", content: expected })
       }
       expect(sandboxPool.size).toBe(1)
+
+      // A screenshot-like image reaches the streaming client as a data URL, not a path on the server.
+      const client = scriptedChat(
+        [{ content: null, tool_calls: [call("c1", "picture", {})] }, { content: "Here." }],
+        []
+      )
+      setNasiChatResolver(async () => ({ client: client as never, model: "fake-model" }))
+      const res = await app.request("/nasi/turn/stream", {
+        method: "POST",
+        headers: auth(),
+        body: JSON.stringify({ message: "show me" })
+      })
+      const image = (await res.text()).split("\n\n").find(block => block.startsWith("event: tool_image"))
+      const data = JSON.parse(image!.slice(image!.indexOf("data:") + 5))
+      expect(data).toMatchObject({ type: "tool_image", mimeType: "image/png" })
+      expect(data.url).toStartWith("data:image/png;base64,iVBOR")
     } finally {
       setNasiSandboxOverride(undefined)
       await sandboxPool.closeAll()

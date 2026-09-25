@@ -54,7 +54,7 @@ test("a tool image renders the picture, not just its path", async () => {
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
     )
   )
-  const t = renderForTest(<TimelineItem item={{ type: "tool_image", path }} thinking={true} />)
+  const t = renderForTest(<TimelineItem item={{ type: "tool_image", path, mimeType: "image/png" }} thinking={true} />)
   for (let i = 0; i < 100 && !t.output().includes("▄"); i++) await t.tick()
   expect(t.output()).toContain("▄")
   expect(t.output()).toContain(path)
@@ -68,7 +68,7 @@ test("an image that can't load says why after its caption", async () => {
   const missing = join(tmpdir(), `kaja-timeline-${Bun.randomUUIDv7()}.png`)
   const t = renderForTest(
     <>
-      <TimelineItem item={{ type: "tool_image", path: missing }} thinking={true} />
+      <TimelineItem item={{ type: "tool_image", path: missing, mimeType: "image/png" }} thinking={true} />
       <TimelineItem
         item={{ type: "final", content: `![A cat](http://127.0.0.1:${server.port}/cat.png)` }}
         thinking={true}

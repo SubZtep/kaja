@@ -168,7 +168,7 @@ async function* handleToolCall(
   messages.push({ role: "tool", tool_call_id: call.id, content: result.text })
   if (result.displayImage) yield { type: "display_image", ...result.displayImage }
   for (const image of result.images ?? []) {
-    yield { type: "tool_image", path: image.path }
+    yield { type: "tool_image", path: image.path, mimeType: image.mimeType }
     const data = await file(image.path).arrayBuffer()
     const base64 = Buffer.from(data).toString("base64")
     messages.push({

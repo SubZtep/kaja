@@ -33,6 +33,12 @@ export const McpAbilitySchema = z
       .default("never")
       .describe("When tool calls ask first: writes = unless the tool is marked read-only"),
     tools: z.array(z.string().min(1)).optional().describe("Only these of the server's tools reach the model"),
+    localOnlyArgs: z
+      .array(z.string().min(1))
+      .optional()
+      .describe(
+        "Tool arguments that only make sense on the user's own machine (e.g. a file path to save to); the cloud hides them"
+      ),
     readOnly: z
       .array(
         z.union([

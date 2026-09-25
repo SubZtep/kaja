@@ -24,6 +24,8 @@ tools = [
   "list_console_messages",
   "list_network_requests",
 ]
+# The cloud can't hand back a file saved in its sandbox, so it hides filePath: screenshots come back inline instead.
+localOnlyArgs = ["filePath"]
 # The server doesn't mark these read-only, but they only look at the page unless given a filePath to write.
 readOnly = [
   { tool = "take_snapshot", unless = ["filePath"] },

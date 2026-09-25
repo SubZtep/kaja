@@ -3,4 +3,4 @@ description = "Counts its calls (sandbox test fixture)."
 transport = "stdio"
 command = "bun"
 args = ["../counter-server.ts"]
-tools = ["count", "whoami"]
+tools = ["count", "whoami", "picture"]

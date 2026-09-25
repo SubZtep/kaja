@@ -149,3 +149,21 @@ test("an image over the size cap is dropped with a note", async () => {
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test("the cloud hides a manifest's localOnlyArgs from the schema and drops them from calls", async () => {
+  const { tools, closeTools } = await createTools({
+    mcpAbilities: [mcpAbilityTarget(remoteAbility({ localOnlyArgs: ["id"] }))],
+    mcpFetch: routeHostTo(open, HOST)
+  })
+  try {
+    const read = tools.find(t => toolName(t) === "read_thing")!
+    const { parameters } = (read.definition as { function: { parameters: unknown } }).function
+    const schema = parameters as { properties?: object; required?: string[] }
+    expect(Object.keys(schema.properties ?? {})).not.toContain("id")
+    expect(schema.required ?? []).not.toContain("id")
+    // The server never sees the hidden argument, even when the model sends it anyway.
+    expect(JSON.stringify(await read.execute({ id: "1" }).catch(error => String(error)))).not.toContain("thing 1")
+  } finally {
+    await closeTools()
+  }
+})

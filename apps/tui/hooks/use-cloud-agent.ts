@@ -45,12 +45,13 @@ function categorizeCloudError(error: unknown): { category: CloudErrorCategory; m
   return { category: "unknown", message: String(error) }
 }
 
-/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no tool_image/display_image/confirm_command — those are local-only; confirm_tool comes from the user's HTTP tools). */
+/** Same shape as apps/tui/hooks/use-agent.ts's TimelineEvent, restricted to what cloud Nasi can ever emit (no display_image/confirm_command — those are local-only; confirm_tool comes from the user's HTTP tools). A tool image's `path` is the data URL it came as. */
 export type CloudTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: CloudErrorCategory }
   | { type: "notice"; text: string }
-  | Exclude<NasiStreamEvent, { type: "delta" | "usage" }>
+  | { type: "tool_image"; path: string; mimeType: string }
+  | Exclude<NasiStreamEvent, { type: "delta" | "usage" | "tool_image" }>
 
 export type CloudPartialMessage = { reasoning: string; content: string }
 
@@ -176,6 +177,8 @@ export function useCloudAgent(options: NasiClientOptions) {
             const event = next.value
             if (event.type === "delta") handleDelta(event)
             else if (event.type === "usage") handleUsage(event)
+            else if (event.type === "tool_image")
+              handleEvent({ type: "tool_image", path: event.url, mimeType: event.mimeType })
             else handleEvent(event)
             if (event.type === "client_tool_call") pendingClientTool = event
             next = await gen.next()
