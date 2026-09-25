@@ -1,11 +1,13 @@
 import { Box, type DOMElement, measureElement } from "ink"
 import {
   Children,
+  createContext,
   isValidElement,
   memo,
   type ReactNode,
   type Ref,
   useCallback,
+  useContext,
   useImperativeHandle,
   useLayoutEffect,
   useReducer,
@@ -27,6 +29,15 @@ export type VirtualScrollRef = {
   remeasure: () => void
 }
 
+const RemeasureContext = createContext<() => void>(() => {})
+
+/**
+ * Re-measures the enclosing {@link VirtualScroll} item. For content that changes its own height after mounting (an
+ * image that loads later), which the item's once-per-mount measurement can't see; call it from a layout effect, when
+ * the new layout is already computed.
+ */
+export const useRemeasure = () => useContext(RemeasureContext)
+
 /**
  * Measures its child once laid out and reports the height. Memoized so a
  * scroll tick (which re-renders VirtualScroll) doesn't re-render or
@@ -47,15 +58,18 @@ const MeasuredItem = memo(function MeasuredItem({
   children: ReactNode
 }) {
   const ref = useRef<DOMElement>(null)
-
-  useLayoutEffect(() => {
+  const measure = useCallback(() => {
     if (ref.current) onMeasure(id, measureElement(ref.current).height)
-  }, [epoch, id, onMeasure, children])
+  }, [id, onMeasure])
+
+  useLayoutEffect(measure, [epoch, measure, children])
 
   return (
-    <Box ref={ref} flexDirection="column" flexShrink={0} width="100%">
-      {children}
-    </Box>
+    <RemeasureContext value={measure}>
+      <Box ref={ref} flexDirection="column" flexShrink={0} width="100%">
+        {children}
+      </Box>
+    </RemeasureContext>
   )
 })
 

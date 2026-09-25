@@ -1,6 +1,7 @@
 import { Box, Text } from "ink"
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { renderTerminalImage } from "../../lib/image/render-terminal-image"
+import { useRemeasure } from "./virtual-scroll"
 
 /**
  * Renders an image inline via terminal-image (Kitty/iTerm2/ANSI-block
@@ -10,6 +11,7 @@ import { renderTerminalImage } from "../../lib/image/render-terminal-image"
  */
 export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
   const [rendered, setRendered] = useState<string | null>(null)
+  const remeasure = useRemeasure()
 
   useEffect(() => {
     let cancelled = false
@@ -21,6 +23,11 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
       cancelled = true
     }
   }, [href])
+
+  // The image arrives after the scroll view measured this item with only the alt text; its new height must reach it
+  useLayoutEffect(() => {
+    if (rendered) remeasure()
+  }, [rendered, remeasure])
 
   return (
     <Box flexDirection="column">
