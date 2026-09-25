@@ -16,6 +16,7 @@ export {
   renderTelegramHtml,
   splitTelegramMessage,
   TELEGRAM_MESSAGE_LIMIT,
+  telegramImages,
   truncateForStreaming
 } from "./telegram-markdown"
 

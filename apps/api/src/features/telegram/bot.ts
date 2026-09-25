@@ -76,6 +76,9 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
           if (rateLimit) throw rateLimit
           throw error
         }
+      },
+      async sendPhoto(chatId, url, caption) {
+        await withRateLimitRetry(() => bot.api.sendPhoto(chatId, url, caption ? { caption } : undefined))
       }
     }
   })

@@ -204,6 +204,26 @@ test("tool_image and display_image events are delivered as photos", async () => 
   expect(edited.at(-1)!.text).toBe("Here is your picture.")
 })
 
+test("a reply's Markdown images follow its text as photos: public URLs and existing local image files only", async () => {
+  const imagePath = join(tmpdir(), "kaja test telegram reply.png")
+  writeFileSync(imagePath, "not-a-real-png")
+  const reply = [
+    "Here you go: ![A cat](https://example.com/cat.jpg)",
+    `![Local](${encodeURI(imagePath)}) ![Missing](/nope/missing.png) ![Not an image](/etc/hostname)`,
+    "![Private](http://127.0.0.1/x.png)"
+  ].join("\n\n")
+  const { sender, photos, edited } = fakeSender()
+  const driver = makeDriver([{ content: reply }], sender)
+
+  await driver.handleMessage(42, 100, "show me")
+
+  expect(edited.at(-1)!.text).toStartWith("Here you go: A cat")
+  expect(photos).toEqual([
+    { chatId: 100, photo: { url: "https://example.com/cat.jpg" }, caption: "A cat" },
+    { chatId: 100, photo: { path: imagePath }, caption: "Local" }
+  ])
+})
+
 test("resuming continues a pre-seeded session, scoped to that owner only", async () => {
   await createSessionRow({
     persona: "kaja",

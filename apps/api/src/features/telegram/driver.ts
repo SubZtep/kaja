@@ -13,8 +13,10 @@ import {
   EditThrottle,
   escapeHtml,
   isCommand,
+  isPublicHttpUrl,
   renderTelegramHtml,
   splitTelegramMessage,
+  telegramImages,
   truncateForStreaming,
   withQuestion
 } from "@kaja/shared"
@@ -56,6 +58,8 @@ export type TelegramButton = { text: string; data: string }
 export type TelegramSender = {
   sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
   editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
+  /** Sends a photo by URL (Telegram fetches it), with an optional plain-text caption. */
+  sendPhoto(chatId: number, url: string, caption?: string): Promise<void>
 }
 
 export type CloudTelegramDriverConfig = {
@@ -108,6 +112,15 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     const [first, ...rest] = splitTelegramMessage(html)
     await edit(first!)
     for (const chunk of rest) await sender.sendMessage(chatId, chunk)
+    // The reply's Markdown images follow as photos, the text keeping only their alt; public URLs only, never a server path
+    for (const image of telegramImages(rawText)) {
+      if (!isPublicHttpUrl(image.src)) continue
+      try {
+        await sender.sendPhoto(chatId, image.src, image.alt || undefined)
+      } catch (error) {
+        console.warn("Telegram photo send failed", { error })
+      }
+    }
   }
 
   /** Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays in the placeholder. */

@@ -32,10 +32,9 @@ function renderInlineToken(token: Token): string {
       const link = token as Tokens.Link
       return `<a href="${escapeAttr(link.href)}">${renderInlineTokens(link.tokens)}</a>`
     }
-    case "image": {
-      const image = token as Tokens.Image
-      return `<a href="${escapeAttr(image.href)}">${escapeHtml(image.text || image.href)}</a>`
-    }
+    case "image":
+      // The picture itself follows the text as a photo (see telegramImages); the text keeps only its alt
+      return escapeHtml((token as Tokens.Image).text)
     case "br":
       return "\n"
     case "escape":
@@ -126,8 +125,25 @@ function renderBlockToken(token: Token): string {
   }
 }
 
-/** Telegram's hard per-message character cap for both text and captions. */
+/** Telegram's hard per-message character cap for text. */
 export const TELEGRAM_MESSAGE_LIMIT = 4096
+
+/** Telegram's cap for a photo's caption. */
+export const TELEGRAM_CAPTION_LIMIT = 1024
+
+/** A Markdown image in a reply, sent after its text as a photo: `src` as written (a URL or a local path), `alt` as its caption. */
+export type TelegramImage = { src: string; alt: string }
+
+/** The `![alt](src)` images in a reply, in order and once each; the same syntax inside code stays code. */
+export function telegramImages(markdown: string): TelegramImage[] {
+  if (!markdown.includes("![")) return []
+  const images = new Map<string, TelegramImage>()
+  telegramMarked.walkTokens(telegramMarked.lexer(markdown), token => {
+    if (token.type === "image" && token.href && !images.has(token.href))
+      images.set(token.href, { src: token.href, alt: token.text.slice(0, TELEGRAM_CAPTION_LIMIT) })
+  })
+  return [...images.values()]
+}
 
 export function renderTelegramHtml(markdown: string): string {
   const tokens = telegramMarked.lexer(markdown)

@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { homedir } from "node:os"
 import {
   compact,
   LOAD_SKILL_TOOL,
@@ -15,8 +17,10 @@ import {
   EditThrottle,
   escapeHtml,
   isCommand,
+  isPublicHttpUrl,
   renderTelegramHtml,
   splitTelegramMessage,
+  telegramImages,
   truncateForStreaming,
   withQuestion
 } from "@kaja/shared"
@@ -65,6 +69,23 @@ function compactedLine(result: { beforeTokens: number; afterTokens: number; drop
     before: result.beforeTokens.toLocaleString(),
     after: result.afterTokens.toLocaleString()
   })
+}
+
+const IMAGE_FILE = /\.(?:png|jpe?g|gif|webp)$/i
+
+/** Where a reply's `![alt](src)` photo comes from: a public URL, or an existing image file by absolute or `~/` path (nothing else, so a reply can't upload an arbitrary file). */
+function photoSource(src: string): { url: string } | { path: string } | undefined {
+  if (isPublicHttpUrl(src)) return { url: src }
+  let path = src.replace(/^file:\/\//, "")
+  try {
+    // marked percent-encodes the href, so a path with spaces or accents arrives encoded
+    path = decodeURI(path)
+  } catch {
+    return undefined
+  }
+  if (path.startsWith("~/")) path = homedir() + path.slice(1)
+  if (!path.startsWith("/") || !IMAGE_FILE.test(path) || !existsSync(path)) return undefined
+  return { path }
 }
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
@@ -252,13 +273,18 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
    * see runTurn) so this never re-sends an identical edit the throttle
    * already delivered. Chunks past the first (only once the rendered HTML
    * exceeds Telegram's message limit) go out as new messages, since editing
-   * only ever targets the one existing placeholder.
+   * only ever targets the one existing placeholder. The reply's Markdown
+   * images follow as photos, the text keeping only their alt.
    */
   async function finalizeMessage(edit: (text: string) => Promise<void>, chatId: number, rawText: string) {
     const html = renderTelegramHtml(rawText) || t("telegram.emptyResponse")
     const [first, ...rest] = splitTelegramMessage(html)
     await edit(first!)
     for (const chunk of rest) await sender.sendMessage(chatId, chunk)
+    for (const image of telegramImages(rawText)) {
+      const photo = photoSource(image.src)
+      if (photo) await sendPhotoSafely(chatId, photo, image.alt)
+    }
   }
 
   async function sendConfirmCommand(chatId: number, state: UserState, event: { command: string; description: string }) {
