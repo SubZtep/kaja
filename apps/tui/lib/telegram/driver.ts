@@ -280,14 +280,16 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
    * images follow as photos, the text keeping only their alt.
    */
   async function finalizeMessage(edit: (text: string) => Promise<void>, chatId: number, rawText: string) {
-    const html = renderTelegramHtml(rawText) || t("telegram.emptyResponse")
+    const photos = telegramImages(rawText).flatMap(image => {
+      const photo = photoSource(image.src)
+      return photo ? [{ photo, alt: image.alt }] : []
+    })
+    // A reply that is only an image (no alt) leaves no text: the placeholder then just marks the photo below
+    const html = renderTelegramHtml(rawText) || (photos.length > 0 ? "📷" : t("telegram.emptyResponse"))
     const [first, ...rest] = splitTelegramMessage(html)
     await edit(first!)
     for (const chunk of rest) await sender.sendMessage(chatId, chunk)
-    for (const image of telegramImages(rawText)) {
-      const photo = photoSource(image.src)
-      if (photo) await sendPhotoSafely(chatId, photo, image.alt)
-    }
+    for (const { photo, alt } of photos) await sendPhotoSafely(chatId, photo, alt)
   }
 
   async function sendConfirmCommand(chatId: number, state: UserState, event: { command: string; description: string }) {

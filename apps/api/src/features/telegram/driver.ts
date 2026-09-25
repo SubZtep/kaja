@@ -109,13 +109,14 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     rawText: string,
     { t }: BotLanguage
   ) {
-    const html = renderTelegramHtml(rawText) || t("telegram.emptyResponse")
+    // The reply's Markdown images follow as photos, the text keeping only their alt; public URLs only, never a server path
+    const photos = telegramImages(rawText).filter(image => isPublicHttpUrl(image.src))
+    // A reply that is only an image (no alt) leaves no text: the placeholder then just marks the photo below
+    const html = renderTelegramHtml(rawText) || (photos.length > 0 ? "📷" : t("telegram.emptyResponse"))
     const [first, ...rest] = splitTelegramMessage(html)
     await edit(first!)
     for (const chunk of rest) await sender.sendMessage(chatId, chunk)
-    // The reply's Markdown images follow as photos, the text keeping only their alt; public URLs only, never a server path
-    for (const image of telegramImages(rawText)) {
-      if (!isPublicHttpUrl(image.src)) continue
+    for (const image of photos) {
       try {
         await sender.sendPhoto(chatId, image.src, image.alt || undefined)
       } catch (error) {

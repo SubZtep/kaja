@@ -327,7 +327,10 @@ describe("HTTP tools in the cloud", () => {
   })
 
   test("the Telegram bot sends a reply's Markdown images as photos after its text, public URLs only", async () => {
-    useScript([{ content: "Here: ![A cat](https://example.com/cat.jpg) ![Server file](/etc/passwd.png)" }])
+    useScript([
+      { content: "Here: ![A cat](https://example.com/cat.jpg) ![Server file](/etc/passwd.png)" },
+      { content: "![](https://example.com/dog.jpg)" }
+    ])
     const edits: string[] = []
     const photos: { url: string; caption?: string }[] = []
     const driver = createCloudTelegramDriver({
@@ -349,6 +352,11 @@ describe("HTTP tools in the cloud", () => {
     await driver.handleMessage(1001, 55, "show me a cat")
     expect(edits.at(-1)).toBe("Here: A cat Server file")
     expect(photos).toEqual([{ url: "https://example.com/cat.jpg", caption: "A cat" }])
+
+    // Only an image: no text to show, so the placeholder marks the photo instead of saying the reply was empty
+    await driver.handleMessage(1001, 55, "and a dog")
+    expect(edits.at(-1)).toBe("📷")
+    expect(photos.at(-1)).toEqual({ url: "https://example.com/dog.jpg", caption: undefined })
   })
 
   test("a photo sent to the Telegram bot reaches the model with its caption, even one that looks like a command", async () => {

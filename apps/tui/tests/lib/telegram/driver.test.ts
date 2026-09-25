@@ -233,6 +233,16 @@ test("a reply's Markdown images follow its text as photos: public URLs and exist
   ])
 })
 
+test("a reply that is only an image leaves a 📷 placeholder instead of an empty-response note", async () => {
+  const { sender, photos, edited } = fakeSender()
+  const driver = makeDriver([{ content: "![](https://example.com/cat.jpg)" }], sender)
+
+  await driver.handleMessage(42, 100, "a cat please")
+
+  expect(edited.at(-1)!.text).toBe("📷")
+  expect(photos).toEqual([{ chatId: 100, photo: { url: "https://example.com/cat.jpg" }, caption: undefined }])
+})
+
 test("a photo reaches the model with its caption; a model that refuses it gets a plain note, and the photo is dropped", async () => {
   const photo = "data:image/jpeg;base64,/9j/4AAQ"
   const { sender, edited } = fakeSender()
