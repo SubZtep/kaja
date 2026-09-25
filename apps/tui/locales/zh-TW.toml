@@ -283,6 +283,10 @@ compacted = "已壓縮文脈：{before} → {after} 個 token"
 compactedDropped = "已壓縮文脈：{before} → {after} 個 token。無法寫入摘要，最舊的訊息已移除。"
 condensed = "{tool} 輸出已壓縮：{before} → {after} 個 token"
 nothingToCompact = "目前沒有要壓縮的內容。"
+imageFailed = "無法載入：{reason}"
+imageMissing = "找不到檔案"
+imageUnreachable = "無法連線"
+imageUnreadable = "非圖片"
 
 [error]
 network = "網路錯誤"
