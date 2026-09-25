@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
+import { APIError } from "openai"
 import type { Agent, Tool } from "../../../lib/agent/agents"
 import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/driver"
 
@@ -51,6 +52,8 @@ beforeEach(async () => {
 })
 
 type FakeMessage = {
+  /** The provider refuses the request with this status instead of answering. */
+  reject?: number
   content: string | null
   tool_calls?: {
     id: string
@@ -59,15 +62,21 @@ type FakeMessage = {
   }[]
 }
 
+/** Every request the fake model got, as the messages it was sent. */
+const requests: { role: string; content?: unknown }[][] = []
+
 /** Mirrors tests/lib/agents.test.ts's fakeClient/fakeAgent exactly. */
 function fakeClient(script: FakeMessage[]) {
   let i = 0
   return {
     chat: {
       completions: {
-        stream: () => {
+        stream: (params: { messages: { role: string; content?: unknown }[] }) => {
+          requests.push(structuredClone(params.messages))
           const message = script[i++]
           if (!message) throw new Error("fake script exhausted")
+          if (message.reject)
+            throw APIError.generate(message.reject, { message: "image input unsupported" }, undefined, new Headers())
           return {
             async *[Symbol.asyncIterator]() {
               if (message.content) yield { choices: [{ delta: { content: message.content } }] }
@@ -202,6 +211,65 @@ test("tool_image and display_image events are delivered as photos", async () => 
   expect(photos[0]!.caption).toBe("a preview")
   expect(photos[1]!.photo).toEqual({ path: imagePath })
   expect(edited.at(-1)!.text).toBe("Here is your picture.")
+})
+
+test("a reply's Markdown images follow its text as photos: public URLs and existing local image files only", async () => {
+  const imagePath = join(tmpdir(), "kaja test telegram reply.png")
+  writeFileSync(imagePath, "not-a-real-png")
+  const reply = [
+    "Here you go: ![A cat](https://example.com/cat.jpg)",
+    `![Local](${encodeURI(imagePath)}) ![Missing](/nope/missing.png) ![Not an image](/etc/hostname)`,
+    "![Private](http://127.0.0.1/x.png)"
+  ].join("\n\n")
+  const { sender, photos, edited } = fakeSender()
+  const driver = makeDriver([{ content: reply }], sender)
+
+  await driver.handleMessage(42, 100, "show me")
+
+  expect(edited.at(-1)!.text).toStartWith("Here you go: A cat")
+  expect(photos).toEqual([
+    { chatId: 100, photo: { url: "https://example.com/cat.jpg" }, caption: "A cat" },
+    { chatId: 100, photo: { path: imagePath }, caption: "Local" }
+  ])
+})
+
+test("a reply that is only an image leaves a 📷 placeholder instead of an empty-response note", async () => {
+  const { sender, photos, edited } = fakeSender()
+  const driver = makeDriver([{ content: "![](https://example.com/cat.jpg)" }], sender)
+
+  await driver.handleMessage(42, 100, "a cat please")
+
+  expect(edited.at(-1)!.text).toBe("📷")
+  expect(photos).toEqual([{ chatId: 100, photo: { url: "https://example.com/cat.jpg" }, caption: undefined }])
+})
+
+test("a photo reaches the model with its caption; a model that refuses it gets a plain note, and the photo is dropped", async () => {
+  const photo = "data:image/jpeg;base64,/9j/4AAQ"
+  const { sender, edited } = fakeSender()
+  const driver = makeDriver([{ content: "A cat." }, { content: null, reject: 400 }, { content: "Sure." }], sender)
+
+  requests.length = 0
+  await driver.handleMessage(42, 100, "what is it?", [photo])
+  expect(requests[0]!.at(-1)).toEqual({
+    role: "user",
+    content: [
+      { type: "text", text: "what is it?" },
+      { type: "image_url", image_url: { url: photo } }
+    ]
+  })
+  expect(edited.at(-1)!.text).toBe("A cat.")
+
+  // A caption that looks like a command is still just the photo's text
+  await driver.handleMessage(42, 100, "/new", [photo])
+  expect(edited.at(-1)!.text).toBe(t("telegram.noVision"))
+
+  await driver.handleMessage(42, 100, "never mind")
+  const images = requests[2]!
+    .flatMap(m => (Array.isArray(m.content) ? m.content : []))
+    .filter(p => p.type === "image_url")
+  // Only the first photo, which the model did take, is still in the conversation
+  expect(images).toHaveLength(1)
+  expect(edited.at(-1)!.text).toBe("Sure.")
 })
 
 test("resuming continues a pre-seeded session, scoped to that owner only", async () => {

@@ -54,7 +54,8 @@ describe("the cloud bot's /abilities", () => {
       },
       async editMessageText(_chatId, messageId, text, rows) {
         edits.push({ id: messageId, text, rows })
-      }
+      },
+      async sendPhoto() {}
     }
   })
   /** The label of the button for `name` in the latest version of the list. */

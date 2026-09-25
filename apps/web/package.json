@@ -30,7 +30,7 @@
     "@tanstack/react-table": "^9.2.4",
     "better-auth": "^1.7.6",
     "lucide-react": "^1.48.0",
-    "nitro": "npm:nitro-nightly@3.0.1-20260923-001540-22b17bb3",
+    "nitro": "npm:nitro-nightly@3.0.1-20260924-200544-22b17bb3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-toastify": "^11.1.0",

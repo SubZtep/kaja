@@ -133,3 +133,40 @@ export async function withRateLimitRetry<T>(send: () => Promise<T>): Promise<T> 
     return send()
   }
 }
+
+/** The most an image sent to a bot may weigh (Telegram's own download cap is 20 MB). */
+export const TELEGRAM_IMAGE_LIMIT = 10 * 1024 * 1024
+
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"])
+
+/** The image fields of a Telegram message, structurally, so this needs no grammy import. */
+export type TelegramImageMessage = {
+  photo?: { file_id: string; file_size?: number }[]
+  document?: { file_id: string; mime_type?: string; file_size?: number }
+}
+
+/** A message's image: the largest size of a photo, or a file sent uncompressed that is an image. */
+export function incomingImage(
+  message: TelegramImageMessage
+): { fileId: string; mimeType: string; size?: number } | undefined {
+  const photo = message.photo?.at(-1)
+  if (photo) return { fileId: photo.file_id, mimeType: "image/jpeg", size: photo.file_size }
+  const document = message.document
+  if (document?.mime_type && IMAGE_TYPES.has(document.mime_type))
+    return { fileId: document.file_id, mimeType: document.mime_type, size: document.file_size }
+}
+
+/** Downloads a message's image from Telegram as a data URL for the model; `getFile` is the bot's `api.getFile`. */
+export async function downloadTelegramImage(
+  botToken: string,
+  getFile: (fileId: string) => Promise<{ file_path?: string }>,
+  image: { fileId: string; mimeType: string }
+): Promise<string> {
+  const { file_path } = await getFile(image.fileId)
+  if (!file_path) throw new Error("Telegram returned no file path")
+  const response = await fetch(`https://api.telegram.org/file/bot${botToken}/${file_path}`)
+  if (!response.ok) throw new Error(`Telegram file download failed: HTTP ${response.status}`)
+  const bytes = await response.arrayBuffer()
+  if (bytes.byteLength > TELEGRAM_IMAGE_LIMIT) throw new Error("Image too large")
+  return `data:${image.mimeType};base64,${new Uint8Array(bytes).toBase64()}`
+}

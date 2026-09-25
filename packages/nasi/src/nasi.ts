@@ -39,7 +39,19 @@ export type NasiOpenOptions = {
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
 
-export type NasiTurnInput = NasiTurnRequest
+/** A turn as the host runs it: the HTTP request, plus images (data URLs) a host like the Telegram bot got with the message. */
+export type NasiTurnInput = NasiTurnRequest & { images?: string[] }
+
+/** How a message sent with a photo shows in history and titles: "📷", then its caption. */
+export function photoLabel(caption: string): string {
+  return caption ? `📷 ${caption}` : "📷"
+}
+
+/** The user's message as history shows it. */
+function userText(input: NasiTurnInput): string {
+  const message = input.message ?? ""
+  return input.images?.length ? photoLabel(message) : message
+}
 
 function lastOf<T extends AgentEvent["type"]>(events: AgentEvent[], type: T) {
   for (let i = events.length - 1; i >= 0; i--) {
@@ -126,7 +138,7 @@ async function persistTurn(
     ...loaded.events,
     input.approval
       ? { type: "tool_approval", approved: input.approval === "approve" }
-      : { type: "user", text: input.message },
+      : { type: "user", text: userText(input) },
     ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
   ]
   const row = {
@@ -211,7 +223,9 @@ export class Nasi {
     const sessionId = input.session
     let session = createSession()
     let events: unknown[] = []
-    let title = (input.message ?? "").split(/[\r\n]/)[0]!.slice(0, 60)
+    let title = userText(input)
+      .split(/[\r\n]/)[0]!
+      .slice(0, 60)
     let storedPersona: string | undefined
 
     if (sessionId) {
@@ -318,7 +332,7 @@ export class Nasi {
     const prompt = await this.promptFor(loaded.session, input)
 
     const turnEvents: AgentEvent[] = []
-    for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null)) {
+    for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null, input.images)) {
       turnEvents.push(event)
       yield event
     }

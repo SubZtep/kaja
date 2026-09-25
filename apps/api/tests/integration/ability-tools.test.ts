@@ -294,7 +294,8 @@ describe("HTTP tools in the cloud", () => {
         },
         async editMessageText(_chatId, messageId, text) {
           edits.push({ id: messageId, text })
-        }
+        },
+        async sendPhoto() {}
       }
     })
 
@@ -323,6 +324,69 @@ describe("HTTP tools in the cloud", () => {
     await driver.handleCallback(1001, 55, prompt.id, approve)
     expect(edits.at(-1)).toEqual({ id: prompt.id, text: "This request was already answered or has expired." })
     expect(requests).toHaveLength(1)
+  })
+
+  test("the Telegram bot sends a reply's Markdown images as photos after its text, public URLs only", async () => {
+    useScript([
+      { content: "Here: ![A cat](https://example.com/cat.jpg) ![Server file](/etc/passwd.png)" },
+      { content: "![](https://example.com/dog.jpg)" }
+    ])
+    const edits: string[] = []
+    const photos: { url: string; caption?: string }[] = []
+    const driver = createCloudTelegramDriver({
+      resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),
+      sender: {
+        async sendMessage() {
+          return { messageId: 1 }
+        },
+        async editMessageText(_chatId, _messageId, text) {
+          edits.push(text)
+        },
+        async sendPhoto(_chatId, url, caption) {
+          photos.push({ url, caption })
+        }
+      }
+    })
+
+    await driver.handleMessage(1001, 55, "/new")
+    await driver.handleMessage(1001, 55, "show me a cat")
+    expect(edits.at(-1)).toBe("Here: A cat Server file")
+    expect(photos).toEqual([{ url: "https://example.com/cat.jpg", caption: "A cat" }])
+
+    // Only an image: no text to show, so the placeholder marks the photo instead of saying the reply was empty
+    await driver.handleMessage(1001, 55, "and a dog")
+    expect(edits.at(-1)).toBe("📷")
+    expect(photos.at(-1)).toEqual({ url: "https://example.com/dog.jpg", caption: undefined })
+  })
+
+  test("a photo sent to the Telegram bot reaches the model with its caption, even one that looks like a command", async () => {
+    const photo = "data:image/jpeg;base64,/9j/4AAQ"
+    const sent = useScript([{ content: "A cat." }])
+    const driver = createCloudTelegramDriver({
+      resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),
+      sender: {
+        async sendMessage() {
+          return { messageId: 1 }
+        },
+        async editMessageText() {},
+        async sendPhoto() {}
+      }
+    })
+
+    await driver.handleMessage(1001, 55, "/new")
+    await driver.handleMessage(1001, 55, "/new", undefined, [photo])
+    expect(sent[0]!.messages.at(-1)).toEqual({
+      role: "user",
+      content: [
+        { type: "text", text: "/new" },
+        { type: "image_url", image_url: { url: photo } }
+      ]
+    })
+    const { rows } = await pool.query(
+      "SELECT title FROM nasi_session WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1",
+      [userId]
+    )
+    expect(rows[0].title).toBe("📷 /new")
   })
 
   test("widget turns never get HTTP tools, even when the owner has them on", async () => {

@@ -1,7 +1,12 @@
+import { existsSync } from "node:fs"
+import { homedir } from "node:os"
 import {
   compact,
+  dropImages,
+  isImageRejection,
   LOAD_SKILL_TOOL,
   type LoadSkillTool,
+  photoLabel,
   recordPausedCall,
   runApprovedTool,
   samplingOf,
@@ -15,8 +20,10 @@ import {
   EditThrottle,
   escapeHtml,
   isCommand,
+  isPublicHttpUrl,
   renderTelegramHtml,
   splitTelegramMessage,
+  telegramImages,
   truncateForStreaming,
   withQuestion
 } from "@kaja/shared"
@@ -65,6 +72,23 @@ function compactedLine(result: { beforeTokens: number; afterTokens: number; drop
     before: result.beforeTokens.toLocaleString(),
     after: result.afterTokens.toLocaleString()
   })
+}
+
+const IMAGE_FILE = /\.(?:png|jpe?g|gif|webp)$/i
+
+/** Where a reply's `![alt](src)` photo comes from: a public URL, or an existing image file by absolute or `~/` path (nothing else, so a reply can't upload an arbitrary file). */
+function photoSource(src: string): { url: string } | { path: string } | undefined {
+  if (isPublicHttpUrl(src)) return { url: src }
+  let path = src.replace(/^file:\/\//, "")
+  try {
+    // marked percent-encodes the href, so a path with spaces or accents arrives encoded
+    path = decodeURI(path)
+  } catch {
+    return undefined
+  }
+  if (path.startsWith("~/")) path = homedir() + path.slice(1)
+  if (!path.startsWith("/") || !IMAGE_FILE.test(path) || !existsSync(path)) return undefined
+  return { path }
 }
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
@@ -252,13 +276,20 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
    * see runTurn) so this never re-sends an identical edit the throttle
    * already delivered. Chunks past the first (only once the rendered HTML
    * exceeds Telegram's message limit) go out as new messages, since editing
-   * only ever targets the one existing placeholder.
+   * only ever targets the one existing placeholder. The reply's Markdown
+   * images follow as photos, the text keeping only their alt.
    */
   async function finalizeMessage(edit: (text: string) => Promise<void>, chatId: number, rawText: string) {
-    const html = renderTelegramHtml(rawText) || t("telegram.emptyResponse")
+    const photos = telegramImages(rawText).flatMap(image => {
+      const photo = photoSource(image.src)
+      return photo ? [{ photo, alt: image.alt }] : []
+    })
+    // A reply that is only an image (no alt) leaves no text: the placeholder then just marks the photo below
+    const html = renderTelegramHtml(rawText) || (photos.length > 0 ? "📷" : t("telegram.emptyResponse"))
     const [first, ...rest] = splitTelegramMessage(html)
     await edit(first!)
     for (const chunk of rest) await sender.sendMessage(chatId, chunk)
+    for (const { photo, alt } of photos) await sendPhotoSafely(chatId, photo, alt)
   }
 
   async function sendConfirmCommand(chatId: number, state: UserState, event: { command: string; description: string }) {
@@ -392,9 +423,28 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     return false
   }
 
-  async function runTurn(userId: number, chatId: number, state: UserState, prompt: string, showUserEvent: boolean) {
+  /** Records a failed turn and returns what the reply should say instead. */
+  function turnFailure(state: UserState, error: unknown, hadImages: boolean, turnStart: number): string {
+    log.warn("Telegram agent run failed", { error })
+    const { category, message } = categorizeError(error)
+    state.events.push({ type: "error", text: message, category })
+    if (!hadImages) return `⚠ ${category}: ${message}`
+    // The session lives on in memory: without this, every later turn would send the photo again
+    dropImages(state.session, turnStart)
+    return isImageRejection(error) ? t("telegram.noVision") : `⚠ ${category}: ${message}`
+  }
+
+  async function runTurn(
+    userId: number,
+    chatId: number,
+    state: UserState,
+    prompt: string,
+    showUserEvent: boolean,
+    images: string[] = []
+  ) {
     state.busy = true
-    if (showUserEvent) state.events.push({ type: "user", text: prompt })
+    if (showUserEvent) state.events.push({ type: "user", text: images.length > 0 ? photoLabel(prompt) : prompt })
+    const turnStart = state.session.messages.length
 
     const placeholder = await sender.sendMessage(chatId, "…")
     const accumulated = { content: "" }
@@ -410,7 +460,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const throttle = new EditThrottle(editIfChanged, error => log.warn("Telegram edit failed", { error }))
 
     try {
-      for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId))) {
+      for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId), images)) {
         if (event.type === "delta") {
           // Reasoning deltas are omitted from the live bubble — mirrors the terminal's optional/collapsed reasoning display.
           if (event.channel === "content") {
@@ -428,17 +478,17 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
         if (done) return
       }
     } catch (error) {
-      log.warn("Telegram agent run failed", { error })
-      const { category, message } = categorizeError(error)
-      state.events.push({ type: "error", text: message, category })
-      await editIfChanged(`⚠ ${category}: ${message}`)
+      await editIfChanged(turnFailure(state, error, images.length > 0, turnStart))
     } finally {
       state.busy = false
       await persistSession(userId, state)
     }
   }
 
-  async function handleMessage(userId: number, chatId: number, text: string) {
+  /** `images` (data URLs): a photo sent with the message, whose caption is `text`; it always runs as a turn, never a command. */
+  async function handleMessage(userId: number, chatId: number, text: string, images: string[] = []) {
+    if (images.length > 0) return handlePhoto(userId, chatId, text, images)
+
     if (isCommand(text, "abilities")) {
       await sender.sendMessage(chatId, abilitiesMessage(agentConfig.tools ?? [], personas))
       return
@@ -474,6 +524,15 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
 
     await runTurn(userId, chatId, state, text, true)
+  }
+
+  async function handlePhoto(userId: number, chatId: number, caption: string, images: string[]) {
+    const state = await getUserState(userId)
+    if (state.busy || state.pendingCommand) {
+      await sender.sendMessage(chatId, t(state.busy ? "telegram.stillWorking" : "telegram.pendingCommand"))
+      return
+    }
+    await runTurn(userId, chatId, state, caption, true, images)
   }
 
   // `/compact [focus]`: summarises this user's conversation now instead of running a turn.

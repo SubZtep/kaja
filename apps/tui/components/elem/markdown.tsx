@@ -1,5 +1,5 @@
 import { Box, Text, useWindowSize } from "ink"
-import { Marked, marked } from "marked"
+import { Marked, marked, type Token } from "marked"
 import { memo } from "react"
 import { splitBlocks } from "../../lib/markdown/blocks"
 import { dedent } from "../../lib/markdown/dedent"
@@ -95,34 +95,48 @@ type Segment = { type: "text"; source: string } | { type: "image"; href: string;
 
 const segmentKey = (segment: Segment, i: number) => `${i}-${Bun.hash(JSON.stringify(segment)).toString(36)}`
 
+type ImageAt = { start: number; end: number; href: string; alt: string }
+
+// Finds each image token's offset by walking the tokens in order with a cursor, so the same `![alt](href)` shown
+// earlier inside a code block or code span is stepped over instead of matched. Table cells are left alone: splitting
+// a table around an image would break it.
+function findImages(source: string, tokens: Token[], from: number, images: ImageAt[]) {
+  let cursor = from
+  for (const token of tokens) {
+    const start = source.indexOf(token.raw, cursor)
+    if (start === -1) continue
+    if (token.type === "image") images.push({ start, end: start + token.raw.length, href: token.href, alt: token.text })
+    else if (token.type === "list") findImages(source, token.items, start, images)
+    else if (token.type !== "table" && "tokens" in token && token.tokens)
+      findImages(source, token.tokens, start, images)
+    cursor = start + token.raw.length
+  }
+}
+
 /**
  * marked-terminal renders images as a link (`alt (href)`), the same as any
  * other link token — there's no terminal image protocol wired into the
  * renderer itself. To actually display images inline, the source is split
- * around each `![alt](href)` occurrence (found via `marked.lexer` +
- * `walkTokens`, in document order) into text/image segments; text segments
- * still go through the normal marked-terminal pipeline, images render via
- * {@link TerminalImage}.
+ * around each `![alt](href)` token ({@link findImages}) into text/image
+ * segments; text segments still go through the normal marked-terminal
+ * pipeline, images render via {@link TerminalImage}.
  */
-function splitSegments(source: string): Segment[] {
+export function splitSegments(source: string): Segment[] {
   // Lexing the whole text costs as much as rendering it; with no image syntax there's nothing to find
   if (!source.includes("![")) return [{ type: "text", source }]
-  const images: { raw: string; href: string; alt: string }[] = []
-  marked.walkTokens(marked.lexer(source), token => {
-    if (token.type === "image") images.push({ raw: token.raw, href: token.href, alt: token.text })
-  })
+  const images: ImageAt[] = []
+  findImages(source, marked.lexer(source), 0, images)
   if (images.length === 0) return [{ type: "text", source }]
 
   const segments: Segment[] = []
-  let rest = source
+  let cursor = 0
   for (const image of images) {
-    const index = rest.indexOf(image.raw)
-    if (index === -1) continue
-    const before = rest.slice(0, index)
+    const before = source.slice(cursor, image.start)
     if (before) segments.push({ type: "text", source: before })
     segments.push({ type: "image", href: image.href, alt: image.alt })
-    rest = rest.slice(index + image.raw.length)
+    cursor = image.end
   }
+  const rest = source.slice(cursor)
   if (rest) segments.push({ type: "text", source: rest })
   return segments
 }

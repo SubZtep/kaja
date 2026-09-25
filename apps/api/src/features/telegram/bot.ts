@@ -1,5 +1,12 @@
 import type { Locale } from "@kaja/shared"
-import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
+import {
+  asRateLimitError,
+  downloadTelegramImage,
+  incomingImage,
+  isNotModifiedError,
+  TELEGRAM_IMAGE_LIMIT,
+  withRateLimitRetry
+} from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard } from "grammy"
 import type { LanguageCode } from "grammy/types"
 import { translator } from "../../core/i18n"
@@ -76,6 +83,9 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
           if (rateLimit) throw rateLimit
           throw error
         }
+      },
+      async sendPhoto(chatId, url, caption) {
+        await withRateLimitRetry(() => bot.api.sendPhoto(chatId, url, caption ? { caption } : undefined))
       }
     }
   })
@@ -153,6 +163,33 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   bot.on("message:text", ctx => {
     void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text, ctx.from.language_code)
+  })
+
+  // A photo (or an image sent as a file) goes to the model with its caption as the text
+  bot.on(["message:photo", "message:document"], async ctx => {
+    const image = incomingImage(ctx.message)
+    if (!image) return
+    const caption = ctx.message.caption ?? ""
+    // An unlinked sender only gets the "link your account" reply; their photo is never downloaded
+    const linked = await telegramLinkService.resolveUser(ctx.from.id)
+    if (!linked) {
+      void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code)
+      return
+    }
+    const { t } = botLanguage(linked.locale, ctx.from.language_code)
+    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT) {
+      await ctx.reply(t("telegram.photoTooLarge"))
+      return
+    }
+    let dataUrl: string
+    try {
+      dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
+    } catch (error) {
+      reportError("Telegram photo download failed", error)
+      await ctx.reply(t("telegram.photoFailed"))
+      return
+    }
+    void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code, [dataUrl])
   })
 
   bot.catch(err => {

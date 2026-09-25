@@ -1,6 +1,8 @@
 import { afterEach, expect, test } from "bun:test"
 import { HttpToolAbilitySchema, McpAbilitySchema } from "@kaja/schema/abilities"
 import type { AbilityStore } from "../src/abilities/types"
+import { createSession } from "../src/agent/agent"
+import { dropImages } from "../src/agent/run"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { createMemoryStore } from "../src/store"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
@@ -374,4 +376,61 @@ test("a cloud user's MCP ability connects with their key when the turn opens; a 
     await nasi.close()
     fixture.stop()
   }
+})
+
+const PHOTO = "data:image/png;base64,iVBORw0KGgo="
+
+test("a turn's images reach the model with its text, and history shows them as a photo", async () => {
+  const sent: SentMessage[][] = []
+  const store = createMemoryStore()
+  const nasi = await open(
+    [
+      {
+        content: null,
+        tool_calls: [
+          { id: "call_1", type: "function", function: { name: "ask_user", arguments: '{"question":"Which one?"}' } }
+        ]
+      },
+      { content: "A cat." },
+      { content: "Also a cat." }
+    ],
+    { store },
+    sent
+  )
+
+  const first = await nasi.turnBuffered({ message: "what is this?", images: [PHOTO] })
+  expect(sent[0]!.at(-1)).toEqual({
+    role: "user",
+    content: [
+      { type: "text", text: "what is this?" },
+      { type: "image_url", image_url: { url: PHOTO } }
+    ]
+  })
+  const row = await store.loadSession(first.session)
+  expect(row!.title).toBe("📷 what is this?")
+  expect(row!.events[0]).toEqual({ type: "user", text: "📷 what is this?" })
+
+  // An answer goes back as the question's tool result, so its photo follows as its own user message
+  await nasi.turnBuffered({ session: first.session, message: "", images: [PHOTO] })
+  expect(sent[1]!.slice(-2)).toEqual([
+    { role: "tool", tool_call_id: "call_1", content: "" },
+    { role: "user", content: [{ type: "image_url", image_url: { url: PHOTO } }] }
+  ])
+})
+
+test("dropImages leaves a note where a failed turn's images were", async () => {
+  const session = createSession()
+  session.messages.push({ role: "user", content: "earlier" })
+  session.messages.push({
+    role: "user",
+    content: [
+      { type: "text", text: "look" },
+      { type: "image_url", image_url: { url: PHOTO } }
+    ]
+  })
+  dropImages(session, 1)
+  expect(session.messages[1]!.content).toEqual([
+    { type: "text", text: "look" },
+    { type: "text", text: "[The user sent an image here, but this model can't view images.]" }
+  ])
 })

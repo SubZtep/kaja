@@ -7,7 +7,7 @@
     "@faker-js/faker": "^10.6.0",
     "@types/bun": "^1.4.2",
     "lefthook": "^2.1.14",
-    "nitro": "npm:nitro-nightly@3.0.1-20260923-001540-22b17bb3",
+    "nitro": "npm:nitro-nightly@3.0.1-20260924-200544-22b17bb3",
     "tombi": "^1.5.5",
     "typescript": "^7.0.2",
     "zod": "^4.6.5"

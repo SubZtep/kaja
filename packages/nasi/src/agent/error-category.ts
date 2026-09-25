@@ -19,3 +19,9 @@ export function categorizeError(error: unknown): {
   }
   return { category: "unknown", message: String(error) }
 }
+
+/** Whether a turn sent with an image failed the way a model that can't view images fails: the provider refused the request itself (a 4xx other than auth, timeout or rate limit). */
+export function isImageRejection(error: unknown): boolean {
+  if (!(error instanceof APIError) || error.status === undefined) return false
+  return error.status >= 400 && error.status < 500 && ![401, 403, 408, 429].includes(error.status)
+}

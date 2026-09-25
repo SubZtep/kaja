@@ -5,10 +5,13 @@ export { LOCALE_LABELS, type Locale, locales, matchLocale } from "./locale"
 export {
   asRateLimitError,
   commandArgument,
+  downloadTelegramImage,
   EditThrottle,
   escapeHtml,
+  incomingImage,
   isCommand,
   isNotModifiedError,
+  TELEGRAM_IMAGE_LIMIT,
   TelegramRateLimitError,
   withRateLimitRetry
 } from "./telegram-bot"
@@ -16,6 +19,7 @@ export {
   renderTelegramHtml,
   splitTelegramMessage,
   TELEGRAM_MESSAGE_LIMIT,
+  telegramImages,
   truncateForStreaming
 } from "./telegram-markdown"
 
