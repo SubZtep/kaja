@@ -1,5 +1,12 @@
 import type { CliResolvedModel } from "@kaja/schema/config"
-import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
+import {
+  asRateLimitError,
+  downloadTelegramImage,
+  incomingImage,
+  isNotModifiedError,
+  TELEGRAM_IMAGE_LIMIT,
+  withRateLimitRetry
+} from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
 import type { Agent } from "../agent/agents"
 import { t } from "../i18n"
@@ -94,6 +101,16 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     console.log(t("telegram.pairedLog", { name, id: ctx.from.id }))
     await config.onPaired?.({ id: ctx.from.id, name })
     await ctx.reply(t("telegram.paired"))
+  })
+
+  // A photo (or an image sent as a file) goes to the model with its caption as the text; owners only, like everything else
+  bot.on(["message:photo", "message:document"], async ctx => {
+    if (!pairing.isOwner(ctx.from.id)) return
+    const image = incomingImage(ctx.message)
+    if (!image) return
+    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT) return void (await ctx.reply(t("telegram.photoTooLarge")))
+    const dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
+    void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.caption ?? "", [dataUrl])
   })
 
   bot.on("callback_query:data", ctx => {

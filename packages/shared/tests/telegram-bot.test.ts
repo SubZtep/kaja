@@ -1,9 +1,11 @@
-import { expect, test } from "bun:test"
+import { afterEach, expect, spyOn, test } from "bun:test"
 import {
   asRateLimitError,
   commandArgument,
+  downloadTelegramImage,
   EditThrottle,
   escapeHtml,
+  incomingImage,
   isCommand,
   isNotModifiedError,
   TelegramRateLimitError,
@@ -118,4 +120,37 @@ test("EditThrottle keeps going after a rate limit and reports other errors to on
   expect(errors).toHaveLength(1)
   expect((errors[0] as Error).message).toBe("bad request")
   expect(sent).toEqual(["c"])
+})
+
+test("incomingImage takes a photo's largest size, or a file that is an image", () => {
+  const photo = [
+    { file_id: "small", file_size: 1 },
+    { file_id: "large", file_size: 9 }
+  ]
+  expect(incomingImage({ photo })).toEqual({ fileId: "large", mimeType: "image/jpeg", size: 9 })
+  expect(incomingImage({ document: { file_id: "f", mime_type: "image/png", file_size: 5 } })).toEqual({
+    fileId: "f",
+    mimeType: "image/png",
+    size: 5
+  })
+  expect(incomingImage({ document: { file_id: "f", mime_type: "application/pdf" } })).toBeUndefined()
+  expect(incomingImage({})).toBeUndefined()
+})
+
+let fetchSpy: ReturnType<typeof spyOn> | undefined
+afterEach(() => fetchSpy?.mockRestore())
+
+test("downloadTelegramImage fetches the file by its path and returns a data URL", async () => {
+  fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(new Response(new Uint8Array([1, 2, 3])))
+  const url = await downloadTelegramImage("TOKEN", async () => ({ file_path: "photos/a.jpg" }), {
+    fileId: "f",
+    mimeType: "image/jpeg"
+  })
+  expect(fetchSpy.mock.calls[0]![0]).toBe("https://api.telegram.org/file/botTOKEN/photos/a.jpg")
+  expect(url).toBe("data:image/jpeg;base64,AQID")
+
+  fetchSpy.mockResolvedValue(new Response("gone", { status: 404 }))
+  await expect(
+    downloadTelegramImage("TOKEN", async () => ({ file_path: "x" }), { fileId: "f", mimeType: "image/png" })
+  ).rejects.toThrow("HTTP 404")
 })

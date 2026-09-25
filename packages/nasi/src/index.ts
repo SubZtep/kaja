@@ -67,9 +67,9 @@ export {
   isContextOverflow,
   summarize
 } from "./agent/compaction"
-export { categorizeError, type ErrorCategory } from "./agent/error-category"
+export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { samplingOf } from "./agent/persona"
-export { compact, run } from "./agent/run"
+export { compact, dropImages, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export {
   applyPersonaToMessages,
@@ -104,7 +104,7 @@ export {
   lowerContextWindow,
   resolveContextWindow
 } from "./models/context-window"
-export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall } from "./nasi"
+export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall, photoLabel } from "./nasi"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
 export { loadPluginTools } from "./plugin/plugin-tools"
 export {

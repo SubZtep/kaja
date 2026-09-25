@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
+import { APIError } from "openai"
 import type { Agent, Tool } from "../../../lib/agent/agents"
 import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/driver"
 
@@ -51,6 +52,8 @@ beforeEach(async () => {
 })
 
 type FakeMessage = {
+  /** The provider refuses the request with this status instead of answering. */
+  reject?: number
   content: string | null
   tool_calls?: {
     id: string
@@ -59,15 +62,21 @@ type FakeMessage = {
   }[]
 }
 
+/** Every request the fake model got, as the messages it was sent. */
+const requests: { role: string; content?: unknown }[][] = []
+
 /** Mirrors tests/lib/agents.test.ts's fakeClient/fakeAgent exactly. */
 function fakeClient(script: FakeMessage[]) {
   let i = 0
   return {
     chat: {
       completions: {
-        stream: () => {
+        stream: (params: { messages: { role: string; content?: unknown }[] }) => {
+          requests.push(structuredClone(params.messages))
           const message = script[i++]
           if (!message) throw new Error("fake script exhausted")
+          if (message.reject)
+            throw APIError.generate(message.reject, { message: "image input unsupported" }, undefined, new Headers())
           return {
             async *[Symbol.asyncIterator]() {
               if (message.content) yield { choices: [{ delta: { content: message.content } }] }
@@ -222,6 +231,35 @@ test("a reply's Markdown images follow its text as photos: public URLs and exist
     { chatId: 100, photo: { url: "https://example.com/cat.jpg" }, caption: "A cat" },
     { chatId: 100, photo: { path: imagePath }, caption: "Local" }
   ])
+})
+
+test("a photo reaches the model with its caption; a model that refuses it gets a plain note, and the photo is dropped", async () => {
+  const photo = "data:image/jpeg;base64,/9j/4AAQ"
+  const { sender, edited } = fakeSender()
+  const driver = makeDriver([{ content: "A cat." }, { content: null, reject: 400 }, { content: "Sure." }], sender)
+
+  requests.length = 0
+  await driver.handleMessage(42, 100, "what is it?", [photo])
+  expect(requests[0]!.at(-1)).toEqual({
+    role: "user",
+    content: [
+      { type: "text", text: "what is it?" },
+      { type: "image_url", image_url: { url: photo } }
+    ]
+  })
+  expect(edited.at(-1)!.text).toBe("A cat.")
+
+  // A caption that looks like a command is still just the photo's text
+  await driver.handleMessage(42, 100, "/new", [photo])
+  expect(edited.at(-1)!.text).toBe(t("telegram.noVision"))
+
+  await driver.handleMessage(42, 100, "never mind")
+  const images = requests[2]!
+    .flatMap(m => (Array.isArray(m.content) ? m.content : []))
+    .filter(p => p.type === "image_url")
+  // Only the first photo, which the model did take, is still in the conversation
+  expect(images).toHaveLength(1)
+  expect(edited.at(-1)!.text).toBe("Sure.")
 })
 
 test("resuming continues a pre-seeded session, scoped to that owner only", async () => {

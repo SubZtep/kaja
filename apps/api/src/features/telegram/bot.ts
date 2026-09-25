@@ -1,5 +1,12 @@
 import type { Locale } from "@kaja/shared"
-import { asRateLimitError, isNotModifiedError, withRateLimitRetry } from "@kaja/shared"
+import {
+  asRateLimitError,
+  downloadTelegramImage,
+  incomingImage,
+  isNotModifiedError,
+  TELEGRAM_IMAGE_LIMIT,
+  withRateLimitRetry
+} from "@kaja/shared"
 import { Bot, GrammyError, InlineKeyboard } from "grammy"
 import type { LanguageCode } from "grammy/types"
 import { translator } from "../../core/i18n"
@@ -156,6 +163,20 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
 
   bot.on("message:text", ctx => {
     void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text, ctx.from.language_code)
+  })
+
+  // A photo (or an image sent as a file) goes to the model with its caption as the text
+  bot.on(["message:photo", "message:document"], async ctx => {
+    const image = incomingImage(ctx.message)
+    if (!image) return
+    const caption = ctx.message.caption ?? ""
+    // An unlinked sender only gets the "link your account" reply; their photo is never downloaded
+    if (!(await telegramLinkService.resolveUser(ctx.from.id)))
+      return void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code)
+    if ((image.size ?? 0) > TELEGRAM_IMAGE_LIMIT)
+      return void (await ctx.reply(botLanguage(null, ctx.from.language_code).t("telegram.photoTooLarge")))
+    const dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
+    void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code, [dataUrl])
   })
 
   bot.catch(err => {

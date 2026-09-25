@@ -267,7 +267,18 @@ async function* streamRound(
   }
 }
 
-function pushPromptToMessages(session: Session, prompt: string): void {
+function pushPromptToMessages(session: Session, prompt: string, images: string[]): void {
+  pushPromptText(session, prompt, images)
+  // A tool result can't carry an image, so one sent with an answer follows as its own user message
+  if (images.length > 0 && session.messages.at(-1)?.role === "tool")
+    session.messages.push({ role: "user", content: images.map(imagePart) })
+}
+
+function imagePart(url: string) {
+  return { type: "image_url" as const, image_url: { url } }
+}
+
+function pushPromptText(session: Session, prompt: string, images: string[]): void {
   if (session.pendingAskUserId) {
     session.messages.push({
       role: "tool",
@@ -296,8 +307,27 @@ function pushPromptToMessages(session: Session, prompt: string): void {
       content: prompt
     })
     session.pendingToolApprovalId = undefined
+  } else if (images.length > 0) {
+    const text = prompt ? [{ type: "text" as const, text: prompt }] : []
+    session.messages.push({ role: "user", content: [...text, ...images.map(imagePart)] })
   } else {
     session.messages.push({ role: "user", content: prompt })
+  }
+}
+
+/** Placeholder a dropped image leaves, so the model still knows one was sent. */
+const DROPPED_IMAGE = "[The user sent an image here, but this model can't view images.]"
+
+/**
+ * Replaces the image parts of the messages from `from` on with a text note: after a turn with a photo failed (most
+ * likely on a model that can't see images), so the session doesn't send the same image, and fail, on every later turn.
+ */
+export function dropImages(session: Session, from: number): void {
+  for (const message of session.messages.slice(from)) {
+    if (message.role !== "user" || !Array.isArray(message.content)) continue
+    message.content = message.content.map(part =>
+      part.type === "image_url" ? { type: "text" as const, text: DROPPED_IMAGE } : part
+    )
   }
 }
 
@@ -501,7 +531,13 @@ function* handlePendingHandoff(
 }
 
 // Seeds a new conversation's system prompt (or refreshes an ongoing one's abilities), then adds the prompt.
-async function openTurn(agent: Agent, session: Session, prompt: string, owner: string | null): Promise<void> {
+async function openTurn(
+  agent: Agent,
+  session: Session,
+  prompt: string,
+  owner: string | null,
+  images: string[]
+): Promise<void> {
   const messages = session.messages
   if (messages.length === 0) {
     const system = await buildSystemPrompt(agent, owner)
@@ -509,7 +545,7 @@ async function openTurn(agent: Agent, session: Session, prompt: string, owner: s
   } else {
     await refreshAbilitiesInPrompt(agent, messages, owner)
   }
-  pushPromptToMessages(session, prompt)
+  pushPromptToMessages(session, prompt, images)
 }
 
 // Records the telemetry step for the round whose message was just appended.
@@ -587,17 +623,19 @@ export async function compact(agent: Agent, session: Session, focus?: string) {
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
+ * `images` (data URLs) go to the model with the prompt, e.g. a photo sent to a bot.
  */
 export async function* run(
   agent: Agent,
   prompt: string,
   session: Session,
-  owner: string | null = LOCAL_OWNER
+  owner: string | null = LOCAL_OWNER,
+  images: string[] = []
 ): AsyncGenerator<AgentEvent, void, void> {
   const toolsByName = new Map(agent.tools.map(t => [toolName(t), t]))
   const definitions = agent.tools.map(t => t.definition)
   const messages = session.messages
-  await openTurn(agent, session, prompt, owner)
+  await openTurn(agent, session, prompt, owner, images)
 
   let emptyRoundRetries = 0
   let failingToolRounds = 0

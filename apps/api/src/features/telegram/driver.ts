@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import {
   categorizeError,
   type FinalizedAgentEvent,
+  isImageRejection,
   type NasiTurnInput,
   pendingToolCall,
   type Session,
@@ -214,10 +215,11 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     chatId: number,
     prompt: string,
     resume: boolean,
-    language: BotLanguage
+    language: BotLanguage,
+    images?: string[]
   ) {
     return withLock(`telegram:${owner}`, () =>
-      runTurnLocked(ownerUserId, owner, chatId, { message: prompt }, resume, language)
+      runTurnLocked(ownerUserId, owner, chatId, { message: prompt, images }, resume, language)
     )
   }
 
@@ -225,7 +227,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     ownerUserId: string,
     owner: string,
     chatId: number,
-    input: Pick<NasiTurnInput, "message" | "approval">,
+    input: Pick<NasiTurnInput, "message" | "approval" | "images">,
     resume: boolean,
     language: BotLanguage
   ) {
@@ -271,6 +273,9 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       }
     } catch (error) {
       console.warn("Telegram agent turn failed", { error })
+      // A failed turn isn't saved, so the photo doesn't linger in the session; only the reply needs saying
+      if (input.images?.length && isImageRejection(error))
+        return void (await editIfChanged(language.t("telegram.noVision")))
       const { category, message } = categorizeError(error)
       // The category in the user's language, like the terminal shows it; the detail is the provider's own (technical) text.
       const label = language.t(`telegram.error.${category}`)
@@ -278,8 +283,17 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** `telegramLanguage` is the sender's Telegram app language, used only when their account has none saved. */
-  async function handleMessage(telegramUserId: number, chatId: number, text: string, telegramLanguage?: string) {
+  /**
+   * `telegramLanguage` is the sender's Telegram app language, used only when their account has none saved. `images`
+   * (data URLs): a photo sent with the message, whose caption is `text`; it always runs as a turn, never a command.
+   */
+  async function handleMessage(
+    telegramUserId: number,
+    chatId: number,
+    text: string,
+    telegramLanguage?: string,
+    images: string[] = []
+  ) {
     const linked = await resolveLinkedUser(telegramUserId)
     const language = botLanguage(linked?.locale, telegramLanguage)
     const { t } = language
@@ -290,6 +304,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     const ownerUserId = linked.userId
 
     const owner = telegramOwner(telegramUserId)
+
+    if (images.length > 0) return startTurn(telegramUserId, ownerUserId, owner, chatId, text, language, images)
 
     if (isCommand(text, "new")) {
       forceNew.add(telegramUserId)
@@ -310,9 +326,21 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return
     }
 
+    await startTurn(telegramUserId, ownerUserId, owner, chatId, text, language)
+  }
+
+  async function startTurn(
+    telegramUserId: number,
+    ownerUserId: string,
+    owner: string,
+    chatId: number,
+    text: string,
+    language: BotLanguage,
+    images?: string[]
+  ) {
     const resume = !forceNew.delete(telegramUserId)
     try {
-      await runTurn(ownerUserId, owner, chatId, text, resume, language)
+      await runTurn(ownerUserId, owner, chatId, text, resume, language, images)
     } catch (error) {
       reportError("Telegram turn crashed", error)
     }

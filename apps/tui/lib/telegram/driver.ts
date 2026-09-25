@@ -2,8 +2,11 @@ import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 import {
   compact,
+  dropImages,
+  isImageRejection,
   LOAD_SKILL_TOOL,
   type LoadSkillTool,
+  photoLabel,
   recordPausedCall,
   runApprovedTool,
   samplingOf,
@@ -418,9 +421,17 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     return false
   }
 
-  async function runTurn(userId: number, chatId: number, state: UserState, prompt: string, showUserEvent: boolean) {
+  async function runTurn(
+    userId: number,
+    chatId: number,
+    state: UserState,
+    prompt: string,
+    showUserEvent: boolean,
+    images: string[] = []
+  ) {
     state.busy = true
-    if (showUserEvent) state.events.push({ type: "user", text: prompt })
+    if (showUserEvent) state.events.push({ type: "user", text: images.length > 0 ? photoLabel(prompt) : prompt })
+    const turnStart = state.session.messages.length
 
     const placeholder = await sender.sendMessage(chatId, "…")
     const accumulated = { content: "" }
@@ -436,7 +447,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const throttle = new EditThrottle(editIfChanged, error => log.warn("Telegram edit failed", { error }))
 
     try {
-      for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId))) {
+      for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId), images)) {
         if (event.type === "delta") {
           // Reasoning deltas are omitted from the live bubble — mirrors the terminal's optional/collapsed reasoning display.
           if (event.channel === "content") {
@@ -457,6 +468,11 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       log.warn("Telegram agent run failed", { error })
       const { category, message } = categorizeError(error)
       state.events.push({ type: "error", text: message, category })
+      if (images.length > 0) {
+        // The session lives on in memory: without this, every later turn would send the photo again
+        dropImages(state.session, turnStart)
+        if (isImageRejection(error)) return void (await editIfChanged(t("telegram.noVision")))
+      }
       await editIfChanged(`⚠ ${category}: ${message}`)
     } finally {
       state.busy = false
@@ -464,7 +480,10 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
   }
 
-  async function handleMessage(userId: number, chatId: number, text: string) {
+  /** `images` (data URLs): a photo sent with the message, whose caption is `text`; it always runs as a turn, never a command. */
+  async function handleMessage(userId: number, chatId: number, text: string, images: string[] = []) {
+    if (images.length > 0) return handlePhoto(userId, chatId, text, images)
+
     if (isCommand(text, "abilities")) {
       await sender.sendMessage(chatId, abilitiesMessage(agentConfig.tools ?? [], personas))
       return
@@ -500,6 +519,13 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
 
     await runTurn(userId, chatId, state, text, true)
+  }
+
+  async function handlePhoto(userId: number, chatId: number, caption: string, images: string[]) {
+    const state = await getUserState(userId)
+    if (state.busy) return void (await sender.sendMessage(chatId, t("telegram.stillWorking")))
+    if (state.pendingCommand) return void (await sender.sendMessage(chatId, t("telegram.pendingCommand")))
+    await runTurn(userId, chatId, state, caption, true, images)
   }
 
   // `/compact [focus]`: summarises this user's conversation now instead of running a turn.
