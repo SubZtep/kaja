@@ -34,9 +34,9 @@ RUN apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
 FROM node:22-trixie-slim AS runner
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
+    fonts-liberation fonts-noto-color-emoji \
     libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libdbus-1-3 libdrm2 libexpat1 libglib2.0-0t64 \
     libnspr4 libnss3 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2 \
-    fonts-liberation fonts-noto-color-emoji \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=mcp /opt/mcp /opt/mcp
 COPY --from=mcp /opt/chrome /opt/chrome

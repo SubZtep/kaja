@@ -17,7 +17,7 @@ function toBase64Url(bytes: Uint8Array): string {
 function fromBase64Url(text: string): Uint8Array<ArrayBuffer> | undefined {
   try {
     const binary = atob(text.replaceAll("-", "+").replaceAll("_", "/"))
-    return Uint8Array.from(binary, char => char.charCodeAt(0))
+    return Uint8Array.from(binary, char => char.codePointAt(0) ?? 0)
   } catch {
     return undefined
   }

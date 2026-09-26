@@ -159,8 +159,11 @@ async function callTool(
     opts.maxImageBytes === undefined || (block.data.length * 3) / 4 <= opts.maxImageBytes
   const imageBlocks = opts.images === false ? [] : allImages.filter(fits)
   const dropped = allImages.length - imageBlocks.length
-  const note = dropped > 0 ? `(${dropped} image${dropped === 1 ? "" : "s"} not shown)` : ""
-  const withNote = note ? (text ? `${text}\n\n${note}` : `${name}: done ${note}`) : text || `${name}: done`
+  let withNote = text || `${name}: done`
+  if (dropped > 0) {
+    const note = `(${dropped} ${dropped === 1 ? "image" : "images"} not shown)`
+    withNote = text ? `${text}\n\n${note}` : `${name}: done ${note}`
+  }
   if (imageBlocks.length === 0) return { text: withNote }
 
   await mkdir(tempDir, { recursive: true })
