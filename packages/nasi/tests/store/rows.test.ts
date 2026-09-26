@@ -3,8 +3,8 @@ import {
   attachImages,
   clearTelemetry,
   detachImages,
-  hasImageRefs,
   IMAGE_REF_PREFIX,
+  imageRefs,
   joinConversation,
   splitConversation
 } from "../../src/store/rows"
@@ -113,8 +113,8 @@ test("inline images leave the parts as references, and come back from them", () 
   const ref = (parts![0] as typeof png).image_url.url
   expect(ref).toStartWith(IMAGE_REF_PREFIX)
   expect(parts![2]).toEqual(linked)
-  expect(hasImageRefs(parts)).toBe(true)
-  expect(hasImageRefs([linked])).toBe(false)
+  expect(imageRefs(parts)).toEqual([images[0]!.hash, images[0]!.hash])
+  expect(imageRefs([linked])).toEqual([])
 
   const stored = new Map(images.map(image => [image.hash, image]))
   expect(attachImages(parts, stored)).toEqual([png, { type: "text", text: "hi" }, linked, png])

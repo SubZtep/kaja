@@ -127,11 +127,15 @@ export {
   clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
+  deleteImages,
   detachImages,
   forgetNotes,
-  hasImageRefs,
   IMAGE_REF_PREFIX,
+  imageHash,
+  imageKey,
+  imageRefs,
   joinConversation,
+  loadImages,
   type MessageRow,
   type NasiStore,
   noteHeader,
@@ -140,8 +144,11 @@ export {
   type SessionWrite,
   type StepRow,
   type StoredImage,
+  saveImages,
+  sessionImagePrefix,
   splitConversation,
-  type ToolCallRow
+  type ToolCallRow,
+  userImagePrefix
 } from "./store"
 export { currentTimeTool } from "./tools/builtin/current-time"
 export { datasetInfoTool } from "./tools/builtin/dataset-info"

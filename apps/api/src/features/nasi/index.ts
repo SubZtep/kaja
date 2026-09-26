@@ -31,6 +31,7 @@ import {
   runUserTurn
 } from "./chat"
 import { createPostgresStore } from "./pg-store"
+import { toolImageUrl } from "./tool-image"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
 const NOTHING_TO_APPROVE = "No tool call is waiting for approval"
@@ -82,7 +83,7 @@ nasiRoutes.openapi(turnRoute, async c => {
   }
 })
 
-/** SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not forwarded, and tool_image goes as a data URL (see {@link sseEvent}). */
+/** SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not forwarded, and tool_image goes as a signed URL (see {@link sseEvent}). */
 const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   delta: "delta",
   reasoning: "reasoning",
@@ -99,12 +100,15 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   tool_image: "tool_image"
 }
 
-/** What the client gets for an event: as is, except a tool image, whose server-side file becomes a data URL (the file is gone after the turn). */
-async function sseEvent(event: FinalizedAgentEvent | AgentDelta): Promise<object> {
+/** What the client gets for an event: as is, except a tool image, whose server-side file goes to storage and becomes a signed URL (the file is gone after the turn). */
+async function sseEvent(
+  event: FinalizedAgentEvent | AgentDelta,
+  userId: string,
+  sessionId: string | undefined
+): Promise<object> {
   if (event.type !== "tool_image") return event
   const { path, mimeType } = event
-  const base64 = Buffer.from(await Bun.file(path).arrayBuffer()).toString("base64")
-  return { type: "tool_image", mimeType, url: `data:${mimeType};base64,${base64}` }
+  return { type: "tool_image", mimeType, url: await toolImageUrl(userId, sessionId, path, mimeType) }
 }
 
 /** The `error` event's body for a failed stream: the known failures by name, anything else categorized and logged. */
@@ -136,7 +140,11 @@ nasiRoutes.post("/turn/stream", async c => {
       let next = await gen.next()
       while (!next.done) {
         const name = SSE_EVENT_NAME[next.value.type]
-        if (name) await stream.writeSSE({ event: name, data: JSON.stringify(await sseEvent(next.value)) })
+        if (name)
+          await stream.writeSSE({
+            event: name,
+            data: JSON.stringify(await sseEvent(next.value, user.id, body.session))
+          })
         next = await gen.next()
       }
       await stream.writeSSE({

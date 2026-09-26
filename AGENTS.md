@@ -11,6 +11,7 @@ Translations: edit only the en-GB locale files; never read or edit other languag
 Kaja is a TypeScript monorepo built with Bun:
 
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
+- **Images**: session images are never in a database: `@kaja/nasi` store helpers (`saveImages`/`loadImages`/`deleteImages`) put them in files-sdk storage under a per-session prefix (API: Hetzner Object Storage at `images/<userId>/<sessionId>/`; TUI: the fs adapter in `files/` beside the SQLite file). Cloud tool images reach clients as signed URLs from `tool-images/<userId>/`
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
@@ -42,8 +43,8 @@ Device authorization still applies where relevant: Better Auth device flow for A
 ## Development Commands
 
 ```bash
-# PostgreSQL + MailDev (API/web optional via compose)
-docker compose up -d db mail
+# PostgreSQL + MailDev + RustFS object storage (API/web optional via compose)
+docker compose up -d db mail storage
 
 # API + web + widget (hot reload)
 bun dev
@@ -91,7 +92,7 @@ bun run --filter @kaja/sandbox build
 
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
-- **Core**: `db.ts` (pg Pool), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`)
+- **Core**: `db.ts` (pg Pool), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (files-sdk object storage for images: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set)
 - **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (cloud ability catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 

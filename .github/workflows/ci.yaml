@@ -45,6 +45,19 @@ jobs:
         options: >-
           --health-cmd pg_isready --health-start-period 3s
           --health-retries 5
+      # Object storage for images; credentials match apps/api/.env.example, and the tests create the bucket
+      storage:
+        image: rustfs/rustfs:1.0.0
+        env:
+          RUSTFS_VOLUMES: /data
+          RUSTFS_ADDRESS: 0.0.0.0:9000
+          RUSTFS_ACCESS_KEY: kaja
+          RUSTFS_SECRET_KEY: kaja-dev-storage
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fsS http://127.0.0.1:9000/health" --health-start-period 5s
+          --health-retries 5
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

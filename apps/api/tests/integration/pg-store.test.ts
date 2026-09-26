@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
+import { sessionImagePrefix } from "@kaja/nasi"
 import { pool } from "../../src/core/db"
+import { files } from "../../src/core/files"
 import { createPostgresStore } from "../../src/features/nasi/pg-store"
 import { signUpAndSignIn } from "./helpers"
 
@@ -161,17 +163,21 @@ describe("postgres store", () => {
     ])
   })
 
-  test("an inline image is kept in nasi_session_image, with a reference in the message", async () => {
+  test("an inline image goes to object storage, with a reference in the message, and leaves with its session", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })
     const { rows } = await pool.query(
-      "SELECT m.parts::text AS parts, i.mime_type FROM nasi_message m, nasi_session_image i WHERE m.session_id = $1 AND i.session_id = $1 AND m.parts IS NOT NULL",
+      "SELECT parts::text AS parts FROM nasi_message WHERE session_id = $1 AND parts IS NOT NULL",
       [id]
     )
     expect(rows).toHaveLength(1)
-    expect(rows[0].parts).toContain("kaja-image:")
-    expect(rows[0].mime_type).toBe("image/png")
+    const hash = rows[0].parts.match(/kaja-image:([0-9a-f]+)/)[1]
+    const key = `${sessionImagePrefix(id, userId)}/${hash}`
+    expect((await files.head(key)).type).toBe("image/png")
     expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
+
+    await store.deleteSession(id)
+    expect(await files.exists(key)).toBe(false)
   })
 
   test("a NUL byte in a message (a binary tool result) is dropped instead of failing the save", async () => {

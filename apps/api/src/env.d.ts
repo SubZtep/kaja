@@ -78,6 +78,18 @@ declare module "bun" {
     SANDBOX_URL?: string
     /** Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token */
     SANDBOX_SECRET?: string
+    /** Object storage bucket for session and tool images */
+    STORAGE_BUCKET?: string
+    /** Hetzner Object Storage location (fsn1, nbg1, hel1) */
+    STORAGE_REGION?: string
+    /** S3-compatible server to use instead of Hetzner (the compose storage service in dev, tests and CI) */
+    STORAGE_ENDPOINT?: string
+    /** STORAGE_ENDPOINT as clients reach it, for signed URLs; only when it differs (the compose API: storage:9000 vs localhost:9000) */
+    STORAGE_PUBLIC_ENDPOINT?: string
+    /** Object storage access key */
+    STORAGE_ACCESS_KEY_ID?: string
+    /** Object storage secret key */
+    STORAGE_SECRET_ACCESS_KEY?: string
     /** BotFather token; when set, starts the always-on cloud Telegram bot */
     TELEGRAM_BOT_TOKEN?: string
   }

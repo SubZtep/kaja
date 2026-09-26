@@ -10,6 +10,9 @@
     "seed:config": "bun run scripts/seed-config.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/s3-presigned-post": "^3.1141.0",
+    "@aws-sdk/s3-request-presigner": "^3.1141.0",
     "@hono/zod-openapi": "^1.6.3",
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",
@@ -20,6 +23,7 @@
     "@sentry/bun": "11.0.0",
     "@sentry/hono": "^11.0.0",
     "better-auth": "^1.7.6",
+    "files-sdk": "^2.6.0",
     "grammy": "^1.46.0",
     "hono": "^4.13.9",
     "hono-rate-limiter": "^0.5.4",

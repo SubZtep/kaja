@@ -143,6 +143,30 @@ export const ApiEnvSchema = z.object({
     )
     .meta({ secret: true, section: "MCP Sandbox" }),
 
+  STORAGE_BUCKET: trimmed
+    .describe("Object storage bucket for session and tool images")
+    .meta({ example: "kaja", devDefault: true, section: "Storage" }),
+  STORAGE_REGION: trimmed
+    .default("fsn1")
+    .describe("Hetzner Object Storage location (fsn1, nbg1, hel1)")
+    .meta({ section: "Storage" }),
+  STORAGE_ENDPOINT: url
+    .optional()
+    .describe("S3-compatible server to use instead of Hetzner (the compose storage service in dev, tests and CI)")
+    .meta({ example: "http://localhost:9000", devDefault: true, section: "Storage" }),
+  STORAGE_PUBLIC_ENDPOINT: url
+    .optional()
+    .describe(
+      "STORAGE_ENDPOINT as clients reach it, for signed URLs; only when it differs (the compose API: storage:9000 vs localhost:9000)"
+    )
+    .meta({ section: "Storage" }),
+  STORAGE_ACCESS_KEY_ID: trimmed
+    .describe("Object storage access key")
+    .meta({ example: "kaja", devDefault: true, section: "Storage" }),
+  STORAGE_SECRET_ACCESS_KEY: trimmed
+    .describe("Object storage secret key")
+    .meta({ secret: true, example: "kaja-dev-storage", devDefault: true, section: "Storage" }),
+
   TELEGRAM_BOT_TOKEN: trimmed
     .optional()
     .describe("BotFather token; when set, starts the always-on cloud Telegram bot")

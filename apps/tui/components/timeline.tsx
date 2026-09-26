@@ -1,3 +1,4 @@
+import { isAbsolute } from "node:path"
 import { StatusMessage, type StatusMessageProps } from "@inkjs/ui"
 import { Box, Text } from "ink"
 import { memo } from "react"
@@ -43,10 +44,8 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
       if (!thinking) return null
       return <ReasoningBox>{item.text}</ReasoningBox>
     case "tool_image":
-      // A cloud image arrives as a data URL, too long to show as its caption.
-      return (
-        <TerminalImage href={item.path} alt={item.path.startsWith("data:") ? "[image]" : `[image: ${item.path}]`} />
-      )
+      // A cloud image arrives as a signed URL, too long to show as its caption; a local one is a file path.
+      return <TerminalImage href={item.path} alt={isAbsolute(item.path) ? `[image: ${item.path}]` : "[image]"} />
     case "display_image":
       return <TerminalImage href={item.url} alt={item.alt} />
     case "message":

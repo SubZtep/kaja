@@ -44,6 +44,21 @@ export type StoredImage = { hash: string; mimeType: string; data: Uint8Array }
 /** What a stored message part's image URL becomes: a reference into the session's images instead of the bytes. */
 export const IMAGE_REF_PREFIX = "kaja-image:"
 
+/** An image's key within its session's store: the sha256 of its bytes, hex. */
+export function imageHash(data: Uint8Array): string {
+  return new Bun.CryptoHasher("sha256").update(data).digest("hex")
+}
+
+/** The hashes of the stored images the parts refer to. */
+export function imageRefs(parts: unknown[] | null): string[] {
+  if (!parts) return []
+  return parts.flatMap(part =>
+    isImagePart(part) && part.image_url.url.startsWith(IMAGE_REF_PREFIX)
+      ? [part.image_url.url.slice(IMAGE_REF_PREFIX.length)]
+      : []
+  )
+}
+
 const DATA_URL = /^data:([^;,]+);base64,(.*)$/s
 
 type ImagePart = { type: "image_url"; image_url: { url: string } }
@@ -60,7 +75,7 @@ export function detachImages(parts: unknown[] | null): { parts: unknown[] | null
     const match = isImagePart(part) ? DATA_URL.exec(part.image_url.url) : null
     if (!match) return part
     const data = Buffer.from(match[2]!, "base64")
-    const hash = new Bun.CryptoHasher("sha256").update(data).digest("hex")
+    const hash = imageHash(data)
     images.push({ hash, mimeType: match[1]!, data })
     return {
       ...(part as ImagePart),
@@ -68,11 +83,6 @@ export function detachImages(parts: unknown[] | null): { parts: unknown[] | null
     }
   })
   return { parts: detached, images }
-}
-
-/** Whether any part refers to a stored image, so a store knows to load the session's images. */
-export function hasImageRefs(parts: unknown[] | null): boolean {
-  return !!parts?.some(part => isImagePart(part) && part.image_url.url.startsWith(IMAGE_REF_PREFIX))
 }
 
 /** The inverse of {@link detachImages}: each reference becomes its data URL again, or a note when the image is gone. */

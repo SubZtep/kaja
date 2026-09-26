@@ -1,3 +1,4 @@
+import { deleteImages, userImagePrefix } from "@kaja/nasi"
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { locales } from "@kaja/shared"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
@@ -6,6 +7,7 @@ import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins
 import { z } from "zod"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
+import { files, toolImagePrefix } from "../../core/files"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
@@ -139,6 +141,15 @@ export const auth = betterAuth({
             reportError("Failed to enable default abilities", err, { userId: user.id })
           })
         }
+      },
+      // The rows cascade from the user; their images in object storage don't, so they go here (self-service and admin removal alike).
+      delete: {
+        after: async user => {
+          await Promise.all([
+            deleteImages(files, userImagePrefix(user.id)),
+            deleteImages(files, toolImagePrefix(user.id))
+          ]).catch(err => reportError("Failed to delete a removed user's images", err, { userId: user.id }))
+        }
       }
     }
   },
@@ -213,7 +224,7 @@ export const auth = betterAuth({
       // Better Auth doesn't check an enum type's values on input, so the validator does.
       locale: { type: [...locales], required: false, validator: { input: z.enum(locales) } }
     },
-    // Self-service deletion from the profile page; needs a recent sign-in. Everything the user owns cascades from the user row.
+    // Self-service deletion from the profile page; needs a recent sign-in. Everything the user owns cascades from the user row, and the delete hook above removes their images.
     deleteUser: { enabled: true },
     changeEmail: {
       enabled: true,

@@ -31,6 +31,7 @@
     "generate:schemas": "bun run packages/schema/tombi/generate.ts",
     "seed:config": "bun run --filter @kaja/api seed:config",
     "session": "bun run apps/tui/scripts/session.ts",
+    "clean:tui-temp": "bun run apps/tui/scripts/clean-temp.ts",
     "sync:locales": "bun scripts/locales.ts",
     "lint": "biome check --config-path=. && tombi format --check && tombi lint",
     "lint:fix": "biome check --config-path=. --write --unsafe && tombi format && tombi lint --error-on-warnings",

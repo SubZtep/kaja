@@ -16,6 +16,9 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   triggers deployment on the managed box. Even the smallest
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
   comfortably at modest traffic.
+- **S3-compatible object storage** for session and tool images (`STORAGE_*`). Production
+  uses [Hetzner Object Storage](https://www.hetzner.com/storage/object-storage); see
+  [Object storage](#object-storage).
 - **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
 - **Outbound HTTP(S) proxy** for the cloud `fetch_url` tool (`WEB_PROXY`); without one the tool is
   left out of cloud turns. Production uses [Webshare](https://www.webshare.io).
@@ -41,7 +44,7 @@ automatically.
 
 The API config declares a `hook:deploy:start:before` step that runs `bun run migrate.js`, so
 **migrations apply on every deploy** before the new container takes traffic. The API keeps no files
-of its own: everything lives in Postgres. `compose.yaml` is for local development only.
+of its own: everything lives in Postgres, and images in [object storage](#object-storage). `compose.yaml` is for local development only.
 
 ### Recreating the database
 
@@ -62,6 +65,51 @@ ALTER SCHEMA public OWNER TO <user in DATABASE_URL>;
 
 Then deploy: the migrations and the config seed run before the new container takes traffic. Secrets users
 saved before the recreate are gone with it.
+
+### Object storage
+
+Session images, and the images tools return in cloud turns, go to a Hetzner Object Storage bucket, never
+to Postgres. Set it up once in the [Hetzner Cloud Console](https://console.hetzner.cloud/):
+
+1. Create a bucket in the same location as the API server (`fsn1`, `nbg1` or `hel1`). Keep it **private**:
+   clients only ever get signed URLs that expire after an hour.
+2. Under **Security → S3 credentials**, create a key pair.
+3. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `STORAGE_ACCESS_KEY_ID`
+   and `STORAGE_SECRET_ACCESS_KEY`. Leave `STORAGE_ENDPOINT` unset: it points the API at another
+   S3-compatible server (the compose RustFS in dev, tests and CI) instead of Hetzner.
+
+The API sets the bucket's lifecycle rule itself on every boot: objects under `tool-images/` expire after
+1 day. Hetzner has no console setting for this; it only takes rules through the S3 API, which the API uses
+anyway. A tool image from a turn that starts a new session is stored there, because the session has no id
+until the turn is saved; the saved session keeps its own copy under `images/`. If the rule can't be set, the
+API still starts and reports it to Sentry, and those copies just stay until someone deletes them.
+
+The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<sha256>`.
+Deleting a session removes its folder, and deleting a user removes both of their prefixes. Recreating
+the database doesn't empty the bucket, so empty it too (see below), or its old images just sit there unused.
+
+#### Deleting images by hand
+
+The Hetzner console can't delete by prefix, so use any S3 client: the AWS CLI, `mc` or s3cmd. With the
+AWS CLI, list first, then delete:
+
+```sh
+export AWS_ACCESS_KEY_ID=<STORAGE_ACCESS_KEY_ID> AWS_SECRET_ACCESS_KEY=<STORAGE_SECRET_ACCESS_KEY>
+aws s3 ls s3://<bucket>/tool-images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
+aws s3 rm s3://<bucket>/tool-images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
+```
+
+Use your bucket's location in the endpoint (`fsn1`, `nbg1` or `hel1`).
+
+- `tool-images/` is always safe to delete. It only holds display copies, the saved sessions keep their own,
+  and their signed URLs expire after an hour anyway. Do it when the expiry rule couldn't be set, which the
+  API reports on boot.
+- `images/` holds the sessions' real images; a deleted one shows as "[an image that is no longer
+  stored]". Empty it (`s3://<bucket>/` as a whole) only when you also recreate the database.
+
+Locally, the same commands work against the compose RustFS with `--endpoint-url http://localhost:9000` and
+the dev credentials from `apps/api/.env.example`. Its console, at <http://localhost:9001> with the same
+credentials, can delete a folder too.
 
 ### MCP sandbox
 
@@ -138,6 +186,7 @@ matching limit and a line in the Privacy Policy.
 ## Production checklist
 
 - A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and real SMTP credentials.
+- The storage bucket and its credentials (see [Object storage](#object-storage)).
 - A strong `CONFIG_API_TOKEN`. `/config/*` is **fail-closed**: a missing or empty token returns 401
   for every request on the prefix and never serves provider API keys.
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/widget) routes are

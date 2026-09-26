@@ -15,8 +15,9 @@ function AdminLayout() {
           <Link
             key={item.to}
             to={item.to!}
-            className="-mb-px border-transparent border-b-2 px-3 py-2 text-muted text-sm hover:text-fg"
+            className="-mb-px border-b-2 px-3 py-2 text-sm hover:text-fg"
             activeProps={{ className: "border-neon text-fg" }}
+            inactiveProps={{ className: "border-transparent text-muted" }}
           >
             {item.label}
           </Link>

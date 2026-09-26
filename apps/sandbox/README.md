@@ -100,6 +100,17 @@ Locally, with hot reload (uses your own `bunx chrome-devtools-mcp` and Chrome, *
 bun dev:sandbox
 ```
 
+`chrome-devtools-mcp` looks for Google Chrome stable (`/opt/google/chrome/chrome` on Linux). With another build, such as a distro's Chromium, point it there with an overrides file outside the repo, and name that file in `apps/sandbox/.env` as `SANDBOX_OVERRIDES=/path/to/sandbox-overrides.json`, then restart the sandbox:
+
+```json
+{
+  "chrome-devtools": {
+    "command": "bunx",
+    "args": ["chrome-devtools-mcp@latest", "--headless", "--isolated", "--executablePath=/usr/bin/chromium"]
+  }
+}
+```
+
 The real image, as production runs it (amd64 only: Chrome for Testing has no Linux arm64 build):
 
 ```sh

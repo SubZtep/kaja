@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_admin/abilities")({
   head: () => ({ meta: seo({ title: m.nav_abilities() }) })
 })
 
-/** Admins only: the last marketplace sync and a button to run one now. */
+/** Admins only: the last marketplace sync and a button to run one now (forced, so a new API build re-reads an unmoved branch). */
 function MarketplaceSyncPanel() {
   const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
@@ -37,7 +37,7 @@ function MarketplaceSyncPanel() {
   })
   const sync = useMutation({
     mutationFn: () =>
-      apiFetch<MarketplaceSyncResult>("/admin/abilities/sync", undefined, { method: "POST" }).then(r =>
+      apiFetch<MarketplaceSyncResult>("/admin/abilities/sync?force=true", undefined, { method: "POST" }).then(r =>
         marketplaceSyncResultSchema.parse(r)
       ),
     onSuccess: result => {

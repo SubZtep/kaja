@@ -24,6 +24,7 @@ personaSwitchedMessage = "Switched to {label}"
 [paths]
 settings       = "settings"
 memorySessions = "memory & sessions"
+images         = "session images"
 models         = "models"
 mcpServers     = "mcp servers"
 tools          = "tools"

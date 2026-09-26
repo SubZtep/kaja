@@ -24,6 +24,7 @@ personaSwitchedMessage = "Váltva erre: {label}"
 [paths]
 settings       = "beállítások"
 memorySessions = "memória és munkamenetek"
+images         = "munkamenet-képek"
 models         = "modellek"
 mcpServers     = "mcp szerverek"
 tools          = "eszközök"
