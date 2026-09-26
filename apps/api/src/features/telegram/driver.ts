@@ -176,8 +176,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     throttle: EditThrottle,
     editIfChanged: (text: string) => Promise<void>,
     chatId: number,
-    userId: string,
-    sessionId: string | undefined,
+    turn: { userId: string; sessionId: string | undefined },
     event: FinalizedAgentEvent,
     language: BotLanguage
   ): Promise<boolean> | boolean {
@@ -201,7 +200,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return sender.sendMessage(chatId, compactedLine(event, language.t)).then(() => false)
 
     if (event.type === "tool_image")
-      return sendToolImage(chatId, userId, sessionId, event.path, event.mimeType).then(() => false)
+      return sendToolImage(chatId, turn.userId, turn.sessionId, event.path, event.mimeType).then(() => false)
 
     return false
   }
@@ -299,8 +298,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
             throttle,
             editIfChanged,
             chatId,
-            ownerUserId,
-            resumeRow?.id,
+            { userId: ownerUserId, sessionId: resumeRow?.id },
             event,
             language
           )

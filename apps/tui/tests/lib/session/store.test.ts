@@ -123,7 +123,7 @@ test("an inline image is stored once as a file beside the database, the message 
   expect((await readdir(folder)).filter(name => !name.endsWith(".meta.json"))).toHaveLength(1)
   expect((await loadSessionRow(id))!.session.messages).toEqual(messages)
   expect(await deleteSessionRow(id)).toBe(true)
-  expect((await readdir(folder).catch(() => [])).length).toBe(0)
+  expect(await readdir(folder).catch(() => [])).toHaveLength(0)
 })
 
 test("a timeline tool image outlives its temp file: it's stored with the session and replays from the stored copy", async () => {
