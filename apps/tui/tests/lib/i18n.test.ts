@@ -3,20 +3,8 @@ import { detectLanguage, dictionaries, setLanguage, t } from "../../lib/i18n"
 
 afterEach(() => setLanguage("en-GB"))
 
-test("en-GB and hu-HU dictionaries have the same keys", () => {
-  expect([...dictionaries["hu-HU"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
-})
-
-test("en-GB and en-US dictionaries have the same keys", () => {
-  expect([...dictionaries["en-US"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
-})
-
-test("en-GB and nan-TW dictionaries have the same keys", () => {
-  expect([...dictionaries["nan-TW"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
-})
-
-test("en-GB and zh-TW dictionaries have the same keys", () => {
-  expect([...dictionaries["zh-TW"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
+test.each(["hu-HU", "en-US", "nan-TW", "zh-TW"] as const)("en-GB and %s dictionaries have the same keys", locale => {
+  expect([...dictionaries[locale].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
 })
 
 test("interpolates params", () => {
