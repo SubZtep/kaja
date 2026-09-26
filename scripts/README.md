@@ -18,7 +18,7 @@ Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebE
   ```
 - **`lib/env-schema.ts`** — shared field-introspection helper (`inspectFields`) used by both generators above; not a standalone script.
 
-Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true`), triggered when `packages/schema/env/*.ts` changes (`env.ts` also watches `.env.example`, `compose.yaml`, `disco.*.json`). `check:env` also runs in CI.
+Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true`), triggered when `packages/schema/env/*.ts` changes (`env.ts` also watches `.env.example`, `compose.yaml`, `apps/*/disco.json`). `check:env` also runs in CI.
 
 ## Locale sync
 

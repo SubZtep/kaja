@@ -33,7 +33,7 @@ piped = true
         "packages/schema/env/*.ts",
         "**/.env.example",
         "compose.yaml",
-        "disco.*.json"
+        "apps/*/disco.json"
       ]
 
 

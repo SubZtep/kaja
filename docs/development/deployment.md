@@ -32,8 +32,8 @@ Create two Disco **Projects** and point each at its own config file:
 
 | Project | Variable | Value |
 | --- | --- | --- |
-| API | `DISCO_JSON_PATH` | `disco.api.json` |
-| Web | `DISCO_JSON_PATH` | `disco.web.json` |
+| API | `DISCO_JSON_PATH` | `apps/api/disco.json` |
+| Web | `DISCO_JSON_PATH` | `apps/web/disco.json` |
 
 Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
 automatically.
