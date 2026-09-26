@@ -2,7 +2,7 @@
 
 The MCP sandbox runs **stdio MCP servers for cloud turns**. A stdio server is a program the agent starts and talks to over stdin/stdout, like `chrome-devtools-mcp`. In local mode Kaja starts it on your machine; the cloud API won't start commands on its own host, so it asks the sandbox instead. The sandbox serves each server over Streamable HTTP at `/mcp/<ability>`, and the cloud agent connects to it like any remote MCP server.
 
-The first (and so far only) server it runs is **chrome-devtools**: a headless Chrome the assistant can browse with, read pages from and screenshot.
+It runs **chrome-devtools**, a headless Chrome the assistant can browse with, read pages from and screenshot. It also runs **time** (Python `mcp-server-time`), which tells the current time and converts it between time zones.
 
 ## How a cloud turn reaches it
 
@@ -145,7 +145,7 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 
 - Abilities that need the user's key (`auth.in = "env"`): keys aren't forwarded, so keyed stdio abilities are refused on both sides.
 - Per-user limits beyond one server per (user, ability).
-- Runtimes other than Node: a Python (`uvx`) server would need Python in the image.
+- Python servers beyond `time`: each one needs its package installed into the image's `/opt/mcp-py` venv, plus an `overrides.json` entry that points at it (`uvx` isn't in the image).
 
 ## Code
 

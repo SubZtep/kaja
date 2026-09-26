@@ -30,10 +30,18 @@ WORKDIR /tmp
 RUN apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
   && mkdir -p /opt/lib && cp -a gbm/usr/lib/x86_64-linux-gnu/libgbm.so.1* /opt/lib/
 
-# The stdio MCP servers are Node programs, so the runtime is Node; only the headless shell's libraries and fonts are added.
+# Python stdio MCP servers (mcp-server-time) in one venv, built on the runner's base so its python3 symlink resolves there.
+FROM node:22-trixie-slim AS mcp-py
+ARG MCP_SERVER_TIME_VERSION=2026.8.18
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv && rm -rf /var/lib/apt/lists/*
+RUN python3 -m venv /opt/mcp-py \
+  && /opt/mcp-py/bin/pip install --no-cache-dir "mcp-server-time==${MCP_SERVER_TIME_VERSION}"
+
+# Most stdio MCP servers are Node programs, so the runtime is Node; the headless shell's libraries and fonts and python3 for the venv are added.
 FROM node:22-trixie-slim AS runner
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
+    python3 \
     fonts-liberation fonts-noto-color-emoji \
     libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libdbus-1-3 libdrm2 libexpat1 libglib2.0-0t64 \
     libnspr4 libnss3 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2 \
@@ -41,6 +49,7 @@ RUN apt-get update \
 COPY --from=mcp /opt/mcp /opt/mcp
 COPY --from=mcp /opt/chrome /opt/chrome
 COPY --from=mcp /opt/lib/ /usr/local/lib/
+COPY --from=mcp-py /opt/mcp-py /opt/mcp-py
 RUN ldconfig
 
 WORKDIR /home/node/app
