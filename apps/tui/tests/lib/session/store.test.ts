@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test"
-import { readdir } from "node:fs/promises"
+import { readdir, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 
@@ -124,6 +124,24 @@ test("an inline image is stored once as a file beside the database, the message 
   expect((await loadSessionRow(id))!.session.messages).toEqual(messages)
   expect(await deleteSessionRow(id)).toBe(true)
   expect((await readdir(folder).catch(() => [])).length).toBe(0)
+})
+
+test("a timeline tool image outlives its temp file: it's stored with the session and replays from the stored copy", async () => {
+  const temp = join(tmpdir(), `kaja-test-tool-image-${Bun.randomUUIDv7()}.png`)
+  const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3])
+  await Bun.write(temp, bytes)
+  const id = await createSessionRow(row({ events: [{ type: "tool_image", path: temp, mimeType: "image/png" }] }))
+  await rm(temp)
+
+  const db = await openDb()
+  const stored = db.query("SELECT payload FROM session_events WHERE sessionId = ?").get(id) as { payload: string }
+  db.close()
+  expect(stored.payload).toContain("kaja-image:")
+  expect(stored.payload).not.toContain(temp)
+
+  const [event] = (await loadSessionRow(id))!.events as { type: string; path: string; mimeType: string }[]
+  expect(event).toMatchObject({ type: "tool_image", mimeType: "image/png" })
+  expect(new Uint8Array(await Bun.file(event!.path).arrayBuffer())).toEqual(bytes)
 })
 
 test("a corrupt row loads as undefined instead of crashing", async () => {

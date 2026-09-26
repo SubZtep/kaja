@@ -61,6 +61,71 @@ bun dev:tui                 # the terminal client
 - [`schema`](./packages/schema/) – shared Zod schemas and types
 - [`shared`](./packages/shared/) – small pure utilities
 
+### Package diagram
+
+```mermaid
+---
+config:
+  look: neo
+  theme: neo-dark
+  layout: elk
+  elk:
+    nodePlacementStrategy: LINEAR_SEGMENTS
+---
+flowchart TB
+    subgraph Users["<tt>Users from various clients</tt>"]
+      USER1((Desktop<br><small>AI native</small>)):::person
+      USER2((Desktop)):::person
+      USER3((Telegram)):::person
+      USER4((Widget on<br>the web)):::person
+    end
+
+    subgraph Local["<tt>Home computer</tt>"]
+        TUI["<b>tui</b><br>Terminal, Telegram bot"]
+        SQL[("SQLite")]
+    end
+
+    subgraph Apps["<tt>Cloud server(s)</tt>"]
+        API["<b>api</b><br>Auth, Chat, Widget"]
+        WEB["<b>web</b><br>Landing, Portal"]
+        SANDBOX["<b>sandbox</b><br>MCP (stdio) runner"]
+        subgraph Data["<tt>Storage</tt>"]
+            DB[("<b>PostgreSQL</b><br>All the data")]
+            S3[("<b>Object Storage</b><br>Session pictures")]
+        end
+        LLM@{ shape: docs, label: "AI model(s)" }
+    end
+
+    subgraph Packages["<tt>Shared packages<tt>"]
+        NASI["<b>nasi</b><br>The loop"]
+        SCHEMA["<b>schema</b><br>Zod contracts"]
+        SHARED["<b>shared</b><br>Pure functions"]
+    end
+
+    USER1 == Custom LLMs === TUI
+    USER2 === TUI
+    USER3 === API
+    USER4 === WEB
+
+    API --- DB
+    API --- LLM
+    TUI --- SQL
+    WEB ---|HTTP| API
+    TUI ---|"HTTP (cloud mode)"| API
+    API ---|"MCP over HTTP"| SANDBOX
+
+    NASI -.- API
+    NASI -.- TUI
+    SCHEMA -.- API
+    SCHEMA -.- WEB
+    SCHEMA -.- TUI
+    SCHEMA -.- NASI
+    SHARED -.- WEB
+    SHARED -.- TUI
+    
+    classDef person fill:#ffff00,color:#000000
+```
+
 ## Contributing
 
 Until it reaches its 1st major version the codebase is under constant refactor.

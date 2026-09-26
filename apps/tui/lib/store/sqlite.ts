@@ -1,11 +1,14 @@
 import { Database } from "bun:sqlite"
-import { mkdirSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { existsSync, mkdirSync, readFileSync } from "node:fs"
+import { dirname, isAbsolute, join } from "node:path"
 import {
   attachImages,
   clearTelemetry,
   deleteImages,
   detachImages,
+  IMAGE_REF_PREFIX,
+  imageHash,
+  imageKey,
   joinConversation,
   loadImages,
   type MessageRow,
@@ -226,7 +229,26 @@ type MessageDbRow = {
 /** Local CLI persistence: one sqlite file (sessions, notes, datasets), and the session images as files beside it. */
 export function createSqliteStore(dbPath: string): NasiStore {
   const db = openDb(dbPath)
-  const files = new Files({ adapter: fs({ root: join(dirname(dbPath), "files") }) })
+  const filesRoot = join(dirname(dbPath), "files")
+  const files = new Files({ adapter: fs({ root: filesRoot }) })
+
+  // A tool image event names a temp file that won't last; the saved timeline refers to the session's stored copy instead, which `images` gets if it isn't there yet.
+  function storedEvent(event: unknown, images: StoredImage[]): unknown {
+    const image = event as { type?: string; path?: string; mimeType?: string }
+    if (image.type !== "tool_image" || !image.path || !isAbsolute(image.path) || !existsSync(image.path)) return event
+    const data = new Uint8Array(readFileSync(image.path))
+    const hash = imageHash(data)
+    images.push({ hash, mimeType: image.mimeType ?? "image/png", data })
+    return { ...image, path: `${IMAGE_REF_PREFIX}${hash}` }
+  }
+
+  // The inverse of storedEvent: the reference becomes the stored copy's path, a plain file under the fs adapter's root.
+  function loadedEvent(sessionId: string, event: unknown): unknown {
+    const image = event as { type?: string; path?: string }
+    if (image.type !== "tool_image" || !image.path?.startsWith(IMAGE_REF_PREFIX)) return event
+    const key = imageKey(sessionImagePrefix(sessionId), image.path.slice(IMAGE_REF_PREFIX.length))
+    return { ...image, path: join(filesRoot, key) }
+  }
 
   function count(table: "messages" | "session_events", sessionId: string): number {
     const row = db.query(`SELECT COUNT(*) AS n FROM ${table} WHERE sessionId = $id`).get({ $id: sessionId }) as {
@@ -326,7 +348,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
         $id: id,
         $seq: storedEvents + i,
         $type: (event as { type: string }).type,
-        $payload: JSON.stringify(event)
+        $payload: JSON.stringify(storedEvent(event, images))
       })
     })
     for (const { callId, status, approval, durationMs } of calls) {
@@ -417,7 +439,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
             }))
           }))
         }),
-        events: eventRows.map(event => JSON.parse(event.payload))
+        events: eventRows.map(event => loadedEvent(row.id, JSON.parse(event.payload)))
       })
       return parsed.success ? parsed.data : undefined
     } catch {
