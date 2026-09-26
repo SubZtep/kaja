@@ -43,7 +43,10 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
       if (!thinking) return null
       return <ReasoningBox>{item.text}</ReasoningBox>
     case "tool_image":
-      return <TerminalImage href={item.path} alt={`[image: ${item.path}]`} />
+      // A cloud image arrives as a data URL, too long to show as its caption.
+      return (
+        <TerminalImage href={item.path} alt={item.path.startsWith("data:") ? "[image]" : `[image: ${item.path}]`} />
+      )
     case "display_image":
       return <TerminalImage href={item.url} alt={item.alt} />
     case "message":

@@ -2,9 +2,32 @@ import { readdir } from "node:fs/promises"
 import { join } from "node:path"
 import { EXAMPLES, exampleToml } from "../apps/tui/lib/models/catalog"
 
-const configDir = join(import.meta.dir, "..", "docs/config")
+const rootDir = join(import.meta.dir, "..")
+const configDir = join(rootDir, "docs/config")
 
-const targets = EXAMPLES.map(example => ({ outPath: join(configDir, example.file), text: exampleToml(example) }))
+/** `text` as `tombi format` leaves it (tombi.toml's rules), so the lint never rewrites a generated file. */
+async function tombiFormat(text: string): Promise<string> {
+  const proc = Bun.spawn([join(rootDir, "node_modules/.bin/tombi"), "format", "-"], {
+    cwd: rootDir,
+    stdin: new Response(text),
+    stdout: "pipe",
+    stderr: "pipe"
+  })
+  const [out, err, code] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited
+  ])
+  if (code !== 0) throw new Error(`tombi format failed: ${err}`)
+  return out
+}
+
+const targets = await Promise.all(
+  EXAMPLES.map(async example => ({
+    outPath: join(configDir, example.file),
+    text: await tombiFormat(exampleToml(example))
+  }))
+)
 
 if (process.argv.includes("--check")) {
   let hasDiff = false

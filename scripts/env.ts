@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import type { z } from "zod"
-import { ApiEnvSchema, WebEnvSchema } from "../packages/schema/env"
+import { ApiEnvSchema, SandboxEnvSchema, WebEnvSchema } from "../packages/schema/env"
 import { type FieldInfo, inspectFields } from "./lib/env-schema"
 
 const rootDir = join(import.meta.dir, "..")
@@ -58,12 +58,13 @@ function renderEnvExample(schema: z.ZodObject<z.ZodRawShape>): string {
 
 const targets = [
   { schema: ApiEnvSchema, outPath: join(rootDir, "apps/api/.env.example") },
-  { schema: WebEnvSchema, outPath: join(rootDir, "apps/web/.env.example") }
+  { schema: WebEnvSchema, outPath: join(rootDir, "apps/web/.env.example") },
+  { schema: SandboxEnvSchema, outPath: join(rootDir, "apps/sandbox/.env.example") }
 ]
 
 const knownKeys = new Set(targets.flatMap(t => Object.keys(t.schema.shape)))
 
-/** Only checks the `api`/`web` services — `db`'s environment block configures the Postgres image, not our app schemas. */
+/** Only checks the `api`/`web`/`sandbox` services — `db`'s environment block configures the Postgres image, not our app schemas. */
 async function extractComposeOverrideKeys(): Promise<string[]> {
   const content = await Bun.file(join(rootDir, "compose.yaml")).text()
   const lines = content.split("\n")
@@ -82,7 +83,7 @@ async function extractComposeOverrideKeys(): Promise<string[]> {
 
     const envMatch = /^(\s+)environment:\s*$/.exec(line)
     if (envMatch) {
-      inEnvBlock = currentService === "api" || currentService === "web"
+      inEnvBlock = currentService === "api" || currentService === "web" || currentService === "sandbox"
       envBlockIndent = envMatch[1]!.length
       continue
     }

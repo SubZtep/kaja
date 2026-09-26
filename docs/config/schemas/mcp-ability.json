@@ -134,6 +134,14 @@
         "minLength": 1
       }
     },
+    "localOnlyArgs": {
+      "description": "Tool arguments that only make sense on the user's own machine (e.g. a file path to save to); the cloud hides them",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "readOnly": {
       "description": "Tools to treat as read-only under approval = \"writes\", for servers that don't mark them",
       "type": "array",

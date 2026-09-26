@@ -271,7 +271,7 @@ export type AgentEvent =
   | { type: "reasoning"; text: string }
   | { type: "message"; content: string }
   | { type: "tool_call"; name: string; arguments: string }
-  | { type: "tool_image"; path: string }
+  | { type: "tool_image"; path: string; mimeType: string }
   | { type: "display_image"; url: string; alt: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }

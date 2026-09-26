@@ -30,7 +30,13 @@ export {
   type KeyCheckResult
 } from "./abilities/http-tool"
 export { type LoadAbilitiesOptions, type LoadedAbilities, loadAbilities } from "./abilities/load"
-export { checkMcpAbilityKey, type McpAbilityTarget, mcpAbilityTarget } from "./abilities/mcp-ability"
+export {
+  checkMcpAbilityKey,
+  type McpAbilityTarget,
+  type McpSandbox,
+  mcpAbilityTarget,
+  sandboxedMcpTarget
+} from "./abilities/mcp-ability"
 export { parseSkillMd } from "./abilities/skill-md"
 export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./abilities/skills"
 export { type AbilityStore, SkillFileError, type SkillSummary } from "./abilities/types"

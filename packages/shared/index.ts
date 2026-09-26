@@ -2,6 +2,7 @@ import clsx, { type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export { LOCALE_LABELS, type Locale, locales, matchLocale } from "./locale"
+export { SANDBOX_STATS_SCOPE, type SandboxClaims, signSandboxToken, verifySandboxToken } from "./sandbox-token"
 export {
   asRateLimitError,
   commandArgument,
@@ -77,12 +78,12 @@ export function cn(...inputs: ClassValue[]) {
 
 const PRIVATE_HOSTNAMES = new Set(["localhost", "0.0.0.0", "[::1]", "::1"])
 
-/** IPv4 ranges not safe to forward to: loopback, link-local (incl. cloud metadata), CGNAT, RFC1918. */
+/** IPv4 ranges not safe to forward to: "this network" (0.0.0.0 reaches loopback), loopback, link-local (incl. cloud metadata), CGNAT, RFC1918, multicast and reserved. */
 function isPrivateIpv4(ipv4: string): boolean {
   const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ipv4)
   if (!match) return false
   const [a, b] = [Number(match[1]), Number(match[2])]
-  if (a === 127) return true
+  if (a === 0 || a === 127 || a >= 224) return true
   if (a === 169 && b === 254) return true
   if (a === 100 && b >= 64 && b <= 127) return true
   if (a === 10) return true
@@ -111,6 +112,7 @@ function isPrivateIpv6(address: string): boolean {
   if (normalized.startsWith("fe8") || normalized.startsWith("fe9")) return true // fe80::/10 (link-local)
   if (normalized.startsWith("fea") || normalized.startsWith("feb")) return true
   if (/^f[cd][0-9a-f]{2}:/.test(normalized)) return true // fc00::/7 (unique local)
+  if (/^ff[0-9a-f]{2}:/.test(normalized)) return true // ff00::/8 (multicast)
   return false
 }
 

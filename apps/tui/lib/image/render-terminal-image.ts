@@ -8,7 +8,7 @@ export type TerminalImageResult = { image: string } | { error: string }
 class HttpError extends Error {}
 
 /**
- * Resolves `src` (an http(s) URL or a local file path) to image bytes and
+ * Resolves `src` (an http(s) or data URL, or a local file path) to image bytes and
  * renders it as ANSI half-block text via terminal-image.
  * Never throws: on any failure (unreachable URL, missing file, unsupported
  * format) it returns a short reason, so callers can fall back to plain text.
@@ -17,7 +17,7 @@ export async function renderTerminalImage(
   src: string,
   options?: { width?: string | number }
 ): Promise<TerminalImageResult> {
-  const remote = src.startsWith("http://") || src.startsWith("https://")
+  const remote = src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")
   let buffer: ArrayBuffer
   try {
     buffer = remote
@@ -27,7 +27,7 @@ export async function renderTerminalImage(
         })
       : await Bun.file(src).arrayBuffer()
   } catch (error) {
-    log.warn("Failed to load terminal image", { error, src })
+    log.warn("Failed to load terminal image", { error, src: src.slice(0, 200) })
     if (error instanceof HttpError) return { error: error.message }
     return { error: t(remote ? "timeline.imageUnreachable" : "timeline.imageMissing") }
   }
@@ -41,7 +41,7 @@ export async function renderTerminalImage(
     })
     return { image }
   } catch (error) {
-    log.warn("Failed to render terminal image", { error, src })
+    log.warn("Failed to render terminal image", { error, src: src.slice(0, 200) })
     return { error: t("timeline.imageUnreadable") }
   }
 }

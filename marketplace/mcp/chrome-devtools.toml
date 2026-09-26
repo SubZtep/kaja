@@ -1,15 +1,20 @@
 # Drives a headless Chrome through the Chrome DevTools MCP server:
 # https://github.com/ChromeDevTools/chrome-devtools-mcp
 # Runs `bunx chrome-devtools-mcp@latest` on your machine and needs Chrome installed.
+# In the cloud it runs in the MCP sandbox instead (apps/sandbox), one browser per user.
 # Reading pages runs straight away; clicking, typing and navigating ask first.
 # Snapshots and screenshots count as reads too, unless they're asked to save a file.
-name = "chrome-devtools"
-description = "Open web pages in a headless Chrome, read them, take screenshots, and click or type when you approve."
-transport = "stdio"
-command = "bunx"
-args = ["chrome-devtools-mcp@latest", "--headless", "--isolated"]
-approval = "writes"
-tools = [
+name          = "chrome-devtools"
+description   = "Open web pages in a headless Chrome, read them, take screenshots, and click or type when you approve."
+transport     = "stdio"
+command       = "bunx"
+args          = [
+  "chrome-devtools-mcp@latest",
+  "--headless",
+  "--isolated"
+]
+approval      = "writes"
+tools         = [
   "new_page",
   "navigate_page",
   "list_pages",
@@ -23,8 +28,22 @@ tools = [
   "list_console_messages",
   "list_network_requests",
 ]
+# The cloud can't hand back a file saved in its sandbox, so it hides filePath: screenshots come back inline instead.
+localOnlyArgs = [
+  "filePath"
+]
 # The server doesn't mark these read-only, but they only look at the page unless given a filePath to write.
-readOnly = [
-  { tool = "take_snapshot", unless = ["filePath"] },
-  { tool = "take_screenshot", unless = ["filePath"] },
+
+
+[[readOnly]]
+tool   = "take_snapshot"
+unless = [
+  "filePath"
+]
+
+
+[[readOnly]]
+tool   = "take_screenshot"
+unless = [
+  "filePath"
 ]

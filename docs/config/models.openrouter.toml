@@ -7,10 +7,14 @@
 [providers.openrouter]
 base_url = "https://openrouter.ai/api/v1"
 
+
 [tasks]
 chat = "space-bunny-alpha"
 
+
 [models.space-bunny-alpha]
-model = "stealth/space-bunny-alpha"
+model    = "stealth/space-bunny-alpha"
 provider = "openrouter"
-tasks = ["chat"]
+tasks    = [
+  "chat"
+]

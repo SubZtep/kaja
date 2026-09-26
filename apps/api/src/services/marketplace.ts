@@ -307,9 +307,9 @@ async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
 }
 
 /**
- * Every `mcp/*.toml` the cloud can run, as stored text. Skipped with a warning: broken manifests, stdio
- * servers, ones without a `tools` allowlist or on a non-public host, and names a tool already has (keys
- * share one namespace per name).
+ * Every `mcp/*.toml` the cloud could run, as stored text. Skipped with a warning: broken manifests, ones without a
+ * `tools` allowlist or on a non-public host, and names a tool already has (keys share one namespace per name).
+ * stdio servers are kept whether or not an MCP sandbox is configured right now; offering them checks that.
  */
 async function readMcpAbilities(marketplaceDir: string, toolNames: Set<string>): Promise<AbilityBundle[]> {
   const bundles: AbilityBundle[] = []
@@ -320,7 +320,7 @@ async function readMcpAbilities(marketplaceDir: string, toolNames: Set<string>):
       if (toolNames.has(entry.name)) throw new Error(`an HTTP tool is already called ${entry.name}`)
       const text = await readFile(join(marketplaceDir, "mcp", file), "utf8")
       const ability = parseMcpManifest(text, entry.name)
-      const problem = cloudMcpProblem(ability)
+      const problem = cloudMcpProblem(ability, { sandbox: true })
       if (problem) throw new Error(problem)
       bundles.push({
         type: "mcp",

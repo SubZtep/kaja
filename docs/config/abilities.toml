@@ -3,17 +3,25 @@
 # and your own. Only what is listed here is loaded, your own skills included.
 
 # Skills, by folder name: marketplace/skills/<name>/SKILL.md
-skills = []
+skills = [
+
+]
 
 # HTTP tool abilities, by file name: marketplace/tools/<name>.toml
-tools = []
+tools = [
+
+]
 
 # MCP server abilities, by file name: marketplace/mcp/<name>.toml
-mcp = []
+mcp = [
+
+]
 
 # Personas, by file name: marketplace/personas/<id>.toml. "default" always
 # loads (built in unless you have a default.toml), so it needn't be listed.
-personas = []
+personas = [
+
+]
 
 # Where `kaja abilities update` fetches the marketplace from. Defaults to the Kaja
 # repo's main branch; a local path works too, for testing your own changes.

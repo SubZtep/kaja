@@ -1,7 +1,10 @@
 # IP geolocation over MCP: https://github.com/SubZtep/geo-service
 # Works without a key. The public endpoint is rate limited per client IP.
-name = "geo-service"
+name        = "geo-service"
 description = "Find where an IP address (or the caller's own IP) is located. Two tools: full details (approximate city and coordinates, with an accuracy radius) or a short summary (country level only: continent, country, time zone)."
-transport = "http"
-url = "https://ip2geo.demo.land/mcp/public"
-tools = ["get_my_location_full", "get_my_location_summary"]
+transport   = "http"
+url         = "https://ip2geo.demo.land/mcp/public"
+tools       = [
+  "get_my_location_full",
+  "get_my_location_summary"
+]

@@ -10,4 +10,4 @@ pgdata
 **/.env*
 **/Dockerfile
 **/*.md
-**/disco.*.json
+**/disco.json

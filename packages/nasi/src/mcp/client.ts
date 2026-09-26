@@ -30,6 +30,24 @@ export type McpConnectOptions = {
   images?: boolean
   /** Cut a result's text at this many characters, with a note. Unset keeps it whole. */
   maxResultChars?: number
+  /** Drop an image bigger than this many bytes, with a note. Unset keeps every size. */
+  maxImageBytes?: number
+  /** Arguments left out of every tool's schema, and dropped from calls, e.g. a file path that would land on the server. */
+  hideArgs?: string[]
+}
+
+/** The tool's input schema without `hide` among its properties or required ones. */
+function withoutArgs(schema: Record<string, unknown>, hide: string[] | undefined): Record<string, unknown> {
+  if (!hide?.length) return schema
+  const properties = schema.properties as Record<string, unknown> | undefined
+  const required = schema.required as string[] | undefined
+  return {
+    ...schema,
+    ...(properties
+      ? { properties: Object.fromEntries(Object.entries(properties).filter(([key]) => !hide.includes(key))) }
+      : {}),
+    ...(required ? { required: required.filter(key => !hide.includes(key)) } : {})
+  }
 }
 
 /** Whether a call counts as read-only under a manifest rule: the tool is listed and none of its `unless` arguments is set. */
@@ -78,8 +96,15 @@ export async function connectMcpServer(
       const mcpToolDef = tool<Record<string, unknown>>({
         name: mcpTool.name,
         description: mcpTool.description ?? mcpTool.name,
-        parameters: mcpTool.inputSchema,
-        execute: args => callTool(client, mcpTool.name, args, tempDir, opts)
+        parameters: withoutArgs(mcpTool.inputSchema, opts.hideArgs),
+        execute: args =>
+          callTool(
+            client,
+            mcpTool.name,
+            Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key))),
+            tempDir,
+            opts
+          )
       })
       const rule = opts.readOnly?.find(r => r.tool === mcpTool.name)
       const mayAsk =
@@ -111,7 +136,7 @@ async function callTool(
   name: string,
   args: Record<string, unknown>,
   tempDir: string,
-  opts: Pick<McpConnectOptions, "images" | "maxResultChars">
+  opts: Pick<McpConnectOptions, "images" | "maxResultChars" | "maxImageBytes">
 ): Promise<ToolResult> {
   const result = await client.callTool({ name, arguments: args })
   const content = (result.content ?? []) as Array<
@@ -126,14 +151,20 @@ async function callTool(
     opts.maxResultChars
   )
 
-  const imageBlocks = content.filter(
+  const allImages = content.filter(
     (block): block is { type: "image"; data: string; mimeType: string } => block.type === "image"
   )
-  if (imageBlocks.length === 0) return { text: text || `${name}: done` }
-  if (opts.images === false) {
-    const note = `(${imageBlocks.length} image${imageBlocks.length === 1 ? "" : "s"} not shown)`
-    return { text: text ? `${text}\n\n${note}` : `${name}: done ${note}` }
+  // Base64 is 4 characters per 3 bytes.
+  const fits = (block: { data: string }) =>
+    opts.maxImageBytes === undefined || (block.data.length * 3) / 4 <= opts.maxImageBytes
+  const imageBlocks = opts.images === false ? [] : allImages.filter(fits)
+  const dropped = allImages.length - imageBlocks.length
+  let withNote = text || `${name}: done`
+  if (dropped > 0) {
+    const note = `(${dropped} ${dropped === 1 ? "image" : "images"} not shown)`
+    withNote = text ? `${text}\n\n${note}` : `${name}: done ${note}`
   }
+  if (imageBlocks.length === 0) return { text: withNote }
 
   await mkdir(tempDir, { recursive: true })
   const images = await Promise.all(
@@ -145,5 +176,5 @@ async function callTool(
     })
   )
 
-  return { text: text || `${name}: done`, images }
+  return { text: withNote, images }
 }

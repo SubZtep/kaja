@@ -7,7 +7,7 @@ has_children: true
 
 # Development
 
-The whole project is one Bun monorepo — three apps, three packages, no build orchestrator beyond
+The whole project is one Bun monorepo — four apps, three packages, no build orchestrator beyond
 Bun workspaces.
 
 ## Repository map
@@ -24,6 +24,7 @@ flowchart TD
         WEB["<b>web</b><br>TanStack Start<br>landing + admin portal"]
         TUI["<b>tui</b><br>Ink terminal client<br>+ Telegram bot"]
         WID["<b>api/widgets</b><br>embeddable browser bundle"]
+        SBX["<b>sandbox</b><br>stdio MCP servers<br>for cloud turns"]
     end
     subgraph Pkgs["packages/"]
         NASI["<b>nasi</b><br>the agent brain"]
@@ -46,6 +47,9 @@ flowchart TD
     TUI --> SQL
     WEB -->|HTTP| API
     TUI -->|"HTTP (cloud mode)"| API
+    API -->|"MCP over HTTP"| SBX
+    SCH --> SBX
+    SHR --> SBX
 ```
 
 | Workspace | What it is |
@@ -54,6 +58,7 @@ flowchart TD
 | `apps/api/widgets` | the embeddable browser chat bundle, built as part of the API |
 | `apps/web` | TanStack Start — the public landing site and the signed-in [web app](/development/web) (dashboard, abilities, widgets, admin) |
 | `apps/tui` | the [terminal client](/tui), Telegram bot, local config and storage |
+| `apps/sandbox` | the [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme): runs stdio MCP servers (a headless Chrome) for cloud turns, one per user, behind an egress proxy that only reaches public addresses |
 | `packages/nasi` | the [agent brain](/development/nasi): loop, tools, store interface |
 | `packages/schema` | every Zod [schema](/development/schema), in role-based subpaths |
 | `packages/shared` | small pure utilities, including the Telegram plumbing both bots share |
@@ -119,6 +124,7 @@ bun dev                  # API + web, hot reload
 bun dev:api              # just the API
 bun dev:web              # just the web app
 bun dev:tui              # the terminal client (use this — it passes your TTY through)
+bun dev:sandbox          # the MCP sandbox (uses your own Chrome; `docker compose up -d sandbox` for the real image)
 
 bun lint                 # Biome check + tombi TOML format/lint
 bun lint:fix             # apply fixes, including unsafe ones
@@ -168,6 +174,7 @@ They're the reason you rarely need to run these by hand.
 | API | [`http://localhost:3001`](http://localhost:3001) |
 | API reference (dev only) | [`http://localhost:3001/reference`](http://localhost:3001/reference) |
 | Web | [`http://localhost:3000`](http://localhost:3000) |
+| MCP sandbox | [`http://localhost:3002/health`](http://localhost:3002/health) |
 
 ## Environment variables
 

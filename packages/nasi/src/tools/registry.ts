@@ -70,11 +70,17 @@ export type CreateToolsOptions = {
   mcpConnectTimeoutMs?: number
   /** Fetch for cloud MCP connections (the SSRF-guarded one); cloud MCP abilities don't connect without it. */
   mcpFetch?: FetchLike
+  /** Cloud only: where MCP image results (screenshots) are saved for the model to see; unset drops them. Kept apart from `tempDir`, which sets the process-wide tool deps. */
+  mcpImageDir?: string
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 10_000
 /** What a cloud MCP result may hand the model, like an HTTP tool's body. */
 const CLOUD_MCP_MAX_RESULT_CHARS = 32 * 1024
+/** The largest MCP image a cloud turn keeps; it's stored with the session and sent to the model on every later round. */
+const CLOUD_MCP_MAX_IMAGE_BYTES = 1536 * 1024
+/** A sandboxed server may have to start first (a browser, say), so it gets longer than the usual connect timeout. */
+const SANDBOX_MCP_CONNECT_TIMEOUT_MS = 30_000
 
 /** Tools that share an origin (and, for non-official ones, usually a source) on their way into {@link mergeTools}. */
 export type ToolGroup = {
@@ -132,10 +138,15 @@ export function mergeTools(groups: ToolGroup[]): { tools: Tool<any>[]; skipped: 
 
 type McpConnection = { tools: Tool<any>[]; close: () => Promise<void>; failed: boolean; id: string }
 
-type McpTarget = { id: string; server: McpServerEntry; opts?: McpConnectOptions }
+type McpTarget = { id: string; server: McpServerEntry; opts?: McpConnectOptions; timeoutMs?: number }
 
-/** Connects one server, giving up after `timeoutMs`; a connection that turns up late is closed rather than left running. */
-async function connectWithTimeout(target: McpTarget, tempDir: string, timeoutMs: number): Promise<McpConnection> {
+/** Connects one server, giving up after `timeoutMs` (or the target's own); a connection that turns up late is closed rather than left running. */
+async function connectWithTimeout(
+  target: McpTarget,
+  tempDir: string,
+  defaultTimeoutMs: number
+): Promise<McpConnection> {
+  const timeoutMs = target.timeoutMs ?? defaultTimeoutMs
   const pending = connectMcpServer(target.server, tempDir, target.opts)
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_, reject) => {
@@ -200,10 +211,16 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         .map(t => (CLIENT_EXECUTABLE.has(toolName(t)) ? toClientExecutableStub(t) : t))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
-  // The cloud never runs a command on the server, and never connects without the guarded fetch.
+  // The cloud never runs a command on the server (the sandbox runs stdio ones behind a url), and never connects without the guarded fetch.
   const cloudAbilities = opts.mcpFetch ? (opts.mcpAbilities ?? []).filter(target => "url" in target.server) : []
   const abilities = local ? (opts.mcpAbilities ?? []) : cloudAbilities
   const abilityIds = new Set(abilities.map(target => `ability:${target.name}`))
+  const cloudOpts: McpConnectOptions = {
+    fetch: opts.mcpFetch,
+    images: opts.mcpImageDir !== undefined,
+    maxImageBytes: CLOUD_MCP_MAX_IMAGE_BYTES,
+    maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS
+  }
   const mcpTargets: McpTarget[] = [
     ...(local ? (opts.mcpServers ?? []) : []).map(server => ({ id: server.id, server })),
     ...abilities.map(target => ({
@@ -215,14 +232,18 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         approval: target.approval,
         readOnly: target.readOnly,
         label: `ability:${target.name}`,
-        ...(local ? {} : { fetch: opts.mcpFetch, images: false, maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS })
-      }
+        ...(local ? {} : { ...cloudOpts, hideArgs: target.localOnlyArgs })
+      },
+      ...(target.sandboxed
+        ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) }
+        : {})
     }))
   ]
-  // Local image results land in the temp dir; the cloud drops them, so it needs none.
+  // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
+  const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
   const mcpConnections =
-    mcpTargets.length > 0 && (!local || tempDir)
-      ? await connectMcpServers(mcpTargets, tempDir ?? "", opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS)
+    mcpTargets.length > 0 && mcpImagesDir !== undefined
+      ? await connectMcpServers(mcpTargets, mcpImagesDir, opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS)
       : []
 
   const pluginTools = local && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []

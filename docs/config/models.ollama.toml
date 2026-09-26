@@ -8,16 +8,23 @@
 [providers.ollama]
 base_url = "http://localhost:11434/v1"
 
+
 [tasks]
-chat = "qwen3-5-4b"
+chat      = "qwen3-5-4b"
 embedding = "qwen3-embedding-0-6b"
 
+
 [models.qwen3-5-4b]
-model = "qwen3.5:4b"
+model    = "qwen3.5:4b"
 provider = "ollama"
-tasks = ["chat"]
+tasks    = [
+  "chat"
+]
+
 
 [models.qwen3-embedding-0-6b]
-model = "qwen3-embedding:0.6b"
+model    = "qwen3-embedding:0.6b"
 provider = "ollama"
-tasks = ["embedding"]
+tasks    = [
+  "embedding"
+]

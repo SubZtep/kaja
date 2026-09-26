@@ -1,47 +1,64 @@
 # Free weather API, no key needed: https://open-meteo.com/en/docs
-name = "open-meteo"
+name        = "open-meteo"
 description = "Weather forecasts and current conditions for any coordinates, from Open-Meteo."
-baseUrl = "https://api.open-meteo.com"
-auth = { type = "none" }
-headers = { Accept = "application/json" }
+baseUrl     = "https://api.open-meteo.com"
+
+
+[auth]
+type = "none"
+
+
+[headers]
+Accept = "application/json"
+
 
 [[tools]]
-name = "weather_forecast"
+name        = "weather_forecast"
 description = """
 Current weather and forecast for a latitude/longitude. Use your own knowledge of \
 the place's coordinates. Ask only for the variables you need, e.g. \
 current="temperature_2m,precipitation,wind_speed_10m" for right now, \
 daily="temperature_2m_max,temperature_2m_min,precipitation_sum" for the next days. \
 Times come back in the place's own timezone."""
-method = "GET"
-path = "/v1/forecast?timezone=auto"
+method      = "GET"
+path        = "/v1/forecast?timezone=auto"
 
-[tools.parameters]
-type = "object"
-required = ["latitude", "longitude"]
 
-[tools.parameters.properties.latitude]
-type = "number"
-description = "Latitude in decimal degrees"
+  [tools.parameters]
+  type     = "object"
+  required = [
+    "latitude",
+    "longitude"
+  ]
 
-[tools.parameters.properties.longitude]
-type = "number"
-description = "Longitude in decimal degrees"
 
-[tools.parameters.properties.current]
-type = "string"
-description = "Comma-separated current variables, e.g. temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+    [tools.parameters.properties.latitude]
+    type        = "number"
+    description = "Latitude in decimal degrees"
 
-[tools.parameters.properties.hourly]
-type = "string"
-description = "Comma-separated hourly variables, e.g. temperature_2m,precipitation_probability"
 
-[tools.parameters.properties.daily]
-type = "string"
-description = "Comma-separated daily variables, e.g. temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset"
+    [tools.parameters.properties.longitude]
+    type        = "number"
+    description = "Longitude in decimal degrees"
 
-[tools.parameters.properties.forecast_days]
-type = "integer"
-minimum = 1
-maximum = 16
-description = "Days to forecast (default 7); keep it small with hourly data"
+
+    [tools.parameters.properties.current]
+    type        = "string"
+    description = "Comma-separated current variables, e.g. temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+
+
+    [tools.parameters.properties.hourly]
+    type        = "string"
+    description = "Comma-separated hourly variables, e.g. temperature_2m,precipitation_probability"
+
+
+    [tools.parameters.properties.daily]
+    type        = "string"
+    description = "Comma-separated daily variables, e.g. temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset"
+
+
+    [tools.parameters.properties.forecast_days]
+    type        = "integer"
+    minimum     = 1
+    maximum     = 16
+    description = "Days to forecast (default 7); keep it small with hourly data"

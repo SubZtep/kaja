@@ -93,3 +93,11 @@ test("a proxy that can't be reached fails closed instead of going direct", async
     ProxyUnavailableError
   )
 })
+
+test("a trusted origin (the MCP sandbox) goes direct, while its private neighbours stay refused", async () => {
+  fakeServer({ "/mcp/demo": () => new Response("sandbox") })
+  const guarded = createGuardedFetch({ proxy: PROXY, trustedOrigins: ["http://localhost:3002"] })
+  expect(await (await guarded("http://localhost:3002/mcp/demo")).text()).toBe("sandbox")
+  expect(calls.map(call => [call.url, call.proxy])).toEqual([["http://localhost:3002/mcp/demo", undefined]])
+  await expect(guarded("http://localhost:3003/mcp/demo")).rejects.toBeInstanceOf(UnsafeUrlError)
+})

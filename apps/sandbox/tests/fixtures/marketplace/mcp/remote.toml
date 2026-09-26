@@ -1,0 +1,6 @@
+name        = "remote"
+description = "A remote server, not the sandbox's to run (sandbox test fixture)."
+url         = "https://example.com/mcp"
+tools       = [
+  "count"
+]

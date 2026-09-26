@@ -28,20 +28,20 @@ Every outside service that receives users' data is listed in the [Privacy Policy
 
 ## Projects
 
-Create two Disco **Projects** and point each at its own config file:
+Create a Disco **Project** per app and point each at its own config file (the sandbox goes on its own server, see [MCP sandbox](#mcp-sandbox)):
 
 | Project | Variable | Value |
 | --- | --- | --- |
-| API | `DISCO_JSON_PATH` | `disco.api.json` |
-| Web | `DISCO_JSON_PATH` | `disco.web.json` |
+| API | `DISCO_JSON_PATH` | `apps/api/disco.json` |
+| Web | `DISCO_JSON_PATH` | `apps/web/disco.json` |
+| Sandbox | `DISCO_JSON_PATH` | `apps/sandbox/disco.json` |
 
 Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
 automatically.
 
-The API config declares a named `nasi-data` volume mounted at `/var/lib/kaja` and a
-`hook:deploy:start:before` step that runs `bun run migrate.js`, so **migrations apply on every
-deploy** before the new container takes traffic. Named volumes, not host bind mounts — `compose.yaml`
-is for local development only.
+The API config declares a `hook:deploy:start:before` step that runs `bun run migrate.js`, so
+**migrations apply on every deploy** before the new container takes traffic. The API keeps no files
+of its own: everything lives in Postgres. `compose.yaml` is for local development only.
 
 ### Recreating the database
 
@@ -62,6 +62,30 @@ ALTER SCHEMA public OWNER TO <user in DATABASE_URL>;
 
 Then deploy: the migrations and the config seed run before the new container takes traffic. Secrets users
 saved before the recreate are gone with it.
+
+### MCP sandbox
+
+The sandbox (`apps/sandbox`) runs stdio MCP servers for cloud turns, starting with a headless Chrome. Its
+browsers go out through the sandbox's own egress proxy, which only connects to public addresses (no
+loopback, private ranges or the cloud metadata service). Still deploy it as its own project on a **separate
+Disco server** with nothing else on it, so a gap in that proxy can't reach the database or the other projects.
+The server must be amd64: the Chrome headless shell has no Linux arm64 build.
+
+- Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
+- Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` and `/stats` only accept an
+  API-signed token; `/health` is open. Admins see the sandbox live on the web's **Admin → Dashboard**.
+- Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
+  the image sets `NODE_ENV=production`. It reports MCP servers that won't start, die on their own, or error,
+  with their last stderr lines; no tracing, and request headers are dropped.
+- The image copies `marketplace/mcp` at build time, so a new or changed stdio manifest needs a sandbox
+  redeploy too. A redeploy restarts every browser, so users lose the pages they had open.
+- Size `SANDBOX_MAX_PROCESSES` (default 8) to the server's RAM: each Chrome takes about 300-500 MB. When
+  it's full, the least recently used idle browser is stopped for the newcomer; only when every one is mid-call
+  is a user turned away. The logs show each start, stop and refusal with the running count.
+
+Without both `SANDBOX_URL` and `SANDBOX_SECRET` the API leaves stdio MCP abilities out of cloud turns.
+How the sandbox works, including its egress proxy and settings, is in its
+[README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
 
 ## Environment variables
 

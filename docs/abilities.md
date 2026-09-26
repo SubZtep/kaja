@@ -75,7 +75,7 @@ The cloud has no shell and serves many people, so it offers less:
 | --- | --- |
 | skill | it has a `scripts/` folder |
 | HTTP tool | its `baseUrl` isn't a public address |
-| MCP server | it's `stdio`, has no `tools` allowlist, or isn't on a public host |
+| MCP server | it has no `tools` allowlist, isn't on a public host, or is `stdio` and needs a key ([keyless `stdio` ones run in the MCP sandbox](/mcp#in-the-cloud)) |
 
 **Keys.** An ability that needs a key asks for it before you can turn it on. The key is tested, stored
 encrypted, and never shown again — the page only says "Key saved", with Replace and Remove. It's only

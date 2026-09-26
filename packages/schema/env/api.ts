@@ -130,6 +130,19 @@ export const ApiEnvSchema = z.object({
     .describe("Branch (or tag) of MARKETPLACE_REPO to sync")
     .meta({ section: "Marketplace" }),
 
+  SANDBOX_URL: url
+    .optional()
+    .describe(
+      "Base URL of the MCP sandbox (apps/sandbox); with SANDBOX_SECRET it lets cloud turns use stdio MCP abilities"
+    )
+    .meta({ example: "http://localhost:3002", section: "MCP Sandbox" }),
+  SANDBOX_SECRET: trimmed
+    .optional()
+    .describe(
+      "Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token"
+    )
+    .meta({ secret: true, section: "MCP Sandbox" }),
+
   TELEGRAM_BOT_TOKEN: trimmed
     .optional()
     .describe("BotFather token; when set, starts the always-on cloud Telegram bot")

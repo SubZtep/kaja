@@ -4,6 +4,7 @@ COPY package.json bun.lock tsconfig.json ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/tui/package.json ./apps/tui/package.json
+COPY apps/sandbox/package.json ./apps/sandbox/package.json
 COPY packages ./packages
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY docs/config ./docs/config
@@ -15,8 +16,6 @@ RUN bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/
 FROM oven/bun:1.4.2-slim AS runner
 WORKDIR /home/bun/app
 ENV NODE_ENV=production
-
-RUN mkdir -p /var/lib/kaja && chown bun:bun /var/lib/kaja
 
 USER bun
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/dist/server.js ./server.js

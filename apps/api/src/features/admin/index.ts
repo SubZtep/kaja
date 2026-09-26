@@ -5,6 +5,7 @@ import type { RouteProps, RouteVariables } from "../../types"
 import { adminMiddleware, requireAuthMiddleware } from "../auth"
 import { registerAdminAbilities } from "./ability"
 import { registerAdminModels } from "./model"
+import { registerAdminSandbox } from "./sandbox"
 
 const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
   c.set("modelService", modelService)
@@ -13,7 +14,7 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
 
 /**
  * Platform-admin-only: /admin/providers/*, /admin/models/*,
- * /admin/abilities/sync (registered before parameterized routes).
+ * /admin/abilities/sync (registered before parameterized routes), /admin/sandbox.
  */
 export const adminRoutes = new OpenAPIHono<RouteProps>()
 adminRoutes.use("*", requireAuthMiddleware)
@@ -25,3 +26,6 @@ registerAdminModels(adminRoutes)
 
 adminRoutes.use("/abilities/*", adminMiddleware)
 registerAdminAbilities(adminRoutes)
+
+adminRoutes.use("/sandbox", adminMiddleware)
+registerAdminSandbox(adminRoutes)

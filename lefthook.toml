@@ -1,63 +1,118 @@
 [commit-msg]
-commands = { commitlint = { run = "bun commitlint --edit {1}" } }
+  [commit-msg.commands]
+    [commit-msg.commands.commitlint]
+    run = "bun commitlint --edit {1}"
+
 
 # Generators run first and stage their own outputs (stage_fixed only re-adds staged files matching the glob), then lint and typecheck see the regenerated tree
 [pre-commit]
 piped = true
 
-[[pre-commit.jobs]]
-name = "generate"
 
-[pre-commit.jobs.group]
-parallel = true
+  [[pre-commit.jobs]]
+  name = "generate"
 
-[[pre-commit.jobs.group.jobs]]
-run = "bun generate:schemas && git add docs/config/schemas"
-glob = ["packages/schema/config/*.ts", "packages/schema/cli/personas.ts", "packages/schema/cli/datasets.ts"]
 
-[[pre-commit.jobs.group.jobs]]
-run = "bun generate:env && git add apps/api/.env.example apps/web/.env.example"
-glob = ["packages/schema/env/*.ts", "**/.env.example", "compose.yaml", "disco.*.json"]
+    [pre-commit.jobs.group]
+    parallel = true
 
-[[pre-commit.jobs.group.jobs]]
-run = "bun generate:models && git add docs/config/models.*.toml"
-glob = ["docs/config/catalog.toml", "apps/tui/lib/models/catalog.ts", "docs/config/models.*.toml"]
 
-[[pre-commit.jobs.group.jobs]]
-run = "bun generate:env-types && git add apps/api/src/env.d.ts apps/web/src/env.d.ts apps/tui/env.d.ts"
-glob = ["packages/schema/env/*.ts"]
+      [[pre-commit.jobs.group.jobs]]
+      run  = "bun generate:schemas && git add docs/config/schemas"
+      glob = [
+        "packages/schema/config/*.ts",
+        "packages/schema/cli/personas.ts",
+        "packages/schema/cli/datasets.ts"
+      ]
 
-[[pre-commit.jobs.group.jobs]]
-run = "bun run --filter @kaja/web generate:routes && git add apps/web/src/routeTree.gen.ts"
-glob = ["apps/web/src/routes/**", "apps/web/src/routeTree.gen.ts"]
 
-[[pre-commit.jobs]]
-name = "check"
+      # One job for both env generators: run in parallel, their two `git add`s raced for .git/index.lock
+      [[pre-commit.jobs.group.jobs]]
+      run  = "bun generate:env && bun generate:env-types && git add apps/api/.env.example apps/web/.env.example apps/sandbox/.env.example apps/api/src/env.d.ts apps/web/src/env.d.ts apps/tui/env.d.ts apps/sandbox/src/env.d.ts"
+      glob = [
+        "packages/schema/env/*.ts",
+        "**/.env.example",
+        "compose.yaml",
+        "apps/*/disco.json"
+      ]
 
-[pre-commit.jobs.group]
-parallel = true
 
-[[pre-commit.jobs.group.jobs]]
-run = "bun lint:fix"
-stage_fixed = true
+      [[pre-commit.jobs.group.jobs]]
+      run  = "bun generate:models && git add docs/config/models.*.toml"
+      glob = [
+        "docs/config/catalog.toml",
+        "apps/tui/lib/models/catalog.ts",
+        "docs/config/models.*.toml"
+      ]
 
-[[pre-commit.jobs.group.jobs]]
-run = "bun typecheck"
-glob = ["*.ts", "*.tsx", "package.json", "bun.lock", "tsconfig*.json"]
 
-# Rebases and merges replay commits; don't run the whole suite once per commit
-[post-commit]
-skip = ["rebase", "merge"]
+      # Other languages follow en-GB: new or changed English becomes a lorem placeholder until someone translates it
+      [[pre-commit.jobs.group.jobs]]
+      run  = "bun sync:locales --stage"
+      glob = [
+        "apps/tui/locales/en-GB.toml",
+        "apps/api/locales/en-GB.toml",
+        "apps/api/widgets/locales/en-GB.toml",
+        "apps/web/messages/en-GB.json"
+      ]
 
-[[post-commit.jobs]]
-run = "bun test"
+
+      [[pre-commit.jobs.group.jobs]]
+      run  = "bun run --filter @kaja/web generate:routes && git add apps/web/src/routeTree.gen.ts"
+      glob = [
+        "apps/web/src/routes/**",
+        "apps/web/src/routeTree.gen.ts"
+      ]
+
+
+  [[pre-commit.jobs]]
+  name = "check"
+
+
+    [pre-commit.jobs.group]
+    parallel = true
+
+
+      [[pre-commit.jobs.group.jobs]]
+      run         = "bun lint:fix"
+      stage_fixed = true
+
+
+      [[pre-commit.jobs.group.jobs]]
+      run  = "bun typecheck"
+      glob = "*.{ts,tsx}"
+
+
+[post-merge]
+  [post-merge.commands]
+    [post-merge.commands.lefthook-install]
+    run = "git diff --quiet ORIG_HEAD HEAD -- lefthook.toml || lefthook install"
+
 
 [pre-push]
 parallel = true
 
-[[pre-push.jobs]]
-run = "bun lint"
 
-[[pre-push.jobs]]
-run = "bun typecheck"
-glob = ["*.ts", "*.tsx", "package.json", "bun.lock", "tsconfig*.json"]
+  [[pre-push.jobs]]
+  run = "bun lint"
+
+
+  [[pre-push.jobs]]
+  run  = "bun typecheck"
+  glob = "*.{ts,tsx}"
+
+
+  [[pre-push.jobs]]
+  run = "bun check:locales"
+
+
+    [[pre-push.jobs.only]]
+    ref = "main"
+
+
+  [[pre-push.jobs]]
+  run = "bun test"
+
+
+    [[pre-push.jobs.only]]
+    ref = "main"

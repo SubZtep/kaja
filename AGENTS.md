@@ -4,7 +4,7 @@ The project is not live yet, so feel free to adjust any breaking changes.
 
 When you modify a feature check its test (if any) for possible required update too.
 
-When you change a translation text, update all the languages as well: edit en-GB yourself, then delegate the other languages to the `translate` agent (`.claude/agents/translate.md`), passing the keys and the old and new English text.
+Translations: edit only the en-GB locale files; never read or edit other languages. Pre-commit runs `bun sync:locales` (`scripts/locales.ts`), which gives every other language the same keys and a `[<locale>] lorem ipsum` placeholder for new or changed English; the user runs `/translate` (`.claude/skills/translate`) to fill them in later.
 
 ## Project Overview
 
@@ -14,6 +14,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
+- **Sandbox** (`apps/sandbox`): Hono service that runs stdio MCP servers (first: chrome-devtools) for cloud turns and serves each over Streamable HTTP; one warm process per (user, ability), reached with an API-signed token (`SANDBOX_URL`/`SANDBOX_SECRET`). Details: `apps/sandbox/AGENTS.md`
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
@@ -47,6 +48,9 @@ docker compose up -d db mail
 # API + web + widget (hot reload)
 bun dev
 
+# MCP sandbox for cloud stdio MCP abilities (needs Chromium; or `docker compose up -d sandbox`)
+bun dev:sandbox
+
 # CLI (entry is apps/tui/cli.ts — NOT apps/tui/src/...)
 bun run --filter @kaja/tui start
 # or: bun run --env-file=apps/tui/.env apps/tui/cli.ts
@@ -69,6 +73,9 @@ bun run --filter @kaja/web build
 
 bun run --filter @kaja/tui start
 bun run --filter @kaja/tui test
+
+bun run --filter @kaja/sandbox dev
+bun run --filter @kaja/sandbox build
 ```
 
 ## Architecture
@@ -93,6 +100,11 @@ bun run --filter @kaja/tui test
 - TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard, profile, abilities, widget, and the admin-only `/admin/*` layout)
 - auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
+
+### Sandbox (`apps/sandbox/`)
+
+- `src/server.ts` entry; `app.ts` routes (`/health`, `/stats` for the admin dashboard, `/mcp/:ability` behind the token), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child
+- Runs only the stdio manifests under its own `marketplace/mcp` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
 
 ### CLI (`apps/tui/`)
 
@@ -146,7 +158,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Notes
 
-- Git hooks already run `bun lint` and typecheck on commit, `bun test` right after each commit, and lint plus typecheck on push, so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
+- Git hooks already run `bun lint` and typecheck on commit, and lint, typecheck and `bun test` on push, so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/tui/`).
 - model defaults: edit `docs/config/catalog.toml`, run `bun generate:models`, never edit `docs/config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`).
 - env vars: edit `packages/schema/env/{api,web,tui}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.

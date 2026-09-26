@@ -7,52 +7,76 @@
 [providers.fireworks]
 base_url = "https://api.fireworks.ai/inference/v1"
 
+
 [providers.xai]
 base_url = "https://api.x.ai/v1"
+
 
 [providers.speaches]
 base_url = "http://localhost:8000"  # local server, no key needed
 
+
 [tasks]
-chat = "minimax-m3"
-embedding = "qwen3-embedding-8b"
-rerank = "qwen3-reranker-8b"
+chat             = "minimax-m3"
+embedding        = "qwen3-embedding-8b"
+rerank           = "qwen3-reranker-8b"
 image-generation = "grok-imagine-image"
-tts = "kokoro-82m-v1-0-onnx-fp16"
-stt = "faster-whisper-small"
-summarize = "glm-5p3-flash"
+tts              = "kokoro-82m-v1-0-onnx-fp16"
+stt              = "faster-whisper-small"
+summarize        = "glm-5p3-flash"
+
 
 [models.minimax-m3]
-model = "accounts/fireworks/models/minimax-m3"
+model    = "accounts/fireworks/models/minimax-m3"
 provider = "fireworks"
-tasks = ["chat"]
+tasks    = [
+  "chat"
+]
+
 
 [models.qwen3-embedding-8b]
-model = "accounts/fireworks/models/qwen3-embedding-8b"
+model    = "accounts/fireworks/models/qwen3-embedding-8b"
 provider = "fireworks"
-tasks = ["embedding"]
+tasks    = [
+  "embedding"
+]
+
 
 [models.qwen3-reranker-8b]
-model = "accounts/fireworks/models/qwen3-reranker-8b"
+model    = "accounts/fireworks/models/qwen3-reranker-8b"
 provider = "fireworks"
-tasks = ["rerank"]
+tasks    = [
+  "rerank"
+]
+
 
 [models.grok-imagine-image]
-model = "grok-imagine-image"
+model    = "grok-imagine-image"
 provider = "xai"
-tasks = ["image-generation"]
+tasks    = [
+  "image-generation"
+]
+
 
 [models.kokoro-82m-v1-0-onnx-fp16]
-model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
+model    = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
 provider = "speaches"
-tasks = ["tts"]
+tasks    = [
+  "tts"
+]
+
 
 [models.faster-whisper-small]
-model = "Systran/faster-whisper-small"
+model    = "Systran/faster-whisper-small"
 provider = "speaches"
-tasks = ["stt"]
+tasks    = [
+  "stt"
+]
+
 
 [models.glm-5p3-flash]
-model = "accounts/fireworks/models/glm-5p3-flash"
+model    = "accounts/fireworks/models/glm-5p3-flash"
 provider = "fireworks"
-tasks = ["summarize"]
+tasks    = [
+  "summarize"
+]

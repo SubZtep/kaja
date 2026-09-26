@@ -16,7 +16,7 @@
     "@kaja/shared": "workspace:*",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
-    "@scalar/hono-api-reference": "^0.12.5",
+    "@scalar/hono-api-reference": "^0.12.6",
     "@sentry/bun": "11.0.0",
     "@sentry/hono": "^11.0.0",
     "better-auth": "^1.7.6",

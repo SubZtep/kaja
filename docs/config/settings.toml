@@ -1,8 +1,8 @@
 [preferences]
 thinking = false
-sounds = true
-voice = false
-locale = "en-GB"
+sounds   = true
+voice    = false
+locale   = "en-GB"
 # Which backend `kaja` starts: "cloud" (the Kaja API) or "local" (the agent loop against
 # your own provider in models.toml). Written by the setup wizard; `--cloud`/`--local`
 # override it for a single run. Without it, a usable chat model means local.

@@ -1,0 +1,19 @@
+{
+  "chrome-devtools": {
+    "command": "node",
+    "args": [
+      "/opt/mcp/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js",
+      "--headless",
+      "--isolated",
+      "--executablePath=/opt/chrome/chrome-headless-shell",
+      "--chromeArg=--no-sandbox",
+      "--usageStatistics=false",
+      "--proxyServer=http://127.0.0.1:3128",
+      "--chromeArg=--proxy-bypass-list=<-loopback>",
+      "--chromeArg=--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
+      "--chromeArg=--js-flags=--max-old-space-size=512",
+      "--allowedUrlPattern=http://*",
+      "--allowedUrlPattern=https://*"
+    ]
+  }
+}

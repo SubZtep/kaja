@@ -8,11 +8,14 @@ import {
   routeHostTo,
   startHttpMcpFixture
 } from "../../../../packages/nasi/tests/fixtures/mcp-http-server"
+import { createApp as createSandboxApp } from "../../../sandbox/src/app"
+import { ProcessPool } from "../../../sandbox/src/pool"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
+import { setNasiChatResolver, setNasiFetchProxyOverride, setNasiSandboxOverride } from "../../src/features/nasi/chat"
 import { marketplaceService, secretService } from "../../src/services"
+import { AbilityService } from "../../src/services/ability"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
@@ -22,7 +25,7 @@ const host = `mcp-${tag}.test`
 const GOOD_KEY = `mcp-key-${tag}`
 const TEST_SECRET_KEY = Buffer.alloc(32, 9).toString("base64")
 
-/** A marketplace folder with one usable MCP ability and four the cloud must skip. */
+/** A marketplace folder with one usable remote MCP ability, a stdio one for the MCP sandbox, and four the cloud must skip. */
 function marketplace(base: string) {
   const root = mkdtempSync(join(base, "mp-"))
   const put = (rel: string, content: string) => {
@@ -44,6 +47,15 @@ function marketplace(base: string) {
   put(
     `mcp/stdio-${tag}.toml`,
     `name = "stdio-${tag}"\ndescription = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\n`
+  )
+  put(
+    `mcp/counter-${tag}.toml`,
+    `name = "counter-${tag}"\ndescription = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count", "picture"]\n`
+  )
+  // Keys aren't forwarded to the MCP sandbox yet, so a stdio server that takes one never reaches the cloud.
+  put(
+    `mcp/stdio-keyed-${tag}.toml`,
+    `name = "stdio-keyed-${tag}"\ndescription = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K", optional = true }\n`
   )
   // Same name as an HTTP tool: keys share one namespace per name, so the MCP one is skipped.
   put(`mcp/same-${tag}.toml`, remote(`same-${tag}`, `https://${host}/mcp`, `tools = ["read_thing"]\n`))
@@ -117,13 +129,24 @@ describe("MCP servers in the cloud", () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds remote MCP abilities with a tool list; stdio, private, unlisted and clashing ones are skipped", async () => {
+  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, private, unlisted and clashing ones are skipped", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "m1")
     expect(result.added).toContain(`mcp/${things}`)
+    expect(result.added).toContain(`mcp/stdio-${tag}`)
     expect(result.added).toContain(`tools/same-${tag}`)
-    for (const skipped of [`open-${tag}`, `private-${tag}`, `stdio-${tag}`, `same-${tag}`]) {
+    for (const skipped of [`open-${tag}`, `private-${tag}`, `stdio-keyed-${tag}`, `same-${tag}`]) {
       expect(result.added).not.toContain(`mcp/${skipped}`)
     }
+  })
+
+  test("a stdio server is only offered with an MCP sandbox, which is where it runs", async () => {
+    const stdio = (catalog: { name: string }[]) => catalog.find(ability => ability.name === `stdio-${tag}`)
+    expect(stdio(await new AbilityService(pool, secretService).listCatalog())).toBeUndefined()
+    const sandboxed = new AbilityService(pool, secretService, new Map(), { sandboxUrl: "http://sandbox.test:3002" })
+    expect(stdio(await sandboxed.listCatalog())).toMatchObject({
+      type: "mcp",
+      mcp: { domain: "sandbox.test:3002", key: "none", transport: "http", tools: ["x"] }
+    })
   })
 
   test("the catalog shows where an MCP server runs, its key need, when it asks, and its tools", async () => {
@@ -195,4 +218,56 @@ describe("MCP servers in the cloud", () => {
     expect(mine.keys).not.toContain(things)
     expect(mine.abilities.map((ability: { name: string }) => ability.name)).not.toContain(things)
   })
+
+  test("with an MCP sandbox, a stdio server runs there for the user's turns and stays warm between them", async () => {
+    const counter = `counter-${tag}`
+    const secret = `sandbox-${tag}`
+    // The sandbox starts its own copy of the server, never the command from the API's row.
+    const script = join(import.meta.dir, "../../../sandbox/tests/fixtures/counter-server.ts")
+    const servers = new Map([[counter, { name: counter, command: process.execPath, args: [script], env: {} }]])
+    const sandboxPool = new ProcessPool({ servers, idleMs: 60_000, maxProcesses: 2 })
+    const server = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: createSandboxApp({ secret, pool: sandboxPool }).fetch
+    })
+    setNasiSandboxOverride({ url: `http://127.0.0.1:${server.port}`, secret })
+    try {
+      expect((await app.request(`/abilities/me/mcp/${counter}`, { method: "PUT", headers: auth() })).status).toBe(200)
+      for (const expected of ["1", "2"]) {
+        const sent: Parameters<typeof scriptedChat>[1] = []
+        const client = scriptedChat(
+          [{ content: null, tool_calls: [call("c1", "count", {})] }, { content: "Counted." }],
+          sent
+        )
+        setNasiChatResolver(async () => ({ client: client as never, model: "fake-model" }))
+        expect(await (await turn({ message: "count" })).json()).toMatchObject({
+          status: "completed",
+          message: "Counted."
+        })
+        expect(sent[1]!.messages.at(-1)).toMatchObject({ role: "tool", content: expected })
+      }
+      expect(sandboxPool.size).toBe(1)
+
+      // A screenshot-like image reaches the streaming client as a data URL, not a path on the server.
+      const client = scriptedChat(
+        [{ content: null, tool_calls: [call("c1", "picture", {})] }, { content: "Here." }],
+        []
+      )
+      setNasiChatResolver(async () => ({ client: client as never, model: "fake-model" }))
+      const res = await app.request("/nasi/turn/stream", {
+        method: "POST",
+        headers: auth(),
+        body: JSON.stringify({ message: "show me" })
+      })
+      const image = (await res.text()).split("\n\n").find(block => block.startsWith("event: tool_image"))
+      const data = JSON.parse(image!.slice(image!.indexOf("data:") + 5))
+      expect(data).toMatchObject({ type: "tool_image", mimeType: "image/png" })
+      expect(data.url).toStartWith("data:image/png;base64,iVBOR")
+    } finally {
+      setNasiSandboxOverride(undefined)
+      await sandboxPool.closeAll()
+      server.stop(true)
+    }
+  }, 60_000)
 })

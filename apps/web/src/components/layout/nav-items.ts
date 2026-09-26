@@ -26,6 +26,7 @@ export const getHeaderItems = (user: { role?: string | null } | null): NavItem[]
 
 /** Tabs of the admin layout. */
 export const getAdminItems = (): NavItem[] => [
+  { to: "/admin/dashboard", label: m.nav_dashboard() },
   { to: "/admin/users", label: m.nav_users() },
   { to: "/admin/models", label: m.nav_models() }
 ]

@@ -1,5 +1,6 @@
 import type { McpAbility, McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
+import { trimTrailingSlashes } from "@kaja/shared"
 import { connectMcpServer } from "../mcp/client"
 import type { FetchLike } from "../security/ssrf"
 import type { KeyCheckResult } from "./http-tool"
@@ -14,7 +15,14 @@ export type McpAbilityTarget = {
   approval: McpAbility["approval"]
   allow?: string[]
   readOnly?: McpReadOnlyRule[]
+  /** Arguments the cloud hides from the model (the manifest's `localOnlyArgs`). */
+  localOnlyArgs?: string[]
+  /** A stdio ability the host's MCP sandbox runs for it, reached over Streamable HTTP. */
+  sandboxed?: boolean
 }
+
+/** The host's MCP sandbox (apps/sandbox): where it is, and a bearer token for the caller and one ability. */
+export type McpSandbox = { url: string; token: (abilityName: string) => Promise<string> }
 
 /** The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var `auth` names. */
 export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbilityTarget {
@@ -31,7 +39,23 @@ export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbili
     transport: ability.transport,
     approval: ability.approval,
     allow: ability.tools,
-    ...(readOnly ? { readOnly } : {})
+    ...(readOnly ? { readOnly } : {}),
+    ...(ability.localOnlyArgs?.length ? { localOnlyArgs: ability.localOnlyArgs } : {})
+  }
+}
+
+/**
+ * A stdio ability as the sandbox serves it: `<sandbox>/mcp/<name>` over Streamable HTTP with the caller's token.
+ * The sandbox starts the command from its own copy of the manifest, so none of it is sent; nor is a key (not forwarded yet).
+ */
+export async function sandboxedMcpTarget(ability: McpAbility, sandbox: McpSandbox): Promise<McpAbilityTarget> {
+  const local = mcpAbilityTarget(ability)
+  const url = `${trimTrailingSlashes(sandbox.url)}/mcp/${encodeURIComponent(ability.name)}`
+  return {
+    ...local,
+    server: { id: ability.name, url, headers: { Authorization: `Bearer ${await sandbox.token(ability.name)}` } },
+    transport: "http",
+    sandboxed: true
   }
 }
 

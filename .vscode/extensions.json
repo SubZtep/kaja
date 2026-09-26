@@ -4,6 +4,7 @@
     "bradlc.vscode-tailwindcss",
     "editorconfig.editorconfig",
     "oven.bun-vscode",
+    "redhat.vscode-yaml",
     "tombi-toml.tombi"
   ],
   "unwantedRecommendations": [

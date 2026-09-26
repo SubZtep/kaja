@@ -18,7 +18,18 @@ Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebE
   ```
 - **`lib/env-schema.ts`** — shared field-introspection helper (`inspectFields`) used by both generators above; not a standalone script.
 
-Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true`), triggered when `packages/schema/env/*.ts` changes (`env.ts` also watches `.env.example`, `compose.yaml`, `disco.*.json`). `check:env` also runs in CI.
+Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true`), triggered when `packages/schema/env/*.ts` changes (`env.ts` also watches `.env.example`, `compose.yaml`, `apps/*/disco.json`). `check:env` also runs in CI.
+
+## Locale sync
+
+- **`locales.ts`** — keeps every non-en-GB locale file (`apps/tui/locales`, `apps/api/locales`, `apps/api/widgets/locales`, `apps/web/messages`) in step with en-GB: same keys, same order. A key that is new, or whose English changed since `HEAD`, gets a `[<locale>] lorem ipsum…` placeholder of similar length (keeping `{params}` and line breaks), unless that translation was itself edited in the same change. Removed keys go away.
+  ```sh
+  bun sync:locales           # rewrite the other languages
+  bun sync:locales --stage   # also git-add what it rewrote (pre-commit does this when an en-GB file changes)
+  bun check:locales          # exit 1 if a language is out of step with en-GB or still has placeholders (pre-push on main, CI)
+  bun sync:locales --todo    # list the placeholders still to translate, as JSON, each with nearby translated keys for terminology
+  bun sync:locales --apply f # write translations back from that JSON with a `value` added (checks {params}); the /translate skill drives these two
+  ```
 
 ## Dev utilities
 

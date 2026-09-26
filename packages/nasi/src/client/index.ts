@@ -37,6 +37,8 @@ export type NasiStreamEvent =
   | { type: "condensed"; tool: string; beforeTokens: number; afterTokens: number }
   | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
   | { type: "final"; content: string | null }
+  /** An image a tool returned (a screenshot, say), as a data URL. */
+  | { type: "tool_image"; mimeType: string; url: string }
 
 export class NasiStreamError extends Error {
   /** The server's error category (e.g. "tool", "network"), when it sent one — absent for connection-level failures (bad response, dropped stream) that never reached the server's own error handling. */

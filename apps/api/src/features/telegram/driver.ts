@@ -59,8 +59,8 @@ export type TelegramButton = { text: string; data: string }
 export type TelegramSender = {
   sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
   editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
-  /** Sends a photo by URL (Telegram fetches it), with an optional plain-text caption. */
-  sendPhoto(chatId: number, url: string, caption?: string): Promise<void>
+  /** Sends a photo by URL (Telegram fetches it) or as the image's bytes, with an optional plain-text caption. */
+  sendPhoto(chatId: number, photo: string | Uint8Array, caption?: string): Promise<void>
 }
 
 export type CloudTelegramDriverConfig = {
@@ -125,6 +125,15 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
+  /** A tool's image file (only there during the turn) as a photo; a failed send is logged, never ends the turn. */
+  async function sendToolImage(chatId: number, path: string) {
+    try {
+      await sender.sendPhoto(chatId, new Uint8Array(await Bun.file(path).arrayBuffer()))
+    } catch (error) {
+      console.warn("Telegram tool image send failed", { error })
+    }
+  }
+
   /** Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays in the placeholder. */
   async function sendApproval(
     accumulated: { content: string },
@@ -148,7 +157,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     await sender.sendMessage(chatId, text.join("\n"), [buttons])
   }
 
-  /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. Local-only events (tool_image, display_image, confirm_command) are ignored — cloud Nasi never emits them. */
+  /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. A tool image (an MCP screenshot) goes out as a photo; local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them. */
   function handleFinalizedEvent(
     accumulated: { content: string },
     throttle: EditThrottle,
@@ -175,6 +184,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
     if (event.type === "compacted")
       return sender.sendMessage(chatId, compactedLine(event, language.t)).then(() => false)
+
+    if (event.type === "tool_image") return sendToolImage(chatId, event.path).then(() => false)
 
     return false
   }

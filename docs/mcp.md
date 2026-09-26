@@ -12,7 +12,7 @@ are two ways to add one:
 
 - **`mcp.toml`** — your own servers, local mode only, loaded as soon as they're listed;
 - **an MCP ability** — a manifest in the marketplace, turned on like any other [ability](/abilities),
-  and usable in the cloud too when it's remote.
+  and usable in the cloud too when it's remote, or a stdio one the MCP sandbox runs.
 
 All servers connect in parallel at startup; one that doesn't answer within 10 seconds, or fails to
 connect, is skipped with a warning and the session starts without its tools. The startup panel shows
@@ -78,15 +78,22 @@ approval = "never"                  # never | writes | always
 
 ## In the cloud
 
-Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they are remote (`http` or
-`sse`) and have a `tools` list — so you see exactly what a server can do before turning it on, and it
-can't add tools later. `stdio` abilities stay local.
+Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list —
+so you see exactly what a server can do before turning it on, and it can't add tools later — and are
+either remote (`http` or `sse`) or `stdio` without a key.
 
-- Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes them
-  when it ends; nothing is kept between turns or shared with other users.
+A `stdio` ability, such as `chrome-devtools`, runs in Kaja's **MCP sandbox**, a separate server, never on
+the API's host. Each user gets their own copy of the server, started on first use and kept warm between
+messages (a browser keeps its open pages) until it's been unused for about 10 minutes. The sandbox's
+browser can only reach public websites: not Kaja's own servers, nor anything on a private network.
+A `stdio` ability that needs a key stays local for now.
+
+- Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes the
+  connection when it ends; nothing is shared with other users.
 - A saved key is tested by connecting and listing the server's tools.
-- `approval` and `readOnly` apply as above. Image results are left out with a note, and long results
-  are cut at about 32 KB.
+- `approval` and `readOnly` apply as above. Images, such as screenshots, come back to you, and long
+  results are cut at about 32 KB. An argument that would save a file on the server (`localOnlyArgs`,
+  like a screenshot's `filePath`) is hidden in the cloud.
 - A server that works without a key is shared by everyone on the Kaja server's IP, with its rate
   limits; add your own key to get yours.
 
