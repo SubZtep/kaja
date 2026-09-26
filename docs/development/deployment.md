@@ -74,12 +74,15 @@ to Postgres. Set it up once in the [Hetzner Cloud Console](https://console.hetzn
 1. Create a bucket in the same location as the API server (`fsn1`, `nbg1` or `hel1`). Keep it **private**:
    clients only ever get signed URLs that expire after an hour.
 2. Under **Security → S3 credentials**, create a key pair.
-3. Add a lifecycle rule that expires objects under `tool-images/` after 1 day. A tool image from a
-   turn that starts a new session is stored there, because the session has no id until the turn is saved;
-   the saved session keeps its own copy under `images/`.
-4. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `STORAGE_ACCESS_KEY_ID`
+3. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `STORAGE_ACCESS_KEY_ID`
    and `STORAGE_SECRET_ACCESS_KEY`. Leave `STORAGE_ENDPOINT` unset: it points the API at another
    S3-compatible server (the compose RustFS in dev, tests and CI) instead of Hetzner.
+
+The API sets the bucket's lifecycle rule itself on every boot: objects under `tool-images/` expire after
+1 day. Hetzner has no console setting for this; it only takes rules through the S3 API, which the API uses
+anyway. A tool image from a turn that starts a new session is stored there, because the session has no id
+until the turn is saved; the saved session keeps its own copy under `images/`. If the rule can't be set, the
+API still starts and reports it to Sentry, and those copies just stay until someone deletes them.
 
 The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<sha256>`.
 Deleting a session removes its folder, and deleting a user removes both of their prefixes. Recreating
@@ -160,7 +163,7 @@ matching limit and a line in the Privacy Policy.
 ## Production checklist
 
 - A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and real SMTP credentials.
-- The storage bucket, its credentials and its `tool-images/` lifecycle rule (see [Object storage](#object-storage)).
+- The storage bucket and its credentials (see [Object storage](#object-storage)).
 - A strong `CONFIG_API_TOKEN`. `/config/*` is **fail-closed**: a missing or empty token returns 401
   for every request on the prefix and never serves provider API keys.
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/widget) routes are

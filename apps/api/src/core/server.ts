@@ -4,7 +4,7 @@ import { createTelegramBotService } from "../features/telegram"
 import { marketplaceService } from "../services"
 import { CronService } from "./cron"
 import { env } from "./env"
-import { ensureDevBucket } from "./files"
+import { prepareBucket } from "./files"
 import { reportError } from "./report"
 
 const port = env.PORT
@@ -12,8 +12,8 @@ const port = env.PORT
 // The agent brain reports skipped abilities, missing keys and failed MCP connections here.
 setWarnHandler((message, payload) => console.warn(message, payload))
 
-// A dev storage server starts without the bucket
-await ensureDevBucket().catch(err => reportError("Couldn't create the dev storage bucket", err))
+// Creates a dev server's bucket, and sets the rule that expires leftover tool images
+await prepareBucket().catch(err => reportError("Couldn't prepare the storage bucket", err))
 
 // Start cron jobs
 const cron = new CronService()

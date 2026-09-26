@@ -1,4 +1,9 @@
-import { CreateBucketCommand, HeadBucketCommand, S3Client } from "@aws-sdk/client-s3"
+import {
+  CreateBucketCommand,
+  HeadBucketCommand,
+  PutBucketLifecycleConfigurationCommand,
+  S3Client
+} from "@aws-sdk/client-s3"
 import { Files } from "files-sdk"
 import { hetzner } from "files-sdk/hetzner"
 import { minio } from "files-sdk/minio"
@@ -26,19 +31,40 @@ export const signedUrl = (key: string, expiresIn: number) => signer.url(key, { e
 /** Where a user's tool images go when their turn's session doesn't exist yet (a new one is saved at the turn's end); the bucket expires them after a day. */
 export const toolImagePrefix = (userId: string) => `tool-images/${userId}`
 
-/** Dev, tests and CI only (a `STORAGE_ENDPOINT` server starts empty): creates the bucket if it isn't there. Hetzner's bucket is made once in its console. */
-export async function ensureDevBucket(): Promise<void> {
-  if (!env.STORAGE_ENDPOINT) return
+/** Days a leftover tool image lives under `tool-images/` before the bucket's lifecycle rule deletes it. */
+const TOOL_IMAGE_DAYS = 1
+
+/**
+ * Readies the bucket on boot: creates it on a dev server (`STORAGE_ENDPOINT` starts empty; Hetzner's is made once in its console),
+ * then sets the rule that expires `tool-images/`. Hetzner only takes lifecycle rules through the S3 API, so the API sets it itself.
+ */
+export async function prepareBucket(): Promise<void> {
   const client = new S3Client({
-    endpoint: env.STORAGE_ENDPOINT,
-    region: "us-east-1",
-    forcePathStyle: true,
+    endpoint: env.STORAGE_ENDPOINT ?? `https://${env.STORAGE_REGION}.your-objectstorage.com`,
+    region: env.STORAGE_ENDPOINT ? "us-east-1" : env.STORAGE_REGION,
+    forcePathStyle: !!env.STORAGE_ENDPOINT,
     credentials
   })
+  const Bucket = env.STORAGE_BUCKET
   try {
-    await client.send(new HeadBucketCommand({ Bucket: env.STORAGE_BUCKET }))
-  } catch {
-    await client.send(new CreateBucketCommand({ Bucket: env.STORAGE_BUCKET }))
+    if (env.STORAGE_ENDPOINT) {
+      await client.send(new HeadBucketCommand({ Bucket })).catch(() => client.send(new CreateBucketCommand({ Bucket })))
+    }
+    await client.send(
+      new PutBucketLifecycleConfigurationCommand({
+        Bucket,
+        LifecycleConfiguration: {
+          Rules: [
+            {
+              ID: "expire-tool-images",
+              Status: "Enabled",
+              Filter: { Prefix: "tool-images/" },
+              Expiration: { Days: TOOL_IMAGE_DAYS }
+            }
+          ]
+        }
+      })
+    )
   } finally {
     client.destroy()
   }
