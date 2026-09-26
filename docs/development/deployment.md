@@ -16,6 +16,9 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   triggers deployment on the managed box. Even the smallest
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
   comfortably at modest traffic.
+- **S3-compatible object storage** for session and tool images (`STORAGE_*`, `HCLOUD_*`). Production
+  uses [Hetzner Object Storage](https://www.hetzner.com/storage/object-storage); see
+  [Object storage](#object-storage).
 - **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
 - **Outbound HTTP(S) proxy** for the cloud `fetch_url` tool (`WEB_PROXY`); without one the tool is
   left out of cloud turns. Production uses [Webshare](https://www.webshare.io).
@@ -41,7 +44,7 @@ automatically.
 
 The API config declares a `hook:deploy:start:before` step that runs `bun run migrate.js`, so
 **migrations apply on every deploy** before the new container takes traffic. The API keeps no files
-of its own: everything lives in Postgres. `compose.yaml` is for local development only.
+of its own: everything lives in Postgres, and images in [object storage](#object-storage). `compose.yaml` is for local development only.
 
 ### Recreating the database
 
@@ -62,6 +65,25 @@ ALTER SCHEMA public OWNER TO <user in DATABASE_URL>;
 
 Then deploy: the migrations and the config seed run before the new container takes traffic. Secrets users
 saved before the recreate are gone with it.
+
+### Object storage
+
+Session images, and the images tools return in cloud turns, go to a Hetzner Object Storage bucket, never
+to Postgres. Set it up once in the [Hetzner Cloud Console](https://console.hetzner.cloud/):
+
+1. Create a bucket in the same location as the API server (`fsn1`, `nbg1` or `hel1`). Keep it **private**:
+   clients only ever get signed URLs that expire after an hour.
+2. Under **Security → S3 credentials**, create a key pair.
+3. Add a lifecycle rule that expires objects under `tool-images/` after 1 day. A tool image from a
+   turn that starts a new session is stored there, because the session has no id until the turn is saved;
+   the saved session keeps its own copy under `images/`.
+4. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `HCLOUD_ACCESS_KEY_ID`
+   and `HCLOUD_SECRET_ACCESS_KEY`. Leave `STORAGE_ENDPOINT` unset: it points the API at another
+   S3-compatible server (the compose RustFS in dev, tests and CI) instead of Hetzner.
+
+The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<sha256>`.
+Deleting a session removes its folder, and deleting a user removes both of their prefixes. Recreating
+the database doesn't empty the bucket, so empty it too, or its old images just sit there unused.
 
 ### MCP sandbox
 
@@ -138,6 +160,7 @@ matching limit and a line in the Privacy Policy.
 ## Production checklist
 
 - A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and real SMTP credentials.
+- The storage bucket, its credentials and its `tool-images/` lifecycle rule (see [Object storage](#object-storage)).
 - A strong `CONFIG_API_TOKEN`. `/config/*` is **fail-closed**: a missing or empty token returns 401
   for every request on the prefix and never serves provider API keys.
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/widget) routes are

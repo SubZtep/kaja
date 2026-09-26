@@ -29,7 +29,7 @@ git clone https://github.com/SubZtep/kaja.git
 cd kaja
 bun install
 bunx lefthook install       # lint on commit, test on push
-docker compose up -d db mail
+docker compose up -d db mail storage
 bun dev                     # API + web portal, hot reload
 bun dev:tui                 # the terminal client
 ```

@@ -14,6 +14,7 @@ import {
   type SessionWrite,
   type StoredImage,
   saveImages,
+  sessionImagePrefix,
   splitConversation
 } from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
@@ -222,9 +223,6 @@ type MessageDbRow = {
   toolCallId: string | null
 }
 
-/** Where a session's images live under the store's `files` folder. */
-const imagePrefix = (sessionId: string) => `images/${sessionId}`
-
 /** Local CLI persistence: one sqlite file (sessions, notes, datasets), and the session images as files beside it. */
 export function createSqliteStore(dbPath: string): NasiStore {
   const db = openDb(dbPath)
@@ -382,7 +380,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
       }[]
       const callsBySeq = Map.groupBy(callRows, call => call.seq)
       const parts = messageRows.map(message => (message.parts ? (JSON.parse(message.parts) as unknown[]) : null))
-      const images = await loadImages(files, imagePrefix(row.id), parts)
+      const images = await loadImages(files, sessionImagePrefix(row.id), parts)
       const eventRows = db
         .query("SELECT payload FROM session_events WHERE sessionId = $id ORDER BY seq")
         .all({ $id: row.id }) as { payload: string }[]
@@ -446,7 +444,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
         })
         return saveConversation(id, data)
       })()
-      await saveImages(files, imagePrefix(id), images)
+      await saveImages(files, sessionImagePrefix(id), images)
       clearTelemetry(data.session)
       return id
     },
@@ -458,7 +456,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
           .run({ $id: id, $updatedAt: new Date().toISOString(), $persona: data.persona, $model: data.model })
         return changes > 0 ? saveConversation(id, data) : []
       })()
-      await saveImages(files, imagePrefix(id), images)
+      await saveImages(files, sessionImagePrefix(id), images)
       clearTelemetry(data.session)
     },
 
@@ -487,7 +485,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
 
     async deleteSession(id) {
       if (db.query("DELETE FROM sessions WHERE id = $id").run({ $id: id }).changes === 0) return false
-      await deleteImages(files, imagePrefix(id))
+      await deleteImages(files, sessionImagePrefix(id))
       return true
     },
 

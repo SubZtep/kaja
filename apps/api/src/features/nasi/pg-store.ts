@@ -11,12 +11,13 @@ import {
   type PendingKind,
   type SessionWrite,
   saveImages,
+  sessionImagePrefix,
   splitConversation
 } from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { channelOf, PersistedSessionSchema } from "@kaja/schema/store"
 import type { Pool, PoolClient } from "pg"
-import { files, sessionImagePrefix } from "../../core/files"
+import { files } from "../../core/files"
 
 function ownerKey(owner: string | null): string {
   return owner ?? ""
@@ -64,7 +65,7 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
   const callsBySeq = Map.groupBy(calls.rows, call => call.seq as number)
   const images = await loadImages(
     files,
-    sessionImagePrefix(userId, row.id),
+    sessionImagePrefix(row.id, userId),
     messages.rows.map(message => message.parts)
   )
   const parsed = PersistedSessionSchema.safeParse({
@@ -107,7 +108,7 @@ async function insertMessage(client: PoolClient, userId: string, sessionId: stri
   const id = Bun.randomUUIDv7()
   // Inline images go to object storage, once per session; the message keeps a reference to each.
   const { parts, images } = detachImages(row.parts)
-  await saveImages(files, sessionImagePrefix(userId, sessionId), images)
+  await saveImages(files, sessionImagePrefix(sessionId, userId), images)
   await client.query(
     `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id,
                                persona, model, prompt_tokens, completion_tokens, latency_ms, finish_reason)
@@ -267,7 +268,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
     async deleteSession(id) {
       const result = await db.query("DELETE FROM nasi_session WHERE id = $1 AND user_id = $2", [id, userId])
       if (!result.rowCount) return false
-      await deleteImages(files, sessionImagePrefix(userId, id))
+      await deleteImages(files, sessionImagePrefix(id, userId))
       return true
     },
 

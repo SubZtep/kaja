@@ -91,7 +91,7 @@ Personal data is processed by these service providers, on Kaja's behalf, only as
 
 | Provider | What they receive | Where |
 |---|---|---|
-| Hetzner Online GmbH | everything stored in cloud mode (hosting and database) | Germany |
+| Hetzner Online GmbH | everything stored in cloud mode (hosting, database and image storage) | Germany |
 | Brevo | your email address and the account emails sent to you | France |
 | Sentry | error reports from the API, the website and the MCP sandbox, which can include request details and your user id, and for a sandbox tool that fails, the last lines it printed, which can include a web address it was working on; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
 | Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |

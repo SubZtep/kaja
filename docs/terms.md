@@ -111,7 +111,7 @@ These Terms do not give you ownership of Kaja’s software, branding, or documen
 Kaja may rely on third-party providers for hosting, databases, email delivery, analytics, monitoring, or similar infrastructure. Their terms and policies may also apply to their services.
 
 Key providers:
-- Hetzner Online GmbH (hosting and database)
+- Hetzner Online GmbH (hosting, database and image storage)
 - Telegram, for the Kaja Telegram bot
 - Google, if you use Google sign-in
 

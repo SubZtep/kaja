@@ -101,10 +101,14 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
 }
 
 /** What the client gets for an event: as is, except a tool image, whose server-side file goes to storage and becomes a signed URL (the file is gone after the turn). */
-async function sseEvent(event: FinalizedAgentEvent | AgentDelta, userId: string): Promise<object> {
+async function sseEvent(
+  event: FinalizedAgentEvent | AgentDelta,
+  userId: string,
+  sessionId: string | undefined
+): Promise<object> {
   if (event.type !== "tool_image") return event
   const { path, mimeType } = event
-  return { type: "tool_image", mimeType, url: await toolImageUrl(userId, path, mimeType) }
+  return { type: "tool_image", mimeType, url: await toolImageUrl(userId, sessionId, path, mimeType) }
 }
 
 /** The `error` event's body for a failed stream: the known failures by name, anything else categorized and logged. */
@@ -136,7 +140,11 @@ nasiRoutes.post("/turn/stream", async c => {
       let next = await gen.next()
       while (!next.done) {
         const name = SSE_EVENT_NAME[next.value.type]
-        if (name) await stream.writeSSE({ event: name, data: JSON.stringify(await sseEvent(next.value, user.id)) })
+        if (name)
+          await stream.writeSSE({
+            event: name,
+            data: JSON.stringify(await sseEvent(next.value, user.id, body.session))
+          })
         next = await gen.next()
       }
       await stream.writeSSE({

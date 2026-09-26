@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
+import { sessionImagePrefix } from "@kaja/nasi"
 import { pool } from "../../src/core/db"
-import { files, sessionImagePrefix } from "../../src/core/files"
+import { files } from "../../src/core/files"
 import { createPostgresStore } from "../../src/features/nasi/pg-store"
 import { signUpAndSignIn } from "./helpers"
 
@@ -171,7 +172,7 @@ describe("postgres store", () => {
     )
     expect(rows).toHaveLength(1)
     const hash = rows[0].parts.match(/kaja-image:([0-9a-f]+)/)[1]
-    const key = `${sessionImagePrefix(userId, id)}/${hash}`
+    const key = `${sessionImagePrefix(id, userId)}/${hash}`
     expect((await files.head(key)).type).toBe("image/png")
     expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
 

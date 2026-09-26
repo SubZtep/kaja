@@ -7,20 +7,24 @@ import { env } from "./env"
 const credentials = { accessKeyId: env.HCLOUD_ACCESS_KEY_ID, secretAccessKey: env.HCLOUD_SECRET_ACCESS_KEY }
 
 /** Object storage for images: Hetzner Object Storage, or the S3-compatible server at `STORAGE_ENDPOINT` (RustFS in dev, tests, CI). */
-export const files = new Files({
-  adapter: env.STORAGE_ENDPOINT
-    ? minio({ bucket: env.STORAGE_BUCKET, endpoint: env.STORAGE_ENDPOINT, ...credentials })
-    : hetzner({ bucket: env.STORAGE_BUCKET, region: env.STORAGE_REGION, ...credentials })
-})
+export const files = storage(env.STORAGE_ENDPOINT)
 
-/** Where a user's images live; a session's go under `<prefix>/<sessionId>`. */
-export const userImagePrefix = (userId: string) => `images/${userId}`
+// Signing is offline, so URLs for clients are signed against the host they reach the server by (the compose API reaches storage:9000, the browser localhost:9000).
+const signer = env.STORAGE_PUBLIC_ENDPOINT ? storage(env.STORAGE_PUBLIC_ENDPOINT) : files
 
-/** Where a user's tool images go for the client to fetch by signed URL; a turn's session may not exist yet, so they sit apart and the bucket expires them after a day. */
+function storage(endpoint: string | undefined) {
+  return new Files({
+    adapter: endpoint
+      ? minio({ bucket: env.STORAGE_BUCKET, endpoint, ...credentials })
+      : hetzner({ bucket: env.STORAGE_BUCKET, region: env.STORAGE_REGION, ...credentials })
+  })
+}
+
+/** A time-limited URL a client can fetch the object from. */
+export const signedUrl = (key: string, expiresIn: number) => signer.url(key, { expiresIn })
+
+/** Where a user's tool images go when their turn's session doesn't exist yet (a new one is saved at the turn's end); the bucket expires them after a day. */
 export const toolImagePrefix = (userId: string) => `tool-images/${userId}`
-
-/** Where one session's images live. */
-export const sessionImagePrefix = (userId: string, sessionId: string) => `${userImagePrefix(userId)}/${sessionId}`
 
 /** Dev, tests and CI only (a `STORAGE_ENDPOINT` server starts empty): creates the bucket if it isn't there. Hetzner's bucket is made once in its console. */
 export async function ensureDevBucket(): Promise<void> {

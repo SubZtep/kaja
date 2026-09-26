@@ -85,11 +85,6 @@ export function detachImages(parts: unknown[] | null): { parts: unknown[] | null
   return { parts: detached, images }
 }
 
-/** Whether any part refers to a stored image, so a store knows to load the session's images. */
-export function hasImageRefs(parts: unknown[] | null): boolean {
-  return !!parts?.some(part => isImagePart(part) && part.image_url.url.startsWith(IMAGE_REF_PREFIX))
-}
-
 /** The inverse of {@link detachImages}: each reference becomes its data URL again, or a note when the image is gone. */
 export function attachImages(
   parts: unknown[] | null,

@@ -77,7 +77,8 @@ services:
     environment:
       DATABASE_URL: postgresql://testuser:testpass@db:5432/kaja
       SMTP_HOST: mail
-      STORAGE_ENDPOINT: http://storage:9000 # tool image URLs then name this host, which only the compose network resolves
+      STORAGE_ENDPOINT: http://storage:9000
+      STORAGE_PUBLIC_ENDPOINT: http://localhost:9000 # signed URLs name the host the browser and the TUI reach
       CORS_ORIGIN: http://localhost:3000
       BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production # local stack only
       SANDBOX_URL: http://sandbox:3002

@@ -84,6 +84,8 @@ declare module "bun" {
     STORAGE_REGION?: string
     /** S3-compatible endpoint (the compose RustFS) instead of Hetzner; for dev, tests and CI */
     STORAGE_ENDPOINT?: string
+    /** Where clients reach STORAGE_ENDPOINT, when that differs (compose's API uses storage:9000, the host localhost:9000); signed URLs name this host */
+    STORAGE_PUBLIC_ENDPOINT?: string
     /** Object storage access key (RUSTFS_ACCESS_KEY under STORAGE_ENDPOINT) */
     HCLOUD_ACCESS_KEY_ID?: string
     /** Object storage secret key (RUSTFS_SECRET_KEY under STORAGE_ENDPOINT) */
