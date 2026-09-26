@@ -86,7 +86,30 @@ API still starts and reports it to Sentry, and those copies just stay until some
 
 The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<sha256>`.
 Deleting a session removes its folder, and deleting a user removes both of their prefixes. Recreating
-the database doesn't empty the bucket, so empty it too, or its old images just sit there unused.
+the database doesn't empty the bucket, so empty it too (see below), or its old images just sit there unused.
+
+#### Deleting images by hand
+
+The Hetzner console can't delete by prefix, so use any S3 client: the AWS CLI, `mc` or s3cmd. With the
+AWS CLI, list first, then delete:
+
+```sh
+export AWS_ACCESS_KEY_ID=<STORAGE_ACCESS_KEY_ID> AWS_SECRET_ACCESS_KEY=<STORAGE_SECRET_ACCESS_KEY>
+aws s3 ls s3://<bucket>/tool-images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
+aws s3 rm s3://<bucket>/tool-images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
+```
+
+Use your bucket's location in the endpoint (`fsn1`, `nbg1` or `hel1`).
+
+- `tool-images/` is always safe to delete. It only holds display copies, the saved sessions keep their own,
+  and their signed URLs expire after an hour anyway. Do it when the expiry rule couldn't be set, which the
+  API reports on boot.
+- `images/` holds the sessions' real images; a deleted one shows as "[an image that is no longer
+  stored]". Empty it (`s3://<bucket>/` as a whole) only when you also recreate the database.
+
+Locally, the same commands work against the compose RustFS with `--endpoint-url http://localhost:9000` and
+the dev credentials from `apps/api/.env.example`. Its console, at <http://localhost:9001> with the same
+credentials, can delete a folder too.
 
 ### MCP sandbox
 
