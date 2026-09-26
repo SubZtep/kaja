@@ -32,5 +32,12 @@ export const SandboxEnvSchema = z.object({
     .describe("Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM"),
   SANDBOX_EGRESS_PORT: positiveInt
     .default(3128)
-    .describe("Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json")
+    .describe("Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json"),
+  WEB_PROXY: trimmed
+    .refine(value => value.startsWith("http://"), "must be an http:// proxy URL")
+    .optional()
+    .describe(
+      "HTTP proxy the browsers' checked traffic goes out through (CONNECT to the checked IP, any port); unset connects directly"
+    )
+    .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" })
 })

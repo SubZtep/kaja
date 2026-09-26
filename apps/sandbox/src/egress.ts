@@ -13,7 +13,9 @@ const HOP_HEADERS = new Set(["connection", "keep-alive", "proxy-connection", "pr
 type Resolve = (hostname: string) => Promise<string[]>
 /** Connections open now, and ones let through, refused and failed upstream since the proxy started. */
 export type EgressCounts = SandboxStats["egress"]
-type Deps = { allow: (address: string) => boolean; resolve: Resolve; counts: EgressCounts }
+/** The proxy traffic is chained through: where to connect, and the `Proxy-Authorization` value when it has credentials. */
+type Upstream = { host: string; port: number; auth?: string }
+type Deps = { allow: (address: string) => boolean; resolve: Resolve; counts: EgressCounts; upstream?: Upstream }
 
 export type EgressOptions = {
   port: number
@@ -23,6 +25,8 @@ export type EgressOptions = {
   resolve?: Resolve
   /** Counted into as connections come and go, for the sandbox's stats. */
   counts?: EgressCounts
+  /** An `http://` proxy (the sandbox's WEB_PROXY) the checked traffic is tunnelled through; unset connects directly. */
+  upstream?: string
 }
 
 /**
@@ -30,13 +34,15 @@ export type EgressOptions = {
  * it resolves each host itself and connects only when every address is public, to the address it checked, so neither
  * a private IP, a name pointing at one, nor DNS rebinding reaches the host's own network or the cloud metadata service.
  * HTTPS and WebSockets come as CONNECT tunnels; plain HTTP is forwarded one request per connection.
+ * With `upstream`, every connection instead goes through that proxy as a CONNECT tunnel to the checked address.
  */
 export function startEgressProxy(opts: EgressOptions): Promise<Server> {
   const allow = opts.allow ?? (address => !isPrivateAddress(address))
   const resolve: Resolve =
     opts.resolve ?? (async hostname => (await lookup(hostname, { all: true })).map(r => r.address))
   const counts = opts.counts ?? { open: 0, allowed: 0, refused: 0, failed: 0 }
-  const server = createServer(client => serveClient(client, { allow, resolve, counts }))
+  const upstream = opts.upstream ? parseUpstream(opts.upstream) : undefined
+  const server = createServer(client => serveClient(client, { allow, resolve, counts, upstream }))
   return new Promise((done, fail) => {
     server.once("error", fail)
     server.listen(opts.port, "127.0.0.1", () => done(server))
@@ -75,26 +81,75 @@ async function forward(client: Socket, head: string, rest: Buffer, deps: Deps) {
   const address = addresses[0]
   if (!address || !addresses.every(deps.allow)) return refuse(client, deps, 403, "Forbidden")
 
-  const upstream = createConnection({ host: address, port })
+  const via = deps.upstream
+  const upstream = createConnection(via ? { host: via.host, port: via.port } : { host: address, port })
   upstream.setTimeout(CONNECT_TIMEOUT_MS, () => upstream.destroy(new Error("connect timeout")))
-  let connected = false
-  // Before the connection there is still an answer to give; after it, the tunnel or response just ends.
-  upstream.once("error", () => (connected ? client.destroy() : refuse(client, deps, 502, "Bad Gateway")))
-  upstream.once("connect", () => {
-    connected = true
+  let state: "connecting" | "open" | "done" = "connecting"
+  // Before the path is open there is still an answer to give; after it, the tunnel or response just ends.
+  const end = () => {
+    if (state === "open") client.destroy()
+    else if (state === "connecting") refuse(client, deps, 502, "Bad Gateway")
+    state = "done"
+  }
+  upstream.once("error", end)
+  upstream.once("close", end)
+  const open = (early: Buffer) => {
+    state = "open"
     deps.counts.allowed++
     deps.counts.open++
     upstream.once("close", () => deps.counts.open--)
     upstream.setTimeout(0)
     if (tunnel) client.write("HTTP/1.1 200 Connection Established\r\n\r\n")
     else upstream.write(originFormHead(method, url, version, headers))
+    if (early.length) client.write(early)
     if (rest.length) upstream.write(rest)
     client.pipe(upstream)
     upstream.pipe(client)
     client.resume()
+    upstream.resume()
+  }
+  upstream.once("connect", () => {
+    if (!via) return open(Buffer.alloc(0))
+    // The upstream proxy is given the address checked here, not the name, so it can't resolve to anything else.
+    const authority = `${isIP(address) === 6 ? `[${address}]` : address}:${port}`
+    const auth = via.auth ? `Proxy-Authorization: ${via.auth}\r\n` : ""
+    upstream.write(`CONNECT ${authority} HTTP/1.1\r\nHost: ${authority}\r\n${auth}\r\n`)
+    void readHead(upstream).then(answer => {
+      if (answer && /^HTTP\/1\.[01] 200 /.test(answer.head)) open(answer.rest)
+      else upstream.destroy()
+    })
   })
   client.once("close", () => upstream.destroy())
-  upstream.once("close", () => connected && client.destroy())
+}
+
+/** Reads a response head off `socket` and pauses it; undefined when it closes first or the head is too big. */
+function readHead(socket: Socket): Promise<{ head: string; rest: Buffer } | undefined> {
+  return new Promise(done => {
+    let buffer = Buffer.alloc(0)
+    const onData = (chunk: Buffer) => {
+      buffer = Buffer.concat([buffer, chunk])
+      const end = buffer.indexOf(HEAD_END)
+      if (end === -1 && buffer.length <= MAX_HEAD_BYTES) return
+      socket.off("data", onData)
+      socket.pause()
+      const head = buffer.subarray(0, end).toString("latin1")
+      done(end === -1 ? undefined : { head, rest: buffer.subarray(end + HEAD_END.length) })
+    }
+    socket.on("data", onData)
+    socket.once("close", () => done(undefined))
+  })
+}
+
+/** Reads WEB_PROXY: `http://` only (the hop to it is plain TCP); credentials become a Basic `Proxy-Authorization`. */
+export function parseUpstream(value: string): Upstream {
+  const url = new URL(value)
+  if (url.protocol !== "http:") throw new Error("WEB_PROXY must be an http:// proxy URL")
+  const credentials = url.username ? `${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}` : ""
+  return {
+    host: url.hostname.replace(/^\[|\]$/g, ""),
+    port: Number(url.port || 80),
+    auth: credentials ? `Basic ${Buffer.from(credentials).toString("base64")}` : undefined
+  }
 }
 
 function parseTarget(target: string): URL | undefined {

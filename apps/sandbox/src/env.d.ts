@@ -20,6 +20,8 @@ declare module "bun" {
     SANDBOX_MAX_PROCESSES?: string
     /** Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json */
     SANDBOX_EGRESS_PORT?: string
+    /** HTTP proxy the browsers' checked traffic goes out through (CONNECT to the checked IP, any port); unset connects directly */
+    WEB_PROXY?: string
   }
 }
 

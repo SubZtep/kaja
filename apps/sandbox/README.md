@@ -85,6 +85,12 @@ The two ends of the proxy are configured in two places:
 
 **They must match.** Change only the env var and the proxy moves while Chrome keeps looking at `3128`: every page then fails to load. That fails safe (nothing leaks), but the browser is broken. A test checks that `overrides.json` matches the env default. The port is internal to the container, so there's normally no reason to change it; if you do, change both.
 
+### Going out through `WEB_PROXY`
+
+Set `WEB_PROXY` (an `http://` proxy URL, credentials allowed: `http://user:pass@proxy.example.com:8080`) and the egress proxy stops connecting directly. After the same checks, it opens a `CONNECT` tunnel through `WEB_PROXY` to **the address it checked** (not the name, so the upstream can't resolve it to something else), with the credentials as `Proxy-Authorization: Basic …`. HTTPS rides that tunnel as before; plain HTTP is sent inside it in origin form, so the site still gets its `Host` header. If the upstream doesn't answer `200`, Chrome gets a `502` and the stats count it as failed.
+
+Chrome can't point at `WEB_PROXY` itself: it has no way to take proxy credentials from a flag, and it would skip the private-address checks. The upstream must allow `CONNECT` to IP addresses on any port (commercial proxies do; Squid by default only allows `443`, which leaves plain `http://` pages failing).
+
 ### What the proxy doesn't cover
 
 - Only the browsers go through it. The MCP server processes themselves (Node) connect directly. A new stdio server that makes its own requests needs its own guard.
@@ -131,6 +137,7 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 | `SANDBOX_IDLE_MS` | `600000` | how long an unused server stays warm |
 | `SANDBOX_MAX_PROCESSES` | `8` | most servers at once; each Chrome needs about 300–500 MB of RAM |
 | `SANDBOX_EGRESS_PORT` | `3128` | the egress proxy's port; must match `overrides.json` |
+| `WEB_PROXY` | — | `http://` proxy the egress proxy tunnels checked traffic through; unset connects directly |
 | `NODE_ENV` | — | `production` turns on Sentry (the image sets it) |
 
 `.env.example` is generated from `packages/schema/env/sandbox.ts` (`bun generate:env`).
