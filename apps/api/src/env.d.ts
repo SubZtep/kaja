@@ -82,14 +82,14 @@ declare module "bun" {
     STORAGE_BUCKET?: string
     /** Hetzner Object Storage location (fsn1, nbg1, hel1) */
     STORAGE_REGION?: string
-    /** S3-compatible endpoint (the compose RustFS) instead of Hetzner; for dev, tests and CI */
+    /** S3-compatible server to use instead of Hetzner (the compose storage service in dev, tests and CI) */
     STORAGE_ENDPOINT?: string
-    /** Where clients reach STORAGE_ENDPOINT, when that differs (compose's API uses storage:9000, the host localhost:9000); signed URLs name this host */
+    /** STORAGE_ENDPOINT as clients reach it, for signed URLs; only when it differs (the compose API: storage:9000 vs localhost:9000) */
     STORAGE_PUBLIC_ENDPOINT?: string
-    /** Object storage access key (RUSTFS_ACCESS_KEY under STORAGE_ENDPOINT) */
-    HCLOUD_ACCESS_KEY_ID?: string
-    /** Object storage secret key (RUSTFS_SECRET_KEY under STORAGE_ENDPOINT) */
-    HCLOUD_SECRET_ACCESS_KEY?: string
+    /** Object storage access key */
+    STORAGE_ACCESS_KEY_ID?: string
+    /** Object storage secret key */
+    STORAGE_SECRET_ACCESS_KEY?: string
     /** BotFather token; when set, starts the always-on cloud Telegram bot */
     TELEGRAM_BOT_TOKEN?: string
   }

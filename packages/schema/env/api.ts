@@ -152,19 +152,19 @@ export const ApiEnvSchema = z.object({
     .meta({ section: "Storage" }),
   STORAGE_ENDPOINT: url
     .optional()
-    .describe("S3-compatible endpoint (the compose RustFS) instead of Hetzner; for dev, tests and CI")
+    .describe("S3-compatible server to use instead of Hetzner (the compose storage service in dev, tests and CI)")
     .meta({ example: "http://localhost:9000", devDefault: true, section: "Storage" }),
   STORAGE_PUBLIC_ENDPOINT: url
     .optional()
     .describe(
-      "Where clients reach STORAGE_ENDPOINT, when that differs (compose's API uses storage:9000, the host localhost:9000); signed URLs name this host"
+      "STORAGE_ENDPOINT as clients reach it, for signed URLs; only when it differs (the compose API: storage:9000 vs localhost:9000)"
     )
     .meta({ section: "Storage" }),
-  HCLOUD_ACCESS_KEY_ID: trimmed
-    .describe("Object storage access key (RUSTFS_ACCESS_KEY under STORAGE_ENDPOINT)")
+  STORAGE_ACCESS_KEY_ID: trimmed
+    .describe("Object storage access key")
     .meta({ example: "kaja", devDefault: true, section: "Storage" }),
-  HCLOUD_SECRET_ACCESS_KEY: trimmed
-    .describe("Object storage secret key (RUSTFS_SECRET_KEY under STORAGE_ENDPOINT)")
+  STORAGE_SECRET_ACCESS_KEY: trimmed
+    .describe("Object storage secret key")
     .meta({ secret: true, example: "kaja-dev-storage", devDefault: true, section: "Storage" }),
 
   TELEGRAM_BOT_TOKEN: trimmed

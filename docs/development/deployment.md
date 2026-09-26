@@ -16,7 +16,7 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   triggers deployment on the managed box. Even the smallest
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
   comfortably at modest traffic.
-- **S3-compatible object storage** for session and tool images (`STORAGE_*`, `HCLOUD_*`). Production
+- **S3-compatible object storage** for session and tool images (`STORAGE_*`). Production
   uses [Hetzner Object Storage](https://www.hetzner.com/storage/object-storage); see
   [Object storage](#object-storage).
 - **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
@@ -77,8 +77,8 @@ to Postgres. Set it up once in the [Hetzner Cloud Console](https://console.hetzn
 3. Add a lifecycle rule that expires objects under `tool-images/` after 1 day. A tool image from a
    turn that starts a new session is stored there, because the session has no id until the turn is saved;
    the saved session keeps its own copy under `images/`.
-4. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `HCLOUD_ACCESS_KEY_ID`
-   and `HCLOUD_SECRET_ACCESS_KEY`. Leave `STORAGE_ENDPOINT` unset: it points the API at another
+4. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `STORAGE_ACCESS_KEY_ID`
+   and `STORAGE_SECRET_ACCESS_KEY`. Leave `STORAGE_ENDPOINT` unset: it points the API at another
    S3-compatible server (the compose RustFS in dev, tests and CI) instead of Hetzner.
 
 The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<sha256>`.

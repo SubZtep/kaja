@@ -4,7 +4,7 @@ import { hetzner } from "files-sdk/hetzner"
 import { minio } from "files-sdk/minio"
 import { env } from "./env"
 
-const credentials = { accessKeyId: env.HCLOUD_ACCESS_KEY_ID, secretAccessKey: env.HCLOUD_SECRET_ACCESS_KEY }
+const credentials = { accessKeyId: env.STORAGE_ACCESS_KEY_ID, secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY }
 
 /** Object storage for images: Hetzner Object Storage, or the S3-compatible server at `STORAGE_ENDPOINT` (RustFS in dev, tests, CI). */
 export const files = storage(env.STORAGE_ENDPOINT)

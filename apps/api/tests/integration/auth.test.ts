@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
+import { userImagePrefix } from "@kaja/nasi"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
+import { files, toolImagePrefix } from "../../src/core/files"
 import { signUpAndSignIn, verifyEmail } from "./helpers"
 
 describe("authentication flow", () => {
@@ -95,6 +97,10 @@ describe("authentication flow", () => {
     test("a freshly signed-in user can delete their own account", async () => {
       const doomed = faker.internet.email().toLowerCase()
       const token = await signUpAndSignIn(doomed, password, "")
+      const { rows } = await pool.query('SELECT id FROM "user" WHERE email = $1', [doomed])
+      // Their images in object storage go with them: a session's and a leftover tool image
+      const keys = [`${userImagePrefix(rows[0].id)}/session/abc`, `${toolImagePrefix(rows[0].id)}/def`]
+      for (const key of keys) await files.upload(key, new Uint8Array([1]), { contentType: "image/png" })
       const res = await app.request("/auth/delete-user", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -103,6 +109,7 @@ describe("authentication flow", () => {
       expect(res.status).toBe(200)
       const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = $1', [doomed])
       expect(rowCount).toBe(0)
+      for (const key of keys) expect(await files.exists(key)).toBe(false)
     })
   })
 

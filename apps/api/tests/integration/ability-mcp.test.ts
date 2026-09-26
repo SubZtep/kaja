@@ -14,6 +14,7 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiFetchProxyOverride, setNasiSandboxOverride } from "../../src/features/nasi/chat"
+import { createCloudTelegramDriver } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
 import { AbilityService } from "../../src/services/ability"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
@@ -267,6 +268,33 @@ describe("MCP servers in the cloud", () => {
       const fetched = await fetch(data.url)
       expect(fetched.ok).toBe(true)
       expect(Buffer.from(await fetched.arrayBuffer()).toString("base64")).toStartWith("iVBOR")
+
+      // Telegram gets it too; Telegram can't fetch a signed URL on the local dev storage, so it goes as the bytes
+      const { user } = await (await app.request("/auth/get-session", { headers: auth() })).json()
+      setNasiChatResolver(async () => ({
+        client: scriptedChat(
+          [{ content: null, tool_calls: [call("c1", "picture", {})] }, { content: "Here." }],
+          []
+        ) as never,
+        model: "fake-model"
+      }))
+      const photos: (string | Uint8Array)[] = []
+      const driver = createCloudTelegramDriver({
+        resolveLinkedUser: async () => ({ userId: user.id, locale: null }),
+        sender: {
+          async sendMessage() {
+            return { messageId: 1 }
+          },
+          async editMessageText() {},
+          async sendPhoto(_chatId, photo) {
+            photos.push(photo)
+          }
+        }
+      })
+      await driver.handleMessage(1001, 55, "show me")
+      expect(photos).toHaveLength(1)
+      expect(photos[0]).toBeInstanceOf(Uint8Array)
+      expect(Buffer.from(photos[0] as Uint8Array).toString("base64")).toStartWith("iVBOR")
     } finally {
       setNasiSandboxOverride(undefined)
       await sandboxPool.closeAll()
