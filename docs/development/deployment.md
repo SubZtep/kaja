@@ -66,10 +66,11 @@ saved before the recreate are gone with it.
 
 ### MCP sandbox
 
-The sandbox (`apps/sandbox`) runs stdio MCP servers for cloud turns, starting with a headless Chrome that
-browses anything its container can reach — the API's SSRF guard doesn't cover it. Deploy it as its own
-project on a **separate Disco server** with nothing else on it, so Chrome can't reach the database or the
-other projects. The server must be amd64: the Chrome headless shell has no Linux arm64 build.
+The sandbox (`apps/sandbox`) runs stdio MCP servers for cloud turns, starting with a headless Chrome. Its
+browsers go out through the sandbox's own egress proxy, which only connects to public addresses (no
+loopback, private ranges or the cloud metadata service). Still deploy it as its own project on a **separate
+Disco server** with nothing else on it, so a gap in that proxy can't reach the database or the other projects.
+The server must be amd64: the Chrome headless shell has no Linux arm64 build.
 
 - Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
 - Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` only accepts the API-signed
@@ -78,9 +79,14 @@ other projects. The server must be amd64: the Chrome headless shell has no Linux
   the image sets `NODE_ENV=production`. It reports MCP servers that won't start, die on their own, or error,
   with their last stderr lines; no tracing, and request headers are dropped.
 - The image copies `marketplace/mcp` at build time, so a new or changed stdio manifest needs a sandbox
-  redeploy too.
+  redeploy too. A redeploy restarts every browser, so users lose the pages they had open.
+- Size `SANDBOX_MAX_PROCESSES` (default 8) to the server's RAM: each Chrome takes about 300-500 MB. When
+  it's full, the least recently used idle browser is stopped for the newcomer; only when every one is mid-call
+  is a user turned away. The logs show each start, stop and refusal with the running count.
 
 Without both `SANDBOX_URL` and `SANDBOX_SECRET` the API leaves stdio MCP abilities out of cloud turns.
+How the sandbox works, including its egress proxy and settings, is in its
+[README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
 
 ## Environment variables
 

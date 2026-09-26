@@ -51,6 +51,9 @@ bun dev:tui                 # the terminal client
 - [`web`](./apps/web/)
   - Public homepage
   - Admin portal
+- [`sandbox`](./apps/sandbox/)
+  - Runs stdio MCP servers (a headless Chrome) for cloud turns
+  - Keeps each browser to public addresses through its own egress proxy
 
 **Packages**
 
