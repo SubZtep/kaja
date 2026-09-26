@@ -6,7 +6,7 @@ declare module "bun" {
     NODE_ENV?: string
     /** Port the sandbox listens on */
     PORT?: string
-    /** Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns connect with */
+    /** Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns and the admin dashboard's stats connect with */
     SANDBOX_SECRET?: string
     /** Folder whose mcp/*.toml stdio manifests are the only servers the sandbox runs */
     MARKETPLACE_DIR?: string

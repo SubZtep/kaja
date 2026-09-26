@@ -76,7 +76,7 @@ declare module "bun" {
     MARKETPLACE_REF?: string
     /** Base URL of the MCP sandbox (apps/sandbox); with SANDBOX_SECRET it lets cloud turns use stdio MCP abilities */
     SANDBOX_URL?: string
-    /** Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with */
+    /** Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token */
     SANDBOX_SECRET?: string
     /** BotFather token; when set, starts the always-on cloud Telegram bot */
     TELEGRAM_BOT_TOKEN?: string

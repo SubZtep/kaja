@@ -72,8 +72,8 @@ Disco server** with nothing else on it, so a gap in that proxy can't reach the d
 The server must be amd64: the Chrome headless shell has no Linux arm64 build.
 
 - Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
-- Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` only accepts the API-signed
-  token; `/health` is open.
+- Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` and `/stats` only accept an
+  API-signed token; `/health` is open. Admins see the sandbox live on the web's **Admin → Dashboard**.
 - Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
   the image sets `NODE_ENV=production`. It reports MCP servers that won't start, die on their own, or error,
   with their last stderr lines; no tracing, and request headers are dropped.

@@ -138,7 +138,9 @@ export const ApiEnvSchema = z.object({
     .meta({ example: "http://localhost:3002", section: "MCP Sandbox" }),
   SANDBOX_SECRET: trimmed
     .optional()
-    .describe("Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with")
+    .describe(
+      "Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token"
+    )
     .meta({ secret: true, section: "MCP Sandbox" }),
 
   TELEGRAM_BOT_TOKEN: trimmed

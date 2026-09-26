@@ -5,7 +5,9 @@ export const SandboxEnvSchema = z.object({
   NODE_ENV: trimmed.optional().describe('Node environment; "production" turns on Sentry'),
   PORT: positiveInt.default(3002).describe("Port the sandbox listens on"),
   SANDBOX_SECRET: trimmed
-    .describe("Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns connect with")
+    .describe(
+      "Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns and the admin dashboard's stats connect with"
+    )
     .meta({ secret: true }),
   MARKETPLACE_DIR: trimmed
     .default("../../marketplace")
