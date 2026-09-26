@@ -46,6 +46,17 @@ piped = true
       ]
 
 
+      # Other languages follow en-GB: new or changed English becomes a lorem placeholder until someone translates it
+      [[pre-commit.jobs.group.jobs]]
+      run  = "bun sync:locales --stage"
+      glob = [
+        "apps/tui/locales/en-GB.toml",
+        "apps/api/locales/en-GB.toml",
+        "apps/api/widgets/locales/en-GB.toml",
+        "apps/web/messages/en-GB.json"
+      ]
+
+
       [[pre-commit.jobs.group.jobs]]
       run  = "bun run --filter @kaja/web generate:routes && git add apps/web/src/routeTree.gen.ts"
       glob = [
@@ -89,6 +100,14 @@ parallel = true
   [[pre-push.jobs]]
   run  = "bun typecheck"
   glob = "*.{ts,tsx}"
+
+
+  [[pre-push.jobs]]
+  run = "bun check:locales"
+
+
+    [[pre-push.jobs.only]]
+    ref = "main"
 
 
   [[pre-push.jobs]]

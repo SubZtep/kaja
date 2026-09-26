@@ -4,7 +4,7 @@ The project is not live yet, so feel free to adjust any breaking changes.
 
 When you modify a feature check its test (if any) for possible required update too.
 
-When you change a translation text, update all the languages as well: edit en-GB yourself, then delegate the other languages to the `translate` agent (`.claude/agents/translate.md`), passing the keys and the old and new English text.
+Translations: edit only the en-GB locale files; never read or edit other languages. Pre-commit runs `bun sync:locales` (`scripts/locales.ts`), which gives every other language the same keys and a `[<locale>] lorem ipsum` placeholder for new or changed English; the user runs `/translate` (`.claude/skills/translate`) to fill them in later.
 
 ## Project Overview
 

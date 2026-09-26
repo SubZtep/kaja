@@ -67,6 +67,9 @@ jobs:
       - name: Check model example files are up to date
         run: bun run check:models
 
+      - name: Check every language is translated
+        run: bun run check:locales
+
       - name: Apply SQL migrations
         run: |
           printf '%s\n' apps/api/migrations/*.sql | LC_ALL=C sort | while read -r f; do
