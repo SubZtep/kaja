@@ -31,10 +31,11 @@ RUN apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
 FROM node:22-trixie-slim AS runner
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    ca-certificates python3 \
+    ca-certificates \
     fonts-liberation fonts-noto-color-emoji \
     libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libdbus-1-3 libdrm2 libexpat1 libglib2.0-0t64 \
     libnspr4 libnss3 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2 \
+    python3 \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /uvx /usr/local/bin/
@@ -53,7 +54,8 @@ USER node
 # bunx keeps packages in /tmp/bunx-<uid>-<pkg>@<version>; the version must match overrides.json (bump with CHROME_HEADLESS_SHELL_VERSION).
 ARG CHROME_DEVTOOLS_MCP_VERSION=1.10.1
 RUN bunx "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}" --version \
-  && UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" uvx mcp-server-time --help >/dev/null \
+  && UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" \
+    uvx mcp-server-time --help >/dev/null \
   && rm -rf ~/.bun
 COPY --from=builder /home/bun/app/apps/sandbox/dist/sandbox.js ./sandbox.js
 COPY --chown=node:node marketplace/mcp ./marketplace/mcp
