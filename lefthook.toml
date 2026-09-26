@@ -69,13 +69,7 @@ piped = true
 
       [[pre-commit.jobs.group.jobs]]
       run  = "bun typecheck"
-      glob = [
-        "*.ts",
-        "*.tsx",
-        "package.json",
-        "bun.lock",
-        "tsconfig*.json"
-      ]
+      glob = "*.{ts,tsx}"
 
 
 [post-merge]
@@ -94,13 +88,7 @@ parallel = true
 
   [[pre-push.jobs]]
   run  = "bun typecheck"
-  glob = [
-    "*.ts",
-    "*.tsx",
-    "package.json",
-    "bun.lock",
-    "tsconfig*.json"
-  ]
+  glob = "*.{ts,tsx}"
 
 
   [[pre-push.jobs]]
