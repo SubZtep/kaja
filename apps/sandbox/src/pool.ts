@@ -12,9 +12,15 @@ export type PoolOptions = {
   start?: (server: SandboxServer) => Promise<McpRelay>
 }
 
-type Entry = { relay: Promise<McpRelay>; lastUsed: number; timer?: ReturnType<typeof setTimeout> }
+type Entry = {
+  relay: Promise<McpRelay>
+  /** The relay once it's started, for choosing a server to stop without waiting. */
+  started?: McpRelay
+  lastUsed: number
+  timer?: ReturnType<typeof setTimeout>
+}
 
-/** One warm server per (user, ability), started on first use and stopped once idle. */
+/** One warm server per (user, ability), started on first use and stopped once idle, or sooner when another user needs the room. */
 export class ProcessPool {
   readonly #opts: PoolOptions
   readonly #entries = new Map<string, Entry>()
@@ -27,15 +33,17 @@ export class ProcessPool {
     return this.#entries.size
   }
 
-  /** Serves an MCP request for `user`'s own `ability` server: 404 for an ability the sandbox doesn't run, 503 when it's full or the server won't start. */
+  /** Serves an MCP request for `user`'s own `ability` server: 404 for an ability the sandbox doesn't run, 503 when every server is mid-call or it won't start. */
   async handle(user: string, ability: string, request: Request): Promise<Response> {
     const server = this.#opts.servers.get(ability)
     if (!server) return Response.json({ error: "unknown ability" }, { status: 404 })
     const key = `${user}\n${ability}`
     let entry = this.#entries.get(key)
     if (!entry) {
-      if (this.#entries.size >= this.#opts.maxProcesses)
+      if (this.#entries.size >= this.#opts.maxProcesses && !this.#evictIdlest()) {
+        console.warn("Sandbox is full", { ability, processes: this.#entries.size })
         return Response.json({ error: "the sandbox is full, try again later" }, { status: 503 })
+      }
       entry = { relay: this.#start(key, server), lastUsed: Date.now() }
       this.#entries.set(key, entry)
     }
@@ -66,6 +74,9 @@ export class ProcessPool {
     try {
       const relay = await (this.#opts.start ?? McpRelay.start)(server)
       relay.onclose = () => this.#forget(key, relay)
+      const entry = this.#entries.get(key)
+      if (entry) entry.started = relay
+      console.log("Sandbox started MCP server", { ability: server.name, processes: this.#entries.size })
       return relay
     } catch (error) {
       this.#entries.delete(key)
@@ -89,7 +100,25 @@ export class ProcessPool {
       return
     }
     this.#entries.delete(key)
+    console.log("Sandbox stopped idle MCP server", { ability: abilityOf(key), processes: this.#entries.size })
     await relay.close()
+  }
+
+  // Stops the least recently used server that isn't mid-call, making room for a new one; false when there's none.
+  #evictIdlest(): boolean {
+    let idlest: [string, Entry] | undefined
+    for (const item of this.#entries) {
+      const relay = item[1].started
+      if (!relay || relay.busy) continue
+      if (!idlest || item[1].lastUsed < idlest[1].lastUsed) idlest = item
+    }
+    if (!idlest) return false
+    const [key, entry] = idlest
+    clearTimeout(entry.timer)
+    this.#entries.delete(key)
+    console.log("Sandbox stopped MCP server to make room", { ability: abilityOf(key), processes: this.#entries.size })
+    void entry.started?.close()
+    return true
   }
 
   #forget(key: string, relay: McpRelay) {
@@ -101,4 +130,8 @@ export class ProcessPool {
       this.#entries.delete(key)
     })
   }
+}
+
+function abilityOf(key: string): string {
+  return key.slice(key.indexOf("\n") + 1)
 }

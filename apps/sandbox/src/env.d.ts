@@ -14,8 +14,10 @@ declare module "bun" {
     SANDBOX_OVERRIDES?: string
     /** How long an unused server process is kept warm before it's stopped (ms) */
     SANDBOX_IDLE_MS?: string
-    /** Most server processes running at once, over all users */
+    /** Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM */
     SANDBOX_MAX_PROCESSES?: string
+    /** Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json */
+    SANDBOX_EGRESS_PORT?: string
   }
 }
 

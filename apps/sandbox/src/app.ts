@@ -6,7 +6,7 @@ import type { ProcessPool } from "./pool"
 export function createApp(opts: { secret: string; pool: ProcessPool }): Hono {
   const app = new Hono()
 
-  app.get("/health", c => c.json({ ok: true, processes: opts.pool.size }))
+  app.get("/health", c => c.json({ ok: true }))
 
   // The token names both the user and the ability, so a user only ever reaches their own server for that one ability.
   app.all("/mcp/:ability", async c => {

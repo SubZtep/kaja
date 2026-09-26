@@ -103,7 +103,7 @@ services:
 
   # Runs stdio MCP servers (a headless Chrome among them) for cloud turns. Only the api shares its network, so it can't
   # reach db or mail by name, and every port here is published on 127.0.0.1 only, so not through the host either.
-  # Production still needs its own egress rules (a separate host, or public addresses only).
+  # Chrome also goes out only through the sandbox's egress proxy (public addresses only); production runs it on a separate host too.
   sandbox:
     build:
       context: .

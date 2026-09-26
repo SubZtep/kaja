@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { SandboxEnvSchema } from "@kaja/schema/env"
 import { signSandboxToken } from "@kaja/shared"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
@@ -77,6 +78,18 @@ describe("manifests", () => {
       "--allowedUrlPattern=https://*"
     ])
   })
+
+  test("the image's Chrome goes out only through the egress proxy, loopback included", async () => {
+    const shipped = await loadSandboxServers(
+      join(import.meta.dir, "../../../marketplace"),
+      join(import.meta.dir, "../overrides.json")
+    )
+    const args = shipped.get("chrome-devtools")!.args
+    const { SANDBOX_EGRESS_PORT } = SandboxEnvSchema.parse({ SANDBOX_SECRET: SECRET })
+    expect(args).toContain(`--proxyServer=http://127.0.0.1:${SANDBOX_EGRESS_PORT}`)
+    expect(args).toContain("--chromeArg=--proxy-bypass-list=<-loopback>")
+    expect(args).toContain("--chromeArg=--force-webrtc-ip-handling-policy=disable_non_proxied_udp")
+  })
 })
 
 describe("auth", () => {
@@ -105,6 +118,7 @@ describe("relay", () => {
       expect((await first.listTools()).tools.map(tool => tool.name).sort()).toEqual([
         "count",
         "crash",
+        "hang",
         "picture",
         "whoami"
       ])
@@ -185,16 +199,37 @@ describe("reporting", () => {
 
 describe("pool", () => {
   test(
-    "past the process limit a new user is turned away until one stops",
+    "past the process limit the least recently used idle server makes room",
     async () => {
-      const { app, pool } = sandbox({ maxProcesses: 1 })
+      const { app, pool } = sandbox({ maxProcesses: 2 })
       const first = await connect(app, "u1")
-      await expect(connect(app, "u2")).rejects.toThrow()
+      const second = await connect(app, "u2")
+      expect(await callText(second, "count")).toBe("1")
+      expect(await callText(first, "count")).toBe("1")
+      const third = await connect(app, "u3")
+      expect(await callText(third, "count")).toBe("1")
+      expect(pool.size).toBe(2)
+      expect(await callText(first, "count")).toBe("2")
+      await Promise.all([first.close(), second.close(), third.close()])
+    },
+    SPAWN_TIMEOUT_MS
+  )
+
+  test(
+    "when every server is mid-call a new user is turned away",
+    async () => {
+      const { app } = sandbox({ maxProcesses: 1 })
+      const first = await connect(app, "u1")
+      void first.callTool({ name: "hang", arguments: {} }).catch(() => {})
+      const warned = spyOn(console, "warn").mockImplementation(() => {})
+      try {
+        await Bun.sleep(200)
+        await expect(connect(app, "u2")).rejects.toThrow()
+        expect(warned.mock.calls.some(([message]) => message === "Sandbox is full")).toBe(true)
+      } finally {
+        warned.mockRestore()
+      }
       await first.close()
-      await pool.closeAll()
-      const next = await connect(app, "u2")
-      expect(await callText(next, "count")).toBe("1")
-      await next.close()
     },
     SPAWN_TIMEOUT_MS
   )

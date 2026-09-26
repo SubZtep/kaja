@@ -1,4 +1,4 @@
-// A stdio MCP server for the sandbox tests: `count` remembers how often it ran, `whoami` shows the env it got, `picture` returns an image, `crash` complains on stderr and exits.
+// A stdio MCP server for the sandbox tests: `count` remembers how often it ran, `whoami` shows the env it got, `picture` returns an image, `hang` never answers, `crash` complains on stderr and exits.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
@@ -20,6 +20,7 @@ server.registerTool("picture", { description: "Returns a tiny picture" }, async 
     { type: "image", data: PIXEL, mimeType: "image/png" }
   ]
 }))
+server.registerTool("hang", { description: "Never answers" }, async () => new Promise(() => {}))
 server.registerTool("crash", { description: "Exits mid-call" }, async () => {
   console.error("counter: out of cheese")
   setTimeout(() => process.exit(1), 50)

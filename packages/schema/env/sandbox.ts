@@ -19,5 +19,10 @@ export const SandboxEnvSchema = z.object({
   SANDBOX_IDLE_MS: positiveInt
     .default(10 * 60 * 1000)
     .describe("How long an unused server process is kept warm before it's stopped (ms)"),
-  SANDBOX_MAX_PROCESSES: positiveInt.default(8).describe("Most server processes running at once, over all users")
+  SANDBOX_MAX_PROCESSES: positiveInt
+    .default(8)
+    .describe("Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM"),
+  SANDBOX_EGRESS_PORT: positiveInt
+    .default(3128)
+    .describe("Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json")
 })
