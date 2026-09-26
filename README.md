@@ -11,32 +11,60 @@ Kaja is an AI assistant you talk to from your terminal. Give it a task and it ke
 
 Under the hood it is a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent. All **TypeScript**, all **Bun**, one repo.
 
-## Run build
+## Install
+
+Download and install the latest release on macOS or Linux:
 
 ```bash
-curl -fsSL https://kaja.io/install.sh | bash   # macOS / Linux
+curl -fsSL https://kaja.io/install.sh | bash
+```
+
+On Windows (PowerShell):
+
+```powershell
+irm https://kaja.io/install.ps1 | iex
+```
+
+Then run it:
+
+```bash
 kaja
 ```
 
-That's cloud mode — approve a device code in the browser and start chatting, no API key of your own. Run `kaja --local` instead to run the agent loop on your machine against your own provider; the first run writes `~/.config/kaja/` for you to fill in.
+The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at your own LLM provider and it writes `~/.config/kaja/` for you.
 
 ## Run from source
 
-You need [Bun](https://bun.com/docs/installation) and [Docker Compose](https://docs.docker.com/compose/install/).
+Make sure [Bun](https://bun.com/docs/installation) and [Docker Compose](https://docs.docker.com/compose/install/) are installed.
 
 ```bash
+# get the source
 git clone https://github.com/SubZtep/kaja.git
 cd kaja
+
+# install dependencies
 bun install
-bunx lefthook install       # lint on commit, test on push
-docker compose up -d db mail storage
-bun dev                     # API + web portal, hot reload
-bun dev:tui                 # the terminal client
+
+# run lint, typecheck and tests from git hooks
+bunx lefthook install
+
+# start services
+docker compose up -d
+
+# run the terminal UI
+cp apps/tui/.env.example apps/tui/.env
+bun dev:tui
 ```
 
-`docker compose up -d` (no service names) additionally builds and runs the API and web images.
+Working on the API or web app? The [development guide](https://docs.kaja.io/development) covers the env files, `bun dev` and the rest.
 
-## What's inside
+> [!TIP]
+> If you want to look around **inside the sandbox** container, open a shell:
+> ```bash
+> docker compose exec sandbox bash
+> ```
+
+## What’s inside
 
 **Apps**
 
@@ -96,7 +124,7 @@ flowchart TB
         LLM@{ shape: docs, label: "AI model(s)" }
     end
 
-    subgraph Packages["<tt>Shared packages<tt>"]
+    subgraph Packages["<tt>Shared packages</tt>"]
         NASI["<b>nasi</b><br>The loop"]
         SCHEMA["<b>schema</b><br>Zod contracts"]
         SHARED["<b>shared</b><br>Pure functions"]
@@ -105,9 +133,10 @@ flowchart TB
     USER1 == Custom LLMs === TUI
     USER2 === TUI
     USER3 === API
-    USER4 === WEB
+    USER4 === API
 
     API --- DB
+    API --- S3
     API --- LLM
     TUI --- SQL
     WEB ---|HTTP| API
@@ -122,14 +151,12 @@ flowchart TB
     SCHEMA -.- NASI
     SHARED -.- WEB
     SHARED -.- TUI
-    
+
     classDef person fill:#ffff00,color:#000000
 ```
 
-## Contributing
-
-Until it reaches its 1st major version the codebase is under constant refactor.
+_If you’d like to chat about it, [here I<big>𝕏</big>am](https://x.com/messages/compose?recipient_id=19888096)._
 
 ## Documentation
 
-Want the full story? 🐓 Head to [docs.kaja.io](https://docs.kaja.io).
+Want the full story? 🐓 Head to **[docs.kaja.io](https://docs.kaja.io)**.

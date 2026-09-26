@@ -1,4 +1,11 @@
-# Move Postgres Data to a Hetzner Volume
+---
+layout: page
+title: Postgres on a volume
+parent: Development
+nav_order: 8
+---
+
+# Postgres on a Hetzner Volume
 
 This guide moves the Kaja Postgres database from the server's main disk to a separate Hetzner Volume. A Hetzner Volume survives server rebuilds — you can delete and recreate the server, reattach the volume, and your database is still there.
 
@@ -6,7 +13,7 @@ Replace anything in `<angle brackets>` with your own values.
 
 ---
 
-## 1. Create the Volume (Hetzner Console)
+## 1. Create the volume (Hetzner Console)
 
 1. Go to the [Hetzner Cloud Console](https://console.hetzner.cloud/).
 2. Open your project, click **Volumes** → **Create Volume**.
@@ -16,7 +23,7 @@ Replace anything in `<angle brackets>` with your own values.
 6. Choose **Automatic** mounting (filesystem ext4) — Hetzner then formats the volume, mounts it at `/mnt/HC_Volume_<id>` and adds the `/etc/fstab` entry for you.
 7. Click **Create & Buy now**.
 
-## 2. Check the Mount on the Server
+## 2. Check the mount on the server
 
 SSH into your server:
 
@@ -53,7 +60,7 @@ ls -l /dev/disk/by-id/ | grep scsi-0HC_Volume
 
 Note this path — it looks like `/dev/disk/by-id/scsi-0HC_Volume_12345678`.
 
-## 3. Format and Mount the Volume (manual only)
+## 3. Format and mount the volume (manual only)
 
 Format it (⚠️ this wipes the volume — only do this once, on a fresh volume):
 
@@ -69,7 +76,7 @@ mount /dev/disk/by-id/scsi-0HC_Volume_12345678 /mnt/kaja-pgdata
 mkdir /mnt/kaja-pgdata/pgdata
 ```
 
-## 4. Make the Mount Permanent (manual only)
+## 4. Make the mount permanent (manual only)
 
 Without this step, the volume won't be mounted after a reboot.
 
@@ -94,7 +101,7 @@ mount -a
 
 If no error appears, it worked.
 
-## 5. Find the Current Postgres Volume Name
+## 5. Find the current Postgres volume name
 
 From your local machine (with the `disco` CLI installed):
 
@@ -104,7 +111,7 @@ disco volumes:list --project <postgres-addon-project-name>
 
 This lists the volume name(s) Disco uses for Postgres. Note the exact name — call it `<volume-name>` below.
 
-## 6. Back Up the Current Data
+## 6. Back up the current data
 
 Still on your local machine:
 
@@ -118,7 +125,7 @@ This downloads a full backup of the current database volume. **Keep this file sa
 
 In the Disco dashboard (or CLI), stop/scale down the Postgres addon service so nothing writes to the database during the move.
 
-## 8. Point the Volume at the Hetzner Disk
+## 8. Point the volume at the Hetzner disk
 
 Back on the **server**, find and remove the old Docker volume, then recreate it as a bind mount to your new disk:
 
@@ -135,15 +142,13 @@ docker volume create \
 
 This makes Docker's volume named `<volume-name>` actually point at `/mnt/kaja-pgdata/pgdata` — which is your Hetzner Volume.
 
-## 9. Restore the Data
+## 9. Restore the data
 
 Back on your local machine:
 
 ```bash
 disco volumes:import --project <postgres-addon-project-name> --volume <volume-name> --input pg-backup.tar.gz
 ```
-
-<!-- docker volume create --driver local --opt type=none --opt o=bind --opt device=/mnt/HC_Volume_106960282 postgres-data -->
 
 This writes the backup into the newly relocated volume.
 
@@ -155,15 +160,17 @@ Start/scale the Postgres addon service back up in Disco.
 
 - Check Postgres logs for errors.
 - Connect to the database and confirm your data (tables, row counts) is intact.
-- Confirm the data really lives on the volume:
+- Confirm the data really lives on the volume (`/mnt/HC_Volume_<id>` if it was mounted automatically):
+
   ```bash
   df -h /mnt/kaja-pgdata
   ```
+
   It should show real disk usage matching your database size.
 
 ---
 
-## Why This Matters
+## Why this matters
 
 If you ever rebuild or replace the server:
 
@@ -173,3 +180,9 @@ If you ever rebuild or replace the server:
 4. Reinstall Disco, set up the same volume-to-bind-mount step (step 8) before starting Postgres.
 
 Your database data survives, because it never lived on the server's main disk in the first place.
+
+---
+
+Next:
+
+[Debug flow](/development/debug-flow){: .btn .btn-green .fs-5 }

@@ -31,7 +31,8 @@ Every outside service that receives users' data is listed in the [Privacy Policy
 
 ## Projects
 
-Create a Disco **Project** per app and point each at its own config file (the sandbox goes on its own server, see [MCP sandbox](#mcp-sandbox)):
+Create a Disco **Project** per app and point each at its own config file (the sandbox goes on its own
+server, see [MCP sandbox](#mcp-sandbox)):
 
 | Project | Variable | Value |
 | --- | --- | --- |
@@ -40,11 +41,13 @@ Create a Disco **Project** per app and point each at its own config file (the sa
 | Sandbox | `DISCO_JSON_PATH` | `apps/sandbox/disco.json` |
 
 Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
-automatically.
+automatically. To keep its data on a Hetzner Volume that outlives the server, follow
+[Postgres on a volume](/development/deploy-volume).
 
 The API config declares a `hook:deploy:start:before` step that runs `bun run migrate.js`, so
 **migrations apply on every deploy** before the new container takes traffic. The API keeps no files
-of its own: everything lives in Postgres, and images in [object storage](#object-storage). `compose.yaml` is for local development only.
+of its own: everything lives in Postgres, and images in [object storage](#object-storage).
+`compose.yaml` is for local development only.
 
 ### Recreating the database
 
@@ -221,4 +224,4 @@ You can always run **Build and release TUI** by hand from the Actions tab.
 
 Next:
 
-[Back to the start](/){: .btn .btn-green .fs-5 }
+[Postgres on a volume](/development/deploy-volume){: .btn .btn-green .fs-5 }

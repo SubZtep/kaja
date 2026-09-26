@@ -39,6 +39,7 @@ kaja -s, --session <id>   # resume a specific session
 kaja sessions             # list saved sessions with their ids
 kaja doctor               # test keys, models and tools; asks for missing keys
 kaja telegram             # run as a Telegram bot (add --headless for no terminal UI)
+kaja telegram --pair      # print a one-time code to pair one more Telegram user
 
 # Config files and abilities
 kaja config paths | fetch | diff | wizard   # see Configuration

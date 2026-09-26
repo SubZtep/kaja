@@ -2,7 +2,7 @@
 layout: page
 title: Debug flow
 parent: Development
-nav_order: 8
+nav_order: 9
 ---
 
 # Debug flow
@@ -29,3 +29,9 @@ bun session dump 01a0c1f7-2d5f-708d-b7c0-0675bb7b9597 > test.local.md
 
 Writes the session as markdown to stdout — redirect it to a `*.local.md` file (gitignored) and open it
 in any viewer that renders Mermaid. The id may be a unique prefix, so `bun session dump 01a0c1f7` works too.
+
+---
+
+Next:
+
+[Back to the start](/){: .btn .btn-green .fs-5 }

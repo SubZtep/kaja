@@ -137,28 +137,28 @@ config:
 ---
 flowchart TD
     Start(["run(agent, prompt, session, owner)"]) --> Sys{"session empty?"}
-    Sys -->|yes| Build["buildSystemPrompt()\ninstructions + env + tool\ncontracts + personas +\nsticky memory + language"]
+    Sys -->|yes| Build["buildSystemPrompt()<br>instructions + env + tool<br>contracts + personas +<br>sticky memory + language"]
     Sys -->|no, resuming| Push
-    Build --> Push["push prompt\n(or pending tool result)"]
+    Build --> Push["push prompt<br>(or pending tool result)"]
 
-    Push --> Fit["condense oversized tool results\ncompact if past compactAt"]
-    Fit --> Call["streamRound()\nOpenAI chat.completions.stream\n(too long: compact, retry once)"]
+    Push --> Fit["condense oversized tool results<br>compact if past compactAt"]
+    Fit --> Call["streamRound()<br>OpenAI chat.completions.stream<br>(too long: compact, retry once)"]
     Call -->|"delta events"| Call
 
     Call --> Empty{"empty round?"}
     Empty -->|"yes, retries left"| Nudge["push a nudge message"] --> Fit
     Empty -->|no| Calls{"tool_calls present?"}
 
-    Calls -->|none| Final["final or ask_user\n(trailing '?' backstop)"] --> Done(["return"])
+    Calls -->|none| Final["final or ask_user<br>(trailing '?' backstop)"] --> Done(["return"])
 
     Calls -->|yes| Dispatch{"which tool?"}
-    Dispatch -->|"ask_user"| AskEv["yield ask_user\nset pendingAskUserId"] --> Wait(["return — wait for host"])
-    Dispatch -->|"run_command"| Risk{"mutates:false and\nread-only allowlist?"}
-    Risk -->|yes| AutoRun["run immediately\nresult → messages"] --> Fit
-    Risk -->|no| ConfirmEv["yield confirm_command\nset pendingRunCommandId"] --> Wait
-    Dispatch -->|"switch_persona"| Switch["applyPersona()\nrewrite system message\nmaybe swap model"] --> Fit
-    Dispatch -->|"any other tool"| Exec["tool.execute(args, ctx)\nctx: owner, personaId, store"]
-    Exec -->|"text or images"| Result["result → messages\nimages also yielded for vision"] --> Fit
+    Dispatch -->|"ask_user"| AskEv["yield ask_user<br>set pendingAskUserId"] --> Wait(["return — wait for host"])
+    Dispatch -->|"run_command"| Risk{"mutates:false and<br>read-only allowlist?"}
+    Risk -->|yes| AutoRun["run immediately<br>result → messages"] --> Fit
+    Risk -->|no| ConfirmEv["yield confirm_command<br>set pendingRunCommandId"] --> Wait
+    Dispatch -->|"switch_persona"| Switch["applyPersona()<br>rewrite system message<br>maybe swap model"] --> Fit
+    Dispatch -->|"any other tool"| Exec["tool.execute(args, ctx)<br>ctx: owner, personaId, store"]
+    Exec -->|"text or images"| Result["result → messages<br>images also yielded for vision"] --> Fit
 
     classDef decision fill:#161b22,stroke:#58a6ff,color:#e6edf3
     classDef action fill:#0d1117,stroke:#1f6feb,color:#e6edf3
@@ -289,4 +289,4 @@ for the terminal to run on the user's machine. `clientTools: false` (on `createT
 
 Next:
 
-[Cloud API](/development/api){: .btn .btn-green .fs-5 }
+[API](/development/api){: .btn .btn-green .fs-5 }

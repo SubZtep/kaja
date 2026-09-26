@@ -7,8 +7,8 @@ nav_order: 5
 
 # Voice & language
 
-> [!CAUTION]
-> **Work in progress:** :lady_beetle:
+> Voice is a work in progress 🐞 — expect rough edges.
+{: .warning }
 
 ## Voice
 
@@ -58,10 +58,11 @@ Then `Ctrl+T` toggles dictation while typing, and `preferences.voice = true` rea
 
 ## Language
 
-The interface and the assistant's replies follow `preferences.locale`: `en-GB`, `hu-HU` (Magyar),
-`nan-TW` or `zh-TW` (繁體中文). The wizard asks for it first; with no saved value the system locale
-decides (Hungarian picks Magyar, anything else English). In cloud mode the web app follows the same
-four languages.
+The interface and the assistant's replies follow `preferences.locale`: `en-GB` (English), `hu-HU`
+(Magyar), `nan-TW` (臺語, Taiwanese Hokkien) or `zh-TW` (繁體中文). The wizard asks for it first; with no
+saved value the system locale decides (`LC_ALL`, `LC_MESSAGES` or `LANG`): a Hungarian, Taiwanese
+Hokkien or Traditional Chinese locale picks that language, anything else English. In cloud mode your
+account's language is used, and the web app offers the same four.
 
 Voice lags behind:
 

@@ -61,7 +61,8 @@ Conventions:
 
 - **Primary keys** are UUIDv7 (time-ordered). Most tables default to `uuidv7()`; the `nasi_*` tables take the
   id from the app, which generates it before the insert.
-- **Names** are `snake_case`, Better Auth's tables included: `auth.ts` maps each of its camelCase fields (`emailVerified` is `email_verified`, the `deviceCode` table is `device_code`).
+- **Names** are `snake_case`, Better Auth's tables included: `auth.ts` maps each of its camelCase fields
+  (`emailVerified` is `email_verified`, the `deviceCode` table is `device_code`).
 - **Types**: `timestamptz` for times, `jsonb` for structured blobs, `text[]` for lists, `boolean` for flags.
 - **Enums are `CHECK` constraints**, not Postgres enum types, so adding a value is a one-line change.
 - **Everything that belongs to a person cascades** from `user`: deleting the account deletes its sessions,
@@ -74,7 +75,7 @@ the two earlier session layouts rather than converting them. It opens in WAL mod
 
 ## PostgreSQL
 
-There are 20 tables in three groups.
+There are 22 tables in three groups.
 
 ### Accounts and access
 
@@ -233,8 +234,8 @@ erDiagram
   ability ||--o{ user_ability : "enabled as"
 ```
 
-- `ability` rows come from the repo's `marketplace/` folder, synced hourly and on demand (see [Marketplace internals](/development/marketplace)). A sync never
-  deletes: an ability that leaves gets `removed_at`, so users' selections survive and come back if it returns.
+- `ability` rows come from the repo's `marketplace/` folder, synced hourly and on demand (see
+  [Marketplace internals](/development/marketplace)). A sync never deletes: an ability that leaves gets `removed_at`, so users' selections survive and come back if it returns.
 - `user_ability` is a user's on/off switches. `marketplace_sync` is a single row that lets an unchanged
   branch skip the download.
 - Personas and datasets are `ability` rows too (type `persona` and `dataset`), synced like skills. A user
@@ -395,7 +396,7 @@ The local file is the second half of the agent state, documented table by table 
 | Tool call | `nasi_tool_call` | `tool_calls` |
 | Compaction summary | `nasi_session_summary` | `session_summaries` |
 | Summarizer call | `nasi_model_call` | `model_calls` |
-| Message image | object storage, `images/<userId>/<sessionId>/` | files, `images/<sessionId>/` |
+| Message image | object storage, `images/<userId>/<sessionId>/` | files beside the SQLite file, `files/images/<sessionId>/` |
 | Memory note | `nasi_note` | `notes` |
 | Dataset answer | `nasi_dataset_answer` | `dataset_answers` |
 | Completed dataset | `nasi_dataset_version` | `dataset_versions` |
@@ -421,7 +422,7 @@ The local file is the second half of the agent state, documented table by table 
 | **Column names** | `snake_case` | `camelCase` |
 | **Foreign keys** | always enforced | enforced only because `PRAGMA foreign_keys = ON` is set on each connection |
 | **Schema changes** | SQL migration files, re-run on every deploy | `createSchema()` on every open; a missing column is added in place, older layouts are dropped, not converted |
-| **Deleting your data** | delete the account and the cascade does it | delete the file |
+| **Deleting your data** | delete the account and the cascade does it | delete the file and the `files/` folder beside it |
 
 ### Differences that change behaviour
 

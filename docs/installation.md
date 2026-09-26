@@ -50,11 +50,13 @@ Your config files are left alone. To pick up newer defaults afterwards, `kaja co
 ## Uninstall
 
 ```sh
+kaja logout             # if you used cloud mode: removes the token from your OS credential store
 rm ~/.local/bin/kaja
 ```
 
-Local config and data are left behind — delete `~/.config/kaja` and the
-[SQLite file](/configuration/storage) yourself.
+Local config and data are left behind. To remove them too, delete `~/.config/kaja` and
+`~/.local/share/kaja` (the [local storage](/configuration/storage): the SQLite file and saved images).
+`kaja config paths` prints the exact locations if you moved them.
 
 ---
 

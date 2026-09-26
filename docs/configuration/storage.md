@@ -34,12 +34,13 @@ account. The [Database](/development/database) page compares the two.
 | `dataset_answers` | individual answers to a [dataset](/memory#datasets) field |
 | `dataset_versions` | marks a dataset as completed at a point in time |
 
-`owner` namespaces rows within one file: `null` for the terminal, a namespaced id for a Telegram
-user or a widget visitor. Sessions belonging to a different owner cannot be resumed.
+`owner` namespaces rows within one file: empty for the terminal (`null` in `sessions`), a namespaced id
+for a Telegram user or a widget visitor. Sessions belonging to a different owner cannot be resumed.
 
 ```mermaid
 erDiagram
   notes {
+    TEXT owner PK "empty = terminal"
     TEXT key PK
     TEXT content
     TEXT importance "low | medium | high"
@@ -145,8 +146,9 @@ erDiagram
 
 ## Deleting it
 
-Closing Kaja and deleting the file wipes all memory and history — there's nothing else to clean
-up.
+Close Kaja (and the Telegram bot), then delete the file, any `-wal`/`-shm` files beside it, and the
+`files/` folder next to it. That wipes all memory, history and saved images; there's nothing else to
+clean up.
 
 ---
 

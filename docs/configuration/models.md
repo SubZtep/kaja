@@ -67,7 +67,7 @@ api_key = "ollama"
 
 ## Examples
 
-Four example files live in [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config).
+Example files live in [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config).
 They are generated from
 [`catalog.toml`](https://github.com/SubZtep/kaja/blob/main/docs/config/catalog.toml), the same provider
 catalog the setup wizard writes `models.toml` from, in the combination you tick. Each example shows one

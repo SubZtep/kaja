@@ -5,7 +5,7 @@
 # Reading pages runs straight away; clicking, typing and navigating ask first.
 # Snapshots and screenshots count as reads too, unless they're asked to save a file.
 name          = "chrome-devtools"
-description   = "Open web pages in a headless Chrome, read them, take screenshots, and click or type when you approve."
+description   = "Browse web pages in a headless Chrome: read, screenshot, and click or type with your approval."
 transport     = "stdio"
 command       = "bunx"
 args          = [

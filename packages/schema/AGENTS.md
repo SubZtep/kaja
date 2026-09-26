@@ -15,16 +15,17 @@ store/       # SQLite-backed runtime state (sessions, memory notes) used by @kaj
 cli/         # Datasets (re-exports abilities/persona.ts)
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
 abilities/    # Marketplace ability content (SKILL.md frontmatter, HTTP tool, MCP and persona manifests), shared by every host that loads abilities
-env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, TuiEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
-  index.ts     # re-exports api/web/tui/helpers
+env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, SandboxEnvSchema, TuiEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)
+  index.ts     # re-exports api/web/sandbox/tui/helpers
   api.ts       # ApiEnvSchema — every var apps/api reads
   web.ts       # WebEnvSchema — every var apps/web reads
+  sandbox.ts   # SandboxEnvSchema — every var apps/sandbox reads
   tui.ts       # TuiEnvSchema — KAJA_API_URL, KAJA_LOG_LEVEL, KAJA_LOG_FILE (locale vars and a hyperlink-support workaround stay plain process.env reads)
   helpers.ts   # trimmed/bool/positiveInt/url field helpers, parseEnv(schema, source)
 tombi/       # TOML<->JSON schema generator, wired into root `generate:schemas`
 ```
 
-Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`, `@kaja/schema/abilities`, `@kaja/schema/env`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
+Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli`, `@kaja/schema/nasi`, `@kaja/schema/abilities`, `@kaja/schema/env`, `@kaja/schema/tombi`) — there is no bare `@kaja/schema` import. Pick the subpath by what the schema describes, not by which app happens to consume it.
 
 ## Conventions
 
@@ -39,7 +40,9 @@ Each directory is its own subpath export (`@kaja/schema/api`, `@kaja/schema/conf
 
 - `@kaja/api` — request validation / OpenAPI (`@kaja/schema/api`)
 - `@kaja/web` — form and type alignment (`@kaja/schema/api`)
-- `@kaja/tui` — local config/store/domain schemas (`@kaja/schema/config`, `/store`, `/cli`, `/env`'s `TuiEnvSchema`)
+- `@kaja/tui` — local config/store/domain schemas (`@kaja/schema/config`, `/store`, `/cli`, `/abilities`, `/env`'s `TuiEnvSchema`)
+- `@kaja/nasi` — turn contract, store rows and ability manifests (`@kaja/schema/nasi`, `/store`, `/abilities`)
+- `@kaja/sandbox` — its env (`/env`'s `SandboxEnvSchema`) and MCP manifests (`/abilities`)
 - CLI device/client id constant: `KAJA_TUI_CLIENT_ID = "kaja-tui"` (in `api/index.ts`)
 
 ## Boundaries

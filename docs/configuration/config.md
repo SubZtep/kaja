@@ -74,7 +74,7 @@ steer it: `/compact keep the SQL decisions`.
 
 A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed before
 the model sees it, in parts when it's more than the summarising model can take in at once. The terminal
-shows a line such as `web_fetch output condensed: 40,000 → 2,000 tokens`. The full output stays in the
+shows a line such as `fetch_url output condensed: 40,000 → 2,000 tokens`. The full output stays in the
 saved conversation.
 
 Images (a screenshot a tool took, say) are sent to the model for your latest two messages; older ones are

@@ -22,26 +22,28 @@ flowchart TD
 
     P --> L["/ landing"]
     P --> S["/signin · /signup<br>/reset-password"]
-    P --> D["/device · /device/approve"]
+    P --> D["/device · /device/approve<br>/device/done"]
 
     A --> DA["/dashboard"]
     A --> AB["/abilities · /welcome"]
     A --> W["/widget"]
     A --> PR["/profile"]
     A --> AD["/admin<br><small>admin-only layout</small>"]
+    AD --> AD2["/admin/dashboard"]
     AD --> U["/admin/users · /admin/users/$userId"]
     AD --> M["/admin/models"]
 ```
 
 ## Public
 
-The landing page at `/` is a set of sections — hero, why-kaja, personas, configuration, memory and
-datasets, install instructions — plus a live **barkochba game** driven by the same
-[widget](/widget) turn endpoint a third-party site would use. It talks to the API by plain fetch
-rather than importing the widget workspace, precisely so it exercises the public contract.
+The landing page at `/` is four sections: a hero, a showcase carousel, a feature strip and install
+instructions. The carousel holds a live **barkochba game** driven by the same [widget](/widget) turn
+endpoint a third-party site would use, and a card that opens the chat widget when the site has a chat
+widget key. The game talks to the API by plain fetch rather than importing the widget workspace,
+precisely so it exercises the public contract.
 
-`/device` and `/device/approve` are where the CLI's device login lands: sign in, confirm the code
-the terminal printed, done.
+`/device`, `/device/approve` and `/device/done` are where the CLI's device login lands: sign in,
+confirm the code the terminal printed, done.
 
 ## Signed in
 
@@ -59,6 +61,7 @@ role, sending anyone else to the dashboard. The menu hides the item and the layo
 | `/welcome` | the same list without personas, shown right after sign-up |
 | `/widget` | [widget keys](/widget#getting-a-key): create, edit, disable, delete |
 | `/profile` | your own account: name and avatar, email, password |
+| `/admin/dashboard` | what the platform's services are doing right now, starting with the MCP sandbox (`/admin` redirects here) |
 | `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |
 | `/admin/models` | providers and their models, per task |
 

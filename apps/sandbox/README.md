@@ -123,7 +123,7 @@ The real image, as production runs it (amd64 only: Chrome for Testing has no Lin
 docker compose up -d sandbox
 ```
 
-For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SANDBOX_URL` (`http://localhost:3002`, or `http://sandbox:3002` inside compose). Deploying to production is covered in [Deployment](../../docs/development/deployment.md#mcp-sandbox).
+For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SANDBOX_URL` (`http://localhost:3002`, or `http://sandbox:3002` inside compose). Deploying to production is covered in [Deployment](https://docs.kaja.io/development/deployment#mcp-sandbox).
 
 ## Configuration
 

@@ -51,9 +51,9 @@ bug report.
 `kaja config fetch` takes `models.toml` from the Kaja server's admin-managed catalog, or from the
 templates bundled in the binary when you're offline or pass `--offline`. `secrets.toml` comes from
 the bundled template, with every section commented out, and is only written when you don't have one
-yet: once it holds a key it's left alone, so fetching never loses your keys. `--only models` or `--only secrets` limits it to one file. It never touches `settings.toml`,
-`abilities.toml` or `mcp.toml`. Use it to pick up new defaults after an upgrade, or to recover a broken
-file.
+yet: once it holds a key it's left alone, so fetching never loses your keys. `--only models` or
+`--only secrets` limits it to one file. It never touches `settings.toml`, `abilities.toml` or `mcp.toml`.
+Use it to pick up new defaults after an upgrade, or to recover a broken file.
 
 ## Checking keys and models
 

@@ -4,21 +4,29 @@ Repo-wide dev/ops utilities, run from the monorepo root with `bun run scripts/<n
 
 ## Env schema tooling
 
-Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebEnvSchema`, `TuiEnvSchema`). Edit the schemas there, then regenerate — never hand-edit the generated output.
+Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebEnvSchema`, `SandboxEnvSchema`, `TuiEnvSchema`). Edit the schemas there, then regenerate — never hand-edit the generated output.
 
 - **`env.ts`** — generates each app's `.env.example` from its Zod env schema.
   ```sh
-  bun run generate:env    # write apps/{api,web}/.env.example
+  bun run generate:env    # write apps/{api,web,sandbox}/.env.example (apps/tui's is hand-written)
   bun run check:env       # regenerate in memory, diff against disk, exit 1 on drift
-                           # (also fails if compose.yaml's api/web services reference an unknown key)
+                           # (also fails if compose.yaml's api/web/sandbox services reference an unknown key)
   ```
 - **`env-types.ts`** — generates each workspace's ambient `Bun.Env` typing (`declare module "bun" { interface Env {...} } `) from the same schemas, so `process.env.FOO` autocompletes and gets a doc comment.
   ```sh
-  bun run generate:env-types    # write apps/api/src/env.d.ts, apps/web/src/env.d.ts, apps/tui/env.d.ts
+  bun run generate:env-types    # write apps/{api,web,sandbox}/src/env.d.ts and apps/tui/env.d.ts
   ```
 - **`lib/env-schema.ts`** — shared field-introspection helper (`inspectFields`) used by both generators above; not a standalone script.
 
 Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true`), triggered when `packages/schema/env/*.ts` changes (`env.ts` also watches `.env.example`, `compose.yaml`, `apps/*/disco.json`). `check:env` also runs in CI.
+
+## Model defaults
+
+- **`models.ts`** — writes the example `docs/config/models.*.toml` files from `docs/config/catalog.toml` (through `apps/tui/lib/models/catalog.ts`), formatted the way `tombi format` would leave them.
+  ```sh
+  bun generate:models   # rewrite docs/config/models.*.toml (pre-commit does this when the catalog changes)
+  bun check:models      # exit 1 if they've drifted from the catalog (CI and the catalog test)
+  ```
 
 ## Locale sync
 
@@ -44,4 +52,8 @@ Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true
 - **`mass_user_create.ts`** — creates N random users against a locally running API (`POST /auth/sign-up/email`), 10 by default.
   ```sh
   bun run ./scripts/mass_user_create.ts [number]
+  ```
+- **`barkochba.ts`** — self-plays Barkochba (twenty questions): a guesser driven by `marketplace/personas/barkochba.toml` against a thinker that holds the secret. Reads your local `models.toml`/`secrets.toml` and calls the chat endpoint directly, with no workspace deps.
+  ```sh
+  bun run scripts/barkochba.ts ["the secret thing"]
   ```

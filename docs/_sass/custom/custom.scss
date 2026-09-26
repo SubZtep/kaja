@@ -19,6 +19,10 @@
   color: $body-heading-color;
 }
 
+.main-content h1:first-of-type {
+  margin-bottom: 0.5em;
+}
+
 .main-content h2 {
   margin-bottom: 1rem;
 }
@@ -40,4 +44,5 @@
 .main-content code {
   font-size: 0.95em;
   padding: 0.22em !important;
+  background-color: #121212;
 }
