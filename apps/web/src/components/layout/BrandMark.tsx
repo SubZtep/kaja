@@ -22,7 +22,7 @@ export function BrandMark({
           alt={m.brand_monster_alt()}
           width={324}
           height={108}
-          className="h-7 w-auto opacity-90"
+          className="h-7 w-auto opacity-90 hidden sm:block"
         />
       ) : (
         <span className="text-neon">&gt;</span>
