@@ -2,7 +2,7 @@
 layout: page
 title: MCP servers
 parent: Abilities
-nav_order: 5
+nav_order: 6
 ---
 
 # MCP servers

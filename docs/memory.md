@@ -2,7 +2,7 @@
 layout: page
 title: Memory & datasets
 parent: Abilities
-nav_order: 6
+nav_order: 7
 ---
 
 # Memory & datasets

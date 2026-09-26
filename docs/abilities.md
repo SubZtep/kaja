@@ -10,7 +10,8 @@ has_children: true
 Everything Kaja can do beyond its [built-in tools](/tools) is an **ability**: a persona, skill, HTTP
 tool, MCP server or dataset. They come from the **marketplace**, a curated
 [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace) folder in the Kaja repo, and in
-local mode from files you write yourself.
+local mode from files you write yourself. Each one plugs into [Nasi](/nasi), the agent at the heart of
+Kaja.
 
 | Kind | What it gives the agent | Read more |
 | --- | --- | --- |
@@ -111,4 +112,4 @@ works is on [Marketplace internals](/development/marketplace).
 
 Next:
 
-[Personas](/personas){: .btn .btn-green .fs-5 }
+[Nasi](/nasi){: .btn .btn-green .fs-5 }

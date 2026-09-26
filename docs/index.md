@@ -50,7 +50,7 @@ In **cloud mode**, sessions and memory are stored server-side against your accou
 | **skill** | a folder of instructions the agent loads when a request matches it |
 | **dataset** | a questionnaire a persona fills in over time |
 | **front door** | a way in to the agent: terminal, Telegram or widget |
-| **Nasi** | the agent core every front door runs, `@kaja/nasi` |
+| **Nasi** | Kaja's brain: the agent every front door runs ([more](/nasi)) |
 
 ---
 

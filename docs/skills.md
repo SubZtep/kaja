@@ -2,7 +2,7 @@
 layout: page
 title: Skills
 parent: Abilities
-nav_order: 2
+nav_order: 3
 ---
 
 # Skills
