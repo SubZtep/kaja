@@ -11,7 +11,7 @@ COPY apps/sandbox ./apps/sandbox
 # One executable with Bun inside, so the runtime image needs no Bun of its own.
 RUN bun run --filter @kaja/sandbox build
 
-# chrome-devtools-mcp and the Chrome for Testing headless shell its Puppeteer is tested with (amd64 only: no Linux arm64 builds).
+# chrome-devtools-mcp and the Chrome for Testing headless shell its Puppeteer is tested with (amd64 only: no Linux arm64 builds; 149+ for overrides.json's URL allowlist).
 FROM node:22-trixie-slim AS mcp
 ARG CHROME_DEVTOOLS_MCP_VERSION=1.10.1
 ARG CHROME_HEADLESS_SHELL_VERSION=153.0.8010.36

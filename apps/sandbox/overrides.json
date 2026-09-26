@@ -7,7 +7,9 @@
       "--isolated",
       "--executablePath=/opt/chrome/chrome-headless-shell",
       "--chromeArg=--no-sandbox",
-      "--usageStatistics=false"
+      "--usageStatistics=false",
+      "--allowedUrlPattern=http://*",
+      "--allowedUrlPattern=https://*"
     ]
   }
 }

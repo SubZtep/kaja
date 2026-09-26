@@ -16,7 +16,7 @@ src/app.ts        # Hono routes: GET /health, ALL /mcp/:ability (token check)
 src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES, 503 past it)
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
 src/manifests.ts  # the stdio manifests it may run, plus overrides.json
-overrides.json    # the Docker image's command/args for chrome-devtools (Node + Chrome for Testing headless shell, --no-sandbox)
+overrides.json    # the Docker image's command/args for chrome-devtools (Node + Chrome for Testing headless shell, --no-sandbox, http(s) pages only)
 Dockerfile        # the sandbox compiled to one binary (bun build --compile) on node:22-trixie-slim
 ```
 
@@ -32,6 +32,7 @@ Dockerfile        # the sandbox compiled to one binary (bun build --compile) on 
 
 - Commands only ever come from the sandbox's own manifests (`MARKETPLACE_DIR/mcp`) and `SANDBOX_OVERRIDES`; a request only names the ability
 - A child gets PATH, a throwaway HOME (removed when it stops) and its manifest's `env`, nothing else from the sandbox's environment
+- Chrome only opens `http://` and `https://` (`--allowedUrlPattern` in `overrides.json`): every user's browser runs as the same `node` user, so a `file://` page could read another user's profile under `/tmp`. The allowlist needs Chrome 149+
 - Every new API turn opens a new MCP session; the relay answers later `initialize` calls from the first one, so the server's state (a browser's pages) survives between turns
 - Server-to-client requests (sampling, roots, elicitation) get "method not found"; only ping is answered
 

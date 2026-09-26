@@ -65,6 +65,18 @@ describe("manifests", () => {
     expect([...servers.keys()]).toEqual(["counter"])
     expect(servers.get("counter")!.command).toBe(process.execPath)
   })
+
+  test("the image's Chrome only opens http(s) pages, never file://", async () => {
+    const shipped = await loadSandboxServers(
+      join(import.meta.dir, "../../../marketplace"),
+      join(import.meta.dir, "../overrides.json")
+    )
+    const args = shipped.get("chrome-devtools")!.args
+    expect(args.filter(arg => arg.startsWith("--allowedUrlPattern="))).toEqual([
+      "--allowedUrlPattern=http://*",
+      "--allowedUrlPattern=https://*"
+    ])
+  })
 })
 
 describe("auth", () => {
