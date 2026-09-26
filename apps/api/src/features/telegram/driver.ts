@@ -217,7 +217,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     return withLock(`telegram:${owner}`, async () => {
       try {
         const latest = resume ? await createPostgresStore(pool, ownerUserId).loadLatestSession(owner) : undefined
-        if (!latest) return void (await sender.sendMessage(chatId, t("telegram.nothingToCompact")))
+        if (!latest) {
+          await sender.sendMessage(chatId, t("telegram.nothingToCompact"))
+          return
+        }
         const nasi = await openNasiFor({ userId: ownerUserId, owner, pinnedModel: latest.model })
         try {
           const result = await nasi.compact(latest.id, focus || undefined)
@@ -228,7 +231,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       } catch (error) {
         reportError("Telegram compaction failed", error)
         const { category, message } = categorizeError(error)
-        await sender.sendMessage(chatId, `⚠ ${t(`telegram.error.${category}`)}: ${message}`)
+        const label = t(`telegram.error.${category}`)
+        await sender.sendMessage(chatId, `⚠ ${label}: ${message}`)
       }
     })
   }

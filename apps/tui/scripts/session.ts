@@ -142,8 +142,8 @@ export function resolveTerminalSessionId(db: Database, idOrPrefix: string): stri
   if (idOrPrefix.length === 0) throw new Error("Session id is required.")
   const rows = db
     .query(
-      `SELECT id FROM sessions
-       WHERE owner IS NULL AND (id = $id OR id LIKE $like ESCAPE '\\')
+      String.raw`SELECT id FROM sessions
+       WHERE owner IS NULL AND (id = $id OR id LIKE $like ESCAPE '\')
        ORDER BY updatedAt DESC, id DESC`
     )
     .all({ $id: idOrPrefix, $like: likePrefix(idOrPrefix) }) as { id: string }[]
@@ -242,7 +242,8 @@ export function renderSessionMarkdown(db: Database, id: string, dbPath: string):
 }
 
 function likePrefix(id: string): string {
-  return `${id.replace(/[\\%_]/g, char => `\\${char}`)}%`
+  const escaped = id.replace(/[\\%_]/g, char => `\\${char}`)
+  return `${escaped}%`
 }
 
 function formatTable(headers: string[], rows: string[][]): string {
@@ -337,22 +338,26 @@ function renderOverview(
   callsByCallId: Map<string, ToolCallRow>,
   events: EventRow[]
 ): string {
-  const lines = ["```mermaid", "sequenceDiagram", "    autonumber"]
-  lines.push("    box rgba(219, 234, 254, 0.35) Front door")
-  lines.push("    actor User")
-  lines.push("    end")
-  lines.push("    box rgba(254, 243, 199, 0.35) Agent loop")
-  lines.push("    participant Agent")
-  lines.push("    participant Model")
-  lines.push("    end")
-  lines.push("    box rgba(220, 252, 231, 0.35) Execution")
-  lines.push("    participant Tools")
-  lines.push("    participant Host")
-  lines.push("    end")
-  lines.push("    box rgba(229, 231, 235, 0.35) Persistence")
-  lines.push("    participant Store")
-  lines.push("    participant Timeline")
-  lines.push("    end")
+  const lines = [
+    "```mermaid",
+    "sequenceDiagram",
+    "    autonumber",
+    "    box rgba(219, 234, 254, 0.35) Front door",
+    "    actor User",
+    "    end",
+    "    box rgba(254, 243, 199, 0.35) Agent loop",
+    "    participant Agent",
+    "    participant Model",
+    "    end",
+    "    box rgba(220, 252, 231, 0.35) Execution",
+    "    participant Tools",
+    "    participant Host",
+    "    end",
+    "    box rgba(229, 231, 235, 0.35) Persistence",
+    "    participant Store",
+    "    participant Timeline",
+    "    end"
+  ]
 
   if (systemPrompt != null) lines.push("    Agent->>Model: Build system prompt")
   if (events.length === 0) {
@@ -399,16 +404,21 @@ function eventBlurb(event: EventRow): string {
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return event.type
   const data = payload as Record<string, unknown>
-  if (event.type === "tool_call" || event.type === "client_tool_call") return String(data.name ?? event.type)
-  if (event.type === "confirm_command" || event.type === "confirm_tool") {
-    return String(data.command ?? data.name ?? event.type)
+  // The first of `keys` holding a plain value, else the event type.
+  const pick = (...keys: string[]) => {
+    const value = keys.map(key => data[key]).find(v => v != null)
+    return typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+      ? String(value)
+      : event.type
   }
-  if (event.type === "error") return String(data.category ?? data.text ?? event.type)
-  if (event.type === "usage") return String(data.model ?? event.type)
-  if (event.type === "tool_approval") return String(data.approved ?? event.type)
-  if (event.type === "ask_user") return String(data.question ?? event.type)
-  if (event.type === "tool_image") return String(data.path ?? event.type)
-  if (event.type === "display_image") return String(data.alt ?? event.type)
+  if (event.type === "tool_call" || event.type === "client_tool_call") return pick("name")
+  if (event.type === "confirm_command" || event.type === "confirm_tool") return pick("command", "name")
+  if (event.type === "error") return pick("category", "text")
+  if (event.type === "usage") return pick("model")
+  if (event.type === "tool_approval") return pick("approved")
+  if (event.type === "ask_user") return pick("question")
+  if (event.type === "tool_image") return pick("path")
+  if (event.type === "display_image") return pick("alt")
   if (typeof data.content === "string") return data.content
   if (typeof data.text === "string") return data.text
   if (typeof data.label === "string") return data.label
@@ -535,7 +545,7 @@ function renderNote(note: NoteRow): string {
 function tagList(stored: string): string {
   try {
     const parsed = JSON.parse(stored)
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(tag => String(tag)).join(", ")
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(String).join(", ")
   } catch {
     return stored
   }
@@ -634,8 +644,10 @@ async function run(args: string[]) {
 }
 
 if (import.meta.main) {
-  run(process.argv.slice(2)).catch(error => {
+  try {
+    await run(process.argv.slice(2))
+  } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     process.exit(1)
-  })
+  }
 }

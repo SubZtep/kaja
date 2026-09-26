@@ -44,7 +44,7 @@ voice = false
 | Field | Purpose |
 | --- | --- |
 | `mode` | `local` or `cloud` — what a plain `kaja` starts; see [Cloud or local](/getting-started/modes#which-mode-a-launch-uses) |
-| `locale` | `en-GB`, `hu-HU`, `nan-TW` or `zh-TW` — the UI and the assistant's replies ([Language](/using/voice#language)) |
+| `locale` | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW` — the UI and the assistant's replies ([Language](/using/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |

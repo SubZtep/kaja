@@ -199,9 +199,10 @@ export function uniqueModelSlug(taken: ReadonlySet<string>, model: string, provi
   const base = modelSlug(model)
   if (!taken.has(base)) return base
   const withProvider = `${base}-${modelSlug(provider)}`
-  let id = withProvider
-  for (let n = 2; taken.has(id); n++) id = `${withProvider}-${n}`
-  return id
+  if (!taken.has(withProvider)) return withProvider
+  let n = 2
+  while (taken.has(`${withProvider}-${n}`)) n++
+  return `${withProvider}-${n}`
 }
 
 /** Drops trailing slashes, e.g. "https://kaja.io//" → "https://kaja.io". A loop, since `/\/+$/` backtracks on long runs of slashes. */

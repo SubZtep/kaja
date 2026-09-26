@@ -21,6 +21,7 @@ const OG_IMAGE = "https://kaja.io/og-image.png"
 
 const OG_LOCALE: Record<Locale, string> = {
   "en-GB": "en_GB",
+  "en-US": "en_US",
   "hu-HU": "hu_HU",
   "nan-TW": "nan_TW",
   "zh-TW": "zh_TW"

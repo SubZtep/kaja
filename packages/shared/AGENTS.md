@@ -21,7 +21,7 @@ locale.ts               # locales, Locale, LOCALE_LABELS, matchLocale — suppor
 - **`isPrivateAddress` / `isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT addresses (the API's fetch guard and the sandbox's egress proxy share it)
 - **`randomUUIDv7`** — time-ordered UUIDv7 generator
 - **`titleCase`** — hyphen/underscore/space-separated label to Title Case
-- **`locales` / `Locale` / `LOCALE_LABELS` / `matchLocale`** — supported UI locale codes (`en-GB`, `hu-HU`, `nan-TW`, `zh-TW`), their native display names, and matching any language tag to one
+- **`locales` / `Locale` / `LOCALE_LABELS` / `matchLocale`** — supported UI locale codes (`en-GB`, `en-US`, `hu-HU`, `nan-TW`, `zh-TW`), their native display names, and matching any language tag to one
 - **`modelSlug` / `uniqueModelSlug`** — the `[models.<id>]` id the wizard derives from a provider's model name
 
 ## Conventions

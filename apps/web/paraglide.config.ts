@@ -11,6 +11,7 @@ export const paraglideOptions: CompilerOptions = {
     {
       pattern: "/:path(.*)?",
       localized: [
+        ["en-US", "/en-US/:path(.*)?"],
         ["hu-HU", "/hu-HU/:path(.*)?"],
         ["nan-TW", "/nan-TW/:path(.*)?"],
         ["zh-TW", "/zh-TW/:path(.*)?"],

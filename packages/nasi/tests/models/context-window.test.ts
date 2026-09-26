@@ -73,7 +73,7 @@ test("nothing reported: the fallback, and the server is asked only once per mode
   expect(await resolveContextWindow(target, fetchFn)).toEqual({ tokens: DEFAULT_CONTEXT_WINDOW, source: "fallback" })
   const asked = calls.length
   await resolveContextWindow(target, fetchFn)
-  expect(calls.length).toBe(asked)
+  expect(calls).toHaveLength(asked)
 })
 
 test("a probe that throws counts as no answer", async () => {
