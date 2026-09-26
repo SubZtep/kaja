@@ -12,10 +12,10 @@ nav_order: 5
 
 ## Voice
 
-Mic dictation and spoken replies work in [local mode](/modes#local-mode), through a
+Mic dictation and spoken replies work in [local mode](/getting-started/modes#local-mode), through a
 [Speaches AI](https://github.com/speaches-ai/speaches) server by default. Any compatible STT/TTS
 provider works: the model goes in `models.toml`, the endpoint in `settings.toml`. Ticking Speaches in
-the [setup wizard](/wizard) writes both for you.
+the [setup wizard](/getting-started/wizard) writes both for you.
 
 1. Run a Speaches server (or equivalent).
 2. Declare the models in [`models.toml`](/configuration/models):

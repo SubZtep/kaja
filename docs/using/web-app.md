@@ -18,7 +18,7 @@ offered. Either way, two boxes come first: that you're 18 or over and accept the
 A Google account can only be created from the sign-up page; on the sign-in page it only signs in.
 Forgotten passwords are reset from the sign-in page.
 
-The terminal's [device login](/modes#cloud-mode) also lands here: open
+The terminal's [device login](/getting-started/modes#cloud-mode) also lands here: open
 [kaja.io/device](https://kaja.io/device), sign in, and confirm the code the terminal printed.
 
 ## Pages
@@ -28,7 +28,7 @@ The terminal's [device login](/modes#cloud-mode) also lands here: open
 | **Welcome** | shown once after sign-up: the ability list, to pick what you start with |
 | **Dashboard** | your usage — sessions, messages, tokens and latency, broken down by day, channel, tool, persona and model — and the **Connect Telegram** card |
 | **Abilities** | turn skills, HTTP tools and MCP servers on and off, save the keys they need, then pick your personas |
-| **Widget** | create, edit, disable and delete [widget keys](/widget#getting-a-key) |
+| **Widget** | create, edit, disable and delete [widget keys](/using/widget#getting-a-key) |
 | **Profile** | your name and avatar, email and password, and deleting your account with everything stored with it |
 
 What the Abilities page can offer, and how keys are kept, is on
@@ -44,4 +44,4 @@ edited (left blank, it is asked from the provider), and a free model with the `s
 
 Next:
 
-[Telegram](/telegram){: .btn .btn-green .fs-5 }
+[Telegram](/using/telegram){: .btn .btn-green .fs-5 }

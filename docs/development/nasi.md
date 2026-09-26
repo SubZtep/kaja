@@ -258,7 +258,7 @@ Skills, HTTP tools, MCP servers and personas come from an `AbilityStore` the hos
 `marketplace/` folder through `createFolderAbilityStore`, the API reads its Postgres copy of the catalog.
 `loadAbilities` turns a store's enabled abilities into extra tools for the host to append, and one that
 can't load (a broken manifest, a required key the user hasn't saved) is left out instead of stopping the
-agent. See [Skills](/skills), [Tools](/tools) and [Personas](/personas) for what each kind does.
+agent. See [Skills](/abilities/skills), [Tools](/abilities/tools) and [Personas](/abilities/personas) for what each kind does.
 
 ## Warnings
 
@@ -270,7 +270,7 @@ set: the API prints them, and the terminal appends them to its opt-in log file, 
 
 `createTools({ includeLocalTools })` decides the registry. The default is **off**: only an explicit
 allowlist of cloud-safe built-ins is returned, so a newly added tool is never cloud-exposed by
-accident. Turning it on adds file, shell, MCP, and plugin tools. See [Tools](/tools) for the
+accident. Turning it on adds file, shell, MCP, and plugin tools. See [Tools](/abilities/tools) for the
 resulting list.
 
 Some built-ins are gated on a **dep** as well as the allowlist — they only register when the host

@@ -30,9 +30,9 @@ Listen first. Reflect back what you heard before offering anything.
 | `label` | display name (required) |
 | `instructions` | system-prompt text for this persona |
 | `when` | short clause telling the model when to switch here on its own |
-| `dataset` | id of a [dataset](/memory#datasets) this persona collects |
+| `dataset` | id of a [dataset](/abilities/memory#datasets) this persona collects |
 | `models` | a model id per task from your [`models.toml`](/configuration/models), e.g. `chat = "reasoning-chat"` |
-| `skills` | [skills](/skills) this persona may use; unset means every enabled skill, `[]` means none |
+| `skills` | [skills](/abilities/skills) this persona may use; unset means every enabled skill, `[]` means none |
 | sampling | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
 
 > Kaja already tells the model that questions go through the `ask_user` tool, and how to collect a
@@ -43,7 +43,7 @@ Listen first. Reflect back what you heard before offering anything.
 
 Every persona's `when` clause goes into the system prompt, so the model can call `switch_persona` on
 its own mid-conversation. A persona without `when` is only reachable from the
-[persona picker](/tui#key-bar).
+[persona picker](/using/tui#key-bar).
 
 - **automatic** (`switch_persona`) keeps the current conversation going;
 - **manual** (the picker) starts a fresh one. It isn't saved: every launch starts from `default`.
@@ -52,7 +52,7 @@ A persona with a `models` pin swaps the model too; otherwise the current one is 
 your `models.toml` doesn't have — expected for a persona written elsewhere — falls back to that task's
 default model instead of failing to load.
 
-Both work in cloud mode as well, among the personas you turned on in the [web app](/web-app).
+Both work in cloud mode as well, among the personas you turned on in the [web app](/using/web-app).
 
 ## Shipped personas
 
@@ -61,7 +61,7 @@ Both work in cloud mode as well, among the personas you turned on in the [web ap
 | `default` | fallback for anything no other persona fits |
 | `care` | self-care companion — listens, reflects, doesn't lecture |
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
-| `onboarding` | walks a new user through the [`onboarding` profile](/memory#the-onboarding-profile) |
+| `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile) |
 
 Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 
@@ -69,4 +69,4 @@ Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/
 
 Next:
 
-[Skills](/skills){: .btn .btn-green .fs-5 }
+[Skills](/abilities/skills){: .btn .btn-green .fs-5 }

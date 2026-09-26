@@ -66,4 +66,4 @@ addresses are refused, on every redirect too. Keys and approvals work as describ
 
 Next:
 
-[MCP servers](/mcp){: .btn .btn-green .fs-5 }
+[MCP servers](/abilities/mcp){: .btn .btn-green .fs-5 }

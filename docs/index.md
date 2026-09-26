@@ -20,16 +20,16 @@ There are two ways to run it:
 | Sessions & memory stored | Postgres, server-side | SQLite, in your home dir |
 | Shell, files, your own MCP servers and plugins | ✗ | ✓ |
 
-[Cloud or local](/modes) has the full comparison and how a launch picks one.
+[Cloud or local](/getting-started/modes) has the full comparison and how a launch picks one.
 
 ## What's in the box
 
-- **[Terminal UI](/tui)** — the keyboard-driven chat client.
-- **[Telegram](/telegram)** and a **[website widget](/widget)** — the same agent, elsewhere.
-- **[Web app](/web-app)** — your kaja.io account: abilities, keys, widgets, Telegram link, usage.
-- **[Abilities](/abilities)** — [personas](/personas), [skills](/skills), [HTTP tools](/http-tools) and
-  [MCP servers](/mcp) from the marketplace, plus the [built-in tools](/tools).
-- **[Memory & datasets](/memory)** — long-term notes and structured questionnaires.
+- **[Terminal UI](/using/tui)** — the keyboard-driven chat client.
+- **[Telegram](/using/telegram)** and a **[website widget](/using/widget)** — the same agent, elsewhere.
+- **[Web app](/using/web-app)** — your kaja.io account: abilities, keys, widgets, Telegram link, usage.
+- **[Abilities](/abilities)** — [personas](/abilities/personas), [skills](/abilities/skills), [HTTP tools](/abilities/http-tools) and
+  [MCP servers](/abilities/mcp) from the marketplace, plus the [built-in tools](/abilities/tools).
+- **[Memory & datasets](/abilities/memory)** — long-term notes and structured questionnaires.
 - **[Configuration](/configuration)** — the TOML files behind local mode.
 
 ## Data safety
@@ -50,10 +50,10 @@ In **cloud mode**, sessions and memory are stored server-side against your accou
 | **skill** | a folder of instructions the agent loads when a request matches it |
 | **dataset** | a questionnaire a persona fills in over time |
 | **front door** | a way in to the agent: terminal, Telegram or widget |
-| **Nasi** | Kaja's brain: the agent every front door runs ([more](/nasi)) |
+| **Nasi** | Kaja's brain: the agent every front door runs ([more](/abilities/nasi)) |
 
 ---
 
 Next:
 
-[Installation](/installation){: .btn .btn-green .fs-5 }
+[Installation](/getting-started/installation){: .btn .btn-green .fs-5 }

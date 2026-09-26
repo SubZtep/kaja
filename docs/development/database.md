@@ -9,7 +9,7 @@ nav_order: 3
 
 Kaja has two databases, and they are deliberately not the same size. The **cloud** keeps everything the
 platform needs in **PostgreSQL**: accounts, server config, the ability catalog, widgets, Telegram links,
-users' secrets, and the agent's own state. The **terminal** in [local mode](/modes) keeps only that last
+users' secrets, and the agent's own state. The **terminal** in [local mode](/getting-started/modes) keeps only that last
 part — one person's conversations, memory and dataset answers — in a single **SQLite** file. Everything
 else a local install needs is a file: [`settings.toml`, `models.toml`, `mcp.toml`, `abilities.toml`](/configuration).
 

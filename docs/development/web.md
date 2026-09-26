@@ -37,7 +37,7 @@ flowchart TD
 ## Public
 
 The landing page at `/` is four sections: a hero, a showcase carousel, a feature strip and install
-instructions. The carousel holds a live **barkochba game** driven by the same [widget](/widget) turn
+instructions. The carousel holds a live **barkochba game** driven by the same [widget](/using/widget) turn
 endpoint a third-party site would use, and a card that opens the chat widget when the site has a chat
 widget key. The game talks to the API by plain fetch rather than importing the widget workspace,
 precisely so it exercises the public contract.
@@ -57,9 +57,9 @@ role, sending anyone else to the dashboard. The menu hides the item and the layo
 | Route | What it is |
 | --- | --- |
 | `/dashboard` | a welcome, the Telegram connect card, and your [usage stats](/development/api#usage-stats--stats) |
-| `/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in a section of their own; admins also get the marketplace sync panel ([user guide](/web-app)) |
+| `/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in a section of their own; admins also get the marketplace sync panel ([user guide](/using/web-app)) |
 | `/welcome` | the same list without personas, shown right after sign-up |
-| `/widget` | [widget keys](/widget#getting-a-key): create, edit, disable, delete |
+| `/widget` | [widget keys](/using/widget#getting-a-key): create, edit, disable, delete |
 | `/profile` | your own account: name and avatar, email, password |
 | `/admin/dashboard` | what the platform's services are doing right now, starting with the MCP sandbox (`/admin` redirects here) |
 | `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |

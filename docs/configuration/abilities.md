@@ -28,7 +28,7 @@ personas = ["care", "barkochba"]
 - `default` is always loaded and needn't be listed.
 - Datasets aren't listed: every one in the folder is available to the personas that name it.
 - A listed ability that's missing or broken is skipped with a warning; the rest still load.
-- The [local Telegram bot](/telegram#local-bot) reads this once at start, so restart it after a change.
+- The [local Telegram bot](/using/telegram#local-bot) reads this once at start, so restart it after a change.
 
 ## `[source]`
 

@@ -7,7 +7,7 @@ nav_order: 5
 
 # Local storage
 
-In [local mode](/modes) everything Kaja remembers lives in one SQLite file on your machine —
+In [local mode](/getting-started/modes) everything Kaja remembers lives in one SQLite file on your machine —
 `~/.local/share/kaja/` by default (XDG), overridable with `[memory] dbPath` in
 [`settings.toml`](/configuration/config). `kaja config paths` prints the resolved location.
 
@@ -24,14 +24,14 @@ account. The [Database](/development/database) page compares the two.
 
 | Table | Holds |
 | --- | --- |
-| `notes` | the agent's long-term [memory](/memory) about you |
+| `notes` | the agent's long-term [memory](/abilities/memory) about you |
 | `sessions` | one row per conversation, listed by `kaja sessions` and resumable with `-c` / `-s` |
 | `messages` | the conversation itself, one row per message (the assistant's rows are its steps, with model, tokens and latency) |
 | `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took; a result too big for the context also keeps the condensed version the model was sent |
 | `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into; the messages themselves are never deleted |
 | `model_calls` | each request that wrote a summary (compacting, condensing, the `summarize` tool): model, tokens and time |
 | `session_events` | the terminal timeline (what the screen showed), replayed when you resume |
-| `dataset_answers` | individual answers to a [dataset](/memory#datasets) field |
+| `dataset_answers` | individual answers to a [dataset](/abilities/memory#datasets) field |
 | `dataset_versions` | marks a dataset as completed at a point in time |
 
 `owner` namespaces rows within one file: empty for the terminal (`null` in `sessions`), a namespaced id

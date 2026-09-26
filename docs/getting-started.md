@@ -13,4 +13,4 @@ Install the binary, choose where the agent runs, and answer the setup wizard's f
 
 Next:
 
-[Installation](/installation){: .btn .btn-green .fs-5 }
+[Installation](/getting-started/installation){: .btn .btn-green .fs-5 }

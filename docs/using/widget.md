@@ -19,7 +19,7 @@ renders, which origins may embed it — is bound to the key and resolved server-
 
 ## Getting a key
 
-Create one from the **Widget** page of the [web app](/web-app):
+Create one from the **Widget** page of the [web app](/using/web-app):
 
 1. Give it a **label** (so you can tell your keys apart).
 2. List the **allowed origins** — the sites permitted to embed it. At least one is required.
@@ -67,7 +67,7 @@ other's, and none of it mixes into your own.
 
 ## What the agent can do
 
-A widget turn runs in [cloud mode](/modes#cloud-mode) with the cloud [built-in tools](/tools#built-ins),
+A widget turn runs in [cloud mode](/getting-started/modes#cloud-mode) with the cloud [built-in tools](/abilities/tools#built-ins),
 but no HTTP tools or MCP servers: a key's abilities are **skills only**, so a visitor can never make a
 call with your API keys. Every persona in the catalog is available, starting from the key's own.
 
@@ -97,4 +97,4 @@ decides *what the page renders*. `kaja.io` runs the `barkochba` widget on its la
 
 Next:
 
-[Voice & language](/voice){: .btn .btn-green .fs-5 }
+[Voice & language](/using/voice){: .btn .btn-green .fs-5 }

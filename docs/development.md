@@ -54,10 +54,10 @@ flowchart TD
 
 | Workspace | What it is |
 | --- | --- |
-| `apps/api` | Hono REST API — auth, admin config, cloud agent (`/nasi`), [widget](/widget) serving, emails |
+| `apps/api` | Hono REST API — auth, admin config, cloud agent (`/nasi`), [widget](/using/widget) serving, emails |
 | `apps/api/widgets` | the embeddable browser chat bundle, built as part of the API |
 | `apps/web` | TanStack Start — the public landing site and the signed-in [web app](/development/web) (dashboard, abilities, widgets, admin) |
-| `apps/tui` | the [terminal client](/tui), Telegram bot, local config and storage |
+| `apps/tui` | the [terminal client](/using/tui), Telegram bot, local config and storage |
 | `apps/sandbox` | the [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme): runs stdio MCP servers (a headless Chrome) for cloud turns, one per user, behind an egress proxy that only reaches public addresses |
 | `packages/nasi` | the [agent brain](/development/nasi): loop, tools, store interface |
 | `packages/schema` | every Zod [schema](/development/schema), in role-based subpaths |

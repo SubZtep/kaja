@@ -27,7 +27,7 @@ import { PersonaPicker } from "./persona-picker"
 import { UserInput } from "./user-input"
 
 /** Docs shown by the help keybar entry. */
-const HELP_URL = "https://docs.kaja.io/tui/"
+const HELP_URL = "https://docs.kaja.io/using/tui/"
 
 /** Which optional chat capabilities the active backend supports — cloud Nasi has no local TTS to speak replies with. */
 type Capabilities = { persona: boolean; voice: boolean }

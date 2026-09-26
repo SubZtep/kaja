@@ -55,7 +55,7 @@ marketplace/
 - A file this folder deleted but you edited stays, as your own.
 - Files you added yourself are never touched.
 
-More on each kind in the docs: [skills](https://docs.kaja.io/skills), [personas](https://docs.kaja.io/personas),
-[HTTP tools](https://docs.kaja.io/http-tools), [MCP servers](https://docs.kaja.io/mcp) and
-[datasets](https://docs.kaja.io/memory#datasets). How the syncing works is on
+More on each kind in the docs: [skills](https://docs.kaja.io/abilities/skills), [personas](https://docs.kaja.io/abilities/personas),
+[HTTP tools](https://docs.kaja.io/abilities/http-tools), [MCP servers](https://docs.kaja.io/abilities/mcp) and
+[datasets](https://docs.kaja.io/abilities/memory#datasets). How the syncing works is on
 [Marketplace internals](https://docs.kaja.io/development/marketplace).

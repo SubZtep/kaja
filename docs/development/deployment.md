@@ -194,7 +194,7 @@ matching limit and a line in the Privacy Policy.
 - The storage bucket and its credentials (see [Object storage](#object-storage)).
 - A strong `CONFIG_API_TOKEN`. `/config/*` is **fail-closed**: a missing or empty token returns 401
   for every request on the prefix and never serves provider API keys.
-- `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/widget) routes are
+- `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/using/widget) routes are
   deliberately exempt — they reflect origins and gate on the key's own allowlist instead.
 - `NODE_ENV=production` (Sentry on, no `/reference` UI).
 - Rate limits left on — they only auto-disable under `bun test`.

@@ -15,9 +15,9 @@ Nasi is Kaja's brain: the agent that reads your message, decides what to do, use
 and writes the reply. Every front door runs the same Nasi — the terminal, both Telegram bots, the web
 app and the website widget. The front door only decides *where* it runs and *what it may touch*.
 
-Everything else in this section plugs into Nasi: [personas](/personas) give it a voice,
-[skills](/skills) teach it procedures, [tools](/tools), [HTTP tools](/http-tools) and
-[MCP servers](/mcp) give it hands, and [memory & datasets](/memory) let it remember you.
+Everything else in this section plugs into Nasi: [personas](/abilities/personas) give it a voice,
+[skills](/abilities/skills) teach it procedures, [tools](/abilities/tools), [HTTP tools](/abilities/http-tools) and
+[MCP servers](/abilities/mcp) give it hands, and [memory & datasets](/abilities/memory) let it remember you.
 
 ## Where it runs
 
@@ -27,22 +27,22 @@ Everything else in this section plugs into Nasi: [personas](/personas) give it a
 | `kaja` cloud mode, web app, cloud Telegram bot, widget | on the Kaja API | ✗ |
 
 Same brain either way: the cloud one just gets a smaller toolset, since it serves many people and has
-no shell. See [Cloud or local](/modes) for the full comparison.
+no shell. See [Cloud or local](/getting-started/modes) for the full comparison.
 
 ## What it knows when a conversation starts
 
 At the start of a conversation Nasi writes itself a brief — the system prompt — out of whatever
 applies:
 
-1. the active [persona](/personas)'s instructions (the `default` persona when none is picked);
+1. the active [persona](/abilities/personas)'s instructions (the `default` persona when none is picked);
 2. where it's running: your OS in the terminal, or the channel (Telegram, widget);
 3. how to use the tools that need care: asking you questions, running shell commands, keeping notes;
 4. the other personas it may switch to, and when;
-5. the names and descriptions of your enabled [skills](/skills);
-6. a [dataset](/memory#datasets) to collect, if the persona has one, and what you've already answered
+5. the names and descriptions of your enabled [skills](/abilities/skills);
+6. a [dataset](/abilities/memory#datasets) to collect, if the persona has one, and what you've already answered
    in your profile;
-7. your sticky [memory notes](/memory#notes);
-8. the language to reply in ([Voice & language](/voice)).
+7. your sticky [memory notes](/abilities/memory#notes);
+8. the language to reply in ([Voice & language](/using/voice)).
 
 Nothing that isn't set up is included, so a cloud or widget conversation sees a subset of what a local
 one does. Turning an ability on or off applies from your next message, even mid-conversation.
@@ -58,9 +58,9 @@ has an answer. Along the way it can stop and hand control back to you:
 - **a file on your disk** — in cloud terminal chat, `read_file` and `list_files` run on your machine,
   not the server.
 
-It can also [switch persona](/personas) mid-turn, which may switch the model too, and carry on.
+It can also [switch persona](/abilities/personas) mid-turn, which may switch the model too, and carry on.
 
-The diagram on [Cloud or local](/modes#how-a-turn-runs) shows the whole loop.
+The diagram on [Cloud or local](/getting-started/modes#how-a-turn-runs) shows the whole loop.
 
 ## When things go wrong
 
@@ -98,4 +98,4 @@ and opens no database, which is why the same brain fits every front door. How it
 
 Next:
 
-[Personas](/personas){: .btn .btn-green .fs-5 }
+[Personas](/abilities/personas){: .btn .btn-green .fs-5 }

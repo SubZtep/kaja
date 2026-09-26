@@ -14,4 +14,4 @@ web app manages your cloud account, and voice works on top of the terminal.
 
 Next:
 
-[Terminal UI](/tui){: .btn .btn-green .fs-5 }
+[Terminal UI](/using/tui){: .btn .btn-green .fs-5 }

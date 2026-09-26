@@ -13,9 +13,9 @@ There are two independent bots: a **local bot** you run yourself with `kaja tele
 | | Local bot | Cloud bot |
 | --- | --- | --- |
 | Runs | on your machine, while `kaja telegram` runs | always, on the API |
-| Agent | [local mode](/modes#local-mode): your models, tools and shell | [cloud mode](/modes#cloud-mode) |
+| Agent | [local mode](/getting-started/modes#local-mode): your models, tools and shell | [cloud mode](/getting-started/modes#cloud-mode) |
 | Who can use it | people you paired with a one-time code | Kaja users who linked their Telegram account |
-| Abilities | what `abilities.toml` loads | what you turned on in the [web app](/web-app) |
+| Abilities | what `abilities.toml` loads | what you turned on in the [web app](/using/web-app) |
 
 On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart
 from each other and from your terminal. A call that needs approval — a shell command, or an HTTP tool
@@ -26,7 +26,7 @@ chat messages, unless you ask for detail.
 
 1. **Create a bot.** In Telegram, message [@BotFather](https://t.me/BotFather), send `/newbot`, and
    follow the prompts. It replies with a token like `123456789:AAH...`.
-2. **Save the token** in [`secrets.toml`](/configuration/secrets) (or let the [setup wizard](/wizard)
+2. **Save the token** in [`secrets.toml`](/configuration/secrets) (or let the [setup wizard](/getting-started/wizard)
    ask for it):
 
    ```toml
@@ -74,7 +74,7 @@ Commands in the bot's menu:
 
 Link your Telegram account once:
 
-1. In the [web app](/web-app), open the **Dashboard**.
+1. In the [web app](/using/web-app), open the **Dashboard**.
 2. In the **Connect Telegram** card, click **Get Telegram link**. The link works once, for 10 minutes.
 3. Open it. Telegram opens a chat with the bot and sends `/start` with the token, and the bot replies
    once you're linked.
@@ -98,4 +98,4 @@ bot.
 
 Next:
 
-[Website widget](/widget){: .btn .btn-green .fs-5 }
+[Website widget](/using/widget){: .btn .btn-green .fs-5 }

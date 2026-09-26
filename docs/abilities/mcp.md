@@ -103,4 +103,4 @@ Keys and approvals otherwise work as described on [Abilities in the cloud](/abil
 
 Next:
 
-[Memory & datasets](/memory){: .btn .btn-green .fs-5 }
+[Memory & datasets](/abilities/memory){: .btn .btn-green .fs-5 }

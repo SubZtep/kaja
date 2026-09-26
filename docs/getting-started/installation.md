@@ -27,13 +27,13 @@ if that directory isn't on your `PATH`.
 
 ## First run
 
-Run `kaja`. The [setup wizard](/wizard) asks your language and colours, then where the agent should
+Run `kaja`. The [setup wizard](/getting-started/wizard) asks your language and colours, then where the agent should
 run:
 
 - **Kaja Cloud** (preselected) — nothing else to set up. Kaja prints a code, you approve it in the
   browser, and you're chatting.
 - **Your own providers** — tick the LLM providers you can use, give their keys or addresses, and Kaja
-  writes `~/.config/kaja/` for [local mode](/modes#local-mode).
+  writes `~/.config/kaja/` for [local mode](/getting-started/modes#local-mode).
 
 Your answer is saved, so the next `kaja` starts the same way. `kaja --local` or `kaja --cloud` overrides
 it for one launch.
@@ -62,4 +62,4 @@ Local config and data are left behind. To remove them too, delete `~/.config/kaj
 
 Next:
 
-[Cloud or local](/modes){: .btn .btn-green .fs-5 }
+[Cloud or local](/getting-started/modes){: .btn .btn-green .fs-5 }

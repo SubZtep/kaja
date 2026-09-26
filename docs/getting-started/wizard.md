@@ -39,11 +39,11 @@ Your answers stay on screen with a ✓ as you go, so you can see what you've cho
    away.
 2. **Colours.** Pick the one that reads best on your terminal: dark or light background. Moving the
    highlight previews it; Kaja starts on the one that matches your terminal. You can switch later in
-   the chat with <kbd>Alt</kbd>+<kbd>D</kbd> (see [Colours](/tui#colours)).
+   the chat with <kbd>Alt</kbd>+<kbd>D</kbd> (see [Colours](/using/tui#colours)).
 3. **How to run Kaja.**
    - **Kaja Cloud** (the default): nothing else to set up. After the wizard, Kaja shows a code, you
      approve it in your browser, and you're chatting. Abilities, personas and models are chosen on the
-     [web app](/web-app).
+     [web app](/using/web-app).
    - **Your own provider**: Kaja runs on your machine, using the AI models you choose. The next
      questions set them up.
 
@@ -52,13 +52,13 @@ Your answers stay on screen with a ✓ as you go, so you can see what you've cho
    - **Fireworks**, **xAI** and **OpenRouter** run online: you're asked for the API key.
    - **Ollama**, **llama.cpp** and **Speaches** run on your machine: you're asked where the server
      listens, with the usual address already filled in. Speaches handles speech in and out, for
-     [voice](/voice).
+     [voice](/using/voice).
    - **Custom** is any other server with an OpenAI-compatible API (LM Studio, vLLM, a proxy). You
      give it a name, its address and a key, then each model's id and what it's for. Press
      <kbd>Enter</kbd> on an empty model id when you've listed them all.
 5. **Which model.** Only asked when two of your providers can do the same job, say chat: pick which
    one does it.
-6. **Extras.** Optional. Tick **Telegram bot** to chat with Kaja from [Telegram](/telegram), and
+6. **Extras.** Optional. Tick **Telegram bot** to chat with Kaja from [Telegram](/using/telegram), and
    paste the bot's token next. Press <kbd>Enter</kbd> with nothing ticked to skip.
 7. **Setup complete.** Press <kbd>Enter</kbd> to finish. The screen says what happens next.
 
@@ -140,4 +140,4 @@ there are none yet.
 
 Next:
 
-[Terminal UI](/tui){: .btn .btn-green .fs-5 }
+[Terminal UI](/using/tui){: .btn .btn-green .fs-5 }
