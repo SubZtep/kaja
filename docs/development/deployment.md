@@ -39,10 +39,9 @@ Create a Disco **Project** per app and point each at its own config file (the sa
 Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
 automatically.
 
-The API config declares a named `nasi-data` volume mounted at `/var/lib/kaja` and a
-`hook:deploy:start:before` step that runs `bun run migrate.js`, so **migrations apply on every
-deploy** before the new container takes traffic. Named volumes, not host bind mounts — `compose.yaml`
-is for local development only.
+The API config declares a `hook:deploy:start:before` step that runs `bun run migrate.js`, so
+**migrations apply on every deploy** before the new container takes traffic. The API keeps no files
+of its own: everything lives in Postgres. `compose.yaml` is for local development only.
 
 ### Recreating the database
 
