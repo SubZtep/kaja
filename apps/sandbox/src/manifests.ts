@@ -8,14 +8,24 @@ export type SandboxServer = { name: string; command: string; args: string[]; env
 
 /**
  * The stdio servers under `<marketplaceDir>/mcp` the sandbox may run: a fixed `tools` list and no key (keys aren't
- * forwarded yet), the same rule the API offers them by. `overridesPath` swaps a server's command/args for this host.
+ * forwarded yet), the same rule the API offers them by. `overridesPath` swaps a server's command/args for this host;
+ * `cacheDir` points every server's bun/uv/npm caches there, since each one's HOME is thrown away.
  */
 export async function loadSandboxServers(
   marketplaceDir: string,
-  overridesPath?: string
+  overridesPath?: string,
+  cacheDir?: string
 ): Promise<Map<string, SandboxServer>> {
   const overrides = overridesPath
     ? McpAbilityOverridesSchema.parse(JSON.parse(await readFile(overridesPath, "utf8")))
+    : {}
+  const cacheEnv: Record<string, string> = cacheDir
+    ? {
+        BUN_INSTALL_CACHE_DIR: join(cacheDir, "bun"),
+        UV_CACHE_DIR: join(cacheDir, "uv"),
+        UV_PYTHON_INSTALL_DIR: join(cacheDir, "python"),
+        npm_config_cache: join(cacheDir, "npm")
+      }
     : {}
   const servers = new Map<string, SandboxServer>()
   for (const entry of await scanMcpAbilities(marketplaceDir)) {
@@ -31,7 +41,7 @@ export async function loadSandboxServers(
       name: ability.name,
       command: override?.command ?? ability.command,
       args: override?.args ?? ability.args,
-      env: ability.env
+      env: { ...cacheEnv, ...ability.env }
     })
   }
   return servers

@@ -18,6 +18,12 @@ export const SandboxEnvSchema = z.object({
       "JSON file replacing a manifest's command/args for this host, e.g. a preinstalled binary and Chrome flags"
     )
     .meta({ example: "overrides.json" }),
+  SANDBOX_CACHE_DIR: trimmed
+    .optional()
+    .describe(
+      "Folder the servers share for bun, uv and npm caches (and uv's Pythons), so a package bunx/uvx fetched stays fetched; unset, each start refetches into its throwaway HOME"
+    )
+    .meta({ example: "/home/node/.cache/mcp" }),
   SANDBOX_IDLE_MS: positiveInt
     .default(10 * 60 * 1000)
     .describe("How long an unused server process is kept warm before it's stopped (ms)"),

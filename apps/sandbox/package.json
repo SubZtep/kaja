@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot src/server.ts",
-    "build": "bun build --compile --minify --outfile dist/sandbox src/server.ts",
-    "start": "./dist/sandbox"
+    "build": "bun build --target=bun --minify --outfile dist/sandbox.js src/server.ts",
+    "start": "bun dist/sandbox.js"
   },
   "dependencies": {
     "@kaja/nasi": "workspace:*",

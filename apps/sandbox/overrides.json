@@ -14,9 +14,5 @@
       "--allowedUrlPattern=http://*",
       "--allowedUrlPattern=https://*"
     ]
-  },
-  "time": {
-    "command": "/opt/mcp-py/bin/mcp-server-time",
-    "args": ["--local-timezone=UTC"]
   }
 }

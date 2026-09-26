@@ -12,6 +12,8 @@ declare module "bun" {
     MARKETPLACE_DIR?: string
     /** JSON file replacing a manifest's command/args for this host, e.g. a preinstalled binary and Chrome flags */
     SANDBOX_OVERRIDES?: string
+    /** Folder the servers share for bun, uv and npm caches (and uv's Pythons), so a package bunx/uvx fetched stays fetched; unset, each start refetches into its throwaway HOME */
+    SANDBOX_CACHE_DIR?: string
     /** How long an unused server process is kept warm before it's stopped (ms) */
     SANDBOX_IDLE_MS?: string
     /** Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM */
