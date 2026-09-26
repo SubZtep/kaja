@@ -6,7 +6,7 @@ nav_exclude: true
 
 # Privacy Policy
 
-Effective date: 23 September 2026
+Effective date: 26 September 2026
 
 Kaja is operated by Andras Serfozo, an individual based in England, United Kingdom, as a personal project. For the cloud service described below, he is the data controller. This policy explains what personal data Kaja collects, why, on what legal basis, who receives it, and what rights you have.
 
@@ -40,6 +40,8 @@ When you use **cloud chat**, Kaja additionally stores, against your account:
 - conversation content — the messages you send, the assistant's replies, and the tool calls made during a turn;
 - memory notes the assistant writes about you, and answers you give to structured questionnaires (datasets);
 - session metadata such as which persona and model handled a conversation, and when it was last updated.
+
+Some abilities run a program for you in Kaja's **sandbox**, a separate server where tools run on your behalf (for example a web browser). While you use one, it keeps its working state, such as a browser's open pages, the cookies websites set, and what it typed into forms, so it can carry on across messages. This state is kept separately for each user, isn't saved in Kaja's database, and is deleted when the tool has been unused for about 10 minutes, or when the sandbox restarts.
 
 When you interact with a **widget** embedded on someone else's website, the same conversation data is stored against *that site owner's* Kaja account, not yours. The site owner is the controller of that data and Kaja processes it on their behalf (see [Widgets](#widgets)). A random visitor id is kept in your browser's `sessionStorage` to keep one conversation together; it is not a cookie and it does not follow you across sites.
 
@@ -91,11 +93,11 @@ Personal data is processed by these service providers, on Kaja's behalf, only as
 |---|---|---|
 | Hetzner Online GmbH | everything stored in cloud mode (hosting and database) | Germany |
 | Brevo | your email address and the account emails sent to you | France |
-| Sentry | error reports from the API, the website and the MCP sandbox, which can include request details and your user id; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
+| Sentry | error reports from the API, the website and the MCP sandbox, which can include request details and your user id, and for a sandbox tool that fails, the last lines it printed, which can include a web address it was working on; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
 | Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |
 | xAI | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training | United States |
 | Brave | the search query, when the assistant searches the web; kept by Brave for up to 90 days for billing and troubleshooting | United States |
-| Webshare | the address of a web page the assistant fetches for you; cloud page fetches leave through this proxy rather than directly from Kaja's servers | United States |
+| Webshare | the address of a web page the assistant's page-fetching tool reads for you; those fetches leave through this proxy rather than directly from Kaja's servers (tools that run in the sandbox, such as its browser, connect directly) | United States |
 
 
 Some conversations are answered by models Kaja runs itself, on its own servers in the EU; those don't leave Kaja's infrastructure.
@@ -104,7 +106,7 @@ These parties also receive data, but under their own terms as independent contro
 
 - **Google**, if you use Google sign-in;
 - **Telegram**, if you chat with the Kaja Telegram bot — those messages pass through Telegram's servers;
-- **the services behind abilities you turn on** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed.
+- **the services behind abilities you turn on** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed. Websites a sandbox tool visits for you (such as pages its browser opens) receive the requests it makes, from Kaja's server address rather than yours.
 
 Kaja may also disclose data if required by law, to protect users, or to investigate abuse or security incidents.
 
@@ -128,6 +130,7 @@ You can ask for details of the safeguard for any provider by email.
 - **Account data** is kept while your account exists.
 - **Cloud conversations, memory notes, dataset answers, ability keys, widget keys, and your Telegram link** are kept until you delete them or your account. A single conversation can be deleted at any time.
 - **Deleting your account** from your profile page deletes it and everything stored with it straight away, including conversations your widgets' visitors had.
+- **Sandbox working state** (such as a browser's pages and cookies) is deleted after about 10 minutes unused, or when the sandbox restarts.
 - **Login session records** (with their IP address and user agent) are kept until the session ends or expires.
 - **Server logs** are kept for up to 30 days, unless a specific entry is needed longer to investigate a security incident.
 - **Error reports** in Sentry are kept for 30 days.
