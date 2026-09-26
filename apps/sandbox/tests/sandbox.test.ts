@@ -68,6 +68,17 @@ describe("manifests", () => {
     expect(servers.get("counter")!.command).toBe(process.execPath)
   })
 
+  test("a cache dir sends every server's bun/uv/npm caches there", async () => {
+    const cached = await loadSandboxServers(MARKETPLACE, undefined, "/cache")
+    expect(cached.get("counter")!.env).toMatchObject({
+      BUN_INSTALL_CACHE_DIR: "/cache/bun",
+      UV_CACHE_DIR: "/cache/uv",
+      UV_PYTHON_INSTALL_DIR: "/cache/python",
+      npm_config_cache: "/cache/npm"
+    })
+    expect(servers.get("counter")!.env).not.toHaveProperty("UV_CACHE_DIR")
+  })
+
   test("the image's Chrome only opens http(s) pages, never file://", async () => {
     const shipped = await loadSandboxServers(
       join(import.meta.dir, "../../../marketplace"),

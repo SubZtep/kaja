@@ -19,8 +19,8 @@ always-current list. This page is the map.
 | Prefix | Auth | What |
 | --- | --- | --- |
 | `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
-| `/admin/*` | session + `admin` role | providers, models, marketplace sync |
-| `/widget/admin/*` | session | list, create, edit and revoke [widget](/widget) keys |
+| `/admin/*` | session + `admin` role | providers, models, marketplace sync, MCP sandbox stats |
+| `/widget/admin/*` | session | list, create, edit and revoke [widget](/using/widget) keys |
 | `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
 | `/abilities/me/*` | session | the user's own abilities and their write-only API keys |
 | `/nasi/*` | bearer | cloud agent: turns, compaction, sessions, and the persona catalog |
@@ -34,7 +34,7 @@ always-current list. This page is the map.
 
 ## Cloud agent — `/nasi`
 
-The endpoints the CLI uses in [cloud mode](/modes). All require a bearer token from device login.
+The endpoints the CLI uses in [cloud mode](/getting-started/modes). All require a bearer token from device login.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -71,10 +71,11 @@ Admin-managed service keys, like provider keys, are meant to replace it.
 
 ## Usage stats — `/stats`
 
-`GET /stats?days=30&tz=Asia/Tokyo` (`days` 1–365; `tz` an IANA timezone, UTC when left out) returns the signed-in
-user's own activity for the [dashboard](/development/web#signed-in): totals, one entry per calendar day in `tz`
-(the web app sends the viewer's own timezone; the database keeps UTC instants either way), sessions per channel (web or CLI, Telegram, widget), and per-tool calls with
-how often they asked first, failed and how long they took. It is computed from the `nasi_message` and
+`GET /stats?days=30&tz=Asia/Tokyo` (`days` 1–365; `tz` an IANA timezone, UTC when left out) returns the
+signed-in user's own activity for the [dashboard](/development/web#signed-in): totals, one entry per calendar
+day in `tz` (the web app sends the viewer's own timezone; the database keeps UTC instants either way),
+sessions per channel (web or CLI, Telegram, widget), and per-tool calls with how often they asked first,
+failed and how long they took. It is computed from the `nasi_message` and
 `nasi_tool_call` rows, so tokens, latencies and per-reply numbers only exist for replies saved after they were
 recorded.
 

@@ -15,8 +15,8 @@ The difference between the two modes is *where the agent loop runs*, and so whic
 | `kaja`, local mode | your machine | SQLite | ✓ |
 | `kaja telegram` | your machine | SQLite | ✓ |
 | `kaja`, cloud mode | the API | Postgres | ✗ (files are [read locally](#cloud-mode)) |
-| cloud [Telegram bot](/telegram#cloud-bot) | the API | Postgres | ✗ |
-| Website [widget](/widget) | the API | Postgres | ✗ |
+| cloud [Telegram bot](/using/telegram#cloud-bot) | the API | Postgres | ✗ |
+| Website [widget](/using/widget) | the API | Postgres | ✗ |
 
 ## Which mode a launch uses
 
@@ -43,7 +43,7 @@ flowchart TD
     Local(["💻 Local: ~/.config/kaja,<br>loop in your process"])
 ```
 
-The [setup wizard](/wizard) writes `preferences.mode`, so the choice sticks even before a provider
+The [setup wizard](/getting-started/wizard) writes `preferences.mode`, so the choice sticks even before a provider
 works: picking local and then "Skip — I'll set up models.toml myself" still starts in local mode next
 time. A flag overrides it for one launch:
 
@@ -64,7 +64,7 @@ There is no credentials file on disk. One account is signed in at a time; `kaja 
 
 The server resolves the model and keeps your sessions, memory and dataset answers. What it can use:
 
-- the cloud [built-in tools](/tools#built-ins): memory, datasets, `ask_user`, web search, image generation;
+- the cloud [built-in tools](/abilities/tools#built-ins): memory, datasets, `ask_user`, web search, image generation;
 - `read_file` and `list_files`: the server pauses the turn and your terminal runs them, scoped to the
   directory you launched from, with no confirmation prompt;
 - the personas, skills, HTTP tools and remote MCP servers you turned on — see
@@ -116,10 +116,10 @@ Some tools hand control back to you instead of running straight away:
 - **approvals** — a shell command, or an HTTP tool or MCP call that changes something, waits for you
   to approve or decline: a prompt above the input in the terminal, buttons in Telegram.
 
-`switch_persona` doesn't stop the loop: it swaps the [persona](/personas) mid-turn and carries on.
+`switch_persona` doesn't stop the loop: it swaps the [persona](/abilities/personas) mid-turn and carries on.
 
 ---
 
 Next:
 
-[Setup wizard](/wizard){: .btn .btn-green .fs-5 }
+[Setup wizard](/getting-started/wizard){: .btn .btn-green .fs-5 }

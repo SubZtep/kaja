@@ -2,7 +2,7 @@
 layout: page
 title: MCP servers
 parent: Abilities
-nav_order: 5
+nav_order: 6
 ---
 
 # MCP servers
@@ -103,4 +103,4 @@ Keys and approvals otherwise work as described on [Abilities in the cloud](/abil
 
 Next:
 
-[Memory & datasets](/memory){: .btn .btn-green .fs-5 }
+[Memory & datasets](/abilities/memory){: .btn .btn-green .fs-5 }

@@ -53,8 +53,7 @@ bun dev
 bun dev:sandbox
 
 # CLI (entry is apps/tui/cli.ts — NOT apps/tui/src/...)
-bun run --filter @kaja/tui start
-# or: bun run --env-file=apps/tui/.env apps/tui/cli.ts
+bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--filter @kaja/tui start` doesn't pass the TTY through (Ink: "Raw mode is not supported")
 
 # Lint / types / tests
 bun lint
@@ -72,8 +71,7 @@ bun run --filter @kaja/api build
 bun run --filter @kaja/web dev
 bun run --filter @kaja/web build
 
-bun run --filter @kaja/tui start
-bun run --filter @kaja/tui test
+bun run --filter @kaja/tui test   # (run the TUI itself with `bun dev:tui`, see above)
 
 bun run --filter @kaja/sandbox dev
 bun run --filter @kaja/sandbox build
@@ -128,8 +126,10 @@ bun run --filter @kaja/sandbox build
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
   - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml), plus the repo's model catalog (`docs/config/catalog.toml`)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
-  - `@kaja/schema/cli` — remaining CLI domain concepts (datasets; re-exports the persona schema)
+  - `@kaja/schema/abilities` — marketplace manifests (skill frontmatter, persona, dataset, HTTP tool, MCP server), shared by every host that loads abilities
+  - `@kaja/schema/cli` — re-exports the persona and dataset schemas so CLI code keeps one import
   - `@kaja/schema/nasi` — cloud turn request/response
+  - `@kaja/schema/env` — per-app env var schemas (source of `.env.example` and `env.d.ts`); `@kaja/schema/tombi` — JSON Schema generation for the TOML files
 - **DB row types**: private to API services; map with private `#rowTo…` helpers
 - **Dates over JSON**: `z.coerce.date()` in schemas
 - See `packages/schema/AGENTS.md` for the full layout and naming conventions
@@ -159,10 +159,10 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Notes
 
-- Git hooks already run `bun lint` and typecheck on commit, and lint, typecheck and `bun test` on push, so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
+- Git hooks already run `bun lint` and typecheck on commit, and lint and typecheck on push (plus `bun test` and `check:locales` when pushing `main`), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/tui/`).
 - model defaults: edit `docs/config/catalog.toml`, run `bun generate:models`, never edit `docs/config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`).
-- env vars: edit `packages/schema/env/{api,web,tui}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
+- env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
 ## Testing & CI
 

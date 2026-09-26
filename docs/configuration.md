@@ -7,7 +7,7 @@ has_children: true
 
 # Configuration
 
-Everything here is **[local mode](/modes#local-mode)**. Cloud mode keeps its settings in your account
+Everything here is **[local mode](/getting-started/modes#local-mode)**. Cloud mode keeps its settings in your account
 and on disk has only a minimal `settings.toml` with your language and `mode = "cloud"`.
 
 ```ini
@@ -21,7 +21,7 @@ and on disk has only a minimal `settings.toml` with your language and `mode = "c
 └─ tools/*.ts       # your own plugin tools
 ```
 
-The directory follows XDG (`$XDG_CONFIG_HOME/kaja` when set). The [setup wizard](/wizard) writes the
+The directory follows XDG (`$XDG_CONFIG_HOME/kaja` when set). The [setup wizard](/getting-started/wizard) writes the
 first version; after that they're yours to edit. Kaja reads them once at startup and never writes them
 while running — restart to apply a change.
 
@@ -31,8 +31,8 @@ while running — restart to apply a change.
 | `models.toml` | [Models](/configuration/models) |
 | `secrets.toml` | [Secrets](/configuration/secrets) |
 | `abilities.toml` | [abilities.toml](/configuration/abilities) |
-| `mcp.toml` | [MCP servers](/mcp#mcptoml) |
-| `tools/*.ts` | [Your own tools](/tools#your-own-tools) |
+| `mcp.toml` | [MCP servers](/abilities/mcp#mcptoml) |
+| `tools/*.ts` | [Your own tools](/abilities/tools#your-own-tools) |
 | the SQLite file | [Local storage](/configuration/storage) |
 
 `secrets.toml` is the only file that holds credentials, so the others are safe to share or paste into a
@@ -43,7 +43,7 @@ bug report.
 | Command | What it does |
 | --- | --- |
 | `kaja config paths` | print where every config file resolves on this machine — start here when unsure which file Kaja reads |
-| `kaja config wizard` | re-run the [setup wizard](/wizard) |
+| `kaja config wizard` | re-run the [setup wizard](/getting-started/wizard) |
 | `kaja config diff` | show what `fetch` would change, without writing anything |
 | `kaja config fetch` | rewrite `models.toml` from the defaults (backing it up if it differs), and write `secrets.toml` if you have none |
 | `kaja doctor` | test every key, model and tool — see below |
@@ -51,9 +51,9 @@ bug report.
 `kaja config fetch` takes `models.toml` from the Kaja server's admin-managed catalog, or from the
 templates bundled in the binary when you're offline or pass `--offline`. `secrets.toml` comes from
 the bundled template, with every section commented out, and is only written when you don't have one
-yet: once it holds a key it's left alone, so fetching never loses your keys. `--only models` or `--only secrets` limits it to one file. It never touches `settings.toml`,
-`abilities.toml` or `mcp.toml`. Use it to pick up new defaults after an upgrade, or to recover a broken
-file.
+yet: once it holds a key it's left alone, so fetching never loses your keys. `--only models` or
+`--only secrets` limits it to one file. It never touches `settings.toml`, `abilities.toml` or `mcp.toml`.
+Use it to pick up new defaults after an upgrade, or to recover a broken file.
 
 ## Checking keys and models
 

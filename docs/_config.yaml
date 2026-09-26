@@ -24,3 +24,11 @@ target-blank:
 
 color_scheme: dark
 favicon_ico: /images/favicon.ico
+
+callouts:
+  note:
+    title: Note
+    color: purple
+  warning:
+    title: Warning
+    color: red

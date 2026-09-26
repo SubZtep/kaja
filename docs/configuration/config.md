@@ -43,13 +43,13 @@ voice = false
 
 | Field | Purpose |
 | --- | --- |
-| `mode` | `local` or `cloud` — what a plain `kaja` starts; see [Cloud or local](/modes#which-mode-a-launch-uses) |
-| `locale` | `en-GB`, `hu-HU`, `nan-TW` or `zh-TW` — the UI and the assistant's replies ([Language](/voice#language)) |
+| `mode` | `local` or `cloud` — what a plain `kaja` starts; see [Cloud or local](/getting-started/modes#which-mode-a-launch-uses) |
+| `locale` | `en-GB`, `hu-HU`, `nan-TW` or `zh-TW` — the UI and the assistant's replies ([Language](/using/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |
-| `hotkeyModifier` | `alt` (default) or `ctrl` — the [key bar](/tui#key-bar)'s modifier |
-| `theme` | `auto` (default), `dark` or `light` — the [colours](/tui#colours); `auto` matches the terminal |
+| `hotkeyModifier` | `alt` (default) or `ctrl` — the [key bar](/using/tui#key-bar)'s modifier |
+| `theme` | `auto` (default), `dark` or `light` — the [colours](/using/tui#colours); `auto` matches the terminal |
 
 ## `[marketplace]`
 
@@ -74,7 +74,7 @@ steer it: `/compact keep the SQL decisions`.
 
 A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed before
 the model sees it, in parts when it's more than the summarising model can take in at once. The terminal
-shows a line such as `web_fetch output condensed: 40,000 → 2,000 tokens`. The full output stays in the
+shows a line such as `fetch_url output condensed: 40,000 → 2,000 tokens`. The full output stays in the
 saved conversation.
 
 Images (a screenshot a tool took, say) are sent to the model for your latest two messages; older ones are
@@ -85,7 +85,7 @@ model works well), else by the chat model. The `summarize` tool uses the same mo
 
 ## `[stt]` / `[tts]`
 
-The speech server's URL and options — see [Voice](/voice). The models themselves are in `models.toml`.
+The speech server's URL and options — see [Voice](/using/voice). The models themselves are in `models.toml`.
 
 ## `[memory]`
 

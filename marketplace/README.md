@@ -1,8 +1,16 @@
+> 🏔️🎪\
+> 🟡🔴🟢🔵🟠🟡🔴🟢🔵🟠🟡🔴🟢🔵🟠🟡🔴🟢🔵🟠🟡🔴🟢🔵🟠\
+> 🤡🎯 **Kaja __marketplace__** 🎈🎈🎈:suspect:\
+> 🔵🟠🟡🔴🟢🔵🟠🟡🔴🟢🔵🟠🟡🔴🟢🔵🟠🟡🔴🟢🔵🟠🟡🔴🟢\
+> ❄️🎡🐧
+
 # Kaja marketplace
 
-Abilities the Kaja CLI can load in local mode. `kaja abilities update` copies this folder into
+Abilities Kaja can load. In local mode `kaja abilities update` copies this folder into
 `~/.config/kaja/marketplace/`, and `kaja abilities` picks which ones load (written to
-`~/.config/kaja/abilities.toml`). Only the repo owner adds abilities here; there is no publish flow.
+`~/.config/kaja/abilities.toml`). The Kaja API syncs the same folder every hour for cloud users, who
+pick theirs on the [Abilities page](https://kaja.io/abilities). Only the repo owner adds abilities here;
+there is no publish flow.
 
 ## Layout
 
@@ -34,8 +42,10 @@ marketplace/
 - An MCP ability's `tools` allowlist keeps the model's tool list short; list only what's useful.
   Pick `approval = "writes"` when a server can change things, and add `readOnly` entries for tools
   the server doesn't mark read-only but that only read (with `unless` for arguments that write, like
-  a `filePath`). Say in the description what a stdio server needs installed (it runs on the user's
-  machine).
+  a `filePath`). Say in the description what a stdio server needs installed (locally it runs on the
+  user's machine; in the cloud a keyless one runs in the MCP sandbox, `apps/sandbox`).
+- What the cloud leaves out: skills with `scripts/`, HTTP tools on a non-public host, and MCP servers
+  without a `tools` allowlist, on a non-public host, or `stdio` needing a key.
 
 ## How sync treats local files
 
@@ -45,5 +55,7 @@ marketplace/
 - A file this folder deleted but you edited stays, as your own.
 - Files you added yourself are never touched.
 
-See [docs/skills.md](../docs/skills.md) for skills, [docs/personas.md](../docs/personas.md) for personas and
-[docs/http-tools.md](../docs/http-tools.md) for HTTP tools.
+More on each kind in the docs: [skills](https://docs.kaja.io/abilities/skills), [personas](https://docs.kaja.io/abilities/personas),
+[HTTP tools](https://docs.kaja.io/abilities/http-tools), [MCP servers](https://docs.kaja.io/abilities/mcp) and
+[datasets](https://docs.kaja.io/abilities/memory#datasets). How the syncing works is on
+[Marketplace internals](https://docs.kaja.io/development/marketplace).

@@ -2,7 +2,7 @@
 layout: page
 title: Memory & datasets
 parent: Abilities
-nav_order: 6
+nav_order: 7
 ---
 
 # Memory & datasets
@@ -62,7 +62,7 @@ note about my old job"*.
 
 A dataset is a questionnaire the agent fills in conversationally, across as many sessions as it
 takes. Datasets are [abilities](/abilities): one JSON file per topic in
-`~/.config/kaja/marketplace/datasets/`, synced or your own. A [persona](/personas) opts into one with
+`~/.config/kaja/marketplace/datasets/`, synced or your own. A [persona](/abilities/personas) opts into one with
 `dataset = "<id>"`. Every dataset in the folder loads, but does nothing until a persona names it or it's
 a profile.
 

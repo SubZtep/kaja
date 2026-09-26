@@ -1,36 +1,37 @@
 # @kaja/nasi
 
-Kaja's agent brain: an OpenAI-compatible tool loop, per-user SQLite (sessions, memory, datasets), and built-in tools.
+Kaja's agent brain: an OpenAI-compatible tool loop, a store interface (sessions, memory, datasets), the built-in tools, and ability loading (skills, HTTP tools, MCP servers, personas).
 
 Hosts construct it. This package has no Ink, Hono, Better Auth, sqlite, or pg, and **does not read `settings.toml`** — the host injects a store, the model client, prompt context, and whether local tools are on.
 
 ```
 src/
-  nasi.ts            # Nasi host: turn() / turnBuffered() over SQLite
-  agent/             # Agent, run(), system prompt, intercepts
-  store/             # NasiStore interface + in-memory adapter (CLI sqlite, API Postgres)
+  nasi.ts            # Nasi host: turn() / turnBuffered() / compact() over a NasiStore
+  agent/             # Agent, run(), system prompt, intercepts, compaction
+  store/             # NasiStore interface, in-memory adapter, image helpers (CLI sqlite, API Postgres live in the hosts)
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
-  mcp/               # attached when includeLocalTools and mcpServers are set
+  abilities/         # AbilityStore, the marketplace folder store, loadAbilities (skills, HTTP tools, MCP, personas)
+  mcp/               # MCP clients: mcp.toml servers (local) and MCP abilities (local, or remote in the cloud)
   plugin/            # attached when includeLocalTools and pluginDir are set
-  client/            # HTTP client for lite CLI (no sqlite / loop)
-  security/          # SSRF + path guard
+  client/            # HTTP client for the cloud CLI (no loop)
+  security/          # SSRF guard (the path guard is tools/path-guard.ts)
 ```
 
 ## Entry points
 
 | Import | What it is |
 |--------|------------|
-| `@kaja/nasi` | Full package: `Nasi`, `Agent`, `run()`, store, tools. Pulls sqlite and the loop. |
-| `@kaja/nasi/client` | `createNasiClient` — `POST /nasi/turn` (buffered) and `POST /nasi/turn/stream` (SSE). Used by the lite CLI. Must not import sqlite or the agent loop. |
+| `@kaja/nasi` | Full package: `Nasi`, `Agent`, `run()`, store interface, tools. Pulls in the loop. |
+| `@kaja/nasi/client` | `createNasiClient` — `POST /nasi/turn` (buffered) and `POST /nasi/turn/stream` (SSE). Used by the cloud CLI. Must not import the agent loop. |
 
-Contracts live in `@kaja/schema/nasi` (HTTP turn), `@kaja/schema/store` (SQLite rows), `@kaja/schema/cli` (personas).
+Contracts live in `@kaja/schema/nasi` (HTTP turn), `@kaja/schema/store` (sessions and notes), `@kaja/schema/abilities` (personas, datasets, skill/HTTP tool/MCP manifests).
 
 ## Hosts
 
 - **API** (`apps/api`) opens `Nasi` with a Postgres store scoped to the account (local tools off). `owner` scopes widget/telegram rows within that account.
 - **CLI `--local`** builds an `Agent` itself (`createTools({ includeLocalTools: true, mcpServers, … })`) and calls `run()` — same loop, no HTTP.
-- **CLI cloud / lite** uses `@kaja/nasi/client` against the API. No local sqlite, MCP, or shell.
+- **CLI cloud** uses `@kaja/nasi/client` against the API. No local loop, MCP or shell; it only runs `read_file`/`list_files` when a turn pauses with `needs_client_tool`.
 
 ---
 
@@ -49,7 +50,9 @@ const nasi = await Nasi.open({
   includeLocalTools?,              // files, shell, MCP, plugins — default false
   personas?,                       // roster for switch_persona
   promptContext?,                  // system-prompt bits (env, sticky notes, …)
-  owner?                           // null = terminal; otherwise a namespaced id
+  owner?,                          // null = terminal; otherwise a namespaced id
+  deps?,                           // extra tool deps (imageGeneration, fetchProxy, …), gate dep-conditional tools
+  clientTools?                     // false: leave out read_file/list_files (no client to run them: widget, Telegram)
 })
 ```
 
@@ -59,9 +62,11 @@ const nasi = await Nasi.open({
 
 | Field | Type | Notes |
 |-------|------|--------|
-| `message` | string, 1–32768 chars | User text. If the session is waiting on `ask_user` or `run_command`, this is the reply / approval, not a new user message. |
+| `message` | string, 1–32768 chars | User text. If the session is waiting on `ask_user`, `run_command` or a client tool, this is the reply / approval / tool output, not a new user message. Optional over HTTP when `approval` is sent. |
+| `approval` | `"approve"` \| `"decline"`, optional | HTTP only: answers a pending `confirm_tool`; the server runs (or skips) the call it saved. |
 | `session` | UUIDv7, optional | Omit to start a conversation. Pass the previous response's `session` to continue. |
 | `includeThinking` | boolean, optional | When true, reasoning is copied into `steps` and `thinking`. |
+| `language` | string, optional | Reply language override. |
 | `personaId` | string, optional | Only on `NasiTurnInput` (in-process). Picks the starting persona from the roster. |
 
 **Turn output** (`NasiTurnResponse`):
@@ -69,11 +74,11 @@ const nasi = await Nasi.open({
 | Field | Type | Notes |
 |-------|------|--------|
 | `session` | UUIDv7 | Persist this and send it back on the next turn. |
-| `status` | `"completed"` \| `"needs_input"` \| `"needs_approval"` \| `"error"` | `needs_input` = `ask_user` pending; `needs_approval` = `run_command` waiting. |
+| `status` | `"completed"` \| `"needs_input"` \| `"needs_approval"` \| `"needs_client_tool"` \| `"error"` | `needs_input` = `ask_user` pending; `needs_approval` = `run_command` or `confirm_tool` waiting; `needs_client_tool` = the client must run `read_file`/`list_files` and send the output as the next `message`. |
 | `message` | string | Visible reply: final assistant text, or the pending question. |
 | `steps` | `NasiStep[]` | Ordered timeline for this turn (not the full history). |
 | `thinking` | string, optional | Concatenated reasoning, only if `includeThinking`. |
-| `usage` | `{ promptTokens?, model? }`, optional | From the last usage event. |
+| `usage` | `{ promptTokens?, model?, contextWindow? }`, optional | From the last usage event. |
 
 **Steps** (`NasiStep`):
 
@@ -86,6 +91,8 @@ const nasi = await Nasi.open({
 | `ask_user` | `question`, optional `note` |
 | `persona_switch` | `personaId`, `label` |
 | `confirm_command` | `command`, `description` |
+| `confirm_tool` | `name`, `arguments`, `summary` — an HTTP tool or MCP call waiting for approval |
+| `client_tool_call` | `name`, `arguments` — a tool only the client can run |
 
 Deltas, usage, `final`, and image events are **not** steps. They either feed `message`/`thinking`/`usage` or are CLI-only UI events.
 
@@ -136,9 +143,13 @@ for await (const event of run(agent, prompt, session, owner)) { /* … */ }
 | `display_image` | Thumbnail for the UI only (not sent to the model) |
 | `ask_user` | Stop and wait; next `prompt` becomes the tool result |
 | `confirm_command` | Stop and wait for approval (`run_command`) |
+| `confirm_tool` | Stop and wait for approval of an HTTP tool or MCP call that changes something |
+| `client_tool_call` | Stop so the client runs `read_file`/`list_files` (cloud only) |
 | `persona_switch` | Persona (and maybe model) changed mid-turn |
+| `compacted` | The conversation was summarised before a round (`beforeTokens`, `afterTokens`, `dropped`) |
+| `condensed` | An oversized tool result was condensed before a round (`tool`, `beforeTokens`, `afterTokens`) |
 | `final` | Turn done (`content` may be a fallback if the model returned empty) |
-| `usage` | `promptTokens`, `model` |
+| `usage` | `promptTokens`, `model`, `contextWindow` |
 
 A trailing `?` on otherwise-final text is also emitted as `ask_user` (no pending tool id). `Nasi` maps that to `status: "completed"` so a rhetorical question does not stall the HTTP turn.
 
@@ -146,7 +157,7 @@ A trailing `?` on otherwise-final text is also emitted as `ask_user` (no pending
 
 ## Tools
 
-`createTools({ includeLocalTools?, deps?, mcpServers?, pluginDir?, tempDir? })` builds the registry. Default is no files/shell/MCP/plugins; `includeLocalTools: true` adds those. `generate_image` still needs an image-gen resolver in `deps`.
+`createTools({ includeLocalTools?, deps?, mcpServers?, pluginDir?, tempDir? })` builds the registry. Default is an explicit allowlist of cloud-safe built-ins; `includeLocalTools: true` adds files, shell, MCP and plugins. `generate_image` still needs an image-gen resolver in `deps`, and cloud `fetch_url` needs `fetchProxy`.
 
 Intercepted by `run()` (never executed as normal tools): `ask_user`, `run_command`, `switch_persona`.
 

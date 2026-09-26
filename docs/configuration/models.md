@@ -41,7 +41,7 @@ Each `[models.<id>]` entry has:
 The id is yours to choose. The wizard uses the model name's last part, cleaned up (`qwen3.5:4b` becomes
 `qwen3-5-4b`, `accounts/fireworks/models/glm-5p3-flash` becomes `glm-5p3-flash`), with `-<provider>` added
 when two providers serve the same name. Models no task uses stay beside the others, for a
-[persona](/personas) to pin by id, or for [`kaja doctor`](/configuration#checking-keys-and-models) to switch
+[persona](/abilities/personas) to pin by id, or for [`kaja doctor`](/configuration#checking-keys-and-models) to switch
 to when the one in use stops answering; a switch only changes that task's line in `[tasks]`.
 
 The header shows how full the chat model's context is (`12,345 / 32,768 tokens (38%)`). Without
@@ -67,7 +67,7 @@ api_key = "ollama"
 
 ## Examples
 
-Four example files live in [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config).
+Example files live in [`docs/config`](https://github.com/SubZtep/kaja/tree/main/docs/config).
 They are generated from
 [`catalog.toml`](https://github.com/SubZtep/kaja/blob/main/docs/config/catalog.toml), the same provider
 catalog the setup wizard writes `models.toml` from, in the combination you tick. Each example shows one

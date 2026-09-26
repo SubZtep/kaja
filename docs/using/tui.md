@@ -3,13 +3,12 @@ layout: page
 title: Terminal UI
 parent: Using Kaja
 nav_order: 1
-permalink: /tui/
 ---
 
 # Terminal UI
 
 The chat client: a scrollable transcript, a multi-line input, and a key bar of hotkeys pinned to the
-bottom of the screen. Both [modes](/modes) share it; cloud mode has no model switching and no shell
+bottom of the screen. Both [modes](/getting-started/modes) share it; cloud mode has no model switching and no shell
 approvals, because the cloud agent never needs them.
 
 A local session starts with a summary of what it loaded: the active persona and model, connected MCP
@@ -39,6 +38,7 @@ kaja -s, --session <id>   # resume a specific session
 kaja sessions             # list saved sessions with their ids
 kaja doctor               # test keys, models and tools; asks for missing keys
 kaja telegram             # run as a Telegram bot (add --headless for no terminal UI)
+kaja telegram --pair      # print a one-time code to pair one more Telegram user
 
 # Config files and abilities
 kaja config paths | fetch | diff | wizard   # see Configuration
@@ -68,7 +68,7 @@ own when the context gets full (the header shows how full it is); see
 | `Home` / `End` | Start/end of the current line |
 | `Backspace` / `Delete` | Delete before/after the cursor |
 | `↑` / `↓` | Previous/next prompt from history (on the first/last line); otherwise move between lines |
-| `Ctrl+T` | Toggle mic [dictation](/voice) |
+| `Ctrl+T` | Toggle mic [dictation](/using/voice) |
 | `Esc` | Quit — or cancel the persona picker / decline the approval prompt when one is open |
 | `Ctrl+C` | Interrupt / exit |
 
@@ -98,7 +98,7 @@ Terminal.app/iTerm2 without "Option as Meta"); keep `Alt` if your host app reser
 (VS Code's integrated terminal does).
 
 In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`/`Backspace`/`Delete` close it. Picking a
-[persona](/personas) here starts a fresh conversation, and lasts until you quit.
+[persona](/abilities/personas) here starts a fresh conversation, and lasts until you quit.
 
 There is no in-app toggle for thinking, sounds or voice: set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
@@ -117,4 +117,4 @@ back to automatic, set `theme = "auto"` there.
 
 Next:
 
-[Web app](/web-app){: .btn .btn-green .fs-5 }
+[Web app](/using/web-app){: .btn .btn-green .fs-5 }

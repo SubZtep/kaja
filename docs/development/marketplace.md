@@ -134,8 +134,8 @@ An ability that can't run in the cloud is skipped at sync time, and one that sto
 from the catalog: a skill with `scripts/`; an HTTP tool on a non-public host, or needing a key when the
 server has no `USER_SECRET_KEY`; an MCP server that has no `tools` allowlist, is on a non-public host, is
 `stdio` and needs a key (a keyless `stdio` one is always stored, and offered only while the API has an
-[MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme) configured), or shares a name with an HTTP tool (a key belongs to one name); anything whose manifest
-no longer parses.
+[MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme) configured), or shares a
+name with an HTTP tool (a key belongs to one name); anything whose manifest no longer parses.
 
 ## Loading
 

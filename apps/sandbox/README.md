@@ -2,7 +2,7 @@
 
 The MCP sandbox runs **stdio MCP servers for cloud turns**. A stdio server is a program the agent starts and talks to over stdin/stdout, like `chrome-devtools-mcp`. In local mode Kaja starts it on your machine; the cloud API won't start commands on its own host, so it asks the sandbox instead. The sandbox serves each server over Streamable HTTP at `/mcp/<ability>`, and the cloud agent connects to it like any remote MCP server.
 
-The first (and so far only) server it runs is **chrome-devtools**: a headless Chrome the assistant can browse with, read pages from and screenshot.
+It runs **chrome-devtools**, a headless Chrome the assistant can browse with, read pages from and screenshot. It also runs **time** (Python `mcp-server-time`), which tells the current time and converts it between time zones.
 
 ## How a cloud turn reaches it
 
@@ -18,7 +18,7 @@ The first (and so far only) server it runs is **chrome-devtools**: a headless Ch
 1. The API offers a stdio MCP ability only when it has `SANDBOX_URL` and `SANDBOX_SECRET`, and only a keyless one with a fixed `tools` list.
 2. Each turn, the API signs a short-lived token (HMAC-SHA256 over the user id, the ability and an expiry) with the shared `SANDBOX_SECRET`.
 3. The sandbox checks the signature, the expiry and that the token is for the ability in the URL, then hands the request to that user's server for that ability.
-4. The request only ever *names* an ability. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's command and flags.
+4. The request only ever *names* an ability. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what it fetched stays cached in `SANDBOX_CACHE_DIR` (the shipped servers are fetched when the image is built).
 
 ## Auth
 
@@ -39,7 +39,7 @@ No ability can be named `#stats`, so an ability's token can't read the stats, an
 - **Started on first use**, one per (user, ability), and **kept warm between turns**: the browser's open pages are still there on your next message. Every turn opens a new MCP session; the relay answers its `initialize` from the first one, so the server itself is only initialized once.
 - **Stopped when idle** for `SANDBOX_IDLE_MS` (10 minutes by default). A call that's still running gets one more idle window first.
 - **At most `SANDBOX_MAX_PROCESSES`** (8) run at once, across all users. When it's full, the least recently used idle server is stopped to make room. Only when every server is in the middle of a call does a new user get a `503`.
-- Each server gets a **throwaway HOME** (removed when it stops) and only `PATH` plus its manifest's `env`: none of the sandbox's own variables, such as the secret.
+- Each server gets a **throwaway HOME** (removed when it stops) and only `PATH`, the shared package caches (`SANDBOX_CACHE_DIR`) and its manifest's `env`: none of the sandbox's own variables, such as the secret.
 
 ## The egress proxy
 
@@ -85,6 +85,12 @@ The two ends of the proxy are configured in two places:
 
 **They must match.** Change only the env var and the proxy moves while Chrome keeps looking at `3128`: every page then fails to load. That fails safe (nothing leaks), but the browser is broken. A test checks that `overrides.json` matches the env default. The port is internal to the container, so there's normally no reason to change it; if you do, change both.
 
+### Going out through `WEB_PROXY`
+
+Set `WEB_PROXY` (an `http://` proxy URL, credentials allowed: `http://user:pass@proxy.example.com:8080`) and the egress proxy stops connecting directly. After the same checks, it opens a `CONNECT` tunnel through `WEB_PROXY` to **the address it checked** (not the name, so the upstream can't resolve it to something else), with the credentials as `Proxy-Authorization: Basic …`. HTTPS rides that tunnel as before; plain HTTP is sent inside it in origin form, so the site still gets its `Host` header. If the upstream doesn't answer `200`, Chrome gets a `502` and the stats count it as failed.
+
+Chrome can't point at `WEB_PROXY` itself: it has no way to take proxy credentials from a flag, and it would skip the private-address checks. The upstream must allow `CONNECT` to IP addresses on any port (commercial proxies do; Squid by default only allows `443`, which leaves plain `http://` pages failing).
+
 ### What the proxy doesn't cover
 
 - Only the browsers go through it. The MCP server processes themselves (Node) connect directly. A new stdio server that makes its own requests needs its own guard.
@@ -117,7 +123,7 @@ The real image, as production runs it (amd64 only: Chrome for Testing has no Lin
 docker compose up -d sandbox
 ```
 
-For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SANDBOX_URL` (`http://localhost:3002`, or `http://sandbox:3002` inside compose). Deploying to production is covered in [Deployment](../../docs/development/deployment.md#mcp-sandbox).
+For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SANDBOX_URL` (`http://localhost:3002`, or `http://sandbox:3002` inside compose). Deploying to production is covered in [Deployment](https://docs.kaja.io/development/deployment#mcp-sandbox).
 
 ## Configuration
 
@@ -127,9 +133,11 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 | `PORT` | `3002` | the MCP endpoint and `/health` |
 | `MARKETPLACE_DIR` | `../../marketplace` | whose `mcp/*.toml` stdio manifests are the only servers it runs |
 | `SANDBOX_OVERRIDES` | — | JSON replacing a manifest's command/args on this host (the image uses `overrides.json`) |
+| `SANDBOX_CACHE_DIR` | — | shared bun/uv/npm caches for the servers, so fetched packages stay (the image uses `/home/node/.cache/mcp`) |
 | `SANDBOX_IDLE_MS` | `600000` | how long an unused server stays warm |
 | `SANDBOX_MAX_PROCESSES` | `8` | most servers at once; each Chrome needs about 300–500 MB of RAM |
 | `SANDBOX_EGRESS_PORT` | `3128` | the egress proxy's port; must match `overrides.json` |
+| `WEB_PROXY` | — | `http://` proxy the egress proxy tunnels checked traffic through; unset connects directly |
 | `NODE_ENV` | — | `production` turns on Sentry (the image sets it) |
 
 `.env.example` is generated from `packages/schema/env/sandbox.ts` (`bun generate:env`).
@@ -145,7 +153,7 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 
 - Abilities that need the user's key (`auth.in = "env"`): keys aren't forwarded, so keyed stdio abilities are refused on both sides.
 - Per-user limits beyond one server per (user, ability).
-- Runtimes other than Node: a Python (`uvx`) server would need Python in the image.
+- Servers that build from source: the image has no compilers or git yet.
 
 ## Code
 
@@ -160,6 +168,6 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 | `src/manifests.ts` | the stdio manifests it may run, plus the overrides |
 | `src/report.ts` | Sentry in production |
 | `overrides.json` | the image's command and Chrome flags for chrome-devtools |
-| `Dockerfile` | the sandbox compiled to one binary, on Node 22 slim with Chrome for Testing's headless shell |
+| `Dockerfile` | one multi-runtime image (Node 22 slim, bun, uv with Python, Chrome for Testing's headless shell) running the bundled sandbox |
 
 Tests: `bun test apps/sandbox/tests`. More notes for coding agents are in [AGENTS.md](./AGENTS.md).

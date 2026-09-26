@@ -137,28 +137,28 @@ config:
 ---
 flowchart TD
     Start(["run(agent, prompt, session, owner)"]) --> Sys{"session empty?"}
-    Sys -->|yes| Build["buildSystemPrompt()\ninstructions + env + tool\ncontracts + personas +\nsticky memory + language"]
+    Sys -->|yes| Build["buildSystemPrompt()<br>instructions + env + tool<br>contracts + personas +<br>sticky memory + language"]
     Sys -->|no, resuming| Push
-    Build --> Push["push prompt\n(or pending tool result)"]
+    Build --> Push["push prompt<br>(or pending tool result)"]
 
-    Push --> Fit["condense oversized tool results\ncompact if past compactAt"]
-    Fit --> Call["streamRound()\nOpenAI chat.completions.stream\n(too long: compact, retry once)"]
+    Push --> Fit["condense oversized tool results<br>compact if past compactAt"]
+    Fit --> Call["streamRound()<br>OpenAI chat.completions.stream<br>(too long: compact, retry once)"]
     Call -->|"delta events"| Call
 
     Call --> Empty{"empty round?"}
     Empty -->|"yes, retries left"| Nudge["push a nudge message"] --> Fit
     Empty -->|no| Calls{"tool_calls present?"}
 
-    Calls -->|none| Final["final or ask_user\n(trailing '?' backstop)"] --> Done(["return"])
+    Calls -->|none| Final["final or ask_user<br>(trailing '?' backstop)"] --> Done(["return"])
 
     Calls -->|yes| Dispatch{"which tool?"}
-    Dispatch -->|"ask_user"| AskEv["yield ask_user\nset pendingAskUserId"] --> Wait(["return — wait for host"])
-    Dispatch -->|"run_command"| Risk{"mutates:false and\nread-only allowlist?"}
-    Risk -->|yes| AutoRun["run immediately\nresult → messages"] --> Fit
-    Risk -->|no| ConfirmEv["yield confirm_command\nset pendingRunCommandId"] --> Wait
-    Dispatch -->|"switch_persona"| Switch["applyPersona()\nrewrite system message\nmaybe swap model"] --> Fit
-    Dispatch -->|"any other tool"| Exec["tool.execute(args, ctx)\nctx: owner, personaId, store"]
-    Exec -->|"text or images"| Result["result → messages\nimages also yielded for vision"] --> Fit
+    Dispatch -->|"ask_user"| AskEv["yield ask_user<br>set pendingAskUserId"] --> Wait(["return — wait for host"])
+    Dispatch -->|"run_command"| Risk{"mutates:false and<br>read-only allowlist?"}
+    Risk -->|yes| AutoRun["run immediately<br>result → messages"] --> Fit
+    Risk -->|no| ConfirmEv["yield confirm_command<br>set pendingRunCommandId"] --> Wait
+    Dispatch -->|"switch_persona"| Switch["applyPersona()<br>rewrite system message<br>maybe swap model"] --> Fit
+    Dispatch -->|"any other tool"| Exec["tool.execute(args, ctx)<br>ctx: owner, personaId, store"]
+    Exec -->|"text or images"| Result["result → messages<br>images also yielded for vision"] --> Fit
 
     classDef decision fill:#161b22,stroke:#58a6ff,color:#e6edf3
     classDef action fill:#0d1117,stroke:#1f6feb,color:#e6edf3
@@ -258,7 +258,7 @@ Skills, HTTP tools, MCP servers and personas come from an `AbilityStore` the hos
 `marketplace/` folder through `createFolderAbilityStore`, the API reads its Postgres copy of the catalog.
 `loadAbilities` turns a store's enabled abilities into extra tools for the host to append, and one that
 can't load (a broken manifest, a required key the user hasn't saved) is left out instead of stopping the
-agent. See [Skills](/skills), [Tools](/tools) and [Personas](/personas) for what each kind does.
+agent. See [Skills](/abilities/skills), [Tools](/abilities/tools) and [Personas](/abilities/personas) for what each kind does.
 
 ## Warnings
 
@@ -270,7 +270,7 @@ set: the API prints them, and the terminal appends them to its opt-in log file, 
 
 `createTools({ includeLocalTools })` decides the registry. The default is **off**: only an explicit
 allowlist of cloud-safe built-ins is returned, so a newly added tool is never cloud-exposed by
-accident. Turning it on adds file, shell, MCP, and plugin tools. See [Tools](/tools) for the
+accident. Turning it on adds file, shell, MCP, and plugin tools. See [Tools](/abilities/tools) for the
 resulting list.
 
 Some built-ins are gated on a **dep** as well as the allowlist — they only register when the host
@@ -289,4 +289,4 @@ for the terminal to run on the user's machine. `clientTools: false` (on `createT
 
 Next:
 
-[Cloud API](/development/api){: .btn .btn-green .fs-5 }
+[API](/development/api){: .btn .btn-green .fs-5 }

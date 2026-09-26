@@ -54,10 +54,10 @@ flowchart TD
 
 | Workspace | What it is |
 | --- | --- |
-| `apps/api` | Hono REST API — auth, admin config, cloud agent (`/nasi`), [widget](/widget) serving, emails |
+| `apps/api` | Hono REST API — auth, admin config, cloud agent (`/nasi`), [widget](/using/widget) serving, emails |
 | `apps/api/widgets` | the embeddable browser chat bundle, built as part of the API |
 | `apps/web` | TanStack Start — the public landing site and the signed-in [web app](/development/web) (dashboard, abilities, widgets, admin) |
-| `apps/tui` | the [terminal client](/tui), Telegram bot, local config and storage |
+| `apps/tui` | the [terminal client](/using/tui), Telegram bot, local config and storage |
 | `apps/sandbox` | the [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme): runs stdio MCP servers (a headless Chrome) for cloud turns, one per user, behind an egress proxy that only reaches public addresses |
 | `packages/nasi` | the [agent brain](/development/nasi): loop, tools, store interface |
 | `packages/schema` | every Zod [schema](/development/schema), in role-based subpaths |
@@ -91,7 +91,7 @@ curated folder in this repo).
 
 **Recommended**
 
-- **Docker Compose** for PostgreSQL and a local mail catcher
+- **Docker Compose** for PostgreSQL, a local mail catcher and S3-compatible object storage (RustFS)
 - **VSCode** (or compatible) with the recommended extensions — TOML schemas and Biome come wired up
 - **Claude Code**, **OpenCode**, or any `AGENTS.md`-compatible coding agent
 
@@ -102,7 +102,7 @@ git clone https://github.com/SubZtep/kaja.git
 cd kaja
 bun install
 bunx lefthook install        # git hooks
-docker compose up -d db mail
+docker compose up -d db mail storage
 ```
 
 The database volume lives in `./pgdata` and the migration files in `apps/api/migrations` run
@@ -113,14 +113,19 @@ Bootstrap the env files and generate a local auth secret:
 
 ```sh
 cp apps/api/.env.example apps/api/.env
+cp apps/sandbox/.env.example apps/sandbox/.env
+cp apps/tui/.env.example apps/tui/.env
 cp apps/web/.env.example apps/web/.env
 ./scripts/create_local_secrets.sh   # appends BETTER_AUTH_SECRET to apps/api/.env
 ```
 
+The API refuses to start without `BETTER_AUTH_SECRET`; run the script once, not on every setup, or it
+appends a second line.
+
 ## Commands
 
 ```sh
-bun dev                  # API + web, hot reload
+bun dev                  # API (with the widget bundle) + web, hot reload
 bun dev:api              # just the API
 bun dev:web              # just the web app
 bun dev:tui              # the terminal client (use this — it passes your TTY through)
@@ -130,6 +135,7 @@ bun lint                 # Biome check + tombi TOML format/lint
 bun lint:fix             # apply fixes, including unsafe ones
 bun typecheck            # tsc --noEmit across every workspace
 bun test                 # API integration + CLI unit tests
+bun docs                 # this site, with Jekyll (needs Ruby and `bundle install` in docs/)
 
 bun run ./scripts/mass_user_create.ts [n]   # create n random local users (default 10)
 bun run scripts/barkochba.ts ["secret"]     # self-play the barkochba persona against a thinker
@@ -141,16 +147,20 @@ bun run scripts/barkochba.ts ["secret"]     # self-play the barkochba persona ag
 
 ### Code generation
 
-Never hand-edit the outputs of these — the schemas in `packages/schema/` are the source of truth:
+Never hand-edit the outputs of these — their inputs are the source of truth:
 
 ```sh
 bun generate:env         # apps/*/.env.example from packages/schema/env/*
 bun check:env            # fail if any .env.example has drifted
 bun generate:env-types   # ambient Bun.Env typings per workspace
-bun generate:schemas     # JSON Schemas for the TOML config files
+bun generate:schemas     # JSON Schemas for the TOML config files (docs/config/schemas)
+bun generate:models      # docs/config/models.*.toml from docs/config/catalog.toml
+bun check:models         # fail if the model examples have drifted
+bun sync:locales         # give every language the en-GB keys, with placeholders for new text
+bun check:locales        # fail on drift or untranslated placeholders
 ```
 
-All of them run automatically on commit via [lefthook](https://github.com/evilmartians/lefthook)
+The generators run automatically on commit via [lefthook](https://github.com/evilmartians/lefthook)
 when their inputs change.
 
 ## Git hooks
@@ -158,9 +168,9 @@ when their inputs change.
 | Hook | Runs |
 | --- | --- |
 | `commit-msg` | commitlint (conventional commits) |
-| `pre-commit` | `lint:fix`, the generators above and the web route tree (only for changed inputs), `typecheck` |
-| `post-commit` | `test`, so a failing suite shows up right after the commit |
-| `pre-push` | `lint`, `typecheck` |
+| `pre-commit` | the generators above and the web route tree (only for changed inputs), then `lint:fix` and `typecheck` |
+| `pre-push` | `lint`, `typecheck`; pushing `main` also runs `check:locales` and `test` |
+| `post-merge` | re-installs the hooks when `lefthook.toml` changed |
 
 They're the reason you rarely need to run these by hand.
 
@@ -175,6 +185,8 @@ They're the reason you rarely need to run these by hand.
 | API reference (dev only) | [`http://localhost:3001/reference`](http://localhost:3001/reference) |
 | Web | [`http://localhost:3000`](http://localhost:3000) |
 | MCP sandbox | [`http://localhost:3002/health`](http://localhost:3002/health) |
+| Object storage (RustFS) S3 API | `http://localhost:9000` (key `kaja`, secret `kaja-dev-storage`) |
+| Object storage console | [`http://localhost:9001`](http://localhost:9001) |
 
 ## Environment variables
 
@@ -199,9 +211,11 @@ bun run --filter @kaja/tui test       # CLI unit tests only
 bun run --filter @kaja/nasi test      # agent brain only
 ```
 
-API integration tests need a running PostgreSQL matching `DATABASE_URL`. The test runner preloads
-`apps/api/.env.example` then `apps/api/.env` (wired via `bunfig.toml`), and rate limiting turns
-itself off under `bun test`.
+API integration tests need a running PostgreSQL matching `DATABASE_URL`, but use their own database:
+`<dev database>_test` beside it (or `TEST_DATABASE_URL`), rebuilt from `apps/api/migrations` whenever
+those files change, so a running `bun dev` can't race them. The test runner preloads
+`apps/api/.env.example` then `apps/api/.env` (wired via `bunfig.toml`), and rate limiting turns itself
+off under `bun test`. `bun test:tz` reruns the date-sensitive tests in three far-apart time zones.
 
 CI runs Biome, the type checker, the env-drift check, and the full test suite against a PostgreSQL service
 with the migrations applied and the config seeded (`.github/workflows/ci.yaml`); a separate workflow builds

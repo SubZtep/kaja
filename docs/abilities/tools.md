@@ -2,12 +2,12 @@
 layout: page
 title: Built-in tools
 parent: Abilities
-nav_order: 3
+nav_order: 4
 ---
 
 # Built-in tools
 
-Every session starts with the built-in toolset. [HTTP tools](/http-tools), [MCP servers](/mcp) and,
+Every session starts with the built-in toolset. [HTTP tools](/abilities/http-tools), [MCP servers](/abilities/mcp) and,
 locally, your own plugin tools are added on top.
 
 ## Built-ins
@@ -15,14 +15,14 @@ locally, your own plugin tools are added on top.
 | Tool | Purpose | Cloud |
 | --- | --- | :---: |
 | `ask_user` | ask a clarifying question mid-task | ✓ |
-| `switch_persona` | change [persona](/personas) mid-conversation | ✓ |
-| `load_skill` | read an enabled [skill](/skills) | ✓ |
+| `switch_persona` | change [persona](/abilities/personas) mid-conversation | ✓ |
+| `load_skill` | read an enabled [skill](/abilities/skills) | ✓ |
 | `current_time` | current date and time | ✓ |
 | `fetch_url` | fetch a URL | proxy |
 | `summarize` | summarize long text | ✓ |
 | `rerank` | rerank passages against a query | ✓ |
-| `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/memory) | ✓ |
-| `dataset_info` | collect answers for a persona's [dataset](/memory#datasets) | ✓ |
+| `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/abilities/memory) | ✓ |
+| `dataset_info` | collect answers for a persona's [dataset](/abilities/memory#datasets) | ✓ |
 | `generate_image` | text-to-image | ✓ |
 | `read_file` / `list_files` | read a file, list a directory | client |
 | `view_image` | look at an image file | ✗ |
@@ -31,7 +31,7 @@ locally, your own plugin tools are added on top.
 Locally, `generate_image` needs an `image-generation` model picked in `[tasks]` of
 [`models.toml`](/configuration/models).
 
-Web search isn't built in: turn on the marketplace's `brave-search` [HTTP tool](/http-tools), which adds
+Web search isn't built in: turn on the marketplace's `brave-search` [HTTP tool](/abilities/http-tools), which adds
 `web_search`: locally with your own Brave Search API key; in the cloud with the server's key, or yours if
 you save one.
 
@@ -104,4 +104,4 @@ the names.
 
 Next:
 
-[HTTP tools](/http-tools){: .btn .btn-green .fs-5 }
+[HTTP tools](/abilities/http-tools){: .btn .btn-green .fs-5 }

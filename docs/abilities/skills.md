@@ -2,7 +2,7 @@
 layout: page
 title: Skills
 parent: Abilities
-nav_order: 2
+nav_order: 3
 ---
 
 # Skills
@@ -50,13 +50,13 @@ with the reason, and the others still load.
 - `load_skill(name)` returns the instructions, the skill's folder, and its other files.
 - `load_skill(name, file)` reads one of those files. Reads stay inside the skill folder, and file
   names match case-insensitively. Binary files, hidden files and `.bak` backups are never served.
-- Scripts run through [`run_command`](/tools#shell-commands), with the same approval as any other
+- Scripts run through [`run_command`](/abilities/tools#shell-commands), with the same approval as any other
   command — so skills with a `scripts/` folder are local-only.
 
-A [persona](/personas) can limit which skills it offers with its `skills` list.
+A [persona](/abilities/personas) can limit which skills it offers with its `skills` list.
 
 ---
 
 Next:
 
-[Built-in tools](/tools){: .btn .btn-green .fs-5 }
+[Built-in tools](/abilities/tools){: .btn .btn-green .fs-5 }

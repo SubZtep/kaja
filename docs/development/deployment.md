@@ -31,7 +31,8 @@ Every outside service that receives users' data is listed in the [Privacy Policy
 
 ## Projects
 
-Create a Disco **Project** per app and point each at its own config file (the sandbox goes on its own server, see [MCP sandbox](#mcp-sandbox)):
+Create a Disco **Project** per app and point each at its own config file (the sandbox goes on its own
+server, see [MCP sandbox](#mcp-sandbox)):
 
 | Project | Variable | Value |
 | --- | --- | --- |
@@ -40,11 +41,13 @@ Create a Disco **Project** per app and point each at its own config file (the sa
 | Sandbox | `DISCO_JSON_PATH` | `apps/sandbox/disco.json` |
 
 Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
-automatically.
+automatically. To keep its data on a Hetzner Volume that outlives the server, follow
+[Postgres on a volume](/development/deploy-volume).
 
 The API config declares a `hook:deploy:start:before` step that runs `bun run migrate.js`, so
 **migrations apply on every deploy** before the new container takes traffic. The API keeps no files
-of its own: everything lives in Postgres, and images in [object storage](#object-storage). `compose.yaml` is for local development only.
+of its own: everything lives in Postgres, and images in [object storage](#object-storage).
+`compose.yaml` is for local development only.
 
 ### Recreating the database
 
@@ -122,6 +125,8 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
 - Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
 - Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` and `/stats` only accept an
   API-signed token; `/health` is open. Admins see the sandbox live on the web's **Admin → Dashboard**.
+- Optionally set `WEB_PROXY` (`http://` only, same format as the API's) so the browsers' traffic leaves
+  through that proxy instead of the sandbox server's own IP; it must allow `CONNECT` to IPs on any port.
 - Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
   the image sets `NODE_ENV=production`. It reports MCP servers that won't start, die on their own, or error,
   with their last stderr lines; no tracing, and request headers are dropped.
@@ -189,7 +194,7 @@ matching limit and a line in the Privacy Policy.
 - The storage bucket and its credentials (see [Object storage](#object-storage)).
 - A strong `CONFIG_API_TOKEN`. `/config/*` is **fail-closed**: a missing or empty token returns 401
   for every request on the prefix and never serves provider API keys.
-- `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/widget) routes are
+- `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/using/widget) routes are
   deliberately exempt — they reflect origins and gate on the key's own allowlist instead.
 - `NODE_ENV=production` (Sentry on, no `/reference` UI).
 - Rate limits left on — they only auto-disable under `bun test`.
@@ -219,4 +224,4 @@ You can always run **Build and release TUI** by hand from the Actions tab.
 
 Next:
 
-[Back to the start](/){: .btn .btn-green .fs-5 }
+[Postgres on a volume](/development/deploy-volume){: .btn .btn-green .fs-5 }

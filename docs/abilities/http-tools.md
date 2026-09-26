@@ -2,7 +2,7 @@
 layout: page
 title: HTTP tools
 parent: Abilities
-nav_order: 4
+nav_order: 5
 ---
 
 # HTTP tools
@@ -66,4 +66,4 @@ addresses are refused, on every redirect too. Keys and approvals work as describ
 
 Next:
 
-[MCP servers](/mcp){: .btn .btn-green .fs-5 }
+[MCP servers](/abilities/mcp){: .btn .btn-green .fs-5 }

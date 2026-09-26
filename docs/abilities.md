@@ -7,18 +7,19 @@ has_children: true
 
 # Abilities
 
-Everything Kaja can do beyond its [built-in tools](/tools) is an **ability**: a persona, skill, HTTP
+Everything Kaja can do beyond its [built-in tools](/abilities/tools) is an **ability**: a persona, skill, HTTP
 tool, MCP server or dataset. They come from the **marketplace**, a curated
 [`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace) folder in the Kaja repo, and in
-local mode from files you write yourself.
+local mode from files you write yourself. Each one plugs into [Nasi](/abilities/nasi), the agent at the heart of
+Kaja.
 
 | Kind | What it gives the agent | Read more |
 | --- | --- | --- |
-| persona | a character with its own instructions, model and sampling | [Personas](/personas) |
-| skill | instructions it loads when a request matches | [Skills](/skills) |
-| HTTP tool | a web API described so the model can call it | [HTTP tools](/http-tools) |
-| MCP server | the tools of a Model Context Protocol server | [MCP servers](/mcp) |
-| dataset | questions a persona collects answers to | [Memory & datasets](/memory#datasets) |
+| persona | a character with its own instructions, model and sampling | [Personas](/abilities/personas) |
+| skill | instructions it loads when a request matches | [Skills](/abilities/skills) |
+| HTTP tool | a web API described so the model can call it | [HTTP tools](/abilities/http-tools) |
+| MCP server | the tools of a Model Context Protocol server | [MCP servers](/abilities/mcp) |
+| dataset | questions a persona collects answers to | [Memory & datasets](/abilities/memory#datasets) |
 
 Nothing loads just because it exists: you turn each ability on — with `kaja abilities` locally, or on
 the [Abilities page](https://kaja.io/abilities) in the cloud. The two lists are separate.
@@ -62,9 +63,9 @@ all work, because everything runs on your machine.
 
 The Kaja API keeps its own copy of the marketplace, refreshed every hour. Pick what your account uses:
 
-- on the [Abilities page](https://kaja.io/abilities) of the [web app](/web-app), which shows each
+- on the [Abilities page](https://kaja.io/abilities) of the [web app](/using/web-app), which shows each
   ability's instructions, host, tools and key need before you turn it on;
-- or with `/abilities` in the [cloud Telegram bot](/telegram#cloud-bot).
+- or with `/abilities` in the [cloud Telegram bot](/using/telegram#cloud-bot).
 
 `kaja abilities` in cloud mode just points you to the web page. A change reaches a conversation that's
 already going from its next message, in cloud terminal chat and the cloud Telegram bot alike.
@@ -75,7 +76,7 @@ The cloud has no shell and serves many people, so it offers less:
 | --- | --- |
 | skill | it has a `scripts/` folder |
 | HTTP tool | its `baseUrl` isn't a public address |
-| MCP server | it has no `tools` allowlist, isn't on a public host, or is `stdio` and needs a key ([keyless `stdio` ones run in the MCP sandbox](/mcp#in-the-cloud)) |
+| MCP server | it has no `tools` allowlist, isn't on a public host, or is `stdio` and needs a key ([keyless `stdio` ones run in the MCP sandbox](/abilities/mcp#in-the-cloud)) |
 
 **Keys.** An ability that needs a key asks for it before you can turn it on. The key is tested, stored
 encrypted, and never shown again — the page only says "Key saved", with Replace and Remove. It's only
@@ -111,4 +112,4 @@ works is on [Marketplace internals](/development/marketplace).
 
 Next:
 
-[Personas](/personas){: .btn .btn-green .fs-5 }
+[Nasi](/abilities/nasi){: .btn .btn-green .fs-5 }

@@ -1,0 +1,14 @@
+# Current time and time zone conversion: https://github.com/modelcontextprotocol/servers/tree/main/src/time
+# Runs `uvx mcp-server-time` on your machine and needs uv (https://docs.astral.sh/uv/) installed.
+# In the cloud it runs in the MCP sandbox instead (apps/sandbox). Both tools only read, so nothing asks first.
+name        = "time"
+description = "The current time in any IANA time zone, and converting times between zones."
+transport   = "stdio"
+command     = "uvx"
+args        = [
+  "mcp-server-time"
+]
+tools       = [
+  "get_current_time",
+  "convert_time"
+]

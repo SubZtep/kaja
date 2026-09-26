@@ -53,7 +53,7 @@ export class McpRelay {
     this.#name = name
   }
 
-  /** Starts the server with a throwaway HOME and nothing from the sandbox's own environment but PATH. */
+  /** Starts the server with a throwaway HOME and nothing from the sandbox's own environment but PATH (cache dirs come in its `env`). */
   static async start(server: SandboxServer): Promise<McpRelay> {
     const home = await mkdtemp(join(tmpdir(), `kaja-sandbox-${server.name}-`))
     const child = new StdioClientTransport({
