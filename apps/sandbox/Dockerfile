@@ -18,11 +18,16 @@ ARG CHROME_HEADLESS_SHELL_VERSION=153.0.8010.36
 ARG PUPPETEER_BROWSERS_VERSION=3.2.3
 RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
 WORKDIR /opt/mcp
-RUN npm install --omit=dev --no-audit --no-fund chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION} \
-  && npx -y @puppeteer/browsers@${PUPPETEER_BROWSERS_VERSION} install chrome-headless-shell@${CHROME_HEADLESS_SHELL_VERSION} --path /tmp/chrome \
-  && mv /tmp/chrome/chrome-headless-shell/linux-${CHROME_HEADLESS_SHELL_VERSION}/chrome-headless-shell-linux64 /opt/chrome
+RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}"
+# Neither package has install scripts; the browsers CLI goes to /tmp so it stays out of /opt/mcp.
+RUN npm install --prefix /tmp/browsers --ignore-scripts --no-audit --no-fund \
+    "@puppeteer/browsers@${PUPPETEER_BROWSERS_VERSION}" \
+  && /tmp/browsers/node_modules/.bin/browsers install \
+    "chrome-headless-shell@${CHROME_HEADLESS_SHELL_VERSION}" --path /tmp/chrome \
+  && mv "/tmp/chrome/chrome-headless-shell/linux-${CHROME_HEADLESS_SHELL_VERSION}/chrome-headless-shell-linux64" /opt/chrome
 # The headless shell links libgbm but renders with its bundled SwiftShader, so libgbm's GPU backends (Mesa, ~190 MB with LLVM) never load: take the one library.
-RUN cd /tmp && apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
+WORKDIR /tmp
+RUN apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
   && mkdir -p /opt/lib && cp -a gbm/usr/lib/x86_64-linux-gnu/libgbm.so.1* /opt/lib/
 
 # The stdio MCP servers are Node programs, so the runtime is Node; only the headless shell's libraries and fonts are added.

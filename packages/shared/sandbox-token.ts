@@ -4,10 +4,11 @@ export type SandboxClaims = { sub: string; ability: string; exp: number }
 const encoder = new TextEncoder()
 
 function toBase64Url(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes))
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replace(/=+$/, "")
+  const base64 = btoa(String.fromCodePoint(...bytes))
+  // A loop, since `/=+$/` backtracks on long runs
+  let end = base64.length
+  while (end > 0 && base64[end - 1] === "=") end--
+  return base64.slice(0, end).replaceAll("+", "-").replaceAll("/", "_")
 }
 
 function fromBase64Url(text: string): Uint8Array<ArrayBuffer> | undefined {

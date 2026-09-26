@@ -1,5 +1,6 @@
 import type { McpAbility, McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
+import { trimTrailingSlashes } from "@kaja/shared"
 import { connectMcpServer } from "../mcp/client"
 import type { FetchLike } from "../security/ssrf"
 import type { KeyCheckResult } from "./http-tool"
@@ -49,7 +50,7 @@ export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbili
  */
 export async function sandboxedMcpTarget(ability: McpAbility, sandbox: McpSandbox): Promise<McpAbilityTarget> {
   const local = mcpAbilityTarget(ability)
-  const url = `${sandbox.url.replace(/\/+$/, "")}/mcp/${encodeURIComponent(ability.name)}`
+  const url = `${trimTrailingSlashes(sandbox.url)}/mcp/${encodeURIComponent(ability.name)}`
   return {
     ...local,
     server: { id: ability.name, url, headers: { Authorization: `Bearer ${await sandbox.token(ability.name)}` } },
