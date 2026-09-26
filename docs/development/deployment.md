@@ -28,12 +28,13 @@ Every outside service that receives users' data is listed in the [Privacy Policy
 
 ## Projects
 
-Create two Disco **Projects** and point each at its own config file:
+Create a Disco **Project** per app and point each at its own config file (the sandbox goes on its own server, see [MCP sandbox](#mcp-sandbox)):
 
 | Project | Variable | Value |
 | --- | --- | --- |
 | API | `DISCO_JSON_PATH` | `apps/api/disco.json` |
 | Web | `DISCO_JSON_PATH` | `apps/web/disco.json` |
+| Sandbox | `DISCO_JSON_PATH` | `apps/sandbox/disco.json` |
 
 Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
 automatically.
@@ -62,6 +63,21 @@ ALTER SCHEMA public OWNER TO <user in DATABASE_URL>;
 
 Then deploy: the migrations and the config seed run before the new container takes traffic. Secrets users
 saved before the recreate are gone with it.
+
+### MCP sandbox
+
+The sandbox (`apps/sandbox`) runs stdio MCP servers for cloud turns, starting with a headless Chrome that
+browses anything its container can reach — the API's SSRF guard doesn't cover it. Deploy it as its own
+project on a **separate Disco server** with nothing else on it, so Chrome can't reach the database or the
+other projects. The server must be amd64: the Chrome headless shell has no Linux arm64 build.
+
+- Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
+- Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` only accepts the API-signed
+  token; `/health` is open.
+- The image copies `marketplace/mcp` at build time, so a new or changed stdio manifest needs a sandbox
+  redeploy too.
+
+Without both `SANDBOX_URL` and `SANDBOX_SECRET` the API leaves stdio MCP abilities out of cloud turns.
 
 ## Environment variables
 

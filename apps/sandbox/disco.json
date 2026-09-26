@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "services": {
+    "web": { "port": 3002, "image": "sandbox" }
+  },
+  "images": {
+    "sandbox": {
+      "dockerfile": "apps/sandbox/Dockerfile",
+      "context": "."
+    }
+  }
+}
