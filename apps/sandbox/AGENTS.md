@@ -21,14 +21,16 @@ src/stats.ts      # /stats: pool servers and counts, process-tree RSS from /proc
 src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked)
 src/manifests.ts  # the stdio manifests it may run, plus overrides.json
 src/report.ts     # Sentry in production (its own project): failed starts, servers that exit on their own (last 20 stderr lines), child errors
-overrides.json    # the Docker image's command/args: chrome-devtools (Node + Chrome for Testing headless shell, --no-sandbox, http(s) pages only, the egress proxy, a 512 MB JS heap per page), time (the /opt/mcp-py venv, UTC)
+overrides.json    # the Docker image's command/args: chrome-devtools (still bunx, pinned, with the Chrome for Testing headless shell, --no-sandbox, http(s) pages only, the egress proxy, a 512 MB JS heap per page), time (the /opt/mcp-py venv, UTC)
 Dockerfile        # the sandbox compiled to one binary (bun build --compile) on node:22-trixie-slim
 ```
 
 ## Docker image
 
-- Runtime is `node:22-trixie-slim`: most stdio MCP servers are Node programs (chrome-devtools-mcp needs Node 20.19+/22.12+); Bun only lives inside the compiled `sandbox` binary
-- Chrome is the Chrome for Testing headless shell at the version chrome-devtools-mcp's Puppeteer pins (`PUPPETEER_REVISIONS` in its bundle): bump `CHROME_DEVTOOLS_MCP_VERSION` and `CHROME_HEADLESS_SHELL_VERSION` together
+- Runtime is `node:22-trixie-slim`: most stdio MCP servers are Node programs (chrome-devtools-mcp needs Node 20.19+/22.12+)
+- `bun` (and a `bunx` symlink) is copied from the builder stage, so a manifest with `command = "bunx"` runs as written, as it does on the user's machine; an override only changes its args (a pinned version, host flags). bunx runs a package's `#!/usr/bin/env node` bin with Node
+- bunx keeps each package it fetched in `/tmp/bunx-<uid>-<pkg>@<version>`, not under the throwaway HOME, so a fetch is kept for later starts and other users; a pinned version never refetches, `@latest` re-resolves now and then. The image fetches chrome-devtools-mcp at build time (as `node`), so it starts offline
+- Chrome is the Chrome for Testing headless shell at the version chrome-devtools-mcp's Puppeteer pins (`PUPPETEER_REVISIONS` in its bundle): bump `CHROME_DEVTOOLS_MCP_VERSION`, the `chrome-devtools-mcp@<version>` in `overrides.json` and `CHROME_HEADLESS_SHELL_VERSION` together
 - Only the libraries the headless shell links are installed; `libgbm.so.1` is copied alone out of its .deb, since its Mesa backends (~190 MB with LLVM) never load for SwiftShader rendering
 - amd64 only: Chrome for Testing has no Linux arm64 builds (Debian's `chromium` would be the arm64 route)
 - Python servers live in one venv at `/opt/mcp-py` (built in the `mcp-py` stage on the same base, so its `python3` symlink resolves in the runner, which installs Debian's `python3`); the manifest's `uvx` is swapped for the venv's entry point in `overrides.json`, and the version is pinned by a build arg (`MCP_SERVER_TIME_VERSION`). `time` makes no network requests, so the egress proxy doesn't apply to it

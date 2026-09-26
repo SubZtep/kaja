@@ -18,7 +18,7 @@ It runs **chrome-devtools**, a headless Chrome the assistant can browse with, re
 1. The API offers a stdio MCP ability only when it has `SANDBOX_URL` and `SANDBOX_SECRET`, and only a keyless one with a fixed `tools` list.
 2. Each turn, the API signs a short-lived token (HMAC-SHA256 over the user id, the ability and an expiry) with the shared `SANDBOX_SECRET`.
 3. The sandbox checks the signature, the expiry and that the token is for the ability in the URL, then hands the request to that user's server for that ability.
-4. The request only ever *names* an ability. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's command and flags.
+4. The request only ever *names* an ability. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's command and flags. A `bunx` manifest keeps its command: the image has Bun, and a package bunx fetched stays cached in the container (chrome-devtools-mcp is fetched when the image is built).
 
 ## Auth
 
