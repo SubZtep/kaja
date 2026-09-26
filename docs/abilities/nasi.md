@@ -7,13 +7,12 @@ nav_order: 1
 
 # ₙ𝐀ₛ𝐈
 
-### `[̲̅N][̲̅a][̲̅s][̲̅i] [̲̅i][̲̅s] [̲̅t][̲̅h][̲̅e] [̲̅m][̲̅o][̲̅s][̲̅t] [̲̅i][̲̅m][̲̅p][̲̅o][̲̅r][̲̅t][̲̅a][̲̅n][̲̅t] [̲̅p][̲̅a][̲̅r][̲̅t] [̲̅o][̲̅f] [̲̅K][̲̅a][̲̅j][̲̅a][̲̅.]`
+### `[̲̅N][̲̅a][̲̅s][̲̅i] [̲̅i][̲̅s] [̲̅t][̲̅h][̲̅e]`<br>`[̲̅m][̲̅o][̲̅s][̲̅t] [̲̅i][̲̅m][̲̅p][̲̅o][̲̅r][̲̅t][̲̅a][̲̅n][̲̅t]`<br>`[̲̅p][̲̅a][̲̅r][̲̅t] [̲̅o][̲̅f] [̲̅K][̲̅a][̲̅j][̲̅a]🤖[̲̅.]` 🧠:shipit::wavy_dash:
 
 ---
 
-Nasi is Kaja's brain: the agent that reads your message, decides what to do, uses tools and abilities,
-and writes the reply. Every front door runs the same Nasi — the terminal, both Telegram bots, the web
-app and the website widget. The front door only decides *where* it runs and *what it may touch*.
+> Think of Nasi as Kaja’s business logic rather than a service. There’s no Nasi server to connect to: it’s a library that whatever hosts it carries along and runs in-process. The terminal app embeds it, the web API embeds it, and so can any future piece of Kaja. Each host gets the same code and the same behaviour, and only supplies the surroundings: a model, a place to store things and a set of tools.
+{: .headsup }
 
 Everything else in this section plugs into Nasi: [personas](/abilities/personas) give it a voice,
 [skills](/abilities/skills) teach it procedures, [tools](/abilities/tools), [HTTP tools](/abilities/http-tools) and
@@ -34,17 +33,17 @@ no shell. See [Cloud or local](/getting-started/modes) for the full comparison.
 At the start of a conversation Nasi writes itself a brief — the system prompt — out of whatever
 applies:
 
-1. the active [persona](/abilities/personas)'s instructions (the `default` persona when none is picked);
-2. where it's running: your OS in the terminal, or the channel (Telegram, widget);
+1. the active [persona](/abilities/personas)’s instructions (the `default` persona when none is picked);
+2. where it’s running: your OS in the terminal, or the channel (Telegram, widget);
 3. how to use the tools that need care: asking you questions, running shell commands, keeping notes;
 4. the other personas it may switch to, and when;
 5. the names and descriptions of your enabled [skills](/abilities/skills);
-6. a [dataset](/abilities/memory#datasets) to collect, if the persona has one, and what you've already answered
+6. a [dataset](/abilities/memory#datasets) to collect, if the persona has one, and what you’ve already answered
    in your profile;
 7. your sticky [memory notes](/abilities/memory#notes);
 8. the language to reply in ([Voice & language](/using/voice)).
 
-Nothing that isn't set up is included, so a cloud or widget conversation sees a subset of what a local
+Nothing that isn’t set up is included, so a cloud or widget conversation sees a subset of what a local
 one does. Turning an ability on or off applies from your next message, even mid-conversation.
 
 ## How it works through a turn
@@ -66,16 +65,16 @@ The diagram on [Cloud or local](/getting-started/modes#how-a-turn-runs) shows th
 
 Nasi tries not to leave you with nothing:
 
-- a tool that fails doesn't end the turn: the model sees the error and can try another way. After
+- a tool that fails doesn’t end the turn: the model sees the error and can try another way. After
   three rounds in a row where every tool call failed, it stops;
-- an empty reply from the model is retried a few times before Nasi admits it's drawing a blank;
-- an ability that can't load (a broken file, a missing key, an MCP server that doesn't answer within
+- an empty reply from the model is retried a few times before Nasi admits it’s drawing a blank;
+- an ability that can’t load (a broken file, a missing key, an MCP server that doesn’t answer within
   10 seconds) is skipped with a warning, and everything else still works. `kaja doctor` lists what was
   left out and why.
 
 ## Long conversations
 
-Models can only read so much at once. Nasi keeps each request inside the model's context window:
+Models can only read so much at once. Nasi keeps each request inside the model’s context window:
 
 - a tool result too big for the window (a long web page, a huge file) is condensed for the model; the
   full output stays in the conversation log;
@@ -91,7 +90,7 @@ model writes the summaries, and when compaction kicks in, is set in
 
 Conversations, memory notes and dataset answers live in a store the host gives it: a
 [SQLite file](/configuration/storage) locally, Postgres in the cloud. Nasi itself reads no config file
-and opens no database, which is why the same brain fits every front door. How it's built is on
+and opens no database, which is why the same brain fits every front door. How it’s built is on
 [Agent brain](/development/nasi).
 
 ---

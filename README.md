@@ -101,33 +101,33 @@ config:
     nodePlacementStrategy: LINEAR_SEGMENTS
 ---
 flowchart TB
-    subgraph Users["<tt>Users from various clients</tt>"]
-      USER1((Desktop<br><small>AI native</small>)):::person
-      USER2((Desktop)):::person
-      USER3((Telegram)):::person
-      USER4((Widget on<br>the web)):::person
+    subgraph Users["Multi-client system access"]
+      USER1((Desktop<br><small><em>AI native<br>/ offline</em></small>)):::person
+      USER2((Desktop<br><small><em>TeleTYpewriter, but<br>Served like non-PCs</em></small>)):::person
+      USER3((Telegram<br><small><em>The bot</em></small>)):::person
+      USER4((Widget on<br>a website<br><small><em>Almost boomer</em></small>)):::person
     end
 
-    subgraph Local["<tt>Home computer</tt>"]
-        TUI["<b>tui</b><br>Terminal, Telegram bot"]
+    subgraph Local["Home computer"]
+        TUI["tui"]
         SQL[("SQLite")]
     end
 
-    subgraph Apps["<tt>Cloud server(s)</tt>"]
-        API["<b>api</b><br>Auth, Chat, Widget"]
-        WEB["<b>web</b><br>Landing, Portal"]
-        SANDBOX["<b>sandbox</b><br>MCP (stdio) runner"]
-        subgraph Data["<tt>Storage</tt>"]
-            DB[("<b>PostgreSQL</b><br>All the data")]
-            S3[("<b>Object Storage</b><br>Session pictures")]
+    subgraph Apps["Cloud server(s)"]
+        API["api"]
+        WEB["web"]
+        SANDBOX["sandbox"]
+        subgraph Data["Storage"]
+            DB[("PostgreSQL")]
+            S3[("Object Storage")]
         end
         LLM@{ shape: docs, label: "AI model(s)" }
     end
 
-    subgraph Packages["<tt>Shared packages</tt>"]
-        NASI["<b>nasi</b><br>The loop"]
-        SCHEMA["<b>schema</b><br>Zod contracts"]
-        SHARED["<b>shared</b><br>Pure functions"]
+    subgraph Packages["Shared packages"]
+        NASI["nasi"]
+        SCHEMA["schema"]
+        SHARED["shared"]
     end
 
     USER1 == Custom LLMs === TUI
