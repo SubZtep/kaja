@@ -142,6 +142,10 @@ services:
         required: false
     environment:
       SANDBOX_SECRET: compose_dev_sandbox_secret_not_for_production # local stack only
+      # The image's own paths: apps/sandbox/.env may point these at host files for `bun dev:sandbox`.
+      MARKETPLACE_DIR: /home/node/app/marketplace
+      SANDBOX_OVERRIDES: /home/node/app/overrides.json
+      SANDBOX_CACHE_DIR: /home/node/.cache/mcp
     networks:
       - sandbox
     healthcheck:
