@@ -14,9 +14,10 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 
 ```
 src/server.ts     # entry: env, manifests, Bun.serve, stops every server on SIGTERM/SIGINT
-src/app.ts        # Hono routes: GET /health, ALL /mcp/:ability (token check)
+src/app.ts        # Hono routes: GET /health, GET /stats (token for SANDBOX_STATS_SCOPE), ALL /mcp/:ability (token check)
 src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES): full, it stops the least recently used idle server, 503 only when all are mid-call
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
+src/stats.ts      # /stats: pool servers and counts, process-tree RSS from /proc, host + cgroup memory, egress counts
 src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked)
 src/manifests.ts  # the stdio manifests it may run, plus overrides.json
 src/report.ts     # Sentry in production (its own project): failed starts, servers that exit on their own (last 20 stderr lines), child errors

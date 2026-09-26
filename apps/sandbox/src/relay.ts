@@ -86,6 +86,21 @@ export class McpRelay {
     return this.#pending.size > 0
   }
 
+  /** Requests waiting on the server right now. */
+  get pending(): number {
+    return this.#pending.size
+  }
+
+  /** Open Streamable HTTP sessions. */
+  get sessions(): number {
+    return this.#sessions.size
+  }
+
+  /** The server's process id, while it runs. */
+  get pid(): number | null {
+    return this.#child.pid
+  }
+
   /** Serves one HTTP request: an existing session's, or a new session's `initialize` (404 for a session this relay doesn't have). */
   async handle(request: Request): Promise<Response> {
     const sessionId = request.headers.get("mcp-session-id")

@@ -20,6 +20,20 @@ The first (and so far only) server it runs is **chrome-devtools**: a headless Ch
 3. The sandbox checks the signature, the expiry and that the token is for the ability in the URL, then hands the request to that user's server for that ability.
 4. The request only ever *names* an ability. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's command and flags.
 
+## Auth
+
+Every route but `/health` needs `Authorization: Bearer <token>`. The API signs the token itself; there are no accounts, sessions or API keys on the sandbox.
+
+- **Format:** `<payload>.<signature>`, both base64url. The payload is JSON claims `{ sub, ability, exp }`; the signature is HMAC-SHA256 of the payload with `SANDBOX_SECRET`, which the API and the sandbox share (`signSandboxToken`/`verifySandboxToken` in `@kaja/shared`).
+- **Checked:** the signature (constant-time, by WebCrypto), that `exp` (Unix seconds) hasn't passed, and that `ability` fits the route. Anything else is `401`.
+
+| Route | `sub` | `ability` | Lifetime | Signed by |
+| --- | --- | --- | --- | --- |
+| `/mcp/<ability>` | the user whose server it is | must equal `<ability>` in the URL | 1 hour (a turn) | nasi chat, once per turn and ability |
+| `/stats` | the admin asking (for logs) | must be `#stats` (`SANDBOX_STATS_SCOPE`) | 1 minute | `GET /admin/sandbox`, admins only |
+
+No ability can be named `#stats`, so an ability's token can't read the stats, and the stats token opens no MCP server. Tokens can't be revoked one by one; changing `SANDBOX_SECRET` on both sides invalidates them all.
+
 ## One warm server per user
 
 - **Started on first use**, one per (user, ability), and **kept warm between turns**: the browser's open pages are still there on your next message. Every turn opens a new MCP session; the relay answers its `initialize` from the first one, so the server itself is only initialized once.
@@ -112,6 +126,7 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 ## Observability
 
 - `GET /health` answers `{ "ok": true }` and needs no token.
+- `GET /stats` shows what's running right now: every server with its user, state, open calls and sessions, and the memory of its whole process tree (the browser included, read from `/proc`); the host's CPUs, load and memory, and the container's memory limit; and, since the sandbox started, how many servers started, failed to start, stopped idle, stopped for room, crashed, or were refused, plus the egress proxy's open, allowed, refused and failed connections. It needs the stats token (see [Auth](#auth)). The API's admins see it live on the web's **Admin → Dashboard** page, through `GET /admin/sandbox`.
 - The logs have a line for every server started, stopped when idle or stopped to make room, and every "sandbox is full" refusal, each with the running count.
 - In production, servers that won't start, exit on their own or error go to the sandbox's own Sentry project with their last 20 stderr lines. Request headers (which carry the token) are dropped.
 
@@ -126,10 +141,11 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 | File | Role |
 | --- | --- |
 | `src/server.ts` | entry: starts the egress proxy, loads manifests, serves, stops everything on SIGTERM/SIGINT |
-| `src/app.ts` | Hono routes: `/health` and `/mcp/:ability` behind the token |
+| `src/app.ts` | Hono routes: `/health`, `/stats` and `/mcp/:ability`, the last two behind the token |
 | `src/pool.ts` | one server per (user, ability): idle stop, cap, making room |
 | `src/relay.ts` | shares one stdio child between many HTTP sessions, renumbering request ids |
 | `src/egress.ts` | the egress proxy |
+| `src/stats.ts` | `/stats`: the pool's servers and counts, memory per process tree, host and container memory |
 | `src/manifests.ts` | the stdio manifests it may run, plus the overrides |
 | `src/report.ts` | Sentry in production |
 | `overrides.json` | the image's command and Chrome flags for chrome-devtools |

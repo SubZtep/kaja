@@ -2,7 +2,7 @@ import clsx, { type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export { LOCALE_LABELS, type Locale, locales, matchLocale } from "./locale"
-export { type SandboxClaims, signSandboxToken, verifySandboxToken } from "./sandbox-token"
+export { SANDBOX_STATS_SCOPE, type SandboxClaims, signSandboxToken, verifySandboxToken } from "./sandbox-token"
 export {
   asRateLimitError,
   commandArgument,

@@ -1,5 +1,6 @@
 import { lookup } from "node:dns/promises"
 import { createConnection, createServer, isIP, type Server, type Socket } from "node:net"
+import type { SandboxStats } from "@kaja/schema/api"
 import { isPrivateAddress } from "@kaja/shared"
 
 /** A request head bigger than this is refused. */
@@ -10,6 +11,9 @@ const HEAD_END = "\r\n\r\n"
 const HOP_HEADERS = new Set(["connection", "keep-alive", "proxy-connection", "proxy-authorization"])
 
 type Resolve = (hostname: string) => Promise<string[]>
+/** Connections open now, and ones let through, refused and failed upstream since the proxy started. */
+export type EgressCounts = SandboxStats["egress"]
+type Deps = { allow: (address: string) => boolean; resolve: Resolve; counts: EgressCounts }
 
 export type EgressOptions = {
   port: number
@@ -17,6 +21,8 @@ export type EgressOptions = {
   allow?: (address: string) => boolean
   /** Resolves a hostname to its addresses; tests swap it. */
   resolve?: Resolve
+  /** Counted into as connections come and go, for the sandbox's stats. */
+  counts?: EgressCounts
 }
 
 /**
@@ -29,58 +35,56 @@ export function startEgressProxy(opts: EgressOptions): Promise<Server> {
   const allow = opts.allow ?? (address => !isPrivateAddress(address))
   const resolve: Resolve =
     opts.resolve ?? (async hostname => (await lookup(hostname, { all: true })).map(r => r.address))
-  const server = createServer(client => serveClient(client, allow, resolve))
+  const counts = opts.counts ?? { open: 0, allowed: 0, refused: 0, failed: 0 }
+  const server = createServer(client => serveClient(client, { allow, resolve, counts }))
   return new Promise((done, fail) => {
     server.once("error", fail)
     server.listen(opts.port, "127.0.0.1", () => done(server))
   })
 }
 
-function serveClient(client: Socket, allow: (address: string) => boolean, resolve: Resolve) {
+function serveClient(client: Socket, deps: Deps) {
   let head = Buffer.alloc(0)
   client.on("error", () => client.destroy())
   const onData = (chunk: Buffer) => {
     head = Buffer.concat([head, chunk])
     const end = head.indexOf(HEAD_END)
     if (end === -1) {
-      if (head.length > MAX_HEAD_BYTES) refuse(client, 431, "Request Header Fields Too Large")
+      if (head.length > MAX_HEAD_BYTES) refuse(client, deps, 431, "Request Header Fields Too Large")
       return
     }
     client.off("data", onData)
     client.pause()
     const rest = head.subarray(end + HEAD_END.length)
-    void forward(client, head.subarray(0, end).toString("latin1"), rest, allow, resolve)
+    void forward(client, head.subarray(0, end).toString("latin1"), rest, deps)
   }
   client.on("data", onData)
 }
 
-async function forward(
-  client: Socket,
-  head: string,
-  rest: Buffer,
-  allow: (address: string) => boolean,
-  resolve: Resolve
-) {
+async function forward(client: Socket, head: string, rest: Buffer, deps: Deps) {
   const [requestLine = "", ...headers] = head.split("\r\n")
   const [method = "", target = "", version = "HTTP/1.1"] = requestLine.split(" ")
   const tunnel = method.toUpperCase() === "CONNECT"
   const url = parseTarget(tunnel ? `http://${target}` : target)
   // A CONNECT target always names its port; URL drops a default one (`:80`), so it's read from the target itself.
   const port = tunnel ? Number(/:(\d+)$/.exec(target)?.[1]) : Number(url?.port || 80)
-  if (!url || (!tunnel && url.protocol !== "http:") || !port) return refuse(client, 400, "Bad Request")
+  if (!url || (!tunnel && url.protocol !== "http:") || !port) return refuse(client, deps, 400, "Bad Request")
 
   const hostname = url.hostname.replace(/^\[|\]$/g, "")
-  const addresses = isIP(hostname) ? [hostname] : await resolve(hostname).catch(() => [])
+  const addresses = isIP(hostname) ? [hostname] : await deps.resolve(hostname).catch(() => [])
   const address = addresses[0]
-  if (!address || !addresses.every(allow)) return refuse(client, 403, "Forbidden")
+  if (!address || !addresses.every(deps.allow)) return refuse(client, deps, 403, "Forbidden")
 
   const upstream = createConnection({ host: address, port })
   upstream.setTimeout(CONNECT_TIMEOUT_MS, () => upstream.destroy(new Error("connect timeout")))
   let connected = false
   // Before the connection there is still an answer to give; after it, the tunnel or response just ends.
-  upstream.once("error", () => (connected ? client.destroy() : refuse(client, 502, "Bad Gateway")))
+  upstream.once("error", () => (connected ? client.destroy() : refuse(client, deps, 502, "Bad Gateway")))
   upstream.once("connect", () => {
     connected = true
+    deps.counts.allowed++
+    deps.counts.open++
+    upstream.once("close", () => deps.counts.open--)
     upstream.setTimeout(0)
     if (tunnel) client.write("HTTP/1.1 200 Connection Established\r\n\r\n")
     else upstream.write(originFormHead(method, url, version, headers))
@@ -107,6 +111,7 @@ function originFormHead(method: string, url: URL, version: string, headers: stri
   return [`${method} ${url.pathname}${url.search} ${version}`, ...kept, "Connection: close", "", ""].join("\r\n")
 }
 
-function refuse(client: Socket, status: number, reason: string) {
+function refuse(client: Socket, deps: Deps, status: number, reason: string) {
+  deps.counts[status === 502 ? "failed" : "refused"]++
   client.end(`HTTP/1.1 ${status} ${reason}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`)
 }

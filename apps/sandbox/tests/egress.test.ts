@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { connect, type Server } from "node:net"
-import { startEgressProxy } from "../src/egress"
+import { type EgressCounts, startEgressProxy } from "../src/egress"
 
 let upstream: ReturnType<typeof Bun.serve>
 const proxies: Server[] = []
@@ -22,9 +22,12 @@ afterAll(async () => {
 })
 
 /** A proxy on a free port; `names` is its DNS, and by default only public addresses are allowed, as in production. */
-async function proxy(opts: { names?: Record<string, string[]>; allowLoopback?: boolean } = {}): Promise<number> {
+async function proxy(
+  opts: { names?: Record<string, string[]>; allowLoopback?: boolean; counts?: EgressCounts } = {}
+): Promise<number> {
   const server = await startEgressProxy({
     port: 0,
+    counts: opts.counts,
     ...(opts.allowLoopback ? { allow: () => true } : {}),
     resolve: async hostname => opts.names?.[hostname] ?? []
   })
@@ -93,5 +96,21 @@ describe("egress proxy", () => {
     )
     expect(answer).toStartWith("HTTP/1.1 200 Connection Established\r\n\r\nHTTP/1.1 200")
     expect(answer).toContain('"path":"/tunnel"')
+  })
+
+  test("counts what it let through, refused and couldn't reach, and closes the count when a tunnel ends", async () => {
+    const counts = { open: 0, allowed: 0, refused: 0, failed: 0 }
+    const port = await proxy({ allowLoopback: true, counts })
+    const target = `127.0.0.1:${upstream.port}`
+    await exchange(
+      port,
+      `CONNECT ${target} HTTP/1.1\r\nHost: ${target}\r\n\r\nGET / HTTP/1.1\r\nHost: ${target}\r\nConnection: close\r\n\r\n`
+    )
+    await exchange(port, "GET ftp://example.com/ HTTP/1.1\r\n\r\n")
+    // Nothing listens on port 1.
+    await exchange(port, "CONNECT 127.0.0.1:1 HTTP/1.1\r\n\r\n")
+    const deadline = Date.now() + 5000
+    while (counts.open > 0 && Date.now() < deadline) await Bun.sleep(20)
+    expect(counts).toEqual({ open: 0, allowed: 1, refused: 1, failed: 1 })
   })
 })

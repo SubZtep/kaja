@@ -1,3 +1,4 @@
+import type { SandboxServerStats, SandboxStats } from "@kaja/schema/api"
 import type { SandboxServer } from "./manifests"
 import { McpRelay } from "./relay"
 import { reportError } from "./report"
@@ -16,6 +17,7 @@ type Entry = {
   relay: Promise<McpRelay>
   /** The relay once it's started, for choosing a server to stop without waiting. */
   started?: McpRelay
+  startedAt: number
   lastUsed: number
   timer?: ReturnType<typeof setTimeout>
 }
@@ -24,6 +26,14 @@ type Entry = {
 export class ProcessPool {
   readonly #opts: PoolOptions
   readonly #entries = new Map<string, Entry>()
+  readonly #counts: SandboxStats["pool"] = {
+    started: 0,
+    failedToStart: 0,
+    stoppedIdle: 0,
+    madeRoom: 0,
+    crashed: 0,
+    refusedFull: 0
+  }
 
   constructor(opts: PoolOptions) {
     this.#opts = opts
@@ -31,6 +41,34 @@ export class ProcessPool {
 
   get size(): number {
     return this.#entries.size
+  }
+
+  /** The abilities it can run. */
+  get abilities(): string[] {
+    return [...this.#opts.servers.keys()]
+  }
+
+  get limits(): SandboxStats["limits"] {
+    return { maxProcesses: this.#opts.maxProcesses, idleMs: this.#opts.idleMs }
+  }
+
+  /** How many servers started, stopped and were turned away since the sandbox started. */
+  get counts(): SandboxStats["pool"] {
+    return { ...this.#counts }
+  }
+
+  /** The servers running or starting now, without their memory (the caller reads that from their pids). */
+  servers(): Omit<SandboxServerStats, "rss">[] {
+    return [...this.#entries].map(([key, entry]) => ({
+      user: key.slice(0, key.indexOf("\n")),
+      ability: abilityOf(key),
+      state: entry.started ? "running" : "starting",
+      pid: entry.started?.pid ?? null,
+      pending: entry.started?.pending ?? 0,
+      sessions: entry.started?.sessions ?? 0,
+      startedAt: new Date(entry.startedAt),
+      lastUsed: new Date(entry.lastUsed)
+    }))
   }
 
   /** Serves an MCP request for `user`'s own `ability` server: 404 for an ability the sandbox doesn't run, 503 when every server is mid-call or it won't start. */
@@ -41,10 +79,11 @@ export class ProcessPool {
     let entry = this.#entries.get(key)
     if (!entry) {
       if (this.#entries.size >= this.#opts.maxProcesses && !this.#evictIdlest()) {
+        this.#counts.refusedFull++
         console.warn("Sandbox is full", { ability, processes: this.#entries.size })
         return Response.json({ error: "the sandbox is full, try again later" }, { status: 503 })
       }
-      entry = { relay: this.#start(key, server), lastUsed: Date.now() }
+      entry = { relay: this.#start(key, server), startedAt: Date.now(), lastUsed: Date.now() }
       this.#entries.set(key, entry)
     }
     let relay: McpRelay
@@ -76,10 +115,12 @@ export class ProcessPool {
       relay.onclose = () => this.#forget(key, relay)
       const entry = this.#entries.get(key)
       if (entry) entry.started = relay
+      this.#counts.started++
       console.log("Sandbox started MCP server", { ability: server.name, processes: this.#entries.size })
       return relay
     } catch (error) {
       this.#entries.delete(key)
+      this.#counts.failedToStart++
       throw error
     }
   }
@@ -100,6 +141,7 @@ export class ProcessPool {
       return
     }
     this.#entries.delete(key)
+    this.#counts.stoppedIdle++
     console.log("Sandbox stopped idle MCP server", { ability: abilityOf(key), processes: this.#entries.size })
     await relay.close()
   }
@@ -116,11 +158,13 @@ export class ProcessPool {
     const [key, entry] = idlest
     clearTimeout(entry.timer)
     this.#entries.delete(key)
+    this.#counts.madeRoom++
     console.log("Sandbox stopped MCP server to make room", { ability: abilityOf(key), processes: this.#entries.size })
     void entry.started?.close()
     return true
   }
 
+  // Only a server that ended on its own is still in the pool here: the pool forgets one before stopping it.
   #forget(key: string, relay: McpRelay) {
     const entry = this.#entries.get(key)
     if (!entry) return
@@ -128,6 +172,7 @@ export class ProcessPool {
       if (current !== relay || this.#entries.get(key) !== entry) return
       clearTimeout(entry.timer)
       this.#entries.delete(key)
+      this.#counts.crashed++
     })
   }
 }

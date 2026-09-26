@@ -1,6 +1,9 @@
 /** Who may use which sandboxed MCP ability, until when (`exp`: Unix seconds). */
 export type SandboxClaims = { sub: string; ability: string; exp: number }
 
+/** The `ability` of a token for the sandbox's `/stats` (an admin's): no ability is named like it, so it opens no MCP server, and an ability's token doesn't open the stats. */
+export const SANDBOX_STATS_SCOPE = "#stats"
+
 const encoder = new TextEncoder()
 
 function toBase64Url(bytes: Uint8Array): string {

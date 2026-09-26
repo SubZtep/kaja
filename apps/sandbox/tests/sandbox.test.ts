@@ -2,8 +2,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { sandboxStatsSchema } from "@kaja/schema/api"
 import { SandboxEnvSchema } from "@kaja/schema/env"
-import { signSandboxToken } from "@kaja/shared"
+import { SANDBOX_STATS_SCOPE, signSandboxToken } from "@kaja/shared"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { createApp } from "../src/app"
@@ -107,6 +108,45 @@ describe("auth", () => {
     const { app } = sandbox()
     expect((await post(app, "/mcp/keyed", `Bearer ${await token("u1", "keyed")}`)).status).toBe(404)
   })
+})
+
+describe("stats", () => {
+  const stats = async (app: ReturnType<typeof createApp>, ability = SANDBOX_STATS_SCOPE) =>
+    app.request("/stats", { headers: { Authorization: `Bearer ${await token("admin", ability)}` } })
+
+  test("only the stats token opens them: none or an ability's is refused, and it opens no MCP server", async () => {
+    const { app } = sandbox()
+    expect((await app.request("/stats")).status).toBe(401)
+    expect((await stats(app, "counter")).status).toBe(401)
+    const mcp = await app.request(`/mcp/${encodeURIComponent(SANDBOX_STATS_SCOPE)}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${await token("admin", SANDBOX_STATS_SCOPE)}` },
+      body: "{}"
+    })
+    expect(mcp.status).toBe(404)
+  })
+
+  test(
+    "show each running server with its user, memory and calls, and what the pool did",
+    async () => {
+      const { app } = sandbox({ maxProcesses: 3 })
+      const empty = sandboxStatsSchema.parse(await (await stats(app)).json())
+      expect(empty).toMatchObject({ abilities: ["counter"], limits: { maxProcesses: 3 }, servers: [] })
+
+      const client = await connect(app, "u1")
+      void client.callTool({ name: "hang", arguments: {} }).catch(() => {})
+      await Bun.sleep(200)
+      const busy = sandboxStatsSchema.parse(await (await stats(app)).json())
+      expect(busy.servers).toEqual([
+        expect.objectContaining({ user: "u1", ability: "counter", state: "running", pending: 1, sessions: 1 })
+      ])
+      expect(busy.servers[0]!.pid).toBeGreaterThan(0)
+      if (process.platform === "linux") expect(busy.servers[0]!.rss).toBeGreaterThan(0)
+      expect(busy.pool).toMatchObject({ started: 1, failedToStart: 0, crashed: 0 })
+      await client.close()
+    },
+    SPAWN_TIMEOUT_MS
+  )
 })
 
 describe("relay", () => {

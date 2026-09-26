@@ -127,10 +127,17 @@ export function setNasiSandboxOverride(sandbox: SandboxConfig | undefined) {
   abilityService.setSandboxUrl(sandbox?.url ?? (env.SANDBOX_SECRET ? env.SANDBOX_URL : undefined))
 }
 
+/** Where the MCP sandbox is and its shared secret, when one is configured (the test override first). */
+export function sandboxConfig(): SandboxConfig | undefined {
+  const { url, secret } = sandboxOverride ?? { url: env.SANDBOX_URL, secret: env.SANDBOX_SECRET }
+  return url && secret ? { url, secret } : undefined
+}
+
 /** The MCP sandbox for one user's turns, when configured: each ability connects with a token only good for that user and ability. */
 function mcpSandboxFor(userId: string): McpSandbox | undefined {
-  const { url, secret } = sandboxOverride ?? { url: env.SANDBOX_URL, secret: env.SANDBOX_SECRET }
-  if (!url || !secret) return undefined
+  const sandbox = sandboxConfig()
+  if (!sandbox) return undefined
+  const { url, secret } = sandbox
   return {
     url,
     token: ability =>

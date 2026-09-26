@@ -103,7 +103,7 @@ bun run --filter @kaja/sandbox build
 
 ### Sandbox (`apps/sandbox/`)
 
-- `src/server.ts` entry; `app.ts` routes (`/health`, `/mcp/:ability` behind the token), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child
+- `src/server.ts` entry; `app.ts` routes (`/health`, `/stats` for the admin dashboard, `/mcp/:ability` behind the token), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child
 - Runs only the stdio manifests under its own `marketplace/mcp` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
 
 ### CLI (`apps/tui/`)
