@@ -83,11 +83,3 @@ include = [
   "marketplace/mcp/*.toml",
   "**/.config/kaja/marketplace/mcp/*.toml"
 ]
-
-
-# Written by `bun generate:models` (exampleToml), which `bun check:models` and the catalog test compare byte for byte: tombi mustn't reformat them.
-[[overrides]]
-files.include  = [
-  "docs/config/models.*.toml"
-]
-format.enabled = false

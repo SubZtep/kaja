@@ -7,16 +7,23 @@
 [providers.xai]
 base_url = "https://api.x.ai/v1"
 
+
 [tasks]
-chat = "grok-4-3"
+chat             = "grok-4-3"
 image-generation = "grok-imagine-image"
 
+
 [models.grok-4-3]
-model = "grok-4.3"
+model    = "grok-4.3"
 provider = "xai"
-tasks = ["chat"]
+tasks    = [
+  "chat"
+]
+
 
 [models.grok-imagine-image]
-model = "grok-imagine-image"
+model    = "grok-imagine-image"
 provider = "xai"
-tasks = ["image-generation"]
+tasks    = [
+  "image-generation"
+]
