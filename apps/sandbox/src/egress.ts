@@ -111,7 +111,8 @@ async function forward(client: Socket, head: string, rest: Buffer, deps: Deps) {
   upstream.once("connect", () => {
     if (!via) return open(Buffer.alloc(0))
     // The upstream proxy is given the address checked here, not the name, so it can't resolve to anything else.
-    const authority = `${isIP(address) === 6 ? `[${address}]` : address}:${port}`
+    const host = isIP(address) === 6 ? `[${address}]` : address
+    const authority = `${host}:${port}`
     const auth = via.auth ? `Proxy-Authorization: ${via.auth}\r\n` : ""
     upstream.write(`CONNECT ${authority} HTTP/1.1\r\nHost: ${authority}\r\n${auth}\r\n`)
     void readHead(upstream).then(answer => {
