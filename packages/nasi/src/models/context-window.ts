@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from "@kaja/shared"
+
 /** What a model is assumed to hold when neither config nor its server says. */
 export const DEFAULT_CONTEXT_WINDOW = 32_768
 
@@ -36,7 +38,8 @@ async function getJson(fetchFn: Fetch, url: string, init: RequestInit = {}): Pro
 
 // The server root: Ollama's and llama.cpp's own endpoints sit beside the OpenAI-compatible /v1.
 function rootOf(baseUrl: string): string {
-  return baseUrl.replace(/\/+$/, "").replace(/\/v1$/, "")
+  const trimmed = trimTrailingSlashes(baseUrl)
+  return trimmed.endsWith("/v1") ? trimmed.slice(0, -3) : trimmed
 }
 
 // llama.cpp: /props reports n_ctx, the size the server actually runs with (per slot).
@@ -58,7 +61,11 @@ async function fromOllama(fetchFn: Fetch, target: ContextWindowTarget) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ model: target.model })
   })
-  const numCtx = /(?:^|\n)\s*num_ctx\s+(\d+)/.exec(typeof show?.parameters === "string" ? show.parameters : "")
+  const parameters: string = typeof show?.parameters === "string" ? show.parameters : ""
+  const numCtx = parameters
+    .split("\n")
+    .map(line => /^num_ctx\s+(\d+)$/.exec(line.trim()))
+    .find(Boolean)
   if (numCtx) return positive(Number(numCtx[1]))
   const info = show?.model_info as Record<string, unknown> | undefined
   const key = info && Object.keys(info).find(k => k.endsWith(".context_length"))
@@ -67,7 +74,7 @@ async function fromOllama(fetchFn: Fetch, target: ContextWindowTarget) {
 
 // OpenAI-compatible /models: several hosts and vLLM add the window to each entry under one of these names.
 async function fromModelsList(fetchFn: Fetch, target: ContextWindowTarget) {
-  const list = await getJson(fetchFn, `${target.baseUrl.replace(/\/+$/, "")}/models`, {
+  const list = await getJson(fetchFn, `${trimTrailingSlashes(target.baseUrl)}/models`, {
     headers: target.apiKey ? { authorization: `Bearer ${target.apiKey}` } : {}
   })
   const entry = (list?.data as any[] | undefined)?.find(m => m?.id === target.model)
