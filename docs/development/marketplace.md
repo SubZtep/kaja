@@ -121,7 +121,8 @@ sequenceDiagram
 - **Triggers.** Once at API start-up (in the background), every hour on the hour, and the admins'
   **Sync now** button. Only one sync runs at a time.
 - **Cheap when idle.** The check is one unauthenticated GitHub API call, so the repo must be public. The
-  tarball (capped at 50 MB) is only downloaded when the branch head moved.
+  tarball (capped at 50 MB) is only downloaded when the branch head moved. **Sync now** always downloads
+  it: a new API build may accept abilities the old one skipped on that same commit.
 - **Which repo.** `MARKETPLACE_REPO` (default `SubZtep/kaja`) and `MARKETPLACE_REF` (default `main`).
 - **Failures are recorded** in the single `marketplace_sync` row, shown in the admin panel, and
   reported to Sentry. The previous catalog stays in place.
