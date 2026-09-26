@@ -2,12 +2,14 @@
 name        = "open-meteo"
 description = "Weather forecasts and current conditions for any coordinates, from Open-Meteo."
 baseUrl     = "https://api.open-meteo.com"
-auth        = {
-  type = "none"
-}
-headers     = {
-  Accept = "application/json"
-}
+
+
+[auth]
+type = "none"
+
+
+[headers]
+Accept = "application/json"
 
 
 [[tools]]

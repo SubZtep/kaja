@@ -1,9 +1,7 @@
 [commit-msg]
-commands = {
-  commitlint = {
+  [commit-msg.commands]
+    [commit-msg.commands.commitlint]
     run = "bun commitlint --edit {1}"
-  }
-}
 
 
 # Generators run first and stage their own outputs (stage_fixed only re-adds staged files matching the glob), then lint and typecheck see the regenerated tree
@@ -81,11 +79,9 @@ piped = true
 
 
 [post-merge]
-commands = {
-  lefthook-install = {
+  [post-merge.commands]
+    [post-merge.commands.lefthook-install]
     run = "git diff --quiet ORIG_HEAD HEAD -- lefthook.toml || lefthook install"
-  }
-}
 
 
 [pre-push]
@@ -108,9 +104,8 @@ parallel = true
 
 
   [[pre-push.jobs]]
-  run  = "bun test"
-  only = [
-    {
-      ref = "main"
-    }
-  ]
+  run = "bun test"
+
+
+    [[pre-push.jobs.only]]
+    ref = "main"

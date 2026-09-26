@@ -8,8 +8,9 @@ args        = [
 tools       = [
   "count"
 ]
-auth        = {
-  type = "apiKey",
-  in   = "env",
-  name = "KEYED_API_KEY"
-}
+
+
+[auth]
+type = "apiKey"
+in   = "env"
+name = "KEYED_API_KEY"

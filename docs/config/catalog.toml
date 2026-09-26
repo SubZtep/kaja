@@ -11,24 +11,26 @@ id       = "fireworks"
 name     = "Fireworks"
 kind     = "hosted"
 base_url = "https://api.fireworks.ai/inference/v1"
-models   = [
-  {
-    task  = "chat",
-    model = "accounts/fireworks/models/minimax-m3"
-  },
-  {
-    task  = "embedding",
-    model = "accounts/fireworks/models/qwen3-embedding-8b"
-  },
-  {
-    task  = "rerank",
-    model = "accounts/fireworks/models/qwen3-reranker-8b"
-  },
-  {
-    task  = "summarize",
-    model = "accounts/fireworks/models/glm-5p3-flash"
-  },
-]
+
+
+  [[providers.models]]
+  task  = "chat"
+  model = "accounts/fireworks/models/minimax-m3"
+
+
+  [[providers.models]]
+  task  = "embedding"
+  model = "accounts/fireworks/models/qwen3-embedding-8b"
+
+
+  [[providers.models]]
+  task  = "rerank"
+  model = "accounts/fireworks/models/qwen3-reranker-8b"
+
+
+  [[providers.models]]
+  task  = "summarize"
+  model = "accounts/fireworks/models/glm-5p3-flash"
 
 
 [[providers]]
@@ -39,16 +41,16 @@ base_url = "http://localhost:11434/v1"
 comment  = [
   'Ollama requires an API key but ignores its value, e.g. [providers.ollama] api_key = "ollama" in secrets.toml.',
 ]
-models   = [
-  {
-    task  = "chat",
-    model = "qwen3.5:4b"
-  },
-  {
-    task  = "embedding",
-    model = "qwen3-embedding:0.6b"
-  },
-]
+
+
+  [[providers.models]]
+  task  = "chat"
+  model = "qwen3.5:4b"
+
+
+  [[providers.models]]
+  task  = "embedding"
+  model = "qwen3-embedding:0.6b"
 
 
 [[providers]]
@@ -59,12 +61,11 @@ base_url = "http://localhost:8080/v1"
 comment  = [
   "llama.cpp's server doesn't need an API key."
 ]
-models   = [
-  {
-    task  = "chat",
-    model = "mistralai/Ministral-3-3B-Reasoning-2512-GGUF:Q4_K_M"
-  }
-]
+
+
+  [[providers.models]]
+  task  = "chat"
+  model = "mistralai/Ministral-3-3B-Reasoning-2512-GGUF:Q4_K_M"
 
 
 [[providers]]
@@ -72,16 +73,16 @@ id       = "xai"
 name     = "xAI"
 kind     = "hosted"
 base_url = "https://api.x.ai/v1"
-models   = [
-  {
-    task  = "chat",
-    model = "grok-4.3"
-  },
-  {
-    task  = "image-generation",
-    model = "grok-imagine-image"
-  },
-]
+
+
+  [[providers.models]]
+  task  = "chat"
+  model = "grok-4.3"
+
+
+  [[providers.models]]
+  task  = "image-generation"
+  model = "grok-imagine-image"
 
 
 [[providers]]
@@ -89,34 +90,35 @@ id       = "openrouter"
 name     = "OpenRouter"
 kind     = "hosted"
 base_url = "https://openrouter.ai/api/v1"
-models   = [
-  {
-    task  = "chat",
-    model = "stealth/space-bunny-alpha"
-  }
-]
-
 
 # Speaches serves both directions, so ticking it sets up voice in and out together.
+
+
+  [[providers.models]]
+  task  = "chat"
+  model = "stealth/space-bunny-alpha"
+
+
 [[providers]]
 id       = "speaches"
 name     = "Speaches"
 kind     = "self-hosted"
 base_url = "http://localhost:8000"
 note     = "local server, no key needed"
-models   = [
-  {
-    task  = "tts",
-    model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
-  },
-  {
-    task  = "stt",
-    model = "Systran/faster-whisper-small"
-  },
-]
-
 
 # The example files in docs/config, each showing one model per task for a mix of providers.
+
+
+  [[providers.models]]
+  task  = "tts"
+  model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
+
+
+  [[providers.models]]
+  task  = "stt"
+  model = "Systran/faster-whisper-small"
+
+
 [[examples]]
 file      = "models.default.toml"
 providers = [

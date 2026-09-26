@@ -15,45 +15,6 @@ toml-version = "v1.1.0"
 
 
 [[schemas]]
-path    = "docs/config/schemas/settings.json"
-include = [
-  "docs/config/settings.toml",
-  "**/.config/kaja/settings.toml"
-]
-
-
-[[schemas]]
-path    = "docs/config/schemas/secrets.json"
-include = [
-  "docs/config/secrets.toml",
-  "**/.config/kaja/secrets.toml"
-]
-
-
-[[schemas]]
-path    = "docs/config/schemas/models.json"
-include = [
-  "docs/config/models*.toml",
-  "**/.config/kaja/models.toml"
-]
-
-
-[[schemas]]
-path    = "docs/config/schemas/catalog.json"
-include = [
-  "docs/config/catalog.toml"
-]
-
-
-[[schemas]]
-path    = "docs/config/schemas/mcp.json"
-include = [
-  "docs/config/mcp.toml",
-  "**/.config/kaja/mcp.toml"
-]
-
-
-[[schemas]]
 path    = "docs/config/schemas/abilities.json"
 include = [
   "docs/config/abilities.toml",
@@ -62,10 +23,9 @@ include = [
 
 
 [[schemas]]
-path    = "docs/config/schemas/persona.json"
+path    = "docs/config/schemas/catalog.json"
 include = [
-  "marketplace/personas/*.toml",
-  "**/.config/kaja/marketplace/personas/*.toml"
+  "docs/config/catalog.toml"
 ]
 
 
@@ -82,4 +42,44 @@ path    = "docs/config/schemas/mcp-ability.json"
 include = [
   "marketplace/mcp/*.toml",
   "**/.config/kaja/marketplace/mcp/*.toml"
+]
+
+
+[[schemas]]
+path    = "docs/config/schemas/mcp.json"
+include = [
+  "docs/config/mcp.toml",
+  "**/.config/kaja/mcp.toml"
+]
+
+
+[[schemas]]
+path    = "docs/config/schemas/models.json"
+include = [
+  "docs/config/models*.toml",
+  "**/.config/kaja/models.toml"
+]
+
+
+[[schemas]]
+path    = "docs/config/schemas/persona.json"
+include = [
+  "marketplace/personas/*.toml",
+  "**/.config/kaja/marketplace/personas/*.toml"
+]
+
+
+[[schemas]]
+path    = "docs/config/schemas/secrets.json"
+include = [
+  "docs/config/secrets.toml",
+  "**/.config/kaja/secrets.toml"
+]
+
+
+[[schemas]]
+path    = "docs/config/schemas/settings.json"
+include = [
+  "docs/config/settings.toml",
+  "**/.config/kaja/settings.toml"
 ]

@@ -33,17 +33,17 @@ localOnlyArgs = [
   "filePath"
 ]
 # The server doesn't mark these read-only, but they only look at the page unless given a filePath to write.
-readOnly      = [
-  {
-    tool   = "take_snapshot",
-    unless = [
-      "filePath"
-    ]
-  },
-  {
-    tool   = "take_screenshot",
-    unless = [
-      "filePath"
-    ]
-  },
+
+
+[[readOnly]]
+tool   = "take_snapshot"
+unless = [
+  "filePath"
+]
+
+
+[[readOnly]]
+tool   = "take_screenshot"
+unless = [
+  "filePath"
 ]

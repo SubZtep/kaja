@@ -4,14 +4,15 @@ name        = "context7"
 description = "Up-to-date documentation and code examples for programming libraries and frameworks, from Context7."
 transport   = "http"
 url         = "https://mcp.context7.com/mcp"
-auth        = {
-  type     = "apiKey",
-  in       = "header",
-  name     = "Authorization",
-  prefix   = "Bearer ",
-  optional = true
-}
 tools       = [
   "resolve-library-id",
   "query-docs"
 ]
+
+
+[auth]
+type     = "apiKey"
+in       = "header"
+name     = "Authorization"
+prefix   = "Bearer "
+optional = true

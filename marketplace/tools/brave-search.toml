@@ -2,17 +2,20 @@
 name        = "brave-search"
 description = "Web search through Brave Search, for current information."
 baseUrl     = "https://api.search.brave.com"
-auth        = {
-  type = "apiKey",
-  in   = "header",
-  name = "X-Subscription-Token"
-}
-headers     = {
-  Accept = "application/json"
-}
-check       = {
-  path = "/res/v1/llm/context?q=kaja"
-}
+
+
+[auth]
+type = "apiKey"
+in   = "header"
+name = "X-Subscription-Token"
+
+
+[headers]
+Accept = "application/json"
+
+
+[check]
+path = "/res/v1/llm/context?q=kaja"
 
 
 [[tools]]
