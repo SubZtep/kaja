@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -102,7 +102,12 @@ describe("relay", () => {
     async () => {
       const { app, pool } = sandbox()
       const first = await connect(app, "u1")
-      expect((await first.listTools()).tools.map(tool => tool.name).sort()).toEqual(["count", "picture", "whoami"])
+      expect((await first.listTools()).tools.map(tool => tool.name).sort()).toEqual([
+        "count",
+        "crash",
+        "picture",
+        "whoami"
+      ])
       expect(await callText(first, "count")).toBe("1")
       await first.close()
 
@@ -132,6 +137,46 @@ describe("relay", () => {
       } finally {
         if (before === undefined) delete process.env.SANDBOX_SECRET
         else process.env.SANDBOX_SECRET = before
+      }
+    },
+    SPAWN_TIMEOUT_MS
+  )
+})
+
+describe("reporting", () => {
+  test(
+    "a server that dies on its own is reported with its last stderr lines, and forgotten",
+    async () => {
+      const logged = spyOn(console, "error").mockImplementation(() => {})
+      try {
+        const { app, pool } = sandbox()
+        const client = await connect(app, "u1")
+        void client.callTool({ name: "crash", arguments: {} }).catch(() => {})
+        const deadline = Date.now() + 10_000
+        while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(100)
+        expect(pool.size).toBe(0)
+        const report = logged.mock.calls.find(([message]) => message === "Sandbox MCP server exited")
+        expect(report?.[1]).toMatchObject({ server: "counter", stderr: "counter: out of cheese" })
+        await client.close()
+      } finally {
+        logged.mockRestore()
+      }
+    },
+    SPAWN_TIMEOUT_MS
+  )
+
+  test(
+    "a server the sandbox stops itself isn't reported",
+    async () => {
+      const logged = spyOn(console, "error").mockImplementation(() => {})
+      try {
+        const { app, pool } = sandbox()
+        const client = await connect(app, "u1")
+        await client.close()
+        await pool.closeAll()
+        expect(logged.mock.calls.some(([message]) => message === "Sandbox MCP server exited")).toBe(false)
+      } finally {
+        logged.mockRestore()
       }
     },
     SPAWN_TIMEOUT_MS

@@ -2,6 +2,9 @@ import { createApp } from "./app"
 import { env } from "./env"
 import { loadSandboxServers } from "./manifests"
 import { ProcessPool } from "./pool"
+import { initReporting } from "./report"
+
+initReporting(env)
 
 const servers = await loadSandboxServers(env.MARKETPLACE_DIR, env.SANDBOX_OVERRIDES)
 const pool = new ProcessPool({ servers, idleMs: env.SANDBOX_IDLE_MS, maxProcesses: env.SANDBOX_MAX_PROCESSES })

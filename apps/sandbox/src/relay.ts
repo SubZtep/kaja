@@ -14,11 +14,14 @@ import {
   type RequestId
 } from "@modelcontextprotocol/sdk/types.js"
 import type { SandboxServer } from "./manifests"
+import { reportError } from "./report"
 
 /** Each turn opens a session and seldom ends it, so the oldest ones past this many are closed. */
 const MAX_SESSIONS = 16
 const METHOD_NOT_FOUND = -32601
 const UNREACHABLE = { error: { code: -32000, message: "the MCP server isn't running" } }
+/** How many of the server's last stderr lines go with a report. */
+const STDERR_LINES = 20
 
 type Reply = { result?: unknown; error?: { code: number; message: string; data?: unknown } }
 type Pending =
@@ -33,6 +36,8 @@ type Pending =
 export class McpRelay {
   readonly #child: StdioClientTransport
   readonly #home: string
+  readonly #name: string
+  readonly #stderr: string[] = []
   readonly #sessions = new Map<string, WebStandardStreamableHTTPServerTransport>()
   readonly #pending = new Map<number, Pending>()
   #nextId = 1
@@ -42,9 +47,10 @@ export class McpRelay {
   /** Called once the server process is gone, whoever ended it. */
   onclose?: () => void
 
-  private constructor(child: StdioClientTransport, home: string) {
+  private constructor(child: StdioClientTransport, home: string, name: string) {
     this.#child = child
     this.#home = home
+    this.#name = name
   }
 
   /** Starts the server with a throwaway HOME and nothing from the sandbox's own environment but PATH. */
@@ -55,12 +61,17 @@ export class McpRelay {
       args: server.args,
       env: { PATH: process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin", HOME: home, ...server.env },
       cwd: home,
-      stderr: "ignore"
+      stderr: "pipe"
     })
-    const relay = new McpRelay(child, home)
+    const relay = new McpRelay(child, home, server.name)
+    child.stderr?.on("data", (chunk: Buffer) => relay.#keepStderr(chunk))
     child.onmessage = message => relay.#fromChild(message)
-    child.onclose = () => void relay.close()
-    child.onerror = error => console.warn("Sandbox MCP server error", { server: server.name, error: error.message })
+    child.onclose = () => {
+      // The relay closes first when it stops the server itself, so a close that finds it open is a crash.
+      if (!relay.#closed) reportError("Sandbox MCP server exited", new Error(`${server.name} exited`), relay.#details())
+      void relay.close()
+    }
+    child.onerror = error => reportError("Sandbox MCP server error", error, relay.#details())
     try {
       await child.start()
     } catch (error) {
@@ -96,6 +107,15 @@ export class McpRelay {
     await this.#child.close().catch(() => {})
     await rm(this.#home, { recursive: true, force: true })
     this.onclose?.()
+  }
+
+  #keepStderr(chunk: Buffer) {
+    this.#stderr.push(...chunk.toString().split("\n").filter(Boolean))
+    this.#stderr.splice(0, this.#stderr.length - STDERR_LINES)
+  }
+
+  #details(): Record<string, unknown> {
+    return { server: this.#name, stderr: this.#stderr.join("\n") }
   }
 
   #openSession(): WebStandardStreamableHTTPServerTransport {

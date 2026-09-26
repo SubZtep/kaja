@@ -91,7 +91,7 @@ Personal data is processed by these service providers, on Kaja's behalf, only as
 |---|---|---|
 | Hetzner Online GmbH | everything stored in cloud mode (hosting and database) | Germany |
 | Brevo | your email address and the account emails sent to you | France |
-| Sentry | error reports from the API and website, which can include request details and your user id; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
+| Sentry | error reports from the API, the website and the MCP sandbox, which can include request details and your user id; passwords, tokens, and IP addresses are scrubbed before they are stored, and Kaja does not deliberately send prompts, memory content, or API keys | United States |
 | Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |
 | xAI | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training | United States |
 | Brave | the search query, when the assistant searches the web; kept by Brave for up to 90 days for billing and troubleshooting | United States |

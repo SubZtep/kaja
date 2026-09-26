@@ -1,5 +1,6 @@
 import type { SandboxServer } from "./manifests"
 import { McpRelay } from "./relay"
+import { reportError } from "./report"
 
 export type PoolOptions = {
   servers: Map<string, SandboxServer>
@@ -42,10 +43,7 @@ export class ProcessPool {
     try {
       relay = await entry.relay
     } catch (error) {
-      console.warn("Sandbox couldn't start MCP server", {
-        ability,
-        error: error instanceof Error ? error.message : error
-      })
+      reportError("Sandbox couldn't start MCP server", error, { ability })
       return Response.json({ error: "the server didn't start" }, { status: 503 })
     }
     this.#touch(key, entry)

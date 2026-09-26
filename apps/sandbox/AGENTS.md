@@ -16,6 +16,7 @@ src/app.ts        # Hono routes: GET /health, ALL /mcp/:ability (token check)
 src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES, 503 past it)
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
 src/manifests.ts  # the stdio manifests it may run, plus overrides.json
+src/report.ts     # Sentry in production (its own project): failed starts, servers that exit on their own (last 20 stderr lines), child errors
 overrides.json    # the Docker image's command/args for chrome-devtools (Node + Chrome for Testing headless shell, --no-sandbox, http(s) pages only)
 Dockerfile        # the sandbox compiled to one binary (bun build --compile) on node:22-trixie-slim
 ```

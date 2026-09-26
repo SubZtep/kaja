@@ -2,6 +2,8 @@
 
 declare module "bun" {
   interface Env {
+    /** Node environment; "production" turns on Sentry */
+    NODE_ENV?: string
     /** Port the sandbox listens on */
     PORT?: string
     /** Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns connect with */

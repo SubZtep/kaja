@@ -74,6 +74,9 @@ other projects. The server must be amd64: the Chrome headless shell has no Linux
 - Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
 - Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` only accepts the API-signed
   token; `/health` is open.
+- Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
+  the image sets `NODE_ENV=production`. It reports MCP servers that won't start, die on their own, or error,
+  with their last stderr lines; no tracing, and request headers are dropped.
 - The image copies `marketplace/mcp` at build time, so a new or changed stdio manifest needs a sandbox
   redeploy too.
 
