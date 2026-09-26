@@ -15,7 +15,7 @@ export type DeviceLoginResult = {
   token: string
 }
 
-/** The web page in the terminal's language: the web reads an unprefixed path as en-GB, so any other language goes in front of it (`/hu-HU/device`). A signed-in visitor's page then switches to their account's language on its own. */
+/** The web page in the terminal's language: the web reads an unprefixed path as en-GB, so any other language (en-US too) goes in front of it (`/hu-HU/device`). A signed-in visitor's page then switches to their account's language on its own. */
 export function localizeWebUrl(url: string, locale: Locale): string {
   const parsed = new URL(url)
   const [, first = ""] = parsed.pathname.split("/")

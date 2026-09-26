@@ -41,6 +41,7 @@ function defaultEnvironmentInstructions() {
 
 const LANGUAGE_NAME: Record<string, string> = {
   "en-GB": "English",
+  "en-US": "American English",
   "hu-HU": "Hungarian",
   "nan-TW": "Taiwanese Hokkien",
   "zh-TW": "Traditional Chinese (Taiwan)"

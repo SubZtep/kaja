@@ -2,6 +2,7 @@
 
 import { type Locale, locales } from "@kaja/shared"
 import enGb from "../../locales/en-GB.toml"
+import enUs from "../../locales/en-US.toml"
 import huHu from "../../locales/hu-HU.toml"
 import nanTw from "../../locales/nan-TW.toml"
 import zhTw from "../../locales/zh-TW.toml"
@@ -20,6 +21,7 @@ function flatten(table: Record<string, unknown>, prefix = "", out = new Map<stri
 // Exported for the key-parity test.
 export const dictionaries: Record<Locale, Map<string, string>> = {
   "en-GB": flatten(enGb),
+  "en-US": flatten(enUs),
   "hu-HU": flatten(huHu),
   "nan-TW": flatten(nanTw),
   "zh-TW": flatten(zhTw)

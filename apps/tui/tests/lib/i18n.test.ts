@@ -7,6 +7,10 @@ test("en-GB and hu-HU dictionaries have the same keys", () => {
   expect([...dictionaries["hu-HU"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
 })
 
+test("en-GB and en-US dictionaries have the same keys", () => {
+  expect([...dictionaries["en-US"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
+})
+
 test("en-GB and nan-TW dictionaries have the same keys", () => {
   expect([...dictionaries["nan-TW"].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
 })
@@ -33,13 +37,15 @@ test("setLanguage switches the dictionary", () => {
   expect(t("doctor.cwd")).toBe("Könyvtár: ")
 })
 
-test("detectLanguage maps Hungarian locales to hu-HU, others to en-GB", () => {
+test("detectLanguage maps Hungarian locales to hu-HU, US English to en-US, others to en-GB", () => {
   const saved = { ...process.env }
   try {
     process.env.LC_ALL = "hu_HU.UTF-8"
     expect(detectLanguage()).toBe("hu-HU")
     process.env.LC_ALL = "en_GB.UTF-8"
     expect(detectLanguage()).toBe("en-GB")
+    process.env.LC_ALL = "en_US.UTF-8"
+    expect(detectLanguage()).toBe("en-US")
     delete process.env.LC_ALL
     delete process.env.LC_MESSAGES
     process.env.LANG = "hu_HU"

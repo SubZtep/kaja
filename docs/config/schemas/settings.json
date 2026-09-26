@@ -89,6 +89,7 @@
           "type": "string",
           "enum": [
             "en-GB",
+            "en-US",
             "hu-HU",
             "nan-TW",
             "zh-TW"

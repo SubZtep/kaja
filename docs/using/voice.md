@@ -58,11 +58,11 @@ Then `Ctrl+T` toggles dictation while typing, and `preferences.voice = true` rea
 
 ## Language
 
-The interface and the assistant's replies follow `preferences.locale`: `en-GB` (English), `hu-HU`
-(Magyar), `nan-TW` (臺語, Taiwanese Hokkien) or `zh-TW` (繁體中文). The wizard asks for it first; with no
-saved value the system locale decides (`LC_ALL`, `LC_MESSAGES` or `LANG`): a Hungarian, Taiwanese
-Hokkien or Traditional Chinese locale picks that language, anything else English. In cloud mode your
-account's language is used, and the web app offers the same four.
+The interface and the assistant's replies follow `preferences.locale`: `en-GB` (British English), `en-US`
+(American English), `hu-HU` (Magyar), `nan-TW` (臺語, Taiwanese Hokkien) or `zh-TW` (繁體中文). The wizard
+asks for it first; with no saved value the system locale decides (`LC_ALL`, `LC_MESSAGES` or `LANG`): a US
+English, Hungarian, Taiwanese Hokkien or Traditional Chinese locale picks that language, anything else
+British English. In cloud mode your account's language is used, and the web app offers the same five.
 
 Voice lags behind:
 

@@ -4,7 +4,10 @@ export const KajaPreferencesSchema = z.object({
   thinking: z.boolean().optional().describe("Show thinking indicator when the model is generating a response"),
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
-  locale: z.enum(["en-GB", "hu-HU", "nan-TW", "zh-TW"]).optional().describe("Language for the chat and application"),
+  locale: z
+    .enum(["en-GB", "en-US", "hu-HU", "nan-TW", "zh-TW"])
+    .optional()
+    .describe("Language for the chat and application"),
   // Written by the setup wizard. Without it the mode is guessed from "is there a usable chat model?", which
   // silently falls back to cloud when models.toml is missing, broken, or deliberately left for hand-editing.
   mode: z

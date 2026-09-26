@@ -1,15 +1,19 @@
 {
   "permissions": {
     "deny": [
+      "Read(**/locales/en-US.toml)",
       "Read(**/locales/hu-HU.toml)",
       "Read(**/locales/nan-TW.toml)",
       "Read(**/locales/zh-TW.toml)",
+      "Read(apps/web/messages/en-US.json)",
       "Read(apps/web/messages/hu-HU.json)",
       "Read(apps/web/messages/nan-TW.json)",
       "Read(apps/web/messages/zh-TW.json)",
+      "Edit(**/locales/en-US.toml)",
       "Edit(**/locales/hu-HU.toml)",
       "Edit(**/locales/nan-TW.toml)",
       "Edit(**/locales/zh-TW.toml)",
+      "Edit(apps/web/messages/en-US.json)",
       "Edit(apps/web/messages/hu-HU.json)",
       "Edit(apps/web/messages/nan-TW.json)",
       "Edit(apps/web/messages/zh-TW.json)"

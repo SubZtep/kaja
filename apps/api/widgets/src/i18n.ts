@@ -1,5 +1,6 @@
 import { type Locale, matchLocale } from "@kaja/shared"
 import enGb from "../locales/en-GB.toml"
+import enUs from "../locales/en-US.toml"
 import huHu from "../locales/hu-HU.toml"
 import nanTw from "../locales/nan-TW.toml"
 import zhTw from "../locales/zh-TW.toml"
@@ -21,6 +22,7 @@ export type WidgetStrings = Record<(typeof KEYS)[number], string>
 
 const dictionaries: Record<Locale, Record<string, string>> = {
   "en-GB": enGb,
+  "en-US": enUs,
   "hu-HU": huHu,
   "nan-TW": nanTw,
   "zh-TW": zhTw
