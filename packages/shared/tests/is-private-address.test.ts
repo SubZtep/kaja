@@ -9,6 +9,14 @@ describe("isPrivateAddress", () => {
     expect(isPrivateAddress("192.168.1.1")).toBe(true)
   })
 
+  test("flags 0.0.0.0/8 (reaches loopback on Linux), multicast and reserved IPv4", () => {
+    expect(isPrivateAddress("0.0.0.0")).toBe(true)
+    expect(isPrivateAddress("0.1.2.3")).toBe(true)
+    expect(isPrivateAddress("224.0.0.1")).toBe(true)
+    expect(isPrivateAddress("255.255.255.255")).toBe(true)
+    expect(isPrivateAddress("223.255.255.255")).toBe(false)
+  })
+
   test("accepts a public IPv4 address", () => {
     expect(isPrivateAddress("8.8.8.8")).toBe(false)
   })
@@ -17,6 +25,7 @@ describe("isPrivateAddress", () => {
     expect(isPrivateAddress("::1")).toBe(true)
     expect(isPrivateAddress("fe80::1")).toBe(true)
     expect(isPrivateAddress("fd00::1")).toBe(true)
+    expect(isPrivateAddress("ff02::1")).toBe(true)
   })
 
   test("accepts a public IPv6 address", () => {
