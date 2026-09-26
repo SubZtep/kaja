@@ -2,18 +2,21 @@ import {
   attachImages,
   clearTelemetry,
   type DatasetAnswer,
+  deleteImages,
   detachImages,
-  hasImageRefs,
   joinConversation,
+  loadImages,
   type MessageRow,
   type NasiStore,
   type PendingKind,
   type SessionWrite,
+  saveImages,
   splitConversation
 } from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { channelOf, PersistedSessionSchema } from "@kaja/schema/store"
 import type { Pool, PoolClient } from "pg"
+import { files, sessionImagePrefix } from "../../core/files"
 
 function ownerKey(owner: string | null): string {
   return owner ?? ""
@@ -40,7 +43,7 @@ const SESSION_COLUMNS =
   "id, created_at, updated_at, persona, model, title, owner, system_prompt, pending_call_id, pending_kind"
 
 /** Rebuilds a session from its rows. The cloud keeps no timeline, so `events` is always empty. */
-async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | undefined> {
+async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<PersistedSession | undefined> {
   const [messages, calls, summary] = await Promise.all([
     db.query(
       "SELECT role, content, parts, reasoning, tool_call_id FROM nasi_message WHERE session_id = $1 ORDER BY seq",
@@ -59,9 +62,11 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
   ])
   const latest = summary.rows[0]
   const callsBySeq = Map.groupBy(calls.rows, call => call.seq as number)
-  const images = messages.rows.some(message => hasImageRefs(message.parts))
-    ? await sessionImages(db, row.id)
-    : new Map<string, never>()
+  const images = await loadImages(
+    files,
+    sessionImagePrefix(userId, row.id),
+    messages.rows.map(message => message.parts)
+  )
   const parsed = PersistedSessionSchema.safeParse({
     id: row.id,
     createdAt: iso(row.created_at),
@@ -95,29 +100,14 @@ async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | un
   return parsed.success ? parsed.data : undefined
 }
 
-// The session's stored images by hash, for the messages that refer to them.
-async function sessionImages(db: Pool, sessionId: string) {
-  const { rows } = await db.query<{ hash: string; mime_type: string; data: Buffer }>(
-    "SELECT hash, mime_type, data FROM nasi_session_image WHERE session_id = $1",
-    [sessionId]
-  )
-  return new Map(rows.map(image => [image.hash, { mimeType: image.mime_type, data: image.data }]))
-}
-
 // Postgres text can't hold a NUL byte; a tool that returned binary data (a fetched image, say) would fail the whole turn's save
 const pgText = (text: string | null | undefined) => text?.replaceAll("\0", "") ?? null
 
-async function insertMessage(client: PoolClient, sessionId: string, seq: number, row: MessageRow) {
+async function insertMessage(client: PoolClient, userId: string, sessionId: string, seq: number, row: MessageRow) {
   const id = Bun.randomUUIDv7()
-  // Inline images go in their own table, once per session; the message keeps a reference to each.
+  // Inline images go to object storage, once per session; the message keeps a reference to each.
   const { parts, images } = detachImages(row.parts)
-  for (const image of images) {
-    await client.query(
-      `INSERT INTO nasi_session_image (session_id, hash, mime_type, data) VALUES ($1, $2, $3, $4)
-       ON CONFLICT (session_id, hash) DO NOTHING`,
-      [sessionId, image.hash, image.mimeType, image.data]
-    )
-  }
+  await saveImages(files, sessionImagePrefix(userId, sessionId), images)
   await client.query(
     `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id,
                                persona, model, prompt_tokens, completion_tokens, latency_ms, finish_reason)
@@ -156,7 +146,7 @@ async function insertMessage(client: PoolClient, sessionId: string, seq: number,
 }
 
 // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
-async function saveConversation(client: PoolClient, id: string, data: SessionWrite) {
+async function saveConversation(client: PoolClient, userId: string, id: string, data: SessionWrite) {
   const {
     systemPrompt,
     pending,
@@ -173,7 +163,7 @@ async function saveConversation(client: PoolClient, id: string, data: SessionWri
   const stored = await client.query("SELECT COUNT(*)::int AS n FROM nasi_message WHERE session_id = $1", [id])
   const storedMessages = stored.rows[0].n as number
   for (const [i, row] of messages.slice(storedMessages).entries()) {
-    await insertMessage(client, id, storedMessages + i, row)
+    await insertMessage(client, userId, id, storedMessages + i, row)
   }
   for (const [callId, text] of Object.entries(toolSummaries)) {
     await client.query(
@@ -233,7 +223,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [id, userId, data.persona, data.model, data.title, data.owner, channelOf(data.owner)]
         )
-        await saveConversation(client, id, data)
+        await saveConversation(client, userId, id, data)
       })
       clearTelemetry(data.session)
       return id
@@ -245,7 +235,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
           "UPDATE nasi_session SET updated_at = NOW(), persona = $3, model = $4 WHERE id = $1 AND user_id = $2",
           [id, userId, data.persona, data.model]
         )
-        if ((result.rowCount ?? 0) > 0) await saveConversation(client, id, data)
+        if ((result.rowCount ?? 0) > 0) await saveConversation(client, userId, id, data)
       })
       clearTelemetry(data.session)
     },
@@ -255,7 +245,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
         id,
         userId
       ])
-      return result.rows[0] ? hydrate(db, result.rows[0]) : undefined
+      return result.rows[0] ? hydrate(db, userId, result.rows[0]) : undefined
     },
 
     async loadLatestSession(owner) {
@@ -271,12 +261,14 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
                ORDER BY updated_at DESC, id DESC LIMIT 1`,
               [userId, owner]
             )
-      return result.rows[0] ? hydrate(db, result.rows[0]) : undefined
+      return result.rows[0] ? hydrate(db, userId, result.rows[0]) : undefined
     },
 
     async deleteSession(id) {
       const result = await db.query("DELETE FROM nasi_session WHERE id = $1 AND user_id = $2", [id, userId])
-      return (result.rowCount ?? 0) > 0
+      if (!result.rowCount) return false
+      await deleteImages(files, sessionImagePrefix(userId, id))
+      return true
     },
 
     async listSessions(): Promise<SessionMeta[]> {

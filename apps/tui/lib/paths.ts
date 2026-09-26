@@ -13,7 +13,8 @@ export function listPaths(all = false, configDir = getPaths().config) {
 
   const items = [
     { label: t("paths.settings"), path: join(configDir, "settings.toml") },
-    { label: t("paths.memorySessions"), path: join(paths.data, "memory.sqlite") }
+    { label: t("paths.memorySessions"), path: join(paths.data, "memory.sqlite") },
+    { label: t("paths.images"), path: join(paths.data, "files") }
   ]
 
   if (all) {

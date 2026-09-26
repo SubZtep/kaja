@@ -36,6 +36,26 @@ services:
         ]
       timeout: 5s
 
+  # S3-compatible object storage for images (Hetzner Object Storage in production); the API creates the bucket on boot
+  storage:
+    image: rustfs/rustfs:1.0.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000" # S3 API
+      - "127.0.0.1:9001:9001" # console
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ACCESS_KEY: kaja # matches apps/api/.env.example
+      RUSTFS_SECRET_KEY: kaja-dev-storage
+    volumes:
+      - storage:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/health"]
+      start_period: 5s
+
   api:
     build:
       context: .
@@ -47,6 +67,8 @@ services:
         condition: service_healthy
       mail:
         condition: service_healthy
+      storage:
+        condition: service_healthy
     env_file:
       - path: apps/api/.env.example
         required: true
@@ -55,6 +77,7 @@ services:
     environment:
       DATABASE_URL: postgresql://testuser:testpass@db:5432/kaja
       SMTP_HOST: mail
+      STORAGE_ENDPOINT: http://storage:9000 # tool image URLs then name this host, which only the compose network resolves
       CORS_ORIGIN: http://localhost:3000
       BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production # local stack only
       SANDBOX_URL: http://sandbox:3002
@@ -133,3 +156,6 @@ services:
 
 networks:
   sandbox:
+
+volumes:
+  storage:

@@ -263,7 +263,10 @@ describe("MCP servers in the cloud", () => {
       const image = (await res.text()).split("\n\n").find(block => block.startsWith("event: tool_image"))
       const data = JSON.parse(image!.slice(image!.indexOf("data:") + 5))
       expect(data).toMatchObject({ type: "tool_image", mimeType: "image/png" })
-      expect(data.url).toStartWith("data:image/png;base64,iVBOR")
+      // The screenshot went to object storage; the client gets a signed URL to it
+      const fetched = await fetch(data.url)
+      expect(fetched.ok).toBe(true)
+      expect(Buffer.from(await fetched.arrayBuffer()).toString("base64")).toStartWith("iVBOR")
     } finally {
       setNasiSandboxOverride(undefined)
       await sandboxPool.closeAll()

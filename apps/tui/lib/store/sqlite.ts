@@ -1,20 +1,25 @@
 import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
-import { dirname } from "node:path"
+import { dirname, join } from "node:path"
 import {
   attachImages,
   clearTelemetry,
+  deleteImages,
   detachImages,
-  hasImageRefs,
   joinConversation,
+  loadImages,
   type MessageRow,
   type NasiStore,
   type PendingKind,
   type SessionWrite,
+  type StoredImage,
+  saveImages,
   splitConversation
 } from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
+import { Files } from "files-sdk"
+import { fs } from "files-sdk/fs"
 
 function ownerKey(owner: string | null): string {
   return owner ?? ""
@@ -27,6 +32,11 @@ function migrateNotesOwnerColumn(db: Database) {
   db.run(`ALTER TABLE notes ADD COLUMN owner TEXT NOT NULL DEFAULT ''`)
 }
 
+// Images used to be BLOBs in a session_images table; they now live in files beside the database, and the old ones are dropped.
+function dropSessionImages(db: Database) {
+  db.run("DROP TABLE IF EXISTS session_images")
+}
+
 // Sessions used to be one row holding the whole conversation as two JSON blobs, then rows without telemetry; they are dropped, not converted.
 function dropLegacySessions(db: Database) {
   const hasColumn = (table: string, column: string) =>
@@ -34,15 +44,7 @@ function dropLegacySessions(db: Database) {
   const blobs = hasColumn("sessions", "session")
   const noTelemetry = hasColumn("messages", "toolCallId") && !hasColumn("messages", "finishReason")
   if (!blobs && !noTelemetry) return
-  for (const table of [
-    "session_images",
-    "model_calls",
-    "session_summaries",
-    "tool_calls",
-    "session_events",
-    "messages",
-    "sessions"
-  ])
+  for (const table of ["model_calls", "session_summaries", "tool_calls", "session_events", "messages", "sessions"])
     db.run(`DROP TABLE IF EXISTS ${table}`)
 }
 
@@ -56,6 +58,7 @@ function migrateToolCallSummaryColumn(db: Database) {
 function createSchema(db: Database) {
   migrateNotesOwnerColumn(db)
   dropLegacySessions(db)
+  dropSessionImages(db)
   db.run(`
     CREATE TABLE IF NOT EXISTS notes (
       owner       TEXT NOT NULL,
@@ -144,16 +147,6 @@ function createSchema(db: Database) {
       PRIMARY KEY (sessionId, summaryFrom)
     )
   `)
-  // Images the messages carried inline, once per session; a message part refers to one as kaja-image:<hash>.
-  db.run(`
-    CREATE TABLE IF NOT EXISTS session_images (
-      sessionId TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
-      hash      TEXT NOT NULL,
-      mimeType  TEXT NOT NULL,
-      data      BLOB NOT NULL,
-      PRIMARY KEY (sessionId, hash)
-    )
-  `)
   // Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool), for their tokens.
   db.run(`
     CREATE TABLE IF NOT EXISTS model_calls (
@@ -229,9 +222,13 @@ type MessageDbRow = {
   toolCallId: string | null
 }
 
-/** Local CLI persistence: one sqlite file (sessions, notes, datasets). */
+/** Where a session's images live under the store's `files` folder. */
+const imagePrefix = (sessionId: string) => `images/${sessionId}`
+
+/** Local CLI persistence: one sqlite file (sessions, notes, datasets), and the session images as files beside it. */
 export function createSqliteStore(dbPath: string): NasiStore {
   const db = openDb(dbPath)
+  const files = new Files({ adapter: fs({ root: join(dirname(dbPath), "files") }) })
 
   function count(table: "messages" | "session_events", sessionId: string): number {
     const row = db.query(`SELECT COUNT(*) AS n FROM ${table} WHERE sessionId = $id`).get({ $id: sessionId }) as {
@@ -240,15 +237,12 @@ export function createSqliteStore(dbPath: string): NasiStore {
     return row.n
   }
 
-  function insertMessage(sessionId: string, seq: number, row: MessageRow, createdAt: string) {
+  // Inline images are collected into `images` for the caller to write as files once the transaction is done; the message keeps a reference to each.
+  function insertMessage(sessionId: string, seq: number, row: MessageRow, createdAt: string, images: StoredImage[]) {
     const id = Bun.randomUUIDv7()
-    // Inline images go in their own table, once per session; the message keeps a reference to each.
-    const { parts, images } = detachImages(row.parts)
-    for (const image of images) {
-      db.query(
-        "INSERT OR IGNORE INTO session_images (sessionId, hash, mimeType, data) VALUES ($sessionId, $hash, $mimeType, $data)"
-      ).run({ $sessionId: sessionId, $hash: image.hash, $mimeType: image.mimeType, $data: image.data })
-    }
+    const detached = detachImages(row.parts)
+    const parts = detached.parts
+    images.push(...detached.images)
     db.query(
       `INSERT INTO messages (id, sessionId, seq, role, content, parts, reasoning, toolCallId, persona, model,
                              promptTokens, completionTokens, latencyMs, finishReason, createdAt)
@@ -293,7 +287,8 @@ export function createSqliteStore(dbPath: string): NasiStore {
   }
 
   // The conversation is append-only apart from the system prompt, so a save writes just the rows past what's stored.
-  const saveConversation = db.transaction((id: string, data: SessionWrite) => {
+  // Returns the new messages' images, for the caller to write with saveImages after the transaction.
+  const saveConversation = db.transaction((id: string, data: SessionWrite): StoredImage[] => {
     const {
       systemPrompt,
       pending,
@@ -313,7 +308,8 @@ export function createSqliteStore(dbPath: string): NasiStore {
     })
     const now = new Date().toISOString()
     const storedMessages = count("messages", id)
-    messages.slice(storedMessages).forEach((row, i) => insertMessage(id, storedMessages + i, row, now))
+    const images: StoredImage[] = []
+    messages.slice(storedMessages).forEach((row, i) => insertMessage(id, storedMessages + i, row, now, images))
     for (const [callId, text] of Object.entries(toolSummaries)) {
       db.query(
         `UPDATE tool_calls SET resultSummary = $text
@@ -362,9 +358,10 @@ export function createSqliteStore(dbPath: string): NasiStore {
         $now: now
       })
     }
+    return images
   })
 
-  function hydrate(row: SessionRow): PersistedSession | undefined {
+  async function hydrate(row: SessionRow): Promise<PersistedSession | undefined> {
     try {
       const messageRows = db
         .query("SELECT role, content, parts, reasoning, toolCallId FROM messages WHERE sessionId = $id ORDER BY seq")
@@ -385,15 +382,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
       }[]
       const callsBySeq = Map.groupBy(callRows, call => call.seq)
       const parts = messageRows.map(message => (message.parts ? (JSON.parse(message.parts) as unknown[]) : null))
-      const images = parts.some(message => hasImageRefs(message))
-        ? new Map(
-            (
-              db
-                .query("SELECT hash, mimeType, data FROM session_images WHERE sessionId = $id")
-                .all({ $id: row.id }) as { hash: string; mimeType: string; data: Uint8Array }[]
-            ).map(image => [image.hash, image])
-          )
-        : new Map<string, never>()
+      const images = await loadImages(files, imagePrefix(row.id), parts)
       const eventRows = db
         .query("SELECT payload FROM session_events WHERE sessionId = $id ORDER BY seq")
         .all({ $id: row.id }) as { payload: string }[]
@@ -442,7 +431,7 @@ export function createSqliteStore(dbPath: string): NasiStore {
     async createSession(data: SessionWrite & { title: string }) {
       const now = new Date().toISOString()
       const id = Bun.randomUUIDv7()
-      db.transaction(() => {
+      const images = db.transaction(() => {
         db.query(`
           INSERT INTO sessions (id, createdAt, updatedAt, persona, model, title, owner)
           VALUES ($id, $createdAt, $updatedAt, $persona, $model, $title, $owner)
@@ -455,19 +444,21 @@ export function createSqliteStore(dbPath: string): NasiStore {
           $title: data.title,
           $owner: data.owner
         })
-        saveConversation(id, data)
+        return saveConversation(id, data)
       })()
+      await saveImages(files, imagePrefix(id), images)
       clearTelemetry(data.session)
       return id
     },
 
     async updateSession(id, data) {
-      db.transaction(() => {
+      const images = db.transaction(() => {
         const { changes } = db
           .query("UPDATE sessions SET updatedAt = $updatedAt, persona = $persona, model = $model WHERE id = $id")
           .run({ $id: id, $updatedAt: new Date().toISOString(), $persona: data.persona, $model: data.model })
-        if (changes > 0) saveConversation(id, data)
+        return changes > 0 ? saveConversation(id, data) : []
       })()
+      await saveImages(files, imagePrefix(id), images)
       clearTelemetry(data.session)
     },
 
@@ -495,7 +486,9 @@ export function createSqliteStore(dbPath: string): NasiStore {
     },
 
     async deleteSession(id) {
-      return db.query("DELETE FROM sessions WHERE id = $id").run({ $id: id }).changes > 0
+      if (db.query("DELETE FROM sessions WHERE id = $id").run({ $id: id }).changes === 0) return false
+      await deleteImages(files, imagePrefix(id))
+      return true
     },
 
     async listSessions(): Promise<SessionMeta[]> {

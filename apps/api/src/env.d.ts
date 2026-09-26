@@ -78,6 +78,16 @@ declare module "bun" {
     SANDBOX_URL?: string
     /** Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token */
     SANDBOX_SECRET?: string
+    /** Object storage bucket for session and tool images */
+    STORAGE_BUCKET?: string
+    /** Hetzner Object Storage location (fsn1, nbg1, hel1) */
+    STORAGE_REGION?: string
+    /** S3-compatible endpoint (the compose RustFS) instead of Hetzner; for dev, tests and CI */
+    STORAGE_ENDPOINT?: string
+    /** Object storage access key (RUSTFS_ACCESS_KEY under STORAGE_ENDPOINT) */
+    HCLOUD_ACCESS_KEY_ID?: string
+    /** Object storage secret key (RUSTFS_SECRET_KEY under STORAGE_ENDPOINT) */
+    HCLOUD_SECRET_ACCESS_KEY?: string
     /** BotFather token; when set, starts the always-on cloud Telegram bot */
     TELEGRAM_BOT_TOKEN?: string
   }

@@ -1,5 +1,7 @@
 import { afterEach, expect, test } from "bun:test"
+import { readdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
+import { dirname, join } from "node:path"
 
 // XDG_CONFIG_HOME is isolated too, since memory-store.ts can write
 // config.memory.dbPath back into settings.toml on first successful open.
@@ -93,7 +95,7 @@ async function openDb() {
 
 function count(
   db: Awaited<ReturnType<typeof openDb>>,
-  table: "messages" | "session_events" | "tool_calls" | "session_images",
+  table: "messages" | "session_events" | "tool_calls",
   id: string
 ) {
   const sql =
@@ -103,7 +105,7 @@ function count(
   return (db.query(sql).get(id) as { n: number }).n
 }
 
-test("an inline image is stored once in session_images, the message keeps a reference, and it loads back", async () => {
+test("an inline image is stored once as a file beside the database, the message keeps a reference, and it loads back", async () => {
   const image = { type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } }
   const messages = [
     { role: "user", content: [image] },
@@ -113,15 +115,15 @@ test("an inline image is stored once in session_images, the message keeps a refe
   const id = await createSessionRow(row({ session: { messages } }))
   const db = await openDb()
   const parts = db.query("SELECT parts FROM messages WHERE sessionId = ? ORDER BY seq").all(id) as { parts: string }[]
+  db.close()
   expect(parts[0]!.parts).toContain("kaja-image:")
   expect(parts[0]!.parts).not.toContain("iVBORw0KGgo")
-  expect(count(db, "session_images", id)).toBe(1)
-  db.close()
+  const { peekStorePath } = await import("../../../lib/memory/store")
+  const folder = join(dirname(peekStorePath()!), "files", "images", id)
+  expect((await readdir(folder)).filter(name => !name.endsWith(".meta.json"))).toHaveLength(1)
   expect((await loadSessionRow(id))!.session.messages).toEqual(messages)
   expect(await deleteSessionRow(id)).toBe(true)
-  const after = await openDb()
-  expect(count(after, "session_images", id)).toBe(0)
-  after.close()
+  expect((await readdir(folder).catch(() => [])).length).toBe(0)
 })
 
 test("a corrupt row loads as undefined instead of crashing", async () => {

@@ -27,6 +27,7 @@ import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
+import { toolImageUrl } from "../nasi/tool-image"
 import {
   ABILITY_CALLBACK,
   ABILITY_PAGE_CALLBACK,
@@ -125,8 +126,14 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** A tool's image file (only there during the turn) as a photo; a failed send is logged, never ends the turn. */
-  async function sendToolImage(chatId: number, path: string) {
+  /** A tool's image file (only there during the turn) as a photo: by its signed storage URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
+  async function sendToolImage(chatId: number, userId: string, path: string, mimeType: string) {
+    try {
+      const url = await toolImageUrl(userId, path, mimeType)
+      if (isPublicHttpUrl(url)) return await sender.sendPhoto(chatId, url)
+    } catch (error) {
+      console.warn("Telegram tool image by URL failed, sending the bytes", { error })
+    }
     try {
       await sender.sendPhoto(chatId, new Uint8Array(await Bun.file(path).arrayBuffer()))
     } catch (error) {
@@ -163,6 +170,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     throttle: EditThrottle,
     editIfChanged: (text: string) => Promise<void>,
     chatId: number,
+    userId: string,
     event: FinalizedAgentEvent,
     language: BotLanguage
   ): Promise<boolean> | boolean {
@@ -185,7 +193,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     if (event.type === "compacted")
       return sender.sendMessage(chatId, compactedLine(event, language.t)).then(() => false)
 
-    if (event.type === "tool_image") return sendToolImage(chatId, event.path).then(() => false)
+    if (event.type === "tool_image") return sendToolImage(chatId, userId, event.path, event.mimeType).then(() => false)
 
     return false
   }
@@ -278,7 +286,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
             continue
           }
           if (event.type === "usage") continue
-          ended = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, event, language)
+          ended = await handleFinalizedEvent(accumulated, throttle, editIfChanged, chatId, ownerUserId, event, language)
         }
       } finally {
         await nasi.close()

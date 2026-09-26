@@ -1,3 +1,4 @@
+export { deleteImages, imageKey, loadImages, saveImages } from "./images"
 export { createMemoryStore } from "./memory-store"
 export { forgetNotes, noteHeader } from "./notes"
 export { requireStore } from "./require"
@@ -9,6 +10,8 @@ export {
   detachImages,
   hasImageRefs,
   IMAGE_REF_PREFIX,
+  imageHash,
+  imageRefs,
   joinConversation,
   type MessageRow,
   type PendingKind,

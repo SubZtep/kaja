@@ -143,6 +143,24 @@ export const ApiEnvSchema = z.object({
     )
     .meta({ secret: true, section: "MCP Sandbox" }),
 
+  STORAGE_BUCKET: trimmed
+    .describe("Object storage bucket for session and tool images")
+    .meta({ example: "kaja", devDefault: true, section: "Storage" }),
+  STORAGE_REGION: trimmed
+    .default("fsn1")
+    .describe("Hetzner Object Storage location (fsn1, nbg1, hel1)")
+    .meta({ section: "Storage" }),
+  STORAGE_ENDPOINT: url
+    .optional()
+    .describe("S3-compatible endpoint (the compose RustFS) instead of Hetzner; for dev, tests and CI")
+    .meta({ example: "http://localhost:9000", devDefault: true, section: "Storage" }),
+  HCLOUD_ACCESS_KEY_ID: trimmed
+    .describe("Object storage access key (RUSTFS_ACCESS_KEY under STORAGE_ENDPOINT)")
+    .meta({ example: "kaja", devDefault: true, section: "Storage" }),
+  HCLOUD_SECRET_ACCESS_KEY: trimmed
+    .describe("Object storage secret key (RUSTFS_SECRET_KEY under STORAGE_ENDPOINT)")
+    .meta({ secret: true, example: "kaja-dev-storage", devDefault: true, section: "Storage" }),
+
   TELEGRAM_BOT_TOKEN: trimmed
     .optional()
     .describe("BotFather token; when set, starts the always-on cloud Telegram bot")

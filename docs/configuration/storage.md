@@ -13,6 +13,10 @@ In [local mode](/modes) everything Kaja remembers lives in one SQLite file on yo
 
 It opens in WAL mode, so it's safe to have the terminal chat and the Telegram bot running at once.
 
+Images the conversation showed the model (a screenshot a tool returned, a photo sent to the bot) are not in
+the database: each is a file under `files/images/<sessionId>/` next to it, stored once per session and named
+by its sha256; the messages refer to them, and deleting a session removes its folder.
+
 In cloud mode there is no local database: the same data lives in the server's Postgres, scoped to your
 account. The [Database](/development/database) page compares the two.
 
@@ -25,7 +29,6 @@ account. The [Database](/development/database) page compares the two.
 | `messages` | the conversation itself, one row per message (the assistant's rows are its steps, with model, tokens and latency) |
 | `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took; a result too big for the context also keeps the condensed version the model was sent |
 | `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into; the messages themselves are never deleted |
-| `session_images` | images the conversation showed the model (a screenshot a tool returned, say), once each; the messages refer to them |
 | `model_calls` | each request that wrote a summary (compacting, condensing, the `summarize` tool): model, tokens and time |
 | `session_events` | the terminal timeline (what the screen showed), replayed when you resume |
 | `dataset_answers` | individual answers to a [dataset](/memory#datasets) field |
@@ -99,13 +102,6 @@ erDiagram
     TEXT createdAt
   }
 
-  session_images {
-    TEXT sessionId PK
-    TEXT hash PK "sha256 of the bytes"
-    TEXT mimeType
-    BLOB data
-  }
-
   model_calls {
     TEXT sessionId FK
     TEXT kind "compact | condense | summarize"
@@ -143,7 +139,6 @@ erDiagram
   sessions ||--o{ session_events : has
   sessions ||--o{ session_summaries : "compacted into"
   sessions ||--o{ model_calls : "summarised with"
-  sessions ||--o{ session_images : shows
   messages ||--o{ tool_calls : makes
   dataset_answers }o--|| dataset_versions : "topic + owner + version"
 ```
