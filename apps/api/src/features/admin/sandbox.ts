@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi"
-import { type AdminSandboxEntry, adminSandboxResponseSchema } from "@kaja/schema/api"
+import { type AdminSandboxEntry, adminSandboxResponseSchema, sandboxSamplesResponseSchema } from "@kaja/schema/api"
 import { pool } from "../../core/db"
 import { sandboxService } from "../../services"
 import type { RouteRegProps } from "../../types"
@@ -20,7 +20,30 @@ const sandboxStatsRoute = createRoute({
   }
 })
 
+const samplesRoute = createRoute({
+  method: "get",
+  path: "/sandbox/{id}/samples",
+  tags: ["Admin"],
+  summary: "A sandbox's load over the last hours (up to 7 days), for its chart",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.uuid() }),
+    query: z.object({ hours: z.coerce.number().int().min(1).max(168).default(24) })
+  },
+  responses: {
+    200: { description: "OK", content: { "application/json": { schema: sandboxSamplesResponseSchema } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
+    403: { description: "Forbidden", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
 export function registerAdminSandbox(app: RouteRegProps) {
+  app.openapi(samplesRoute, async c => {
+    const { id } = c.req.valid("param")
+    const { hours } = c.req.valid("query")
+    return c.json({ samples: await sandboxService.samples(id, hours) }, 200)
+  })
+
   app.openapi(sandboxStatsRoute, async c => {
     const sandboxes = await sandboxService.list()
     const entries: AdminSandboxEntry[] = await Promise.all(

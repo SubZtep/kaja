@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto"
-import type { Sandbox, SandboxInfo, SandboxLoad } from "@kaja/schema/api"
+import type { Sandbox, SandboxInfo, SandboxLoad, SandboxSample } from "@kaja/schema/api"
 import type { Pool } from "pg"
 import type { GeoLocation } from "../core/geo"
 
@@ -145,9 +145,36 @@ export class SandboxService {
     return { id: rows[0]!.id, secret }
   }
 
-  /** Records a heartbeat: how busy it is, and that it's still there. */
+  /** Records a heartbeat: how busy it is, that it's still there, and a sample for its load chart. */
   async heartbeat(id: string, load: SandboxLoad): Promise<void> {
-    await this.#db.query("UPDATE sandbox SET load = $2, last_seen_at = now() WHERE id = $1", [id, JSON.stringify(load)])
+    await this.#db.query(
+      `WITH updated AS (UPDATE sandbox SET load = $2, last_seen_at = now() WHERE id = $1 RETURNING id)
+       INSERT INTO sandbox_sample (sandbox_id, running, load, memory_used)
+       SELECT id, $3, $4, $5 FROM updated ON CONFLICT DO NOTHING`,
+      [id, JSON.stringify(load), load.running, load.load, Math.round(load.memoryUsed)]
+    )
+  }
+
+  /** A sandbox's load over the last `hours`, averaged into about `points` buckets (peak for `running`), oldest first. */
+  async samples(id: string, hours: number, points = 120): Promise<SandboxSample[]> {
+    const bucketSeconds = Math.max(60, Math.ceil((hours * 3600) / points))
+    const { rows } = await this.#db.query<{ at: Date; running: number; load: number; memory_used: string }>(
+      `SELECT date_bin(make_interval(secs => $3), at, TIMESTAMPTZ '2000-01-01') AS at, max(running) AS running,
+         avg(load)::real AS load, avg(memory_used)::bigint AS memory_used
+       FROM sandbox_sample WHERE sandbox_id = $1 AND at > now() - make_interval(hours => $2)
+       GROUP BY 1 ORDER BY 1`,
+      [id, hours, bucketSeconds]
+    )
+    return rows.map(row => ({ at: row.at, running: row.running, load: row.load, memoryUsed: Number(row.memory_used) }))
+  }
+
+  /** Drops load samples older than `olderThanMs`. */
+  async pruneSamples(olderThanMs: number): Promise<number> {
+    const { rowCount } = await this.#db.query(
+      "DELETE FROM sandbox_sample WHERE at < now() - make_interval(secs => $1)",
+      [olderThanMs / 1000]
+    )
+    return rowCount ?? 0
   }
 
   async setOffline(id: string): Promise<void> {

@@ -60,6 +60,10 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 - Forwarding users' keys (`auth.in = "env"`) — keyed stdio abilities are refused on both sides
 - Per-user limits beyond one process per (user, ability)
 
+## Release
+
+`.github/workflows/dockerhub.yaml` (`release_sandbox`) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
+
 ## Testing
 
 `bun test apps/sandbox/tests` runs a fixture stdio server (`tests/fixtures/counter-server.ts`) through the real relay and the API's `SandboxTunnel`, wired in-process; the API's `sandbox.test.ts`, `admin-sandbox.test.ts` and `ability-mcp.test.ts` connect real sandboxes over the WebSocket (`tests/integration/sandbox-helpers.ts`).

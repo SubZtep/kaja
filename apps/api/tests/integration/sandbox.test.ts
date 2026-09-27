@@ -8,6 +8,7 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { lookupGeo, setGeoLookupOverride } from "../../src/core/geo"
 import { pickSandbox } from "../../src/features/sandbox/registry"
+import { sandboxService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, waitFor } from "./sandbox-helpers"
 
@@ -115,6 +116,25 @@ describe("routing", () => {
     try {
       const counts = await (await app.request("/sandbox/public")).json()
       expect(counts.online).toBeGreaterThanOrEqual(1)
+    } finally {
+      await sandbox.close()
+    }
+  }, 30_000)
+})
+
+describe("load history", () => {
+  test("each heartbeat is a sample, bucketed for the chart, and old ones are pruned", async () => {
+    const sandbox = await startSandbox({ apiUrl, abilities: [ability] })
+    try {
+      await sandboxService.heartbeat(sandbox.id, { running: 1, load: 0.5, memoryUsed: 1000 })
+      await Bun.sleep(5)
+      await sandboxService.heartbeat(sandbox.id, { running: 3, load: 1.5, memoryUsed: 3000 })
+      const samples = await sandboxService.samples(sandbox.id, 1)
+      expect(samples).toHaveLength(1)
+      expect(samples[0]).toMatchObject({ running: 3, load: 1, memoryUsed: 2000 })
+      await pool.query("UPDATE sandbox_sample SET at = at - interval '8 days' WHERE sandbox_id = $1", [sandbox.id])
+      expect(await sandboxService.pruneSamples(7 * 24 * 60 * 60 * 1000)).toBeGreaterThanOrEqual(2)
+      expect(await sandboxService.samples(sandbox.id, 168)).toEqual([])
     } finally {
       await sandbox.close()
     }

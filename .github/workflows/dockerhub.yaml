@@ -15,6 +15,10 @@ on:
         description: "Release Web"
         type: boolean
         default: false
+      release_sandbox:
+        description: "Release Sandbox"
+        type: boolean
+        default: false
 
 jobs:
   api-docker:
@@ -94,3 +98,32 @@ jobs:
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: ./apps/web/Dockerfile
           version: ${{ steps.version.outputs.version }}
+
+  sandbox-docker:
+    name: Sandbox Build and Push
+    if: ${{ inputs.release_sandbox }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Get Sandbox version
+        id: version
+        run: |
+          VERSION=$(jq -r .version ./apps/sandbox/package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # subztep/kaja-sandbox, the image anyone can run: docker run subztep/kaja-sandbox (amd64 only, like its Chrome)
+      - name: Release Sandbox
+        uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
+        with:
+          dockerhub_repository: ${{ vars.DOCKER_IMAGE_SANDBOX || 'subztep/kaja-sandbox' }}
+          dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+          dockerfile: ./apps/sandbox/Dockerfile
+          version: ${{ steps.version.outputs.version }}
+          # The Chrome for Testing headless shell has no Linux arm64 build
+          platforms: linux/amd64

@@ -150,6 +150,17 @@ export const adminSandboxResponseSchema = z.object({
   emails: z.record(z.string(), z.string())
 })
 
+/** One point of a sandbox's load chart: the peak `running`, and the average load and memory, over its bucket. */
+export const sandboxSampleSchema = z.object({
+  at: z.coerce.date(),
+  running: z.number().int(),
+  load: z.number(),
+  memoryUsed: z.number()
+})
+
+/** `GET /admin/sandbox/{id}/samples`: its load over the last `hours`. */
+export const sandboxSamplesResponseSchema = z.object({ samples: z.array(sandboxSampleSchema) })
+
 /** A user's sandbox settings: others may use theirs (`share`), they may use others' (`useShared`), and whether they have a key yet. */
 export const sandboxSettingsSchema = z.object({
   share: z.boolean(),
@@ -188,3 +199,5 @@ export type AdminSandboxResponse = z.infer<typeof adminSandboxResponseSchema>
 export type SandboxSettings = z.infer<typeof sandboxSettingsSchema>
 export type MySandboxesResponse = z.infer<typeof mySandboxesResponseSchema>
 export type PublicSandboxesResponse = z.infer<typeof publicSandboxesResponseSchema>
+export type SandboxSample = z.infer<typeof sandboxSampleSchema>
+export type SandboxSamplesResponse = z.infer<typeof sandboxSamplesResponseSchema>

@@ -141,7 +141,8 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
   it's full, the least recently used idle browser is stopped for the newcomer; only when every one is mid-call
   is a user turned away. The logs show each start, stop and refusal with the running count.
 
-Anyone can run more sandboxes (`docker run subztep/kaja-sandbox`, with their key from the web's Sandbox page or
+The public image is released from **Release to Docker Hub** (`release_sandbox`), amd64 only, as
+`subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes (`docker run subztep/kaja-sandbox`, with their key from the web's Sandbox page or
 anonymously); with none online for a user, their stdio MCP abilities just have no tools that turn.
 How the sandbox works, including its egress proxy and settings, is in its
 [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).

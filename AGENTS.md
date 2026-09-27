@@ -144,7 +144,7 @@ bun run --filter @kaja/sandbox build
 6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
 7. `2026-09-19-ability.sql` — `ability`, `user_ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`)
 8. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`)
-9. `2026-09-27-sandbox.sql` — `sandbox` (registered MCP sandboxes: owner, online, geolocation, hardware, load), `sandbox_owner` (users' sandbox keys and share settings)
+9. `2026-09-27-sandbox.sql` — `sandbox` (registered MCP sandboxes: owner, online, geolocation, hardware, load), `sandbox_owner` (users' sandbox keys and share settings), `sandbox_sample` (heartbeat load, kept 7 days)
 
 Each file only creates; there are no patch migrations, so a schema change until v1.0 is edited into the file that creates the table (and existing databases are recreated).
 

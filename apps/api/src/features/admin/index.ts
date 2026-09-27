@@ -28,4 +28,5 @@ adminRoutes.use("/abilities/*", adminMiddleware)
 registerAdminAbilities(adminRoutes)
 
 adminRoutes.use("/sandbox", adminMiddleware)
+adminRoutes.use("/sandbox/*", adminMiddleware)
 registerAdminSandbox(adminRoutes)

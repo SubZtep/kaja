@@ -5,7 +5,7 @@ import type {
   SandboxServerStats,
   SandboxStats
 } from "@kaja/schema/api"
-import { adminSandboxResponseSchema } from "@kaja/schema/api"
+import { adminSandboxResponseSchema, type SandboxSample, sandboxSamplesResponseSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared/date"
 import { cn } from "@kaja/shared/ui"
 import { useQuery } from "@tanstack/react-query"
@@ -148,6 +148,72 @@ function owner(sandbox: Sandbox, emails: Record<string, string>): string {
   return m.sandbox_kind_owned({ email: (sandbox.ownerId && emails[sandbox.ownerId]) ?? sandbox.ownerId ?? "" })
 }
 
+/** How far back the load charts reach. */
+const HISTORY_HOURS = 24
+
+/** One measure over the last day, a bar per bucket; hovering a bar names its time and value. */
+function HistoryBars({
+  title,
+  samples,
+  value,
+  format
+}: Readonly<{
+  title: string
+  samples: SandboxSample[]
+  value: (sample: SandboxSample) => number
+  format: (value: number) => string
+}>) {
+  const max = Math.max(...samples.map(value), Number.EPSILON)
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex justify-between gap-2 text-xs">
+        <span className="text-muted">{title}</span>
+        <span className="font-mono text-muted">{m.sandbox_history_peak({ value: format(max) })}</span>
+      </div>
+      <div className="flex h-16 items-end gap-px" role="img" aria-label={title}>
+        {samples.map(sample => (
+          <div
+            key={sample.at.toISOString()}
+            title={m.sandbox_history_tooltip({ time: sample.at.toLocaleString(), value: format(value(sample)) })}
+            className={cn("min-w-px flex-1 rounded-t-sm", value(sample) > 0 ? "bg-neon" : "bg-border")}
+            style={{ height: value(sample) > 0 ? `${Math.max(6, (value(sample) / max) * 100)}%` : "2px" }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** A sandbox's servers and load over the last day, from its heartbeats. */
+function SandboxHistory({ id }: Readonly<{ id: string }>) {
+  const apiFetch = useApiFetch()
+  const { data } = useQuery({
+    queryKey: ["admin", "sandbox", id, "samples"],
+    queryFn: () =>
+      apiFetch(`/admin/sandbox/${id}/samples?hours=${HISTORY_HOURS}`).then(
+        r => sandboxSamplesResponseSchema.parse(r).samples
+      ),
+    refetchInterval: 60_000
+  })
+  if (!data || data.length === 0) return null
+  return (
+    <div className="mt-6 flex flex-wrap gap-6">
+      <HistoryBars
+        title={m.sandbox_history_servers({ hours: HISTORY_HOURS })}
+        samples={data}
+        value={sample => sample.running}
+        format={value => String(value)}
+      />
+      <HistoryBars
+        title={m.sandbox_history_load({ hours: HISTORY_HOURS })}
+        samples={data}
+        value={sample => sample.load}
+        format={value => value.toFixed(2)}
+      />
+    </div>
+  )
+}
+
 function SandboxEntry({ entry, emails }: Readonly<{ entry: AdminSandboxEntry; emails: Record<string, string> }>) {
   const { sandbox, stats, error } = entry
   return (
@@ -170,6 +236,7 @@ function SandboxEntry({ entry, emails }: Readonly<{ entry: AdminSandboxEntry; em
       </div>
       {error && <p className="text-red-400 text-sm">{m.sandbox_down_hint({ error })}</p>}
       {stats && <SandboxUp stats={stats} emails={emails} />}
+      <SandboxHistory id={sandbox.id} />
     </div>
   )
 }

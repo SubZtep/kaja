@@ -37,3 +37,13 @@ CREATE TABLE IF NOT EXISTS "sandbox_owner" (
   -- this user's turns may run in other people's sandboxes (whose operators can see that traffic)
   "use_shared" boolean default false not null
 );
+
+-- Every heartbeat (about one a minute) of every sandbox, kept 7 days (hourly cron), for its load chart.
+CREATE TABLE IF NOT EXISTS "sandbox_sample" (
+  "sandbox_id" uuid not null references "sandbox" ("id") on delete cascade,
+  "at" timestamptz default CURRENT_TIMESTAMP not null,
+  "running" integer not null,
+  "load" real not null,
+  "memory_used" bigint not null,
+  PRIMARY KEY ("sandbox_id", "at")
+);
