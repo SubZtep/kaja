@@ -53,7 +53,8 @@ piped = true
         "apps/tui/locales/en-GB.toml",
         "apps/api/locales/en-GB.toml",
         "apps/api/widgets/locales/en-GB.toml",
-        "apps/web/messages/en-GB.json"
+        "apps/web/messages/en-GB.json",
+        "packages/shared/locale/index.ts"
       ]
 
 

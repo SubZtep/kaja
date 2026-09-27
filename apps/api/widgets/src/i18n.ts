@@ -1,4 +1,4 @@
-import { type Locale, matchLocale } from "@kaja/shared/locale"
+import { baseLocale, type Locale, matchLocale } from "@kaja/shared/locale"
 import enGb from "../locales/en-GB.toml"
 import enUs from "../locales/en-US.toml"
 import huHu from "../locales/hu-HU.toml"
@@ -20,6 +20,7 @@ const KEYS = [
 
 export type WidgetStrings = Record<(typeof KEYS)[number], string>
 
+// Bundlers only inline static imports, so each locale file is listed here once; the type keeps the list complete.
 const dictionaries: Record<Locale, Record<string, string>> = {
   "en-GB": enGb,
   "en-US": enUs,
@@ -30,7 +31,7 @@ const dictionaries: Record<Locale, Record<string, string>> = {
 
 /** The embedding page's language (`<html lang>`), else the visitor's browser's, else en-GB. */
 export function widgetLocale(): Locale {
-  return matchLocale(document.documentElement.lang) ?? matchLocale(navigator.language) ?? "en-GB"
+  return matchLocale(document.documentElement.lang) ?? matchLocale(navigator.language) ?? baseLocale
 }
 
 /** The widget's strings in one language, each falling back to en-GB. */

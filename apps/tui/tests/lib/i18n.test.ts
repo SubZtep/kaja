@@ -1,9 +1,10 @@
 import { afterEach, expect, test } from "bun:test"
+import { baseLocale, locales } from "@kaja/shared/locale"
 import { detectLanguage, dictionaries, setLanguage, t } from "../../lib/i18n"
 
 afterEach(() => setLanguage("en-GB"))
 
-test.each(["hu-HU", "en-US", "nan-TW", "zh-TW"] as const)("en-GB and %s dictionaries have the same keys", locale => {
+test.each(locales.filter(locale => locale !== baseLocale))("en-GB and %s dictionaries have the same keys", locale => {
   expect([...dictionaries[locale].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
 })
 

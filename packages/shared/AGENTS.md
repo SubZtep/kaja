@@ -12,7 +12,7 @@ text/        # getFirstName, getDisplayName, capitalized, titleCase, formatDevic
 ui/          # cn (clsx + tailwind-merge)
 net/         # isPrivateAddress, isPublicHttpUrl — SSRF guard
 id/          # randomUUIDv7
-locale/      # locales, Locale, LOCALE_LABELS, matchLocale — supported UI locale codes, display names, tag matching
+locale/      # locales, baseLocale, LOCALE_LABELS, matchLocale, flattenMessages, formatMessage — the one list of supported languages
 sandbox/     # signSandboxToken, verifySandboxToken, SANDBOX_STATS_SCOPE — HMAC bearer tokens the API signs and the MCP sandbox checks (Web Crypto)
 telegram/    # plumbing both Telegram bots (apps/tui, apps/api) share
   bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency)
@@ -28,7 +28,8 @@ A new subpath needs an entry in `package.json` `exports`.
 - **`isPrivateAddress` / `isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT addresses (the API's fetch guard and the sandbox's egress proxy share it)
 - **`randomUUIDv7`** — time-ordered UUIDv7 generator
 - **`titleCase`** — hyphen/underscore/space-separated label to Title Case
-- **`locales` / `Locale` / `LOCALE_LABELS` / `matchLocale`** — supported UI locale codes (`en-GB`, `en-US`, `hu-HU`, `nan-TW`, `zh-TW`), their native display names, and matching any language tag to one
+- **`locales` / `Locale` / `baseLocale` / `LOCALE_LABELS` / `matchLocale`** — the single source of truth for supported languages (`en-GB`, `en-US`, `hu-HU`, `nan-TW`, `zh-TW`), the en-GB source/fallback, their native display names, and matching any language tag to one. Everything else derives from it: the settings schema, the web's URL patterns, and `bun sync:locales` (which creates a new language's files and updates the inlang settings)
+- **`flattenMessages` / `formatMessage`** — a parsed TOML locale file as dotted keys, and `{param}` interpolation (API and TUI translators)
 - **`modelSlug` / `uniqueModelSlug`** — the `[models.<id>]` id the wizard derives from a provider's model name
 
 ## Conventions

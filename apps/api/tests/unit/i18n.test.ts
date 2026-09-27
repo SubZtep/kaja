@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test"
-import { locales } from "@kaja/shared/locale"
+import { baseLocale, locales } from "@kaja/shared/locale"
 import { dictionaries, toLocale, translator } from "../../src/core/i18n"
 import { getChangeEmailHtml } from "../../src/emails/ChangeEmail"
 import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"
 
 const WIDGET_LOCALES = `${import.meta.dir}/../../widgets/locales`
 
-for (const locale of locales.filter(locale => locale !== "en-GB")) {
+for (const locale of locales.filter(locale => locale !== baseLocale)) {
   test(`en-GB and ${locale} dictionaries have the same keys`, () => {
     expect([...dictionaries[locale].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
   })

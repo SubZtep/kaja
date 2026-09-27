@@ -153,6 +153,7 @@
       "name": "@kaja/schema",
       "version": "0.21.3",
       "dependencies": {
+        "@kaja/shared": "workspace:*",
         "zod": "^4.6.5",
       },
     },

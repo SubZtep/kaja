@@ -30,7 +30,7 @@ Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true
 
 ## Locale sync
 
-- **`locales.ts`** — keeps every non-en-GB locale file (`apps/tui/locales`, `apps/api/locales`, `apps/api/widgets/locales`, `apps/web/messages`) in step with en-GB: same keys, same order. A key that is new, or whose English changed since `HEAD`, gets a `[<locale>] lorem ipsum…` placeholder of similar length (keeping `{params}` and line breaks), unless that translation was itself edited in the same change. Removed keys go away.
+- **`locales.ts`** — keeps every non-en-GB locale file (`apps/tui/locales`, `apps/api/locales`, `apps/api/widgets/locales`, `apps/web/messages`) in step with en-GB: same keys, same order. A key that is new, or whose English changed since `HEAD`, gets a `[<locale>] lorem ipsum…` placeholder of similar length (keeping `{params}` and line breaks), unless that translation was itself edited in the same change. Removed keys go away. The languages come from `@kaja/shared/locale`: a newly listed one gets its files created (all placeholders), a file for an unlisted one is an error, and `apps/web/project.inlang/settings.json` gets the same list.
   ```sh
   bun sync:locales           # rewrite the other languages
   bun sync:locales --stage   # also git-add what it rewrote (pre-commit does this when an en-GB file changes)

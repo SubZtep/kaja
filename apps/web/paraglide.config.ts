@@ -1,4 +1,5 @@
 import type { CompilerOptions } from "@inlang/paraglide-js"
+import { baseLocale, locales } from "@kaja/shared/locale"
 
 /** Shared between `vite.config.ts` (dev/build) and `scripts/generate-paraglide.ts` (CI/standalone regeneration) so both produce identical output. */
 export const paraglideOptions: CompilerOptions = {
@@ -10,12 +11,12 @@ export const paraglideOptions: CompilerOptions = {
   urlPatterns: [
     {
       pattern: "/:path(.*)?",
+      // Every other locale under its own prefix; en-GB, unprefixed, last as the catch-all
       localized: [
-        ["en-US", "/en-US/:path(.*)?"],
-        ["hu-HU", "/hu-HU/:path(.*)?"],
-        ["nan-TW", "/nan-TW/:path(.*)?"],
-        ["zh-TW", "/zh-TW/:path(.*)?"],
-        ["en-GB", "/:path(.*)?"]
+        ...locales
+          .filter(locale => locale !== baseLocale)
+          .map((locale): [string, string] => [locale, `/${locale}/:path(.*)?`]),
+        [baseLocale, "/:path(.*)?"]
       ]
     }
   ]
