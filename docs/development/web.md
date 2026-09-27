@@ -50,7 +50,7 @@ confirm the code the terminal printed, done.
 Everything behind `_admin` (the auth-gated shell, despite the name) requires a signed-in, non-banned user.
 
 The top menu is a static list, not something each page assembles: visitors see Sign In, Sign Up and Docs;
-signed-in users see Dashboard, Profile, Abilities and Widget; admins also get one **Admin** item. Every
+signed-in users see Dashboard, Abilities, Widget, Sandbox and Profile; admins also get one **Admin** item. Every
 admin-only page sits under `/admin`, whose layout has its own tab bar and requires the Better Auth `admin`
 role, sending anyone else to the dashboard. The menu hides the item and the layout enforces it.
 
@@ -60,7 +60,8 @@ role, sending anyone else to the dashboard. The menu hides the item and the layo
 | `/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in a section of their own; admins also get the marketplace sync panel ([user guide](/using/web-app)) |
 | `/welcome` | the same list without personas, shown right after sign-up |
 | `/widget` | [widget keys](/using/widget#getting-a-key): create, edit, disable, delete |
-| `/profile` | your own account: name and avatar, email, password |
+| `/sandbox` | your sandbox key and its run command, your own sandboxes (online or last seen, place, hardware, servers running; offline ones can be removed), and the share and use-shared switches |
+| `/profile` | your own account: name and avatar, email, password, and deleting it |
 | `/admin/dashboard` | what the platform's services are doing right now, starting with the MCP sandbox (`/admin` redirects here) |
 | `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |
 | `/admin/models` | providers and their models, per task |

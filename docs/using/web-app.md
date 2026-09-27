@@ -29,7 +29,11 @@ The terminal's [device login](/getting-started/modes#cloud-mode) also lands here
 | **Dashboard** | your usage — sessions, messages, tokens and latency, broken down by day, channel, tool, persona and model — and the **Connect Telegram** card |
 | **Abilities** | turn skills, HTTP tools and MCP servers on and off, save the keys they need, then pick your personas |
 | **Widget** | create, edit, disable and delete [widget keys](/using/widget#getting-a-key) |
+| **Sandbox** | your sandbox key and the `docker run` command to start an [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme) on your own machine, the sandboxes you run, and whether others may use yours and you theirs (whoever runs a shared one can see the pages it opens) |
 | **Profile** | your name and avatar, email and password, and deleting your account with everything stored with it |
+
+The language picker at the bottom of every page switches the site; signed in, it also saves the choice to
+your account, so emails, the Telegram bot and the terminal's cloud mode use it too.
 
 What the Abilities page can offer, and how keys are kept, is on
 [Abilities in the cloud](/abilities#in-the-cloud). A change there reaches a conversation that's already
