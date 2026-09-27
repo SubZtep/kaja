@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --preload ./instrument.server.mjs vite dev --port 3000",
+    "dev": "vite dev --port 3000",
     "build": "vite build && cp instrument.server.mjs .output/server",
     "preview": "vite preview",
     "test": "echo \"no tests\"",
