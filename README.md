@@ -11,65 +11,12 @@ Kaja is an AI assistant you talk to from your terminal. Give it a task and it ke
 
 Under the hood it is a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent. All **TypeScript**, all **Bun**, one repo.
 
-## Install
-
-Download and install the latest release on macOS or Linux:
-
-```bash
-curl -fsSL https://kaja.io/install.sh | bash
-```
-
-On Windows (PowerShell):
-
-```powershell
-irm https://kaja.io/install.ps1 | iex
-```
-
-Then run it:
-
-```bash
-kaja
-```
-
-The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at your own LLM provider and it writes `~/.config/kaja/` for you.
-
-## Run from source
-
-Make sure [Bun](https://bun.com/docs/installation) and [Docker Compose](https://docs.docker.com/compose/install/) are installed.
-
-```bash
-# get the source
-git clone https://github.com/SubZtep/kaja.git
-cd kaja
-
-# install dependencies
-bun install
-
-# run lint, typecheck and tests from git hooks
-bunx lefthook install
-
-# start services
-docker compose up -d
-
-# run the terminal UI
-cp apps/tui/.env.example apps/tui/.env
-bun dev:tui
-```
-
-Working on the API or web app? The [development guide](https://docs.kaja.io/development) covers the env files, `bun dev` and the rest.
-
-> [!TIP]
-> If you want to look around **inside the sandbox** container, open a shell:
-> ```bash
-> docker compose exec sandbox bash
-> ```
-
 ## What’s inside
 
 **Apps**
 
 - [`api`](./apps/api/)
-  - REST API and cloud agent (`/nasi`)
+  - Rest API and cloud agent loop
   - Authentication and database migrations
   - Email sending and templates
   - [Widget](./apps/api/widgets/) bundle served to third-party sites
@@ -102,10 +49,10 @@ config:
 ---
 flowchart TB
     subgraph Users["Multi-client system access"]
-      USER1((Desktop<br><small><em>AI native<br>/ offline</em></small>)):::person
-      USER2((Desktop<br><small><em>TeleTYpewriter, but<br>Served like non-PCs</em></small>)):::person
-      USER3((Telegram<br><small><em>The bot</em></small>)):::person
-      USER4((Widget on<br>a website<br><small><em>Almost boomer</em></small>)):::person
+      USER1((Cloud<br>Desktop)):::person
+      USER2((Local<br>Desktop)):::person
+      USER3((Telegram)):::person
+      USER4((Widget on<br>a website)):::person
     end
 
     subgraph Local["Home computer"]
@@ -155,8 +102,46 @@ flowchart TB
     classDef person fill:#ffff00,color:#000000
 ```
 
-_If you’d like to chat about it, [here I<big>𝕏</big>am](https://x.com/messages/compose?recipient_id=19888096)._
+## Run from the source
+
+Make sure [Bun](https://bun.com/docs/installation) and [Docker Compose](https://docs.docker.com/compose/install/) are installed.
+
+```bash
+# get the source
+git clone https://github.com/SubZtep/kaja.git
+cd kaja
+
+# install dependencies
+bun install
+
+# run lint, typecheck and tests from git hooks
+bunx lefthook install
+
+# start services
+docker compose up -d
+
+# run the terminal UI
+cp apps/tui/.env.example apps/tui/.env
+bun dev:tui
+```
+
+The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at your own LLM provider and it writes `~/.config/kaja/` for you.
+
+Working on the API or web app? The [development guide](https://docs.kaja.io/development) covers the env files, `bun dev` and the rest.
+
+> [!TIP]
+> If you want to look around **inside the sandbox** container, open a shell:
+> ```bash
+> docker compose exec sandbox bash
+> ```
 
 ## Documentation
 
 Want the full story? 🐓 Head to **[docs.kaja.io](https://docs.kaja.io)**.
+
+---
+
+\
+<small>_If you’d like to chat about it, [here I<big>𝕏</big>am](https://x.com/messages/compose?recipient_id=19888096)._💬</small>
+
+---
