@@ -90,30 +90,35 @@ piped = true
     run = "git diff --quiet ORIG_HEAD HEAD -- lefthook.toml || bunx lefthook install"
 
 
+# Checks run first; the locales job last, since it may commit translations and push them itself
 [pre-push]
-parallel = true
+piped = true
 
 
   [[pre-push.jobs]]
-  run = "bun lint"
+  name = "check"
+
+
+    [pre-push.jobs.group]
+    parallel = true
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "bun lint"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run  = "bun typecheck"
+      glob = "*.{ts,tsx}"
+
+
+      [[pre-push.jobs.group.jobs]]
+      run = "bun test"
+
+
+        [[pre-push.jobs.group.jobs.only]]
+        ref = "main"
 
 
   [[pre-push.jobs]]
-  run  = "bun typecheck"
-  glob = "*.{ts,tsx}"
-
-
-  [[pre-push.jobs]]
-  run = "bun check:locales"
-
-
-    [[pre-push.jobs.only]]
-    ref = "main"
-
-
-  [[pre-push.jobs]]
-  run = "bun test"
-
-
-    [[pre-push.jobs.only]]
-    ref = "main"
+  run = "scripts/translate_push.sh {1}"

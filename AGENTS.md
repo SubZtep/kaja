@@ -4,7 +4,7 @@ The project is not live yet, so feel free to adjust any breaking changes.
 
 When you modify a feature check its test (if any) for possible required update too.
 
-Translations: edit only the en-GB locale files; never read or edit other languages. Pre-commit runs `bun sync:locales` (`scripts/locales.ts`), which gives every other language the same keys and a `[<locale>] lorem ipsum` placeholder for new or changed English; the user runs `/translate` (`.claude/skills/translate`) to fill them in later.
+Translations: edit only the en-GB locale files; never read or edit other languages. Pre-commit runs `bun sync:locales` (`scripts/locales.ts`), which gives every other language the same keys and a `[<locale>] lorem ipsum` placeholder for new or changed English; `/translate` (`.claude/skills/translate`) fills them in, run by hand or headless by the pre-push hook.
 
 ## Project Overview
 
@@ -159,7 +159,7 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Notes
 
-- Git hooks already run `bun lint` and typecheck on commit, and lint and typecheck on push (plus `bun test` and `check:locales` when pushing `main`), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
+- Git hooks already run `bun lint` and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/tui/`).
 - model defaults: edit `docs/config/catalog.toml`, run `bun generate:models`, never edit `docs/config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`).
 - env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
