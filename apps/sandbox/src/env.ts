@@ -10,4 +10,7 @@ if (!result.success) {
   process.exit(1)
 }
 
-export const env = result.data
+/** The production API a sandbox joins unless told otherwise; a dev checkout joins the local one. */
+const DEFAULT_API_URL = result.data.NODE_ENV === "production" ? "https://api.kaja.io" : "http://localhost:3001"
+
+export const env = { ...result.data, KAJA_API_URL: result.data.KAJA_API_URL ?? DEFAULT_API_URL }

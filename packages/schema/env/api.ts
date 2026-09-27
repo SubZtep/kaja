@@ -34,6 +34,19 @@ export const ApiEnvSchema = z.object({
     .describe("Google OAuth client secret (redirect URI: <BETTER_AUTH_URL>/auth/callback/google)")
     .meta({ secret: true, section: "Google Sign-in" }),
 
+  TURNSTILE_SECRET: trimmed
+    .optional()
+    .describe(
+      "Cloudflare Turnstile secret key; when set, email sign-up/sign-in, password reset and Google sign-in need a captcha token"
+    )
+    .meta({ secret: true, section: "Turnstile" }),
+  TURNSTILE_HOSTNAMES: trimmed
+    .optional()
+    .describe(
+      "Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET); never localhost in production"
+    )
+    .meta({ example: "localhost", section: "Turnstile" }),
+
   SMTP_HOST: trimmed.optional().describe("SMTP server hostname"),
   SMTP_PORT: positiveInt.optional().describe("SMTP server port").meta({ example: "1025" }),
   SMTP_SECURE: bool.optional().describe("Use TLS for the SMTP connection"),
@@ -46,7 +59,9 @@ export const ApiEnvSchema = z.object({
     .describe("Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes")
     .meta({ example: "kaja", devDefault: true, section: "Config API" }),
 
-  BUN_TEST: trimmed.optional().describe("Set by the Bun test runner; disables rate limiting when present"),
+  BUN_TEST: trimmed
+    .optional()
+    .describe("Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile"),
   RATE_LIMIT_ENABLED: bool
     .optional()
     .describe("Set false to disable global + auth + nasi/widget turn rate limiters")
@@ -130,17 +145,22 @@ export const ApiEnvSchema = z.object({
     .describe("Branch (or tag) of MARKETPLACE_REPO to sync")
     .meta({ section: "Marketplace" }),
 
-  SANDBOX_URL: url
+  SANDBOX_SYSTEM_KEY: trimmed
+    .min(16)
     .optional()
     .describe(
-      "Base URL of the MCP sandbox (apps/sandbox); with SANDBOX_SECRET it lets cloud turns use stdio MCP abilities"
+      "Key the operator's own MCP sandbox connects with (its KAJA_SANDBOX_KEY), marking it the official one every user falls back to"
     )
-    .meta({ example: "http://localhost:3002", section: "MCP Sandbox" }),
-  SANDBOX_SECRET: trimmed
-    .optional()
+    .meta({ secret: true, section: "MCP Sandbox" }),
+  GEO_API_URL: url
+    .default("https://ip2geo.demo.land")
     .describe(
-      "Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token"
+      "IP geolocation service (github.com/SubZtep/geo-service) a sandbox's public IP is looked up in when it connects"
     )
+    .meta({ section: "MCP Sandbox" }),
+  GEO_API_KEY: trimmed
+    .optional()
+    .describe("GEO_API_URL's X-API-Key; unset, sandboxes register without a location")
     .meta({ secret: true, section: "MCP Sandbox" }),
 
   STORAGE_BUCKET: trimmed

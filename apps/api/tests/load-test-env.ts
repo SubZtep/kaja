@@ -26,6 +26,9 @@ function parseEnvFile(path: string, presetKeys: ReadonlySet<string>) {
   }
 }
 
+// The API turns Turnstile and rate limiting off under test by this flag, which Bun's runner doesn't set itself.
+Bun.env.BUN_TEST = "1"
+
 const apiDir = join(import.meta.dir, "..")
 const presetKeys = new Set(Object.keys(Bun.env))
 parseEnvFile(join(apiDir, ".env.example"), presetKeys)

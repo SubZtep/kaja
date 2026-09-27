@@ -40,6 +40,13 @@ Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true
   ```
 - **`translate_push.sh`** — the last pre-push job: when `check:locales` fails it runs `claude -p "/translate"`, commits the translated locale files, pushes them itself (`--no-verify`, the other jobs already passed) and exits 1 so the original, now stale push stops.
 
+## SonarCloud
+
+- **`sonar.ts`** — lists a branch's open SonarCloud issues and unreviewed security hotspots on its pull request (public API, no token), one line each; nothing when the branch has no PR. The `/sonar-fix` skill (`.claude/skills/sonar-fix`) runs it and fixes them in code, left uncommitted for review; run it when SonarCloud reports a failed gate.
+  ```sh
+  bun scripts/sonar.ts <branch>
+  ```
+
 ## Dev utilities
 
 - **`create_local_secrets.sh`** — appends a freshly generated `BETTER_AUTH_SECRET` to `apps/api/.env`.

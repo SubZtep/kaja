@@ -7,6 +7,7 @@ import { cookieName, isLocale, localizeHref } from "../../paraglide/runtime.js"
 import { FeatureStrip } from "./-components/feature-strip"
 import { Hero } from "./-components/hero"
 import { Install } from "./-components/install"
+import { RunSandbox } from "./-components/run-sandbox"
 import { Showcase } from "./-components/showcase"
 
 /** The homepage has no locale prefix for en-GB, so the url strategy always wins there over the cookie. Redirect here once, on the actual unprefixed root request, to honor a returning visitor's saved language. */
@@ -44,6 +45,7 @@ function LandingPage() {
       <Showcase />
       <FeatureStrip />
       <Install />
+      <RunSandbox />
     </>
   )
 }

@@ -6,6 +6,7 @@ import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { Checkbox } from "../../components/form/primitives/Checkbox"
 import { useAuthClient } from "../../hooks/auth-client"
+import { Turnstile, useTurnstile } from "../../hooks/turnstile"
 import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { seo } from "../../lib/seo"
@@ -31,6 +32,7 @@ function SignUp() {
   const navigate = useNavigate()
   const router = useRouter()
   const { signUp } = useAuthClient()
+  const captcha = useTurnstile()
 
   const form = useAppForm({
     defaultValues: {
@@ -57,7 +59,7 @@ function SignUp() {
         setLoading(true)
         // The API refuses a sign-up without `consent`; Better Auth's client types don't know the extra body field. The locale is saved now so the verification email is already in it.
         const body = { ...parsed.data, consent: true, locale: getLocale() }
-        const { error, data } = await signUp.email(body)
+        const { error, data } = await signUp.email({ ...body, fetchOptions: captcha.fetchOptions })
 
         if (error) toast.error(authErrorMessage(error))
         if (data?.user) {
@@ -69,6 +71,7 @@ function SignUp() {
       } catch {
         toast.error(m.error_generic())
       } finally {
+        captcha.reset()
         setLoading(false)
       }
     }
@@ -102,7 +105,8 @@ function SignUp() {
           </ConsentBox>
         </div>
 
-        <GoogleButton className="mb-5" signUp disabled={!consented} />
+        <Turnstile captcha={captcha} className="mb-4" />
+        <GoogleButton className="mb-5" signUp disabled={!consented} captcha={captcha} />
         <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
           {m.auth_or_email()}
         </p>
@@ -158,7 +162,7 @@ function SignUp() {
             )}
           </form.AppField>
 
-          <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
+          <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
             {m.signup_submit()}
           </Button>
         </form>

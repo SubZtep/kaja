@@ -134,6 +134,11 @@
         "minLength": 1
       }
     },
+    "trustedSandbox": {
+      "default": false,
+      "description": "In the cloud, only the user's own MCP sandboxes or the official one run it, never one another person shares (stdio)",
+      "type": "boolean"
+    },
     "localOnlyArgs": {
       "description": "Tool arguments that only make sense on the user's own machine (e.g. a file path to save to); the cloud hides them",
       "type": "array",

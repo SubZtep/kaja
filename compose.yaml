@@ -81,8 +81,7 @@ services:
       STORAGE_PUBLIC_ENDPOINT: http://localhost:9000 # signed URLs name the host the browser and the TUI reach
       CORS_ORIGIN: http://localhost:3000
       BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production # local stack only
-      SANDBOX_URL: http://sandbox:3002
-      SANDBOX_SECRET: compose_dev_sandbox_secret_not_for_production # local stack only
+      SANDBOX_SYSTEM_KEY: compose_dev_sandbox_system_key_not_for_production # local stack only
     networks:
       - default
       - sandbox
@@ -125,15 +124,16 @@ services:
       timeout: 5s
       start_period: 10s
 
-  # Runs stdio MCP servers (a headless Chrome among them) for cloud turns. Only the api shares its network, so it can't
-  # reach db or mail by name, and every port here is published on 127.0.0.1 only, so not through the host either.
-  # Chrome also goes out only through the sandbox's egress proxy (public addresses only); production runs it on a separate host too.
+  # Runs stdio MCP servers (a headless Chrome among them) for cloud turns, as the official sandbox: it dials the api's
+  # WebSocket, nothing connects in, so it publishes no port. Only the api shares its network, so it can't reach db or mail
+  # by name. Chrome also goes out only through the sandbox's egress proxy (public addresses only).
   sandbox:
     build:
       context: .
       dockerfile: apps/sandbox/Dockerfile
-    ports:
-      - "127.0.0.1:3002:3002"
+    depends_on:
+      api:
+        condition: service_healthy
     shm_size: 1gb
     env_file:
       - path: apps/sandbox/.env.example
@@ -141,26 +141,21 @@ services:
       - path: apps/sandbox/.env
         required: false
     environment:
-      SANDBOX_SECRET: compose_dev_sandbox_secret_not_for_production # local stack only
+      KAJA_API_URL: http://api:3001
+      KAJA_SANDBOX_KEY: compose_dev_sandbox_system_key_not_for_production # local stack only: the api's SANDBOX_SYSTEM_KEY
       # The image's own paths: apps/sandbox/.env may point these at host files for `bun dev:sandbox`.
       MARKETPLACE_DIR: /home/node/app/marketplace
       SANDBOX_OVERRIDES: /home/node/app/overrides.json
       SANDBOX_CACHE_DIR: /home/node/.cache/mcp
+      SANDBOX_STATE_DIR: /data
+    volumes:
+      - sandbox:/data
     networks:
       - sandbox
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:3002/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
-        ]
-      timeout: 5s
-      start_period: 8s
 
 networks:
   sandbox:
 
 volumes:
   storage:
+  sandbox:

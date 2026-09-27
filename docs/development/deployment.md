@@ -122,9 +122,14 @@ loopback, private ranges or the cloud metadata service). Still deploy it as its 
 Disco server** with nothing else on it, so a gap in that proxy can't reach the database or the other projects.
 The server must be amd64: the Chrome headless shell has no Linux arm64 build.
 
-- Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
-- Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` and `/stats` only accept an
-  API-signed token; `/health` is open. Admins see the sandbox live on the web's **Admin → Dashboard**.
+- Nothing connects in: the sandbox dials the API's WebSocket (`/sandbox/connect`) and serves over it, so
+  `apps/sandbox/disco.json` runs it as a worker with no public port. Its registration is kept in the
+  `sandbox-state` volume (`/data`), so a redeploy comes back as the same sandbox.
+- Set the API's `SANDBOX_SYSTEM_KEY` (`openssl rand -base64 32`) and the same value as the sandbox's
+  `KAJA_SANDBOX_KEY`: that marks it the official sandbox every user falls back to. `KAJA_API_URL` defaults to
+  `https://api.kaja.io` in the image. Admins see every sandbox live on the web's **Admin → Dashboard**.
+- Set the API's `GEO_API_KEY` for [ip2geo](https://github.com/SubZtep/geo-service) (`GEO_API_URL`), which
+  places each sandbox by its public IP when it connects; without it sandboxes register without a location.
 - Optionally set `WEB_PROXY` (`http://` only, same format as the API's) so the browsers' traffic leaves
   through that proxy instead of the sandbox server's own IP; it must allow `CONNECT` to IPs on any port.
 - Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
@@ -132,11 +137,16 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
   with their last stderr lines; no tracing, and request headers are dropped.
 - The image copies `marketplace/mcp` at build time, so a new or changed stdio manifest needs a sandbox
   redeploy too. A redeploy restarts every browser, so users lose the pages they had open.
-- Size `SANDBOX_MAX_PROCESSES` (default 8) to the server's RAM: each Chrome takes about 300-500 MB. When
-  it's full, the least recently used idle browser is stopped for the newcomer; only when every one is mid-call
-  is a user turned away. The logs show each start, stop and refusal with the running count.
+- The sandbox sizes itself: one server per 512 MB of the container's memory limit (else the machine's RAM),
+  less 512 MB for itself; `SANDBOX_MAX_PROCESSES` overrides it. A new server also needs 512 MB free right
+  then, and a server using more than `SANDBOX_SERVER_MEMORY` (1 GB) is stopped. When it's full, the least
+  recently used idle browser is stopped for the newcomer; only when every one is mid-call, or memory is
+  short, is a user turned away, and the API then tries their next sandbox. The logs show each start, stop and
+  refusal with the running count.
 
-Without both `SANDBOX_URL` and `SANDBOX_SECRET` the API leaves stdio MCP abilities out of cloud turns.
+The public image is released from **Release to Docker Hub** (`release_sandbox`), amd64 only, as
+`subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes (`docker run subztep/kaja-sandbox`, with their key from the web's Sandbox page or
+anonymously); with none online for a user, their stdio MCP abilities just have no tools that turn.
 How the sandbox works, including its egress proxy and settings, is in its
 [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
 

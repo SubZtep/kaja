@@ -4,10 +4,14 @@ declare module "bun" {
   interface Env {
     /** Node environment; "production" turns on Sentry */
     NODE_ENV?: string
-    /** Port the sandbox listens on */
-    PORT?: string
-    /** Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns and the admin dashboard's stats connect with */
-    SANDBOX_SECRET?: string
+    /** Kaja API the sandbox connects out to (a WebSocket at /sandbox/connect; nothing connects in); unset, https://api.kaja.io with NODE_ENV=production (the image), else http://localhost:3001 */
+    KAJA_API_URL?: string
+    /** Your sandbox key from the web app's Sandbox page, linking the sandbox to your account; unset, it runs anonymously for everyone */
+    KAJA_SANDBOX_KEY?: string
+    /** A name shown for this sandbox */
+    SANDBOX_NAME?: string
+    /** Folder the sandbox keeps its registration in, so a restart comes back as the same sandbox (mount a volume there in Docker) */
+    SANDBOX_STATE_DIR?: string
     /** Folder whose mcp/*.toml stdio manifests are the only servers the sandbox runs */
     MARKETPLACE_DIR?: string
     /** JSON file replacing a manifest's command/args for this host, e.g. a preinstalled binary and Chrome flags */
@@ -16,8 +20,12 @@ declare module "bun" {
     SANDBOX_CACHE_DIR?: string
     /** How long an unused server process is kept warm before it's stopped (ms) */
     SANDBOX_IDLE_MS?: string
-    /** Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM */
+    /** Most server processes running at once, over all users; unset, one per 512 MB of the container's memory limit (else the machine's RAM), less 512 MB for the sandbox itself */
     SANDBOX_MAX_PROCESSES?: string
+    /** Bytes of memory one server (a browser with all its processes) may use before it's stopped */
+    SANDBOX_SERVER_MEMORY?: string
+    /** Run each user's servers as their own Linux user (needs the sandbox to run as root, as in the image), so users can't read each other's files */
+    SANDBOX_ISOLATE_USERS?: string
     /** Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json */
     SANDBOX_EGRESS_PORT?: string
     /** HTTP proxy the browsers' checked traffic goes out through (CONNECT to the checked IP, any port); unset connects directly */

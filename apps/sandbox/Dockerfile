@@ -48,18 +48,32 @@ ENV NODE_ENV=production
 ENV MARKETPLACE_DIR=/home/node/app/marketplace
 ENV SANDBOX_OVERRIDES=/home/node/app/overrides.json
 ENV SANDBOX_CACHE_DIR=/home/node/.cache/mcp
-# Chrome refuses to start as root.
-USER node
-# Fetch the shipped servers once, into the same caches the sandbox hands them, so the first start needs no download.
-# bunx keeps packages in /tmp/bunx-<uid>-<pkg>@<version>; the version must match overrides.json (bump with CHROME_HEADLESS_SHELL_VERSION).
+# Where it keeps its registration, so a restart comes back as the same sandbox: mount a volume here.
+ENV SANDBOX_STATE_DIR=/data
+RUN mkdir -p /data
+VOLUME /data
+# chrome-devtools-mcp is installed once, for every user's uid to run as it is (overrides.json points at its bin); the
+# version must match the Chrome headless shell above (bump with CHROME_HEADLESS_SHELL_VERSION). Not through bunx: bun's
+# cache can't be shared between uids. The time server is fetched into the shared uv cache, so its first start is offline.
 ARG CHROME_DEVTOOLS_MCP_VERSION=1.10.1
-RUN bunx "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}" --version \
-  && UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" \
-    uvx mcp-server-time --help >/dev/null \
-  && rm -rf ~/.bun
+RUN npm install --prefix /opt/mcp --ignore-scripts --no-audit --no-fund --omit=dev \
+    "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}" \
+  && npm cache clean --force \
+  && /opt/mcp/node_modules/.bin/chrome-devtools-mcp --version
+USER node
+RUN UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" \
+  uvx mcp-server-time --help >/dev/null
+# The sandbox runs as root only to start each user's servers as their own uid (prlimit + setpriv, every capability dropped); Chrome
+# never runs as root. Those uids share the package caches through the mcp group: group-writable, new files inheriting it.
+USER root
+RUN groupadd --gid 1500 mcp \
+  && chgrp -R mcp "$SANDBOX_CACHE_DIR" \
+  && chmod -R g+rwX "$SANDBOX_CACHE_DIR" \
+  && find "$SANDBOX_CACHE_DIR" -type d -exec chmod g+s {} + \
+  && chmod o+x /home/node /home/node/.cache
 COPY --from=builder /home/bun/app/apps/sandbox/dist/sandbox.js ./sandbox.js
 COPY --chown=node:node marketplace/mcp ./marketplace/mcp
 COPY --chown=node:node apps/sandbox/overrides.json ./overrides.json
 
-EXPOSE 3002
+# Nothing listens: the sandbox dials KAJA_API_URL (https://api.kaja.io by default) and serves over that socket.
 CMD ["bun", "sandbox.js"]

@@ -27,6 +27,12 @@ export const WebEnvSchema = z.object({
     .describe(
       "Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget script."
     ),
+  VITE_TURNSTILE_SITE_KEY: trimmed
+    .optional()
+    .describe(
+      "Cloudflare Turnstile site key (public) for the auth forms and Google buttons; pair it with the API's TURNSTILE_SECRET"
+    )
+    .meta({ example: "0x4AAAAAAFFB6C3c3s5JwO5V" }),
   SENTRY_AUTH_TOKEN: trimmed
     .optional()
     .describe("Sentry auth token used by the build-time Vite plugin to upload source maps")

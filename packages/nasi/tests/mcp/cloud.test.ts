@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { McpAbilitySchema } from "@kaja/schema/abilities"
 import { loadAbilities } from "../../src/abilities/load"
-import { checkMcpAbilityKey, mcpAbilityTarget } from "../../src/abilities/mcp-ability"
+import { checkMcpAbilityKey, mcpAbilityTarget, SANDBOX_ORIGIN } from "../../src/abilities/mcp-ability"
 import type { AbilityStore } from "../../src/abilities/types"
 import { toolName } from "../../src/agent/tools"
 import { connectMcpServer } from "../../src/mcp/client"
@@ -113,7 +113,7 @@ test("with an image dir, cloud results keep images for the model", async () => {
   }
 })
 
-test("with a sandbox, a stdio ability connects to <sandbox>/mcp/<name> with the caller's token", async () => {
+test("with a sandbox, a stdio ability connects to <SANDBOX_ORIGIN>/mcp/<name>, which the sandbox's fetch serves", async () => {
   const store: AbilityStore = {
     listSkills: async () => [],
     readSkill: async () => undefined,
@@ -121,17 +121,14 @@ test("with a sandbox, a stdio ability connects to <sandbox>/mcp/<name> with the 
     listMcpAbilities: async () => [{ ...stdioAbility, tools: ["read_thing"] }, remoteAbility()]
   }
   const { mcp } = await loadAbilities(store, {
-    mcpSandbox: { url: "http://sandbox.test:3002/", token: async name => `token-for-${name}` }
+    mcpSandbox: { fetch: async () => new Response(null, { status: 503 }) }
   })
   expect(mcp[0]).toMatchObject({
     name: "local-things",
     transport: "http",
     sandboxed: true,
     allow: ["read_thing"],
-    server: {
-      url: "http://sandbox.test:3002/mcp/local-things",
-      headers: { Authorization: "Bearer token-for-local-things" }
-    }
+    server: { url: `${SANDBOX_ORIGIN}/mcp/local-things`, headers: {} }
   })
   expect(mcp[1]).toMatchObject({ name: "things", server: { url: `https://${HOST}/mcp` } })
   expect(mcp[1]!.sandboxed).toBeUndefined()

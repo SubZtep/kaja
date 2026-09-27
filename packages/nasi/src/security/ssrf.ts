@@ -183,22 +183,16 @@ export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Respo
  * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are
  * followed here and only within the same origin (headers may carry the user's key), and the body is
  * streamed rather than buffered, so an SSE stream stays open. Egresses through `proxy` when set, failing
- * closed with {@link ProxyUnavailableError} rather than going direct. `trustedOrigins` (the host's own
- * MCP sandbox) skip the checks and the proxy.
+ * closed with {@link ProxyUnavailableError} rather than going direct.
  */
-export function createGuardedFetch(
-  opts: { proxy?: string; maxRedirects?: number; trustedOrigins?: string[] } = {}
-): FetchLike {
+export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number } = {}): FetchLike {
   const maxRedirects = opts.maxRedirects ?? DEFAULT_MAX_REDIRECTS
-  const trusted = new Set(opts.trustedOrigins ?? [])
   return async (input, init) => {
     let current = String(input)
     let request: RequestInit = init ?? {}
     for (let hop = 0; hop <= maxRedirects; hop++) {
-      // A trusted origin (the operator's own MCP sandbox) goes direct: it may be on a private address, and never through the proxy.
-      const direct = trusted.has(originOf(current))
-      if (!direct) await assertHopAllowed(current, opts)
-      const res = await streamHop(current, request, direct ? undefined : opts.proxy)
+      await assertHopAllowed(current, opts)
+      const res = await streamHop(current, request, opts.proxy)
       const next = redirectTarget(res, current)
       if (!next) return res
       await res.body?.cancel()
@@ -210,14 +204,6 @@ export function createGuardedFetch(
       current = next
     }
     throw new Error(`Too many redirects fetching ${String(input)}`)
-  }
-}
-
-function originOf(url: string): string {
-  try {
-    return new URL(url).origin
-  } catch {
-    return ""
   }
 }
 

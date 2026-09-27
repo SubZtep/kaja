@@ -1,7 +1,7 @@
 {
   "chrome-devtools": {
+    "command": "/opt/mcp/node_modules/.bin/chrome-devtools-mcp",
     "args": [
-      "chrome-devtools-mcp@1.10.1",
       "--headless",
       "--isolated",
       "--executablePath=/opt/chrome/chrome-headless-shell",

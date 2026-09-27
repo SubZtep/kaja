@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises"
+import { chown, mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
@@ -13,6 +13,7 @@ import {
   type JSONRPCRequest,
   type RequestId
 } from "@modelcontextprotocol/sdk/types.js"
+import { asUser, type RunAs } from "./isolation"
 import type { SandboxServer } from "./manifests"
 import { reportError } from "./report"
 
@@ -53,13 +54,26 @@ export class McpRelay {
     this.#name = name
   }
 
-  /** Starts the server with a throwaway HOME and nothing from the sandbox's own environment but PATH (cache dirs come in its `env`). */
-  static async start(server: SandboxServer): Promise<McpRelay> {
+  /**
+   * Starts the server with a throwaway HOME and nothing from the sandbox's own environment but PATH (cache dirs come in
+   * its `env`); with `runAs`, as that user, who alone can open the HOME.
+   */
+  static async start(server: SandboxServer, isolation?: { runAs: RunAs; cacheGid?: number }): Promise<McpRelay> {
     const home = await mkdtemp(join(tmpdir(), `kaja-sandbox-${server.name}-`))
+    if (isolation) await chown(home, isolation.runAs.uid, isolation.runAs.gid)
+    const { command, args } = isolation
+      ? asUser(server.command, server.args, isolation.runAs, isolation.cacheGid)
+      : { command: server.command, args: server.args }
     const child = new StdioClientTransport({
-      command: server.command,
-      args: server.args,
-      env: { PATH: process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin", HOME: home, ...server.env },
+      command,
+      args,
+      env: {
+        PATH: process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin",
+        HOME: home,
+        ...server.env,
+        // bun's install cache breaks when another uid filled it (bunx finds no executable), so each keeps its own
+        ...(isolation ? { BUN_INSTALL_CACHE_DIR: join(home, ".bun-cache") } : {})
+      },
       cwd: home,
       stderr: "pipe"
     })

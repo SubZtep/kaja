@@ -5,7 +5,8 @@ export const getRootEnv = createServerFn().handler(() => {
   return {
     apiUrl: env.VITE_API_URL,
     barkochbaWidgetKey: env.VITE_WIDGET_BARKOCHBA_KEY,
-    chatWidgetKey: env.VITE_WIDGET_CHAT_KEY
+    chatWidgetKey: env.VITE_WIDGET_CHAT_KEY,
+    turnstileSiteKey: env.VITE_TURNSTILE_SITE_KEY
   }
 })
 

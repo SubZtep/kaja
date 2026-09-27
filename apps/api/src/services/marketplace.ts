@@ -320,7 +320,7 @@ async function readMcpAbilities(marketplaceDir: string, toolNames: Set<string>):
       if (toolNames.has(entry.name)) throw new Error(`an HTTP tool is already called ${entry.name}`)
       const text = await readFile(join(marketplaceDir, "mcp", file), "utf8")
       const ability = parseMcpManifest(text, entry.name)
-      const problem = cloudMcpProblem(ability, { sandbox: true })
+      const problem = cloudMcpProblem(ability)
       if (problem) throw new Error(problem)
       bundles.push({
         type: "mcp",

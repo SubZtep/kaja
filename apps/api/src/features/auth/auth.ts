@@ -3,7 +3,7 @@ import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
 import { locales } from "@kaja/shared/locale"
 import { type BetterAuthPlugin, betterAuth } from "better-auth"
 import { APIError, createAuthMiddleware, getOAuthState } from "better-auth/api"
-import { admin, bearer, deviceAuthorization, openAPI } from "better-auth/plugins"
+import { admin, bearer, captcha, deviceAuthorization, openAPI } from "better-auth/plugins"
 import { z } from "zod"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
@@ -74,6 +74,24 @@ const plugins: BetterAuthPlugin[] = [
 
 if (env.NODE_ENV === "development") {
   plugins.push(openAPI({ theme: "purple" }))
+}
+
+// Turnstile gates the web's public auth forms and Google buttons (all send one "auth" action); tests run without it.
+if (env.TURNSTILE_SECRET && !env.BUN_TEST) {
+  const allowedHostnames = (env.TURNSTILE_HOSTNAMES ?? "")
+    .split(",")
+    .map(hostname => hostname.trim())
+    .filter(Boolean)
+  if (allowedHostnames.length === 0) throw new Error("TURNSTILE_HOSTNAMES must be set with TURNSTILE_SECRET")
+  plugins.push(
+    captcha({
+      provider: "cloudflare-turnstile",
+      secretKey: env.TURNSTILE_SECRET,
+      endpoints: ["/sign-up/email", "/sign-in/email", "/request-password-reset", "/sign-in/social"],
+      expectedAction: "auth",
+      allowedHostnames
+    })
+  )
 }
 
 export const auth = betterAuth({

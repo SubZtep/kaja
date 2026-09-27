@@ -41,12 +41,11 @@ type ManifestRow = { type: string; name: string; files: Record<string, string> }
 
 /**
  * Why the cloud can't offer an MCP ability, or undefined when it can: a fixed tool list, and either a remote server on a
- * public host or, with `sandbox`, a stdio one the MCP sandbox runs (not one that takes a key: keys aren't forwarded there yet).
+ * public host or a stdio one an MCP sandbox runs (not one that takes a key: keys aren't forwarded there yet).
  */
-export function cloudMcpProblem(ability: McpAbility, opts: { sandbox?: boolean } = {}): string | undefined {
+export function cloudMcpProblem(ability: McpAbility): string | undefined {
   if (!ability.tools?.length) return "no `tools` allowlist"
   if (ability.transport === "stdio" || !ability.url) {
-    if (!opts.sandbox) return "stdio servers only run locally (no MCP sandbox)"
     // Also keeps saveKey's live test from starting the command on this host.
     if (ability.auth.type === "apiKey") return "the MCP sandbox can't take a key yet"
     return undefined
@@ -54,6 +53,9 @@ export function cloudMcpProblem(ability: McpAbility, opts: { sandbox?: boolean }
   if (!isPublicHttpUrl(ability.url)) return `${ability.url} isn't a public address`
   return undefined
 }
+
+/** What a stdio ability's catalog entry names as where its calls go: whichever MCP sandbox the user's turn runs in. */
+export const SANDBOX_DOMAIN = "sandbox"
 
 // Offered in the cloud: still in the marketplace, and nothing that needs a shell.
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
@@ -102,24 +104,11 @@ export class AbilityService {
   readonly #secrets: SecretService
   // TODO: temporary server-wide keys from ABILITY_KEYS, until admin-managed service keys (like providers) replace them.
   readonly #serviceKeys: Map<string, string>
-  // The MCP sandbox's host when one is configured, so stdio MCP abilities can run.
-  #sandboxHost: string | undefined
 
-  constructor(
-    db: Pool,
-    secrets: SecretService,
-    serviceKeys = new Map<string, string>(),
-    opts: { sandboxUrl?: string } = {}
-  ) {
+  constructor(db: Pool, secrets: SecretService, serviceKeys = new Map<string, string>()) {
     this.#db = db
     this.#secrets = secrets
     this.#serviceKeys = serviceKeys
-    this.setSandboxUrl(opts.sandboxUrl)
-  }
-
-  /** Where the MCP sandbox is (undefined: none, so stdio MCP abilities aren't offered). Set once at startup, and by tests. */
-  setSandboxUrl(url: string | undefined) {
-    this.#sandboxHost = url ? new URL(url).host : undefined
   }
 
   /** Whether users' keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left out everywhere. */
@@ -401,9 +390,7 @@ export class AbilityService {
       const text = row.files[`${row.name}.toml`] ?? ""
       if (row.type === "tool") return { type: "tool", ability: parseHttpToolManifest(text, row.name) }
       const ability = parseMcpManifest(text, row.name)
-      // Expected without an MCP sandbox, not a broken row: left out quietly.
-      if (ability.transport === "stdio" && !this.#sandboxHost) return undefined
-      const problem = cloudMcpProblem(ability, { sandbox: this.#sandboxHost !== undefined })
+      const problem = cloudMcpProblem(ability)
       if (problem) throw new Error(problem)
       return { type: "mcp", ability }
     } catch (error) {
@@ -442,8 +429,8 @@ export class AbilityService {
     }
     return {
       mcp: {
-        // A stdio server runs in the MCP sandbox, so that's where its calls go.
-        domain: keyed.ability.url ? new URL(keyed.ability.url).host : (this.#sandboxHost ?? ""),
+        // A stdio server runs in an MCP sandbox, so that's where its calls go.
+        domain: keyed.ability.url ? new URL(keyed.ability.url).host : SANDBOX_DOMAIN,
         key: this.#keyNeed(keyed.ability),
         transport: keyed.ability.transport === "sse" ? "sse" : "http",
         approval: keyed.ability.approval,

@@ -58,7 +58,7 @@ flowchart TD
 | `apps/api/widgets` | the embeddable browser chat bundle, built as part of the API |
 | `apps/web` | TanStack Start — the public landing site and the signed-in [web app](/development/web) (dashboard, abilities, widgets, admin) |
 | `apps/tui` | the [terminal client](/using/tui), Telegram bot, local config and storage |
-| `apps/sandbox` | the [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme): runs stdio MCP servers (a headless Chrome) for cloud turns, one per user, behind an egress proxy that only reaches public addresses |
+| `apps/sandbox` | the [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme): runs stdio MCP servers (a headless Chrome) for cloud turns, one per user, behind an egress proxy that only reaches public addresses; anyone can run one, it dials the API's WebSocket |
 | `packages/nasi` | the [agent brain](/development/nasi): loop, tools, store interface |
 | `packages/schema` | every Zod [schema](/development/schema), in role-based subpaths |
 | `packages/shared` | small pure utilities, including the Telegram plumbing both bots share |
@@ -172,7 +172,8 @@ when their inputs change.
 | `pre-push` | `lint`, `typecheck` (pushing `main` also `test`), then `check:locales`: leftover placeholders get translated by a headless `claude -p "/translate"`, committed and pushed in place of the original push |
 | `post-merge` | re-installs the hooks when `lefthook.toml` changed |
 
-They're the reason you rarely need to run these by hand.
+They're the reason you rarely need to run these by hand. [Vibe coding](/development/vibe-coding) walks
+through them, and the agent skills, in more detail.
 
 ## Local URLs
 
@@ -184,7 +185,6 @@ They're the reason you rarely need to run these by hand.
 | API | [`http://localhost:3001`](http://localhost:3001) |
 | API reference (dev only) | [`http://localhost:3001/reference`](http://localhost:3001/reference) |
 | Web | [`http://localhost:3000`](http://localhost:3000) |
-| MCP sandbox | [`http://localhost:3002/health`](http://localhost:3002/health) |
 | Object storage (RustFS) S3 API | `http://localhost:9000` (key `kaja`, secret `kaja-dev-storage`) |
 | Object storage console | [`http://localhost:9001`](http://localhost:9001) |
 

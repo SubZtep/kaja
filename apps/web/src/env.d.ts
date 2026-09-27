@@ -14,6 +14,8 @@ declare module "bun" {
     VITE_WIDGET_BARKOCHBA_KEY?: string
     /** Second widget key, on a separate dedicated demo account, used by the landing page's embeddable chat widget script. */
     VITE_WIDGET_CHAT_KEY?: string
+    /** Cloudflare Turnstile site key (public) for the auth forms and Google buttons; pair it with the API's TURNSTILE_SECRET */
+    VITE_TURNSTILE_SITE_KEY?: string
     /** Sentry auth token used by the build-time Vite plugin to upload source maps */
     SENTRY_AUTH_TOKEN?: string
   }

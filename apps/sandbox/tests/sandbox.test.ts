@@ -2,18 +2,19 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { sandboxStatsSchema } from "@kaja/schema/api"
+import { apiSandboxFrameSchema, SANDBOX_FULL_HEADER, sandboxFrameSchema } from "@kaja/schema/api"
 import { SandboxEnvSchema } from "@kaja/schema/env"
-import { SANDBOX_STATS_SCOPE, signSandboxToken } from "@kaja/shared/sandbox"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { createApp } from "../src/app"
+import { SandboxTunnel } from "../../api/src/features/sandbox/tunnel"
+import { defaultMaxProcesses, hasRoom, SERVER_MEMORY } from "../src/capacity"
 import { loadSandboxServers, type SandboxServer } from "../src/manifests"
-import { ProcessPool } from "../src/pool"
+import { type PoolOptions, ProcessPool } from "../src/pool"
+import { collectStats } from "../src/stats"
+import { TunnelServer } from "../src/tunnel"
 
 // Spawning bun children is slow on a busy machine, so every test that starts one gets room.
 const SPAWN_TIMEOUT_MS = 30_000
-const SECRET = "sandbox-test-secret"
 const MARKETPLACE = join(import.meta.dir, "fixtures/marketplace")
 
 let dir: string
@@ -36,21 +37,50 @@ afterAll(async () => {
   await rm(dir, { recursive: true, force: true })
 })
 
-function sandbox(opts: { idleMs?: number; maxProcesses?: number } = {}) {
-  const pool = new ProcessPool({ servers, idleMs: opts.idleMs ?? 60_000, maxProcesses: opts.maxProcesses ?? 8 })
+/** A sandbox and the API's end of its tunnel, wired in-process: every frame goes through JSON and its schema, as over the socket. */
+function sandbox(
+  opts: Partial<Pick<PoolOptions, "idleMs" | "maxProcesses" | "hasRoom" | "serverMemory" | "treeRss">> = {}
+) {
+  const pool = new ProcessPool({
+    servers,
+    idleMs: 60_000,
+    maxProcesses: 8,
+    hasRoom: async () => true,
+    ...opts
+  })
   pools.push(pool)
-  return { pool, app: createApp({ secret: SECRET, pool }) }
+  const egress = { open: 0, allowed: 0, refused: 0, failed: 0 }
+  const handler = {
+    mcp: (user: string, ability: string, request: Request) => pool.handle(user, ability, request),
+    release: (user: string, ability: string) => pool.release(user, ability),
+    stats: () => collectStats({ pool, egress }),
+    running: () => pool.size
+  }
+  let server: TunnelServer | undefined
+  const tunnel = new SandboxTunnel({
+    id: "test",
+    info: {
+      version: "0.0.0",
+      name: null,
+      arch: "x64",
+      os: "linux",
+      cpu: { model: "test", cores: 1 },
+      memory: { total: 1, limit: null },
+      maxProcesses: pool.limits.maxProcesses,
+      abilities: pool.abilities
+    },
+    send: text => queueMicrotask(() => server?.receive(apiSandboxFrameSchema.parse(JSON.parse(text))))
+  })
+  server = new TunnelServer(handler, frame =>
+    queueMicrotask(() => tunnel.receive(sandboxFrameSchema.parse(JSON.parse(JSON.stringify(frame)))))
+  )
+  return { pool, tunnel, server }
 }
 
-async function token(sub: string, ability: string, secret = SECRET) {
-  return signSandboxToken({ sub, ability, exp: Math.floor(Date.now() / 1000) + 60 }, secret)
-}
-
-/** An MCP client of `ability` for `user`, over Streamable HTTP straight into the app. */
-async function connect(app: ReturnType<typeof createApp>, user: string, ability = "counter"): Promise<Client> {
-  const transport = new StreamableHTTPClientTransport(new URL(`http://sandbox.test/mcp/${ability}`), {
-    requestInit: { headers: { Authorization: `Bearer ${await token(user, ability)}` } },
-    fetch: async (url, init) => app.fetch(new Request(url, init))
+/** An MCP client of `ability` for `user`, over Streamable HTTP through the tunnel. */
+async function connect(tunnel: SandboxTunnel, user: string, ability = "counter"): Promise<Client> {
+  const transport = new StreamableHTTPClientTransport(new URL(`http://sandbox.invalid/mcp/${ability}`), {
+    fetch: (url, init) => tunnel.request(user, url, init)
   })
   const client = new Client({ name: "test", version: "1.0.0" })
   await client.connect(transport)
@@ -97,57 +127,43 @@ describe("manifests", () => {
       join(import.meta.dir, "../overrides.json")
     )
     const args = shipped.get("chrome-devtools")!.args
-    const { SANDBOX_EGRESS_PORT } = SandboxEnvSchema.parse({ SANDBOX_SECRET: SECRET })
+    const { SANDBOX_EGRESS_PORT } = SandboxEnvSchema.parse({})
     expect(args).toContain(`--proxyServer=http://127.0.0.1:${SANDBOX_EGRESS_PORT}`)
     expect(args).toContain("--chromeArg=--proxy-bypass-list=<-loopback>")
     expect(args).toContain("--chromeArg=--force-webrtc-ip-handling-policy=disable_non_proxied_udp")
   })
 })
 
-describe("auth", () => {
-  const post = (app: ReturnType<typeof createApp>, path: string, auth?: string) =>
-    app.request(path, { method: "POST", headers: auth ? { Authorization: auth } : {}, body: "{}" })
+describe("tunnel", () => {
+  const post = (tunnel: SandboxTunnel, path: string) =>
+    tunnel.request("u1", `http://sandbox.invalid${path}`, { method: "POST", body: "{}" })
 
-  test("no token, a forged one, or one for another ability is refused", async () => {
-    const { app } = sandbox()
-    expect((await post(app, "/mcp/counter")).status).toBe(401)
-    expect((await post(app, "/mcp/counter", `Bearer ${await token("u1", "counter", "wrong")}`)).status).toBe(401)
-    expect((await post(app, "/mcp/counter", `Bearer ${await token("u1", "other")}`)).status).toBe(401)
+  test("an ability the sandbox doesn't run is 404, and so is any path but /mcp/<ability>", async () => {
+    const { tunnel } = sandbox()
+    expect((await post(tunnel, "/mcp/keyed")).status).toBe(404)
+    expect((await post(tunnel, "/stats")).status).toBe(404)
   })
 
-  test("an ability the sandbox doesn't run is 404, even with a valid token", async () => {
-    const { app } = sandbox()
-    expect((await post(app, "/mcp/keyed", `Bearer ${await token("u1", "keyed")}`)).status).toBe(404)
+  test("a dropped socket fails what's in flight, and nothing more is sent", async () => {
+    const { tunnel } = sandbox()
+    tunnel.close()
+    await expect(post(tunnel, "/mcp/counter")).rejects.toThrow("the sandbox disconnected")
+    await expect(tunnel.stats()).rejects.toThrow("the sandbox disconnected")
   })
 })
 
 describe("stats", () => {
-  const stats = async (app: ReturnType<typeof createApp>, ability = SANDBOX_STATS_SCOPE) =>
-    app.request("/stats", { headers: { Authorization: `Bearer ${await token("admin", ability)}` } })
-
-  test("only the stats token opens them: none or an ability's is refused, and it opens no MCP server", async () => {
-    const { app } = sandbox()
-    expect((await app.request("/stats")).status).toBe(401)
-    expect((await stats(app, "counter")).status).toBe(401)
-    const mcp = await app.request(`/mcp/${encodeURIComponent(SANDBOX_STATS_SCOPE)}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${await token("admin", SANDBOX_STATS_SCOPE)}` },
-      body: "{}"
-    })
-    expect(mcp.status).toBe(404)
-  })
-
   test(
     "show each running server with its user, memory and calls, and what the pool did",
     async () => {
-      const { app } = sandbox({ maxProcesses: 3 })
-      const empty = sandboxStatsSchema.parse(await (await stats(app)).json())
+      const { tunnel } = sandbox({ maxProcesses: 3 })
+      const empty = await tunnel.stats()
       expect(empty).toMatchObject({ abilities: ["counter"], limits: { maxProcesses: 3 }, servers: [] })
 
-      const client = await connect(app, "u1")
+      const client = await connect(tunnel, "u1")
       void client.callTool({ name: "hang", arguments: {} }).catch(() => {})
       await Bun.sleep(200)
-      const busy = sandboxStatsSchema.parse(await (await stats(app)).json())
+      const busy = await tunnel.stats()
       expect(busy.servers).toEqual([
         expect.objectContaining({ user: "u1", ability: "counter", state: "running", pending: 1, sessions: 1 })
       ])
@@ -164,8 +180,8 @@ describe("relay", () => {
   test(
     "a new session reaches the same warm server, and another user gets their own",
     async () => {
-      const { app, pool } = sandbox()
-      const first = await connect(app, "u1")
+      const { tunnel, pool } = sandbox()
+      const first = await connect(tunnel, "u1")
       expect((await first.listTools()).tools.map(tool => tool.name).sort()).toEqual([
         "count",
         "crash",
@@ -176,10 +192,10 @@ describe("relay", () => {
       expect(await callText(first, "count")).toBe("1")
       await first.close()
 
-      const second = await connect(app, "u1")
+      const second = await connect(tunnel, "u1")
       expect(await callText(second, "count")).toBe("2")
 
-      const other = await connect(app, "u2")
+      const other = await connect(tunnel, "u2")
       expect(await callText(other, "count")).toBe("1")
       expect(pool.size).toBe(2)
       await Promise.all([second.close(), other.close()])
@@ -190,18 +206,18 @@ describe("relay", () => {
   test(
     "the server gets a throwaway HOME and none of the sandbox's own env",
     async () => {
-      const before = process.env.SANDBOX_SECRET
-      process.env.SANDBOX_SECRET = SECRET
+      const before = process.env.KAJA_SANDBOX_KEY
+      process.env.KAJA_SANDBOX_KEY = "ks_secret"
       try {
-        const { app } = sandbox()
-        const client = await connect(app, "u1")
+        const { tunnel } = sandbox()
+        const client = await connect(tunnel, "u1")
         const seen = JSON.parse(await callText(client, "whoami")) as { home: string; secret: string | null }
         expect(seen.secret).toBeNull()
         expect(seen.home).toContain("kaja-sandbox-counter-")
         await client.close()
       } finally {
-        if (before === undefined) delete process.env.SANDBOX_SECRET
-        else process.env.SANDBOX_SECRET = before
+        if (before === undefined) delete process.env.KAJA_SANDBOX_KEY
+        else process.env.KAJA_SANDBOX_KEY = before
       }
     },
     SPAWN_TIMEOUT_MS
@@ -214,8 +230,8 @@ describe("reporting", () => {
     async () => {
       const logged = spyOn(console, "error").mockImplementation(() => {})
       try {
-        const { app, pool } = sandbox()
-        const client = await connect(app, "u1")
+        const { tunnel, pool } = sandbox()
+        const client = await connect(tunnel, "u1")
         void client.callTool({ name: "crash", arguments: {} }).catch(() => {})
         const deadline = Date.now() + 10_000
         while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(100)
@@ -235,8 +251,8 @@ describe("reporting", () => {
     async () => {
       const logged = spyOn(console, "error").mockImplementation(() => {})
       try {
-        const { app, pool } = sandbox()
-        const client = await connect(app, "u1")
+        const { tunnel, pool } = sandbox()
+        const client = await connect(tunnel, "u1")
         await client.close()
         await pool.closeAll()
         expect(logged.mock.calls.some(([message]) => message === "Sandbox MCP server exited")).toBe(false)
@@ -252,12 +268,12 @@ describe("pool", () => {
   test(
     "past the process limit the least recently used idle server makes room",
     async () => {
-      const { app, pool } = sandbox({ maxProcesses: 2 })
-      const first = await connect(app, "u1")
-      const second = await connect(app, "u2")
+      const { tunnel, pool } = sandbox({ maxProcesses: 2 })
+      const first = await connect(tunnel, "u1")
+      const second = await connect(tunnel, "u2")
       expect(await callText(second, "count")).toBe("1")
       expect(await callText(first, "count")).toBe("1")
-      const third = await connect(app, "u3")
+      const third = await connect(tunnel, "u3")
       expect(await callText(third, "count")).toBe("1")
       expect(pool.size).toBe(2)
       expect(await callText(first, "count")).toBe("2")
@@ -269,13 +285,13 @@ describe("pool", () => {
   test(
     "when every server is mid-call a new user is turned away",
     async () => {
-      const { app } = sandbox({ maxProcesses: 1 })
-      const first = await connect(app, "u1")
+      const { tunnel } = sandbox({ maxProcesses: 1 })
+      const first = await connect(tunnel, "u1")
       void first.callTool({ name: "hang", arguments: {} }).catch(() => {})
       const warned = spyOn(console, "warn").mockImplementation(() => {})
       try {
         await Bun.sleep(200)
-        await expect(connect(app, "u2")).rejects.toThrow()
+        await expect(connect(tunnel, "u2")).rejects.toThrow()
         expect(warned.mock.calls.some(([message]) => message === "Sandbox is full")).toBe(true)
       } finally {
         warned.mockRestore()
@@ -288,17 +304,95 @@ describe("pool", () => {
   test(
     "an idle server is stopped, and the next session starts a fresh one",
     async () => {
-      const { app, pool } = sandbox({ idleMs: 300 })
-      const client = await connect(app, "u1")
+      const { tunnel, pool } = sandbox({ idleMs: 300 })
+      const client = await connect(tunnel, "u1")
       expect(await callText(client, "count")).toBe("1")
       await client.close()
       const deadline = Date.now() + 10_000
       while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(100)
       expect(pool.size).toBe(0)
-      const fresh = await connect(app, "u1")
+      const fresh = await connect(tunnel, "u1")
       expect(await callText(fresh, "count")).toBe("1")
       await fresh.close()
     },
     SPAWN_TIMEOUT_MS
   )
+
+  test("with too little memory left a new server isn't started, and the answer says the sandbox is full", async () => {
+    const warned = spyOn(console, "warn").mockImplementation(() => {})
+    try {
+      const { tunnel, pool } = sandbox({ hasRoom: async () => false })
+      const response = await tunnel.request("u1", "http://sandbox.invalid/mcp/counter", { method: "POST", body: "{}" })
+      expect(response.status).toBe(503)
+      expect(response.headers.get(SANDBOX_FULL_HEADER)).toBe("1")
+      expect(pool.counts.refusedMemory).toBe(1)
+      expect(pool.size).toBe(0)
+    } finally {
+      warned.mockRestore()
+    }
+  })
+
+  test(
+    "every answer carries how many servers run, and a release stops the user's server at once",
+    async () => {
+      const { tunnel, pool } = sandbox()
+      const client = await connect(tunnel, "u1")
+      expect(await callText(client, "count")).toBe("1")
+      expect(tunnel.running).toBe(1)
+      await client.close()
+      tunnel.release("u1", "counter")
+      const deadline = Date.now() + 10_000
+      while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(50)
+      expect(pool.size).toBe(0)
+      expect(pool.counts.released).toBe(1)
+      const fresh = await connect(tunnel, "u1")
+      expect(await callText(fresh, "count")).toBe("1")
+      await fresh.close()
+    },
+    SPAWN_TIMEOUT_MS
+  )
+
+  test(
+    "a server over its memory is stopped, even mid-call",
+    async () => {
+      let rss = 100
+      const { tunnel, pool } = sandbox({
+        serverMemory: 1000,
+        treeRss: async pids => new Map(pids.map(pid => [pid, rss]))
+      })
+      const client = await connect(tunnel, "u1")
+      void client.callTool({ name: "hang", arguments: {} }).catch(() => {})
+      await Bun.sleep(200)
+      await pool.checkMemory()
+      expect(pool.size).toBe(1)
+      rss = 5000
+      const warned = spyOn(console, "warn").mockImplementation(() => {})
+      try {
+        await pool.checkMemory()
+      } finally {
+        warned.mockRestore()
+      }
+      expect(pool.size).toBe(0)
+      expect(pool.counts.stoppedMemory).toBe(1)
+      await client.close()
+    },
+    SPAWN_TIMEOUT_MS
+  )
+})
+
+describe("capacity", () => {
+  const GB = 1024 ** 3
+
+  test("the default cap is the container's memory limit, else the machine's, less the sandbox's share", async () => {
+    expect(await defaultMaxProcesses({ container: { current: 0, max: 4 * GB }, total: 64 * GB, free: 0 })).toBe(7)
+    expect(await defaultMaxProcesses({ container: { current: 0, max: null }, total: 2 * GB, free: 0 })).toBe(3)
+    expect(await defaultMaxProcesses({ container: null, total: 256 * 1024 ** 2, free: 0 })).toBe(1)
+  })
+
+  test("another server fits while a server's share of memory is left", async () => {
+    const container = (current: number) => ({ container: { current, max: 4 * GB }, total: 64 * GB, free: 64 * GB })
+    expect(await hasRoom(container(4 * GB - SERVER_MEMORY))).toBe(true)
+    expect(await hasRoom(container(4 * GB - SERVER_MEMORY + 1))).toBe(false)
+    expect(await hasRoom({ container: null, total: 8 * GB, free: SERVER_MEMORY - 1 })).toBe(false)
+  })
 })

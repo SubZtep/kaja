@@ -1,6 +1,5 @@
 import type { McpAbility, McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
-import { trimTrailingSlashes } from "@kaja/shared/text"
 import { connectMcpServer } from "../mcp/client"
 import type { FetchLike } from "../security/ssrf"
 import type { KeyCheckResult } from "./http-tool"
@@ -21,8 +20,14 @@ export type McpAbilityTarget = {
   sandboxed?: boolean
 }
 
-/** The host's MCP sandbox (apps/sandbox): where it is, and a bearer token for the caller and one ability. */
-export type McpSandbox = { url: string; token: (abilityName: string) => Promise<string> }
+/**
+ * The host's MCP sandboxes (apps/sandbox): a `fetch` that takes `<SANDBOX_ORIGIN>/mcp/<ability>` requests to one
+ * serving the caller, and a `close` the instance calls after its own MCP connections close (the turn is over).
+ */
+export type McpSandbox = { fetch: FetchLike; close?: () => Promise<void> }
+
+/** The origin sandboxed abilities' URLs are given: never looked up, only routed to {@link McpSandbox.fetch}. */
+export const SANDBOX_ORIGIN = "https://sandbox.invalid"
 
 /** The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var `auth` names. */
 export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbilityTarget {
@@ -45,15 +50,15 @@ export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbili
 }
 
 /**
- * A stdio ability as the sandbox serves it: `<sandbox>/mcp/<name>` over Streamable HTTP with the caller's token.
+ * A stdio ability as a sandbox serves it: `<SANDBOX_ORIGIN>/mcp/<name>` over Streamable HTTP, through the sandbox's fetch.
  * The sandbox starts the command from its own copy of the manifest, so none of it is sent; nor is a key (not forwarded yet).
  */
-export async function sandboxedMcpTarget(ability: McpAbility, sandbox: McpSandbox): Promise<McpAbilityTarget> {
+export function sandboxedMcpTarget(ability: McpAbility): McpAbilityTarget {
   const local = mcpAbilityTarget(ability)
-  const url = `${trimTrailingSlashes(sandbox.url)}/mcp/${encodeURIComponent(ability.name)}`
+  const url = `${SANDBOX_ORIGIN}/mcp/${encodeURIComponent(ability.name)}`
   return {
     ...local,
-    server: { id: ability.name, url, headers: { Authorization: `Bearer ${await sandbox.token(ability.name)}` } },
+    server: { id: ability.name, url, headers: {} },
     transport: "http",
     sandboxed: true
   }

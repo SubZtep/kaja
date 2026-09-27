@@ -41,7 +41,11 @@ When you use **cloud chat**, Kaja additionally stores, against your account:
 - memory notes the assistant writes about you, and answers you give to structured questionnaires (datasets);
 - session metadata such as which persona and model handled a conversation, and when it was last updated.
 
-Some abilities run a program for you in Kaja's **sandbox**, a separate server where tools run on your behalf (for example a web browser). While you use one, it keeps its working state, such as a browser's open pages, the cookies websites set, and what it typed into forms, so it can carry on across messages. This state is kept separately for each user, isn't saved in Kaja's database, and is deleted when the tool has been unused for about 10 minutes, or when the sandbox restarts.
+Some abilities run a program for you in a **sandbox**, a separate machine where tools run on your behalf (for example a web browser). While you use one, it keeps its working state, such as a browser's open pages, the cookies websites set, and what it typed into forms, so it can carry on across messages. This state is kept separately for each user, isn't saved in Kaja's database, and is deleted when the tool has been unused for about 10 minutes, or when the sandbox restarts.
+
+Sandboxes can be run by Kaja, by you, or by other people who share theirs. By default your tools only run in Kaja's sandbox or your own. If you turn on **Use shared sandboxes**, they may also run in someone else's, and **that person can see what runs there**, such as the pages the browser opens and what it types into them; they are not told who you are (the sandbox only gets a random id for you). Your tools there are stopped as soon as your turn ends, so nothing of yours (such as a browser's cookies) stays on that person's computer afterwards. Don't use shared sandboxes for anything private.
+
+If you **run a sandbox**, Kaja stores, for as long as it's registered: its public IP address and the location our geolocation service ([ip2geo](https://github.com/SubZtep/geo-service), run by Kaja on MaxMind GeoLite2 data) finds for it (country, city, coordinates), when it was online, the name you gave it, and its hardware and load (CPU, memory, how many tools it's running). Its city and country are shown to Kaja's administrators. A sandbox run without your key is anonymous, and its record is deleted a week after it was last online.
 
 When you interact with a **widget** embedded on someone else's website, the same conversation data is stored against *that site owner's* Kaja account, not yours. The site owner is the controller of that data and Kaja processes it on their behalf (see [Widgets](#widgets)). A random visitor id is kept in your browser's `sessionStorage` to keep one conversation together; it is not a cookie and it does not follow you across sites.
 
@@ -49,7 +53,7 @@ IP address handling details:
 
 - Kaja processes IP addresses temporarily for authentication, session security, and rate limiting.
 - Each login session record keeps the IP address and browser user agent it was created from, until the session ends or expires.
-- Kaja does not look up your location from your IP address. The assistant only knows where you are if you tell it, or if you turn on a location ability that looks it up.
+- Kaja does not store your location. When you use shared sandboxes, Kaja looks your IP address up once a day and keeps the rough coordinates in memory only, to pick a sandbox near you; the assistant is never told. Otherwise the assistant only knows where you are if you tell it, or if you turn on a location ability that looks it up.
 
 Kaja does not collect payment data because accounts are currently free.
 
@@ -106,7 +110,7 @@ These parties also receive data, but under their own terms as independent contro
 
 - **Google**, if you use Google sign-in;
 - **Telegram**, if you chat with the Kaja Telegram bot — those messages pass through Telegram's servers;
-- **the services behind abilities you turn on** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed. Websites a sandbox tool visits for you (such as pages its browser opens) receive the requests it makes, from Kaja's server address rather than yours.
+- **the services behind abilities you turn on** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed. Websites a sandbox tool visits for you (such as pages its browser opens) receive the requests it makes, from the sandbox's address rather than yours; in a shared sandbox, its operator can see them too.
 
 Kaja may also disclose data if required by law, to protect users, or to investigate abuse or security incidents.
 
@@ -131,6 +135,7 @@ You can ask for details of the safeguard for any provider by email.
 - **Cloud conversations, memory notes, dataset answers, ability keys, widget keys, and your Telegram link** are kept until you delete them or your account. A single conversation can be deleted at any time.
 - **Deleting your account** from your profile page deletes it and everything stored with it straight away, including conversations your widgets' visitors had.
 - **Sandbox working state** (such as a browser's pages and cookies) is deleted after about 10 minutes unused, or when the sandbox restarts.
+- **Sandbox records** (IP address, location, hardware) are kept until you remove the sandbox or your account; anonymous ones a week after they were last online.
 - **Login session records** (with their IP address and user agent) are kept until the session ends or expires.
 - **Server logs** are kept for up to 30 days, unless a specific entry is needed longer to investigate a security incident.
 - **Error reports** in Sentry are kept for 30 days.

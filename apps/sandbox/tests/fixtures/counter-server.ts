@@ -9,7 +9,7 @@ server.registerTool("count", { description: "Counts its calls" }, async () => ({
 }))
 server.registerTool("whoami", { description: "The server's HOME and a leaked secret, if any" }, async () => ({
   content: [
-    { type: "text", text: JSON.stringify({ home: process.env.HOME, secret: process.env.SANDBOX_SECRET ?? null }) }
+    { type: "text", text: JSON.stringify({ home: process.env.HOME, secret: process.env.KAJA_SANDBOX_KEY ?? null }) }
   ]
 }))
 // A 1×1 PNG, like a screenshot the cloud has to hand back to its client.

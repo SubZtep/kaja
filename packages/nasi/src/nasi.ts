@@ -5,7 +5,7 @@ import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import type OpenAI from "openai"
 import { loadAbilities } from "./abilities/load"
-import type { McpSandbox } from "./abilities/mcp-ability"
+import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import type { Compaction } from "./agent/compaction"
@@ -13,7 +13,7 @@ import { samplingOf } from "./agent/persona"
 import { compact, run } from "./agent/run"
 import { recordPausedCall } from "./agent/telemetry"
 import { runApprovedTool, type Tool } from "./agent/tools"
-import { createGuardedFetch } from "./security/ssrf"
+import { createGuardedFetch, type FetchLike } from "./security/ssrf"
 import type { NasiStore } from "./store/types"
 import type { NasiToolDeps } from "./tools/deps"
 import { createTools } from "./tools/registry"
@@ -54,6 +54,13 @@ export function photoLabel(caption: string): string {
 }
 
 /** The user's message as history shows it. */
+// Sandboxed abilities' requests go to the sandbox's fetch (it picks a sandbox and tunnels there); every other one through the guard.
+function withSandbox(guarded: FetchLike, sandbox: McpSandbox | undefined): FetchLike {
+  if (!sandbox) return guarded
+  return (input, init) =>
+    String(input).startsWith(`${SANDBOX_ORIGIN}/`) ? sandbox.fetch(input, init) : guarded(input, init)
+}
+
 function userText(input: NasiTurnInput): string {
   const message = input.message ?? ""
   return input.images?.length ? photoLabel(message) : message
@@ -216,15 +223,13 @@ export class Nasi {
       extraTools: abilities?.groups,
       // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
-      mcpFetch: createGuardedFetch({
-        proxy: opts.deps?.fetchProxy,
-        trustedOrigins: opts.mcpSandbox ? [new URL(opts.mcpSandbox.url).origin] : []
-      }),
+      mcpFetch: withSandbox(createGuardedFetch({ proxy: opts.deps?.fetchProxy }), opts.mcpSandbox),
       mcpImageDir: imageDir,
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
     })
     const close = async () => {
       await closeTools()
+      await opts.mcpSandbox?.close?.()
       if (imageDir) await rm(imageDir, { recursive: true, force: true })
     }
     return new Nasi(opts, tools, close)

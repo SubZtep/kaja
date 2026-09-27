@@ -41,11 +41,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const saved = session?.user.locale
     if (import.meta.env.SSR && saved && saved !== getLocale() && !keepsLinkLanguage(location.pathname))
       throw redirect({ href: localizeHref(location.href, { locale: saved }) })
-    const { apiUrl, barkochbaWidgetKey, chatWidgetKey } = await getRootEnv()
+    const { apiUrl, barkochbaWidgetKey, chatWidgetKey, turnstileSiteKey } = await getRootEnv()
     return {
       apiUrl,
       barkochbaWidgetKey,
       chatWidgetKey,
+      turnstileSiteKey,
       session,
       sessionError
     }

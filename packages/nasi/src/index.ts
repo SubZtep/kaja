@@ -35,6 +35,7 @@ export {
   type McpAbilityTarget,
   type McpSandbox,
   mcpAbilityTarget,
+  SANDBOX_ORIGIN,
   sandboxedMcpTarget
 } from "./abilities/mcp-ability"
 export { parseSkillMd } from "./abilities/skill-md"

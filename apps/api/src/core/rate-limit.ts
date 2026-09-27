@@ -6,7 +6,7 @@ import { trustedSsrClientIp } from "./ssr-client-ip"
 
 /**
  * Rate limiting is on by default. Disable with RATE_LIMIT_ENABLED=false
- * or automatically during `bun test` (BUN_TEST is set by the test runner).
+ * or automatically during `bun test` (the test preload sets BUN_TEST).
  */
 function isRateLimitEnabled(): boolean {
   if (env.BUN_TEST === "1" || env.BUN_TEST === "true") return false
@@ -14,7 +14,8 @@ function isRateLimitEnabled(): boolean {
   return true
 }
 
-function clientIp(c: Context): string {
+/** The visitor's IP: the web SSR's vouched one, else what the proxy forwarded; "unknown" without either. */
+export function clientIp(c: Context): string {
   const ssrClientIp = trustedSsrClientIp(c.req.raw.headers)
   if (ssrClientIp) return ssrClientIp
   const forwarded = c.req.header("x-forwarded-for")

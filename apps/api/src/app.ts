@@ -11,6 +11,7 @@ import { configExportRoutes } from "./features/config-export"
 import { healthRoutes } from "./features/health"
 import { nasiRoutes } from "./features/nasi"
 import { referenceRoutes, setupApiDocs } from "./features/reference"
+import { sandboxRoutes } from "./features/sandbox"
 import { statsRoutes } from "./features/stats"
 import { telegramAdminRoutes } from "./features/telegram-admin"
 import { widgetRoutes } from "./features/widget"
@@ -52,6 +53,7 @@ app.route("/config", configRoutes)
 app.route("/health", healthRoutes)
 app.route("/nasi", nasiRoutes)
 app.route("/abilities", abilityRoutes)
+app.route("/sandbox", sandboxRoutes)
 app.route("/stats", statsRoutes)
 app.route("/telegram/admin", telegramAdminRoutes)
 app.route("/widget", widgetRoutes)
