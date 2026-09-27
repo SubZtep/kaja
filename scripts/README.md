@@ -34,10 +34,11 @@ Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true
   ```sh
   bun sync:locales           # rewrite the other languages
   bun sync:locales --stage   # also git-add what it rewrote (pre-commit does this when an en-GB file changes)
-  bun check:locales          # exit 1 if a language is out of step with en-GB or still has placeholders (pre-push on main, CI)
+  bun check:locales          # exit 1 if a language is out of step with en-GB or still has placeholders (pre-push, CI)
   bun sync:locales --todo    # list the placeholders still to translate, as JSON, each with nearby translated keys for terminology
   bun sync:locales --apply f # write translations back from that JSON with a `value` added (checks {params}); the /translate skill drives these two
   ```
+- **`translate_push.sh`** — the last pre-push job: when `check:locales` fails it runs `claude -p "/translate"`, commits the translated locale files, pushes them itself (`--no-verify`, the other jobs already passed) and exits 1 so the original, now stale push stops.
 
 ## Dev utilities
 

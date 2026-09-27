@@ -169,7 +169,7 @@ when their inputs change.
 | --- | --- |
 | `commit-msg` | commitlint (conventional commits) |
 | `pre-commit` | the generators above and the web route tree (only for changed inputs), then `lint:fix` and `typecheck` |
-| `pre-push` | `lint`, `typecheck`; pushing `main` also runs `check:locales` and `test` |
+| `pre-push` | `lint`, `typecheck` (pushing `main` also `test`), then `check:locales`: leftover placeholders get translated by a headless `claude -p "/translate"`, committed and pushed in place of the original push |
 | `post-merge` | re-installs the hooks when `lefthook.toml` changed |
 
 They're the reason you rarely need to run these by hand.

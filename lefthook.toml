@@ -121,4 +121,5 @@ piped = true
 
 
   [[pre-push.jobs]]
-  run = "scripts/translate_push.sh {1}"
+  run       = "scripts/translate_push.sh {1}"
+  use_stdin = true
