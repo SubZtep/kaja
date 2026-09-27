@@ -30,7 +30,7 @@ export async function collectStats(opts: { pool: ProcessPool; egress: EgressCoun
 }
 
 /** The cgroup v2 memory use and limit of the container the sandbox runs in, if it's in one. */
-async function containerMemory(): Promise<{ current: number; max: number | null } | null> {
+export async function containerMemory(): Promise<{ current: number; max: number | null } | null> {
   const [current, max] = await Promise.all(
     ["memory.current", "memory.max"].map(file => readFile(`/sys/fs/cgroup/${file}`, "utf8").catch(() => undefined))
   )

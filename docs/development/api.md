@@ -19,12 +19,15 @@ always-current list. This page is the map.
 | Prefix | Auth | What |
 | --- | --- | --- |
 | `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
-| `/admin/*` | session + `admin` role | providers, models, marketplace sync, MCP sandbox stats |
+| `/admin/*` | session + `admin` role | providers, models, marketplace sync, every MCP sandbox with live stats |
 | `/widget/admin/*` | session | list, create, edit and revoke [widget](/using/widget) keys |
 | `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
 | `/abilities/me/*` | session | the user's own abilities and their write-only API keys |
 | `/nasi/*` | bearer | cloud agent: turns, compaction, sessions, and the persona catalog |
 | `/stats` | session | the signed-in user's own [usage numbers](#usage-stats--stats) |
+| `/sandbox/connect` | sandbox key or none | an MCP sandbox's WebSocket: it registers, then serves the MCP requests tunnelled to it |
+| `/sandbox`, `/sandbox/key`, `/sandbox/settings` | session | the user's own sandboxes, their sandbox key, and whether they share or use shared ones |
+| `/sandbox/public` | none | how many sandboxes are online, by country |
 | `/telegram/admin/link` | session | start linking a Telegram account to the cloud bot (`POST`, returns a one-time deep link) |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/models` | shared secret | model resolution for tooling |

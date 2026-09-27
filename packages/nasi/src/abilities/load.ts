@@ -76,9 +76,7 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
     const apiKey = keyFor(ability)
     if (apiKey === null) continue
     mcp.push(
-      ability.transport === "stdio" && opts.mcpSandbox
-        ? await sandboxedMcpTarget(ability, opts.mcpSandbox)
-        : mcpAbilityTarget(ability, apiKey)
+      ability.transport === "stdio" && opts.mcpSandbox ? sandboxedMcpTarget(ability) : mcpAbilityTarget(ability, apiKey)
     )
   }
 

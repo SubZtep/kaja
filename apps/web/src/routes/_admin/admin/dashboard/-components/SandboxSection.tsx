@@ -1,4 +1,10 @@
-import type { AdminSandboxResponse, SandboxServerStats, SandboxStats } from "@kaja/schema/api"
+import type {
+  AdminSandboxEntry,
+  AdminSandboxResponse,
+  Sandbox,
+  SandboxServerStats,
+  SandboxStats
+} from "@kaja/schema/api"
 import { adminSandboxResponseSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared/date"
 import { cn } from "@kaja/shared/ui"
@@ -16,8 +22,11 @@ const REFRESH_MS = 3000
 
 const UNITS = ["B", "KB", "MB", "GB", "TB"]
 
+/** The command that starts an anonymous sandbox, for the empty state. */
+const RUN_COMMAND = "docker run -d --restart unless-stopped -v kaja-sandbox:/data subztep/kaja-sandbox"
+
 /** 512 MB, 1.4 GB: binary units, one decimal from a gigabyte up. */
-function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number): string {
   let value = bytes
   let unit = 0
   while (value >= 1024 && unit < UNITS.length - 1) {
@@ -148,13 +157,56 @@ function SandboxUp({ stats, emails }: Readonly<{ stats: SandboxStats; emails: Re
   )
 }
 
-const STATUS_LABELS: Record<AdminSandboxResponse["status"], () => string> = {
-  up: () => m.sandbox_status_up(),
-  down: () => m.sandbox_status_down(),
-  off: () => m.sandbox_status_off()
+function owner(sandbox: Sandbox, emails: Record<string, string>): string {
+  if (sandbox.kind === "official") return m.sandbox_kind_official()
+  if (sandbox.kind === "anonymous") return m.sandbox_kind_anonymous()
+  return m.sandbox_kind_owned({ email: (sandbox.ownerId && emails[sandbox.ownerId]) ?? sandbox.ownerId ?? "" })
 }
 
-/** The MCP sandbox's servers, memory and counters, refreshed every few seconds. */
+/** Where it is, as the geolocation service placed its IP. */
+export function place(sandbox: Sandbox): string {
+  return [sandbox.city, sandbox.country].filter(Boolean).join(", ") || m.sandbox_location_unknown()
+}
+
+/** Cores, memory, arch and version from its hello. */
+export function hardware(sandbox: Sandbox): string | undefined {
+  const info = sandbox.info
+  if (!info) return undefined
+  return m.sandbox_hardware({
+    cores: info.cpu.cores,
+    memory: formatBytes(info.memory.limit ?? info.memory.total),
+    arch: info.arch,
+    version: info.version
+  })
+}
+
+function SandboxEntry({ entry, emails }: Readonly<{ entry: AdminSandboxEntry; emails: Record<string, string> }>) {
+  const { sandbox, stats, error } = entry
+  return (
+    <div className="border-border border-b pb-6 last:border-b-0 last:pb-0">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="font-semibold text-fg">{sandbox.name ?? m.sandbox_unnamed()}</span>
+          <span className="text-muted text-sm">{owner(sandbox, emails)}</span>
+          <span className="text-muted text-sm">{place(sandbox)}</span>
+          {hardware(sandbox) && <span className="font-mono text-muted text-xs">{hardware(sandbox)}</span>}
+        </div>
+        <div className="flex items-center gap-3">
+          {!sandbox.online && sandbox.lastSeenAt && (
+            <span className="font-mono text-muted text-xs">
+              {m.sandbox_last_seen({ time: getTimeAgo(sandbox.lastSeenAt) })}
+            </span>
+          )}
+          <StatusDot active={sandbox.online} label={sandbox.online ? m.sandbox_online() : m.sandbox_offline()} />
+        </div>
+      </div>
+      {error && <p className="text-red-400 text-sm">{m.sandbox_down_hint({ error })}</p>}
+      {stats && <SandboxUp stats={stats} emails={emails} />}
+    </div>
+  )
+}
+
+/** Every registered MCP sandbox, and the online ones' servers, memory and counters, refreshed every few seconds. */
 export function SandboxSection() {
   const apiFetch = useApiFetch()
   const { data, error, isLoading } = useQuery({
@@ -162,6 +214,7 @@ export function SandboxSection() {
     queryFn: () => apiFetch<AdminSandboxResponse>("/admin/sandbox").then(r => adminSandboxResponseSchema.parse(r)),
     refetchInterval: REFRESH_MS
   })
+  const online = data?.sandboxes.filter(entry => entry.sandbox.online).length ?? 0
 
   return (
     <Section
@@ -170,7 +223,9 @@ export function SandboxSection() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span>{m.sandbox_title()}</span>
           <div className="flex items-center gap-4 font-normal">
-            {data && <StatusDot active={data.status === "up"} label={STATUS_LABELS[data.status]()} />}
+            {data && (
+              <StatusDot active={online > 0} label={m.sandbox_online_count({ online, total: data.sandboxes.length })} />
+            )}
             <span className="font-mono text-muted text-xs">{m.sandbox_live({ seconds: REFRESH_MS / 1000 })}</span>
           </div>
         </div>
@@ -178,11 +233,14 @@ export function SandboxSection() {
     >
       <ErrorNotice error={error} />
       {isLoading && <Loader />}
-      {data?.status === "off" && (
-        <p className="text-muted text-sm">{m.sandbox_off_hint({ url: "SANDBOX_URL", secret: "SANDBOX_SECRET" })}</p>
+      {data?.sandboxes.length === 0 && <p className="text-muted text-sm">{m.sandbox_none({ command: RUN_COMMAND })}</p>}
+      {data && data.sandboxes.length > 0 && (
+        <div className="flex flex-col gap-6">
+          {data.sandboxes.map(entry => (
+            <SandboxEntry key={entry.sandbox.id} entry={entry} emails={data.emails} />
+          ))}
+        </div>
       )}
-      {data?.status === "down" && <p className="text-red-400 text-sm">{m.sandbox_down_hint({ error: data.error })}</p>}
-      {data?.status === "up" && <SandboxUp stats={data.stats} emails={data.emails} />}
     </Section>
   )
 }

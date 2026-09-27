@@ -1,49 +1,53 @@
 # @kaja/sandbox
 
-The MCP sandbox runs **stdio MCP servers for cloud turns**. A stdio server is a program the agent starts and talks to over stdin/stdout, like `chrome-devtools-mcp`. In local mode Kaja starts it on your machine; the cloud API won't start commands on its own host, so it asks the sandbox instead. The sandbox serves each server over Streamable HTTP at `/mcp/<ability>`, and the cloud agent connects to it like any remote MCP server.
+The MCP sandbox runs **stdio MCP servers for cloud turns**. A stdio server is a program the agent starts and talks to over stdin/stdout, like `chrome-devtools-mcp`. In local mode Kaja starts it on your machine; the cloud API won't start commands on its own host, so it asks a sandbox instead.
+
+Anyone can run one: it **dials out** to the API over a WebSocket, so it needs no open port and works behind home NAT. The API tunnels each MCP request (Streamable HTTP, SSE included) over that socket.
 
 It runs **chrome-devtools**, a headless Chrome the assistant can browse with, read pages from and screenshot. It also runs **time** (Python `mcp-server-time`), which tells the current time and converts it between time zones.
+
+## Run one
+
+```sh
+# linked to your account (key from the web app's Sandbox page)
+docker run -d --restart unless-stopped --shm-size 1g -v kaja-sandbox:/data -e KAJA_SANDBOX_KEY=ks_… subztep/kaja-sandbox
+# anonymous: shared with everyone
+docker run -d --restart unless-stopped --shm-size 1g -v kaja-sandbox:/data subztep/kaja-sandbox
+```
+
+The `/data` volume keeps its registration, so a restart comes back as the same sandbox. `SANDBOX_NAME` names it, `SANDBOX_MAX_PROCESSES` caps how many servers (browsers) it runs at once.
 
 ## How a cloud turn reaches it
 
 ```
- TUI / web / Telegram            API (cloud turn)                     sandbox
-┌─────────────────┐   chat   ┌──────────────────────┐  /mcp/chrome-devtools  ┌─────────────────────────────┐
-│ "open kaja.io"  │ ───────► │ nasi agent loop      │ ─────────────────────► │ token ok? → user's own      │
-└─────────────────┘          │ signs a token:       │  Authorization:        │ chrome-devtools-mcp + Chrome│
-                             │ { user, ability,exp }│  Bearer <token>        │ (started on first use)      │
-                             └──────────────────────┘                        └─────────────────────────────┘
+ TUI / web / Telegram       API (cloud turn)                          sandbox (anywhere)
+┌────────────────┐  chat  ┌───────────────────────────┐  WebSocket  ┌─────────────────────────────┐
+│ "open kaja.io" │ ─────► │ nasi agent loop           │ ◄────────── │ dialled in at start:        │
+└────────────────┘        │ picks a sandbox, sends    │  request    │ hello {cpu, memory, ...}    │
+                          │ { user: pseudonym,        │ ──────────► │ → user's own                │
+                          │   ability, HTTP request } │ ◄────────── │ chrome-devtools-mcp + Chrome│
+                          └───────────────────────────┘  head/chunks└─────────────────────────────┘
 ```
 
-1. The API offers a stdio MCP ability only when it has `SANDBOX_URL` and `SANDBOX_SECRET`, and only a keyless one with a fixed `tools` list.
-2. Each turn, the API signs a short-lived token (HMAC-SHA256 over the user id, the ability and an expiry) with the shared `SANDBOX_SECRET`.
-3. The sandbox checks the signature, the expiry and that the token is for the ability in the URL, then hands the request to that user's server for that ability.
-4. The request only ever *names* an ability. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what it fetched stays cached in `SANDBOX_CACHE_DIR` (the shipped servers are fetched when the image is built).
+1. At start the sandbox connects to `KAJA_API_URL`'s `/sandbox/connect` with its owner's key (`X-Kaja-Sandbox-Key`; none: anonymous) and, after the first time, the id and secret it was welcomed with (`X-Kaja-Sandbox-Instance`). It says `hello` with its hardware, version, cap and abilities; the API records it, with its public IP's location from the geolocation service, and answers `welcome`. Every minute it sends a `heartbeat` with its load.
+2. A cloud turn picks a sandbox per ability: the one the user's last turn used while it still fits, else their own, else (only if they allow it) one another user shares or an anonymous one, nearest first, else the official one. See `apps/api/src/features/sandbox/registry.ts`.
+3. The API sends the MCP request as a `request` frame; the sandbox runs it and streams the answer back as `head`, `chunk`… and `end` frames (`cancel` stops it). Frames are JSON and checked against `sandboxFrameSchema`/`apiSandboxFrameSchema` in `@kaja/schema/api` on both sides.
+4. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what it fetched stays cached in `SANDBOX_CACHE_DIR` (the shipped servers are fetched when the image is built).
 
-## Auth
+## Trust
 
-Every route but `/health` needs `Authorization: Bearer <token>`. The API signs the token itself; there are no accounts, sessions or API keys on the sandbox.
-
-- **Format:** `<payload>.<signature>`, both base64url. The payload is JSON claims `{ sub, ability, exp }`; the signature is HMAC-SHA256 of the payload with `SANDBOX_SECRET`, which the API and the sandbox share (`signSandboxToken`/`verifySandboxToken` in `@kaja/shared/sandbox`).
-- **Checked:** the signature (constant-time, by WebCrypto), that `exp` (Unix seconds) hasn't passed, and that `ability` fits the route. Anything else is `401`.
-
-| Route | `sub` | `ability` | Lifetime | Signed by |
-| --- | --- | --- | --- | --- |
-| `/mcp/<ability>` | the user whose server it is | must equal `<ability>` in the URL | 1 hour (a turn) | nasi chat, once per turn and ability |
-| `/stats` | the admin asking (for logs) | must be `#stats` (`SANDBOX_STATS_SCOPE`) | 1 minute | `GET /admin/sandbox`, admins only |
-
-No ability can be named `#stats`, so an ability's token can't read the stats, and the stats token opens no MCP server. Tokens can't be revoked one by one; changing `SANDBOX_SECRET` on both sides invalidates them all.
+The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Users' ability keys are never sent to any sandbox, so keyed stdio abilities stay local-only.
 
 ## One warm server per user
 
 - **Started on first use**, one per (user, ability), and **kept warm between turns**: the browser's open pages are still there on your next message. Every turn opens a new MCP session; the relay answers its `initialize` from the first one, so the server itself is only initialized once.
 - **Stopped when idle** for `SANDBOX_IDLE_MS` (10 minutes by default). A call that's still running gets one more idle window first.
 - **At most `SANDBOX_MAX_PROCESSES`** (8) run at once, across all users. When it's full, the least recently used idle server is stopped to make room. Only when every server is in the middle of a call does a new user get a `503`.
-- Each server gets a **throwaway HOME** (removed when it stops) and only `PATH`, the shared package caches (`SANDBOX_CACHE_DIR`) and its manifest's `env`: none of the sandbox's own variables, such as the secret.
+- Each server gets a **throwaway HOME** (removed when it stops) and only `PATH`, the shared package caches (`SANDBOX_CACHE_DIR`) and its manifest's `env`: none of the sandbox's own variables, such as its key.
 
 ## The egress proxy
 
-Chrome will open whatever a page (or the model) points it at. Without a guard, that includes `http://169.254.169.254/` (the cloud metadata service), `http://localhost:3002/` (the sandbox itself) and anything on the host's private network. The API's SSRF checks can't help: the browsing happens here, not in the API.
+Chrome will open whatever a page (or the model) points it at. Without a guard, that includes `http://169.254.169.254/` (the cloud metadata service), the operator's router and anything else on the host's private network. The API's SSRF checks can't help: the browsing happens here, not in the API.
 
 So the sandbox runs its own small **forward proxy** (`src/egress.ts`), and Chrome is told to send all of its traffic through it:
 
@@ -51,7 +55,7 @@ So the sandbox runs its own small **forward proxy** (`src/egress.ts`), and Chrom
  sandbox container
 ┌──────────────────────────────────────────────────────────────────────┐
 │  sandbox process (Bun)                                               │
-│   ├─ :3002             MCP endpoint  ◄──── API                       │
+│   ├─ WebSocket ──────────────────────────────────► API               │
 │   └─ 127.0.0.1:3128    egress proxy  ─────────────► public internet  │
 │                           ▲                     ✗ 127.x, 10.x,       │
 │  chrome-devtools-mcp      │                       169.254.x, ...     │
@@ -117,20 +121,24 @@ bun dev:sandbox
 }
 ```
 
-The real image, as production runs it (amd64 only: Chrome for Testing has no Linux arm64 build):
+Outside the image `KAJA_API_URL` defaults to the local API (`http://localhost:3001`), and without `KAJA_SANDBOX_KEY` it joins anonymously. Set the API's `SANDBOX_SYSTEM_KEY` and the same value as `KAJA_SANDBOX_KEY` to make it the official one.
+
+The real image, as production runs it (amd64 only: Chrome for Testing has no Linux arm64 build), joins the compose API as the official sandbox:
 
 ```sh
 docker compose up -d sandbox
 ```
 
-For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SANDBOX_URL` (`http://localhost:3002`, or `http://sandbox:3002` inside compose). Deploying to production is covered in [Deployment](https://docs.kaja.io/development/deployment#mcp-sandbox).
+Deploying to production is covered in [Deployment](https://docs.kaja.io/development/deployment#mcp-sandbox).
 
 ## Configuration
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `SANDBOX_SECRET` | — (required) | shared with the API; verifies the tokens |
-| `PORT` | `3002` | the MCP endpoint and `/health` |
+| `KAJA_API_URL` | `https://api.kaja.io` in the image, else `http://localhost:3001` | the API it dials |
+| `KAJA_SANDBOX_KEY` | — | your key from the web's Sandbox page (or the API's `SANDBOX_SYSTEM_KEY`); unset: anonymous |
+| `SANDBOX_NAME` | — | a name shown for it |
+| `SANDBOX_STATE_DIR` | `./.sandbox` (`/data` in the image) | where it keeps the id and secret it was welcomed with |
 | `MARKETPLACE_DIR` | `../../marketplace` | whose `mcp/*.toml` stdio manifests are the only servers it runs |
 | `SANDBOX_OVERRIDES` | — | JSON replacing a manifest's command/args on this host (the image uses `overrides.json`) |
 | `SANDBOX_CACHE_DIR` | — | shared bun/uv/npm caches for the servers, so fetched packages stay (the image uses `/home/node/.cache/mcp`) |
@@ -144,10 +152,10 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 
 ## Observability
 
-- `GET /health` answers `{ "ok": true }` and needs no token.
-- `GET /stats` shows what's running right now: every server with its user, state, open calls and sessions, and the memory of its whole process tree (the browser included, read from `/proc`); the host's CPUs, load and memory, and the container's memory limit; and, since the sandbox started, how many servers started, failed to start, stopped idle, stopped for room, crashed, or were refused, plus the egress proxy's open, allowed, refused and failed connections. It needs the stats token (see [Auth](#auth)). The API's admins see it live on the web's **Admin → Dashboard** page, through `GET /admin/sandbox`.
-- The logs have a line for every server started, stopped when idle or stopped to make room, and every "sandbox is full" refusal, each with the running count.
-- In production, servers that won't start, exit on their own or error go to the sandbox's own Sentry project with their last 20 stderr lines. Request headers (which carry the token) are dropped.
+- The API's `sandbox` table has every sandbox that ever connected: owner, online, when last seen, IP and its full geolocation, the `hello` info and the latest `heartbeat`.
+- Asked over the socket, the sandbox reports what's running right now: every server with its (pseudonymous) user, state, open calls and sessions, and the memory of its whole process tree (the browser included, read from `/proc`); the host's CPUs, load and memory, and the container's memory limit; and, since the sandbox started, how many servers started, failed to start, stopped idle, stopped for room, crashed, or were refused, plus the egress proxy's open, allowed, refused and failed connections. The API's admins see every sandbox live on the web's **Admin → Dashboard** page, through `GET /admin/sandbox`, with the users' emails.
+- The logs have a line for connecting and losing the API, every server started, stopped when idle or stopped to make room, and every "sandbox is full" refusal, each with the running count.
+- In production, servers that won't start, exit on their own or error go to the sandbox's own Sentry project with their last 20 stderr lines.
 
 ## Not yet
 
@@ -159,12 +167,13 @@ For the API to use it, set the same `SANDBOX_SECRET` on both, and the API's `SAN
 
 | File | Role |
 | --- | --- |
-| `src/server.ts` | entry: starts the egress proxy, loads manifests, serves, stops everything on SIGTERM/SIGINT |
-| `src/app.ts` | Hono routes: `/health`, `/stats` and `/mcp/:ability`, the last two behind the token |
+| `src/server.ts` | entry: starts the egress proxy, loads manifests, connects the tunnel, stops everything on SIGTERM/SIGINT |
+| `src/tunnel.ts` | the dial-out WebSocket: hello, heartbeats, reconnects, and running the API's request frames |
+| `src/hardware.ts` | the hello's hardware facts and the heartbeat's load |
 | `src/pool.ts` | one server per (user, ability): idle stop, cap, making room |
 | `src/relay.ts` | shares one stdio child between many HTTP sessions, renumbering request ids |
 | `src/egress.ts` | the egress proxy |
-| `src/stats.ts` | `/stats`: the pool's servers and counts, memory per process tree, host and container memory |
+| `src/stats.ts` | the stats: the pool's servers and counts, memory per process tree, host and container memory |
 | `src/manifests.ts` | the stdio manifests it may run, plus the overrides |
 | `src/report.ts` | Sentry in production |
 | `overrides.json` | the image's command and Chrome flags for chrome-devtools |

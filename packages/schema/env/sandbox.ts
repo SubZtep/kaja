@@ -1,14 +1,27 @@
 import * as z from "zod"
-import { positiveInt, trimmed } from "./helpers"
+import { positiveInt, trimmed, url } from "./helpers"
 
 export const SandboxEnvSchema = z.object({
   NODE_ENV: trimmed.optional().describe('Node environment; "production" turns on Sentry'),
-  PORT: positiveInt.default(3002).describe("Port the sandbox listens on"),
-  SANDBOX_SECRET: trimmed
+  KAJA_API_URL: url
+    .optional()
     .describe(
-      "Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns and the admin dashboard's stats connect with"
+      "Kaja API the sandbox connects out to (a WebSocket at /sandbox/connect; nothing connects in); unset, https://api.kaja.io with NODE_ENV=production (the image), else http://localhost:3001"
+    )
+    .meta({ example: "http://localhost:3001" }),
+  KAJA_SANDBOX_KEY: trimmed
+    .optional()
+    .describe(
+      "Your sandbox key from the web app's Sandbox page, linking the sandbox to your account; unset, it runs anonymously for everyone"
     )
     .meta({ secret: true }),
+  SANDBOX_NAME: trimmed.max(80).optional().describe("A name shown for this sandbox"),
+  SANDBOX_STATE_DIR: trimmed
+    .default("./.sandbox")
+    .describe(
+      "Folder the sandbox keeps its registration in, so a restart comes back as the same sandbox (mount a volume there in Docker)"
+    )
+    .meta({ example: "/data" }),
   MARKETPLACE_DIR: trimmed
     .default("../../marketplace")
     .describe("Folder whose mcp/*.toml stdio manifests are the only servers the sandbox runs"),

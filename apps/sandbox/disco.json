@@ -1,7 +1,11 @@
 {
   "version": "1.0",
   "services": {
-    "web": { "port": 3002, "image": "sandbox" }
+    "worker": {
+      "image": "sandbox",
+      "command": "bun sandbox.js",
+      "volumes": [{ "name": "sandbox-state", "destinationPath": "/data" }]
+    }
   },
   "images": {
     "sandbox": {

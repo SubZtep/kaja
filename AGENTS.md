@@ -15,7 +15,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
-- **Sandbox** (`apps/sandbox`): Hono service that runs stdio MCP servers (first: chrome-devtools) for cloud turns and serves each over Streamable HTTP; one warm process per (user, ability), reached with an API-signed token (`SANDBOX_URL`/`SANDBOX_SECRET`). Details: `apps/sandbox/AGENTS.md`
+- **Sandbox** (`apps/sandbox`): runs stdio MCP servers (first: chrome-devtools) for cloud turns; anyone can run one (`subztep/kaja-sandbox`, linked by the owner's sandbox key or anonymous). It dials the API's WebSocket (`/sandbox/connect`), registers in the `sandbox` table (hardware, geolocation), and serves the MCP requests the API tunnels to it; one warm process per (user, ability). Details: `apps/sandbox/AGENTS.md`
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.
@@ -91,7 +91,7 @@ bun run --filter @kaja/sandbox build
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (files-sdk object storage for images: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (cloud ability catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (cloud ability catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
@@ -144,6 +144,7 @@ bun run --filter @kaja/sandbox build
 6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
 7. `2026-09-19-ability.sql` — `ability`, `user_ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`)
 8. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`)
+9. `2026-09-27-sandbox.sql` — `sandbox` (registered MCP sandboxes: owner, online, geolocation, hardware, load), `sandbox_owner` (users' sandbox keys and share settings)
 
 Each file only creates; there are no patch migrations, so a schema change until v1.0 is edited into the file that creates the table (and existing databases are recreated).
 

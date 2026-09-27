@@ -1,23 +1,25 @@
 # @kaja/sandbox
 
-Runs stdio MCP servers for cloud turns, which can't start commands on the API host. Each server is served over Streamable HTTP at `/mcp/<ability>`, so the cloud agent connects to it like any remote MCP server.
+Runs stdio MCP servers for cloud turns, which can't start commands on the API host. Anyone can run one (`subztep/kaja-sandbox`): it dials the API's WebSocket (`/sandbox/connect`), registers, and serves the MCP requests the API tunnels to it; nothing connects in.
 
 The human-facing overview (request flow, warm servers, how the egress proxy works and why `SANDBOX_EGRESS_PORT` must match `overrides.json`) is [README.md](./README.md); keep it in step with changes here.
 
 ## How it fits
 
-- The API offers a stdio MCP ability (keyless, with a `tools` list) only when `SANDBOX_URL` and `SANDBOX_SECRET` are set (`cloudMcpProblem` in `apps/api/src/services/ability.ts`)
-- A cloud turn gets `mcpSandbox` (`apps/api/src/features/nasi/chat.ts`): nasi's `sandboxedMcpTarget` turns each stdio ability into `<SANDBOX_URL>/mcp/<name>` with `Authorization: Bearer <token>`, and the guarded fetch trusts that origin (no SSRF checks, no proxy)
-- The token (`signSandboxToken` in `@kaja/shared/sandbox`) is HMAC-SHA256 over `{ sub: userId, ability, exp }`; the sandbox refuses a wrong signature, an expired token, or one for another ability
+- Keyless stdio MCP abilities with a `tools` list are always offered in the cloud (`cloudMcpProblem` in `apps/api/src/services/ability.ts`); a cloud turn always gets `mcpSandbox` (`apps/api/src/features/nasi/chat.ts`), so a stdio ability never runs on the API host. nasi's `sandboxedMcpTarget` points each at `SANDBOX_ORIGIN/mcp/<name>`, and requests to that origin go to `mcpSandbox.fetch` instead of the guarded fetch
+- API side (`apps/api/src/features/sandbox/`): `connect.ts` (owner from `X-Kaja-Sandbox-Key`: `SANDBOX_SYSTEM_KEY` = official, a user's `sandbox_owner` key, none = anonymous; resume by `X-Kaja-Sandbox-Instance`), `tunnel.ts` (fetch ⇄ frames), `registry.ts` (connected tunnels in memory, pseudonyms, `pickSandbox`: last pick → own → shared if the user's `use_shared` and the owner's `share` → official). Rows in `sandbox`/`sandbox_owner` (`services/sandbox.ts`); geolocation in `core/geo.ts`
+- Frames are JSON, schemas in `@kaja/schema/api` (`sandboxFrameSchema` from the sandbox, `apiSandboxFrameSchema` from the API). A sandbox sees users only as `pseudonymFor(userId, sandboxId)` (HMAC with `BETTER_AUTH_SECRET`)
+- The API holds the sockets in memory, so it must run as one instance
 
 ## Layout
 
 ```
-src/server.ts     # entry: env, manifests, Bun.serve, stops every server on SIGTERM/SIGINT
-src/app.ts        # Hono routes: GET /health, GET /stats (token for SANDBOX_STATS_SCOPE), ALL /mcp/:ability (token check)
+src/server.ts     # entry: env, manifests, the tunnel, stops every server on SIGTERM/SIGINT
+src/tunnel.ts     # connectTunnel: dials KAJA_API_URL, hello/welcome (instance id+secret kept in SANDBOX_STATE_DIR), heartbeat every minute, reconnect with backoff; TunnelServer runs request/cancel/stats frames
+src/hardware.ts   # hello info (cpu, memory, arch, os, version, cap, abilities) and heartbeat load
 src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES): full, it stops the least recently used idle server, 503 only when all are mid-call
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
-src/stats.ts      # /stats: pool servers and counts, process-tree RSS from /proc, host + cgroup memory, egress counts
+src/stats.ts      # stats frame: pool servers and counts, process-tree RSS from /proc, host + cgroup memory, egress counts
 src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked)
 src/manifests.ts  # the stdio manifests it may run, plus overrides.json
 src/report.ts     # Sentry in production (its own project): failed starts, servers that exit on their own (last 20 stderr lines), child errors
@@ -41,7 +43,7 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 ## Rules
 
 - Commands only ever come from the sandbox's own manifests (`MARKETPLACE_DIR/mcp`) and `SANDBOX_OVERRIDES`; a request only names the ability
-- A child gets PATH, a throwaway HOME (removed when it stops), the cache dirs from `SANDBOX_CACHE_DIR` and its manifest's `env`, nothing else from the sandbox's environment. The caches are shared by every user's servers, which is fine while only the repo's own manifests run
+- A child gets PATH, a throwaway HOME (removed when it stops), the cache dirs from `SANDBOX_CACHE_DIR` and its manifest's `env`, nothing else from the sandbox's environment (not `KAJA_SANDBOX_KEY`). The caches are shared by every user's servers, which is fine while only the repo's own manifests run
 - Chrome only opens `http://` and `https://` (`--allowedUrlPattern` in `overrides.json`): every user's browser runs as the same `node` user, so a `file://` page could read another user's profile under `/tmp`. The allowlist needs Chrome 149+
 - Chrome only goes out through the egress proxy (`--proxyServer`, with `--proxy-bypass-list=<-loopback>` so loopback isn't skipped, and WebRTC kept off direct UDP); `--proxyServer`'s port must match `SANDBOX_EGRESS_PORT`. With `WEB_PROXY` set (`http://` only), the egress proxy tunnels each checked connection through it (`CONNECT <checked-ip>:<port>`, Basic auth from the URL) instead of connecting directly. A new stdio server that makes its own requests needs the same, or it isn't covered
 - Every new API turn opens a new MCP session; the relay answers later `initialize` calls from the first one, so the server's state (a browser's pages) survives between turns
@@ -49,14 +51,13 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 
 ## Security
 
-Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, link-local (the cloud metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses (`isPrivateAddress` in `@kaja/shared/sandbox`), for IP literals and for every address a name resolves to, and then connects to the address it checked, so DNS rebinding can't swap it. Behind that, in `compose.yaml` the sandbox has its own network (only the api joins it), so `db` and `mail` don't resolve, and every port is published on `127.0.0.1` only; production runs it on a separate host. The Node MCP server processes themselves aren't proxied, only their browsers.
+Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, link-local (the cloud metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses (`isPrivateAddress` in `@kaja/shared/net`), for IP literals and for every address a name resolves to, and then connects to the address it checked, so DNS rebinding can't swap it. Behind that, in `compose.yaml` the sandbox has its own network (only the api joins it), so `db` and `mail` don't resolve and it publishes no port; production runs the official one on a separate host. On a home machine the same rule keeps browsers off the operator's LAN. The Node MCP server processes themselves aren't proxied, only their browsers.
 
 ## Not yet
 
 - Forwarding users' keys (`auth.in = "env"`) — keyed stdio abilities are refused on both sides
 - Per-user limits beyond one process per (user, ability)
-- A published image in `.github/workflows/dockerhub.yaml` (production deploys build `apps/sandbox/disco.json` on its own Disco server; see `docs/development/deployment.md`)
 
 ## Testing
 
-`bun test apps/sandbox/tests` runs a fixture stdio server (`tests/fixtures/counter-server.ts`) through the real relay; the API's `ability-mcp.test.ts` drives a cloud turn through an in-process sandbox.
+`bun test apps/sandbox/tests` runs a fixture stdio server (`tests/fixtures/counter-server.ts`) through the real relay and the API's `SandboxTunnel`, wired in-process; the API's `sandbox.test.ts`, `admin-sandbox.test.ts` and `ability-mcp.test.ts` connect real sandboxes over the WebSocket (`tests/integration/sandbox-helpers.ts`).

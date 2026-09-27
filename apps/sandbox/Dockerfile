@@ -48,6 +48,10 @@ ENV NODE_ENV=production
 ENV MARKETPLACE_DIR=/home/node/app/marketplace
 ENV SANDBOX_OVERRIDES=/home/node/app/overrides.json
 ENV SANDBOX_CACHE_DIR=/home/node/.cache/mcp
+# Where it keeps its registration, so a restart comes back as the same sandbox: mount a volume here.
+ENV SANDBOX_STATE_DIR=/data
+RUN mkdir -p /data && chown node:node /data
+VOLUME /data
 # Chrome refuses to start as root.
 USER node
 # Fetch the shipped servers once, into the same caches the sandbox hands them, so the first start needs no download.
@@ -61,5 +65,5 @@ COPY --from=builder /home/bun/app/apps/sandbox/dist/sandbox.js ./sandbox.js
 COPY --chown=node:node marketplace/mcp ./marketplace/mcp
 COPY --chown=node:node apps/sandbox/overrides.json ./overrides.json
 
-EXPOSE 3002
+# Nothing listens: the sandbox dials KAJA_API_URL (https://api.kaja.io by default) and serves over that socket.
 CMD ["bun", "sandbox.js"]

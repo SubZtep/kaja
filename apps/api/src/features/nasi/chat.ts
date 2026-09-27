@@ -10,11 +10,11 @@ import {
 import type { Persona } from "@kaja/schema/abilities"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared/net"
-import { signSandboxToken } from "@kaja/shared/sandbox"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { abilityService, modelService } from "../../services"
+import { mcpSandboxFor } from "../sandbox"
 import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
 
@@ -116,34 +116,12 @@ export function nasiToolDeps() {
   return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
 
-/** How long a sandbox token lasts: well past one turn, which is the most a token is used for. */
-const SANDBOX_TOKEN_TTL_S = 60 * 60
+type SandboxPicker = (userId: string) => McpSandbox
+let sandboxOverride: SandboxPicker | undefined
 
-type SandboxConfig = { url: string; secret: string }
-let sandboxOverride: SandboxConfig | undefined
-
-/** Test seam: points cloud turns (and which abilities are offered) at a test MCP sandbox. Pass undefined to restore the env's. */
-export function setNasiSandboxOverride(sandbox: SandboxConfig | undefined) {
-  sandboxOverride = sandbox
-  abilityService.setSandboxUrl(sandbox?.url ?? (env.SANDBOX_SECRET ? env.SANDBOX_URL : undefined))
-}
-
-/** Where the MCP sandbox is and its shared secret, when one is configured (the test override first). */
-export function sandboxConfig(): SandboxConfig | undefined {
-  const { url, secret } = sandboxOverride ?? { url: env.SANDBOX_URL, secret: env.SANDBOX_SECRET }
-  return url && secret ? { url, secret } : undefined
-}
-
-/** The MCP sandbox for one user's turns, when configured: each ability connects with a token only good for that user and ability. */
-function mcpSandboxFor(userId: string): McpSandbox | undefined {
-  const sandbox = sandboxConfig()
-  if (!sandbox) return undefined
-  const { url, secret } = sandbox
-  return {
-    url,
-    token: ability =>
-      signSandboxToken({ sub: userId, ability, exp: Math.floor(Date.now() / 1000) + SANDBOX_TOKEN_TTL_S }, secret)
-  }
+/** Test seam: how a user's turns reach an MCP sandbox. Pass undefined to restore the connected sandboxes. */
+export function setNasiSandboxOverride(picker: SandboxPicker | undefined) {
+  sandboxOverride = picker
 }
 
 /** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. The caller closes it after the turn (its MCP connections). */
@@ -177,7 +155,8 @@ export async function openNasiFor(opts: {
     deps: nasiToolDeps(),
     abilities: createPostgresAbilityStore(source),
     abilityKey: name => keys.get(name),
-    mcpSandbox: "userId" in source ? mcpSandboxFor(source.userId) : undefined,
+    // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
+    mcpSandbox: "userId" in source ? (sandboxOverride ?? mcpSandboxFor)(source.userId) : undefined,
     promptContext: {
       environment:
         "You are Kaja cloud chat. " +

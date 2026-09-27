@@ -78,10 +78,12 @@ declare module "bun" {
     MARKETPLACE_REPO?: string
     /** Branch (or tag) of MARKETPLACE_REPO to sync */
     MARKETPLACE_REF?: string
-    /** Base URL of the MCP sandbox (apps/sandbox); with SANDBOX_SECRET it lets cloud turns use stdio MCP abilities */
-    SANDBOX_URL?: string
-    /** Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token */
-    SANDBOX_SECRET?: string
+    /** Key the operator's own MCP sandbox connects with (its KAJA_SANDBOX_KEY), marking it the official one every user falls back to */
+    SANDBOX_SYSTEM_KEY?: string
+    /** IP geolocation service (github.com/SubZtep/geo-service) a sandbox's public IP is looked up in when it connects */
+    GEO_API_URL?: string
+    /** GEO_API_URL's X-API-Key; unset, sandboxes register without a location */
+    GEO_API_KEY?: string
     /** Object storage bucket for session and tool images */
     STORAGE_BUCKET?: string
     /** Hetzner Object Storage location (fsn1, nbg1, hel1) */

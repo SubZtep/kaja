@@ -8,16 +8,14 @@ import {
   routeHostTo,
   startHttpMcpFixture
 } from "../../../../packages/nasi/tests/fixtures/mcp-http-server"
-import { createApp as createSandboxApp } from "../../../sandbox/src/app"
-import { ProcessPool } from "../../../sandbox/src/pool"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { setNasiChatResolver, setNasiFetchProxyOverride, setNasiSandboxOverride } from "../../src/features/nasi/chat"
+import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
 import { createCloudTelegramDriver } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
-import { AbilityService } from "../../src/services/ability"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
+import { serveApi, startSandbox } from "./sandbox-helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
 const tag = faker.string.alphanumeric(6).toLowerCase()
@@ -140,14 +138,28 @@ describe("MCP servers in the cloud", () => {
     }
   })
 
-  test("a stdio server is only offered with an MCP sandbox, which is where it runs", async () => {
-    const stdio = (catalog: { name: string }[]) => catalog.find(ability => ability.name === `stdio-${tag}`)
-    expect(stdio(await new AbilityService(pool, secretService).listCatalog())).toBeUndefined()
-    const sandboxed = new AbilityService(pool, secretService, new Map(), { sandboxUrl: "http://sandbox.test:3002" })
-    expect(stdio(await sandboxed.listCatalog())).toMatchObject({
+  test("a keyless stdio server is offered, running in an MCP sandbox", async () => {
+    const { abilities } = await (await app.request("/abilities")).json()
+    expect(abilities.find((ability: { name: string }) => ability.name === `stdio-${tag}`)).toMatchObject({
       type: "mcp",
-      mcp: { domain: "sandbox.test:3002", key: "none", transport: "http", tools: ["x"] }
+      mcp: { domain: "sandbox", key: "none", transport: "http", tools: ["x"] }
     })
+  })
+
+  test("with no sandbox online, a stdio ability's turn still runs, without its tools", async () => {
+    const stdio = `stdio-${tag}`
+    expect((await app.request(`/abilities/me/mcp/${stdio}`, { method: "PUT", headers: auth() })).status).toBe(200)
+    try {
+      const sent: Parameters<typeof scriptedChat>[1] = []
+      setNasiChatResolver(async () => ({
+        client: scriptedChat([{ content: "Hi." }], sent) as never,
+        model: "fake-model"
+      }))
+      expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed", message: "Hi." })
+      expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("x")
+    } finally {
+      await app.request(`/abilities/me/mcp/${stdio}`, { method: "DELETE", headers: auth() })
+    }
   })
 
   test("the catalog shows where an MCP server runs, its key need, when it asks, and its tools", async () => {
@@ -220,19 +232,13 @@ describe("MCP servers in the cloud", () => {
     expect(mine.abilities.map((ability: { name: string }) => ability.name)).not.toContain(things)
   })
 
-  test("with an MCP sandbox, a stdio server runs there for the user's turns and stays warm between them", async () => {
+  test("in the user's own sandbox, a stdio server runs for their turns and stays warm between them", async () => {
     const counter = `counter-${tag}`
-    const secret = `sandbox-${tag}`
-    // The sandbox starts its own copy of the server, never the command from the API's row.
-    const script = join(import.meta.dir, "../../../sandbox/tests/fixtures/counter-server.ts")
-    const servers = new Map([[counter, { name: counter, command: process.execPath, args: [script], env: {} }]])
-    const sandboxPool = new ProcessPool({ servers, idleMs: 60_000, maxProcesses: 2 })
-    const server = Bun.serve({
-      port: 0,
-      hostname: "127.0.0.1",
-      fetch: createSandboxApp({ secret, pool: sandboxPool }).fetch
-    })
-    setNasiSandboxOverride({ url: `http://127.0.0.1:${server.port}`, secret })
+    const server = serveApi()
+    const { key } = await (await app.request("/sandbox/key", { method: "POST", headers: auth() })).json()
+    // The sandbox starts its own copy of the server, never the command from the API's row; it dials the API with the user's key.
+    const sandbox = await startSandbox({ apiUrl: `http://127.0.0.1:${server.port}`, abilities: [counter], key })
+    const sandboxPool = sandbox.pool
     try {
       expect((await app.request(`/abilities/me/mcp/${counter}`, { method: "PUT", headers: auth() })).status).toBe(200)
       for (const expected of ["1", "2"]) {
@@ -296,8 +302,7 @@ describe("MCP servers in the cloud", () => {
       expect(photos[0]).toBeInstanceOf(Uint8Array)
       expect(Buffer.from(photos[0] as Uint8Array).toString("base64")).toStartWith("iVBOR")
     } finally {
-      setNasiSandboxOverride(undefined)
-      await sandboxPool.closeAll()
+      await sandbox.close()
       server.stop(true)
     }
   }, 60_000)

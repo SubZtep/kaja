@@ -143,17 +143,22 @@ export const ApiEnvSchema = z.object({
     .describe("Branch (or tag) of MARKETPLACE_REPO to sync")
     .meta({ section: "Marketplace" }),
 
-  SANDBOX_URL: url
+  SANDBOX_SYSTEM_KEY: trimmed
+    .min(16)
     .optional()
     .describe(
-      "Base URL of the MCP sandbox (apps/sandbox); with SANDBOX_SECRET it lets cloud turns use stdio MCP abilities"
+      "Key the operator's own MCP sandbox connects with (its KAJA_SANDBOX_KEY), marking it the official one every user falls back to"
     )
-    .meta({ example: "http://localhost:3002", section: "MCP Sandbox" }),
-  SANDBOX_SECRET: trimmed
-    .optional()
+    .meta({ secret: true, section: "MCP Sandbox" }),
+  GEO_API_URL: url
+    .default("https://ip2geo.demo.land")
     .describe(
-      "Shared with the sandbox's SANDBOX_SECRET; signs the per-user tokens cloud turns connect with, and the admin dashboard's stats token"
+      "IP geolocation service (github.com/SubZtep/geo-service) a sandbox's public IP is looked up in when it connects"
     )
+    .meta({ section: "MCP Sandbox" }),
+  GEO_API_KEY: trimmed
+    .optional()
+    .describe("GEO_API_URL's X-API-Key; unset, sandboxes register without a location")
     .meta({ secret: true, section: "MCP Sandbox" }),
 
   STORAGE_BUCKET: trimmed

@@ -13,7 +13,6 @@ ui/          # cn (clsx + tailwind-merge)
 net/         # isPrivateAddress, isPublicHttpUrl — SSRF guard
 id/          # randomUUIDv7
 locale/      # locales, baseLocale, LOCALE_LABELS, matchLocale, flattenMessages, formatMessage — the one list of supported languages
-sandbox/     # signSandboxToken, verifySandboxToken, SANDBOX_STATS_SCOPE — HMAC bearer tokens the API signs and the MCP sandbox checks (Web Crypto)
 telegram/    # plumbing both Telegram bots (apps/tui, apps/api) share
   bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency)
   markdown.ts  # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT
@@ -40,5 +39,5 @@ A new subpath needs an entry in `package.json` `exports`.
 
 ## Boundaries
 
-- No React components, no Zod schemas (use `@kaja/schema`), no logging, no fetch (`sandbox/` uses Web Crypto, which is fine)
+- No React components, no Zod schemas (use `@kaja/schema`), no logging, no fetch
 - Do not import from `apps/*`

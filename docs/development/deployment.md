@@ -122,9 +122,14 @@ loopback, private ranges or the cloud metadata service). Still deploy it as its 
 Disco server** with nothing else on it, so a gap in that proxy can't reach the database or the other projects.
 The server must be amd64: the Chrome headless shell has no Linux arm64 build.
 
-- Set the same `SANDBOX_SECRET` (`openssl rand -base64 32`) on the sandbox and the API project.
-- Set the API's `SANDBOX_URL` to the sandbox's public HTTPS URL. `/mcp/*` and `/stats` only accept an
-  API-signed token; `/health` is open. Admins see the sandbox live on the web's **Admin → Dashboard**.
+- Nothing connects in: the sandbox dials the API's WebSocket (`/sandbox/connect`) and serves over it, so
+  `apps/sandbox/disco.json` runs it as a worker with no public port. Its registration is kept in the
+  `sandbox-state` volume (`/data`), so a redeploy comes back as the same sandbox.
+- Set the API's `SANDBOX_SYSTEM_KEY` (`openssl rand -base64 32`) and the same value as the sandbox's
+  `KAJA_SANDBOX_KEY`: that marks it the official sandbox every user falls back to. `KAJA_API_URL` defaults to
+  `https://api.kaja.io` in the image. Admins see every sandbox live on the web's **Admin → Dashboard**.
+- Set the API's `GEO_API_KEY` for [ip2geo](https://github.com/SubZtep/geo-service) (`GEO_API_URL`), which
+  places each sandbox by its public IP when it connects; without it sandboxes register without a location.
 - Optionally set `WEB_PROXY` (`http://` only, same format as the API's) so the browsers' traffic leaves
   through that proxy instead of the sandbox server's own IP; it must allow `CONNECT` to IPs on any port.
 - Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
@@ -136,7 +141,8 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
   it's full, the least recently used idle browser is stopped for the newcomer; only when every one is mid-call
   is a user turned away. The logs show each start, stop and refusal with the running count.
 
-Without both `SANDBOX_URL` and `SANDBOX_SECRET` the API leaves stdio MCP abilities out of cloud turns.
+Anyone can run more sandboxes (`docker run subztep/kaja-sandbox`, with their key from the web's Sandbox page or
+anonymously); with none online for a user, their stdio MCP abilities just have no tools that turn.
 How the sandbox works, including its egress proxy and settings, is in its
 [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
 

@@ -1,9 +1,11 @@
-import { createApp } from "./app"
 import { type EgressCounts, startEgressProxy } from "./egress"
 import { env } from "./env"
+import { sandboxInfo, sandboxLoad } from "./hardware"
 import { loadSandboxServers } from "./manifests"
 import { ProcessPool } from "./pool"
 import { initReporting } from "./report"
+import { collectStats } from "./stats"
+import { connectTunnel } from "./tunnel"
 
 initReporting(env)
 
@@ -15,13 +17,24 @@ const egress = await startEgressProxy({
 })
 const servers = await loadSandboxServers(env.MARKETPLACE_DIR, env.SANDBOX_OVERRIDES, env.SANDBOX_CACHE_DIR)
 const pool = new ProcessPool({ servers, idleMs: env.SANDBOX_IDLE_MS, maxProcesses: env.SANDBOX_MAX_PROCESSES })
-const app = createApp({ secret: env.SANDBOX_SECRET, pool, egress: egressCounts })
+console.log(`MCP sandbox running ${[...servers.keys()].join(", ") || "nothing"}`)
 
-const server = Bun.serve({ port: env.PORT, fetch: app.fetch, idleTimeout: 0 })
-console.log(`MCP sandbox on :${server.port}, running ${[...servers.keys()].join(", ") || "nothing"}`)
+// Nothing connects in: the sandbox dials the API and serves its requests over that socket.
+const tunnel = connectTunnel({
+  apiUrl: env.KAJA_API_URL,
+  key: env.KAJA_SANDBOX_KEY,
+  stateDir: env.SANDBOX_STATE_DIR,
+  info: () => sandboxInfo({ name: env.SANDBOX_NAME, pool }),
+  load: () => sandboxLoad(pool),
+  handler: {
+    mcp: (user, ability, request) => pool.handle(user, ability, request),
+    stats: () => collectStats({ pool, egress: egressCounts })
+  }
+})
 
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.on(signal, () => {
+    tunnel.close()
     egress.close()
     void pool.closeAll().finally(() => process.exit(0))
   })

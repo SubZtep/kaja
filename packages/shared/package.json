@@ -21,10 +21,6 @@
       "types": "./net/index.ts",
       "default": "./net/index.ts"
     },
-    "./sandbox": {
-      "types": "./sandbox/index.ts",
-      "default": "./sandbox/index.ts"
-    },
     "./telegram": {
       "types": "./telegram/index.ts",
       "default": "./telegram/index.ts"

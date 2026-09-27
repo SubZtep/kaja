@@ -16,12 +16,13 @@ import {
 } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
-import { nasiTurnRateLimiter } from "../../core/rate-limit"
+import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
+import { rememberPlace } from "../sandbox"
 import {
   compactUserSession,
   nasiToolDeps,
@@ -38,6 +39,12 @@ const NOTHING_TO_APPROVE = "No tool call is waiting for approval"
 
 export const nasiRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 nasiRoutes.use("*", requireAuthMiddleware)
+// Where the user is (from their request's IP, at most once a day), so a shared MCP sandbox near them can be picked.
+nasiRoutes.use("*", async (c, next) => {
+  const user = c.get("user")
+  if (user) rememberPlace(user.id, clientIp(c))
+  await next()
+})
 nasiRoutes.use("/turn", nasiTurnRateLimiter)
 nasiRoutes.use("/turn/stream", nasiTurnRateLimiter)
 nasiRoutes.use("/compact", nasiTurnRateLimiter)

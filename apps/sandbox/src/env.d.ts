@@ -4,10 +4,14 @@ declare module "bun" {
   interface Env {
     /** Node environment; "production" turns on Sentry */
     NODE_ENV?: string
-    /** Port the sandbox listens on */
-    PORT?: string
-    /** Shared with the API's SANDBOX_SECRET; verifies the tokens cloud turns and the admin dashboard's stats connect with */
-    SANDBOX_SECRET?: string
+    /** Kaja API the sandbox connects out to (a WebSocket at /sandbox/connect; nothing connects in); unset, https://api.kaja.io with NODE_ENV=production (the image), else http://localhost:3001 */
+    KAJA_API_URL?: string
+    /** Your sandbox key from the web app's Sandbox page, linking the sandbox to your account; unset, it runs anonymously for everyone */
+    KAJA_SANDBOX_KEY?: string
+    /** A name shown for this sandbox */
+    SANDBOX_NAME?: string
+    /** Folder the sandbox keeps its registration in, so a restart comes back as the same sandbox (mount a volume there in Docker) */
+    SANDBOX_STATE_DIR?: string
     /** Folder whose mcp/*.toml stdio manifests are the only servers the sandbox runs */
     MARKETPLACE_DIR?: string
     /** JSON file replacing a manifest's command/args for this host, e.g. a preinstalled binary and Chrome flags */

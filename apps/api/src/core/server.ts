@@ -1,7 +1,8 @@
 import { setWarnHandler } from "@kaja/nasi"
+import { websocket } from "hono/bun"
 import { app } from "../app"
 import { createTelegramBotService } from "../features/telegram"
-import { marketplaceService } from "../services"
+import { marketplaceService, sandboxService } from "../services"
 import { CronService } from "./cron"
 import { env } from "./env"
 import { prepareBucket } from "./files"
@@ -18,6 +19,9 @@ await prepareBucket().catch(err => reportError("Couldn't prepare the storage buc
 // Start cron jobs
 const cron = new CronService()
 cron.start()
+
+// No sandbox is connected to a fresh process, whatever the rows say from before it.
+await sandboxService.markAllOffline().catch(err => reportError("Couldn't reset the sandboxes' status", err))
 
 // Sync the ability catalog once at startup without holding up the server; failures are logged and recorded in its status.
 marketplaceService.sync().catch(() => {})
@@ -45,6 +49,8 @@ if (telegramBot) {
 export default {
   port,
   fetch: app.fetch,
+  // Sandboxes' WebSockets (/sandbox/connect)
+  websocket,
   // SSE connections need longer timeout (max 255 seconds ~4 minutes)
   idleTimeout: 255
 }

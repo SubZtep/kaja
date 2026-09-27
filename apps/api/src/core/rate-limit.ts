@@ -14,7 +14,8 @@ function isRateLimitEnabled(): boolean {
   return true
 }
 
-function clientIp(c: Context): string {
+/** The visitor's IP: the web SSR's vouched one, else what the proxy forwarded; "unknown" without either. */
+export function clientIp(c: Context): string {
   const ssrClientIp = trustedSsrClientIp(c.req.raw.headers)
   if (ssrClientIp) return ssrClientIp
   const forwarded = c.req.header("x-forwarded-for")
