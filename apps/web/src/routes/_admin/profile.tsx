@@ -55,7 +55,7 @@ function Profile() {
           </Section>
         </div>
         <Section className="border-red-500/30 sm:col-span-2 sm:bg-red-500/5" title={m.profile_delete_title()}>
-          <DeleteAccount />
+          <DeleteAccount email={user.email} />
         </Section>
       </div>
     </div>
@@ -306,7 +306,7 @@ function ChangePassword() {
 }
 
 // Hard delete (GDPR erasure): everything the user owns cascades from the user row. Better Auth wants a recent sign-in for it.
-function DeleteAccount() {
+function DeleteAccount({ email }: Readonly<{ email: string }>) {
   const { deleteUser } = useAuthClient()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
@@ -335,6 +335,7 @@ function DeleteAccount() {
         title={m.profile_delete_confirm_title()}
         description={m.profile_delete_confirm_description()}
         confirm={m.profile_delete_confirm_button()}
+        typeToConfirm={email}
         onConfirm={onConfirm}
       >
         <Button className="shrink-0 text-red-400" loading={loading}>

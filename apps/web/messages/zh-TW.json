@@ -100,6 +100,7 @@
   "confirm_dialog_description": "此操作無法復原。",
   "confirm_dialog_cancel": "取消",
   "confirm_dialog_confirm": "確認",
+  "confirm_dialog_type_to_confirm": "[zh-TW] lorem ipsum {text}",
   "confirm_dialog_are_you_sure": "確定嗎？",
   "sign_out": "登出",
   "sign_out_confirm_title": "要登出嗎？",
