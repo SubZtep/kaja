@@ -43,6 +43,11 @@ function newSecret(): string {
   return randomBytes(24).toString("base64url")
 }
 
+function sandboxKind(row: SandboxRow): Sandbox["kind"] {
+  if (row.official) return "official"
+  return row.user_id ? "owned" : "anonymous"
+}
+
 /** Registered MCP sandboxes (`sandbox`) and users' sandbox keys and settings (`sandbox_owner`). */
 export class SandboxService {
   readonly #db: Pool
@@ -252,7 +257,7 @@ export class SandboxService {
   #rowToSandbox(row: SandboxRow): Sandbox {
     return {
       id: row.id,
-      kind: row.official ? "official" : row.user_id ? "owned" : "anonymous",
+      kind: sandboxKind(row),
       ownerId: row.user_id,
       name: row.name,
       online: row.online,

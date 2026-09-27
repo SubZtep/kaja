@@ -19,8 +19,7 @@ describe("UserIsolation", () => {
     expect(isolation.runAs("a").uid).toBe(30_000)
   })
 
-  test("is off unless the sandbox runs as root", async () => {
-    if (process.getuid?.() === 0) return
+  test.skipIf(process.getuid?.() === 0)("is off unless the sandbox runs as root", async () => {
     expect(await UserIsolation.create({ enabled: true })).toBeUndefined()
   })
 })

@@ -15,6 +15,7 @@ Fix the issues SonarCloud found on this branch's pull request, so its quality ga
    - Randomness for non-security uses such as animation timing: `Math.random` trips S2245 and `crypto.getRandomValues(...) % n` trips CodeQL's biased-random alert, so use a fixed list or no randomness.
    - Dockerfiles (`docker:S6505`): `npm install --ignore-scripts`, never `npx -y`; install a CLI pinned with `--prefix /tmp/x --ignore-scripts` and run its `.bin`.
    - Regexes that strip trailing characters, like `/\/+$/`, trip a ReDoS alert: use `trimTrailingSlashes` from `@kaja/shared` or a loop.
+   - `docker:S6471` (`USER root`) in `apps/sandbox/Dockerfile` is deliberate: the sandbox needs root to start each user's servers as their own uid. The user accepted it in the SonarCloud UI; leave it.
    - In test files, fix only rules that make sense for tests.
 4. Run `bun lint:fix` and, if you touched TypeScript, `bun typecheck`; fix what they report in the lines you changed.
 5. Don't commit; the user reviews and commits. Finish with one line per issue: fixed, already gone, or left (and why).

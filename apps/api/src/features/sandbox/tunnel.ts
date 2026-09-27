@@ -134,25 +134,9 @@ export class SandboxTunnel {
       return
     }
     switch (frame.t) {
-      case "head": {
-        if (pending.headed) return
-        pending.headed = true
-        const headers = new Headers(frame.headers)
-        if (NULL_BODY_STATUSES.has(frame.status)) {
-          pending.resolve(new Response(null, { status: frame.status, headers }))
-          return
-        }
-        const body = new ReadableStream<Uint8Array>({
-          start: controller => {
-            pending.body = controller
-          },
-          cancel: () => {
-            if (this.#pending.delete(frame.id)) this.#frame({ t: "cancel", id: frame.id })
-          }
-        })
-        pending.resolve(new Response(body, { status: frame.status, headers }))
+      case "head":
+        this.#head(frame, pending)
         return
-      }
       case "chunk":
         pending.body?.enqueue(new Uint8Array(Buffer.from(frame.data, "base64")))
         return
@@ -169,6 +153,26 @@ export class SandboxTunnel {
         return
       }
     }
+  }
+
+  // A request's status and headers arrived: its Response resolves now, the body streams in as chunks
+  #head(frame: Extract<SandboxFrame, { t: "head" }>, pending: PendingRequest) {
+    if (pending.headed) return
+    pending.headed = true
+    const headers = new Headers(frame.headers)
+    if (NULL_BODY_STATUSES.has(frame.status)) {
+      pending.resolve(new Response(null, { status: frame.status, headers }))
+      return
+    }
+    const body = new ReadableStream<Uint8Array>({
+      start: controller => {
+        pending.body = controller
+      },
+      cancel: () => {
+        if (this.#pending.delete(frame.id)) this.#frame({ t: "cancel", id: frame.id })
+      }
+    })
+    pending.resolve(new Response(body, { status: frame.status, headers }))
   }
 
   /** The socket closed: everything in flight fails. */

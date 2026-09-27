@@ -22,9 +22,7 @@ export class CronService {
     this.#jobs.push(
       Bun.cron("0 * * * *", async () => {
         await marketplaceService.sync().catch(() => {})
-      })
-    )
-    this.#jobs.push(
+      }),
       Bun.cron("30 * * * *", async () => {
         await sandboxService
           .pruneAnonymous(ANONYMOUS_SANDBOX_TTL_MS)

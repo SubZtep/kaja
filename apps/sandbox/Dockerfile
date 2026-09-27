@@ -56,11 +56,13 @@ VOLUME /data
 # version must match the Chrome headless shell above (bump with CHROME_HEADLESS_SHELL_VERSION). Not through bunx: bun's
 # cache can't be shared between uids. The time server is fetched into the shared uv cache, so its first start is offline.
 ARG CHROME_DEVTOOLS_MCP_VERSION=1.10.1
-RUN npm install --prefix /opt/mcp --no-audit --no-fund --omit=dev "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}" \
+RUN npm install --prefix /opt/mcp --ignore-scripts --no-audit --no-fund --omit=dev \
+    "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}" \
   && npm cache clean --force \
   && /opt/mcp/node_modules/.bin/chrome-devtools-mcp --version
 USER node
-RUN UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" uvx mcp-server-time --help >/dev/null
+RUN UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" \
+  uvx mcp-server-time --help >/dev/null
 # The sandbox runs as root only to start each user's servers as their own uid (prlimit + setpriv, every capability dropped); Chrome
 # never runs as root. Those uids share the package caches through the mcp group: group-writable, new files inheriting it.
 USER root

@@ -1,11 +1,13 @@
-import type {
-  AdminSandboxEntry,
-  AdminSandboxResponse,
-  Sandbox,
-  SandboxServerStats,
-  SandboxStats
+import {
+  type AdminSandboxEntry,
+  type AdminSandboxResponse,
+  adminSandboxResponseSchema,
+  type Sandbox,
+  type SandboxSample,
+  type SandboxServerStats,
+  type SandboxStats,
+  sandboxSamplesResponseSchema
 } from "@kaja/schema/api"
-import { adminSandboxResponseSchema, type SandboxSample, sandboxSamplesResponseSchema } from "@kaja/schema/api"
 import { getTimeAgo } from "@kaja/shared/date"
 import { cn } from "@kaja/shared/ui"
 import { useQuery } from "@tanstack/react-query"
@@ -205,7 +207,7 @@ function SandboxHistory({ id }: Readonly<{ id: string }>) {
         title={m.sandbox_history_servers({ hours: HISTORY_HOURS })}
         samples={data}
         value={sample => sample.running}
-        format={value => String(value)}
+        format={String}
       />
       <HistoryBars
         title={m.sandbox_history_load({ hours: HISTORY_HOURS })}

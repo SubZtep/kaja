@@ -197,7 +197,8 @@ export function connectTunnel(opts: {
       clearInterval(heartbeat)
       server.abortAll()
       if (stopped) return
-      console.warn(`Sandbox lost the API (${event.code}${event.reason ? `: ${event.reason}` : ""}); retrying`, {
+      const why = event.reason ? `${event.code}: ${event.reason}` : String(event.code)
+      console.warn(`Sandbox lost the API (${why}); retrying`, {
         inMs: backoff
       })
       retry = setTimeout(() => void open(), backoff)

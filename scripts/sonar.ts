@@ -14,8 +14,10 @@ async function get<T>(path: string, params: Record<string, string>): Promise<T> 
   return (await res.json()) as T
 }
 
-const where = (component: string, line?: number) =>
-  `${component.slice(PROJECT.length + 1)}${line === undefined ? "" : `:${line}`}`
+function where(component: string, line?: number) {
+  const path = component.slice(PROJECT.length + 1)
+  return line === undefined ? path : `${path}:${line}`
+}
 
 const branch = Bun.argv[2]
 if (!branch) {

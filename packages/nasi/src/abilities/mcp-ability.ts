@@ -27,7 +27,7 @@ export type McpAbilityTarget = {
 export type McpSandbox = { fetch: FetchLike; close?: () => Promise<void> }
 
 /** The origin sandboxed abilities' URLs are given: never looked up, only routed to {@link McpSandbox.fetch}. */
-export const SANDBOX_ORIGIN = "http://sandbox.invalid"
+export const SANDBOX_ORIGIN = "https://sandbox.invalid"
 
 /** The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var `auth` names. */
 export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbilityTarget {
