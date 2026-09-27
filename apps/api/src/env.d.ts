@@ -24,6 +24,10 @@ declare module "bun" {
     GOOGLE_CLIENT_ID?: string
     /** Google OAuth client secret (redirect URI: <BETTER_AUTH_URL>/auth/callback/google) */
     GOOGLE_CLIENT_SECRET?: string
+    /** Cloudflare Turnstile secret key; when set, email sign-up/sign-in, password reset and Google sign-in need a captcha token */
+    TURNSTILE_SECRET?: string
+    /** Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET); never localhost in production */
+    TURNSTILE_HOSTNAMES?: string
     /** SMTP server hostname */
     SMTP_HOST?: string
     /** SMTP server port */

@@ -3,6 +3,7 @@ import { CheckCircle, LoaderCircle } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "../../hooks/auth-client"
+import type { Captcha } from "../../hooks/turnstile"
 import { authErrorMessage } from "../../lib/error-messages"
 import { m } from "../../paraglide/messages.js"
 import { localizeHref } from "../../paraglide/runtime.js"
@@ -10,8 +11,9 @@ import { ConfirmDialog } from "../ui/ConfirmDialog"
 
 export function ForgotPassword({
   getEmail,
+  captcha,
   children
-}: Readonly<{ getEmail: () => string; children: React.ReactElement }>) {
+}: Readonly<{ getEmail: () => string; captcha: Captcha; children: React.ReactElement }>) {
   const authClient = useAuthClient()
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -27,7 +29,8 @@ export function ForgotPassword({
       setLoading(true)
       const { data, error } = await authClient.requestPasswordReset({
         email: parsed.data.email,
-        redirectTo: `${window.location.origin}${localizeHref("/reset-password")}`
+        redirectTo: `${window.location.origin}${localizeHref("/reset-password")}`,
+        fetchOptions: captcha.fetchOptions
       })
       if (error) {
         toast.error(authErrorMessage(error))
@@ -38,6 +41,7 @@ export function ForgotPassword({
     } catch {
       toast.error(m.error_generic())
     } finally {
+      captcha.reset()
       setLoading(false)
     }
   }

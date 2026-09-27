@@ -2,6 +2,7 @@ import { cn } from "@kaja/shared/ui"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "../../../hooks/auth-client"
+import type { Captcha } from "../../../hooks/turnstile"
 import { m } from "../../../paraglide/messages.js"
 import { localizeHref } from "../../../paraglide/runtime.js"
 import { Sticker } from "./sticker"
@@ -32,13 +33,15 @@ function GoogleMark() {
 /**
  * Starts the Google OAuth flow via the API; on success Better Auth redirects back to `callbackPath` on this origin.
  * Only `signUp` (the sign-up page, after its consent boxes) may create a new account; elsewhere an unknown Google address comes back to /signin with `error=signup_disabled`.
+ * Stays disabled until the page's Turnstile `captcha` is solved.
  */
 export function GoogleButton({
   className,
   callbackPath = "/dashboard",
   signUp = false,
-  disabled = false
-}: Readonly<{ className?: string; callbackPath?: string; signUp?: boolean; disabled?: boolean }>) {
+  disabled = false,
+  captcha
+}: Readonly<{ className?: string; callbackPath?: string; signUp?: boolean; disabled?: boolean; captcha: Captcha }>) {
   const authClient = useAuthClient()
   const [loading, setLoading] = useState(false)
 
@@ -51,13 +54,16 @@ export function GoogleButton({
         provider: "google",
         callbackURL: new URL(localizeHref(callbackPath), origin).toString(),
         errorCallbackURL: new URL(localizeHref(signUp ? "/signup" : "/signin"), origin).toString(),
-        ...(signUp ? { requestSignUp: true, additionalData: { consent: true } } : {})
+        ...(signUp ? { requestSignUp: true, additionalData: { consent: true } } : {}),
+        fetchOptions: captcha.fetchOptions
       })
       if (authError) {
+        captcha.reset()
         toast.error(authError.message ?? m.signin_error_generic())
         setLoading(false)
       }
     } catch (err) {
+      captcha.reset()
       toast.error(err instanceof Error ? err.message : m.signin_error_generic())
       setLoading(false)
     }
@@ -67,7 +73,7 @@ export function GoogleButton({
     <div className={cn("relative inline-flex w-full max-w-sm overflow-visible pt-3", className)}>
       <button
         type="button"
-        disabled={loading || disabled}
+        disabled={loading || disabled || !captcha.ready}
         className="tape-btn flex w-full cursor-pointer items-center justify-center gap-2 px-5 py-3 disabled:opacity-60"
         onClick={signIn}
       >

@@ -34,6 +34,19 @@ export const ApiEnvSchema = z.object({
     .describe("Google OAuth client secret (redirect URI: <BETTER_AUTH_URL>/auth/callback/google)")
     .meta({ secret: true, section: "Google Sign-in" }),
 
+  TURNSTILE_SECRET: trimmed
+    .optional()
+    .describe(
+      "Cloudflare Turnstile secret key; when set, email sign-up/sign-in, password reset and Google sign-in need a captcha token"
+    )
+    .meta({ secret: true, section: "Turnstile" }),
+  TURNSTILE_HOSTNAMES: trimmed
+    .optional()
+    .describe(
+      "Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET); never localhost in production"
+    )
+    .meta({ example: "localhost", section: "Turnstile" }),
+
   SMTP_HOST: trimmed.optional().describe("SMTP server hostname"),
   SMTP_PORT: positiveInt.optional().describe("SMTP server port").meta({ example: "1025" }),
   SMTP_SECURE: bool.optional().describe("Use TLS for the SMTP connection"),

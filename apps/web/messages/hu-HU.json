@@ -433,6 +433,7 @@
   "auth_error_link_expired": "Ez a link lejárt vagy már használatban volt. Kérj egy újat.",
   "auth_error_session_expired": "A biztonságod érdekében újra be kell lépned, mielőtt ezt megtennéd.",
   "auth_error_rate_limited": "Túl sok próbálkozás — kérlek, várj egy percet, és próbáld újra.",
+  "auth_error_captcha": "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing",
   "signup_prelaunch_notice": "Ez a projekt még fejlesztés alatt áll. Az adatbázist bármikor lehet törölni — ne támaszkodj az ide beírt adatokra.",
   "admin_dashboard_description": "Mit csinálnak most a platform szolgáltatásai.",
   "sandbox_title": "MCP sandbox",

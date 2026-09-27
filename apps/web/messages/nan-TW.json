@@ -433,6 +433,7 @@
   "auth_error_link_expired": "這个連結已經過期抑是已經用過矣。吔著要新个。",
   "auth_error_session_expired": "為著你个安全，做這个代誌進前著愛重新登入。",
   "auth_error_rate_limited": "試太濟擺矣 — 請等一分鐘才閣試一改。",
+  "auth_error_captcha": "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing",
   "signup_prelaunch_notice": "這个專案猶佇開發中。資料庫會當隨時清空 — 請毋倚靠你佇遐輸入个資料。",
   "admin_dashboard_description": "平台服務這馬咧做啥物。",
   "sandbox_title": "MCP 沙箱",

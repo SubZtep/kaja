@@ -433,6 +433,7 @@
   "auth_error_link_expired": "This link has expired or was already used. Ask for a new one.",
   "auth_error_session_expired": "For your safety, sign in again before doing this.",
   "auth_error_rate_limited": "Too many attempts — please wait a minute and try again.",
+  "auth_error_captcha": "Human check failed — please tick the box again and retry.",
   "signup_prelaunch_notice": "This project is under development. The database may be wiped at any time — please don’t rely on any data you enter here.",
   "admin_dashboard_description": "What the platform's services are doing right now.",
   "sandbox_title": "MCP sandbox",

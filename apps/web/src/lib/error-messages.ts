@@ -33,7 +33,9 @@ const AUTH_ERRORS: Record<string, () => string> = {
   INVALID_TOKEN: m.auth_error_link_expired,
   TOKEN_EXPIRED: m.auth_error_link_expired,
   SESSION_EXPIRED: m.auth_error_session_expired,
-  SESSION_NOT_FRESH: m.auth_error_session_expired
+  SESSION_NOT_FRESH: m.auth_error_session_expired,
+  VERIFICATION_FAILED: m.auth_error_captcha,
+  MISSING_RESPONSE: m.auth_error_captcha
 }
 
 /** A Better Auth error in the page's language: a known code or a rate limit gets its translation, anything else Better Auth's own (English) message rather than nothing. */

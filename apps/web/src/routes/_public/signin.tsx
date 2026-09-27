@@ -5,6 +5,7 @@ import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { ForgotPassword } from "../../components/user/ForgotPassword"
 import { useAuthClient } from "../../hooks/auth-client"
+import { Turnstile, useTurnstile } from "../../hooks/turnstile"
 import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { searchString } from "../../lib/search"
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_public/signin")({
 function SignIn() {
   const { redirect, error } = useSearch({ from: "/_public/signin" })
   const authClient = useAuthClient()
+  const captcha = useTurnstile()
   const [loading, setLoading] = useState(false)
 
   const form = useAppForm({
@@ -54,7 +56,8 @@ function SignIn() {
         setLoading(true)
         const { error: authError } = await authClient.signIn.email({
           ...parsed.data,
-          callbackURL: localizeHref(redirect ?? "/dashboard")
+          callbackURL: localizeHref(redirect ?? "/dashboard"),
+          fetchOptions: captcha.fetchOptions
         })
         if (authError) {
           toast.error(authErrorMessage(authError))
@@ -62,6 +65,7 @@ function SignIn() {
       } catch (err) {
         toast.error(err instanceof Error ? err.message : m.signin_error_generic())
       } finally {
+        captcha.reset()
         setLoading(false)
       }
 
@@ -91,7 +95,8 @@ function SignIn() {
             </Link>
           </p>
         ) : null}
-        <GoogleButton className="mb-5" callbackPath={redirect} />
+        <Turnstile captcha={captcha} className="mb-4" />
+        <GoogleButton className="mb-5" callbackPath={redirect} captcha={captcha} />
         <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
           {m.auth_or_email()}
         </p>
@@ -132,11 +137,11 @@ function SignIn() {
               {field => <field.CheckboxField label={m.auth_field_remember_me()} className="text-[13px] text-muted" />}
             </form.AppField>
 
-            <ForgotPassword getEmail={() => form.state.values.email}>
+            <ForgotPassword getEmail={() => form.state.values.email} captcha={captcha}>
               <Button
                 size="sm"
                 variant="link"
-                disabled={loading}
+                disabled={loading || !captcha.ready}
                 className="text-[13px] text-muted hover:text-neon mx-0"
               >
                 {m.auth_field_forgot_password()}
@@ -144,7 +149,7 @@ function SignIn() {
             </ForgotPassword>
           </div>
 
-          <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
+          <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
             {m.signin_submit()}
           </Button>
         </form>
