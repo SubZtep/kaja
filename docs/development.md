@@ -172,7 +172,8 @@ when their inputs change.
 | `pre-push` | `lint`, `typecheck` (pushing `main` also `test`), then `check:locales`: leftover placeholders get translated by a headless `claude -p "/translate"`, committed and pushed in place of the original push |
 | `post-merge` | re-installs the hooks when `lefthook.toml` changed |
 
-They're the reason you rarely need to run these by hand.
+They're the reason you rarely need to run these by hand. [Vibe coding](/development/vibe-coding) walks
+through them, and the agent skills, in more detail.
 
 ## Local URLs
 
