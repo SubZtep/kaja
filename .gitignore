@@ -21,3 +21,6 @@ docs/_site/
 docs/.jekyll-cache/
 docs/.bundle/
 docs/vendor/
+
+# A dev sandbox's registration (SANDBOX_STATE_DIR)
+apps/sandbox/.sandbox/

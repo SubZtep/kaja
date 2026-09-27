@@ -15,26 +15,11 @@ import { Section } from "../../../../../components/ui/Section"
 import { StatusDot } from "../../../../../components/ui/StatusDot"
 import { ValueBox } from "../../../../../components/ui/ValueBox"
 import { useApiFetch } from "../../../../../lib/api-fetch"
+import { formatBytes, hardware, place, runCommand } from "../../../../../lib/sandbox"
 import { m } from "../../../../../paraglide/messages.js"
 
 /** How often the page asks for fresh numbers; the query pauses while the tab is hidden. */
 const REFRESH_MS = 3000
-
-const UNITS = ["B", "KB", "MB", "GB", "TB"]
-
-/** The command that starts an anonymous sandbox, for the empty state. */
-const RUN_COMMAND = "docker run -d --restart unless-stopped -v kaja-sandbox:/data subztep/kaja-sandbox"
-
-/** 512 MB, 1.4 GB: binary units, one decimal from a gigabyte up. */
-export function formatBytes(bytes: number): string {
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < UNITS.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value.toFixed(unit >= 3 ? 1 : 0)} ${UNITS[unit]}`
-}
 
 function StatLine({ label, value, warn }: Readonly<{ label: string; value: number; warn?: boolean }>) {
   return (
@@ -163,23 +148,6 @@ function owner(sandbox: Sandbox, emails: Record<string, string>): string {
   return m.sandbox_kind_owned({ email: (sandbox.ownerId && emails[sandbox.ownerId]) ?? sandbox.ownerId ?? "" })
 }
 
-/** Where it is, as the geolocation service placed its IP. */
-export function place(sandbox: Sandbox): string {
-  return [sandbox.city, sandbox.country].filter(Boolean).join(", ") || m.sandbox_location_unknown()
-}
-
-/** Cores, memory, arch and version from its hello. */
-export function hardware(sandbox: Sandbox): string | undefined {
-  const info = sandbox.info
-  if (!info) return undefined
-  return m.sandbox_hardware({
-    cores: info.cpu.cores,
-    memory: formatBytes(info.memory.limit ?? info.memory.total),
-    arch: info.arch,
-    version: info.version
-  })
-}
-
 function SandboxEntry({ entry, emails }: Readonly<{ entry: AdminSandboxEntry; emails: Record<string, string> }>) {
   const { sandbox, stats, error } = entry
   return (
@@ -233,7 +201,9 @@ export function SandboxSection() {
     >
       <ErrorNotice error={error} />
       {isLoading && <Loader />}
-      {data?.sandboxes.length === 0 && <p className="text-muted text-sm">{m.sandbox_none({ command: RUN_COMMAND })}</p>}
+      {data?.sandboxes.length === 0 && (
+        <p className="text-muted text-sm">{m.sandbox_none({ command: runCommand() })}</p>
+      )}
       {data && data.sandboxes.length > 0 && (
         <div className="flex flex-col gap-6">
           {data.sandboxes.map(entry => (

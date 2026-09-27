@@ -86,7 +86,7 @@ describe("connecting", () => {
     expect(old.status).toBe(401)
     // An offline sandbox of your own can be removed; someone else's can't.
     expect((await app.request(`/sandbox/${sandbox.id}`, { method: "DELETE", headers: as(tokenB) })).status).toBe(404)
-    expect((await app.request(`/sandbox/${sandbox.id}`, { method: "DELETE", headers: as(tokenA) })).status).toBe(204)
+    expect((await app.request(`/sandbox/${sandbox.id}`, { method: "DELETE", headers: as(tokenA) })).status).toBe(200)
   }, 30_000)
 })
 

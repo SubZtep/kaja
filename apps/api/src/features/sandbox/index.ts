@@ -110,7 +110,7 @@ const deleteRoute = createRoute({
   security: [{ bearerAuth: [] }],
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
-    204: { description: "Removed" },
+    200: { description: "Removed", content: { "application/json": { schema: z.object({ ok: z.literal(true) }) } } },
     401: unauthorizedResponse,
     404: { description: "No such offline sandbox", content: { "application/json": { schema: errorSchema } } }
   }
@@ -120,5 +120,5 @@ sandboxRoutes.openapi(deleteRoute, async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
   if (!(await sandboxService.deleteOffline(user.id, c.req.valid("param").id))) return notFound(c)
-  return c.body(null, 204)
+  return c.json({ ok: true as const }, 200)
 })

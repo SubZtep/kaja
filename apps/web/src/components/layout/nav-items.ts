@@ -20,6 +20,7 @@ export const getHeaderItems = (user: { role?: string | null } | null): NavItem[]
     { to: "/dashboard", label: m.nav_dashboard() },
     { to: "/abilities", label: m.nav_abilities() },
     { to: "/widget", label: m.nav_widget() },
+    { to: "/sandbox", label: m.nav_sandbox() },
     ...(user.role === "admin" ? [{ to: "/admin", label: m.nav_admin() }] : []),
     { to: "/profile", label: m.nav_profile(), icon: UserCog }
   ]

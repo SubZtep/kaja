@@ -15,6 +15,7 @@ import { Route as AdminAbilitiesRouteImport } from './routes/_admin/abilities'
 import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
+import { Route as AdminSandboxRouteImport } from './routes/_admin/sandbox'
 import { Route as AdminWelcomeRouteImport } from './routes/_admin/welcome'
 import { Route as AdminWidgetRouteImport } from './routes/_admin/widget'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
@@ -57,6 +58,11 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSandboxRoute = AdminSandboxRouteImport.update({
+  id: '/sandbox',
+  path: '/sandbox',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminAdminRouteWithChildren
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
+  '/sandbox': typeof AdminSandboxRoute
   '/welcome': typeof AdminWelcomeRoute
   '/widget': typeof AdminWidgetRoute
   '/device': typeof PublicDeviceRouteWithChildren
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/abilities': typeof AdminAbilitiesRoute
   '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
+  '/sandbox': typeof AdminSandboxRoute
   '/welcome': typeof AdminWelcomeRoute
   '/widget': typeof AdminWidgetRoute
   '/reset-password': typeof PublicResetPasswordRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRoute
   '/_admin/profile': typeof AdminProfileRoute
+  '/_admin/sandbox': typeof AdminSandboxRoute
   '/_admin/welcome': typeof AdminWelcomeRoute
   '/_admin/widget': typeof AdminWidgetRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/profile'
+    | '/sandbox'
     | '/welcome'
     | '/widget'
     | '/device'
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/abilities'
     | '/dashboard'
     | '/profile'
+    | '/sandbox'
     | '/welcome'
     | '/widget'
     | '/reset-password'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/_admin/admin'
     | '/_admin/dashboard'
     | '/_admin/profile'
+    | '/_admin/sandbox'
     | '/_admin/welcome'
     | '/_admin/widget'
     | '/_public/device'
@@ -313,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AdminProfileRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/sandbox': {
+      id: '/_admin/sandbox'
+      path: '/sandbox'
+      fullPath: '/sandbox'
+      preLoaderRoute: typeof AdminSandboxRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/welcome': {
@@ -448,6 +467,7 @@ interface AdminRouteChildren {
   AdminAdminRoute: typeof AdminAdminRouteWithChildren
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminProfileRoute: typeof AdminProfileRoute
+  AdminSandboxRoute: typeof AdminSandboxRoute
   AdminWelcomeRoute: typeof AdminWelcomeRoute
   AdminWidgetRoute: typeof AdminWidgetRoute
 }
@@ -457,6 +477,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminRoute: AdminAdminRouteWithChildren,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminProfileRoute: AdminProfileRoute,
+  AdminSandboxRoute: AdminSandboxRoute,
   AdminWelcomeRoute: AdminWelcomeRoute,
   AdminWidgetRoute: AdminWidgetRoute,
 }
