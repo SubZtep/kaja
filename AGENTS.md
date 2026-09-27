@@ -117,7 +117,7 @@ bun run --filter @kaja/sandbox build
 | Package | Role |
 |---------|------|
 | `@kaja/schema` | Zod API contracts + `KAJA_TUI_CLIENT_ID` (single source of truth for API types) |
-| `@kaja/shared` | Pure utils (`cn`, dates, strings) |
+| `@kaja/shared` | Pure utils by subpath (`/date`, `/text`, `/ui`, `/net`, `/id`, `/locale`, `/sandbox`, `/telegram`) |
 | `@kaja/nasi` | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres. |
 
 ### Type architecture

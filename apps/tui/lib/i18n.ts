@@ -1,6 +1,6 @@
 // Static i18n: every dictionary loads at import, and the active language is set at startup (cli.ts, from preferences.locale). The setup wizard switches it mid-run, the moment its first question is answered, so the rest of its steps are readable. Nothing else switches live — a language change takes effect on the next launch.
 
-import type { Locale } from "@kaja/shared"
+import type { Locale } from "@kaja/shared/locale"
 import * as z from "zod"
 import enGb from "../locales/en-GB.toml"
 import enUs from "../locales/en-US.toml"

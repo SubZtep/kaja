@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { adminSandboxResponseSchema, sandboxStatsSchema } from "@kaja/schema/api"
-import { SANDBOX_STATS_SCOPE, signSandboxToken } from "@kaja/shared"
+import { SANDBOX_STATS_SCOPE, signSandboxToken } from "@kaja/shared/sandbox"
 import { pool } from "../../core/db"
 import type { RouteRegProps } from "../../types"
 import { sandboxConfig } from "../nasi/chat"

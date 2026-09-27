@@ -15,18 +15,18 @@ import {
 } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
+import { isPublicHttpUrl } from "@kaja/shared/net"
 import {
   commandArgument,
   EditThrottle,
   escapeHtml,
   isCommand,
-  isPublicHttpUrl,
   renderTelegramHtml,
   splitTelegramMessage,
   telegramImages,
-  truncateForStreaming,
-  withQuestion
-} from "@kaja/shared"
+  truncateForStreaming
+} from "@kaja/shared/telegram"
+import { withQuestion } from "@kaja/shared/text"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"

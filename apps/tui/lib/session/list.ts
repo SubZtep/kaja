@@ -1,5 +1,5 @@
 import { LOCAL_OWNER, type SessionMeta } from "@kaja/schema/store"
-import { getTimeAgo } from "@kaja/shared"
+import { getTimeAgo } from "@kaja/shared/date"
 import { getLanguage, t } from "../i18n"
 
 /**

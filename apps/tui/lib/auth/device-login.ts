@@ -1,5 +1,5 @@
 import { KAJA_TUI_CLIENT_ID } from "@kaja/schema/api"
-import { type Locale, locales } from "@kaja/shared"
+import { type Locale, locales } from "@kaja/shared/locale"
 import { createAuthClient } from "better-auth/client"
 import { deviceAuthorizationClient } from "better-auth/client/plugins"
 import { getLanguage, t } from "../i18n"

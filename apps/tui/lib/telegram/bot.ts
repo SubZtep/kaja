@@ -6,7 +6,7 @@ import {
   isNotModifiedError,
   TELEGRAM_IMAGE_LIMIT,
   withRateLimitRetry
-} from "@kaja/shared"
+} from "@kaja/shared/telegram"
 import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
 import type { Agent } from "../agent/agents"
 import { t } from "../i18n"

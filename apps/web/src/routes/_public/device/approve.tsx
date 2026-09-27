@@ -1,4 +1,4 @@
-import { formatDeviceUserCode } from "@kaja/shared"
+import { formatDeviceUserCode } from "@kaja/shared/text"
 import { createFileRoute, redirect, useLoaderData, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"

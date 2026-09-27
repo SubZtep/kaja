@@ -8,7 +8,7 @@ import type {
   UpdateProviderRequest
 } from "@kaja/schema/api"
 import { modelSchema, providerSchema } from "@kaja/schema/api"
-import { getTimeAgo } from "@kaja/shared"
+import { getTimeAgo } from "@kaja/shared/date"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"

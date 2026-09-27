@@ -1,4 +1,4 @@
-import { type Locale, matchLocale } from "@kaja/shared"
+import { type Locale, matchLocale } from "@kaja/shared/locale"
 import enGb from "../locales/en-GB.toml"
 import enUs from "../locales/en-US.toml"
 import huHu from "../locales/hu-HU.toml"

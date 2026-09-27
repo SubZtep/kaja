@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { isPublicHttpUrl } from "../index"
+import { isPublicHttpUrl } from "../net"
 
 describe("isPublicHttpUrl", () => {
   test("accepts public http(s) URLs", () => {

@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS "user" (
   ban_expires TIMESTAMPTZ,
   -- When they confirmed they're 18+, accepted the Terms and Privacy Policy, and gave explicit consent to health data (UK GDPR Art. 9); set on sign-up
   consented_at TIMESTAMPTZ,
-  -- The language picked in any client (web picker, TUI); read by the Telegram bot and emails. NULL until a client sets it; the API validates it against @kaja/shared locales
+  -- The language picked in any client (web picker, TUI); read by the Telegram bot and emails. NULL until a client sets it; the API validates it against @kaja/shared/locale locales
   locale TEXT,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL

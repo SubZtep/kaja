@@ -1,5 +1,5 @@
 import type { Model, ModelTask, Provider } from "@kaja/schema/api"
-import { uniqueModelSlug } from "@kaja/shared"
+import { uniqueModelSlug } from "@kaja/shared/text"
 import { TOML } from "bun"
 
 // Excluded from ETag hashing (the route layer hashes the un-prefixed body): a live timestamp would

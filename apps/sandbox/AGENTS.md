@@ -8,7 +8,7 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 
 - The API offers a stdio MCP ability (keyless, with a `tools` list) only when `SANDBOX_URL` and `SANDBOX_SECRET` are set (`cloudMcpProblem` in `apps/api/src/services/ability.ts`)
 - A cloud turn gets `mcpSandbox` (`apps/api/src/features/nasi/chat.ts`): nasi's `sandboxedMcpTarget` turns each stdio ability into `<SANDBOX_URL>/mcp/<name>` with `Authorization: Bearer <token>`, and the guarded fetch trusts that origin (no SSRF checks, no proxy)
-- The token (`signSandboxToken` in `@kaja/shared`) is HMAC-SHA256 over `{ sub: userId, ability, exp }`; the sandbox refuses a wrong signature, an expired token, or one for another ability
+- The token (`signSandboxToken` in `@kaja/shared/sandbox`) is HMAC-SHA256 over `{ sub: userId, ability, exp }`; the sandbox refuses a wrong signature, an expired token, or one for another ability
 
 ## Layout
 
@@ -49,7 +49,7 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 
 ## Security
 
-Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, link-local (the cloud metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses (`isPrivateAddress` in `@kaja/shared`), for IP literals and for every address a name resolves to, and then connects to the address it checked, so DNS rebinding can't swap it. Behind that, in `compose.yaml` the sandbox has its own network (only the api joins it), so `db` and `mail` don't resolve, and every port is published on `127.0.0.1` only; production runs it on a separate host. The Node MCP server processes themselves aren't proxied, only their browsers.
+Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, link-local (the cloud metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses (`isPrivateAddress` in `@kaja/shared/sandbox`), for IP literals and for every address a name resolves to, and then connects to the address it checked, so DNS rebinding can't swap it. Behind that, in `compose.yaml` the sandbox has its own network (only the api joins it), so `db` and `mail` don't resolve, and every port is published on `127.0.0.1` only; production runs it on a separate host. The Node MCP server processes themselves aren't proxied, only their browsers.
 
 ## Not yet
 

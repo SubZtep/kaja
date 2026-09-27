@@ -1,7 +1,7 @@
 import { lookup } from "node:dns/promises"
 import { createConnection, createServer, isIP, type Server, type Socket } from "node:net"
 import type { SandboxStats } from "@kaja/schema/api"
-import { isPrivateAddress } from "@kaja/shared"
+import { isPrivateAddress } from "@kaja/shared/net"
 
 /** A request head bigger than this is refused. */
 const MAX_HEAD_BYTES = 16 * 1024

@@ -1,4 +1,5 @@
-import { capitalized, getDisplayName, getTimeAgo } from "@kaja/shared"
+import { getTimeAgo } from "@kaja/shared/date"
+import { capitalized, getDisplayName } from "@kaja/shared/text"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"

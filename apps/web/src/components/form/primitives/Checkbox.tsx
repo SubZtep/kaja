@@ -1,5 +1,5 @@
 import { Checkbox as CheckboxBase } from "@base-ui/react/checkbox"
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { Check } from "lucide-react"
 import type React from "react"
 

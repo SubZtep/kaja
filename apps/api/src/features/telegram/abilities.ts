@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import type { AbilityType } from "@kaja/schema/api"
-import { trimTrailingSlashes } from "@kaja/shared"
+import { trimTrailingSlashes } from "@kaja/shared/text"
 import { env } from "../../core/env"
 import type { Translate } from "../../core/i18n"
 import { abilityService } from "../../services"

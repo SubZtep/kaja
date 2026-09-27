@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { useAuthClient } from "../../../hooks/auth-client"

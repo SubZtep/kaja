@@ -1,4 +1,4 @@
-import type { Locale } from "@kaja/shared"
+import type { Locale } from "@kaja/shared/locale"
 import {
   asRateLimitError,
   downloadTelegramImage,
@@ -6,7 +6,7 @@ import {
   isNotModifiedError,
   TELEGRAM_IMAGE_LIMIT,
   withRateLimitRetry
-} from "@kaja/shared"
+} from "@kaja/shared/telegram"
 import { Bot, GrammyError, InlineKeyboard, InputFile } from "grammy"
 import type { LanguageCode } from "grammy/types"
 import { translator } from "../../core/i18n"

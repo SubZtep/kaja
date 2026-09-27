@@ -1,5 +1,5 @@
 import { setToolDeps } from "@kaja/nasi"
-import { formatDeviceUserCode } from "@kaja/shared"
+import { formatDeviceUserCode } from "@kaja/shared/text"
 import { render } from "ink"
 import notifier from "node-notifier"
 import open from "open"

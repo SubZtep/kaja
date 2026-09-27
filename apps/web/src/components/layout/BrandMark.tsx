@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { Link } from "@tanstack/react-router"
 import { m } from "../../paraglide/messages.js"
 

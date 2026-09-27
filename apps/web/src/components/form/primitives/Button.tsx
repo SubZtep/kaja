@@ -1,5 +1,5 @@
 import { Button as BaseButton } from "@base-ui/react/button"
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { LoaderCircle } from "lucide-react"
 
 const VARIANTS = {

@@ -1,4 +1,4 @@
-import { SANDBOX_STATS_SCOPE, verifySandboxToken } from "@kaja/shared"
+import { SANDBOX_STATS_SCOPE, verifySandboxToken } from "@kaja/shared/sandbox"
 import type { Context } from "hono"
 import { Hono } from "hono"
 import type { EgressCounts } from "./egress"

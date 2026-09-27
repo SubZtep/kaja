@@ -1,6 +1,6 @@
 // Server-side strings for what the API says itself (emails, the Telegram bot). The language is per call, from the user's saved locale, never a global.
 
-import { type Locale, locales } from "@kaja/shared"
+import { type Locale, locales } from "@kaja/shared/locale"
 import enGb from "../../locales/en-GB.toml"
 import enUs from "../../locales/en-US.toml"
 import huHu from "../../locales/hu-HU.toml"

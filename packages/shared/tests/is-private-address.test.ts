@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { isPrivateAddress } from "../index"
+import { isPrivateAddress } from "../net"
 
 describe("isPrivateAddress", () => {
   test("flags IPv4 loopback, link-local, and RFC1918 ranges", () => {

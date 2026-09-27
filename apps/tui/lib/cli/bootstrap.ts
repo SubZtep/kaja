@@ -1,4 +1,4 @@
-import { locales } from "@kaja/shared"
+import { locales } from "@kaja/shared/locale"
 import { readConfigLoose } from "../config/config"
 import { detectLanguage, type Language, setLanguage } from "../i18n"
 

@@ -1,6 +1,6 @@
 import type { StatsChannel, UsageStatsResponse } from "@kaja/schema/api"
 import { usageStatsResponseSchema } from "@kaja/schema/api"
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { useApiFetch } from "../../lib/api-fetch"

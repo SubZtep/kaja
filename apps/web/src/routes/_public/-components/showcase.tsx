@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { useLoaderData } from "@tanstack/react-router"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"

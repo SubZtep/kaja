@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { modelSlug, uniqueModelSlug } from "../index"
+import { modelSlug, uniqueModelSlug } from "../text"
 
 test("modelSlug keeps the last path part, lowercased, with other characters as dashes", () => {
   expect(modelSlug("accounts/fireworks/models/glm-5p3-flash")).toBe("glm-5p3-flash")

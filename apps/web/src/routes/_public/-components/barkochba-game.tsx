@@ -1,5 +1,5 @@
 import type { NasiTurnResponse, WidgetTurnRequest } from "@kaja/schema/nasi"
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { useLoaderData } from "@tanstack/react-router"
 import {
   BrainCircuit,

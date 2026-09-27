@@ -14,7 +14,7 @@ import {
   scanSkills
 } from "@kaja/nasi"
 import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/api"
-import { isPublicHttpUrl } from "@kaja/shared"
+import { isPublicHttpUrl } from "@kaja/shared/net"
 import type { Pool } from "pg"
 import { withLock } from "../core/lock"
 import { reportError } from "../core/report"

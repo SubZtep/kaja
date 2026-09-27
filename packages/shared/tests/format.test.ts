@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { titleCase, trimTrailingSlashes, withQuestion } from "../"
+import { titleCase, trimTrailingSlashes, withQuestion } from "../text"
 
 test("titleCase keeps plain ids", () => {
   expect(titleCase("kaja-free-chat")).toBe("Kaja Free Chat")

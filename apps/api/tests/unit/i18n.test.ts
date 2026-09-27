@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { locales } from "@kaja/shared"
+import { locales } from "@kaja/shared/locale"
 import { dictionaries, toLocale, translator } from "../../src/core/i18n"
 import { getChangeEmailHtml } from "../../src/emails/ChangeEmail"
 import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"

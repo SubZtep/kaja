@@ -1,4 +1,5 @@
-import { capitalized, cn } from "@kaja/shared"
+import { capitalized } from "@kaja/shared/text"
+import { cn } from "@kaja/shared/ui"
 import { type Column, type ColumnFiltersState, flexRender, useTable } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { type ReactNode, useState } from "react"

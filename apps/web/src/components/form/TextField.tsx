@@ -1,5 +1,5 @@
 import { Field } from "@base-ui/react/field"
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { useFieldContext } from "../../lib/form-contexts"
 import { FieldErrors } from "./FieldErrors"
 import { Text } from "./primitives/Text"

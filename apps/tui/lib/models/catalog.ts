@@ -1,5 +1,5 @@
 import { type CatalogFile, CatalogFileSchema, type ModelTask } from "@kaja/schema/config"
-import { uniqueModelSlug } from "@kaja/shared"
+import { uniqueModelSlug } from "@kaja/shared/text"
 import { TOML } from "bun"
 import CATALOG_TOML from "../../../../docs/config/catalog.toml" with { type: "text" }
 

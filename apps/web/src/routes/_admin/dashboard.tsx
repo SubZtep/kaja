@@ -1,4 +1,4 @@
-import { getFirstName } from "@kaja/shared"
+import { getFirstName } from "@kaja/shared/text"
 import { createFileRoute } from "@tanstack/react-router"
 import { UsageStats } from "../../components/stats/UsageStats"
 import { PageHeader } from "../../components/ui/PageHeader"

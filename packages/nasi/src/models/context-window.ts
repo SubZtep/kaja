@@ -1,4 +1,4 @@
-import { trimTrailingSlashes } from "@kaja/shared"
+import { trimTrailingSlashes } from "@kaja/shared/text"
 
 /** What a model is assumed to hold when neither config nor its server says. */
 export const DEFAULT_CONTEXT_WINDOW = 32_768

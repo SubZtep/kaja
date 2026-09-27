@@ -24,7 +24,7 @@ It runs **chrome-devtools**, a headless Chrome the assistant can browse with, re
 
 Every route but `/health` needs `Authorization: Bearer <token>`. The API signs the token itself; there are no accounts, sessions or API keys on the sandbox.
 
-- **Format:** `<payload>.<signature>`, both base64url. The payload is JSON claims `{ sub, ability, exp }`; the signature is HMAC-SHA256 of the payload with `SANDBOX_SECRET`, which the API and the sandbox share (`signSandboxToken`/`verifySandboxToken` in `@kaja/shared`).
+- **Format:** `<payload>.<signature>`, both base64url. The payload is JSON claims `{ sub, ability, exp }`; the signature is HMAC-SHA256 of the payload with `SANDBOX_SECRET`, which the API and the sandbox share (`signSandboxToken`/`verifySandboxToken` in `@kaja/shared/sandbox`).
 - **Checked:** the signature (constant-time, by WebCrypto), that `exp` (Unix seconds) hasn't passed, and that `ability` fits the route. Anything else is `401`.
 
 | Route | `sub` | `ability` | Lifetime | Signed by |
@@ -63,7 +63,7 @@ What happens when Chrome opens `https://example.com`:
 
 1. **Chrome asks the proxy.** It doesn't connect itself; it sends `CONNECT example.com:443` ("open a tunnel for me"). A plain `http://` page comes as `GET http://example.com/path` instead.
 2. **The proxy resolves the name itself**, say to `93.184.215.14`.
-3. **Every address must be public.** Loopback, private ranges (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`, the metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses, and their IPv6 equivalents, are refused with `403`. Chrome shows an error page. The rule is `isPrivateAddress` from `@kaja/shared`, the same one the API's SSRF guard uses.
+3. **Every address must be public.** Loopback, private ranges (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`, the metadata service), CGNAT, `0.0.0.0/8`, multicast and reserved addresses, and their IPv6 equivalents, are refused with `403`. Chrome shows an error page. The rule is `isPrivateAddress` from `@kaja/shared/net`, the same one the API's SSRF guard uses.
 4. **It connects to the address it checked**, not the name again. That rules out DNS rebinding: a name that answers with a public IP for the check and a private one for the connection.
 5. **Bytes are piped both ways.** HTTPS stays encrypted end to end; the proxy never sees inside it. Plain HTTP is rewritten to `GET /path`, and the connection closes after the answer, so the next request (maybe to another host) is checked again.
 

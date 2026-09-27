@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 
 const SIZES = {
   sm: { box: "h-9 w-9", text: "text-xs" },

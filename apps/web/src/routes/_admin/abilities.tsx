@@ -1,6 +1,6 @@
 import type { MarketplaceSyncResult, MarketplaceSyncStatus } from "@kaja/schema/api"
 import { marketplaceSyncResultSchema, marketplaceSyncStatusSchema } from "@kaja/schema/api"
-import { getTimeAgo } from "@kaja/shared"
+import { getTimeAgo } from "@kaja/shared/date"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { RefreshCw } from "lucide-react"

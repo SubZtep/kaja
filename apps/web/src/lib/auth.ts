@@ -1,4 +1,4 @@
-import { locales } from "@kaja/shared"
+import { locales } from "@kaja/shared/locale"
 import { adminClient, deviceAuthorizationClient, inferAdditionalFields } from "better-auth/client/plugins"
 import { createAuthClient } from "better-auth/react"
 

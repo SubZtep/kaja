@@ -3,7 +3,41 @@
   "description": "Shared types and utilities",
   "version": "0.5.2",
   "private": true,
-  "main": "index.ts",
+  "sideEffects": false,
+  "exports": {
+    "./date": {
+      "types": "./date/index.ts",
+      "default": "./date/index.ts"
+    },
+    "./id": {
+      "types": "./id/index.ts",
+      "default": "./id/index.ts"
+    },
+    "./locale": {
+      "types": "./locale/index.ts",
+      "default": "./locale/index.ts"
+    },
+    "./net": {
+      "types": "./net/index.ts",
+      "default": "./net/index.ts"
+    },
+    "./sandbox": {
+      "types": "./sandbox/index.ts",
+      "default": "./sandbox/index.ts"
+    },
+    "./telegram": {
+      "types": "./telegram/index.ts",
+      "default": "./telegram/index.ts"
+    },
+    "./text": {
+      "types": "./text/index.ts",
+      "default": "./text/index.ts"
+    },
+    "./ui": {
+      "types": "./ui/index.ts",
+      "default": "./ui/index.ts"
+    }
+  },
   "dependencies": {
     "clsx": "^2.1.1",
     "marked": "^18.0.14",

@@ -1,6 +1,6 @@
 import type { McpAbility, McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
-import { trimTrailingSlashes } from "@kaja/shared"
+import { trimTrailingSlashes } from "@kaja/shared/text"
 import { connectMcpServer } from "../mcp/client"
 import type { FetchLike } from "../security/ssrf"
 import type { KeyCheckResult } from "./http-tool"

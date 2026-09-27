@@ -1,4 +1,4 @@
-import type { Locale } from "@kaja/shared"
+import type { Locale } from "@kaja/shared/locale"
 import { useMatch, useRouterState } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { getLocale, setLocale } from "../paraglide/runtime.js"

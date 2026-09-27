@@ -9,18 +9,18 @@ import {
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
+import { isPublicHttpUrl } from "@kaja/shared/net"
 import {
   commandArgument,
   EditThrottle,
   escapeHtml,
   isCommand,
-  isPublicHttpUrl,
   renderTelegramHtml,
   splitTelegramMessage,
   telegramImages,
-  truncateForStreaming,
-  withQuestion
-} from "@kaja/shared"
+  truncateForStreaming
+} from "@kaja/shared/telegram"
+import { withQuestion } from "@kaja/shared/text"
 import { pool } from "../../core/db"
 import type { Translate } from "../../core/i18n"
 import { withLock } from "../../core/lock"
