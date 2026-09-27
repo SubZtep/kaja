@@ -32,11 +32,17 @@ The `/data` volume keeps its registration, so a restart comes back as the same s
 1. At start the sandbox connects to `KAJA_API_URL`'s `/sandbox/connect` with its owner's key (`X-Kaja-Sandbox-Key`; none: anonymous) and, after the first time, the id and secret it was welcomed with (`X-Kaja-Sandbox-Instance`). It says `hello` with its hardware, version, cap and abilities; the API records it, with its public IP's location from the geolocation service, and answers `welcome`. Every minute it sends a `heartbeat` with its load.
 2. A cloud turn picks a sandbox per ability: the one the user's last turn used while it still fits, else their own, else (only if they allow it) one another user shares or an anonymous one, nearest first, else the official one. See `apps/api/src/features/sandbox/registry.ts`.
 3. The API sends the MCP request as a `request` frame; the sandbox runs it and streams the answer back as `head`, `chunk`… and `end` frames (`cancel` stops it). Frames are JSON and checked against `sandboxFrameSchema`/`apiSandboxFrameSchema` in `@kaja/schema/api` on both sides.
-4. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what it fetched stays cached in `SANDBOX_CACHE_DIR` (the shipped servers are fetched when the image is built).
+4. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what npx and uvx fetched stays cached in `SANDBOX_CACHE_DIR` (chrome-devtools-mcp is installed in the image, and the time server fetched when it's built).
 
 ## Trust
 
 The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Users' ability keys are never sent to any sandbox, so keyed stdio abilities stay local-only.
+
+## One Linux user per user
+
+In the image the sandbox runs as root, only so it can start every user's servers as **their own Linux user**: a uid from 20000 up (with a private group of the same number), kept for that user while the sandbox runs. `src/isolation.ts` starts each server through util-linux's `setpriv` with that uid, every capability dropped for good (`--inh-caps=-all --bounding-set=-all --no-new-privs`) and umask `002`. The server's throwaway HOME is `0700` and owned by that uid, and so is Chrome's profile under `/tmp`, so one user's browser can't read another's cookies or pages. The only thing they share is the package caches (`SANDBOX_CACHE_DIR`), through the `mcp` group (gid 1500), group-writable. Outside the image (not root) or with `SANDBOX_ISOLATE_USERS=false`, every server runs as the sandbox's own user.
+
+This keeps users apart from each other. It doesn't keep anything from the operator, who is root on their own machine.
 
 ## One warm server per user
 
@@ -76,7 +82,7 @@ Two more Chrome flags keep it from going around the proxy:
 - `--proxy-bypass-list=<-loopback>`: Chrome normally skips the proxy for `localhost`. That exception is exactly the hole we're closing, so this turns it off.
 - `--force-webrtc-ip-handling-policy=disable_non_proxied_udp`: WebRTC could otherwise open direct UDP connections.
 
-Chrome also only opens `http://` and `https://` URLs (`--allowedUrlPattern`). Every user's browser runs as the same `node` user, so a `file://` page could read another user's browser profile.
+Chrome also only opens `http://` and `https://` URLs (`--allowedUrlPattern`), so a page can't read files on the machine at all.
 
 ### The port: `SANDBOX_EGRESS_PORT`
 
@@ -144,6 +150,7 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `SANDBOX_CACHE_DIR` | — | shared bun/uv/npm caches for the servers, so fetched packages stay (the image uses `/home/node/.cache/mcp`) |
 | `SANDBOX_IDLE_MS` | `600000` | how long an unused server stays warm |
 | `SANDBOX_MAX_PROCESSES` | `8` | most servers at once; each Chrome needs about 300–500 MB of RAM |
+| `SANDBOX_ISOLATE_USERS` | `true` | each user's servers as their own Linux user (only when running as root) |
 | `SANDBOX_EGRESS_PORT` | `3128` | the egress proxy's port; must match `overrides.json` |
 | `WEB_PROXY` | — | `http://` proxy the egress proxy tunnels checked traffic through; unset connects directly |
 | `NODE_ENV` | — | `production` turns on Sentry (the image sets it) |
@@ -160,7 +167,7 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 ## Not yet
 
 - Abilities that need the user's key (`auth.in = "env"`): keys aren't forwarded, so keyed stdio abilities are refused on both sides.
-- Per-user limits beyond one server per (user, ability).
+- Per-user limits beyond one server per (user, ability) (CPU, memory per uid).
 - Servers that build from source: the image has no compilers or git yet.
 
 ## Code
@@ -171,6 +178,7 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `src/tunnel.ts` | the dial-out WebSocket: hello, heartbeats, reconnects, and running the API's request frames |
 | `src/hardware.ts` | the hello's hardware facts and the heartbeat's load |
 | `src/pool.ts` | one server per (user, ability): idle stop, cap, making room |
+| `src/isolation.ts` | a Linux uid per user, and the `setpriv` wrapper that starts a server as it |
 | `src/relay.ts` | shares one stdio child between many HTTP sessions, renumbering request ids |
 | `src/egress.ts` | the egress proxy |
 | `src/stats.ts` | the stats: the pool's servers and counts, memory per process tree, host and container memory |

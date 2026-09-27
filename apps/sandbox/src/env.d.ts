@@ -22,6 +22,8 @@ declare module "bun" {
     SANDBOX_IDLE_MS?: string
     /** Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM */
     SANDBOX_MAX_PROCESSES?: string
+    /** Run each user's servers as their own Linux user (needs the sandbox to run as root, as in the image), so users can't read each other's files */
+    SANDBOX_ISOLATE_USERS?: string
     /** Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json */
     SANDBOX_EGRESS_PORT?: string
     /** HTTP proxy the browsers' checked traffic goes out through (CONNECT to the checked IP, any port); unset connects directly */

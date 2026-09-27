@@ -1,5 +1,5 @@
 import * as z from "zod"
-import { positiveInt, trimmed, url } from "./helpers"
+import { bool, positiveInt, trimmed, url } from "./helpers"
 
 export const SandboxEnvSchema = z.object({
   NODE_ENV: trimmed.optional().describe('Node environment; "production" turns on Sentry'),
@@ -43,6 +43,11 @@ export const SandboxEnvSchema = z.object({
   SANDBOX_MAX_PROCESSES: positiveInt
     .default(8)
     .describe("Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM"),
+  SANDBOX_ISOLATE_USERS: bool
+    .default(true)
+    .describe(
+      "Run each user's servers as their own Linux user (needs the sandbox to run as root, as in the image), so users can't read each other's files"
+    ),
   SANDBOX_EGRESS_PORT: positiveInt
     .default(3128)
     .describe("Port of the 127.0.0.1 proxy that keeps the browsers to public addresses; must match overrides.json"),

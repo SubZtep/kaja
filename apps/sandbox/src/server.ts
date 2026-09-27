@@ -1,6 +1,7 @@
 import { type EgressCounts, startEgressProxy } from "./egress"
 import { env } from "./env"
 import { sandboxInfo, sandboxLoad } from "./hardware"
+import { UserIsolation } from "./isolation"
 import { loadSandboxServers } from "./manifests"
 import { ProcessPool } from "./pool"
 import { initReporting } from "./report"
@@ -16,8 +17,16 @@ const egress = await startEgressProxy({
   upstream: env.WEB_PROXY
 })
 const servers = await loadSandboxServers(env.MARKETPLACE_DIR, env.SANDBOX_OVERRIDES, env.SANDBOX_CACHE_DIR)
-const pool = new ProcessPool({ servers, idleMs: env.SANDBOX_IDLE_MS, maxProcesses: env.SANDBOX_MAX_PROCESSES })
-console.log(`MCP sandbox running ${[...servers.keys()].join(", ") || "nothing"}`)
+const isolation = await UserIsolation.create({ enabled: env.SANDBOX_ISOLATE_USERS, cacheDir: env.SANDBOX_CACHE_DIR })
+const pool = new ProcessPool({
+  servers,
+  idleMs: env.SANDBOX_IDLE_MS,
+  maxProcesses: env.SANDBOX_MAX_PROCESSES,
+  isolation
+})
+console.log(
+  `MCP sandbox running ${[...servers.keys()].join(", ") || "nothing"}${isolation ? ", each user as their own Linux user" : ""}`
+)
 
 // Nothing connects in: the sandbox dials the API and serves its requests over that socket.
 const tunnel = connectTunnel({

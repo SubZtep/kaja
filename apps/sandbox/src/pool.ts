@@ -1,4 +1,5 @@
 import type { SandboxServerStats, SandboxStats } from "@kaja/schema/api"
+import type { UserIsolation } from "./isolation"
 import type { SandboxServer } from "./manifests"
 import { McpRelay } from "./relay"
 import { reportError } from "./report"
@@ -9,8 +10,10 @@ export type PoolOptions = {
   idleMs: number
   /** Most servers running at once, over all users. */
   maxProcesses: number
+  /** Runs each user's servers as their own Linux user (the image, running as root). */
+  isolation?: UserIsolation
   /** Starts a server; tests swap it. */
-  start?: (server: SandboxServer) => Promise<McpRelay>
+  start?: typeof McpRelay.start
 }
 
 type Entry = {
@@ -83,7 +86,7 @@ export class ProcessPool {
         console.warn("Sandbox is full", { ability, processes: this.#entries.size })
         return Response.json({ error: "the sandbox is full, try again later" }, { status: 503 })
       }
-      entry = { relay: this.#start(key, server), startedAt: Date.now(), lastUsed: Date.now() }
+      entry = { relay: this.#start(key, server, user), startedAt: Date.now(), lastUsed: Date.now() }
       this.#entries.set(key, entry)
     }
     let relay: McpRelay
@@ -109,9 +112,13 @@ export class ProcessPool {
     )
   }
 
-  async #start(key: string, server: SandboxServer): Promise<McpRelay> {
+  async #start(key: string, server: SandboxServer, user: string): Promise<McpRelay> {
+    const isolation = this.#opts.isolation
     try {
-      const relay = await (this.#opts.start ?? McpRelay.start)(server)
+      const relay = await (this.#opts.start ?? McpRelay.start)(
+        server,
+        isolation ? { runAs: isolation.runAs(user), cacheGid: isolation.cacheGid } : undefined
+      )
       relay.onclose = () => this.#forget(key, relay)
       const entry = this.#entries.get(key)
       if (entry) entry.started = relay
