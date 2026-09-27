@@ -1,0 +1,14 @@
+# Step-by-step reasoning scratchpad: https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
+# Runs `npx @modelcontextprotocol/server-sequential-thinking` on your machine and needs Node.js installed.
+# In the cloud it runs in the MCP sandbox instead (apps/sandbox). Its one tool only records thoughts, so nothing asks first.
+name        = "sequential-thinking"
+description = "Work through hard problems in numbered steps that can be revised or branched before answering."
+transport   = "stdio"
+command     = "npx"
+args        = [
+  "-y",
+  "@modelcontextprotocol/server-sequential-thinking"
+]
+tools       = [
+  "sequentialthinking"
+]
