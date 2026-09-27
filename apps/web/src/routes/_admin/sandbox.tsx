@@ -9,6 +9,7 @@ import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { Checkbox } from "../../components/form/primitives/Checkbox"
+import { RunCommand } from "../../components/sandbox/RunCommand"
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog"
 import { ErrorNotice } from "../../components/ui/ErrorNotice"
 import { IconButton } from "../../components/ui/IconButton"
@@ -18,7 +19,7 @@ import { Section } from "../../components/ui/Section"
 import { StatusDot } from "../../components/ui/StatusDot"
 import { useApiFetch } from "../../lib/api-fetch"
 import { userRequired } from "../../lib/loaders"
-import { hardware, place, runCommand } from "../../lib/sandbox"
+import { hardware, place } from "../../lib/sandbox"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 
@@ -29,14 +30,6 @@ export const Route = createFileRoute("/_admin/sandbox")({
 })
 
 const QUERY_KEY = ["sandbox", "mine"]
-
-function Command({ command }: Readonly<{ command: string }>) {
-  return (
-    <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-black/40 p-3 font-mono text-muted text-xs">
-      {command}
-    </pre>
-  )
-}
 
 function KeySection({ settings }: Readonly<{ settings: SandboxSettings }>) {
   const apiFetch = useApiFetch()
@@ -63,7 +56,7 @@ function KeySection({ settings }: Readonly<{ settings: SandboxSettings }>) {
       {key ? (
         <div className="mb-4">
           <p className="mb-2 text-fg text-sm">{m.sandbox_key_shown_once()}</p>
-          <Command command={runCommand(key)} />
+          <RunCommand sandboxKey={key} />
         </div>
       ) : (
         settings.keyCreatedAt && (

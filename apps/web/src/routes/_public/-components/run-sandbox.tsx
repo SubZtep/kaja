@@ -1,8 +1,8 @@
 import { publicSandboxesResponseSchema } from "@kaja/schema/api"
 import { useQuery } from "@tanstack/react-query"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
+import { RunCommand } from "../../../components/sandbox/RunCommand"
 import { useApiFetch } from "../../../lib/api-fetch"
-import { runCommand } from "../../../lib/sandbox"
 import { m } from "../../../paraglide/messages.js"
 import { Sticker } from "./sticker"
 
@@ -27,8 +27,8 @@ export function RunSandbox() {
           )}
         </div>
         <p className="mb-6 max-w-2xl font-crt text-muted text-sm">{m.landing_sandbox_body()}</p>
-        <div className="crt-frame px-4 py-5">
-          <code className="block overflow-x-auto whitespace-nowrap font-crt text-neon text-sm">{runCommand()}</code>
+        <div className="max-w-3xl">
+          <RunCommand look="crt" />
         </div>
       </ContentWidth>
     </section>
