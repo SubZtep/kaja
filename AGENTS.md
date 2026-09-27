@@ -58,7 +58,7 @@ bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--
 # Lint / types / tests
 bun lint
 bun lint:fix
-bun typecheck          # apps/* and packages/* with tsconfig; fails on first error
+bun typecheck          # apps/*, packages/* and .claude/skills/* with tsconfig; fails on first error
 bun test               # API integration + CLI unit tests
 ```
 
