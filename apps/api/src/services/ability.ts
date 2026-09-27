@@ -20,7 +20,7 @@ import {
   type SkillDetail,
   type UserAbility
 } from "@kaja/schema/api"
-import { isPublicHttpUrl } from "@kaja/shared"
+import { isPublicHttpUrl } from "@kaja/shared/net"
 import type { Pool } from "pg"
 // Built in, so the cloud has its default persona before the first sync brings the same file.
 import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml" with { type: "text" }

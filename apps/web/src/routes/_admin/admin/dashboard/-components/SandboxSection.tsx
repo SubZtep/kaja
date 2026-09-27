@@ -1,6 +1,7 @@
 import type { AdminSandboxResponse, SandboxServerStats, SandboxStats } from "@kaja/schema/api"
 import { adminSandboxResponseSchema } from "@kaja/schema/api"
-import { cn, getTimeAgo } from "@kaja/shared"
+import { getTimeAgo } from "@kaja/shared/date"
+import { cn } from "@kaja/shared/ui"
 import { useQuery } from "@tanstack/react-query"
 import { ErrorNotice } from "../../../../../components/ui/ErrorNotice"
 import { Loader } from "../../../../../components/ui/Loader"

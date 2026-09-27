@@ -1,5 +1,6 @@
 import { Select } from "@base-ui/react/select"
-import { cn, LOCALE_LABELS } from "@kaja/shared"
+import { LOCALE_LABELS } from "@kaja/shared/locale"
+import { cn } from "@kaja/shared/ui"
 import { useMatch } from "@tanstack/react-router"
 import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

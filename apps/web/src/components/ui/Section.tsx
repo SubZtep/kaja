@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import type { CSSProperties, ReactNode } from "react"
 
 const BORDERED = {

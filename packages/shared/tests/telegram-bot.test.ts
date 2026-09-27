@@ -10,7 +10,7 @@ import {
   isNotModifiedError,
   TelegramRateLimitError,
   withRateLimitRetry
-} from "../telegram-bot"
+} from "../telegram/bot"
 
 // grammy's GrammyError, by shape: what the helpers actually look at.
 const botApiError = (error_code: number, description: string, parameters?: { retry_after?: number }) =>

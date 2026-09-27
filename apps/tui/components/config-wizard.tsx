@@ -1,6 +1,7 @@
 import { MultiSelect, PasswordInput, TextInput, ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
-import { capitalized, LOCALE_LABELS, locales } from "@kaja/shared"
+import { LOCALE_LABELS, locales } from "@kaja/shared/locale"
+import { capitalized } from "@kaja/shared/text"
 import { Box, Static, Text, useInput } from "ink"
 import Gradient from "ink-gradient"
 import { useState } from "react"

@@ -1,5 +1,5 @@
 import type { HttpTool, HttpToolAbility } from "@kaja/schema/abilities"
-import { trimTrailingSlashes } from "@kaja/shared"
+import { trimTrailingSlashes } from "@kaja/shared/text"
 import { type Tool, tool } from "../agent/tools"
 import { fetchPublicHttp } from "../security/ssrf"
 

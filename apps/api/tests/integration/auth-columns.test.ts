@@ -133,6 +133,12 @@ describe("Better Auth reads and writes the snake_case columns", () => {
     expect(refused.status).toBe(400)
     const after = await pool.query('SELECT locale FROM "user" WHERE id = $1', [user.id])
     expect(after.rows[0].locale).toBe("hu-HU")
+
+    // Switching back to the base locale saves it too
+    const back = await post("/update-user", { locale: "en-GB" }, user.token)
+    expect(back.status).toBe(200)
+    const base = await pool.query('SELECT locale FROM "user" WHERE id = $1', [user.id])
+    expect(base.rows[0].locale).toBe("en-GB")
     await pool.query('DELETE FROM "user" WHERE id = $1', [user.id])
   })
 })

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { join } from "node:path"
 import { faker } from "@faker-js/faker"
-import { signSandboxToken } from "@kaja/shared"
+import { signSandboxToken } from "@kaja/shared/sandbox"
 import { createApp as createSandboxApp } from "../../../sandbox/src/app"
 import { ProcessPool } from "../../../sandbox/src/pool"
 import { app } from "../../src/app"

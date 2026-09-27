@@ -1,7 +1,7 @@
 import { listFilesTool, readFileTool, type Tool } from "@kaja/nasi"
 import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStreamEvent } from "@kaja/nasi/client"
 import type { NasiInfoResponse } from "@kaja/schema/nasi"
-import { commandArgument } from "@kaja/shared"
+import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getLanguage, t } from "../lib/i18n"
 

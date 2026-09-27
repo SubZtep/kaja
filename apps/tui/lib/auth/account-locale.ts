@@ -1,4 +1,4 @@
-import type { Locale } from "@kaja/shared"
+import type { Locale } from "@kaja/shared/locale"
 import { getApiBaseUrl } from "../config/api-url"
 import { log } from "../logger"
 import { loadToken } from "./credentials"

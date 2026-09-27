@@ -1,4 +1,5 @@
-import { getDateTime, getDisplayName } from "@kaja/shared"
+import { getDateTime } from "@kaja/shared/date"
+import { getDisplayName } from "@kaja/shared/text"
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import type { UserWithRole } from "better-auth/plugins"
 import { ArrowLeft, Calendar, CheckCircle2, Clock, Mail, Shield } from "lucide-react"

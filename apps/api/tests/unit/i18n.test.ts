@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test"
-import { locales } from "@kaja/shared"
+import { baseLocale, locales } from "@kaja/shared/locale"
 import { dictionaries, toLocale, translator } from "../../src/core/i18n"
 import { getChangeEmailHtml } from "../../src/emails/ChangeEmail"
 import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"
 
 const WIDGET_LOCALES = `${import.meta.dir}/../../widgets/locales`
 
-for (const locale of locales.filter(locale => locale !== "en-GB")) {
+for (const locale of locales.filter(locale => locale !== baseLocale)) {
   test(`en-GB and ${locale} dictionaries have the same keys`, () => {
     expect([...dictionaries[locale].keys()].sort()).toEqual([...dictionaries["en-GB"].keys()].sort())
   })
@@ -51,6 +51,8 @@ test("a Telegram app language maps to a supported locale", () => {
   expect(localeFromTelegram("hu")).toBe("hu-HU")
   expect(localeFromTelegram("zh-hant")).toBe("zh-TW")
   expect(localeFromTelegram("zh-hans")).toBe("zh-TW")
+  expect(localeFromTelegram("en-us")).toBe("en-US")
+  expect(localeFromTelegram("en")).toBe("en-GB")
   expect(localeFromTelegram("de")).toBe("en-GB")
   expect(localeFromTelegram(undefined)).toBe("en-GB")
 })

@@ -620,6 +620,28 @@ export async function compact(agent: Agent, session: Session, focus?: string) {
   return compactSession(agent, session, { focus, definitions: agent.tools.map(t => t.definition), lastTurnOnly: true })
 }
 
+// The scale that brings the character estimate to what the provider counted; the estimate runs before this round's reply is appended, so it covers exactly what was sent.
+function rescaleEstimate(
+  session: Session,
+  definitions: readonly unknown[],
+  promptTokens: number | undefined,
+  scale: number
+): number {
+  const estimate = estimateTokens(contextMessages(session), definitions)
+  if (!promptTokens || estimate <= 0) return scale
+  return Math.min(3, Math.max(0.33, promptTokens / estimate))
+}
+
+// Consecutive rounds where every tool call failed; throws once there are too many.
+function countFailingRounds(session: Session, toolCalls: { id: string }[], previous: number): number {
+  const everyCallFailed = toolCalls.every(call => session.telemetry?.calls[call.id]?.status === "error")
+  const rounds = everyCallFailed ? previous + 1 : 0
+  if (rounds >= MAX_FAILING_TOOL_ROUNDS) {
+    throw new Error(`Stopped: every tool call failed ${MAX_FAILING_TOOL_ROUNDS} rounds in a row.`)
+  }
+  return rounds
+}
+
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
@@ -647,9 +669,7 @@ export async function* run(
     yield* compactIfNeeded(agent, session, definitions, estimateScale)
     const round = yield* streamRoundFitting(agent, session, definitions, estimateScale)
     const { message, thinking, usage, model } = round
-    // Nothing is appended yet, so this is exactly what was sent.
-    const estimate = estimateTokens(contextMessages(session), definitions)
-    if (usage?.promptTokens && estimate > 0) estimateScale = Math.min(3, Math.max(0.33, usage.promptTokens / estimate))
+    estimateScale = rescaleEstimate(session, definitions, usage?.promptTokens, estimateScale)
 
     if (isEmptyRound(message) && emptyRoundRetries < MAX_EMPTY_ROUND_RETRIES) {
       emptyRoundRetries++
@@ -683,11 +703,7 @@ export async function* run(
       usage => recordModelCall(session, { kind: "summarize", ...usage })
     )
 
-    const everyCallFailed = message.tool_calls.every(call => session.telemetry?.calls[call.id]?.status === "error")
-    failingToolRounds = everyCallFailed ? failingToolRounds + 1 : 0
-    if (failingToolRounds >= MAX_FAILING_TOOL_ROUNDS) {
-      throw new Error(`Stopped: every tool call failed ${MAX_FAILING_TOOL_ROUNDS} rounds in a row.`)
-    }
+    failingToolRounds = countFailingRounds(session, message.tool_calls, failingToolRounds)
 
     if (yield* handlePendingHandoff(session, ask, confirm, clientTool, approval)) return
   }

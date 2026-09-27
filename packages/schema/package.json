@@ -38,6 +38,7 @@
     }
   },
   "dependencies": {
+    "@kaja/shared": "workspace:*",
     "zod": "^4.6.5"
   }
 }

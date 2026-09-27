@@ -265,7 +265,7 @@ test("each answer stays on screen and the next question opens below it", async (
   expect(w.t.lastFrame()).toContain("Paste your Fireworks API key")
   expect(w.t.lastFrame()).not.toContain("Which model providers can you use?")
   const trail = w.t.output()
-  expect(trail).toContain("✓  Language: English")
+  expect(trail).toContain("✓  Language: British English")
   expect(trail).toContain("✓  Providers: Fireworks, Ollama")
   // A forced mode was never asked, so it leaves no line.
   expect(trail).not.toContain("Mode:")
@@ -437,6 +437,7 @@ test("picking a language switches the rest of the wizard into it", async () => {
   // The point of asking first: the mode question that follows is rendered through `t()`.
   const w = renderWizard()
   await w.t.tick()
+  await w.t.press(DOWN) // American English
   await w.t.press(DOWN) // Magyar
   await w.t.press(ENTER)
   await w.t.press(ENTER) // theme

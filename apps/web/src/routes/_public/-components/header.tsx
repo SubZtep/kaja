@@ -1,4 +1,4 @@
-import { getDisplayName } from "@kaja/shared"
+import { getDisplayName } from "@kaja/shared/text"
 import { Link } from "@tanstack/react-router"
 import { getHeaderItems, type NavItem } from "../../../components/layout/nav-items"
 import { SignOutButton } from "../../../components/layout/SignOutButton"

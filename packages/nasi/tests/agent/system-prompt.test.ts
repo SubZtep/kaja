@@ -20,6 +20,10 @@ test("returns a reply-language instruction naming the language for a known non-E
   expect(replyLanguageInstructionFor("hu-HU")).toContain("Hungarian")
 })
 
+test("returns a reply-language instruction for en-US", () => {
+  expect(replyLanguageInstructionFor("en-US")).toContain("American English")
+})
+
 test("returns a reply-language instruction for zh-TW", () => {
   expect(replyLanguageInstructionFor("zh-TW")).toContain("Traditional Chinese")
 })

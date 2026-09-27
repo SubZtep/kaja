@@ -1,5 +1,5 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog"
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
 

@@ -1,5 +1,5 @@
 import dns from "node:dns"
-import { isPrivateAddress, isPublicHttpUrl } from "@kaja/shared"
+import { isPrivateAddress, isPublicHttpUrl } from "@kaja/shared/net"
 
 const DEFAULT_TIMEOUT_MS = 8_000
 const DEFAULT_MAX_BYTES = 256 * 1024

@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
-import { randomUUIDv7 } from "@kaja/shared"
+import { randomUUIDv7 } from "@kaja/shared/id"
 import { write } from "bun"
 import OpenAI from "openai"
 import { ToolError, tool } from "../../agent/agent"

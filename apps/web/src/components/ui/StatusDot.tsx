@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 
 export function StatusDot({ active, label }: Readonly<{ active: boolean; label: string }>) {
   return (

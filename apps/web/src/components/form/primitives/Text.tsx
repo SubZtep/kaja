@@ -1,5 +1,5 @@
 import { Input as BaseInput } from "@base-ui/react/input"
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import { type ComponentProps, useEffect, useState } from "react"
 
 const VARIANTS = {

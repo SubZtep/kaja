@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 
 const TONES = {
   ice: "bg-ice/10 text-ice",

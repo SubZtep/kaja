@@ -1,5 +1,5 @@
 import { SSR_CLIENT_IP_HEADER, SSR_SECRET_HEADER } from "@kaja/schema/api"
-import type { Locale } from "@kaja/shared"
+import type { Locale } from "@kaja/shared/locale"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import type { Session } from "better-auth"

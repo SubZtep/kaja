@@ -30,14 +30,15 @@ Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true
 
 ## Locale sync
 
-- **`locales.ts`** — keeps every non-en-GB locale file (`apps/tui/locales`, `apps/api/locales`, `apps/api/widgets/locales`, `apps/web/messages`) in step with en-GB: same keys, same order. A key that is new, or whose English changed since `HEAD`, gets a `[<locale>] lorem ipsum…` placeholder of similar length (keeping `{params}` and line breaks), unless that translation was itself edited in the same change. Removed keys go away.
+- **`locales.ts`** — keeps every non-en-GB locale file (`apps/tui/locales`, `apps/api/locales`, `apps/api/widgets/locales`, `apps/web/messages`) in step with en-GB: same keys, same order. A key that is new, or whose English changed since `HEAD`, gets a `[<locale>] lorem ipsum…` placeholder of similar length (keeping `{params}` and line breaks), unless that translation was itself edited in the same change. Removed keys go away. The languages come from `@kaja/shared/locale`: a newly listed one gets its files created (all placeholders), a file for an unlisted one is an error, and `apps/web/project.inlang/settings.json` gets the same list.
   ```sh
   bun sync:locales           # rewrite the other languages
   bun sync:locales --stage   # also git-add what it rewrote (pre-commit does this when an en-GB file changes)
-  bun check:locales          # exit 1 if a language is out of step with en-GB or still has placeholders (pre-push on main, CI)
+  bun check:locales          # exit 1 if a language is out of step with en-GB or still has placeholders (pre-push, CI)
   bun sync:locales --todo    # list the placeholders still to translate, as JSON, each with nearby translated keys for terminology
   bun sync:locales --apply f # write translations back from that JSON with a `value` added (checks {params}); the /translate skill drives these two
   ```
+- **`translate_push.sh`** — the last pre-push job: when `check:locales` fails it runs `claude -p "/translate"`, commits the translated locale files, pushes them itself (`--no-verify`, the other jobs already passed) and exits 1 so the original, now stale push stops.
 
 ## Dev utilities
 

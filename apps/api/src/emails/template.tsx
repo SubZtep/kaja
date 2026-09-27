@@ -1,4 +1,4 @@
-import type { Locale } from "@kaja/shared"
+import type { Locale } from "@kaja/shared/locale"
 import { Body, Container, Font, Head, Html } from "@react-email/components"
 import type { User } from "better-auth"
 import type { Translate } from "../core/i18n"

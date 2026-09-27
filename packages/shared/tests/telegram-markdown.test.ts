@@ -5,7 +5,7 @@ import {
   TELEGRAM_MESSAGE_LIMIT,
   telegramImages,
   truncateForStreaming
-} from "../index"
+} from "../telegram/markdown"
 
 test("bold and italic", () => {
   expect(renderTelegramHtml("**bold** and *italic*")).toBe("<b>bold</b> and <i>italic</i>")

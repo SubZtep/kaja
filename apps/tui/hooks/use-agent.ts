@@ -1,7 +1,7 @@
 import { compact, recordPausedCall, replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
-import { commandArgument } from "@kaja/shared"
+import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useRef, useState } from "react"
 import {
   Agent,

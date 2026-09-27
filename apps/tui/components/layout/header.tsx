@@ -1,5 +1,5 @@
 import { Spinner, ThemeProvider } from "@inkjs/ui"
-import { titleCase } from "@kaja/shared"
+import { titleCase } from "@kaja/shared/text"
 import { Box, Text } from "ink"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"

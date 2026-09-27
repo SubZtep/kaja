@@ -1,4 +1,4 @@
-import { cn } from "@kaja/shared"
+import { cn } from "@kaja/shared/ui"
 import type { ElementType, ReactNode } from "react"
 
 /** Centered page column shared by headers, footers, and section bodies. */

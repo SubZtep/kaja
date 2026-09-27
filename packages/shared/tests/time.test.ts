@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test"
-import { getDateTime, getTimeAgo } from "../index"
+import { getDateTime, getTimeAgo } from "../date"
 
 const ZONES = ["UTC", "Asia/Tokyo", "America/Los_Angeles", "Pacific/Kiritimati", "Pacific/Pago_Pago"]
 const originalTz = process.env.TZ

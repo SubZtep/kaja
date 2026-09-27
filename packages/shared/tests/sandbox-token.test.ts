@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { signSandboxToken, verifySandboxToken } from "../sandbox-token"
+import { signSandboxToken, verifySandboxToken } from "../sandbox"
 
 const SECRET = "test-secret"
 const claims = { sub: "user-1", ability: "chrome-devtools", exp: Math.floor(Date.now() / 1000) + 60 }

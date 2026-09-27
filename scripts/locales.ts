@@ -1,11 +1,14 @@
 import { readdir } from "node:fs/promises"
 import { join } from "node:path"
 import { $ } from "bun"
+import { baseLocale, locales } from "../packages/shared/locale"
 
 // Syncs every non-en-GB locale file to en-GB: same keys in the same order; a key that is new or whose English changed since HEAD gets a lorem ipsum placeholder tagged with the language code, unless that translation was itself edited in the working tree. `--stage` git-adds the files it rewrote; `--check` fails on drift or leftover placeholders; `--todo` lists the placeholders as JSON and `--apply <file>` writes their translations back (the /translate skill).
 
 const LOCALE_DIRS = ["apps/tui/locales", "apps/api/locales", "apps/api/widgets/locales", "apps/web/messages"]
-const SOURCE = "en-GB"
+const SOURCE = baseLocale
+// The web's inlang project lists its languages in JSON, so the sync keeps them in step with @kaja/shared/locale
+const INLANG_SETTINGS = "apps/web/project.inlang/settings.json"
 const LOREM =
   "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat".split(
     " "
@@ -129,16 +132,34 @@ type Locales = { json: boolean; sourcePath: string; targets: { locale: string; p
 
 const byName = (a: string, b: string) => a.localeCompare(b)
 
-/** A locale dir's en-GB file and the other languages' files. */
+/** A locale dir's en-GB file and a path for every other supported locale (`@kaja/shared/locale`), whether that file exists yet or not. */
 async function localesOf(dir: string): Promise<Locales> {
   const files = (await readdir(dir)).filter(f => /\.(toml|json)$/.test(f)).sort(byName)
   const source = files.find(f => f.startsWith(`${SOURCE}.`))
   if (!source) throw new Error(`No ${SOURCE} file in ${dir}`)
   const ext = source.slice(source.lastIndexOf("."))
-  const targets = files
-    .filter(f => f !== source && f.endsWith(ext))
-    .map(f => ({ locale: f.slice(0, -ext.length), path: join(dir, f) }))
+  const stray = files.filter(f => f.endsWith(ext) && !(locales as readonly string[]).includes(f.slice(0, -ext.length)))
+  if (stray.length > 0) throw new Error(`Not a supported locale in ${dir}: ${stray.join(", ")}`)
+  const targets = locales
+    .filter(locale => locale !== SOURCE)
+    .map(locale => ({ locale, path: join(dir, `${locale}${ext}`) }))
   return { json: ext === ".json", sourcePath: join(dir, source), targets }
+}
+
+// A missing locale file reads as an empty one, so a sync creates it with every key a placeholder
+async function readLocale(path: string, json: boolean): Promise<string> {
+  const file = Bun.file(path)
+  if (await file.exists()) return file.text()
+  return json ? "{}" : ""
+}
+
+/** Writes the supported locales into the web's inlang settings; returns its path when it was out of step. */
+async function syncInlang(write = true): Promise<string[]> {
+  const settings = (await Bun.file(INLANG_SETTINGS).json()) as Record<string, unknown>
+  const next = { ...settings, baseLocale, locales }
+  if (JSON.stringify(next) === JSON.stringify(settings)) return []
+  if (write) await Bun.write(INLANG_SETTINGS, `${JSON.stringify(next, null, 2)}\n`)
+  return [INLANG_SETTINGS]
 }
 
 type Keep = (key: string) => boolean
@@ -175,7 +196,7 @@ async function syncDir(dir: string, write = true): Promise<string[]> {
 
   const written: string[] = []
   for (const { locale, path } of targets) {
-    const text = await Bun.file(path).text()
+    const text = await readLocale(path, json)
     const current = valuesOf(text, json)
     const headText = await readHead(path)
     const head = headText === undefined ? new Map<string, string>() : valuesOf(headText, json)
@@ -220,7 +241,7 @@ async function todo(): Promise<Todo[]> {
     const { json, sourcePath, targets } = await localesOf(dir)
     const english = valuesOf(await Bun.file(sourcePath).text(), json)
     for (const { locale, path } of targets) {
-      const values = valuesOf(await Bun.file(path).text(), json)
+      const values = valuesOf(await readLocale(path, json), json)
       for (const [key, value] of values) {
         if (!isPlaceholder(value, locale)) continue
         todos.push({ file: path, key, english: english.get(key) ?? "", nearby: nearby(key, english, values, locale) })
@@ -278,7 +299,10 @@ async function apply(input: string): Promise<void> {
 
 /** Exits 1 when a language is out of step with en-GB or still has placeholders (pre-push on main, CI). */
 async function check(): Promise<void> {
-  const drifted = (await Promise.all(LOCALE_DIRS.map(dir => syncDir(dir, false)))).flat()
+  const drifted = [
+    ...(await Promise.all(LOCALE_DIRS.map(dir => syncDir(dir, false)))).flat(),
+    ...(await syncInlang(false))
+  ]
   const untranslated = Map.groupBy(await todo(), t => t.file)
   if (drifted.length === 0 && untranslated.size === 0) return
   for (const path of drifted) console.error(`out of sync with ${SOURCE}: ${path}`)
@@ -296,7 +320,7 @@ if (args[0] === "--todo") console.log(JSON.stringify(await todo(), null, 2))
 else if (args[0] === "--apply" && args[1]) await apply(args[1])
 else if (args[0] === "--check") await check()
 else {
-  const written = (await Promise.all(LOCALE_DIRS.map(dir => syncDir(dir)))).flat()
+  const written = [...(await Promise.all(LOCALE_DIRS.map(dir => syncDir(dir)))).flat(), ...(await syncInlang())]
   for (const path of written) console.log(`synced ${path}`)
   if (args.includes("--stage") && written.length > 0) await $`git add ${written}`
 }

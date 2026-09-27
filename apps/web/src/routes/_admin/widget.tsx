@@ -6,7 +6,7 @@ import type {
 } from "@kaja/schema/api"
 import { widgetKeySchema, widgetTypeSchema } from "@kaja/schema/api"
 import { type NasiPersonasResponse, NasiPersonasResponseSchema } from "@kaja/schema/nasi"
-import { getTimeAgo } from "@kaja/shared"
+import { getTimeAgo } from "@kaja/shared/date"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useLoaderData } from "@tanstack/react-router"
 import type { CellContext } from "@tanstack/react-table"
