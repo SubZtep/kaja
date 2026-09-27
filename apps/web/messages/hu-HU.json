@@ -100,7 +100,7 @@
   "confirm_dialog_description": "Ezt a műveletet nem lehet visszavonni.",
   "confirm_dialog_cancel": "Mégse",
   "confirm_dialog_confirm": "Megerősítés",
-  "confirm_dialog_type_to_confirm": "[hu-HU] lorem ipsum {text}",
+  "confirm_dialog_type_to_confirm": "A megerősítéshez írd be: {text}",
   "confirm_dialog_are_you_sure": "Biztos vagy benne?",
   "sign_out": "Kijelentkezés",
   "sign_out_confirm_title": "Kijelentkezel?",
