@@ -59,7 +59,9 @@ export const ApiEnvSchema = z.object({
     .describe("Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes")
     .meta({ example: "kaja", devDefault: true, section: "Config API" }),
 
-  BUN_TEST: trimmed.optional().describe("Set by the Bun test runner; disables rate limiting when present"),
+  BUN_TEST: trimmed
+    .optional()
+    .describe("Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile"),
   RATE_LIMIT_ENABLED: bool
     .optional()
     .describe("Set false to disable global + auth + nasi/widget turn rate limiters")

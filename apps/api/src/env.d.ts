@@ -42,7 +42,7 @@ declare module "bun" {
     CI?: string
     /** Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes */
     CONFIG_API_TOKEN?: string
-    /** Set by the Bun test runner; disables rate limiting when present */
+    /** Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile */
     BUN_TEST?: string
     /** Set false to disable global + auth + nasi/widget turn rate limiters */
     RATE_LIMIT_ENABLED?: string
