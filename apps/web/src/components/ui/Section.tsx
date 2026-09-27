@@ -32,7 +32,7 @@ export function Section({
       )}
       style={style}
     >
-      {title && <h2 className="m-0 mb-4 font-semibold text-fg text-[15px]">{title}</h2>}
+      {title && <h2 className="m-0 mb-4 font-display font-extrabold text-fg text-base">{title}</h2>}
       {children}
     </div>
   )

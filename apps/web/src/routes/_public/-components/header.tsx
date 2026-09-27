@@ -59,7 +59,7 @@ function MobileNav({ menuItems, user }: Readonly<{ menuItems: NavItem[]; user: R
       {user ? (
         <div className="flex items-center justify-between pt-4">
           <div className="min-w-0">
-            <div className="truncate font-display font-bold text-fg text-sm">{getDisplayName(user)}</div>
+            <div className="truncate font-display font-extrabold text-fg text-sm">{getDisplayName(user)}</div>
             <div className="truncate font-crt text-muted text-xs capitalize">{user.role ?? "user"}</div>
           </div>
           <SignOutButton onClick={close} />

@@ -17,12 +17,11 @@
   --radius-xl: 0.875rem;
   --radius-full: 1rem;
 
-  --font-headline: "Manrope Variable", "Manrope", sans-serif;
-  --font-display: "Syne Variable", "Syne", "Manrope Variable", sans-serif;
-  --font-stamp: "Silkscreen", "Syne Variable", sans-serif;
-  --font-crt: "Share Tech Mono", "JetBrains Mono Variable", monospace;
+  --font-display: "Syne", sans-serif;
+  --font-stamp: "Silkscreen", "Syne", sans-serif;
+  --font-crt: "Share Tech Mono", monospace;
   --font-body: "Inter Variable", "Inter", sans-serif;
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
+  --font-mono: "Share Tech Mono", monospace;
 
   --color-bg: #0d100c;
   --color-surface: #1a2016;
@@ -182,11 +181,11 @@
   }
 
   h1 {
-    @apply text-2xl font-extrabold mb-3 font-headline;
+    @apply text-2xl font-extrabold mb-3 font-display;
   }
 
   h2 {
-    @apply text-xl font-bold my-1 font-headline first:mt-0;
+    @apply text-xl font-extrabold my-1 font-display first:mt-0;
   }
   a {
     @apply text-fg;
