@@ -1,3 +1,6 @@
+import silkscreenBold from "@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff2?url"
+import syneRegular from "@fontsource/syne/files/syne-latin-400-normal.woff2?url"
+import syneExtraBold from "@fontsource/syne/files/syne-latin-800-normal.woff2?url"
 import * as Sentry from "@sentry/tanstackstart-react"
 import type { QueryClient } from "@tanstack/react-query"
 import {
@@ -18,6 +21,9 @@ import { baseLocale, getLocale, getTextDirection, type Locale, locales, localize
 import appCss from "../styles.css?url"
 
 const OG_IMAGE = "https://kaja.io/og-image.png"
+
+// The hero's fonts (headline, subline, stickers); preloaded so they don't wait for the stylesheet, which would shift the layout when they swap in
+const PRELOAD_FONTS = [syneExtraBold, syneRegular, silkscreenBold]
 
 const OG_LOCALE: Record<Locale, string> = {
   "en-GB": "en_GB",
@@ -85,6 +91,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           rel: "stylesheet",
           href: appCss
         },
+        ...PRELOAD_FONTS.map(href => ({
+          rel: "preload",
+          as: "font",
+          type: "font/woff2",
+          href,
+          crossOrigin: "anonymous" as const
+        })),
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
@@ -151,10 +164,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = getLocale()
   const ogLocale = OG_LOCALE[locale]
+  // The session, sandbox and widget requests all go to the API origin
+  const apiUrl = Route.useLoaderData({ select: data => data.apiUrl })
 
   return (
     <html lang={locale} dir={getTextDirection()} suppressHydrationWarning>
       <head>
+        {apiUrl && <link rel="preconnect" href={apiUrl} />}
         <HeadContent />
 
         <meta property="og:type" content="website" />
