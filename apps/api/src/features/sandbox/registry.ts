@@ -1,9 +1,9 @@
 import { createHmac } from "node:crypto"
 import type { McpSandbox } from "@kaja/nasi"
-import type { Sandbox } from "@kaja/schema/api"
+import { SANDBOX_FULL_HEADER, type Sandbox } from "@kaja/schema/api"
 import { env } from "../../core/env"
 import { lookupGeo } from "../../core/geo"
-import { sandboxService } from "../../services"
+import { abilityService, sandboxService } from "../../services"
 import type { SandboxTunnel } from "./tunnel"
 
 /** Connected sandboxes by id. Their rows say `online`, but only this process holds their sockets (one API instance). */
@@ -68,21 +68,35 @@ function distance(a: { latitude: number; longitude: number }, b: { latitude: num
 // How full a sandbox is: running servers over its cap (1 when it takes none).
 function fullness(sandbox: Sandbox, tunnel: SandboxTunnel): number {
   const max = tunnel.info.maxProcesses
-  return max > 0 ? (tunnel.load?.running ?? sandbox.load?.running ?? 0) / max : 1
+  return max > 0 ? (tunnel.running ?? sandbox.load?.running ?? 0) / max : 1
 }
+
+/** Where {@link pickSandbox} put a user's ability, and whose box that is. */
+export type SandboxPick = { tunnel: SandboxTunnel; borrowed: boolean }
 
 /**
  * The sandbox a user's turn runs its stdio abilities in: the last one while it's still usable, else their own (the
- * least full), else, when they allow it, one another user shares (the nearest, then the least full), else the official box.
+ * least full), else, when they allow it and the ability doesn't need a trusted box, one another user shares (the
+ * nearest, then the least full), else the official box. `skip` leaves out sandboxes that just answered they're full.
  */
-export async function pickSandbox(userId: string, ability: string): Promise<SandboxTunnel | undefined> {
+export async function pickSandbox(
+  userId: string,
+  ability: string,
+  opts: { trusted?: boolean; skip?: Set<string> } = {}
+): Promise<SandboxPick | undefined> {
   const { useShared } = await sandboxService.settings(userId)
-  const usable = (await sandboxService.usableBy(userId, useShared)).flatMap(sandbox => {
+  const usable = (await sandboxService.usableBy(userId, useShared && !opts.trusted)).flatMap(sandbox => {
     const tunnel = tunnels.get(sandbox.id)
-    return tunnel && !tunnel.closed && tunnel.info.abilities.includes(ability) ? [{ sandbox, tunnel }] : []
+    return tunnel && !tunnel.closed && !opts.skip?.has(sandbox.id) && tunnel.info.abilities.includes(ability)
+      ? [{ sandbox, tunnel }]
+      : []
+  })
+  const pick = (entry: (typeof usable)[number]): SandboxPick => ({
+    tunnel: entry.tunnel,
+    borrowed: entry.sandbox.ownerId !== userId && entry.sandbox.kind !== "official"
   })
   const last = usable.find(entry => entry.sandbox.id === lastPick.get(userId))
-  if (last && fullness(last.sandbox, last.tunnel) < 1) return last.tunnel
+  if (last && fullness(last.sandbox, last.tunnel) < 1) return pick(last)
 
   const place = places.get(userId)
   const byFullness = (a: (typeof usable)[number], b: (typeof usable)[number]) =>
@@ -103,21 +117,63 @@ export async function pickSandbox(userId: string, ability: string): Promise<Sand
   const ordered = [...own, ...shared, ...official]
   const picked = ordered.find(entry => fullness(entry.sandbox, entry.tunnel) < 1) ?? ordered[0]
   if (picked) lastPick.set(userId, picked.sandbox.id)
-  return picked?.tunnel
+  return picked && pick(picked)
 }
 
-/** A turn's MCP sandbox: an ability's first request picks a sandbox for the user, and the turn's later ones go there too. */
+/** How many other sandboxes a request that found its sandbox full tries. */
+const FULL_RETRIES = 3
+
+/**
+ * A turn's MCP sandbox: an ability's first request picks a sandbox for the user (another one when that answers it's
+ * full), and the turn's later ones go there too. Closing it releases the user's servers on sandboxes they borrowed,
+ * so nothing of the turn (a browser's logins) stays on someone else's machine.
+ */
 export function mcpSandboxFor(userId: string): McpSandbox {
-  const picked = new Map<string, Promise<SandboxTunnel | undefined>>()
+  const picked = new Map<string, Promise<SandboxPick | undefined>>()
+  let trusted: Promise<Set<string>> | undefined
+  // The user's abilities that must stay on their own or the official sandbox (the manifest's trustedSandbox).
+  const needsTrust = async (ability: string) => {
+    trusted ??= abilityService
+      .mcpForUser(userId)
+      .then(abilities => new Set(abilities.filter(a => a.trustedSandbox).map(a => a.name)))
+      .catch(() => new Set<string>())
+    return (await trusted).has(ability)
+  }
+
   return {
     fetch: async (input, init) => {
       const ability = decodeURIComponent(/^\/mcp\/([^/]+)$/.exec(new URL(String(input)).pathname)?.[1] ?? "")
-      if (!picked.has(ability)) picked.set(ability, pickSandbox(userId, ability))
-      const tunnel = await picked.get(ability)
-      if (!tunnel || tunnel.closed) {
-        return Response.json({ error: "no MCP sandbox is online for you right now" }, { status: 503 })
+      if (!picked.has(ability)) {
+        picked.set(
+          ability,
+          needsTrust(ability).then(trust => pickSandbox(userId, ability, { trusted: trust }))
+        )
       }
-      return tunnel.request(pseudonymFor(userId, tunnel.id), input, init)
+      // A retry resends the body, so it's read once up front.
+      const body =
+        init?.body === undefined || init.body === null ? undefined : await new Response(init.body).arrayBuffer()
+      const skip = new Set<string>()
+      for (let attempt = 0; ; attempt++) {
+        const current = await picked.get(ability)
+        if (!current || current.tunnel.closed) {
+          return Response.json({ error: "no MCP sandbox is online for you right now" }, { status: 503 })
+        }
+        const { tunnel } = current
+        const response = await tunnel.request(pseudonymFor(userId, tunnel.id), input, { ...init, body })
+        if (response.status !== 503 || !response.headers.has(SANDBOX_FULL_HEADER) || attempt >= FULL_RETRIES) {
+          return response
+        }
+        await response.body?.cancel()
+        skip.add(tunnel.id)
+        const trust = await needsTrust(ability)
+        picked.set(ability, pickSandbox(userId, ability, { trusted: trust, skip }))
+      }
+    },
+    close: async () => {
+      for (const [ability, pending] of picked) {
+        const current = await pending.catch(() => undefined)
+        if (current?.borrowed) current.tunnel.release(pseudonymFor(userId, current.tunnel.id), ability)
+      }
     }
   }
 }

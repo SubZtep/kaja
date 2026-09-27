@@ -33,6 +33,12 @@ export const McpAbilitySchema = z
       .default("never")
       .describe("When tool calls ask first: writes = unless the tool is marked read-only"),
     tools: z.array(z.string().min(1)).optional().describe("Only these of the server's tools reach the model"),
+    trustedSandbox: z
+      .boolean()
+      .default(false)
+      .describe(
+        "In the cloud, only the user's own MCP sandboxes or the official one run it, never one another person shares (stdio)"
+      ),
     localOnlyArgs: z
       .array(z.string().min(1))
       .optional()

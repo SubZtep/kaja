@@ -25,10 +25,11 @@ describe("UserIsolation", () => {
   })
 })
 
-test("asUser runs the command through setpriv as that user, with no capabilities left, keeping its args", () => {
+test("asUser runs the command through prlimit and setpriv as that user, with no capabilities left, keeping its args", () => {
   const wrapped = asUser("bunx", ["pkg@1", "--flag"], { uid: 20_001, gid: 20_001 }, 1500)
-  expect(wrapped.command).toBe("setpriv")
-  expect(wrapped.args.slice(0, 7)).toEqual([
+  expect(wrapped.command).toBe("prlimit")
+  expect(wrapped.args.slice(0, 4)).toEqual(["--nproc=512", "--nofile=4096", "--", "setpriv"])
+  expect(wrapped.args.slice(4, 11)).toEqual([
     "--reuid=20001",
     "--regid=20001",
     "--groups=1500",

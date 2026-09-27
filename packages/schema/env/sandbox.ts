@@ -41,8 +41,14 @@ export const SandboxEnvSchema = z.object({
     .default(10 * 60 * 1000)
     .describe("How long an unused server process is kept warm before it's stopped (ms)"),
   SANDBOX_MAX_PROCESSES: positiveInt
-    .default(8)
-    .describe("Most server processes running at once, over all users; each Chrome needs about 300-500 MB of RAM"),
+    .optional()
+    .describe(
+      "Most server processes running at once, over all users; unset, one per 512 MB of the container's memory limit (else the machine's RAM), less 512 MB for the sandbox itself"
+    )
+    .meta({ example: "8" }),
+  SANDBOX_SERVER_MEMORY: positiveInt
+    .default(1024 * 1024 * 1024)
+    .describe("Bytes of memory one server (a browser with all its processes) may use before it's stopped"),
   SANDBOX_ISOLATE_USERS: bool
     .default(true)
     .describe(

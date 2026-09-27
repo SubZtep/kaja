@@ -20,8 +20,11 @@ export type McpAbilityTarget = {
   sandboxed?: boolean
 }
 
-/** The host's MCP sandboxes (apps/sandbox): a `fetch` that takes `<SANDBOX_ORIGIN>/mcp/<ability>` requests to one serving the caller. */
-export type McpSandbox = { fetch: FetchLike }
+/**
+ * The host's MCP sandboxes (apps/sandbox): a `fetch` that takes `<SANDBOX_ORIGIN>/mcp/<ability>` requests to one
+ * serving the caller, and a `close` the instance calls after its own MCP connections close (the turn is over).
+ */
+export type McpSandbox = { fetch: FetchLike; close?: () => Promise<void> }
 
 /** The origin sandboxed abilities' URLs are given: never looked up, only routed to {@link McpSandbox.fetch}. */
 export const SANDBOX_ORIGIN = "http://sandbox.invalid"

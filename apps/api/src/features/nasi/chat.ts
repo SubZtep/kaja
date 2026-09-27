@@ -13,7 +13,7 @@ import { isPublicHttpUrl } from "@kaja/shared/net"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
-import { abilityService, modelService } from "../../services"
+import { abilityService, modelService, sandboxService } from "../../services"
 import { mcpSandboxFor } from "../sandbox"
 import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
@@ -116,6 +116,11 @@ export function nasiToolDeps() {
   return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
 }
 
+// Said to a user's turns when their stdio abilities may run on a sandbox another person runs.
+const SHARED_SANDBOX_NOTE =
+  " Tools like the browser may run on another person's computer, who can see the pages it opens: never sign in or " +
+  "enter the user's personal data there, and tell the user if a task would need that."
+
 type SandboxPicker = (userId: string) => McpSandbox
 let sandboxOverride: SandboxPicker | undefined
 
@@ -144,7 +149,10 @@ export async function openNasiFor(opts: {
   const source = opts.abilities ?? { userId: opts.userId }
   const personas = await personasFor(source)
   // Only the user's own turns get their keys; a widget's skills-only source never needs one.
-  const keys = "userId" in source ? await abilityService.keysForUser(source.userId) : new Map<string, string>()
+  const [keys, sandboxSettings] =
+    "userId" in source
+      ? await Promise.all([abilityService.keysForUser(source.userId), sandboxService.settings(source.userId)])
+      : [new Map<string, string>(), undefined]
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
@@ -164,7 +172,8 @@ export async function openNasiFor(opts: {
           ? "read_file and list_files run on the user's own machine, scoped to their current directory — "
           : "You have no access to the user's machine — ") +
         "you cannot run a shell. " +
-        "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing.",
+        "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing." +
+        (sandboxSettings?.useShared ? SHARED_SANDBOX_NOTE : ""),
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
       channelInstruction: opts.channelInstruction,
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined

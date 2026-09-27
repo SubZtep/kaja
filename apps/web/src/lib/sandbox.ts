@@ -14,10 +14,10 @@ export function formatBytes(bytes: number): string {
   return `${value.toFixed(unit >= 3 ? 1 : 0)} ${UNITS[unit]}`
 }
 
-/** The `docker run` that starts a sandbox: linked to the account whose `key` it carries, else anonymous. */
+/** The `docker run` that starts a sandbox: linked to the account whose `key` it carries, else anonymous; it lends at most 4 GB and 2 CPUs (7 browsers). */
 export function runCommand(key?: string): string {
   const env = key ? ` -e KAJA_SANDBOX_KEY=${key}` : ""
-  return `docker run -d --restart unless-stopped --shm-size 1g -v kaja-sandbox:/data${env} subztep/kaja-sandbox`
+  return `docker run -d --restart unless-stopped --memory 4g --cpus 2 --shm-size 1g -v kaja-sandbox:/data${env} subztep/kaja-sandbox`
 }
 
 /** Where it is, as the geolocation service placed its IP. */

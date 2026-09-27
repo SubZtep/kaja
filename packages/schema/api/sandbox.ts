@@ -41,7 +41,13 @@ export const sandboxStatsSchema = z.object({
     madeRoom: z.number().int(),
     crashed: z.number().int(),
     /** Turned away with every server mid-call. */
-    refusedFull: z.number().int()
+    refusedFull: z.number().int(),
+    /** Turned away with too little free memory left. */
+    refusedMemory: z.number().int(),
+    /** Stopped for using more memory than a server may (SANDBOX_SERVER_MEMORY). */
+    stoppedMemory: z.number().int(),
+    /** Stopped when the turn of a user borrowing the sandbox ended. */
+    released: z.number().int()
   }),
   /** The browsers' egress proxy: connections open now, and ones let through, refused (a private or unknown address, a bad request) and failed upstream. */
   egress: z.object({
@@ -87,7 +93,9 @@ export const sandboxFrameSchema = z.discriminatedUnion("t", [
     t: z.literal("head"),
     id: frameId,
     status: z.number().int().min(100).max(599),
-    headers: z.array(z.tuple([z.string(), z.string()])).max(100)
+    headers: z.array(z.tuple([z.string(), z.string()])).max(100),
+    /** Servers running or starting as it answers, fresher than the last heartbeat. */
+    running: z.number().int().min(0)
   }),
   /** A piece of the response body, base64. */
   z.object({ t: z.literal("chunk"), id: frameId, data: z.string() }),
@@ -111,12 +119,17 @@ export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
     body: z.string().nullable()
   }),
   z.object({ t: z.literal("cancel"), id: frameId }),
-  z.object({ t: z.literal("stats"), id: frameId })
+  z.object({ t: z.literal("stats"), id: frameId }),
+  /** The turn of a user borrowing the sandbox ended: stop their `ability` server, so nothing (a browser's logins) outlives it. */
+  z.object({ t: z.literal("release"), user: z.string(), ability: z.string() })
 ])
 
 /** Headers a sandbox connects with: the owner's sandbox key (none: anonymous) and the `<id>.<secret>` it was welcomed with before. */
 export const SANDBOX_KEY_HEADER = "x-kaja-sandbox-key"
 export const SANDBOX_INSTANCE_HEADER = "x-kaja-sandbox-instance"
+
+/** Set on a sandbox's 503 when it has no room for another server, so the API tries another sandbox. */
+export const SANDBOX_FULL_HEADER = "x-kaja-sandbox-full"
 
 /** A registered sandbox: `official` is the operator's own box, `owned` a user's, `anonymous` one started without a key. */
 export const sandboxSchema = z.object({

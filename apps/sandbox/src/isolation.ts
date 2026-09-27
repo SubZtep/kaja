@@ -58,9 +58,14 @@ export class UserIsolation {
   }
 }
 
+/** Processes (threads count too) one user may run across all their servers, and files one process may hold open. */
+const MAX_USER_PROCESSES = 512
+const MAX_OPEN_FILES = 4096
+
 /**
- * `command args` run as `runAs` through util-linux's `setpriv`: that uid and gid, the caches' group besides, every
- * capability dropped for good, and umask 002 so what it writes into the shared caches stays usable by the others.
+ * `command args` run as `runAs` through util-linux's `prlimit` and `setpriv`: capped processes and open files, that
+ * uid and gid, the caches' group besides, every capability dropped for good, and umask 002 so what it writes into the
+ * shared caches stays usable by the others. The process cap counts per uid, so it holds across a user's servers.
  */
 export function asUser(
   command: string,
@@ -69,8 +74,12 @@ export function asUser(
   cacheGid: number | undefined
 ): { command: string; args: string[] } {
   return {
-    command: "setpriv",
+    command: "prlimit",
     args: [
+      `--nproc=${MAX_USER_PROCESSES}`,
+      `--nofile=${MAX_OPEN_FILES}`,
+      "--",
+      "setpriv",
       `--reuid=${runAs.uid}`,
       `--regid=${runAs.gid}`,
       cacheGid === undefined ? "--clear-groups" : `--groups=${cacheGid}`,

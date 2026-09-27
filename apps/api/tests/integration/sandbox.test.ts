@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -7,7 +7,7 @@ import { SANDBOX_KEY_HEADER } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { lookupGeo, setGeoLookupOverride } from "../../src/core/geo"
-import { pickSandbox } from "../../src/features/sandbox/registry"
+import { mcpSandboxFor, pickSandbox } from "../../src/features/sandbox/registry"
 import { sandboxService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, waitFor } from "./sandbox-helpers"
@@ -21,6 +21,18 @@ let apiUrl: string
 let tokenA: string
 let tokenB: string
 let userA: string
+
+/** An MCP initialize request, the first a new server gets. */
+const initialize: RequestInit = {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+  body: JSON.stringify({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1.0.0" } }
+  })
+}
 
 const as = (token: string) => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
 const newKey = async (token: string): Promise<string> =>
@@ -96,18 +108,63 @@ describe("routing", () => {
     const own = await startSandbox({ apiUrl, abilities: [ability], key: await newKey(tokenA) })
     const theirs = await startSandbox({ apiUrl, abilities: [ability], key: await newKey(tokenB) })
     try {
-      expect((await pickSandbox(userA, ability))?.id).toBe(own.id)
+      expect((await pickSandbox(userA, ability))?.tunnel.id).toBe(own.id)
       expect(await pickSandbox(userA, "not-an-ability")).toBeUndefined()
       await own.close()
       expect(await pickSandbox(userA, ability)).toBeUndefined()
       expect((await settings(tokenA, { useShared: true })).status).toBe(200)
-      expect((await pickSandbox(userA, ability))?.id).toBe(theirs.id)
+      expect(await pickSandbox(userA, ability)).toMatchObject({ tunnel: { id: theirs.id }, borrowed: true })
+      // An ability that needs a trusted sandbox never goes to another person's.
+      expect(await pickSandbox(userA, ability, { trusted: true })).toBeUndefined()
       expect(await (await settings(tokenB, { share: false })).json()).toMatchObject({ share: false, useShared: false })
       expect(await pickSandbox(userA, ability)).toBeUndefined()
     } finally {
       await theirs.close()
       await settings(tokenA, { useShared: false })
       await settings(tokenB, { share: true })
+    }
+  }, 30_000)
+
+  test("a full sandbox sends the turn to the next one, and a borrowed one forgets it when the turn ends", async () => {
+    const warned = spyOn(console, "warn").mockImplementation(() => {})
+    const own = await startSandbox({
+      apiUrl,
+      abilities: [ability],
+      key: await newKey(tokenA),
+      hasRoom: async () => false
+    })
+    const theirs = await startSandbox({ apiUrl, abilities: [ability], key: await newKey(tokenB) })
+    try {
+      await settings(tokenA, { useShared: true })
+      const sandbox = mcpSandboxFor(userA)
+      const res = await sandbox.fetch(`http://sandbox.invalid/mcp/${ability}`, initialize)
+      expect(res.status).toBe(200)
+      await res.text()
+      expect(own.pool.counts.refusedMemory).toBe(1)
+      expect(theirs.pool.size).toBe(1)
+      await sandbox.close?.()
+      await waitFor(async () => (theirs.pool.size === 0 ? true : undefined))
+      expect(theirs.pool.counts.released).toBe(1)
+    } finally {
+      warned.mockRestore()
+      await Promise.all([own.close(), theirs.close()])
+      await settings(tokenA, { useShared: false })
+    }
+  }, 30_000)
+
+  test("the user's own sandbox keeps their server warm after the turn", async () => {
+    const own = await startSandbox({ apiUrl, abilities: [ability], key: await newKey(tokenA) })
+    try {
+      const sandbox = mcpSandboxFor(userA)
+      const res = await sandbox.fetch(`http://sandbox.invalid/mcp/${ability}`, initialize)
+      expect(res.status).toBe(200)
+      await res.text()
+      await sandbox.close?.()
+      await Bun.sleep(300)
+      expect(own.pool.size).toBe(1)
+      expect(own.pool.counts.released).toBe(0)
+    } finally {
+      await own.close()
     }
   }, 30_000)
 

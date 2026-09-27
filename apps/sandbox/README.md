@@ -10,12 +10,12 @@ It runs **chrome-devtools**, a headless Chrome the assistant can browse with, re
 
 ```sh
 # linked to your account (key from the web app's Sandbox page)
-docker run -d --restart unless-stopped --shm-size 1g -v kaja-sandbox:/data -e KAJA_SANDBOX_KEY=ks_… subztep/kaja-sandbox
+docker run -d --restart unless-stopped --memory 4g --cpus 2 --shm-size 1g -v kaja-sandbox:/data -e KAJA_SANDBOX_KEY=ks_… subztep/kaja-sandbox
 # anonymous: shared with everyone
-docker run -d --restart unless-stopped --shm-size 1g -v kaja-sandbox:/data subztep/kaja-sandbox
+docker run -d --restart unless-stopped --memory 4g --cpus 2 --shm-size 1g -v kaja-sandbox:/data subztep/kaja-sandbox
 ```
 
-The `/data` volume keeps its registration, so a restart comes back as the same sandbox. `SANDBOX_NAME` names it, `SANDBOX_MAX_PROCESSES` caps how many servers (browsers) it runs at once.
+The `/data` volume keeps its registration, so a restart comes back as the same sandbox. `SANDBOX_NAME` names it. `--memory` and `--cpus` are how much of the machine it lends: it runs one server (browser) per 512 MB of its memory limit, less 512 MB for itself, so 7 with `--memory 4g`; `SANDBOX_MAX_PROCESSES` overrides that.
 
 ## How a cloud turn reaches it
 
@@ -36,11 +36,11 @@ The `/data` volume keeps its registration, so a restart comes back as the same s
 
 ## Trust
 
-The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Users' ability keys are never sent to any sandbox, so keyed stdio abilities stay local-only.
+The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Users' ability keys are never sent to any sandbox, so keyed stdio abilities stay local-only. When a turn borrowed someone else's sandbox, the API sends `release` as it ends and the user's server stops at once, so no browser profile (cookies, logins) waits there for the operator; and the model is told not to sign in or type personal data when shared sandboxes are on. A manifest with `trustedSandbox = true` never runs in a shared one at all.
 
 ## One Linux user per user
 
-In the image the sandbox runs as root, only so it can start every user's servers as **their own Linux user**: a uid from 20000 up (with a private group of the same number), kept for that user while the sandbox runs. `src/isolation.ts` starts each server through util-linux's `setpriv` with that uid, every capability dropped for good (`--inh-caps=-all --bounding-set=-all --no-new-privs`) and umask `002`. The server's throwaway HOME is `0700` and owned by that uid, and so is Chrome's profile under `/tmp`, so one user's browser can't read another's cookies or pages. The only thing they share is the package caches (`SANDBOX_CACHE_DIR`), through the `mcp` group (gid 1500), group-writable. Outside the image (not root) or with `SANDBOX_ISOLATE_USERS=false`, every server runs as the sandbox's own user.
+In the image the sandbox runs as root, only so it can start every user's servers as **their own Linux user**: a uid from 20000 up (with a private group of the same number), kept for that user while the sandbox runs. `src/isolation.ts` starts each server through util-linux's `prlimit` (at most 512 processes and threads per uid, 4096 open files) and `setpriv` with that uid, every capability dropped for good (`--inh-caps=-all --bounding-set=-all --no-new-privs`) and umask `002`. The server's throwaway HOME is `0700` and owned by that uid, and so is Chrome's profile under `/tmp`, so one user's browser can't read another's cookies or pages. The only thing they share is the package caches (`SANDBOX_CACHE_DIR`), through the `mcp` group (gid 1500), group-writable. Outside the image (not root) or with `SANDBOX_ISOLATE_USERS=false`, every server runs as the sandbox's own user.
 
 This keeps users apart from each other. It doesn't keep anything from the operator, who is root on their own machine.
 
@@ -48,7 +48,9 @@ This keeps users apart from each other. It doesn't keep anything from the operat
 
 - **Started on first use**, one per (user, ability), and **kept warm between turns**: the browser's open pages are still there on your next message. Every turn opens a new MCP session; the relay answers its `initialize` from the first one, so the server itself is only initialized once.
 - **Stopped when idle** for `SANDBOX_IDLE_MS` (10 minutes by default). A call that's still running gets one more idle window first.
-- **At most `SANDBOX_MAX_PROCESSES`** (8) run at once, across all users. When it's full, the least recently used idle server is stopped to make room. Only when every server is in the middle of a call does a new user get a `503`.
+- **At most `SANDBOX_MAX_PROCESSES`** run at once, across all users: unset, one per 512 MB of the container's memory limit (else the machine's RAM), less 512 MB. When it's full, the least recently used idle server is stopped to make room. A new server also needs 512 MB free at that moment (the same idle server is stopped for it). Only when every server is in the middle of a call, or memory stays short, does a new user get a `503` marked `x-kaja-sandbox-full`, and the API tries their next sandbox.
+- **Stopped over its memory**: every 30 s the pool measures each server's whole process tree, and one above `SANDBOX_SERVER_MEMORY` (1 GB) is stopped, even mid-call, so one user's browser can't take the whole sandbox.
+- **Stopped when a borrowed turn ends** (`release`), on a sandbox that isn't the user's own or the official one.
 - Each server gets a **throwaway HOME** (removed when it stops) and only `PATH`, the shared package caches (`SANDBOX_CACHE_DIR`) and its manifest's `env`: none of the sandbox's own variables, such as its key.
 
 ## The egress proxy
@@ -149,7 +151,8 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `SANDBOX_OVERRIDES` | — | JSON replacing a manifest's command/args on this host (the image uses `overrides.json`) |
 | `SANDBOX_CACHE_DIR` | — | shared bun/uv/npm caches for the servers, so fetched packages stay (the image uses `/home/node/.cache/mcp`) |
 | `SANDBOX_IDLE_MS` | `600000` | how long an unused server stays warm |
-| `SANDBOX_MAX_PROCESSES` | `8` | most servers at once; each Chrome needs about 300–500 MB of RAM |
+| `SANDBOX_MAX_PROCESSES` | from memory | most servers at once; unset, one per 512 MB of the memory limit, less 512 MB |
+| `SANDBOX_SERVER_MEMORY` | `1073741824` | bytes one server (a browser with all its processes) may use before it's stopped |
 | `SANDBOX_ISOLATE_USERS` | `true` | each user's servers as their own Linux user (only when running as root) |
 | `SANDBOX_EGRESS_PORT` | `3128` | the egress proxy's port; must match `overrides.json` |
 | `WEB_PROXY` | — | `http://` proxy the egress proxy tunnels checked traffic through; unset connects directly |
@@ -160,8 +163,8 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 ## Observability
 
 - The API's `sandbox` table has every sandbox that ever connected: owner, online, when last seen, IP and its full geolocation, the `hello` info and the latest `heartbeat`; every heartbeat is also a row in `sandbox_sample` (kept 7 days), which the admin dashboard charts over the last day.
-- Asked over the socket, the sandbox reports what's running right now: every server with its (pseudonymous) user, state, open calls and sessions, and the memory of its whole process tree (the browser included, read from `/proc`); the host's CPUs, load and memory, and the container's memory limit; and, since the sandbox started, how many servers started, failed to start, stopped idle, stopped for room, crashed, or were refused, plus the egress proxy's open, allowed, refused and failed connections. The API's admins see every sandbox live on the web's **Admin → Dashboard** page, through `GET /admin/sandbox`, with the users' emails.
-- The logs have a line for connecting and losing the API, every server started, stopped when idle or stopped to make room, and every "sandbox is full" refusal, each with the running count.
+- Asked over the socket, the sandbox reports what's running right now: every server with its (pseudonymous) user, state, open calls and sessions, and the memory of its whole process tree (the browser included, read from `/proc`); the host's CPUs, load and memory, and the container's memory limit; and, since the sandbox started, how many servers started, failed to start, stopped idle, stopped for room, stopped over memory, were released, crashed, or were refused (full or short of memory), plus the egress proxy's open, allowed, refused and failed connections. The API's admins see every sandbox live on the web's **Admin → Dashboard** page, through `GET /admin/sandbox`, with the users' emails.
+- The logs have a line for connecting and losing the API, every server started, stopped when idle, to make room, over its memory or released, and every "sandbox is full" or short-of-memory refusal, each with the running count.
 - In production, servers that won't start, exit on their own or error go to the sandbox's own Sentry project with their last 20 stderr lines.
 
 ## Not yet
@@ -177,8 +180,9 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `src/server.ts` | entry: starts the egress proxy, loads manifests, connects the tunnel, stops everything on SIGTERM/SIGINT |
 | `src/tunnel.ts` | the dial-out WebSocket: hello, heartbeats, reconnects, and running the API's request frames |
 | `src/hardware.ts` | the hello's hardware facts and the heartbeat's load |
-| `src/pool.ts` | one server per (user, ability): idle stop, cap, making room |
-| `src/isolation.ts` | a Linux uid per user, and the `setpriv` wrapper that starts a server as it |
+| `src/pool.ts` | one server per (user, ability): idle stop, cap, making room, memory watchdog, release |
+| `src/capacity.ts` | the default cap from memory, and the live free-memory check |
+| `src/isolation.ts` | a Linux uid per user, and the `prlimit` + `setpriv` wrapper that starts a server as it |
 | `src/relay.ts` | shares one stdio child between many HTTP sessions, renumbering request ids |
 | `src/egress.ts` | the egress proxy |
 | `src/stats.ts` | the stats: the pool's servers and counts, memory per process tree, host and container memory |

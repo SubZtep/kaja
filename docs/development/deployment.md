@@ -137,9 +137,12 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
   with their last stderr lines; no tracing, and request headers are dropped.
 - The image copies `marketplace/mcp` at build time, so a new or changed stdio manifest needs a sandbox
   redeploy too. A redeploy restarts every browser, so users lose the pages they had open.
-- Size `SANDBOX_MAX_PROCESSES` (default 8) to the server's RAM: each Chrome takes about 300-500 MB. When
-  it's full, the least recently used idle browser is stopped for the newcomer; only when every one is mid-call
-  is a user turned away. The logs show each start, stop and refusal with the running count.
+- The sandbox sizes itself: one server per 512 MB of the container's memory limit (else the machine's RAM),
+  less 512 MB for itself; `SANDBOX_MAX_PROCESSES` overrides it. A new server also needs 512 MB free right
+  then, and a server using more than `SANDBOX_SERVER_MEMORY` (1 GB) is stopped. When it's full, the least
+  recently used idle browser is stopped for the newcomer; only when every one is mid-call, or memory is
+  short, is a user turned away, and the API then tries their next sandbox. The logs show each start, stop and
+  refusal with the running count.
 
 The public image is released from **Release to Docker Hub** (`release_sandbox`), amd64 only, as
 `subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes (`docker run subztep/kaja-sandbox`, with their key from the web's Sandbox page or

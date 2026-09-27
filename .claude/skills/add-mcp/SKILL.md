@@ -48,13 +48,14 @@ Then pick:
 - `tools`: the useful ones for a chat assistant, in a sensible order (read tools first). Leave out admin, debug, duplicate and rarely useful tools; keep the list short.
 - `approval`: `"never"` if every kept tool only reads; `"writes"` if any can change something (then check that each read tool has `readOnlyHint: true`, and list the ones that don't under `readOnly`, with `unless` for arguments that make a call write, like a `filePath`); `"always"` only for servers where even reads are sensitive.
 - `localOnlyArgs`: arguments that only make sense on the user's machine (saving to a file path); the cloud hides them.
+- `trustedSandbox = true` (stdio only): a server that may see a user's logins or personal pages runs only in their own MCP sandbox or the official one, never in one someone else shares.
 
 ## 4. Write the file
 
 Follow the existing files' style:
 
 - A header comment: what it is and the project link; for stdio what must be installed locally (e.g. `bunx` needs Bun, `uvx` needs uv) and that the cloud runs it in the MCP sandbox (`apps/sandbox`) instead; whether a key is needed or optional and where to get one; what asks first under `approval`.
-- `name`, `description` (one sentence, what the user gets, up to 1024 chars), `transport`, then `url` or `command`/`args`, `env`/`headers`, `approval`, `tools`, `localOnlyArgs`, then `[auth]` and `[[readOnly]]` tables. Omit fields left at their default (`approval = "never"`, empty `env`/`headers`, `auth` none).
+- `name`, `description` (one sentence, what the user gets, up to 1024 chars), `transport`, then `url` or `command`/`args`, `env`/`headers`, `approval`, `tools`, `localOnlyArgs`, `trustedSandbox`, then `[auth]` and `[[readOnly]]` tables. Omit fields left at their default (`approval = "never"`, empty `env`/`headers`, `auth` none, `trustedSandbox = false`).
 - Comments are single lines, no wrapping.
 
 ## 5. Check

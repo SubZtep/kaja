@@ -86,8 +86,11 @@ A `stdio` ability, such as `chrome-devtools`, runs in an **MCP sandbox**, never 
 own, one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web's Sandbox page), or,
 if you turn on **Use shared sandboxes**, one someone else shares (who can see what runs there). Each user
 gets their own copy of the server, started on first use and kept warm between messages (a browser keeps its
-open pages) until it's been unused for about 10 minutes. The sandbox's browser can only reach public
+open pages) until it's been unused for about 10 minutes; in someone else's sandbox it's stopped as soon as
+the turn ends instead, so nothing (such as a login) stays there. The sandbox's browser can only reach public
 websites: not Kaja's own servers, nor anything on the sandbox's private network.
+A manifest with `trustedSandbox = true` only ever runs in the user's own sandboxes or Kaja's, never in one
+someone else shares.
 A `stdio` ability that needs a key stays local for now.
 
 - Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes the

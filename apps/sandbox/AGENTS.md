@@ -17,8 +17,9 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 src/server.ts     # entry: env, manifests, the tunnel, stops every server on SIGTERM/SIGINT
 src/tunnel.ts     # connectTunnel: dials KAJA_API_URL, hello/welcome (instance id+secret kept in SANDBOX_STATE_DIR), heartbeat every minute, reconnect with backoff; TunnelServer runs request/cancel/stats frames
 src/hardware.ts   # hello info (cpu, memory, arch, os, version, cap, abilities) and heartbeat load
-src/isolation.ts  # UserIsolation: a uid per user (LRU reuse), asUser: the setpriv wrapper
-src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES): full, it stops the least recently used idle server, 503 only when all are mid-call
+src/capacity.ts   # defaultMaxProcesses (512 MB per server of the memory limit, less 512 MB), hasRoom (512 MB free now)
+src/isolation.ts  # UserIsolation: a uid per user (LRU reuse), asUser: the prlimit + setpriv wrapper
+src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES, else from memory): full or short of memory, it stops the least recently used idle server, 503 + x-kaja-sandbox-full only when that doesn't help; memory watchdog (SANDBOX_SERVER_MEMORY); release
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
 src/stats.ts      # stats frame: pool servers and counts, process-tree RSS from /proc, host + cgroup memory, egress counts
 src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked)
@@ -45,9 +46,11 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 
 - Commands only ever come from the sandbox's own manifests (`MARKETPLACE_DIR/mcp`) and `SANDBOX_OVERRIDES`; a request only names the ability
 - A child gets PATH, a throwaway HOME (removed when it stops), the cache dirs from `SANDBOX_CACHE_DIR` and its manifest's `env`, nothing else from the sandbox's environment (not `KAJA_SANDBOX_KEY`). The caches are shared by every user's servers, which is fine while only the repo's own manifests run
-- Each user's servers run as their own uid (`src/isolation.ts`: `setpriv`, no capabilities, umask 002, uids from 20000, private group, plus the `mcp` group owning `SANDBOX_CACHE_DIR`); only when the sandbox is root (the image) and `SANDBOX_ISOLATE_USERS` is on. HOMEs are `0700` and chowned to the uid
+- Each user's servers run as their own uid (`src/isolation.ts`: `prlimit` 512 processes per uid and 4096 files, then `setpriv`, no capabilities, umask 002, uids from 20000, private group, plus the `mcp` group owning `SANDBOX_CACHE_DIR`); only when the sandbox is root (the image) and `SANDBOX_ISOLATE_USERS` is on. HOMEs are `0700` and chowned to the uid
 - Chrome only opens `http://` and `https://` (`--allowedUrlPattern` in `overrides.json`), as a second wall around other users' profiles under `/tmp`. The allowlist needs Chrome 149+
 - Chrome only goes out through the egress proxy (`--proxyServer`, with `--proxy-bypass-list=<-loopback>` so loopback isn't skipped, and WebRTC kept off direct UDP); `--proxyServer`'s port must match `SANDBOX_EGRESS_PORT`. With `WEB_PROXY` set (`http://` only), the egress proxy tunnels each checked connection through it (`CONNECT <checked-ip>:<port>`, Basic auth from the URL) instead of connecting directly. A new stdio server that makes its own requests needs the same, or it isn't covered
+- A sandbox that isn't the user's own or the official one is borrowed: the API's `McpSandbox.close` (called by `Nasi.close`) sends `release`, and the pool stops that server at once. Abilities with the manifest's `trustedSandbox` never go to a borrowed one (`pickSandbox`'s `trusted`)
+- The pool's 503s for a full or short-of-memory sandbox carry `x-kaja-sandbox-full`; `mcpSandboxFor` then picks another (up to 3), and every `head` frame carries `running`, so routing doesn't wait for the heartbeat
 - Every new API turn opens a new MCP session; the relay answers later `initialize` calls from the first one, so the server's state (a browser's pages) survives between turns
 - Server-to-client requests (sampling, roots, elicitation) get "method not found"; only ping is answered
 

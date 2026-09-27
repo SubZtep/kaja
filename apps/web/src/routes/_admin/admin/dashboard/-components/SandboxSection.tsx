@@ -123,9 +123,12 @@ function SandboxUp({ stats, emails }: Readonly<{ stats: SandboxStats; emails: Re
           <StatLine label={m.sandbox_count_started()} value={pool.started} />
           <StatLine label={m.sandbox_count_stopped_idle()} value={pool.stoppedIdle} />
           <StatLine label={m.sandbox_count_made_room()} value={pool.madeRoom} />
+          <StatLine label={m.sandbox_count_released()} value={pool.released} />
           <StatLine label={m.sandbox_count_failed()} value={pool.failedToStart} warn />
           <StatLine label={m.sandbox_count_crashed()} value={pool.crashed} warn />
           <StatLine label={m.sandbox_count_refused_full()} value={pool.refusedFull} warn />
+          <StatLine label={m.sandbox_count_refused_memory()} value={pool.refusedMemory} warn />
+          <StatLine label={m.sandbox_count_stopped_memory()} value={pool.stoppedMemory} warn />
         </div>
         <div className="flex flex-col gap-1.5">
           <h3 className="m-0 mb-1 font-semibold text-fg text-sm">{m.sandbox_egress_title()}</h3>

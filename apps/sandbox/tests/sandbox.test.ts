@@ -2,13 +2,14 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { apiSandboxFrameSchema, sandboxFrameSchema } from "@kaja/schema/api"
+import { apiSandboxFrameSchema, SANDBOX_FULL_HEADER, sandboxFrameSchema } from "@kaja/schema/api"
 import { SandboxEnvSchema } from "@kaja/schema/env"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { SandboxTunnel } from "../../api/src/features/sandbox/tunnel"
+import { defaultMaxProcesses, hasRoom, SERVER_MEMORY } from "../src/capacity"
 import { loadSandboxServers, type SandboxServer } from "../src/manifests"
-import { ProcessPool } from "../src/pool"
+import { type PoolOptions, ProcessPool } from "../src/pool"
 import { collectStats } from "../src/stats"
 import { TunnelServer } from "../src/tunnel"
 
@@ -37,13 +38,23 @@ afterAll(async () => {
 })
 
 /** A sandbox and the API's end of its tunnel, wired in-process: every frame goes through JSON and its schema, as over the socket. */
-function sandbox(opts: { idleMs?: number; maxProcesses?: number } = {}) {
-  const pool = new ProcessPool({ servers, idleMs: opts.idleMs ?? 60_000, maxProcesses: opts.maxProcesses ?? 8 })
+function sandbox(
+  opts: Partial<Pick<PoolOptions, "idleMs" | "maxProcesses" | "hasRoom" | "serverMemory" | "treeRss">> = {}
+) {
+  const pool = new ProcessPool({
+    servers,
+    idleMs: 60_000,
+    maxProcesses: 8,
+    hasRoom: async () => true,
+    ...opts
+  })
   pools.push(pool)
   const egress = { open: 0, allowed: 0, refused: 0, failed: 0 }
   const handler = {
     mcp: (user: string, ability: string, request: Request) => pool.handle(user, ability, request),
-    stats: () => collectStats({ pool, egress })
+    release: (user: string, ability: string) => pool.release(user, ability),
+    stats: () => collectStats({ pool, egress }),
+    running: () => pool.size
   }
   let server: TunnelServer | undefined
   const tunnel = new SandboxTunnel({
@@ -306,4 +317,82 @@ describe("pool", () => {
     },
     SPAWN_TIMEOUT_MS
   )
+
+  test("with too little memory left a new server isn't started, and the answer says the sandbox is full", async () => {
+    const warned = spyOn(console, "warn").mockImplementation(() => {})
+    try {
+      const { tunnel, pool } = sandbox({ hasRoom: async () => false })
+      const response = await tunnel.request("u1", "http://sandbox.invalid/mcp/counter", { method: "POST", body: "{}" })
+      expect(response.status).toBe(503)
+      expect(response.headers.get(SANDBOX_FULL_HEADER)).toBe("1")
+      expect(pool.counts.refusedMemory).toBe(1)
+      expect(pool.size).toBe(0)
+    } finally {
+      warned.mockRestore()
+    }
+  })
+
+  test(
+    "every answer carries how many servers run, and a release stops the user's server at once",
+    async () => {
+      const { tunnel, pool } = sandbox()
+      const client = await connect(tunnel, "u1")
+      expect(await callText(client, "count")).toBe("1")
+      expect(tunnel.running).toBe(1)
+      await client.close()
+      tunnel.release("u1", "counter")
+      const deadline = Date.now() + 10_000
+      while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(50)
+      expect(pool.size).toBe(0)
+      expect(pool.counts.released).toBe(1)
+      const fresh = await connect(tunnel, "u1")
+      expect(await callText(fresh, "count")).toBe("1")
+      await fresh.close()
+    },
+    SPAWN_TIMEOUT_MS
+  )
+
+  test(
+    "a server over its memory is stopped, even mid-call",
+    async () => {
+      let rss = 100
+      const { tunnel, pool } = sandbox({
+        serverMemory: 1000,
+        treeRss: async pids => new Map(pids.map(pid => [pid, rss]))
+      })
+      const client = await connect(tunnel, "u1")
+      void client.callTool({ name: "hang", arguments: {} }).catch(() => {})
+      await Bun.sleep(200)
+      await pool.checkMemory()
+      expect(pool.size).toBe(1)
+      rss = 5000
+      const warned = spyOn(console, "warn").mockImplementation(() => {})
+      try {
+        await pool.checkMemory()
+      } finally {
+        warned.mockRestore()
+      }
+      expect(pool.size).toBe(0)
+      expect(pool.counts.stoppedMemory).toBe(1)
+      await client.close()
+    },
+    SPAWN_TIMEOUT_MS
+  )
+})
+
+describe("capacity", () => {
+  const GB = 1024 ** 3
+
+  test("the default cap is the container's memory limit, else the machine's, less the sandbox's share", async () => {
+    expect(await defaultMaxProcesses({ container: { current: 0, max: 4 * GB }, total: 64 * GB, free: 0 })).toBe(7)
+    expect(await defaultMaxProcesses({ container: { current: 0, max: null }, total: 2 * GB, free: 0 })).toBe(3)
+    expect(await defaultMaxProcesses({ container: null, total: 256 * 1024 ** 2, free: 0 })).toBe(1)
+  })
+
+  test("another server fits while a server's share of memory is left", async () => {
+    const container = (current: number) => ({ container: { current, max: 4 * GB }, total: 64 * GB, free: 64 * GB })
+    expect(await hasRoom(container(4 * GB - SERVER_MEMORY))).toBe(true)
+    expect(await hasRoom(container(4 * GB - SERVER_MEMORY + 1))).toBe(false)
+    expect(await hasRoom({ container: null, total: 8 * GB, free: SERVER_MEMORY - 1 })).toBe(false)
+  })
 })

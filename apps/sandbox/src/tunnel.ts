@@ -12,10 +12,13 @@ import {
 } from "@kaja/schema/api"
 import { reportError } from "./report"
 
-/** What the tunnel serves: an MCP request for a (pseudonymous) user's ability, and the stats. */
+/** What the tunnel serves: an MCP request for a (pseudonymous) user's ability, a release of one, and the stats. */
 export type SandboxHandler = {
   mcp: (user: string, ability: string, request: Request) => Promise<Response>
+  release: (user: string, ability: string) => Promise<void>
   stats: () => Promise<SandboxStats>
+  /** Servers running or starting now, sent with every answer. */
+  running: () => number
 }
 
 // Bun's WebSocket takes headers; the DOM typings the root tsconfig brings in only know protocols.
@@ -51,6 +54,11 @@ export class TunnelServer {
           error => this.#send({ t: "error", id: frame.id, message: messageOf(error) })
         )
         return
+      case "release":
+        this.#handler
+          .release(frame.user, frame.ability)
+          .catch(error => reportError("Sandbox couldn't release MCP server", error, { ability: frame.ability }))
+        return
       case "welcome":
         return
     }
@@ -78,7 +86,13 @@ export class TunnelServer {
         await response.body?.cancel()
         return
       }
-      this.#send({ t: "head", id: frame.id, status: response.status, headers: [...response.headers] })
+      this.#send({
+        t: "head",
+        id: frame.id,
+        status: response.status,
+        headers: [...response.headers],
+        running: this.#handler.running()
+      })
       if (response.body) {
         const reader = response.body.getReader()
         signal.addEventListener("abort", () => void reader.cancel().catch(() => {}), { once: true })

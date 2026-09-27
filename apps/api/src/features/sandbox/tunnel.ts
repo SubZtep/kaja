@@ -29,6 +29,8 @@ export class SandboxTunnel {
   readonly id: string
   readonly info: SandboxInfo
   load: SandboxLoad | null = null
+  /** Servers it runs, from its latest heartbeat or answer, whichever came last. */
+  running: number | null = null
   readonly #send: (text: string) => void
   readonly #pending = new Map<string, PendingRequest | PendingStats>()
   #next = 0
@@ -85,6 +87,11 @@ export class SandboxTunnel {
     })
   }
 
+  /** Tells the sandbox to stop the opaque `user`'s `ability` server now (their turn on it ended). */
+  release(user: string, ability: string) {
+    this.#frame({ t: "release", user, ability })
+  }
+
   /** The sandbox's live stats; rejects when it doesn't answer in time. */
   stats(timeoutMs = STATS_TIMEOUT_MS): Promise<SandboxStats> {
     if (this.#closed) return Promise.reject(new SandboxGoneError())
@@ -114,8 +121,10 @@ export class SandboxTunnel {
     if (frame.t === "hello") return
     if (frame.t === "heartbeat") {
       this.load = frame.load
+      this.running = frame.load.running
       return
     }
+    if (frame.t === "head") this.running = frame.running
     const pending = this.#pending.get(frame.id)
     if (!pending) return
     if (pending.kind === "stats") {

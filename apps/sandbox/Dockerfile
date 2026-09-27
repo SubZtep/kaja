@@ -61,7 +61,7 @@ RUN npm install --prefix /opt/mcp --no-audit --no-fund --omit=dev "chrome-devtoo
   && /opt/mcp/node_modules/.bin/chrome-devtools-mcp --version
 USER node
 RUN UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" uvx mcp-server-time --help >/dev/null
-# The sandbox runs as root only to start each user's servers as their own uid (setpriv, every capability dropped); Chrome
+# The sandbox runs as root only to start each user's servers as their own uid (prlimit + setpriv, every capability dropped); Chrome
 # never runs as root. Those uids share the package caches through the mcp group: group-writable, new files inheriting it.
 USER root
 RUN groupadd --gid 1500 mcp \

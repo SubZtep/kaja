@@ -32,11 +32,18 @@ export async function startSandbox(opts: {
   key?: string
   stateDir?: string
   maxProcesses?: number
+  /** Whether it has memory for another server (default yes). */
+  hasRoom?: () => Promise<boolean>
 }): Promise<TestSandbox> {
   const servers = new Map(
     opts.abilities.map(name => [name, { name, command: process.execPath, args: [COUNTER_SCRIPT], env: {} }])
   )
-  const pool = new ProcessPool({ servers, idleMs: 60_000, maxProcesses: opts.maxProcesses ?? 2 })
+  const pool = new ProcessPool({
+    servers,
+    idleMs: 60_000,
+    maxProcesses: opts.maxProcesses ?? 2,
+    hasRoom: opts.hasRoom ?? (async () => true)
+  })
   const stateDir = opts.stateDir ?? mkdtempSync(join(tmpdir(), "kaja-sandbox-state-"))
   const egress = { open: 0, allowed: 0, refused: 0, failed: 0 }
   const known = new Set((await sandboxService.list()).map(sandbox => sandbox.id))
@@ -48,7 +55,9 @@ export async function startSandbox(opts: {
     load: () => sandboxLoad(pool),
     handler: {
       mcp: (user, ability, request) => pool.handle(user, ability, request),
-      stats: () => collectStats({ pool, egress })
+      release: (user, ability) => pool.release(user, ability),
+      stats: () => collectStats({ pool, egress }),
+      running: () => pool.size
     }
   })
   const id = await waitFor(async () => {

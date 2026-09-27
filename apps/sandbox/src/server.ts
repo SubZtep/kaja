@@ -1,3 +1,4 @@
+import { defaultMaxProcesses } from "./capacity"
 import { type EgressCounts, startEgressProxy } from "./egress"
 import { env } from "./env"
 import { sandboxInfo, sandboxLoad } from "./hardware"
@@ -21,7 +22,8 @@ const isolation = await UserIsolation.create({ enabled: env.SANDBOX_ISOLATE_USER
 const pool = new ProcessPool({
   servers,
   idleMs: env.SANDBOX_IDLE_MS,
-  maxProcesses: env.SANDBOX_MAX_PROCESSES,
+  maxProcesses: env.SANDBOX_MAX_PROCESSES ?? (await defaultMaxProcesses()),
+  serverMemory: env.SANDBOX_SERVER_MEMORY,
   isolation
 })
 console.log(
@@ -37,6 +39,8 @@ const tunnel = connectTunnel({
   load: () => sandboxLoad(pool),
   handler: {
     mcp: (user, ability, request) => pool.handle(user, ability, request),
+    release: (user, ability) => pool.release(user, ability),
+    running: () => pool.size,
     stats: () => collectStats({ pool, egress: egressCounts })
   }
 })

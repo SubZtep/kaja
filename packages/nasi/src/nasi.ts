@@ -229,6 +229,7 @@ export class Nasi {
     })
     const close = async () => {
       await closeTools()
+      await opts.mcpSandbox?.close?.()
       if (imageDir) await rm(imageDir, { recursive: true, force: true })
     }
     return new Nasi(opts, tools, close)
