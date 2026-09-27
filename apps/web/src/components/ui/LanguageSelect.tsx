@@ -12,6 +12,26 @@ import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } f
 /** Capture the cookie state before any hydration-triggered locale resolution can write it. */
 const hadLocaleCookieBeforeHydration = Boolean(extractLocaleFromCookie())
 
+/** setLocale reloads the page, so a pick's outcome waits here and is toasted, in the new language, once the page is back. */
+const PICKED_KEY = "language-select-picked"
+type Picked = "saved" | "switched"
+
+function rememberPick(picked: Picked) {
+  try {
+    sessionStorage.setItem(PICKED_KEY, picked)
+  } catch {}
+}
+
+function takePick(): Picked | null {
+  try {
+    const picked = sessionStorage.getItem(PICKED_KEY) as Picked | null
+    sessionStorage.removeItem(PICKED_KEY)
+    return picked
+  } catch {
+    return null
+  }
+}
+
 export function LanguageSelect({ className }: Readonly<{ className?: string }> = {}) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -31,8 +51,17 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
         return
       }
     }
+    rememberPick(signedIn ? "saved" : "switched")
     setLocale(locale)
   }
+
+  useEffect(() => {
+    const picked = takePick()
+    if (picked) {
+      const message = picked === "saved" ? m.language_select_saved() : m.language_select_switched()
+      toast.success(message, { toastId: "language-select-picked" })
+    }
+  }, [])
 
   useEffect(() => {
     if (!hadLocaleCookieBeforeHydration)

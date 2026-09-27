@@ -11,11 +11,11 @@ export const PRIVACY_URL = "https://docs.kaja.io/privacy/"
 export function Footer() {
   return (
     <footer>
-      <ContentWidth className="flex flex-wrap items-end justify-between gap-6 py-10 sm:py-16">
+      <ContentWidth className="flex flex-wrap items-end justify-between gap-6 pt-4 pb-10 sm:pt-6 sm:pb-16">
         <div>
           <BrandMark monster className="mb-3 text-[17px]" />
           <div className="flex flex-wrap items-center gap-x-2 gap-y-2 font-crt text-muted text-[13px]">
-            <LanguageSelect className="nav-stamp border-fg bg-surface text-fg" />
+            <LanguageSelect className="border-border/60 bg-transparent" />
             <span aria-hidden>·</span>
             <span>{m.footer_license_name()}</span>
             <span aria-hidden>·</span>
