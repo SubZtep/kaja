@@ -160,7 +160,7 @@ function UserList() {
 
   return (
     <>
-      <PageHeader title={m.users_title()} description={m.users_description()} meta={m.users_meta()}>
+      <PageHeader title={m.users_title()} description={m.users_description()}>
         <ValueBox label={m.users_total()} variant="neon">
           {userCount.toLocaleString()}
         </ValueBox>

@@ -24,9 +24,10 @@ widgetRoutes.use("*", widgetCors)
 const widgetBundlePath = resolve("public/widget.js")
 const widgetEntrypoint = resolve(import.meta.dir, "../../../widgets/src/index.ts")
 
-async function getWidgetBundle(): Promise<string> {
+// Prebuilt bundles are cacheable; the dev fallback isn't, so source edits show up on the next load.
+async function getWidgetBundle(): Promise<{ code: string; prebuilt: boolean }> {
   const file = Bun.file(widgetBundlePath)
-  if (await file.exists()) return file.text()
+  if (await file.exists()) return { code: await file.text(), prebuilt: true }
 
   const result = await Bun.build({
     entrypoints: [widgetEntrypoint],
@@ -36,7 +37,7 @@ async function getWidgetBundle(): Promise<string> {
   })
   const output = result.outputs[0]
   if (!result.success || !output) throw new AggregateError(result.logs, "Widget bundle build failed")
-  return output.text()
+  return { code: await output.text(), prebuilt: false }
 }
 
 // Plain string literal (not String.raw) so Hono can infer the ":rawKey" param name from the
@@ -47,8 +48,12 @@ widgetRoutes.get("/:rawKey{[A-Za-z0-9_-]+\\.js}", widgetKeyRateLimiter, async c 
   if (!resolved) return notFound(c, "Unknown widget")
 
   const bundle = await getWidgetBundle()
-  const body = `window.__kajaWidgetMode=${JSON.stringify(resolved.config.widgetType)};\n${bundle}`
-  return new Response(body, { headers: { "content-type": "application/javascript; charset=utf-8" } })
+  const body = `window.__kajaWidgetMode=${JSON.stringify(resolved.config.widgetType)};\n${bundle.code}`
+  // Short: the key's widget type (and a deploy's new bundle) must reach embedding pages soon
+  const cacheControl = bundle.prebuilt ? "public, max-age=300, stale-while-revalidate=86400" : "no-store"
+  return new Response(body, {
+    headers: { "content-type": "application/javascript; charset=utf-8", "cache-control": cacheControl }
+  })
 })
 
 widgetRoutes.options("/turn", c => c.body(null, 204))

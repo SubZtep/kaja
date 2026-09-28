@@ -28,8 +28,8 @@ export const mcpDetailSchema = z.object({
   transport: z.enum(["http", "sse"]),
   /** When its calls wait for the user's OK: never, for changes only, or every time. */
   approval: z.enum(["never", "writes", "always"]),
-  /** The tools it may use (the cloud only offers abilities with a fixed list). */
-  tools: z.array(z.string())
+  /** The tools it may use (the cloud only offers abilities with a fixed list), with what each does when the manifest says. */
+  tools: z.array(z.object({ name: z.string(), description: z.string().optional() }))
 })
 
 /** Who a persona is, shown before enabling it. */
@@ -76,7 +76,14 @@ export const userAbilitySchema = z.object({
   name: z.string(),
   description: z.string(),
   enabledAt: z.coerce.date(),
-  available: z.boolean()
+  available: z.boolean(),
+  /** An HTTP tool's or MCP server's tools the user switched off (the rest reach their turns); empty for other types. */
+  disabledTools: z.array(z.string())
+})
+
+/** Which of an enabled HTTP tool's or MCP server's tools the user switched off; the rest stay on, and so do tools it gains later. */
+export const setDisabledToolsRequestSchema = z.object({
+  disabled: z.array(z.string().min(1)).max(500)
 })
 
 /** An ability's key, as the user types it; stored encrypted and never sent back. */
@@ -125,6 +132,7 @@ export type SkillDetail = z.infer<typeof skillDetailSchema>
 export type UserAbility = z.infer<typeof userAbilitySchema>
 export type ListUserAbilitiesResponse = z.infer<typeof listUserAbilitiesResponseSchema>
 export type SaveAbilityKeyRequest = z.infer<typeof saveAbilityKeyRequestSchema>
+export type SetDisabledToolsRequest = z.infer<typeof setDisabledToolsRequestSchema>
 export type AbilityKeyCheck = z.infer<typeof abilityKeyCheckSchema>
 export type SaveAbilityKeyResponse = z.infer<typeof saveAbilityKeyResponseSchema>
 export type MarketplaceSyncStatus = z.infer<typeof marketplaceSyncStatusSchema>

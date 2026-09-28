@@ -230,6 +230,12 @@ confirmStdio        = "A(z) {name} ezt futtatja a gépeden: `{command}`. Bekapcs
 enable              = "Bekapcsolom"
 dontEnable          = "Nem kapcsolom be"
 optionalKeyPrompt   = "A(z) {name} tud API-kulcsot használni ({where}). Nem kötelező: nélküle is működik."
+pickToolsAsk        = "Ezek közül néhány több eszközt is tud használni. Kiválasztod, melyiket melyik használhatja?"
+pickTools           = "Eszközök kiválasztása"
+keepAllTools        = "Maradjon mind"
+toolsTitle          = "Eszközök, amelyeket a(z) {name} használhat"
+toolsHint           = "Szóköz: ki/be, Enter: mentés (legalább egy maradjon), Esc: marad, ahogy volt."
+toolsSaved          = "Az eszközválasztás elmentve ide: {path}."
 
 
 [secrets]

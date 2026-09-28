@@ -89,7 +89,7 @@ Commands:
   `/compact keep the dates`. It also happens on its own once the conversation gets long.
 - `/abilities` — every skill, tool and MCP server as a button: ✅ on, ▫️ off, 🔑 needs your API key
   first, ⚠️ no longer in the marketplace. A tap applies from your next message. Keys are entered on the
-  [Abilities page](https://kaja.io/abilities), never in Telegram, where they'd stay in the chat history.
+  [Abilities page](https://kaja.io/agent/abilities), never in Telegram, where they'd stay in the chat history.
 
 Running your own Kaja API? Set `TELEGRAM_BOT_TOKEN` in its environment and restart to start the cloud
 bot.

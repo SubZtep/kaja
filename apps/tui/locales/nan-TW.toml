@@ -230,6 +230,12 @@ confirmStdio        = "{name} 會佇你个電腦執行 `{command}`。欲開無�
 enable              = "開"
 dontEnable          = "莫開"
 optionalKeyPrompt   = "{name} 會當用 API 鎖匙（{where}）。無一定愛：無鎖匙嘛會用。"
+pickToolsAsk        = "內底有一寡會當用幾若个工具。欲揀逐个會當用佗一寡無？"
+pickTools           = "揀工具"
+keepAllTools        = "攏留咧"
+toolsTitle          = "{name} 會當用个工具"
+toolsHint           = "空白鍵切換，Enter 儲存（上少留一个），Esc 保持原樣。"
+toolsSaved          = "工具个選擇存佇 {path} 矣。"
 
 
 [secrets]

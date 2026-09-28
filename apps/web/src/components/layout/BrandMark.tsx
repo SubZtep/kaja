@@ -17,11 +17,13 @@ export function BrandMark({
       className={cn("font-display font-extrabold text-fg flex gap-2 items-center tracking-tight", className)}
     >
       {monster ? (
+        // Usually the page's first monster.gif, so React's SSR preload of it takes this priority (it's the hero's LCP image too)
         <img
           src="/monster.gif"
           alt={m.brand_monster_alt()}
           width={324}
           height={108}
+          fetchPriority="high"
           className="h-7 w-auto opacity-90 hidden sm:block"
         />
       ) : (

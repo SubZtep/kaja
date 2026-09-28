@@ -101,6 +101,7 @@ function SignIn() {
           {m.auth_or_email()}
         </p>
         <form
+          noValidate
           onSubmit={event => {
             event.preventDefault()
             const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement

@@ -35,7 +35,7 @@ async function loader() {
 export const Route = createFileRoute("/_public/")({
   component: LandingPage,
   loader,
-  head: () => ({ meta: seo({ description: m.site_og_description() }) })
+  head: () => ({ meta: seo({ title: m.hero_headline(), description: m.site_og_description() }) })
 })
 
 function LandingPage() {

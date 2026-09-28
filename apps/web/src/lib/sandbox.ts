@@ -18,7 +18,7 @@ export function formatBytes(bytes: number): string {
 export function runCommand(key?: string, limited = false): string {
   const env = key ? ` -e KAJA_SANDBOX_KEY=${key}` : ""
   const limits = limited ? " --memory 4g --cpus 2" : ""
-  return `docker run -d --restart unless-stopped${limits} --shm-size 1g -v kaja-sandbox:/data${env} subztep/kaja-sandbox`
+  return `docker run -d --name kaja-sandbox --restart unless-stopped${limits} --shm-size 1g -v kaja-sandbox:/data${env} subztep/kaja-sandbox`
 }
 
 /** Where it is, as the geolocation service placed its IP. */

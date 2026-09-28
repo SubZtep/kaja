@@ -7,7 +7,9 @@ import {
   parseHttpToolManifest,
   parseMcpManifest,
   parsePersonaManifest,
-  parseSkillMd
+  parseSkillMd,
+  withoutHttpTools,
+  withoutMcpTools
 } from "@kaja/nasi"
 import type { Dataset, HttpToolAbility, McpAbility, Persona } from "@kaja/schema/abilities"
 import {
@@ -38,6 +40,23 @@ export type SaveKeyResult = { check: KeyCheckResult | null } | "not_found" | "no
 type KeyedAbility = { type: "tool"; ability: HttpToolAbility } | { type: "mcp"; ability: McpAbility }
 
 type ManifestRow = { type: string; name: string; files: Record<string, string> }
+
+export type SetDisabledToolsResult = "ok" | "not_found" | "not_enabled" | "unknown_tool"
+
+/** The tool names an HTTP tool or MCP server ability offers. */
+function toolNames(keyed: KeyedAbility): string[] {
+  return keyed.type === "tool" ? keyed.ability.tools.map(tool => tool.name) : (keyed.ability.tools ?? [])
+}
+
+/** The ability without the tools the user switched off; undefined when none are left, so it's left out as a whole. */
+function withoutTools(keyed: KeyedAbility, disabled: string[]): KeyedAbility | undefined {
+  if (keyed.type === "tool") {
+    const ability = withoutHttpTools(keyed.ability, disabled)
+    return ability && { type: "tool", ability }
+  }
+  const ability = withoutMcpTools(keyed.ability, disabled)
+  return ability && { type: "mcp", ability }
+}
 
 /**
  * Why the cloud can't offer an MCP ability, or undefined when it can: a fixed tool list, and either a remote server on a
@@ -168,7 +187,7 @@ export class AbilityService {
   async listForUser(userId: string): Promise<UserAbility[]> {
     const { rows } = await this.#db.query(
       `
-      SELECT p.type, p.name, p.description, up.enabled_at, (${AVAILABLE}) AS available,
+      SELECT p.type, p.name, p.description, up.enabled_at, up.disabled_tools, (${AVAILABLE}) AS available,
         CASE WHEN p.type <> 'skill' THEN p.files END AS files
       FROM user_ability up JOIN ability p ON p.id = up.ability_id
       WHERE up.user_id = $1
@@ -181,7 +200,8 @@ export class AbilityService {
       name: row.name,
       description: row.description,
       enabledAt: new Date(row.enabled_at),
-      available: row.available && this.#runs(row)
+      available: row.available && this.#runs(row),
+      disabledTools: row.disabled_tools ?? []
     }))
   }
 
@@ -230,6 +250,28 @@ export class AbilityService {
     if (!rows[0]) return false
     await this.#db.query("DELETE FROM user_ability WHERE user_id = $1 AND ability_id = $2", [userId, rows[0].id])
     return true
+  }
+
+  /** Switches off some of an enabled HTTP tool's or MCP server's tools (replacing the earlier list); an empty list turns them all back on. */
+  async setDisabledTools(
+    userId: string,
+    type: KeyedAbilityType,
+    name: string,
+    disabled: string[]
+  ): Promise<SetDisabledToolsResult> {
+    const keyed = await this.#getKeyed(type, name)
+    if (!keyed) return "not_found"
+    const offered = new Set(toolNames(keyed))
+    if (disabled.some(tool => !offered.has(tool))) return "unknown_tool"
+    const result = await this.#db.query(
+      `
+      UPDATE user_ability up SET disabled_tools = $4
+      FROM ability p
+      WHERE up.ability_id = p.id AND up.user_id = $1 AND p.type = $2 AND p.name = $3
+      `,
+      [userId, type, name, [...new Set(disabled)].sort((a, b) => a.localeCompare(b))]
+    )
+    return result.rowCount ? "ok" : "not_enabled"
   }
 
   /** The user's enabled skills that are still available, with their files. */
@@ -374,14 +416,19 @@ export class AbilityService {
   async #keyedForUser(userId: string, type: KeyedAbilityType): Promise<KeyedAbility[]> {
     const { rows } = await this.#db.query(
       `
-      SELECT p.type, p.name, p.files
+      SELECT p.type, p.name, p.files, up.disabled_tools
       FROM user_ability up JOIN ability p ON p.id = up.ability_id
       WHERE up.user_id = $1 AND p.type = $2 AND ${AVAILABLE}
       ORDER BY p.name
       `,
       [userId, type]
     )
-    return rows.map(row => this.#usable(row)).filter(keyed => keyed !== undefined)
+    // The tools the user switched off never reach the turn
+    return rows.flatMap(row => {
+      const keyed = this.#usable(row)
+      const kept = keyed && withoutTools(keyed, row.disabled_tools ?? [])
+      return kept ? [kept] : []
+    })
   }
 
   /** The stored manifest, parsed; undefined (with a warning) when it no longer parses or the cloud can't run it. */
@@ -434,7 +481,10 @@ export class AbilityService {
         key: this.#keyNeed(keyed.ability),
         transport: keyed.ability.transport === "sse" ? "sse" : "http",
         approval: keyed.ability.approval,
-        tools: keyed.ability.tools ?? []
+        tools: (keyed.ability.tools ?? []).map(tool => ({
+          name: tool,
+          description: keyed.ability.toolDescriptions?.[tool]
+        }))
       }
     }
   }

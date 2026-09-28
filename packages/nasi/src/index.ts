@@ -40,6 +40,7 @@ export {
 } from "./abilities/mcp-ability"
 export { parseSkillMd } from "./abilities/skill-md"
 export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./abilities/skills"
+export { withoutHttpTools, withoutMcpTools } from "./abilities/tool-filter"
 export { type AbilityStore, SkillFileError, type SkillSummary } from "./abilities/types"
 export {
   Agent,

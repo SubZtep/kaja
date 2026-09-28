@@ -4,6 +4,7 @@ import { createAuthClient } from "better-auth/client"
 import { deviceAuthorizationClient } from "better-auth/client/plugins"
 import { getLanguage, t } from "../i18n"
 import { saveToken } from "./credentials"
+import { KAJA_USER_AGENT } from "./user-agent"
 
 export type DeviceLoginPrompt = {
   userCode: string
@@ -42,7 +43,9 @@ export async function deviceLogin(
   const authClient = createAuthClient({
     baseURL: apiUrl,
     basePath: "/auth",
-    plugins: [deviceAuthorizationClient()]
+    plugins: [deviceAuthorizationClient()],
+    // The session the token poll creates records this, so the web can name it
+    fetchOptions: { headers: { "User-Agent": KAJA_USER_AGENT } }
   })
 
   const { data, error } = await authClient.device.code({

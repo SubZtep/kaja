@@ -3,6 +3,7 @@ import type { Provider, UpdateProviderRequest } from "@kaja/schema/api"
 import { useState } from "react"
 import { z } from "zod"
 import { Button } from "../../../../../components/form/primitives/Button"
+import { DIALOG_TITLE, DialogShell } from "../../../../../components/ui/DialogShell"
 import { useAppForm } from "../../../../../lib/form"
 import { m } from "../../../../../paraglide/messages.js"
 
@@ -53,14 +54,12 @@ export function EditProviderDialog({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger render={children} />
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 min-h-dvh bg-black opacity-70 transition-all duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-[-webkit-touch-callout:none]:absolute" />
-        <Dialog.Popup className="fixed top-1/2 left-1/2 max-h-[calc(100dvh-4rem)] w-[36rem] max-w-[calc(100vw-3rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-border bg-surface p-6 text-fg outline-none transition-all duration-150 data-ending-style:scale-90 data-ending-style:opacity-0 data-starting-style:scale-90 data-starting-style:opacity-0">
-          <Dialog.Title className="-mt-1.5 mb-1 font-bold text-fg text-lg">
-            {m.models_edit_provider_title()}
-          </Dialog.Title>
+        <DialogShell className="w-[36rem]">
+          <Dialog.Title className={DIALOG_TITLE}>{m.models_edit_provider_title()}</Dialog.Title>
           <Dialog.Description className="mb-6 font-mono text-muted text-sm">{provider.name}</Dialog.Description>
 
           <form
+            noValidate
             onSubmit={e => {
               e.preventDefault()
               form.handleSubmit()
@@ -90,7 +89,7 @@ export function EditProviderDialog({
               </Button>
             </div>
           </form>
-        </Dialog.Popup>
+        </DialogShell>
       </Dialog.Portal>
     </Dialog.Root>
   )

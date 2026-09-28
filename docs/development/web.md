@@ -24,9 +24,11 @@ flowchart TD
     P --> S["/signin · /signup<br>/reset-password"]
     P --> D["/device · /device/approve<br>/device/done"]
 
-    A --> DA["/dashboard"]
-    A --> AB["/abilities · /welcome"]
-    A --> W["/widget"]
+    A --> DA["/dashboard<br><small>tab layout</small>"]
+    DA --> DA2["/dashboard · /dashboard/stats"]
+    A --> AG["/agent<br><small>tab layout</small>"]
+    AG --> AG2["/agent/abilities · /agent/widget<br>/agent/sandbox"]
+    A --> WE["/welcome"]
     A --> PR["/profile"]
     A --> AD["/admin<br><small>admin-only layout</small>"]
     AD --> AD2["/admin/dashboard"]
@@ -50,17 +52,19 @@ confirm the code the terminal printed, done.
 Everything behind `_admin` (the auth-gated shell, despite the name) requires a signed-in, non-banned user.
 
 The top menu is a static list, not something each page assembles: visitors see Sign In, Sign Up and Docs;
-signed-in users see Dashboard, Abilities, Widget, Sandbox and Profile; admins also get one **Admin** item. Every
-admin-only page sits under `/admin`, whose layout has its own tab bar and requires the Better Auth `admin`
-role, sending anyone else to the dashboard. The menu hides the item and the layout enforces it.
+signed-in users see one item per section — Dashboard, Agent and Profile — and admins also get **Admin**. A
+section is a layout route with a tab bar (`SectionTabs`, its tabs from `nav-items.ts`) over its pages. Every
+admin-only page sits under `/admin`, whose layout also requires the Better Auth `admin` role, sending anyone
+else to the dashboard. The menu hides the item and the layout enforces it.
 
 | Route | What it is |
 | --- | --- |
-| `/dashboard` | a welcome, the Telegram connect card, and your [usage stats](/development/api#usage-stats--stats) |
-| `/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in a section of their own; admins also get the marketplace sync panel ([user guide](/using/web-app)) |
+| `/dashboard` | a welcome and the Telegram connect card |
+| `/dashboard/stats` | your [usage stats](/development/api#usage-stats--stats) |
+| `/agent/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in a section of their own; admins also get the marketplace sync panel ([user guide](/using/web-app)) |
 | `/welcome` | the same list without personas, shown right after sign-up |
-| `/widget` | [widget keys](/using/widget#getting-a-key): create, edit, disable, delete |
-| `/sandbox` | your sandbox key and its run command, your own sandboxes (online or last seen, place, hardware, servers running; offline ones can be removed), and the share and use-shared switches |
+| `/agent/widget` | [widget keys](/using/widget#getting-a-key): create, edit, disable, delete |
+| `/agent/sandbox` | your sandbox key and its run command, your own sandboxes (online or last seen, place, hardware, servers running; offline ones can be removed), and the share and use-shared switches |
 | `/profile` | your own account: name and avatar, email, password, and deleting it |
 | `/admin/dashboard` | what the platform's services are doing right now, starting with the MCP sandbox (`/admin` redirects here) |
 | `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |

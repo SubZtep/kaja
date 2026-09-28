@@ -1,41 +1,16 @@
-import { getFirstName } from "@kaja/shared/text"
-import { createFileRoute } from "@tanstack/react-router"
-import { UsageStats } from "../../components/stats/UsageStats"
-import { PageHeader } from "../../components/ui/PageHeader"
-import { Section } from "../../components/ui/Section"
-import { ConnectTelegram } from "../../components/user/ConnectTelegram"
-import { useUser } from "../../hooks/user"
-import { seo } from "../../lib/seo"
-import { m } from "../../paraglide/messages.js"
+import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { getDashboardItems } from "../../components/layout/nav-items"
+import { SectionTabs } from "../../components/layout/SectionTabs"
 
 export const Route = createFileRoute("/_admin/dashboard")({
-  component: DashboardPage,
-  head: () => ({ meta: seo({ title: m.nav_dashboard() }) })
+  component: DashboardLayout
 })
 
-function DashboardPage() {
-  const user = useUser()
-
+function DashboardLayout() {
   return (
     <>
-      <PageHeader
-        title={
-          <>
-            {m.dashboard_welcome_back()}
-            {getFirstName(user?.name, ", ")}
-          </>
-        }
-        description={m.dashboard_description()}
-        meta={user?.role}
-      />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Section title={m.telegram_connect_title()}>
-          <ConnectTelegram />
-        </Section>
-      </div>
-
-      <UsageStats />
+      <SectionTabs items={getDashboardItems()} />
+      <Outlet />
     </>
   )
 }

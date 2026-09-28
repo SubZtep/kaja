@@ -25,7 +25,7 @@ function nameHash(name: string): string {
 
 /** Where keys are added and abilities read in full. */
 function abilitiesWebUrl(): string {
-  return `${trimTrailingSlashes(env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN)}/abilities`
+  return `${trimTrailingSlashes(env.WEB_PUBLIC_URL ?? env.CORS_ORIGIN)}/agent/abilities`
 }
 
 /** The catalog as the user sees it (skills, personas, tools, then MCP servers), plus enabled abilities that left it. */

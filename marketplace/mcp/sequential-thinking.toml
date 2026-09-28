@@ -12,3 +12,8 @@ args        = [
 tools       = [
   "sequentialthinking"
 ]
+
+
+# What each tool does, for the web's tool list; the server's own descriptions only arrive at run time
+[toolDescriptions]
+sequentialthinking = "Writes down one numbered step of its reasoning, which later steps can revise or branch from."

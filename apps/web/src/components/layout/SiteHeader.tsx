@@ -35,7 +35,7 @@ export function SiteHeader({
 
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Trigger
-            className="flex items-center justify-center border border-fg bg-ice p-2 text-bg lg:hidden"
+            className="flex cursor-pointer items-center justify-center border border-fg bg-ice p-2 text-bg lg:hidden"
             style={{ clipPath: "polygon(6% 0%, 100% 8%, 94% 100%, 0% 88%)" }}
             aria-label={open ? m.menu_close() : m.menu_open()}
           >

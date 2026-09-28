@@ -54,7 +54,7 @@ function Profile() {
             <ChangePassword />
           </Section>
         </div>
-        <Section className="border-red-500/30 sm:col-span-2 sm:bg-red-500/5" title={m.profile_delete_title()}>
+        <Section className="sm:col-span-2" tone="danger" title={m.profile_delete_title()}>
           <DeleteAccount email={user.email} />
         </Section>
       </div>
@@ -108,6 +108,7 @@ function EditUser({ user }: Readonly<{ user: User }>) {
 
   return (
     <form
+      noValidate
       onSubmit={e => {
         e.preventDefault()
         form.handleSubmit()
@@ -190,6 +191,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
 
   return (
     <form
+      noValidate
       onSubmit={e => {
         e.preventDefault()
         form.handleSubmit()
@@ -260,6 +262,7 @@ function ChangePassword() {
 
   return (
     <form
+      noValidate
       className="flex flex-col gap-4"
       onSubmit={e => {
         e.preventDefault()

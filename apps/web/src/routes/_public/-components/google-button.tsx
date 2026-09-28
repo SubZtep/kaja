@@ -81,7 +81,7 @@ export function GoogleButton({
         {m.google_continue()}
       </button>
       <Sticker rotate={12} className="pointer-events-none absolute -top-3 -right-2 px-2 py-1">
-        {m.stamp_beta()}
+        {m.stamp_one_click()}
       </Sticker>
     </div>
   )

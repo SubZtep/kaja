@@ -256,6 +256,33 @@ describe("HTTP tools in the cloud", () => {
     }
   })
 
+  test("switched-off tools stay out of turns; unknown tools and abilities that aren't on are refused", async () => {
+    const setTools = (type: string, name: string, disabled: string[]) =>
+      app.request(`/abilities/me/${type}/${name}/tools`, {
+        method: "PUT",
+        headers: auth(),
+        body: JSON.stringify({ disabled })
+      })
+    expect((await setTools("tool", issues, ["no_such_tool"])).status).toBe(400)
+    expect((await setTools("tool", extras, [`extras_${tag}`])).status).toBe(409)
+    expect((await setTools("tool", "nope-nope", [])).status).toBe(404)
+
+    expect((await setTools("tool", issues, [createIssueTool])).status).toBe(200)
+    const listed = (await mine()).abilities.find((ability: { name: string }) => ability.name === issues)
+    expect(listed.disabledTools).toEqual([createIssueTool])
+    const sent = useScript([{ content: "Hi." }])
+    expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed" })
+    const offered = sent[0]!.tools!.map(t => t.function.name)
+    expect(offered).toContain(forecastTool)
+    // Its only tool is off, so the whole ability is left out
+    expect(offered).not.toContain(createIssueTool)
+
+    expect((await setTools("tool", issues, [])).status).toBe(200)
+    expect((await mine()).abilities.find((ability: { name: string }) => ability.name === issues).disabledTools).toEqual(
+      []
+    )
+  })
+
   test("the stream forwards confirm_tool, and declining never calls the tool", async () => {
     const sent = useScript([{ content: null, tool_calls: [createIssueCall("call_b")] }, { content: "Not filed." }])
     requests.length = 0

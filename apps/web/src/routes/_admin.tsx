@@ -4,6 +4,7 @@ import { SiteShell } from "../components/layout/SiteShell"
 import { userRequired } from "../lib/loaders"
 import { noindexSeo } from "../lib/seo"
 import { Footer } from "./_public/-components/footer"
+import { GritDefs } from "./_public/-components/grit-defs"
 import { Header } from "./_public/-components/header"
 
 export const Route = createFileRoute("/_admin")({
@@ -14,7 +15,9 @@ export const Route = createFileRoute("/_admin")({
 
 function AdminLayoutRoute() {
   return (
-    <SiteShell header={<Header />} footer={<Footer />}>
+    // Same grit as the public pages: torn header edge, and the #wobble filters the stamps and cards use
+    <SiteShell className="public-grit" header={<Header />} footer={<Footer />}>
+      <GritDefs />
       <ContentWidth className="flex-1 py-10 md:py-14">
         <Outlet />
       </ContentWidth>

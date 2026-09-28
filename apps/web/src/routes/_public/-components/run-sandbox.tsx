@@ -1,4 +1,4 @@
-import { publicSandboxesResponseSchema } from "@kaja/schema/api"
+import type { PublicSandboxesResponse } from "@kaja/schema/api"
 import { useQuery } from "@tanstack/react-query"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { RunCommand } from "../../../components/sandbox/RunCommand"
@@ -11,7 +11,8 @@ export function RunSandbox() {
   const apiFetch = useApiFetch()
   const { data } = useQuery({
     queryKey: ["sandbox", "public"],
-    queryFn: () => apiFetch("/sandbox/public").then(r => publicSandboxesResponseSchema.parse(r)),
+    // Typed, not parsed: a zod parse here would pull zod into the landing page
+    queryFn: () => apiFetch<PublicSandboxesResponse>("/sandbox/public"),
     staleTime: 60_000
   })
 

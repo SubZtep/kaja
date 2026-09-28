@@ -20,7 +20,7 @@ function put(path: string, content: string) {
 }
 
 test("a missing abilities.toml enables nothing and isn't created", async () => {
-  expect(await loadAbilitiesFile()).toEqual({ skills: [], tools: [], mcp: [], personas: [] })
+  expect(await loadAbilitiesFile()).toEqual({ skills: [], tools: [], mcp: [], personas: [], disabledTools: {} })
   expect(await Bun.file(getAbilitiesPath()).exists()).toBe(false)
 })
 

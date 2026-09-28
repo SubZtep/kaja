@@ -102,16 +102,15 @@ function BarList({
   )
 }
 
-/** Dashboard section: when the user talked, what it cost in tokens and time, how the tools did, and which channels, personas and models replied. */
+/** The stats page's body: when the user talked, what it cost in tokens and time, how the tools did, and which channels, personas and models replied. */
 export function UsageStats() {
   const [days, setDays] = useState<(typeof RANGES)[number]>(30)
   const stats = useUsageStats(days)
   const data = stats.data
 
   return (
-    <section className="mt-10">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="m-0 font-semibold text-fg text-lg">{m.stats_title()}</h2>
+    <section>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex gap-2">
           {RANGES.map(range => (
             <Button

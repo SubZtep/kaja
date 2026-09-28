@@ -42,7 +42,7 @@ export async function loadAbilitiesFile(): Promise<AbilitiesFile> {
 
 /** Writes the enabled lists to abilities.toml, keeping [source] and any keys this version doesn't know. Only `kaja abilities` calls this. */
 export async function saveAbilitiesFile(
-  update: Partial<Pick<AbilitiesFile, "skills" | "tools" | "mcp" | "personas">>
+  update: Partial<Pick<AbilitiesFile, "skills" | "tools" | "mcp" | "personas" | "disabledTools">>
 ): Promise<void> {
   const path = getAbilitiesPath()
   const f = file(path)

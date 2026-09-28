@@ -151,6 +151,8 @@ export function connectTunnel(opts: {
   info: () => Promise<SandboxInfo>
   load: () => Promise<SandboxLoad>
   handler: SandboxHandler
+  /** Told when it's welcomed (with its id), after every heartbeat, and when the socket drops. */
+  onStatus?: (status: { connected: true; id: string } | { connected: false }) => void
 }): { close: () => void } {
   let stopped = false
   let backoff = MIN_BACKOFF_MS
@@ -182,10 +184,15 @@ export function connectTunnel(opts: {
         backoff = MIN_BACKOFF_MS
         if (frame.secret) void saveInstance(opts.stateDir, { api: opts.apiUrl, id: frame.id, secret: frame.secret })
         console.log(`Sandbox connected to ${opts.apiUrl} as ${frame.id}${opts.key ? "" : " (anonymous)"}`)
+        const id = frame.id
+        opts.onStatus?.({ connected: true, id })
         clearInterval(heartbeat)
         heartbeat = setInterval(() => {
           opts.load().then(
-            load => send({ t: "heartbeat", load }),
+            load => {
+              send({ t: "heartbeat", load })
+              opts.onStatus?.({ connected: true, id })
+            },
             error => reportError("Sandbox couldn't read its load", error)
           )
         }, HEARTBEAT_MS)
@@ -196,6 +203,7 @@ export function connectTunnel(opts: {
     ws.onclose = event => {
       clearInterval(heartbeat)
       server.abortAll()
+      opts.onStatus?.({ connected: false })
       if (stopped) return
       const why = event.reason ? `${event.code}: ${event.reason}` : String(event.code)
       console.warn(`Sandbox lost the API (${why}); retrying`, {

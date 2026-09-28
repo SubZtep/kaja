@@ -6,7 +6,7 @@ export function Providers({ children }: Readonly<{ children: React.ReactNode }>)
   return (
     <TanStackQueryProvider>
       {children}
-      <ToastContainer theme="colored" position="top-center" />
+      <ToastContainer theme="dark" position="top-center" />
     </TanStackQueryProvider>
   )
 }

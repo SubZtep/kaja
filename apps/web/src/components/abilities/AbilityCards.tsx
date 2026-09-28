@@ -22,6 +22,7 @@ export function AbilityCards() {
     .filter(ability => ability.type === "skill" || toolEntry(ability))
     .sort((a, b) => a.name.localeCompare(b.name))
   const enabled = new Set((mine.data?.abilities ?? []).map(p => `${p.type}:${p.name}`))
+  const disabledTools = new Map((mine.data?.abilities ?? []).map(p => [`${p.type}:${p.name}`, p.disabledTools]))
   const keys = new Set(mine.data?.keys ?? [])
   const keysEnabled = mine.data?.keysEnabled ?? false
   const pendingId = toggle.isPending ? `${toggle.variables?.type}:${toggle.variables?.name}` : undefined
@@ -44,6 +45,7 @@ export function AbilityCards() {
                 key={id}
                 entry={entry}
                 enabled={enabled.has(id)}
+                disabledTools={disabledTools.get(id) ?? []}
                 hasKey={keys.has(ability.name)}
                 keysEnabled={keysEnabled}
                 pending={pendingId === id}

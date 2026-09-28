@@ -53,6 +53,22 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "disabledTools": {
+      "default": {},
+      "description": "Tools to leave out, by HTTP tool or MCP ability name; an MCP ability needs a `tools` list for this. The rest (and tools it gains later) stay on",
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   }
 }

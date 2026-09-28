@@ -5,23 +5,23 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { RefreshCw } from "lucide-react"
 import { toast } from "react-toastify"
-import { AbilitySections } from "../../components/abilities/AbilitySections"
+import { AbilitySections } from "../../../components/abilities/AbilitySections"
 import {
   CATALOG_QUERY_KEY,
   MY_ABILITIES_QUERY_KEY,
   useCatalog,
   useMyAbilities
-} from "../../components/abilities/queries"
-import { Button } from "../../components/form/primitives/Button"
-import { PageHeader } from "../../components/ui/PageHeader"
-import { Section } from "../../components/ui/Section"
-import { ValueBox } from "../../components/ui/ValueBox"
-import { useUser } from "../../hooks/user"
-import { useApiFetch } from "../../lib/api-fetch"
-import { seo } from "../../lib/seo"
-import { m } from "../../paraglide/messages.js"
+} from "../../../components/abilities/queries"
+import { Button } from "../../../components/form/primitives/Button"
+import { PageHeader } from "../../../components/ui/PageHeader"
+import { Section } from "../../../components/ui/Section"
+import { ValueBox } from "../../../components/ui/ValueBox"
+import { useUser } from "../../../hooks/user"
+import { useApiFetch } from "../../../lib/api-fetch"
+import { seo } from "../../../lib/seo"
+import { m } from "../../../paraglide/messages.js"
 
-export const Route = createFileRoute("/_admin/abilities")({
+export const Route = createFileRoute("/_admin/agent/abilities")({
   component: AbilitiesPage,
   head: () => ({ meta: seo({ title: m.nav_abilities() }) })
 })

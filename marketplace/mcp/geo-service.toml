@@ -8,3 +8,9 @@ tools       = [
   "get_my_location_full",
   "get_my_location_summary"
 ]
+
+
+# What each tool does, for the web's tool list; the server's own descriptions only arrive at run time
+[toolDescriptions]
+get_my_location_full    = "Where the request's IP address is: approximate city and region, country, coordinates and time zone."
+get_my_location_summary = "Just the country and time zone of the request's IP address."

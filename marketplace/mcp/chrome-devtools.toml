@@ -47,3 +47,19 @@ tool   = "take_screenshot"
 unless = [
   "filePath"
 ]
+
+
+# What each tool does, for the web's tool list; the server's own descriptions only arrive at run time
+[toolDescriptions]
+new_page              = "Opens a new tab at a web address."
+navigate_page         = "Goes to an address, or back, forward or reload, in the current tab."
+list_pages            = "Lists the open tabs."
+select_page           = "Switches to another open tab."
+take_snapshot         = "Reads the page as text, with an id for each thing it can click or fill in."
+take_screenshot       = "Takes a picture of the page, or of one part of it."
+wait_for              = "Waits until some text shows up on the page."
+click                 = "Clicks a button, link or other element."
+fill                  = "Types into a field, or picks an option in a list."
+press_key             = "Presses a key or a shortcut."
+list_console_messages = "Lists the page's console messages, such as errors."
+list_network_requests = "Lists the requests the page made."
