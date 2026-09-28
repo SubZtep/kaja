@@ -1,5 +1,6 @@
+import { cn } from "@kaja/shared/ui"
 import { Link, useLoaderData } from "@tanstack/react-router"
-import { lazy, Suspense, useEffect, useState } from "react"
+import { lazy, Suspense, useCallback, useEffect, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { Turnstile, useTurnstile } from "../../../hooks/turnstile"
 import { useUser } from "../../../hooks/user"
@@ -18,6 +19,8 @@ export function Hero() {
   const user = useUser()
   const captcha = useTurnstile()
   const [copied, setCopied] = useState(false)
+  const [faceReady, setFaceReady] = useState(false)
+  const onFaceReady = useCallback(() => setFaceReady(true), [])
   const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/install.sh | bash")
 
   useEffect(() => {
@@ -89,11 +92,11 @@ export function Hero() {
                 width={324}
                 height={108}
                 fetchPriority="high"
-                className="h-36 w-auto lg:h-48"
+                className={cn("h-36 w-auto transition-opacity duration-500 lg:h-48", faceReady && "opacity-0")}
                 style={{ imageRendering: "pixelated" }}
               />
               <Suspense fallback={null}>
-                <MonsterFace className="absolute inset-0" />
+                <MonsterFace className="absolute inset-0" onReady={onFaceReady} />
               </Suspense>
               <Sticker tone="neon" rotate={-11} className="absolute -bottom-1 -left-3 text-[11px]">
                 kaja

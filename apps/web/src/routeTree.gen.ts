@@ -11,19 +11,23 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicRouteImport } from './routes/_public'
-import { Route as AdminAbilitiesRouteImport } from './routes/_admin/abilities'
 import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
+import { Route as AdminAgentRouteImport } from './routes/_admin/agent'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
-import { Route as AdminSandboxRouteImport } from './routes/_admin/sandbox'
 import { Route as AdminWelcomeRouteImport } from './routes/_admin/welcome'
-import { Route as AdminWidgetRouteImport } from './routes/_admin/widget'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicDeviceRouteImport } from './routes/_public/device'
 import { Route as PublicResetPasswordRouteImport } from './routes/_public/reset-password'
 import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin/index'
+import { Route as AdminAgentIndexRouteImport } from './routes/_admin/agent/index'
+import { Route as AdminAgentAbilitiesRouteImport } from './routes/_admin/agent/abilities'
+import { Route as AdminAgentSandboxRouteImport } from './routes/_admin/agent/sandbox'
+import { Route as AdminAgentWidgetRouteImport } from './routes/_admin/agent/widget'
+import { Route as AdminDashboardIndexRouteImport } from './routes/_admin/dashboard/index'
+import { Route as AdminDashboardStatsRouteImport } from './routes/_admin/dashboard/stats'
 import { Route as PublicDeviceIndexRouteImport } from './routes/_public/device/index'
 import { Route as PublicDeviceApproveRouteImport } from './routes/_public/device/approve'
 import { Route as PublicDeviceDoneRouteImport } from './routes/_public/device/done'
@@ -40,14 +44,14 @@ const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminAbilitiesRoute = AdminAbilitiesRouteImport.update({
-  id: '/abilities',
-  path: '/abilities',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminAdminRoute = AdminAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAgentRoute = AdminAgentRouteImport.update({
+  id: '/agent',
+  path: '/agent',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
@@ -60,19 +64,9 @@ const AdminProfileRoute = AdminProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminSandboxRoute = AdminSandboxRouteImport.update({
-  id: '/sandbox',
-  path: '/sandbox',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminWidgetRoute = AdminWidgetRouteImport.update({
-  id: '/widget',
-  path: '/widget',
   getParentRoute: () => AdminRoute,
 } as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
@@ -104,6 +98,36 @@ const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAgentIndexRoute = AdminAgentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAgentRoute,
+} as any)
+const AdminAgentAbilitiesRoute = AdminAgentAbilitiesRouteImport.update({
+  id: '/abilities',
+  path: '/abilities',
+  getParentRoute: () => AdminAgentRoute,
+} as any)
+const AdminAgentSandboxRoute = AdminAgentSandboxRouteImport.update({
+  id: '/sandbox',
+  path: '/sandbox',
+  getParentRoute: () => AdminAgentRoute,
+} as any)
+const AdminAgentWidgetRoute = AdminAgentWidgetRouteImport.update({
+  id: '/widget',
+  path: '/widget',
+  getParentRoute: () => AdminAgentRoute,
+} as any)
+const AdminDashboardIndexRoute = AdminDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminDashboardRoute,
+} as any)
+const AdminDashboardStatsRoute = AdminDashboardStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AdminDashboardRoute,
 } as any)
 const PublicDeviceIndexRoute = PublicDeviceIndexRouteImport.update({
   id: '/',
@@ -144,20 +168,24 @@ const AdminAdminUsersUserIdRoute = AdminAdminUsersUserIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
-  '/abilities': typeof AdminAbilitiesRoute
   '/admin': typeof AdminAdminRouteWithChildren
-  '/dashboard': typeof AdminDashboardRoute
+  '/agent': typeof AdminAgentRouteWithChildren
+  '/dashboard': typeof AdminDashboardRouteWithChildren
   '/profile': typeof AdminProfileRoute
-  '/sandbox': typeof AdminSandboxRoute
   '/welcome': typeof AdminWelcomeRoute
-  '/widget': typeof AdminWidgetRoute
   '/device': typeof PublicDeviceRouteWithChildren
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
+  '/agent/abilities': typeof AdminAgentAbilitiesRoute
+  '/agent/sandbox': typeof AdminAgentSandboxRoute
+  '/agent/widget': typeof AdminAgentWidgetRoute
+  '/dashboard/stats': typeof AdminDashboardStatsRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/device/done': typeof PublicDeviceDoneRoute
   '/admin/': typeof AdminAdminIndexRoute
+  '/agent/': typeof AdminAgentIndexRoute
+  '/dashboard/': typeof AdminDashboardIndexRoute
   '/device/': typeof PublicDeviceIndexRoute
   '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/admin/dashboard/': typeof AdminAdminDashboardIndexRoute
@@ -166,18 +194,20 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
-  '/abilities': typeof AdminAbilitiesRoute
-  '/dashboard': typeof AdminDashboardRoute
   '/profile': typeof AdminProfileRoute
-  '/sandbox': typeof AdminSandboxRoute
   '/welcome': typeof AdminWelcomeRoute
-  '/widget': typeof AdminWidgetRoute
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
+  '/agent/abilities': typeof AdminAgentAbilitiesRoute
+  '/agent/sandbox': typeof AdminAgentSandboxRoute
+  '/agent/widget': typeof AdminAgentWidgetRoute
+  '/dashboard/stats': typeof AdminDashboardStatsRoute
   '/device/approve': typeof PublicDeviceApproveRoute
   '/device/done': typeof PublicDeviceDoneRoute
   '/admin': typeof AdminAdminIndexRoute
+  '/agent': typeof AdminAgentIndexRoute
+  '/dashboard': typeof AdminDashboardIndexRoute
   '/device': typeof PublicDeviceIndexRoute
   '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/admin/dashboard': typeof AdminAdminDashboardIndexRoute
@@ -188,21 +218,25 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
-  '/_admin/abilities': typeof AdminAbilitiesRoute
   '/_admin/admin': typeof AdminAdminRouteWithChildren
-  '/_admin/dashboard': typeof AdminDashboardRoute
+  '/_admin/agent': typeof AdminAgentRouteWithChildren
+  '/_admin/dashboard': typeof AdminDashboardRouteWithChildren
   '/_admin/profile': typeof AdminProfileRoute
-  '/_admin/sandbox': typeof AdminSandboxRoute
   '/_admin/welcome': typeof AdminWelcomeRoute
-  '/_admin/widget': typeof AdminWidgetRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
   '/_public/reset-password': typeof PublicResetPasswordRoute
   '/_public/signin': typeof PublicSigninRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/': typeof PublicIndexRoute
+  '/_admin/agent/abilities': typeof AdminAgentAbilitiesRoute
+  '/_admin/agent/sandbox': typeof AdminAgentSandboxRoute
+  '/_admin/agent/widget': typeof AdminAgentWidgetRoute
+  '/_admin/dashboard/stats': typeof AdminDashboardStatsRoute
   '/_public/device/approve': typeof PublicDeviceApproveRoute
   '/_public/device/done': typeof PublicDeviceDoneRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
+  '/_admin/agent/': typeof AdminAgentIndexRoute
+  '/_admin/dashboard/': typeof AdminDashboardIndexRoute
   '/_public/device/': typeof PublicDeviceIndexRoute
   '/_admin/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/_admin/admin/dashboard/': typeof AdminAdminDashboardIndexRoute
@@ -213,20 +247,24 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/abilities'
     | '/admin'
+    | '/agent'
     | '/dashboard'
     | '/profile'
-    | '/sandbox'
     | '/welcome'
-    | '/widget'
     | '/device'
     | '/reset-password'
     | '/signin'
     | '/signup'
+    | '/agent/abilities'
+    | '/agent/sandbox'
+    | '/agent/widget'
+    | '/dashboard/stats'
     | '/device/approve'
     | '/device/done'
     | '/admin/'
+    | '/agent/'
+    | '/dashboard/'
     | '/device/'
     | '/admin/users/$userId'
     | '/admin/dashboard/'
@@ -235,18 +273,20 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/abilities'
-    | '/dashboard'
     | '/profile'
-    | '/sandbox'
     | '/welcome'
-    | '/widget'
     | '/reset-password'
     | '/signin'
     | '/signup'
+    | '/agent/abilities'
+    | '/agent/sandbox'
+    | '/agent/widget'
+    | '/dashboard/stats'
     | '/device/approve'
     | '/device/done'
     | '/admin'
+    | '/agent'
+    | '/dashboard'
     | '/device'
     | '/admin/users/$userId'
     | '/admin/dashboard'
@@ -256,21 +296,25 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_admin'
     | '/_public'
-    | '/_admin/abilities'
     | '/_admin/admin'
+    | '/_admin/agent'
     | '/_admin/dashboard'
     | '/_admin/profile'
-    | '/_admin/sandbox'
     | '/_admin/welcome'
-    | '/_admin/widget'
     | '/_public/device'
     | '/_public/reset-password'
     | '/_public/signin'
     | '/_public/signup'
     | '/_public/'
+    | '/_admin/agent/abilities'
+    | '/_admin/agent/sandbox'
+    | '/_admin/agent/widget'
+    | '/_admin/dashboard/stats'
     | '/_public/device/approve'
     | '/_public/device/done'
     | '/_admin/admin/'
+    | '/_admin/agent/'
+    | '/_admin/dashboard/'
     | '/_public/device/'
     | '/_admin/admin/users/$userId'
     | '/_admin/admin/dashboard/'
@@ -299,18 +343,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin/abilities': {
-      id: '/_admin/abilities'
-      path: '/abilities'
-      fullPath: '/abilities'
-      preLoaderRoute: typeof AdminAbilitiesRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_admin/admin': {
       id: '/_admin/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminAdminRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/agent': {
+      id: '/_admin/agent'
+      path: '/agent'
+      fullPath: '/agent'
+      preLoaderRoute: typeof AdminAgentRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/dashboard': {
@@ -327,25 +371,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProfileRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/sandbox': {
-      id: '/_admin/sandbox'
-      path: '/sandbox'
-      fullPath: '/sandbox'
-      preLoaderRoute: typeof AdminSandboxRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_admin/welcome': {
       id: '/_admin/welcome'
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof AdminWelcomeRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/widget': {
-      id: '/_admin/widget'
-      path: '/widget'
-      fullPath: '/widget'
-      preLoaderRoute: typeof AdminWidgetRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_public/': {
@@ -389,6 +419,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminAdminIndexRouteImport
       parentRoute: typeof AdminAdminRoute
+    }
+    '/_admin/agent/': {
+      id: '/_admin/agent/'
+      path: '/'
+      fullPath: '/agent/'
+      preLoaderRoute: typeof AdminAgentIndexRouteImport
+      parentRoute: typeof AdminAgentRoute
+    }
+    '/_admin/agent/abilities': {
+      id: '/_admin/agent/abilities'
+      path: '/abilities'
+      fullPath: '/agent/abilities'
+      preLoaderRoute: typeof AdminAgentAbilitiesRouteImport
+      parentRoute: typeof AdminAgentRoute
+    }
+    '/_admin/agent/sandbox': {
+      id: '/_admin/agent/sandbox'
+      path: '/sandbox'
+      fullPath: '/agent/sandbox'
+      preLoaderRoute: typeof AdminAgentSandboxRouteImport
+      parentRoute: typeof AdminAgentRoute
+    }
+    '/_admin/agent/widget': {
+      id: '/_admin/agent/widget'
+      path: '/widget'
+      fullPath: '/agent/widget'
+      preLoaderRoute: typeof AdminAgentWidgetRouteImport
+      parentRoute: typeof AdminAgentRoute
+    }
+    '/_admin/dashboard/': {
+      id: '/_admin/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AdminDashboardIndexRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
+    '/_admin/dashboard/stats': {
+      id: '/_admin/dashboard/stats'
+      path: '/stats'
+      fullPath: '/dashboard/stats'
+      preLoaderRoute: typeof AdminDashboardStatsRouteImport
+      parentRoute: typeof AdminDashboardRoute
     }
     '/_public/device/': {
       id: '/_public/device/'
@@ -462,24 +534,52 @@ const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
   AdminAdminRouteChildren,
 )
 
+interface AdminAgentRouteChildren {
+  AdminAgentAbilitiesRoute: typeof AdminAgentAbilitiesRoute
+  AdminAgentSandboxRoute: typeof AdminAgentSandboxRoute
+  AdminAgentWidgetRoute: typeof AdminAgentWidgetRoute
+  AdminAgentIndexRoute: typeof AdminAgentIndexRoute
+}
+
+const AdminAgentRouteChildren: AdminAgentRouteChildren = {
+  AdminAgentAbilitiesRoute: AdminAgentAbilitiesRoute,
+  AdminAgentSandboxRoute: AdminAgentSandboxRoute,
+  AdminAgentWidgetRoute: AdminAgentWidgetRoute,
+  AdminAgentIndexRoute: AdminAgentIndexRoute,
+}
+
+const AdminAgentRouteWithChildren = AdminAgentRoute._addFileChildren(
+  AdminAgentRouteChildren,
+)
+
+interface AdminDashboardRouteChildren {
+  AdminDashboardStatsRoute: typeof AdminDashboardStatsRoute
+  AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
+}
+
+const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
+  AdminDashboardStatsRoute: AdminDashboardStatsRoute,
+  AdminDashboardIndexRoute: AdminDashboardIndexRoute,
+}
+
+const AdminDashboardRouteWithChildren = AdminDashboardRoute._addFileChildren(
+  AdminDashboardRouteChildren,
+)
+
 interface AdminRouteChildren {
-  AdminAbilitiesRoute: typeof AdminAbilitiesRoute
   AdminAdminRoute: typeof AdminAdminRouteWithChildren
-  AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminAgentRoute: typeof AdminAgentRouteWithChildren
+  AdminDashboardRoute: typeof AdminDashboardRouteWithChildren
   AdminProfileRoute: typeof AdminProfileRoute
-  AdminSandboxRoute: typeof AdminSandboxRoute
   AdminWelcomeRoute: typeof AdminWelcomeRoute
-  AdminWidgetRoute: typeof AdminWidgetRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminAbilitiesRoute: AdminAbilitiesRoute,
   AdminAdminRoute: AdminAdminRouteWithChildren,
-  AdminDashboardRoute: AdminDashboardRoute,
+  AdminAgentRoute: AdminAgentRouteWithChildren,
+  AdminDashboardRoute: AdminDashboardRouteWithChildren,
   AdminProfileRoute: AdminProfileRoute,
-  AdminSandboxRoute: AdminSandboxRoute,
   AdminWelcomeRoute: AdminWelcomeRoute,
-  AdminWidgetRoute: AdminWidgetRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

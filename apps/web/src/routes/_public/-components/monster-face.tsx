@@ -176,13 +176,15 @@ function Pixels({ cells }: { cells: readonly Cell[] }) {
   return (
     <>
       {cells.map(([r, c]) => (
-        <rect key={`${r}-${c}`} x={c * CELL} y={r * CELL} width={CELL - 1} height={CELL - 1} rx={1.5} />
+        <rect key={`${r}-${c}`} x={c * CELL} y={r * CELL} width={CELL} height={CELL} />
       ))}
     </>
   )
 }
 
-export function MonsterFace({ className }: Readonly<{ className?: string }>) {
+/** Renders nothing under prefers-reduced-motion (the gif stays); otherwise calls `onReady` once it has faded in, so the gif below can hide. */
+export function MonsterFace({ className, onReady }: Readonly<{ className?: string; onReady?: () => void }>) {
+  const rootRef = useRef<HTMLDivElement>(null)
   const faceRef = useRef<HTMLDivElement>(null)
   const eyeLPupilRef = useRef<SVGGElement>(null)
   const eyeRPupilRef = useRef<SVGGElement>(null)
@@ -194,112 +196,119 @@ export function MonsterFace({ className }: Readonly<{ className?: string }>) {
   const mouthVariantRef = useRef<SVGGElement>(null)
 
   useEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    const stage = faceRef.current?.parentElement
+    const stage = rootRef.current
     const face = faceRef.current
-    if (!stage || !face) return
+    // Reduced motion keeps the gif: the face stays invisible and never reports ready
+    if (!stage || !face || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
 
     const cleanups: Array<() => void> = []
 
-    if (!reduceMotion) {
-      // whole-face tilt toward the pointer
-      let raf = 0
-      let rx = 0
-      let ry = 0
-      const applyTilt = () => {
-        face.style.transform = `rotateX(${ry}deg) rotateY(${rx}deg)`
-        raf = 0
-      }
-      const onMove = (e: PointerEvent) => {
-        const r = stage.getBoundingClientRect()
-        const px = (e.clientX - r.left) / r.width
-        const py = (e.clientY - r.top) / r.height
-        rx = (px - 0.5) * 2 * 10
-        ry = -(py - 0.5) * 2 * 10
-        if (!raf) raf = requestAnimationFrame(applyTilt)
+    // fade in once painted, then let the gif below go
+    const fadeIn = requestAnimationFrame(() => {
+      stage.classList.remove("opacity-0")
+      onReady?.()
+    })
+    cleanups.push(() => cancelAnimationFrame(fadeIn))
 
-        // pupils track the pointer within their sockets
-        const dx = Math.max(-1, Math.min(1, (px - 0.5) * 2)) * 3
-        const dy = Math.max(-1, Math.min(1, (py - 0.5) * 2)) * 3
-        const t = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`
-        if (eyeLPupilRef.current) eyeLPupilRef.current.style.transform = t
-        if (eyeRPupilRef.current) eyeRPupilRef.current.style.transform = t
-      }
-      const onLeave = () => {
-        rx = 0
-        ry = 0
-        if (!raf) raf = requestAnimationFrame(applyTilt)
-        if (eyeLPupilRef.current) eyeLPupilRef.current.style.transform = ""
-        if (eyeRPupilRef.current) eyeRPupilRef.current.style.transform = ""
-      }
-      stage.addEventListener("pointermove", onMove)
-      stage.addEventListener("pointerleave", onLeave)
-      cleanups.push(() => {
-        stage.removeEventListener("pointermove", onMove)
-        stage.removeEventListener("pointerleave", onLeave)
-        cancelAnimationFrame(raf)
-      })
-
-      // idle blink / mouth twitch, same loose cadence as the source gif
-      let idleTimer = 0
-      let blinkTimer = 0
-      const show = (el: SVGGElement | null, visible: boolean) => {
-        if (el) el.style.display = visible ? "" : "none"
-      }
-      const scheduleIdle = () => {
-        const delay = 1800 + Math.random() * 2600
-        idleTimer = window.setTimeout(() => {
-          const roll = Math.random()
-          if (roll < 0.4) {
-            show(eyeLRingRef.current, false)
-            show(eyeLClosedRef.current, true)
-            if (eyeLPupilRef.current) eyeLPupilRef.current.style.display = "none"
-            blinkTimer = window.setTimeout(() => {
-              show(eyeLRingRef.current, true)
-              show(eyeLClosedRef.current, false)
-              if (eyeLPupilRef.current) eyeLPupilRef.current.style.display = ""
-            }, 130)
-          } else if (roll < 0.8) {
-            show(eyeRRingRef.current, false)
-            show(eyeRClosedRef.current, true)
-            if (eyeRPupilRef.current) eyeRPupilRef.current.style.display = "none"
-            blinkTimer = window.setTimeout(() => {
-              show(eyeRRingRef.current, true)
-              show(eyeRClosedRef.current, false)
-              if (eyeRPupilRef.current) eyeRPupilRef.current.style.display = ""
-            }, 130)
-          } else {
-            show(mouthBaseRef.current, false)
-            show(mouthVariantRef.current, true)
-            blinkTimer = window.setTimeout(() => {
-              show(mouthBaseRef.current, true)
-              show(mouthVariantRef.current, false)
-            }, 260)
-          }
-          scheduleIdle()
-        }, delay)
-      }
-      scheduleIdle()
-      cleanups.push(() => {
-        window.clearTimeout(idleTimer)
-        window.clearTimeout(blinkTimer)
-      })
+    // whole-face tilt toward the pointer
+    let raf = 0
+    let rx = 0
+    let ry = 0
+    const applyTilt = () => {
+      face.style.transform = `rotateX(${ry}deg) rotateY(${rx}deg)`
+      raf = 0
     }
+    // The whole window steers it: the pointer's offset from the face's centre, against half the window
+    const onMove = (e: PointerEvent) => {
+      const r = stage.getBoundingClientRect()
+      const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2)))
+      const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2)))
+      rx = nx * 12
+      ry = -ny * 12
+      if (!raf) raf = requestAnimationFrame(applyTilt)
+
+      // pupils look toward the pointer a whole cell at a time, so they stay on the pixel grid
+      const t = `translate(${Math.round(nx) * CELL}px,${Math.round(ny) * CELL}px)`
+      if (eyeLPupilRef.current) eyeLPupilRef.current.style.transform = t
+      if (eyeRPupilRef.current) eyeRPupilRef.current.style.transform = t
+    }
+    const onLeave = () => {
+      rx = 0
+      ry = 0
+      if (!raf) raf = requestAnimationFrame(applyTilt)
+      if (eyeLPupilRef.current) eyeLPupilRef.current.style.transform = ""
+      if (eyeRPupilRef.current) eyeRPupilRef.current.style.transform = ""
+    }
+    // relax when the pointer leaves the window
+    const onOut = (e: MouseEvent) => {
+      if (!e.relatedTarget) onLeave()
+    }
+    window.addEventListener("pointermove", onMove, { passive: true })
+    document.addEventListener("mouseout", onOut)
+    window.addEventListener("blur", onLeave)
+    cleanups.push(() => {
+      window.removeEventListener("pointermove", onMove)
+      document.removeEventListener("mouseout", onOut)
+      window.removeEventListener("blur", onLeave)
+      cancelAnimationFrame(raf)
+    })
+
+    // idle blink / mouth twitch, same loose cadence as the source gif
+    let idleTimer = 0
+    let blinkTimer = 0
+    const show = (el: SVGGElement | null, visible: boolean) => {
+      if (el) el.style.display = visible ? "" : "none"
+    }
+    const scheduleIdle = () => {
+      const delay = 1800 + Math.random() * 2600
+      idleTimer = window.setTimeout(() => {
+        const roll = Math.random()
+        if (roll < 0.4) {
+          show(eyeLRingRef.current, false)
+          show(eyeLClosedRef.current, true)
+          if (eyeLPupilRef.current) eyeLPupilRef.current.style.display = "none"
+          blinkTimer = window.setTimeout(() => {
+            show(eyeLRingRef.current, true)
+            show(eyeLClosedRef.current, false)
+            if (eyeLPupilRef.current) eyeLPupilRef.current.style.display = ""
+          }, 130)
+        } else if (roll < 0.8) {
+          show(eyeRRingRef.current, false)
+          show(eyeRClosedRef.current, true)
+          if (eyeRPupilRef.current) eyeRPupilRef.current.style.display = "none"
+          blinkTimer = window.setTimeout(() => {
+            show(eyeRRingRef.current, true)
+            show(eyeRClosedRef.current, false)
+            if (eyeRPupilRef.current) eyeRPupilRef.current.style.display = ""
+          }, 130)
+        } else {
+          show(mouthBaseRef.current, false)
+          show(mouthVariantRef.current, true)
+          blinkTimer = window.setTimeout(() => {
+            show(mouthBaseRef.current, true)
+            show(mouthVariantRef.current, false)
+          }, 260)
+        }
+        scheduleIdle()
+      }, delay)
+    }
+    scheduleIdle()
+    cleanups.push(() => {
+      window.clearTimeout(idleTimer)
+      window.clearTimeout(blinkTimer)
+    })
 
     return () => {
       for (const fn of cleanups) fn()
     }
-  }, [])
+  }, [onReady])
 
   return (
     <div
-      className={cn("pointer-events-auto text-fg opacity-0 transition-opacity duration-500", className)}
+      ref={rootRef}
+      className={cn("pointer-events-none text-fg opacity-0 transition-opacity duration-500", className)}
       style={{ perspective: 600 }}
       aria-hidden
-      ref={el => {
-        // fade in once mounted, after the layers below are painted
-        if (el) requestAnimationFrame(() => el.classList.remove("opacity-0"))
-      }}
     >
       <div
         ref={faceRef}
@@ -318,7 +327,7 @@ export function MonsterFace({ className }: Readonly<{ className?: string }>) {
               transform: `translateZ(${g.depth}px)`
             }}
           >
-            <g fill="currentColor">
+            <g fill="currentColor" shapeRendering="crispEdges">
               {g.key === "bracketL" && <Pixels cells={BRACKET_L} />}
               {g.key === "bracketR" && <Pixels cells={BRACKET_R} />}
               {g.key === "mouth" && (
