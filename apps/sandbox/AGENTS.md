@@ -14,7 +14,10 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 ## Layout
 
 ```
-src/server.ts     # entry: env, manifests, the tunnel, stops every server on SIGTERM/SIGINT
+src/cli.ts        # bundle entry: `health` (the Docker HEALTHCHECK) or startSandbox()
+src/server.ts     # startSandbox(): banner, env, manifests, the tunnel, status every 15 min, stops every server on SIGTERM/SIGINT
+src/health.ts     # status file the tunnel keeps current (welcome, heartbeats, disconnects); `health` reads it
+src/banner.ts     # the startup banner: the monster, version and setup
 src/tunnel.ts     # connectTunnel: dials KAJA_API_URL, hello/welcome (instance id+secret kept in SANDBOX_STATE_DIR), heartbeat every minute, reconnect with backoff; TunnelServer runs request/cancel/stats frames
 src/hardware.ts   # hello info (cpu, memory, arch, os, version, cap, abilities) and heartbeat load
 src/capacity.ts   # defaultMaxProcesses (512 MB per server of the memory limit, less 512 MB), hasRoom (512 MB free now)

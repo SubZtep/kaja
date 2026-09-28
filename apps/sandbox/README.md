@@ -17,6 +17,10 @@ docker run -d --name kaja-sandbox --restart unless-stopped --memory 4g --cpus 2 
 
 The `/data` volume keeps its registration, so a restart comes back as the same sandbox. `SANDBOX_NAME` names it. `--memory` and `--cpus` are optional (the web app's commands add them behind a "Limit what it may use" switch) and cap how much of the machine it lends: it runs one server (browser) per 512 MB of its memory limit, or of the machine's RAM without one, less 512 MB for itself, so 7 with `--memory 4g`, and turns new ones away while less than 512 MB is free; `SANDBOX_MAX_PROCESSES` overrides the count.
 
+## Is it working?
+
+It starts with the Kaja monster and a summary (API, owner, servers, capacity), then logs `Sandbox connected to … as <id>` and `Sandbox ready`. After that it's quiet until someone uses it: each MCP server it starts or stops is logged, plus a status line every 15 minutes. The image's `HEALTHCHECK` (`bun sandbox.js health`) reports healthy while it's connected with a heartbeat in the last 150 seconds, so Docker (and Docker Desktop) show it as healthy or unhealthy.
+
 ## How a cloud turn reaches it
 
 ```

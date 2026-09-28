@@ -76,4 +76,6 @@ COPY --chown=node:node marketplace/mcp ./marketplace/mcp
 COPY --chown=node:node apps/sandbox/overrides.json ./overrides.json
 
 # Nothing listens: the sandbox dials KAJA_API_URL (https://api.kaja.io by default) and serves over that socket.
+# Healthy while connected with a heartbeat in the last 150s (it writes a status file; `health` only reads it).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["bun", "sandbox.js", "health"]
 CMD ["bun", "sandbox.js"]
