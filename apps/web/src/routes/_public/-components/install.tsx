@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
+import { CopyButton } from "../../../components/ui/CopyButton"
 import { getInstallCmd } from "../../../lib/vars"
 import { m } from "../../../paraglide/messages.js"
 import { Sticker } from "./sticker"
+
+const WINDOWS_INSTALL = "irm https://kaja.io/install.ps1 | iex"
 
 export function Install() {
   const [installCmd, setInstallCmd] = useState("curl -fsSL https://kaja.io/install.sh | bash")
@@ -24,13 +27,17 @@ export function Install() {
         <div className="grid gap-6 md:grid-cols-2">
           <div className="crt-frame px-4 py-5">
             <p className="m-0 mb-2 font-stamp text-[11px] text-ice uppercase">{m.install_mac_linux_label()}</p>
-            <code className="block overflow-x-auto whitespace-nowrap font-crt text-neon text-sm">{installCmd}</code>
+            <div className="flex items-start gap-3">
+              <code className="block min-w-0 flex-1 wrap-break-word font-crt text-neon text-sm">{installCmd}</code>
+              <CopyButton text={installCmd} />
+            </div>
           </div>
           <div className="crt-frame px-4 py-5">
             <p className="m-0 mb-2 font-stamp text-[11px] text-ice uppercase">{m.install_windows_label()}</p>
-            <code className="block overflow-x-auto whitespace-nowrap font-crt text-neon text-sm">
-              irm https://kaja.io/install.ps1 | iex
-            </code>
+            <div className="flex items-start gap-3">
+              <code className="block min-w-0 flex-1 wrap-break-word font-crt text-neon text-sm">{WINDOWS_INSTALL}</code>
+              <CopyButton text={WINDOWS_INSTALL} />
+            </div>
           </div>
         </div>
 
@@ -46,14 +53,6 @@ export function Install() {
           </a>{" "}
           {m.install_binary_suffix()}
         </p>
-        <a
-          href="https://github.com/SubZtep/kaja"
-          target="_blank"
-          rel="noopener"
-          className="mt-2 inline-block font-crt text-muted text-sm hover:text-neon"
-        >
-          {m.hero_cta_source()}
-        </a>
       </ContentWidth>
     </section>
   )

@@ -10,9 +10,9 @@ It runs **chrome-devtools**, a headless Chrome the assistant can browse with, re
 
 ```sh
 # linked to your account (key from the web app's Sandbox page)
-docker run -d --restart unless-stopped --shm-size 1g -v kaja-sandbox:/data -e KAJA_SANDBOX_KEY=ks_… subztep/kaja-sandbox
+docker run -d --name kaja-sandbox --restart unless-stopped --shm-size 1g -v kaja-sandbox:/data -e KAJA_SANDBOX_KEY=ks_… subztep/kaja-sandbox
 # anonymous, shared with everyone, and lending at most 4 GB and 2 CPUs
-docker run -d --restart unless-stopped --memory 4g --cpus 2 --shm-size 1g -v kaja-sandbox:/data subztep/kaja-sandbox
+docker run -d --name kaja-sandbox --restart unless-stopped --memory 4g --cpus 2 --shm-size 1g -v kaja-sandbox:/data subztep/kaja-sandbox
 ```
 
 The `/data` volume keeps its registration, so a restart comes back as the same sandbox. `SANDBOX_NAME` names it. `--memory` and `--cpus` are optional (the web app's commands add them behind a "Limit what it may use" switch) and cap how much of the machine it lends: it runs one server (browser) per 512 MB of its memory limit, or of the machine's RAM without one, less 512 MB for itself, so 7 with `--memory 4g`, and turns new ones away while less than 512 MB is free; `SANDBOX_MAX_PROCESSES` overrides the count.

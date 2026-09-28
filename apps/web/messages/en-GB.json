@@ -59,7 +59,7 @@
   "feature_telegram_meta": "Same brain, pocket-sized",
   "features_docs": "The rest is in the docs",
   "install_title": "Install",
-  "install_linux_note": "Linux first",
+  "install_linux_note": "Tested on Linux",
   "install_mac_linux_label": "Mac / Linux",
   "install_windows_label": "Windows",
   "install_binary_prefix": "Prefer a plain binary?",
