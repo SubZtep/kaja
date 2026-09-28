@@ -194,6 +194,35 @@
   a:hover {
     @apply text-neon;
   }
+  /* Soft hover/focus fades on everything interactive; a transition-* utility still wins (utilities outrank base) */
+  :where(
+    a,
+    button,
+    summary,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [role="combobox"],
+    [role="option"],
+    [role="menuitem"],
+    [role="tab"]
+  ) {
+    transition-property:
+      color, background-color, border-color, text-decoration-color,
+      outline-color, box-shadow, opacity;
+    transition-duration: var(--hover-fade, 160ms);
+    transition-timing-function: ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --hover-fade: 0s;
+    }
+  }
+  /* Tailwind v4 leaves buttons on the arrow cursor */
+  :where(button:not(:disabled), [role="button"]:not([aria-disabled="true"])) {
+    cursor: pointer;
+  }
   ::-webkit-scrollbar {
     width: 4px;
   }
