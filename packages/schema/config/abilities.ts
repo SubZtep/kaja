@@ -21,7 +21,13 @@ export const AbilitiesFileSchema = z.object({
   personas: z
     .array(z.string().min(1))
     .default([])
-    .describe("Enabled personas, by file name under marketplace/personas/ (default always loads)")
+    .describe("Enabled personas, by file name under marketplace/personas/ (default always loads)"),
+  disabledTools: z
+    .record(z.string().min(1), z.array(z.string().min(1)))
+    .default({})
+    .describe(
+      "Tools to leave out, by HTTP tool or MCP ability name; an MCP ability needs a `tools` list for this. The rest (and tools it gains later) stay on"
+    )
 })
 
 export type AbilitiesFile = z.infer<typeof AbilitiesFileSchema>

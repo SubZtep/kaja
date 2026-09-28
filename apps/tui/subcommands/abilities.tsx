@@ -5,6 +5,7 @@ import {
   confirmStdioServers,
   ensureMarketplace,
   pickAbilities,
+  pickDisabledTools,
   scanMarketplace
 } from "../lib/abilities/picker"
 import type { args as Args } from "../lib/cli/args"
@@ -15,7 +16,7 @@ import type { args as Args } from "../lib/cli/args"
  * before the local/cloud branch like `config`: it never triggers cloud login.
  */
 /** Where cloud users pick their abilities (the web app's /abilities page). */
-const CLOUD_ABILITIES_URL = "https://kaja.io/abilities"
+const CLOUD_ABILITIES_URL = "https://kaja.io/agent/abilities"
 
 export async function runAbilitiesSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")
@@ -78,9 +79,18 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
     tools: [...picked.tools, ...keepBroken(enabled.tools, tools)],
     mcp: [...(await confirmStdioServers(picked.mcp, mcpScan, enabled.mcp)), ...keepBroken(enabled.mcp, mcp)]
   }
-  await saveAbilitiesFile(next)
+  // Tools switched off for abilities that are no longer on are dropped with them
+  const stillOn = new Set([...next.tools, ...next.mcp])
+  const disabledTools = Object.fromEntries(Object.entries(enabled.disabledTools).filter(([name]) => stillOn.has(name)))
+  await saveAbilitiesFile({ ...next, disabledTools })
   const count = next.skills.length + next.personas.length + next.tools.length + next.mcp.length
   console.log(statusLine("success", t("ability.saved", { path: getAbilitiesPath(), count })))
+
+  const pickedTools = await pickDisabledTools(next, { tools: toolScan, mcp: mcpScan }, disabledTools)
+  if (pickedTools) {
+    await saveAbilitiesFile({ disabledTools: pickedTools })
+    console.log(statusLine("success", t("ability.toolsSaved", { path: getAbilitiesPath() })))
+  }
 
   // Only the keys still missing for what is now enabled: the rest were set earlier and aren't this command's business.
   const { secrets } = await import("../lib/config/secrets")

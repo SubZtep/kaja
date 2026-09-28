@@ -230,6 +230,12 @@ confirmStdio        = "{name} 會佇你个電腦執行 `{command}`。欲開無�
 enable              = "開"
 dontEnable          = "莫開"
 optionalKeyPrompt   = "{name} 會當用 API 鎖匙（{where}）。無一定愛：無鎖匙嘛會用。"
+pickToolsAsk        = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
+pickTools           = "[nan-TW] lorem"
+keepAllTools        = "[nan-TW] lorem"
+toolsTitle          = "[nan-TW] lorem {name}"
+toolsHint           = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+toolsSaved          = "[nan-TW] lorem ipsum dolor sit {path}"
 
 
 [secrets]

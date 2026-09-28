@@ -14,6 +14,7 @@ import {
 import type * as z from "zod"
 import { warn } from "../warn"
 import { parseSkillMd } from "./skill-md"
+import { withoutHttpTools, withoutMcpTools } from "./tool-filter"
 import { type AbilityStore, SkillFileError, type SkillSummary } from "./types"
 
 const SKILL_FILE = "SKILL.md"
@@ -27,6 +28,8 @@ export type FolderAbilityStoreOptions = {
   root: string
   /** Ability names the host enabled (abilities.toml) — only these load. */
   enabled: { skills: string[]; tools?: string[]; mcp?: string[] }
+  /** Tools the user switched off, by HTTP tool or MCP ability name (abilities.toml's `[disabledTools]`). */
+  disabledTools?: Record<string, string[]>
 }
 
 /** Every file under a skill folder except SKILL.md and hidden/backup files, relative with `/` separators, sorted and capped. */
@@ -188,6 +191,8 @@ export type AbilityKeyNeed = { in: "header" | "query" | "env"; name: string; opt
 export type HttpToolScanEntry = {
   name: string
   description?: string
+  /** Its tools, for choosing which of them it may use. */
+  tools?: { name: string; description?: string }[]
   /** Host the ability calls, shown before enabling. */
   domain?: string
   /** Where its key goes, or undefined when it needs none. */
@@ -205,6 +210,7 @@ export async function scanHttpTools(root: string): Promise<HttpToolScanEntry[]> 
         return {
           name,
           description: ability.description,
+          tools: ability.tools.map(tool => ({ name: tool.name, description: tool.description })),
           domain: new URL(ability.baseUrl).host,
           auth:
             ability.auth.type === "apiKey"
@@ -222,6 +228,8 @@ export async function scanHttpTools(root: string): Promise<HttpToolScanEntry[]> 
 export type McpScanEntry = {
   name: string
   description?: string
+  /** Its `tools` list with each one's description, when the manifest has one (only then can tools be switched off). */
+  tools?: { name: string; description?: string }[]
   transport?: McpAbility["transport"]
   /** Host of a remote server. */
   domain?: string
@@ -241,6 +249,7 @@ export async function scanMcpAbilities(root: string): Promise<McpScanEntry[]> {
         return {
           name,
           description: ability.description,
+          tools: ability.tools?.map(tool => ({ name: tool, description: ability.toolDescriptions?.[tool] })),
           transport: ability.transport,
           ...(ability.url
             ? { domain: new URL(ability.url).host }
@@ -405,19 +414,23 @@ export function createFolderAbilityStore(opts: FolderAbilityStoreOptions): Abili
       return skills
     },
 
-    listHttpTools: () =>
-      readEnabled(
-        opts.enabled.tools,
-        name => readManifest(join(resolve(opts.root), "tools"), name, HttpToolAbilitySchema),
-        "HTTP tool ability"
-      ),
+    listHttpTools: async () =>
+      (
+        await readEnabled(
+          opts.enabled.tools,
+          name => readManifest(join(resolve(opts.root), "tools"), name, HttpToolAbilitySchema),
+          "HTTP tool ability"
+        )
+      ).flatMap(ability => withoutHttpTools(ability, opts.disabledTools?.[ability.name] ?? []) ?? []),
 
-    listMcpAbilities: () =>
-      readEnabled(
-        opts.enabled.mcp,
-        name => readManifest(join(resolve(opts.root), "mcp"), name, McpAbilitySchema),
-        "MCP ability"
-      ),
+    listMcpAbilities: async () =>
+      (
+        await readEnabled(
+          opts.enabled.mcp,
+          name => readManifest(join(resolve(opts.root), "mcp"), name, McpAbilitySchema),
+          "MCP ability"
+        )
+      ).flatMap(ability => withoutMcpTools(ability, opts.disabledTools?.[ability.name] ?? []) ?? []),
 
     async readSkill(name, file) {
       if (!enabled.has(name) || !SkillNameSchema.safeParse(name).success) return undefined

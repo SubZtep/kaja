@@ -76,6 +76,18 @@ approval = "never"                  # never | writes | always
   ]
   ```
 
+- Locally, `kaja abilities` offers to choose which tools an ability with several may use, and saves the ones
+  you untick in abilities.toml's `[disabledTools]`; the rest (and tools it gains later) stay on. This needs the
+  ability to have a `tools` list.
+- `toolDescriptions` says in a line what each listed tool does. The web's tool list shows it, since the
+  server's own descriptions only arrive once it runs:
+
+  ```toml
+  [toolDescriptions]
+  "resolve-library-id" = "Finds a library's Context7 id from its name."
+  "query-docs"         = "Fetches current documentation and code examples for a library."
+  ```
+
 ## In the cloud
 
 Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list —
@@ -96,6 +108,8 @@ A `stdio` ability that needs a key stays local for now.
 - Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes the
   connection when it ends; nothing is shared with other users.
 - A saved key is tested by connecting and listing the server's tools.
+- On the web's Abilities page, a server's **Tools** list lets you untick tools you don't want; they never
+  reach your chats, while the rest (and tools it gains later) stay on.
 - `approval` and `readOnly` apply as above. Images, such as screenshots, come back to you, and long
   results are cut at about 32 KB. An argument that would save a file on the server (`localOnlyArgs`,
   like a screenshot's `filePath`) is hidden in the cloud.

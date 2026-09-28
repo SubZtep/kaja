@@ -43,7 +43,8 @@ export async function getDefaultTools(personas: Persona[]) {
   const abilities = await loadAbilities(
     createFolderAbilityStore({
       root: getMarketplaceDir(),
-      enabled: { skills: abilitiesFile.skills, tools: abilitiesFile.tools, mcp: abilitiesFile.mcp }
+      enabled: { skills: abilitiesFile.skills, tools: abilitiesFile.tools, mcp: abilitiesFile.mcp },
+      disabledTools: abilitiesFile.disabledTools
     }),
     {
       personas,

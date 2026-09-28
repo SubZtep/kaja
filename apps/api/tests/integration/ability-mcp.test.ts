@@ -38,7 +38,8 @@ function marketplace(base: string) {
     remote(
       things,
       `https://${host}/mcp`,
-      `auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\napproval = "writes"\ntools = ["read_thing", "write_thing"]\n`
+      `auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\napproval = "writes"\ntools = ["read_thing", "write_thing"]\n` +
+        `[toolDescriptions]\nread_thing = "Reads a thing"\n`
     )
   )
   put(`mcp/open-${tag}.toml`, remote(`open-${tag}`, `https://${host}/mcp`))
@@ -142,7 +143,7 @@ describe("MCP servers in the cloud", () => {
     const { abilities } = await (await app.request("/abilities")).json()
     expect(abilities.find((ability: { name: string }) => ability.name === `stdio-${tag}`)).toMatchObject({
       type: "mcp",
-      mcp: { domain: "sandbox", key: "none", transport: "http", tools: ["x"] }
+      mcp: { domain: "sandbox", key: "none", transport: "http", tools: [{ name: "x" }] }
     })
   })
 
@@ -162,7 +163,7 @@ describe("MCP servers in the cloud", () => {
     }
   })
 
-  test("the catalog shows where an MCP server runs, its key need, when it asks, and its tools", async () => {
+  test("the catalog shows where an MCP server runs, its key need, when it asks, and its tools with their descriptions", async () => {
     const { abilities } = await (await app.request("/abilities")).json()
     expect(abilities.find((ability: { name: string }) => ability.name === things)).toMatchObject({
       type: "mcp",
@@ -171,7 +172,7 @@ describe("MCP servers in the cloud", () => {
         key: "required",
         transport: "http",
         approval: "writes",
-        tools: ["read_thing", "write_thing"]
+        tools: [{ name: "read_thing", description: "Reads a thing" }, { name: "write_thing" }]
       }
     })
   })

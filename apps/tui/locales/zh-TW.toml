@@ -230,6 +230,12 @@ confirmStdio        = "{name} 會在你的電腦上執行 `{command}`。要啟�
 enable              = "啟用"
 dontEnable          = "不要啟用"
 optionalKeyPrompt   = "{name} 可以使用 API 金鑰（{where}）。這是選填的：沒有也能運作。"
+pickToolsAsk        = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
+pickTools           = "[zh-TW] lorem"
+keepAllTools        = "[zh-TW] lorem"
+toolsTitle          = "[zh-TW] lorem ipsum {name}"
+toolsHint           = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+toolsSaved          = "[zh-TW] lorem ipsum dolor sit {path}"
 
 
 [secrets]

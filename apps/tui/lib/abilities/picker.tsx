@@ -1,5 +1,6 @@
 import type { AbilityKeyNeed, McpScanEntry } from "@kaja/nasi"
 import type { PickerItem, PickerSelection } from "../../components/ability-picker"
+import type { ToolChoice } from "../../components/tool-picker"
 
 /** Every ability on disk, grouped as picker rows, plus the raw scans the key/command prompts need. */
 export type MarketplaceScan = Awaited<ReturnType<typeof scanMarketplace>>
@@ -100,6 +101,62 @@ export async function pickAbilities(
   )
   await picker.waitUntilExit()
   return picked
+}
+
+/** One ability's tool checklist; the tools to switch off, or undefined when it was cancelled or everything was unticked (nothing changes then). */
+async function pickTools(ability: string, tools: ToolChoice[], disabled: string[]): Promise<string[] | undefined> {
+  const { render } = await import("ink")
+  const { ToolPicker } = await import("../../components/tool-picker")
+  const { ConsoleTheme } = await import("../../components/theme")
+  let kept: string[] | undefined
+  const picker = render(
+    <ConsoleTheme>
+      <ToolPicker
+        ability={ability}
+        tools={tools}
+        disabled={disabled}
+        onSubmit={values => {
+          kept = values
+          picker.unmount()
+        }}
+        onCancel={() => picker.unmount()}
+      />
+    </ConsoleTheme>
+  )
+  await picker.waitUntilExit()
+  if (!kept?.length) return undefined
+  return tools.map(tool => tool.name).filter(name => !kept?.includes(name))
+}
+
+/**
+ * After the abilities checklist: offers once (default no) to choose which tools each enabled HTTP tool or MCP
+ * server with more than one of them may use, then walks them one by one. Returns abilities.toml's new
+ * `[disabledTools]`, only for abilities still enabled, or undefined when there was nothing to ask or the answer
+ * was no.
+ */
+export async function pickDisabledTools(
+  enabled: { tools: string[]; mcp: string[] },
+  scan: { tools: { name: string; tools?: ToolChoice[] }[]; mcp: { name: string; tools?: ToolChoice[] }[] },
+  current: Record<string, string[]>
+): Promise<Record<string, string[]> | undefined> {
+  const { t } = await import("../i18n")
+  const { askYesNo } = await import("../doctor/prompt")
+  const choices = [
+    ...scan.tools.filter(entry => enabled.tools.includes(entry.name)),
+    ...scan.mcp.filter(entry => enabled.mcp.includes(entry.name))
+  ].filter((entry): entry is { name: string; tools: ToolChoice[] } => (entry.tools?.length ?? 0) > 1)
+  if (choices.length === 0) return undefined
+  const ask = await askYesNo(t("ability.pickToolsAsk"), t("ability.pickTools"), t("ability.keepAllTools"), {
+    defaultYes: false
+  })
+  if (!ask) return undefined
+
+  const next: Record<string, string[]> = {}
+  for (const { name, tools } of choices) {
+    const off = (await pickTools(name, tools, current[name] ?? [])) ?? current[name] ?? []
+    if (off.length) next[name] = off
+  }
+  return next
 }
 
 /** A stdio server runs a command on this machine: newly enabling one asks once, showing exactly what it runs. */

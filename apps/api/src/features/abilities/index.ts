@@ -7,11 +7,12 @@ import {
   listUserAbilitiesResponseSchema,
   saveAbilityKeyRequestSchema,
   saveAbilityKeyResponseSchema,
+  setDisabledToolsRequestSchema,
   skillDetailSchema
 } from "@kaja/schema/api"
 import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badRequest, notFound, serviceUnavailable, unauthorized } from "../../types/errors"
+import { badRequest, conflict, notFound, serviceUnavailable, unauthorized } from "../../types/errors"
 import { requireAuthMiddleware } from "../auth"
 import { nasiToolDeps } from "../nasi/chat"
 
@@ -153,6 +154,44 @@ const keyParams = z.object({
     .string()
     .min(1)
     .openapi({ param: { name: "name", in: "path" }, example: "open-meteo" })
+})
+
+const disabledToolsRoute = createRoute({
+  method: "put",
+  path: "/me/{type}/{name}/tools",
+  tags: ["Abilities"],
+  summary: "Switch off some of an enabled HTTP tool's or MCP server's tools for the signed-in user",
+  description:
+    "Replaces the list; an empty one turns every tool back on. Tools left out never reach the user's turns, and an ability with all of them off is left out as a whole. Turning the ability off and on again clears the list.",
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: keyParams,
+    body: { content: { "application/json": { schema: setDisabledToolsRequestSchema } }, required: true }
+  },
+  responses: {
+    200: { description: "Saved", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
+    400: {
+      description: "`unknown_tool`: a name the ability doesn't offer",
+      content: { "application/json": { schema: errorSchema } }
+    },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
+    404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } },
+    409: {
+      description: "`not_enabled`: turn the ability on first",
+      content: { "application/json": { schema: errorSchema } }
+    }
+  }
+})
+
+abilityRoutes.openapi(disabledToolsRoute, async c => {
+  const user = c.get("user")
+  if (!user) return unauthorized(c)
+  const { type, name } = c.req.valid("param")
+  const result = await abilityService.setDisabledTools(user.id, type, name, c.req.valid("json").disabled)
+  if (result === "not_found") return notFound(c, "Ability not found")
+  if (result === "unknown_tool") return badRequest(c, "unknown_tool")
+  if (result === "not_enabled") return conflict(c, "not_enabled")
+  return c.json({ ok: true }, 200)
 })
 
 const saveKeyRoute = createRoute({

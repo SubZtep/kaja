@@ -33,6 +33,12 @@ export const McpAbilitySchema = z
       .default("never")
       .describe("When tool calls ask first: writes = unless the tool is marked read-only"),
     tools: z.array(z.string().min(1)).optional().describe("Only these of the server's tools reach the model"),
+    toolDescriptions: z
+      .record(z.string().min(1), z.string().min(1).max(1024))
+      .optional()
+      .describe(
+        "What each listed tool does, in a line, for the web's tool list (the server's own text only arrives at run time)"
+      ),
     trustedSandbox: z
       .boolean()
       .default(false)
@@ -62,6 +68,8 @@ export const McpAbilitySchema = z
     const issue: IssueAt = (path, message) => ctx.addIssue({ code: "custom", path: [path], message })
     if (ability.transport === "stdio") checkStdio(ability, issue)
     else checkRemote(ability, issue)
+    for (const tool of Object.keys(ability.toolDescriptions ?? {}))
+      if (!ability.tools?.includes(tool)) issue("toolDescriptions", `${tool} isn't in tools`)
   })
 
 type IssueAt = (path: string, message: string) => void

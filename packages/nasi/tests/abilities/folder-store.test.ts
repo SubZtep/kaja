@@ -206,6 +206,42 @@ test("listMcpAbilities reads enabled manifests; scanMcpAbilities shows the host 
   expect(entries[2]).toMatchObject({ transport: "http", domain: "mcp.docs.test", auth: undefined })
 })
 
+test("disabledTools leaves those tools out; an ability with none left, or an MCP one without a list, is handled", async () => {
+  put(
+    "tools/two.toml",
+    `${manifest("two")}\n[[tools]]\nname = "two_put"\ndescription = "Put something"\nmethod = "PUT"\npath = "/things"\n`
+  )
+  put("tools/one.toml", manifest("one"))
+  put(
+    "mcp/listed.toml",
+    'name = "listed"\ndescription = "L"\nurl = "https://mcp.l.test/mcp"\ntools = ["read", "write"]\n[toolDescriptions]\nread = "Reads"\n'
+  )
+  put("mcp/open.toml", 'name = "open"\ndescription = "O"\nurl = "https://mcp.o.test/mcp"\n')
+  const store = createFolderAbilityStore({
+    root,
+    enabled: { skills: [], tools: ["two", "one"], mcp: ["listed", "open"] },
+    disabledTools: { two: ["two_put"], one: ["one_get"], listed: ["write"], open: ["anything"] }
+  })
+  const tools = await store.listHttpTools()
+  // one's only tool is off, so it's left out as a whole
+  expect(tools.map(tool => [tool.name, tool.tools.map(t => t.name)])).toEqual([["two", ["two_get"]]])
+  const mcp = await store.listMcpAbilities()
+  expect(mcp.map(ability => [ability.name, ability.tools])).toEqual([
+    ["listed", ["read"]],
+    ["open", undefined]
+  ])
+
+  // The picker gets each ability's tools with what they do
+  expect((await scanMcpAbilities(root)).find(entry => entry.name === "listed")?.tools).toEqual([
+    { name: "read", description: "Reads" },
+    { name: "write", description: undefined }
+  ])
+  expect((await scanHttpTools(root)).find(entry => entry.name === "two")?.tools?.map(t => t.name)).toEqual([
+    "two_get",
+    "two_put"
+  ])
+})
+
 test("readPersonas reads the named personas in order, id from the file name; broken, missing and badly named ones are skipped", async () => {
   put("personas/care.toml", 'label = "Care"\nwhen = "the user is sad"\ntemperature = 0.3\n')
   put("personas/barkochba.toml", 'label = "Barkochba"\n')

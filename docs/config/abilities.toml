@@ -23,6 +23,11 @@ personas = [
 
 ]
 
+# Tools to leave out, by ability name; the rest (and any it gains later) stay on.
+# `kaja abilities` asks about these too. An MCP ability needs a `tools` list for it.
+# [disabledTools]
+# chrome-devtools = ["click", "fill"]
+
 # Where `kaja abilities update` fetches the marketplace from. Defaults to the Kaja
 # repo's main branch; a local path works too, for testing your own changes.
 # [source]

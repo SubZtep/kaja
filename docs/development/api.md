@@ -63,6 +63,7 @@ NAT doesn't starve everyone.
 | `GET` | `/abilities/me` | the user's abilities, which ones have a saved key, and whether keys can be saved |
 | `PUT` / `DELETE` | `/abilities/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
 | `PUT` / `DELETE` | `/abilities/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
+| `PUT` | `/abilities/me/{tool\|mcp}/{name}/tools` | switch off some of an enabled ability's tools (`{ disabled: [...] }`, replacing the list; `[]` turns them all back on); they never reach the user's turns, and one with every tool off is left out. `/abilities/me` lists them as `disabledTools` |
 
 Keys live [encrypted in `user_secret`](/development/database#accounts-and-access); no endpoint returns
 one. Without `USER_SECRET_KEY` the key routes answer 503 and abilities that need a key are

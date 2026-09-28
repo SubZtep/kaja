@@ -134,6 +134,19 @@
         "minLength": 1
       }
     },
+    "toolDescriptions": {
+      "description": "What each listed tool does, in a line, for the web's tool list (the server's own text only arrives at run time)",
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024
+      }
+    },
     "trustedSandbox": {
       "default": false,
       "description": "In the cloud, only the user's own MCP sandboxes or the official one run it, never one another person shares (stdio)",

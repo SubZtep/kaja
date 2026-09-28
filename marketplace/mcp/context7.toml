@@ -16,3 +16,9 @@ in       = "header"
 name     = "Authorization"
 prefix   = "Bearer "
 optional = true
+
+
+# What each tool does, for the web's tool list; the server's own descriptions only arrive at run time
+[toolDescriptions]
+"resolve-library-id" = "Finds a library's Context7 id from its name."
+"query-docs"         = "Fetches current documentation and code examples for a library."
