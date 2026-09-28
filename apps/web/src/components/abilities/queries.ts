@@ -1,4 +1,4 @@
-import type { AbilityType, ListCatalogResponse, ListUserAbilitiesResponse } from "@kaja/schema/api"
+import type { AbilityType, KeyedAbilityType, ListCatalogResponse, ListUserAbilitiesResponse } from "@kaja/schema/api"
 import { listCatalogResponseSchema, listUserAbilitiesResponseSchema } from "@kaja/schema/api"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
@@ -45,5 +45,17 @@ export function useToggleAbility() {
       toast.success(on ? m.skills_turned_on({ name }) : m.skills_turned_off({ name }))
     },
     onError: (err: Error) => toast.error(err.message || m.skills_error_toggle())
+  })
+}
+
+/** Saves which of an enabled HTTP tool's or MCP server's tools are off; quiet on success, a toast when it fails. */
+export function useSetDisabledTools() {
+  const apiFetch = useApiFetch()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ type, name, disabled }: { type: KeyedAbilityType; name: string; disabled: string[] }) =>
+      apiFetch(`/abilities/me/${type}/${encodeURIComponent(name)}/tools`, { disabled }, { method: "PUT" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_ABILITIES_QUERY_KEY }),
+    onError: (err: Error) => toast.error(err.message || m.tools_pick_error())
   })
 }

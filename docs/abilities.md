@@ -22,7 +22,7 @@ Kaja.
 | dataset | questions a persona collects answers to | [Memory & datasets](/abilities/memory#datasets) |
 
 Nothing loads just because it exists: you turn each ability on — with `kaja abilities` locally, or on
-the [Abilities page](https://kaja.io/abilities) in the cloud. The two lists are separate.
+the [Abilities page](https://kaja.io/agent/abilities) in the cloud. The two lists are separate.
 
 ## In local mode
 
@@ -63,7 +63,7 @@ all work, because everything runs on your machine.
 
 The Kaja API keeps its own copy of the marketplace, refreshed every hour. Pick what your account uses:
 
-- on the [Abilities page](https://kaja.io/abilities) of the [web app](/using/web-app), which shows each
+- on the [Abilities page](https://kaja.io/agent/abilities) of the [web app](/using/web-app), which shows each
   ability's instructions, host, tools and key need before you turn it on;
 - or with `/abilities` in the [cloud Telegram bot](/using/telegram#cloud-bot).
 

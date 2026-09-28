@@ -2,17 +2,18 @@ import { cn } from "@kaja/shared/ui"
 import type { CSSProperties, ReactNode } from "react"
 
 const BORDERED = {
-  always: "border border-border",
-  "sm-up": "border-0 p-0 sm:border sm:px-6 sm:py-6"
+  always: "paper-card",
+  "sm-up": "sm:paper-card sm:px-6 sm:py-6"
 } as const
 
-/** Card surface shared by landing tiles and admin panels. Renders a div so it nests cleanly inside page sections. */
+/** Card surface shared by landing tiles and admin panels: the site's hand-cut paper frame (`paper-card`), from `sm` up only with `bordered="sm-up"`; `tone="danger"` tints it red. Renders a div so it nests cleanly inside page sections. */
 export function Section({
   className,
   style,
   children,
   padded = true,
   bordered = "always",
+  tone,
   title
 }: Readonly<{
   className?: string
@@ -20,14 +21,16 @@ export function Section({
   children: ReactNode
   padded?: boolean
   bordered?: keyof typeof BORDERED
+  tone?: "danger"
   title?: ReactNode
 }>) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl sm:bg-surface",
         BORDERED[bordered],
-        padded && bordered === "always" && "px-5.5 py-5 sm:px-6 sm:py-6",
+        tone === "danger" && "paper-card-danger",
+        // unpadded (a table inside) still keeps the frame's edge visible
+        padded ? bordered === "always" && "px-5.5 py-5 sm:px-6 sm:py-6" : "p-0.5",
         className
       )}
       style={style}

@@ -595,6 +595,55 @@
   );
 }
 
+/* The signed-in card: square paper with slightly cut corners and a hard offset shadow (the sign-in card's look), drawn behind the content so text and inputs stay crisp. Corners are cut in px, so big cards aren't cut deeper */
+@utility paper-card {
+  --paper-cut: polygon(
+    6px 2px,
+    calc(100% - 10px) 0,
+    100% 7px,
+    calc(100% - 2px) calc(100% - 6px),
+    calc(100% - 11px) 100%,
+    7px calc(100% - 2px),
+    0 calc(100% - 9px),
+    2px 5px
+  );
+  position: relative;
+  isolation: isolate;
+
+  @variant before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--color-border);
+    clip-path: var(--paper-cut);
+    translate: 5px 7px;
+  }
+
+  @variant after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--paper-bg, var(--color-surface));
+    clip-path: var(--paper-cut);
+  }
+}
+
+@utility paper-card-danger {
+  --paper-bg: color-mix(in srgb, var(--color-red-500) 7%, var(--color-surface));
+
+  @variant before {
+    background: color-mix(
+      in srgb,
+      var(--color-red-500) 35%,
+      var(--color-border)
+    );
+  }
+}
+
 @utility hide-scrollbar {
   scrollbar-width: none;
   @variant webkit-scrollbar {
@@ -646,4 +695,66 @@ pre {
     max-height: 100%;
     pointer-events: none;
   }
+}
+
+/* A disabled button shows the not-allowed cursor; unlayered, so it outranks any cursor-pointer utility */
+:is(button, [role="button"]):is(
+  :disabled,
+  [aria-disabled="true"],
+  [data-disabled]
+) {
+  cursor: not-allowed;
+}
+
+/* Toasts as paper notes: surface, square corners, the stickers' hard shadow, and the toast type as a thick left edge. Set on .Toastify so these win over react-toastify's own :root values */
+.Toastify {
+  --toastify-font-family: var(--font-body);
+  /* below the sticky header, not over its menu */
+  --toastify-toast-top: 5rem;
+  --toastify-color-dark: var(--color-surface);
+  --toastify-text-color-dark: var(--color-fg);
+  --toastify-toast-bd-radius: 2px;
+  --toastify-toast-shadow: 4px 5px 0 var(--color-border);
+  --toastify-color-success: var(--color-neon);
+  --toastify-color-info: var(--color-ice);
+  --toastify-color-warning: var(--color-ice);
+  --toastify-color-error: var(--color-red-500);
+  --toastify-icon-color-success: var(--color-neon);
+  --toastify-icon-color-info: var(--color-ice);
+  --toastify-icon-color-warning: var(--color-ice);
+  --toastify-icon-color-error: var(--color-red-500);
+  --toastify-color-progress-dark: var(--color-muted);
+  --toastify-color-progress-success: var(--color-neon);
+  --toastify-color-progress-info: var(--color-ice);
+  --toastify-color-progress-warning: var(--color-ice);
+  --toastify-color-progress-error: var(--color-red-500);
+}
+
+.Toastify__toast {
+  border: 1.5px solid var(--color-border);
+  border-left-width: 4px;
+  font-size: 0.875rem;
+}
+
+/* the close button sits in the corner over the toast; keep the text clear of it */
+.Toastify__toast:has(.Toastify__close-button) {
+  padding-inline-end: 1.75rem;
+}
+
+.Toastify__toast--success {
+  border-left-color: var(--color-neon);
+}
+
+.Toastify__toast--info,
+.Toastify__toast--warning {
+  border-left-color: var(--color-ice);
+}
+
+.Toastify__toast--error {
+  border-left-color: var(--color-red-500);
+}
+
+.Toastify__close-button {
+  color: var(--color-muted);
+  opacity: 1;
 }

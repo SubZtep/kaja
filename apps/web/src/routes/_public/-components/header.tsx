@@ -57,8 +57,9 @@ function MobileNav({ menuItems, user }: Readonly<{ menuItems: NavItem[]; user: R
         <MenuItem key={item.label} item={item} onNavigate={close} />
       ))}
       {user ? (
-        <div className="flex items-center justify-between pt-4">
-          <div className="min-w-0">
+        // Who is signed in, then signing out on its own line, under the same dashed rule as the auth card's footer
+        <div className="mt-2 flex w-full flex-col items-start gap-3 border-border border-t border-dashed pt-4">
+          <div className="w-full min-w-0 px-2">
             <div className="truncate font-display font-extrabold text-fg text-sm">{getDisplayName(user)}</div>
             <div className="truncate font-crt text-muted text-xs capitalize">{user.role ?? "user"}</div>
           </div>
@@ -81,7 +82,7 @@ export function Header() {
           {menuItems.map(item => (
             <MenuItem key={item.label} item={item} compact />
           ))}
-          {user ? <SignOutButton /> : null}
+          {user ? <SignOutButton compact /> : null}
         </>
       }
       mobileNav={<MobileNav menuItems={menuItems} user={user} />}

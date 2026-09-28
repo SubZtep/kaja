@@ -1,6 +1,6 @@
 import type { AbilityKeyNeed, CatalogAbility, KeyedAbilityType, McpDetail } from "@kaja/schema/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Globe, KeyRound } from "lucide-react"
+import { Globe, KeyRound, ListTree } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { useApiFetch } from "../../lib/api-fetch"
@@ -10,6 +10,7 @@ import { Badge } from "../ui/Badge"
 import { Section } from "../ui/Section"
 import { KeyDialog } from "./KeyDialog"
 import { MY_ABILITIES_QUERY_KEY } from "./queries"
+import { ToolsDialog } from "./ToolsDialog"
 
 const KEY_NEED_LABEL: Record<AbilityKeyNeed, () => string> = {
   none: m.tools_key_none,
@@ -29,8 +30,8 @@ export type ToolEntry = {
   type: KeyedAbilityType
   domain: string
   key: AbilityKeyNeed
-  /** Each tool, with the method for HTTP tools. */
-  items: { name: string; method?: string }[]
+  /** Each tool, with what it does (and the method for HTTP tools). */
+  items: { name: string; method?: string; description?: string }[]
   /** When an MCP server's calls wait for the user's OK. */
   approvalNote?: string
 }
@@ -39,7 +40,13 @@ export type ToolEntry = {
 export function toolEntry(ability: CatalogAbility): ToolEntry | undefined {
   if (ability.type === "tool" && ability.http) {
     const { domain, key, tools } = ability.http
-    return { ability, type: "tool", domain, key, items: tools.map(({ name, method }) => ({ name, method })) }
+    return {
+      ability,
+      type: "tool",
+      domain,
+      key,
+      items: tools.map(({ name, method, description }) => ({ name, method, description }))
+    }
   }
   if (ability.type === "mcp" && ability.mcp) {
     const { domain, key, tools, approval } = ability.mcp
@@ -48,7 +55,7 @@ export function toolEntry(ability: CatalogAbility): ToolEntry | undefined {
       type: "mcp",
       domain,
       key,
-      items: tools.map(name => ({ name })),
+      items: tools.map(({ name, description }) => ({ name, description })),
       approvalNote: MCP_APPROVAL_NOTE[approval]?.()
     }
   }
@@ -60,6 +67,7 @@ const linkButton = "cursor-pointer text-muted text-xs underline-offset-2 hover:t
 export function ToolCard({
   entry,
   enabled,
+  disabledTools,
   hasKey,
   keysEnabled,
   pending,
@@ -67,6 +75,8 @@ export function ToolCard({
 }: Readonly<{
   entry: ToolEntry
   enabled: boolean
+  /** Its tools the user switched off. */
+  disabledTools: string[]
   hasKey: boolean
   keysEnabled: boolean
   pending: boolean
@@ -75,7 +85,7 @@ export function ToolCard({
   const { ability: tool, type } = entry
   const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
-  const [dialog, setDialog] = useState<"closed" | "key" | "enable">("closed")
+  const [dialog, setDialog] = useState<"closed" | "key" | "enable" | "tools">("closed")
 
   const removeKey = useMutation({
     mutationFn: () =>
@@ -98,7 +108,9 @@ export function ToolCard({
             <span className="font-mono font-semibold text-fg text-sm">{tool.name}</span>
             {type === "mcp" && <Badge>{m.tools_mcp_badge()}</Badge>}
           </div>
-          <p className="m-0 text-[13.5px] text-muted">{tool.description}</p>
+          <p className="m-0 line-clamp-3 text-[13.5px] text-muted" title={tool.description}>
+            {tool.description}
+          </p>
         </div>
         <Checkbox
           className="shrink-0"
@@ -118,18 +130,18 @@ export function ToolCard({
           <KeyRound size={13} />
           {KEY_NEED_LABEL[entry.key]()}
         </span>
+        {/* The tool list lives in a dialog, so every card stays one size however many tools it has */}
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1 ${linkButton}`}
+          onClick={() => setDialog("tools")}
+        >
+          <ListTree size={13} />
+          {enabled && disabledTools.length > 0
+            ? m.tools_list_button_some({ on: entry.items.length - disabledTools.length, count: entry.items.length })
+            : m.tools_list_button({ count: entry.items.length })}
+        </button>
       </p>
-
-      <ul className="mt-3 mb-0 grid list-none gap-1 p-0">
-        {entry.items.map(item => (
-          <li key={item.name} className="text-xs">
-            <span className="font-mono text-fg">{item.name}</span>
-            {item.method && <span className="font-mono text-muted"> {item.method}</span>}
-            {item.method && item.method !== "GET" && <span className="text-ice"> · {m.tools_asks_first()}</span>}
-          </li>
-        ))}
-      </ul>
-      {entry.approvalNote && <p className="mt-2 mb-0 text-ice text-xs">{entry.approvalNote}</p>}
 
       {entry.key !== "none" && keysEnabled && (
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -158,11 +170,18 @@ export function ToolCard({
         </div>
       )}
 
+      <ToolsDialog
+        entry={entry}
+        enabled={enabled}
+        disabledTools={disabledTools}
+        open={dialog === "tools"}
+        onOpenChange={open => !open && setDialog("closed")}
+      />
       <KeyDialog
         type={type}
         name={tool.name}
         domain={entry.domain}
-        open={dialog !== "closed"}
+        open={dialog === "key" || dialog === "enable"}
         onOpenChange={open => !open && setDialog("closed")}
         enableAfter={dialog === "enable"}
       />

@@ -58,6 +58,14 @@ export class TelegramLinkService {
     return true
   }
 
+  /** When the Kaja account was last linked to a Telegram account, or null when it isn't. */
+  async linkedAt(userId: string): Promise<Date | null> {
+    const { rows } = await this.#db.query("SELECT max(linked_at) AS linked_at FROM telegram_link WHERE user_id = $1", [
+      userId
+    ])
+    return rows[0]?.linked_at ? new Date(rows[0].linked_at) : null
+  }
+
   /** The Kaja account a Telegram user is linked to, with its saved language (null until a client sets one), or undefined if unlinked. */
   async resolveUser(telegramUserId: number): Promise<{ userId: string; locale: string | null } | undefined> {
     const result = await this.#db.query(

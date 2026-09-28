@@ -14,26 +14,26 @@ import { Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
-import { useSkillCatalog } from "../../components/abilities/queries"
-import { SkillChecklist } from "../../components/abilities/SkillChecklist"
-import { Button } from "../../components/form/primitives/Button"
-import { ConfirmDialog } from "../../components/ui/ConfirmDialog"
-import { ErrorNotice } from "../../components/ui/ErrorNotice"
-import { IconButton } from "../../components/ui/IconButton"
-import { Loader } from "../../components/ui/Loader"
-import { PageHeader } from "../../components/ui/PageHeader"
-import { Section } from "../../components/ui/Section"
-import { Table } from "../../components/ui/Table"
-import { ValueBox } from "../../components/ui/ValueBox"
-import { useApiFetch } from "../../lib/api-fetch"
-import { useAppForm } from "../../lib/form"
-import { userRequired } from "../../lib/loaders"
-import { seo } from "../../lib/seo"
-import { tableColumnHelper, type tableFeaturesConfig } from "../../lib/table"
-import { m } from "../../paraglide/messages.js"
+import { useSkillCatalog } from "../../../components/abilities/queries"
+import { SkillChecklist } from "../../../components/abilities/SkillChecklist"
+import { Button } from "../../../components/form/primitives/Button"
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog"
+import { ErrorNotice } from "../../../components/ui/ErrorNotice"
+import { IconButton } from "../../../components/ui/IconButton"
+import { Loader } from "../../../components/ui/Loader"
+import { PageHeader } from "../../../components/ui/PageHeader"
+import { Section } from "../../../components/ui/Section"
+import { Table } from "../../../components/ui/Table"
+import { ValueBox } from "../../../components/ui/ValueBox"
+import { useApiFetch } from "../../../lib/api-fetch"
+import { useAppForm } from "../../../lib/form"
+import { userRequired } from "../../../lib/loaders"
+import { seo } from "../../../lib/seo"
+import { tableColumnHelper, type tableFeaturesConfig } from "../../../lib/table"
+import { m } from "../../../paraglide/messages.js"
 import { EditWidgetDialog, parseOrigins } from "./-components/EditWidgetDialog"
 
-export const Route = createFileRoute("/_admin/widget")({
+export const Route = createFileRoute("/_admin/agent/widget")({
   component: WidgetPage,
   loader: () => userRequired(),
   head: () => ({ meta: seo({ title: m.nav_widget() }) })
@@ -249,7 +249,7 @@ function WidgetPage() {
 
   return (
     <>
-      <PageHeader title={m.widget_title()} description={m.widget_description()} meta={m.widget_meta()}>
+      <PageHeader title={m.widget_title()} description={m.widget_description()}>
         <ValueBox label={m.widget_total()} variant="neon">
           {keys.length}
         </ValueBox>

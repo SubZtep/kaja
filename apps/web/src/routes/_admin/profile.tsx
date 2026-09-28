@@ -54,7 +54,7 @@ function Profile() {
             <ChangePassword />
           </Section>
         </div>
-        <Section className="border-red-500/30 sm:col-span-2 sm:bg-red-500/5" title={m.profile_delete_title()}>
+        <Section className="sm:col-span-2" tone="danger" title={m.profile_delete_title()}>
           <DeleteAccount email={user.email} />
         </Section>
       </div>

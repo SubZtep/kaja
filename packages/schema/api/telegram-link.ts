@@ -7,3 +7,11 @@ export const startTelegramLinkResponseSchema = z.object({
 })
 
 export type StartTelegramLinkResponse = z.infer<typeof startTelegramLinkResponseSchema>
+
+/** Whether the signed-in user's account is linked to Telegram, and since when. */
+export const telegramLinkStatusSchema = z.object({
+  linked: z.boolean(),
+  linkedAt: z.coerce.date().nullable()
+})
+
+export type TelegramLinkStatus = z.infer<typeof telegramLinkStatusSchema>

@@ -1,12 +1,14 @@
 import type { CatalogAbility } from "@kaja/schema/api"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { ScrollText } from "lucide-react"
 import { useState } from "react"
 import { m } from "../../paraglide/messages.js"
 import { Checkbox } from "../form/primitives/Checkbox"
 import { ErrorNotice } from "../ui/ErrorNotice"
 import { Loader } from "../ui/Loader"
 import { Section } from "../ui/Section"
+import { InstructionsDialog } from "./InstructionsDialog"
 import { useCatalog, useMyAbilities, useToggleAbility } from "./queries"
+import { abilitySourceUrl } from "./source"
 import { UnavailableAbilities } from "./UnavailableAbilities"
 
 function PersonaCard({
@@ -25,7 +27,7 @@ function PersonaCard({
             {detail?.label ?? persona.name}{" "}
             <span className="font-mono font-normal text-muted text-xs">{persona.name}</span>
           </div>
-          <p className="m-0 text-[13.5px] text-muted">
+          <p className="m-0 line-clamp-3 text-[13.5px] text-muted" title={detail?.when}>
             {detail?.when ? m.personas_when({ when: detail.when }) : m.personas_manual_only()}
           </p>
         </div>
@@ -41,18 +43,23 @@ function PersonaCard({
         <>
           <button
             type="button"
-            onClick={() => setOpen(!open)}
-            aria-expanded={open}
+            onClick={() => setOpen(true)}
             className="mt-3 inline-flex cursor-pointer items-center gap-1 text-muted text-xs hover:text-fg"
           >
-            {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            {open ? m.skills_hide_instructions() : m.skills_show_instructions()}
+            <ScrollText size={13} />
+            {m.skills_show_instructions()}
           </button>
-          {open && (
-            <div className="mt-3 max-h-80 overflow-y-auto whitespace-pre-wrap border-border border-t pt-3 font-mono text-muted text-xs leading-relaxed">
+          <InstructionsDialog
+            title={detail.label}
+            description={detail.when ? m.personas_when({ when: detail.when }) : m.personas_manual_only()}
+            sourceUrl={abilitySourceUrl("persona", persona.name)}
+            open={open}
+            onOpenChange={setOpen}
+          >
+            <div className="whitespace-pre-wrap border-border border-t border-dashed pt-3 font-mono text-muted text-xs leading-relaxed">
               {detail.instructions}
             </div>
-          )}
+          </InstructionsDialog>
         </>
       )}
     </Section>
