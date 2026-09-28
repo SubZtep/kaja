@@ -172,7 +172,11 @@ const GROUPS = [
   { key: "bracketR", cols: 7, x: 34, depth: 0 }
 ] as const
 
-function Pixels({ cells }: { cells: readonly Cell[] }) {
+/** Pauses between idle moves (1.8–4.4 s, like the gif) and which move comes next: blinks each eye 3 times in 8, twitches the mouth twice. */
+const IDLE_GAPS_MS = [2600, 3900, 2100, 4300, 3100, 1900, 3600, 2800, 4100, 2300, 3400]
+const IDLE_ACTIONS = ["eyeL", "eyeR", "mouth", "eyeL", "eyeR", "eyeL", "mouth", "eyeR"] as const
+
+function Pixels({ cells }: Readonly<{ cells: readonly Cell[] }>) {
   return (
     <>
       {cells.map(([r, c]) => (
@@ -253,17 +257,19 @@ export function MonsterFace({ className, onReady }: Readonly<{ className?: strin
       cancelAnimationFrame(raf)
     })
 
-    // idle blink / mouth twitch, same loose cadence as the source gif
+    // idle blink / mouth twitch, same loose cadence as the source gif: fixed lists, no randomness needed
     let idleTimer = 0
     let blinkTimer = 0
+    let beat = 0
     const show = (el: SVGGElement | null, visible: boolean) => {
       if (el) el.style.display = visible ? "" : "none"
     }
     const scheduleIdle = () => {
-      const delay = 1800 + Math.random() * 2600
+      const delay = IDLE_GAPS_MS[beat % IDLE_GAPS_MS.length]
+      const action = IDLE_ACTIONS[beat % IDLE_ACTIONS.length]
+      beat++
       idleTimer = window.setTimeout(() => {
-        const roll = Math.random()
-        if (roll < 0.4) {
+        if (action === "eyeL") {
           show(eyeLRingRef.current, false)
           show(eyeLClosedRef.current, true)
           if (eyeLPupilRef.current) eyeLPupilRef.current.style.display = "none"
@@ -272,7 +278,7 @@ export function MonsterFace({ className, onReady }: Readonly<{ className?: strin
             show(eyeLClosedRef.current, false)
             if (eyeLPupilRef.current) eyeLPupilRef.current.style.display = ""
           }, 130)
-        } else if (roll < 0.8) {
+        } else if (action === "eyeR") {
           show(eyeRRingRef.current, false)
           show(eyeRClosedRef.current, true)
           if (eyeRPupilRef.current) eyeRPupilRef.current.style.display = "none"

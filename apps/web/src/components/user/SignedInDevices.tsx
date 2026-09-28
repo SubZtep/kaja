@@ -61,7 +61,7 @@ export function SignedInDevices() {
     <>
       <ul className="m-0 grid list-none gap-3 p-0">
         {(sessions.data ?? []).map(session => {
-          const device = describeUserAgent(session.userAgent)
+          const device = describeUserAgent(session.userAgent ?? "")
           const current = session.id === currentId
           return (
             <li

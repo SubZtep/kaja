@@ -68,9 +68,8 @@ export async function startSandbox(): Promise<void> {
 
   // A line now and then, so the logs show it's alive even while nobody uses it
   setInterval(() => {
-    console.log(
-      `Sandbox ${connectedAs ? `connected as ${connectedAs}` : "reconnecting to the API"}, ${pool.size} MCP server(s) running`
-    )
+    const state = connectedAs ? `connected as ${connectedAs}` : "reconnecting to the API"
+    console.log(`Sandbox ${state}, ${pool.size} MCP server(s) running`)
   }, STATUS_EVERY_MS)
 
   for (const signal of ["SIGTERM", "SIGINT"] as const) {

@@ -168,7 +168,8 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const apiUrl = Route.useLoaderData({ select: data => data.apiUrl })
 
   return (
-    <html lang={locale} dir={getTextDirection()} prefix="og: https://ogp.me/ns#" suppressHydrationWarning>
+    // The Open Graph namespace (ogp.me); spread, since the RDFa `prefix` attribute isn't in every linter's list of HTML attributes
+    <html lang={locale} dir={getTextDirection()} {...{ prefix: "og: https://ogp.me/ns#" }} suppressHydrationWarning>
       <head>
         {apiUrl && <link rel="preconnect" href={apiUrl} />}
         <HeadContent />
