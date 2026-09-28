@@ -1,4 +1,5 @@
 import type { StartTelegramLinkResponse } from "@kaja/schema/api"
+import { cn } from "@kaja/shared/ui"
 import { useMutation } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Send } from "lucide-react"
@@ -48,8 +49,8 @@ export function TelegramConnectCta({ className }: Readonly<{ className?: string 
 const IDLE_GAPS_MS = [9000, 6500, 13000, 7500, 15000, 11000]
 const SPIN_DURATIONS_MS = [1000, 1800, 2500, 3000, 1400, 2200]
 
-/** Signed-out promo for the desktop hero column under the monster. */
-export function TelegramPromo() {
+/** Signed-out promo: the desktop hero column under the monster, and on phones under the install line. */
+export function TelegramPromo({ className }: Readonly<{ className?: string }>) {
   const [isSpinning, setIsSpinning] = useState(false)
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export function TelegramPromo() {
   }, [])
 
   return (
-    <div className="crt-frame w-full max-w-64 px-4 py-4">
+    <div className={cn("crt-frame w-full max-w-64 px-4 py-4", className)}>
       <Sticker tone="neon" rotate={-4} className="mb-3 text-[10px]">
         {m.feature_telegram_title()}
       </Sticker>

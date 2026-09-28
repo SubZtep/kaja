@@ -55,7 +55,7 @@ export function Hero() {
         }}
       />
 
-      <ContentWidth className="relative py-10 md:pt-16 md:pb-8">
+      <ContentWidth className="relative pt-10 pb-2 md:pt-16 md:pb-8">
         <Sticker rotate={-8} className="mb-8">
           {m.hero_badge()}
         </Sticker>
@@ -108,29 +108,38 @@ export function Hero() {
               <Link to="/signup" className="text-fg hover:text-neon">
                 {m.nav_sign_up()}
               </Link>
-              <span className="text-border">/</span>
-              <a href="https://github.com/SubZtep/kaja" target="_blank" rel="noopener" className="text-muted">
+              {/* On phones the source link takes its own line, so no slash is left dangling */}
+              <span className="hidden text-border sm:inline">/</span>
+              <a
+                href="https://github.com/SubZtep/kaja"
+                target="_blank"
+                rel="noopener"
+                className="basis-full text-muted sm:basis-auto"
+              >
                 {m.hero_cta_source()}
               </a>
             </div>
           </div>
         )}
 
-        <div className="crt-frame mt-10 flex max-w-xl min-w-0 flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:gap-2.5 sm:px-3.5 sm:py-2.5">
-          <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-crt text-neon text-sm">
+        <div className="crt-frame mt-10 flex max-w-xl min-w-0 items-start gap-2.5 px-3 py-2.5 sm:items-center sm:px-3.5">
+          <code className="min-w-0 flex-1 wrap-break-word font-crt text-neon text-sm sm:overflow-x-auto sm:whitespace-nowrap">
             {installCmd}
             <span className="ml-0.5 inline-block h-3.5 w-1.5 bg-neon align-[-1px] animate-[caret-blink_1.1s_steps(1)_infinite]" />
           </code>
           <button
             type="button"
             onClick={copyInstall}
-            className="shrink-0 cursor-pointer self-end border border-ice/70 bg-surface px-2 py-1 font-crt text-[11px] text-ice uppercase sm:self-auto"
+            className="shrink-0 cursor-pointer border border-ice/70 bg-surface px-2 py-1 font-crt text-[11px] text-ice uppercase"
           >
             {copied ? m.hero_copy_copied() : m.hero_copy_copy()}
           </button>
         </div>
 
-        <div className="mt-10 flex justify-center md:hidden">
+        {/* Phones get Telegram too; on desktop it sits in the column beside the headline */}
+        <div className="mt-8 md:hidden">{user ? <TelegramConnectCta /> : <TelegramPromo className="max-w-none" />}</div>
+
+        <div className="mt-8 flex justify-center md:hidden">
           <div className="monster-glint relative">
             <img
               src="/monster.gif"
@@ -138,7 +147,7 @@ export function Hero() {
               width={324}
               height={108}
               fetchPriority="high"
-              className="h-28 w-auto"
+              className="h-20 w-auto"
               style={{ imageRendering: "pixelated" }}
             />
             <Sticker tone="neon" rotate={9} className="absolute -bottom-1 -left-3 text-[11px]">
