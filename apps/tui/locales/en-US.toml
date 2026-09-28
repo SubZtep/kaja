@@ -230,12 +230,12 @@ confirmStdio        = "{name} runs `{command}` on your computer. Enable it?"
 enable              = "Enable"
 dontEnable          = "Don't enable"
 optionalKeyPrompt   = "{name} can use an API key ({where}). It's optional: it works without one."
-pickToolsAsk        = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
-pickTools           = "[en-US] lorem"
-keepAllTools        = "[en-US] lorem"
-toolsTitle          = "[en-US] lorem ipsum {name}"
-toolsHint           = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
-toolsSaved          = "[en-US] lorem ipsum dolor sit {path}"
+pickToolsAsk        = "Some of these can use several tools. Choose which ones each may use?"
+pickTools           = "Choose tools"
+keepAllTools        = "Keep them all"
+toolsTitle          = "Tools {name} may use"
+toolsHint           = "Space toggles, Enter saves (keep at least one), Esc leaves it as it was."
+toolsSaved          = "Saved the tool choices to {path}."
 
 
 [secrets]
