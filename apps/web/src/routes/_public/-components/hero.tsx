@@ -1,5 +1,5 @@
 import { Link, useLoaderData } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { Turnstile, useTurnstile } from "../../../hooks/turnstile"
 import { useUser } from "../../../hooks/user"
@@ -8,6 +8,10 @@ import { m } from "../../../paraglide/messages.js"
 import { GoogleButton } from "./google-button"
 import { Sticker } from "./sticker"
 import { TelegramConnectCta, TelegramPromo } from "./telegram-connect-cta"
+
+// Client-only, code-split: keeps the gif below as the SSR'd LCP element and never
+// delays it. Loads after hydration and fades in on top once ready.
+const MonsterFace = lazy(() => import("./monster-face").then(mod => ({ default: mod.MonsterFace })))
 
 export function Hero() {
   const { apiUrl, chatWidgetKey } = useLoaderData({ from: "__root__" })
@@ -88,6 +92,9 @@ export function Hero() {
                 className="h-36 w-auto lg:h-48"
                 style={{ imageRendering: "pixelated" }}
               />
+              <Suspense fallback={null}>
+                <MonsterFace className="absolute inset-0" />
+              </Suspense>
               <Sticker tone="neon" rotate={-11} className="absolute -bottom-1 -left-3 text-[11px]">
                 kaja
               </Sticker>
