@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { configExportBundleSchema } from "@kaja/schema/api"
 import { file, write } from "bun"
+import { KAJA_USER_AGENT } from "../auth/user-agent"
 import { log } from "../logger"
 import { getPaths } from "../paths"
 import { getApiBaseUrl } from "./api-url"
@@ -36,7 +37,7 @@ export async function fetchRemoteConfigBundle(useEtagCache = true): Promise<Remo
   const cachedEtag = useEtagCache ? await readCachedEtag() : undefined
 
   const res = await fetch(new URL("/config/export", apiBaseUrl), {
-    headers: cachedEtag ? { "If-None-Match": cachedEtag } : {}
+    headers: { "User-Agent": KAJA_USER_AGENT, ...(cachedEtag ? { "If-None-Match": cachedEtag } : {}) }
   })
 
   if (res.status === 304) return { unchanged: true }

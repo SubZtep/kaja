@@ -55,13 +55,13 @@ export function ConfirmDialog({
               />
             </div>
           )}
-          <div className="flex justify-end gap-4">
-            <AlertDialog.Close render={<Button />}>{cancel}</AlertDialog.Close>
+          <div className="flex flex-wrap justify-end gap-3">
+            <AlertDialog.Close render={<Button className="whitespace-nowrap" />}>{cancel}</AlertDialog.Close>
             <AlertDialog.Close
               onClick={onConfirm}
               render={
                 <Button
-                  className={cn("text-red-400 font-semibold", confirmClassName)}
+                  className={cn("whitespace-nowrap text-red-400 font-semibold", confirmClassName)}
                   autoFocus={typeToConfirm === undefined}
                   disabled={locked}
                 />

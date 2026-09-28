@@ -30,6 +30,27 @@ telegramAdminRoutes.openapi(linkStatusRoute, async c => {
   return c.json({ linked: linkedAt !== null, linkedAt }, 200)
 })
 
+const unlinkRoute = createRoute({
+  method: "delete",
+  path: "/link",
+  tags: ["Telegram"],
+  summary: "Disconnect the signed-in user's account from Telegram",
+  description: "The cloud bot then treats that Telegram account as unlinked; linking again needs a new deep link.",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: { description: "Disconnected", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
+    404: { description: "Not linked", content: { "application/json": { schema: errorSchema } } }
+  }
+})
+
+telegramAdminRoutes.openapi(unlinkRoute, async c => {
+  const user = c.get("user")
+  if (!user) return unauthorized(c)
+  if (!(await telegramLinkService.unlink(user.id))) return notFound(c, "Not linked to Telegram")
+  return c.json({ ok: true }, 200)
+})
+
 const linkRoute = createRoute({
   method: "post",
   path: "/link",

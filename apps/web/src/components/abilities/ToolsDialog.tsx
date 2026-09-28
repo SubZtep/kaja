@@ -63,7 +63,7 @@ export function ToolsDialog({
                 >
                   <Checkbox
                     className="mt-0.5 shrink-0"
-                    checked={enabled && on}
+                    checked={on}
                     disabled={!enabled || setDisabled.isPending || (on && onCount === 1)}
                     aria-label={m.tools_pick_toggle({ tool: item.name })}
                     onCheckedChange={checked => pick(item.name, checked)}

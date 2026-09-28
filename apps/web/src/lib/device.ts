@@ -21,10 +21,12 @@ const SYSTEMS: [RegExp, string][] = [
   [/Linux/, "Linux"]
 ]
 
-/** "Chrome on Linux", "Kaja terminal" (the CLI's device login sends Bun's own agent), or "Unknown device". */
+/** "Chrome on Linux", "Kaja terminal 0.29.4" (the CLI sends `kaja-tui/<version>`; older logins only Bun's own agent), or "Unknown device". */
 export function describeUserAgent(userAgent: string | null | undefined): DeviceInfo {
   const ua = userAgent ?? ""
-  if (/^Bun\/|kaja/i.test(ua)) return { label: m.devices_terminal(), icon: SquareTerminal }
+  const terminal = /^kaja-tui\/(\S+)/.exec(ua)
+  if (terminal) return { label: m.devices_terminal_version({ version: terminal[1]! }), icon: SquareTerminal }
+  if (/^Bun\//.test(ua)) return { label: m.devices_terminal(), icon: SquareTerminal }
   const browser = BROWSERS.find(([pattern]) => pattern.test(ua))?.[1]
   const system = SYSTEMS.find(([pattern]) => pattern.test(ua))?.[1]
   const icon = /Mobile|Android|iPhone|iPad/.test(ua) ? Smartphone : Monitor

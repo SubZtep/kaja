@@ -28,7 +28,7 @@ always-current list. This page is the map.
 | `/sandbox/connect` | sandbox key or none | an MCP sandbox's WebSocket: it registers, then serves the MCP requests tunnelled to it |
 | `/sandbox`, `/sandbox/key`, `/sandbox/settings` | session | the user's own sandboxes, their sandbox key, and whether they share or use shared ones |
 | `/sandbox/public` | none | how many sandboxes are online, by country |
-| `/telegram/admin/link` | session | start linking a Telegram account to the cloud bot (`POST`, returns a one-time deep link) |
+| `/telegram/admin/link` | session | `POST` starts linking a Telegram account to the cloud bot (returns a one-time deep link); `GET` says whether the account is linked and since when; `DELETE` disconnects it |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/models` | shared secret | model resolution for tooling |
 | `/config/export` | none | the model defaults that `kaja config fetch` downloads |

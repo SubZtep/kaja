@@ -66,6 +66,13 @@ export class TelegramLinkService {
     return rows[0]?.linked_at ? new Date(rows[0].linked_at) : null
   }
 
+  /** Disconnects every Telegram account linked to the Kaja account (and drops an unused link token); false when none was linked. */
+  async unlink(userId: string): Promise<boolean> {
+    await this.#db.query("DELETE FROM telegram_link_token WHERE user_id = $1", [userId])
+    const result = await this.#db.query("DELETE FROM telegram_link WHERE user_id = $1", [userId])
+    return (result.rowCount ?? 0) > 0
+  }
+
   /** The Kaja account a Telegram user is linked to, with its saved language (null until a client sets one), or undefined if unlinked. */
   async resolveUser(telegramUserId: number): Promise<{ userId: string; locale: string | null } | undefined> {
     const result = await this.#db.query(

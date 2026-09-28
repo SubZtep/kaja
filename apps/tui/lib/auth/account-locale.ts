@@ -2,11 +2,12 @@ import type { Locale } from "@kaja/shared/locale"
 import { getApiBaseUrl } from "../config/api-url"
 import { log } from "../logger"
 import { loadToken } from "./credentials"
+import { KAJA_USER_AGENT } from "./user-agent"
 
 async function postLocale(token: string, locale: Locale): Promise<void> {
   const res = await fetch(new URL("/auth/update-user", getApiBaseUrl()), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "User-Agent": KAJA_USER_AGENT },
     body: JSON.stringify({ locale }),
     signal: AbortSignal.timeout(5000)
   })
