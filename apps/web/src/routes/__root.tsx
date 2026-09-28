@@ -168,20 +168,28 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const apiUrl = Route.useLoaderData({ select: data => data.apiUrl })
 
   return (
-    <html lang={locale} dir={getTextDirection()} suppressHydrationWarning>
+    <html lang={locale} dir={getTextDirection()} prefix="og: https://ogp.me/ns#" suppressHydrationWarning>
       <head>
         {apiUrl && <link rel="preconnect" href={apiUrl} />}
         <HeadContent />
 
         <meta property="og:type" content="website" />
         <meta property="og:image" content={OG_IMAGE} />
-        <meta property="og:image:width" content="1280" />
-        <meta property="og:image:height" content="640" />
-        <meta property="og:site_name" content="Kaja.io" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:alt" content={m.site_og_image_alt()} />
+        <meta property="og:site_name" content="Kaja" />
         <meta property="og:locale" content={ogLocale} />
+        {locales
+          .filter(other => other !== locale)
+          .map(other => (
+            <meta key={other} property="og:locale:alternate" content={OG_LOCALE[other]} />
+          ))}
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={OG_IMAGE} />
+        <meta name="twitter:image:alt" content={m.site_og_image_alt()} />
       </head>
       <body>
         <Providers>

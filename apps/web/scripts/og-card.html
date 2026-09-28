@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- Source of public/og-image.png: open this file in Chrome at a 1200x630 viewport, screenshot it, then shrink it with `magick shot.png -colors 256 PNG8:public/og-image.png` -->
+<title>OG card</title>
+<style>
+  @font-face { font-family: Syne; font-weight: 800; src: url(../node_modules/@fontsource/syne/files/syne-latin-800-normal.woff2); }
+  @font-face { font-family: Syne; font-weight: 400; src: url(../node_modules/@fontsource/syne/files/syne-latin-400-normal.woff2); }
+  @font-face { font-family: Silkscreen; font-weight: 700; src: url(../node_modules/@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff2); }
+  @font-face { font-family: "Share Tech Mono"; src: url(../node_modules/@fontsource/share-tech-mono/files/share-tech-mono-latin-400-normal.woff2); }
+  :root {
+    --bg: #0d100c; --surface: #1a2016; --border: #37402f; --fg: #eef2e6; --muted: #9aa88f;
+    --neon: #6ba85a; --neon-hi: #8ec478; --ice: #e0b563;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: var(--bg); }
+  .card {
+    position: relative; width: 1200px; height: 630px; overflow: hidden; padding: 64px 72px;
+    background:
+      radial-gradient(closest-side at 22% 12%, color-mix(in srgb, var(--neon) 30%, transparent), transparent 70%),
+      radial-gradient(closest-side at 86% 58%, color-mix(in srgb, var(--ice) 16%, transparent), transparent 72%),
+      var(--bg);
+  }
+  .card::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
+  }
+  .sticker {
+    display: inline-flex; align-items: center; font-family: Silkscreen, sans-serif; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; line-height: 1.1; border: 3px solid var(--fg); background: var(--ice); color: var(--bg);
+    box-shadow: 4px 5px 0 var(--neon); padding: 8px 16px 6px;
+    clip-path: polygon(2% 8%, 6% 0%, 94% 3%, 100% 14%, 98% 86%, 92% 100%, 8% 97%, 0% 82%);
+  }
+  .badge { font-size: 20px; transform: rotate(-6deg); margin-bottom: 30px; }
+  h1 {
+    margin: 0; max-width: 780px; font-family: Syne, sans-serif; font-weight: 800; color: var(--fg);
+    font-size: 76px; line-height: 0.95; letter-spacing: -0.04em;
+  }
+  .squiggle { display: block; width: 420px; margin: 10px 0 0 4px; color: var(--neon); }
+  .sub { margin: 22px 0 0; font-family: Syne, sans-serif; font-weight: 400; font-size: 30px; color: var(--muted); }
+  .monster { position: absolute; right: 84px; top: 372px; text-align: center; }
+  .monster img { height: 120px; width: auto; image-rendering: pixelated; display: block; }
+  .monster .sticker { position: absolute; left: -18px; bottom: -14px; font-size: 20px; background: var(--neon); box-shadow: 4px 4px 0 var(--ice); transform: rotate(-11deg); }
+  .foot {
+    position: absolute; left: 72px; right: 72px; bottom: 50px; display: flex; justify-content: space-between; align-items: center;
+    font-family: "Share Tech Mono", monospace; font-size: 26px; color: var(--muted);
+  }
+  .url { font-family: Silkscreen, sans-serif; font-weight: 700; font-size: 30px; color: var(--neon-hi); letter-spacing: 0.04em; }
+  .where span { color: var(--fg); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="sticker badge">OSS · MIT · WIP</div>
+    <h1>Your AI should ask, never guess.</h1>
+    <svg class="squiggle" viewBox="0 0 220 12" fill="none" aria-hidden="true"><path d="M1 8 C 40 2, 70 11, 110 6 S 180 2, 219 9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <p class="sub">Play here. Take it to Telegram. Then take it local.</p>
+
+    <div class="monster">
+      <img src="../public/monster.gif" alt="" />
+      <div class="sticker">kaja</div>
+    </div>
+
+    <div class="foot">
+      <div class="url">kaja.io</div>
+      <div class="where"><span>Web</span> · <span>Telegram</span> · <span>Terminal</span></div>
+    </div>
+  </div>
+</body>
+</html>
