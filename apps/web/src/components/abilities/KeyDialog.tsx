@@ -82,6 +82,7 @@ export function KeyDialog({
             {m.tools_key_dialog_description({ domain })}
           </Dialog.Description>
           <form
+            noValidate
             onSubmit={e => {
               e.preventDefault()
               if (apiKey.trim()) save.mutate()

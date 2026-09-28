@@ -74,6 +74,7 @@ function ResetPassword() {
         }
       >
         <form
+          noValidate
           onSubmit={event => {
             event.preventDefault()
             form.handleSubmit()

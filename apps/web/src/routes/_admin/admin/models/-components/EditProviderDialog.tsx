@@ -59,6 +59,7 @@ export function EditProviderDialog({
           <Dialog.Description className="mb-6 font-mono text-muted text-sm">{provider.name}</Dialog.Description>
 
           <form
+            noValidate
             onSubmit={e => {
               e.preventDefault()
               form.handleSubmit()

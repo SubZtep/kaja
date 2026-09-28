@@ -111,6 +111,7 @@ function SignUp() {
           {m.auth_or_email()}
         </p>
         <form
+          noValidate
           onSubmit={e => {
             e.preventDefault()
             form.handleSubmit()

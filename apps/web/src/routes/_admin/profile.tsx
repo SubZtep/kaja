@@ -108,6 +108,7 @@ function EditUser({ user }: Readonly<{ user: User }>) {
 
   return (
     <form
+      noValidate
       onSubmit={e => {
         e.preventDefault()
         form.handleSubmit()
@@ -190,6 +191,7 @@ function ChangeEmail({ email }: Readonly<{ email: string }>) {
 
   return (
     <form
+      noValidate
       onSubmit={e => {
         e.preventDefault()
         form.handleSubmit()
@@ -260,6 +262,7 @@ function ChangePassword() {
 
   return (
     <form
+      noValidate
       className="flex flex-col gap-4"
       onSubmit={e => {
         e.preventDefault()

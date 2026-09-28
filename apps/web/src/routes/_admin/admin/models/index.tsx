@@ -436,6 +436,7 @@ function ModelsPage() {
 
       <Section className="mb-4" title={m.models_add_provider_title()}>
         <form
+          noValidate
           onSubmit={e => {
             e.preventDefault()
             providerForm.handleSubmit()
@@ -475,6 +476,7 @@ function ModelsPage() {
           <p className="text-muted text-sm">{m.models_add_model_needs_provider()}</p>
         ) : (
           <form
+            noValidate
             onSubmit={e => {
               e.preventDefault()
               modelForm.handleSubmit()

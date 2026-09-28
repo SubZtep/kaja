@@ -261,6 +261,7 @@ function WidgetPage() {
 
       <Section className="mb-4" title={m.widget_create_title()}>
         <form
+          noValidate
           onSubmit={e => {
             e.preventDefault()
             form.handleSubmit()

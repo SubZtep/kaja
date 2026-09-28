@@ -69,6 +69,7 @@ export function EditModelDialog({
           <Dialog.Description className="mb-6 break-all font-mono text-muted text-sm">{model.model}</Dialog.Description>
 
           <form
+            noValidate
             onSubmit={e => {
               e.preventDefault()
               form.handleSubmit()

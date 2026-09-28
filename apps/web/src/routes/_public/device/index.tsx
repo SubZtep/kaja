@@ -40,6 +40,7 @@ function DeviceCodePage() {
       <h1>{m.device_title()}</h1>
       <p>{m.device_description()}</p>
       <form
+        noValidate
         className="flex flex-col gap-4"
         onSubmit={async ev => {
           ev.preventDefault()

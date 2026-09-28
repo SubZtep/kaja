@@ -39,7 +39,7 @@ export function SelectField({
           value={field.state.value}
           onBlur={field.handleBlur}
           onChange={e => field.handleChange(e.target.value)}
-          className="w-full rounded-sm border border-border/60 bg-black/25 px-3 py-2 text-base text-fg focus:outline-2 focus:-outline-offset-1 focus:outline-neon/50 dark:scheme-dark"
+          className="w-full rounded-sm border border-border/60 bg-black/25 px-3 py-2 data-invalid:border-red-500/70 text-base text-fg focus:outline-2 focus:-outline-offset-1 focus:outline-neon/50 dark:scheme-dark"
           {...props}
         >
           {options.map(option => (

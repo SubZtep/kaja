@@ -78,6 +78,7 @@ export function EditWidgetDialog({
           <Dialog.Description className="mb-6 font-mono text-muted text-sm">{widgetKey.keyPrefix}…</Dialog.Description>
 
           <form
+            noValidate
             onSubmit={e => {
               e.preventDefault()
               form.handleSubmit()
