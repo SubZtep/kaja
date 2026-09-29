@@ -18,15 +18,14 @@ import { telegramOwner } from "@kaja/schema/store"
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import {
   commandArgument,
-  EditThrottle,
+  compactedLine,
   escapeHtml,
   isCommand,
-  renderTelegramHtml,
-  splitTelegramMessage,
-  telegramImages,
-  truncateForStreaming
+  openReply,
+  type Reply,
+  renderTelegramHtml
 } from "@kaja/shared/telegram"
-import { withQuestion } from "@kaja/shared/text"
+import { sessionTitle, withQuestion } from "@kaja/shared/text"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { Agent, createSession, run, type Session } from "../agent/agents"
 import { isDangerousCommand } from "../agent/command-risk"
@@ -64,14 +63,6 @@ function abilitiesMessage(tools: Tool<any>[], personas: Persona[]): string {
     "",
     t("telegram.abilitiesHint")
   ].join("\n")
-}
-
-/** The chat line for a compaction, in the bot's language. */
-function compactedLine(result: { beforeTokens: number; afterTokens: number; dropped: boolean }): string {
-  return t(result.dropped ? "telegram.compactedDropped" : "telegram.compacted", {
-    before: result.beforeTokens.toLocaleString(),
-    after: result.afterTokens.toLocaleString()
-  })
 }
 
 const IMAGE_FILE = /\.(?:png|jpe?g|gif|webp)$/i
@@ -238,7 +229,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
         if (state.sessionRowId === undefined) {
           state.sessionRowId = await createSessionRow({
             ...data,
-            title: first.text.split(/[\r\n]/)[0]!.slice(0, 60)
+            title: sessionTitle(first.text)
           })
         } else {
           await updateSessionRow(state.sessionRowId, data)
@@ -268,28 +259,6 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     } catch (error) {
       log.warn("Telegram photo send failed", { error })
     }
-  }
-
-  /**
-   * Renders and sends the authoritative final text for a turn, via
-   * `edit` (the same dedupe-guarded editor the turn's EditThrottle uses —
-   * see runTurn) so this never re-sends an identical edit the throttle
-   * already delivered. Chunks past the first (only once the rendered HTML
-   * exceeds Telegram's message limit) go out as new messages, since editing
-   * only ever targets the one existing placeholder. The reply's Markdown
-   * images follow as photos, the text keeping only their alt.
-   */
-  async function finalizeMessage(edit: (text: string) => Promise<void>, chatId: number, rawText: string) {
-    const photos = telegramImages(rawText).flatMap(image => {
-      const photo = photoSource(image.src)
-      return photo ? [{ photo, alt: image.alt }] : []
-    })
-    // A reply that is only an image (no alt) leaves no text: the placeholder then just marks the photo below
-    const html = renderTelegramHtml(rawText) || (photos.length > 0 ? "📷" : t("telegram.emptyResponse"))
-    const [first, ...rest] = splitTelegramMessage(html)
-    await edit(first!)
-    for (const chunk of rest) await sender.sendMessage(chatId, chunk)
-    for (const { photo, alt } of photos) await sendPhotoSafely(chatId, photo, alt)
   }
 
   async function sendConfirmCommand(chatId: number, state: UserState, event: { command: string; description: string }) {
@@ -366,13 +335,11 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
   async function handleFinalizedEvent(
     chatId: number,
     state: UserState,
-    accumulated: { content: string },
-    throttle: EditThrottle,
-    editIfChanged: (text: string) => Promise<void>,
+    reply: Reply,
     event: Exclude<TimelineEvent, { type: "user" | "error" }>
   ): Promise<boolean> {
     if (event.type === "compacted") {
-      await sender.sendMessage(chatId, compactedLine(event))
+      await sender.sendMessage(chatId, compactedLine(event, t))
       return false
     }
 
@@ -394,29 +361,24 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     }
 
     if (event.type === "confirm_command") {
-      throttle.cancel()
-      if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
+      await reply.settle()
       await sendConfirmCommand(chatId, state, event)
       return true
     }
 
     if (event.type === "confirm_tool") {
-      throttle.cancel()
-      if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content)
+      await reply.settle()
       await sendConfirmTool(chatId, state, event)
       return true
     }
 
     if (event.type === "ask_user") {
-      throttle.cancel()
-      const text = withQuestion(accumulated.content, event.question)
-      await finalizeMessage(editIfChanged, chatId, text)
+      await reply.finish(withQuestion(reply.streamed, event.question))
       return true
     }
 
     if (event.type === "final") {
-      throttle.cancel()
-      await finalizeMessage(editIfChanged, chatId, event.content ?? "")
+      await reply.finish(event.content ?? "")
       return true
     }
 
@@ -428,10 +390,12 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     log.warn("Telegram agent run failed", { error })
     const { category, message } = categorizeError(error)
     state.events.push({ type: "error", text: message, category })
-    if (!hadImages) return `⚠ ${category}: ${message}`
+    // The category in the user's language, like the cloud bot and the terminal show it; the detail is the provider's own text
+    const line = `⚠ ${t(`error.${category}`)}: ${message}`
+    if (!hadImages) return line
     // The session lives on in memory: without this, every later turn would send the photo again
     dropImages(state.session, turnStart)
-    return isImageRejection(error) ? t("telegram.noVision") : `⚠ ${category}: ${message}`
+    return isImageRejection(error) ? t("telegram.noVision") : line
   }
 
   async function runTurn(
@@ -446,27 +410,21 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     if (showUserEvent) state.events.push({ type: "user", text: images.length > 0 ? photoLabel(prompt) : prompt })
     const turnStart = state.session.messages.length
 
-    const placeholder = await sender.sendMessage(chatId, "…")
-    const accumulated = { content: "" }
-    const renderCurrent = () =>
-      accumulated.content.trim() ? truncateForStreaming(renderTelegramHtml(accumulated.content)) : "…"
-    // Shared between the throttle and every direct edit below, so a caller-driven edit (finalize/error) that happens to match whatever the throttle already sent never re-sends the same text.
-    let lastSentText: string | undefined
-    async function editIfChanged(text: string) {
-      if (text === lastSentText) return
-      lastSentText = text
-      await editSafely(chatId, placeholder.messageId, text)
-    }
-    const throttle = new EditThrottle(editIfChanged, error => log.warn("Telegram edit failed", { error }))
+    const reply = await openReply({
+      send: text => sender.sendMessage(chatId, text),
+      edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
+      sendPhoto: (photo: { path: string } | { url: string }, caption) =>
+        sender.sendPhoto(chatId, photo, caption ? { caption } : undefined),
+      photoSource,
+      emptyReply: t("telegram.emptyResponse"),
+      warn: (message, error) => log.warn(message, { error })
+    })
 
     try {
       for await (const event of run(state.agent, prompt, state.session, telegramOwner(userId), images)) {
         if (event.type === "delta") {
           // Reasoning deltas are omitted from the live bubble — mirrors the terminal's optional/collapsed reasoning display.
-          if (event.channel === "content") {
-            accumulated.content += event.text
-            throttle.request(renderCurrent)
-          }
+          if (event.channel === "content") reply.append(event.text)
           continue
         }
 
@@ -474,11 +432,11 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
         state.events.push(event)
 
-        const done = await handleFinalizedEvent(chatId, state, accumulated, throttle, editIfChanged, event)
+        const done = await handleFinalizedEvent(chatId, state, reply, event)
         if (done) return
       }
     } catch (error) {
-      await editIfChanged(turnFailure(state, error, images.length > 0, turnStart))
+      await reply.fail(turnFailure(state, error, images.length > 0, turnStart))
     } finally {
       state.busy = false
       await persistSession(userId, state)
@@ -541,7 +499,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     try {
       const result = await compact(state.agent, state.session, focus || undefined)
       if (result) state.events.push({ type: "compacted", ...result })
-      await sender.sendMessage(chatId, result ? compactedLine(result) : t("telegram.nothingToCompact"))
+      await sender.sendMessage(chatId, result ? compactedLine(result, t) : t("telegram.nothingToCompact"))
     } catch (error) {
       log.warn("Telegram compaction failed", { error })
       await sender.sendMessage(chatId, t("telegram.genericError"))

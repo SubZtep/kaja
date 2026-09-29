@@ -272,6 +272,15 @@ test("a photo reaches the model with its caption; a model that refuses it gets a
   expect(edited.at(-1)!.text).toBe("Sure.")
 })
 
+test("a failed turn names the error category in the bot's language, like the cloud bot does", async () => {
+  const { sender, edited } = fakeSender()
+  const driver = makeDriver([{ content: null, reject: 500 }], sender)
+  await driver.handleMessage(42, 100, "hi")
+  const labels = ["network", "tool", "agent", "unknown"].map(category => t(`error.${category}`))
+  const line = edited.at(-1)!.text
+  expect(labels.some(label => line.startsWith(`⚠ ${label}: `))).toBe(true)
+})
+
 test("resuming continues a pre-seeded session, scoped to that owner only", async () => {
   await createSessionRow({
     persona: "kaja",

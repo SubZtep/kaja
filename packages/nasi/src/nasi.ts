@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
+import { sessionTitle } from "@kaja/shared/text"
 import type OpenAI from "openai"
 import { loadAbilities } from "./abilities/load"
 import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
@@ -252,9 +253,7 @@ export class Nasi {
     const sessionId = input.session
     let session = createSession()
     let events: unknown[] = []
-    let title = userText(input)
-      .split(/[\r\n]/)[0]!
-      .slice(0, 60)
+    let title = sessionTitle(userText(input))
     let storedPersona: string | undefined
 
     if (sessionId) {
