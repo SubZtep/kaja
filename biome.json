@@ -30,10 +30,10 @@
         "noUnusedImports": "warn",
         "noUnusedVariables": "warn",
         "noChildrenProp": "off",
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": { "level": "warn", "fix": "none" }
       },
       "suspicious": {
-        "noExplicitAny": "off",
+        "noExplicitAny": "warn",
         "noImplicitAnyLet": "off",
         "noTsIgnore": "off",
         "useIterableCallbackReturn": "off"
@@ -43,6 +43,12 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["apps/tui/lib/markdown/marked-terminal.ts"],
+      "linter": { "rules": { "suspicious": { "noExplicitAny": "off" } } }
+    }
+  ],
   "css": {
     "parser": {
       "tailwindDirectives": true

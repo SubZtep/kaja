@@ -167,7 +167,7 @@ export function registerAdminModels(app: RouteRegProps) {
     const modelService = c.get("modelService")
     const provider = await modelService.updateProvider(id, body)
     if (!provider) return notFound(c, "Provider not found")
-    return c.json(provider)
+    return c.json(provider, 200)
   })
 
   app.openapi(deleteProviderRoute, async c => {
@@ -175,7 +175,7 @@ export function registerAdminModels(app: RouteRegProps) {
     const modelService = c.get("modelService")
     const success = await modelService.deleteProvider(id)
     if (!success) return notFound(c, "Provider not found")
-    return c.json({ success })
+    return c.json({ success }, 200)
   })
 
   app.openapi(listModelsRoute, async c => {
@@ -197,7 +197,7 @@ export function registerAdminModels(app: RouteRegProps) {
     const modelService = c.get("modelService")
     const model = await modelService.updateModel(id, body)
     if (!model) return notFound(c, "Model not found")
-    return c.json(model)
+    return c.json(model, 200)
   })
 
   app.openapi(deleteModelRoute, async c => {
@@ -205,6 +205,6 @@ export function registerAdminModels(app: RouteRegProps) {
     const modelService = c.get("modelService")
     const success = await modelService.deleteModel(id)
     if (!success) return notFound(c, "Model not found")
-    return c.json({ success })
+    return c.json({ success }, 200)
   })
 }

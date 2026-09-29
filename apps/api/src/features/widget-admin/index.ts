@@ -121,5 +121,5 @@ widgetAdminRoutes.openapi(deleteRoute, async c => {
   const { id } = c.req.valid("param")
   const ok = await widgetService.revokeKey(user.id, id)
   if (!ok) return notFound(c, "Widget key not found")
-  return c.json({ ok: true })
+  return c.json({ ok: true }, 200)
 })

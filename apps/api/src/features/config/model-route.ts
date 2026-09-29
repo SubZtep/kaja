@@ -39,13 +39,16 @@ export function registerGetModel(app: RouteRegProps) {
     if (!result) return notFound(c, "Model not found")
 
     const { model, provider } = result
-    return c.json({
-      id: model.id,
-      model: model.model,
-      tasks: model.tasks,
-      baseUrl: provider.baseUrl,
-      apiKey: provider.apiKey
-    })
+    return c.json(
+      {
+        id: model.id,
+        model: model.model,
+        tasks: model.tasks,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey
+      },
+      200
+    )
   })
 
   app.openapi(getRandomModelRoute, async c => {
@@ -54,12 +57,15 @@ export function registerGetModel(app: RouteRegProps) {
     if (!result) return notFound(c, "No free enabled models")
 
     const { model, provider } = result
-    return c.json({
-      id: model.id,
-      model: model.model,
-      tasks: model.tasks,
-      baseUrl: provider.baseUrl,
-      apiKey: provider.apiKey
-    })
+    return c.json(
+      {
+        id: model.id,
+        model: model.model,
+        tasks: model.tasks,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey
+      },
+      200
+    )
   })
 }

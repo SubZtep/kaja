@@ -76,6 +76,7 @@ const turnRoute = createRoute({
       content: { "application/json": { schema: errorSchema } }
     },
     502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
+    500: { description: "The turn failed unexpectedly", content: { "application/json": { schema: errorSchema } } },
     503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
   }
 })
@@ -85,7 +86,7 @@ nasiRoutes.openapi(turnRoute, async c => {
   const body = c.req.valid("json")
   try {
     const result = await runUserTurn(user.id, body)
-    return c.json(result)
+    return c.json(result, 200)
   } catch (error) {
     const known = knownTurnErrorResponse(c, error)
     if (known) return known
@@ -187,7 +188,12 @@ const compactRoute = createRoute({
     400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
     404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
+    409: {
+      description: "The session is in a state that can't be compacted",
+      content: { "application/json": { schema: errorSchema } }
+    },
     502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
+    500: { description: "The turn failed unexpectedly", content: { "application/json": { schema: errorSchema } } },
     503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
   }
 })
@@ -196,7 +202,7 @@ nasiRoutes.openapi(compactRoute, async c => {
   const user = sessionUser(c)
   const body = c.req.valid("json")
   try {
-    return c.json({ compacted: (await compactUserSession(user.id, body)) ?? null })
+    return c.json({ compacted: (await compactUserSession(user.id, body)) ?? null }, 200)
   } catch (error) {
     const known = knownTurnErrorResponse(c, error)
     if (known) return known
@@ -246,12 +252,15 @@ nasiRoutes.openapi(infoRoute, async c => {
     ...mcpTools
   ]
 
-  return c.json({
-    persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },
-    personas: personas.map(p => ({ id: p.id, label: p.label })),
-    model: result.model.model,
-    tools
-  })
+  return c.json(
+    {
+      persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },
+      personas: personas.map(p => ({ id: p.id, label: p.label })),
+      model: result.model.model,
+      tools
+    },
+    200
+  )
 })
 
 const personasRoute = createRoute({
@@ -365,5 +374,5 @@ nasiRoutes.openapi(deleteRoute, async c => {
   const { id } = c.req.valid("param")
   const ok = await createPostgresStore(pool, user.id).deleteSession(id)
   if (!ok) return notFound(c, "Session not found")
-  return c.json({ ok: true })
+  return c.json({ ok: true }, 200)
 })

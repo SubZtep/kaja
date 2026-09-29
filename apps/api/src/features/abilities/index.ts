@@ -120,7 +120,7 @@ abilityRoutes.openapi(enableRoute, async c => {
   const result = await abilityService.enable(user.id, type, name)
   if (result === "not_found") return notFound(c, "Ability not found")
   if (result === "key_required") return badRequest(c, "key_required")
-  return c.json({ ok: true })
+  return c.json({ ok: true }, 200)
 })
 
 const disableRoute = createRoute({
@@ -146,7 +146,7 @@ abilityRoutes.openapi(disableRoute, async c => {
   const { type, name } = c.req.valid("param")
   if (isDefaultPersona(type, name)) return badRequest(c, ALWAYS_ON)
   if (!(await abilityService.disable(user.id, type, name))) return notFound(c, "Ability not found")
-  return c.json({ ok: true })
+  return c.json({ ok: true }, 200)
 })
 
 const keyParams = z.object({
