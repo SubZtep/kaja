@@ -65,7 +65,12 @@ export {
   SWITCH_PERSONA_TOOL,
   switchPersonaTool
 } from "./agent/agent"
-export { isDangerousCommand } from "./agent/command-risk"
+export {
+  compileSafeCommands,
+  DEFAULT_SAFE_COMMANDS,
+  isDangerousCommand,
+  isSafeCommand
+} from "./agent/command-risk"
 export {
   type Compaction,
   chooseCut,

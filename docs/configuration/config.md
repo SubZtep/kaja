@@ -55,6 +55,21 @@ voice = false
 | `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |
 | `theme` | `auto` (default), `dark` or `light`: the [colours](/using/tui#colours). `auto` follows the terminal |
 
+## `commands.toml`: commands that run without asking
+
+The agent asks before it runs a shell command, except for the simple read-only ones on the safe list. `commands.toml` holds
+that list as regexes, each of which must match the whole command:
+
+```toml
+safe = ['pwd', 'git (status|diff|log)(\s+[\w./=:@^~-]+)*']  # the defaults; `kaja config fetch` refreshes them
+custom = ['npm (test|run lint)']                            # yours, kept when the defaults are refreshed
+```
+
+A command with a shell metacharacter (`; & | $ ( ) { } < >`, a backtick or a newline) always asks, and so does anything
+flagged as dangerous (`rm -rf`, `sudo`, a force push, ...), whatever the patterns say. A pattern that isn't a valid regex is
+skipped with a warning. The list applies to the local TUI and to `kaja --local telegram`; the cloud agent never runs shell
+commands.
+
 ## `[marketplace]`
 
 | Field | Purpose |

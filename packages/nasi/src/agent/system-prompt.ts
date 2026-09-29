@@ -77,8 +77,8 @@ function datasetInstructions(topic: string, label: string) {
 const RUN_COMMAND_INSTRUCTIONS =
   `Use ${RUN_COMMAND_TOOL} to run a shell command on the user's computer — ` +
   `e.g. playing a sound, converting a file, checking installed tools. Set ` +
-  `mutates to false only for purely read-only commands, which run ` +
-  `immediately with no human approval. When unsure whether a command ` +
+  `mutates to false only for purely read-only commands; simple ones on the ` +
+  `user's safe list run immediately with no human approval. When unsure whether a command ` +
   `mutates state, set mutates to true. This includes commands that only ` +
   `write to a temp directory: ` +
   `writing a file is a mutation regardless of where it lands, so mutates ` +

@@ -17,7 +17,7 @@ import {
   type Session,
   SWITCH_PERSONA_TOOL
 } from "./agent"
-import { isDangerousCommand } from "./command-risk"
+import { DEFAULT_SAFE_PATTERNS, isSafeCommand } from "./command-risk"
 import {
   compactSession,
   condenseOversizedResults,
@@ -48,28 +48,13 @@ function parseToolArgs(raw: string): unknown {
   }
 }
 
-/** Auto-runs read-only allowlisted commands; otherwise reports a pending confirmation. */
-const AUTO_APPROVE_BINARIES = /^(ls|cat|head|tail|git status|git diff|git log|pwd|whoami|date|uname|echo|true)(\s|$)/
-
-// Shell metacharacters that let a command chain into, pipe into, or substitute in another command
-// (`sh -c` interprets all of these) — auto-approval requires none of them, so the allowlist above
-// only ever matches a single simple invocation, never a smuggled second command.
-const SHELL_METACHARACTERS = /[;&|`$(){}<>\n]/
-
-function isSimpleAllowlistedCommand(command: string): boolean {
-  return !SHELL_METACHARACTERS.test(command) && AUTO_APPROVE_BINARIES.test(command.trim())
-}
-
 async function handleRunCommandCall(
+  agent: Agent,
   messages: ChatCompletionMessageParam[],
   call: FunctionToolCall,
   record: RecordCall
 ): Promise<{ id: string; command: string; description: string } | undefined> {
-  const args = parseToolArgs(call.function.arguments) as {
-    command?: string
-    description?: string
-    mutates?: boolean
-  } | null
+  const args = parseToolArgs(call.function.arguments) as { command?: string; description?: string } | null
   if (!args || typeof args.command !== "string") {
     messages.push({
       role: "tool",
@@ -79,9 +64,7 @@ async function handleRunCommandCall(
     record(call.id, { status: "error" })
     return undefined
   }
-  const autoApprove =
-    args.mutates === false && !isDangerousCommand(args.command) && isSimpleAllowlistedCommand(args.command)
-  if (autoApprove) {
+  if (isSafeCommand(args.command, agent.safeCommands ?? DEFAULT_SAFE_PATTERNS)) {
     const startedAt = performance.now()
     const result = await runShellCommand(args.command)
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
@@ -371,7 +354,7 @@ async function* handleToolCalls(
     }
 
     if (call.function.name === RUN_COMMAND_TOOL) {
-      confirm = await handleRunCommandCall(messages, call, record)
+      confirm = await handleRunCommandCall(agent, messages, call, record)
       continue
     }
 

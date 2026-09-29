@@ -1,0 +1,21 @@
+# Shell commands the agent may run without asking you first. Each entry is a regex that
+# must match the WHOLE command (it is anchored for you). A command containing shell
+# metacharacters (; & | ` $ ( ) { } < > or a newline) always asks, and so does anything
+# `kaja` flags as dangerous (rm -rf, sudo, force push, ...), whatever these say.
+# This list also applies to `kaja --local telegram`.
+#
+# `safe` is the default list from `kaja config fetch`; a fetch replaces it (backing the
+# file up). Put your own patterns in `custom`, which a fetch keeps.
+safe = [
+  'ls(\s+-[a-zA-Z]+)*(\s+[\w./~-]+)*',
+  '(cat|head|tail)(\s+-[a-zA-Z0-9]+)*(\s+[\w./~-]+)+',
+  "pwd",
+  "whoami",
+  "date",
+  'uname(\s+-[a-zA-Z]+)*',
+  'git (status|diff|log)(?!.*--output)(\s+[\w./=:@^~-]+)*'
+]
+
+# custom = [
+#   'npm (test|run lint)',
+# ]

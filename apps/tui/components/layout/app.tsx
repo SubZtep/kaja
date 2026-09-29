@@ -285,6 +285,7 @@ function LocalApp({
   personas,
   openaiApiModel,
   tools,
+  safeCommands,
   initialSession,
   promptHistory
 }: Readonly<{
@@ -293,6 +294,8 @@ function LocalApp({
   personas: Persona[]
   openaiApiModel: string
   tools: Tool<any>[]
+  /** Whole-command patterns that run without asking, from commands.toml. */
+  safeCommands?: RegExp[]
   initialSession?: PersistedSession
   promptHistory?: string[]
 }>) {
@@ -317,6 +320,7 @@ function LocalApp({
     summarizer,
     compactAt,
     tools,
+    safeCommands,
     personas,
     models,
     // Stored session's persona/model may no longer exist; resolves to undefined and the resume proceeds with defaults — messages restore verbatim anyway.
@@ -435,6 +439,8 @@ type LocalAppProps = Readonly<{
   personas: Persona[]
   openaiApiModel: string
   tools: Tool<any>[]
+  /** Whole-command patterns that run without asking, from commands.toml. */
+  safeCommands?: RegExp[]
   /** A persisted session to continue (--continue / --session <id>). */
   initialSession?: PersistedSession
   /** Past prompts across all sessions for ↑/↓ recall, newest first. */

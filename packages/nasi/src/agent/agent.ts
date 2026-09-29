@@ -50,6 +50,8 @@ export class Agent {
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
   compactAt?: number
+  /** Whole-command patterns that run without asking (commands.toml); defaults to the built-in list. */
+  safeCommands?: RegExp[]
 
   constructor(config: {
     name?: string
@@ -68,6 +70,7 @@ export class Agent {
     contextWindow?: number
     summarizer?: { client: OpenAI; model: string; contextWindow?: number }
     compactAt?: number
+    safeCommands?: RegExp[]
   }) {
     this.name = config.name ?? "Assistant"
     this.model = config.model
@@ -85,6 +88,7 @@ export class Agent {
     this.contextWindow = config.contextWindow
     this.summarizer = config.summarizer
     this.compactAt = config.compactAt
+    this.safeCommands = config.safeCommands
   }
 
   /** Point the agent at another model, swapping the client when {@link createClient} is set. */
@@ -137,9 +141,9 @@ export const runCommandTool = tool<{
 }>({
   name: RUN_COMMAND_TOOL,
   description:
-    "Propose a shell command to run on the user's computer. Read-only " +
-    "commands (mutates: false) run immediately; others require human " +
-    "approval first. Use for actions like playing a sound, converting " +
+    "Propose a shell command to run on the user's computer. Commands on " +
+    "the user's safe list (simple read-only ones) run immediately; others " +
+    "require human approval first. Use for actions like playing a sound, converting " +
     "media, or invoking a CLI tool.",
   parameters: {
     type: "object",

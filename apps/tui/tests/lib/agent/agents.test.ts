@@ -243,7 +243,7 @@ test("run_command call is intercepted and yielded as confirm_command", async () 
   expect(finalized).toEqual([{ type: "confirm_command", command: "echo hi", description: "Say hi" }])
 })
 
-test("run_command with mutates: false runs immediately, no confirm_command", async () => {
+test("run_command matching the safe list runs immediately, no confirm_command", async () => {
   const agent = fakeAgent([
     {
       content: null,
@@ -254,7 +254,7 @@ test("run_command with mutates: false runs immediately, no confirm_command", asy
           function: {
             name: "run_command",
             arguments: JSON.stringify({
-              command: "echo hi",
+              command: "pwd",
               description: "Say hi",
               mutates: false
             })
