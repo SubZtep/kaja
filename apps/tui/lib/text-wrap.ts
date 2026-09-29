@@ -8,6 +8,8 @@ export type VisualLine = {
 
 /**
  * Soft-wrap `text` to `width` terminal columns (emoji-aware via Bun.stringWidth).
+ * Breaks at spaces so words stay whole; a word wider than the line is split by column.
+ * Spaces at a soft break are left out of both lines, so no line starts with one.
  * Hard newlines (`\n`) always break. Empty string yields a single empty line
  * so the cursor has a row to sit on.
  */
@@ -21,49 +23,66 @@ export function softWrapLines(text: string, width: number): VisualLine[] {
   let lineStart = 0
   let lineText = ""
   let lineW = 0
+  // The line began at a soft wrap (not the text start or after `\n`), so its leading spaces are dropped.
+  let softStart = false
+  // Last place a word ended on this line: text length before the space run, and its string offset.
+  let breakText = 0
+  let breakOffset = 0
   let i = 0
 
   for (const char of text) {
     if (char === "\n") {
       // end is exclusive and includes the newline so the cursor after `\n` lands on the following visual line.
-      lines.push({
-        start: lineStart,
-        end: i + 1,
-        text: lineText
-      })
+      lines.push({ start: lineStart, end: i + 1, text: lineText })
       lineStart = i + 1
       lineText = ""
       lineW = 0
+      softStart = false
+      breakText = 0
       i += 1
       continue
     }
-    // Soft-wrap: don't begin a visual line with a space (looks like indent).
-    if (char === " " && lineText.length === 0) {
+    if (char === " " && lineText.length === 0 && softStart) {
       i += 1
       lineStart = i
       continue
     }
     const cw = Math.max(1, Bun.stringWidth(char))
-    if (lineW + cw > w && lineText.length > 0) {
-      lines.push({
-        start: lineStart,
-        end: i,
-        text: lineText
-      })
-      // Skip spaces at the wrap point so the next line doesn't start indented.
-      if (char === " ") {
-        lineStart = i + 1
+    if (char === " " && lineW + cw > w && lineText.length > 0) {
+      // A space at the wrap point ends the line and is dropped.
+      lines.push({ start: lineStart, end: i, text: lineText })
+      lineStart = i + 1
+      lineText = ""
+      lineW = 0
+      softStart = true
+      breakText = 0
+      i += 1
+      continue
+    }
+    while (char !== " " && lineW + cw > w && lineText.length > 0) {
+      if (breakText > 0) {
+        // Carry the trailing word to the next line, minus the spaces before it.
+        const rest = lineText.slice(breakText)
+        const word = rest.trimStart()
+        lines.push({ start: lineStart, end: breakOffset, text: lineText.slice(0, breakText) })
+        lineStart = breakOffset + (rest.length - word.length)
+        lineText = word
+        lineW = Bun.stringWidth(word)
+        breakText = 0
+      } else {
+        lines.push({ start: lineStart, end: i, text: lineText })
+        lineStart = i
         lineText = ""
         lineW = 0
-      } else {
-        lineStart = i
-        lineText = char
-        lineW = cw
       }
-    } else {
-      lineText += char
-      lineW += cw
+      softStart = true
     }
+    if (char === " " && lineText.length > 0 && !lineText.endsWith(" ")) {
+      breakText = lineText.length
+      breakOffset = i
+    }
+    lineText += char
+    lineW += cw
     i += char.length
   }
 

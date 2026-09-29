@@ -18,6 +18,26 @@ test("softWrapLines breaks on column width", () => {
   expect(lines[2]).toMatchObject({ start: 8, end: 10 })
 })
 
+test("softWrapLines keeps words whole and drops the break spaces", () => {
+  const lines = softWrapLines("hello wonderful world", 10)
+  expect(lines.map(l => l.text)).toEqual(["hello", "wonderful", "world"])
+  expect(lines[1]).toMatchObject({ start: 6, end: 15 })
+  expect(lines[2]).toMatchObject({ start: 16, end: 21 })
+})
+
+test("softWrapLines never starts a wrapped line with a space", () => {
+  expect(softWrapLines("aaaa  bbbb", 4).map(l => l.text)).toEqual(["aaaa", "bbbb"])
+  expect(softWrapLines("ab cd  ef", 5).map(l => l.text)).toEqual(["ab cd", "ef"])
+})
+
+test("softWrapLines splits a word longer than the line", () => {
+  expect(softWrapLines("hi abcdefghij", 4).map(l => l.text)).toEqual(["hi", "abcd", "efgh", "ij"])
+})
+
+test("softWrapLines keeps indentation typed by the user", () => {
+  expect(softWrapLines("  ab\n  cd", 10).map(l => l.text)).toEqual(["  ab", "  cd"])
+})
+
 test("softWrapLines empty string is one empty line", () => {
   expect(softWrapLines("", 10)).toEqual([{ start: 0, end: 0, text: "" }])
 })
