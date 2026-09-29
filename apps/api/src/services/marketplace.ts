@@ -242,21 +242,23 @@ async function readManifests<Entry extends { name: string; error?: string }>(
   entries: Entry[],
   toBundle: (text: string, entry: Entry) => { name: string; description: string }
 ): Promise<AbilityBundle[]> {
-  const bundles: AbilityBundle[] = []
-  for (const entry of entries) {
-    const file = `${entry.name}.${kind.extension}`
-    try {
-      if (entry.error) throw new Error(entry.error)
-      const text = await readFile(join(marketplaceDir, MARKETPLACE_FOLDER[kind.type], file), "utf8")
-      bundles.push({ type: kind.type, ...toBundle(text, entry), files: { [file]: text }, hasScripts: false })
-    } catch (error) {
-      console.warn(`Marketplace ${kind.label} skipped`, {
-        [kind.type]: entry.name,
-        error: error instanceof Error ? error.message : error
-      })
-    }
-  }
-  return bundles
+  const bundles = await Promise.all(
+    entries.map(async (entry): Promise<AbilityBundle | undefined> => {
+      const file = `${entry.name}.${kind.extension}`
+      try {
+        if (entry.error) throw new Error(entry.error)
+        const text = await readFile(join(marketplaceDir, MARKETPLACE_FOLDER[kind.type], file), "utf8")
+        return { type: kind.type, ...toBundle(text, entry), files: { [file]: text }, hasScripts: false }
+      } catch (error) {
+        console.warn(`Marketplace ${kind.label} skipped`, {
+          [kind.type]: entry.name,
+          error: error instanceof Error ? error.message : error
+        })
+        return undefined
+      }
+    })
+  )
+  return bundles.filter(bundle => bundle !== undefined)
 }
 
 /** Every valid `personas/*.toml`, with its label as the description. */
