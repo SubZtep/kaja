@@ -27,7 +27,7 @@ memorySessions = "記智佮工作階段"
 images         = "工作階段圖片"
 models         = "模型"
 mcpServers     = "mcp 伺服器"
-commands       = "[nan-TW] lorem"
+commands       = "安全指令"
 tools          = "工具"
 abilities      = "能力"
 marketplace    = "市集"
@@ -258,8 +258,8 @@ persona   = "角色"
 copy      = "拷貝"
 theme     = "配色"
 quit      = "退出"
-expand    = "[nan-TW] lorem"
-quitAgain = "[nan-TW] lorem ipsum dolor sit amet"
+expand    = "展開"
+quitAgain = "猶咧執行：閣按一擺 Esc 就退出"
 cancel    = "取消"
 decline   = "拒絕"
 
@@ -270,12 +270,12 @@ older = "↑ 較早進前 · PageDown 抑是 Ctrl+End 轉去上新个"
 
 [confirmCommand]
 yes         = "好，執行"
-yesSession  = "[nan-TW] lorem ipsum dolor sit amet consectetur"
-yesAlways   = "[nan-TW] lorem ipsum dolor sit amet"
+yesSession  = "好，這擺工作階段毋免閣問"
+yesAlways   = "好，這个工具永遠允准"
 no          = "毋通，取消"
 running     = "執行中…"
 truncated   = "… 猶有 {count} 逝"
-inputLocked = "[nan-TW] lorem ipsum dolor sit"
+inputLocked = "咧等你頂面个回答"
 toolRequest = "{name} 想欲送這个請求："
 
 
@@ -315,7 +315,7 @@ loadSkillFile = "咧讀 {name} 技能內底个 {file}..."
 
 [timeline]
 personaSwitch    = "已經換角色：{label}"
-toolsUsed        = "[nan-TW] lorem ipsum {count} {names}"
+toolsUsed        = "工具呼叫（{count}）：{names}"
 compacted        = "語境精簡：{before} → {after} 个 token"
 compactedDropped = "語境精簡：{before} → {after} 个 token。摘要寫袂落，所以上早个訊息就略掉矣。"
 condensed        = "{tool} 輸出精簡：{before} → {after} 个 token"
@@ -436,4 +436,4 @@ nothingToCompact  = "猶無啥物通精簡个。"
 
 
 [markdown]
-codeMore = "[nan-TW] lorem ipsum dolor sit amet {count}"
+codeMore = "… 猶有 {count} 逝（展開看全部）"

@@ -27,7 +27,7 @@ memorySessions = "memória és munkamenetek"
 images         = "munkamenet-képek"
 models         = "modellek"
 mcpServers     = "mcp szerverek"
-commands       = "[hu-HU] lorem"
+commands       = "biztonságos parancsok"
 tools          = "eszközök"
 abilities      = "képességek"
 marketplace    = "piactér"
@@ -258,8 +258,8 @@ persona   = "Perszóna"
 copy      = "Másolás"
 theme     = "Téma"
 quit      = "Kilépés"
-expand    = "[hu-HU] lorem"
-quitAgain = "[hu-HU] lorem ipsum dolor sit amet"
+expand    = "Kibontás"
+quitAgain = "Még fut: Esc újra a kilépéshez"
 cancel    = "Mégse"
 decline   = "Elutasítás"
 
@@ -270,12 +270,12 @@ older = "↑ régebbi · PageDown vagy Ctrl+End a követéshez"
 
 [confirmCommand]
 yes         = "Igen, futtasd"
-yesSession  = "[hu-HU] lorem ipsum dolor sit amet consectetur"
-yesAlways   = "[hu-HU] lorem ipsum dolor sit amet"
+yesSession  = "Igen, és ebben a munkamenetben ne kérdezz újra"
+yesAlways   = "Igen, és mindig engedélyezd ezt az eszközt"
 no          = "Nem, mégse"
 running     = "Fut…"
 truncated   = "… még {count} sor"
-inputLocked = "[hu-HU] lorem ipsum dolor sit"
+inputLocked = "Várom a válaszodat fent"
 toolRequest = "A(z) {name} ezt a kérést küldené:"
 
 
@@ -315,7 +315,7 @@ loadSkillFile = "{file} olvasása a(z) {name} készségből..."
 
 [timeline]
 personaSwitch    = "Perszóna váltva: {label}"
-toolsUsed        = "[hu-HU] lorem ipsum {count} {names}"
+toolsUsed        = "Eszközhívások ({count}): {names}"
 compacted        = "Kontextus tömörítve: {before} → {after} token"
 compactedDropped = "Kontextus tömörítve: {before} → {after} token. Az összefoglaló nem írható, így a legrégebbi üzenetek kimaradtak."
 condensed        = "{tool} kimenet tömörítve: {before} → {after} token"
@@ -436,4 +436,4 @@ nothingToCompact  = "Még nincs tömöríthető."
 
 
 [markdown]
-codeMore = "[hu-HU] lorem ipsum dolor sit amet {count}"
+codeMore = "… még {count} sor (kibontással mind látszik)"

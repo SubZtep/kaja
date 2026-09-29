@@ -27,7 +27,7 @@ memorySessions = "memory & sessions"
 images         = "session images"
 models         = "models"
 mcpServers     = "mcp servers"
-commands       = "[en-US] lorem"
+commands       = "safe commands"
 tools          = "tools"
 abilities      = "abilities"
 marketplace    = "marketplace"
@@ -258,8 +258,8 @@ persona   = "Persona"
 copy      = "Copy"
 theme     = "Theme"
 quit      = "Quit"
-expand    = "[en-US] lorem"
-quitAgain = "[en-US] lorem ipsum dolor sit amet"
+expand    = "Expand"
+quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
 
@@ -270,12 +270,12 @@ older = "↑ older · PageDown or Ctrl+End to follow"
 
 [confirmCommand]
 yes         = "Yes, run it"
-yesSession  = "[en-US] lorem ipsum dolor sit amet consectetur"
-yesAlways   = "[en-US] lorem ipsum dolor sit amet"
+yesSession  = "Yes, and don't ask again this session"
+yesAlways   = "Yes, and always allow this tool"
 no          = "No, cancel"
 running     = "Running…"
 truncated   = "… {count} more lines"
-inputLocked = "[en-US] lorem ipsum dolor sit"
+inputLocked = "Waiting for your answer above"
 toolRequest = "{name} wants to send this request:"
 
 
@@ -315,7 +315,7 @@ loadSkillFile = "Reading {file} from the {name} skill..."
 
 [timeline]
 personaSwitch    = "Persona switched: {label}"
-toolsUsed        = "[en-US] lorem ipsum {count} {names}"
+toolsUsed        = "Tool calls ({count}): {names}"
 compacted        = "Context compacted: {before} → {after} tokens"
 compactedDropped = "Context compacted: {before} → {after} tokens. The summary couldn't be written, so the oldest messages were left out."
 condensed        = "{tool} output condensed: {before} → {after} tokens"
@@ -436,4 +436,4 @@ nothingToCompact  = "Nothing to compact yet."
 
 
 [markdown]
-codeMore = "[en-US] lorem ipsum dolor sit amet {count}"
+codeMore = "… {count} more lines (expand to see all)"
