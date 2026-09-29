@@ -397,7 +397,7 @@ function CloudApp({
     contextWindow
   } = useCloudAgent({
     baseUrl: apiUrl,
-    getToken: async () => token
+    getToken: () => Promise.resolve(token)
   })
 
   const lastEvent = events.at(-1)

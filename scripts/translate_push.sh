@@ -14,7 +14,7 @@ pushes_branch=false
 pushes_head=false
 while read -r local_ref local_oid _remote_ref _remote_oid; do
   [ "$local_oid" = "$zero" ] && continue
-  case "$local_ref" in refs/heads/*) pushes_branch=true ;; esac
+  case "$local_ref" in refs/heads/*) pushes_branch=true ;; *) ;; esac
   [ -n "$branch" ] && [ "$local_ref" = "refs/heads/$branch" ] && [ "$local_oid" = "$head" ] && pushes_head=true
 done
 

@@ -42,7 +42,7 @@ export async function startSandbox(opts: {
     servers,
     idleMs: 60_000,
     maxProcesses: opts.maxProcesses ?? 2,
-    hasRoom: opts.hasRoom ?? (async () => true)
+    hasRoom: opts.hasRoom ?? (() => Promise.resolve(true))
   })
   const stateDir = opts.stateDir ?? mkdtempSync(join(tmpdir(), "kaja-sandbox-state-"))
   const egress = { open: 0, allowed: 0, refused: 0, failed: 0 }
@@ -75,7 +75,7 @@ export async function startSandbox(opts: {
     close: async () => {
       tunnel.close()
       await pool.closeAll()
-      await waitFor(async () => (tunnelFor(id) ? undefined : true))
+      await waitFor(() => Promise.resolve(tunnelFor(id) ? undefined : true))
       if (!opts.stateDir) rmSync(stateDir, { recursive: true, force: true })
     }
   }
