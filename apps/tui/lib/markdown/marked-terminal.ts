@@ -106,6 +106,7 @@ function fixHardReturn(text: string, reflow: boolean) {
   }
   const max = this.o.codeLines?.() ?? Number.POSITIVE_INFINITY
   const lines = code.split("\n")
+  this.o.codeSeen?.(lines.length)
   const hidden = lines.length - max
   if (hidden > 0) code = lines.slice(0, max).join("\n")
   const body = indentify(this.tab, highlight(code, lang, this.o, this.highlightOptions))

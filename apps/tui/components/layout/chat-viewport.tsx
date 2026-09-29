@@ -9,6 +9,7 @@ import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { isTerminalMouseSequence, parseWheelDirection } from "../../lib/terminal-input"
 import { foldToolCalls } from "../../lib/tool-summary"
+import { uiEvents } from "../../lib/ui-events"
 import { Activity } from "../activity"
 import { PartialMessage } from "../elem/partial-message"
 import { VirtualScroll, type VirtualScrollRef } from "../elem/virtual-scroll"
@@ -256,16 +257,29 @@ export function ChatViewport({
     }
   }
 
+  const copyLatest = () => {
+    const text = lastCopyableText(events)
+    if (!text) return
+    writeText(text)
+      .then(async () => {
+        if (sounds) (await import("../../lib/audio/sounds")).playSound("keyboard")
+      })
+      .catch(error => log.warn("Copy to clipboard failed", { error }))
+  }
+  // The key bar's Copy button asks through uiEvents; a ref keeps the listener on the latest events
+  const copyRef = useRef(copyLatest)
+  copyRef.current = copyLatest
+  useEffect(() => {
+    const onCopy = () => copyRef.current()
+    uiEvents.on("copy", onCopy)
+    return () => {
+      uiEvents.off("copy", onCopy)
+    }
+  }, [])
+
   useInput((input, key) => {
     if ((hotkeyModifier === "ctrl" ? key.ctrl : key.meta) && input === "r") {
-      const text = lastCopyableText(events)
-      if (text) {
-        writeText(text)
-          .then(async () => {
-            if (sounds) (await import("../../lib/audio/sounds")).playSound("keyboard")
-          })
-          .catch(error => log.warn("Copy to clipboard failed", { error }))
-      }
+      copyLatest()
       return
     }
 

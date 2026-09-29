@@ -5,7 +5,7 @@ import { useContext } from "react"
 import { t } from "../../lib/i18n"
 import { guessLanguage } from "../../lib/markdown/guess-language"
 import { type Palette, usePalette } from "../theme"
-import { CodeViewContext } from "./code-expand"
+import { CodeViewContext, useReportOverflow } from "./code-expand"
 import { codeTheme } from "./markdown"
 
 function safeHighlight(code: string, language: string, palette: Palette): string {
@@ -48,6 +48,7 @@ export function CodePreview({
   const shown = view.expanded ? Math.max(3, rows - 12) : view.lines
   const preview = lines.slice(0, shown).join("\n")
   const hidden = lines.length - shown
+  useReportOverflow(lines.length > view.lines)
   const coloured = kind === "command" && chalk.level > 0 ? highlightCommand(preview, palette) : undefined
 
   return (

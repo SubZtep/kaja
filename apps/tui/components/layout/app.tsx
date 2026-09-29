@@ -5,7 +5,7 @@ import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
 import notifier from "node-notifier"
 import open from "open"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
@@ -19,12 +19,13 @@ import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel, compactAt, summarizer } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
+import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
 import { themes } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
-import { KeyBar } from "./key-bar"
+import { KeyBar, type KeyBarEntry } from "./key-bar"
 import { PersonaPicker } from "./persona-picker"
 import { UserInput } from "./user-input"
 
@@ -50,8 +51,9 @@ function getBottomChromeKey(
 // picker/confirm prompt over it. While a command is actually running there's nothing bound to Esc (no entry).
 function escKeyBarItem(
   bottomChromeKey: BottomChromeKey,
-  quitArmed: boolean
-): { key: string; label: string } | undefined {
+  quitArmed: boolean,
+  pressQuit: () => void
+): KeyBarEntry | undefined {
   const quit = quitArmed ? t("keybar.quitAgain") : t("keybar.quit")
   const labels: Partial<Record<BottomChromeKey, string>> = {
     persona: t("keybar.cancel"),
@@ -60,7 +62,8 @@ function escKeyBarItem(
     running: quit
   }
   const label = labels[bottomChromeKey]
-  return label ? { key: "Esc", label } : undefined
+  const quits = bottomChromeKey === "input" || bottomChromeKey === "running"
+  return label ? { key: "Esc", label, onPress: quits ? pressQuit : undefined } : undefined
 }
 
 /** What the confirm prompt shows for a paused call: the shell command, or the tool's request summary. */
@@ -79,16 +82,18 @@ function buildKeyBarItems(
   hasPersona: boolean,
   bottomChromeKey: BottomChromeKey,
   quitArmed: boolean,
-  actions: { help: () => void; persona: () => void; theme: () => void; expand: () => void }
+  actions: { help: () => void; persona: () => void; copy: () => void; theme: () => void; expand: () => void },
+  canExpand: boolean,
+  pressQuit: () => void
 ) {
   const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
-  const escItem = escKeyBarItem(bottomChromeKey, quitArmed)
+  const escItem = escKeyBarItem(bottomChromeKey, quitArmed, pressQuit)
   return [
     { key: `${modifierLabel}+L`, label: t("keybar.help"), onPress: actions.help },
     ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona"), onPress: actions.persona }] : []),
-    { key: `${modifierLabel}+R`, label: t("keybar.copy") },
+    { key: `${modifierLabel}+R`, label: t("keybar.copy"), onPress: actions.copy },
     { key: `${modifierLabel}+D`, label: t("keybar.theme"), onPress: actions.theme },
-    { key: `${modifierLabel}+E`, label: t("keybar.expand"), onPress: actions.expand },
+    ...(canExpand ? [{ key: `${modifierLabel}+E`, label: t("keybar.expand"), onPress: actions.expand }] : []),
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -165,9 +170,15 @@ function Chrome({
   const { columns, rows } = useWindowSize()
   const [pickingPersona, setPickingPersona] = useState(false)
   const [codeExpanded, setCodeExpanded] = useState(false)
+  // How many mounted code blocks are longer than the preview: the expand button shows only while some are
+  const [overflowing, setOverflowing] = useState(0)
+  const registerOverflow = useCallback(() => {
+    setOverflowing(n => n + 1)
+    return () => setOverflowing(n => n - 1)
+  }, [])
   const codeView = useMemo(
-    () => ({ expanded: codeExpanded, lines: codePreviewLines }),
-    [codeExpanded, codePreviewLines]
+    () => ({ expanded: codeExpanded, lines: codePreviewLines, register: registerOverflow }),
+    [codeExpanded, codePreviewLines, registerOverflow]
   )
 
   // The same actions answer the hotkeys and a click on the key bar
@@ -181,6 +192,7 @@ function Chrome({
       if (capabilities.persona && !pending) setPickingPersona(true)
     },
     // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
+    copy: () => uiEvents.emit("copy"),
     theme: toggleTheme,
     expand: () => setCodeExpanded(prev => !prev)
   }
@@ -188,11 +200,19 @@ function Chrome({
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
   const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
-  const quitArmed = useQuitGuard(
+  const { armed: quitArmed, press: pressQuit } = useQuitGuard(
     bottomChromeKey === "input" || bottomChromeKey === "running",
     pending || runningCommand
   )
-  const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey, quitArmed, actions)
+  const keyBarItems = buildKeyBarItems(
+    hotkeyModifier,
+    capabilities.persona,
+    bottomChromeKey,
+    quitArmed,
+    actions,
+    overflowing > 0,
+    pressQuit
+  )
 
   return (
     <ThemeProvider theme={themes[theme]}>

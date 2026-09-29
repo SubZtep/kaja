@@ -81,7 +81,7 @@ Prompt history spans all past sessions, newest first.
 
 ### Key bar
 
-Help, Persona, Theme and Expand are also buttons: they dim under the mouse and a click runs them, for a terminal or system that takes the hotkey.
+Every entry but a Cancel or Decline is also a button: it dims under the mouse and a click runs it, for a terminal or system that takes the hotkey. Expand shows only while some code on screen is longer than `codePreviewLines`.
 
 | Key | Action |
 |---|---|

@@ -121,3 +121,27 @@ test("an approval command is cut to the preview lines, and all of it shows once 
   t.unmount()
   await t.waitUntilExit()
 })
+
+test("code longer than the preview registers for the expand button, and withdraws on unmount", async () => {
+  let active = 0
+  const register = () => {
+    active++
+    return () => {
+      active--
+    }
+  }
+  const long = { type: "confirm_command", command: "a\nb\nc\nd\ne\nf\ng", description: "run" } as const
+  const short = { type: "confirm_command", command: "a\nb", description: "run" } as const
+  const view = { expanded: false, lines: 5, register }
+  const t = renderForTest(
+    <CodeViewContext.Provider value={view}>
+      <TimelineItem item={long} thinking={false} />
+      <TimelineItem item={short} thinking={false} />
+    </CodeViewContext.Provider>
+  )
+  await t.tick()
+  expect(active).toBe(1)
+  t.unmount()
+  await t.waitUntilExit()
+  expect(active).toBe(0)
+})
