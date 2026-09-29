@@ -49,6 +49,18 @@ describe("isPublicHttpUrl", () => {
     expect(isPublicHttpUrl("http://[::ffff:10.0.0.1]")).toBe(false)
   })
 
+  test("rejects private IPv6 literals", () => {
+    expect(isPublicHttpUrl("http://[::]")).toBe(false)
+    expect(isPublicHttpUrl("http://[fd00::1]/")).toBe(false)
+    expect(isPublicHttpUrl("http://[fe80::1]/")).toBe(false)
+    expect(isPublicHttpUrl("http://[64:ff9b::7f00:1]/")).toBe(false)
+    expect(isPublicHttpUrl("http://[2002:7f00:1::]/")).toBe(false)
+  })
+
+  test("accepts a public IPv6 literal", () => {
+    expect(isPublicHttpUrl("https://[2001:4860:4860::8888]/")).toBe(true)
+  })
+
   test("does not treat a private-looking hostname suffix as an IP", () => {
     expect(isPublicHttpUrl("http://192.168.1.1.evil.com")).toBe(true)
   })
