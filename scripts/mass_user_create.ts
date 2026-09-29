@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto"
 import { faker } from "@faker-js/faker"
 
-const NUMBER_OF_USERS = /^\d+$/.test(Bun.argv[2]) ? Number.parseInt(Bun.argv[2], 10) : 10
+const count = Bun.argv[2] ?? ""
+const NUMBER_OF_USERS = /^\d+$/.test(count) ? Number.parseInt(count, 10) : 10
 
 for (let i = 0; i < NUMBER_OF_USERS; i++) {
   const firstName = faker.person.firstName()
@@ -30,7 +31,7 @@ process.exit(0)
 
 /** Generates a random number from 0 to 1. */
 export function random() {
-  return randomBytes(1)[0] / 255
+  return randomBytes(1).readUInt8(0) / 255
 }
 
 function generatePassword() {

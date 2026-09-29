@@ -34,7 +34,7 @@ function defaultValueOf(schema: z.ZodTypeAny): string | number | boolean {
 
 /** Introspects a Zod env object's fields: description/example/secret/section metadata, optionality, and default value. */
 export function inspectFields(schema: z.ZodObject<z.ZodRawShape>): FieldInfo[] {
-  return Object.entries(schema.shape).map(([key, fieldSchema]) => {
+  return Object.entries(schema.shape as Record<string, z.ZodType>).map(([key, fieldSchema]) => {
     const meta = fieldSchema.meta?.() as EnvFieldMeta | undefined
     return {
       key,

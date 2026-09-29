@@ -511,137 +511,155 @@ export function createSqliteStore(dbPath: string): NasiStore {
       return true
     },
 
-    async listSessions(): Promise<SessionMeta[]> {
-      return db
-        .query(
-          "SELECT id, createdAt, updatedAt, persona, model, title, owner FROM sessions ORDER BY updatedAt DESC, id DESC"
-        )
-        .all() as SessionMeta[]
+    listSessions(): Promise<SessionMeta[]> {
+      return Promise.try(() => {
+        return db
+          .query(
+            "SELECT id, createdAt, updatedAt, persona, model, title, owner FROM sessions ORDER BY updatedAt DESC, id DESC"
+          )
+          .all() as SessionMeta[]
+      })
     },
 
-    async loadPromptHistory(limit = 100) {
-      const rows = db
-        .query(`
-          SELECT e.payload ->> 'text' AS text
-          FROM session_events AS e JOIN sessions AS s ON s.id = e.sessionId
-          WHERE e.type = 'user'
-          ORDER BY s.updatedAt DESC, s.id DESC, e.seq DESC
-          LIMIT $limit
-        `)
-        .all({ $limit: limit }) as { text: unknown }[]
-      const prompts: string[] = []
-      for (const row of rows) {
-        if (typeof row.text !== "string" || row.text.length === 0) continue
-        if (prompts.at(-1) === row.text) continue
-        prompts.push(row.text)
-      }
-      return prompts
-    },
-
-    async loadMemory(owner) {
-      const rows = db
-        .query(
-          "SELECT key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount FROM notes WHERE owner = $owner"
-        )
-        .all({ $owner: ownerKey(owner) }) as {
-        key: string
-        content: string
-        importance: string
-        tags: string
-        sticky: number
-        createdAt: string
-        lastUsedAt: string
-        useCount: number
-      }[]
-      const store: MemoryStore = {}
-      for (const row of rows) {
-        store[row.key] = {
-          content: row.content,
-          importance: row.importance as MemoryNote["importance"],
-          tags: JSON.parse(row.tags),
-          sticky: row.sticky === 1,
-          createdAt: row.createdAt,
-          lastUsedAt: row.lastUsedAt,
-          useCount: row.useCount
+    loadPromptHistory(limit = 100) {
+      return Promise.try(() => {
+        const rows = db
+          .query(`
+            SELECT e.payload ->> 'text' AS text
+            FROM session_events AS e JOIN sessions AS s ON s.id = e.sessionId
+            WHERE e.type = 'user'
+            ORDER BY s.updatedAt DESC, s.id DESC, e.seq DESC
+            LIMIT $limit
+          `)
+          .all({ $limit: limit }) as { text: unknown }[]
+        const prompts: string[] = []
+        for (const row of rows) {
+          if (typeof row.text !== "string" || row.text.length === 0) continue
+          if (prompts.at(-1) === row.text) continue
+          prompts.push(row.text)
         }
-      }
-      return store
-    },
-
-    async saveMemory(owner, store) {
-      const insert = db.query(`
-        INSERT INTO notes (owner, key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount)
-        VALUES ($owner, $key, $content, $importance, $tags, $sticky, $createdAt, $lastUsedAt, $useCount)
-      `)
-      const deleteOwned = db.query("DELETE FROM notes WHERE owner = $owner")
-      const ownerParam = ownerKey(owner)
-      db.transaction(() => {
-        deleteOwned.run({ $owner: ownerParam })
-        for (const [key, note] of Object.entries(store)) insert.run({ $owner: ownerParam, ...noteParams(key, note) })
-      })()
-    },
-
-    async latestDatasetVersion(topic, owner) {
-      const row = db
-        .query(
-          `SELECT MAX(version) AS version FROM (
-             SELECT version FROM dataset_answers WHERE topic = $topic AND owner = $owner
-             UNION ALL
-             SELECT version FROM dataset_versions WHERE topic = $topic AND owner = $owner
-           )`
-        )
-        .get({ $topic: topic, $owner: ownerKey(owner) }) as { version: number | null } | null
-      return row?.version ?? 0
-    },
-
-    async loadDatasetAnswers(topic, owner, version) {
-      return db
-        .query(
-          `SELECT field, value, answeredAt FROM dataset_answers
-           WHERE topic = $topic AND owner = $owner AND version = $version
-           ORDER BY answeredAt ASC`
-        )
-        .all({ $topic: topic, $owner: ownerKey(owner), $version: version }) as {
-        field: string
-        value: string
-        answeredAt: string
-      }[]
-    },
-
-    async saveDatasetAnswer(topic, owner, version, field, value) {
-      db.query(
-        `INSERT INTO dataset_answers (topic, owner, version, field, value, answeredAt)
-         VALUES ($topic, $owner, $version, $field, $value, $answeredAt)
-         ON CONFLICT(topic, owner, version, field) DO UPDATE SET value = excluded.value, answeredAt = excluded.answeredAt`
-      ).run({
-        $topic: topic,
-        $owner: ownerKey(owner),
-        $version: version,
-        $field: field,
-        $value: value,
-        $answeredAt: new Date().toISOString()
+        return prompts
       })
     },
 
-    async markDatasetVersionComplete(topic, owner, version) {
-      db.query(
-        `INSERT OR IGNORE INTO dataset_versions (topic, owner, version, completedAt)
-         VALUES ($topic, $owner, $version, $completedAt)`
-      ).run({
-        $topic: topic,
-        $owner: ownerKey(owner),
-        $version: version,
-        $completedAt: new Date().toISOString()
+    loadMemory(owner) {
+      return Promise.try(() => {
+        const rows = db
+          .query(
+            "SELECT key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount FROM notes WHERE owner = $owner"
+          )
+          .all({ $owner: ownerKey(owner) }) as {
+          key: string
+          content: string
+          importance: string
+          tags: string
+          sticky: number
+          createdAt: string
+          lastUsedAt: string
+          useCount: number
+        }[]
+        const store: MemoryStore = {}
+        for (const row of rows) {
+          store[row.key] = {
+            content: row.content,
+            importance: row.importance as MemoryNote["importance"],
+            tags: JSON.parse(row.tags),
+            sticky: row.sticky === 1,
+            createdAt: row.createdAt,
+            lastUsedAt: row.lastUsedAt,
+            useCount: row.useCount
+          }
+        }
+        return store
       })
     },
 
-    async loadDatasetVersionCompletedAt(topic, owner, version) {
-      const row = db
-        .query(
-          "SELECT completedAt FROM dataset_versions WHERE topic = $topic AND owner = $owner AND version = $version"
-        )
-        .get({ $topic: topic, $owner: ownerKey(owner), $version: version }) as { completedAt: string } | null
-      return row?.completedAt
+    saveMemory(owner, store) {
+      return Promise.try(() => {
+        const insert = db.query(`
+          INSERT INTO notes (owner, key, content, importance, tags, sticky, createdAt, lastUsedAt, useCount)
+          VALUES ($owner, $key, $content, $importance, $tags, $sticky, $createdAt, $lastUsedAt, $useCount)
+        `)
+        const deleteOwned = db.query("DELETE FROM notes WHERE owner = $owner")
+        const ownerParam = ownerKey(owner)
+        db.transaction(() => {
+          deleteOwned.run({ $owner: ownerParam })
+          for (const [key, note] of Object.entries(store)) insert.run({ $owner: ownerParam, ...noteParams(key, note) })
+        })()
+      })
+    },
+
+    latestDatasetVersion(topic, owner) {
+      return Promise.try(() => {
+        const row = db
+          .query(
+            `SELECT MAX(version) AS version FROM (
+               SELECT version FROM dataset_answers WHERE topic = $topic AND owner = $owner
+               UNION ALL
+               SELECT version FROM dataset_versions WHERE topic = $topic AND owner = $owner
+             )`
+          )
+          .get({ $topic: topic, $owner: ownerKey(owner) }) as { version: number | null } | null
+        return row?.version ?? 0
+      })
+    },
+
+    loadDatasetAnswers(topic, owner, version) {
+      return Promise.try(() => {
+        return db
+          .query(
+            `SELECT field, value, answeredAt FROM dataset_answers
+             WHERE topic = $topic AND owner = $owner AND version = $version
+             ORDER BY answeredAt ASC`
+          )
+          .all({ $topic: topic, $owner: ownerKey(owner), $version: version }) as {
+          field: string
+          value: string
+          answeredAt: string
+        }[]
+      })
+    },
+
+    saveDatasetAnswer(topic, owner, version, field, value) {
+      return Promise.try(() => {
+        db.query(
+          `INSERT INTO dataset_answers (topic, owner, version, field, value, answeredAt)
+           VALUES ($topic, $owner, $version, $field, $value, $answeredAt)
+           ON CONFLICT(topic, owner, version, field) DO UPDATE SET value = excluded.value, answeredAt = excluded.answeredAt`
+        ).run({
+          $topic: topic,
+          $owner: ownerKey(owner),
+          $version: version,
+          $field: field,
+          $value: value,
+          $answeredAt: new Date().toISOString()
+        })
+      })
+    },
+
+    markDatasetVersionComplete(topic, owner, version) {
+      return Promise.try(() => {
+        db.query(
+          `INSERT OR IGNORE INTO dataset_versions (topic, owner, version, completedAt)
+           VALUES ($topic, $owner, $version, $completedAt)`
+        ).run({
+          $topic: topic,
+          $owner: ownerKey(owner),
+          $version: version,
+          $completedAt: new Date().toISOString()
+        })
+      })
+    },
+
+    loadDatasetVersionCompletedAt(topic, owner, version) {
+      return Promise.try(() => {
+        const row = db
+          .query(
+            "SELECT completedAt FROM dataset_versions WHERE topic = $topic AND owner = $owner AND version = $version"
+          )
+          .get({ $topic: topic, $owner: ownerKey(owner), $version: version }) as { completedAt: string } | null
+        return row?.completedAt
+      })
     }
   }
 }

@@ -8,17 +8,15 @@ function fixtureServer() {
   server.registerTool(
     "read_thing",
     { description: "Reads a thing", inputSchema: { id: z.string() }, annotations: { readOnlyHint: true } },
-    async ({ id }) => ({ content: [{ type: "text", text: `thing ${id}` }] })
+    ({ id }) => ({ content: [{ type: "text", text: `thing ${id}` }] })
   )
-  server.registerTool(
-    "write_thing",
-    { description: "Writes a thing", inputSchema: { id: z.string() } },
-    async ({ id }) => ({ content: [{ type: "text", text: `wrote ${id}` }] })
-  )
+  server.registerTool("write_thing", { description: "Writes a thing", inputSchema: { id: z.string() } }, ({ id }) => ({
+    content: [{ type: "text", text: `wrote ${id}` }]
+  }))
   server.registerTool(
     "picture",
     { description: "Returns a picture", inputSchema: {}, annotations: { readOnlyHint: true } },
-    async () => ({
+    () => ({
       content: [
         { type: "text", text: "a picture" },
         { type: "image", data: Buffer.from("png").toString("base64"), mimeType: "image/png" }
@@ -28,7 +26,7 @@ function fixtureServer() {
   server.registerTool(
     "long_answer",
     { description: "Answers at length", inputSchema: {}, annotations: { readOnlyHint: true } },
-    async () => ({ content: [{ type: "text", text: "x".repeat(40_000) }] })
+    () => ({ content: [{ type: "text", text: "x".repeat(40_000) }] })
   )
   return server
 }

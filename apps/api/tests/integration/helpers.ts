@@ -63,16 +63,16 @@ export function fakeChatClient(
         stream: (params: { tools?: { function: { name: string } }[] }) => {
           onRequest?.(params)
           return {
-            async *[Symbol.asyncIterator]() {
+            // A plain iterable: `for await` takes those too
+            *[Symbol.iterator]() {
               yield { choices: [{ delta: { content: reply } }] }
             },
-            finalChatCompletion: async () => ({
-              choices: [{ message: { role: "assistant", content: reply } }]
-            })
+            finalChatCompletion: () =>
+              Promise.resolve({ choices: [{ message: { role: "assistant", content: reply } }] })
           }
         },
         // The summarizer, for /nasi/compact.
-        create: async () => ({ choices: [{ message: { content: "SUMMARY" } }] })
+        create: () => Promise.resolve({ choices: [{ message: { content: "SUMMARY" } }] })
       }
     }
   }

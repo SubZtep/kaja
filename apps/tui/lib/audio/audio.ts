@@ -115,7 +115,7 @@ export function createLocalSource({ inputFile }: LocalSourceOptions = {}): Audio
   let stopping = false
 
   // Surface ffmpeg errors (e.g. no mic found), but drop the muxer noise it emits when Ctrl+C signals it alongside us.
-  ;(async () => {
+  void (async () => {
     for await (const chunk of readStream(ffmpeg.stderr)) {
       if (stopping) continue
       const text = new TextDecoder().decode(chunk).trim()

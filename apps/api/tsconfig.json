@@ -4,6 +4,6 @@
     "jsx": "react-jsx",
     "types": ["bun"]
   },
-  "include": ["src/**/*", "migrate.ts"],
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*", "migrate.ts"],
   "exclude": ["node_modules", "dist"]
 }

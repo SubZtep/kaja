@@ -116,11 +116,11 @@ export class McpRelay {
   }
 
   /** Serves one HTTP request: an existing session's, or a new session's `initialize` (404 for a session this relay doesn't have). */
-  async handle(request: Request): Promise<Response> {
+  handle(request: Request): Promise<Response> {
     const sessionId = request.headers.get("mcp-session-id")
     if (sessionId) {
       const session = this.#sessions.get(sessionId)
-      if (!session) return Response.json({ error: "unknown session" }, { status: 404 })
+      if (!session) return Promise.resolve(Response.json({ error: "unknown session" }, { status: 404 }))
       return session.handleRequest(request)
     }
     return this.#openSession().handleRequest(request)

@@ -28,120 +28,148 @@ export function createMemoryStore(): NasiStore {
   const versions = new Map<string, { topic: string; owner: string | null; version: number; completedAt: string }>()
 
   return {
-    async createSession(data: SessionWrite & { title: string }) {
-      const now = new Date().toISOString()
-      const id = Bun.randomUUIDv7()
-      sessions.set(id, {
-        id,
-        createdAt: now,
-        updatedAt: now,
-        persona: data.persona,
-        model: data.model,
-        title: data.title,
-        owner: data.owner,
-        session: clone(data.session) as PersistedSession["session"],
-        events: clone(data.events) as PersistedSession["events"]
-      })
-      return id
-    },
-
-    async updateSession(id, data) {
-      const row = sessions.get(id)
-      if (!row) return
-      sessions.set(id, {
-        ...row,
-        updatedAt: new Date().toISOString(),
-        persona: data.persona,
-        model: data.model,
-        session: clone(data.session) as PersistedSession["session"],
-        events: clone(data.events) as PersistedSession["events"]
+    createSession(data: SessionWrite & { title: string }) {
+      return Promise.try(() => {
+        const now = new Date().toISOString()
+        const id = Bun.randomUUIDv7()
+        sessions.set(id, {
+          id,
+          createdAt: now,
+          updatedAt: now,
+          persona: data.persona,
+          model: data.model,
+          title: data.title,
+          owner: data.owner,
+          session: clone(data.session) as PersistedSession["session"],
+          events: clone(data.events) as PersistedSession["events"]
+        })
+        return id
       })
     },
 
-    async loadSession(id) {
-      const row = sessions.get(id)
-      return row ? parseSession(clone(row)) : undefined
+    updateSession(id, data) {
+      return Promise.try(() => {
+        const row = sessions.get(id)
+        if (!row) return
+        sessions.set(id, {
+          ...row,
+          updatedAt: new Date().toISOString(),
+          persona: data.persona,
+          model: data.model,
+          session: clone(data.session) as PersistedSession["session"],
+          events: clone(data.events) as PersistedSession["events"]
+        })
+      })
     },
 
-    async loadLatestSession(owner) {
-      const matches = [...sessions.values()].filter(s => (s.owner ?? null) === owner)
-      matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id))
-      const row = matches[0]
-      return row ? parseSession(clone(row)) : undefined
+    loadSession(id) {
+      return Promise.try(() => {
+        const row = sessions.get(id)
+        return row ? parseSession(clone(row)) : undefined
+      })
     },
 
-    async deleteSession(id) {
-      return sessions.delete(id)
+    loadLatestSession(owner) {
+      return Promise.try(() => {
+        const matches = [...sessions.values()].filter(s => (s.owner ?? null) === owner)
+        matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id))
+        const row = matches[0]
+        return row ? parseSession(clone(row)) : undefined
+      })
     },
 
-    async listSessions(): Promise<SessionMeta[]> {
-      return [...sessions.values()]
-        .map(({ session: _s, events: _e, ...meta }) => meta)
-        .toSorted((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id))
+    deleteSession(id) {
+      return Promise.try(() => {
+        return sessions.delete(id)
+      })
     },
 
-    async loadPromptHistory(limit = 100) {
-      const rows = [...sessions.values()].toSorted(
-        (a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id)
-      )
-      const prompts: string[] = []
-      for (const row of rows) {
-        for (let i = row.events.length - 1; i >= 0; i--) {
-          const event = row.events[i] as { type?: string; text?: unknown }
-          if (event?.type !== "user" || typeof event.text !== "string" || event.text.length === 0) continue
-          if (prompts.at(-1) === event.text) continue
-          prompts.push(event.text)
-          if (prompts.length >= limit) return prompts
+    listSessions(): Promise<SessionMeta[]> {
+      return Promise.try(() => {
+        return [...sessions.values()]
+          .map(({ session: _s, events: _e, ...meta }) => meta)
+          .toSorted((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id))
+      })
+    },
+
+    loadPromptHistory(limit = 100) {
+      return Promise.try(() => {
+        const rows = [...sessions.values()].toSorted(
+          (a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id)
+        )
+        const prompts: string[] = []
+        for (const row of rows) {
+          for (let i = row.events.length - 1; i >= 0; i--) {
+            const event = row.events[i] as { type?: string; text?: unknown }
+            if (event?.type !== "user" || typeof event.text !== "string" || event.text.length === 0) continue
+            if (prompts.at(-1) === event.text) continue
+            prompts.push(event.text)
+            if (prompts.length >= limit) return prompts
+          }
         }
-      }
-      return prompts
-    },
-
-    async loadMemory(owner) {
-      return clone(memoryByOwner.get(ownerKey(owner)) ?? {})
-    },
-
-    async saveMemory(owner, next) {
-      memoryByOwner.set(ownerKey(owner), clone(next))
-    },
-
-    async latestDatasetVersion(topic, owner) {
-      let max = 0
-      for (const row of answers.values()) {
-        if (row.topic === topic && (row.owner ?? null) === owner) max = Math.max(max, row.version)
-      }
-      for (const row of versions.values()) {
-        if (row.topic === topic && (row.owner ?? null) === owner) max = Math.max(max, row.version)
-      }
-      return max
-    },
-
-    async loadDatasetAnswers(topic, owner, version) {
-      return [...answers.values()]
-        .filter(row => row.topic === topic && (row.owner ?? null) === owner && row.version === version)
-        .map(({ field, value, answeredAt }) => ({ field, value, answeredAt }))
-        .toSorted((a, b) => a.answeredAt.localeCompare(b.answeredAt))
-    },
-
-    async saveDatasetAnswer(topic, owner, version, field, value) {
-      answers.set(datasetKey(topic, owner, version, field), {
-        topic,
-        owner,
-        version,
-        field,
-        value,
-        answeredAt: new Date().toISOString()
+        return prompts
       })
     },
 
-    async markDatasetVersionComplete(topic, owner, version) {
-      const key = datasetKey(topic, owner, version)
-      if (versions.has(key)) return
-      versions.set(key, { topic, owner, version, completedAt: new Date().toISOString() })
+    loadMemory(owner) {
+      return Promise.try(() => {
+        return clone(memoryByOwner.get(ownerKey(owner)) ?? {})
+      })
     },
 
-    async loadDatasetVersionCompletedAt(topic, owner, version) {
-      return versions.get(datasetKey(topic, owner, version))?.completedAt
+    saveMemory(owner, next) {
+      return Promise.try(() => {
+        memoryByOwner.set(ownerKey(owner), clone(next))
+      })
+    },
+
+    latestDatasetVersion(topic, owner) {
+      return Promise.try(() => {
+        let max = 0
+        for (const row of answers.values()) {
+          if (row.topic === topic && (row.owner ?? null) === owner) max = Math.max(max, row.version)
+        }
+        for (const row of versions.values()) {
+          if (row.topic === topic && (row.owner ?? null) === owner) max = Math.max(max, row.version)
+        }
+        return max
+      })
+    },
+
+    loadDatasetAnswers(topic, owner, version) {
+      return Promise.try(() => {
+        return [...answers.values()]
+          .filter(row => row.topic === topic && (row.owner ?? null) === owner && row.version === version)
+          .map(({ field, value, answeredAt }) => ({ field, value, answeredAt }))
+          .toSorted((a, b) => a.answeredAt.localeCompare(b.answeredAt))
+      })
+    },
+
+    saveDatasetAnswer(topic, owner, version, field, value) {
+      return Promise.try(() => {
+        answers.set(datasetKey(topic, owner, version, field), {
+          topic,
+          owner,
+          version,
+          field,
+          value,
+          answeredAt: new Date().toISOString()
+        })
+      })
+    },
+
+    markDatasetVersionComplete(topic, owner, version) {
+      return Promise.try(() => {
+        const key = datasetKey(topic, owner, version)
+        if (versions.has(key)) return
+        versions.set(key, { topic, owner, version, completedAt: new Date().toISOString() })
+      })
+    },
+
+    loadDatasetVersionCompletedAt(topic, owner, version) {
+      return Promise.try(() => {
+        return versions.get(datasetKey(topic, owner, version))?.completedAt
+      })
     }
   }
 }

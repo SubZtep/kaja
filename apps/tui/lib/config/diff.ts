@@ -7,13 +7,13 @@ import { t } from "../i18n"
 import { pathForBundleKey, pickBundleFiles } from "./cli"
 import { fetchRemoteConfigBundle } from "./remote-fetch"
 
-async function offlineBundle(): Promise<Record<string, string>> {
+function offlineBundle(): Record<string, string> {
   return { "models.toml": MODELS_TEMPLATE, "commands.toml": COMMANDS_TEMPLATE }
 }
 
 /** Reports what `kaja config fetch` would change: one line per bundle file (unchanged / new / would update), without writing anything. `offline` compares against the bundled templates instead of the server. */
 export async function diffConfig(offline: boolean): Promise<string[]> {
-  const bundle = offline ? await offlineBundle() : await remoteOrOfflineBundle()
+  const bundle = offline ? offlineBundle() : await remoteOrOfflineBundle()
   // secrets.toml is never in the remote bundle (no user secrets on the server) — fetch always
   // compares it against the bundled local template, so diff must too.
   const files: Record<string, string> = { ...bundle, "secrets.toml": SECRETS_TEMPLATE }

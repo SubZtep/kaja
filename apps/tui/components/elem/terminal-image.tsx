@@ -76,7 +76,7 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
     // A resize keeps the old picture up until the resized one is ready.
     if (renderedHref.current !== href) setResult(null)
     renderedHref.current = href
-    renderTerminalImage(href, { width: settled.columns, height: settled.rows }).then(next => {
+    void renderTerminalImage(href, { width: settled.columns, height: settled.rows }).then(next => {
       if (!cancelled) setResult(next)
     })
     return () => {

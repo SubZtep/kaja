@@ -4,17 +4,17 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
 let count = 0
 const server = new McpServer({ name: "counter", version: "1.0.0" })
-server.registerTool("count", { description: "Counts its calls" }, async () => ({
+server.registerTool("count", { description: "Counts its calls" }, () => ({
   content: [{ type: "text", text: String(++count) }]
 }))
-server.registerTool("whoami", { description: "The server's HOME and a leaked secret, if any" }, async () => ({
+server.registerTool("whoami", { description: "The server's HOME and a leaked secret, if any" }, () => ({
   content: [
     { type: "text", text: JSON.stringify({ home: process.env.HOME, secret: process.env.KAJA_SANDBOX_KEY ?? null }) }
   ]
 }))
 // A 1×1 PNG, like a screenshot the cloud has to hand back to its client.
 const PIXEL = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-server.registerTool("picture", { description: "Returns a tiny picture" }, async () => ({
+server.registerTool("picture", { description: "Returns a tiny picture" }, () => ({
   content: [
     { type: "text", text: "a picture" },
     { type: "image", data: PIXEL, mimeType: "image/png" }

@@ -43,9 +43,7 @@ function toClientExecutableStub(t: Tool<any>): Tool<any> {
   return {
     definition: t.definition,
     requiresClientExecution: true,
-    execute: async () => {
-      throw new Error(`${toolName(t)} should be intercepted by run(), not executed server-side`)
-    }
+    execute: () => Promise.reject(new Error(`${toolName(t)} should be intercepted by run(), not executed server-side`))
   }
 }
 

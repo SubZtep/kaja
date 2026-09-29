@@ -8,6 +8,11 @@ on:
       - main
   workflow_dispatch:
 
+# A newer push to a PR supersedes its running checks; main's runs always finish
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     permissions:
@@ -17,11 +22,87 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - name: Setup Biome Toolchain
-        uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
 
-      - name: Run linter and formatter
-        run: biome ci .
+      - name: Cache Bun packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      # Biome and Tombi ship their binaries as optional dependencies, so no install scripts are needed
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      # The same `bun lint` as locally: Biome, then Tombi's TOML format check and lint, from the locked install
+      - name: Run linters and format checks
+        run: bun run lint
+
+  typecheck:
+    needs: lint
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
+      - name: Cache Bun packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Generate Paraglide messages
+        run: bun run --filter @kaja/web generate:paraglide
+
+      - name: Run type checker
+        run: bun run typecheck
+
+  # The same builds the Dockerfiles run, so a broken bundle fails here rather than at deploy
+  build:
+    needs: lint
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
+      - name: Cache Bun packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Build API (with the widget) and its migrate script
+        run: |
+          bun run --filter @kaja/api build
+          bun build --minify --target bun --outfile apps/api/dist/migrate.js apps/api/migrate.ts
+
+      - name: Build sandbox
+        run: bun run --filter @kaja/sandbox build
+
+      - name: Build web
+        env:
+          NODE_ENV: production
+        run: bun run --filter @kaja/web build
 
   test:
     needs: lint
@@ -65,14 +146,18 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
 
+      - name: Cache Bun packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Generate Paraglide messages
         run: bun run --filter @kaja/web generate:paraglide
-
-      - name: Run type checker
-        run: bun run typecheck
 
       - name: Check .env.example files are up to date
         run: bun run check:env
@@ -80,15 +165,9 @@ jobs:
       - name: Check model example files are up to date
         run: bun run check:models
 
-      - name: Apply SQL migrations
-        run: |
-          printf '%s\n' apps/api/migrations/*.sql | LC_ALL=C sort | while read -r f; do
-            echo "applying $f"
-            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
-          done
-
-      - name: Seed default config
-        run: bun run seed:config
+      # What a deploy runs: every migration, then the default config seed. The tests build their own database.
+      - name: Migrate and seed like a deploy
+        run: bun apps/api/migrate.ts
 
       - name: Install secret-service backend
         run: sudo apt-get update && sudo apt-get install -y gnome-keyring dbus-x11
@@ -130,6 +209,13 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
+      - name: Cache Bun packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
