@@ -57,6 +57,20 @@ nasiRoutes.use("/compact", nasiTurnRateLimiter)
 
 const errorSchema = z.object({ error: z.string() })
 
+/** An `{ error }` JSON response for a route's `responses`. */
+const jsonError = (description: string) => ({ description, content: { "application/json": { schema: errorSchema } } })
+
+/** Everything a route that runs the model can answer besides success (see `knownTurnError`); `conflict` says when it answers 409. */
+const turnErrorResponses = (conflict: string) => ({
+  400: jsonError("Bad request"),
+  401: jsonError("Unauthorized"),
+  404: jsonError("Session not found"),
+  409: jsonError(conflict),
+  500: jsonError("The turn failed unexpectedly"),
+  502: jsonError("The model provider failed"),
+  503: jsonError("No model available")
+})
+
 const turnRoute = createRoute({
   method: "post",
   path: "/turn",
@@ -68,16 +82,7 @@ const turnRoute = createRoute({
   },
   responses: {
     200: { description: "Turn complete", content: { "application/json": { schema: NasiTurnResponseSchema } } },
-    400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
-    409: {
-      description: "`approval` sent, but no tool call is waiting for one",
-      content: { "application/json": { schema: errorSchema } }
-    },
-    502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
-    500: { description: "The turn failed unexpectedly", content: { "application/json": { schema: errorSchema } } },
-    503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
+    ...turnErrorResponses("`approval` sent, but no tool call is waiting for one")
   }
 })
 
@@ -185,16 +190,7 @@ const compactRoute = createRoute({
       description: "Compacted, or `compacted: null` when there was nothing to summarise yet",
       content: { "application/json": { schema: NasiCompactResponseSchema } }
     },
-    400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
-    409: {
-      description: "The session is in a state that can't be compacted",
-      content: { "application/json": { schema: errorSchema } }
-    },
-    502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
-    500: { description: "The turn failed unexpectedly", content: { "application/json": { schema: errorSchema } } },
-    503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
+    ...turnErrorResponses("The session is in a state that can't be compacted")
   }
 })
 
