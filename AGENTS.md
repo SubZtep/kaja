@@ -33,7 +33,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | API env examples | `apps/api/.env.example` |
 | Web env examples | `apps/web/.env.example` |
 | DB migrations | `apps/api/migrations/*.sql` |
-| Migration runner | `scripts/db_migration.sh` |
+| Migration runners | `apps/api/migrate.ts` (deploy and CI: every migration, then the config seed); `scripts/db_migration.sh` (local, against compose) |
 | `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
 | `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
 | Model defaults | `docs/config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `docs/config/models.*.toml` |
@@ -59,7 +59,7 @@ bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--
 bun lint
 bun lint:fix
 bun typecheck          # apps/* (with their tests/ and scripts/), packages/*, .claude/skills and root scripts/; incremental (gitignored .tsbuildinfo per tsconfig); fails on first error
-bun test               # API integration + CLI unit tests
+bun test               # every workspace's tests (API integration tests need Postgres + RustFS); run from the repo root
 ```
 
 ### Per-workspace
@@ -117,7 +117,7 @@ bun run --filter @kaja/sandbox build
 | Package | Role |
 |---------|------|
 | `@kaja/schema` | Zod API contracts + `KAJA_TUI_CLIENT_ID` (single source of truth for API types) |
-| `@kaja/shared` | Pure utils by subpath (`/date`, `/text`, `/ui`, `/net`, `/id`, `/locale`, `/sandbox`, `/telegram`) |
+| `@kaja/shared` | Pure utils by subpath (`/date`, `/text`, `/ui`, `/net`, `/id`, `/locale`, `/telegram`) |
 | `@kaja/nasi` | Agent loop, store interface, tools. CLI uses sqlite; API uses Postgres. |
 
 ### Type architecture
@@ -160,22 +160,22 @@ Applied **only on first Postgres init** via compose volume `apps/api/migrations`
 
 ## Notes
 
-- Git hooks already run `bun lint` and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
+- Git hooks already run `bun lint:fix:safe` (safe fixes only, staged) and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
 - CLI config templates import from monorepo-root `docs/config/` (not under `apps/tui/`).
 - model defaults: edit `docs/config/catalog.toml`, run `bun generate:models`, never edit `docs/config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`).
-- env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env`, never edit `.env.example` by hand — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
+- env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env`, never edit the api/web/sandbox `.env.example` by hand (tui's is hand-written) — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
 ## Testing & CI
 
 - `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
 - API integration tests need a running Postgres matching `DATABASE_URL`, but run against their own database: the preload (`apps/api/tests/test-database.ts`) points them at `<dev database>_test` (or `TEST_DATABASE_URL`) and rebuilds it from `apps/api/migrations` whenever those files change, so a running `bun dev` (its marketplace sync on every hot restart) can't race them
 - CLI has a large unit suite under `apps/tui/tests/`
-- CI (`.github/workflows/ci.yaml`): Biome lint/format + tests with PostgreSQL service
+- CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
 - Separate workflow builds the CLI
 
 ## Import Aliases
 
-- Packages: import by package name (`@kaja/schema`, etc.); each package exports from its root `index.ts`
+- Packages: import by package name; `@kaja/nasi` exports its root `index.ts` (and `./client`), while `@kaja/schema` and `@kaja/shared` only have subpaths (e.g. `@kaja/schema/api`)
 
 ## Key Dependencies
 

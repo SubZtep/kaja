@@ -75,7 +75,8 @@ piped = true
 
 
       [[pre-commit.jobs.group.jobs]]
-      run         = "bun lint:fix"
+      # Safe fixes only: an unsafe fix can change behaviour, so it waits for a manual `bun lint:fix` and a look at the diff
+      run         = "bun lint:fix:safe"
       stage_fixed = true
 
 
