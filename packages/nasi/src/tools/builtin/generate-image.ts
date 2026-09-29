@@ -5,6 +5,7 @@ import { write } from "bun"
 import OpenAI from "openai"
 import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
+import { fetchPublicHttp } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
 /**
@@ -36,7 +37,9 @@ export const generateImageTool = tool({
     const url = response.data?.[0]?.url
     if (!url) return "Image generation returned no image."
 
-    const res = await fetch(url)
+    // The URL is whatever the provider answered: capped and timed out like any fetch. Local mode only (the TUI configures
+    // this tool), where a provider on the user's own network is fine.
+    const res = await fetchPublicHttp(url, { allowPrivate: true, timeoutMs: 60_000, maxBytes: 20 * 1024 * 1024 })
     if (!res.ok) throw new ToolError("generate_image", `Failed to download generated image: ${res.status}`)
     const mimeType = res.headers.get("content-type") ?? "image/png"
     const ext = mimeType.split("/")[1] ?? "png"

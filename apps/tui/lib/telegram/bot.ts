@@ -15,6 +15,11 @@ import type { Persona } from "../personas/personas"
 import { createTelegramDriver, type InlineKeyboardLike } from "./driver"
 import { createPairing, generatePairingCode } from "./pairing"
 
+/** Runs a driver call without holding up grammy's update loop; anything it doesn't handle itself is logged, never left an unhandled rejection. */
+function inBackground(work: Promise<unknown>) {
+  work.catch(error => log.error("Telegram update handling crashed", { error }))
+}
+
 export type CreateTelegramBotConfig = {
   botToken: string
   /** Telegram user ids allowed to talk to the bot (secrets.toml `owner_ids`). */
@@ -93,7 +98,7 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
   bot.on("message:text", async ctx => {
     const verdict = pairing.check(ctx.from.id, ctx.message.text)
     if (verdict === "owner") {
-      void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text)
+      inBackground(driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text))
       return
     }
     if (verdict !== "paired") return
@@ -113,7 +118,7 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
       return
     }
     const dataUrl = await downloadTelegramImage(config.botToken, fileId => bot.api.getFile(fileId), image)
-    void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.caption ?? "", [dataUrl])
+    inBackground(driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.caption ?? "", [dataUrl]))
   })
 
   bot.on("callback_query:data", ctx => {
@@ -121,7 +126,9 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
     const chatId = ctx.callbackQuery.message?.chat.id
     const messageId = ctx.callbackQuery.message?.message_id
     if (chatId === undefined || messageId === undefined) return
-    void driver.handleCallbackQuery(ctx.from.id, chatId, messageId, ctx.callbackQuery.data, ctx.callbackQuery.id)
+    inBackground(
+      driver.handleCallbackQuery(ctx.from.id, chatId, messageId, ctx.callbackQuery.data, ctx.callbackQuery.id)
+    )
   })
 
   bot.catch(err => {

@@ -15,6 +15,11 @@ import { telegramLinkService } from "../../services"
 import { createCloudTelegramDriver, type TelegramButton } from "./driver"
 import { botLanguage } from "./language"
 
+/** Runs a driver call without holding up grammy's update loop; anything it doesn't handle itself (a lock or database error before its own try) is reported, never left an unhandled rejection. */
+function inBackground(what: string, work: Promise<unknown>) {
+  work.catch(error => reportError(what, error))
+}
+
 /** Callback data is capped at 64 bytes by the Bot API; "link:confirm:" (13) + a 24-char base64url token fits comfortably. */
 function linkCallbackData(action: "confirm" | "cancel", token: string): string {
   return `link:${action}:${token}`
@@ -120,12 +125,15 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     const message = ctx.callbackQuery.message
     if (/^(tool|ability|abilitypage):/.test(ctx.callbackQuery.data) && message) {
       await ctx.answerCallbackQuery()
-      void driver.handleCallback(
-        ctx.from.id,
-        message.chat.id,
-        message.message_id,
-        ctx.callbackQuery.data,
-        ctx.from.language_code
+      inBackground(
+        "Telegram button handling crashed",
+        driver.handleCallback(
+          ctx.from.id,
+          message.chat.id,
+          message.message_id,
+          ctx.callbackQuery.data,
+          ctx.from.language_code
+        )
       )
       return
     }
@@ -163,7 +171,10 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
   })
 
   bot.on("message:text", ctx => {
-    void driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text, ctx.from.language_code)
+    inBackground(
+      "Telegram message handling crashed",
+      driver.handleMessage(ctx.from.id, ctx.chat.id, ctx.message.text, ctx.from.language_code)
+    )
   })
 
   // A photo (or an image sent as a file) goes to the model with its caption as the text
@@ -174,7 +185,10 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
     // An unlinked sender only gets the "link your account" reply; their photo is never downloaded
     const linked = await telegramLinkService.resolveUser(ctx.from.id)
     if (!linked) {
-      void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code)
+      inBackground(
+        "Telegram message handling crashed",
+        driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code)
+      )
       return
     }
     const { t } = botLanguage(linked.locale, ctx.from.language_code)
@@ -190,7 +204,10 @@ export function createCloudTelegramBot(config: CreateCloudTelegramBotConfig) {
       await ctx.reply(t("telegram.photoFailed"))
       return
     }
-    void driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code, [dataUrl])
+    inBackground(
+      "Telegram message handling crashed",
+      driver.handleMessage(ctx.from.id, ctx.chat.id, caption, ctx.from.language_code, [dataUrl])
+    )
   })
 
   bot.catch(err => {

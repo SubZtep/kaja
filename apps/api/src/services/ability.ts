@@ -26,6 +26,7 @@ import { isPublicHttpUrl } from "@kaja/shared/net"
 import type { Pool } from "pg"
 // Built in, so the cloud has its default persona before the first sync brings the same file.
 import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml" with { type: "text" }
+import { reportError } from "../core/report"
 import type { SecretService } from "./secret"
 
 /** An enabled skill with its files, for the agent's Postgres AbilityStore. */
@@ -171,7 +172,10 @@ export class AbilityService {
     let instructions = ""
     try {
       instructions = parseSkillMd(row.files["SKILL.md"] ?? "", row.name).body
-    } catch {}
+    } catch (error) {
+      // The skill still loads, without instructions; the sync validates SKILL.md, so this means a row it didn't write
+      reportError("Stored SKILL.md doesn't parse", error, { skill: row.name })
+    }
     return {
       name: row.name,
       description: row.description,

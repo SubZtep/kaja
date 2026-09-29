@@ -1,5 +1,6 @@
 import { isIP } from "node:net"
 import { isPrivateAddress } from "@kaja/shared/net"
+import { z } from "zod"
 import { env } from "./env"
 import { reportError } from "./report"
 
@@ -15,11 +16,12 @@ export type GeoLocation = {
   longitude: number | null
 }
 
-type LookupAnswer = {
-  country?: { name?: string; isoCode?: string }
-  city?: { name?: string }
-  location?: { latitude?: number; longitude?: number }
-}
+// The parts of the service's answer we read; a part in another shape reads as unknown rather than failing the lookup.
+const LookupAnswerSchema = z.object({
+  country: z.object({ name: z.string().optional(), isoCode: z.string().optional() }).optional().catch(undefined),
+  city: z.object({ name: z.string().optional() }).optional().catch(undefined),
+  location: z.object({ latitude: z.number().optional(), longitude: z.number().optional() }).optional().catch(undefined)
+})
 
 let lookupOverride: ((ip: string) => Promise<GeoLocation | undefined>) | undefined
 
@@ -39,15 +41,15 @@ export async function lookupGeo(ip: string | undefined): Promise<GeoLocation | u
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS)
     })
     if (!res.ok) throw new Error(`the geolocation service answered ${res.status}`)
-    const raw = (await res.json()) as Record<string, unknown>
-    const answer = raw as LookupAnswer
+    const raw = z.record(z.string(), z.unknown()).parse(await res.json())
+    const answer = LookupAnswerSchema.parse(raw)
     return {
       raw,
       country: answer.country?.name ?? null,
       countryCode: answer.country?.isoCode ?? null,
       city: answer.city?.name ?? null,
-      latitude: typeof answer.location?.latitude === "number" ? answer.location.latitude : null,
-      longitude: typeof answer.location?.longitude === "number" ? answer.location.longitude : null
+      latitude: answer.location?.latitude ?? null,
+      longitude: answer.location?.longitude ?? null
     }
   } catch (error) {
     reportError("Couldn't look a sandbox's IP up", error)

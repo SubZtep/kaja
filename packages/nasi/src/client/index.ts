@@ -5,9 +5,14 @@ import {
   NasiCompactResponseSchema,
   type NasiInfoResponse,
   NasiInfoResponseSchema,
+  NasiStreamDoneSchema,
+  NasiStreamErrorSchema,
+  type NasiStreamEvent,
+  NasiStreamEventSchema,
   type NasiTurnRequest,
   NasiTurnRequestSchema,
   type NasiTurnResponse,
+  NasiTurnResponseSchema,
   type NasiTurnStatus
 } from "@kaja/schema/nasi"
 
@@ -17,28 +22,11 @@ export type NasiClientOptions = {
 }
 
 /**
- * One live event from `POST /nasi/turn/stream`, matching the server's SSE
- * event names. `delta` carries streaming tokens; the rest mirror the shapes
- * in `NasiStep` plus `usage`. Terminal events (`done`, `error`) are not
- * included here — `turn_stream`'s async generator return value / thrown
- * error carries those instead, so a `for await` consumer never has to
+ * One live event from `POST /nasi/turn/stream` (`NasiStreamEventSchema`). Terminal events (`done`, `error`) are not
+ * included: `turn_stream`'s return value and thrown error carry those, so a `for await` consumer never has to
  * special-case them mid-stream.
  */
-export type NasiStreamEvent =
-  | { type: "delta"; channel: "reasoning" | "content"; text: string }
-  | { type: "reasoning"; text: string }
-  | { type: "message"; content: string }
-  | { type: "tool_call"; name: string; arguments: string }
-  | { type: "client_tool_call"; name: string; arguments: string }
-  | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
-  | { type: "ask_user"; question: string; note?: string }
-  | { type: "persona_switch"; personaId: string; label: string }
-  | { type: "compacted"; beforeTokens: number; afterTokens: number; dropped: boolean }
-  | { type: "condensed"; tool: string; beforeTokens: number; afterTokens: number }
-  | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
-  | { type: "final"; content: string | null }
-  /** An image a tool returned (a screenshot, say), as a data URL. */
-  | { type: "tool_image"; mimeType: string; url: string }
+export type { NasiStreamEvent }
 
 export class NasiStreamError extends Error {
   /** The server's error category (e.g. "tool", "network"), when it sent one — absent for connection-level failures (bad response, dropped stream) that never reached the server's own error handling. */
@@ -47,6 +35,14 @@ export class NasiStreamError extends Error {
   constructor(message: string, category?: string) {
     super(message)
     this.category = category
+  }
+}
+
+function parseJson(data: string): unknown {
+  try {
+    return JSON.parse(data)
+  } catch {
+    return undefined
   }
 }
 
@@ -139,7 +135,7 @@ export function createNasiClient(opts: NasiClientOptions) {
         const text = await res.text()
         throw new Error(`Nasi turn failed: ${res.status} ${text}`)
       }
-      return res.json()
+      return NasiTurnResponseSchema.parse(await res.json())
     },
 
     /**
@@ -166,13 +162,20 @@ export function createNasiClient(opts: NasiClientOptions) {
       for await (const { event, data } of parseSseStream(res.body)) {
         if (event === "heartbeat") continue
         if (event === "error") {
-          const parsedError = JSON.parse(data) as { error: string; category?: string }
-          throw new NasiStreamError(parsedError.error, parsedError.category)
+          const failure = NasiStreamErrorSchema.safeParse(parseJson(data))
+          throw new NasiStreamError(
+            failure.success ? failure.data.error : `Nasi turn failed: ${data}`,
+            failure.data?.category
+          )
         }
         if (event === "done") {
-          return JSON.parse(data) as { session: string; status: NasiTurnStatus }
+          const done = NasiStreamDoneSchema.safeParse(parseJson(data))
+          if (!done.success) throw new NasiStreamError(`Nasi turn stream ended with a malformed done event: ${data}`)
+          return done.data
         }
-        yield JSON.parse(data) as NasiStreamEvent
+        // An event this client doesn't know (a newer server's) is skipped rather than guessed at
+        const streamed = NasiStreamEventSchema.safeParse(parseJson(data))
+        if (streamed.success) yield streamed.data
       }
       throw new NasiStreamError("Nasi turn stream ended without a done event")
     }

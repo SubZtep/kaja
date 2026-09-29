@@ -21,6 +21,7 @@ export class CronService {
     // Hourly marketplace sync; cheap when the branch hasn't moved (one GitHub call, no download).
     this.#jobs.push(
       Bun.cron("0 * * * *", async () => {
+        // sync() reports and records its own failure before rethrowing
         await marketplaceService.sync().catch(() => {})
       }),
       Bun.cron("30 * * * *", async () => {
