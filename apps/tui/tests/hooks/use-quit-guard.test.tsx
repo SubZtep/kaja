@@ -16,12 +16,12 @@ test("Esc while busy arms the quit instead of exiting, and a second Esc exits", 
   await t.tick()
   expect(t.lastFrame()).toContain("armed")
   await t.press("\x1b")
-  await t.waitUntilExit()
+  expect(await t.waitUntilExit().then(() => true)).toBe(true)
 })
 
 test("Esc while idle exits at once", async () => {
   const t = renderForTest(<Probe busy={false} />)
   await t.tick()
   await t.press("\x1b")
-  await t.waitUntilExit()
+  expect(await t.waitUntilExit().then(() => true)).toBe(true)
 })

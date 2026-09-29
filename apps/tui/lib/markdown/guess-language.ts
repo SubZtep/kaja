@@ -4,7 +4,7 @@ export function guessLanguage(code: string): string | undefined {
   if (!text) return undefined
   if (
     /^#!.*\b(ba|z)?sh\b/.test(text) ||
-    /^\$ /.test(text) ||
+    text.startsWith("$ ") ||
     /^(cat|cd|ls|echo|curl|git|bun|npm|sudo|mkdir) /m.test(text)
   )
     return "bash"

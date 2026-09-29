@@ -44,13 +44,13 @@ export function isDangerousCommand(command: string): boolean {
 
 /** Regex sources for commands that run without asking; each must match the whole command. The built-in list, also `docs/config/commands.toml`'s `safe`. */
 export const DEFAULT_SAFE_COMMANDS: readonly string[] = [
-  "ls(\\s+-[a-zA-Z]+)*(\\s+[\\w./~-]+)*",
-  "(cat|head|tail)(\\s+-[a-zA-Z0-9]+)*(\\s+[\\w./~-]+)+",
+  String.raw`ls(\s+-[a-zA-Z]+)*(\s+[\w./~-]+)*`,
+  String.raw`(cat|head|tail)(\s+-[a-zA-Z0-9]+)*(\s+[\w./~-]+)+`,
   "pwd",
   "whoami",
   "date",
-  "uname(\\s+-[a-zA-Z]+)*",
-  "git (status|diff|log)(?!.*--output)(\\s+[\\w./=:@^~-]+)*"
+  String.raw`uname(\s+-[a-zA-Z]+)*`,
+  String.raw`git (status|diff|log)(?!.*--output)(\s+[\w./=:@^~-]+)*`
 ]
 
 /** Compiles regex sources into whole-command matchers; a source that isn't a valid regex is returned in `invalid` instead of throwing. */

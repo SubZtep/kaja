@@ -15,4 +15,4 @@ export function isAllowed(patterns: readonly string[] | undefined, key: string |
   )
 }
 
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)

@@ -56,6 +56,13 @@ export type CloudTimelineEvent =
 /** How the user answered a `confirm_tool`: once, for the rest of the session, always (saved to their allow list), or no. */
 export type CloudApproval = "approve" | "approve_session" | "approve_always" | "decline"
 
+function approvalAnswer(approved: boolean, scope?: "session" | "always"): CloudApproval {
+  if (!approved) return "decline"
+  if (scope === "session") return "approve_session"
+  if (scope === "always") return "approve_always"
+  return "approve"
+}
+
 export type CloudPartialMessage = { reasoning: string; content: string }
 
 const DELTA_INTERVAL_MS = 80
@@ -239,16 +246,7 @@ export function useCloudAgent(options: NasiClientOptions) {
 
   /** Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent back. */
   const resolveToolApproval = useCallback(
-    (approved: boolean, scope?: "session" | "always") =>
-      runTurns({
-        approval: !approved
-          ? "decline"
-          : scope === "session"
-            ? "approve_session"
-            : scope === "always"
-              ? "approve_always"
-              : "approve"
-      }),
+    (approved: boolean, scope?: "session" | "always") => runTurns({ approval: approvalAnswer(approved, scope) }),
     [runTurns]
   )
 

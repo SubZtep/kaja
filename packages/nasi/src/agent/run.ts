@@ -331,8 +331,7 @@ async function* handleToolCalls(
   toolsByName: Map<string, Tool<any>>,
   toolCalls: ChatCompletionMessageToolCall[],
   granted: readonly string[] | undefined,
-  record: RecordCall,
-  onModelCall: (usage: ModelCallUsage) => void
+  { record, onModelCall }: { record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
 ): AsyncGenerator<
   AgentEvent,
   {
@@ -370,10 +369,7 @@ async function* handleToolCalls(
       continue
     }
 
-    const tool = toolsByName.get(call.function.name)
-    // A tool the user allowed (always, or for this session) never pauses for approval
-    const allowed = tool && (isAllowed(agent.allowedTools, allowKey(tool)) || isAllowed(granted, allowKey(tool)))
-    const summary = allowed ? undefined : approvalSummaryFor(tool, call)
+    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call, [agent.allowedTools, granted])
     if (summary !== undefined) {
       approval = holdApproval(messages, record, approval, {
         id: call.id,
@@ -412,9 +408,14 @@ function holdApproval(
   return held
 }
 
-/** The approval summary when `tool` wants the human to confirm this call first, else undefined. */
-function approvalSummaryFor(tool: Tool<any> | undefined, call: FunctionToolCall): string | undefined {
+/** The approval summary when `tool` wants the human to confirm this call first, else undefined. A tool the user allowed (always, or for this session: `allowLists`) never asks. */
+function approvalSummaryFor(
+  tool: Tool<any> | undefined,
+  call: FunctionToolCall,
+  allowLists: (readonly string[] | undefined)[]
+): string | undefined {
   if (!tool?.approval) return undefined
+  if (allowLists.some(list => isAllowed(list, allowKey(tool)))) return undefined
   const args = parseToolArgs(call.function.arguments)
   return args === null ? undefined : tool.approval(args)
 }
@@ -688,8 +689,10 @@ export async function* run(
       toolsByName,
       message.tool_calls,
       session.grantedTools,
-      (callId, stat) => recordCall(session, callId, stat),
-      usage => recordModelCall(session, { kind: "summarize", ...usage })
+      {
+        record: (callId, stat) => recordCall(session, callId, stat),
+        onModelCall: usage => recordModelCall(session, { kind: "summarize", ...usage })
+      }
     )
 
     failingToolRounds = countFailingRounds(session, message.tool_calls, failingToolRounds)

@@ -425,6 +425,15 @@ function renderStatic(display: string, placeholder: string, firstLead: string) {
   )
 }
 
+/** The wrap width, visible-line cap and continuation indent the props ask for; a missing or non-positive width or cap means none. */
+function layoutOf(columns: number | undefined, maxVisibleLines: number | undefined, prefixCols: number) {
+  return {
+    contLead: " ".repeat(Math.max(0, prefixCols)),
+    wrapWidth: columns && columns > 0 ? columns : undefined,
+    maxVis: maxVisibleLines && maxVisibleLines > 0 ? maxVisibleLines : undefined
+  }
+}
+
 export function TextInput({
   value: originalValue,
   placeholder = "",
@@ -451,10 +460,8 @@ export function TextInput({
   const [windowStart, setWindowStart] = useState(0)
   const { isRawModeSupported } = useStdin()
   const { cursorOffset, cursorWidth, preferredColumn } = state
-  const hang = Math.max(0, prefixCols)
   const firstLead = prefix
-  const contLead = hang > 0 ? " ".repeat(hang) : ""
-  const wrapWidth = columns && columns > 0 ? columns : undefined
+  const { contLead, wrapWidth, maxVis } = layoutOf(columns, maxVisibleLines, prefixCols)
   const canFocus = focus && isRawModeSupported
 
   useEffect(() => {
@@ -519,7 +526,6 @@ export function TextInput({
 
   const display = mask ? mask.repeat(originalValue.length) : originalValue
   const pasteWidth = highlightPastedText ? cursorWidth : 0
-  const maxVis = maxVisibleLines && maxVisibleLines > 0 ? maxVisibleLines : undefined
 
   const lines = useMemo(
     () => (wrapWidth && maxVis ? softWrapLines(display, wrapWidth) : null),

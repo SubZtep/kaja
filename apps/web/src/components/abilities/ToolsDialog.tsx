@@ -8,7 +8,7 @@ import { useSetAllowedTools, useSetDisabledTools } from "./queries"
 import { abilitySourceUrl } from "./source"
 import type { ToolEntry } from "./ToolCard"
 
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
 
 /**
  * Everything an HTTP tool or MCP server ability can call: each tool's name, what it does, its method and
