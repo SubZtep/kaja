@@ -42,22 +42,28 @@ jobs:
               - 'packages/shared/**'
             schema:
               - 'packages/schema/**'
+            sandbox:
+              - 'apps/sandbox/**'
+            nasi:
+              - 'packages/nasi/**'
 
       - name: Setup Git
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.changes != '[]'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump, commit, tag, and push once
         id: bump
-        if: steps.filter.outputs.api == 'true' || steps.filter.outputs.tui == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.schema == 'true'
+        if: steps.filter.outputs.changes != '[]'
         env:
           FILTER_API: ${{ steps.filter.outputs.api }}
           FILTER_TUI: ${{ steps.filter.outputs.tui }}
           FILTER_WEB: ${{ steps.filter.outputs.web }}
           FILTER_SHARED: ${{ steps.filter.outputs.shared }}
           FILTER_SCHEMA: ${{ steps.filter.outputs.schema }}
+          FILTER_SANDBOX: ${{ steps.filter.outputs.sandbox }}
+          FILTER_NASI: ${{ steps.filter.outputs.nasi }}
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
@@ -81,11 +87,13 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
+          # Conventional Commits, read per line: a `type!:` header or a BREAKING CHANGE footer is major, a `feat:`
+          # header is minor, anything else is a patch. (A bare substring match took any "!" or "feature" in a body.)
           bump_type() {
             local msgs="$1"
-            if [[ "$msgs" == *"BREAKING CHANGE"* || "$msgs" == *"!"* ]]; then
+            if grep -qE '^[a-z]+(\([^)]*\))?!:|^BREAKING[ -]CHANGE:' <<< "$msgs"; then
               echo "major"
-            elif [[ "$msgs" == *"feat"* ]]; then
+            elif grep -qE '^feat(\([^)]*\))?:' <<< "$msgs"; then
               echo "minor"
             else
               echo "patch"
@@ -147,6 +155,12 @@ jobs:
           fi
           if [[ "$FILTER_SCHEMA" == "true" ]]; then
             bump_workspace "schema" "packages/schema"
+          fi
+          if [[ "$FILTER_SANDBOX" == "true" ]]; then
+            bump_workspace "sandbox" "apps/sandbox"
+          fi
+          if [[ "$FILTER_NASI" == "true" ]]; then
+            bump_workspace "nasi" "packages/nasi"
           fi
 
           if [[ ${#SUMMARY_PARTS[@]} -eq 0 ]]; then
