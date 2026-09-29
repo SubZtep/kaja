@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS nasi_tool_call (
 );
 
 CREATE INDEX IF NOT EXISTS nasi_tool_call_name_idx ON nasi_tool_call (name);
+-- Backs result_message_id's ON DELETE SET NULL: without it, deleting a session scans every tool call once per message
+CREATE INDEX IF NOT EXISTS nasi_tool_call_result_message_idx ON nasi_tool_call (result_message_id);
 
 -- One row per compaction: the model is sent the latest summary in place of the messages before summary_from.
 CREATE TABLE IF NOT EXISTS nasi_session_summary (

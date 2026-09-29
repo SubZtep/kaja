@@ -8,6 +8,7 @@ import { z } from "zod"
 import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { files, toolImagePrefix } from "../../core/files"
+import { isRateLimitEnabled } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
@@ -96,6 +97,13 @@ if (env.TURNSTILE_SECRET && !env.BUN_TEST) {
 
 export const auth = betterAuth({
   trustedOrigins: [env.CORS_ORIGIN],
+  // Top level, where Better Auth reads it (it sat under `advanced`, ignored). On in dev too, not only in production;
+  // off under bun test and with RATE_LIMIT_ENABLED=false, like the API's own limiters.
+  rateLimit: {
+    enabled: isRateLimitEnabled(),
+    window: 60, // time window in seconds
+    max: 100 // max requests in the window
+  },
   advanced: {
     cookiePrefix: "kaja",
     database: {
@@ -104,11 +112,6 @@ export const auth = betterAuth({
     },
     ipAddress: {
       ipv6Subnet: 56
-    },
-    rateLimit: {
-      enabled: true, // enable in dev mode too
-      window: 60, // time window in seconds
-      max: 100 // max requests in the window
     },
     ...(env.CROSS_PARENT_DOMAIN
       ? {

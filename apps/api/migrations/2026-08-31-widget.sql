@@ -12,4 +12,3 @@ CREATE TABLE IF NOT EXISTS "widget" (
 );
 
 CREATE INDEX IF NOT EXISTS "widget_user_id_idx" ON "widget" ("user_id");
-CREATE INDEX IF NOT EXISTS "widget_key_hash_idx" ON "widget" ("key_hash");
