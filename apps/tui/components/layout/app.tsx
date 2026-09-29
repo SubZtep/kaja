@@ -5,7 +5,7 @@ import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
 import notifier from "node-notifier"
 import open from "open"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
@@ -19,7 +19,7 @@ import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel, compactAt, summarizer } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
-import { CodeExpandContext } from "../elem/code-expand"
+import { CodeViewContext } from "../elem/code-expand"
 import { themes } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { ConfirmCommand } from "./confirm-command"
@@ -152,6 +152,7 @@ function Chrome({
   const {
     thinking,
     toolDisplay,
+    codePreviewLines,
     sounds,
     voice,
     hotkeyModifier,
@@ -163,6 +164,10 @@ function Chrome({
   const { columns, rows } = useWindowSize()
   const [pickingPersona, setPickingPersona] = useState(false)
   const [codeExpanded, setCodeExpanded] = useState(false)
+  const codeView = useMemo(
+    () => ({ expanded: codeExpanded, lines: codePreviewLines }),
+    [codeExpanded, codePreviewLines]
+  )
 
   useModifierKeys(hotkeyModifier, {
     // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
@@ -188,7 +193,7 @@ function Chrome({
 
   return (
     <ThemeProvider theme={themes[theme]}>
-      <CodeExpandContext.Provider value={codeExpanded}>
+      <CodeViewContext.Provider value={codeView}>
         <Box flexDirection="column" width={columns} height={rows}>
           <Header
             mode={mode}
@@ -245,7 +250,7 @@ function Chrome({
           )}
           <KeyBar items={keyBarItems} />
         </Box>
-      </CodeExpandContext.Provider>
+      </CodeViewContext.Provider>
     </ThemeProvider>
   )
 }

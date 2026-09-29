@@ -4,6 +4,8 @@ thinking = false
 # one-line summary per turn; "verbose" lists every call; "corner" shows the current call
 # in the header's top-right corner and nothing in the chat.
 # toolDisplay = "minimal"
+# Lines of a code block, or of a command awaiting approval, shown before "… N more lines".
+# codePreviewLines = 5
 sounds   = true
 voice    = false
 locale   = "en-GB"

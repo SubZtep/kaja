@@ -1,7 +1,8 @@
 import { createContext } from "react"
 
-/** Whether long code blocks (in answers and the run confirm) show every line instead of a capped preview; toggled by the expand hotkey. */
-export const CodeExpandContext = createContext(false)
+/** How code shows: `expanded` prints every line, otherwise `lines` of it (`preferences.codePreviewLines`). Toggled by the expand hotkey. */
+export type CodeView = { expanded: boolean; lines: number }
 
-/** Lines of a code block shown before it is capped. */
-export const CODE_PREVIEW_LINES = 15
+export const DEFAULT_CODE_LINES = 5
+
+export const CodeViewContext = createContext<CodeView>({ expanded: false, lines: DEFAULT_CODE_LINES })

@@ -87,7 +87,7 @@ Prompt history spans all past sessions, newest first.
 | `<modifier>+P` | Open the persona picker |
 | `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`) |
 | `<modifier>+D` | Switch between dark and light, and save it |
-| `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show 15 lines otherwise) |
+| `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
 [`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS Terminal.app

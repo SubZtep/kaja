@@ -1,23 +1,8 @@
-import chalk from "chalk"
-import { highlight } from "cli-highlight"
-import { Box, Text, useWindowSize } from "ink"
-import { useContext } from "react"
+import { Box, Text } from "ink"
 import { isDangerousCommand } from "../../lib/agent/command-risk"
 import { t } from "../../lib/i18n"
-import { CODE_PREVIEW_LINES, CodeExpandContext } from "../elem/code-expand"
-import { codeTheme } from "../elem/markdown"
 import { SelectMenu } from "../elem/select-menu"
-import { type Palette, useKajaTheme, usePalette } from "../theme"
-
-/** The command in shell colours; plain when colour is off or the highlighter can't take it. */
-function highlightShell(command: string, palette: Palette): string | undefined {
-  if (chalk.level === 0) return undefined
-  try {
-    return highlight(command, { language: "bash", theme: codeTheme(palette) })
-  } catch {
-    return undefined
-  }
-}
+import { useKajaTheme } from "../theme"
 
 /**
  * Yes/No gate shown in place of the input field while a run_command call, or
@@ -27,9 +12,8 @@ function highlightShell(command: string, palette: Palette): string | undefined {
  * replaced by a status line: the command can take a while and Menu would
  * otherwise sit there fully interactive with no sign anything happened.
  *
- * The command preview is capped at CODE_PREVIEW_LINES (all of it, up to the screen, once expanded): a generated multi-line
- * script (e.g. a Python heredoc) can otherwise grow tall enough to push the
- * Menu below the terminal's visible rows, leaving it unreachable.
+ * It doesn't repeat the command: that is the last row of the chat (a capped, highlighted preview, see CodePreview),
+ * so a long generated script can't push the menu below the terminal's visible rows.
  */
 export function ConfirmCommand({
   command,
@@ -38,7 +22,7 @@ export function ConfirmCommand({
   running,
   onResolve
 }: Readonly<{
-  /** The shell command, or for `kind: "tool"` the request summary (method, URL, body preview). */
+  /** The shell command, or for `kind: "tool"` the request summary; only used to judge the risk, the chat shows it. */
   command: string
   description: string
   kind?: "command" | "tool"
@@ -48,25 +32,10 @@ export function ConfirmCommand({
   const dangerous = kind === "command" && isDangerousCommand(command)
   const { danger, warning } = useKajaTheme()
   const tone = dangerous ? danger() : warning()
-  const palette = usePalette()
-  const expanded = useContext(CodeExpandContext)
-  const { rows } = useWindowSize()
-  const lines = command.split("\n")
-  // Expanded still leaves room for the chrome around it, so the menu stays on screen
-  const room = Math.max(3, rows - 12)
-  const shown = expanded ? room : Math.min(CODE_PREVIEW_LINES, room)
-  const preview = lines.slice(0, shown).join("\n")
-  const hiddenLines = lines.length - shown
-  const code = kind === "command" ? highlightShell(preview, palette) : undefined
 
   return (
     <Box flexDirection="column" flexShrink={0} width="100%">
       <Text {...tone}>{dangerous ? `⚠ ${description}` : description}</Text>
-      <Box>
-        <Text {...tone}>{kind === "tool" ? "→ " : "$ "}</Text>
-        {code ? <Text>{code}</Text> : <Text {...tone}>{preview}</Text>}
-      </Box>
-      {hiddenLines > 0 && <Text dimColor>{t("confirmCommand.truncated", { count: hiddenLines })}</Text>}
       {running ? (
         <Text dimColor>{t("confirmCommand.running")}</Text>
       ) : (

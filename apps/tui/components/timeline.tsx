@@ -6,6 +6,7 @@ import type { ErrorCategory } from "../lib/agent/error-category"
 import { describeToolCall } from "../lib/agent/tool-labels"
 import { t } from "../lib/i18n"
 import type { DisplayEvent } from "../lib/tool-summary"
+import { CodePreview } from "./elem/code-preview"
 import Markdown from "./elem/markdown"
 import { ReasoningBox } from "./elem/reasoning-box"
 import { TerminalImage } from "./elem/terminal-image"
@@ -102,9 +103,9 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
         </Box>
       )
     case "confirm_command":
-      return <Text {...theme.warning()}>{`$ ${item.command}`}</Text>
+      return <CodePreview command={item.command} tone={theme.warning()} />
     case "confirm_tool":
-      return <Text {...theme.warning()}>{`→ ${item.summary}`}</Text>
+      return <CodePreview command={item.summary} kind="tool" tone={theme.warning()} />
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
     case "compacted":

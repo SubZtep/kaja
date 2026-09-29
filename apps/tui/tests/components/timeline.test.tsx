@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { CodeViewContext } from "../../components/elem/code-expand"
 import { TimelineItem } from "../../components/timeline"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { renderForTest } from "../test-utils"
@@ -98,6 +99,25 @@ test("tool calls render as a labelled row, and a summary as one line", async () 
   await t.tick()
   expect(t.output()).toContain("a.txt")
   expect(t.output()).toContain("read_file, fetch_url")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("an approval command is cut to the preview lines, and all of it shows once expanded", async () => {
+  const command = Array.from({ length: 12 }, (_, i) => `echo line${i}`).join("\n")
+  const item = { type: "confirm_command", command, description: "run" } as const
+  const t = renderForTest(<TimelineItem item={item} thinking={false} />)
+  await t.tick()
+  expect(t.output()).toContain("line4")
+  expect(t.output()).not.toContain("line5")
+  expect(t.output()).toContain("7 more")
+  t.rerender(
+    <CodeViewContext.Provider value={{ expanded: true, lines: 5 }}>
+      <TimelineItem item={item} thinking={false} />
+    </CodeViewContext.Provider>
+  )
+  await t.tick()
+  expect(t.lastFrame()).toContain("line11")
   t.unmount()
   await t.waitUntilExit()
 })

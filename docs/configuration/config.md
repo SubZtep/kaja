@@ -16,6 +16,7 @@ mode = "local"
 locale = "en-GB"
 thinking = false
 # toolDisplay = "minimal"
+# codePreviewLines = 5
 sounds = true
 voice = false
 # hotkeyModifier = "alt"
@@ -48,6 +49,7 @@ voice = false
 | `locale` | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
 | `toolDisplay` | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show |
+| `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |
 | `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |

@@ -9,6 +9,7 @@ export function usePreferences(initial?: KajaPreferences) {
   return {
     thinking: initial?.thinking ?? false,
     toolDisplay: initial?.toolDisplay ?? "minimal",
+    codePreviewLines: initial?.codePreviewLines ?? 5,
     sounds: initial?.sounds ?? true,
     // Spoken replies are opt-in: they need the speaches TTS server running.
     voice: initial?.voice ?? false,
