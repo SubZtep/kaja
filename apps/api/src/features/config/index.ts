@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto"
+import { timingSafeEqual } from "node:crypto"
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { createMiddleware } from "hono/factory"
 import { env } from "../../core/env"
@@ -20,9 +20,10 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
  */
 export function isValidConfigToken(authHeader: string | undefined | null, token: string | undefined | null): boolean {
   if (!token) return false
-  // Compared as digests, so the time taken says nothing about how much of the token a guess got right
-  const digest = (value: string) => createHash("sha256").update(value).digest()
-  return timingSafeEqual(digest(authHeader ?? ""), digest(`Bearer ${token}`))
+  // Constant time, so how long it takes says nothing about how much of the token a guess got right (only its length)
+  const sent = Buffer.from(authHeader ?? "")
+  const expected = Buffer.from(`Bearer ${token}`)
+  return sent.length === expected.length && timingSafeEqual(sent, expected)
 }
 
 const configTokenAuth = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
