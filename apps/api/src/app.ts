@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { sentry } from "@sentry/hono/bun"
 import { cors } from "hono/cors"
+import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { abilityRoutes } from "./features/abilities"
@@ -34,11 +35,12 @@ if (env.NODE_ENV === "production") {
 // there. /widget/admin/* is the authenticated management API and must go through the normal
 // credentialed CORS below, so it's deliberately excluded from this exemption.
 const PUBLIC_WIDGET_PATH = /^\/widget\/(turn|[A-Za-z0-9_-]+\.js)$/
-app.use("*", async (c, next) => {
+app.use("*", (c, next) => {
   if (PUBLIC_WIDGET_PATH.test(c.req.path)) return next()
   return cors({ origin: env.CORS_ORIGIN, credentials: true })(c, next)
 })
 app.use("*", globalRateLimiter)
+app.use("*", csrfProtection)
 app.use("*", authMiddleware)
 
 // Mount routes
