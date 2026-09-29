@@ -64,7 +64,7 @@ export function EditModelDialog({
     >
       <Dialog.Trigger render={children} />
       <Dialog.Portal>
-        <DialogShell className="w-[36rem]">
+        <DialogShell className="w-xl">
           <Dialog.Title className={DIALOG_TITLE}>{m.models_edit_model_title()}</Dialog.Title>
           <Dialog.Description className="mb-6 break-all font-mono text-muted text-sm">{model.model}</Dialog.Description>
 
