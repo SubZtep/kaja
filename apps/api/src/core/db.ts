@@ -6,11 +6,10 @@ export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 2_000,
-  maxLifetimeSeconds: 60,
+  maxLifetimeSeconds: 30 * 60,
   allowExitOnIdle: true,
-  onConnect: async client => {
-    await client.query("SET TIME ZONE 'UTC'")
-  }
+  // Set at connection startup, no extra round trip: UTC timestamps, and no query may hold a connection past 15 s
+  options: "-c TimeZone=UTC -c statement_timeout=15000"
 })
 
 pool.on("error", err => {

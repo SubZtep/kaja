@@ -36,7 +36,7 @@ src/
     config/              # /config — resolve model (CONFIG_API_TOKEN)
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
     abilities/            # /abilities — public catalog (skills, HTTP tools, MCP); /abilities/me — the user's abilities and write-only keys
-    health/              # /health
+    health/              # /health (liveness), /health/ready (database + storage probe; the Docker HEALTHCHECK)
     reference/           # /reference (dev OpenAPI UI)
   services/              # shared domain logic (mcp-server, model, ability, marketplace sync, …)
   emails/                # React Email templates

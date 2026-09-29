@@ -28,4 +28,7 @@ COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/public ./public
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/api/migrations ./migrations
 
 EXPOSE 3001
+# Unhealthy only when the database is unreachable (see /health/ready); the slim image has no curl, so Bun asks
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["bun", "-e", "const r = await fetch(`http://localhost:${process.env.PORT || 3001}/health/ready`); process.exit(r.ok ? 0 : 1)"]
 CMD ["bun", "run", "server.js"]

@@ -60,7 +60,9 @@ const apiEnvFields = z.object({
 
   CONFIG_API_TOKEN: trimmed
     .optional()
-    .describe("Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes")
+    .describe(
+      "Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes (generate with: openssl rand -hex 32)"
+    )
     .meta({ example: "kaja", devDefault: true, section: "Config API" }),
 
   BUN_TEST: trimmed

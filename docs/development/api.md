@@ -33,6 +33,7 @@ That's the authoritative, always-current list. This page is the map.
 | `/config/models` | shared secret | model resolution for tooling |
 | `/config/export` | none | the model defaults and safe-commands list that `kaja config fetch` downloads |
 | `/health` | none | liveness |
+| `/health/ready` | none | readiness: probes the database (503 without it) and object storage (`degraded` without it); the image's `HEALTHCHECK` |
 | `/reference` | none | OpenAPI UI, development builds only |
 
 ## Cloud agent: `/nasi`
