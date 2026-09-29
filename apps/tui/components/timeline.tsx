@@ -2,9 +2,11 @@ import { isAbsolute } from "node:path"
 import { StatusMessage, type StatusMessageProps } from "@inkjs/ui"
 import { Box, Text } from "ink"
 import { memo } from "react"
-import type { TimelineEvent } from "../hooks/use-agent"
 import type { ErrorCategory } from "../lib/agent/error-category"
+import { describeToolCall } from "../lib/agent/tool-labels"
 import { t } from "../lib/i18n"
+import type { DisplayEvent } from "../lib/tool-summary"
+import { CodePreview } from "./elem/code-preview"
 import Markdown from "./elem/markdown"
 import { ReasoningBox } from "./elem/reasoning-box"
 import { TerminalImage } from "./elem/terminal-image"
@@ -24,7 +26,7 @@ const ERROR_VARIANT: Record<ErrorCategory, StatusMessageProps["variant"]> = {
  * streaming flushes (which re-render the whole ScrollView subtree) bail
  * out here instead of re-rendering every history item.
  */
-export const TimelineItem = memo(function TimelineItem({ item, thinking }: { item: TimelineEvent; thinking: boolean }) {
+export const TimelineItem = memo(function TimelineItem({ item, thinking }: { item: DisplayEvent; thinking: boolean }) {
   const theme = useKajaTheme()
   const content = renderItem(item, thinking, theme)
   if (content === null) return null
@@ -36,10 +38,48 @@ export const TimelineItem = memo(function TimelineItem({ item, thinking }: { ite
   )
 })
 
-function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<typeof useKajaTheme>) {
+// Only the left edge is drawn, as a thin bar
+const USER_BAR = {
+  topLeft: "",
+  top: "",
+  topRight: "",
+  left: "▎",
+  bottomLeft: "",
+  bottom: "",
+  bottomRight: "",
+  right: ""
+}
+
+const SUMMARY_NAMES = 3
+
+// The first few distinct tool names, then an ellipsis
+function summaryNames(names: string[]) {
+  return names.length > SUMMARY_NAMES ? `${names.slice(0, SUMMARY_NAMES).join(", ")}, …` : names.join(", ")
+}
+
+function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typeof useKajaTheme>) {
   switch (item.type) {
     case "user":
-      return <Text {...theme.userText()}>{`> ${item.text}`}</Text>
+      return (
+        <Box
+          {...theme.userBox()}
+          borderStyle={USER_BAR}
+          borderTop={false}
+          borderBottom={false}
+          borderRight={false}
+          paddingX={1}
+          width="100%"
+        >
+          <Text {...theme.userText()}>{item.text}</Text>
+        </Box>
+      )
+    case "tool_call":
+    case "client_tool_call":
+      return <Text dimColor>{`⚙ ${describeToolCall(item.name, item.arguments)}`}</Text>
+    case "tool_summary":
+      return (
+        <Text dimColor>{`⚙ ${t("timeline.toolsUsed", { count: item.count, names: summaryNames(item.names) })}`}</Text>
+      )
     case "reasoning":
       if (!thinking) return null
       return <ReasoningBox>{item.text}</ReasoningBox>
@@ -63,9 +103,9 @@ function renderItem(item: TimelineEvent, thinking: boolean, theme: ReturnType<ty
         </Box>
       )
     case "confirm_command":
-      return <Text {...theme.warning()}>{`$ ${item.command}`}</Text>
+      return <CodePreview command={item.command} tone={theme.warning()} />
     case "confirm_tool":
-      return <Text {...theme.warning()}>{`→ ${item.summary}`}</Text>
+      return <CodePreview command={item.summary} kind="tool" tone={theme.warning()} />
     case "persona_switch":
       return <Text dimColor>{t("timeline.personaSwitch", { label: item.label })}</Text>
     case "compacted":

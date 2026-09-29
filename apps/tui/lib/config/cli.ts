@@ -5,6 +5,7 @@ import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
 import { fetchModelsToml, getModelsPath } from "../models/models"
 import { listPaths } from "../paths"
+import { fetchCommandsToml } from "./commands"
 import { getConfigDir } from "./config"
 import { writeTemplateConfig } from "./fetch"
 import { fetchRemoteConfigBundle } from "./remote-fetch"
@@ -12,7 +13,7 @@ import { fetchSecretsToml } from "./secrets"
 
 type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean; kept?: boolean }
 
-const BUNDLE_FILES = new Set(["models.toml"])
+const BUNDLE_FILES = new Set(["models.toml", "commands.toml"])
 
 /** The server bundle's files that `fetch` writes; personas and MCP servers, like the rest of the marketplace, come from `kaja abilities update`. */
 export function pickBundleFiles(files: Record<string, string>): Record<string, string> {
@@ -35,6 +36,7 @@ function matchesOnly(key: string, only: string | undefined): boolean {
   if (!only) return true
   if (only === "models") return key === "models.toml"
   if (only === "secrets") return key === "secrets.toml"
+  if (only === "commands") return key === "commands.toml"
   return true
 }
 
@@ -42,6 +44,7 @@ async function runFetchOffline(only?: string): Promise<FetchResult[]> {
   const results: FetchResult[] = []
   if (matchesOnly("models.toml", only)) results.push(await fetchModelsToml())
   if (matchesOnly("secrets.toml", only)) results.push(await fetchSecretsToml())
+  if (matchesOnly("commands.toml", only)) results.push(await fetchCommandsToml())
   return results
 }
 
@@ -51,7 +54,11 @@ async function runFetchOnline(only: string | undefined): Promise<FetchResult[] |
   if ("unchanged" in bundle) return undefined
 
   const entries = Object.entries(pickBundleFiles(bundle.files)).filter(([key]) => matchesOnly(key, only))
-  return Promise.all(entries.map(([key, text]) => writeTemplateConfig(text, pathForBundleKey(key))))
+  return Promise.all(
+    entries.map(([key, text]) =>
+      key === "commands.toml" ? fetchCommandsToml(text) : writeTemplateConfig(text, pathForBundleKey(key))
+    )
+  )
 }
 
 async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number; text: string }> {

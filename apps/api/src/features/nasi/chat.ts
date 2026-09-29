@@ -149,10 +149,14 @@ export async function openNasiFor(opts: {
   const source = opts.abilities ?? { userId: opts.userId }
   const personas = await personasFor(source)
   // Only the user's own turns get their keys; a widget's skills-only source never needs one.
-  const [keys, sandboxSettings] =
+  const [keys, sandboxSettings, allowedTools] =
     "userId" in source
-      ? await Promise.all([abilityService.keysForUser(source.userId), sandboxService.settings(source.userId)])
-      : [new Map<string, string>(), undefined]
+      ? await Promise.all([
+          abilityService.keysForUser(source.userId),
+          sandboxService.settings(source.userId),
+          abilityService.allowedToolsForUser(source.userId)
+        ])
+      : [new Map<string, string>(), undefined, []]
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
@@ -163,6 +167,9 @@ export async function openNasiFor(opts: {
     deps: nasiToolDeps(),
     abilities: createPostgresAbilityStore(source),
     abilityKey: name => keys.get(name),
+    allowedTools,
+    // "Always allow" at an approval prompt saves the tool to the user's own list; a widget has no user to save it for
+    onAlwaysAllow: "userId" in source ? key => abilityService.allowTool(source.userId, key) : undefined,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
     mcpSandbox: "userId" in source ? (sandboxOverride ?? mcpSandboxFor)(source.userId) : undefined,
     promptContext: {

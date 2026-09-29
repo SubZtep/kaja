@@ -11,7 +11,7 @@ export async function runTelegramSubcommand() {
 
   await requireConfiguredProvider()
 
-  const { models, personas, tools, closeTools } = await bootstrapLocalAgentDeps()
+  const { models, personas, tools, closeTools, safeCommands } = await bootstrapLocalAgentDeps()
 
   const { args } = await import("../lib/cli/args")
   const telegram = (await secrets()).telegram
@@ -21,6 +21,7 @@ export async function runTelegramSubcommand() {
     ownerIds: telegram?.owner_ids ?? [],
     pair: Boolean(args.flags.pair),
     tools,
+    safeCommands,
     personas,
     models,
     closeTools

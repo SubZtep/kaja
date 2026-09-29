@@ -19,7 +19,7 @@ describe("config export", () => {
     const body = await res.json()
     expect(body.files["models.toml"]).toContain("provider")
     // Personas and MCP servers are marketplace abilities; `kaja abilities update` brings them, not the export.
-    expect(Object.keys(body.files)).toEqual(["models.toml"])
+    expect(Object.keys(body.files)).toEqual(["models.toml", "commands.toml"])
   })
 
   test("never emits provider api_key", async () => {

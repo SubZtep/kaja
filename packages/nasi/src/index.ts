@@ -65,7 +65,12 @@ export {
   SWITCH_PERSONA_TOOL,
   switchPersonaTool
 } from "./agent/agent"
-export { isDangerousCommand } from "./agent/command-risk"
+export {
+  compileSafeCommands,
+  DEFAULT_SAFE_COMMANDS,
+  isDangerousCommand,
+  isSafeCommand
+} from "./agent/command-risk"
 export {
   type Compaction,
   chooseCut,
@@ -77,6 +82,7 @@ export {
 } from "./agent/compaction"
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { samplingOf } from "./agent/persona"
+export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"
 export { compact, dropImages, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export {
@@ -86,6 +92,7 @@ export {
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "./agent/system-prompt"
 export { recordPausedCall } from "./agent/telemetry"
+export { allowKey, isAllowed } from "./agent/tool-allow"
 export {
   LOCAL_OWNER_CTX,
   runApprovedTool,

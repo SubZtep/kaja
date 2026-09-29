@@ -23,6 +23,14 @@ include = [
 
 
 [[schemas]]
+path    = "docs/config/schemas/commands.json"
+include = [
+  "docs/config/commands.toml",
+  "**/.config/kaja/commands.toml"
+]
+
+
+[[schemas]]
 path    = "docs/config/schemas/catalog.json"
 include = [
   "docs/config/catalog.toml"

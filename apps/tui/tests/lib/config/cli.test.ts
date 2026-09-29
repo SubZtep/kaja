@@ -207,3 +207,13 @@ test("fetch still writes a missing models.toml when the cached ETag would get a 
     restore()
   }
 })
+
+test("diff treats commands.toml as unchanged when only the user's custom patterns differ", async () => {
+  await runConfigCli(["fetch", "--offline"], { offline: true })
+  const path = join(getConfigDir(), "commands.toml")
+  await Bun.write(path, `${await Bun.file(path).text()}\ncustom = ["npm test"]\n`)
+  const { text } = await runConfigCli(["diff"], { offline: true })
+  expect(text).toContain(path)
+  const line = text.split("\n").find(row => row.includes("commands.toml"))!
+  expect(line).not.toMatch(/would update|update/i)
+})

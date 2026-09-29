@@ -7,6 +7,7 @@ import {
   listUserAbilitiesResponseSchema,
   saveAbilityKeyRequestSchema,
   saveAbilityKeyResponseSchema,
+  setAllowedToolsRequestSchema,
   setDisabledToolsRequestSchema,
   skillDetailSchema
 } from "@kaja/schema/api"
@@ -188,6 +189,44 @@ abilityRoutes.openapi(disabledToolsRoute, async c => {
   if (!user) return unauthorized(c)
   const { type, name } = c.req.valid("param")
   const result = await abilityService.setDisabledTools(user.id, type, name, c.req.valid("json").disabled)
+  if (result === "not_found") return notFound(c, "Ability not found")
+  if (result === "unknown_tool") return badRequest(c, "unknown_tool")
+  if (result === "not_enabled") return conflict(c, "not_enabled")
+  return c.json({ ok: true }, 200)
+})
+
+const allowedToolsRoute = createRoute({
+  method: "put",
+  path: "/me/{type}/{name}/allowed-tools",
+  tags: ["Abilities"],
+  summary: "Choose which of an enabled HTTP tool's or MCP server's tools never ask for approval",
+  description:
+    'Replaces the list (tool names, or globs with `*`); an empty one makes every call ask again. The list also grows when the user answers "always allow" at an approval prompt, and is cleared when the ability is turned off and on again.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: keyParams,
+    body: { content: { "application/json": { schema: setAllowedToolsRequestSchema } }, required: true }
+  },
+  responses: {
+    200: { description: "Saved", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
+    400: {
+      description: "`unknown_tool`: a name the ability doesn't offer",
+      content: { "application/json": { schema: errorSchema } }
+    },
+    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
+    404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } },
+    409: {
+      description: "`not_enabled`: turn the ability on first",
+      content: { "application/json": { schema: errorSchema } }
+    }
+  }
+})
+
+abilityRoutes.openapi(allowedToolsRoute, async c => {
+  const user = c.get("user")
+  if (!user) return unauthorized(c)
+  const { type, name } = c.req.valid("param")
+  const result = await abilityService.setAllowedTools(user.id, type, name, c.req.valid("json").allowed)
   if (result === "not_found") return notFound(c, "Ability not found")
   if (result === "unknown_tool") return badRequest(c, "unknown_tool")
   if (result === "not_enabled") return conflict(c, "not_enabled")

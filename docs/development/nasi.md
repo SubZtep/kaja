@@ -152,7 +152,7 @@ flowchart TD
 
     Calls -->|yes| Dispatch{"which tool?"}
     Dispatch -->|"ask_user"| AskEv["yield ask_user<br>set pendingAskUserId"] --> Wait(["return — wait for host"])
-    Dispatch -->|"run_command"| Risk{"mutates:false and<br>read-only allowlist?"}
+    Dispatch -->|"run_command"| Risk{"matches a safe pattern,<br>no metacharacters,<br>not dangerous?"}
     Risk -->|yes| AutoRun["run immediately<br>result → messages"] --> Fit
     Risk -->|no| ConfirmEv["yield confirm_command<br>set pendingRunCommandId"] --> Wait
     Dispatch -->|"switch_persona"| Switch["applyPersona()<br>rewrite system message<br>maybe swap model"] --> Fit
@@ -210,7 +210,7 @@ Over HTTP the same loop is buffered into one response:
 | --- | --- |
 | `completed` | the turn finished, and `message` is the reply |
 | `needs_input` | `ask_user` is pending: send the answer as the next `message` |
-| `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval: "approve"` or `"decline"` next. The server runs the call it saved, never one the client describes. A plain `message` instead skips it |
+| `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval` next: `"approve"`, `"approve_session"` (also stops asking about that tool for the rest of the session), `"approve_always"` (also adds it to the user's allow list) or `"decline"`. The server runs the call it saved, never one the client describes. A plain `message` instead skips it |
 | `needs_client_tool` | the model asked for `read_file` or `list_files`, which only the client can run on its own disk: the client runs it and sends the output as the next `message` |
 | `error` | the turn failed |
 

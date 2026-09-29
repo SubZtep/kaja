@@ -19,6 +19,7 @@
 import chalk from "chalk"
 import { highlight as highlightCli } from "cli-highlight"
 import supportsHyperlinks from "supports-hyperlinks"
+import { guessLanguage } from "./guess-language"
 import { renderTable } from "./table"
 
 const COLON_REPLACER = "*#COLON|*"
@@ -103,7 +104,13 @@ function fixHardReturn(text: string, reflow: boolean) {
     _escaped = !!code.escaped
     code = code.text
   }
-  return section(indentify(this.tab, highlight(code, lang, this.o, this.highlightOptions)))
+  const max = this.o.codeLines?.() ?? Number.POSITIVE_INFINITY
+  const lines = code.split("\n")
+  this.o.codeSeen?.(lines.length)
+  const hidden = lines.length - max
+  if (hidden > 0) code = lines.slice(0, max).join("\n")
+  const body = indentify(this.tab, highlight(code, lang, this.o, this.highlightOptions))
+  return section(hidden > 0 ? `${body}\n${indentify(this.tab, chalk.dim(this.o.codeMore(hidden)))}` : body)
 }
 
 ;(Renderer.prototype as any).blockquote = function (this: any, quote: any) {
@@ -553,6 +560,7 @@ function highlight(code: string, language: string, opts: any, hightlightOpts: an
   code = fixHardReturn(code, opts.reflowText)
 
   // No language: cli-highlight would guess one, which costs ~17ms a block and is often wrong
+  language ||= guessLanguage(code) ?? ""
   if (!language) return style(code)
 
   try {

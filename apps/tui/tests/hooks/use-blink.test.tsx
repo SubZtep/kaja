@@ -20,3 +20,22 @@ test("starts visible, then hides (not frozen visible) once inactive", async () =
   t.unmount()
   await t.waitUntilExit()
 })
+
+function KeyHarness({ k }: { k: string }) {
+  const on = useBlink(400, true, k)
+  return <Text>{on ? "on" : "off"}</Text>
+}
+
+test("a changed reset key shows the cursor again and restarts the cycle", async () => {
+  const t = renderForTest(<KeyHarness k="a" />)
+  // Wait for the first blink to hide it.
+  for (let i = 0; i < 40 && !t.lastFrame().includes("off"); i++) await Bun.sleep(50)
+  expect(t.lastFrame()).toContain("off")
+
+  t.rerender(<KeyHarness k="b" />)
+  await Bun.sleep(150)
+  expect(t.lastFrame()).toContain("on")
+
+  t.unmount()
+  await t.waitUntilExit()
+})

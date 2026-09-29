@@ -283,6 +283,60 @@ describe("HTTP tools in the cloud", () => {
     )
   })
 
+  test("'approve for this session' stops asking about that tool in the session, and only there", async () => {
+    useScript([
+      { content: null, tool_calls: [createIssueCall("call_s1")] },
+      { content: null, tool_calls: [createIssueCall("call_s2")] },
+      { content: "Filed twice." },
+      { content: null, tool_calls: [createIssueCall("call_s3")] }
+    ])
+    requests.length = 0
+    const paused = await (await turn({ message: "file two bugs" })).json()
+    expect(paused.status).toBe("needs_approval")
+    const done = await (await turn({ session: paused.session, approval: "approve_session" })).json()
+    // The second call ran without asking
+    expect(done).toMatchObject({ status: "completed", message: "Filed twice." })
+    expect(requests.filter(request => request.method === "POST")).toHaveLength(2)
+    // A different session asks again
+    expect((await (await turn({ message: "another bug" })).json()).status).toBe("needs_approval")
+  })
+
+  test("'always allow' saves the tool to the user's list, so later sessions run it without asking until it is removed", async () => {
+    const setAllowed = (allowed: string[]) =>
+      app.request(`/abilities/me/tool/${issues}/allowed-tools`, {
+        method: "PUT",
+        headers: auth(),
+        body: JSON.stringify({ allowed })
+      })
+    const allowedOf = async () =>
+      (await mine()).abilities.find((ability: { name: string }) => ability.name === issues).allowedTools
+    expect((await setAllowed(["no_such_tool"])).status).toBe(400)
+    expect((await setAllowed([])).status).toBe(200)
+
+    useScript([{ content: null, tool_calls: [createIssueCall("call_al1")] }, { content: "Filed." }])
+    const paused = await (await turn({ message: "file a bug" })).json()
+    expect((await (await turn({ session: paused.session, approval: "approve_always" })).json()).status).toBe(
+      "completed"
+    )
+    expect(await allowedOf()).toEqual([createIssueTool])
+
+    requests.length = 0
+    useScript([{ content: null, tool_calls: [createIssueCall("call_al2")] }, { content: "Filed again." }])
+    expect(await (await turn({ message: "file another" })).json()).toMatchObject({
+      status: "completed",
+      message: "Filed again."
+    })
+    expect(requests.filter(request => request.method === "POST")).toHaveLength(1)
+
+    expect((await setAllowed([])).status).toBe(200)
+    useScript([{ content: null, tool_calls: [createIssueCall("call_al3")] }, { content: "Filed." }])
+    expect((await (await turn({ message: "and once more" })).json()).status).toBe("needs_approval")
+    // A glob covers the tool by its name too
+    expect((await setAllowed(["create_*"])).status).toBe(200)
+    expect(await allowedOf()).toEqual(["create_*"])
+    expect((await setAllowed([])).status).toBe(200)
+  })
+
   test("the stream forwards confirm_tool, and declining never calls the tool", async () => {
     const sent = useScript([{ content: null, tool_calls: [createIssueCall("call_b")] }, { content: "Not filed." }])
     requests.length = 0
@@ -331,7 +385,9 @@ describe("HTTP tools in the cloud", () => {
     expect(prompt.text).toContain(createIssueTool)
     expect(prompt.buttons!.flat().map(button => button.data)).toEqual([
       expect.stringMatching(/^tool:approve:[0-9a-f]{16}$/),
-      expect.stringMatching(/^tool:decline:[0-9a-f]{16}$/)
+      expect.stringMatching(/^tool:decline:[0-9a-f]{16}$/),
+      expect.stringMatching(/^tool:approve_session:[0-9a-f]{16}$/),
+      expect.stringMatching(/^tool:approve_always:[0-9a-f]{16}$/)
     ])
     const approve = prompt.buttons![0]![0]!.data
 

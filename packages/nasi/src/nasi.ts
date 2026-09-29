@@ -12,7 +12,8 @@ import type { Compaction } from "./agent/compaction"
 import { samplingOf } from "./agent/persona"
 import { compact, run } from "./agent/run"
 import { recordPausedCall } from "./agent/telemetry"
-import { runApprovedTool, type Tool } from "./agent/tools"
+import { allowKey } from "./agent/tool-allow"
+import { runApprovedTool, type Tool, toolName } from "./agent/tools"
 import { createGuardedFetch, type FetchLike } from "./security/ssrf"
 import type { NasiStore } from "./store/types"
 import type { NasiToolDeps } from "./tools/deps"
@@ -41,6 +42,10 @@ export type NasiOpenOptions = {
   mcpConnectTimeoutMs?: number
   /** Cloud: the MCP sandbox that runs stdio abilities; without it they're left out. */
   mcpSandbox?: McpSandbox
+  /** The caller's "always allow" patterns (see `agent/tool-allow.ts`): tools that never pause for approval. */
+  allowedTools?: string[]
+  /** Saves an `approve_always` answer, by the tool's allow key. */
+  onAlwaysAllow?: (key: string) => Promise<void>
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
@@ -150,7 +155,7 @@ async function persistTurn(
   const persistedEvents = [
     ...loaded.events,
     input.approval
-      ? { type: "tool_approval", approved: input.approval === "approve" }
+      ? { type: "tool_approval", approved: input.approval !== "decline" }
       : { type: "user", text: userText(input) },
     ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
   ]
@@ -279,7 +284,8 @@ export class Nasi {
       promptContext: this.opts.promptContext ?? {},
       store: this.opts.store,
       contextWindow: this.opts.chat.contextWindow,
-      summarizer: this.opts.summarizer
+      summarizer: this.opts.summarizer,
+      allowedTools: this.opts.allowedTools
     })
 
     return { agent, session, sessionId, events, title }
@@ -303,6 +309,7 @@ export class Nasi {
       }
       const call = pendingToolCall(session, pendingId)
       if (!call) return "Error: the call waiting for approval is gone."
+      if (input.approval !== "approve") await this.grant(session, call.function.name, input.approval)
       const startedAt = performance.now()
       let status: "ok" | "error" = "ok"
       const result = await runApprovedTool(this.tools, call.function.name, call.function.arguments, s => {
@@ -314,6 +321,15 @@ export class Nasi {
     const message = input.message ?? ""
     if (pendingId) recordPausedCall(session, "tool_approval", "skipped")
     return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
+  }
+
+  /** An `approve_session` or `approve_always` answer: the tool stops asking for this session, and `approve_always` also goes to the caller's allow list. */
+  private async grant(session: Session, toolNameApproved: string, approval: "approve_session" | "approve_always") {
+    const tool = this.tools.find(candidate => toolName(candidate) === toolNameApproved)
+    const key = tool && allowKey(tool)
+    if (!key) return
+    session.grantedTools = [...new Set([...(session.grantedTools ?? []), key])]
+    if (approval === "approve_always") await this.opts.onAlwaysAllow?.(key)
   }
 
   async turnBuffered(input: NasiTurnInput): Promise<NasiTurnResponse> {

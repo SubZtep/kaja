@@ -13,6 +13,7 @@
 import chalk from "chalk"
 import { Box, type Key, Text, useInput, useStdin } from "ink"
 import { useEffect, useMemo, useState } from "react"
+import { useBlink } from "../../hooks/use-blink"
 import { isIgnoredTerminalInput } from "../../lib/terminal-input"
 import {
   clampWindowStart,
@@ -39,6 +40,13 @@ export type TextInputProps = {
    * Defaults to `showCursor` so callers that don't blink see no change.
    */
   cursorVisible?: boolean
+  /**
+   * Blink the cursor internally at this interval (ms), so only this component re-renders per phase.
+   * It stays solid while the text or cursor moves. Overrides {@link cursorVisible}.
+   */
+  blinkMs?: number
+  /** With {@link blinkMs}: hide the cursor and stop the timer (e.g. window unfocused). */
+  blinkPaused?: boolean
   mask?: string
   highlightPastedText?: boolean
   columns?: number
@@ -417,6 +425,15 @@ function renderStatic(display: string, placeholder: string, firstLead: string) {
   )
 }
 
+/** The wrap width, visible-line cap and continuation indent the props ask for; a missing or non-positive width or cap means none. */
+function layoutOf(columns: number | undefined, maxVisibleLines: number | undefined, prefixCols: number) {
+  return {
+    contLead: " ".repeat(Math.max(0, prefixCols)),
+    wrapWidth: columns && columns > 0 ? columns : undefined,
+    maxVis: maxVisibleLines && maxVisibleLines > 0 ? maxVisibleLines : undefined
+  }
+}
+
 export function TextInput({
   value: originalValue,
   placeholder = "",
@@ -424,7 +441,9 @@ export function TextInput({
   mask,
   highlightPastedText = false,
   showCursor = true,
-  cursorVisible = showCursor,
+  cursorVisible: cursorVisibleProp = showCursor,
+  blinkMs,
+  blinkPaused = false,
   onChange,
   onSubmit,
   onHistory,
@@ -441,10 +460,8 @@ export function TextInput({
   const [windowStart, setWindowStart] = useState(0)
   const { isRawModeSupported } = useStdin()
   const { cursorOffset, cursorWidth, preferredColumn } = state
-  const hang = Math.max(0, prefixCols)
   const firstLead = prefix
-  const contLead = hang > 0 ? " ".repeat(hang) : ""
-  const wrapWidth = columns && columns > 0 ? columns : undefined
+  const { contLead, wrapWidth, maxVis } = layoutOf(columns, maxVisibleLines, prefixCols)
   const canFocus = focus && isRawModeSupported
 
   useEffect(() => {
@@ -509,7 +526,6 @@ export function TextInput({
 
   const display = mask ? mask.repeat(originalValue.length) : originalValue
   const pasteWidth = highlightPastedText ? cursorWidth : 0
-  const maxVis = maxVisibleLines && maxVisibleLines > 0 ? maxVisibleLines : undefined
 
   const lines = useMemo(
     () => (wrapWidth && maxVis ? softWrapLines(display, wrapWidth) : null),
@@ -523,6 +539,12 @@ export function TextInput({
   }, [lines, cursorOffset, maxVis])
 
   const cursorActive = showCursor && canFocus
+  const blinkOn = useBlink(
+    blinkMs ?? 500,
+    blinkMs !== undefined && cursorActive && !blinkPaused,
+    `${cursorOffset}:${display}`
+  )
+  const cursorVisible = blinkMs === undefined ? cursorVisibleProp : blinkOn
 
   let body: React.ReactNode
   if (lines && maxVis) {

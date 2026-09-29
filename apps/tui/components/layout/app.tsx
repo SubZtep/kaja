@@ -8,8 +8,10 @@ import open from "open"
 import { useState } from "react"
 import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
+import { useCodeView } from "../../hooks/use-code-view"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
+import { useQuitGuard } from "../../hooks/use-quit-guard"
 import { useSound } from "../../hooks/use-sound"
 import { useTheme } from "../../hooks/use-theme"
 import { useVoice } from "../../hooks/use-voice"
@@ -18,11 +20,13 @@ import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel, compactAt, summarizer } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
+import { uiEvents } from "../../lib/ui-events"
+import { CodeViewContext } from "../elem/code-expand"
 import { themes } from "../theme"
 import { ChatViewport } from "./chat-viewport"
-import { ConfirmCommand } from "./confirm-command"
+import { type ApprovalScope, ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
-import { KeyBar } from "./key-bar"
+import { KeyBar, type KeyBarEntry } from "./key-bar"
 import { PersonaPicker } from "./persona-picker"
 import { UserInput } from "./user-input"
 
@@ -44,16 +48,25 @@ function getBottomChromeKey(
   return runningCommand ? "running" : "confirm"
 }
 
-// Esc means something different depending on what's showing — quit while typing, but just dismiss the
-// picker/confirm prompt over it. While a command is actually running there's nothing bound to Esc (no entry).
-function escKeyBarItem(bottomChromeKey: BottomChromeKey): { key: string; label: string } | undefined {
+/** Whether Esc quits here (typing, or a command running) rather than dismissing a prompt. */
+const isQuittable = (key: BottomChromeKey) => key === "input" || key === "running"
+
+// Esc means something different depending on what's showing — quit while typing or while a command runs, but just dismiss the
+// picker/confirm prompt over it.
+function escKeyBarItem(
+  bottomChromeKey: BottomChromeKey,
+  quitArmed: boolean,
+  pressQuit: () => void
+): KeyBarEntry | undefined {
+  const quit = quitArmed ? t("keybar.quitAgain") : t("keybar.quit")
   const labels: Partial<Record<BottomChromeKey, string>> = {
     persona: t("keybar.cancel"),
     confirm: t("keybar.decline"),
-    input: t("keybar.quit")
+    input: quit,
+    running: quit
   }
   const label = labels[bottomChromeKey]
-  return label ? { key: "Esc", label } : undefined
+  return label ? { key: "Esc", label, onPress: isQuittable(bottomChromeKey) ? pressQuit : undefined } : undefined
 }
 
 /** What the confirm prompt shows for a paused call: the shell command, or the tool's request summary. */
@@ -67,14 +80,19 @@ function confirmPrompt(
   return { command: event.summary, description: t("confirmCommand.toolRequest", { name: event.name }), kind: "tool" }
 }
 
-function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolean, bottomChromeKey: BottomChromeKey) {
+/** One hotkey and its key bar entry: shown, bound and clickable only while `when` holds, so the three can't disagree. */
+type KeyBinding = { letter: string; label: string; run: () => void; when: boolean }
+
+function buildKeyBarItems(hotkeyModifier: string | undefined, bindings: KeyBinding[], escItem?: KeyBarEntry) {
   const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
-  const escItem = escKeyBarItem(bottomChromeKey)
   return [
-    { key: `${modifierLabel}+L`, label: t("keybar.help") },
-    ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
-    { key: `${modifierLabel}+R`, label: t("keybar.copy") },
-    { key: `${modifierLabel}+D`, label: t("keybar.theme") },
+    ...bindings
+      .filter(binding => binding.when)
+      .map(binding => ({
+        key: `${modifierLabel}+${binding.letter.toUpperCase()}`,
+        label: binding.label,
+        onPress: binding.run
+      })),
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -88,6 +106,7 @@ function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolea
  * running.
  */
 function Chrome({
+  mode,
   personaLabel,
   model,
   provider,
@@ -107,8 +126,11 @@ function Chrome({
   switchPersona,
   pendingCommand,
   runningCommand = false,
-  resolvePending
+  resolvePending,
+  approvalScopes = false
 }: Readonly<{
+  /** Where the agent runs, shown as a badge in the header. */
+  mode: "local" | "cloud"
   personaLabel: string
   model: string
   /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". Local only — cloud never exposes the resolved provider. */
@@ -131,87 +153,123 @@ function Chrome({
   /** A run_command or an HTTP tool call waiting on approval; `command` is the shell command or the request summary. */
   pendingCommand?: { command: string; description: string; kind: "command" | "tool" }
   runningCommand?: boolean
-  resolvePending?: (approved: boolean) => Promise<void>
+  resolvePending?: (approved: boolean, scope?: ApprovalScope) => Promise<void>
+  /** Offer "for this session" and "always" on a tool approval (cloud). */
+  approvalScopes?: boolean
 }>) {
-  const { thinking, sounds, voice, hotkeyModifier, theme: initialTheme } = usePreferences(initialPreferences)
+  const {
+    thinking,
+    toolDisplay,
+    codePreviewLines,
+    sounds,
+    voice,
+    hotkeyModifier,
+    theme: initialTheme
+  } = usePreferences(initialPreferences)
   const { theme, toggle: toggleTheme } = useTheme(initialTheme)
   useSound(events, sounds)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
   const [pickingPersona, setPickingPersona] = useState(false)
-
-  useModifierKeys(hotkeyModifier, {
-    // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
-    // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
-    l: () => {
-      open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
-    },
-    p: () => {
-      if (capabilities.persona && !pending) setPickingPersona(true)
-    },
-    // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
-    d: toggleTheme
-  })
+  const codeView = useCodeView(codePreviewLines)
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
   const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
-  const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey)
+  const { armed: quitArmed, press: pressQuit } = useQuitGuard(isQuittable(bottomChromeKey), pending || runningCommand)
+  // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
+  // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
+  // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
+  const bindings: KeyBinding[] = [
+    {
+      letter: "l",
+      label: t("keybar.help"),
+      when: true,
+      run: () => {
+        open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
+      }
+    },
+    {
+      letter: "p",
+      label: t("keybar.persona"),
+      when: capabilities.persona && !pending,
+      run: () => setPickingPersona(true)
+    },
+    // "R" for copy, not "C": Ctrl+C is reserved by Ink to quit the app, so under hotkeyModifier: "ctrl" it could never fire
+    { letter: "r", label: t("keybar.copy"), when: true, run: () => uiEvents.emit("copy") },
+    { letter: "d", label: t("keybar.theme"), when: true, run: toggleTheme },
+    {
+      letter: "e",
+      label: t("keybar.expand"),
+      when: codeView.canExpand,
+      run: codeView.toggle
+    }
+  ]
+  useModifierKeys(
+    hotkeyModifier,
+    Object.fromEntries(bindings.filter(binding => binding.when).map(binding => [binding.letter, binding.run]))
+  )
+  const keyBarItems = buildKeyBarItems(hotkeyModifier, bindings, escKeyBarItem(bottomChromeKey, quitArmed, pressQuit))
 
   return (
     <ThemeProvider theme={themes[theme]}>
-      <Box flexDirection="column" width={columns} height={rows}>
-        <Header
-          persona={personaLabel}
-          model={model}
-          provider={provider}
-          promptTokens={promptTokens}
-          contextWindow={contextWindow}
-          currentTool={currentTool}
-          width={columns}
-        />
-        <ChatViewport
-          events={events}
-          thinking={thinking}
-          partial={partial}
-          pending={pending}
-          sounds={sounds}
-          hotkeyModifier={hotkeyModifier}
-          bottomChromeKey={bottomChromeKey}
-        />
-        {bottomChromeKey === "persona" && (
-          <PersonaPicker
-            key="persona-picker"
-            personas={personas}
-            currentPersonaId={currentPersonaId}
-            onSelect={next => {
-              switchPersona?.(next)
-              setPickingPersona(false)
-            }}
-            onCancel={() => setPickingPersona(false)}
+      <CodeViewContext.Provider value={codeView.view}>
+        <Box flexDirection="column" width={columns} height={rows}>
+          <Header
+            mode={mode}
+            persona={personaLabel}
+            model={model}
+            provider={provider}
+            promptTokens={promptTokens}
+            contextWindow={contextWindow}
+            currentTool={toolDisplay === "corner" ? currentTool : undefined}
+            width={columns}
           />
-        )}
-        {showConfirm && pendingCommand && resolvePending && (
-          <ConfirmCommand
-            key="confirm-command"
-            command={pendingCommand.command}
-            description={pendingCommand.description}
-            kind={pendingCommand.kind}
-            running={runningCommand}
-            onResolve={approved => resolvePending(approved)}
-          />
-        )}
-        {bottomChromeKey !== "persona" && !showConfirm && (
-          <UserInput
-            key="user-input"
+          <ChatViewport
+            events={events}
+            thinking={thinking}
+            partial={partial}
             pending={pending}
-            speaking={speaking}
-            send={send}
-            history={history}
-            personaModels={personaModels}
+            sounds={sounds}
+            bottomChromeKey={bottomChromeKey}
+            toolDisplay={toolDisplay}
+            currentTool={currentTool}
           />
-        )}
-        <KeyBar items={keyBarItems} />
-      </Box>
+          {bottomChromeKey === "persona" && (
+            <PersonaPicker
+              key="persona-picker"
+              personas={personas}
+              currentPersonaId={currentPersonaId}
+              onSelect={next => {
+                switchPersona?.(next)
+                setPickingPersona(false)
+              }}
+              onCancel={() => setPickingPersona(false)}
+            />
+          )}
+          {showConfirm && pendingCommand && resolvePending && (
+            <ConfirmCommand
+              key="confirm-command"
+              command={pendingCommand.command}
+              description={pendingCommand.description}
+              kind={pendingCommand.kind}
+              running={runningCommand}
+              scopes={approvalScopes && pendingCommand.kind === "tool"}
+              onResolve={(approved, scope) => resolvePending(approved, scope)}
+            />
+          )}
+          {bottomChromeKey !== "persona" && !showConfirm && (
+            <UserInput
+              key="user-input"
+              pending={pending}
+              speaking={speaking}
+              send={send}
+              history={history}
+              personaModels={personaModels}
+            />
+          )}
+          <KeyBar items={keyBarItems} />
+        </Box>
+      </CodeViewContext.Provider>
     </ThemeProvider>
   )
 }
@@ -222,6 +280,7 @@ function LocalApp({
   personas,
   openaiApiModel,
   tools,
+  safeCommands,
   initialSession,
   promptHistory
 }: Readonly<{
@@ -230,6 +289,8 @@ function LocalApp({
   personas: Persona[]
   openaiApiModel: string
   tools: Tool<any>[]
+  /** Whole-command patterns that run without asking, from commands.toml. */
+  safeCommands?: RegExp[]
   initialSession?: PersistedSession
   promptHistory?: string[]
 }>) {
@@ -254,6 +315,7 @@ function LocalApp({
     summarizer,
     compactAt,
     tools,
+    safeCommands,
     personas,
     models,
     // Stored session's persona/model may no longer exist; resolves to undefined and the resume proceeds with defaults — messages restore verbatim anyway.
@@ -289,6 +351,7 @@ function LocalApp({
 
   return (
     <Chrome
+      mode="local"
       personaLabel={persona.label}
       model={displayModel}
       provider={provider}
@@ -342,6 +405,7 @@ function CloudApp({
 
   return (
     <Chrome
+      mode="cloud"
       personaLabel={persona?.label ?? t("cli.connecting")}
       model={model}
       promptTokens={promptTokens}
@@ -359,6 +423,7 @@ function CloudApp({
       pendingCommand={pendingEvent && confirmPrompt(pendingEvent)}
       runningCommand={false}
       resolvePending={pendingEvent ? resolveToolApproval : undefined}
+      approvalScopes
     />
   )
 }
@@ -370,6 +435,8 @@ type LocalAppProps = Readonly<{
   personas: Persona[]
   openaiApiModel: string
   tools: Tool<any>[]
+  /** Whole-command patterns that run without asking, from commands.toml. */
+  safeCommands?: RegExp[]
   /** A persisted session to continue (--continue / --session <id>). */
   initialSession?: PersistedSession
   /** Past prompts across all sessions for ↑/↓ recall, newest first. */

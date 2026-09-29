@@ -17,7 +17,7 @@ import {
   type Session,
   SWITCH_PERSONA_TOOL
 } from "./agent"
-import { isDangerousCommand } from "./command-risk"
+import { DEFAULT_SAFE_PATTERNS, isSafeCommand } from "./command-risk"
 import {
   compactSession,
   condenseOversizedResults,
@@ -29,6 +29,7 @@ import {
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordModelCall, recordStep } from "./telemetry"
+import { allowKey, isAllowed } from "./tool-allow"
 import { type ModelCallUsage, type Tool, toolName } from "./tools"
 
 /** Notes how a call went, keyed by its id. */
@@ -48,28 +49,13 @@ function parseToolArgs(raw: string): unknown {
   }
 }
 
-/** Auto-runs read-only allowlisted commands; otherwise reports a pending confirmation. */
-const AUTO_APPROVE_BINARIES = /^(ls|cat|head|tail|git status|git diff|git log|pwd|whoami|date|uname|echo|true)(\s|$)/
-
-// Shell metacharacters that let a command chain into, pipe into, or substitute in another command
-// (`sh -c` interprets all of these) — auto-approval requires none of them, so the allowlist above
-// only ever matches a single simple invocation, never a smuggled second command.
-const SHELL_METACHARACTERS = /[;&|`$(){}<>\n]/
-
-function isSimpleAllowlistedCommand(command: string): boolean {
-  return !SHELL_METACHARACTERS.test(command) && AUTO_APPROVE_BINARIES.test(command.trim())
-}
-
 async function handleRunCommandCall(
+  agent: Agent,
   messages: ChatCompletionMessageParam[],
   call: FunctionToolCall,
   record: RecordCall
 ): Promise<{ id: string; command: string; description: string } | undefined> {
-  const args = parseToolArgs(call.function.arguments) as {
-    command?: string
-    description?: string
-    mutates?: boolean
-  } | null
+  const args = parseToolArgs(call.function.arguments) as { command?: string; description?: string } | null
   if (!args || typeof args.command !== "string") {
     messages.push({
       role: "tool",
@@ -79,9 +65,7 @@ async function handleRunCommandCall(
     record(call.id, { status: "error" })
     return undefined
   }
-  const autoApprove =
-    args.mutates === false && !isDangerousCommand(args.command) && isSimpleAllowlistedCommand(args.command)
-  if (autoApprove) {
+  if (isSafeCommand(args.command, agent.safeCommands ?? DEFAULT_SAFE_PATTERNS)) {
     const startedAt = performance.now()
     const result = await runShellCommand(args.command)
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
@@ -346,8 +330,8 @@ async function* handleToolCalls(
   owner: string | null,
   toolsByName: Map<string, Tool<any>>,
   toolCalls: ChatCompletionMessageToolCall[],
-  record: RecordCall,
-  onModelCall: (usage: ModelCallUsage) => void
+  granted: readonly string[] | undefined,
+  { record, onModelCall }: { record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
 ): AsyncGenerator<
   AgentEvent,
   {
@@ -371,7 +355,7 @@ async function* handleToolCalls(
     }
 
     if (call.function.name === RUN_COMMAND_TOOL) {
-      confirm = await handleRunCommandCall(messages, call, record)
+      confirm = await handleRunCommandCall(agent, messages, call, record)
       continue
     }
 
@@ -385,7 +369,7 @@ async function* handleToolCalls(
       continue
     }
 
-    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call)
+    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call, [agent.allowedTools, granted])
     if (summary !== undefined) {
       approval = holdApproval(messages, record, approval, {
         id: call.id,
@@ -424,9 +408,14 @@ function holdApproval(
   return held
 }
 
-/** The approval summary when `tool` wants the human to confirm this call first, else undefined. */
-function approvalSummaryFor(tool: Tool<any> | undefined, call: FunctionToolCall): string | undefined {
+/** The approval summary when `tool` wants the human to confirm this call first, else undefined. A tool the user allowed (always, or for this session: `allowLists`) never asks. */
+function approvalSummaryFor(
+  tool: Tool<any> | undefined,
+  call: FunctionToolCall,
+  allowLists: (readonly string[] | undefined)[]
+): string | undefined {
   if (!tool?.approval) return undefined
+  if (allowLists.some(list => isAllowed(list, allowKey(tool)))) return undefined
   const args = parseToolArgs(call.function.arguments)
   return args === null ? undefined : tool.approval(args)
 }
@@ -699,8 +688,11 @@ export async function* run(
       owner,
       toolsByName,
       message.tool_calls,
-      (callId, stat) => recordCall(session, callId, stat),
-      usage => recordModelCall(session, { kind: "summarize", ...usage })
+      session.grantedTools,
+      {
+        record: (callId, stat) => recordCall(session, callId, stat),
+        onModelCall: usage => recordModelCall(session, { kind: "summarize", ...usage })
+      }
     )
 
     failingToolRounds = countFailingRounds(session, message.tool_calls, failingToolRounds)

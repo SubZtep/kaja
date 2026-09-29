@@ -187,7 +187,7 @@ export class AbilityService {
   async listForUser(userId: string): Promise<UserAbility[]> {
     const { rows } = await this.#db.query(
       `
-      SELECT p.type, p.name, p.description, up.enabled_at, up.disabled_tools, (${AVAILABLE}) AS available,
+      SELECT p.type, p.name, p.description, up.enabled_at, up.disabled_tools, up.allowed_tools, (${AVAILABLE}) AS available,
         CASE WHEN p.type <> 'skill' THEN p.files END AS files
       FROM user_ability up JOIN ability p ON p.id = up.ability_id
       WHERE up.user_id = $1
@@ -201,7 +201,8 @@ export class AbilityService {
       description: row.description,
       enabledAt: new Date(row.enabled_at),
       available: row.available && this.#runs(row),
-      disabledTools: row.disabled_tools ?? []
+      disabledTools: row.disabled_tools ?? [],
+      allowedTools: row.allowed_tools ?? []
     }))
   }
 
@@ -272,6 +273,56 @@ export class AbilityService {
       [userId, type, name, [...new Set(disabled)].sort((a, b) => a.localeCompare(b))]
     )
     return result.rowCount ? "ok" : "not_enabled"
+  }
+
+  /** Sets which of an enabled HTTP tool's or MCP server's tools never ask for approval (names the ability offers, or globs with `*`), replacing the list. */
+  async setAllowedTools(
+    userId: string,
+    type: KeyedAbilityType,
+    name: string,
+    allowed: string[]
+  ): Promise<SetDisabledToolsResult> {
+    const keyed = await this.#getKeyed(type, name)
+    if (!keyed) return "not_found"
+    const offered = new Set(toolNames(keyed))
+    if (allowed.some(tool => !tool.includes("*") && !offered.has(tool))) return "unknown_tool"
+    const result = await this.#db.query(
+      `
+      UPDATE user_ability up SET allowed_tools = $4
+      FROM ability p
+      WHERE up.ability_id = p.id AND up.user_id = $1 AND p.type = $2 AND p.name = $3
+      `,
+      [userId, type, name, [...new Set(allowed)].sort((a, b) => a.localeCompare(b))]
+    )
+    return result.rowCount ? "ok" : "not_enabled"
+  }
+
+  /** The allow patterns of the user's enabled tool and MCP abilities, as the turn matches them: `ability:<name>:<tool or glob>`. */
+  async allowedToolsForUser(userId: string): Promise<string[]> {
+    const { rows } = await this.#db.query(
+      `
+      SELECT p.name, up.allowed_tools
+      FROM user_ability up JOIN ability p ON p.id = up.ability_id
+      WHERE up.user_id = $1 AND p.type IN ('tool', 'mcp') AND ${AVAILABLE} AND cardinality(up.allowed_tools) > 0
+      `,
+      [userId]
+    )
+    return rows.flatMap(row => (row.allowed_tools as string[]).map(tool => `ability:${row.name}:${tool}`))
+  }
+
+  /** Adds one tool to its ability's allow list, from the allow key an "always allow" answer carries (`ability:<name>:<tool>`); does nothing for an ability the user hasn't enabled. */
+  async allowTool(userId: string, key: string): Promise<void> {
+    const match = /^ability:([^:]+):(.+)$/.exec(key)
+    if (!match) return
+    await this.#db.query(
+      `
+      UPDATE user_ability up SET allowed_tools = array_append(up.allowed_tools, $3)
+      FROM ability p
+      WHERE up.ability_id = p.id AND up.user_id = $1 AND p.name = $2 AND p.type IN ('tool', 'mcp')
+        AND NOT ($3 = ANY (up.allowed_tools))
+      `,
+      [userId, match[1], match[2]]
+    )
   }
 
   /** The user's enabled skills that are still available, with their files. */

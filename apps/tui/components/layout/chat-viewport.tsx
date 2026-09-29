@@ -2,12 +2,13 @@ import { Box, Text, useInput, useStdout, useWindowSize } from "ink"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
-import type { HotkeyModifier } from "../../hooks/use-modifier-keys"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { isTerminalMouseSequence, parseWheelDirection } from "../../lib/terminal-input"
+import { foldToolCalls } from "../../lib/tool-summary"
+import { uiEvents } from "../../lib/ui-events"
 import { Activity } from "../activity"
 import { PartialMessage } from "../elem/partial-message"
 import { VirtualScroll, type VirtualScrollRef } from "../elem/virtual-scroll"
@@ -27,11 +28,16 @@ function idFor(event: TimelineEvent) {
   return id
 }
 
-/** Timeline event types whose text is worth copying to the clipboard. */
+function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbose" | "corner", pending: boolean) {
+  if (toolDisplay === "verbose") return events
+  if (toolDisplay === "corner")
+    return events.filter(item => item.type !== "tool_call" && item.type !== "client_tool_call")
+  return foldToolCalls(events, pending)
+}
+
+/** Timeline event types whose text is worth copying to the clipboard: the agent's words, never the user's own message. */
 function copyableText(event: TimelineEvent): string | null {
   switch (event.type) {
-    case "user":
-      return event.text
     case "message":
       return event.content
     case "final":
@@ -78,9 +84,7 @@ function scrollByClamped(view: VirtualScrollRef, delta: number) {
  *   PageUp/Down, Ctrl+↑/↓, Ctrl+Home/End, mouse wheel → this viewport
  *   ↑/↓, ←/→, Home/End (no ctrl), Ctrl+←/→ → TextInput cursor
  *   Ctrl+T → mic
- *   <modifier>+R → copy the most recent message to the clipboard ("R", not "C": Ctrl+C is
- *     reserved globally by Ink to quit the app, so under hotkeyModifier: "ctrl" that letter
- *     could never fire — "R" has no such collision under either modifier)
+ *   the copy button / <modifier>+R (app.tsx) → uiEvents "copy" → this viewport copies the latest message
  *
  * Stick-to-bottom uses a small slop so streaming near the end stays pinned.
  */
@@ -90,22 +94,26 @@ export function ChatViewport({
   partial,
   pending,
   sounds,
-  hotkeyModifier,
   bottomChromeKey,
-  startupPanel
+  startupPanel,
+  toolDisplay = "minimal",
+  currentTool
 }: Readonly<{
   events: TimelineEvent[]
   thinking: boolean
   partial: PartialMessageData | null
   pending: boolean
   sounds: boolean
-  hotkeyModifier: HotkeyModifier
   /** Changes whenever the sibling below (input / confirm prompt) swaps to a
    * differently-sized layout, so the viewport remeasures even though none of
    * the other props changed. */
   bottomChromeKey?: string | number
   /** Shown in place of the empty timeline before the first message. */
   startupPanel?: ReactNode
+  /** How tool calls show in the chat; corner keeps them out of it (the header shows the current one). */
+  toolDisplay?: "minimal" | "verbose" | "corner"
+  /** The tool call in flight, for minimal's live row. */
+  currentTool?: { name: string; arguments: string }
 }>) {
   const scrollRef = useRef<VirtualScrollRef>(null)
   const stickRef = useRef(true)
@@ -242,19 +250,27 @@ export function ChatViewport({
     }
   }
 
-  useInput((input, key) => {
-    if ((hotkeyModifier === "ctrl" ? key.ctrl : key.meta) && input === "r") {
-      const text = lastCopyableText(events)
-      if (text) {
-        writeText(text)
-          .then(async () => {
-            if (sounds) (await import("../../lib/audio/sounds")).playSound("keyboard")
-          })
-          .catch(error => log.warn("Copy to clipboard failed", { error }))
-      }
-      return
+  const copyLatest = () => {
+    const text = lastCopyableText(events)
+    if (!text) return
+    writeText(text)
+      .then(async () => {
+        if (sounds) (await import("../../lib/audio/sounds")).playSound("keyboard")
+      })
+      .catch(error => log.warn("Copy to clipboard failed", { error }))
+  }
+  // The key bar's Copy button asks through uiEvents; a ref keeps the listener on the latest events
+  const copyRef = useRef(copyLatest)
+  copyRef.current = copyLatest
+  useEffect(() => {
+    const onCopy = () => copyRef.current()
+    uiEvents.on("copy", onCopy)
+    return () => {
+      uiEvents.off("copy", onCopy)
     }
+  }, [])
 
+  useInput((input, key) => {
     const view = scrollRef.current
     if (!view) return
 
@@ -274,14 +290,15 @@ export function ChatViewport({
   // Stable element identities across scroll-tick renders: TimelineItem is memo()ed, and keeping the same elements here also stops the ScrollView's per-item measurement effect (keyed on child identity) from re-running.
   const timelineItems = useMemo(
     () =>
-      events
-        .filter(item => item.type !== "tool_call" && item.type !== "client_tool_call")
-        .map((item, i) => (
-          <Box key={idFor(item)} marginTop={i > 0 && item.type === "user" ? 1 : 0}>
-            <TimelineItem item={item} thinking={thinking} />
-          </Box>
-        )),
-    [events, thinking]
+      visibleEvents(events, toolDisplay, pending).map((item, i) => (
+        <Box
+          key={item.type === "tool_summary" ? `summary-${idFor(item.last)}` : idFor(item)}
+          marginTop={i > 0 && item.type === "user" ? 1 : 0}
+        >
+          <TimelineItem item={item} thinking={thinking} />
+        </Box>
+      )),
+    [events, thinking, toolDisplay, pending]
   )
 
   return (
@@ -325,7 +342,12 @@ export function ChatViewport({
           <PartialMessage partial={partial} thinking={thinking} />
         </Box>
         <Box key="activity">
-          <Activity pending={pending} partial={partial} thinking={thinking} />
+          <Activity
+            pending={pending}
+            partial={partial}
+            thinking={thinking}
+            tool={toolDisplay === "minimal" ? currentTool : undefined}
+          />
         </Box>
       </VirtualScroll>
     </Box>

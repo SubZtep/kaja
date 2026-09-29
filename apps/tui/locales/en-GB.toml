@@ -27,6 +27,7 @@ memorySessions = "memory & sessions"
 images         = "session images"
 models         = "models"
 mcpServers     = "mcp servers"
+commands       = "safe commands"
 tools          = "tools"
 abilities      = "abilities"
 marketplace    = "marketplace"
@@ -246,14 +247,21 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 placeholder = "PgUp history · Alt+Enter newline"
 
 
+[header]
+local = "Local"
+cloud = "Cloud"
+
+
 [keybar]
-help    = "Help"
-persona = "Persona"
-copy    = "Copy"
-theme   = "Theme"
-quit    = "Quit"
-cancel  = "Cancel"
-decline = "Decline"
+help      = "Help"
+persona   = "Persona"
+copy      = "Copy"
+theme     = "Theme"
+quit      = "Quit"
+expand    = "Expand"
+quitAgain = "Still running: Esc again to quit"
+cancel    = "Cancel"
+decline   = "Decline"
 
 
 [viewport]
@@ -262,9 +270,12 @@ older = "↑ older · PageDown or Ctrl+End to follow"
 
 [confirmCommand]
 yes         = "Yes, run it"
+yesSession  = "Yes, and don't ask again this session"
+yesAlways   = "Yes, and always allow this tool"
 no          = "No, cancel"
 running     = "Running…"
 truncated   = "… {count} more lines"
+inputLocked = "Waiting for your answer above"
 toolRequest = "{name} wants to send this request:"
 
 
@@ -304,6 +315,7 @@ loadSkillFile = "Reading {file} from the {name} skill..."
 
 [timeline]
 personaSwitch    = "Persona switched: {label}"
+toolsUsed        = "Tool calls ({count}): {names}"
 compacted        = "Context compacted: {before} → {after} tokens"
 compactedDropped = "Context compacted: {before} → {after} tokens. The summary couldn't be written, so the oldest messages were left out."
 condensed        = "{tool} output condensed: {before} → {after} tokens"
@@ -421,3 +433,7 @@ commandCompact    = "Summarise the conversation so far to free up space"
 compacted         = "🗜 Conversation compacted: {before} → {after} tokens."
 compactedDropped  = "🗜 Conversation compacted: {before} → {after} tokens. The summary couldn't be written, so the oldest messages were left out."
 nothingToCompact  = "Nothing to compact yet."
+
+
+[markdown]
+codeMore = "… {count} more lines (expand to see all)"

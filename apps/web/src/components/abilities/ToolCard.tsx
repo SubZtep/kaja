@@ -68,6 +68,7 @@ export function ToolCard({
   entry,
   enabled,
   disabledTools,
+  allowedTools,
   hasKey,
   keysEnabled,
   pending,
@@ -77,6 +78,7 @@ export function ToolCard({
   enabled: boolean
   /** Its tools the user switched off. */
   disabledTools: string[]
+  allowedTools: string[]
   hasKey: boolean
   keysEnabled: boolean
   pending: boolean
@@ -174,6 +176,7 @@ export function ToolCard({
         entry={entry}
         enabled={enabled}
         disabledTools={disabledTools}
+        allowedTools={allowedTools}
         open={dialog === "tools"}
         onOpenChange={open => !open && setDialog("closed")}
       />

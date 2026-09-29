@@ -16,8 +16,10 @@ export async function bootstrapLocalAgentDeps() {
   const models = await loadModels()
   const personas = await loadPersonas()
   const { tools, skipped, mcpServers, closeTools } = await getDefaultTools(personas)
+  const { loadSafeCommands } = await import("../config/commands")
+  const safeCommands = await loadSafeCommands()
 
-  return { models, personas, tools, skipped, mcpServers, closeTools }
+  return { models, personas, tools, skipped, mcpServers, closeTools, safeCommands }
 }
 
 /** Exits the process if no provider is configured — no silent fallback to Kaja's cloud free tier for --local entry points. */
@@ -43,6 +45,9 @@ export function installShutdownHandlers(closeTools: () => Promise<void>, options
   const shutdown = async () => {
     if (closed) return
     closed = true
+    // Quitting stops everything still running: a command, the voice player, the mic
+    const { killTrackedProcesses } = await import("@kaja/nasi")
+    killTrackedProcesses()
     await Promise.race([closeTools(), new Promise(resolve => setTimeout(resolve, SHUTDOWN_TIMEOUT_MS))])
   }
   const onSignal = async () => {

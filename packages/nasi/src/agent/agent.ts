@@ -50,6 +50,10 @@ export class Agent {
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
   compactAt?: number
+  /** Whole-command patterns that run without asking (commands.toml); defaults to the built-in list. */
+  safeCommands?: RegExp[]
+  /** Tool allow patterns (see `tool-allow.ts`) whose approval is skipped: the caller's "always allow" list. */
+  allowedTools?: string[]
 
   constructor(config: {
     name?: string
@@ -68,6 +72,8 @@ export class Agent {
     contextWindow?: number
     summarizer?: { client: OpenAI; model: string; contextWindow?: number }
     compactAt?: number
+    safeCommands?: RegExp[]
+    allowedTools?: string[]
   }) {
     this.name = config.name ?? "Assistant"
     this.model = config.model
@@ -85,6 +91,8 @@ export class Agent {
     this.contextWindow = config.contextWindow
     this.summarizer = config.summarizer
     this.compactAt = config.compactAt
+    this.safeCommands = config.safeCommands
+    this.allowedTools = config.allowedTools
   }
 
   /** Point the agent at another model, swapping the client when {@link createClient} is set. */
@@ -137,9 +145,9 @@ export const runCommandTool = tool<{
 }>({
   name: RUN_COMMAND_TOOL,
   description:
-    "Propose a shell command to run on the user's computer. Read-only " +
-    "commands (mutates: false) run immediately; others require human " +
-    "approval first. Use for actions like playing a sound, converting " +
+    "Propose a shell command to run on the user's computer. Commands on " +
+    "the user's safe list (simple read-only ones) run immediately; others " +
+    "require human approval first. Use for actions like playing a sound, converting " +
     "media, or invoking a CLI tool.",
   parameters: {
     type: "object",
@@ -250,6 +258,8 @@ export type Session = {
   pendingClientToolCallId?: string
   /** A tool call waiting on the human's approval (see `Tool.approval`); the host answers it by running the tool itself. */
   pendingToolApprovalId?: string
+  /** Tools (allow keys, see `tool-allow.ts`) the user approved for the rest of this session. */
+  grantedTools?: string[]
   /** Once compacted: the latest summary, which stands in for `messages` before index `from` in what the model is sent. */
   summary?: { text: string; from: number }
   /** Condensed versions of oversized tool results, by call id, sent to the model in place of the full output. */

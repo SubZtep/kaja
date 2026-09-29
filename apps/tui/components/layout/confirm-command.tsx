@@ -4,7 +4,8 @@ import { t } from "../../lib/i18n"
 import { SelectMenu } from "../elem/select-menu"
 import { useKajaTheme } from "../theme"
 
-const MAX_COMMAND_LINES = 6
+/** How long an approval lasts: this session, or always (saved to the user's allow list). Unset means this one call. */
+export type ApprovalScope = "session" | "always"
 
 /**
  * Yes/No gate shown in place of the input field while a run_command call, or
@@ -14,45 +15,53 @@ const MAX_COMMAND_LINES = 6
  * replaced by a status line: the command can take a while and Menu would
  * otherwise sit there fully interactive with no sign anything happened.
  *
- * The command preview is capped at MAX_COMMAND_LINES: a generated multi-line
- * script (e.g. a Python heredoc) can otherwise grow tall enough to push the
- * Menu below the terminal's visible rows, leaving it unreachable.
+ * It doesn't repeat the command: that is the last row of the chat (a capped, highlighted preview, see CodePreview),
+ * so a long generated script can't push the menu below the terminal's visible rows.
  */
 export function ConfirmCommand({
   command,
   description,
   kind = "command",
   running,
+  scopes = false,
   onResolve
 }: Readonly<{
-  /** The shell command, or for `kind: "tool"` the request summary (method, URL, body preview). */
+  /** The shell command, or for `kind: "tool"` the request summary; only used to judge the risk, the chat shows it. */
   command: string
   description: string
   kind?: "command" | "tool"
   running: boolean
-  onResolve: (approved: boolean) => void
+  /** Also offers to approve the tool for the rest of the session, or always (cloud tool calls). */
+  scopes?: boolean
+  onResolve: (approved: boolean, scope?: ApprovalScope) => void
 }>) {
   const dangerous = kind === "command" && isDangerousCommand(command)
   const { danger, warning } = useKajaTheme()
   const tone = dangerous ? danger() : warning()
-  const lines = command.split("\n")
-  const preview = lines.slice(0, MAX_COMMAND_LINES).join("\n")
-  const hiddenLines = lines.length - MAX_COMMAND_LINES
+  const items: { label: string; approved: boolean; scope?: ApprovalScope }[] = [
+    { label: t("confirmCommand.yes"), approved: true },
+    ...(scopes
+      ? [
+          { label: t("confirmCommand.yesSession"), approved: true, scope: "session" as const },
+          { label: t("confirmCommand.yesAlways"), approved: true, scope: "always" as const }
+        ]
+      : []),
+    { label: t("confirmCommand.no"), approved: false }
+  ]
 
   return (
     <Box flexDirection="column" flexShrink={0} width="100%">
       <Text {...tone}>{dangerous ? `⚠ ${description}` : description}</Text>
-      <Text {...tone}>{`${kind === "tool" ? "→" : "$"} ${preview}`}</Text>
-      {hiddenLines > 0 && <Text dimColor>{t("confirmCommand.truncated", { count: hiddenLines })}</Text>}
       {running ? (
         <Text dimColor>{t("confirmCommand.running")}</Text>
       ) : (
         <SelectMenu
-          items={[t("confirmCommand.yes"), t("confirmCommand.no")]}
-          onSelect={index => onResolve(index === 0)}
+          items={items.map(item => item.label)}
+          onSelect={index => onResolve(items[index]!.approved, items[index]!.scope)}
           onClose={() => onResolve(false)}
         />
       )}
+      <Text dimColor>{`> ${t("confirmCommand.inputLocked")}`}</Text>
     </Box>
   )
 }

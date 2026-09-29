@@ -37,7 +37,14 @@ export type Palette = {
   thinking: string
   keyBackground: string
   keyText: string
+  /** The header's local/cloud badge: a muted tint of the status colour, so it reads as a label and not a call to action. */
+  localBadge: string
+  localBadgeText: string
+  cloudBadge: string
+  cloudBadgeText: string
   inputBackground: string
+  /** Behind the user's own messages in the chat; a different tint from the input box. */
+  userBackground: string
   tableHead: string
   tableBorder: string
   /** The mascot's and the wizard header's gradient, left to right. */
@@ -60,7 +67,12 @@ const darkPalette: Palette = {
   thinking: "magenta",
   keyBackground: "cyan",
   keyText: "black",
+  localBadge: "#16301f",
+  localBadgeText: "#7fd99a",
+  cloudBadge: "#182a4a",
+  cloudBadgeText: "#8ab4f8",
   inputBackground: "#224",
+  userBackground: "#12303a",
   tableHead: "magenta",
   tableBorder: "gray",
   gradient: ["#833ab4", "#fd1d1d", "#fcb045"]
@@ -83,7 +95,12 @@ const lightPalette: Palette = {
   thinking: "#6a1b9a",
   keyBackground: "#00838f",
   keyText: "white",
+  localBadge: "#d5ebd8",
+  localBadgeText: "#2e7d32",
+  cloudBadge: "#d3e3f8",
+  cloudBadgeText: "#1565c0",
   inputBackground: "#e8e8f4",
+  userBackground: "#d8ecf2",
   tableHead: "magenta",
   tableBorder: "gray",
   gradient: ["#6a1b9a", "#c62828", "#b35c00"]
@@ -104,6 +121,8 @@ function kajaStyles(p: Palette) {
     reasoningBox: (): BoxProps => ({ borderColor: p.reasoningBorder }),
     accent: (): TextProps => ({ color: p.accent }),
     userText: (): TextProps => ({ color: p.user }),
+    /** A message the user sent: tinted band with a bar down its left edge. */
+    userBox: (): BoxProps => ({ backgroundColor: p.userBackground, borderColor: p.user }),
     muted: (): TextProps => ({ color: p.muted }),
     /** The highlighted row of a menu. */
     focus: (): TextProps => ({ color: p.focus }),

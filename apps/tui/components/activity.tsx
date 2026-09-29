@@ -2,6 +2,7 @@ import { Spinner, ThemeProvider } from "@inkjs/ui"
 import { useEffect, useState } from "react"
 import type { PartialMessage } from "../hooks/use-agent"
 import { useRandomSpinner } from "../hooks/use-random-spinner"
+import { describeToolCall } from "../lib/agent/tool-labels"
 import { t } from "../lib/i18n"
 import { useSpinnerTheme } from "./theme"
 
@@ -22,15 +23,18 @@ function estimateTokens(partial: PartialMessage | null) {
 export function Activity({
   pending,
   partial,
-  thinking
+  thinking,
+  tool
 }: Readonly<{
   pending: boolean
   partial: PartialMessage | null
   thinking: boolean
+  /** The tool call in flight; shown in place of the thinking line (minimal `toolDisplay`). */
+  tool?: { name: string; arguments: string }
 }>) {
   const [tick, setTick] = useState(0)
   const spinnerType = useRandomSpinner(pending, "dots")
-  const spinnerTheme = useSpinnerTheme("thinkingLabel")
+  const spinnerTheme = useSpinnerTheme(tool ? "toolLabel" : "thinkingLabel")
   useEffect(() => {
     if (!pending) return
     setTick(0)
@@ -41,6 +45,14 @@ export function Activity({
   const contentVisible = !!partial?.content
   const reasoningVisible = thinking && !!partial?.reasoning
   if (!pending || contentVisible || reasoningVisible) return null
+
+  if (tool) {
+    return (
+      <ThemeProvider theme={spinnerTheme}>
+        <Spinner type={spinnerType} label={describeToolCall(tool.name, tool.arguments)} />
+      </ThemeProvider>
+    )
+  }
 
   const seconds = Math.floor((tick * TICK_MS) / 1000)
   const tokens = estimateTokens(partial)

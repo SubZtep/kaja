@@ -15,6 +15,8 @@ Install-wide preferences. Which model handles each task lives in [`models.toml`]
 mode = "local"
 locale = "en-GB"
 thinking = false
+# toolDisplay = "minimal"
+# codePreviewLines = 5
 sounds = true
 voice = false
 # hotkeyModifier = "alt"
@@ -46,10 +48,27 @@ voice = false
 | `mode` | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/getting-started/modes#which-mode-a-launch-uses) |
 | `locale` | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
+| `toolDisplay` | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show |
+| `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |
 | `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |
 | `theme` | `auto` (default), `dark` or `light`: the [colours](/using/tui#colours). `auto` follows the terminal |
+
+## `commands.toml`: commands that run without asking
+
+The agent asks before it runs a shell command, except for the simple read-only ones on the safe list. `commands.toml` holds
+that list as regexes, each of which must match the whole command:
+
+```toml
+safe = ['pwd', 'git (status|diff|log)(\s+[\w./=:@^~-]+)*']  # the defaults; `kaja config fetch` refreshes them
+custom = ['npm (test|run lint)']                            # yours, kept when the defaults are refreshed
+```
+
+A command with a shell metacharacter (`; & | $ ( ) { } < >`, a backtick or a newline) always asks, and so does anything
+flagged as dangerous (`rm -rf`, `sudo`, a force push, ...), whatever the patterns say. A pattern that isn't a valid regex is
+skipped with a warning. The list applies to the local TUI and to `kaja --local telegram`; the cloud agent never runs shell
+commands.
 
 ## `[marketplace]`
 

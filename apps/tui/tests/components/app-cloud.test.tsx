@@ -90,6 +90,8 @@ test("the key bar shows Esc, Help, Persona, and Copy", async () => {
   expect(frame).toContain("Persona")
   expect(frame).toContain("Alt+R")
   expect(frame).toContain("Copy")
+  // Nothing on screen is longer than the code preview, so there is no Expand button (and no hotkey behind it)
+  expect(frame).not.toContain("Expand")
   t.unmount()
   await t.waitUntilExit()
 })

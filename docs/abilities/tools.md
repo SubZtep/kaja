@@ -86,7 +86,8 @@ type = "string"
   lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`, and without it the ability is left
   out with a warning. An optional `check` request lets Kaja test a key before saving it.
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
-  approval, like a shell command.
+  approval, like a shell command. At the prompt you can also approve the tool for the rest of the chat, or always;
+  "always" is saved, and the tool's dialog on the web abilities page lists it with a switch to ask again.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same way, so
   the model can react. Redirects to another host are refused, and the key never appears in what the model
   sees.
@@ -102,7 +103,7 @@ refused either way, on every redirect too. Keys and approvals work as described 
 
 ## Shell commands
 
-`run_command` always asks first. Known-risky patterns get a louder warning:
+`run_command` asks first, except for simple read-only commands on the [safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (`ls`, `pwd`, `git status`, and the like), which you can edit. Known-risky patterns get a louder warning, and never skip the question:
 
 - `rm -rf` (any flag order, and the long form `--recursive --force`)
 - `sudo`, `mkfs`, writes to `/dev/sd*`

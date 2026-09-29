@@ -32,6 +32,8 @@ export type ConversationRows = {
   summary: { text: string; from: number } | null
   /** Condensed oversized tool results by call id, kept beside the call; the message keeps the full output. */
   toolSummaries: Record<string, string>
+  /** Tools the user approved for the rest of the session (allow keys); a store that has no column for them leaves it out. */
+  grantedTools?: string[]
   /** Set on saving, never read back. */
   calls?: CallUpdate[]
   /** Summarizer calls made since the last save; set on saving, never read back. */
@@ -138,6 +140,7 @@ export function splitConversation(session: unknown): ConversationRows {
     pending: pendingField ? { callId: rest[pendingField[0]]!, kind: pendingField[1] } : null,
     summary: rest.summary ? { text: rest.summary.text, from: rest.summary.from - (hasSystem ? 1 : 0) } : null,
     toolSummaries: rest.toolSummaries ?? {},
+    grantedTools: rest.grantedTools ?? [],
     messages: (hasSystem ? others : all).map((message, at) => {
       const row = toRow(message)
       const stat = telemetry?.steps.find(step => step.at === at)
@@ -182,5 +185,6 @@ export function joinConversation(rows: ConversationRows): Session {
   if (rows.summary)
     session.summary = { text: rows.summary.text, from: rows.summary.from + (rows.systemPrompt !== null ? 1 : 0) }
   if (Object.keys(rows.toolSummaries).length > 0) session.toolSummaries = rows.toolSummaries
+  if (rows.grantedTools?.length) session.grantedTools = rows.grantedTools
   return session
 }

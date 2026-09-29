@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { CodeViewContext } from "../../components/elem/code-expand"
 import { TimelineItem } from "../../components/timeline"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import { renderForTest } from "../test-utils"
@@ -82,4 +83,65 @@ test("an image that can't load says why after its caption", async () => {
   t.unmount()
   await t.waitUntilExit()
   await server.stop(true)
+})
+
+test("tool calls render as a labelled row, and a summary as one line", async () => {
+  const call = { type: "tool_call", name: "read_file", arguments: '{"path":"a.txt"}' } as const
+  const t = renderForTest(
+    <>
+      <TimelineItem item={call} thinking={false} />
+      <TimelineItem
+        item={{ type: "tool_summary", last: call, names: ["read_file", "fetch_url"], count: 2 }}
+        thinking={false}
+      />
+    </>
+  )
+  await t.tick()
+  expect(t.output()).toContain("a.txt")
+  expect(t.output()).toContain("read_file, fetch_url")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("an approval command is cut to the preview lines, and all of it shows once expanded", async () => {
+  const command = Array.from({ length: 12 }, (_, i) => `echo line${i}`).join("\n")
+  const item = { type: "confirm_command", command, description: "run" } as const
+  const t = renderForTest(<TimelineItem item={item} thinking={false} />)
+  await t.tick()
+  expect(t.output()).toContain("line4")
+  expect(t.output()).not.toContain("line5")
+  expect(t.output()).toContain("7 more")
+  t.rerender(
+    <CodeViewContext.Provider value={{ expanded: true, lines: 5 }}>
+      <TimelineItem item={item} thinking={false} />
+    </CodeViewContext.Provider>
+  )
+  await t.tick()
+  expect(t.lastFrame()).toContain("line11")
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("code longer than the preview registers for the expand button, and withdraws on unmount", async () => {
+  let active = 0
+  const register = () => {
+    active++
+    return () => {
+      active--
+    }
+  }
+  const long = { type: "confirm_command", command: "a\nb\nc\nd\ne\nf\ng", description: "run" } as const
+  const short = { type: "confirm_command", command: "a\nb", description: "run" } as const
+  const view = { expanded: false, lines: 5, register }
+  const t = renderForTest(
+    <CodeViewContext.Provider value={view}>
+      <TimelineItem item={long} thinking={false} />
+      <TimelineItem item={short} thinking={false} />
+    </CodeViewContext.Provider>
+  )
+  await t.tick()
+  expect(active).toBe(1)
+  t.unmount()
+  await t.waitUntilExit()
+  expect(active).toBe(0)
 })

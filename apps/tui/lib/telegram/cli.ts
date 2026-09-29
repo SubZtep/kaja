@@ -20,6 +20,8 @@ export async function runTelegramCli(deps: {
   /** `--pair`: show a code to pair one more person. */
   pair: boolean
   tools: Tool<any>[]
+  /** Whole-command patterns that run without asking, from commands.toml. */
+  safeCommands?: RegExp[]
   personas: Persona[]
   models: CliResolvedModel[]
   /** Closes long-lived tool connections (e.g. Playwright MCP subprocess); shared with SIGINT/SIGTERM via installShutdownHandlers. */
@@ -47,6 +49,7 @@ export async function runTelegramCli(deps: {
       compactAt,
       store: await getStore(),
       tools: deps.tools,
+      safeCommands: deps.safeCommands,
       personas: deps.personas,
       models: deps.models,
       // Replies in the language set for the terminal, as its own chat does.

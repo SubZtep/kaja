@@ -1,14 +1,16 @@
 import { Box, Text, useWindowSize } from "ink"
 import { Marked, marked, type Token } from "marked"
-import { memo } from "react"
+import { memo, useContext } from "react"
+import { t } from "../../lib/i18n"
 import { splitBlocks } from "../../lib/markdown/blocks"
 import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
 import { type Palette, paint, usePalette } from "../theme"
+import { type CodeView, CodeViewContext, useReportOverflow } from "./code-expand"
 import { TerminalImage } from "./terminal-image"
 
 // cli-highlight's token colours from the palette, in the spirit of its default theme
-function codeTheme(p: Palette) {
+export function codeTheme(p: Palette) {
   return {
     keyword: paint(p.info),
     literal: paint(p.info),
@@ -35,8 +37,13 @@ function codeTheme(p: Palette) {
  * thing sized to the terminal. Cleared wholesale past a cap to bound memory (streaming leaves throwaway prefixes of the
  * last block behind).
  */
+type Rendered = { text: string; overflow: boolean }
+
 function createParser(p: Palette) {
   let tableWidth = 80
+  let expand = false
+  let previewLines = 5
+  let longest = 0
   const renderer = new Marked(
     markedTerminal(
       {
@@ -53,28 +60,40 @@ function createParser(p: Palette) {
         tableHead: paint(p.tableHead).bold,
         tableBorder: paint(p.tableBorder),
         tableWidth: () => tableWidth,
+        codeLines: () => (expand ? Number.POSITIVE_INFINITY : previewLines),
+        codeSeen: (lines: number) => {
+          longest = Math.max(longest, lines)
+        },
+        codeMore: (count: number) => t("markdown.codeMore", { count }),
         tab: 2
       },
       { theme: codeTheme(p) }
     )
   )
-  const rendered = new Map<string, string>()
-  const renderBlock = (block: string) => {
-    const key = block.includes("|") ? `${tableWidth}\0${block}` : block
+  const rendered = new Map<string, Rendered>()
+  const renderBlock = (block: string): Rendered => {
+    const key =
+      block.includes("|") || block.includes("```") ? `${tableWidth}\0${expand}\0${previewLines}\0${block}` : block
     const hit = rendered.get(key)
     if (hit !== undefined) return hit
-    const out = dedent(renderer.parse(block) as string)
+    longest = 0
+    const out = { text: dedent(renderer.parse(block) as string), overflow: false }
+    // A code block longer than the preview: the expand button has something to do
+    out.overflow = longest > previewLines
     if (rendered.size > 2000) rendered.clear()
     rendered.set(key, out)
     return out
   }
-  return (source: string, width: number) => {
+  return (source: string, width: number, view: CodeView): Rendered => {
     tableWidth = width
-    return splitBlocks(source).map(renderBlock).join("\n\n")
+    expand = view.expanded
+    previewLines = view.lines
+    const blocks = splitBlocks(source).map(renderBlock)
+    return { text: blocks.map(block => block.text).join("\n\n"), overflow: blocks.some(block => block.overflow) }
   }
 }
 
-const parsers = new WeakMap<Palette, (source: string, tableWidth: number) => string>()
+const parsers = new WeakMap<Palette, (source: string, tableWidth: number, view: CodeView) => Rendered>()
 
 // Columns a table leaves free for what Markdown sits in: the agent's "●" and its gap, or the reasoning box's frame
 const TABLE_MARGIN = 6
@@ -87,8 +106,9 @@ function useParser() {
     parser = createParser(palette)
     parsers.set(palette, parser)
   }
+  const view = useContext(CodeViewContext)
   const tableWidth = Math.max(20, columns - TABLE_MARGIN)
-  return (source: string) => parser(source, tableWidth)
+  return (source: string) => parser(source, tableWidth, view)
 }
 
 type Segment = { type: "text"; source: string } | { type: "image"; href: string; alt: string }
@@ -146,12 +166,14 @@ export function splitSegments(source: string): Segment[] {
 export default memo(function Markdown({ children }: { children: string }) {
   const parseMarkdown = useParser()
   const segments = splitSegments(children)
-  if (segments.length === 1 && segments[0]!.type === "text") return <Text>{parseMarkdown(children)}</Text>
+  const rendered = segments.map(segment => (segment.type === "text" ? parseMarkdown(segment.source) : undefined))
+  useReportOverflow(rendered.some(part => part?.overflow))
+  if (segments.length === 1 && segments[0]!.type === "text") return <Text>{rendered[0]!.text}</Text>
   return (
     <Box flexDirection="column">
       {segments.map((segment, i) =>
         segment.type === "text" ? (
-          <Text key={segmentKey(segment, i)}>{parseMarkdown(segment.source)}</Text>
+          <Text key={segmentKey(segment, i)}>{rendered[i]!.text}</Text>
         ) : (
           <TerminalImage key={segmentKey(segment, i)} href={segment.href} alt={segment.alt} />
         )

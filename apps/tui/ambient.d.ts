@@ -31,7 +31,10 @@ declare module "play-sound" {
     players?: string[]
   }
   interface Player {
-    play(file: string, callback?: (err: Error | null) => void): void
+    play(
+      file: string,
+      callback?: (err: Error | null) => void
+    ): import("node:child_process").ChildProcess | null | undefined
   }
   function playSound(options?: PlaySoundOptions): Player
   export default playSound

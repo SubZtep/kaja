@@ -38,6 +38,11 @@ const RemeasureContext = createContext<() => void>(() => {})
  */
 export const useRemeasure = () => useContext(RemeasureContext)
 
+const ViewportHeightContext = createContext(0)
+
+/** Rows of the enclosing {@link VirtualScroll}'s viewport (0 until it has been measured). */
+export const useViewportHeight = () => useContext(ViewportHeightContext)
+
 /**
  * Measures its child once laid out and reports the height. Memoized so a
  * scroll tick (which re-renders VirtualScroll) doesn't re-render or
@@ -208,21 +213,28 @@ export function VirtualScroll({
   }
 
   return (
-    <Box
-      ref={containerRef}
-      flexDirection="column"
-      overflow="hidden"
-      flexGrow={flexGrow}
-      flexShrink={flexShrink}
-      width={width}
-    >
-      <Box flexDirection="column" flexShrink={0} width="100%" marginTop={innerMargin}>
-        {mounted.map((item, i) => (
-          <MeasuredItem key={keys[start + i]!} id={keys[start + i]!} epoch={epochRef.current} onMeasure={handleMeasure}>
-            {item}
-          </MeasuredItem>
-        ))}
+    <ViewportHeightContext value={viewportRef.current}>
+      <Box
+        ref={containerRef}
+        flexDirection="column"
+        overflow="hidden"
+        flexGrow={flexGrow}
+        flexShrink={flexShrink}
+        width={width}
+      >
+        <Box flexDirection="column" flexShrink={0} width="100%" marginTop={innerMargin}>
+          {mounted.map((item, i) => (
+            <MeasuredItem
+              key={keys[start + i]!}
+              id={keys[start + i]!}
+              epoch={epochRef.current}
+              onMeasure={handleMeasure}
+            >
+              {item}
+            </MeasuredItem>
+          ))}
+        </Box>
       </Box>
-    </Box>
+    </ViewportHeightContext>
   )
 }

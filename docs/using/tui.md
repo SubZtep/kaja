@@ -65,7 +65,7 @@ In the chat, `/compact` summarises the conversation so far to free up space, and
 | `Backspace` / `Delete` | Delete before/after the cursor |
 | `↑` / `↓` | Previous/next prompt from history (on the first/last line), otherwise move between lines |
 | `Ctrl+T` | Toggle mic [dictation](/using/voice) |
-| `Esc` | Quit, or close the persona picker / decline the approval prompt when one is open |
+| `Esc` | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
 | `Ctrl+C` | Interrupt / exit |
 
 Prompt history spans all past sessions, newest first.
@@ -81,12 +81,15 @@ Prompt history spans all past sessions, newest first.
 
 ### Key bar
 
+Every entry but Cancel and Decline is also a button: it dims under the mouse and a click runs it, for a terminal or system that takes the hotkey (hover needs a terminal that reports mouse movement). Quit is clickable too, with the same double press while something is running. Expand shows only while some code on screen is longer than `codePreviewLines`, and its hotkey works only then.
+
 | Key | Action |
 |---|---|
 | `<modifier>+L` | Open these docs in your browser |
-| `<modifier>+P` | Open the persona picker |
+| `<modifier>+P` | Open the persona picker (hidden while a turn runs) |
 | `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`) |
 | `<modifier>+D` | Switch between dark and light, and save it |
+| `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
 [`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS Terminal.app
@@ -96,7 +99,15 @@ terminal does).
 In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`, `Backspace` or `Delete` close it. Picking a
 [persona](/abilities/personas) starts a fresh conversation and lasts until you quit.
 
-Thinking, sounds and voice have no in-app toggle. Set them in
+## Tool calls
+
+When the agent uses a tool, `preferences.toolDisplay` decides how it shows. `minimal` (default) keeps one live
+row above the input and leaves a one-line summary of the turn's tools; `verbose` lists every call in the chat;
+`corner` shows the current call in the header's top-right corner and nothing in the chat.
+
+In cloud mode, an approval for an HTTP tool or MCP call also offers to approve that tool for the rest of the chat, or always (saved to your list, see [HTTP tools](/abilities/tools)).
+
+Thinking, tool display, code preview length, sounds and voice have no in-app toggle. Set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
 
 ## Colours

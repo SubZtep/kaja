@@ -39,7 +39,7 @@ import {
 } from "./abilities"
 import { type BotLanguage, botLanguage } from "./language"
 
-const TOOL_CALLBACK = /^tool:(approve|decline):([0-9a-f]{16})$/
+const TOOL_CALLBACK = /^tool:(approve|approve_session|approve_always|decline):([0-9a-f]{16})$/
 
 /** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
 function approvalToken(callId: string): string {
@@ -162,12 +162,18 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     ]
     const token = approvalToken(event.id)
     const buttons = [
-      { text: t("telegram.approve"), data: `tool:approve:${token}` },
-      { text: t("telegram.decline"), data: `tool:decline:${token}` }
+      [
+        { text: t("telegram.approve"), data: `tool:approve:${token}` },
+        { text: t("telegram.decline"), data: `tool:decline:${token}` }
+      ],
+      [
+        { text: t("telegram.approveSession"), data: `tool:approve_session:${token}` },
+        { text: t("telegram.approveAlways"), data: `tool:approve_always:${token}` }
+      ]
     ]
     if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content, language)
     else await editIfChanged("…")
-    await sender.sendMessage(chatId, text.join("\n"), [buttons])
+    await sender.sendMessage(chatId, text.join("\n"), buttons)
   }
 
   /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. A tool image (an MCP screenshot) goes out as a photo; local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them. */
@@ -456,7 +462,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return true
     }
     const owner = telegramOwner(telegramUserId)
-    const approval = match[1] as "approve" | "decline"
+    const approval = match[1] as "approve" | "approve_session" | "approve_always" | "decline"
 
     try {
       await withLock(`telegram:${owner}`, async () => {
@@ -468,7 +474,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
           await editSafely(chatId, messageId, t("telegram.approvalExpired"))
           return
         }
-        const status = approval === "approve" ? t("telegram.approved") : t("telegram.declined")
+        const status = approval === "decline" ? t("telegram.declined") : t("telegram.approved")
         await editSafely(chatId, messageId, `🔐 <b>${escapeHtml(call.function.name)}</b>: ${status}`)
         await runTurnLocked(ownerUserId, owner, chatId, { approval }, true, language)
       })

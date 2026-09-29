@@ -1,7 +1,6 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { Box, useApp, useInput, useWindowSize } from "ink"
+import { Box, useInput, useWindowSize } from "ink"
 import { useEffect, useState } from "react"
-import { useBlink } from "../../hooks/use-blink"
 import { useDictation } from "../../hooks/use-dictation"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
 import { useWindowFocus } from "../../hooks/use-window-focus"
@@ -15,6 +14,11 @@ import { useKajaTheme } from "../theme"
  */
 const INPUT_MAX_HEIGHT = 8
 const INPUT_CONTENT_LINES = 6
+const CURSOR_BLINK_MS = 500
+/** Idle time before the placeholder hint disappears. */
+const HINT_HIDE_MS = 20_000
+/** Idle time before the border switches to the "power" style. */
+const POWER_BORDER_MS = 30_000
 /** Always 2 ASCII cells — never emoji (terminals disagree on emoji width). */
 const PREFIX_COLS = 2
 
@@ -53,10 +57,11 @@ export function UserInput({
   personaModels?: PersonaModels
 }>) {
   const [input, setInput] = useState("")
-  const [idle, setIdle] = useState(0)
+  // Thresholds flip once each, so a quiet input never re-renders on a timer.
+  const [hintHidden, setHintHidden] = useState(false)
+  const [power, setPower] = useState(false)
   const [mic, setMic] = useState(false)
   const { columns } = useWindowSize()
-  const { exit } = useApp()
   const history = usePromptHistory(initialHistory ?? [])
   // Human edits (typing, dictation) reset the recall position; recalled text itself goes through plain setInput so it doesn't.
   const editInput = (value: string) => {
@@ -64,10 +69,9 @@ export function UserInput({
     setInput(value)
   }
 
-  // Ctrl+T toggles dictation; Esc quits.
+  // Ctrl+T toggles dictation (Esc quits, see useQuitGuard).
   useInput((char, key) => {
     if (key.ctrl && char === "t") setMic(prev => !prev)
-    if (key.escape) exit()
   })
   // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.
   const sttState = useDictation(
@@ -81,20 +85,17 @@ export function UserInput({
 
   const prefix = statusPrefix(mic, speaking, sttState)
   const windowFocused = useWindowFocus()
-  const cursorVisible = useBlink(500, !mic && !pending && windowFocused)
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setIdle(idle => idle + 1)
-    }, 1000)
+    setHintHidden(false)
+    setPower(false)
+    const hint = setTimeout(() => setHintHidden(true), HINT_HIDE_MS)
+    const border = setTimeout(() => setPower(true), POWER_BORDER_MS)
 
     return () => {
-      clearInterval(timer)
+      clearTimeout(hint)
+      clearTimeout(border)
     }
-  }, [])
-
-  useEffect(() => {
-    setIdle(0)
   }, [pending, input])
 
   const handleSubmit = (value: string) => {
@@ -110,7 +111,7 @@ export function UserInput({
 
   return (
     <Box flexDirection="column" flexShrink={0}>
-      <Border variant={idle > 30 ? "power" : "solid"}>
+      <Border variant={power ? "power" : "solid"}>
         <TextInput
           value={input}
           focus={!pending}
@@ -122,8 +123,9 @@ export function UserInput({
             return recalled
           }}
           showCursor={!mic}
-          cursorVisible={cursorVisible}
-          placeholder={idle > 20 ? undefined : t("input.placeholder")}
+          blinkMs={CURSOR_BLINK_MS}
+          blinkPaused={!windowFocused}
+          placeholder={hintHidden ? undefined : t("input.placeholder")}
           prefix={prefix}
           prefixCols={PREFIX_COLS}
           columns={fieldColumns}

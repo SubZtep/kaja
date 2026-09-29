@@ -5,6 +5,7 @@ import {
   isIgnoredTerminalInput,
   isKittyKeyboardNoise,
   isTerminalMouseSequence,
+  parseMouse,
   parseWheelDirection,
   windowFocusReport
 } from "../../lib/terminal-input"
@@ -61,4 +62,11 @@ test("colour-scheme reports are recognized and are noise (not typed into the pro
   expect(colorSchemeReport("[?997;3n")).toBeNull()
   expect(colorSchemeReport("hello")).toBeNull()
   expect(isIgnoredTerminalInput("[?997;1n")).toBeTrue()
+})
+
+test("parseMouse decodes a left press and a button-less move, and ignores wheel and release", () => {
+  expect(parseMouse("[<0;5;20M")).toEqual({ kind: "press", col: 4, row: 19 })
+  expect(parseMouse("[<35;10;3M")).toEqual({ kind: "move", col: 9, row: 2 })
+  expect(parseMouse("[<0;5;20m")).toBeNull()
+  expect(parseMouse("[<64;5;20M")).toBeNull()
 })

@@ -41,3 +41,42 @@ export function isDangerousCommand(command: string): boolean {
   if (DANGEROUS_PATTERNS.some(pattern => pattern.test(command))) return true
   return isDangerousRm(command) || isForcePush(command) || isRecursiveChownOnRoot(command)
 }
+
+/** Regex sources for commands that run without asking; each must match the whole command. The built-in list, also `docs/config/commands.toml`'s `safe`. */
+export const DEFAULT_SAFE_COMMANDS: readonly string[] = [
+  String.raw`ls(\s+-[a-zA-Z]+)*(\s+[\w./~-]+)*`,
+  String.raw`(cat|head|tail)(\s+-[a-zA-Z0-9]+)*(\s+[\w./~-]+)+`,
+  "pwd",
+  "whoami",
+  "date",
+  String.raw`uname(\s+-[a-zA-Z]+)*`,
+  String.raw`git (status|diff|log)(?!.*--output)(\s+[\w./=:@^~-]+)*`
+]
+
+/** Compiles regex sources into whole-command matchers; a source that isn't a valid regex is returned in `invalid` instead of throwing. */
+export function compileSafeCommands(sources: readonly string[]): { patterns: RegExp[]; invalid: string[] } {
+  const patterns: RegExp[] = []
+  const invalid: string[] = []
+  for (const source of sources) {
+    try {
+      patterns.push(new RegExp(`^(?:${source})$`))
+    } catch {
+      invalid.push(source)
+    }
+  }
+  return { patterns, invalid }
+}
+
+/** The built-in patterns, compiled once, for an agent given none of its own. */
+export const DEFAULT_SAFE_PATTERNS = compileSafeCommands(DEFAULT_SAFE_COMMANDS).patterns
+
+// Shell metacharacters that chain into, pipe into or substitute another command (`sh -c` interprets all of them):
+// a safe pattern only ever approves one simple invocation, whatever it says
+const SHELL_METACHARACTERS = /[;&|`$(){}<>\n]/
+
+/** Whether a command may run without asking: it matches a safe pattern, has no shell metacharacters and isn't dangerous. */
+export function isSafeCommand(command: string, patterns: readonly RegExp[]): boolean {
+  const trimmed = command.trim()
+  if (SHELL_METACHARACTERS.test(trimmed) || isDangerousCommand(trimmed)) return false
+  return patterns.some(pattern => pattern.test(trimmed))
+}

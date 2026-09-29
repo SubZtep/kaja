@@ -3,6 +3,19 @@ import * as z from "zod"
 
 export const KajaPreferencesSchema = z.object({
   thinking: z.boolean().optional().describe("Show thinking indicator when the model is generating a response"),
+  toolDisplay: z
+    .enum(["minimal", "verbose", "corner"])
+    .optional()
+    .describe(
+      "How tool calls show: minimal keeps one live row and a summary line in the chat, verbose lists every call, corner shows the current call in the header (default: minimal)"
+    ),
+  codePreviewLines: z
+    .number()
+    .int()
+    .min(1)
+    .max(200)
+    .optional()
+    .describe("Lines of a code block or approval command shown before it is cut short (default: 5)"),
   sounds: z.boolean().optional().describe("Enable sound effects"),
   voice: z.boolean().optional().describe("Enable voice output (text-to-speech)"),
   locale: z.enum(locales).optional().describe("Language for the chat and application"),

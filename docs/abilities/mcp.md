@@ -70,7 +70,8 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
   works without one.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only, and `always` asks before
   every call. If a server forgets to mark its read-only tools, list them in `readOnly`, with the arguments
-  that turn a call into a write:
+  that turn a call into a write. In the cloud you can also skip the question for a tool yourself, by answering
+  "always allow" at the prompt or from the tool's dialog on the abilities page:
 
   ```toml
   readOnly = [

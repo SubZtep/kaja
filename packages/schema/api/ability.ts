@@ -78,12 +78,19 @@ export const userAbilitySchema = z.object({
   enabledAt: z.coerce.date(),
   available: z.boolean(),
   /** An HTTP tool's or MCP server's tools the user switched off (the rest reach their turns); empty for other types. */
-  disabledTools: z.array(z.string())
+  disabledTools: z.array(z.string()),
+  /** Tools (names, or globs with `*`) that never ask for approval; empty for other types. */
+  allowedTools: z.array(z.string())
 })
 
 /** Which of an enabled HTTP tool's or MCP server's tools the user switched off; the rest stay on, and so do tools it gains later. */
 export const setDisabledToolsRequestSchema = z.object({
   disabled: z.array(z.string().min(1)).max(500)
+})
+
+/** Which of an enabled HTTP tool's or MCP server's tools never ask for approval (names, or globs with `*`); replaces the list. */
+export const setAllowedToolsRequestSchema = z.object({
+  allowed: z.array(z.string().min(1).max(200)).max(500)
 })
 
 /** An ability's key, as the user types it; stored encrypted and never sent back. */
@@ -133,6 +140,7 @@ export type UserAbility = z.infer<typeof userAbilitySchema>
 export type ListUserAbilitiesResponse = z.infer<typeof listUserAbilitiesResponseSchema>
 export type SaveAbilityKeyRequest = z.infer<typeof saveAbilityKeyRequestSchema>
 export type SetDisabledToolsRequest = z.infer<typeof setDisabledToolsRequestSchema>
+export type SetAllowedToolsRequest = z.infer<typeof setAllowedToolsRequestSchema>
 export type AbilityKeyCheck = z.infer<typeof abilityKeyCheckSchema>
 export type SaveAbilityKeyResponse = z.infer<typeof saveAbilityKeyResponseSchema>
 export type MarketplaceSyncStatus = z.infer<typeof marketplaceSyncStatusSchema>
