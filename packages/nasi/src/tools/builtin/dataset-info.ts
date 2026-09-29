@@ -1,14 +1,18 @@
 import { normalizeAnswer } from "@kaja/schema/cli"
+import { z } from "zod"
 import { DATASET_INFO_TOOL, LOCAL_OWNER_CTX, tool } from "../../agent/agent"
 import { loadDataset, loadDatasets } from "../../personas"
 import { requireStore } from "../../store"
 import type { NasiStore } from "../../store/types"
 
-type Args =
-  | { action: "list_datasets" }
-  | { action: "get_status"; dataset: string }
-  | { action: "answer"; dataset: string; field: string; value: string }
-  | { action: "start_new_version"; dataset: string }
+// Exactly the fields each action needs; the model is shown one flat object instead (see `parameters` below), which every provider takes.
+const ArgsSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("list_datasets") }),
+  z.object({ action: z.literal("get_status"), dataset: z.string() }),
+  z.object({ action: z.literal("answer"), dataset: z.string(), field: z.string(), value: z.string() }),
+  z.object({ action: z.literal("start_new_version"), dataset: z.string() })
+])
+type Args = z.output<typeof ArgsSchema>
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -161,7 +165,7 @@ async function handleStartNewVersion(store: NasiStore, datasetId: string, owner:
  * optional revalidateAfterDays that controls when a completed version
  * becomes eligible for a fresh one.
  */
-export const datasetInfoTool = tool<Args>({
+export const datasetInfoTool = tool({
   name: DATASET_INFO_TOOL,
   description:
     "Collect a dataset's fields from the user by asking about them one at " +
@@ -185,6 +189,7 @@ export const datasetInfoTool = tool<Args>({
     "conversationally, phrasing its prompt naturally rather than reading it " +
     "verbatim, and ask one at a time rather than dumping the whole list on " +
     "the user.",
+  schema: ArgsSchema,
   parameters: {
     type: "object",
     properties: {

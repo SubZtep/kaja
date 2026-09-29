@@ -1,6 +1,7 @@
 import type { Dataset, Persona, SamplingParams } from "@kaja/schema/cli"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import type OpenAI from "openai"
+import { z } from "zod"
 import type { NasiStore } from "../store/types"
 import { samplingOf } from "./persona"
 import { type Tool, tool } from "./tools"
@@ -109,91 +110,66 @@ export const DATASET_INFO_TOOL = "dataset_info"
 export const SWITCH_PERSONA_TOOL = "switch_persona"
 export const REMEMBER_NOTE_TOOL = "remember_note"
 
-export const askUserTool = tool<{ question: string; note?: string }>({
+export const askUserTool = tool({
   name: ASK_USER_TOOL,
   description:
     "Ask the human a question and wait for their reply. Use this when you need " +
     "information only they can provide, or when you're done with your current " +
     "thought and it's their turn (e.g. asking your next yes/no question in a " +
     "game). Don't use this just to acknowledge or restate something.",
-  parameters: {
-    type: "object",
-    properties: {
-      question: {
-        type: "string",
-        description: "The question to ask the human."
-      },
-      note: {
-        type: "string",
-        description:
-          "Optional short reaction to their previous answer, shown separately from " +
+  schema: z.object({
+    question: z.string().describe("The question to ask the human."),
+    note: z
+      .string()
+      .optional()
+      .describe(
+        "Optional short reaction to their previous answer, shown separately from " +
           "the question (e.g. 'Not alive — got it.'). Never repeat or preview the " +
           "question itself here."
-      }
-    },
-    required: ["question"]
-  },
+      )
+  }),
   execute: async () => {
     throw new Error(`${ASK_USER_TOOL} should be intercepted by run(), not executed`)
   }
 })
 
-export const runCommandTool = tool<{
-  command: string
-  description: string
-  mutates: boolean
-}>({
+export const runCommandTool = tool({
   name: RUN_COMMAND_TOOL,
   description:
     "Propose a shell command to run on the user's computer. Commands on " +
     "the user's safe list (simple read-only ones) run immediately; others " +
     "require human approval first. Use for actions like playing a sound, converting " +
     "media, or invoking a CLI tool.",
-  parameters: {
-    type: "object",
-    properties: {
-      command: { type: "string", description: "The shell command to run" },
-      description: {
-        type: "string",
-        description: "One short sentence explaining what this command does, shown to the human alongside it"
-      },
-      mutates: {
-        type: "boolean",
-        description:
-          "Whether this command changes any state — files, git history, " +
+  schema: z.object({
+    command: z.string().describe("The shell command to run"),
+    description: z
+      .string()
+      .describe("One short sentence explaining what this command does, shown to the human alongside it"),
+    mutates: z
+      .boolean()
+      .describe(
+        "Whether this command changes any state — files, git history, " +
           "installed packages, system config, network resources, etc. " +
           "false only for purely read-only commands (e.g. ls, cat, git " +
           'status, python3 -c "print(...)"). When unsure, say true.'
-      }
-    },
-    required: ["command", "description", "mutates"]
-  },
+      )
+  }),
   execute: async () => {
     throw new Error(`${RUN_COMMAND_TOOL} should be intercepted by run(), not executed`)
   }
 })
 
-export const switchPersonaTool = tool<{ persona: string; reason?: string }>({
+export const switchPersonaTool = tool({
   name: SWITCH_PERSONA_TOOL,
   description:
     "Switch your own persona when the conversation clearly calls for a " +
     "different one (see ## Personas in your system prompt). The " +
     "conversation continues uninterrupted; only your role, style, and " +
     "focus change.",
-  parameters: {
-    type: "object",
-    properties: {
-      persona: {
-        type: "string",
-        description: "Id of the persona to adopt"
-      },
-      reason: {
-        type: "string",
-        description: "One short sentence on why this persona fits now"
-      }
-    },
-    required: ["persona"]
-  },
+  schema: z.object({
+    persona: z.string().describe("Id of the persona to adopt"),
+    reason: z.string().optional().describe("One short sentence on why this persona fits now")
+  }),
   execute: async () => {
     throw new Error(`${SWITCH_PERSONA_TOOL} should be intercepted by run(), not executed`)
   }

@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { tool } from "../../agent/agent"
 import { summarize, TEXT_STYLE } from "../../agent/compaction"
 import { getToolDeps } from "../deps"
@@ -10,10 +11,7 @@ import { getToolDeps } from "../deps"
  * pricing" or "3 bullet points".
  * @returns The generated summary.
  */
-export const summarizeTool = tool<{
-  text: string
-  instructions?: string
-}>({
+export const summarizeTool = tool({
   name: "summarize",
   description:
     "Summarize a long piece of text. You MUST call this tool on any long " +
@@ -21,20 +19,13 @@ export const summarizeTool = tool<{
     "a long page — rather than condensing or paraphrasing it yourself. Do " +
     "not skip this call just because you're capable of summarizing the " +
     "text directly.",
-  parameters: {
-    type: "object",
-    properties: {
-      text: {
-        type: "string",
-        description: "The text to summarize"
-      },
-      instructions: {
-        type: "string",
-        description: "Optional extra guidance, e.g. 'focus on pricing' or '3 bullet points'"
-      }
-    },
-    required: ["text"]
-  },
+  schema: z.object({
+    text: z.string().describe("The text to summarize"),
+    instructions: z
+      .string()
+      .optional()
+      .describe("Optional extra guidance, e.g. 'focus on pricing' or '3 bullet points'")
+  }),
   execute: async (args, ctx) => {
     const { summarizer, chat } = getToolDeps()
     const model = summarizer ?? chat

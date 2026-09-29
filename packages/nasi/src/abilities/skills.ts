@@ -1,10 +1,18 @@
 import type { Persona } from "@kaja/schema/cli"
+import { z } from "zod"
 import { type Tool, tool } from "../agent/tools"
 import { type AbilityStore, SkillFileError, type SkillSummary } from "./types"
 
 export const LOAD_SKILL_TOOL = "load_skill"
 
-type LoadSkillArgs = { name: string; file?: string }
+const LoadSkillArgsSchema = z.object({
+  name: z.string().describe("Name of the skill"),
+  file: z
+    .string()
+    .optional()
+    .describe("Optional path of another file in the skill, relative to its folder (e.g. reference.md)")
+})
+type LoadSkillArgs = z.output<typeof LoadSkillArgsSchema>
 
 /** The load_skill tool, carrying the skill catalog it serves so the system prompt can list the same skills. */
 export type LoadSkillTool = Tool<LoadSkillArgs> & { skills: SkillSummary[] }
@@ -31,22 +39,12 @@ export function createLoadSkillTool(opts: {
 }): LoadSkillTool {
   const personaById = new Map((opts.personas ?? []).map(p => [p.id, p]))
 
-  const loadSkill = tool<LoadSkillArgs>({
+  const loadSkill = tool({
     name: LOAD_SKILL_TOOL,
     description:
       "Load a skill's instructions (see ## Skills in your system prompt) before starting a task it covers. " +
       "Pass `file` to read one of the skill's other files, only when its instructions point to it.",
-    parameters: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Name of the skill" },
-        file: {
-          type: "string",
-          description: "Optional path of another file in the skill, relative to its folder (e.g. reference.md)"
-        }
-      },
-      required: ["name"]
-    },
+    schema: LoadSkillArgsSchema,
     // Problems come back as text rather than a thrown ToolError, so the model can pick another skill or file instead of the turn failing.
     execute: async (args, ctx) => {
       const allowed = skillsForPersona(opts.skills, personaById.get(ctx?.personaId ?? ""))

@@ -1,4 +1,5 @@
-import type { MemoryImportance } from "@kaja/schema/store"
+import { type MemoryImportance, MemoryImportanceSchema } from "@kaja/schema/store"
+import { z } from "zod"
 import { REMEMBER_NOTE_TOOL, tool } from "../../agent/agent"
 import { forgetNotes, noteHeader, requireStore } from "../../store"
 
@@ -17,45 +18,25 @@ const IMPORTANCE_WEIGHT: Record<MemoryImportance, number> = {
  * @param args.tags - Optional labels to help future recall_memory queries match.
  * @param args.sticky - When true, this note is injected into every future session's system prompt instead of waiting for a recall_memory query.
  */
-export const rememberNoteTool = tool<{
-  key: string
-  content: string
-  importance: MemoryImportance
-  tags?: string[]
-  sticky?: boolean
-}>({
+export const rememberNoteTool = tool({
   name: REMEMBER_NOTE_TOOL,
   description:
     "Write or update a durable fact for future sessions. Upserts by key " +
     "(calling again with the same key overwrites, it doesn't duplicate). " +
     "Write proactively whenever you learn something durable about the " +
     "user or project — don't ask permission first.",
-  parameters: {
-    type: "object",
-    properties: {
-      key: {
-        type: "string",
-        description: "Stable identifier for this fact, e.g. 'user:communication-style'"
-      },
-      content: { type: "string", description: "The fact itself" },
-      importance: {
-        type: "string",
-        enum: ["low", "medium", "high"],
-        description: "How much this should weigh in recall ranking"
-      },
-      tags: {
-        type: "array",
-        items: { type: "string" },
-        description: "Optional labels to help future recall_memory queries match"
-      },
-      sticky: {
-        type: "boolean",
-        description:
-          "When true, this note is shown at the start of every future session instead of waiting for a recall_memory query"
-      }
-    },
-    required: ["key", "content", "importance"]
-  },
+  schema: z.object({
+    key: z.string().describe("Stable identifier for this fact, e.g. 'user:communication-style'"),
+    content: z.string().describe("The fact itself"),
+    importance: MemoryImportanceSchema.describe("How much this should weigh in recall ranking"),
+    tags: z.array(z.string()).optional().describe("Optional labels to help future recall_memory queries match"),
+    sticky: z
+      .boolean()
+      .optional()
+      .describe(
+        "When true, this note is shown at the start of every future session instead of waiting for a recall_memory query"
+      )
+  }),
   execute: async (args, ctx) => {
     const nasi = requireStore(ctx)
     const owner = ctx?.owner ?? null
@@ -87,47 +68,22 @@ export const rememberNoteTool = tool<{
  * @param args.minImportance - Only notes at or above this importance.
  * @returns The top-matching notes with their metadata header, or a no-match message.
  */
-export const recallMemoryTool = tool<{
-  query: string
-  limit?: number
-  tags?: string[]
-  stickyOnly?: boolean
-  minImportance?: MemoryImportance
-}>({
+export const recallMemoryTool = tool({
   name: "recall_memory",
   description:
     "Search stored notes by keyword, ranked by relevance and importance. " +
     "Optional filters: tags (any-of), stickyOnly, minImportance. An empty " +
     "query with a filter returns the whole filtered set.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description: "Search terms; may be empty when a filter is given"
-      },
-      limit: {
-        type: "number",
-        description:
-          "Max notes to return (default 5 for keyword queries; an empty query is uncapped unless this is set)"
-      },
-      tags: {
-        type: "array",
-        items: { type: "string" },
-        description: "Only notes carrying at least one of these tags"
-      },
-      stickyOnly: {
-        type: "boolean",
-        description: "Only sticky notes"
-      },
-      minImportance: {
-        type: "string",
-        enum: ["low", "medium", "high"],
-        description: "Only notes at or above this importance"
-      }
-    },
-    required: ["query"]
-  },
+  schema: z.object({
+    query: z.string().describe("Search terms; may be empty when a filter is given"),
+    limit: z
+      .number()
+      .optional()
+      .describe("Max notes to return (default 5 for keyword queries; an empty query is uncapped unless this is set)"),
+    tags: z.array(z.string()).optional().describe("Only notes carrying at least one of these tags"),
+    stickyOnly: z.boolean().optional().describe("Only sticky notes"),
+    minImportance: MemoryImportanceSchema.optional().describe("Only notes at or above this importance")
+  }),
   execute: async (args, ctx) => {
     const nasi = requireStore(ctx)
     const owner = ctx?.owner ?? null
@@ -179,31 +135,17 @@ export const recallMemoryTool = tool<{
  * @param args.tag - Delete every note carrying this tag.
  * @param args.pattern - Delete every note whose key matches this glob, e.g. "test:*".
  */
-export const forgetNoteTool = tool<{
-  key?: string
-  tag?: string
-  pattern?: string
-}>({
+export const forgetNoteTool = tool({
   name: "forget_note",
   description:
     "Delete stored notes. Provide exactly one selector: key (exact), tag " +
     "(every note carrying it), or pattern (key glob like 'test:*'). " +
     "Returns the forgotten keys.",
-  parameters: {
-    type: "object",
-    properties: {
-      key: { type: "string", description: "Exact key of one note to delete" },
-      tag: {
-        type: "string",
-        description: "Delete every note carrying this tag"
-      },
-      pattern: {
-        type: "string",
-        description: "Delete every note whose key matches this glob, e.g. 'test:*'"
-      }
-    },
-    required: []
-  },
+  schema: z.object({
+    key: z.string().optional().describe("Exact key of one note to delete"),
+    tag: z.string().optional().describe("Delete every note carrying this tag"),
+    pattern: z.string().optional().describe("Delete every note whose key matches this glob, e.g. 'test:*'")
+  }),
   execute: async (args, ctx) => {
     const selectors = [args.key, args.tag, args.pattern].filter(s => s !== undefined)
     if (selectors.length !== 1) return "Provide exactly one of: key, tag, pattern."
@@ -224,22 +166,15 @@ export const forgetNoteTool = tool<{
  *
  * @param args.full - When true, include each note's content below its header.
  */
-export const listNotesTool = tool<{ full?: boolean }>({
+export const listNotesTool = tool({
   name: "list_notes",
   description:
     "List every stored note's key, importance, sticky flag, tags, and " +
     "last-used date — use to audit what's currently remembered. Pass " +
     "full: true to include each note's content.",
-  parameters: {
-    type: "object",
-    properties: {
-      full: {
-        type: "boolean",
-        description: "Include each note's content below its header"
-      }
-    },
-    required: []
-  },
+  schema: z.object({
+    full: z.boolean().optional().describe("Include each note's content below its header")
+  }),
   execute: async (args, ctx) => {
     const store = await requireStore(ctx).loadMemory(ctx?.owner ?? null)
     const entries = Object.entries(store)

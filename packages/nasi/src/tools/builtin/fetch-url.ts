@@ -1,5 +1,6 @@
 import { Readability } from "@mozilla/readability"
 import { parseHTML } from "linkedom"
+import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
 import { fetchPublicHttp, ProxyUnavailableError, UnsafeUrlError } from "../../security/ssrf"
 import { warn } from "../../warn"
@@ -16,7 +17,7 @@ const MAX_PAGE_BYTES = 2 * 1024 * 1024
  * ads, and other boilerplate stripped); other content types are returned
  * as-is.
  */
-export const fetchUrlTool = tool<{ url: string }>({
+export const fetchUrlTool = tool({
   name: "fetch_url",
   description:
     "Fetch a specific, known URL and return its content as plain text. Use " +
@@ -25,16 +26,9 @@ export const fetchUrlTool = tool<{ url: string }>({
     "returns the actual page instead of a search snippet. The full page " +
     "text is returned unsummarized — if it's long, call summarize on the " +
     "result before replying instead of condensing it yourself.",
-  parameters: {
-    type: "object",
-    properties: {
-      url: {
-        type: "string",
-        description: "The URL to fetch"
-      }
-    },
-    required: ["url"]
-  },
+  schema: z.object({
+    url: z.string().describe("The URL to fetch")
+  }),
   execute: async args => {
     let res: Response
     try {

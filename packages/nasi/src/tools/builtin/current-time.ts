@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { tool } from "../../agent/agent"
 
 /**
@@ -9,20 +10,13 @@ import { tool } from "../../agent/agent"
  * user's own timezone (if it knows it)
  * when it wants that instead.
  */
-export const currentTimeTool = tool<{ timezone?: string }>({
+export const currentTimeTool = tool({
   name: "current_time",
   description:
     "Get the current date and time in a given IANA timezone (e.g. 'America/New_York'). Defaults to the local timezone — pass the user's timezone explicitly if you know it.",
-  parameters: {
-    type: "object",
-    properties: {
-      timezone: {
-        type: "string",
-        description: "IANA timezone name, e.g. 'America/New_York'"
-      }
-    },
-    required: []
-  },
+  schema: z.object({
+    timezone: z.string().optional().describe("IANA timezone name, e.g. 'America/New_York'")
+  }),
   execute: async args => {
     const timeZone = args.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
     const now = new Date()
