@@ -6,6 +6,7 @@ pgdata
 **/.output
 **/.tanstack
 **/dist
+**/.tsbuildinfo
 **/node_modules
 **/.env*
 **/Dockerfile

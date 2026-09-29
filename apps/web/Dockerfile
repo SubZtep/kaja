@@ -5,10 +5,13 @@ COPY apps/web/package.json ./apps/web/package.json
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/tui/package.json ./apps/tui/package.json
 COPY apps/sandbox/package.json ./apps/sandbox/package.json
-COPY packages ./packages
+COPY packages/nasi/package.json ./packages/nasi/package.json
+COPY packages/schema/package.json ./packages/schema/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
+# Only manifests before the install, so a source edit anywhere reuses the installed dependencies layer
 RUN bun install --frozen-lockfile --ignore-scripts
-COPY apps/web ./apps/web
 COPY packages ./packages
+COPY apps/web ./apps/web
 ENV NODE_ENV=production
 RUN bun run --filter @kaja/web build
 
