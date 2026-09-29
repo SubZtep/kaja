@@ -77,23 +77,19 @@ function confirmPrompt(
   return { command: event.summary, description: t("confirmCommand.toolRequest", { name: event.name }), kind: "tool" }
 }
 
-function buildKeyBarItems(
-  hotkeyModifier: string | undefined,
-  hasPersona: boolean,
-  bottomChromeKey: BottomChromeKey,
-  quitArmed: boolean,
-  actions: { help: () => void; persona: () => void; copy: () => void; theme: () => void; expand: () => void },
-  canExpand: boolean,
-  pressQuit: () => void
-) {
+/** One hotkey and its key bar entry: shown, bound and clickable only while `when` holds, so the three can't disagree. */
+type KeyBinding = { letter: string; label: string; run: () => void; when: boolean }
+
+function buildKeyBarItems(hotkeyModifier: string | undefined, bindings: KeyBinding[], escItem?: KeyBarEntry) {
   const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
-  const escItem = escKeyBarItem(bottomChromeKey, quitArmed, pressQuit)
   return [
-    { key: `${modifierLabel}+L`, label: t("keybar.help"), onPress: actions.help },
-    ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona"), onPress: actions.persona }] : []),
-    { key: `${modifierLabel}+R`, label: t("keybar.copy"), onPress: actions.copy },
-    { key: `${modifierLabel}+D`, label: t("keybar.theme"), onPress: actions.theme },
-    ...(canExpand ? [{ key: `${modifierLabel}+E`, label: t("keybar.expand"), onPress: actions.expand }] : []),
+    ...bindings
+      .filter(binding => binding.when)
+      .map(binding => ({
+        key: `${modifierLabel}+${binding.letter.toUpperCase()}`,
+        label: binding.label,
+        onPress: binding.run
+      })),
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -181,38 +177,44 @@ function Chrome({
     [codeExpanded, codePreviewLines, registerOverflow]
   )
 
-  // The same actions answer the hotkeys and a click on the key bar
-  const actions = {
-    // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
-    // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
-    help: () => {
-      open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
-    },
-    persona: () => {
-      if (capabilities.persona && !pending) setPickingPersona(true)
-    },
-    // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
-    copy: () => uiEvents.emit("copy"),
-    theme: toggleTheme,
-    expand: () => setCodeExpanded(prev => !prev)
-  }
-  useModifierKeys(hotkeyModifier, { l: actions.help, p: actions.persona, d: actions.theme, e: actions.expand })
-
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
   const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
   const { armed: quitArmed, press: pressQuit } = useQuitGuard(
     bottomChromeKey === "input" || bottomChromeKey === "running",
     pending || runningCommand
   )
-  const keyBarItems = buildKeyBarItems(
+  // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
+  // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
+  // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
+  const bindings: KeyBinding[] = [
+    {
+      letter: "l",
+      label: t("keybar.help"),
+      when: true,
+      run: () => {
+        open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
+      }
+    },
+    {
+      letter: "p",
+      label: t("keybar.persona"),
+      when: capabilities.persona && !pending,
+      run: () => setPickingPersona(true)
+    },
+    { letter: "r", label: t("keybar.copy"), when: true, run: () => uiEvents.emit("copy") },
+    { letter: "d", label: t("keybar.theme"), when: true, run: toggleTheme },
+    {
+      letter: "e",
+      label: t("keybar.expand"),
+      when: overflowing > 0,
+      run: () => setCodeExpanded(prev => !prev)
+    }
+  ]
+  useModifierKeys(
     hotkeyModifier,
-    capabilities.persona,
-    bottomChromeKey,
-    quitArmed,
-    actions,
-    overflowing > 0,
-    pressQuit
+    Object.fromEntries(bindings.filter(binding => binding.when).map(binding => [binding.letter, binding.run]))
   )
+  const keyBarItems = buildKeyBarItems(hotkeyModifier, bindings, escKeyBarItem(bottomChromeKey, quitArmed, pressQuit))
 
   return (
     <ThemeProvider theme={themes[theme]}>
@@ -234,7 +236,6 @@ function Chrome({
             partial={partial}
             pending={pending}
             sounds={sounds}
-            hotkeyModifier={hotkeyModifier}
             bottomChromeKey={bottomChromeKey}
             toolDisplay={toolDisplay}
             currentTool={currentTool}
