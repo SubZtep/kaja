@@ -1,5 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { sentry } from "@sentry/hono/bun"
+import { bodyLimit } from "hono/body-limit"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { csrfProtection } from "./core/csrf"
@@ -52,6 +53,8 @@ app.use("*", (c, next) => {
   if (PUBLIC_WIDGET_PATH.test(c.req.path)) return next()
   return cors({ origin: env.CORS_ORIGIN, credentials: true })(c, next)
 })
+// No route takes more than a turn's text (images reach the API through Telegram, not request bodies); without this Bun buffers up to 128 MB before zod runs.
+app.use("*", bodyLimit({ maxSize: 1024 * 1024, onError: c => c.json({ error: "Request body too large" }, 413) }))
 app.use("*", globalRateLimiter)
 app.use("*", csrfProtection)
 app.use("*", authMiddleware)

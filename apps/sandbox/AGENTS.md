@@ -8,7 +8,7 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 
 - Keyless stdio MCP abilities with a `tools` list are always offered in the cloud (`cloudMcpProblem` in `apps/api/src/services/ability.ts`); a cloud turn always gets `mcpSandbox` (`apps/api/src/features/nasi/chat.ts`), so a stdio ability never runs on the API host. nasi's `sandboxedMcpTarget` points each at `SANDBOX_ORIGIN/mcp/<name>`, and requests to that origin go to `mcpSandbox.fetch` instead of the guarded fetch
 - API side (`apps/api/src/features/sandbox/`): `connect.ts` (owner from `X-Kaja-Sandbox-Key`: `SANDBOX_SYSTEM_KEY` = official, a user's `sandbox_owner` key, none = anonymous; resume by `X-Kaja-Sandbox-Instance`), `tunnel.ts` (fetch ⇄ frames), `registry.ts` (connected tunnels in memory, pseudonyms, `pickSandbox`: last pick → own → shared if the user's `use_shared` and the owner's `share` → official). Rows in `sandbox`/`sandbox_owner` (`services/sandbox.ts`); geolocation in `core/geo.ts`
-- Frames are JSON, schemas in `@kaja/schema/api` (`sandboxFrameSchema` from the sandbox, `apiSandboxFrameSchema` from the API). A sandbox sees users only as `pseudonymFor(userId, sandboxId)` (HMAC with `BETTER_AUTH_SECRET`)
+- Frames are JSON, schemas in `@kaja/schema/api` (`sandboxFrameSchema` from the sandbox, `apiSandboxFrameSchema` from the API). A sandbox sees users only as `pseudonymFor(userId, sandboxId)` (HMAC with a key HKDF-derived from `BETTER_AUTH_SECRET`)
 - The API holds the sockets in memory, so it must run as one instance
 
 ## Layout

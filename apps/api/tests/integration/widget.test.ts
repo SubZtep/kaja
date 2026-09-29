@@ -206,6 +206,23 @@ describe("widget", () => {
     expect(res.status).toBe(400)
   })
 
+  test.each([
+    "null",
+    "example-site.test",
+    "https://example-site.test/",
+    "https://example-site.test/page",
+    "HTTPS://EXAMPLE-SITE.TEST",
+    "https://example-site.test:443",
+    "ftp://example-site.test"
+  ])("a key for %p, which no browser sends as its Origin, is rejected", async origin => {
+    const res = await app.request("/widget/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ label: "Bad origin", allowedOrigins: [origin] })
+    })
+    expect(res.status).toBe(400)
+  })
+
   test("a key with no persona behaves exactly as before (auto-select, unaffected)", async () => {
     const res = await app.request("/widget/turn", {
       method: "POST",

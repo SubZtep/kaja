@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto"
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { createMiddleware } from "hono/factory"
 import { env } from "../../core/env"
@@ -14,14 +15,14 @@ const attachServices = createMiddleware<{ Variables: RouteVariables }>(async (c,
 /**
  * Shared-secret bearer for /config/* (no per-user auth).
  * Fail-closed: missing/empty CONFIG_API_TOKEN denies every request so provider
- * API keys in models.toml / model JSON cannot be scraped when misconfigured.
+ * API keys in models.toml / model JSON cannot be scraped when misconfigured; in production the
+ * API won't boot with the .env.example placeholder either (see ApiEnvSchema).
  */
-// TODO: this only fails closed on a missing/empty token — a deployment left at the
-// .env.example placeholder value still passes. Warn or refuse to boot when CONFIG_API_TOKEN
-// equals the example placeholder.
 export function isValidConfigToken(authHeader: string | undefined | null, token: string | undefined | null): boolean {
   if (!token) return false
-  return authHeader === `Bearer ${token}`
+  // Compared as digests, so the time taken says nothing about how much of the token a guess got right
+  const digest = (value: string) => createHash("sha256").update(value).digest()
+  return timingSafeEqual(digest(authHeader ?? ""), digest(`Bearer ${token}`))
 }
 
 const configTokenAuth = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {

@@ -3,12 +3,24 @@ import { z } from "zod"
 /** Which client-side UI the embed script renders — independent of persona (which LLM personality runs behind it). */
 export const widgetTypeSchema = z.enum(["chat", "barkochba"])
 
+/** An embedding site's origin exactly as browsers send it (`https://example.com`, `http://localhost:3000`): no path, no default port, lower case; never `null`. */
+export const widgetOriginSchema = z
+  .string()
+  .max(256)
+  .refine(value => {
+    const url = URL.parse(value)
+    return (url?.protocol === "https:" || url?.protocol === "http:") && url.origin === value
+  }, "must be an origin like https://example.com")
+
 export const widgetConfigSchema = z.object({
   widgetType: widgetTypeSchema.default("chat"),
-  persona: z.string().min(1).optional(),
+  persona: z.string().min(1).max(128).optional(),
   /** Catalog skills this key's visitors get — its own list, independent of the owner's enabled abilities. */
-  skills: z.array(z.string().min(1)).optional()
+  skills: z.array(z.string().min(1).max(128)).max(100).optional()
 })
+
+const widgetLabelSchema = z.string().min(1).max(100)
+const widgetOriginsSchema = z.array(widgetOriginSchema).min(1).max(20)
 
 export const widgetKeySchema = z.object({
   id: z.uuidv7(),
@@ -22,15 +34,15 @@ export const widgetKeySchema = z.object({
 })
 
 export const createWidgetKeyRequestSchema = z.object({
-  label: z.string().min(1),
-  allowedOrigins: z.array(z.string().min(1)).min(1),
+  label: widgetLabelSchema,
+  allowedOrigins: widgetOriginsSchema,
   config: widgetConfigSchema.optional()
 })
 
 /** Any subset; `config` replaces the whole config (send widgetType, persona and skills together). */
 export const updateWidgetKeyRequestSchema = z.object({
-  label: z.string().min(1).optional(),
-  allowedOrigins: z.array(z.string().min(1)).min(1).optional(),
+  label: widgetLabelSchema.optional(),
+  allowedOrigins: widgetOriginsSchema.optional(),
   config: widgetConfigSchema.optional()
 })
 

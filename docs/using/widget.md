@@ -23,7 +23,9 @@ all tied to the key and resolved on the server.
 Create one on the **Widget** page of the [web app](/using/web-app):
 
 1. Give it a **label**, so you can tell your keys apart.
-2. List the **allowed origins**, the sites that may embed it. You need at least one.
+2. List the **allowed origins**, the sites that may embed it: scheme and host (plus a port if it isn't the
+   default), such as `https://example.com`. You need at least one, and up to 20. A pasted page URL is cut
+   to its origin.
 3. Pick a **type** (`chat` or `barkochba`) and, optionally, a **persona** and the **skills** it may use.
 
 You can change the label, origins, persona and skills later. The key itself never changes.

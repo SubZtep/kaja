@@ -70,7 +70,7 @@ declare module "bun" {
     NASI_STUB_MODEL?: string
     /** HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely */
     WEB_PROXY?: string
-    /** Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one */
+    /** Encrypts users' ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one */
     USER_SECRET_KEY?: string
     /** Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...); every cloud user shares them, and a user's own key wins */
     ABILITY_KEYS?: string
