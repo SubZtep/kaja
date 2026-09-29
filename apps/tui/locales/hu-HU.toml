@@ -257,6 +257,7 @@ persona = "Perszóna"
 copy    = "Másolás"
 theme   = "Téma"
 quit    = "Kilépés"
+quitAgain = "[hu-HU] lorem ipsum dolor sit amet"
 cancel  = "Mégse"
 decline = "Elutasítás"
 

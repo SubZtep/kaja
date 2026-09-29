@@ -1,5 +1,5 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { Box, useApp, useInput, useWindowSize } from "ink"
+import { Box, useInput, useWindowSize } from "ink"
 import { useEffect, useState } from "react"
 import { useDictation } from "../../hooks/use-dictation"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
@@ -62,7 +62,6 @@ export function UserInput({
   const [power, setPower] = useState(false)
   const [mic, setMic] = useState(false)
   const { columns } = useWindowSize()
-  const { exit } = useApp()
   const history = usePromptHistory(initialHistory ?? [])
   // Human edits (typing, dictation) reset the recall position; recalled text itself goes through plain setInput so it doesn't.
   const editInput = (value: string) => {
@@ -70,10 +69,9 @@ export function UserInput({
     setInput(value)
   }
 
-  // Ctrl+T toggles dictation; Esc quits.
+  // Ctrl+T toggles dictation (Esc quits, see useQuitGuard).
   useInput((char, key) => {
     if (key.ctrl && char === "t") setMic(prev => !prev)
-    if (key.escape) exit()
   })
   // Half-duplex: while the agent's voice plays, the mic is paused (captured audio dropped) so it doesn't transcribe the agent talking to itself.
   const sttState = useDictation(

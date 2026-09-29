@@ -257,6 +257,7 @@ persona = "Persona"
 copy    = "Copy"
 theme   = "Theme"
 quit    = "Quit"
+quitAgain = "[en-US] lorem ipsum dolor sit amet"
 cancel  = "Cancel"
 decline = "Decline"
 

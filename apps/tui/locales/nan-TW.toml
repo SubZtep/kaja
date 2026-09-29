@@ -257,6 +257,7 @@ persona = "角色"
 copy    = "拷貝"
 theme   = "配色"
 quit    = "退出"
+quitAgain = "[nan-TW] lorem ipsum dolor sit amet"
 cancel  = "取消"
 decline = "拒絕"
 

@@ -3,6 +3,7 @@
 // and playback here go through ffmpeg/ffplay against the default
 // PulseAudio/PipeWire mic and speakers.
 
+import { trackProcess } from "@kaja/nasi"
 import { log } from "../logger"
 
 /** All PCM crossing the audio boundary is s16le, mono, 24000 Hz. */
@@ -104,10 +105,12 @@ export function createLocalSource({ inputFile }: LocalSourceOptions = {}): Audio
     "s16le",
     "-"
   ]
-  const ffmpeg = Bun.spawn(["ffmpeg", ...ffmpegArgs], {
-    stdout: "pipe",
-    stderr: "pipe"
-  })
+  const ffmpeg = trackProcess(
+    Bun.spawn(["ffmpeg", ...ffmpegArgs], {
+      stdout: "pipe",
+      stderr: "pipe"
+    })
+  )
 
   let stopping = false
 
@@ -138,27 +141,29 @@ export function createLocalSink(): AudioSink {
 
   function getFfplay() {
     if (!ffplay?.exitCode) {
-      ffplay = Bun.spawn(
-        [
-          "ffplay",
-          "-hide_banner",
-          "-loglevel",
-          "error",
-          "-nodisp",
-          "-autoexit",
-          "-f",
-          "s16le",
-          "-sample_rate",
-          String(SAMPLE_RATE),
-          "-ch_layout",
-          "mono",
-          "-"
-        ],
-        {
-          stdin: "pipe",
-          stdout: "ignore",
-          stderr: "ignore"
-        }
+      ffplay = trackProcess(
+        Bun.spawn(
+          [
+            "ffplay",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nodisp",
+            "-autoexit",
+            "-f",
+            "s16le",
+            "-sample_rate",
+            String(SAMPLE_RATE),
+            "-ch_layout",
+            "mono",
+            "-"
+          ],
+          {
+            stdin: "pipe",
+            stdout: "ignore",
+            stderr: "ignore"
+          }
+        )
       )
     }
     return ffplay

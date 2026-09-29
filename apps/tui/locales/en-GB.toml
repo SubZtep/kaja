@@ -252,13 +252,14 @@ cloud = "Cloud"
 
 
 [keybar]
-help    = "Help"
-persona = "Persona"
-copy    = "Copy"
-theme   = "Theme"
-quit    = "Quit"
-cancel  = "Cancel"
-decline = "Decline"
+help      = "Help"
+persona   = "Persona"
+copy      = "Copy"
+theme     = "Theme"
+quit      = "Quit"
+quitAgain = "Still running: Esc again to quit"
+cancel    = "Cancel"
+decline   = "Decline"
 
 
 [viewport]

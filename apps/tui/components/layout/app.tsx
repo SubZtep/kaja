@@ -10,6 +10,7 @@ import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/u
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
+import { useQuitGuard } from "../../hooks/use-quit-guard"
 import { useSound } from "../../hooks/use-sound"
 import { useTheme } from "../../hooks/use-theme"
 import { useVoice } from "../../hooks/use-voice"
@@ -46,11 +47,16 @@ function getBottomChromeKey(
 
 // Esc means something different depending on what's showing — quit while typing, but just dismiss the
 // picker/confirm prompt over it. While a command is actually running there's nothing bound to Esc (no entry).
-function escKeyBarItem(bottomChromeKey: BottomChromeKey): { key: string; label: string } | undefined {
+function escKeyBarItem(
+  bottomChromeKey: BottomChromeKey,
+  quitArmed: boolean
+): { key: string; label: string } | undefined {
+  const quit = quitArmed ? t("keybar.quitAgain") : t("keybar.quit")
   const labels: Partial<Record<BottomChromeKey, string>> = {
     persona: t("keybar.cancel"),
     confirm: t("keybar.decline"),
-    input: t("keybar.quit")
+    input: quit,
+    running: quit
   }
   const label = labels[bottomChromeKey]
   return label ? { key: "Esc", label } : undefined
@@ -67,9 +73,14 @@ function confirmPrompt(
   return { command: event.summary, description: t("confirmCommand.toolRequest", { name: event.name }), kind: "tool" }
 }
 
-function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolean, bottomChromeKey: BottomChromeKey) {
+function buildKeyBarItems(
+  hotkeyModifier: string | undefined,
+  hasPersona: boolean,
+  bottomChromeKey: BottomChromeKey,
+  quitArmed: boolean
+) {
   const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
-  const escItem = escKeyBarItem(bottomChromeKey)
+  const escItem = escKeyBarItem(bottomChromeKey, quitArmed)
   return [
     { key: `${modifierLabel}+L`, label: t("keybar.help") },
     ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
@@ -165,7 +176,11 @@ function Chrome({
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
   const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
-  const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey)
+  const quitArmed = useQuitGuard(
+    bottomChromeKey === "input" || bottomChromeKey === "running",
+    pending || runningCommand
+  )
+  const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey, quitArmed)
 
   return (
     <ThemeProvider theme={themes[theme]}>

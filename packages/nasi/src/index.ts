@@ -77,6 +77,7 @@ export {
 } from "./agent/compaction"
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { samplingOf } from "./agent/persona"
+export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"
 export { compact, dropImages, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
 export {

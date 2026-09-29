@@ -1,3 +1,4 @@
+import { trackChild } from "@kaja/nasi"
 import playSoundLib from "play-sound"
 import bell from "../../assets/sounds/333695__khrinx__thin-bell-ding-2.wav" with { type: "file" }
 import keyboard from "../../assets/sounds/391310__pfranzen__hitting-the-enter-key-on-a-keyboard.ogg" with {
@@ -19,9 +20,11 @@ export async function playSound(sound: keyof typeof soundFile) {
   const path = soundFile[sound]
 
   await new Promise<void>(resolve => {
-    player.play(path, err => {
-      if (err) log.error("Failed to play sound", { sound, err })
-      resolve()
-    })
+    trackChild(
+      player.play(path, err => {
+        if (err) log.error("Failed to play sound", { sound, err })
+        resolve()
+      })
+    )
   })
 }
