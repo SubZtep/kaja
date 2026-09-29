@@ -135,7 +135,7 @@
     },
     "packages/nasi": {
       "name": "@kaja/nasi",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "@kaja/schema": "workspace:*",
         "@kaja/shared": "workspace:*",
