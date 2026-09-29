@@ -270,6 +270,8 @@ older = "↑ 較早的內容 · 按 PageDown 或 Ctrl+End 跟隨最新"
 
 [confirmCommand]
 yes         = "是，執行"
+yesSession  = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+yesAlways   = "[zh-TW] lorem ipsum dolor sit amet"
 no          = "否，取消"
 running     = "執行中…"
 truncated   = "… 還有 {count} 行"

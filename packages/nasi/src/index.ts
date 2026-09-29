@@ -92,6 +92,7 @@ export {
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "./agent/system-prompt"
 export { recordPausedCall } from "./agent/telemetry"
+export { allowKey, isAllowed } from "./agent/tool-allow"
 export {
   LOCAL_OWNER_CTX,
   runApprovedTool,

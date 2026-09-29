@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS "user_ability" (
   "enabled_at" timestamptz default CURRENT_TIMESTAMP not null,
   -- An HTTP tool's or MCP server's tools the user switched off; the rest (and any it gains later) stay on
   "disabled_tools" text[] default '{}' not null,
+  -- An HTTP tool's or MCP server's tools (names, or globs with *) that never ask for approval
+  "allowed_tools" text[] default '{}' not null,
   PRIMARY KEY ("user_id", "ability_id")
 );
 

@@ -270,6 +270,8 @@ older = "↑ régebbi · PageDown vagy Ctrl+End a követéshez"
 
 [confirmCommand]
 yes         = "Igen, futtasd"
+yesSession  = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+yesAlways   = "[hu-HU] lorem ipsum dolor sit amet"
 no          = "Nem, mégse"
 running     = "Fut…"
 truncated   = "… még {count} sor"

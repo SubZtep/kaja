@@ -38,10 +38,11 @@ type SessionRow = {
   system_prompt: string | null
   pending_call_id: string | null
   pending_kind: PendingKind | null
+  granted_tools: string[]
 }
 
 const SESSION_COLUMNS =
-  "id, created_at, updated_at, persona, model, title, owner, system_prompt, pending_call_id, pending_kind"
+  "id, created_at, updated_at, persona, model, title, owner, system_prompt, pending_call_id, pending_kind, granted_tools"
 
 /** Rebuilds a session from its rows. The cloud keeps no timeline, so `events` is always empty. */
 async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<PersistedSession | undefined> {
@@ -80,6 +81,7 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
       systemPrompt: row.system_prompt,
       pending: row.pending_call_id && row.pending_kind ? { callId: row.pending_call_id, kind: row.pending_kind } : null,
       summary: latest ? { text: latest.summary, from: latest.summary_from } : null,
+      grantedTools: row.granted_tools,
       toolSummaries: Object.fromEntries(
         calls.rows.filter(call => call.result_summary !== null).map(call => [call.call_id, call.result_summary])
       ),
@@ -151,6 +153,7 @@ async function saveConversation(client: PoolClient, userId: string, id: string, 
   const {
     systemPrompt,
     pending,
+    grantedTools = [],
     messages,
     summary,
     toolSummaries,
@@ -158,8 +161,8 @@ async function saveConversation(client: PoolClient, userId: string, id: string, 
     modelCalls = []
   } = splitConversation(data.session)
   await client.query(
-    "UPDATE nasi_session SET system_prompt = $2, pending_call_id = $3, pending_kind = $4 WHERE id = $1",
-    [id, systemPrompt, pending?.callId ?? null, pending?.kind ?? null]
+    "UPDATE nasi_session SET system_prompt = $2, pending_call_id = $3, pending_kind = $4, granted_tools = $5 WHERE id = $1",
+    [id, systemPrompt, pending?.callId ?? null, pending?.kind ?? null, grantedTools]
   )
   const stored = await client.query("SELECT COUNT(*)::int AS n FROM nasi_message WHERE session_id = $1", [id])
   const storedMessages = stored.rows[0].n as number

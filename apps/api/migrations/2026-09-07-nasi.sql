@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS nasi_session (
   channel text NOT NULL CHECK (channel IN ('web', 'telegram', 'widget')),
   system_prompt text,
   pending_call_id text,
-  pending_kind text CHECK (pending_kind IN ('ask_user', 'run_command', 'client_tool', 'tool_approval'))
+  pending_kind text CHECK (pending_kind IN ('ask_user', 'run_command', 'client_tool', 'tool_approval')),
+  -- Tools (allow keys) the user approved for the rest of this session
+  granted_tools text[] NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX IF NOT EXISTS nasi_session_user_updated_idx ON nasi_session (user_id, updated_at DESC);

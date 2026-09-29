@@ -14,8 +14,8 @@ export const NasiTurnRequestSchema = z
   .object({
     ...turnFields,
     message: turnFields.message.optional(),
-    /** Answers the session's `confirm_tool` step: the server runs (or skips) the call it saved, so the client never supplies a tool result. */
-    approval: z.enum(["approve", "decline"]).optional()
+    /** Answers the session's `confirm_tool` step: the server runs (or skips) the call it saved, so the client never supplies a tool result. `approve_session` also stops asking about that tool for the rest of the session, `approve_always` adds it to the user's allow list. */
+    approval: z.enum(["approve", "approve_session", "approve_always", "decline"]).optional()
   })
   .refine(turn => turn.message !== undefined || turn.approval !== undefined, {
     message: "message or approval is required",

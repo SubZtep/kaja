@@ -270,6 +270,8 @@ older = "↑ older · PageDown or Ctrl+End to follow"
 
 [confirmCommand]
 yes         = "Yes, run it"
+yesSession  = "Yes, and don't ask again this session"
+yesAlways   = "Yes, and always allow this tool"
 no          = "No, cancel"
 running     = "Running…"
 truncated   = "… {count} more lines"

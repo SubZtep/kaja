@@ -270,6 +270,8 @@ older = "↑ 較早進前 · PageDown 抑是 Ctrl+End 轉去上新个"
 
 [confirmCommand]
 yes         = "好，執行"
+yesSession  = "[nan-TW] lorem ipsum dolor sit amet consectetur"
+yesAlways   = "[nan-TW] lorem ipsum dolor sit amet"
 no          = "毋通，取消"
 running     = "執行中…"
 truncated   = "… 猶有 {count} 逝"

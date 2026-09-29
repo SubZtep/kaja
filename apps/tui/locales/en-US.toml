@@ -270,6 +270,8 @@ older = "↑ older · PageDown or Ctrl+End to follow"
 
 [confirmCommand]
 yes         = "Yes, run it"
+yesSession  = "[en-US] lorem ipsum dolor sit amet consectetur"
+yesAlways   = "[en-US] lorem ipsum dolor sit amet"
 no          = "No, cancel"
 running     = "Running…"
 truncated   = "… {count} more lines"

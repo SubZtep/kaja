@@ -4,7 +4,7 @@ import { m } from "../../paraglide/messages.js"
 import { Checkbox } from "../form/primitives/Checkbox"
 import { DIALOG_TITLE, DialogShell } from "../ui/DialogShell"
 import { SourceLink } from "./InstructionsDialog"
-import { useSetDisabledTools } from "./queries"
+import { useSetAllowedTools, useSetDisabledTools } from "./queries"
 import { abilitySourceUrl } from "./source"
 import type { ToolEntry } from "./ToolCard"
 
@@ -17,16 +17,19 @@ export function ToolsDialog({
   entry,
   enabled,
   disabledTools,
+  allowedTools,
   open,
   onOpenChange
 }: Readonly<{
   entry: ToolEntry
   enabled: boolean
   disabledTools: string[]
+  allowedTools: string[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }>) {
   const setDisabled = useSetDisabledTools()
+  const setAllowed = useSetAllowedTools()
   const off = new Set(disabledTools)
   const onCount = entry.items.length - entry.items.filter(item => off.has(item.name)).length
 
@@ -34,6 +37,14 @@ export function ToolsDialog({
     const next = on ? disabledTools.filter(name => name !== tool) : [...disabledTools, tool]
     setDisabled.mutate({ type: entry.type, name: entry.ability.name, disabled: next })
   }
+
+  const allow = (tool: string, on: boolean) => {
+    const next = on ? [...allowedTools, tool] : allowedTools.filter(name => name !== tool)
+    setAllowed.mutate({ type: entry.type, name: entry.ability.name, allowed: next })
+  }
+  // Which tools ask first: an HTTP tool that isn't a GET, and every tool of an MCP server that asks
+  const asksFirst = (item: ToolEntry["items"][number]) =>
+    item.method ? item.method !== "GET" : entry.approvalNote !== undefined
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -76,6 +87,17 @@ export function ToolsDialog({
                         <span className="text-ice text-xs">{m.tools_asks_first()}</span>
                       )}
                     </div>
+                    {asksFirst(item) && (
+                      <div className="mt-1 flex items-center gap-2 text-muted text-xs">
+                        <Checkbox
+                          checked={allowedTools.includes(item.name)}
+                          disabled={!enabled || setAllowed.isPending}
+                          aria-label={m.tools_allow_toggle({ tool: item.name })}
+                          onCheckedChange={checked => allow(item.name, checked)}
+                        />
+                        {m.tools_allow_label()}
+                      </div>
+                    )}
                     {item.description && (
                       <p className="mt-1 mb-0 whitespace-pre-line text-[13px] text-muted">{item.description}</p>
                     )}

@@ -105,6 +105,8 @@ When the agent uses a tool, `preferences.toolDisplay` decides how it shows. `min
 row above the input and leaves a one-line summary of the turn's tools; `verbose` lists every call in the chat;
 `corner` shows the current call in the header's top-right corner and nothing in the chat.
 
+In cloud mode, an approval for an HTTP tool or MCP call also offers to approve that tool for the rest of the chat, or always (saved to your list, see [HTTP tools](/abilities/tools)).
+
 Thinking, tool display, code preview length, sounds and voice have no in-app toggle. Set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
 

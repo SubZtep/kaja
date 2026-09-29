@@ -29,6 +29,7 @@ import {
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordModelCall, recordStep } from "./telemetry"
+import { allowKey, isAllowed } from "./tool-allow"
 import { type ModelCallUsage, type Tool, toolName } from "./tools"
 
 /** Notes how a call went, keyed by its id. */
@@ -329,6 +330,7 @@ async function* handleToolCalls(
   owner: string | null,
   toolsByName: Map<string, Tool<any>>,
   toolCalls: ChatCompletionMessageToolCall[],
+  granted: readonly string[] | undefined,
   record: RecordCall,
   onModelCall: (usage: ModelCallUsage) => void
 ): AsyncGenerator<
@@ -368,7 +370,10 @@ async function* handleToolCalls(
       continue
     }
 
-    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call)
+    const tool = toolsByName.get(call.function.name)
+    // A tool the user allowed (always, or for this session) never pauses for approval
+    const allowed = tool && (isAllowed(agent.allowedTools, allowKey(tool)) || isAllowed(granted, allowKey(tool)))
+    const summary = allowed ? undefined : approvalSummaryFor(tool, call)
     if (summary !== undefined) {
       approval = holdApproval(messages, record, approval, {
         id: call.id,
@@ -682,6 +687,7 @@ export async function* run(
       owner,
       toolsByName,
       message.tool_calls,
+      session.grantedTools,
       (callId, stat) => recordCall(session, callId, stat),
       usage => recordModelCall(session, { kind: "summarize", ...usage })
     )

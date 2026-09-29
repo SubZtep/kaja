@@ -20,7 +20,7 @@ that runs inside the Kaja API and links to your account.
 
 On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart from
 each other and from your terminal. A call that needs approval, like a shell command or an HTTP tool or MCP
-call that changes something, comes with Approve and Decline buttons. Replies stay short, like chat
+call that changes something, comes with Approve and Decline buttons (in the cloud bot also "for this chat" and "always allow this tool"). Replies stay short, like chat
 messages, unless you ask for detail. Photos work in both directions.
 
 ## Local bot

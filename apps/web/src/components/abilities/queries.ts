@@ -48,6 +48,18 @@ export function useToggleAbility() {
   })
 }
 
+/** Saves which of an enabled HTTP tool's or MCP server's tools never ask for approval; quiet on success, a toast when it fails. */
+export function useSetAllowedTools() {
+  const apiFetch = useApiFetch()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ type, name, allowed }: { type: KeyedAbilityType; name: string; allowed: string[] }) =>
+      apiFetch(`/abilities/me/${type}/${encodeURIComponent(name)}/allowed-tools`, { allowed }, { method: "PUT" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_ABILITIES_QUERY_KEY }),
+    onError: (err: Error) => toast.error(err.message || m.tools_allow_error())
+  })
+}
+
 /** Saves which of an enabled HTTP tool's or MCP server's tools are off; quiet on success, a toast when it fails. */
 export function useSetDisabledTools() {
   const apiFetch = useApiFetch()

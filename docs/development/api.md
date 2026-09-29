@@ -64,6 +64,7 @@ rate-limited **per user id**, not per IP, so a shared NAT doesn't starve everyon
 | `PUT` / `DELETE` | `/abilities/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
 | `PUT` / `DELETE` | `/abilities/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
 | `PUT` | `/abilities/me/{tool\|mcp}/{name}/tools` | switch off some of an enabled ability's tools (`{ disabled: [...] }` replaces the list, `[]` turns them all back on). They never reach the user's turns, and one with every tool off is left out. `/abilities/me` lists them as `disabledTools` |
+| `PUT` | `/abilities/me/{tool\|mcp}/{name}/allowed-tools` | choose which of an enabled ability's tools never ask for approval (`{ allowed: [...] }` replaces the list; names the ability offers, or globs with `*`; `[]` makes every call ask again). An "always allow" answer at an approval prompt adds to it. `/abilities/me` lists them as `allowedTools` |
 
 Keys live [encrypted in `user_secret`](/development/database#accounts-and-access), and no endpoint returns
 one. Without `USER_SECRET_KEY` the key routes answer 503, and abilities that need a key are left out of the

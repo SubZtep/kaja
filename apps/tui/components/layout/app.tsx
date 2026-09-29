@@ -24,7 +24,7 @@ import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
 import { themes } from "../theme"
 import { ChatViewport } from "./chat-viewport"
-import { ConfirmCommand } from "./confirm-command"
+import { type ApprovalScope, ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
 import { KeyBar, type KeyBarEntry } from "./key-bar"
 import { PersonaPicker } from "./persona-picker"
@@ -126,7 +126,8 @@ function Chrome({
   switchPersona,
   pendingCommand,
   runningCommand = false,
-  resolvePending
+  resolvePending,
+  approvalScopes = false
 }: Readonly<{
   /** Where the agent runs, shown as a badge in the header. */
   mode: "local" | "cloud"
@@ -152,7 +153,9 @@ function Chrome({
   /** A run_command or an HTTP tool call waiting on approval; `command` is the shell command or the request summary. */
   pendingCommand?: { command: string; description: string; kind: "command" | "tool" }
   runningCommand?: boolean
-  resolvePending?: (approved: boolean) => Promise<void>
+  resolvePending?: (approved: boolean, scope?: ApprovalScope) => Promise<void>
+  /** Offer "for this session" and "always" on a tool approval (cloud). */
+  approvalScopes?: boolean
 }>) {
   const {
     thinking,
@@ -250,7 +253,8 @@ function Chrome({
               description={pendingCommand.description}
               kind={pendingCommand.kind}
               running={runningCommand}
-              onResolve={approved => resolvePending(approved)}
+              scopes={approvalScopes && pendingCommand.kind === "tool"}
+              onResolve={(approved, scope) => resolvePending(approved, scope)}
             />
           )}
           {bottomChromeKey !== "persona" && !showConfirm && (
@@ -419,6 +423,7 @@ function CloudApp({
       pendingCommand={pendingEvent && confirmPrompt(pendingEvent)}
       runningCommand={false}
       resolvePending={pendingEvent ? resolveToolApproval : undefined}
+      approvalScopes
     />
   )
 }

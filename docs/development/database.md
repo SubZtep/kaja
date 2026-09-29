@@ -218,6 +218,8 @@ erDiagram
     uuid user_id PK
     uuid ability_id PK
     timestamptz enabled_at
+    text_array disabled_tools "tools switched off"
+    text_array allowed_tools "tools that never ask for approval"
   }
 
   marketplace_sync {
@@ -310,6 +312,7 @@ erDiagram
     text system_prompt
     text pending_call_id "a call waiting on the human"
     text pending_kind
+    text_array granted_tools "tools approved for the rest of the session"
     timestamptz created_at
     timestamptz updated_at
   }
