@@ -15,6 +15,18 @@ import { TunnelServer } from "../src/tunnel"
 
 // Spawning bun children is slow on a busy machine, so every test that starts one gets room.
 const SPAWN_TIMEOUT_MS = 30_000
+
+/** Polls `check` until it holds, for up to `timeoutMs` (a busy machine takes its time), instead of sleeping a fixed guess. */
+async function until(check: () => boolean | Promise<boolean>, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs
+  while (!(await check())) {
+    if (Date.now() > deadline) throw new Error("condition not met in time")
+    await Bun.sleep(20)
+  }
+}
+
+/** Until the one running server has a call in flight (a `hang` call reached it). */
+const callInFlight = (tunnel: SandboxTunnel) => until(async () => (await tunnel.stats()).servers[0]?.pending === 1)
 const MARKETPLACE = join(import.meta.dir, "fixtures/marketplace")
 
 let dir: string
@@ -162,7 +174,7 @@ describe("stats", () => {
 
       const client = await connect(tunnel, "u1")
       void client.callTool({ name: "hang", arguments: {} }).catch(() => {})
-      await Bun.sleep(200)
+      await callInFlight(tunnel)
       const busy = await tunnel.stats()
       expect(busy.servers).toEqual([
         expect.objectContaining({ user: "u1", ability: "counter", state: "running", pending: 1, sessions: 1 })
@@ -233,9 +245,7 @@ describe("reporting", () => {
         const { tunnel, pool } = sandbox()
         const client = await connect(tunnel, "u1")
         void client.callTool({ name: "crash", arguments: {} }).catch(() => {})
-        const deadline = Date.now() + 10_000
-        while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(100)
-        expect(pool.size).toBe(0)
+        await until(() => pool.size === 0)
         const report = logged.mock.calls.find(([message]) => message === "Sandbox MCP server exited")
         expect(report?.[1]).toMatchObject({ server: "counter", stderr: "counter: out of cheese" })
         await client.close()
@@ -290,7 +300,7 @@ describe("pool", () => {
       void first.callTool({ name: "hang", arguments: {} }).catch(() => {})
       const warned = spyOn(console, "warn").mockImplementation(() => {})
       try {
-        await Bun.sleep(200)
+        await callInFlight(tunnel)
         await expect(connect(tunnel, "u2")).rejects.toThrow()
         expect(warned.mock.calls.some(([message]) => message === "Sandbox is full")).toBe(true)
       } finally {
@@ -308,14 +318,13 @@ describe("pool", () => {
       const client = await connect(tunnel, "u1")
       expect(await callText(client, "count")).toBe("1")
       await client.close()
-      const deadline = Date.now() + 10_000
-      while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(100)
-      expect(pool.size).toBe(0)
+      await until(() => pool.size === 0)
       const fresh = await connect(tunnel, "u1")
       expect(await callText(fresh, "count")).toBe("1")
       await fresh.close()
     },
-    SPAWN_TIMEOUT_MS
+    // Two servers start in this one
+    2 * SPAWN_TIMEOUT_MS
   )
 
   test("with too little memory left a new server isn't started, and the answer says the sandbox is full", async () => {
@@ -341,15 +350,14 @@ describe("pool", () => {
       expect(tunnel.running).toBe(1)
       await client.close()
       tunnel.release("u1", "counter")
-      const deadline = Date.now() + 10_000
-      while (pool.size > 0 && Date.now() < deadline) await Bun.sleep(50)
-      expect(pool.size).toBe(0)
+      await until(() => pool.size === 0)
       expect(pool.counts.released).toBe(1)
       const fresh = await connect(tunnel, "u1")
       expect(await callText(fresh, "count")).toBe("1")
       await fresh.close()
     },
-    SPAWN_TIMEOUT_MS
+    // Two servers start in this one
+    2 * SPAWN_TIMEOUT_MS
   )
 
   test(
@@ -362,7 +370,7 @@ describe("pool", () => {
       })
       const client = await connect(tunnel, "u1")
       void client.callTool({ name: "hang", arguments: {} }).catch(() => {})
-      await Bun.sleep(200)
+      await callInFlight(tunnel)
       await pool.checkMemory()
       expect(pool.size).toBe(1)
       rss = 5000

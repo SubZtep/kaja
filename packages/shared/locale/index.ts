@@ -41,3 +41,20 @@ export function formatMessage(template: string, params?: Record<string, string |
     ? template.replace(/\{(\w+)\}/g, (match, name) => (name in params ? String(params[name]) : match))
     : template
 }
+
+/**
+ * Every locale's messages, flattened, and a lookup in one of them with `{param}` interpolation that falls back to
+ * en-GB, then to the key. Each app passes its own locale files (bundlers only inline static imports).
+ */
+export function createMessages(files: Record<Locale, Record<string, unknown>>) {
+  const dictionaries = Object.fromEntries(locales.map(locale => [locale, flattenMessages(files[locale])])) as Record<
+    Locale,
+    Map<string, string>
+  >
+  return {
+    dictionaries,
+    translate(locale: Locale, key: string, params?: Record<string, string | number>): string {
+      return formatMessage(dictionaries[locale].get(key) ?? dictionaries[baseLocale].get(key) ?? key, params)
+    }
+  }
+}

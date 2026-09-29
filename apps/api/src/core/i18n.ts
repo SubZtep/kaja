@@ -1,6 +1,6 @@
 // Server-side strings for what the API says itself (emails, the Telegram bot). The language is per call, from the user's saved locale, never a global.
 
-import { baseLocale, flattenMessages, formatMessage, type Locale, locales } from "@kaja/shared/locale"
+import { baseLocale, createMessages, type Locale, locales } from "@kaja/shared/locale"
 import enGb from "../../locales/en-GB.toml"
 import enUs from "../../locales/en-US.toml"
 import huHu from "../../locales/hu-HU.toml"
@@ -18,10 +18,10 @@ const files: Record<Locale, Record<string, unknown>> = {
   "zh-TW": zhTw
 }
 
+const messages = createMessages(files)
+
 // Exported for the key-parity test.
-export const dictionaries = Object.fromEntries(
-  locales.map(locale => [locale, flattenMessages(files[locale])])
-) as Record<Locale, Map<string, string>>
+export const dictionaries = messages.dictionaries
 
 /** A saved or requested language as a supported locale, else en-GB. */
 export function toLocale(value: unknown): Locale {
@@ -30,6 +30,6 @@ export function toLocale(value: unknown): Locale {
 
 /** Dictionary lookup in one language with `{param}` interpolation; falls back to en-GB, then to the key. */
 export function translator(locale: unknown): Translate {
-  const dictionary = dictionaries[toLocale(locale)]
-  return (key, params) => formatMessage(dictionary.get(key) ?? dictionaries[baseLocale].get(key) ?? key, params)
+  const language = toLocale(locale)
+  return (key, params) => messages.translate(language, key, params)
 }

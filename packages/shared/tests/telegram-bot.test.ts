@@ -70,8 +70,16 @@ test("a 429 without retry_after is not retried", async () => {
   expect(calls).toBe(1)
 })
 
-// Short real intervals: timers only ever fire late on a busy machine, so these waits stay generous.
+// Short real intervals: timers only ever fire late on a busy machine, so the tests poll for what should happen.
 const FAST = { minMs: 5, maxMs: 20 }
+
+async function until(check: () => boolean, timeoutMs = 5_000) {
+  const deadline = Date.now() + timeoutMs
+  while (!check()) {
+    if (Date.now() > deadline) throw new Error("condition not met in time")
+    await Bun.sleep(5)
+  }
+}
 
 test("EditThrottle coalesces rapid requests into one edit with the latest text", async () => {
   const sent: string[] = []
@@ -83,7 +91,7 @@ test("EditThrottle coalesces rapid requests into one edit with the latest text",
   throttle.request(() => "one")
   throttle.request(() => "two")
   throttle.request(() => "three")
-  await Bun.sleep(100)
+  await until(() => sent.length > 0)
   expect(sent).toEqual(["three"])
 })
 
@@ -96,6 +104,7 @@ test("EditThrottle.cancel drops a pending edit", async () => {
   )
   throttle.request(() => "never")
   throttle.cancel()
+  // Nothing to poll for: wait well past the interval, so an edit that would fire has
   await Bun.sleep(100)
   expect(sent).toEqual([])
 })
@@ -104,8 +113,10 @@ test("EditThrottle keeps going after a rate limit and reports other errors to on
   const sent: string[] = []
   const errors: unknown[] = []
   const failures: unknown[] = [new TelegramRateLimitError(undefined), new Error("bad request")]
+  let attempts = 0
   const throttle = new EditThrottle(
     async text => {
+      attempts++
       const failure = failures.shift()
       if (failure) throw failure
       sent.push(text)
@@ -113,9 +124,9 @@ test("EditThrottle keeps going after a rate limit and reports other errors to on
     error => errors.push(error),
     FAST
   )
-  for (const text of ["a", "b", "c"]) {
+  for (const [i, text] of ["a", "b", "c"].entries()) {
     throttle.request(() => text)
-    await Bun.sleep(150)
+    await until(() => attempts > i)
   }
   expect(errors).toHaveLength(1)
   expect((errors[0] as Error).message).toBe("bad request")
