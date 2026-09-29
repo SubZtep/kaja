@@ -3,11 +3,12 @@ layout: page
 title: Installation
 parent: Get started
 nav_order: 1
+summary: "Install the terminal client and run it for the first time."
 ---
 
 # Installation
 
-Run the setup script, which picks the right binary for your system.
+<!-- TODO: add a short terminal recording of the install and first run here -->
 
 On macOS or Linux:
 
@@ -21,42 +22,34 @@ On Windows:
 irm https://kaja.io/install.ps1 | iex
 ```
 
-Or grab a binary directly from [GitHub Releases](https://github.com/SubZtep/kaja/releases)
-— x64 and arm64. The script installs to `~/.local/bin` (set `INSTALL_DIR` to change it) and tells you
-if that directory isn't on your `PATH`.
+The script picks the right binary for your system and puts it in `~/.local/bin` (change that with
+`INSTALL_DIR`). If the folder isn't on your `PATH`, it tells you. You can also download a binary
+(x64 or arm64) from [GitHub Releases](https://github.com/SubZtep/kaja/releases).
 
 ## First run
 
-Run `kaja`. The [setup wizard](/getting-started/wizard) asks your language and colours, then where the agent should
-run:
-
-- **Kaja Cloud** (preselected) — nothing else to set up. Kaja prints a code, you approve it in the
-  browser, and you're chatting.
-- **Your own providers** — tick the LLM providers you can use, give their keys or addresses, and Kaja
-  writes `~/.config/kaja/` for [local mode](/getting-started/modes#local-mode).
-
-Your answer is saved, so the next `kaja` starts the same way. `kaja --local` or `kaja --cloud` overrides
-it for one launch.
+Run `kaja`. The [setup wizard](/getting-started/wizard) asks a few questions, including whether to use
+**Kaja Cloud** (nothing to set up, you just approve a code in the browser) or **your own providers**. Your
+answer is saved, so the next `kaja` starts the same way. `kaja --local` or `kaja --cloud` overrides it for
+one launch.
 
 ## Updating
 
-Run the install script again: it downloads the latest release over the old binary. Set `VERSION=v1.2.3`
-to pin a specific release instead.
+Run the install script again. Set `VERSION=v1.2.3` to pin a release.
 
-Your config files are left alone. To pick up newer defaults afterwards, `kaja config diff` shows what
-[`kaja config fetch`](/configuration#commands) would change, and `kaja abilities update` refreshes the
+Your config files stay as they are. `kaja config diff` shows what
+[`kaja config fetch`](/configuration/commands) would change, and `kaja abilities update` refreshes the
 [marketplace](/abilities).
 
 ## Uninstall
 
 ```sh
-kaja logout             # if you used cloud mode: removes the token from your OS credential store
+kaja logout             # cloud mode only: removes the token from your OS keychain
 rm ~/.local/bin/kaja
 ```
 
-Local config and data are left behind. To remove them too, delete `~/.config/kaja` and
-`~/.local/share/kaja` (the [local storage](/configuration/storage): the SQLite file and saved images).
-`kaja config paths` prints the exact locations if you moved them.
+Config and data stay behind. To remove them too, delete `~/.config/kaja` and `~/.local/share/kaja` (the
+[local storage](/configuration/storage)). `kaja config paths` prints the exact locations.
 
 ---
 

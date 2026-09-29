@@ -18,10 +18,10 @@ Kaja is a highly customisable, multi-purpose AI agent: a single executable binar
 - [Abilities](https://docs.kaja.io/abilities/)
 - [Personas](https://docs.kaja.io/abilities/personas/)
 - [Skills](https://docs.kaja.io/abilities/skills/)
-- [Built-in tools](https://docs.kaja.io/abilities/tools/)
-- [HTTP tools](https://docs.kaja.io/abilities/http-tools/)
+- [Tools](https://docs.kaja.io/abilities/tools/)
 - [MCP servers](https://docs.kaja.io/abilities/mcp/)
 - [Memory & datasets](https://docs.kaja.io/abilities/memory/)
+- [Marketplace](https://docs.kaja.io/abilities/marketplace/)
 - [Configuration](https://docs.kaja.io/configuration/)
 - [Troubleshooting](https://docs.kaja.io/troubleshooting/)
 

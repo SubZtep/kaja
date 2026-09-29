@@ -2,12 +2,13 @@
 layout: page
 title: Postgres on a volume
 parent: Development
-nav_order: 8
+nav_order: 10
+summary: "Keep Postgres data on a volume that outlives the server."
 ---
 
 # Postgres on a Hetzner Volume
 
-This guide moves the Kaja Postgres database from the server's main disk to a separate Hetzner Volume. A Hetzner Volume survives server rebuilds — you can delete and recreate the server, reattach the volume, and your database is still there.
+This guide moves the Kaja Postgres database from the server's main disk to a separate Hetzner Volume. A Hetzner Volume survives server rebuilds: you can delete and recreate the server, reattach the volume, and your database is still there.
 
 Replace anything in `<angle brackets>` with your own values.
 
@@ -18,9 +19,9 @@ Replace anything in `<angle brackets>` with your own values.
 1. Go to the [Hetzner Cloud Console](https://console.hetzner.cloud/).
 2. Open your project, click **Volumes** → **Create Volume**.
 3. Pick the same location/region as your server.
-4. Set a size (leave room to grow — resizing later is easy, shrinking is not).
+4. Set a size (leave room to grow: resizing later is easy, shrinking is not).
 5. Attach it to your Kaja server directly in this step (there's an "Attach to Server" option).
-6. Choose **Automatic** mounting (filesystem ext4) — Hetzner then formats the volume, mounts it at `/mnt/HC_Volume_<id>` and adds the `/etc/fstab` entry for you.
+6. Choose **Automatic** mounting (filesystem ext4). Hetzner then formats the volume, mounts it at `/mnt/HC_Volume_<id>` and adds the `/etc/fstab` entry for you.
 7. Click **Create & Buy now**.
 
 ## 2. Check the mount on the server
@@ -38,7 +39,7 @@ df -h | grep HC_Volume
 grep HC_Volume /etc/fstab
 ```
 
-Both should show `/mnt/HC_Volume_<id>`. Then create the folder Postgres will use — a subfolder, because the volume's root holds `lost+found`, and Postgres won't create a new database in a data folder that isn't empty:
+Both should show `/mnt/HC_Volume_<id>`. Then create the folder Postgres will use. Make it a subfolder, because the volume's root holds `lost+found`, and Postgres won't create a new database in a data folder that isn't empty:
 
 ```bash
 mkdir /mnt/HC_Volume_<id>/pgdata
@@ -58,11 +59,11 @@ You'll see a new device, usually something like `/dev/sdb`. Also get its stable 
 ls -l /dev/disk/by-id/ | grep scsi-0HC_Volume
 ```
 
-Note this path — it looks like `/dev/disk/by-id/scsi-0HC_Volume_12345678`.
+Note this path, it looks like `/dev/disk/by-id/scsi-0HC_Volume_12345678`.
 
 ## 3. Format and mount the volume (manual only)
 
-Format it (⚠️ this wipes the volume — only do this once, on a fresh volume):
+Format it (⚠️ this wipes the volume, so only do it once, on a fresh volume):
 
 ```bash
 mkfs.ext4 /dev/disk/by-id/scsi-0HC_Volume_12345678
@@ -109,7 +110,7 @@ From your local machine (with the `disco` CLI installed):
 disco volumes:list --project <postgres-addon-project-name>
 ```
 
-This lists the volume name(s) Disco uses for Postgres. Note the exact name — call it `<volume-name>` below.
+This lists the volume name(s) Disco uses for Postgres. Note the exact name, called `<volume-name>` below.
 
 ## 6. Back up the current data
 
@@ -140,7 +141,7 @@ docker volume create \
   <volume-name>
 ```
 
-This makes Docker's volume named `<volume-name>` actually point at `/mnt/kaja-pgdata/pgdata` — which is your Hetzner Volume.
+This makes Docker's volume named `<volume-name>` actually point at `/mnt/kaja-pgdata/pgdata`, which is your Hetzner Volume.
 
 ## 9. Restore the data
 
@@ -176,7 +177,7 @@ If you ever rebuild or replace the server:
 
 1. Create a new server.
 2. Attach the same Hetzner Volume to it.
-3. Mount it — in the Console's attach dialog pick **Automatic** (on an existing volume it only mounts, it doesn't format), or repeat steps 3–4 by hand without the `mkfs` line. The data is already there.
+3. Mount it. In the Console's attach dialog pick **Automatic** (on an existing volume it only mounts, it doesn't format), or repeat steps 3–4 by hand without the `mkfs` line. The data is already there.
 4. Reinstall Disco, set up the same volume-to-bind-mount step (step 8) before starting Postgres.
 
 Your database data survives, because it never lived on the server's main disk in the first place.

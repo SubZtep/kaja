@@ -3,67 +3,60 @@ layout: page
 title: Setup wizard
 parent: Get started
 nav_order: 3
+summary: "The questions the first-run setup asks, and what they write."
 ---
 
 # Setup wizard
 
-The first time you run `kaja`, it asks you a few questions to get set up. This is the setup wizard.
-It takes about a minute, and you can run it again whenever you like with `kaja config wizard`.
+The first time you run `kaja`, a short wizard sets things up. It takes about a minute, and you can run it
+again any time with `kaja config wizard`.
 
-Every question starts with an answer already picked, so pressing <kbd>Enter</kbd> is always a safe
-choice. When you run the wizard again, it starts on the answers you gave last time.
+Every question starts with an answer already picked, so <kbd>Enter</kbd> is always a safe choice. On a
+second run, the wizard starts from your previous answers.
 
 ## Before you start
 
-- **For Kaja Cloud** you need nothing. You sign in with your browser once the wizard is done.
-- **For your own provider**, have its API key at hand (Fireworks, xAI, OpenRouter), or make sure your local
-  server is running (Ollama, llama.cpp, Speaches). You can skip a key and add it later.
+- **Kaja Cloud** needs nothing. You sign in with your browser after the wizard.
+- **Your own provider** needs its API key at hand (Fireworks, xAI, OpenRouter), or a running local
+  server (Ollama, llama.cpp, Speaches). You can skip a key and add it later.
 
 ## Moving around
 
 | Key | What it does |
 | --- | --- |
 | <kbd>↑</kbd> <kbd>↓</kbd> | Move through a list |
-| <kbd>Space</kbd> | Tick or untick an item, in a list where you can pick several |
-| <kbd>Enter</kbd> | Confirm the answer and go to the next question |
-| <kbd>Esc</kbd> | Cancel the whole wizard (on a list) — nothing is saved |
+| <kbd>Space</kbd> | Tick or untick an item, in lists where you can pick several |
+| <kbd>Enter</kbd> | Confirm and go on |
+| <kbd>Esc</kbd> | Cancel the wizard from a list. Nothing is saved |
 
-Where you type an answer, pressing <kbd>Enter</kbd> on an empty field skips it; an address keeps the
-usual one that's already filled in.
-
-Your answers stay on screen with a ✓ as you go, so you can see what you've chosen so far.
+In a field you type into, <kbd>Enter</kbd> on an empty value skips it. An address keeps its usual default.
+Your answers stay on screen with a ✓, so you can see what you've chosen so far.
 
 ## The questions
 
-1. **Language.** The language Kaja talks to you in. The rest of the wizard switches to it straight
-   away.
-2. **Colours.** Pick the one that reads best on your terminal: dark or light background. Moving the
-   highlight previews it; Kaja starts on the one that matches your terminal. You can switch later in
-   the chat with <kbd>Alt</kbd>+<kbd>D</kbd> (see [Colours](/using/tui#colours)).
+1. **Language.** What Kaja speaks to you in. The rest of the wizard switches right away.
+2. **Colours.** Dark or light. Moving the highlight previews it, and the one matching your terminal is
+   preselected. You can switch later with <kbd>Alt</kbd>+<kbd>D</kbd> ([Colours](/using/tui#colours)).
 3. **How to run Kaja.**
-   - **Kaja Cloud** (the default): nothing else to set up. After the wizard, Kaja shows a code, you
-     approve it in your browser, and you're chatting. Abilities, personas and models are chosen on the
-     [web app](/using/web-app).
-   - **Your own provider**: Kaja runs on your machine, using the AI models you choose. The next
-     questions set them up.
+   - **Kaja Cloud** (default): after the wizard, Kaja shows a code, you approve it in your browser, and
+     you're chatting. Abilities, personas and models are chosen in the [web app](/using/web-app).
+   - **Your own provider**: Kaja runs on your machine with the models you choose. The next questions
+     set them up.
 
-   Starting with `kaja --cloud` or `kaja --local` answers this for you, so it isn't asked.
-4. **Providers.** Tick every provider you can use (at least one), then press <kbd>Enter</kbd>:
-   - **Fireworks**, **xAI** and **OpenRouter** run online: you're asked for the API key.
-   - **Ollama**, **llama.cpp** and **Speaches** run on your machine: you're asked where the server
-     listens, with the usual address already filled in. Speaches handles speech in and out, for
-     [voice](/using/voice).
-   - **Custom** is any other server with an OpenAI-compatible API (LM Studio, vLLM, a proxy). You
-     give it a name, its address and a key, then each model's id and what it's for. Press
-     <kbd>Enter</kbd> on an empty model id when you've listed them all.
-5. **Which model.** Only asked when two of your providers can do the same job, say chat: pick which
-   one does it.
-6. **Extras.** Optional. Tick **Telegram bot** to chat with Kaja from [Telegram](/using/telegram), and
-   paste the bot's token next. Press <kbd>Enter</kbd> with nothing ticked to skip.
-7. **Setup complete.** Press <kbd>Enter</kbd> to finish. The screen says what happens next.
+   Starting with `kaja --cloud` or `kaja --local` answers this for you.
+4. **Providers.** Tick every provider you can use (at least one):
+   - **Fireworks**, **xAI** and **OpenRouter** run online, so you give an API key.
+   - **Ollama**, **llama.cpp** and **Speaches** run on your machine, so you confirm where the server
+     listens. Speaches handles speech in and out for [voice](/using/voice).
+   - **Custom** is any other OpenAI-compatible server (LM Studio, vLLM, a proxy). You give a name, an
+     address and a key, then each model's id and what it's for. <kbd>Enter</kbd> on an empty model id
+     ends the list.
+5. **Which model.** Only asked when two of your providers can do the same job, say chat. You pick one.
+6. **Extras.** Tick **Telegram bot** to chat from [Telegram](/using/telegram) and paste the bot token.
+   Press <kbd>Enter</kbd> with nothing ticked to skip.
+7. **Setup complete.** <kbd>Enter</kbd> finishes.
 
-A key you type is hidden as you type it and never shown again. It's tested before it's saved (see
-below).
+A key is hidden while you type it and never shown again. It's tested before it's saved.
 
 ```mermaid
 ---
@@ -86,40 +79,36 @@ flowchart TD
 
 ## After the last question
 
-With **Kaja Cloud**, that's it. The first time, Kaja goes straight on to sign you in; after
+With **Kaja Cloud** that's it. The first time, Kaja goes straight on to sign you in. After a later
 `kaja config wizard`, run `kaja` to sign in.
 
-With **your own provider**, Kaja finishes setting up first, and may ask a few more things:
+With **your own provider**, Kaja finishes setting up first and may ask a few more things:
 
-1. **Marketplace.** Whether to use the online [marketplace](/abilities) of skills, personas and
-   tools. It needs `git`, and downloads it once. Then whether to keep it up to date automatically
-   (see [`[marketplace]`](/configuration/config#marketplace)).
-2. **Starter abilities.** Everything in the marketplace that needs no key and runs no program on
-   your machine is switched on, so there's something to try straight away. `kaja abilities` picks
-   from the rest. This only happens when no ability is switched on yet.
-3. **Model downloads.** If your Ollama server doesn't have the models yet, one question covers
-   all of them.
-4. **Keys are tested.** Each key is saved only once the service accepts it; if it's turned down, Kaja
-   asks whether to save it anyway. Keys that only the finished setup turns out to need, such as an
-   ability's, are asked for here.
-5. **Models are tested.** Every model is tried once, the same check
-   [`kaja doctor`](/configuration#checking-keys-and-models) runs. If one doesn't answer and another
-   can do its job, you're offered the switch.
+1. **Marketplace.** Whether to use the online [marketplace](/abilities) of skills, personas and tools
+   (needs `git`), and whether to keep it up to date on its own
+   ([`[marketplace]`](/configuration/config#marketplace)).
+2. **Starter abilities.** Everything in the marketplace that needs no key and runs no program on your
+   machine is switched on, so there's something to try. `kaja abilities` picks from the rest. This only
+   happens when no ability is on yet.
+3. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
+4. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
+   it anyway. Keys the finished setup turns out to need, such as an ability's, are asked for here.
+5. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/configuration/commands#checking-keys-and-models)
+   runs. If one fails and another can do its job, you're offered the switch.
 
-The first time, the chat starts right after this. When you ran `kaja config wizard`, you're back at
-your prompt.
+The first time, the chat starts right after. After `kaja config wizard`, you're back at your prompt.
 
-## Where your answers are saved
+## Where your answers go
 
-Everything is plain text in `~/.config/kaja/`, which you can edit by hand afterwards:
+Everything is plain text in `~/.config/kaja/`, and yours to edit afterwards:
 
 | You answer | It becomes | In |
 | --- | --- | --- |
 | Language | `[preferences] locale` | [`settings.toml`](/configuration/config) |
 | Colours | `[preferences] theme` | `settings.toml` |
 | How to run Kaja | `[preferences] mode` | `settings.toml` |
-| Providers you tick, custom provider | `[providers.<name>]` tables and their models | [`models.toml`](/configuration/models) |
-| Which model, per task | `[tasks]` (`chat = "minimax-m3"` etc.); every model offered stays as `[models.<id>]` | `models.toml` |
+| Providers, custom provider | `[providers.<name>]` tables and their models | [`models.toml`](/configuration/models) |
+| Which model, per task | `[tasks]` (`chat = "minimax-m3"`); every model offered stays as `[models.<id>]` | `models.toml` |
 | A server address | `[providers.<name>] base_url` | `models.toml` |
 | Speaches address | `[stt] speachesUrl`, `[tts] speachesUrl` | `settings.toml` |
 | A provider's API key | `[providers.<name>] api_key` | [`secrets.toml`](/configuration/secrets) |
@@ -127,14 +116,12 @@ Everything is plain text in `~/.config/kaja/`, which you can edit by hand afterw
 
 ## Running it again
 
-`kaja config wizard` starts on your current setup, so holding <kbd>Enter</kbd> changes nothing.
-It rewrites `models.toml` from your answers, though, so keep a copy of anything you edited there by
-hand. It never touches `mcp.toml`, your `tools/*.ts`, or an `abilities.toml` that already switches
-something on.
+`kaja config wizard` starts from your current setup, so holding <kbd>Enter</kbd> changes nothing. It does
+rewrite `models.toml` from your answers, so keep a copy of hand edits. It never touches `mcp.toml`, your
+`tools/*.ts`, or an `abilities.toml` that already has something switched on.
 
-The provider list is built into Kaja, so the wizard itself needs no internet connection. Without a
-terminal (input piped in, or `--headless`), it asks nothing and writes the default config files if
-there are none yet.
+The provider list is built in, so the wizard works offline. Without a terminal (piped input, or
+`--headless`) it asks nothing and writes the default config files if you have none.
 
 ---
 

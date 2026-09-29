@@ -2,13 +2,13 @@
 layout: page
 title: Settings
 parent: Configuration
-nav_order: 1
+nav_order: 2
+summary: "settings.toml: preferences, voice, marketplace and storage."
 ---
 
 # settings.toml
 
-Install-wide preferences. Which model handles each task lives in [`models.toml`](/configuration/models)
-instead.
+Install-wide preferences. Which model handles each task lives in [`models.toml`](/configuration/models).
 
 ```toml
 [preferences]
@@ -43,54 +43,54 @@ voice = false
 
 | Field | Purpose |
 | --- | --- |
-| `mode` | `local` or `cloud` — what a plain `kaja` starts; see [Cloud or local](/getting-started/modes#which-mode-a-launch-uses) |
-| `locale` | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW` — the UI and the assistant's replies ([Language](/using/voice#language)) |
+| `mode` | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/getting-started/modes#which-mode-a-launch-uses) |
+| `locale` | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |
-| `hotkeyModifier` | `alt` (default) or `ctrl` — the [key bar](/using/tui#key-bar)'s modifier |
-| `theme` | `auto` (default), `dark` or `light` — the [colours](/using/tui#colours); `auto` matches the terminal |
+| `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |
+| `theme` | `auto` (default), `dark` or `light`: the [colours](/using/tui#colours). `auto` follows the terminal |
 
 ## `[marketplace]`
 
 | Field | Purpose |
 | --- | --- |
-| `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. What's already in `marketplace/` still loads. Default `true`. |
-| `autoFetch` | pull the [marketplace](/abilities) in the background at startup when the last sync is over a day old, silently on failure; changes apply on the next launch. Default `true`. |
+| `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. What's already in `marketplace/` still loads. Default `true` |
+| `autoFetch` | pull the [marketplace](/abilities) in the background at startup when the last sync is over a day old, silently on failure. Changes apply on the next launch. Default `true` |
 
 ## `[context]`
 
 | Field | Purpose |
 | --- | --- |
-| `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before the older messages are summarised so the conversation fits. Default `0.8`. |
+| `compact_at` | how full the chat model's [context window](/configuration/models) may get, from `0.3` to `0.95`, before older messages are summarised. Default `0.8` |
 
-Once the context gets that full, the older messages are summarised and the model carries on from the
-summary plus the most recent turns, word for word. The chat shows a line each time, like
-`Context compacted: 26,000 → 4,000 tokens`. Nothing is deleted: the whole conversation stays saved. If the
-summary can't be written, the oldest messages are left out instead, and the line says so.
+Past that point, the older messages are summarised, and the model carries on from the summary plus the most
+recent turns, word for word. The chat shows a line each time, like `Context compacted: 26,000 → 4,000
+tokens`. Nothing is deleted, and the whole conversation stays saved. If the summary can't be written, the
+oldest messages are left out instead, and the line says so.
 
-`/compact` does it on demand and keeps only your latest turn word for word; add what to keep in mind to
-steer it: `/compact keep the SQL decisions`.
+`/compact` does it on demand and keeps only your latest turn word for word. Add what to keep:
+`/compact keep the SQL decisions`.
 
 A single tool result bigger than a quarter of the window (a long web page, a large file) is condensed before
-the model sees it, in parts when it's more than the summarising model can take in at once. The terminal
-shows a line such as `fetch_url output condensed: 40,000 → 2,000 tokens`. The full output stays in the
-saved conversation.
+the model sees it, in parts if it's more than the summarising model can take in at once. The terminal shows
+a line like `fetch_url output condensed: 40,000 → 2,000 tokens`, and the full output stays in the saved
+conversation.
 
-Images (a screenshot a tool took, say) are sent to the model for your latest two messages; older ones are
-replaced by a short note, since resending them every time costs a lot. They stay in the saved conversation.
+Images (say, a screenshot a tool took) are sent to the model for your latest two messages. Older ones
+become a short note, since resending them every time costs a lot. They stay in the saved conversation.
 
-The summaries are written by the model `models.toml`'s `[tasks]` picks for `summarize` (a smaller, cheaper
-model works well), else by the chat model. The `summarize` tool uses the same model.
+Summaries are written by the model that `models.toml`'s `[tasks]` picks for `summarize` (a smaller, cheaper
+one works well), or else the chat model. The `summarize` tool uses the same model.
 
 ## `[stt]` / `[tts]`
 
-The speech server's URL and options — see [Voice](/using/voice). The models themselves are in `models.toml`.
+The speech server's URL and options, see [Voice](/using/voice). The models themselves are in `models.toml`.
 
 ## `[memory]`
 
-`dbPath` overrides where the [SQLite file](/configuration/storage) lives. Leave it out and Kaja uses
-the XDG data directory.
+`dbPath` overrides where the [SQLite file](/configuration/storage) lives. Leave it out for the XDG data
+folder.
 
 ---
 

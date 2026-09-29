@@ -3,24 +3,23 @@ layout: page
 title: Terminal UI
 parent: Using Kaja
 nav_order: 1
+summary: "The terminal chat client and its commands."
 ---
 
 # Terminal UI
 
-The chat client: a scrollable transcript, a multi-line input, and a key bar of hotkeys pinned to the
-bottom of the screen. Both [modes](/getting-started/modes) share it; cloud mode has no model switching and no shell
-approvals, because the cloud agent never needs them.
+A scrollable chat, a multi-line input, and a bar of hotkeys at the bottom. Both [modes](/getting-started/modes)
+use it. Cloud mode has no model switching and no shell approvals, because the cloud agent never needs them.
 
-A local session starts with a summary of what it loaded: the active persona and model, connected MCP
-servers with their tool counts, and how many saved conversations and memory notes exist.
+A local session opens with a summary of what loaded: the persona and model, connected MCP servers with
+their tool counts, and how many saved conversations and memory notes you have.
 
-The header shows the persona, the model, and after the first reply how full its context window is, e.g.
-`12,345 / 32,768 tokens (38%)`. Long conversations are summarised before they run out of room; see
-`/compact` below.
+The header shows the persona, the model and, after the first reply, how full the context window is, like
+`12,345 / 32,768 tokens (38%)`. Long conversations are summarised before they run out of room (see
+`/compact` below).
 
-Replies are rendered as markdown while they arrive: headings, lists, tables that fit the window,
-and syntax-highlighted code. Images are drawn inline in coloured blocks, and links are clickable
-where the terminal supports OSC 8 hyperlinks.
+Replies render as markdown while they arrive: headings, lists, tables that fit, and highlighted code.
+Images are drawn inline in coloured blocks, and links are clickable in terminals that support OSC 8.
 
 ## Commands
 
@@ -46,14 +45,11 @@ kaja abilities            # pick which skills, tools, MCP servers and personas l
 kaja abilities update     # fetch the marketplace
 ```
 
-`config`, `abilities` and `sessions` only touch local files: they never trigger a cloud login. The `config`
-subcommands are explained under [Configuration](/configuration#commands), `abilities` under
-[Abilities](/abilities).
+`config`, `abilities` and `sessions` only touch local files, so they never trigger a cloud login. See
+[Configuration](/configuration/commands) for `config` and [Abilities](/abilities) for `abilities`.
 
-In the chat, type `/compact` to summarise the conversation so far and keep only your latest turn word
-for word; add what matters to steer it, e.g. `/compact keep the SQL decisions`. It also happens on its
-own when the context gets full (the header shows how full it is); see
-[`[context]`](/configuration/config#context).
+In the chat, `/compact` summarises the conversation so far to free up space, and you can add what to keep:
+`/compact keep the SQL decisions`. It also happens on its own ([details](/configuration/config#context)).
 
 ## Keyboard shortcuts
 
@@ -62,26 +58,26 @@ own when the context gets full (the header shows how full it is); see
 | Key | Action |
 |---|---|
 | `Enter` | Send the prompt |
-| `Shift+Enter` / `Ctrl+Enter` / `Meta+Enter` / `Ctrl+J` | Insert a newline |
+| `Shift+Enter` / `Ctrl+Enter` / `Meta+Enter` / `Ctrl+J` | New line |
 | `←` / `→` | Move one character |
 | `Ctrl+←` / `Ctrl+→` (or `Meta+←`/`→`) | Move one word |
-| `Home` / `End` | Start/end of the current line |
+| `Home` / `End` | Start/end of the line |
 | `Backspace` / `Delete` | Delete before/after the cursor |
-| `↑` / `↓` | Previous/next prompt from history (on the first/last line); otherwise move between lines |
+| `↑` / `↓` | Previous/next prompt from history (on the first/last line), otherwise move between lines |
 | `Ctrl+T` | Toggle mic [dictation](/using/voice) |
-| `Esc` | Quit — or cancel the persona picker / decline the approval prompt when one is open |
+| `Esc` | Quit, or close the persona picker / decline the approval prompt when one is open |
 | `Ctrl+C` | Interrupt / exit |
 
 Prompt history spans all past sessions, newest first.
 
-### Chat viewport
+### Scrolling
 
 | Key | Action |
 |---|---|
-| `PageUp` / `PageDown` | Scroll one page |
-| `Ctrl+↑` / `Ctrl+↓`, mouse wheel | Scroll 3 lines |
-| `Ctrl+Home` | Scroll to the top |
-| `Ctrl+End` | Jump to the bottom and resume auto-follow |
+| `PageUp` / `PageDown` | One page |
+| `Ctrl+↑` / `Ctrl+↓`, mouse wheel | 3 lines |
+| `Ctrl+Home` | Top |
+| `Ctrl+End` | Bottom, and follow new output again |
 
 ### Key bar
 
@@ -89,29 +85,29 @@ Prompt history spans all past sessions, newest first.
 |---|---|
 | `<modifier>+L` | Open these docs in your browser |
 | `<modifier>+P` | Open the persona picker |
-| `<modifier>+R` | Copy the most recent message (`C` is taken by `Ctrl+C`) |
-| `<modifier>+D` | Switch between the dark and light theme, and save it |
+| `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`) |
+| `<modifier>+D` | Switch between dark and light, and save it |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
-[`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS
-Terminal.app/iTerm2 without "Option as Meta"); keep `Alt` if your host app reserves `Ctrl+<letter>`
-(VS Code's integrated terminal does).
+[`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS Terminal.app
+and iTerm2 without "Option as Meta"), and keep `Alt` if your host app claims `Ctrl+<letter>` (VS Code's
+terminal does).
 
-In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`/`Backspace`/`Delete` close it. Picking a
-[persona](/abilities/personas) here starts a fresh conversation, and lasts until you quit.
+In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`, `Backspace` or `Delete` close it. Picking a
+[persona](/abilities/personas) starts a fresh conversation and lasts until you quit.
 
-There is no in-app toggle for thinking, sounds or voice: set them in
+Thinking, sounds and voice have no in-app toggle. Set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
 
 ## Colours
 
-Kaja has a dark and a light theme. By default (`theme = "auto"`) it asks your terminal which one
-fits when it starts. In terminals that announce it (kitty, Ghostty, Contour, …), it also follows
-along when you switch your system between dark and light mode.
+There's a dark and a light theme. With `theme = "auto"` (the default), Kaja asks your terminal which one
+fits when it starts. In terminals that announce changes (kitty, Ghostty, Contour and others), it follows
+when you switch your system between dark and light.
 
-Press `<modifier>+D` to switch it yourself. Your pick is saved in
-[`settings.toml`](/configuration/config#preferences), and Kaja stops following the terminal. To go
-back to automatic, set `theme = "auto"` there.
+`<modifier>+D` switches it yourself, saves the pick in
+[`settings.toml`](/configuration/config#preferences), and stops following the terminal. Set
+`theme = "auto"` to go back.
 
 ---
 

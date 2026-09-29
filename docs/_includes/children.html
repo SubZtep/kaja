@@ -1,0 +1,9 @@
+{%- assign kids = site.pages | where: "parent", page.title | sort: "nav_order" -%}
+<div class="cards">
+  {%- for kid in kids %}
+  <a class="card" href="{{ kid.url | relative_url }}">
+    <strong>{{ kid.title }}</strong>
+    <span>{{ kid.summary }}</span>
+  </a>
+  {%- endfor %}
+</div>

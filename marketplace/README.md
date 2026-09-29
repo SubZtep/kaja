@@ -6,11 +6,9 @@
 
 # Kaja marketplace
 
-Abilities Kaja can load. In local mode `kaja abilities update` copies this folder into
-`~/.config/kaja/marketplace/`, and `kaja abilities` picks which ones load (written to
-`~/.config/kaja/abilities.toml`). The Kaja API syncs the same folder every hour for cloud users, who
-pick theirs on the [Abilities page](https://kaja.io/abilities). Only the repo owner adds abilities here;
-there is no publish flow.
+The abilities Kaja can load: personas, skills, HTTP tools, MCP servers and datasets. Local users get this folder with `kaja abilities update`, and the Kaja API syncs it every hour for cloud users, who pick theirs on the [Abilities page](https://kaja.io/agent/abilities).
+
+Only the repo owner adds abilities here (a merged pull request counts), so there is no publish flow. To try a new one before it's merged, see [Adding to the marketplace](https://docs.kaja.io/abilities/marketplace#adding-to-the-marketplace).
 
 ## Layout
 
@@ -26,36 +24,16 @@ marketplace/
 └─ mcp/<name>.toml    # an MCP server: url (http/sse) or command (stdio), auth, approval, tool allowlist
 ```
 
-- `name` in the frontmatter must match the folder: lowercase letters, digits and single hyphens,
-  up to 64 characters.
-- `description` (up to 1024 characters) says what the skill does and when to use it. It's all the
-  model sees before loading the skill, so make the "when" part concrete.
+## Writing one
+
+- Names are lowercase letters, digits and single hyphens, up to 64 characters, and match the folder (skills) or file name (everything else).
+- A skill's `description` (up to 1024 characters) is all the model sees before loading it, so make the "when" part concrete.
 - Keep files as text. Binary files, hidden files and `*.bak` files are never shown to the model.
-- A persona's id is its file name, with the same naming rule. `default.toml` is the persona every
-  user always has; the CLI also ships a copy of it, for installs that haven't synced yet.
-- Scripts should work with a plain POSIX `sh` or state what they need in `SKILL.md`. A skill with a
-  `scripts/` folder is local-only: the cloud catalog leaves it out, since there's no shell there.
-- A tools file's `name` must match its file name. Tool names are what the model calls, so keep them
-  specific (`weather_forecast`, not `get`); a name Kaja already uses is skipped. Never put a key in
-  the file: `auth` only says where it goes, and the user's key stays in their `secrets.toml`.
-- Anything but GET asks the user first, so read-only endpoints should be GET tools.
-- An MCP ability's `tools` allowlist keeps the model's tool list short; list only what's useful.
-  Pick `approval = "writes"` when a server can change things, and add `readOnly` entries for tools
-  the server doesn't mark read-only but that only read (with `unless` for arguments that write, like
-  a `filePath`). Say in the description what a stdio server needs installed (locally it runs on the
-  user's machine; in the cloud a keyless one runs in the MCP sandbox, `apps/sandbox`).
-- What the cloud leaves out: skills with `scripts/`, HTTP tools on a non-public host, and MCP servers
-  without a `tools` allowlist, on a non-public host, or `stdio` needing a key.
+- `default.toml` is the persona every user always has. The CLI ships a copy for installs that haven't synced yet.
+- Scripts should work with plain POSIX `sh`, or say what they need in `SKILL.md`.
+- Tool names are what the model calls, so keep them specific (`weather_forecast`, not `get`). A name Kaja already uses is skipped.
+- Never put a key in a file. `auth` only says where it goes, and the user's key stays in their `secrets.toml`.
+- Anything but GET asks the user first, so make read-only endpoints GET tools.
+- For an MCP ability, list only useful tools in the `tools` allowlist. Pick `approval = "writes"` when a server can change things, and add `readOnly` entries for tools that only read but aren't marked so (with `unless` for arguments that write, like a `filePath`). Say in the description what a stdio server needs installed.
 
-## How sync treats local files
-
-- A file you never touched is updated or removed along with this folder.
-- A file you edited is replaced by the new version, and yours is saved next to it as `.bak`
-  (`.bak2`, … if one already exists).
-- A file this folder deleted but you edited stays, as your own.
-- Files you added yourself are never touched.
-
-More on each kind in the docs: [skills](https://docs.kaja.io/abilities/skills), [personas](https://docs.kaja.io/abilities/personas),
-[HTTP tools](https://docs.kaja.io/abilities/http-tools), [MCP servers](https://docs.kaja.io/abilities/mcp) and
-[datasets](https://docs.kaja.io/abilities/memory#datasets). How the syncing works is on
-[Marketplace internals](https://docs.kaja.io/development/marketplace).
+What the cloud leaves out, and how the two copies are kept in step, is in the docs: [Abilities in the cloud](https://docs.kaja.io/abilities/marketplace#in-the-cloud) and [Marketplace internals](https://docs.kaja.io/development/marketplace). The format of each kind: [skills](https://docs.kaja.io/abilities/skills), [personas](https://docs.kaja.io/abilities/personas), [HTTP tools](https://docs.kaja.io/abilities/tools#http-tools), [MCP servers](https://docs.kaja.io/abilities/mcp) and [datasets](https://docs.kaja.io/abilities/memory#datasets).

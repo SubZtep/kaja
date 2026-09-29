@@ -129,3 +129,46 @@ blockquote.headsup-title>p:nth-child(2) {
 blockquote.headsup-title>p:last-child {
   margin-bottom: 0;
 }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.main-content a.card {
+  display: block;
+  padding: 1rem;
+  border: 1px solid $grey-dk-200;
+  border-radius: 6px;
+  color: $body-text-color;
+  text-decoration: none;
+  transition: border-color 0.1s ease;
+
+  &:hover {
+    border-color: rebeccapurple;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: lighten(rebeccapurple, 20%);
+  }
+
+  span {
+    font-size: 0.9em;
+  }
+}
+
+// the theme's divider before the (disabled) child list on category pages
+.main-content > hr:has(+ footer) {
+  display: none;
+}
+
+@media (max-width: 50rem) {
+  .main-content table {
+    display: block;
+    overflow-x: auto;
+  }
+}

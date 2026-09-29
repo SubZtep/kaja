@@ -2,15 +2,15 @@
 layout: page
 title: Secrets
 parent: Configuration
-nav_order: 3
+nav_order: 4
+summary: "secrets.toml: every key and token in one place."
 ---
 
 # secrets.toml
 
-`secrets.toml` is the only file you ever paste a key or token into. Each section matches a table in
-another file, or a feature, by name, and is merged in when Kaja starts. Everything else — `base_url`,
-server addresses, model names — stays in `models.toml`, `mcp.toml` and `settings.toml`, so those are
-safe to commit or share.
+`secrets.toml` is the only file you paste a key or token into. Each section matches a table in another file,
+or a feature, by name, and is merged in when Kaja starts. Everything else (`base_url`, server addresses,
+model names) stays in `models.toml`, `mcp.toml` and `settings.toml`, so those are safe to commit or share.
 
 ```toml
 # The local Telegram bot (`kaja telegram`); owner_ids is filled in by pairing
@@ -22,7 +22,7 @@ owner_ids = [123456789]
 [providers.fireworks]
 api_key = "fw_YourSecretKey"
 
-# mcp.toml's [[servers]] by id — merged into that server's env (stdio) or headers (HTTP)
+# mcp.toml's [[servers]] by id, merged into that server's env (stdio) or headers (HTTP)
 [mcp.context7]
 CONTEXT7_API_KEY = "ctx7sk-..."
 
@@ -31,8 +31,8 @@ CONTEXT7_API_KEY = "ctx7sk-..."
 api_key = "BSA..."
 ```
 
-A missing section just turns that feature off. The template ships with every section commented out.
-The wizard, `kaja doctor` and `kaja abilities` fill it in for you, testing each key first.
+A missing section just turns that feature off. The template ships with every section commented out. The
+wizard, `kaja doctor` and `kaja abilities` fill it in for you, testing each key first.
 
 ---
 

@@ -2,23 +2,24 @@
 layout: page
 title: Local storage
 parent: Configuration
-nav_order: 5
+nav_order: 6
+summary: "The local SQLite file and what it holds."
 ---
 
 # Local storage
 
-In [local mode](/getting-started/modes) everything Kaja remembers lives in one SQLite file on your machine —
-`~/.local/share/kaja/` by default (XDG), overridable with `[memory] dbPath` in
+In [local mode](/getting-started/modes) everything Kaja remembers lives in one SQLite file on your machine,
+by default in `~/.local/share/kaja/` (XDG). Change that with `[memory] dbPath` in
 [`settings.toml`](/configuration/config). `kaja config paths` prints the resolved location.
 
-It opens in WAL mode, so it's safe to have the terminal chat and the Telegram bot running at once.
+The file opens in WAL mode, so the terminal chat and the Telegram bot can run at the same time.
 
-Images the conversation showed the model (a screenshot a tool returned, a photo sent to the bot) are not in
-the database: each is a file under `files/images/<sessionId>/` next to it, stored once per session and named
-by its sha256; the messages refer to them, and deleting a session removes its folder.
+Images the model was shown (a screenshot a tool returned, a photo sent to the bot) aren't in the database.
+Each is a file under `files/images/<sessionId>/` next to it, stored once per session and named by its
+sha256. Messages refer to them, and deleting a session removes its folder.
 
-In cloud mode there is no local database: the same data lives in the server's Postgres, scoped to your
-account. The [Database](/development/database) page compares the two.
+In cloud mode there's no local database: the same data lives in the server's Postgres, under your account.
+The [Database](/development/database) page compares the two.
 
 ## Tables
 
@@ -26,16 +27,16 @@ account. The [Database](/development/database) page compares the two.
 | --- | --- |
 | `notes` | the agent's long-term [memory](/abilities/memory) about you |
 | `sessions` | one row per conversation, listed by `kaja sessions` and resumable with `-c` / `-s` |
-| `messages` | the conversation itself, one row per message (the assistant's rows are its steps, with model, tokens and latency) |
-| `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took; a result too big for the context also keeps the condensed version the model was sent |
-| `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into; the messages themselves are never deleted |
+| `messages` | the conversation itself, one row per message (assistant rows are its steps, with model, tokens and latency) |
+| `tool_calls` | every tool call the assistant made, linked to its result message, with how it went and how long it took. A result too big for the context also keeps the condensed version the model was sent |
+| `session_summaries` | each summary a long conversation was [compacted](/configuration/config#context) into. The messages themselves are never deleted |
 | `model_calls` | each request that wrote a summary (compacting, condensing, the `summarize` tool): model, tokens and time |
 | `session_events` | the terminal timeline (what the screen showed), replayed when you resume |
 | `dataset_answers` | individual answers to a [dataset](/abilities/memory#datasets) field |
 | `dataset_versions` | marks a dataset as completed at a point in time |
 
-`owner` namespaces rows within one file: empty for the terminal (`null` in `sessions`), a namespaced id
-for a Telegram user or a widget visitor. Sessions belonging to a different owner cannot be resumed.
+`owner` separates rows within one file: empty for the terminal (`null` in `sessions`), a namespaced id for a
+Telegram user or a widget visitor. Sessions belonging to another owner can't be resumed.
 
 ```mermaid
 erDiagram
@@ -146,12 +147,12 @@ erDiagram
 
 ## Deleting it
 
-Close Kaja (and the Telegram bot), then delete the file, any `-wal`/`-shm` files beside it, and the
-`files/` folder next to it. That wipes all memory, history and saved images; there's nothing else to
-clean up.
+Close Kaja (and the Telegram bot), then delete the file, any `-wal` and `-shm` files beside it, and the
+`files/` folder next to it. That wipes all memory, history and saved images. There's nothing else to clean
+up.
 
 ---
 
 Next:
 
-[Troubleshooting](/troubleshooting){: .btn .btn-green .fs-5 }
+[Commands & doctor](/configuration/commands){: .btn .btn-green .fs-5 }

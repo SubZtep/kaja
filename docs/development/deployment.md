@@ -2,17 +2,18 @@
 layout: page
 title: Deployment
 parent: Development
-nav_order: 7
+nav_order: 9
+summary: "How kaja.io is deployed and what production needs."
 ---
 
 # Deployment
 
 How [kaja.io](https://kaja.io) reaches its current environment.
-[Disco](https://disco.cloud) does most of the work — push to `main` and the pipeline runs.
+[Disco](https://disco.cloud) does most of the work: push to `main` and the pipeline runs.
 
 ## Prerequisites
 
-- [**GitHub + Ubuntu 24.04**](https://disco.cloud/docs/#prerequisites) — the publish webhook
+- [**GitHub + Ubuntu 24.04**](https://disco.cloud/docs/#prerequisites): the publish webhook
   triggers deployment on the managed box. Even the smallest
   [Hetzner VPS](https://www.hetzner.com/cloud/cost-optimized) hosts several services and a database
   comfortably at modest traffic.
@@ -26,8 +27,7 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   cloud user. Production sets one for web search: `brave-search=` with a
   [Brave Search API](https://api-dashboard.search.brave.com) key.
 
-Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data)
-— add, remove or swap a provider there too.
+Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data). Add, remove or swap a provider there too.
 
 ## Projects
 
@@ -40,7 +40,7 @@ server, see [MCP sandbox](#mcp-sandbox)):
 | Web | `DISCO_JSON_PATH` | `apps/web/disco.json` |
 | Sandbox | `DISCO_JSON_PATH` | `apps/sandbox/disco.json` |
 
-Install and attach the **PostgreSQL addon** to the API project — it creates `DATABASE_URL`
+Install and attach the **PostgreSQL addon** to the API project. It creates `DATABASE_URL`
 automatically. To keep its data on a Hetzner Volume that outlives the server, follow
 [Postgres on a volume](/development/deploy-volume).
 
@@ -137,22 +137,20 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
   with their last stderr lines; no tracing, and request headers are dropped.
 - The image copies `marketplace/mcp` at build time, so a new or changed stdio manifest needs a sandbox
   redeploy too. A redeploy restarts every browser, so users lose the pages they had open.
-- The sandbox sizes itself: one server per 512 MB of the container's memory limit (else the machine's RAM),
-  less 512 MB for itself; `SANDBOX_MAX_PROCESSES` overrides it. A new server also needs 512 MB free right
-  then, and a server using more than `SANDBOX_SERVER_MEMORY` (1 GB) is stopped. When it's full, the least
-  recently used idle browser is stopped for the newcomer; only when every one is mid-call, or memory is
-  short, is a user turned away, and the API then tries their next sandbox. The logs show each start, stop and
-  refusal with the running count.
+- The sandbox sizes itself from its memory limit (`SANDBOX_MAX_PROCESSES` overrides it), and stops the
+  least recently used idle browser when it's full. The
+  [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#one-warm-server-per-user) has the rules.
 
 The public image is released from **Release to Docker Hub** (`release_sandbox`), amd64 only, as
-`subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes (`docker run subztep/kaja-sandbox`, with their key from the web's Sandbox page or
-anonymously); with none online for a user, their stdio MCP abilities just have no tools that turn.
-How the sandbox works, including its egress proxy and settings, is in its
+`subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes with
+`docker run subztep/kaja-sandbox`, using their key from the web app's Sandbox page or none at all. With no
+sandbox online for a user, their stdio MCP abilities just have no tools that turn. How the sandbox works,
+including its egress proxy and settings, is in its
 [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
 
 ## Environment variables
 
-Docker builds omit `.env` files entirely. **No `.env*` file ships to production** — inject
+Docker builds omit `.env` files entirely. **No `.env*` file ships to production**. Inject
 variables on the server (Disco's UI, `docker --env-file` outside the image, k8s secrets). Every variable
 is listed, with its purpose, in the generated `apps/*/.env.example`.
 
@@ -184,7 +182,7 @@ Then merge into `/etc/docker/daemon.json`:
 ```
 {% endraw %}
 
-Run `systemctl restart docker` (a brief outage) and redeploy every project — containers keep the log
+Run `systemctl restart docker` (a brief outage) and redeploy every project, because containers keep the log
 driver they were created with. Every container should now report `journald`, and the oldest journal
 entry should never be more than 31 days old:
 
@@ -202,16 +200,14 @@ matching limit and a line in the Privacy Policy.
 
 - A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and real SMTP credentials.
 - The storage bucket and its credentials (see [Object storage](#object-storage)).
-- A strong `CONFIG_API_TOKEN`. `/config/*` is **fail-closed**: a missing or empty token returns 401
-  for every request on the prefix and never serves provider API keys.
+- A strong `CONFIG_API_TOKEN`. Without it `/config/*` is [fail-closed](/development/api#fail-closed-config-routes).
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/using/widget) routes are
-  deliberately exempt — they reflect origins and gate on the key's own allowlist instead.
+  deliberately exempt: they reflect origins and gate on the key's own allowlist instead.
 - `NODE_ENV=production` (Sentry on, no `/reference` UI).
-- Rate limits left on — they only auto-disable under `bun test`.
-- The same `SSR_SECRET` (`openssl rand -base64 32`) on both the API and the web project. Disco
-  projects don't share a private network, so the web's `API_URL` is the public API URL. Without the
-  secret, every visitor's server-side session check counts against the web host's IP, and busy pages
-  start getting 429s (see [rate limits and the visitor's IP](/development/api#rate-limits-and-the-visitors-ip)).
+- Rate limits left on. They only switch off under `bun test`.
+- The same `SSR_SECRET` on both the API and the web project, or busy pages start getting 429s (see
+  [rate limits and the visitor's IP](/development/api#rate-limits-and-the-visitors-ip)). Disco projects
+  don't share a private network, so the web's `API_URL` is the public API URL.
 
 ## CLI release automation
 
@@ -223,7 +219,7 @@ matching limit and a line in the Privacy Policy.
 3. If the **TUI** was bumped, it dispatches **Build and release TUI** on `main` via
    `gh workflow run`.
 
-`[skip ci]` keeps the bump commit from re-triggering CI and auto-version — which is also why the
+`[skip ci]` keeps the bump commit from re-triggering CI and auto-version, which is also why the
 explicit dispatch, not a tag trigger, is what ships the binary. No personal access token is
 needed: the default `GITHUB_TOKEN` can push the bump and start the dispatch given `contents: write`
 and `actions: write`.

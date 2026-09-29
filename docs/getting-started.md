@@ -3,14 +3,11 @@ layout: page
 title: Get started
 nav_order: 2
 has_children: true
+has_toc: false
 ---
 
 # Get started
 
-Install the binary, choose where the agent runs, and answer the setup wizard's few questions.
+Install Kaja, choose where the agent runs, and answer a few setup questions.
 
----
-
-Next:
-
-[Installation](/getting-started/installation){: .btn .btn-green .fs-5 }
+{% include children.html %}

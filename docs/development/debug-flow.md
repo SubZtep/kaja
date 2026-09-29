@@ -2,16 +2,17 @@
 layout: page
 title: Debug flow
 parent: Development
-nav_order: 9
+nav_order: 11
+summary: "Dump a terminal conversation to markdown and see what happened."
 ---
 
 # Debug flow
 
-When a terminal conversation goes sideways, dump it to markdown and read what actually happened —
-every message, tool call and result, plus a Mermaid sequence diagram of the turn flow.
+When a terminal conversation goes sideways, dump it to markdown and read what happened: every message, tool
+call and result, plus a Mermaid sequence diagram of the turn flow.
 
-The script is read-only: it opens the local `memory.sqlite`, never creates or migrates it, and only
-sees terminal sessions (not cloud ones).
+The script is read-only. It opens the local `memory.sqlite`, never creates or migrates it, and only sees
+terminal sessions, not cloud ones.
 
 ## List sessions
 
@@ -27,8 +28,8 @@ Prints terminal sessions, newest first, with their ids.
 bun session dump 01a0c1f7-2d5f-708d-b7c0-0675bb7b9597 > test.local.md
 ```
 
-Writes the session as markdown to stdout — redirect it to a `*.local.md` file (gitignored) and open it
-in any viewer that renders Mermaid. The id may be a unique prefix, so `bun session dump 01a0c1f7` works too.
+Writes the session as markdown to stdout. Redirect it to a `*.local.md` file (gitignored) and open it in
+anything that renders Mermaid. A unique prefix of the id works too: `bun session dump 01a0c1f7`.
 
 ---
 

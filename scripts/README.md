@@ -1,67 +1,35 @@
 # scripts/
 
-Repo-wide dev/ops utilities, run from the monorepo root with `bun run scripts/<name>` (or `bun <name>` for `.ts`, `./scripts/<name>.sh` for shell scripts). Anything coupled to a single workspace's build (e.g. Docker image contents) stays in that workspace instead — see `apps/api/migrate.ts`.
+Repo-wide dev and ops utilities, run from the monorepo root with `bun run scripts/<name>` (or `./scripts/<name>.sh` for shell scripts). Anything tied to one workspace's build, like Docker image contents, stays in that workspace (see `apps/api/migrate.ts`).
 
-## Env schema tooling
+Most of these run for you from git hooks. [Vibe coding](https://docs.kaja.io/development/vibe-coding) explains when, and [Development](https://docs.kaja.io/development#code-generation) lists the commands.
 
-Source of truth for all of this is `packages/schema/env/` (`ApiEnvSchema`, `WebEnvSchema`, `SandboxEnvSchema`, `TuiEnvSchema`). Edit the schemas there, then regenerate — never hand-edit the generated output.
+## Generators
 
-- **`env.ts`** — generates each app's `.env.example` from its Zod env schema.
-  ```sh
-  bun run generate:env    # write apps/{api,web,sandbox}/.env.example (apps/tui's is hand-written)
-  bun run check:env       # regenerate in memory, diff against disk, exit 1 on drift
-                           # (also fails if compose.yaml's api/web/sandbox services reference an unknown key)
-  ```
-- **`env-types.ts`** — generates each workspace's ambient `Bun.Env` typing (`declare module "bun" { interface Env {...} } `) from the same schemas, so `process.env.FOO` autocompletes and gets a doc comment.
-  ```sh
-  bun run generate:env-types    # write apps/{api,web,sandbox}/src/env.d.ts and apps/tui/env.d.ts
-  ```
-- **`lib/env-schema.ts`** — shared field-introspection helper (`inspectFields`) used by both generators above; not a standalone script.
+Never hand-edit their output. Change the input, then regenerate.
 
-Both generators are wired into `lefthook.toml`'s pre-commit (`stage_fixed = true`), triggered when `packages/schema/env/*.ts` changes (`env.ts` also watches `.env.example`, `compose.yaml`, `apps/*/disco.json`). `check:env` also runs in CI.
-
-## Model defaults
-
-- **`models.ts`** — writes the example `docs/config/models.*.toml` files from `docs/config/catalog.toml` (through `apps/tui/lib/models/catalog.ts`), formatted the way `tombi format` would leave them.
-  ```sh
-  bun generate:models   # rewrite docs/config/models.*.toml (pre-commit does this when the catalog changes)
-  bun check:models      # exit 1 if they've drifted from the catalog (CI and the catalog test)
-  ```
-
-## Locale sync
-
-- **`locales.ts`** — keeps every non-en-GB locale file (`apps/tui/locales`, `apps/api/locales`, `apps/api/widgets/locales`, `apps/web/messages`) in step with en-GB: same keys, same order. A key that is new, or whose English changed since `HEAD`, gets a `[<locale>] lorem ipsum…` placeholder of similar length (keeping `{params}` and line breaks), unless that translation was itself edited in the same change. Removed keys go away. The languages come from `@kaja/shared/locale`: a newly listed one gets its files created (all placeholders), a file for an unlisted one is an error, and `apps/web/project.inlang/settings.json` gets the same list.
+- **`env.ts`** writes each app's `.env.example` from `packages/schema/env/`. `bun generate:env` writes, `bun check:env` fails on drift (and on a `compose.yaml` key no schema knows). The TUI's is hand-written.
+- **`env-types.ts`** writes each workspace's ambient `Bun.Env` typing from the same schemas: `bun generate:env-types`.
+- **`models.ts`** writes `docs/config/models.*.toml` from `docs/config/catalog.toml`: `bun generate:models`, and `bun check:models` fails on drift (CI and the catalog test).
+- **`locales.ts`** keeps every non-en-GB locale file in step with en-GB: same keys, same order. New or changed English gets a `[<locale>] lorem ipsum…` placeholder, and removed keys go away.
   ```sh
   bun sync:locales           # rewrite the other languages
-  bun sync:locales --stage   # also git-add what it rewrote (pre-commit does this when an en-GB file changes)
-  bun check:locales          # exit 1 if a language is out of step with en-GB or still has placeholders (pre-push, CI)
-  bun sync:locales --todo    # list the placeholders still to translate, as JSON, each with nearby translated keys for terminology
-  bun sync:locales --apply f # write translations back from that JSON with a `value` added (checks {params}); the /translate skill drives these two
+  bun sync:locales --stage   # also git-add what it rewrote (pre-commit)
+  bun check:locales          # fail on drift or leftover placeholders (pre-push, CI)
+  bun sync:locales --todo    # list placeholders still to translate, as JSON
+  bun sync:locales --apply f # write translations back from that JSON (the /translate skill drives these two)
   ```
-- **`translate_push.sh`** — the last pre-push job: when `check:locales` fails it runs `claude -p "/translate"`, commits the translated locale files, pushes them itself (`--no-verify`, the other jobs already passed) and exits 1 so the original, now stale push stops.
+- **`translate_push.sh`** is the last pre-push job. When `check:locales` fails it runs `claude -p "/translate"`, commits and pushes the translations itself, and exits 1 so the original, now stale push stops.
+
+`lib/env-schema.ts` is a shared helper for the two env generators, not a script.
 
 ## SonarCloud
 
-- **`sonar.ts`** — lists a branch's open SonarCloud issues and unreviewed security hotspots on its pull request (public API, no token), one line each; nothing when the branch has no PR. The `/sonar-fix` skill (`.claude/skills/sonar-fix`) runs it and fixes them in code, left uncommitted for review; run it when SonarCloud reports a failed gate.
-  ```sh
-  bun scripts/sonar.ts <branch>
-  ```
+**`sonar.ts`** lists a branch's open SonarCloud issues and unreviewed security hotspots on its pull request (public API, no token): `bun scripts/sonar.ts <branch>`. The `/sonar-fix` skill runs it and fixes them.
 
 ## Dev utilities
 
-- **`create_local_secrets.sh`** — appends a freshly generated `BETTER_AUTH_SECRET` to `apps/api/.env`.
-  ```sh
-  ./scripts/create_local_secrets.sh
-  ```
-- **`db_migration.sh`** — applies every `apps/api/migrations/*.sql` file (lexicographic order) against `$DATABASE_URL`, or the value in `apps/api/.env` if unset. For manually catching up an existing `pgdata` volume — first-boot init already applies these automatically via the compose mount.
-  ```sh
-  ./scripts/db_migration.sh
-  ```
-- **`mass_user_create.ts`** — creates N random users against a locally running API (`POST /auth/sign-up/email`), 10 by default.
-  ```sh
-  bun run ./scripts/mass_user_create.ts [number]
-  ```
-- **`barkochba.ts`** — self-plays Barkochba (twenty questions): a guesser driven by `marketplace/personas/barkochba.toml` against a thinker that holds the secret. Reads your local `models.toml`/`secrets.toml` and calls the chat endpoint directly, with no workspace deps.
-  ```sh
-  bun run scripts/barkochba.ts ["the secret thing"]
-  ```
+- **`create_local_secrets.sh`** appends a fresh `BETTER_AUTH_SECRET` to `apps/api/.env`. Run it once.
+- **`db_migration.sh`** applies every `apps/api/migrations/*.sql` against `$DATABASE_URL` (or `apps/api/.env`), to catch up an existing `pgdata` volume. First-boot init does this on its own.
+- **`mass_user_create.ts [number]`** creates random users against a local API, 10 by default.
+- **`barkochba.ts ["secret"]`** self-plays Twenty Questions: a guesser driven by `marketplace/personas/barkochba.toml` against a thinker holding the secret. Uses your local `models.toml` and `secrets.toml`.

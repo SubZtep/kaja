@@ -3,14 +3,15 @@ layout: page
 title: Cloud or local
 parent: Get started
 nav_order: 2
+summary: "Cloud or local: where the agent runs and what that changes."
 ---
 
 # Cloud or local
 
-Kaja is one agent with several front doors — the terminal, Telegram and a website widget.
-The difference between the two modes is *where the agent loop runs*, and so which tools it may use.
+Kaja is one agent with several front doors: the terminal, Telegram and a website widget. The two modes
+differ in *where the agent loop runs*, and so in which tools it can use.
 
-| Front door | Loop runs | Store | Your files, shell, own MCP servers and plugins |
+| Front door | Loop runs on | Store | Your files, shell, own MCP servers and plugins |
 |---|---|---|---|
 | `kaja`, local mode | your machine | SQLite | ✓ |
 | `kaja telegram` | your machine | SQLite | ✓ |
@@ -43,9 +44,8 @@ flowchart TD
     Local(["💻 Local: ~/.config/kaja,<br>loop in your process"])
 ```
 
-The [setup wizard](/getting-started/wizard) writes `preferences.mode`, so the choice sticks even before a provider
-works: picking local and then "Skip — I'll set up models.toml myself" still starts in local mode next
-time. A flag overrides it for one launch:
+The [setup wizard](/getting-started/wizard) saves your choice as `preferences.mode`, even before a provider
+works. A flag overrides it for one launch:
 
 ```sh
 kaja --local     # local agent loop, even with no config yet
@@ -54,39 +54,36 @@ kaja --cloud     # cloud login, even if a local config exists
 
 ## Cloud mode
 
-On the first cloud launch Kaja does a **device login**: it prints a code, you approve it in the browser
-at [kaja.io/device](https://kaja.io/device), and a bearer token is stored in your OS credential store.
-There is no credentials file on disk. One account is signed in at a time; `kaja logout` clears it.
+The first time, Kaja does a **device login**: it shows a code, you approve it at
+[kaja.io/device](https://kaja.io/device), and a token goes into your OS keychain. Nothing is written to
+disk. One account is signed in at a time, and `kaja logout` clears it.
 
-> If the OS keychain is unavailable, cloud mode errors out and recommends `--local` — there is no
-> plaintext fallback.
+> Without a keychain, cloud mode stops and suggests `--local`. There is no plaintext fallback.
 {: .warning }
 
-The server resolves the model and keeps your sessions, memory and dataset answers. What it can use:
+The server picks the model and keeps your sessions, memory and dataset answers. The agent can use:
 
-- the cloud [built-in tools](/abilities/tools#built-ins): memory, datasets, `ask_user`, web search, image generation;
-- `read_file` and `list_files`: the server pauses the turn and your terminal runs them, scoped to the
-  directory you launched from, with no confirmation prompt;
-- the personas, skills, HTTP tools and remote MCP servers you turned on — see
-  [Abilities in the cloud](/abilities#in-the-cloud).
+- the cloud [built-in tools](/abilities/tools#built-ins): memory, datasets, `ask_user`, image generation and more;
+- `read_file` and `list_files`, which run in your terminal, limited to the folder you started in and with no
+  confirmation prompt;
+- the personas, skills, HTTP tools and MCP servers you turned on ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
 
 There is no shell, no `mcp.toml`, no plugin tools and no model switching.
 
 ## Local mode
 
-The full agent: the loop, the tools and the storage all run in your process.
+The whole agent runs in your process:
 
-- config from `~/.config/kaja/` ([Configuration](/configuration));
-- your own provider from `models.toml`. With no chat model configured the CLI exits with an error; it
-  never falls back to cloud;
-- every tool: files, shell, MCP servers, plugins, and hosts on your own network;
-- sessions, memory and dataset answers in a [SQLite file](/configuration/storage);
-- `kaja -c` resumes the most recent session, `kaja -s <id>` a specific one; `kaja sessions` lists
-  them with their ids.
+- config comes from `~/.config/kaja/` ([Configuration](/configuration/files));
+- models come from your `models.toml`. Without a chat model Kaja exits with an error; it never falls back
+  to the cloud;
+- every tool works: files, shell, MCP servers, plugins, hosts on your own network;
+- sessions, memory and dataset answers live in a [SQLite file](/configuration/storage);
+- `kaja -c` resumes the last session, `kaja -s <id>` a specific one, and `kaja sessions` lists them.
 
 ## How a turn runs
 
-Both modes run the same agent core, `@kaja/nasi`:
+Both modes run the same agent core, [Nasi](/abilities/nasi):
 
 ```mermaid
 ---
@@ -110,13 +107,13 @@ flowchart TD
     Reply --> DB[("SQLite (local)<br>Postgres (cloud)")]
 ```
 
-Some tools hand control back to you instead of running straight away:
+Two things hand control back to you:
 
-- **`ask_user`** — the agent needs a clarification. Your next message is its answer, not a new turn.
-- **approvals** — a shell command, or an HTTP tool or MCP call that changes something, waits for you
-  to approve or decline: a prompt above the input in the terminal, buttons in Telegram.
+- **`ask_user`**: the agent needs an answer. Your next message is that answer, not a new turn.
+- **Approvals**: a shell command, or an HTTP tool or MCP call that changes something, waits for your OK.
+  You get a prompt above the input in the terminal, and buttons in Telegram.
 
-`switch_persona` doesn't stop the loop: it swaps the [persona](/abilities/personas) mid-turn and carries on.
+`switch_persona` doesn't stop anything. It swaps the [persona](/abilities/personas) and carries on.
 
 ---
 

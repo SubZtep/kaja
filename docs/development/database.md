@@ -2,16 +2,17 @@
 layout: page
 title: Database
 parent: Development
-nav_order: 3
+nav_order: 5
+summary: "Both databases, the tables and how the schema is managed."
 ---
 
 # Database
 
 Kaja has two databases, and they are deliberately not the same size. The **cloud** keeps everything the
 platform needs in **PostgreSQL**: accounts, server config, the ability catalog, widgets, Telegram links,
-users' secrets, and the agent's own state. The **terminal** in [local mode](/getting-started/modes) keeps only that last
-part — one person's conversations, memory and dataset answers — in a single **SQLite** file. Everything
-else a local install needs is a file: [`settings.toml`, `models.toml`, `mcp.toml`, `abilities.toml`](/configuration).
+users' secrets, MCP sandboxes, and the agent's own state. The **terminal** in [local mode](/getting-started/modes) keeps only that last
+part (one person's conversations, memory and dataset answers) in a single **SQLite** file. Everything
+else a local install needs is a file: [`settings.toml`, `models.toml`, `mcp.toml`, `abilities.toml`](/configuration/files).
 
 The agent state is the one place the two overlap, and that overlap is a contract: the
 [agent brain](/development/nasi) talks to a `NasiStore` interface, and each host injects its own
@@ -48,6 +49,7 @@ flowchart LR
 | `2026-09-10-telegram-link.sql` | `telegram_link`, `telegram_link_token` |
 | `2026-09-19-ability.sql` | `ability`, `user_ability`, `marketplace_sync` |
 | `2026-09-19-user-secret.sql` | `user_secret` |
+| `2026-09-27-sandbox.sql` | `sandbox`, `sandbox_owner`, `sandbox_sample` |
 
 Every file only *creates* (`IF NOT EXISTS`), and the API's `migrate.ts` re-runs all of them on every
 deploy, so they have to stay idempotent. The files run on the first boot of the compose volume; for an
@@ -70,17 +72,17 @@ Conventions:
 - Row shapes stay private to the API's `services/`; they are mapped to the API types with private helpers.
 
 **SQLite** has no migration files. `createSchema()` in `apps/tui/lib/store/sqlite.ts` runs every time the file
-is opened: it creates missing tables, adds the one column older installs lack (`notes.owner`), and drops
-the two earlier session layouts rather than converting them. It opens in WAL mode with foreign keys on.
+is opened: it creates missing tables, adds the columns older installs lack (`notes.owner`,
+`tool_calls.resultSummary`), and drops the earlier session layouts rather than converting them. It opens in WAL mode with foreign keys on.
 
 ## PostgreSQL
 
-There are 22 tables in three groups.
+There are 25 tables in four groups.
 
 ### Accounts and access
 
 Better Auth owns the first five tables; the rest hang off `user`. Only the columns that matter here are
-shown — see the [migration](https://github.com/SubZtep/kaja/blob/main/apps/api/migrations/2026-03-03-better-auth.sql)
+shown, see the [migration](https://github.com/SubZtep/kaja/blob/main/apps/api/migrations/2026-03-03-better-auth.sql)
 for the full list.
 
 ```mermaid
@@ -241,6 +243,54 @@ erDiagram
 - Personas and datasets are `ability` rows too (type `persona` and `dataset`), synced like skills. A user
   switches skills, tools, MCP servers and personas; datasets come with the personas that use them. There is
   no separate persona table.
+
+### MCP sandboxes
+
+The cloud's registry of [MCP sandboxes](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme), the
+machines that run stdio MCP servers for cloud turns. Anyone can run one. Each dials the API's WebSocket and
+registers itself here.
+
+```mermaid
+erDiagram
+  sandbox {
+    uuid id PK
+    uuid user_id FK "null = anonymous"
+    boolean official "the operator's own box"
+    text secret_hash "lets it come back as this row"
+    text name
+    boolean online
+    inet ip
+    text country_code "picked out of the geo answer"
+    jsonb info "version, arch, cpu, memory, abilities"
+    jsonb load "running, load, memoryUsed"
+    timestamptz last_seen_at
+  }
+
+  sandbox_owner {
+    uuid user_id PK
+    text key_hash UK "shown once when made"
+    boolean share "others may use my sandboxes"
+    boolean use_shared "my turns may run in shared ones"
+  }
+
+  sandbox_sample {
+    uuid sandbox_id PK
+    timestamptz at PK
+    integer running
+    real load
+    bigint memory_used
+  }
+
+  user ||--o{ sandbox : runs
+  user ||--o| sandbox_owner : "has settings"
+  sandbox ||--o{ sandbox_sample : reports
+```
+
+- A sandbox with no `user_id` and `official = false` is anonymous and open to everyone. `official` marks the
+  operator's own box, set by `SANDBOX_SYSTEM_KEY`.
+- `sandbox_owner` holds a user's sandbox key (only its hash) and the two sharing switches.
+- `sandbox_sample` gets one heartbeat a minute per sandbox, for the admin load chart. An hourly job deletes
+  samples older than 7 days, and anonymous sandboxes a week after they were last online.
 
 ### The cloud agent's state
 

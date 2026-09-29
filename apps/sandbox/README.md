@@ -166,9 +166,9 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 
 ## Observability
 
-- The API's `sandbox` table has every sandbox that ever connected: owner, online, when last seen, IP and its full geolocation, the `hello` info and the latest `heartbeat`; every heartbeat is also a row in `sandbox_sample` (kept 7 days), which the admin dashboard charts over the last day.
-- Asked over the socket, the sandbox reports what's running right now: every server with its (pseudonymous) user, state, open calls and sessions, and the memory of its whole process tree (the browser included, read from `/proc`); the host's CPUs, load and memory, and the container's memory limit; and, since the sandbox started, how many servers started, failed to start, stopped idle, stopped for room, stopped over memory, were released, crashed, or were refused (full or short of memory), plus the egress proxy's open, allowed, refused and failed connections. The API's admins see every sandbox live on the web's **Admin → Dashboard** page, through `GET /admin/sandbox`, with the users' emails.
-- The logs have a line for connecting and losing the API, every server started, stopped when idle, to make room, over its memory or released, and every "sandbox is full" or short-of-memory refusal, each with the running count.
+- The API's `sandbox` table has every sandbox that ever connected (owner, online, last seen, IP and geolocation, the `hello` info and the latest `heartbeat`). Each heartbeat is also a row in `sandbox_sample`, kept 7 days, which the admin dashboard charts.
+- Asked over the socket, the sandbox reports what's running right now: each server with its (pseudonymous) user, state, open calls and memory, the host's CPUs, load and memory, and counters since it started (servers started, failed, stopped and why, refused) plus the egress proxy's allowed, refused and failed connections. Admins see this live on the web's **Admin → Dashboard**, through `GET /admin/sandbox`.
+- The logs have a line for connecting and losing the API, and for every server started or stopped and every "sandbox is full" refusal, each with the running count.
 - In production, servers that won't start, exit on their own or error go to the sandbox's own Sentry project with their last 20 stderr lines.
 
 ## Not yet
