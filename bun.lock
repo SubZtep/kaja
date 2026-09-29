@@ -19,7 +19,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.20.13",
+      "version": "0.20.14",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.1142.0",
         "@aws-sdk/s3-presigned-post": "^3.1142.0",
@@ -135,7 +135,7 @@
     },
     "packages/nasi": {
       "name": "@kaja/nasi",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@kaja/schema": "workspace:*",
         "@kaja/shared": "workspace:*",
