@@ -1,8 +1,8 @@
-// The turn failures a host answers differently from a crash (a 404, a 409, a 502...). Each keeps the `name` hosts matched on before these were classes.
+// The turn failures a host answers differently from a crash (a 404, a 409, a 502...); hosts tell them apart with instanceof. Each `name` is written out, since a minified bundle renames classes.
 
 /** The turn named a session that doesn't exist, or one another owner in the same store holds. */
 export class SessionNotFoundError extends Error {
-  override name = "NasiSessionNotFound"
+  override name = "SessionNotFoundError"
   constructor() {
     super("session_not_found")
   }
@@ -10,7 +10,7 @@ export class SessionNotFoundError extends Error {
 
 /** An `approval` came with no tool call waiting for one. */
 export class NothingToApproveError extends Error {
-  override name = "NasiNothingToApprove"
+  override name = "NothingToApproveError"
   constructor() {
     super("nothing_to_approve")
   }
@@ -18,7 +18,7 @@ export class NothingToApproveError extends Error {
 
 /** The host found no model to run the turn with. */
 export class NoModelError extends Error {
-  override name = "NasiNoModel"
+  override name = "NoModelError"
   constructor() {
     super("no_model")
   }
@@ -26,7 +26,7 @@ export class NoModelError extends Error {
 
 /** The model provider refused or failed the request; `contextOverflow` lets run() compact and retry first. */
 export class ModelUnavailableError extends Error {
-  override name = "NasiModelUnavailable"
+  override name = "ModelUnavailableError"
   readonly contextOverflow: boolean
   constructor(message: string, opts: { contextOverflow: boolean; cause: unknown }) {
     super(`Model provider request failed: ${message}`, { cause: opts.cause })

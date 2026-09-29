@@ -194,7 +194,7 @@ shortened. Only what the model is sent changes (`contextMessages()`).
   `Session.telemetry.modelCalls`, which the stores save as model call rows.
 - **Too long anyway.** When the provider rejects the prompt as too long, the known window is lowered below it
   (for this process, `lowerContextWindow()`), the session is compacted, and the round is retried once. A
-  second failure surfaces as `NasiModelUnavailable`, like any provider error.
+  second failure surfaces as `ModelUnavailableError`, like any provider error.
 - **On demand.** `compact(agent, session, focus?)` (and `Nasi.compact(sessionId, focus?)` for a stored
   session) summarises everything but the latest turn, with `focus` steering what the summary keeps. It backs
   `/compact` in the terminal, both Telegram bots and `POST /nasi/compact`.
@@ -248,7 +248,7 @@ as rows (a message per row, a row per tool call), with each assistant step's mod
 [Database](/development/database) page compares the two real schemas.
 
 `owner` separates rows *inside* one store: `null` for a terminal session, a namespaced id for a Telegram user
-or widget visitor. Resuming a session whose owner doesn't match raises `NasiSessionNotFound`, which is what
+or widget visitor. Resuming a session whose owner doesn't match raises `SessionNotFoundError`, which is what
 stops two widget visitors on one account from reading each other's chats.
 
 ## Abilities

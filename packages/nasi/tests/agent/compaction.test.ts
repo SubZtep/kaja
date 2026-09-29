@@ -10,6 +10,7 @@ import {
   summarize,
   transcriptOf
 } from "../../src/agent/compaction"
+import { ModelUnavailableError } from "../../src/agent/errors"
 import { compact, run } from "../../src/agent/run"
 import { tool } from "../../src/agent/tools"
 
@@ -340,7 +341,6 @@ test("an overflow that survives the retry still reaches the host as a model prov
   const { client, rounds } = fakeClient({ streamErrors: [overflow(), overflow()] })
   const agent = new Agent({ model: "m", client, tools: [], contextWindow: 100_000 })
   const error = await collect(run(agent, "next", history(10, 60))).catch(e => e)
-  expect(error).toBeInstanceOf(Error)
-  expect(error.name).toBe("NasiModelUnavailable")
+  expect(error).toBeInstanceOf(ModelUnavailableError)
   expect(rounds).toHaveLength(2)
 })
