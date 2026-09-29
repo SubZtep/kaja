@@ -54,7 +54,7 @@ export function EditProviderDialog({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger render={children} />
       <Dialog.Portal>
-        <DialogShell className="w-[36rem]">
+        <DialogShell className="w-xl">
           <Dialog.Title className={DIALOG_TITLE}>{m.models_edit_provider_title()}</Dialog.Title>
           <Dialog.Description className="mb-6 font-mono text-muted text-sm">{provider.name}</Dialog.Description>
 

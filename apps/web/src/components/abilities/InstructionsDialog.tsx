@@ -23,7 +23,7 @@ export function InstructionsDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <DialogShell className="w-[40rem]">
+        <DialogShell className="w-160">
           <div className="mb-2 flex items-start justify-between gap-3">
             <Dialog.Title className={DIALOG_TITLE}>{title}</Dialog.Title>
             <Dialog.Close
