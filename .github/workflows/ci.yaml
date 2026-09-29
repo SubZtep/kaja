@@ -36,11 +36,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
-      - name: Run linter and formatter
-        run: bunx biome ci .
-
-      - name: Check TOML formatting and lint
-        run: bunx tombi format --check && bunx tombi lint
+      # The same `bun lint` as locally: Biome, then Tombi's TOML format check and lint, from the locked install
+      - name: Run linters and format checks
+        run: bun run lint
 
   typecheck:
     needs: lint
