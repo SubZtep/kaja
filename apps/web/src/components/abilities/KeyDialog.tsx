@@ -76,7 +76,7 @@ export function KeyDialog({
   return (
     <Dialog.Root open={open} onOpenChange={close}>
       <Dialog.Portal>
-        <DialogShell className="w-120">
+        <DialogShell className="w-[30rem]">
           <Dialog.Title className={DIALOG_TITLE}>{m.tools_key_dialog_title({ name })}</Dialog.Title>
           <Dialog.Description className="mb-6 text-muted text-sm">
             {m.tools_key_dialog_description({ domain })}

@@ -57,7 +57,7 @@ export function ToolsDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <DialogShell className="w-136">
+        <DialogShell className="w-[34rem]">
           <div className="mb-2 flex items-start justify-between gap-3">
             <Dialog.Title className={DIALOG_TITLE}>{m.tools_list_title({ name: entry.ability.name })}</Dialog.Title>
             <Dialog.Close

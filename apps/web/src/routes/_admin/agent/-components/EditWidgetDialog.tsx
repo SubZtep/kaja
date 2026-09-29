@@ -77,7 +77,7 @@ export function EditWidgetDialog({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger render={children} />
       <Dialog.Portal>
-        <DialogShell className="w-xl">
+        <DialogShell className="w-[36rem]">
           <Dialog.Title className={DIALOG_TITLE}>{m.widget_edit_title()}</Dialog.Title>
           <Dialog.Description className="mb-6 font-mono text-muted text-sm">{widgetKey.keyPrefix}…</Dialog.Description>
 
