@@ -37,6 +37,11 @@ export type Palette = {
   thinking: string
   keyBackground: string
   keyText: string
+  /** The header's local/cloud badge: a muted tint of the status colour, so it reads as a label and not a call to action. */
+  localBadge: string
+  localBadgeText: string
+  cloudBadge: string
+  cloudBadgeText: string
   inputBackground: string
   tableHead: string
   tableBorder: string
@@ -60,6 +65,10 @@ const darkPalette: Palette = {
   thinking: "magenta",
   keyBackground: "cyan",
   keyText: "black",
+  localBadge: "#16301f",
+  localBadgeText: "#7fd99a",
+  cloudBadge: "#182a4a",
+  cloudBadgeText: "#8ab4f8",
   inputBackground: "#224",
   tableHead: "magenta",
   tableBorder: "gray",
@@ -83,6 +92,10 @@ const lightPalette: Palette = {
   thinking: "#6a1b9a",
   keyBackground: "#00838f",
   keyText: "white",
+  localBadge: "#d5ebd8",
+  localBadgeText: "#2e7d32",
+  cloudBadge: "#d3e3f8",
+  cloudBadgeText: "#1565c0",
   inputBackground: "#e8e8f4",
   tableHead: "magenta",
   tableBorder: "gray",

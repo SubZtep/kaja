@@ -88,6 +88,7 @@ function buildKeyBarItems(hotkeyModifier: string | undefined, hasPersona: boolea
  * running.
  */
 function Chrome({
+  mode,
   personaLabel,
   model,
   provider,
@@ -109,6 +110,8 @@ function Chrome({
   runningCommand = false,
   resolvePending
 }: Readonly<{
+  /** Where the agent runs, shown as a badge in the header. */
+  mode: "local" | "cloud"
   personaLabel: string
   model: string
   /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". Local only — cloud never exposes the resolved provider. */
@@ -161,6 +164,7 @@ function Chrome({
     <ThemeProvider theme={themes[theme]}>
       <Box flexDirection="column" width={columns} height={rows}>
         <Header
+          mode={mode}
           persona={personaLabel}
           model={model}
           provider={provider}
@@ -289,6 +293,7 @@ function LocalApp({
 
   return (
     <Chrome
+      mode="local"
       personaLabel={persona.label}
       model={displayModel}
       provider={provider}
@@ -342,6 +347,7 @@ function CloudApp({
 
   return (
     <Chrome
+      mode="cloud"
       personaLabel={persona?.label ?? t("cli.connecting")}
       model={model}
       promptTokens={promptTokens}

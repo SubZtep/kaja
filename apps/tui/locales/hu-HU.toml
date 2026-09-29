@@ -246,6 +246,11 @@ invalidAt = "Érvénytelen secrets fájl ({path}): {message}"
 placeholder = "PgUp előzmények · Alt+Enter új sor"
 
 
+[header]
+local = "[hu-HU] lorem"
+cloud = "[hu-HU] lorem"
+
+
 [keybar]
 help    = "Súgó"
 persona = "Perszóna"

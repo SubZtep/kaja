@@ -246,6 +246,11 @@ invalidAt = "secrets 檔無效（{path}）：{message}"
 placeholder = "PgUp 歷史紀錄 · Alt+Enter 換逝"
 
 
+[header]
+local = "[nan-TW] lorem"
+cloud = "[nan-TW] lorem"
+
+
 [keybar]
 help    = "說明"
 persona = "角色"

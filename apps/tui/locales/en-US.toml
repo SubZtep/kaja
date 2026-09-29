@@ -246,6 +246,11 @@ invalidAt = "Invalid secrets file at {path}: {message}"
 placeholder = "PgUp history · Alt+Enter newline"
 
 
+[header]
+local = "[en-US] lorem"
+cloud = "[en-US] lorem"
+
+
 [keybar]
 help    = "Help"
 persona = "Persona"

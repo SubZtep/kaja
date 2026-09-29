@@ -246,6 +246,11 @@ invalidAt = "{path} 的機密檔案無效：{message}"
 placeholder = "PgUp 歷史紀錄 · Alt+Enter 換行"
 
 
+[header]
+local = "[zh-TW] lorem"
+cloud = "[zh-TW] lorem"
+
+
 [keybar]
 help    = "說明"
 persona = "角色"
