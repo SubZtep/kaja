@@ -18,6 +18,7 @@ import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@ka
 import { channelOf, PersistedSessionSchema } from "@kaja/schema/store"
 import type { Pool, PoolClient } from "pg"
 import { files } from "../../core/files"
+import { reportError } from "../../core/report"
 
 function ownerKey(owner: string | null): string {
   return owner ?? ""
@@ -100,7 +101,10 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
     }),
     events: []
   })
-  return parsed.success ? parsed.data : undefined
+  if (parsed.success) return parsed.data
+  // Rows the conversation schema refuses read as a missing session; reported, so a shape it doesn't know yet shows up
+  reportError("Stored session failed validation", parsed.error, { sessionId: row.id })
+  return undefined
 }
 
 // Postgres text can't hold a NUL byte; a tool that returned binary data (a fetched image, say) would fail the whole turn's save

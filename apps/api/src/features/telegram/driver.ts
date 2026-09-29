@@ -5,7 +5,6 @@ import {
   isImageRejection,
   type NasiTurnInput,
   pendingToolCall,
-  type Session,
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
@@ -467,7 +466,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     try {
       await withLock(`telegram:${owner}`, async () => {
         const row = await createPostgresStore(pool, ownerUserId).loadLatestSession(owner)
-        const session = row?.session as Session | undefined
+        const session = row?.session
         const pendingId = session?.pendingToolApprovalId
         const call = session && pendingId ? pendingToolCall(session, pendingId) : undefined
         if (!call || approvalToken(pendingId!) !== match[2]) {

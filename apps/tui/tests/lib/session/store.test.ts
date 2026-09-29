@@ -2,6 +2,7 @@ import { afterEach, expect, test } from "bun:test"
 import { readdir, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import type { StoredConversation } from "@kaja/schema/store"
 
 // XDG_CONFIG_HOME is isolated too, since memory-store.ts can write
 // config.memory.dbPath back into settings.toml on first successful open.
@@ -19,7 +20,9 @@ const {
   updateSessionRow
 } = await import("../../../lib/session/store")
 
-const SESSION = {
+type Messages = StoredConversation["messages"]
+
+const SESSION: StoredConversation = {
   messages: [
     { role: "system", content: "be helpful" },
     { role: "user", content: "hi" }
@@ -106,8 +109,8 @@ function count(
 }
 
 test("an inline image is stored once as a file beside the database, the message keeps a reference, and it loads back", async () => {
-  const image = { type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } }
-  const messages = [
+  const image = { type: "image_url" as const, image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } }
+  const messages: Messages = [
     { role: "user", content: [image] },
     { role: "assistant", content: "a picture" },
     { role: "user", content: [image] }
@@ -158,8 +161,8 @@ test("a corrupt row loads as undefined instead of crashing", async () => {
   expect(await loadSessionRow(id)).toBeUndefined()
 })
 
-const CALL = { id: "call_1", type: "function", function: { name: "read_thing", arguments: "{}" } }
-const TURN_ONE = [
+const CALL = { id: "call_1", type: "function" as const, function: { name: "read_thing", arguments: "{}" } }
+const TURN_ONE: Messages = [
   ...SESSION.messages,
   { role: "assistant", content: null, reasoning_content: "hmm", tool_calls: [CALL] },
   { role: "tool", tool_call_id: "call_1", content: "ok" },
@@ -190,7 +193,7 @@ test("a save writes only the rows past what is stored", async () => {
   const db = await openDb()
   const before = db.query("SELECT id FROM messages WHERE sessionId = ? ORDER BY seq").all(id)
 
-  const next = [...TURN_ONE, { role: "user", content: "again" }, { role: "assistant", content: "sure" }]
+  const next: Messages = [...TURN_ONE, { role: "user", content: "again" }, { role: "assistant", content: "sure" }]
   await updateSessionRow(
     id,
     row({ session: { messages: next }, events: [...TURN_ONE_EVENTS, { type: "user", text: "again" }] })
@@ -315,7 +318,7 @@ test("a sqlite file from before telemetry is reset when the store opens", async 
 
 test("the system prompt is rewritten in place while the messages stay untouched", async () => {
   const id = await createSessionRow(row({ session: { messages: TURN_ONE } }))
-  const rewritten = [{ role: "system", content: "now a different persona" }, ...TURN_ONE.slice(1)]
+  const rewritten: Messages = [{ role: "system", content: "now a different persona" }, ...TURN_ONE.slice(1)]
   await updateSessionRow(id, row({ session: { messages: rewritten } }))
   const db = await openDb()
   expect(count(db, "messages", id)).toBe(TURN_ONE.length - 1)
@@ -325,7 +328,7 @@ test("the system prompt is rewritten in place while the messages stay untouched"
 
 test("every compaction summary is kept, the latest comes back, and the messages stay whole", async () => {
   const id = await createSessionRow(row({ session: { messages: TURN_ONE }, events: TURN_ONE_EVENTS }))
-  const longer = [...TURN_ONE, { role: "user", content: "again" }, { role: "assistant", content: "sure" }]
+  const longer: Messages = [...TURN_ONE, { role: "user", content: "again" }, { role: "assistant", content: "sure" }]
   // Session indexes count the system prompt; the stored summaryFrom is the message seq, one less.
   await updateSessionRow(id, row({ session: { messages: TURN_ONE, summary: { text: "first", from: 2 } } }))
   await updateSessionRow(id, row({ session: { messages: longer, summary: { text: "first", from: 2 } } }))

@@ -1,6 +1,7 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { sessionImagePrefix } from "@kaja/nasi"
+import type { StoredConversation } from "@kaja/schema/store"
 import { pool } from "../../src/core/db"
 import { files } from "../../src/core/files"
 import { createPostgresStore } from "../../src/features/nasi/pg-store"
@@ -12,8 +13,10 @@ async function signUp(name: string) {
   return (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id as string
 }
 
-const call = (id: string, name: string) => ({ id, type: "function", function: { name, arguments: "{}" } })
-const TURN = [
+type Messages = StoredConversation["messages"]
+
+const call = (id: string, name: string) => ({ id, type: "function" as const, function: { name, arguments: "{}" } })
+const TURN: Messages = [
   { role: "system", content: "be helpful" },
   { role: "user", content: "hi" },
   { role: "assistant", content: null, reasoning_content: "hmm", tool_calls: [call("c1", "read"), call("c2", "write")] },
@@ -141,7 +144,7 @@ describe("postgres store", () => {
   test("every compaction summary is kept and the latest comes back, with the messages whole", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })
-    const longer = [...TURN, { role: "assistant", content: "sure" }]
+    const longer: Messages = [...TURN, { role: "assistant", content: "sure" }]
     // Session indexes count the system prompt; the stored summary_from is the message seq, one less.
     await store.updateSession(id, write(TURN, { session: { messages: TURN, summary: { text: "first", from: 2 } } }))
     await store.updateSession(id, write(longer, { session: { messages: longer, summary: { text: "first", from: 2 } } }))
@@ -182,7 +185,7 @@ describe("postgres store", () => {
 
   test("a NUL byte in a message (a binary tool result) is dropped instead of failing the save", async () => {
     const store = createPostgresStore(pool, userId)
-    const messages = [
+    const messages: Messages = [
       { role: "user", content: "hi" },
       { role: "assistant", content: null, tool_calls: [call("c1", "fetch_url")] },
       { role: "tool", tool_call_id: "c1", content: "\xff\xd8\0JFIF" },
@@ -231,7 +234,7 @@ describe("postgres store", () => {
   test("a rewritten system prompt changes no message rows", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })
-    const rewritten = [{ role: "system", content: "another persona" }, ...TURN.slice(1)]
+    const rewritten: Messages = [{ role: "system", content: "another persona" }, ...TURN.slice(1)]
     await store.updateSession(id, write(rewritten))
     expect((await store.loadSession(id))!.session.messages).toEqual(rewritten)
     const { rows } = await pool.query("SELECT COUNT(*)::int AS n FROM nasi_message WHERE session_id = $1", [id])
@@ -297,5 +300,21 @@ describe("postgres store", () => {
     })
     expect(await store.loadPromptHistory()).toEqual(["third", "second", "first"])
     expect(await store.loadPromptHistory(1)).toEqual(["third"])
+  })
+
+  test("a stored message the conversation schema doesn't know reads as no session, and is reported", async () => {
+    const store = createPostgresStore(pool, userId)
+    const id = await store.createSession({ ...write(TURN), title: "t" })
+    await pool.query("UPDATE nasi_message SET role = 'narrator' WHERE session_id = $1 AND seq = 0", [id])
+    const logged = spyOn(console, "error").mockImplementation(() => {})
+    try {
+      expect(await store.loadSession(id)).toBeUndefined()
+      expect(logged).toHaveBeenCalledWith(
+        "Stored session failed validation",
+        expect.objectContaining({ sessionId: id })
+      )
+    } finally {
+      logged.mockRestore()
+    }
   })
 })

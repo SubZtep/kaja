@@ -198,7 +198,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
 
     return {
       agent,
-      session: resumeRow ? (resumeRow.session as Session) : createSession(),
+      session: resumeRow ? resumeRow.session : createSession(),
       events: (resumeRow?.events as TimelineEvent[] | undefined) ?? [],
       sessionRowId: resumeRow?.id,
       persona,

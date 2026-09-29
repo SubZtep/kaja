@@ -24,6 +24,7 @@ import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@ka
 import { PersistedSessionSchema } from "@kaja/schema/store"
 import { Files } from "files-sdk"
 import { fs } from "files-sdk/fs"
+import { log } from "../logger"
 
 function ownerKey(owner: string | null): string {
   return owner ?? ""
@@ -441,7 +442,9 @@ export function createSqliteStore(dbPath: string): NasiStore {
         }),
         events: eventRows.map(event => loadedEvent(row.id, JSON.parse(event.payload)))
       })
-      return parsed.success ? parsed.data : undefined
+      if (parsed.success) return parsed.data
+      log.error("Stored session failed validation", { sessionId: row.id, issues: parsed.error.issues })
+      return undefined
     } catch {
       return undefined
     }
