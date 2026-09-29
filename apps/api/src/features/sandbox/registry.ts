@@ -3,6 +3,7 @@ import type { McpSandbox } from "@kaja/nasi"
 import { SANDBOX_FULL_HEADER, type Sandbox } from "@kaja/schema/api"
 import { env } from "../../core/env"
 import { lookupGeo } from "../../core/geo"
+import { reportError } from "../../core/report"
 import { abilityService, sandboxService } from "../../services"
 import type { SandboxTunnel } from "./tunnel"
 
@@ -130,14 +131,19 @@ const FULL_RETRIES = 3
  */
 export function mcpSandboxFor(userId: string): McpSandbox {
   const picked = new Map<string, Promise<SandboxPick | undefined>>()
-  let trusted: Promise<Set<string>> | undefined
-  // The user's abilities that must stay on their own or the official sandbox (the manifest's trustedSandbox).
+  let trusted: Promise<Set<string> | undefined> | undefined
+  // The user's abilities that must stay on their own or the official sandbox (the manifest's trustedSandbox). If that
+  // can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on a stranger's machine.
   const needsTrust = async (ability: string) => {
     trusted ??= abilityService
       .mcpForUser(userId)
       .then(abilities => new Set(abilities.filter(a => a.trustedSandbox).map(a => a.name)))
-      .catch(() => new Set<string>())
-    return (await trusted).has(ability)
+      .catch(error => {
+        reportError("trusted sandbox abilities lookup failed", error, { userId })
+        return undefined
+      })
+    const names = await trusted
+    return names === undefined || names.has(ability)
   }
 
   return {

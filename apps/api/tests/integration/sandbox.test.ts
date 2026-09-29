@@ -8,7 +8,7 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { lookupGeo, setGeoLookupOverride } from "../../src/core/geo"
 import { mcpSandboxFor, pickSandbox } from "../../src/features/sandbox/registry"
-import { sandboxService } from "../../src/services"
+import { abilityService, sandboxService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, waitFor } from "./sandbox-helpers"
 
@@ -122,6 +122,25 @@ describe("routing", () => {
       await theirs.close()
       await settings(tokenA, { useShared: false })
       await settings(tokenB, { share: true })
+    }
+  }, 30_000)
+
+  test("if the user's trusted-only abilities can't be looked up, the turn stays off other people's sandboxes", async () => {
+    const theirs = await startSandbox({ apiUrl, abilities: [ability], key: await newKey(tokenB) })
+    const lookup = spyOn(abilityService, "mcpForUser").mockRejectedValue(new Error("database down"))
+    const logged = spyOn(console, "error").mockImplementation(() => {})
+    try {
+      await settings(tokenA, { useShared: true })
+      const res = await mcpSandboxFor(userA).fetch(`http://sandbox.invalid/mcp/${ability}`, initialize)
+      expect(res.status).toBe(503)
+      await res.text()
+      expect(theirs.pool.size).toBe(0)
+      expect(logged).toHaveBeenCalled()
+    } finally {
+      lookup.mockRestore()
+      logged.mockRestore()
+      await theirs.close()
+      await settings(tokenA, { useShared: false })
     }
   }, 30_000)
 

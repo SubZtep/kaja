@@ -24,7 +24,7 @@ A new subpath needs an entry in `package.json` `exports`.
 
 - **`cn(...inputs)`** — `clsx` + `tailwind-merge` for class names (web UI)
 - **`getTimeAgo` / `getDateTime`** — locale-aware formatting via `Intl`
-- **`isPrivateAddress` / `isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT addresses (the API's fetch guard and the sandbox's egress proxy share it)
+- **`isPrivateAddress` / `isPublicHttpUrl`** — SSRF guard: rejects loopback/link-local/private/CGNAT addresses, and IPv6 forms that carry one of them (mapped, translated, compatible, NAT64, 6to4); an unparseable IPv6 counts as private (the API's fetch guard and the sandbox's egress proxy share it)
 - **`randomUUIDv7`** — time-ordered UUIDv7 generator
 - **`titleCase`** — hyphen/underscore/space-separated label to Title Case
 - **`locales` / `Locale` / `baseLocale` / `LOCALE_LABELS` / `matchLocale`** — the single source of truth for supported languages (`en-GB`, `en-US`, `hu-HU`, `nan-TW`, `zh-TW`), the en-GB source/fallback, their native display names, and matching any language tag to one. Everything else derives from it: the settings schema, the web's URL patterns, and `bun sync:locales` (which creates a new language's files and updates the inlang settings)
