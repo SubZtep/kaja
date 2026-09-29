@@ -6,7 +6,7 @@ import { withLock } from "../../core/lock"
 import { widgetKeyRateLimiter, widgetTurnRateLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { widgetService } from "../../services"
-import { badGateway, badRequest, internalError, notFound } from "../../types/errors"
+import { badRequest, internalError, knownTurnErrorResponse, notFound } from "../../types/errors"
 import { type WidgetVariables, widgetKeyAuthMiddleware } from "./auth"
 import { runWidgetTurn } from "./chat"
 import { widgetCors } from "./cors"
@@ -73,9 +73,8 @@ widgetRoutes.post("/turn", widgetKeyRateLimiter, widgetTurnRateLimiter, widgetKe
     )
     return c.json(result)
   } catch (error) {
-    if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
-    if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
-    if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
+    const known = knownTurnErrorResponse(c, error)
+    if (known) return known
     const { category, message } = categorizeError(error)
     reportError("widget turn failed", error, { widgetKeyId: widgetKey.id, category })
     return internalError(c, message)

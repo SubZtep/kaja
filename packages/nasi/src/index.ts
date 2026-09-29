@@ -81,6 +81,7 @@ export {
   summarize
 } from "./agent/compaction"
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
+export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 export { samplingOf } from "./agent/persona"
 export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"
 export { compact, dropImages, run } from "./agent/run"

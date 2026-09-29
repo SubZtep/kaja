@@ -9,6 +9,7 @@ import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import type { Compaction } from "./agent/compaction"
+import { NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 import { samplingOf } from "./agent/persona"
 import { compact, run } from "./agent/run"
 import { recordPausedCall } from "./agent/telemetry"
@@ -260,11 +261,7 @@ export class Nasi {
       const row = await this.opts.store.loadSession(sessionId)
       // Also rejects a session id that belongs to a different owner in the same store — e.g. two widget
       // visitors sharing one account must never resume each other's conversation by guessing/observing a session id.
-      if (!row || (row.owner ?? null) !== (this.opts.owner ?? null)) {
-        const err = new Error("session_not_found")
-        err.name = "NasiSessionNotFound"
-        throw err
-      }
+      if (!row || (row.owner ?? null) !== (this.opts.owner ?? null)) throw new SessionNotFoundError()
       session = row.session as Session
       events = row.events
       title = row.title
@@ -298,11 +295,7 @@ export class Nasi {
   private async promptFor(session: Session, input: NasiTurnInput): Promise<string> {
     const pendingId = session.pendingToolApprovalId
     if (input.approval) {
-      if (!pendingId) {
-        const err = new Error("nothing_to_approve")
-        err.name = "NasiNothingToApprove"
-        throw err
-      }
+      if (!pendingId) throw new NothingToApproveError()
       if (input.approval === "decline") {
         recordPausedCall(session, "tool_approval", "declined")
         return TOOL_DECLINED

@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { sentry } from "@sentry/hono/bun"
 import { cors } from "hono/cors"
+import { HTTPException } from "hono/http-exception"
 import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
@@ -18,8 +19,20 @@ import { telegramAdminRoutes } from "./features/telegram-admin"
 import { widgetRoutes } from "./features/widget"
 import { widgetAdminRoutes } from "./features/widget-admin"
 import type { RouteProps } from "./types"
+import { knownTurnError } from "./types/errors"
 
 export const app = new OpenAPIHono<RouteProps>()
+
+// Whatever a route lets escape still answers in the `{ error }` JSON shape. Only logged here: in production the Sentry
+// middleware reports every error a route throws (Hono records it before calling this), so reportError would double it.
+app.onError((error, c) => {
+  if (error instanceof HTTPException) return error.getResponse()
+  const known = knownTurnError(error)
+  if (known) return c.json({ error: known.message }, known.status)
+  console.error("Unhandled API error", { method: c.req.method, path: c.req.path, error })
+  return c.json({ error: "Internal server error" }, 500)
+})
+app.notFound(c => c.json({ error: "Not found" }, 404))
 
 // Global middlewares
 if (env.NODE_ENV === "production") {

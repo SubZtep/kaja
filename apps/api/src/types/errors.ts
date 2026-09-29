@@ -2,7 +2,24 @@
  * Standardized error response types for API routes
  */
 
+import { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "@kaja/nasi"
 import type { Context } from "hono"
+import type { ContentfulStatusCode } from "hono/utils/http-status"
+
+/** What a client hears about a known turn failure, or undefined for anything else (a crash, to report). */
+export function knownTurnError(error: unknown): { status: ContentfulStatusCode; message: string } | undefined {
+  if (error instanceof SessionNotFoundError) return { status: 404, message: "Session not found" }
+  if (error instanceof NothingToApproveError) return { status: 409, message: "No tool call is waiting for approval" }
+  if (error instanceof NoModelError) return { status: 503, message: "No model available" }
+  if (error instanceof ModelUnavailableError) return { status: 502, message: error.message }
+  return undefined
+}
+
+/** The JSON error response for a known turn failure, or undefined when `error` isn't one. */
+export function knownTurnErrorResponse(c: Context, error: unknown) {
+  const known = knownTurnError(error)
+  return known && (c.json({ error: known.message }, known.status) as any)
+}
 
 /**
  * Type-safe error response helpers
