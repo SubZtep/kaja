@@ -26,6 +26,7 @@ import {
   estimateTokens,
   isContextOverflow
 } from "./compaction"
+import { ModelUnavailableError } from "./errors"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordModelCall, recordStep } from "./telemetry"
@@ -218,12 +219,7 @@ async function* streamRound(
     }
   } catch (cause) {
     if (cause instanceof OpenAI.APIError) {
-      // Hosts map this name to "the model provider failed"; `contextOverflow` lets run() compact and retry first.
-      const err = Object.assign(new Error(`Model provider request failed: ${cause.message}`), {
-        contextOverflow: isContextOverflow(cause)
-      })
-      err.name = "NasiModelUnavailable"
-      throw err
+      throw new ModelUnavailableError(cause.message, { contextOverflow: isContextOverflow(cause), cause })
     }
     throw cause
   }
@@ -592,7 +588,7 @@ async function* streamRoundFitting(
   try {
     return yield* streamRound(agent, contextMessages(session), definitions)
   } catch (error) {
-    if (!(error as { contextOverflow?: boolean } | undefined)?.contextOverflow) throw error
+    if (!(error instanceof ModelUnavailableError && error.contextOverflow)) throw error
     const sent = Math.round(estimateTokens(contextMessages(session), definitions) * estimateScale)
     const smaller = Math.floor(Math.min(agent.contextWindow ?? sent, sent) * 0.9)
     agent.contextWindow = smaller

@@ -3,6 +3,7 @@ import {
   createOpenAIClient,
   type McpSandbox,
   Nasi,
+  NoModelError,
   replyLanguageInstructionFor,
   resolveContextWindow,
   setDatasetLoaders
@@ -48,7 +49,7 @@ async function defaultChatResolver(pinnedModel?: string) {
     }
   }
   const result = await resolveModelWithProvider(pinnedModel)
-  if (!result) throw new Error("no_model")
+  if (!result) throw new NoModelError()
   if (!isPublicHttpUrl(result.provider.baseUrl)) throw new Error("unsafe_model_url")
   const window = await resolveContextWindow({
     baseUrl: result.provider.baseUrl,

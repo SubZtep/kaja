@@ -20,7 +20,15 @@ import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badGateway, badRequest, conflict, internalError, notFound, unauthorized } from "../../types/errors"
+import {
+  badRequest,
+  internalError,
+  knownTurnError,
+  knownTurnErrorResponse,
+  notFound,
+  serviceUnavailable,
+  unauthorized
+} from "../../types/errors"
 import { requireAuthMiddleware } from "../auth/middleware"
 import { rememberPlace } from "../sandbox"
 import {
@@ -35,7 +43,6 @@ import { createPostgresStore } from "./pg-store"
 import { toolImageUrl } from "./tool-image"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
-const NOTHING_TO_APPROVE = "No tool call is waiting for approval"
 
 export const nasiRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 nasiRoutes.use("*", requireAuthMiddleware)
@@ -68,7 +75,9 @@ const turnRoute = createRoute({
     409: {
       description: "`approval` sent, but no tool call is waiting for one",
       content: { "application/json": { schema: errorSchema } }
-    }
+    },
+    502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
+    503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
   }
 })
 
@@ -80,10 +89,8 @@ nasiRoutes.openapi(turnRoute, async c => {
     const result = await runUserTurn(user.id, body)
     return c.json(result)
   } catch (error) {
-    if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
-    if (error instanceof Error && error.name === "NasiNothingToApprove") return conflict(c, NOTHING_TO_APPROVE)
-    if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
-    if (error instanceof Error && error.name === "NasiModelUnavailable") return badGateway(c, error.message)
+    const known = knownTurnErrorResponse(c, error)
+    if (known) return known
     const { category, message } = categorizeError(error)
     reportError("nasi turn failed", error, { userId: user.id, category })
     return internalError(c, message)
@@ -118,12 +125,10 @@ async function sseEvent(
   return { type: "tool_image", mimeType, url: await toolImageUrl(userId, sessionId, path, mimeType) }
 }
 
-/** The `error` event's body for a failed stream: the known failures by name, anything else categorized and logged. */
+/** The `error` event's body for a failed stream: a known failure's message, anything else categorized and logged. */
 function streamErrorBody(error: unknown, userId: string): { error: string; category?: string } {
-  if (error instanceof Error && error.name === "NasiSessionNotFound") return { error: "Session not found" }
-  if (error instanceof Error && error.name === "NasiNothingToApprove") return { error: NOTHING_TO_APPROVE }
-  if (error instanceof Error && error.message === "no_model") return { error: "No model available" }
-  if (error instanceof Error && error.name === "NasiModelUnavailable") return { error: error.message }
+  const known = knownTurnError(error)
+  if (known) return { error: known.message }
   const { category, message } = categorizeError(error)
   reportError("nasi turn/stream failed", error, { userId, category })
   return { error: message, category }
@@ -184,7 +189,9 @@ const compactRoute = createRoute({
     },
     400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } }
+    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
+    502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
+    503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
   }
 })
 
@@ -195,8 +202,8 @@ nasiRoutes.openapi(compactRoute, async c => {
   try {
     return c.json({ compacted: (await compactUserSession(user.id, body)) ?? null })
   } catch (error) {
-    if (error instanceof Error && error.name === "NasiSessionNotFound") return notFound(c, "Session not found")
-    if (error instanceof Error && error.message === "no_model") return notFound(c, "No model available")
+    const known = knownTurnErrorResponse(c, error)
+    if (known) return known
     const { category, message } = categorizeError(error)
     reportError("nasi compact failed", error, { userId: user.id, category })
     return internalError(c, message)
@@ -213,7 +220,7 @@ const infoRoute = createRoute({
   responses: {
     200: { description: "OK", content: { "application/json": { schema: NasiInfoResponseSchema } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
+    503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
   }
 })
 
@@ -224,7 +231,7 @@ nasiRoutes.openapi(infoRoute, async c => {
 
   const pinnedModel = await pinnedModelFor(user.id, session)
   const result = await resolveModelWithProvider(pinnedModel)
-  if (!result) return notFound(c, "No model available")
+  if (!result) return serviceUnavailable(c, "No model available")
 
   const personas = await abilityService.personasForUser(user.id)
   const persona = personas[0]

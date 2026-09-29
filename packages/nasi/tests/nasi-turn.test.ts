@@ -2,6 +2,7 @@ import { afterEach, expect, test } from "bun:test"
 import { HttpToolAbilitySchema, McpAbilitySchema } from "@kaja/schema/abilities"
 import type { AbilityStore } from "../src/abilities/types"
 import { createSession } from "../src/agent/agent"
+import { NothingToApproveError } from "../src/agent/errors"
 import { dropImages } from "../src/agent/run"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { createMemoryStore } from "../src/store"
@@ -326,9 +327,9 @@ test("declining skips the call, and so does writing a message instead", async ()
 test("an approval with nothing waiting for one is refused", async () => {
   const nasi = await open([{ content: "hi" }])
   const first = await nasi.turnBuffered({ message: "hello" })
-  await expect(nasi.turnBuffered({ session: first.session, approval: "approve" })).rejects.toMatchObject({
-    name: "NasiNothingToApprove"
-  })
+  await expect(nasi.turnBuffered({ session: first.session, approval: "approve" })).rejects.toBeInstanceOf(
+    NothingToApproveError
+  )
 })
 
 test("a cloud user's MCP ability connects with their key when the turn opens; a write waits for approval", async () => {
