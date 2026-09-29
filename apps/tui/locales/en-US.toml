@@ -247,8 +247,8 @@ placeholder = "PgUp history · Alt+Enter newline"
 
 
 [header]
-local = "[en-US] lorem"
-cloud = "[en-US] lorem"
+local = "Local"
+cloud = "Cloud"
 
 
 [keybar]

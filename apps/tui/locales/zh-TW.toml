@@ -247,8 +247,8 @@ placeholder = "PgUp 歷史紀錄 · Alt+Enter 換行"
 
 
 [header]
-local = "[zh-TW] lorem"
-cloud = "[zh-TW] lorem"
+local = "本機"
+cloud = "雲端"
 
 
 [keybar]

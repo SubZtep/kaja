@@ -247,8 +247,8 @@ placeholder = "PgUp előzmények · Alt+Enter új sor"
 
 
 [header]
-local = "[hu-HU] lorem"
-cloud = "[hu-HU] lorem"
+local = "Helyi"
+cloud = "Felhő"
 
 
 [keybar]
