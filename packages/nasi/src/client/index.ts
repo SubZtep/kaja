@@ -46,6 +46,28 @@ function parseJson(data: string): unknown {
   }
 }
 
+/** One SSE event of a turn stream: a live event to yield, the closing `done`, or nothing (a heartbeat, or an event this client doesn't know, a newer server's). An `error` event throws. */
+function readStreamEvent(
+  event: string,
+  data: string
+): { event?: NasiStreamEvent; done?: { session: string; status: NasiTurnStatus } } | undefined {
+  if (event === "heartbeat") return undefined
+  if (event === "error") {
+    const failure = NasiStreamErrorSchema.safeParse(parseJson(data))
+    throw new NasiStreamError(
+      failure.success ? failure.data.error : `Nasi turn failed: ${data}`,
+      failure.data?.category
+    )
+  }
+  if (event === "done") {
+    const done = NasiStreamDoneSchema.safeParse(parseJson(data))
+    if (!done.success) throw new NasiStreamError(`Nasi turn stream ended with a malformed done event: ${data}`)
+    return { done: done.data }
+  }
+  const streamed = NasiStreamEventSchema.safeParse(parseJson(data))
+  return streamed.success ? { event: streamed.data } : undefined
+}
+
 function parseSseBlock(block: string): { event: string; data: string } | undefined {
   let event: string | undefined
   const dataLines: string[] = []
@@ -160,22 +182,9 @@ export function createNasiClient(opts: NasiClientOptions) {
       if (!res.body) throw new NasiStreamError("Nasi turn stream returned no body")
 
       for await (const { event, data } of parseSseStream(res.body)) {
-        if (event === "heartbeat") continue
-        if (event === "error") {
-          const failure = NasiStreamErrorSchema.safeParse(parseJson(data))
-          throw new NasiStreamError(
-            failure.success ? failure.data.error : `Nasi turn failed: ${data}`,
-            failure.data?.category
-          )
-        }
-        if (event === "done") {
-          const done = NasiStreamDoneSchema.safeParse(parseJson(data))
-          if (!done.success) throw new NasiStreamError(`Nasi turn stream ended with a malformed done event: ${data}`)
-          return done.data
-        }
-        // An event this client doesn't know (a newer server's) is skipped rather than guessed at
-        const streamed = NasiStreamEventSchema.safeParse(parseJson(data))
-        if (streamed.success) yield streamed.data
+        const read = readStreamEvent(event, data)
+        if (read?.done) return read.done
+        if (read?.event) yield read.event
       }
       throw new NasiStreamError("Nasi turn stream ended without a done event")
     }
