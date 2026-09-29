@@ -12,7 +12,8 @@ import { MonsterMate } from "./monster"
  *
  * `width` must be the full terminal width so `space-between` has a real
  * track to lay out against — without it Ink can collapse the row and the
- * model/tokens slot never paints.
+ * model/tokens slot never paints. When the two sides don't fit on one row
+ * the right one wraps below the left instead of being squeezed.
  */
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
@@ -50,7 +51,7 @@ export function Header({
   const spinnerTheme = useSpinnerTheme("toolLabel")
 
   return (
-    <Box width={width} flexShrink={0} justifyContent="space-between" paddingX={1} gap={1}>
+    <Box width={width} flexShrink={0} justifyContent="space-between" flexWrap="wrap" paddingX={1} columnGap={1}>
       <Box gap={1} flexShrink={1} flexGrow={0} minWidth={0} overflow="hidden">
         <MonsterMate />
         <Box overflow="hidden" flexShrink={1} minWidth={0}>
@@ -66,7 +67,7 @@ export function Header({
           </ThemeProvider>
         </Box>
       ) : (
-        <Box flexShrink={0} flexGrow={0}>
+        <Box flexShrink={1} flexGrow={0} minWidth={0}>
           <Text {...muted()}>
             {titleCase(model)}
             {provider ? <Text dimColor> {titleCase(provider)}</Text> : null}
