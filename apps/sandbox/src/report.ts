@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/bun"
+import pkg from "../package.json" with { type: "json" }
 
 /** Starts Sentry in production for the sandbox's own failures only: no tracing, and no request headers (they carry the user's token). */
 export function initReporting(env: { NODE_ENV?: string }) {
@@ -6,6 +7,7 @@ export function initReporting(env: { NODE_ENV?: string }) {
   Sentry.init({
     dsn: "https://c8f04f802119c8ce54c8c63eba5e2b4c@o326475.ingest.us.sentry.io/4512150310486016",
     environment: "production",
+    release: `kaja-sandbox@${pkg.version}`,
     beforeSend(event) {
       if (event.request) delete event.request.headers
       return event

@@ -39,12 +39,7 @@ const TOOL_IMAGE_DAYS = 1
  * then sets the rule that expires `tool-images/`. Hetzner only takes lifecycle rules through the S3 API, so the API sets it itself.
  */
 export async function prepareBucket(): Promise<void> {
-  const client = new S3Client({
-    endpoint: env.STORAGE_ENDPOINT ?? `https://${env.STORAGE_REGION}.your-objectstorage.com`,
-    region: env.STORAGE_ENDPOINT ? "us-east-1" : env.STORAGE_REGION,
-    forcePathStyle: !!env.STORAGE_ENDPOINT,
-    credentials
-  })
+  const client = s3Client()
   const Bucket = env.STORAGE_BUCKET
   try {
     if (env.STORAGE_ENDPOINT) {
@@ -68,4 +63,27 @@ export async function prepareBucket(): Promise<void> {
   } finally {
     client.destroy()
   }
+}
+
+// The raw S3 client for what files-sdk doesn't do: bucket setup and the readiness probe.
+function s3Client() {
+  return new S3Client({
+    endpoint: env.STORAGE_ENDPOINT ?? `https://${env.STORAGE_REGION}.your-objectstorage.com`,
+    region: env.STORAGE_ENDPOINT ? "us-east-1" : env.STORAGE_REGION,
+    forcePathStyle: !!env.STORAGE_ENDPOINT,
+    credentials
+  })
+}
+
+let probeClient: S3Client | undefined
+
+/** Whether the bucket answers a HEAD within `timeoutMs`, for `/health/ready`. */
+export async function storageReachable(timeoutMs: number): Promise<boolean> {
+  probeClient ??= s3Client()
+  return await probeClient
+    .send(new HeadBucketCommand({ Bucket: env.STORAGE_BUCKET }), { abortSignal: AbortSignal.timeout(timeoutMs) })
+    .then(
+      () => true,
+      () => false
+    )
 }

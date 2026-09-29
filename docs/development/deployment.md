@@ -202,7 +202,7 @@ matching limit and a line in the Privacy Policy.
   credentials.
 - `USER_SECRET_KEY` (`openssl rand -base64 32`). The API won't boot in production without it.
 - The storage bucket and its credentials (see [Object storage](#object-storage)).
-- A strong `CONFIG_API_TOKEN`. Without it `/config/*` is [fail-closed](/development/api#fail-closed-config-routes),
+- A strong `CONFIG_API_TOKEN` (`openssl rand -hex 32`). Without it `/config/*` is [fail-closed](/development/api#fail-closed-config-routes),
   and the `.env.example` placeholder stops the API from booting.
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/using/widget) routes are
   deliberately exempt: they reflect origins and gate on the key's own allowlist instead.

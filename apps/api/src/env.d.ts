@@ -40,7 +40,7 @@ declare module "bun" {
     SMTP_PASS?: string
     /** Set by the CI runner; skips SMTP verification on boot when present */
     CI?: string
-    /** Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes */
+    /** Shared-secret bearer token for /config/* — fail-closed: missing/empty denies all config routes (generate with: openssl rand -hex 32) */
     CONFIG_API_TOKEN?: string
     /** Set by the test preload (apps/api/tests/load-test-env.ts); disables rate limiting and Turnstile */
     BUN_TEST?: string

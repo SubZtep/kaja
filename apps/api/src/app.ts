@@ -3,6 +3,7 @@ import { sentry } from "@sentry/hono/bun"
 import { bodyLimit } from "hono/body-limit"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
+import pkg from "../package.json" with { type: "json" }
 import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
@@ -40,7 +41,8 @@ if (env.NODE_ENV === "production") {
   app.use(
     sentry(app, {
       dsn: "https://bf4e285ce5108859b3a4e541ba9a8cab@o326475.ingest.us.sentry.io/4512041143828480",
-      environment: "production"
+      environment: "production",
+      release: `kaja-api@${pkg.version}`
     })
   )
 }

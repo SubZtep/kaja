@@ -90,7 +90,7 @@ bun run --filter @kaja/sandbox build
 
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
-- **Core**: `db.ts` (pg Pool), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `csrf.ts` (cookie-session writes must come from `CORS_ORIGIN`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (files-sdk object storage for images: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set)
+- **Core**: `db.ts` (pg Pool; UTC and a 15 s `statement_timeout` per connection), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `csrf.ts` (cookie-session writes must come from `CORS_ORIGIN`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (files-sdk object storage for images: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set)
 - **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (cloud ability catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/` (plus health, users, config, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
