@@ -8,6 +8,8 @@ import { useSetAllowedTools, useSetDisabledTools } from "./queries"
 import { abilitySourceUrl } from "./source"
 import type { ToolEntry } from "./ToolCard"
 
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
 /**
  * Everything an HTTP tool or MCP server ability can call: each tool's name, what it does, its method and
  * whether it asks first. While the ability is on, a checkbox per tool keeps it out of the user's chats; the
@@ -32,6 +34,12 @@ export function ToolsDialog({
   const setAllowed = useSetAllowedTools()
   const off = new Set(disabledTools)
   const onCount = entry.items.length - entry.items.filter(item => off.has(item.name)).length
+
+  // A glob in the list (set through the API) covers tools the checkbox can't remove one by one
+  const coveredByGlob = (tool: string) =>
+    allowedTools.some(
+      pattern => pattern.includes("*") && new RegExp(`^${pattern.split("*").map(escapeRegExp).join(".*")}$`).test(tool)
+    )
 
   const pick = (tool: string, on: boolean) => {
     const next = on ? disabledTools.filter(name => name !== tool) : [...disabledTools, tool]
@@ -90,8 +98,12 @@ export function ToolsDialog({
                     {asksFirst(item) && (
                       <div className="mt-1 flex items-center gap-2 text-muted text-xs">
                         <Checkbox
-                          checked={allowedTools.includes(item.name)}
-                          disabled={!enabled || setAllowed.isPending}
+                          checked={allowedTools.includes(item.name) || coveredByGlob(item.name)}
+                          disabled={
+                            !enabled ||
+                            setAllowed.isPending ||
+                            (!allowedTools.includes(item.name) && coveredByGlob(item.name))
+                          }
                           aria-label={m.tools_allow_toggle({ tool: item.name })}
                           onCheckedChange={checked => allow(item.name, checked)}
                         />

@@ -35,11 +35,9 @@ function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbos
   return foldToolCalls(events, pending)
 }
 
-/** Timeline event types whose text is worth copying to the clipboard. */
+/** Timeline event types whose text is worth copying to the clipboard: the agent's words, never the user's own message. */
 function copyableText(event: TimelineEvent): string | null {
   switch (event.type) {
-    case "user":
-      return event.text
     case "message":
       return event.content
     case "final":

@@ -61,6 +61,27 @@ test("the copy event copies the most recent message to the clipboard", async () 
   await t.waitUntilExit()
 })
 
+test("copy takes the agent's latest words, not the user's message that came after them", async () => {
+  const events: TimelineEvent[] = [
+    { type: "user", text: "first question" },
+    { type: "final", content: "the agent's answer" },
+    { type: "user", text: "my follow-up" }
+  ]
+  const spy = spyOn(tinyclip, "writeText").mockResolvedValue(undefined)
+  const t = renderForTest(
+    <Box flexDirection="column" width={40} height={12}>
+      <ChatViewport events={events} thinking={false} partial={null} pending={true} sounds={false} />
+    </Box>
+  )
+  await t.tick()
+  uiEvents.emit("copy")
+  await t.tick()
+  expect(spy).toHaveBeenCalledWith("the agent's answer")
+  spy.mockRestore()
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   const mdEvents: TimelineEvent[] = Array.from({ length: 50 }, (_, i) => ({
     type: "message" as const,

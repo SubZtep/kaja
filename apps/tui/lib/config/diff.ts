@@ -1,4 +1,5 @@
-import { file } from "bun"
+import { CommandsFileSchema } from "@kaja/schema/config"
+import { deepEquals, file, TOML } from "bun"
 import COMMANDS_TEMPLATE from "../../../../docs/config/commands.toml" with { type: "text" }
 import MODELS_TEMPLATE from "../../../../docs/config/models.default.toml" with { type: "text" }
 import SECRETS_TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
@@ -26,9 +27,22 @@ export async function diffConfig(offline: boolean): Promise<string[]> {
       continue
     }
     const existing = await f.text()
-    lines.push(existing === files[key] ? t("config.diffUnchanged", { path }) : t("config.diffWouldUpdate", { path }))
+    const same = key === "commands.toml" ? sameDefaultCommands(existing, files[key]!) : existing === files[key]
+    lines.push(same ? t("config.diffUnchanged", { path }) : t("config.diffWouldUpdate", { path }))
   }
   return lines
+}
+
+/** commands.toml's `safe` list is what a fetch replaces; the user's `custom` patterns are kept, so they never make it differ. */
+function sameDefaultCommands(existing: string, fetched: string): boolean {
+  try {
+    return deepEquals(
+      CommandsFileSchema.parse(TOML.parse(existing)).safe,
+      CommandsFileSchema.parse(TOML.parse(fetched)).safe
+    )
+  } catch {
+    return existing === fetched
+  }
 }
 
 async function remoteOrOfflineBundle(): Promise<Record<string, string>> {
