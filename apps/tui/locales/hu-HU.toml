@@ -309,6 +309,7 @@ loadSkillFile = "{file} olvasása a(z) {name} készségből..."
 
 [timeline]
 personaSwitch    = "Perszóna váltva: {label}"
+toolsUsed        = "[hu-HU] lorem ipsum {count} {names}"
 compacted        = "Kontextus tömörítve: {before} → {after} token"
 compactedDropped = "Kontextus tömörítve: {before} → {after} token. Az összefoglaló nem írható, így a legrégebbi üzenetek kimaradtak."
 condensed        = "{tool} kimenet tömörítve: {before} → {after} token"

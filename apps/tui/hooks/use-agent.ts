@@ -243,6 +243,12 @@ export function useAgent(
       const flush = () => {
         if (hasPartial) setPartial({ ...accumulated })
       }
+      // A finalized event replaces what was streaming, so the next round starts from empty rather than resurrecting its text
+      const resetPartial = () => {
+        accumulated.reasoning = ""
+        accumulated.content = ""
+        hasPartial = false
+      }
       const handleDelta = (event: AgentDelta) => {
         accumulated[event.channel] += event.text
         hasPartial = true
@@ -261,7 +267,10 @@ export function useAgent(
         for await (const event of run(agent, prompt, sessionRef.current!)) {
           if (event.type === "delta") handleDelta(event)
           else if (event.type === "usage") handleUsage(event)
-          else handleFinalizedEvent(event)
+          else {
+            handleFinalizedEvent(event)
+            resetPartial()
+          }
         }
       } catch (error) {
         log.warn("Agent run failed", { error })

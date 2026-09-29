@@ -309,6 +309,7 @@ loadSkillFile = "正在從 {name} 技能讀取 {file}..."
 
 [timeline]
 personaSwitch    = "已切換角色：{label}"
+toolsUsed        = "[zh-TW] lorem ipsum {count} {names}"
 compacted        = "已壓縮文脈：{before} → {after} 個 token"
 compactedDropped = "已壓縮文脈：{before} → {after} 個 token。無法寫入摘要，最舊的訊息已移除。"
 condensed        = "{tool} 輸出已壓縮：{before} → {after} 個 token"

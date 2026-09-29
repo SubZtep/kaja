@@ -1,13 +1,14 @@
 import type { KajaPreferences } from "@kaja/schema/config"
 
 /**
- * In-app preferences (thinking/sounds/voice/hotkeyModifier/theme), read once from
+ * In-app preferences (thinking/toolDisplay/sounds/voice/hotkeyModifier/theme), read once from
  * the config file at startup. Only the theme changes in-app (see useTheme); edit
  * settings.toml directly and restart to change the rest.
  */
 export function usePreferences(initial?: KajaPreferences) {
   return {
     thinking: initial?.thinking ?? false,
+    toolDisplay: initial?.toolDisplay ?? "minimal",
     sounds: initial?.sounds ?? true,
     // Spoken replies are opt-in: they need the speaches TTS server running.
     voice: initial?.voice ?? false,

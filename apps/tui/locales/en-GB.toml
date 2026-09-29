@@ -309,6 +309,7 @@ loadSkillFile = "Reading {file} from the {name} skill..."
 
 [timeline]
 personaSwitch    = "Persona switched: {label}"
+toolsUsed        = "Tool calls ({count}): {names}"
 compacted        = "Context compacted: {before} → {after} tokens"
 compactedDropped = "Context compacted: {before} → {after} tokens. The summary couldn't be written, so the oldest messages were left out."
 condensed        = "{tool} output condensed: {before} → {after} tokens"

@@ -136,7 +136,14 @@ function Chrome({
   runningCommand?: boolean
   resolvePending?: (approved: boolean) => Promise<void>
 }>) {
-  const { thinking, sounds, voice, hotkeyModifier, theme: initialTheme } = usePreferences(initialPreferences)
+  const {
+    thinking,
+    toolDisplay,
+    sounds,
+    voice,
+    hotkeyModifier,
+    theme: initialTheme
+  } = usePreferences(initialPreferences)
   const { theme, toggle: toggleTheme } = useTheme(initialTheme)
   useSound(events, sounds)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
@@ -170,7 +177,7 @@ function Chrome({
           provider={provider}
           promptTokens={promptTokens}
           contextWindow={contextWindow}
-          currentTool={currentTool}
+          currentTool={toolDisplay === "corner" ? currentTool : undefined}
           width={columns}
         />
         <ChatViewport
@@ -181,6 +188,8 @@ function Chrome({
           sounds={sounds}
           hotkeyModifier={hotkeyModifier}
           bottomChromeKey={bottomChromeKey}
+          toolDisplay={toolDisplay}
+          currentTool={currentTool}
         />
         {bottomChromeKey === "persona" && (
           <PersonaPicker

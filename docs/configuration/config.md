@@ -15,6 +15,7 @@ Install-wide preferences. Which model handles each task lives in [`models.toml`]
 mode = "local"
 locale = "en-GB"
 thinking = false
+# toolDisplay = "minimal"
 sounds = true
 voice = false
 # hotkeyModifier = "alt"
@@ -46,6 +47,7 @@ voice = false
 | `mode` | `local` or `cloud`: what a plain `kaja` starts. See [Cloud or local](/getting-started/modes#which-mode-a-launch-uses) |
 | `locale` | `en-GB`, `en-US`, `hu-HU`, `nan-TW` or `zh-TW`: the UI and the assistant's replies ([Language](/using/voice#language)) |
 | `thinking` | show the model's reasoning while it generates |
+| `toolDisplay` | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show |
 | `sounds` | play UI sounds |
 | `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |
 | `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |

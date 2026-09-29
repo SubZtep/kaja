@@ -96,7 +96,13 @@ terminal does).
 In the persona picker, `↑`/`↓` move, `Enter` picks, and `Esc`, `Backspace` or `Delete` close it. Picking a
 [persona](/abilities/personas) starts a fresh conversation and lasts until you quit.
 
-Thinking, sounds and voice have no in-app toggle. Set them in
+## Tool calls
+
+When the agent uses a tool, `preferences.toolDisplay` decides how it shows. `minimal` (default) keeps one live
+row above the input and leaves a one-line summary of the turn's tools; `verbose` lists every call in the chat;
+`corner` shows the current call in the header's top-right corner and nothing in the chat.
+
+Thinking, tool display, sounds and voice have no in-app toggle. Set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
 
 ## Colours

@@ -8,6 +8,7 @@ import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { isTerminalMouseSequence, parseWheelDirection } from "../../lib/terminal-input"
+import { foldToolCalls } from "../../lib/tool-summary"
 import { Activity } from "../activity"
 import { PartialMessage } from "../elem/partial-message"
 import { VirtualScroll, type VirtualScrollRef } from "../elem/virtual-scroll"
@@ -25,6 +26,13 @@ function idFor(event: TimelineEvent) {
     eventIds.set(event, id)
   }
   return id
+}
+
+function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbose" | "corner", pending: boolean) {
+  if (toolDisplay === "verbose") return events
+  if (toolDisplay === "corner")
+    return events.filter(item => item.type !== "tool_call" && item.type !== "client_tool_call")
+  return foldToolCalls(events, pending)
 }
 
 /** Timeline event types whose text is worth copying to the clipboard. */
@@ -92,7 +100,9 @@ export function ChatViewport({
   sounds,
   hotkeyModifier,
   bottomChromeKey,
-  startupPanel
+  startupPanel,
+  toolDisplay = "minimal",
+  currentTool
 }: Readonly<{
   events: TimelineEvent[]
   thinking: boolean
@@ -106,6 +116,10 @@ export function ChatViewport({
   bottomChromeKey?: string | number
   /** Shown in place of the empty timeline before the first message. */
   startupPanel?: ReactNode
+  /** How tool calls show in the chat; corner keeps them out of it (the header shows the current one). */
+  toolDisplay?: "minimal" | "verbose" | "corner"
+  /** The tool call in flight, for minimal's live row. */
+  currentTool?: { name: string; arguments: string }
 }>) {
   const scrollRef = useRef<VirtualScrollRef>(null)
   const stickRef = useRef(true)
@@ -274,14 +288,15 @@ export function ChatViewport({
   // Stable element identities across scroll-tick renders: TimelineItem is memo()ed, and keeping the same elements here also stops the ScrollView's per-item measurement effect (keyed on child identity) from re-running.
   const timelineItems = useMemo(
     () =>
-      events
-        .filter(item => item.type !== "tool_call" && item.type !== "client_tool_call")
-        .map((item, i) => (
-          <Box key={idFor(item)} marginTop={i > 0 && item.type === "user" ? 1 : 0}>
-            <TimelineItem item={item} thinking={thinking} />
-          </Box>
-        )),
-    [events, thinking]
+      visibleEvents(events, toolDisplay, pending).map((item, i) => (
+        <Box
+          key={item.type === "tool_summary" ? `summary-${idFor(item.last)}` : idFor(item)}
+          marginTop={i > 0 && item.type === "user" ? 1 : 0}
+        >
+          <TimelineItem item={item} thinking={thinking} />
+        </Box>
+      )),
+    [events, thinking, toolDisplay, pending]
   )
 
   return (
@@ -325,7 +340,12 @@ export function ChatViewport({
           <PartialMessage partial={partial} thinking={thinking} />
         </Box>
         <Box key="activity">
-          <Activity pending={pending} partial={partial} thinking={thinking} />
+          <Activity
+            pending={pending}
+            partial={partial}
+            thinking={thinking}
+            tool={toolDisplay === "minimal" ? currentTool : undefined}
+          />
         </Box>
       </VirtualScroll>
     </Box>

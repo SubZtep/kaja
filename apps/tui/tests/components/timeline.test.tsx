@@ -83,3 +83,21 @@ test("an image that can't load says why after its caption", async () => {
   await t.waitUntilExit()
   await server.stop(true)
 })
+
+test("tool calls render as a labelled row, and a summary as one line", async () => {
+  const call = { type: "tool_call", name: "read_file", arguments: '{"path":"a.txt"}' } as const
+  const t = renderForTest(
+    <>
+      <TimelineItem item={call} thinking={false} />
+      <TimelineItem
+        item={{ type: "tool_summary", last: call, names: ["read_file", "fetch_url"], count: 2 }}
+        thinking={false}
+      />
+    </>
+  )
+  await t.tick()
+  expect(t.output()).toContain("a.txt")
+  expect(t.output()).toContain("read_file, fetch_url")
+  t.unmount()
+  await t.waitUntilExit()
+})

@@ -154,6 +154,10 @@ export function useCloudAgent(options: NasiClientOptions) {
       }
 
       const handleEvent = (event: CloudTimelineEvent) => {
+        // A finalized event replaces what was streaming, so the next round starts from empty rather than resurrecting its text
+        accumulated.reasoning = ""
+        accumulated.content = ""
+        hasPartial = false
         setPartial(null)
         pushEvent(event)
         followPersonaSwitch(event)
