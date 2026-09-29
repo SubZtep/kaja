@@ -95,6 +95,9 @@ if (env.TURNSTILE_SECRET && !env.BUN_TEST) {
   )
 }
 
+/** Prefix of Better Auth's cookies (`kaja.session_token`, or `__Secure-kaja.session_token` over HTTPS). */
+export const AUTH_COOKIE_PREFIX = "kaja"
+
 export const auth = betterAuth({
   trustedOrigins: [env.CORS_ORIGIN],
   // Top level, where Better Auth reads it (it sat under `advanced`, ignored). On in dev too, not only in production;
@@ -105,7 +108,7 @@ export const auth = betterAuth({
     max: 100 // max requests in the window
   },
   advanced: {
-    cookiePrefix: "kaja",
+    cookiePrefix: AUTH_COOKIE_PREFIX,
     database: {
       generateId: () => Bun.randomUUIDv7(),
       defaultFindManyLimit: 1000

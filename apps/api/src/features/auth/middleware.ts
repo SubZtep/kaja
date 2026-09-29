@@ -1,6 +1,9 @@
+import { getSessionCookie } from "better-auth/cookies"
+import type { Context } from "hono"
 import { createMiddleware } from "hono/factory"
+import { HTTPException } from "hono/http-exception"
 import type { AuthSessionUser, RouteVariables } from "../../types"
-import { auth } from "./auth"
+import { AUTH_COOKIE_PREFIX, auth } from "./auth"
 
 /** Better Auth may store multi-roles as a comma-separated string. */
 function userHasRole(user: Pick<AuthSessionUser, "role">, role: string): boolean {
@@ -30,27 +33,31 @@ function toSessionUser(
   }
 }
 
+/**
+ * Sets `user` from the request's session: its bearer token when it sends one (the TUI, the web's API calls), else its
+ * session cookie. Without either there's nothing to look up, so public traffic (health checks, widget scripts, the
+ * sandbox socket) costs no database query.
+ */
 export const authMiddleware = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {
-  let user: AuthSessionUser | null = null
-
-  // Bearer token from Authorization header
   const authHeader = c.req.header("authorization")
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7)
-    const session = await auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${token}` }) })
+  const bearer = authHeader?.startsWith("Bearer ") ? authHeader : undefined
+  let user: AuthSessionUser | null = null
+  if (bearer || getSessionCookie(c.req.raw.headers, { cookiePrefix: AUTH_COOKIE_PREFIX })) {
+    const session = await auth.api.getSession({
+      headers: bearer ? new Headers({ authorization: bearer }) : c.req.raw.headers
+    })
     user = toSessionUser(session?.user ?? null)
   }
-
-  // Cookie session fallback
-  if (!user) {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers })
-    user = toSessionUser(session?.user ?? null)
-  }
-
   c.set("user", user)
-
   await next()
 })
+
+/** The signed-in user on a route behind {@link requireAuthMiddleware}; a route mounted without it answers 401 instead of running without one. */
+export function sessionUser(c: Context<{ Variables: RouteVariables }>): AuthSessionUser {
+  const user = c.get("user")
+  if (!user) throw new HTTPException(401, { res: Response.json({ error: "Unauthorized" }, { status: 401 }) })
+  return user
+}
 
 /** Requires a signed-in, non-banned user. */
 export const requireAuthMiddleware = createMiddleware<{ Variables: RouteVariables }>(async (c, next) => {

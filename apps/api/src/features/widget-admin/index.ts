@@ -9,8 +9,8 @@ import {
 } from "@kaja/schema/api"
 import { abilityService, widgetService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badRequest, notFound, unauthorized } from "../../types/errors"
-import { requireAuthMiddleware } from "../auth"
+import { badRequest, notFound } from "../../types/errors"
+import { requireAuthMiddleware, sessionUser } from "../auth"
 
 const errorSchema = z.object({ error: z.string() })
 const idParam = z.object({
@@ -43,10 +43,9 @@ const listRoute = createRoute({
 })
 
 widgetAdminRoutes.openapi(listRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const keys = await widgetService.listKeys(user.id)
-  return c.json({ keys })
+  return c.json({ keys }, 200)
 })
 
 const createRouteDef = createRoute({
@@ -66,8 +65,7 @@ const createRouteDef = createRoute({
 })
 
 widgetAdminRoutes.openapi(createRouteDef, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { label, allowedOrigins, config } = c.req.valid("json")
   const invalid = await configError(config)
   if (invalid) return badRequest(c, invalid)
@@ -94,8 +92,7 @@ const updateRoute = createRoute({
 })
 
 widgetAdminRoutes.openapi(updateRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { id } = c.req.valid("param")
   const patch = c.req.valid("json")
   const invalid = await configError(patch.config)
@@ -120,8 +117,7 @@ const deleteRoute = createRoute({
 })
 
 widgetAdminRoutes.openapi(deleteRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { id } = c.req.valid("param")
   const ok = await widgetService.revokeKey(user.id, id)
   if (!ok) return notFound(c, "Widget key not found")

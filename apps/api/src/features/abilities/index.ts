@@ -13,8 +13,8 @@ import {
 } from "@kaja/schema/api"
 import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badRequest, conflict, notFound, serviceUnavailable, unauthorized } from "../../types/errors"
-import { requireAuthMiddleware } from "../auth"
+import { badRequest, conflict, notFound, serviceUnavailable } from "../../types/errors"
+import { requireAuthMiddleware, sessionUser } from "../auth"
 import { nasiToolDeps } from "../nasi/chat"
 
 const errorSchema = z.object({ error: z.string() })
@@ -84,13 +84,15 @@ const mineRoute = createRoute({
 })
 
 abilityRoutes.openapi(mineRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
-  return c.json({
-    abilities: await abilityService.listForUser(user.id),
-    keys: await abilityService.keyNames(user.id),
-    keysEnabled: abilityService.keysEnabled
-  })
+  const user = sessionUser(c)
+  return c.json(
+    {
+      abilities: await abilityService.listForUser(user.id),
+      keys: await abilityService.keyNames(user.id),
+      keysEnabled: abilityService.keysEnabled
+    },
+    200
+  )
 })
 
 const enableRoute = createRoute({
@@ -112,8 +114,7 @@ const enableRoute = createRoute({
 })
 
 abilityRoutes.openapi(enableRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { type, name } = c.req.valid("param")
   if (isDefaultPersona(type, name)) return badRequest(c, ALWAYS_ON)
   const result = await abilityService.enable(user.id, type, name)
@@ -141,8 +142,7 @@ const disableRoute = createRoute({
 })
 
 abilityRoutes.openapi(disableRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { type, name } = c.req.valid("param")
   if (isDefaultPersona(type, name)) return badRequest(c, ALWAYS_ON)
   if (!(await abilityService.disable(user.id, type, name))) return notFound(c, "Ability not found")
@@ -185,8 +185,7 @@ const disabledToolsRoute = createRoute({
 })
 
 abilityRoutes.openapi(disabledToolsRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { type, name } = c.req.valid("param")
   const result = await abilityService.setDisabledTools(user.id, type, name, c.req.valid("json").disabled)
   if (result === "not_found") return notFound(c, "Ability not found")
@@ -223,8 +222,7 @@ const allowedToolsRoute = createRoute({
 })
 
 abilityRoutes.openapi(allowedToolsRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { type, name } = c.req.valid("param")
   const result = await abilityService.setAllowedTools(user.id, type, name, c.req.valid("json").allowed)
   if (result === "not_found") return notFound(c, "Ability not found")
@@ -261,8 +259,7 @@ const saveKeyRoute = createRoute({
 })
 
 abilityRoutes.openapi(saveKeyRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   if (!abilityService.keysEnabled) return serviceUnavailable(c, "keys_unavailable")
   const { type, name } = c.req.valid("param")
   // Same egress as a turn's tool calls: through WEB_PROXY when set, never to a private host.
@@ -290,8 +287,7 @@ const deleteKeyRoute = createRoute({
 })
 
 abilityRoutes.openapi(deleteKeyRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { type, name } = c.req.valid("param")
   if (!(await abilityService.deleteKey(user.id, type, name))) return notFound(c, "Ability not found")
   return c.json({ ok: true }, 200)
