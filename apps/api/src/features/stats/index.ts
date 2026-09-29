@@ -2,8 +2,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { statsQuerySchema, usageStatsResponseSchema } from "@kaja/schema/api"
 import { statsService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { unauthorized } from "../../types/errors"
-import { requireAuthMiddleware } from "../auth"
+import { requireAuthMiddleware, sessionUser } from "../auth"
 
 const errorSchema = z.object({ error: z.string() })
 
@@ -25,8 +24,7 @@ const usageRoute = createRoute({
 })
 
 statsRoutes.openapi(usageRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { days, tz } = c.req.valid("query")
   return c.json(await statsService.usage(user.id, days, tz), 200)
 })

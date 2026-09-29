@@ -10,7 +10,7 @@ import {
   updateProviderRequestSchema
 } from "@kaja/schema/api"
 import type { RouteRegProps } from "../../types"
-import { notFound, unauthorized } from "../../types/errors"
+import { notFound } from "../../types/errors"
 
 const errorSchema = z.object({ error: z.string() })
 const idParam = z.object({
@@ -149,18 +149,12 @@ const deleteModelRoute = createRoute({
 
 export function registerAdminModels(app: RouteRegProps) {
   app.openapi(listProvidersRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const modelService = c.get("modelService")
     const providers = await modelService.listProviders()
-    return c.json({ providers })
+    return c.json({ providers }, 200)
   })
 
   app.openapi(createProviderRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const body = c.req.valid("json")
     const modelService = c.get("modelService")
     const provider = await modelService.createProvider(body)
@@ -168,9 +162,6 @@ export function registerAdminModels(app: RouteRegProps) {
   })
 
   app.openapi(updateProviderRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const { id } = c.req.valid("param")
     const body = c.req.valid("json")
     const modelService = c.get("modelService")
@@ -180,9 +171,6 @@ export function registerAdminModels(app: RouteRegProps) {
   })
 
   app.openapi(deleteProviderRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const { id } = c.req.valid("param")
     const modelService = c.get("modelService")
     const success = await modelService.deleteProvider(id)
@@ -191,18 +179,12 @@ export function registerAdminModels(app: RouteRegProps) {
   })
 
   app.openapi(listModelsRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const modelService = c.get("modelService")
     const models = await modelService.listModels()
-    return c.json({ models })
+    return c.json({ models }, 200)
   })
 
   app.openapi(createModelRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const body = c.req.valid("json")
     const modelService = c.get("modelService")
     const model = await modelService.createModel(body)
@@ -210,9 +192,6 @@ export function registerAdminModels(app: RouteRegProps) {
   })
 
   app.openapi(updateModelRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const { id } = c.req.valid("param")
     const body = c.req.valid("json")
     const modelService = c.get("modelService")
@@ -222,9 +201,6 @@ export function registerAdminModels(app: RouteRegProps) {
   })
 
   app.openapi(deleteModelRoute, async c => {
-    const user = c.get("user")
-    if (!user) return unauthorized(c)
-
     const { id } = c.req.valid("param")
     const modelService = c.get("modelService")
     const success = await modelService.deleteModel(id)

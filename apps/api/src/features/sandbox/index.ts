@@ -8,8 +8,8 @@ import {
 } from "@kaja/schema/api"
 import { sandboxService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { notFound, unauthorized } from "../../types/errors"
-import { requireAuthMiddleware } from "../auth"
+import { notFound } from "../../types/errors"
+import { requireAuthMiddleware, sessionUser } from "../auth"
 import { sandboxConnect, sandboxOwnerMiddleware } from "./connect"
 
 export { mcpSandboxFor, rememberPlace, tunnelFor, userForPseudonym } from "./registry"
@@ -56,8 +56,7 @@ const mineRoute = createRoute({
 })
 
 sandboxRoutes.openapi(mineRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const [settings, sandboxes] = await Promise.all([
     sandboxService.settings(user.id),
     sandboxService.listForUser(user.id)
@@ -78,8 +77,7 @@ const keyRoute = createRoute({
 })
 
 sandboxRoutes.openapi(keyRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   return c.json({ key: await sandboxService.createKey(user.id) }, 200)
 })
 
@@ -97,8 +95,7 @@ const settingsRoute = createRoute({
 })
 
 sandboxRoutes.openapi(settingsRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   return c.json(await sandboxService.updateSettings(user.id, c.req.valid("json")), 200)
 })
 
@@ -117,8 +114,7 @@ const deleteRoute = createRoute({
 })
 
 sandboxRoutes.openapi(deleteRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   if (!(await sandboxService.deleteOffline(user.id, c.req.valid("param").id))) return notFound(c)
   return c.json({ ok: true as const }, 200)
 })

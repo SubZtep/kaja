@@ -57,7 +57,7 @@ widgets/                 # embeddable browser widget bundle source, own tsconfig
 - **Routes**: `@hono/zod-openapi` + schemas from `@kaja/schema`
 - **DB**: raw SQL with parameterized queries via `pg` Pool — never string-interpolate user input
 - **Types**: API contracts from `@kaja/schema`; row types stay private in services; map with `#rowTo…` helpers
-- **Auth**: `authMiddleware` on all routes; session/bearer via Better Auth
+- **Auth**: `authMiddleware` on all routes sets `user` from the bearer token, else the session cookie (no lookup when the request carries neither); routes behind `requireAuthMiddleware` read it with `sessionUser(c)` (401 if missing). No session `cookieCache`: a ban or sign-out must apply at once
 - **Logging**: no logger package. A failure the code handles itself (so Sentry's Hono middleware never sees it) goes through `core/report.ts`'s `reportError`; a recoverable problem is a `console.warn`; `@kaja/nasi`'s warnings arrive via `setWarnHandler` in `core/server.ts`
 - **Errors**: helpers in `types/errors.ts` (cast responses for Hono typing); `knownTurnError` maps `@kaja/nasi`'s typed turn errors (`SessionNotFoundError` 404, `NothingToApproveError` 409, `ModelUnavailableError` 502, `NoModelError` 503). `app.onError` answers anything a route lets escape as `{ error }` JSON (logged only: the Sentry middleware already reports thrown errors), and `app.notFound` too
 

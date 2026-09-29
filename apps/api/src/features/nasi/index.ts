@@ -26,10 +26,9 @@ import {
   knownTurnError,
   knownTurnErrorResponse,
   notFound,
-  serviceUnavailable,
-  unauthorized
+  serviceUnavailable
 } from "../../types/errors"
-import { requireAuthMiddleware } from "../auth/middleware"
+import { requireAuthMiddleware, sessionUser } from "../auth/middleware"
 import { rememberPlace } from "../sandbox"
 import {
   compactUserSession,
@@ -82,8 +81,7 @@ const turnRoute = createRoute({
 })
 
 nasiRoutes.openapi(turnRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const body = c.req.valid("json")
   try {
     const result = await runUserTurn(user.id, body)
@@ -135,8 +133,7 @@ function streamErrorBody(error: unknown, userId: string): { error: string; categ
 }
 
 nasiRoutes.post("/turn/stream", async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   // c.req.json() would parse a text/plain body too, the one kind a cross-site form can send without a preflight
   if (!c.req.header("content-type")?.startsWith("application/json")) return badRequest(c, "Invalid request body")
   const parsed = NasiTurnRequestSchema.safeParse(await c.req.json().catch(() => undefined))
@@ -196,8 +193,7 @@ const compactRoute = createRoute({
 })
 
 nasiRoutes.openapi(compactRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const body = c.req.valid("json")
   try {
     return c.json({ compacted: (await compactUserSession(user.id, body)) ?? null })
@@ -225,8 +221,7 @@ const infoRoute = createRoute({
 })
 
 nasiRoutes.openapi(infoRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { session } = c.req.valid("query")
 
   const pinnedModel = await pinnedModelFor(user.id, session)
@@ -272,7 +267,6 @@ const personasRoute = createRoute({
 })
 
 nasiRoutes.openapi(personasRoute, async c => {
-  if (!c.get("user")) return unauthorized(c)
   const personas = await abilityService.personaCatalog()
   return c.json({ personas: personas.map(p => ({ id: p.id, label: p.label })) }, 200)
 })
@@ -307,18 +301,20 @@ const listRoute = createRoute({
 })
 
 nasiRoutes.openapi(listRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const sessions = await createPostgresStore(pool, user.id).listSessions()
-  return c.json({
-    sessions: sessions.map(s => ({
-      id: s.id,
-      title: s.title,
-      persona: s.persona,
-      model: s.model,
-      updatedAt: s.updatedAt
-    }))
-  })
+  return c.json(
+    {
+      sessions: sessions.map(s => ({
+        id: s.id,
+        title: s.title,
+        persona: s.persona,
+        model: s.model,
+        updatedAt: s.updatedAt
+      }))
+    },
+    200
+  )
 })
 
 const getRoute = createRoute({
@@ -336,8 +332,7 @@ const getRoute = createRoute({
 })
 
 nasiRoutes.openapi(getRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { id } = c.req.valid("param")
   const row = await createPostgresStore(pool, user.id).loadSession(id)
   if (!row) return notFound(c, "Session not found")
@@ -366,8 +361,7 @@ const deleteRoute = createRoute({
 })
 
 nasiRoutes.openapi(deleteRoute, async c => {
-  const user = c.get("user")
-  if (!user) return unauthorized(c)
+  const user = sessionUser(c)
   const { id } = c.req.valid("param")
   const ok = await createPostgresStore(pool, user.id).deleteSession(id)
   if (!ok) return notFound(c, "Session not found")
