@@ -164,7 +164,11 @@ export async function downloadTelegramImage(
 ): Promise<string> {
   const { file_path } = await getFile(image.fileId)
   if (!file_path) throw new Error("Telegram returned no file path")
-  const response = await fetch(`https://api.telegram.org/file/bot${botToken}/${file_path}`)
+  // A failed fetch's error carries the URL, bot token and all, and these errors end up in logs and Sentry
+  const response = await fetch(`https://api.telegram.org/file/bot${botToken}/${file_path}`).catch((error: unknown) => {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new Error(`Telegram file download failed: ${reason.replaceAll(botToken, "***")}`)
+  })
   if (!response.ok) throw new Error(`Telegram file download failed: HTTP ${response.status}`)
   const bytes = await response.arrayBuffer()
   if (bytes.byteLength > TELEGRAM_IMAGE_LIMIT) throw new Error("Image too large")

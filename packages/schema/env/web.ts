@@ -8,6 +8,7 @@ export const WebEnvSchema = z.object({
       "Server-to-server API base URL — the container-network address in compose (e.g. http://api:3001), the public API URL on Disco; takes precedence over VITE_API_URL when both are set"
     ),
   SSR_SECRET: trimmed
+    .min(32)
     .optional()
     .describe(
       "Shared with the API's SSR_SECRET; server-side session checks send it with the visitor's IP so the API rate-limits per visitor instead of per web host"

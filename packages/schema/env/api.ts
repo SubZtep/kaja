@@ -1,7 +1,7 @@
 import * as z from "zod"
 import { bool, positiveInt, trimmed, url } from "./helpers"
 
-export const ApiEnvSchema = z.object({
+const apiEnvFields = z.object({
   NODE_ENV: trimmed
     .optional()
     .describe('Node environment; "development" enables API docs and Better Auth\'s OpenAPI plugin'),
@@ -10,8 +10,12 @@ export const ApiEnvSchema = z.object({
     "Origin allowed for browser requests (also Better Auth's trusted origin and email callback base)"
   ),
   DATABASE_URL: url.describe("PostgreSQL connection string"),
-  BETTER_AUTH_SECRET: trimmed.describe("Better Auth signing secret").meta({ secret: true, section: "Security" }),
+  BETTER_AUTH_SECRET: trimmed
+    .min(32)
+    .describe("Better Auth signing secret")
+    .meta({ secret: true, section: "Security" }),
   SSR_SECRET: trimmed
+    .min(32)
     .optional()
     .describe(
       "Shared with the web's SSR_SECRET; the web's server-side calls send it with the visitor's IP so rate limits key on the visitor, not the web host"
@@ -125,7 +129,9 @@ export const ApiEnvSchema = z.object({
       }
     }, "must be 32 bytes, base64-encoded")
     .optional()
-    .describe("Encrypts users' ability API keys (AES-256-GCM); unset turns key entry off and hides tools that need one")
+    .describe(
+      "Encrypts users' ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one"
+    )
     .meta({ secret: true, section: "Marketplace" }),
 
   // TODO: temporary until admin-managed service keys (like providers) replace it.
@@ -191,4 +197,12 @@ export const ApiEnvSchema = z.object({
     .optional()
     .describe("BotFather token; when set, starts the always-on cloud Telegram bot")
     .meta({ secret: true, section: "Telegram" })
+})
+
+export const ApiEnvSchema = apiEnvFields.superRefine((env, ctx) => {
+  if (env.NODE_ENV !== "production") return
+  if (!env.USER_SECRET_KEY)
+    ctx.addIssue({ code: "custom", path: ["USER_SECRET_KEY"], message: "required in production" })
+  if (env.CONFIG_API_TOKEN === "kaja")
+    ctx.addIssue({ code: "custom", path: ["CONFIG_API_TOKEN"], message: "still the .env.example placeholder" })
 })

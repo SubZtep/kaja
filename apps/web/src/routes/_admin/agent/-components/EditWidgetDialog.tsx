@@ -19,12 +19,16 @@ const editFormSchema = z.object({
   persona: z.string()
 })
 
-/** Comma or newline separated origins, e.g. "https://example.com, https://www.example.com". */
+/** Comma or newline separated origins, e.g. "https://example.com, https://www.example.com"; a URL of the site is cut to its origin, anything else goes to the API as typed (which refuses it). */
 export function parseOrigins(input: string): string[] {
   return input
     .split(/[\n,]/)
     .map(o => o.trim())
     .filter(Boolean)
+    .map(o => {
+      const url = URL.parse(o)
+      return url?.protocol === "https:" || url?.protocol === "http:" ? url.origin : o
+    })
 }
 
 /** Edits a widget key's label, origins, type, persona and skills. The key itself never changes, so the embed snippet keeps working. */

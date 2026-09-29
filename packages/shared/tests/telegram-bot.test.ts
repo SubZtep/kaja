@@ -154,3 +154,18 @@ test("downloadTelegramImage fetches the file by its path and returns a data URL"
     downloadTelegramImage("TOKEN", async () => ({ file_path: "x" }), { fileId: "f", mimeType: "image/png" })
   ).rejects.toThrow("HTTP 404")
 })
+
+test("a failed download's error never carries the bot token", async () => {
+  fetchSpy = spyOn(globalThis, "fetch").mockRejectedValue(
+    new Error("Unable to connect: https://api.telegram.org/file/bot123:SECRET/x")
+  )
+  const error: Error = await downloadTelegramImage("123:SECRET", async () => ({ file_path: "x" }), {
+    fileId: "f",
+    mimeType: "image/png"
+  }).then(
+    () => new Error("expected the download to fail"),
+    (error: Error) => error
+  )
+  expect(error.message).toBe("Telegram file download failed: Unable to connect: https://api.telegram.org/file/bot***/x")
+  expect(error.cause).toBeUndefined()
+})

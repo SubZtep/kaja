@@ -198,14 +198,17 @@ matching limit and a line in the Privacy Policy.
 
 ## Production checklist
 
-- A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and real SMTP credentials.
+- A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`; the API refuses one under 32 characters) and real SMTP
+  credentials.
+- `USER_SECRET_KEY` (`openssl rand -base64 32`). The API won't boot in production without it.
 - The storage bucket and its credentials (see [Object storage](#object-storage)).
-- A strong `CONFIG_API_TOKEN`. Without it `/config/*` is [fail-closed](/development/api#fail-closed-config-routes).
+- A strong `CONFIG_API_TOKEN`. Without it `/config/*` is [fail-closed](/development/api#fail-closed-config-routes),
+  and the `.env.example` placeholder stops the API from booting.
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/using/widget) routes are
   deliberately exempt: they reflect origins and gate on the key's own allowlist instead.
 - `NODE_ENV=production` (Sentry on, no `/reference` UI).
 - Rate limits left on. They only switch off under `bun test`.
-- The same `SSR_SECRET` on both the API and the web project, or busy pages start getting 429s (see
+- The same `SSR_SECRET` (at least 32 characters) on both the API and the web project, or busy pages start getting 429s (see
   [rate limits and the visitor's IP](/development/api#rate-limits-and-the-visitors-ip)). Disco projects
   don't share a private network, so the web's `API_URL` is the public API URL.
 

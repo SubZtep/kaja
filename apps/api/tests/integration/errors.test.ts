@@ -31,6 +31,16 @@ describe("error responses", () => {
     expect(await res.json()).toEqual({ error: "Not found" })
   })
 
+  test("a body over 1 MB is refused before any route reads it", async () => {
+    const res = await app.request("/nasi/turn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ message: "x".repeat(1024 * 1024) })
+    })
+    expect(res.status).toBe(413)
+    expect(await res.json()).toEqual({ error: "Request body too large" })
+  })
+
   test("no model to run a turn with is 503, in the buffered and the streamed turn", async () => {
     setNasiChatResolver(() => Promise.reject(new NoModelError()))
     const res = await post("/nasi/turn")

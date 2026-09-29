@@ -7,7 +7,7 @@ const turnFields = {
   /** BCP-47-ish UI language code (e.g. "en-GB", "hu-HU") the caller wants replies in — passed through to the model as a reply-language instruction. */
   language: z.string().min(2).max(10).optional(),
   /** Id of the persona to use for this turn — resolved fresh every turn (including resumed sessions), so a caller that keeps sending the same id keeps the session pinned to it. */
-  personaId: z.string().optional()
+  personaId: z.string().max(128).optional()
 }
 
 export const NasiTurnRequestSchema = z

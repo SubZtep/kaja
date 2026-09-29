@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto"
+import { createHmac, hkdfSync } from "node:crypto"
 import type { McpSandbox } from "@kaja/nasi"
 import { SANDBOX_FULL_HEADER, type Sandbox } from "@kaja/schema/api"
 import { env } from "../../core/env"
@@ -37,9 +37,12 @@ export function userForPseudonym(pseudonym: string): string | undefined {
   return pseudonyms.get(pseudonym)
 }
 
+// Its own key derived from the auth secret, so pseudonyms never use the key that signs sessions
+const pseudonymKey = Buffer.from(hkdfSync("sha256", env.BETTER_AUTH_SECRET, "", "kaja sandbox pseudonym", 32))
+
 /** What a sandbox calls `userId`: stable for that pair, and meaningless to its operator or to any other sandbox. */
 export function pseudonymFor(userId: string, sandboxId: string): string {
-  const pseudonym = createHmac("sha256", env.BETTER_AUTH_SECRET)
+  const pseudonym = createHmac("sha256", pseudonymKey)
     .update(`sandbox:${sandboxId}:${userId}`)
     .digest("base64url")
     .slice(0, 22)
