@@ -19,6 +19,7 @@ import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel, compactAt, summarizer } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
+import { CodeExpandContext } from "../elem/code-expand"
 import { themes } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { ConfirmCommand } from "./confirm-command"
@@ -86,6 +87,7 @@ function buildKeyBarItems(
     ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
     { key: `${modifierLabel}+R`, label: t("keybar.copy") },
     { key: `${modifierLabel}+D`, label: t("keybar.theme") },
+    { key: `${modifierLabel}+E`, label: t("keybar.expand") },
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -160,6 +162,7 @@ function Chrome({
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
   const [pickingPersona, setPickingPersona] = useState(false)
+  const [codeExpanded, setCodeExpanded] = useState(false)
 
   useModifierKeys(hotkeyModifier, {
     // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
@@ -171,7 +174,8 @@ function Chrome({
       if (capabilities.persona && !pending) setPickingPersona(true)
     },
     // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
-    d: toggleTheme
+    d: toggleTheme,
+    e: () => setCodeExpanded(prev => !prev)
   })
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
@@ -184,62 +188,64 @@ function Chrome({
 
   return (
     <ThemeProvider theme={themes[theme]}>
-      <Box flexDirection="column" width={columns} height={rows}>
-        <Header
-          mode={mode}
-          persona={personaLabel}
-          model={model}
-          provider={provider}
-          promptTokens={promptTokens}
-          contextWindow={contextWindow}
-          currentTool={toolDisplay === "corner" ? currentTool : undefined}
-          width={columns}
-        />
-        <ChatViewport
-          events={events}
-          thinking={thinking}
-          partial={partial}
-          pending={pending}
-          sounds={sounds}
-          hotkeyModifier={hotkeyModifier}
-          bottomChromeKey={bottomChromeKey}
-          toolDisplay={toolDisplay}
-          currentTool={currentTool}
-        />
-        {bottomChromeKey === "persona" && (
-          <PersonaPicker
-            key="persona-picker"
-            personas={personas}
-            currentPersonaId={currentPersonaId}
-            onSelect={next => {
-              switchPersona?.(next)
-              setPickingPersona(false)
-            }}
-            onCancel={() => setPickingPersona(false)}
+      <CodeExpandContext.Provider value={codeExpanded}>
+        <Box flexDirection="column" width={columns} height={rows}>
+          <Header
+            mode={mode}
+            persona={personaLabel}
+            model={model}
+            provider={provider}
+            promptTokens={promptTokens}
+            contextWindow={contextWindow}
+            currentTool={toolDisplay === "corner" ? currentTool : undefined}
+            width={columns}
           />
-        )}
-        {showConfirm && pendingCommand && resolvePending && (
-          <ConfirmCommand
-            key="confirm-command"
-            command={pendingCommand.command}
-            description={pendingCommand.description}
-            kind={pendingCommand.kind}
-            running={runningCommand}
-            onResolve={approved => resolvePending(approved)}
-          />
-        )}
-        {bottomChromeKey !== "persona" && !showConfirm && (
-          <UserInput
-            key="user-input"
+          <ChatViewport
+            events={events}
+            thinking={thinking}
+            partial={partial}
             pending={pending}
-            speaking={speaking}
-            send={send}
-            history={history}
-            personaModels={personaModels}
+            sounds={sounds}
+            hotkeyModifier={hotkeyModifier}
+            bottomChromeKey={bottomChromeKey}
+            toolDisplay={toolDisplay}
+            currentTool={currentTool}
           />
-        )}
-        <KeyBar items={keyBarItems} />
-      </Box>
+          {bottomChromeKey === "persona" && (
+            <PersonaPicker
+              key="persona-picker"
+              personas={personas}
+              currentPersonaId={currentPersonaId}
+              onSelect={next => {
+                switchPersona?.(next)
+                setPickingPersona(false)
+              }}
+              onCancel={() => setPickingPersona(false)}
+            />
+          )}
+          {showConfirm && pendingCommand && resolvePending && (
+            <ConfirmCommand
+              key="confirm-command"
+              command={pendingCommand.command}
+              description={pendingCommand.description}
+              kind={pendingCommand.kind}
+              running={runningCommand}
+              onResolve={approved => resolvePending(approved)}
+            />
+          )}
+          {bottomChromeKey !== "persona" && !showConfirm && (
+            <UserInput
+              key="user-input"
+              pending={pending}
+              speaking={speaking}
+              send={send}
+              history={history}
+              personaModels={personaModels}
+            />
+          )}
+          <KeyBar items={keyBarItems} />
+        </Box>
+      </CodeExpandContext.Provider>
     </ThemeProvider>
   )
 }

@@ -65,7 +65,7 @@ In the chat, `/compact` summarises the conversation so far to free up space, and
 | `Backspace` / `Delete` | Delete before/after the cursor |
 | `↑` / `↓` | Previous/next prompt from history (on the first/last line), otherwise move between lines |
 | `Ctrl+T` | Toggle mic [dictation](/using/voice) |
-| `Esc` | Quit, or close the persona picker / decline the approval prompt when one is open |
+| `Esc` | Quit (while a turn or command is running, press it twice), or close the persona picker / decline the approval prompt when one is open |
 | `Ctrl+C` | Interrupt / exit |
 
 Prompt history spans all past sessions, newest first.
@@ -87,6 +87,7 @@ Prompt history spans all past sessions, newest first.
 | `<modifier>+P` | Open the persona picker |
 | `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`) |
 | `<modifier>+D` | Switch between dark and light, and save it |
+| `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show 15 lines otherwise) |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
 [`settings.toml`](/configuration/config). Use `Ctrl` if Alt types special characters (macOS Terminal.app

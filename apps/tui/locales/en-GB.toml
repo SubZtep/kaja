@@ -257,6 +257,7 @@ persona   = "Persona"
 copy      = "Copy"
 theme     = "Theme"
 quit      = "Quit"
+expand    = "Expand"
 quitAgain = "Still running: Esc again to quit"
 cancel    = "Cancel"
 decline   = "Decline"
@@ -271,6 +272,7 @@ yes         = "Yes, run it"
 no          = "No, cancel"
 running     = "Running…"
 truncated   = "… {count} more lines"
+inputLocked = "Waiting for your answer above"
 toolRequest = "{name} wants to send this request:"
 
 
@@ -428,3 +430,7 @@ commandCompact    = "Summarise the conversation so far to free up space"
 compacted         = "🗜 Conversation compacted: {before} → {after} tokens."
 compactedDropped  = "🗜 Conversation compacted: {before} → {after} tokens. The summary couldn't be written, so the oldest messages were left out."
 nothingToCompact  = "Nothing to compact yet."
+
+
+[markdown]
+codeMore = "… {count} more lines (expand to see all)"

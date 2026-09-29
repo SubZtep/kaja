@@ -252,14 +252,15 @@ cloud = "Cloud"
 
 
 [keybar]
-help    = "Help"
-persona = "Persona"
-copy    = "Copy"
-theme   = "Theme"
-quit    = "Quit"
+help      = "Help"
+persona   = "Persona"
+copy      = "Copy"
+theme     = "Theme"
+quit      = "Quit"
+expand    = "[en-US] lorem"
 quitAgain = "[en-US] lorem ipsum dolor sit amet"
-cancel  = "Cancel"
-decline = "Decline"
+cancel    = "Cancel"
+decline   = "Decline"
 
 
 [viewport]
@@ -271,6 +272,7 @@ yes         = "Yes, run it"
 no          = "No, cancel"
 running     = "Running…"
 truncated   = "… {count} more lines"
+inputLocked = "[en-US] lorem ipsum dolor sit"
 toolRequest = "{name} wants to send this request:"
 
 
@@ -428,3 +430,7 @@ commandCompact    = "Summarize the conversation so far to free up space"
 compacted         = "🗜 Conversation compacted: {before} → {after} tokens."
 compactedDropped  = "🗜 Conversation compacted: {before} → {after} tokens. The summary couldn't be written, so the oldest messages were left out."
 nothingToCompact  = "Nothing to compact yet."
+
+
+[markdown]
+codeMore = "[en-US] lorem ipsum dolor sit amet {count}"

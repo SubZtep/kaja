@@ -252,14 +252,15 @@ cloud = "Felhő"
 
 
 [keybar]
-help    = "Súgó"
-persona = "Perszóna"
-copy    = "Másolás"
-theme   = "Téma"
-quit    = "Kilépés"
+help      = "Súgó"
+persona   = "Perszóna"
+copy      = "Másolás"
+theme     = "Téma"
+quit      = "Kilépés"
+expand    = "[hu-HU] lorem"
 quitAgain = "[hu-HU] lorem ipsum dolor sit amet"
-cancel  = "Mégse"
-decline = "Elutasítás"
+cancel    = "Mégse"
+decline   = "Elutasítás"
 
 
 [viewport]
@@ -271,6 +272,7 @@ yes         = "Igen, futtasd"
 no          = "Nem, mégse"
 running     = "Fut…"
 truncated   = "… még {count} sor"
+inputLocked = "[hu-HU] lorem ipsum dolor sit"
 toolRequest = "A(z) {name} ezt a kérést küldené:"
 
 
@@ -428,3 +430,7 @@ commandCompact    = "Az eddigi beszélgetést összegzése, hogy helyet csipkelj
 compacted         = "🗜 Beszélgetés tömörítve: {before} → {after} token."
 compactedDropped  = "🗜 Beszélgetés tömörítve: {before} → {after} token. Az összefoglaló nem írható, így a legrégebbi üzenetek kimaradtak."
 nothingToCompact  = "Még nincs tömöríthető."
+
+
+[markdown]
+codeMore = "[hu-HU] lorem ipsum dolor sit amet {count}"

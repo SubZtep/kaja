@@ -1,14 +1,16 @@
 import { Box, Text, useWindowSize } from "ink"
 import { Marked, marked, type Token } from "marked"
-import { memo } from "react"
+import { memo, useContext } from "react"
+import { t } from "../../lib/i18n"
 import { splitBlocks } from "../../lib/markdown/blocks"
 import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
 import { type Palette, paint, usePalette } from "../theme"
+import { CODE_PREVIEW_LINES, CodeExpandContext } from "./code-expand"
 import { TerminalImage } from "./terminal-image"
 
 // cli-highlight's token colours from the palette, in the spirit of its default theme
-function codeTheme(p: Palette) {
+export function codeTheme(p: Palette) {
   return {
     keyword: paint(p.info),
     literal: paint(p.info),
@@ -37,6 +39,7 @@ function codeTheme(p: Palette) {
  */
 function createParser(p: Palette) {
   let tableWidth = 80
+  let expand = false
   const renderer = new Marked(
     markedTerminal(
       {
@@ -53,6 +56,8 @@ function createParser(p: Palette) {
         tableHead: paint(p.tableHead).bold,
         tableBorder: paint(p.tableBorder),
         tableWidth: () => tableWidth,
+        codeLines: () => (expand ? Number.POSITIVE_INFINITY : CODE_PREVIEW_LINES),
+        codeMore: (count: number) => t("markdown.codeMore", { count }),
         tab: 2
       },
       { theme: codeTheme(p) }
@@ -60,7 +65,7 @@ function createParser(p: Palette) {
   )
   const rendered = new Map<string, string>()
   const renderBlock = (block: string) => {
-    const key = block.includes("|") ? `${tableWidth}\0${block}` : block
+    const key = block.includes("|") || block.includes("```") ? `${tableWidth}\0${expand}\0${block}` : block
     const hit = rendered.get(key)
     if (hit !== undefined) return hit
     const out = dedent(renderer.parse(block) as string)
@@ -68,13 +73,14 @@ function createParser(p: Palette) {
     rendered.set(key, out)
     return out
   }
-  return (source: string, width: number) => {
+  return (source: string, width: number, expanded: boolean) => {
     tableWidth = width
+    expand = expanded
     return splitBlocks(source).map(renderBlock).join("\n\n")
   }
 }
 
-const parsers = new WeakMap<Palette, (source: string, tableWidth: number) => string>()
+const parsers = new WeakMap<Palette, (source: string, tableWidth: number, expand: boolean) => string>()
 
 // Columns a table leaves free for what Markdown sits in: the agent's "●" and its gap, or the reasoning box's frame
 const TABLE_MARGIN = 6
@@ -87,8 +93,9 @@ function useParser() {
     parser = createParser(palette)
     parsers.set(palette, parser)
   }
+  const expand = useContext(CodeExpandContext)
   const tableWidth = Math.max(20, columns - TABLE_MARGIN)
-  return (source: string) => parser(source, tableWidth)
+  return (source: string) => parser(source, tableWidth, expand)
 }
 
 type Segment = { type: "text"; source: string } | { type: "image"; href: string; alt: string }
