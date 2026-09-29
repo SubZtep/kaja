@@ -10,7 +10,7 @@ const originCheck = csrf({ origin: env.CORS_ORIGIN })
  * form or no-cors fetch. Calls with an Authorization header, or without cookies (TUI, sandbox, widget visitors), can't
  * be forged cross-site and pass untouched.
  */
-export const csrfProtection = createMiddleware(async (c, next) => {
+export const csrfProtection = createMiddleware((c, next) => {
   if (!c.req.header("cookie") || c.req.header("authorization")) return next()
   return originCheck(c, next)
 })

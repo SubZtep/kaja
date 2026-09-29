@@ -14,7 +14,7 @@ import { widgetCors } from "./cors"
 export const widgetRoutes = new Hono<{ Variables: WidgetVariables }>()
 // Only the two public routes: this router is mounted at /widget, so "*" would also reflect any origin onto /widget/admin/*
 widgetRoutes.use("/turn", widgetCors)
-widgetRoutes.use("/:rawKey{[A-Za-z0-9_-]+\\.js}", widgetCors)
+widgetRoutes.use(String.raw`/:rawKey{[A-Za-z0-9_-]+\.js}`, widgetCors)
 
 // In prod `bun run --filter @kaja/api build` bundles widgets/src/index.ts into public/widget.js ahead
 // of time, so it's served as a plain static file (no bundler, no node_modules needed at runtime) — cwd
