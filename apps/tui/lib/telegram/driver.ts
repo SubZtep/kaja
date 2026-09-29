@@ -391,7 +391,8 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     const { category, message } = categorizeError(error)
     state.events.push({ type: "error", text: message, category })
     // The category in the user's language, like the cloud bot and the terminal show it; the detail is the provider's own text
-    const line = `⚠ ${t(`error.${category}`)}: ${message}`
+    const label = t(`error.${category}`)
+    const line = `⚠ ${label}: ${message}`
     if (!hadImages) return line
     // The session lives on in memory: without this, every later turn would send the photo again
     dropImages(state.session, turnStart)
