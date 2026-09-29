@@ -4,6 +4,7 @@
 .output/
 .playwright-mcp/
 .tanstack/
+.tsbuildinfo
 .tmp-test-xdg-config-*/
 apps/tui/assets/datasets/
 apps/api/public/

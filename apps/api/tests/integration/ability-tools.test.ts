@@ -415,7 +415,7 @@ describe("HTTP tools in the cloud", () => {
       { content: "![](https://example.com/dog.jpg)" }
     ])
     const edits: string[] = []
-    const photos: { url: string; caption?: string }[] = []
+    const photos: { url: string | Uint8Array; caption?: string }[] = []
     const driver = createCloudTelegramDriver({
       resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),
       sender: {

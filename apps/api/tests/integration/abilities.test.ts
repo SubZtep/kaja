@@ -229,7 +229,7 @@ describe("abilities", () => {
 describe("marketplace sync from GitHub", () => {
   const sha = "a".repeat(40)
   const skillName = `tarball-${tag}`
-  let tarball: Uint8Array
+  let tarball: Uint8Array<ArrayBuffer>
   let requests: string[]
 
   beforeAll(async () => {

@@ -5,6 +5,9 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
+    // Each workspace keeps its own build info (gitignored), so a re-run only re-checks what changed
+    "incremental": true,
+    "tsBuildInfoFile": "${configDir}/.tsbuildinfo",
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,

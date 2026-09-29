@@ -5,6 +5,6 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "bun"]
   },
-  "include": ["src/**/*", "*.ts"],
+  "include": ["src/**/*", "scripts/**/*", "*.ts"],
   "exclude": ["node_modules", ".output", ".tanstack"]
 }
