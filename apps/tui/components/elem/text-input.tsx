@@ -13,6 +13,7 @@
 import chalk from "chalk"
 import { Box, type Key, Text, useInput, useStdin } from "ink"
 import { useEffect, useMemo, useState } from "react"
+import { useBlink } from "../../hooks/use-blink"
 import { isIgnoredTerminalInput } from "../../lib/terminal-input"
 import {
   clampWindowStart,
@@ -39,6 +40,13 @@ export type TextInputProps = {
    * Defaults to `showCursor` so callers that don't blink see no change.
    */
   cursorVisible?: boolean
+  /**
+   * Blink the cursor internally at this interval (ms), so only this component re-renders per phase.
+   * It stays solid while the text or cursor moves. Overrides {@link cursorVisible}.
+   */
+  blinkMs?: number
+  /** With {@link blinkMs}: hide the cursor and stop the timer (e.g. window unfocused). */
+  blinkPaused?: boolean
   mask?: string
   highlightPastedText?: boolean
   columns?: number
@@ -424,7 +432,9 @@ export function TextInput({
   mask,
   highlightPastedText = false,
   showCursor = true,
-  cursorVisible = showCursor,
+  cursorVisible: cursorVisibleProp = showCursor,
+  blinkMs,
+  blinkPaused = false,
   onChange,
   onSubmit,
   onHistory,
@@ -523,6 +533,12 @@ export function TextInput({
   }, [lines, cursorOffset, maxVis])
 
   const cursorActive = showCursor && canFocus
+  const blinkOn = useBlink(
+    blinkMs ?? 500,
+    blinkMs !== undefined && cursorActive && !blinkPaused,
+    `${cursorOffset}:${display}`
+  )
+  const cursorVisible = blinkMs === undefined ? cursorVisibleProp : blinkOn
 
   let body: React.ReactNode
   if (lines && maxVis) {
