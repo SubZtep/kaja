@@ -31,7 +31,7 @@ That's the authoritative, always-current list. This page is the map.
 | `/telegram/admin/link` | session | `POST` starts linking a Telegram account to the cloud bot (returns a one-time deep link), `GET` says whether it's linked and since when, `DELETE` disconnects it |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/models` | shared secret | model resolution for tooling |
-| `/config/export` | none | the model defaults that `kaja config fetch` downloads |
+| `/config/export` | none | the model defaults and safe-commands list that `kaja config fetch` downloads |
 | `/health` | none | liveness |
 | `/reference` | none | OpenAPI UI, development builds only |
 

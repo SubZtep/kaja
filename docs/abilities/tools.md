@@ -102,7 +102,7 @@ refused either way, on every redirect too. Keys and approvals work as described 
 
 ## Shell commands
 
-`run_command` always asks first. Known-risky patterns get a louder warning:
+`run_command` asks first, except for simple read-only commands on the [safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (`ls`, `pwd`, `git status`, and the like), which you can edit. Known-risky patterns get a louder warning, and never skip the question:
 
 - `rm -rf` (any flag order, and the long form `--recursive --force`)
 - `sudo`, `mkfs`, writes to `/dev/sd*`

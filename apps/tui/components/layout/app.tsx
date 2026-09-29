@@ -5,9 +5,10 @@ import type { PersistedSession } from "@kaja/schema/store"
 import { Box, useWindowSize } from "ink"
 import notifier from "node-notifier"
 import open from "open"
-import { useCallback, useMemo, useState } from "react"
+import { useState } from "react"
 import { type PartialMessage, type TimelineEvent, useAgent } from "../../hooks/use-agent"
 import { useCloudAgent } from "../../hooks/use-cloud-agent"
+import { useCodeView } from "../../hooks/use-code-view"
 import { useModifierKeys } from "../../hooks/use-modifier-keys"
 import { usePreferences } from "../../hooks/use-preferences"
 import { useQuitGuard } from "../../hooks/use-quit-guard"
@@ -47,8 +48,11 @@ function getBottomChromeKey(
   return runningCommand ? "running" : "confirm"
 }
 
-// Esc means something different depending on what's showing — quit while typing, but just dismiss the
-// picker/confirm prompt over it. While a command is actually running there's nothing bound to Esc (no entry).
+/** Whether Esc quits here (typing, or a command running) rather than dismissing a prompt. */
+const isQuittable = (key: BottomChromeKey) => key === "input" || key === "running"
+
+// Esc means something different depending on what's showing — quit while typing or while a command runs, but just dismiss the
+// picker/confirm prompt over it.
 function escKeyBarItem(
   bottomChromeKey: BottomChromeKey,
   quitArmed: boolean,
@@ -62,8 +66,7 @@ function escKeyBarItem(
     running: quit
   }
   const label = labels[bottomChromeKey]
-  const quits = bottomChromeKey === "input" || bottomChromeKey === "running"
-  return label ? { key: "Esc", label, onPress: quits ? pressQuit : undefined } : undefined
+  return label ? { key: "Esc", label, onPress: isQuittable(bottomChromeKey) ? pressQuit : undefined } : undefined
 }
 
 /** What the confirm prompt shows for a paused call: the shell command, or the tool's request summary. */
@@ -165,24 +168,11 @@ function Chrome({
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
   const [pickingPersona, setPickingPersona] = useState(false)
-  const [codeExpanded, setCodeExpanded] = useState(false)
-  // How many mounted code blocks are longer than the preview: the expand button shows only while some are
-  const [overflowing, setOverflowing] = useState(0)
-  const registerOverflow = useCallback(() => {
-    setOverflowing(n => n + 1)
-    return () => setOverflowing(n => n - 1)
-  }, [])
-  const codeView = useMemo(
-    () => ({ expanded: codeExpanded, lines: codePreviewLines, register: registerOverflow }),
-    [codeExpanded, codePreviewLines, registerOverflow]
-  )
+  const codeView = useCodeView(codePreviewLines)
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
   const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
-  const { armed: quitArmed, press: pressQuit } = useQuitGuard(
-    bottomChromeKey === "input" || bottomChromeKey === "running",
-    pending || runningCommand
-  )
+  const { armed: quitArmed, press: pressQuit } = useQuitGuard(isQuittable(bottomChromeKey), pending || runningCommand)
   // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
   // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
   // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
@@ -201,13 +191,14 @@ function Chrome({
       when: capabilities.persona && !pending,
       run: () => setPickingPersona(true)
     },
+    // "R" for copy, not "C": Ctrl+C is reserved by Ink to quit the app, so under hotkeyModifier: "ctrl" it could never fire
     { letter: "r", label: t("keybar.copy"), when: true, run: () => uiEvents.emit("copy") },
     { letter: "d", label: t("keybar.theme"), when: true, run: toggleTheme },
     {
       letter: "e",
       label: t("keybar.expand"),
-      when: overflowing > 0,
-      run: () => setCodeExpanded(prev => !prev)
+      when: codeView.canExpand,
+      run: codeView.toggle
     }
   ]
   useModifierKeys(
@@ -218,7 +209,7 @@ function Chrome({
 
   return (
     <ThemeProvider theme={themes[theme]}>
-      <CodeViewContext.Provider value={codeView}>
+      <CodeViewContext.Provider value={codeView.view}>
         <Box flexDirection="column" width={columns} height={rows}>
           <Header
             mode={mode}

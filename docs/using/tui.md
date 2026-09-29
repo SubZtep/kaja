@@ -81,12 +81,12 @@ Prompt history spans all past sessions, newest first.
 
 ### Key bar
 
-Every entry but a Cancel or Decline is also a button: it dims under the mouse and a click runs it, for a terminal or system that takes the hotkey. Expand shows only while some code on screen is longer than `codePreviewLines`.
+Every entry but Cancel and Decline is also a button: it dims under the mouse and a click runs it, for a terminal or system that takes the hotkey (hover needs a terminal that reports mouse movement). Quit is clickable too, with the same double press while something is running. Expand shows only while some code on screen is longer than `codePreviewLines`, and its hotkey works only then.
 
 | Key | Action |
 |---|---|
 | `<modifier>+L` | Open these docs in your browser |
-| `<modifier>+P` | Open the persona picker |
+| `<modifier>+P` | Open the persona picker (hidden while a turn runs) |
 | `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`) |
 | `<modifier>+D` | Switch between dark and light, and save it |
 | `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
@@ -105,7 +105,7 @@ When the agent uses a tool, `preferences.toolDisplay` decides how it shows. `min
 row above the input and leaves a one-line summary of the turn's tools; `verbose` lists every call in the chat;
 `corner` shows the current call in the header's top-right corner and nothing in the chat.
 
-Thinking, tool display, sounds and voice have no in-app toggle. Set them in
+Thinking, tool display, code preview length, sounds and voice have no in-app toggle. Set them in
 [`settings.toml`](/configuration/config#preferences) and restart.
 
 ## Colours

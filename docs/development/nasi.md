@@ -152,7 +152,7 @@ flowchart TD
 
     Calls -->|yes| Dispatch{"which tool?"}
     Dispatch -->|"ask_user"| AskEv["yield ask_user<br>set pendingAskUserId"] --> Wait(["return — wait for host"])
-    Dispatch -->|"run_command"| Risk{"mutates:false and<br>read-only allowlist?"}
+    Dispatch -->|"run_command"| Risk{"matches a safe pattern,<br>no metacharacters,<br>not dangerous?"}
     Risk -->|yes| AutoRun["run immediately<br>result → messages"] --> Fit
     Risk -->|no| ConfirmEv["yield confirm_command<br>set pendingRunCommandId"] --> Wait
     Dispatch -->|"switch_persona"| Switch["applyPersona()<br>rewrite system message<br>maybe swap model"] --> Fit
