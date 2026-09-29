@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
 import type { ToolContext } from "../../agent/tools"
 import { getToolDeps } from "../deps"
@@ -10,35 +11,17 @@ import { getToolDeps } from "../deps"
  * @param args.documents - The documents to rank, most relevant first in the result.
  * @param args.top_n - Optional cap on how many ranked documents to return.
  */
-export const rerankTool = tool<{
-  query: string
-  documents: string[]
-  top_n?: number
-}>({
+export const rerankTool = tool({
   name: "rerank",
   description:
     "Rank a list of documents by relevance to a query, most relevant first. " +
     "Use this after search/retrieval to reorder or filter candidate passages " +
     "by relevance before reasoning over them.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description: "The search query to rank documents against"
-      },
-      documents: {
-        type: "array",
-        items: { type: "string" },
-        description: "The documents to rank"
-      },
-      top_n: {
-        type: "integer",
-        description: "Optional cap on how many top-ranked documents to return. Omit to return all."
-      }
-    },
-    required: ["query", "documents"]
-  },
+  schema: z.object({
+    query: z.string().describe("The search query to rank documents against"),
+    documents: z.array(z.string()).describe("The documents to rank"),
+    top_n: z.int().optional().describe("Optional cap on how many top-ranked documents to return. Omit to return all.")
+  }),
   execute: async (args, ctx) => JSON.stringify(await rerank(args, ctx))
 })
 

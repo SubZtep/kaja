@@ -31,7 +31,7 @@ import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordModelCall, recordStep } from "./telemetry"
 import { allowKey, isAllowed } from "./tool-allow"
-import { type ModelCallUsage, type Tool, toolName } from "./tools"
+import { checkToolArgs, type ModelCallUsage, type Tool, toolName } from "./tools"
 
 /** Notes how a call went, keyed by its id. */
 type RecordCall = (callId: string, stat: CallStat) => void
@@ -127,10 +127,17 @@ async function* handleToolCall(
     record(call.id, { status: "error" })
     return
   }
+  // Arguments that don't fit the tool's schema go back to the model to fix, like invalid JSON, instead of reaching execute.
+  const checked = checkToolArgs(t, args)
+  if (!checked.ok) {
+    messages.push({ role: "tool", tool_call_id: call.id, content: checked.error })
+    record(call.id, { status: "error" })
+    return
+  }
   const startedAt = performance.now()
   let result: Awaited<ReturnType<typeof t.execute>>
   try {
-    result = await t.execute(args, {
+    result = await t.execute(checked.args, {
       owner,
       personaId: agent.personaId,
       store: agent.store,

@@ -1,5 +1,6 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionFunctionTool, ChatCompletionTool } from "openai/resources/chat/completions"
+import { z } from "zod"
 import type { NasiStore } from "../store/types"
 
 /** Identifies who's talking to a {@link Tool}'s `execute`, and which persona is active — `owner` is `null` for a terminal session, `"telegram:<id>"` for a Telegram user; `personaId` mirrors {@link Agent.personaId}. Supplied by {@link run}, never by the model. */
@@ -63,6 +64,13 @@ export type ToolOrigin = "official" | "community" | "third-party"
  */
 export type Tool<Args> = {
   definition: ChatCompletionTool
+  /**
+   * The arguments' schema, on built-in tools: run() checks the model's arguments against it before `execute` (see
+   * {@link checkToolArgs}). Tools with an outside JSON Schema (MCP servers, HTTP abilities, plugins) have none; their
+   * server checks. Untyped here so a Tool stays assignable the way it was before it had a schema; {@link tool} ties the
+   * two together.
+   */
+  schema?: z.ZodType
   execute: (args: Args, ctx?: ToolContext) => Promise<string | ToolResult>
   /** True only for the cloud-registered stub of a tool that must run on the client (see registry.ts's CLIENT_EXECUTABLE). Never set on the real implementation. */
   requiresClientExecution?: boolean
@@ -77,26 +85,69 @@ export type Tool<Args> = {
   source?: string
 }
 
+type FunctionParameters = ChatCompletionFunctionTool["function"]["parameters"]
+
 /**
- * Defines a tool from a JSON schema and an executor function.
+ * Defines a tool from a zod schema (built-ins: the model's arguments are checked against it, and its JSON Schema is
+ * what the model sees, unless `parameters` spells that out itself) or from an outside JSON Schema (MCP servers, HTTP
+ * abilities, plugins: taken as they are).
  */
+export function tool<S extends z.ZodType>(config: {
+  name: string
+  description: string
+  schema: S
+  parameters?: FunctionParameters
+  execute: (args: z.output<S>, ctx?: ToolContext) => Promise<string | ToolResult>
+}): Tool<z.output<S>>
 export function tool<Args>(config: {
   name: string
   description: string
-  parameters: ChatCompletionFunctionTool["function"]["parameters"]
+  parameters: FunctionParameters
   execute: (args: Args, ctx?: ToolContext) => Promise<string | ToolResult>
-}): Tool<Args> {
+}): Tool<Args>
+export function tool(config: {
+  name: string
+  description: string
+  schema?: z.ZodType
+  parameters?: FunctionParameters
+  execute: (args: unknown, ctx?: ToolContext) => Promise<string | ToolResult>
+}): Tool<unknown> {
   return {
     definition: {
       type: "function",
       function: {
         name: config.name,
         description: config.description,
-        parameters: config.parameters
+        parameters: config.parameters ?? (config.schema && jsonSchemaFor(config.schema))
       }
     },
+    schema: config.schema,
     execute: config.execute
   }
+}
+
+// What the model is sent for a zod schema: the input side (a field with a default isn't required), without `$schema` or z.int()'s implied safe-integer bounds, and with `required` even when empty, as the hand-written ones were.
+function jsonSchemaFor(schema: z.ZodType): FunctionParameters {
+  const { $schema: _, ...parameters } = z.toJSONSchema(schema, {
+    io: "input",
+    override: ({ jsonSchema }) => {
+      if (jsonSchema.minimum === Number.MIN_SAFE_INTEGER) delete jsonSchema.minimum
+      if (jsonSchema.maximum === Number.MAX_SAFE_INTEGER) delete jsonSchema.maximum
+      if (jsonSchema.type === "object" && jsonSchema.properties && !jsonSchema.required) jsonSchema.required = []
+    }
+  })
+  return parameters
+}
+
+/** The model's arguments checked against the tool's schema (a tool without one takes them as they are), or the error to send back to the model instead of running it. */
+export function checkToolArgs<Args>(
+  t: Tool<Args>,
+  args: unknown
+): { ok: true; args: Args } | { ok: false; error: string } {
+  if (!t.schema) return { ok: true, args: args as Args }
+  const parsed = t.schema.safeParse(args)
+  if (parsed.success) return { ok: true, args: parsed.data as Args }
+  return { ok: false, error: `Invalid arguments for ${toolName(t)}:\n${z.prettifyError(parsed.error)}` }
 }
 
 export function toolName(t: Tool<any>): string {
@@ -121,7 +172,12 @@ export async function runApprovedTool(
     return `Error: unknown tool "${name}"`
   }
   try {
-    const result = await target.execute(JSON.parse(argumentsJson || "{}"))
+    const checked = checkToolArgs(target, JSON.parse(argumentsJson || "{}"))
+    if (!checked.ok) {
+      onStatus?.("error")
+      return `Error: ${checked.error}`
+    }
+    const result = await target.execute(checked.args)
     onStatus?.("ok")
     return typeof result === "string" ? result : result.text
   } catch (error) {

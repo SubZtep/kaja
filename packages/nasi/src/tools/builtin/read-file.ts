@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
 import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-guard"
 
@@ -7,19 +8,12 @@ import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-gu
  * @param args.path - Path to the file to read.
  * @returns The file's contents as a string.
  */
-export const readFileTool = tool<{ path: string }>({
+export const readFileTool = tool({
   name: "read_file",
   description: "Read a text file",
-  parameters: {
-    type: "object",
-    properties: {
-      path: {
-        type: "string",
-        description: "Path to the file"
-      }
-    },
-    required: ["path"]
-  },
+  schema: z.object({
+    path: z.string().describe("Path to the file")
+  }),
   execute: async args => {
     let safePath: string
     try {

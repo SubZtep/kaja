@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { randomUUIDv7 } from "@kaja/shared/id"
 import { write } from "bun"
 import OpenAI from "openai"
+import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
 import { getToolDeps } from "../deps"
 
@@ -14,19 +15,12 @@ import { getToolDeps } from "../deps"
  * @returns A {@link ToolResult} carrying the saved image; run() injects it as
  * a vision content block in a follow-up user message.
  */
-export const generateImageTool = tool<{ prompt: string }>({
+export const generateImageTool = tool({
   name: "generate_image",
   description: "Generate an image from a text prompt.",
-  parameters: {
-    type: "object",
-    properties: {
-      prompt: {
-        type: "string",
-        description: "Description of the image to generate"
-      }
-    },
-    required: ["prompt"]
-  },
+  schema: z.object({
+    prompt: z.string().describe("Description of the image to generate")
+  }),
   execute: async (args, ctx) => {
     const imageGen = getToolDeps().imageGeneration?.(ctx?.personaId)
     if (!imageGen) return "Image generation is not configured."

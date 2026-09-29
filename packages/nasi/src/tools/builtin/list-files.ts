@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
 import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-guard"
 
@@ -8,25 +9,17 @@ import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../path-gu
  * @param args.pattern - Glob pattern relative to path (default "*", immediate children only; use e.g. "**\/*" to recurse).
  * @returns Matching paths, one per line, relative to path.
  */
-export const listFilesTool = tool<{ path: string; pattern?: string }>({
+export const listFilesTool = tool({
   name: "list_files",
   description:
     "List files under a directory. Optionally filter with a glob pattern (default lists immediate children only; use a recursive pattern like '**/*.ts' to search subdirectories).",
-  parameters: {
-    type: "object",
-    properties: {
-      path: {
-        type: "string",
-        description: "Directory to list"
-      },
-      pattern: {
-        type: "string",
-        description:
-          "Glob pattern relative to path, e.g. '*.ts' or '**/*.ts'. Defaults to '*' (immediate children only)."
-      }
-    },
-    required: ["path"]
-  },
+  schema: z.object({
+    path: z.string().describe("Directory to list"),
+    pattern: z
+      .string()
+      .optional()
+      .describe("Glob pattern relative to path, e.g. '*.ts' or '**/*.ts'. Defaults to '*' (immediate children only).")
+  }),
   execute: async args => {
     let safePath: string
     try {

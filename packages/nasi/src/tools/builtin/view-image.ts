@@ -1,4 +1,5 @@
 import { file } from "bun"
+import { z } from "zod"
 import { tool } from "../../agent/agent"
 
 /**
@@ -9,16 +10,12 @@ import { tool } from "../../agent/agent"
  * @returns A {@link ToolResult} carrying the image; run() injects it as a
  * vision content block in a follow-up user message.
  */
-export const viewImageTool = tool<{ path: string }>({
+export const viewImageTool = tool({
   name: "view_image",
   description: "View an image file (e.g. a screenshot or photo) so you can see its contents.",
-  parameters: {
-    type: "object",
-    properties: {
-      path: { type: "string", description: "Path to the image file" }
-    },
-    required: ["path"]
-  },
+  schema: z.object({
+    path: z.string().describe("Path to the image file")
+  }),
   execute: async args => {
     const f = file(args.path)
     if (!(await f.exists())) return `File not found: ${args.path}`
