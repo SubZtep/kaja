@@ -1,67 +1,49 @@
 import { describe, expect, test } from "bun:test"
 import { isPublicHttpUrl } from "../net"
 
+// [url, why]
+const REFUSED: [string, string][] = [
+  ["ftp://example.com", "not http(s)"],
+  ["file:///etc/passwd", "not http(s)"],
+  ["not-a-url", "not a URL"],
+  ["http://localhost", "loopback name"],
+  ["http://127.0.0.1", "IPv4 loopback"],
+  ["http://[::1]", "IPv6 loopback"],
+  ["http://169.254.169.254", "link-local (cloud metadata endpoint)"],
+  ["http://10.0.0.5", "RFC1918"],
+  ["http://172.16.0.1", "RFC1918"],
+  ["http://172.31.255.255", "RFC1918"],
+  ["http://192.168.1.1", "RFC1918"],
+  ["http://100.64.0.1", "CGNAT (RFC 6598)"],
+  ["http://100.127.255.255", "CGNAT (RFC 6598)"],
+  ["http://[::ffff:127.0.0.1]", "IPv4-mapped loopback"],
+  ["http://[::ffff:192.168.1.1]", "IPv4-mapped RFC1918"],
+  ["http://[::ffff:10.0.0.1]", "IPv4-mapped RFC1918"],
+  ["http://[::]", "IPv6 unspecified"],
+  ["http://[fd00::1]/", "IPv6 unique-local"],
+  ["http://[fe80::1]/", "IPv6 link-local"],
+  ["http://[64:ff9b::7f00:1]/", "NAT64 of loopback"],
+  ["http://[2002:7f00:1::]/", "6to4 of loopback"]
+]
+
+const ALLOWED: [string, string][] = [
+  ["https://api.openai.com", "public name"],
+  ["http://example.com:8080", "public name with a port"],
+  ["http://172.32.0.1", "just past RFC1918's 172.16/12"],
+  ["http://172.15.0.1", "just before RFC1918's 172.16/12"],
+  ["http://11.0.0.1", "just past 10/8"],
+  ["http://100.63.0.1", "just before CGNAT"],
+  ["http://100.128.0.1", "just past CGNAT"],
+  ["https://[2001:4860:4860::8888]/", "public IPv6 literal"],
+  ["http://192.168.1.1.evil.com", "a private-looking name, not an IP"]
+]
+
 describe("isPublicHttpUrl", () => {
-  test("accepts public http(s) URLs", () => {
-    expect(isPublicHttpUrl("https://api.openai.com")).toBe(true)
-    expect(isPublicHttpUrl("http://example.com:8080")).toBe(true)
+  test.each(REFUSED)("refuses %s (%s)", url => {
+    expect(isPublicHttpUrl(url)).toBe(false)
   })
 
-  test("rejects non-http(s) protocols", () => {
-    expect(isPublicHttpUrl("ftp://example.com")).toBe(false)
-    expect(isPublicHttpUrl("file:///etc/passwd")).toBe(false)
-    expect(isPublicHttpUrl("not-a-url")).toBe(false)
-  })
-
-  test("rejects loopback and localhost", () => {
-    expect(isPublicHttpUrl("http://localhost")).toBe(false)
-    expect(isPublicHttpUrl("http://127.0.0.1")).toBe(false)
-    expect(isPublicHttpUrl("http://[::1]")).toBe(false)
-  })
-
-  test("rejects link-local addresses (incl. cloud metadata endpoint)", () => {
-    expect(isPublicHttpUrl("http://169.254.169.254")).toBe(false)
-  })
-
-  test("rejects RFC1918 private ranges", () => {
-    expect(isPublicHttpUrl("http://10.0.0.5")).toBe(false)
-    expect(isPublicHttpUrl("http://172.16.0.1")).toBe(false)
-    expect(isPublicHttpUrl("http://172.31.255.255")).toBe(false)
-    expect(isPublicHttpUrl("http://192.168.1.1")).toBe(false)
-  })
-
-  test("does not reject public addresses that merely look similar", () => {
-    expect(isPublicHttpUrl("http://172.32.0.1")).toBe(true)
-    expect(isPublicHttpUrl("http://172.15.0.1")).toBe(true)
-    expect(isPublicHttpUrl("http://11.0.0.1")).toBe(true)
-  })
-
-  test("rejects CGNAT shared address space (RFC 6598)", () => {
-    expect(isPublicHttpUrl("http://100.64.0.1")).toBe(false)
-    expect(isPublicHttpUrl("http://100.127.255.255")).toBe(false)
-    expect(isPublicHttpUrl("http://100.63.0.1")).toBe(true)
-    expect(isPublicHttpUrl("http://100.128.0.1")).toBe(true)
-  })
-
-  test("rejects IPv4-mapped IPv6 loopback and private addresses", () => {
-    expect(isPublicHttpUrl("http://[::ffff:127.0.0.1]")).toBe(false)
-    expect(isPublicHttpUrl("http://[::ffff:192.168.1.1]")).toBe(false)
-    expect(isPublicHttpUrl("http://[::ffff:10.0.0.1]")).toBe(false)
-  })
-
-  test("rejects private IPv6 literals", () => {
-    expect(isPublicHttpUrl("http://[::]")).toBe(false)
-    expect(isPublicHttpUrl("http://[fd00::1]/")).toBe(false)
-    expect(isPublicHttpUrl("http://[fe80::1]/")).toBe(false)
-    expect(isPublicHttpUrl("http://[64:ff9b::7f00:1]/")).toBe(false)
-    expect(isPublicHttpUrl("http://[2002:7f00:1::]/")).toBe(false)
-  })
-
-  test("accepts a public IPv6 literal", () => {
-    expect(isPublicHttpUrl("https://[2001:4860:4860::8888]/")).toBe(true)
-  })
-
-  test("does not treat a private-looking hostname suffix as an IP", () => {
-    expect(isPublicHttpUrl("http://192.168.1.1.evil.com")).toBe(true)
+  test.each(ALLOWED)("accepts %s (%s)", url => {
+    expect(isPublicHttpUrl(url)).toBe(true)
   })
 })
