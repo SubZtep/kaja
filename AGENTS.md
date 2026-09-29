@@ -33,7 +33,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | API env examples | `apps/api/.env.example` |
 | Web env examples | `apps/web/.env.example` |
 | DB migrations | `apps/api/migrations/*.sql` |
-| Migration runners | `apps/api/migrate.ts` (deploy and CI: every migration, then the config seed); `scripts/db_migration.sh` (local, against compose) |
+| Migration runner | `apps/api/scripts/migrations.ts` (`applyMigrations`: files not yet in `schema_migrations`, each in a transaction; edited files re-applied only while the API is 0.x), used by `apps/api/migrate.ts` (deploy, CI, and `scripts/db_migration.sh` locally; then the config seed) and the test database build |
 | `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
 | `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
 | Model defaults | `docs/config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `docs/config/models.*.toml` |
@@ -148,7 +148,7 @@ bun run --filter @kaja/sandbox build
 
 Each file only creates; there are no patch migrations, so a schema change until v1.0 is edited into the file that creates the table (and existing databases are recreated).
 
-Applied **only on first Postgres init** via compose volume `apps/api/migrations` → `docker-entrypoint-initdb.d`. Existing `pgdata` volumes do **not** auto-apply new files — run `scripts/db_migration.sh` (or apply SQL manually).
+`migrate.ts` records each applied file and its checksum in `schema_migrations` and applies only new or (before v1.0) edited files, each in its own transaction; from v1.0 an edited file is refused and a change needs a new file. Compose also runs the raw files on first Postgres init (`docker-entrypoint-initdb.d`); an existing `pgdata` volume catches up with `scripts/db_migration.sh`.
 
 ## Code Style
 

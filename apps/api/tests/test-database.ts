@@ -1,20 +1,17 @@
 import { createHash } from "node:crypto"
-import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { Client } from "pg"
+import { applyMigrations, type Migration, readMigrations } from "../scripts/migrations"
 
 const migrationsDir = join(import.meta.dir, "..", "migrations")
 // Any number works; it only has to be the same for every `bun test` that might race to build the database.
 const BUILD_LOCK = 7_261_947
 
 /** The migrations as one fingerprint: they're edited in place until v1.0, so a changed file means a rebuilt test database. */
-function migrationsFingerprint(): { files: { name: string; sql: string }[]; hash: string } {
-  const files = readdirSync(migrationsDir)
-    .filter(name => name.endsWith(".sql"))
-    .sort()
-    .map(name => ({ name, sql: readFileSync(join(migrationsDir, name), "utf8") }))
+function migrationsFingerprint(): { files: Migration[]; hash: string } {
+  const files = readMigrations(migrationsDir)
   const hash = createHash("sha256")
-  for (const file of files) hash.update(file.name).update("\0").update(file.sql).update("\0")
+  for (const file of files) hash.update(file.name).update("\0").update(file.checksum).update("\0")
   return { files, hash: hash.digest("hex") }
 }
 
@@ -67,7 +64,7 @@ export async function useTestDatabase(): Promise<void> {
     const client = new Client({ connectionString: testUrl })
     await client.connect()
     try {
-      for (const file of files) await client.query(file.sql)
+      await applyMigrations(client, files, { log: () => {} })
       await client.query("CREATE TABLE test_schema (hash TEXT NOT NULL)")
       await client.query("INSERT INTO test_schema (hash) VALUES ($1)", [hash])
     } finally {
