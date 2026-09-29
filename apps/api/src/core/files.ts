@@ -80,7 +80,7 @@ let probeClient: S3Client | undefined
 /** Whether the bucket answers a HEAD within `timeoutMs`, for `/health/ready`. */
 export async function storageReachable(timeoutMs: number): Promise<boolean> {
   probeClient ??= s3Client()
-  return probeClient
+  return await probeClient
     .send(new HeadBucketCommand({ Bucket: env.STORAGE_BUCKET }), { abortSignal: AbortSignal.timeout(timeoutMs) })
     .then(
       () => true,
