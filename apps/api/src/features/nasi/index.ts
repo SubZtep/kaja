@@ -132,6 +132,8 @@ function streamErrorBody(error: unknown, userId: string): { error: string; categ
 nasiRoutes.post("/turn/stream", async c => {
   const user = c.get("user")
   if (!user) return unauthorized(c)
+  // c.req.json() would parse a text/plain body too, the one kind a cross-site form can send without a preflight
+  if (!c.req.header("content-type")?.startsWith("application/json")) return badRequest(c, "Invalid request body")
   const parsed = NasiTurnRequestSchema.safeParse(await c.req.json().catch(() => undefined))
   if (!parsed.success) return badRequest(c, "Invalid request body")
   const body = parsed.data

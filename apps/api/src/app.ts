@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import { sentry } from "@sentry/hono/bun"
 import { cors } from "hono/cors"
+import { csrfProtection } from "./core/csrf"
 import { env } from "./core/env"
 import { authRateLimiter, globalRateLimiter } from "./core/rate-limit"
 import { abilityRoutes } from "./features/abilities"
@@ -39,6 +40,7 @@ app.use("*", async (c, next) => {
   return cors({ origin: env.CORS_ORIGIN, credentials: true })(c, next)
 })
 app.use("*", globalRateLimiter)
+app.use("*", csrfProtection)
 app.use("*", authMiddleware)
 
 // Mount routes

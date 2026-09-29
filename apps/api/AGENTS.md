@@ -28,6 +28,7 @@ src/
     db.ts                # pg Pool
     report.ts            # reportError: console.error + Sentry for failures the code handles itself
     rate-limit.ts        # global + auth + nasi turn limiters (off under bun test)
+    csrf.ts              # cookie-session writes must come from CORS_ORIGIN (bearer/cookieless pass)
     cron.ts              # Bun.cron jobs: hourly marketplace sync
   features/              # one folder per URL mount prefix
     auth/                # Better Auth config + routes + middleware
