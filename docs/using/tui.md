@@ -81,6 +81,8 @@ Prompt history spans all past sessions, newest first.
 
 ### Key bar
 
+Help, Persona, Theme and Expand are also buttons: they dim under the mouse and a click runs them, for a terminal or system that takes the hotkey.
+
 | Key | Action |
 |---|---|
 | `<modifier>+L` | Open these docs in your browser |

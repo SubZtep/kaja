@@ -78,16 +78,17 @@ function buildKeyBarItems(
   hotkeyModifier: string | undefined,
   hasPersona: boolean,
   bottomChromeKey: BottomChromeKey,
-  quitArmed: boolean
+  quitArmed: boolean,
+  actions: { help: () => void; persona: () => void; theme: () => void; expand: () => void }
 ) {
   const modifierLabel = hotkeyModifier === "ctrl" ? "Ctrl" : "Alt"
   const escItem = escKeyBarItem(bottomChromeKey, quitArmed)
   return [
-    { key: `${modifierLabel}+L`, label: t("keybar.help") },
-    ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona") }] : []),
+    { key: `${modifierLabel}+L`, label: t("keybar.help"), onPress: actions.help },
+    ...(hasPersona ? [{ key: `${modifierLabel}+P`, label: t("keybar.persona"), onPress: actions.persona }] : []),
     { key: `${modifierLabel}+R`, label: t("keybar.copy") },
-    { key: `${modifierLabel}+D`, label: t("keybar.theme") },
-    { key: `${modifierLabel}+E`, label: t("keybar.expand") },
+    { key: `${modifierLabel}+D`, label: t("keybar.theme"), onPress: actions.theme },
+    { key: `${modifierLabel}+E`, label: t("keybar.expand"), onPress: actions.expand },
     ...(escItem ? [escItem] : [])
   ]
 }
@@ -169,19 +170,21 @@ function Chrome({
     [codeExpanded, codePreviewLines]
   )
 
-  useModifierKeys(hotkeyModifier, {
+  // The same actions answer the hotkeys and a click on the key bar
+  const actions = {
     // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
     // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
-    l: () => {
+    help: () => {
       open(HELP_URL).catch(error => log.warn("Failed to open help URL", { error }))
     },
-    p: () => {
+    persona: () => {
       if (capabilities.persona && !pending) setPickingPersona(true)
     },
     // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
-    d: toggleTheme,
-    e: () => setCodeExpanded(prev => !prev)
-  })
+    theme: toggleTheme,
+    expand: () => setCodeExpanded(prev => !prev)
+  }
+  useModifierKeys(hotkeyModifier, { l: actions.help, p: actions.persona, d: actions.theme, e: actions.expand })
 
   const bottomChromeKey = getBottomChromeKey(pickingPersona, pendingCommand, runningCommand)
   const showConfirm = bottomChromeKey !== "persona" && Boolean(pendingCommand && resolvePending)
@@ -189,7 +192,7 @@ function Chrome({
     bottomChromeKey === "input" || bottomChromeKey === "running",
     pending || runningCommand
   )
-  const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey, quitArmed)
+  const keyBarItems = buildKeyBarItems(hotkeyModifier, capabilities.persona, bottomChromeKey, quitArmed, actions)
 
   return (
     <ThemeProvider theme={themes[theme]}>

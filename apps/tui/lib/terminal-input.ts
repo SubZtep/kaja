@@ -106,6 +106,20 @@ export function isIgnoredTerminalInput(input: string): boolean {
   )
 }
 
+export type MouseEvent = { kind: "press" | "move"; col: number; row: number }
+
+/** Decodes an SGR left-button press or a button-less move, with the 0-based cell it happened in; null for anything else (wheel, release, drag, other buttons). */
+export function parseMouse(input: string): MouseEvent | null {
+  const sgr = /^\[<(\d+);(\d+);(\d+)([Mm])$/.exec(stripEsc(input))
+  if (!sgr) return null
+  const button = Number(sgr[1])
+  const col = Number(sgr[2]) - 1
+  const row = Number(sgr[3]) - 1
+  if (sgr[4] === "M" && button === 0) return { kind: "press", col, row }
+  if (button === 35) return { kind: "move", col, row }
+  return null
+}
+
 export type WheelDirection = "up" | "down"
 
 /**
@@ -137,10 +151,11 @@ export function parseWheelDirection(input: string): WheelDirection | null {
 /** CSI sequences to enable SGR mouse + wheel (and alternate-scroll on altscreen). */
 export const MOUSE_ENABLE =
   `${ESC}[?1000h` + // mouse click/drag
+  `${ESC}[?1003h` + // motion with no button held, for hover
   `${ESC}[?1006h` + // SGR encoding
   `${ESC}[?1007h` // alternate scroll (wheel → app on alternate screen)
 
-export const MOUSE_DISABLE = `${ESC}[?1007l` + `${ESC}[?1006l` + `${ESC}[?1000l`
+export const MOUSE_DISABLE = `${ESC}[?1007l` + `${ESC}[?1006l` + `${ESC}[?1003l` + `${ESC}[?1000l`
 
 /** DECSET 1004: ask the terminal to report window focus in/out events (see {@link windowFocusReport}). */
 export const FOCUS_REPORTING_ENABLE = `${ESC}[?1004h`
