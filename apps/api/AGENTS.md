@@ -16,7 +16,7 @@ bun run test
 
 Local secrets helper: `../../scripts/create_local_secrets.sh`  
 Manual migrations: `../../scripts/db_migration.sh`  
-DB migration builder for Docker/Disco (stays here — path-coupled to `./migrations` and the Dockerfile build step): `migrate.ts`
+DB migration builder for Docker/Disco (stays here — path-coupled to `./migrations` and the Dockerfile build step): `migrate.ts`, running `scripts/migrations.ts` (`schema_migrations` tracking, one transaction per file)
 
 ## Layout
 

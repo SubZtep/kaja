@@ -51,9 +51,12 @@ flowchart LR
 | `2026-09-19-user-secret.sql` | `user_secret` |
 | `2026-09-27-sandbox.sql` | `sandbox`, `sandbox_owner`, `sandbox_sample` |
 
-Every file only *creates* (`IF NOT EXISTS`), and the API's `migrate.ts` re-runs all of them on every
-deploy, so they have to stay idempotent. The files run on the first boot of the compose volume; for an
-existing volume use `scripts/db_migration.sh`.
+Every file only *creates* (`IF NOT EXISTS`). The API's `migrate.ts` runs on every deploy and records each
+file it applied, with a checksum, in `schema_migrations`. It applies only files that are new or have changed
+since, each in its own transaction, so a failing file leaves nothing half done. Until v1.0 an edited file is
+applied again, so files have to stay re-runnable. From v1.0 an edited file stops the deploy, and a change goes
+in a new file. The files also run on the first boot of the compose volume; for an existing volume use
+`scripts/db_migration.sh`, which runs `migrate.ts` locally.
 
 **Until v1.0 there are no patch migrations.** There is no production data worth keeping, so a schema
 change is edited into the file that creates the table, and existing databases are recreated: locally
