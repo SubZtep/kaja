@@ -74,3 +74,12 @@ test("no ctx (undefined personaId) still reaches the resolver, e.g. for the no-p
   await rerankTool.execute({ query: "q", documents: [] })
   expect(seenPersonaId).toBeUndefined()
 })
+
+test("an answer in an unexpected shape is a ToolError, not a crash further down", async () => {
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ results: [{ idx: 0 }] }), { status: 200 })) as unknown as typeof fetch
+  setToolDeps({ rerank: () => ({ model: "m", baseUrl: "https://rerank.example.test" }) })
+  await expect(rerankTool.execute({ query: "q", documents: ["a"] })).rejects.toThrow(
+    "Rerank answered in an unexpected shape"
+  )
+})

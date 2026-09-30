@@ -12,6 +12,29 @@ import type { Pool } from "pg"
 /** `Provider` with the real api_key value — never returned from the admin API, only used to authenticate an actual outbound call to the provider. */
 type ProviderWithSecret = Omit<Provider, "hasApiKey"> & { apiKey: string | null }
 
+// Rows as pg returns them (timestamptz as Date); `last_used_at` only where a query joins usage in.
+type ProviderRow = {
+  id: string
+  name: string
+  base_url: string
+  api_key: string | null
+  created_at: Date
+  updated_at: Date
+}
+
+type ModelRow = {
+  id: string
+  provider_id: string
+  model: string
+  tasks: Model["tasks"]
+  enabled: boolean
+  free: boolean
+  context_window: number | null
+  created_at: Date
+  updated_at: Date
+  last_used_at?: Date | null
+}
+
 export class ModelService {
   readonly #db: Pool
 
@@ -245,7 +268,7 @@ export class ModelService {
     }
   }
 
-  #rowToProvider(row: any): Provider {
+  #rowToProvider(row: ProviderRow): Provider {
     return {
       id: row.id,
       name: row.name,
@@ -256,7 +279,7 @@ export class ModelService {
     }
   }
 
-  #rowToProviderWithSecret(row: any): ProviderWithSecret {
+  #rowToProviderWithSecret(row: ProviderRow): ProviderWithSecret {
     return {
       id: row.id,
       name: row.name,
@@ -267,7 +290,7 @@ export class ModelService {
     }
   }
 
-  #rowToModel(row: any): Model {
+  #rowToModel(row: ModelRow): Model {
     return {
       id: row.id,
       providerId: row.provider_id,

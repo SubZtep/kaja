@@ -101,3 +101,40 @@ test("turn_stream() throws NasiStreamError on a server error event", async () =>
   const gen = client.turn_stream({ message: "hi" })
   await expect(gen.next()).rejects.toBeInstanceOf(NasiStreamError)
 })
+
+function streamOf(raw: string) {
+  server = Bun.serve({
+    port: 0,
+    fetch: () => new Response(sseChunks([raw]), { headers: { "content-type": "text/event-stream" } })
+  })
+  return createNasiClient({ baseUrl: server.url.toString(), getToken: async () => undefined })
+}
+
+test("turn_stream() skips an event it doesn't know or that doesn't fit its schema", async () => {
+  const client = streamOf(
+    'event: sparkle\ndata: {"type":"sparkle","glitter":1}\n\n' +
+      'event: final\ndata: {"type":"final","content":42}\n\n' +
+      'event: final\ndata: {"type":"final","content":"ok"}\n\n' +
+      'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"completed"}\n\n'
+  )
+  const events: unknown[] = []
+  const stream = client.turn_stream({ message: "hi" })
+  let next = await stream.next()
+  while (!next.done) {
+    events.push(next.value)
+    next = await stream.next()
+  }
+  expect(events).toEqual([{ type: "final", content: "ok" }])
+  expect(next.value).toEqual({ session: "01900000-0000-7000-8000-000000000000", status: "completed" })
+})
+
+test("turn_stream() refuses a malformed done event instead of returning it", async () => {
+  const client = streamOf('event: done\ndata: {"session":"not-a-session","status":"sure"}\n\n')
+  await expect(client.turn_stream({ message: "hi" }).next()).rejects.toThrow(NasiStreamError)
+})
+
+test("turn() refuses a response that isn't a turn", async () => {
+  server = Bun.serve({ port: 0, fetch: () => Response.json({ hello: "world" }) })
+  const client = createNasiClient({ baseUrl: server.url.toString(), getToken: async () => undefined })
+  await expect(client.turn({ message: "hi" })).rejects.toThrow()
+})

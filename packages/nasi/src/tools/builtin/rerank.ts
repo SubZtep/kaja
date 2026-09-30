@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
 import type { ToolContext } from "../../agent/tools"
+import { fetchPublicHttp } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
 /**
@@ -25,16 +26,10 @@ export const rerankTool = tool({
   execute: async (args, ctx) => JSON.stringify(await rerank(args, ctx))
 })
 
-interface RerankResponse {
-  object: "list"
-  model: string
-  data: {
-    index: number
-    relevance_score: number
-    document?: string
-  }[]
-  usage: { prompt_tokens: number; total_tokens: number }
-}
+/** The part of a (Cohere/Jina-style) rerank answer the tool reads. */
+const RerankResponseSchema = z.object({
+  data: z.array(z.object({ index: z.int(), relevance_score: z.number(), document: z.string().optional() }))
+})
 
 async function rerank(args: { query: string; documents: string[]; top_n?: number }, ctx?: ToolContext) {
   const resolved = getToolDeps().rerank?.(ctx?.personaId)
@@ -43,7 +38,8 @@ async function rerank(args: { query: string; documents: string[]; top_n?: number
   }
   const { baseUrl, apiKey, model } = resolved
 
-  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/rerank`, {
+  // The user's own rerank provider (local mode only, so a private host is fine); capped, timed out, and its key never follows a redirect elsewhere
+  const res = await fetchPublicHttp(`${baseUrl.replace(/\/$/, "")}/rerank`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -54,11 +50,16 @@ async function rerank(args: { query: string; documents: string[]; top_n?: number
       query: args.query,
       documents: args.documents,
       ...(args.top_n ? { top_n: args.top_n } : {})
-    })
+    }),
+    allowPrivate: true,
+    sameOriginRedirects: true,
+    timeoutMs: 60_000,
+    maxBytes: 5 * 1024 * 1024
   })
   if (!res.ok) throw new ToolError("rerank", `Rerank failed: ${res.status} ${await res.text()}`)
-  const data = (await res.json()) as RerankResponse
-  return data.data.map(result => ({
+  const data = RerankResponseSchema.safeParse(await res.json().catch(() => undefined))
+  if (!data.success) throw new ToolError("rerank", "Rerank answered in an unexpected shape")
+  return data.data.data.map(result => ({
     index: result.index,
     relevance_score: result.relevance_score,
     document: result.document
