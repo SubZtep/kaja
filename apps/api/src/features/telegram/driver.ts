@@ -9,16 +9,7 @@ import {
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
 import { isPublicHttpUrl } from "@kaja/shared/net"
-import {
-  commandArgument,
-  EditThrottle,
-  escapeHtml,
-  isCommand,
-  renderTelegramHtml,
-  splitTelegramMessage,
-  telegramImages,
-  truncateForStreaming
-} from "@kaja/shared/telegram"
+import { commandArgument, compactedLine, escapeHtml, isCommand, openReply, type Reply } from "@kaja/shared/telegram"
 import { withQuestion } from "@kaja/shared/text"
 import { pool } from "../../core/db"
 import type { Translate } from "../../core/i18n"
@@ -81,14 +72,6 @@ export type CloudTelegramDriverConfig = {
  * round-trips through Postgres via the session id instead of living in
  * memory.
  */
-/** The chat line for a compaction, in the user's language. */
-function compactedLine(result: { beforeTokens: number; afterTokens: number; dropped: boolean }, t: Translate): string {
-  return t(result.dropped ? "telegram.compactedDropped" : "telegram.compacted", {
-    before: result.beforeTokens.toLocaleString(),
-    after: result.afterTokens.toLocaleString()
-  })
-}
-
 export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   const { resolveLinkedUser, sender } = config
   // Marks a Telegram user's next message as "don't resume" after /new. No other in-memory
@@ -100,28 +83,6 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       await sender.editMessageText(chatId, messageId, text, rows)
     } catch (error) {
       console.warn("Telegram edit failed", { error })
-    }
-  }
-
-  async function finalizeMessage(
-    edit: (text: string) => Promise<void>,
-    chatId: number,
-    rawText: string,
-    { t }: BotLanguage
-  ) {
-    // The reply's Markdown images follow as photos, the text keeping only their alt; public URLs only, never a server path
-    const photos = telegramImages(rawText).filter(image => isPublicHttpUrl(image.src))
-    // A reply that is only an image (no alt) leaves no text: the placeholder then just marks the photo below
-    const html = renderTelegramHtml(rawText) || (photos.length > 0 ? "📷" : t("telegram.emptyResponse"))
-    const [first, ...rest] = splitTelegramMessage(html)
-    await edit(first!)
-    for (const chunk of rest) await sender.sendMessage(chatId, chunk)
-    for (const image of photos) {
-      try {
-        await sender.sendPhoto(chatId, image.src, image.alt || undefined)
-      } catch (error) {
-        console.warn("Telegram photo send failed", { error })
-      }
     }
   }
 
@@ -148,8 +109,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
 
   /** Shows a tool call waiting for approval, with Approve/Decline buttons; any text the model wrote first stays in the placeholder. */
   async function sendApproval(
-    accumulated: { content: string },
-    editIfChanged: (text: string) => Promise<void>,
+    reply: Reply,
     chatId: number,
     event: Extract<FinalizedAgentEvent, { type: "confirm_tool" }>,
     language: BotLanguage
@@ -170,43 +130,33 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         { text: t("telegram.approveAlways"), data: `tool:approve_always:${token}` }
       ]
     ]
-    if (accumulated.content.trim()) await finalizeMessage(editIfChanged, chatId, accumulated.content, language)
-    else await editIfChanged("…")
+    await reply.settle()
     await sender.sendMessage(chatId, text.join("\n"), buttons)
   }
 
   /** Returns true once the event has ended the turn (ask_user, confirm_tool, final) so runTurn ignores anything after it. A tool image (an MCP screenshot) goes out as a photo; local-only events (display_image, confirm_command) are ignored — cloud Nasi never emits them. */
-  function handleFinalizedEvent(
-    accumulated: { content: string },
-    throttle: EditThrottle,
-    editIfChanged: (text: string) => Promise<void>,
+  async function handleFinalizedEvent(
+    reply: Reply,
     chatId: number,
     turn: { userId: string; sessionId: string | undefined },
     event: FinalizedAgentEvent,
     language: BotLanguage
-  ): Promise<boolean> | boolean {
+  ): Promise<boolean> {
     if (event.type === "ask_user") {
-      throttle.cancel()
-      const text = withQuestion(accumulated.content, event.question)
-      return finalizeMessage(editIfChanged, chatId, text, language).then(() => true)
+      await reply.finish(withQuestion(reply.streamed, event.question))
+      return true
     }
-
     if (event.type === "final") {
-      throttle.cancel()
-      return finalizeMessage(editIfChanged, chatId, event.content ?? "", language).then(() => true)
+      await reply.finish(event.content ?? "")
+      return true
     }
-
     if (event.type === "confirm_tool") {
-      throttle.cancel()
-      return sendApproval(accumulated, editIfChanged, chatId, event, language).then(() => true)
+      await sendApproval(reply, chatId, event, language)
+      return true
     }
-
-    if (event.type === "compacted")
-      return sender.sendMessage(chatId, compactedLine(event, language.t)).then(() => false)
-
-    if (event.type === "tool_image")
-      return sendToolImage(chatId, turn.userId, turn.sessionId, event.path, event.mimeType).then(() => false)
-
+    if (event.type === "compacted") await sender.sendMessage(chatId, compactedLine(event, language.t))
+    else if (event.type === "tool_image")
+      await sendToolImage(chatId, turn.userId, turn.sessionId, event.path, event.mimeType)
     return false
   }
 
@@ -267,17 +217,15 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     resume: boolean,
     language: BotLanguage
   ) {
-    const placeholder = await sender.sendMessage(chatId, "…")
-    const accumulated = { content: "" }
-    const renderCurrent = () =>
-      accumulated.content.trim() ? truncateForStreaming(renderTelegramHtml(accumulated.content)) : "…"
-    let lastSentText: string | undefined
-    async function editIfChanged(text: string) {
-      if (text === lastSentText) return
-      lastSentText = text
-      await editSafely(chatId, placeholder.messageId, text)
-    }
-    const throttle = new EditThrottle(editIfChanged, error => console.warn("Telegram edit failed", { error }))
+    const reply = await openReply({
+      send: text => sender.sendMessage(chatId, text),
+      edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
+      sendPhoto: (url: string, caption) => sender.sendPhoto(chatId, url, caption),
+      // Public URLs only, never a server path
+      photoSource: src => (isPublicHttpUrl(src) ? src : undefined),
+      emptyReply: language.t("telegram.emptyResponse"),
+      warn: (message, error) => console.warn(message, { error })
+    })
 
     try {
       const store = createPostgresStore(pool, ownerUserId)
@@ -295,17 +243,12 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
           // Read to the end even after the reply is out: the turn is only saved once the generator finishes.
           if (ended) continue
           if (event.type === "delta") {
-            if (event.channel === "content") {
-              accumulated.content += event.text
-              throttle.request(renderCurrent)
-            }
+            if (event.channel === "content") reply.append(event.text)
             continue
           }
           if (event.type === "usage") continue
           ended = await handleFinalizedEvent(
-            accumulated,
-            throttle,
-            editIfChanged,
+            reply,
             chatId,
             { userId: ownerUserId, sessionId: resumeRow?.id },
             event,
@@ -319,13 +262,13 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       console.warn("Telegram agent turn failed", { error })
       // A failed turn isn't saved, so the photo doesn't linger in the session; only the reply needs saying
       if (input.images?.length && isImageRejection(error)) {
-        await editIfChanged(language.t("telegram.noVision"))
+        await reply.fail(language.t("telegram.noVision"))
         return
       }
       const { category, message } = categorizeError(error)
       // The category in the user's language, like the terminal shows it; the detail is the provider's own (technical) text.
       const label = language.t(`telegram.error.${category}`)
-      await editIfChanged(`⚠ ${label}: ${message}`)
+      await reply.fail(`⚠ ${label}: ${message}`)
     }
   }
 

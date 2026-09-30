@@ -8,7 +8,7 @@ One subpath per category (`@kaja/shared/<category>`), each a folder with an `ind
 
 ```
 date/        # getTimeAgo, getDateTime — locale-aware formatting via Intl
-text/        # getFirstName, getDisplayName, capitalized, titleCase, formatDeviceUserCode, modelSlug, uniqueModelSlug, trimTrailingSlashes, withQuestion
+text/        # getFirstName, getDisplayName, capitalized, titleCase, formatDeviceUserCode, modelSlug, uniqueModelSlug, trimTrailingSlashes, withQuestion, sessionTitle
 ui/          # cn (clsx + tailwind-merge)
 net/         # isPrivateAddress, isPublicHttpUrl — SSRF guard
 id/          # randomUUIDv7
@@ -16,6 +16,7 @@ locale/      # locales, baseLocale, LOCALE_LABELS, matchLocale, flattenMessages,
 telegram/    # plumbing both Telegram bots (apps/tui, apps/api) share
   bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency)
   markdown.ts  # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT
+  reply.ts     # openReply (a turn's "…" placeholder: throttled streamed edits, finish with chunks and photos, settle before an approval, fail), compactedLine; each bot passes its sender, photo rule, translations and logger
 ```
 
 A new subpath needs an entry in `package.json` `exports`.

@@ -2,6 +2,7 @@ import { compact, recordPausedCall, replyLanguageInstructionFor, runApprovedTool
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { commandArgument } from "@kaja/shared/telegram"
+import { sessionTitle } from "@kaja/shared/text"
 import { useCallback, useRef, useState } from "react"
 import {
   Agent,
@@ -173,7 +174,7 @@ export function useAgent(
         if (sessionRowIdRef.current === undefined) {
           sessionRowIdRef.current = await createSessionRow({
             ...data,
-            title: first.text.split(/[\r\n]/)[0]!.slice(0, 60)
+            title: sessionTitle(first.text)
           })
         } else {
           await updateSessionRow(sessionRowIdRef.current, data)
