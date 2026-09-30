@@ -19,7 +19,7 @@
     },
     "apps/api": {
       "name": "@kaja/api",
-      "version": "0.21.4",
+      "version": "0.21.5",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.1142.0",
         "@aws-sdk/s3-presigned-post": "^3.1142.0",
@@ -65,7 +65,7 @@
     },
     "apps/tui": {
       "name": "@kaja/tui",
-      "version": "0.29.10",
+      "version": "0.29.11",
       "dependencies": {
         "@inkjs/ui": "^2.0.0",
         "@kaja/nasi": "workspace:*",
@@ -135,7 +135,7 @@
     },
     "packages/nasi": {
       "name": "@kaja/nasi",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "dependencies": {
         "@kaja/schema": "workspace:*",
         "@kaja/shared": "workspace:*",
@@ -149,7 +149,7 @@
     },
     "packages/schema": {
       "name": "@kaja/schema",
-      "version": "0.21.11",
+      "version": "0.21.12",
       "dependencies": {
         "@kaja/shared": "workspace:*",
         "zod": "^4.6.5",
