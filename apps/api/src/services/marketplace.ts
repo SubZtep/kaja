@@ -232,111 +232,90 @@ function reportName(type: AbilityBundle["type"], name: string): string {
   return type === "skill" ? name : `${MARKETPLACE_FOLDER[type]}/${name}`
 }
 
-/** Every valid `personas/*.toml` as stored text, with its label as the description; broken ones are skipped with a warning. */
-async function readPersonaFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
-  const bundles: AbilityBundle[] = []
-  for (const entry of await scanPersonas(marketplaceDir)) {
-    const file = `${entry.name}.toml`
-    try {
-      if (entry.error) throw new Error(entry.error)
-      const text = await readFile(join(marketplaceDir, "personas", file), "utf8")
-      const persona = parsePersonaManifest(text, entry.name)
-      bundles.push({
-        type: "persona",
-        name: entry.name,
-        description: persona.label,
-        files: { [file]: text },
-        hasScripts: false
-      })
-    } catch (error) {
-      console.warn("Marketplace persona skipped", {
-        persona: entry.name,
-        error: error instanceof Error ? error.message : error
-      })
-    }
-  }
-  return bundles
-}
-
-/** Every valid `datasets/*.json` as stored text, with its label as the description; broken ones are skipped with a warning. */
-async function readDatasetFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
-  const bundles: AbilityBundle[] = []
-  for (const entry of await scanDatasets(marketplaceDir)) {
-    if (entry.error || !entry.label) {
-      console.warn("Marketplace dataset skipped", { dataset: entry.name, error: entry.error })
-      continue
-    }
-    const file = `${entry.name}.json`
-    const text = await readFile(join(marketplaceDir, "datasets", file), "utf8")
-    bundles.push({
-      type: "dataset",
-      name: entry.name,
-      description: entry.label,
-      files: { [file]: text },
-      hasScripts: false
+/**
+ * One marketplace folder's manifests as stored text: each scanned entry's file is read and turned into a bundle by
+ * `toBundle`, which throws to skip it; a broken or refused one is skipped with a warning naming `kind`.
+ */
+async function readManifests<Entry extends { name: string; error?: string }>(
+  marketplaceDir: string,
+  kind: { type: Exclude<AbilityBundle["type"], "skill">; label: string; extension: string },
+  entries: Entry[],
+  toBundle: (text: string, entry: Entry) => { name: string; description: string }
+): Promise<AbilityBundle[]> {
+  const bundles = await Promise.all(
+    entries.map(async (entry): Promise<AbilityBundle | undefined> => {
+      const file = `${entry.name}.${kind.extension}`
+      try {
+        if (entry.error) throw new Error(entry.error)
+        const text = await readFile(join(marketplaceDir, MARKETPLACE_FOLDER[kind.type], file), "utf8")
+        return { type: kind.type, ...toBundle(text, entry), files: { [file]: text }, hasScripts: false }
+      } catch (error) {
+        console.warn(`Marketplace ${kind.label} skipped`, {
+          [kind.type]: entry.name,
+          error: error instanceof Error ? error.message : error
+        })
+        return undefined
+      }
     })
-  }
-  return bundles
+  )
+  return bundles.filter(bundle => bundle !== undefined)
 }
 
-/** Every valid `tools/*.toml` as stored text; broken manifests and ones that call a non-public host are skipped with a warning. */
+/** Every valid `personas/*.toml`, with its label as the description. */
+async function readPersonaFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
+  return readManifests(
+    marketplaceDir,
+    { type: "persona", label: "persona", extension: "toml" },
+    await scanPersonas(marketplaceDir),
+    (text, entry) => ({ name: entry.name, description: parsePersonaManifest(text, entry.name).label })
+  )
+}
+
+/** Every valid `datasets/*.json`, with its label as the description. */
+async function readDatasetFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
+  return readManifests(
+    marketplaceDir,
+    { type: "dataset", label: "dataset", extension: "json" },
+    await scanDatasets(marketplaceDir),
+    (_text, entry) => {
+      if (!entry.label) throw new Error("no label")
+      return { name: entry.name, description: entry.label }
+    }
+  )
+}
+
+/** Every valid `tools/*.toml`; ones that call a non-public host are skipped. */
 async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
-  const bundles: AbilityBundle[] = []
-  for (const entry of await scanHttpTools(marketplaceDir)) {
-    const file = `${entry.name}.toml`
-    try {
-      if (entry.error) throw new Error(entry.error)
-      const text = await readFile(join(marketplaceDir, "tools", file), "utf8")
+  return readManifests(
+    marketplaceDir,
+    { type: "tool", label: "HTTP tool", extension: "toml" },
+    await scanHttpTools(marketplaceDir),
+    (text, entry) => {
       const ability = parseHttpToolManifest(text, entry.name)
       if (!isPublicHttpUrl(ability.baseUrl)) throw new Error(`${ability.baseUrl} isn't a public address`)
-      bundles.push({
-        type: "tool",
-        name: ability.name,
-        description: ability.description,
-        files: { [file]: text },
-        hasScripts: false
-      })
-    } catch (error) {
-      console.warn("Marketplace HTTP tool skipped", {
-        tool: entry.name,
-        error: error instanceof Error ? error.message : error
-      })
+      return { name: ability.name, description: ability.description }
     }
-  }
-  return bundles
+  )
 }
 
 /**
- * Every `mcp/*.toml` the cloud could run, as stored text. Skipped with a warning: broken manifests, ones without a
- * `tools` allowlist or on a non-public host, and names a tool already has (keys share one namespace per name).
- * stdio servers are kept whether or not an MCP sandbox is configured right now; offering them checks that.
+ * Every `mcp/*.toml` the cloud could run. Skipped: ones without a `tools` allowlist or on a non-public host, and names
+ * a tool already has (keys share one namespace per name). stdio servers are kept whether or not an MCP sandbox is
+ * configured right now; offering them checks that.
  */
 async function readMcpAbilities(marketplaceDir: string, toolNames: Set<string>): Promise<AbilityBundle[]> {
-  const bundles: AbilityBundle[] = []
-  for (const entry of await scanMcpAbilities(marketplaceDir)) {
-    const file = `${entry.name}.toml`
-    try {
-      if (entry.error) throw new Error(entry.error)
+  return readManifests(
+    marketplaceDir,
+    { type: "mcp", label: "MCP ability", extension: "toml" },
+    await scanMcpAbilities(marketplaceDir),
+    (text, entry) => {
       if (toolNames.has(entry.name)) throw new Error(`an HTTP tool is already called ${entry.name}`)
-      const text = await readFile(join(marketplaceDir, "mcp", file), "utf8")
       const ability = parseMcpManifest(text, entry.name)
       const problem = cloudMcpProblem(ability)
       if (problem) throw new Error(problem)
-      bundles.push({
-        type: "mcp",
-        name: ability.name,
-        description: ability.description,
-        files: { [file]: text },
-        hasScripts: false
-      })
-    } catch (error) {
-      console.warn("Marketplace MCP ability skipped", {
-        mcp: entry.name,
-        error: error instanceof Error ? error.message : error
-      })
+      return { name: ability.name, description: ability.description }
     }
-  }
-  return bundles
+  )
 }
 
 /** Stable hash of what the agent sees of an ability, so an unchanged one keeps its updated_at. */

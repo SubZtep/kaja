@@ -33,7 +33,8 @@ test("a changed reset key shows the cursor again and restarts the cycle", async 
   expect(t.lastFrame()).toContain("off")
 
   t.rerender(<KeyHarness k="b" />)
-  await Bun.sleep(150)
+  // Polled rather than a fixed wait: the cursor is back within one 400 ms phase, however slow the render
+  for (let i = 0; i < 40 && !t.lastFrame().includes("on"); i++) await Bun.sleep(20)
   expect(t.lastFrame()).toContain("on")
 
   t.unmount()

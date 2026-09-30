@@ -1,6 +1,6 @@
 // Static i18n: every dictionary loads at import, and the active language is set at startup (cli.ts, from preferences.locale). The setup wizard switches it mid-run, the moment its first question is answered, so the rest of its steps are readable. Nothing else switches live — a language change takes effect on the next launch.
 
-import { baseLocale, flattenMessages, formatMessage, type Locale, locales, matchLocale } from "@kaja/shared/locale"
+import { baseLocale, createMessages, type Locale, matchLocale } from "@kaja/shared/locale"
 import * as z from "zod"
 import enGb from "../locales/en-GB.toml"
 import enUs from "../locales/en-US.toml"
@@ -19,10 +19,10 @@ const files: Record<Locale, Record<string, unknown>> = {
   "zh-TW": zhTw
 }
 
+const messages = createMessages(files)
+
 // Exported for the key-parity test.
-export const dictionaries = Object.fromEntries(
-  locales.map(locale => [locale, flattenMessages(files[locale])])
-) as Record<Language, Map<string, string>>
+export const dictionaries = messages.dictionaries
 
 let language: Language = baseLocale
 
@@ -55,5 +55,5 @@ export function setLanguage(next: Language) {
 
 /** Dictionary lookup with `{param}` interpolation; falls back to en-GB, then to the key. */
 export function t(key: string, params?: Record<string, string | number>) {
-  return formatMessage(dictionaries[language].get(key) ?? dictionaries[baseLocale].get(key) ?? key, params)
+  return messages.translate(language, key, params)
 }
