@@ -1,7 +1,7 @@
 {
   "name": "@kaja/shared",
   "description": "Shared types and utilities",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "private": true,
   "sideEffects": false,
   "exports": {
