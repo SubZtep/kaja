@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto"
 import { SANDBOX_INSTANCE_HEADER, SANDBOX_KEY_HEADER, type SandboxFrame, sandboxFrameSchema } from "@kaja/schema/api"
 import type { Context } from "hono"
-import { getConnInfo, upgradeWebSocket } from "hono/bun"
+import { upgradeWebSocket } from "hono/bun"
 import { createMiddleware } from "hono/factory"
 import type { WSContext } from "hono/ws"
 import { env } from "../../core/env"
@@ -43,15 +43,10 @@ export const sandboxOwnerMiddleware = createMiddleware<{ Variables: ConnectVaria
   return next()
 })
 
-// The sandbox's public IP: the proxy's forwarded one, else the socket's own (a local dev stack).
+// The sandbox's public IP (see clientIp for where it comes from).
 function remoteIp(c: Context): string | undefined {
-  const forwarded = clientIp(c)
-  if (forwarded !== "unknown") return forwarded
-  try {
-    return getConnInfo(c).remote.address
-  } catch {
-    return undefined
-  }
+  const ip = clientIp(c)
+  return ip === "unknown" ? undefined : ip
 }
 
 function parseFrame(data: unknown): SandboxFrame | undefined {

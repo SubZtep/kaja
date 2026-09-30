@@ -1,4 +1,5 @@
 import dns from "node:dns"
+import { isIP } from "node:net"
 import { isPrivateAddress, isPublicHttpUrl } from "@kaja/shared/net"
 
 const DEFAULT_TIMEOUT_MS = 8_000
@@ -20,20 +21,42 @@ export class ProxyUnavailableError extends Error {
   }
 }
 
+/** The address a checked hop connects to, so the name can't resolve differently between the check and the connection. */
+type Pin = { address: string; family: number }
+
 /**
- * `isPublicHttpUrl` only inspects the literal hostname, so a DNS name that resolves to a private/
- * loopback address (attacker-controlled DNS, or a rebinding attack) sails through it. This resolves
- * the hostname and rejects if any address it comes back with is private — closing that gap for the
- * direct-fetch path. Skipped when a `proxy` is set: the proxy does its own egress resolution/policy,
- * a different trust boundary this check can't see into anyway.
+ * `isPublicHttpUrl` only inspects the literal hostname, so a DNS name that resolves to a private/loopback address
+ * (attacker-controlled DNS) sails through it. This resolves the hostname once and refuses it if any answer is private;
+ * the hop then connects to that very address (see {@link pinned}), so a second lookup that answers differently (DNS
+ * rebinding) never happens. Not used behind a `proxy`: the proxy resolves for itself, a trust boundary this can't see into.
  */
-async function hasOnlyPublicAddresses(hostname: string): Promise<boolean> {
+async function checkedAddress(hostname: string): Promise<Pin | undefined> {
   try {
     const records = await dns.promises.lookup(hostname, { all: true, verbatim: true })
-    return records.length > 0 && records.every(r => !isPrivateAddress(r.address))
+    if (records.length === 0 || records.some(r => isPrivateAddress(r.address))) return undefined
+    return records[0]
   } catch {
-    return false
+    return undefined
   }
+}
+
+/**
+ * The request for a pinned hop: the checked address in the URL, the host kept in `Host` and in `tls.serverName`, so
+ * SNI and the certificate check still name the host (Bun's documented way to connect to an address you resolved).
+ * A name with several addresses gets no fallback to the others.
+ */
+function pinned(
+  url: string,
+  pin: Pin | undefined,
+  headers: HeadersInit | undefined
+): { url: string; init: BunFetchRequestInit } {
+  if (!pin) return { url, init: { headers } }
+  const target = new URL(url)
+  const pinnedHeaders = new Headers(headers)
+  pinnedHeaders.set("host", target.host)
+  const serverName = target.hostname
+  target.hostname = pin.family === 6 ? `[${pin.address}]` : pin.address
+  return { url: target.toString(), init: { headers: pinnedHeaders, tls: { serverName } } }
 }
 
 type HopRequest = { method: string; headers?: Record<string, string>; body?: string }
@@ -43,14 +66,16 @@ async function fetchHop(
   url: string,
   timeoutMs: number,
   proxy: string | undefined,
-  request: HopRequest
+  request: HopRequest,
+  pin: Pin | undefined
 ): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const hop = pinned(url, pin, request.headers)
   try {
-    return await fetch(url, {
+    return await fetch(hop.url, {
+      ...hop.init,
       method: request.method,
-      headers: request.headers,
       body: request.body,
       redirect: "manual",
       signal: controller.signal,
@@ -118,14 +143,25 @@ function requestAfterRedirect(status: number, request: HopRequest): HopRequest {
   return becomesGet(status, request.method) ? { method: "GET", headers: request.headers } : request
 }
 
-/** Throws {@link UnsafeUrlError} unless `url` may be fetched: http(s) only, and (without `allowPrivate`) a public host whose DNS answers are public too (skipped behind a proxy, which resolves for itself). */
-async function assertHopAllowed(url: string, opts: { allowPrivate?: boolean; proxy?: string }): Promise<void> {
+/**
+ * Throws {@link UnsafeUrlError} unless `url` may be fetched: http(s) only, and (without `allowPrivate`) a public host
+ * whose DNS answers are public too. Returns the address the hop must connect to when it looked the name up (not behind
+ * a proxy, which resolves for itself; not for an IP literal, which is what it is).
+ */
+async function assertHopAllowed(
+  url: string,
+  opts: { allowPrivate?: boolean; proxy?: string }
+): Promise<Pin | undefined> {
   if (opts.allowPrivate) {
     if (!isHttpUrl(url)) throw new UnsafeUrlError(url)
-    return
+    return undefined
   }
   if (!isPublicHttpUrl(url)) throw new UnsafeUrlError(url)
-  if (!opts.proxy && !(await hasOnlyPublicAddresses(new URL(url).hostname))) throw new UnsafeUrlError(url)
+  const { hostname } = new URL(url)
+  if (opts.proxy || isIP(hostname) || hostname.startsWith("[")) return undefined
+  const pin = await checkedAddress(hostname)
+  if (!pin) throw new UnsafeUrlError(url)
+  return pin
 }
 
 export type FetchPublicHttpOptions = {
@@ -156,9 +192,9 @@ export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions
   let current = url
   let request: HopRequest = { method: opts?.method ?? "GET", headers: opts?.headers, body: opts?.body }
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    await assertHopAllowed(current, opts ?? {})
+    const pin = await assertHopAllowed(current, opts ?? {})
 
-    const res = await fetchHop(current, timeoutMs, opts?.proxy, request)
+    const res = await fetchHop(current, timeoutMs, opts?.proxy, request, pin)
     const next = redirectTarget(res, current)
     if (next) {
       if (opts?.sameOriginRedirects && new URL(next).origin !== new URL(current).origin) {
@@ -191,8 +227,8 @@ export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number
     let current = String(input)
     let request: RequestInit = init ?? {}
     for (let hop = 0; hop <= maxRedirects; hop++) {
-      await assertHopAllowed(current, opts)
-      const res = await streamHop(current, request, opts.proxy)
+      const pin = await assertHopAllowed(current, opts)
+      const res = await streamHop(current, request, opts.proxy, pin)
       const next = redirectTarget(res, current)
       if (!next) return res
       await res.body?.cancel()
@@ -208,9 +244,15 @@ export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number
 }
 
 // One hop of the guarded fetch: the body is left to stream, redirects aren't followed, and an unreachable proxy fails closed.
-async function streamHop(url: string, request: RequestInit, proxy: string | undefined): Promise<Response> {
+async function streamHop(
+  url: string,
+  request: RequestInit,
+  proxy: string | undefined,
+  pin: Pin | undefined
+): Promise<Response> {
+  const hop = pinned(url, pin, request.headers)
   try {
-    return await fetch(url, { ...request, redirect: "manual", ...(proxy ? { proxy } : {}) })
+    return await fetch(hop.url, { ...request, ...hop.init, redirect: "manual", ...(proxy ? { proxy } : {}) })
   } catch (error) {
     if (proxy && !request.signal?.aborted) throw new ProxyUnavailableError(url, error)
     throw error

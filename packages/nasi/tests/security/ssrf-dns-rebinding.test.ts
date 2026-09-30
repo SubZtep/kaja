@@ -1,4 +1,4 @@
-import { afterAll, afterEach, expect, mock, test } from "bun:test"
+import { afterAll, afterEach, expect, mock, spyOn, test } from "bun:test"
 
 // A public-looking hostname that resolves to a private/metadata address is exactly the case
 // isPublicHttpUrl's literal-hostname check can't catch (DNS rebinding, attacker-controlled DNS).
@@ -38,4 +38,24 @@ test("does not DNS-check when a proxy is set (proxy owns egress resolution)", as
   } finally {
     await origin.stop(true)
   }
+})
+
+test("a checked hop connects to the address it checked, naming the host only in Host and SNI", async () => {
+  // Public for the check, private for anyone who asks again: the rebinding a second lookup would fall for
+  lookup.mockImplementationOnce(async () => [{ address: "203.0.113.9", family: 4 }])
+  const sent: { url: string; init: BunFetchRequestInit }[] = []
+  const fetchSpy = spyOn(globalThis, "fetch").mockImplementation((async (url: string, init: BunFetchRequestInit) => {
+    sent.push({ url, init })
+    return new Response("ok")
+  }) as unknown as typeof fetch)
+  try {
+    const res = await fetchPublicHttp("https://rebind.example.com:8443/page?q=1")
+    expect(await res.text()).toBe("ok")
+  } finally {
+    fetchSpy.mockRestore()
+  }
+  expect(lookup).toHaveBeenCalledTimes(1)
+  expect(sent[0]!.url).toBe("https://203.0.113.9:8443/page?q=1")
+  expect(new Headers(sent[0]!.init.headers).get("host")).toBe("rebind.example.com:8443")
+  expect(sent[0]!.init.tls?.serverName).toBe("rebind.example.com")
 })

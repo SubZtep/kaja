@@ -1,4 +1,5 @@
 import type { Context, MiddlewareHandler, Next } from "hono"
+import { getConnInfo } from "hono/bun"
 import { rateLimiter } from "hono-rate-limiter"
 import type { RouteVariables } from "../types"
 import { env } from "./env"
@@ -14,16 +15,23 @@ export function isRateLimitEnabled(): boolean {
   return true
 }
 
-/** The visitor's IP: the web SSR's vouched one, else what the proxy forwarded; "unknown" without either. */
+/**
+ * The visitor's IP: the web SSR's vouched one, else the first `X-Forwarded-For` entry, else the socket's own address
+ * (a local stack with no proxy); "unknown" without any. The first entry is the client because Disco's Caddy trusts no
+ * proxy by default, so it drops an incoming `X-Forwarded-For` and sets its own. A CDN in front of it (Cloudflare, say)
+ * would make every visitor its edge's IP: that needs Caddy's `trusted_proxies` set to the CDN's ranges first.
+ */
 export function clientIp(c: Context): string {
   const ssrClientIp = trustedSsrClientIp(c.req.raw.headers)
   if (ssrClientIp) return ssrClientIp
-  const forwarded = c.req.header("x-forwarded-for")
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim()
-    if (first) return first
+  const first = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
+  if (first) return first
+  try {
+    return getConnInfo(c).remote.address ?? "unknown"
+  } catch {
+    // No socket behind the request (app.request in tests)
+    return "unknown"
   }
-  return c.req.header("cf-connecting-ip") ?? c.req.header("x-real-ip") ?? "unknown"
 }
 
 function skipWhenDisabled(limiter: MiddlewareHandler): MiddlewareHandler {
