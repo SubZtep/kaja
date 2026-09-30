@@ -57,6 +57,20 @@ nasiRoutes.use("/compact", nasiTurnRateLimiter)
 
 const errorSchema = z.object({ error: z.string() })
 
+/** An `{ error }` JSON response for a route's `responses`. */
+const jsonError = (description: string) => ({ description, content: { "application/json": { schema: errorSchema } } })
+
+/** Everything a route that runs the model can answer besides success (see `knownTurnError`); `conflict` says when it answers 409. */
+const turnErrorResponses = (conflict: string) => ({
+  400: jsonError("Bad request"),
+  401: jsonError("Unauthorized"),
+  404: jsonError("Session not found"),
+  409: jsonError(conflict),
+  500: jsonError("The turn failed unexpectedly"),
+  502: jsonError("The model provider failed"),
+  503: jsonError("No model available")
+})
+
 const turnRoute = createRoute({
   method: "post",
   path: "/turn",
@@ -68,15 +82,7 @@ const turnRoute = createRoute({
   },
   responses: {
     200: { description: "Turn complete", content: { "application/json": { schema: NasiTurnResponseSchema } } },
-    400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
-    409: {
-      description: "`approval` sent, but no tool call is waiting for one",
-      content: { "application/json": { schema: errorSchema } }
-    },
-    502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
-    503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
+    ...turnErrorResponses("`approval` sent, but no tool call is waiting for one")
   }
 })
 
@@ -85,7 +91,7 @@ nasiRoutes.openapi(turnRoute, async c => {
   const body = c.req.valid("json")
   try {
     const result = await runUserTurn(user.id, body)
-    return c.json(result)
+    return c.json(result, 200)
   } catch (error) {
     const known = knownTurnErrorResponse(c, error)
     if (known) return known
@@ -184,11 +190,7 @@ const compactRoute = createRoute({
       description: "Compacted, or `compacted: null` when there was nothing to summarise yet",
       content: { "application/json": { schema: NasiCompactResponseSchema } }
     },
-    400: { description: "Bad request", content: { "application/json": { schema: errorSchema } } },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Session not found", content: { "application/json": { schema: errorSchema } } },
-    502: { description: "The model provider failed", content: { "application/json": { schema: errorSchema } } },
-    503: { description: "No model available", content: { "application/json": { schema: errorSchema } } }
+    ...turnErrorResponses("The session is in a state that can't be compacted")
   }
 })
 
@@ -196,7 +198,7 @@ nasiRoutes.openapi(compactRoute, async c => {
   const user = sessionUser(c)
   const body = c.req.valid("json")
   try {
-    return c.json({ compacted: (await compactUserSession(user.id, body)) ?? null })
+    return c.json({ compacted: (await compactUserSession(user.id, body)) ?? null }, 200)
   } catch (error) {
     const known = knownTurnErrorResponse(c, error)
     if (known) return known
@@ -246,12 +248,15 @@ nasiRoutes.openapi(infoRoute, async c => {
     ...mcpTools
   ]
 
-  return c.json({
-    persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },
-    personas: personas.map(p => ({ id: p.id, label: p.label })),
-    model: result.model.model,
-    tools
-  })
+  return c.json(
+    {
+      persona: { id: persona?.id ?? "default", label: persona?.label ?? "default" },
+      personas: personas.map(p => ({ id: p.id, label: p.label })),
+      model: result.model.model,
+      tools
+    },
+    200
+  )
 })
 
 const personasRoute = createRoute({
@@ -365,5 +370,5 @@ nasiRoutes.openapi(deleteRoute, async c => {
   const { id } = c.req.valid("param")
   const ok = await createPostgresStore(pool, user.id).deleteSession(id)
   if (!ok) return notFound(c, "Session not found")
-  return c.json({ ok: true })
+  return c.json({ ok: true }, 200)
 })

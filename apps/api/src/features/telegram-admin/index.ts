@@ -69,5 +69,5 @@ telegramAdminRoutes.openapi(linkRoute, async c => {
   if (!botUsername) return notFound(c, "Telegram bot is not configured")
 
   const { token } = await telegramLinkService.createLinkToken(user.id)
-  return c.json({ token, botUsername })
+  return c.json({ token, botUsername }, 200)
 })
