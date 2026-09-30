@@ -1,6 +1,6 @@
 {
   "name": "@kaja/nasi",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Kaja agent core: tool loop, sessions, memory, built-in tools",
   "private": true,
   "type": "module",
