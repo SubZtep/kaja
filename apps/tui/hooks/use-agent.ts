@@ -106,7 +106,7 @@ export function useAgent(
     return created
   })
   const sessionRef = useRef<Session>(undefined)
-  if (!sessionRef.current) sessionRef.current = resume ? (resume.session.session as Session) : createSession()
+  if (!sessionRef.current) sessionRef.current = resume ? resume.session.session : createSession()
   // The database row this conversation saves into; undefined until the first save (empty sessions are never recorded).
   const sessionRowIdRef = useRef<string | undefined>(resume?.session.id)
 

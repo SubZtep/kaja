@@ -262,7 +262,7 @@ export class Nasi {
       // Also rejects a session id that belongs to a different owner in the same store — e.g. two widget
       // visitors sharing one account must never resume each other's conversation by guessing/observing a session id.
       if (!row || (row.owner ?? null) !== (this.opts.owner ?? null)) throw new SessionNotFoundError()
-      session = row.session as Session
+      session = row.session
       events = row.events
       title = row.title
       storedPersona = row.persona
