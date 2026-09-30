@@ -28,7 +28,7 @@ export function DialogShell({
   return (
     <>
       <Backdrop className={BACKDROP} />
-      <Popup className={cn(POPUP, "w-[30rem]", className)}>
+      <Popup className={cn(POPUP, "w-120", className)}>
         <div className="paper-card">
           <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto p-6">{children}</div>
         </div>
