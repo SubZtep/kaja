@@ -1,7 +1,8 @@
 import { cn } from "@kaja/shared/ui"
+import { useLoaderData } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { useAuthClient } from "../../../hooks/auth-client"
+import { loadAuthClient } from "../../../hooks/load-auth-client"
 import type { Captcha } from "../../../hooks/turnstile"
 import { m } from "../../../paraglide/messages.js"
 import { localizeHref } from "../../../paraglide/runtime.js"
@@ -42,7 +43,7 @@ export function GoogleButton({
   disabled = false,
   captcha
 }: Readonly<{ className?: string; callbackPath?: string; signUp?: boolean; disabled?: boolean; captcha: Captcha }>) {
-  const authClient = useAuthClient()
+  const { apiUrl } = useLoaderData({ from: "__root__" })
   const [loading, setLoading] = useState(false)
 
   const signIn = async () => {
@@ -50,6 +51,7 @@ export function GoogleButton({
     try {
       // absolute URLs: a relative one would resolve against the API origin
       const { origin } = window.location
+      const authClient = await loadAuthClient(apiUrl)
       const { error: authError } = await authClient.signIn.social({
         provider: "google",
         callbackURL: new URL(localizeHref(callbackPath), origin).toString(),

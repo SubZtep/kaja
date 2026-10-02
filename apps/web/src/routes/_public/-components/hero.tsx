@@ -1,5 +1,5 @@
 import { cn } from "@kaja/shared/ui"
-import { Link, useLoaderData } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { Turnstile, useTurnstile } from "../../../hooks/turnstile"
@@ -45,10 +45,11 @@ function greeting(part: DayPart | null, name: string | undefined) {
 }
 
 export function Hero() {
-  const { apiUrl, chatWidgetKey } = useLoaderData({ from: "__root__" })
   const user = useUser()
   const captcha = useTurnstile()
   const [copied, setCopied] = useState(false)
+  // The animated face follows the mouse, so phones and tablets keep the plain gif and never download it
+  const [finePointer, setFinePointer] = useState(false)
   const [faceReady, setFaceReady] = useState(false)
   const onFaceReady = useCallback(() => setFaceReady(true), [])
   const monsterRef = useRef<HTMLDivElement>(null)
@@ -59,6 +60,7 @@ export function Hero() {
 
   useEffect(() => {
     setOs(detectInstallOs())
+    setFinePointer(matchMedia("(pointer: fine)").matches)
     setPart(dayPart(new Date().getHours()))
   }, [])
 
@@ -76,18 +78,6 @@ export function Hero() {
       root.removeAttribute("data-hero-monster")
     }
   }, [])
-
-  // Embeds the standalone chat widget bubble so the carousel "Chat" tile has somewhere to go.
-  useEffect(() => {
-    if (!chatWidgetKey) return
-    const script = document.createElement("script")
-    script.async = true
-    script.src = `${apiUrl}/widget/${chatWidgetKey}.js`
-    document.body.appendChild(script)
-    return () => {
-      script.remove()
-    }
-  }, [apiUrl, chatWidgetKey])
 
   const copyInstall = () => {
     navigator.clipboard?.writeText(installCmd)
@@ -136,7 +126,7 @@ export function Hero() {
           </p>
         </div>
 
-        <div className="order-last min-w-0 md:order-none md:col-start-1 md:row-start-2 [&>:first-child]:mt-0">
+        <div className="order-last min-w-0 md:order-0 md:col-start-1 md:row-start-2 *:first:mt-0">
           {user ? null : (
             <div className="mt-8 max-w-md flex flex-col gap-4">
               <Turnstile captcha={captcha} />
@@ -166,7 +156,7 @@ export function Hero() {
           <div className="mt-10 max-w-xl">{user ? <TelegramConnectCta /> : <TelegramPromo />}</div>
 
           <div className="relative mt-8 max-w-xl">
-            <div className="mb-2 flex gap-1" role="group" aria-label={m.install_title()}>
+            <fieldset className="mb-2 flex gap-1" aria-label={m.install_title()}>
               {(["unix", "windows"] as const).map(key => (
                 <button
                   key={key}
@@ -184,7 +174,7 @@ export function Hero() {
                   {key === "unix" ? m.install_mac_linux_label() : m.install_windows_label()}
                 </button>
               ))}
-            </div>
+            </fieldset>
             <Sticker rotate={8} className="absolute -top-1 right-2 z-1 text-[10px]">
               {m.install_linux_note()}
             </Sticker>
@@ -229,9 +219,11 @@ export function Hero() {
               )}
               style={{ imageRendering: "pixelated" }}
             />
-            <Suspense fallback={null}>
-              <MonsterFace className="absolute inset-0" onReady={onFaceReady} />
-            </Suspense>
+            {finePointer ? (
+              <Suspense fallback={null}>
+                <MonsterFace className="absolute inset-0" onReady={onFaceReady} />
+              </Suspense>
+            ) : null}
             <Sticker tone="neon" rotate={-11} className="absolute -bottom-1 -left-3 text-[11px]">
               kaja
             </Sticker>

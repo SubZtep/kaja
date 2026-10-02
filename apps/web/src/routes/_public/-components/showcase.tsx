@@ -11,11 +11,32 @@ import { Sticker } from "./sticker"
 // The centred card leaves a sliver of each neighbour showing at the edges
 const SLOT = "flex w-[84%] shrink-0 snap-center flex-col gap-2"
 
-function openChatWidget(configured: boolean) {
+let chatWidget: Promise<void> | undefined
+
+/** The standalone chat widget's script, fetched on the first tap of the Chat card rather than with the page; it builds its bubble as soon as it runs. */
+function loadChatWidget(src: string) {
+  chatWidget ??= new Promise((resolve, reject) => {
+    const script = document.createElement("script")
+    script.async = true
+    script.src = src
+    script.onload = () => resolve()
+    script.onerror = () => {
+      // A failed download may be retried with the next tap
+      script.remove()
+      chatWidget = undefined
+      reject(new Error(`Could not load ${src}`))
+    }
+    document.body.appendChild(script)
+  })
+  return chatWidget
+}
+
+async function openChatWidget(apiUrl: string, widgetKey: string | undefined) {
+  if (widgetKey) await loadChatWidget(`${apiUrl}/widget/${widgetKey}.js`).catch(() => {})
   const bubble = document.querySelector<HTMLButtonElement>(".kaja-widget-bubble")
   const panel = document.querySelector<HTMLElement>(".kaja-widget-panel")
-  if (!configured || !bubble) {
-    toast.info(configured ? m.carousel_chat_missing() : m.carousel_demo_missing())
+  if (!widgetKey || !bubble) {
+    toast.info(widgetKey ? m.carousel_chat_missing() : m.carousel_demo_missing())
     return
   }
   if (panel?.hidden !== false) bubble.click()
@@ -86,7 +107,7 @@ function ToyCard({
 
 /** Infinite snap carousel of live toys and coming-soon tiles, sized to its column (the hero's right side): the current card sits centered with both neighbours peeking in. */
 export function Showcase() {
-  const { barkochbaWidgetKey, chatWidgetKey } = useLoaderData({ from: "__root__" })
+  const { apiUrl, barkochbaWidgetKey, chatWidgetKey } = useLoaderData({ from: "__root__" })
   const scroller = useRef<HTMLDivElement>(null)
 
   const toys: { key: string; node: ReactNode }[] = [
@@ -125,7 +146,7 @@ export function Showcase() {
           live={Boolean(chatWidgetKey)}
           title={m.carousel_chat_title()}
           meta={m.carousel_chat_meta()}
-          onClick={() => openChatWidget(Boolean(chatWidgetKey))}
+          onClick={() => openChatWidget(apiUrl, chatWidgetKey)}
         />
       )
     },

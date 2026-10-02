@@ -1,7 +1,6 @@
 import silkscreenBold from "@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff2?url"
 import syneRegular from "@fontsource/syne/files/syne-latin-400-normal.woff2?url"
 import syneExtraBold from "@fontsource/syne/files/syne-latin-800-normal.woff2?url"
-import * as Sentry from "@sentry/tanstackstart-react"
 import type { QueryClient } from "@tanstack/react-query"
 import {
   createRootRouteWithContext,
@@ -14,6 +13,7 @@ import {
 import { useEffect } from "react"
 import { keepsLinkLanguage, LocaleSync } from "../components/LocaleSync"
 import { Providers } from "../components/Providers"
+import { captureError } from "../lib/sentry"
 import { getSession } from "../lib/session"
 import { getPageTitle, getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
@@ -40,7 +40,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     try {
       session = await getSession()
     } catch (err) {
-      Sentry.captureException(err)
+      captureError(err)
       sessionError = true
     }
     // A signed-in user's saved language, before anything renders; in the browser LocaleSync does it (a full reload).
@@ -209,7 +209,7 @@ function NotFound() {
 
 function DefaultError({ error: err }: ErrorComponentProps) {
   useEffect(() => {
-    Sentry.captureException(err)
+    captureError(err)
   }, [err])
 
   return (

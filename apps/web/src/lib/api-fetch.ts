@@ -1,7 +1,7 @@
-import * as Sentry from "@sentry/tanstackstart-react"
 import { useLoaderData } from "@tanstack/react-router"
 import { useCallback } from "react"
-import { useAuthClient } from "../hooks/auth-client"
+import { loadAuthClient } from "../hooks/load-auth-client"
+import { captureError } from "./sentry"
 
 async function apiFetch<T = unknown>(
   apiUrl: string,
@@ -24,7 +24,7 @@ async function apiFetch<T = unknown>(
     try {
       body = JSON.stringify(payload)
     } catch (err) {
-      Sentry.captureException(err)
+      captureError(err)
     }
   }
 
@@ -47,18 +47,23 @@ async function apiFetch<T = unknown>(
 
 /** Bound `apiFetch` using the current API base URL and Better Auth session token. */
 export function useApiFetch() {
-  const { apiUrl } = useLoaderData({ from: "__root__" })
-  const authClient = useAuthClient()
+  const { apiUrl, session } = useLoaderData({ from: "__root__" })
+  const signedIn = Boolean(session)
 
   return useCallback(
     <T = unknown>(path: string, payload?: unknown, options?: RequestInit) =>
       apiFetch<T>(
         apiUrl,
-        async () => (await authClient.getSession()).data?.session?.token ?? null,
+        async () => {
+          // A visitor has no token, so public calls (the landing's) skip the auth client and its session lookup
+          if (!signedIn) return null
+          const authClient = await loadAuthClient(apiUrl)
+          return (await authClient.getSession()).data?.session?.token ?? null
+        },
         path,
         payload,
         options
       ),
-    [apiUrl, authClient]
+    [apiUrl, signedIn]
   )
 }
