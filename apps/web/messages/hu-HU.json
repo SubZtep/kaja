@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
-  "site_og_image_alt": "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+  "site_og_description": "Nyílt forráskódú AI-ügynök, amely böngészik a weben, emlékszik rád és új trükköket tanul. Használd böngészőben, Telegramon vagy a terminálban, helyben vagy a felhőben.",
+  "site_og_image_alt": "Kaja: nyílt forráskódú AI-ügynök. Böngészik a weben, emlékszik rád, új trükköket tanul. A weben, Telegramon és a terminálban a kaja.io-n.",
   "not_found_message": "Sajnáljuk, ez az oldal nem létezik.",
   "nav_home": "Kezdőlap",
   "nav_sign_in": "Bejelentkezés",

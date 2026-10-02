@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
-  "site_og_image_alt": "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+  "site_og_description": "開源ê AI 代理，會曉看網頁、會記得你，閣會學新ê本事。會使佇瀏覽器、Telegram 抑是終端機內底用，本機抑是雲端攏會使。",
+  "site_og_image_alt": "Kaja：開源ê AI 代理。看網頁、記得你、學新本事。佇 kaja.io 用網頁、Telegram 佮終端機。",
   "not_found_message": "歹勢，這个頁面無存在。",
   "nav_home": "頭頁",
   "nav_sign_in": "登入",

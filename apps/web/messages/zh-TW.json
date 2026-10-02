@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
-  "site_og_image_alt": "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+  "site_og_description": "開源 AI 代理，能瀏覽網頁、記住你，還會學習新技能。可在瀏覽器、Telegram 或終端機中使用，本機或雲端皆可。",
+  "site_og_image_alt": "Kaja：開源 AI 代理。瀏覽網頁、記住你、學習新技能。在 kaja.io 透過網頁、Telegram 和終端機使用。",
   "not_found_message": "抱歉，這個頁面不存在。",
   "nav_home": "首頁",
   "nav_sign_in": "登入",
