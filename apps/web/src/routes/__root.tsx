@@ -13,7 +13,7 @@ import {
 import { useEffect } from "react"
 import { keepsLinkLanguage, LocaleSync } from "../components/LocaleSync"
 import { Providers } from "../components/Providers"
-import { captureError } from "../lib/sentry"
+import { captureError, loadSentry } from "../lib/sentry"
 import { getSession } from "../lib/session"
 import { getPageTitle, getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
@@ -166,6 +166,11 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const ogLocale = OG_LOCALE[locale]
   // The session, sandbox and widget requests all go to the API origin
   const apiUrl = Route.useLoaderData({ select: data => data.apiUrl })
+
+  // Sentry starts right after hydration: off the first paint, yet early enough to catch what goes wrong next
+  useEffect(() => {
+    loadSentry()
+  }, [])
 
   return (
     // The Open Graph namespace (ogp.me); spread, since the RDFa `prefix` attribute isn't in every linter's list of HTML attributes

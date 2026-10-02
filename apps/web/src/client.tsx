@@ -1,17 +1,27 @@
 import { StartClient } from "@tanstack/react-start/client"
 import { StrictMode, startTransition } from "react"
 import { hydrateRoot } from "react-dom/client"
-import { loadSentry } from "./lib/sentry"
+import { captureError, type ReactErrorKind } from "./lib/sentry"
+
+// Keeps React's console output, then hands the error to Sentry, which loads on the spot if it hasn't started yet
+const reportTo = (kind: ReactErrorKind) => (error: unknown, info: { componentStack?: string | null }) => {
+  console.error(error)
+  captureError(error, { kind, componentStack: info.componentStack })
+}
 
 startTransition(() => {
   hydrateRoot(
     document,
     <StrictMode>
       <StartClient />
-    </StrictMode>
+    </StrictMode>,
+    // Production only: dev keeps React's own handlers and overlay (and never starts Sentry)
+    import.meta.env.PROD
+      ? {
+          onUncaughtError: reportTo("uncaught"),
+          onCaughtError: reportTo("caught"),
+          onRecoverableError: reportTo("recoverable")
+        }
+      : undefined
   )
 })
-
-// Sentry starts once the page is idle, so it never competes with the first paint; an error before then loads it on the spot (captureError)
-if ("requestIdleCallback" in window) requestIdleCallback(() => loadSentry(), { timeout: 4000 })
-else setTimeout(loadSentry, 2000)
