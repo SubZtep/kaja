@@ -3,6 +3,7 @@ import { type AbilitiesFile, AbilitiesFileSchema, type AbilitiesSource } from "@
 import { file, TOML, write } from "bun"
 import { getConfigDir, readConfigLoose } from "../config/config"
 import { t } from "../i18n"
+import { syncedAbilityPaths } from "./sync"
 
 /** Where `kaja abilities update` fetches from unless abilities.toml's [source] says otherwise: this repo's marketplace/ folder on main. */
 export const DEFAULT_SOURCE: Required<AbilitiesSource> = { url: "https://github.com/SubZtep/kaja.git", ref: "main" }
@@ -18,6 +19,16 @@ export function getAbilitiesPath() {
 /** Holds every ability, synced from the marketplace or your own; abilities.toml decides which of them load. */
 export function getMarketplaceDir() {
   return join(getConfigDir(), "marketplace")
+}
+
+/** Your own skills and personas: in the marketplace folder but not written by the sync, so they load without an abilities.toml entry (rename or move one to switch it off). Broken ones are listed too, so loading them warns. */
+export async function ownAbilities(root = getMarketplaceDir()): Promise<{ skills: string[]; personas: string[] }> {
+  const { scanPersonas, scanSkills } = await import("@kaja/nasi")
+  const synced = await syncedAbilityPaths(root)
+  return {
+    skills: (await scanSkills(root)).map(s => s.name).filter(name => !synced.has(`skills/${name}`)),
+    personas: (await scanPersonas(root)).map(s => s.name).filter(name => !synced.has(`personas/${name}.toml`))
+  }
 }
 
 /** settings.toml's `[marketplace]`, both switches on unless turned off. Tolerant of a broken file, like the wizard prefill. */

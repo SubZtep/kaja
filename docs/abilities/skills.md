@@ -41,8 +41,9 @@ Other frontmatter keys (`license`, `metadata` and so on) are allowed and ignored
 
 ## Writing your own
 
-Create the folder under `~/.config/kaja/marketplace/skills/`, then turn it on with `kaja abilities`, where
-your own skills are tagged `local`. A skill with missing or broken frontmatter is listed with the reason,
+Create the folder under `~/.config/kaja/marketplace/skills/` and it loads on the next start, no
+`abilities.toml` entry needed (rename or move the folder to switch it off). `kaja abilities` lists your own
+skills apart, tagged `local`. A skill with missing or broken frontmatter is listed with the reason,
 and the others still load.
 
 ## How the model uses them

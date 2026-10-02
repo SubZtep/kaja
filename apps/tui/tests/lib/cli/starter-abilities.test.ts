@@ -38,8 +38,11 @@ test("a machine that already has abilities on is left exactly as it was", async 
 })
 
 test("an empty machine gets the keyless starter set", async () => {
-  // A lock file marks the marketplace as already synced, so nothing is cloned.
-  await write(join(getMarketplaceDir(), ".sync-lock.json"), JSON.stringify({ files: {} }))
+  // A lock file marks the marketplace as already synced, so nothing is cloned; it records the skill as synced, not your own.
+  await write(
+    join(getMarketplaceDir(), ".sync-lock.json"),
+    JSON.stringify({ files: { "skills/meeting-notes/SKILL.md": "synced" } })
+  )
   await write(
     join(getMarketplaceDir(), "skills/meeting-notes/SKILL.md"),
     "---\nname: meeting-notes\ndescription: Summarise meeting notes.\n---\n\n# Meeting notes\n"

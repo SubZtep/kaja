@@ -8,8 +8,8 @@ summary: "abilities.toml: which abilities load."
 
 # abilities.toml
 
-Which [abilities](/abilities) load in local mode. Files in `~/.config/kaja/marketplace/`, synced or your own,
-load only when listed here. `kaja abilities` writes it as a checklist, and you can edit it by hand.
+Which [abilities](/abilities) load in local mode. Synced files in `~/.config/kaja/marketplace/` load only
+when listed here. `kaja abilities` writes it as a checklist, and you can edit it by hand.
 
 ```toml
 # Skills, by folder name: marketplace/skills/<name>/SKILL.md
@@ -26,6 +26,8 @@ personas = ["care", "barkochba"]
 ```
 
 - `default` is always loaded and needn't be listed.
+- Skills and personas you added yourself (ones the sync didn't write) always load and needn't be listed. To
+  switch one off, rename or move its file. Your own tools and MCP servers still need listing.
 - Datasets aren't listed. Every one in the folder is available to the personas that name it.
 - A listed ability that's missing or broken is skipped with a warning, and the rest still load.
 - The [local Telegram bot](/using/telegram#local-bot) reads this once at start, so restart it after a change.

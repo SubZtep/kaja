@@ -9,7 +9,10 @@ function scan(): MarketplaceScan {
       { name: "meeting-notes", type: "skill", local: false },
       { name: "broken-skill", type: "skill", local: false, error: "no SKILL.md" }
     ],
-    personas: [{ name: "care", type: "persona", local: false }],
+    personas: [
+      { name: "care", type: "persona", local: false },
+      { name: "so", type: "persona", local: true, alwaysOn: true }
+    ],
     tools: [
       { name: "open-meteo", type: "tool", local: false },
       { name: "paid-api", type: "tool", local: false, key: "required" }
@@ -41,4 +44,8 @@ test("a keyless stdio MCP server is still left out", () => {
 
 test("broken entries are skipped", () => {
   expect(starterSelection(scan()).skills).not.toContain("broken-skill")
+})
+
+test("your own skills and personas are left out: they load anyway", () => {
+  expect(starterSelection(scan()).personas).not.toContain("so")
 })

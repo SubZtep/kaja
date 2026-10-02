@@ -215,6 +215,7 @@ pickerHint          = "Szóköz: kijelölés, Enter: mentés, Esc: mégse. A ké
 local               = "saját"
 empty               = "Még nincs képesség. Futtasd a `kaja abilities update` parancsot, vagy tegyél sajátot a marketplace/skills/, personas/, tools/ vagy mcp/ mappába."
 invalidTitle        = "Nem tölthető be (javítsd, majd futtasd újra a `kaja abilities` parancsot):"
+ownTitle            = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
 notTty              = "A betöltendő képességeket itt módosíthatod: {path}, vagy futtasd a `kaja abilities` parancsot egy terminálban."
 cancelled           = "Nem változott semmi."
 saved               = "Mentve: {path}, {count} képesség bekapcsolva."

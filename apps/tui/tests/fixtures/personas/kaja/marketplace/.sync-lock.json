@@ -1,0 +1,9 @@
+{
+  "files": {
+    "personas/barkochba.toml": "fixture",
+    "personas/broken.toml": "fixture",
+    "personas/default.toml": "fixture",
+    "personas/unknown-model.toml": "fixture",
+    "personas/unlisted.toml": "fixture"
+  }
+}

@@ -8,7 +8,7 @@ import {
   setDatasetLoaders
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
-import { getMarketplaceDir, loadAbilitiesFile } from "../lib/abilities/abilities-file"
+import { getMarketplaceDir, loadAbilitiesFile, ownAbilities } from "../lib/abilities/abilities-file"
 import { getConfigDir } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
 import { secrets } from "../lib/config/secrets"
@@ -39,11 +39,13 @@ export async function getDefaultTools(personas: Persona[]) {
     : undefined
 
   const abilitiesFile = await loadAbilitiesFile()
+  // Your own skill folders load without an abilities.toml entry, like your own personas.
+  const skills = [...new Set([...abilitiesFile.skills, ...(await ownAbilities()).skills])]
   const { abilities: abilitySecrets } = await secrets()
   const abilities = await loadAbilities(
     createFolderAbilityStore({
       root: getMarketplaceDir(),
-      enabled: { skills: abilitiesFile.skills, tools: abilitiesFile.tools, mcp: abilitiesFile.mcp },
+      enabled: { skills, tools: abilitiesFile.tools, mcp: abilitiesFile.mcp },
       disabledTools: abilitiesFile.disabledTools
     }),
     {

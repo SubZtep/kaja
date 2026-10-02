@@ -12,7 +12,9 @@ A persona is a named character the assistant can switch into: its own instructio
 model and sampling. Each one is a file, `~/.config/kaja/marketplace/personas/<id>.toml`, and the file name
 is the persona's id.
 
-`default` is always on. The others load when you turn them on (see [Abilities](/abilities)). A fresh
+`default` is always on. The marketplace's others load when you turn them on (see [Abilities](/abilities)).
+A persona file you add yourself loads on the next start without that, and the persona picker shows it in a
+different colour; rename or move the file to switch it off. A fresh
 install has `default` built in, and a `default.toml` in the folder (the marketplace brings one) replaces it.
 
 ```toml

@@ -17,6 +17,7 @@ const VISIBLE_COUNT = 5
 export function SelectMenu({
   items,
   hints,
+  accented,
   width = 32,
   initialIndex,
   plain,
@@ -28,6 +29,8 @@ export function SelectMenu({
   items: string[]
   /** Dimmed note pinned to the right edge of each row, e.g. a locale's code beside its name. */
   hints?: string[]
+  /** Rows drawn in the accent colour while not focused, e.g. your own personas in the persona picker. */
+  accented?: boolean[]
   width?: number
   /** Option highlighted on open, for menus that re-offer a current value; defaults to the first. */
   initialIndex?: number
@@ -75,7 +78,7 @@ export function SelectMenu({
     if (key.return) onSelect(focused)
   })
 
-  const { focus, frame } = useKajaTheme()
+  const { accent, focus, frame } = useKajaTheme()
   const focusProps = plain ? { bold: true } : focus()
 
   return (
@@ -85,6 +88,7 @@ export function SelectMenu({
           const index = from + offset
           const isFocused = index === focused
           const hint = hints?.[index]
+          const accentRow = !plain && !isFocused && accented?.[index]
           return (
             <Box
               key={index}
@@ -97,7 +101,9 @@ export function SelectMenu({
             >
               <Box gap={1}>
                 {isFocused && <Text {...focusProps}>❯</Text>}
-                <Text {...(isFocused ? focusProps : {})}>{item}</Text>
+                <Text {...(isFocused ? focusProps : {})} {...(accentRow ? accent() : {})}>
+                  {item}
+                </Text>
               </Box>
               {hint !== undefined && <Text dimColor>{hint}</Text>}
             </Box>

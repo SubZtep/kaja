@@ -14,13 +14,14 @@ function keyNeed(auth?: AbilityKeyNeed): PickerItem["key"] {
 export async function scanMarketplace(marketplaceDir: string) {
   const { scanHttpTools, scanMcpAbilities, scanPersonas, scanSkills } = await import("@kaja/nasi")
   const { DEFAULT_PERSONA_ID } = await import("../personas/personas")
-  const { readSyncLock } = await import("./sync")
-  const lockedPaths = Object.keys((await readSyncLock(marketplaceDir))?.files ?? {})
-  const synced = new Set(lockedPaths.map(path => path.split("/").slice(0, 2).join("/")))
+  const { syncedAbilityPaths } = await import("./sync")
+  const synced = await syncedAbilityPaths(marketplaceDir)
+  // Your own skills and personas load without an abilities.toml entry, so they're always on.
+  const own = (path: string) => ({ local: !synced.has(path), alwaysOn: !synced.has(path) })
   const skills = (await scanSkills(marketplaceDir)).map(s => ({
     ...s,
     type: "skill" as const,
-    local: !synced.has(`skills/${s.name}`)
+    ...own(`skills/${s.name}`)
   }))
   // default always loads, so there's nothing to pick.
   const personas = (await scanPersonas(marketplaceDir))
@@ -29,7 +30,7 @@ export async function scanMarketplace(marketplaceDir: string) {
       ...s,
       description: label,
       type: "persona" as const,
-      local: !synced.has(`personas/${s.name}.toml`)
+      ...own(`personas/${s.name}.toml`)
     }))
   const toolScan = await scanHttpTools(marketplaceDir)
   const tools = toolScan.map(({ auth, ...s }) => ({
@@ -57,14 +58,16 @@ export function allItems(scan: MarketplaceScan): PickerItem[] {
 /**
  * The setup wizard's recommended starter set: everything that works with no key of its own and
  * without running anything on this machine. Skills and personas always qualify — they have no
- * credentials. A tool or MCP server qualifies when it needs no key or the key is optional.
+ * credentials. A tool or MCP server qualifies when it needs no key or the key is optional. Your own skills and
+ * personas are left out: they load anyway.
  *
  * stdio MCP servers are deliberately excluded even when keyless: enabling one spawns a process
  * locally, which belongs behind {@link confirmStdioServers} in `kaja abilities`, not in a set the
  * user accepts with one keystroke. Broken entries are skipped — they can't load anyway.
  */
 export function starterSelection(scan: MarketplaceScan): PickerSelection {
-  const usable = <T extends { error?: string }>(items: T[]) => items.filter(item => !item.error)
+  const usable = <T extends { error?: string; alwaysOn?: boolean }>(items: T[]) =>
+    items.filter(item => !item.error && !item.alwaysOn)
   return {
     skills: usable(scan.skills).map(s => s.name),
     personas: usable(scan.personas).map(s => s.name),
