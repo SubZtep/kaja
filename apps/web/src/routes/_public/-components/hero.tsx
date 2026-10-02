@@ -75,7 +75,7 @@ export function Hero() {
     observer.observe(el)
     return () => {
       observer.disconnect()
-      root.removeAttribute("data-hero-monster")
+      delete root.dataset.heroMonster
     }
   }, [])
 

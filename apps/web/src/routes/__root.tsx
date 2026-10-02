@@ -170,7 +170,7 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
 
   // Sentry starts right after hydration: off the first paint, yet early enough to catch what goes wrong next
   useEffect(() => {
-    loadSentry()
+    loadSentry().catch(() => {})
   }, [])
 
   return (
