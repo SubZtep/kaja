@@ -12,8 +12,16 @@ export const getRootEnv = createServerFn().handler(() => {
 
 const isWin32 = () => typeof navigator !== "undefined" && navigator.userAgent.includes("Windows")
 
-export const getInstallCmd = () =>
-  isWin32() ? "irm https://kaja.io/install.ps1 | iex" : "curl -fsSL https://kaja.io/install.sh | bash"
+/** One-line CLI installers, by platform. */
+export const INSTALL_CMD = {
+  unix: "curl -fsSL https://kaja.io/install.sh | bash",
+  windows: "irm https://kaja.io/install.ps1 | iex"
+} as const
+
+export type InstallOs = keyof typeof INSTALL_CMD
+
+/** The visitor's installer platform (client only; the server always gets `unix`). */
+export const detectInstallOs = (): InstallOs => (isWin32() ? "windows" : "unix")
 
 export function getPageTitle(title?: string) {
   return title ? `${title} • Kaja` : "Kaja"

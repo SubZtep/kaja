@@ -551,7 +551,7 @@
 @utility toy-card {
   position: relative;
   display: flex;
-  width: min(100%, 22rem);
+  width: 100%;
   flex-shrink: 0;
   scroll-snap-align: start;
   flex-direction: column;

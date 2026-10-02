@@ -8,9 +8,8 @@ import { toast } from "react-toastify"
 import { Button } from "../../../components/form/primitives/Button"
 import { useApiFetch } from "../../../lib/api-fetch"
 import { m } from "../../../paraglide/messages.js"
-import { Sticker } from "./sticker"
 
-/** Signed-in CTA: one-time Telegram deep link via the existing link API. */
+/** Signed-in banner: one-time Telegram deep link via the existing link API. */
 export function TelegramConnectCta({ className }: Readonly<{ className?: string }>) {
   const apiFetch = useApiFetch()
   const [link, setLink] = useState<string | null>(null)
@@ -22,20 +21,23 @@ export function TelegramConnectCta({ className }: Readonly<{ className?: string 
   })
 
   return (
-    <div className={className}>
-      <p className="mb-3 font-display text-fg text-sm">{m.telegram_cta_hint()}</p>
-      <Button
-        type="button"
-        variant="primary"
-        className="w-full gap-2 rounded-none! font-stamp text-xs uppercase tracking-wide"
-        loading={createLink.isPending}
-        onClick={() => createLink.mutate()}
-      >
-        <Send size={16} />
-        {m.telegram_cta()}
-      </Button>
+    <div className={cn("crt-frame w-full px-4 py-3", className)}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <Send size={20} className="shrink-0 text-neon" />
+        <p className="m-0 min-w-0 flex-1 font-display text-fg text-sm">{m.telegram_cta_hint()}</p>
+        <Button
+          type="button"
+          variant="primary"
+          className="gap-2 rounded-none! font-stamp text-xs uppercase tracking-wide"
+          loading={createLink.isPending}
+          onClick={() => createLink.mutate()}
+        >
+          <Send size={16} />
+          {m.telegram_cta()}
+        </Button>
+      </div>
       {link ? (
-        <div className="crt-frame mt-3 px-3 py-2.5">
+        <div className="mt-3 border-border border-t pt-2.5">
           <p className="mb-1.5 text-[12px] text-muted">{m.telegram_cta_notice()}</p>
           <a href={link} target="_blank" rel="noreferrer" className="break-all font-crt text-neon text-sm">
             {link}
@@ -49,7 +51,7 @@ export function TelegramConnectCta({ className }: Readonly<{ className?: string 
 const IDLE_GAPS_MS = [9000, 6500, 13000, 7500, 15000, 11000]
 const SPIN_DURATIONS_MS = [1000, 1800, 2500, 3000, 1400, 2200]
 
-/** Signed-out promo: the desktop hero column under the monster, and on phones under the install line. */
+/** Signed-out banner under the hero's install line; the plane takes an occasional spin. */
 export function TelegramPromo({ className }: Readonly<{ className?: string }>) {
   const [isSpinning, setIsSpinning] = useState(false)
 
@@ -84,14 +86,13 @@ export function TelegramPromo({ className }: Readonly<{ className?: string }>) {
   }, [])
 
   return (
-    <div className={cn("crt-frame w-full max-w-64 px-4 py-4", className)}>
-      <Sticker tone="neon" rotate={-4} className="mb-3 text-[10px]">
-        {m.feature_telegram_title()}
-      </Sticker>
-      <p className="m-0 font-display font-extrabold text-fg text-lg leading-tight">{m.hero_telegram_title()}</p>
-      <p className="mt-2 mb-4 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
-      <Link to="/signin" className="inline-flex items-center gap-1.5 font-stamp text-[11px] text-neon uppercase">
-        <Send size={12} className={isSpinning ? "animate-spin" : undefined} />
+    <div className={cn("crt-frame flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", className)}>
+      <Send size={20} className={cn("shrink-0 text-neon", isSpinning && "animate-spin")} />
+      <div className="min-w-52 flex-1">
+        <p className="m-0 font-display font-extrabold text-fg text-base leading-tight">{m.hero_telegram_title()}</p>
+        <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
+      </div>
+      <Link to="/signin" className="font-stamp text-[11px] text-neon uppercase">
         {m.hero_telegram_action()}
       </Link>
     </div>
