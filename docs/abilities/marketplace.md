@@ -57,8 +57,9 @@ applies on the next launch. You can turn both off in [`[marketplace]`](/configur
 To fetch from a fork, a branch or a local checkout, set [`[source]`](/configuration/abilities#source).
 
 `kaja abilities` is a checklist of everything in the folder (space toggles, Enter saves). It writes
-[`abilities.toml`](/configuration/abilities), and only what's listed there loads, your own abilities
-included. Anything that needs a key asks for it, and a stdio MCP server shows its command before you
+[`abilities.toml`](/configuration/abilities), and only what's listed there loads. Your own skills and
+personas are the exception: they always load, and the picker lists them apart (rename or move the file to
+switch one off). Your own tools and MCP servers are in the checklist like the rest. Anything that needs a key asks for it, and a stdio MCP server shows its command before you
 enable it. A file that fails to load is skipped with the reason and never stops the rest.
 
 Local mode is the most permissive: skills with scripts, stdio MCP servers and hosts on your own network all

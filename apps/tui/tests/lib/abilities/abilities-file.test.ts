@@ -7,8 +7,15 @@ process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-abilities-file`
 
 const { createFolderAbilityStore, loadAbilities } = await import("@kaja/nasi")
 const { getConfigDir } = await import("../../../lib/config/config")
-const { getMarketplaceDir, getAbilitiesPath, loadAbilitiesFile, resolveSource, saveAbilitiesFile, DEFAULT_SOURCE } =
-  await import("../../../lib/abilities/abilities-file")
+const {
+  getMarketplaceDir,
+  getAbilitiesPath,
+  loadAbilitiesFile,
+  ownAbilities,
+  resolveSource,
+  saveAbilitiesFile,
+  DEFAULT_SOURCE
+} = await import("../../../lib/abilities/abilities-file")
 
 afterEach(() => {
   rmSync(getConfigDir(), { recursive: true, force: true })
@@ -55,4 +62,24 @@ test("startup's ability loading uses no network and no git", async () => {
     fetchSpy.mockRestore()
     spawnSpy.mockRestore()
   }
+})
+
+test("your own skills and personas are the ones the last sync didn't write", async () => {
+  const root = getMarketplaceDir()
+  put(join(root, "skills/synced/SKILL.md"), "---\nname: synced\ndescription: Synced.\n---\nBody\n")
+  put(join(root, "skills/mine/SKILL.md"), "---\nname: mine\ndescription: Mine.\n---\nBody\n")
+  put(join(root, "personas/care.toml"), `label = "Care"\ninstructions = "Synced."\n`)
+  put(join(root, "personas/so.toml"), `label = "Mine"\ninstructions = "Mine."\n`)
+  put(
+    join(root, ".sync-lock.json"),
+    JSON.stringify({ files: { "skills/synced/SKILL.md": "x", "personas/care.toml": "x" } })
+  )
+  expect(await ownAbilities()).toEqual({ skills: ["mine"], personas: ["so"] })
+})
+
+test("with no sync lock, everything on disk is your own", async () => {
+  const root = getMarketplaceDir()
+  put(join(root, "skills/mine/SKILL.md"), "---\nname: mine\ndescription: Mine.\n---\nBody\n")
+  put(join(root, "personas/so.toml"), `label = "Mine"\ninstructions = "Mine."\n`)
+  expect(await ownAbilities()).toEqual({ skills: ["mine"], personas: ["so"] })
 })

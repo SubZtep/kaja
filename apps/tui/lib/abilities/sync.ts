@@ -34,6 +34,12 @@ export async function readSyncLock(marketplaceDir: string): Promise<SyncLock | u
   }
 }
 
+/** The abilities the last sync wrote, as `skills/<name>` or `personas/<id>.toml` (a file's first two path parts); anything else on disk is your own. */
+export async function syncedAbilityPaths(marketplaceDir: string): Promise<Set<string>> {
+  const lockedPaths = Object.keys((await readSyncLock(marketplaceDir))?.files ?? {})
+  return new Set(lockedPaths.map(path => path.split("/").slice(0, 2).join("/")))
+}
+
 async function hashFile(path: string): Promise<string | undefined> {
   try {
     return createHash("sha256")

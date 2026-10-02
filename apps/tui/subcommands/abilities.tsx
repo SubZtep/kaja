@@ -113,10 +113,11 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
   process.exit(0)
 }
 
-// Without a terminal to pick in: one `[x] type name` line per ability.
+// Without a terminal to pick in: one `[x] type name` line per ability (your own skills and personas are always on).
 function printAbilities(items: PickerItem[], enabled: AbilitiesFile) {
   const on = { skill: enabled.skills, persona: enabled.personas, tool: enabled.tools, mcp: enabled.mcp }
   for (const item of items) {
-    console.log(`${on[item.type].includes(item.name) ? "[x]" : "[ ]"} ${item.type.padEnd(7)} ${item.name}`)
+    const ticked = item.alwaysOn || on[item.type].includes(item.name)
+    console.log(`${ticked ? "[x]" : "[ ]"} ${item.type.padEnd(7)} ${item.name}`)
   }
 }

@@ -215,6 +215,7 @@ pickerHint          = "空白鍵切換，Enter 儲存，Esc 取消。能力佇�
 local               = "家己个"
 empty               = "猶無能力。請執行 `kaja abilities update`，抑是共你家己个囥佇 marketplace/skills/、personas/、tools/ 抑是 mcp/。"
 invalidTitle        = "袂當載入（修理了後閣執行 `kaja abilities`）："
+ownTitle            = "你家己个，一直攏開咧（欲關掉一个，共伊个檔案改名抑是徙走）："
 notTty              = "欲改載入个能力，請改 {path}，抑是佇終端機執行 `kaja abilities`。"
 cancelled           = "無改啥物。"
 saved               = "已經儲存 {path}：開 {count} 个能力。"

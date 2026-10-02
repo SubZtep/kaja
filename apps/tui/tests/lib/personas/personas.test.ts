@@ -6,6 +6,7 @@ import { loadPersonas } from "../../../lib/personas/personas"
 
 // getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it per-test isolates each test from the real ~/.config/kaja — same pattern as tests/lib/personas/datasets.test.ts.
 // The fixture's abilities.toml enables unknown-model, barkochba, broken and a missing one; unlisted.toml isn't enabled.
+// Its .sync-lock.json records every persona file but own.toml, which is therefore yours and loads unlisted.
 const fixtureConfigDir = join(import.meta.dir, "../../fixtures/personas")
 const emptyConfigDir = join(tmpdir(), `kaja-test-personas-empty-${Date.now()}`)
 process.env.NODE_ENV = "test"
@@ -18,8 +19,15 @@ afterEach(async () => {
 test("loads default first, then the personas abilities.toml enables, by id", async () => {
   process.env.XDG_CONFIG_HOME = fixtureConfigDir
   const personas = await loadPersonas()
-  expect(personas.map(p => p.id)).toEqual(["default", "barkochba", "unknown-model"])
+  expect(personas.map(p => p.id)).toEqual(["default", "barkochba", "own", "unknown-model"])
   expect(personas.find(p => p.id === "barkochba")?.label).toBe("Barkochba guesser")
+})
+
+test("your own persona (one the sync didn't write) loads without an abilities.toml entry, marked local", async () => {
+  process.env.XDG_CONFIG_HOME = fixtureConfigDir
+  const personas = await loadPersonas()
+  expect(personas.find(p => p.id === "own")).toMatchObject({ label: "Your own persona", local: true })
+  expect(personas.filter(p => p.local).map(p => p.id)).toEqual(["own"])
 })
 
 test("a marketplace default.toml replaces the built-in default", async () => {

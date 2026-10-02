@@ -215,6 +215,7 @@ pickerHint          = "Space toggles, Enter saves, Esc cancels. Abilities apply 
 local               = "local"
 empty               = "No abilities yet. Run `kaja abilities update`, or add your own under marketplace/skills/, personas/, tools/ or mcp/."
 invalidTitle        = "Can't load (fix and run `kaja abilities` again):"
+ownTitle            = "Your own, always on (rename or move the file to switch one off):"
 notTty              = "Edit {path} to change which abilities load, or run `kaja abilities` in a terminal."
 cancelled           = "Nothing changed."
 saved               = "Saved {path}: {count} ability(s) enabled."

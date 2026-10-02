@@ -26,8 +26,9 @@ provider such as GNOME Keyring or KWallet).
 found. A private or mistyped [`[source]`](/configuration/abilities#source) URL fails instead of asking for
 a password. Also check that `[marketplace] enabled` isn't `false`.
 
-**An ability doesn't show up.** It loads only when listed in [`abilities.toml`](/configuration/abilities)
-(run `kaja abilities`), and one that needs a key stays out until the key is in `secrets.toml`. `kaja doctor`
+**An ability doesn't show up.** A synced one loads only when listed in
+[`abilities.toml`](/configuration/abilities) (run `kaja abilities`); your own skills and personas load on
+the next start without that. One one that needs a key stays out until the key is in `secrets.toml`. `kaja doctor`
 lists everything left out and why.
 
 **An MCP server's tools are missing.** A server that fails to connect, or takes over 10 seconds, is

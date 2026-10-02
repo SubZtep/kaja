@@ -15,6 +15,8 @@ export type PickerItem = {
   error?: string
   /** Not from the marketplace sync — written by the user. */
   local: boolean
+  /** Your own skill or persona: it loads without an abilities.toml entry, so it's listed apart instead of ticked. */
+  alwaysOn?: boolean
   /** Tools and MCP servers: the host they call, shown before enabling. */
   domain?: string
   /** stdio MCP servers: the command they run on this machine, shown before enabling. */
@@ -71,8 +73,9 @@ export function AbilityPicker({
   const columns = stdout.columns ?? 80
   const { warning } = useKajaTheme()
 
-  const selectable = items.filter(item => !item.error)
+  const selectable = items.filter(item => !item.error && !item.alwaysOn)
   const broken = items.filter(item => item.error)
+  const own = items.filter(item => item.alwaysOn && !item.error)
   const enabledValues = [
     ...enabled.skills.map(name => optionValue({ type: "skill", name })),
     ...enabled.personas.map(name => optionValue({ type: "persona", name })),
@@ -100,6 +103,16 @@ export function AbilityPicker({
           <Text>{t("ability.empty")}</Text>
         )}
       </Box>
+      {own.length > 0 && (
+        <Box flexDirection="column" marginTop={1}>
+          <Text>{t("ability.ownTitle")}</Text>
+          {own.map(item => (
+            <Text key={optionValue(item)} dimColor>
+              {`  ${optionLabel(item, columns)}`}
+            </Text>
+          ))}
+        </Box>
+      )}
       {broken.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           <Text {...warning()}>{t("ability.invalidTitle")}</Text>

@@ -215,6 +215,7 @@ pickerHint          = "空白鍵切換，Enter 儲存，Esc 取消。能力僅�
 local               = "本機"
 empty               = "目前沒有任何能力。請執行 `kaja abilities update`，或在 marketplace/skills/、personas/、tools/ 或 mcp/ 下新增你自己的。"
 invalidTitle        = "無法載入（修正後請再次執行 `kaja abilities`）："
+ownTitle            = "你自己的，一律啟用（若要停用某一項，請重新命名或移動該檔案）："
 notTty              = "請編輯 {path} 來變更要載入的能力，或在終端機中執行 `kaja abilities`。"
 cancelled           = "沒有任何變更。"
 saved               = "已儲存 {path}：已啟用 {count} 項能力。"
