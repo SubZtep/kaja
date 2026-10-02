@@ -3,7 +3,8 @@ import { createAuthClientWithUrl } from "../lib/auth"
 
 let authClient: ReturnType<typeof createAuthClientWithUrl> | null = null
 
-function getAuthClient(apiUrl: string) {
+/** The shared Better Auth client; code that runs on the landing page loads it with `loadAuthClient` instead. */
+export function getAuthClient(apiUrl: string) {
   if (!authClient) {
     authClient = createAuthClientWithUrl(apiUrl)
   }

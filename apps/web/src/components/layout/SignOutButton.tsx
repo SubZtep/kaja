@@ -1,15 +1,15 @@
-import { useNavigate } from "@tanstack/react-router"
+import { useLoaderData, useNavigate } from "@tanstack/react-router"
 import { LoaderCircle, LogOut } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
-import { useAuthClient } from "../../hooks/auth-client"
+import { loadAuthClient } from "../../hooks/load-auth-client"
 import { m } from "../../paraglide/messages.js"
 import { ConfirmDialog } from "../ui/ConfirmDialog"
 
 /** A header stamp like the menu items; `compact` (the desktop bar) shows just the icon, with the label as its accessible name. */
 export function SignOutButton({ compact, onClick }: Readonly<{ compact?: boolean; onClick?: () => void }>) {
   const navigate = useNavigate()
-  const { signOut } = useAuthClient()
+  const { apiUrl } = useLoaderData({ from: "__root__" })
   const [loading, setLoading] = useState(false)
 
   return (
@@ -17,6 +17,7 @@ export function SignOutButton({ compact, onClick }: Readonly<{ compact?: boolean
       title={m.sign_out_confirm_title()}
       onConfirm={async () => {
         setLoading(true)
+        const { signOut } = await loadAuthClient(apiUrl)
         const { error } = await signOut({
           fetchOptions: {
             onSuccess: () => {

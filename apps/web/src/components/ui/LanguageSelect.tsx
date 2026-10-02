@@ -5,7 +5,7 @@ import { useMatch } from "@tanstack/react-router"
 import { ArrowBigDown, ChevronsUpDown, Languages } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast, Zoom } from "react-toastify"
-import { useAuthClient } from "../../hooks/auth-client"
+import { loadAuthClient } from "../../hooks/load-auth-client"
 import { m } from "../../paraglide/messages.js"
 import { extractLocaleFromCookie, getLocale, type Locale, locales, setLocale } from "../../paraglide/runtime.js"
 
@@ -35,15 +35,15 @@ function takePick(): Picked | null {
 export function LanguageSelect({ className }: Readonly<{ className?: string }> = {}) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const signedIn = Boolean(useMatch({ from: "__root__", shouldThrow: false })?.loaderData?.session)
-  const authClient = useAuthClient()
+  const rootData = useMatch({ from: "__root__", shouldThrow: false })?.loaderData
+  const signedIn = Boolean(rootData?.session)
 
   // A signed-in pick is saved first: LocaleSync switches the page back to the saved language after the reload.
   async function pick(locale: Locale) {
     if (signedIn) {
       // A network failure (offline) throws rather than coming back as `error`.
-      const saved = await authClient
-        .updateUser({ locale })
+      const saved = await loadAuthClient(rootData?.apiUrl ?? "")
+        .then(authClient => authClient.updateUser({ locale }))
         .then(({ error }) => !error)
         .catch(() => false)
       if (!saved) {

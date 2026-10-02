@@ -1,7 +1,6 @@
 import silkscreenBold from "@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff2?url"
 import syneRegular from "@fontsource/syne/files/syne-latin-400-normal.woff2?url"
 import syneExtraBold from "@fontsource/syne/files/syne-latin-800-normal.woff2?url"
-import * as Sentry from "@sentry/tanstackstart-react"
 import type { QueryClient } from "@tanstack/react-query"
 import {
   createRootRouteWithContext,
@@ -14,13 +13,15 @@ import {
 import { useEffect } from "react"
 import { keepsLinkLanguage, LocaleSync } from "../components/LocaleSync"
 import { Providers } from "../components/Providers"
+import { captureError, loadSentry } from "../lib/sentry"
 import { getSession } from "../lib/session"
 import { getPageTitle, getRootEnv } from "../lib/vars"
 import { m } from "../paraglide/messages.js"
 import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
 
-const OG_IMAGE = "https://kaja.io/og-image.png"
+// Bump `v` whenever public/og-image.png changes: X, Telegram and Facebook cache share images by URL
+const OG_IMAGE = "https://kaja.io/og-image.png?v=2"
 
 // The hero's fonts (headline, subline, stickers); preloaded so they don't wait for the stylesheet, which would shift the layout when they swap in
 const PRELOAD_FONTS = [syneExtraBold, syneRegular, silkscreenBold]
@@ -40,7 +41,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     try {
       session = await getSession()
     } catch (err) {
-      Sentry.captureException(err)
+      captureError(err)
       sessionError = true
     }
     // A signed-in user's saved language, before anything renders; in the browser LocaleSync does it (a full reload).
@@ -167,6 +168,11 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   // The session, sandbox and widget requests all go to the API origin
   const apiUrl = Route.useLoaderData({ select: data => data.apiUrl })
 
+  // Sentry starts right after hydration: off the first paint, yet early enough to catch what goes wrong next
+  useEffect(() => {
+    loadSentry().catch(() => {})
+  }, [])
+
   return (
     // The Open Graph namespace (ogp.me); spread, since the RDFa `prefix` attribute isn't in every linter's list of HTML attributes
     <html lang={locale} dir={getTextDirection()} {...{ prefix: "og: https://ogp.me/ns#" }} suppressHydrationWarning>
@@ -209,7 +215,7 @@ function NotFound() {
 
 function DefaultError({ error: err }: ErrorComponentProps) {
   useEffect(() => {
-    Sentry.captureException(err)
+    captureError(err)
   }, [err])
 
   return (
