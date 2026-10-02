@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "開放原始碼个代理。佇遮𨑨迌、佇 Telegram 開講，抑是佇你的終端機走。",
-  "site_og_image_alt": "Kaja：你的 AI 應該先問，毋通烏白臆。佇遮𨑨迌，紲落去 Telegram，閣紮轉來本機走。",
+  "site_og_description": "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
+  "site_og_image_alt": "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
   "not_found_message": "歹勢，這个頁面無存在。",
   "nav_home": "頭頁",
   "nav_sign_in": "登入",

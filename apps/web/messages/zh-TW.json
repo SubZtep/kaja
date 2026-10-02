@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "開源代理。在這裡玩、在 Telegram 上聊，或在你的終端機中執行。",
-  "site_og_image_alt": "Kaja：你的 AI 應該先問，而不是亂猜。在這裡玩，帶到 Telegram，再搬到本機執行。",
+  "site_og_description": "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
+  "site_og_image_alt": "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
   "not_found_message": "抱歉，這個頁面不存在。",
   "nav_home": "首頁",
   "nav_sign_in": "登入",

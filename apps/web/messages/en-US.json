@@ -1,7 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "site_og_description": "Open-source agent. Play here, talk on Telegram, or run it in your terminal.",
-  "site_og_image_alt": "Kaja: your AI should ask, never guess. Play here, take it to Telegram, then take it local.",
+  "site_og_description": "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
+  "site_og_image_alt": "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
   "not_found_message": "Sorry, this page doesn't exist.",
   "nav_home": "Home",
   "nav_sign_in": "Sign In",

@@ -20,7 +20,8 @@ import { m } from "../paraglide/messages.js"
 import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
 
-const OG_IMAGE = "https://kaja.io/og-image.png"
+// Bump `v` whenever public/og-image.png changes: X, Telegram and Facebook cache share images by URL
+const OG_IMAGE = "https://kaja.io/og-image.png?v=2"
 
 // The hero's fonts (headline, subline, stickers); preloaded so they don't wait for the stylesheet, which would shift the layout when they swap in
 const PRELOAD_FONTS = [syneExtraBold, syneRegular, silkscreenBold]
