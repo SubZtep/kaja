@@ -117,6 +117,7 @@ export async function runModelPass(
   { probe = probeModel, save = saveCommentedOutModels, contextWindow = resolveContextWindow }: Deps = {}
 ): Promise<ModelOutcome[]> {
   const outcomes: ModelOutcome[] = []
+  const dropped: string[] = []
 
   for (const [task, entries] of groupModelsByTask(models)) {
     print(t(TASK_HEADING_KEY[task]))
@@ -147,12 +148,14 @@ export async function runModelPass(
     if (picked !== 1) continue
 
     // Every model ahead of it failed, so dropping them all makes it the first.
-    await save(results.slice(0, next).map(entry => entry.model.id))
+    dropped.push(...results.slice(0, next).map(entry => entry.model.id))
     outcome.ok = true
     outcome.switchedTo = chosen
     print(
       statusLine("success", t("doctor.modelSwitched", { task: noun, provider: chosen.provider, model: chosen.model }))
     )
   }
+  // One write for every switch; a model dropped for two tasks is commented out once.
+  if (dropped.length) await save(dropped)
   return outcomes
 }

@@ -164,3 +164,15 @@ test("whichever model comes first in the file is the task's active one", async (
   expect(r.outcomes[0]).toMatchObject({ task: "chat", active: OLLAMA_CHAT, switchedTo: FIREWORKS_CHAT })
   expect(r.saved).toEqual([["llama3-2-1b"]])
 })
+
+test("switches in several tasks are saved together, once", async () => {
+  const ollamaEmbedding = model("nomic-embed-text", "embedding", "ollama", "nomic-embed-text")
+  const down = { "minimax-m3": "down", "qwen3-embedding": "down" }
+  const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT, EMBEDDING, ollamaEmbedding], down, [1, 1])
+  expect(r.asked).toHaveLength(2)
+  expect(r.saved).toEqual([["minimax-m3", "qwen3-embedding"]])
+  expect(r.outcomes).toMatchObject([
+    { ok: true, switchedTo: OLLAMA_CHAT },
+    { ok: true, switchedTo: ollamaEmbedding }
+  ])
+})
