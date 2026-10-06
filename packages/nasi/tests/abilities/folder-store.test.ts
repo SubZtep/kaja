@@ -56,7 +56,9 @@ test("lists enabled skills with their folder and other files, skipping hidden an
   putSkill("pdf")
   put("skills/pdf/reference.md", "ref")
   put("skills/pdf/scripts/fill.py", "print(1)")
-  put("skills/pdf/SKILL.md.bak", "old")
+  put("skills/pdf/SKILL.bak.md", "old")
+  put("skills/pdf/scripts/fill.bak.2.py", "old")
+  put("skills/pdf/scripts/run.bak", "old")
   put("skills/pdf/.env", "SECRET=1")
   putSkill("unlisted")
 
@@ -257,7 +259,8 @@ test("readPersonas reads the named personas in order, id from the file name; bro
 test("scanPersonas lists every persona file with its label, or why it can't load", async () => {
   put("personas/care.toml", 'label = "Care"\nwhen = "the user is sad"\n')
   put("personas/broken.toml", "label = \n")
-  put("personas/care.toml.bak", 'label = "Old"\n')
+  put("personas/care.bak.toml", 'label = "Old"\n')
+  put("personas/care.bak.2.toml", 'label = "Older"\n')
   const entries = await scanPersonas(root)
   expect(entries.map(e => e.name)).toEqual(["broken", "care"])
   expect(entries[0]!.error).toContain("invalid TOML")
@@ -279,7 +282,7 @@ test("readDatasets loads every valid datasets/*.json by topic; broken, badly nam
   put("datasets/onboarding.json", JSON.stringify(onboarding))
   put("datasets/broken.json", '{ "label": "No fields" }')
   put("datasets/Bad_Name.json", JSON.stringify(onboarding))
-  put("datasets/onboarding.json.bak", "{}")
+  put("datasets/onboarding.bak.json", "{}")
   const datasets = await readDatasets(root)
   expect([...datasets.keys()]).toEqual(["onboarding"])
   expect(datasets.get("onboarding")).toEqual(onboarding)
@@ -300,7 +303,7 @@ test("readSkillBundle reads SKILL.md and the text files, and flags scripts", asy
   putSkill("pdf", "PDFs.", "Body.")
   put("skills/pdf/reference.md", "ref")
   put("skills/pdf/logo.png", new Uint8Array([0x89, 0x00, 0x01]))
-  put("skills/pdf/SKILL.md.bak", "old")
+  put("skills/pdf/SKILL.bak.md", "old")
   const bundle = await readSkillBundle(root, "pdf")
   expect(bundle).toEqual({
     name: "pdf",

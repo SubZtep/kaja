@@ -3,14 +3,13 @@ import OpenAI from "openai"
 import { loadModelsFile, resolveActiveModel } from "./models"
 
 /**
- * Generates embeddings via the model configured at models.toml's
- * the embedding model [tasks] picks (or the active persona's pin, if set). Batches multiple
- * inputs into one request.
+ * Generates embeddings via models.toml's first model listing embedding (or the active persona's pin, if set).
+ * Batches multiple inputs into one request.
  */
 export async function embed(input: string | string[], personaModels?: PersonaModels): Promise<number[][]> {
   const embedding = resolveActiveModel(await loadModelsFile(), "embedding", personaModels)
   if (!embedding) {
-    throw new Error("No embedding model configured — pick one for embedding in [tasks] of models.toml")
+    throw new Error("No embedding model configured — list embedding in a model's tasks in models.toml")
   }
   const client = new OpenAI({
     baseURL: embedding.baseUrl,

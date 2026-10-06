@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { setProviderBaseUrl, setTaskModel } from "../../../lib/models/models"
+import { commentOutModels, setProviderBaseUrl } from "../../../lib/models/models"
 
 const TEMPLATE = `# Kaja models — a comment that must survive.
 
@@ -8,9 +8,6 @@ base_url = "http://localhost:11434/v1"
 
 [providers.speaches]
 base_url = "http://localhost:8000"  # local server, no key needed
-
-[tasks]
-chat = "llama3-2-1b"
 
 [models.llama3-2-1b]
 model = "llama3.2:1b"
@@ -47,39 +44,43 @@ const TWO_CHATS = `# Kaja models — a comment that must survive.
 [providers.fireworks]
 base_url = "https://api.fireworks.ai/inference/v1"
 
-[providers.ollama]
-base_url = "http://localhost:11434/v1"
-
-[tasks]
-chat = "minimax-m3"  # the default
-embedding = "qwen3-embedding-8b"
-
 [models.minimax-m3]
-model = "accounts/fireworks/models/minimax-m3"
+model    = "accounts/fireworks/models/minimax-m3"
 provider = "fireworks"
-tasks = ["chat"]
+tasks    = [
+  "chat"
+]
 
+# A local fallback.
 [models.llama3-2-1b]
-model = "llama3.2:1b"
+model = "llama3.2:1b"  # small
 provider = "ollama"
 tasks = ["chat"]
 `
 
-test("setTaskModel points a task at another model id and touches nothing else", () => {
-  const out = setTaskModel(TWO_CHATS, "chat", "llama3-2-1b")
-  expect(out).toBe(TWO_CHATS.replace('chat = "minimax-m3"', 'chat = "llama3-2-1b"'))
+test("commentOutModels comments out the whole table, a multi-line array included, and nothing after it", () => {
+  const out = commentOutModels(TWO_CHATS, ["minimax-m3"])
+  expect(out).toContain(`# [models.minimax-m3]
+# model    = "accounts/fireworks/models/minimax-m3"
+# provider = "fireworks"
+# tasks    = [
+#   "chat"
+# ]
+
+# A local fallback.
+[models.llama3-2-1b]`)
+  expect(out).toContain("# Kaja models — a comment that must survive.\n")
 })
 
-test("setTaskModel adds a task [tasks] doesn't have yet, inside the table", () => {
-  const out = setTaskModel(TWO_CHATS, "summarize", "llama3-2-1b")
-  expect(out).toContain('embedding = "qwen3-embedding-8b"\nsummarize = "llama3-2-1b"\n\n[models.minimax-m3]')
+test("commentOutModels handles the last table and several ids, and skips a missing one", () => {
+  const out = commentOutModels(TWO_CHATS, ["nope", "llama3-2-1b", "minimax-m3"])
+  expect(out).toContain('# model = "llama3.2:1b"  # small\n# provider = "ollama"\n# tasks = ["chat"]\n')
+  expect(out).toContain("# [models.minimax-m3]")
+  expect(Bun.TOML.parse(out)).toEqual({
+    providers: { fireworks: { base_url: "https://api.fireworks.ai/inference/v1" } }
+  })
 })
 
-test("setTaskModel leaves the text alone when there is no [tasks] table", () => {
-  const text = TWO_CHATS.replace("[tasks]", "[other]")
-  expect(setTaskModel(text, "chat", "llama3-2-1b")).toBe(text)
-})
-
-test("setTaskModel escapes an id that would break out of the string", () => {
-  expect(setTaskModel(TWO_CHATS, "chat", 'we"ird')).toContain('chat = "we\\"ird"  # the default')
+test("commentOutModels leaves the text alone when the model is absent", () => {
+  expect(commentOutModels(TWO_CHATS, ["nope"])).toBe(TWO_CHATS)
 })

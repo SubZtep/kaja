@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // Idempotent upsert of docs/config/models.default.toml (generated from docs/config/catalog.toml) into Postgres —
 // the admin-managed model defaults the cloud API and `kaja config fetch` serve from the DB.
-// Only the models [tasks] picks are seeded, with the tasks it picks them for: they are marked free, and free models'
+// Only the models in use are seeded (each task's first entry that lists it), with the tasks they win: they are marked free, and free models'
 // credentials are handed out publicly, so an alternative, should the file ever gain one, is left for an admin to add.
 // Self-hosted providers (the catalog's kind, e.g. Speaches on localhost) are skipped: the server can't reach a user's own machine.
 // ON CONFLICT DO NOTHING so admin edits made after the first run always survive a re-run.
@@ -23,15 +23,14 @@ async function seedModels(db: Queryable) {
       .providers.filter(provider => provider.kind === "self-hosted")
       .map(provider => provider.id)
   )
-  const defaults = Object.entries(data.models)
-    .filter(([, entry]) => !selfHosted.has(entry.provider))
-    .map(([id, entry]) => ({
-      ...entry,
-      tasks: (Object.entries(data.tasks) as [ModelTask, string][])
-        .filter(([, used]) => used === id)
-        .map(([task]) => task)
-    }))
-    .filter(entry => entry.tasks.length > 0)
+  const won = new Set<ModelTask>()
+  const defaults = Object.values(data.models)
+    .map(entry => {
+      const tasks = entry.tasks.filter(task => !won.has(task))
+      for (const task of tasks) won.add(task)
+      return { ...entry, tasks }
+    })
+    .filter(entry => entry.tasks.length > 0 && !selfHosted.has(entry.provider))
   const used = new Set(defaults.map(entry => entry.provider))
 
   const providerIds: Record<string, string> = {}

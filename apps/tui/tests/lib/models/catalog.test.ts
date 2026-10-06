@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { CatalogFileSchema, ModelsFileSchema } from "@kaja/schema/config"
+import { CatalogFileSchema, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { TOML } from "bun"
 import {
   buildModelsToml,
@@ -15,9 +15,12 @@ import {
 const pick = (...ids: string[]): CatalogProvider[] => ids.map(id => catalogProvider(id)!)
 const parse = (text: string) => ModelsFileSchema.parse(TOML.parse(text))
 type Parsed = ReturnType<typeof parse>
-/** The entry [tasks] picks for `task`. */
-const inUse = (parsed: Parsed, task: keyof Parsed["tasks"]) => {
-  const id = parsed.tasks[task]
+/** The id of the entry used for `task`: the first that lists it. */
+const inUseId = (parsed: Parsed, task: ModelTask) =>
+  Object.entries(parsed.models).find(([, entry]) => entry.tasks.includes(task))?.[0]
+/** The entry used for `task`. */
+const inUse = (parsed: Parsed, task: ModelTask) => {
+  const id = inUseId(parsed, task)
   return id ? parsed.models[id] : undefined
 }
 
@@ -66,7 +69,7 @@ test("every combination of providers writes a file the schema accepts, with a de
 
     for (const task of TASK_ORDER) {
       const options = candidates[task] ?? []
-      // Every task somebody can serve is in [tasks], picking a real candidate.
+      // Every task somebody can serve has a model, picking a real candidate.
       expect(inUse(parsed, task) !== undefined).toBe(options.length > 0)
       if (options.length === 0) continue
       const entries = Object.values(parsed.models).filter(entry => entry.tasks.includes(task))
@@ -84,13 +87,13 @@ test("with two providers for one task, the picked one is the default and the oth
   ])
 
   const picked = parse(buildModelsToml({ providers, pick: { chat: "ollama" } }))
-  expect(picked.tasks.chat).toBe("qwen3-5-4b")
+  expect(inUseId(picked, "chat")).toBe("qwen3-5-4b")
   expect(inUse(picked, "chat")).toMatchObject({ provider: "ollama", model: "qwen3.5:4b" })
   expect(picked.models["minimax-m3"]).toMatchObject({ provider: "fireworks", tasks: ["chat"] })
 
   // No answer means the first candidate, so a silent choice is still a sensible one.
   const unpicked = parse(buildModelsToml({ providers }))
-  expect(unpicked.tasks.chat).toBe("minimax-m3")
+  expect(inUseId(unpicked, "chat")).toBe("minimax-m3")
   expect(unpicked.models["qwen3-5-4b"]?.provider).toBe("ollama")
   // The examples leave the alternatives out: one model per task.
   const bare = parse(buildModelsToml({ providers, alternatives: false }))
@@ -98,6 +101,30 @@ test("with two providers for one task, the picked one is the default and the oth
   expect(inUse(bare, "chat")?.provider).toBe("fireworks")
   // A task only one of them serves has no alternative.
   expect(Object.values(unpicked.models).filter(entry => entry.tasks.includes("rerank"))).toHaveLength(1)
+})
+
+test("a picked model listed as another task's alternative never comes before that task's pick", () => {
+  const provider = (id: string, models: CatalogProvider["models"]): CatalogProvider => ({
+    id,
+    name: id,
+    kind: "hosted",
+    baseUrl: `https://${id}.test/v1`,
+    models
+  })
+  const cloud = provider("cloud", [
+    { task: "chat", model: "c" },
+    { task: "summarize", model: "s" }
+  ])
+  const local = provider("local", [
+    { task: "chat", model: "q" },
+    { task: "summarize", model: "q" }
+  ])
+  // q is picked for chat, so its entry comes first; listing summarize too would take it from s.
+  const parsed = parse(buildModelsToml({ providers: [cloud, local], pick: { chat: "local", summarize: "cloud" } }))
+  expect(inUseId(parsed, "chat")).toBe("q")
+  expect(inUseId(parsed, "summarize")).toBe("s")
+  expect(parsed.models.q?.tasks).toEqual(["chat"])
+  expect(parsed.models.c?.tasks).toEqual(["chat"])
 })
 
 test("ids are slugs of the model name, with the provider added when two providers share a name", () => {
@@ -110,7 +137,7 @@ test("ids are slugs of the model name, with the provider added when two provider
   })
   const parsed = parse(buildModelsToml({ providers: [twin("one"), twin("two")] }))
   expect(Object.keys(parsed.models)).toEqual(["big-model-7b", "big-model-7b-two"])
-  expect(parsed.tasks.chat).toBe("big-model-7b")
+  expect(inUseId(parsed, "chat")).toBe("big-model-7b")
 })
 
 test("a model serving two tasks is one entry listing both", () => {
@@ -128,7 +155,7 @@ test("a model serving two tasks is one entry listing both", () => {
   expect(parsed.models).toEqual({
     "qwen3-5-4b": { model: "qwen3.5:4b", provider: "local", tasks: ["chat", "summarize"] }
   })
-  expect(parsed.tasks).toEqual({ chat: "qwen3-5-4b", summarize: "qwen3-5-4b" })
+  expect(inUseId(parsed, "summarize")).toBe("qwen3-5-4b")
 })
 
 test("a provider serving a task twice gets two entries, never a duplicate table", () => {
@@ -144,7 +171,7 @@ test("a provider serving a task twice gets two entries, never a duplicate table"
   }
   const parsed = parse(buildModelsToml({ providers: [twice] }))
   expect(Object.keys(parsed.models).sort()).toEqual(["big", "small"])
-  expect(parsed.tasks.chat).toBe("big")
+  expect(inUseId(parsed, "chat")).toBe("big")
 })
 
 test("the comments that explain the file are written, and no placeholder for a task nobody serves", () => {

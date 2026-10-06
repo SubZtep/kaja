@@ -1,5 +1,6 @@
-import { Box, type DOMElement, Text, useBoxMetrics, useInput } from "ink"
+import { Box, type DOMElement, Text, useBoxMetrics } from "ink"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useTerminalReports } from "../../hooks/use-terminal-reports"
 import { parseMouse } from "../../lib/terminal-input"
 import { useKajaTheme } from "../theme"
 
@@ -55,7 +56,7 @@ export function KeyBar({ items }: Readonly<{ items: KeyBarEntry[] }>) {
       )
     })
 
-  useInput(input => {
+  useTerminalReports(input => {
     const mouse = parseMouse(input)
     if (!mouse) return
     const item = hit(mouse.col, mouse.row)

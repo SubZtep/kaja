@@ -47,7 +47,7 @@ Right now the marketplace has:
 The sync never loses your edits:
 
 - files you never touched follow the marketplace, removals included;
-- a file you edited is replaced, and yours is saved beside it as `.bak` (`.bak2` and so on);
+- a file you edited is replaced, and yours is saved beside it with `.bak` before the extension (`care.bak.toml`, then `care.bak.2.toml` and so on), so it keeps its highlighting and Kaja never loads it;
 - a file the marketplace removed but you edited stays, as your own;
 - files you added yourself are never touched.
 

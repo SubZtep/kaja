@@ -55,7 +55,10 @@ test("a tool image renders the picture, not just its path", async () => {
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
     )
   )
-  const t = renderForTest(<TimelineItem item={{ type: "tool_image", path, mimeType: "image/png" }} thinking={true} />)
+  // Wide enough that the per-run temp path doesn't wrap
+  const t = renderForTest(<TimelineItem item={{ type: "tool_image", path, mimeType: "image/png" }} thinking={true} />, {
+    columns: 200
+  })
   for (let i = 0; i < 100 && !t.output().includes("▄"); i++) await t.tick()
   expect(t.output()).toContain("▄")
   expect(t.output()).toContain(path)

@@ -18,7 +18,7 @@ async function resolveTtsSettings(personaModels?: PersonaModels) {
   const resolved = resolveActiveModel(await loadModelsFile(), "tts", personaModels)
   if (!resolved || !tts?.voice) {
     throw new Error(
-      "No TTS model/voice configured — pick one for tts in [tasks] of models.toml, and set tts.voice in settings.toml"
+      "No TTS model/voice configured — list tts in a model's tasks in models.toml, and set tts.voice in settings.toml"
     )
   }
   return {

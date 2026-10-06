@@ -1,16 +1,13 @@
-# Kaja models. [tasks] says which model each task uses, by its [models.<id>] id; a task left out
-# is off. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and what it
-# can be used for (`tasks`); models no task uses are kept for a persona's [models] pin, or for
-# `kaja doctor` to switch to when one stops answering. `model` is the literal name sent to the API.
+# Kaja models. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and
+# what it can be used for (`tasks`); a task no model lists is off. Order matters: each task uses the
+# first model in this file that lists it, so to switch, comment that one out or move another above it.
+# The later ones are kept for a persona's [models] pin, or for `kaja doctor` to fall back to when one
+# stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
 # llama.cpp's server doesn't need an API key.
 [providers.llama]
 base_url = "http://localhost:8080/v1"
-
-
-[tasks]
-chat = "ministral-3-3b-reasoning-2512-gguf-q4-k-m"
 
 
 [models.ministral-3-3b-reasoning-2512-gguf-q4-k-m]

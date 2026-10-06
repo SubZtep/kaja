@@ -108,7 +108,7 @@ Everything is plain text in `~/.config/kaja/`, and yours to edit afterwards:
 | Colours | `[preferences] theme` | `settings.toml` |
 | How to run Kaja | `[preferences] mode` | `settings.toml` |
 | Providers, custom provider | `[providers.<name>]` tables and their models | [`models.toml`](/configuration/models) |
-| Which model, per task | `[tasks]` (`chat = "minimax-m3"`); every model offered stays as `[models.<id>]` | `models.toml` |
+| Which model, per task | the picked model comes first among the `[models.<id>]` listing that task; every model offered stays | `models.toml` |
 | A server address | `[providers.<name>] base_url` | `models.toml` |
 | Speaches address | `[stt] speachesUrl`, `[tts] speachesUrl` | `settings.toml` |
 | A provider's API key | `[providers.<name>] api_key` | [`secrets.toml`](/configuration/secrets) |

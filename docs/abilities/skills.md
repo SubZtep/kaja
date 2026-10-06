@@ -51,7 +51,7 @@ and the others still load.
 - The system prompt lists every enabled skill's name and description.
 - `load_skill(name)` returns the instructions, the skill's folder and its other files.
 - `load_skill(name, file)` reads one of those files. Reads stay inside the skill folder, and file names
-  match case-insensitively. Binary files, hidden files and `.bak` backups are never served.
+  match case-insensitively. Binary files, hidden files and backups (`SKILL.bak.md`) are never served.
 - Scripts run through [`run_command`](/abilities/tools#shell-commands) with the usual approval, which is why
   skills with a `scripts/` folder are local-only.
 

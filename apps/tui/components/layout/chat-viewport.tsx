@@ -3,10 +3,11 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { writeText } from "tinyclip"
 import type { PartialMessage as PartialMessageData, TimelineEvent } from "../../hooks/use-agent"
 import { useMouseTracking } from "../../hooks/use-mouse-tracking"
+import { useTerminalReports } from "../../hooks/use-terminal-reports"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
-import { isTerminalMouseSequence, parseWheelDirection } from "../../lib/terminal-input"
+import { parseWheelDirection } from "../../lib/terminal-input"
 import { foldToolCalls } from "../../lib/tool-summary"
 import { uiEvents } from "../../lib/ui-events"
 import { Activity } from "../activity"
@@ -270,19 +271,14 @@ export function ChatViewport({
     }
   }, [])
 
-  useInput((input, key) => {
+  // Nothing to scroll (getBottomOffset 0): the handlers keep stick and don't create empty overscroll
+  useInput((_input, key) => {
     const view = scrollRef.current
-    if (!view) return
-
-    // Nothing to scroll: keep stick, don't create empty overscroll.
-    const maxScroll = view.getBottomOffset()
-
-    if (isTerminalMouseSequence(input)) {
-      handleWheelInput(view, input, maxScroll)
-      return
-    }
-
-    handleKeyInput(view, key, maxScroll)
+    if (view) handleKeyInput(view, key, view.getBottomOffset())
+  })
+  useTerminalReports(input => {
+    const view = scrollRef.current
+    if (view) handleWheelInput(view, input, view.getBottomOffset())
   })
 
   const showAffordance = canScroll && !stuckToBottom

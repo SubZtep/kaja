@@ -44,7 +44,7 @@ test("an untouched file follows upstream without a backup", async () => {
   const report = await syncMarketplace(upstream, local)
   expect(report.updated).toEqual(["skills/a/SKILL.md"])
   expect(read("skills/a/SKILL.md")).toBe("a2")
-  expect(existsSync(join(local, "skills/a/SKILL.md.bak"))).toBe(false)
+  expect(existsSync(join(local, "skills/a/SKILL.bak.md"))).toBe(false)
 })
 
 test("unchanged files are reported as nothing", async () => {
@@ -59,22 +59,22 @@ test("unchanged files are reported as nothing", async () => {
   })
 })
 
-test("an edited file is replaced by upstream and backed up, then .bak2 on the next conflict", async () => {
+test("an edited file is replaced by upstream and backed up, then .bak.2 on the next conflict", async () => {
   put(upstream, "skills/a/SKILL.md", "a1")
   await syncMarketplace(upstream, local)
 
   put(local, "skills/a/SKILL.md", "mine")
   put(upstream, "skills/a/SKILL.md", "a2")
   const first = await syncMarketplace(upstream, local)
-  expect(first.backedUp).toEqual([{ path: "skills/a/SKILL.md", backup: "skills/a/SKILL.md.bak" }])
+  expect(first.backedUp).toEqual([{ path: "skills/a/SKILL.md", backup: "skills/a/SKILL.bak.md" }])
   expect(read("skills/a/SKILL.md")).toBe("a2")
-  expect(read("skills/a/SKILL.md.bak")).toBe("mine")
+  expect(read("skills/a/SKILL.bak.md")).toBe("mine")
 
   put(local, "skills/a/SKILL.md", "mine again")
   put(upstream, "skills/a/SKILL.md", "a3")
   const second = await syncMarketplace(upstream, local)
-  expect(second.backedUp[0]?.backup).toBe("skills/a/SKILL.md.bak2")
-  expect(read("skills/a/SKILL.md.bak2")).toBe("mine again")
+  expect(second.backedUp[0]?.backup).toBe("skills/a/SKILL.bak.2.md")
+  expect(read("skills/a/SKILL.bak.2.md")).toBe("mine again")
 })
 
 test("an edit that already matches upstream needs no backup", async () => {
@@ -91,7 +91,7 @@ test("your own file that upstream later adds at the same path is backed up and r
   put(local, "skills/a/SKILL.md", "mine")
   put(upstream, "skills/a/SKILL.md", "upstream")
   const report = await syncMarketplace(upstream, local)
-  expect(report.backedUp).toEqual([{ path: "skills/a/SKILL.md", backup: "skills/a/SKILL.md.bak" }])
+  expect(report.backedUp).toEqual([{ path: "skills/a/SKILL.md", backup: "skills/a/SKILL.bak.md" }])
   expect(read("skills/a/SKILL.md")).toBe("upstream")
 })
 

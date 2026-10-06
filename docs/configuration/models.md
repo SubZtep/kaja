@@ -8,7 +8,8 @@ summary: "models.toml: providers and the model for each task."
 
 # models.toml
 
-`models.toml` declares providers, the models they serve, and which model handles each task. A provider's
+`models.toml` declares providers and the models they serve, and the order of the models decides which one
+handles each task. A provider's
 `api_key` lives in [`secrets.toml`](/configuration/secrets) under the same `[providers.<name>]` table. This
 file only holds `base_url` and the models.
 
@@ -16,18 +17,21 @@ file only holds `base_url` and the models.
 [providers.ollama]
 base_url = "http://localhost:11434/v1"
 
-[tasks]
-chat = "qwen3-5-4b"
-summarize = "qwen3-5-4b"
-
 [models.qwen3-5-4b]
 model = "qwen3.5:4b"
 provider = "ollama"
 tasks = ["chat", "summarize"]
+
+[models.llama3-2-1b]
+model = "llama3.2:1b"
+provider = "ollama"
+tasks = ["chat"]
 ```
 
-**`[tasks]` says which model each task uses**, by its `[models.<id>]` id. A task left out is off, along with
-the features that need it. `chat` is **required** in local mode, and without it the CLI exits with an error.
+**Each task uses the first model in the file that lists it.** Above, chat and summarize both use
+`qwen3-5-4b`, and `llama3-2-1b` waits behind it. To switch, comment the first one out (the next one listing
+the task takes over) or move another above it. A task no model lists is off, along with the features that
+need it. `chat` is **required** in local mode, and without it the CLI exits with an error.
 
 The tasks:
 
@@ -48,9 +52,10 @@ Each `[models.<id>]` entry has:
 
 The id is yours to choose. The wizard uses the last part of the model name, cleaned up (`qwen3.5:4b` becomes
 `qwen3-5-4b`, `accounts/fireworks/models/glm-5p3-flash` becomes `glm-5p3-flash`), and adds `-<provider>` when
-two providers serve the same name. Models no task uses stay in the file, for a
-[persona](/abilities/personas) to pin by id, or for [`kaja doctor`](/configuration/commands#checking-keys-and-models)
-to switch to when the one in use stops answering. A switch only changes that task's line in `[tasks]`.
+two providers serve the same name. A purely numeric id is refused, since it would lose its place in the order.
+The models further down stay in the file, for a [persona](/abilities/personas) to pin by id, or for
+[`kaja doctor`](/configuration/commands#checking-keys-and-models) to fall back to when the one in use stops
+answering. Falling back comments out the broken model, so the next one takes over.
 
 The header shows how full the chat model's context is (`12,345 / 32,768 tokens (38%)`). Without
 `context_window`, Kaja asks the server once per run. llama.cpp and Ollama report the size they actually run

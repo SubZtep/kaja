@@ -25,10 +25,6 @@ the models go in `models.toml`, the endpoint in `settings.toml`. Ticking Speache
    [providers.speaches]
    base_url = "http://localhost:8000"
 
-   [tasks]
-   tts = "kokoro-82m-v1-0-onnx-fp16"
-   stt = "faster-distil-whisper-small-en"
-
    [models.kokoro-82m-v1-0-onnx-fp16]
    model = "speaches-ai/Kokoro-82M-v1.0-ONNX-fp16"
    provider = "speaches"
@@ -75,10 +71,10 @@ web app offers the same five.
 
 Voice lags behind:
 
-- **Dictation** needs a multilingual Whisper model. The default above is English-only, so point `stt` in
-  `[tasks]` at a multilingual one and set `stt.language`.
-- **Spoken replies** use the configured Kokoro voice, which has no Hungarian. Point `tts` in `[tasks]` at
-  something that does.
+- **Dictation** needs a multilingual Whisper model. The default above is English-only, so put a multilingual one
+  that lists `stt` above it and set `stt.language`.
+- **Spoken replies** use the configured Kokoro voice, which has no Hungarian. Put a `tts` model that does
+  above it.
 
 ---
 

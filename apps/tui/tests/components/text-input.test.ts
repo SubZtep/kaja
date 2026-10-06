@@ -172,11 +172,9 @@ test("Ctrl combinations that are not bindings do not insert", () => {
   expect(edit(state("ab\ncd", 4), { ctrl: true, input: "e" })).toBeNull()
 })
 
-test("mouse wheel / kitty protocol noise do not insert text", () => {
-  expect(edit(state("hi", 2), { input: "[<64;10;5M" })).toBeNull()
-  expect(edit(state("hi", 2), { input: "[<65;1;1m" })).toBeNull()
-  // leftover CSI ? flags u from kitty keyboard enable (was prefilling the prompt)
-  expect(edit(state("", 0), { input: "[?0u" })).toBeNull()
+test("escape replies mangled into byte lists do not insert text", () => {
+  // Ink 8 drops mouse and kitty replies before useInput; this form still arrives as text
+  expect(edit(state("", 0), { input: "27,91,63,48,117" })).toBeNull()
 })
 
 test("return submits; tab/Ctrl+arrows out are ignored", () => {

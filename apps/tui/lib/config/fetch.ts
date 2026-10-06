@@ -1,15 +1,15 @@
 import { existsSync } from "node:fs"
+import { extname } from "node:path"
 import { deepEquals, file, TOML, write } from "bun"
 
-/** First non-existent path among <path>.bak, <path>.bak2, ... */
+/** First non-existent path among <name>.bak.<ext>, <name>.bak.2.<ext>, ... — the extension stays last so editors still highlight and validate the backup. */
 export async function nextBackupPath(path: string): Promise<string> {
-  let suffix = ""
-  let n = 1
-  while (existsSync(`${path}.bak${suffix}`)) {
-    n += 1
-    suffix = String(n)
-  }
-  return `${path}.bak${suffix}`
+  const ext = extname(path)
+  const stem = path.slice(0, path.length - ext.length)
+  let candidate = `${stem}.bak${ext}`
+  let n = 2
+  while (existsSync(candidate)) candidate = `${stem}.bak.${n++}${ext}`
+  return candidate
 }
 
 /** Writes a bundled docs/config/*.toml template to the local config dir, backing up any existing (differing) file first. */

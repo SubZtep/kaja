@@ -15,8 +15,6 @@ const FIREWORKS_CHAT = model("minimax-m3", "chat", "fireworks", "minimax-m3")
 const OLLAMA_CHAT = model("llama3-2-1b", "chat", "ollama", "llama3.2:1b")
 const LLAMA_CHAT = model("ministral", "chat", "llama", "ministral")
 const EMBEDDING = model("qwen3-embedding", "embedding", "fireworks", "qwen3-embedding")
-/** models.toml's [tasks] for these tests: Fireworks serves chat and embedding. */
-const IN_USE = { chat: "minimax-m3", embedding: "qwen3-embedding" }
 
 type Probe = NonNullable<Parameters<typeof runModelPass>[3]>["probe"]
 
@@ -44,10 +42,10 @@ function io(picks: (number | undefined)[] = [], interactive = true) {
 }
 
 function saver() {
-  const saved: [string, string][] = []
+  const saved: string[][] = []
   return {
     saved,
-    save: async (task: string, id: string) => void saved.push([task, id])
+    save: async (ids: string[]) => void saved.push(ids)
   }
 }
 
@@ -64,7 +62,6 @@ async function run(
   const outcomes = await runModelPass(models, line => lines.push(stripVTControlCharacters(line)), fake, {
     probe,
     save,
-    active: async () => IN_USE,
     contextWindow: async m => ({ tokens: m.contextWindow ?? 32_768, source: m.contextWindow ? "config" : "fallback" })
   })
   return { lines, calls, asked, saved, outcomes }
@@ -90,14 +87,14 @@ test("a failing model says why", async () => {
   expect(r.outcomes).toMatchObject([{ task: "chat", ok: false }])
 })
 
-test("a broken default with a working alternative offers the switch, and choosing it rewrites the default", async () => {
+test("a broken first model with a working one after it offers the switch, and choosing it comments out the broken one", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "minimax-m3": "401 bad key" }, [1])
 
   expect(r.asked).toHaveLength(1)
   expect(r.asked[0]!.title).toContain("minimax-m3 didn't work: 401 bad key")
   // The safe answer is first, then only the models that actually answered.
   expect(r.asked[0]!.items).toEqual(["Keep minimax-m3", "ollama — llama3.2:1b"])
-  expect(r.saved).toEqual([["chat", "llama3-2-1b"]])
+  expect(r.saved).toEqual([["minimax-m3"]])
   expect(r.lines.at(-1)).toContain("chat now uses ollama — llama3.2:1b")
   expect(r.outcomes[0]).toMatchObject({ ok: true, switchedTo: OLLAMA_CHAT })
 })
@@ -118,10 +115,11 @@ test("keeping the broken model, or dismissing the question, changes nothing", as
   expect(dismissed.outcomes[0]).toMatchObject({ ok: false })
 })
 
-test("only alternatives that answered are offered, and the pick picks among them", async () => {
+test("the first model after it that answered is offered, and every broken one ahead of it is commented out", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT, LLAMA_CHAT], { "minimax-m3": "down", "llama3.2:1b": "down" }, [1])
   expect(r.asked[0]!.items).toEqual(["Keep minimax-m3", "llama — ministral"])
-  expect(r.saved).toEqual([["chat", "ministral"]])
+  expect(r.saved).toEqual([["minimax-m3", "llama3-2-1b"]])
+  expect(r.outcomes[0]).toMatchObject({ ok: true, switchedTo: LLAMA_CHAT })
 })
 
 test("when nothing else answers either, it says so and asks nothing", async () => {
@@ -130,19 +128,19 @@ test("when nothing else answers either, it says so and asks nothing", async () =
   expect(r.lines.some(line => line.includes("No other chat model answered either."))).toBe(true)
 })
 
-test("a broken default with no alternative is only reported", async () => {
+test("a broken first model with nothing after it is only reported", async () => {
   const r = await run([FIREWORKS_CHAT], { "minimax-m3": "down" })
   expect(r.asked).toEqual([])
   expect(r.lines.some(line => line.includes("No other"))).toBe(false)
 })
 
-test("a working default is never offered a switch, even with alternatives", async () => {
+test("a working first model is never offered a switch, even with others after it", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "llama3.2:1b": "down" })
   expect(r.asked).toEqual([])
   expect(r.outcomes[0]).toMatchObject({ ok: true })
 })
 
-test("a broken alternative alone does not fail the task", async () => {
+test("a broken later model alone does not fail the task", async () => {
   const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT], { "llama3.2:1b": "down" })
   expect(r.lines).toContain("  ✘ llama3.2:1b (down): down")
   expect(r.outcomes).toHaveLength(1)
@@ -161,8 +159,20 @@ test("each task decides for itself, and every model is probed exactly once", asy
   expect(r.calls.sort()).toEqual(["llama3.2:1b", "minimax-m3", "qwen3-embedding"])
 })
 
-test("a task with only alternatives and no default is listed but has no outcome", async () => {
-  const r = await run([OLLAMA_CHAT], { "llama3.2:1b": "down" })
-  expect(r.lines).toContain("  ✘ llama3.2:1b (down): down")
-  expect(r.outcomes).toEqual([])
+test("whichever model comes first in the file is the task's active one", async () => {
+  const r = await run([OLLAMA_CHAT, FIREWORKS_CHAT], { "llama3.2:1b": "down" }, [1])
+  expect(r.outcomes[0]).toMatchObject({ task: "chat", active: OLLAMA_CHAT, switchedTo: FIREWORKS_CHAT })
+  expect(r.saved).toEqual([["llama3-2-1b"]])
+})
+
+test("switches in several tasks are saved together, once", async () => {
+  const ollamaEmbedding = model("nomic-embed-text", "embedding", "ollama", "nomic-embed-text")
+  const down = { "minimax-m3": "down", "qwen3-embedding": "down" }
+  const r = await run([FIREWORKS_CHAT, OLLAMA_CHAT, EMBEDDING, ollamaEmbedding], down, [1, 1])
+  expect(r.asked).toHaveLength(2)
+  expect(r.saved).toEqual([["minimax-m3", "qwen3-embedding"]])
+  expect(r.outcomes).toMatchObject([
+    { ok: true, switchedTo: OLLAMA_CHAT },
+    { ok: true, switchedTo: ollamaEmbedding }
+  ])
 })

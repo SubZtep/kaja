@@ -21,7 +21,7 @@ beforeAll(clearEtag)
 
 afterEach(async () => {
   const { $ } = await import("bun")
-  await $`rm -f ${getMcpPath()} ${getMcpPath()}.bak ${getMcpPath()}.bak2 ${getModelsPath()} ${getModelsPath()}.bak ${getModelsPath()}.bak2 ${getConfigPath()}`
+  await $`rm -f ${getMcpPath()} ${backup(getMcpPath())} ${getModelsPath()} ${backup(getModelsPath())} ${backup(getModelsPath(), 2)} ${getConfigPath()}`
     .quiet()
     .nothrow()
   await $`rm -rf ${getConfigDir()} ${getConfigDir()}.bak ${getConfigDir()}.bak2`.quiet().nothrow()
@@ -44,20 +44,20 @@ test("fetch leaves an existing mcp.toml alone", async () => {
   const { code } = await runConfigCli(["fetch"])
   expect(code).toBe(0)
   expect(await Bun.file(getMcpPath()).text()).toBe("servers = []\n# mine\n")
-  expect(await Bun.file(`${getMcpPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(backup(getMcpPath())).exists()).toBe(false)
 })
 
 test("fetch backs up an existing models.toml instead of overwriting it", async () => {
   // Each fetch needs a fresh etag and body: a repeated etag yields a 304 ("all up to date")
-  // and identical content is a no-op, and neither writes the .bak2 this asserts on.
+  // and identical content is a no-op, and neither writes the .bak.2.toml this asserts on.
   let restore = mockBundleFetch({ "models.toml": "providers = {}\n" }, '"v1"')
   try {
     await Bun.write(getModelsPath(), "old content")
 
     const first = await runConfigCli(["fetch"])
     expect(first.code).toBe(0)
-    expect(first.text).toContain(".bak")
-    expect(await Bun.file(`${getModelsPath()}.bak`).text()).toBe("old content")
+    expect(first.text).toContain("models.bak.toml")
+    expect(await Bun.file(backup(getModelsPath())).text()).toBe("old content")
     expect(await Bun.file(getModelsPath()).text()).not.toBe("old content")
 
     await Bun.write(getModelsPath(), "newer content")
@@ -65,9 +65,9 @@ test("fetch backs up an existing models.toml instead of overwriting it", async (
     restore = mockBundleFetch({ "models.toml": 'label = "changed"\n' }, '"v2"')
     const second = await runConfigCli(["fetch"])
     expect(second.code).toBe(0)
-    expect(second.text).toContain(".bak2")
-    expect(await Bun.file(`${getModelsPath()}.bak`).text()).toBe("old content")
-    expect(await Bun.file(`${getModelsPath()}.bak2`).text()).toBe("newer content")
+    expect(second.text).toContain("models.bak.2.toml")
+    expect(await Bun.file(backup(getModelsPath())).text()).toBe("old content")
+    expect(await Bun.file(backup(getModelsPath(), 2)).text()).toBe("newer content")
   } finally {
     restore()
   }
@@ -80,7 +80,7 @@ test("fetch is a no-op (no new backup) when the file already matches the bundled
   const { code, text } = await runConfigCli(["fetch"])
   expect(code).toBe(0)
   expect(text).not.toContain(".bak")
-  expect(await Bun.file(`${getModelsPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(backup(getModelsPath())).exists()).toBe(false)
 })
 
 test("unknown or missing subcommand prints usage and exits 1", async () => {
@@ -90,6 +90,11 @@ test("unknown or missing subcommand prints usage and exits 1", async () => {
     expect(text).toContain("kaja config fetch")
   }
 })
+
+// models.toml → models.bak.toml, then models.bak.2.toml, ...
+function backup(path: string, n?: number) {
+  return path.replace(/\.toml$/, n ? `.bak.${n}.toml` : ".bak.toml")
+}
 
 function mockBundleFetch(files: Record<string, string>, etag = '"abc123"') {
   const originalFetch = globalThis.fetch
@@ -176,7 +181,7 @@ test("fetch leaves a secrets.toml holding keys alone: no backup, nothing overwri
   const { code, text } = await runConfigCli(["fetch"], { offline: true })
   expect(code).toBe(0)
   expect(text).toContain(`${getSecretsPath()} holds your keys`)
-  expect(await Bun.file(`${getSecretsPath()}.bak`).exists()).toBe(false)
+  expect(await Bun.file(backup(getSecretsPath())).exists()).toBe(false)
   expect(await Bun.file(getSecretsPath()).text()).toBe(saved)
 })
 

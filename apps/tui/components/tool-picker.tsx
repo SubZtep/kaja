@@ -1,5 +1,5 @@
 import { MultiSelect } from "@inkjs/ui"
-import { Box, Text, useInput, useStdout } from "ink"
+import { Box, Text, useInput, useWindowSize } from "ink"
 import { t } from "../lib/i18n"
 
 // Room MultiSelect takes around a label: the ❯ pointer, spacing and the ✔ mark.
@@ -26,8 +26,7 @@ export function ToolPicker({
   useInput((_input, key) => {
     if (key.escape) onCancel()
   })
-  const { stdout } = useStdout()
-  const columns = stdout.columns ?? 80
+  const { columns } = useWindowSize()
   const nameWidth = Math.max(...tools.map(tool => tool.name.length)) + 2
 
   const label = (tool: ToolChoice) => {

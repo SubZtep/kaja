@@ -2,7 +2,7 @@ import { resolveContextWindow } from "@kaja/nasi"
 import type { CliResolvedModel, ModelTask } from "@kaja/schema/config"
 import { t } from "../i18n"
 import { probeModel } from "../models/check"
-import { loadModelsFile, saveTaskModel } from "../models/models"
+import { saveCommentedOutModels } from "../models/models"
 import { statusLine } from "./status"
 
 const TASK_ORDER: ModelTask[] = ["chat", "summarize", "embedding", "rerank", "tts", "stt", "image-generation"]
@@ -46,7 +46,7 @@ export type ModelIo = {
 /** What became of a task's active model: still fine, still broken, or replaced by another that answered. */
 export type ModelOutcome = {
   task: ModelTask
-  /** The model [tasks] names, the one the app uses. */
+  /** The first model in the file that lists the task, the one the app uses. */
   active: CliResolvedModel
   ok: boolean
   switchedTo?: CliResolvedModel
@@ -54,10 +54,8 @@ export type ModelOutcome = {
 
 type Deps = {
   probe?: typeof probeModel
-  save?: typeof saveTaskModel
+  save?: typeof saveCommentedOutModels
   contextWindow?: typeof resolveContextWindow
-  /** models.toml's [tasks]: the model id each task uses. */
-  active?: () => Promise<Partial<Record<ModelTask, string>>>
 }
 
 /** The model pass's prompt for a real terminal. Loaded here so a non-interactive caller never loads the prompts. */
@@ -106,64 +104,58 @@ function trimTrailingDots(text: string): string {
 }
 
 /**
- * Tests every configured model, task by task, and prints one line each with why it failed. When a
- * task's active model (the one [tasks] names) fails while another model of the same task answered, and
- * there is a terminal to ask in, offers to switch to it: only that task's line in [tasks] changes, so every
- * model entry and any persona pin stay as they are. A model nothing else can stand in for is only reported.
+ * Tests every configured model, task by task, and prints one line each with why it failed. `models` is in
+ * file order, so a task's first model is its active one. When that fails while a later one of the same task
+ * answered, and there is a terminal to ask in, offers to switch to the first that did: the broken models
+ * ahead of it are commented out of models.toml, so it becomes the first. A model nothing else can stand in
+ * for is only reported.
  */
 export async function runModelPass(
   models: CliResolvedModel[],
   print: (line: string) => void,
   io: ModelIo,
-  {
-    probe = probeModel,
-    save = saveTaskModel,
-    contextWindow = resolveContextWindow,
-    active: activeIds = async () => (await loadModelsFile()).tasks
-  }: Deps = {}
+  { probe = probeModel, save = saveCommentedOutModels, contextWindow = resolveContextWindow }: Deps = {}
 ): Promise<ModelOutcome[]> {
   const outcomes: ModelOutcome[] = []
-  const inUse = await activeIds()
+  const dropped: string[] = []
 
   for (const [task, entries] of groupModelsByTask(models)) {
     print(t(TASK_HEADING_KEY[task]))
     const results = await probeTask(entries, print, probe, contextWindow)
 
-    const active = results.find(entry => entry.model.id === inUse[task])
-    if (!active) continue
+    const active = results[0]!
     const outcome: ModelOutcome = { task, active: active.model, ok: active.result.ok }
     outcomes.push(outcome)
     const failure = active.result
     if (failure.ok || !io.interactive) continue
 
-    const working = results.filter(entry => entry !== active && entry.result.ok).map(entry => entry.model)
+    const next = results.findIndex(entry => entry.result.ok)
     const noun = t(TASK_NOUN_KEY[task])
-    if (results.length > 1 && working.length === 0) {
-      print(statusLine("warning", t("doctor.modelAlternativesDown", { task: noun })))
+    if (next === -1) {
+      if (results.length > 1) print(statusLine("warning", t("doctor.modelAlternativesDown", { task: noun })))
       continue
     }
-    if (working.length === 0) continue
 
+    const chosen = results[next]!.model
     const picked = await io.askPick(
       t("doctor.modelSwitchTitle", {
         task: noun,
         model: active.model.model,
         reason: trimTrailingDots(failure.error)
       }),
-      [
-        t("doctor.modelSwitchKeep", { model: active.model.model }),
-        ...working.map(model => `${model.provider} — ${model.model}`)
-      ]
+      [t("doctor.modelSwitchKeep", { model: active.model.model }), `${chosen.provider} — ${chosen.model}`]
     )
-    if (picked === undefined || picked === 0) continue
+    if (picked !== 1) continue
 
-    const chosen = working[picked - 1]!
-    await save(task, chosen.id)
+    // Every model ahead of it failed, so dropping them all makes it the first.
+    dropped.push(...results.slice(0, next).map(entry => entry.model.id))
     outcome.ok = true
     outcome.switchedTo = chosen
     print(
       statusLine("success", t("doctor.modelSwitched", { task: noun, provider: chosen.provider, model: chosen.model }))
     )
   }
+  // One write for every switch; a model dropped for two tasks is commented out once.
+  if (dropped.length) await save(dropped)
   return outcomes
 }

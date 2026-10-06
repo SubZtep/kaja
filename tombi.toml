@@ -18,7 +18,8 @@ toml-version = "v1.1.0"
 path    = "docs/config/schemas/abilities.json"
 include = [
   "docs/config/abilities.toml",
-  "**/.config/kaja/abilities.toml"
+  "**/.config/kaja/abilities.toml",
+  "**/.config/kaja/abilities.bak*.toml"
 ]
 
 
@@ -26,7 +27,8 @@ include = [
 path    = "docs/config/schemas/commands.json"
 include = [
   "docs/config/commands.toml",
-  "**/.config/kaja/commands.toml"
+  "**/.config/kaja/commands.toml",
+  "**/.config/kaja/commands.bak*.toml"
 ]
 
 
@@ -57,7 +59,8 @@ include = [
 path    = "docs/config/schemas/mcp.json"
 include = [
   "docs/config/mcp.toml",
-  "**/.config/kaja/mcp.toml"
+  "**/.config/kaja/mcp.toml",
+  "**/.config/kaja/mcp.bak*.toml"
 ]
 
 
@@ -65,7 +68,8 @@ include = [
 path    = "docs/config/schemas/models.json"
 include = [
   "docs/config/models*.toml",
-  "**/.config/kaja/models.toml"
+  "**/.config/kaja/models.toml",
+  "**/.config/kaja/models.bak*.toml"
 ]
 
 
@@ -81,7 +85,8 @@ include = [
 path    = "docs/config/schemas/secrets.json"
 include = [
   "docs/config/secrets.toml",
-  "**/.config/kaja/secrets.toml"
+  "**/.config/kaja/secrets.toml",
+  "**/.config/kaja/secrets.bak*.toml"
 ]
 
 
@@ -89,5 +94,6 @@ include = [
 path    = "docs/config/schemas/settings.json"
 include = [
   "docs/config/settings.toml",
-  "**/.config/kaja/settings.toml"
+  "**/.config/kaja/settings.toml",
+  "**/.config/kaja/settings.bak*.toml"
 ]

@@ -272,7 +272,10 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
     const { chosenProviders } = await import("../../components/config-wizard")
     const models: NonNullable<WizardResult["models"]> = {}
     for (const [task, options] of Object.entries(candidatesByTask(chosenProviders({ providers, custom })))) {
-      const active = data?.models?.[data?.tasks?.[task]]?.provider
+      // The first model in the file that lists the task is the one in use.
+      const active = Object.values<any>(data?.models ?? {}).find(
+        entry => Array.isArray(entry.tasks) && entry.tasks.includes(task)
+      )?.provider
       if (options.length > 1 && typeof active === "string") models[task as keyof typeof models] = active
     }
     return { providers, addresses, models, ...(custom ? { custom } : {}) }

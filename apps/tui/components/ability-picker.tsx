@@ -1,5 +1,5 @@
 import { MultiSelect } from "@inkjs/ui"
-import { Box, Text, useInput, useStdout } from "ink"
+import { Box, Text, useInput, useWindowSize } from "ink"
 import { t } from "../lib/i18n"
 import { useKajaTheme } from "./theme"
 
@@ -69,8 +69,7 @@ export function AbilityPicker({
   useInput((_input, key) => {
     if (key.escape) onCancel()
   })
-  const { stdout } = useStdout()
-  const columns = stdout.columns ?? 80
+  const { columns } = useWindowSize()
   const { warning } = useKajaTheme()
 
   const selectable = items.filter(item => !item.error && !item.alwaysOn)

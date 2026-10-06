@@ -12,10 +12,6 @@ await Bun.write(
 [providers.default]
 base_url = "http://localhost/v1"
 
-[tasks]
-chat = "chat"
-embedding = "embedding"
-
 [models.chat]
 model = "test-model"
 tasks = ["chat"]
@@ -118,10 +114,6 @@ base_url = "http://localhost/v1"
 
 [providers.embed-host]
 base_url = "http://embedding-host/v1"
-
-[tasks]
-chat = "chat"
-embedding = "embedding"
 
 [models.chat]
 model = "test-model"

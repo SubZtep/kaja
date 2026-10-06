@@ -1,7 +1,7 @@
 /**
- * Filter stdin noise that Ink's key parser doesn't swallow: mouse reports,
- * kitty keyboard protocol replies, etc. After ESC is stripped, useInput may
- * hand these to the text field as literal insert text (e.g. `[?0u`).
+ * Terminal input helpers. Ink 8 drops complete control sequences it has no key for (mouse, focus, colour-scheme and
+ * other terminal replies) before useInput, so the reports the chat asks for are read off stdin by useTerminalReports
+ * and decoded here; the text field only filters what still gets through as text.
  */
 
 const ESC = "\u001b"
@@ -10,50 +10,12 @@ function stripEsc(input: string): string {
   return input.startsWith(ESC) ? input.slice(1) : input
 }
 
-/** True if this looks like a mouse report (wheel, click, drag, …). */
-export function isTerminalMouseSequence(input: string): boolean {
-  if (!input) return false
-  const s = stripEsc(input)
-  // SGR: [<btn;x;yM or m
-  if (/^\[<\d+;\d+;\d+[Mm]$/.test(s)) return true
-  // X10: [M + 3 bytes
-  if (/^\[M...$/.test(s)) return true
-  return false
-}
+// X10 mouse (`ESC[M` + 3 bytes) or a CSI sequence (`ESC[`, optional private marker, params, final byte)
+const REPORT = new RegExp(String.raw`${ESC}\[(?:M[\s\S]{3}|[<>?]?[\d;:]*[@-~])`, "g")
 
-/**
- * Kitty keyboard protocol replies / mode chatter (CSI … u).
- * Query response looks like CSI ? flags u → after strip: `[?0u`.
- */
-export function isKittyKeyboardNoise(input: string): boolean {
-  if (!input) return false
-  const s = stripEsc(input)
-  // CSI ? flags u  |  CSI > flags u  |  CSI < u
-  if (/^\[\?\d*u$/.test(s)) return true
-  if (/^\[>\d*u$/.test(s)) return true
-  if (/^\[<u$/.test(s)) return true
-  return false
-}
-
-/**
- * Primary Device Attributes (DA1) reply, e.g. `[?1;2c` or `[?63;1;2;6c`.
- * Sent by the terminal in response to a `\x1b[c` / `\x1b[0c` query.
- */
-export function isDeviceAttributesReply(input: string): boolean {
-  if (!input) return false
-  const s = stripEsc(input)
-  return /^\[\?\d+(;\d+)*c$/.test(s)
-}
-
-/**
- * xterm window/text-area report (XTWINOPS), e.g. `[4;350;848t` (pixel size)
- * or `[8;40;120t` (char size). Sent in response to a `\x1b[14t` / `\x1b[18t`
- * style query.
- */
-function isWindowReport(input: string): boolean {
-  if (!input) return false
-  const s = stripEsc(input)
-  return /^\[\d+(;\d+){0,2}t$/.test(s)
+/** The escape sequences in a raw stdin chunk, ESC included, in order; text between them is skipped. */
+export function splitTerminalReports(chunk: string): string[] {
+  return Array.from(chunk.matchAll(REPORT), match => match[0])
 }
 
 /**
@@ -93,17 +55,9 @@ export function colorSchemeReport(input: string): "dark" | "light" | null {
   return null
 }
 
-/** Any non-text terminal sequence that must not be typed into the input. */
+/** Terminal noise that still reaches useInput as text and must not be typed into the input. */
 export function isIgnoredTerminalInput(input: string): boolean {
-  return (
-    isTerminalMouseSequence(input) ||
-    isKittyKeyboardNoise(input) ||
-    isDeviceAttributesReply(input) ||
-    isWindowReport(input) ||
-    isEscapeByteList(input) ||
-    windowFocusReport(input) !== null ||
-    colorSchemeReport(input) !== null
-  )
+  return isEscapeByteList(input)
 }
 
 export type MouseEvent = { kind: "press" | "move"; col: number; row: number }
@@ -128,7 +82,6 @@ export type WheelDirection = "up" | "down"
  */
 export function parseWheelDirection(input: string): WheelDirection | null {
   const s = stripEsc(input)
-  // useInput usually strips ESC, so we see `[<64;col;rowM`
   const sgr = /^\[<(\d+);\d+;\d+[Mm]$/.exec(s)
   if (sgr) {
     const btn = Number(sgr[1])

@@ -24,10 +24,11 @@ function addModelEntry(modelsData: Record<string, ModelEntry>, model: Model, pro
 
 /** models.toml — provider.api_key is never emitted; secrets live in the CLI's secrets.toml. */
 export function renderModelsToml(providers: Provider[], models: Model[]): string {
-  // [tasks]: per task, the first enabled+free model that serves it wins (created_at order already applied by the
-  // caller). The `free` filter matters — this endpoint is public, so a paid model here would hand anonymous
-  // CLI users a model id their own credentials can't reach. Each winner is one [models.<slug>] entry.
-  const tasks: Partial<Record<ModelTask, string>> = {}
+  // Per task, the first enabled+free model that serves it wins (created_at order already applied by the caller),
+  // and only lists the tasks it wins, so the CLI's "first entry listing a task" picks the same one. The `free`
+  // filter matters — this endpoint is public, so a paid model here would hand anonymous CLI users a model id
+  // their own credentials can't reach. Each winner is one [models.<slug>] entry.
+  const won = new Set<ModelTask>()
   const modelsData: Record<string, ModelEntry> = {}
   const idByModel = new Map<string, string>()
   for (const model of models) {
@@ -35,11 +36,11 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
     const providerName = providers.find(p => p.id === model.providerId)?.name
     if (!providerName) continue
     for (const task of model.tasks) {
-      if (tasks[task]) continue
+      if (won.has(task)) continue
       const id = idByModel.get(model.id) ?? addModelEntry(modelsData, model, providerName)
       idByModel.set(model.id, id)
       modelsData[id]!.tasks.push(task)
-      tasks[task] = id
+      won.add(task)
     }
   }
 
@@ -50,5 +51,5 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
     providers.filter(p => usedProviderNames.has(p.name)).map(p => [p.name, { base_url: p.baseUrl }])
   )
 
-  return generatedHeader() + TOML.stringify({ providers: providersData, tasks, models: modelsData })
+  return generatedHeader() + TOML.stringify({ providers: providersData, models: modelsData })
 }

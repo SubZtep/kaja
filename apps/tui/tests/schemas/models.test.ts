@@ -12,10 +12,6 @@ base_url = "https://api.fireworks.ai/inference/v1"
 [providers.speaches]
 base_url = "http://localhost:8000"
 
-[tasks]
-chat = "chat"
-tts = "tts"
-
 [models.chat]
 model = "accounts/fireworks/models/deepseek"
 tasks = ["chat"]
@@ -50,7 +46,7 @@ test("valid file parses and resolves provider baseUrl (credentials come from sec
 })
 
 test("empty file parses to no providers, no models", () => {
-  expect(parse("")).toEqual({ providers: {}, tasks: {}, models: {} })
+  expect(parse("")).toEqual({ providers: {}, models: {} })
 })
 
 test("unknown provider reference is rejected", () => {
@@ -109,17 +105,33 @@ provider = "fireworks"
   expect(() => parse(toml)).toThrow()
 })
 
-test("[tasks] must name an existing model that lists that task", () => {
-  const base = `
+test("models keep their file order, which picks each task's model", () => {
+  const toml = `
 [providers.fireworks]
 base_url = "https://api.example.test/v1"
 
-[models.glm]
-model = "some/glm"
+[models.zeta]
+model = "some/zeta"
 provider = "fireworks"
-tasks = ["summarize"]
+tasks = ["chat"]
+
+[models.alpha]
+model = "some/alpha"
+provider = "fireworks"
+tasks = ["chat"]
 `
-  expect(parse(`[tasks]\nsummarize = "glm"\n${base}`).tasks).toEqual({ summarize: "glm" })
-  expect(() => parse(`[tasks]\nchat = "nope"\n${base}`)).toThrow("No [models.nope]")
-  expect(() => parse(`[tasks]\nchat = "glm"\n${base}`)).toThrow("in its tasks")
+  expect(Object.keys(parse(toml).models)).toEqual(["zeta", "alpha"])
+})
+
+test("a numeric model id is rejected, since it would jump to the front", () => {
+  const toml = `
+[providers.fireworks]
+base_url = "https://api.example.test/v1"
+
+[models.42]
+model = "some/model"
+provider = "fireworks"
+tasks = ["chat"]
+`
+  expect(() => parse(toml)).toThrow("non-numeric id")
 })

@@ -31,9 +31,9 @@ Telegram token and web search. In a terminal it asks for anything missing or fai
 before saving it to `secrets.toml`, and keeps a failing value only if you say so.
 
 It then tries every model by task, and shows each chat model's context window and where the number came from
-(`models.toml`, detected from the server, or assumed). When a task's model stops answering and another model
-you configured for that task works, it offers to switch. Only that task's line in `[tasks]` changes, so
-every model entry and persona pin stays. It ends with what's still broken, and lists every tool by origin
+(`models.toml`, detected from the server, or assumed). When a task's model stops answering and a model further
+down that lists the task works, it offers to switch: the broken models ahead of it are commented out of
+`models.toml`, so the working one comes first. It ends with what's still broken, and lists every tool by origin
 plus anything left out and why.
 
 ---

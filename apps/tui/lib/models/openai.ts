@@ -26,7 +26,7 @@ export function clientForModel(model: CliResolvedModel) {
   })
 }
 
-/** The model [tasks] picks for summarize, which writes the summaries a long conversation is compacted into; unset means the chat model does. */
+/** The first model listing summarize in models.toml, which writes the summaries a long conversation is compacted into; unset means the chat model does. */
 export const summarizer = summarizeEntry && {
   client: clientForModel(summarizeEntry),
   model: summarizeEntry.model,

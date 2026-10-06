@@ -1,7 +1,8 @@
-# Kaja models. [tasks] says which model each task uses, by its [models.<id>] id; a task left out
-# is off. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and what it
-# can be used for (`tasks`); models no task uses are kept for a persona's [models] pin, or for
-# `kaja doctor` to switch to when one stops answering. `model` is the literal name sent to the API.
+# Kaja models. Each [models.<id>] names the API it runs on (`provider`, a [providers.*] table) and
+# what it can be used for (`tasks`); a task no model lists is off. Order matters: each task uses the
+# first model in this file that lists it, so to switch, comment that one out or move another above it.
+# The later ones are kept for a persona's [models] pin, or for `kaja doctor` to fall back to when one
+# stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
 [providers.fireworks]
@@ -14,16 +15,6 @@ base_url = "https://api.x.ai/v1"
 
 [providers.speaches]
 base_url = "http://localhost:8000"  # local server, no key needed
-
-
-[tasks]
-chat             = "minimax-m3"
-embedding        = "qwen3-embedding-8b"
-rerank           = "qwen3-reranker-8b"
-image-generation = "grok-imagine-image"
-tts              = "kokoro-82m-v1-0-onnx-fp16"
-stt              = "faster-whisper-small"
-summarize        = "glm-5p3-flash"
 
 
 [models.minimax-m3]
