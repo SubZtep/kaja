@@ -7,7 +7,8 @@ export async function nextBackupPath(path: string): Promise<string> {
   const ext = extname(path)
   const stem = path.slice(0, path.length - ext.length)
   let candidate = `${stem}.bak${ext}`
-  for (let n = 2; existsSync(candidate); n++) candidate = `${stem}.bak.${n}${ext}`
+  let n = 2
+  while (existsSync(candidate)) candidate = `${stem}.bak.${n++}${ext}`
   return candidate
 }
 

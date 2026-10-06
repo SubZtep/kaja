@@ -15,7 +15,7 @@ const REPORT = new RegExp(String.raw`${ESC}\[(?:M[\s\S]{3}|[<>?]?[\d;:]*[@-~])`,
 
 /** The escape sequences in a raw stdin chunk, ESC included, in order; text between them is skipped. */
 export function splitTerminalReports(chunk: string): string[] {
-  return chunk.match(REPORT) ?? []
+  return Array.from(chunk.matchAll(REPORT), match => match[0])
 }
 
 /**

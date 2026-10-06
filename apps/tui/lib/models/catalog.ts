@@ -81,6 +81,49 @@ const HEADER = `# Kaja models. Each [models.<id>] names the API it runs on (\`pr
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 `
 
+type ModelEntry = { id: string; provider: string; model: string; tasks: ModelTask[] }
+
+// A provider's [providers.<id>] table, under its comment lines.
+function providerTable(provider: CatalogProvider, baseUrl: string): string {
+  const lines = [...(provider.comment ?? []).map(line => `# ${line}`), `[providers.${provider.id}]`]
+  const note = provider.note ? `  # ${provider.note}` : ""
+  lines.push(`base_url = ${JSON.stringify(baseUrl)}${note}`)
+  return lines.join("\n")
+}
+
+// Each task's model: the candidate of the provider picked for it, else the first one.
+function pickedModels(
+  candidates: Partial<Record<ModelTask, ModelCandidate[]>>,
+  pick: Partial<Record<ModelTask, string>>
+): Map<ModelTask, ModelCandidate> {
+  const chosen = new Map<ModelTask, ModelCandidate>()
+  for (const task of TASK_ORDER) {
+    const options = candidates[task]
+    if (options?.length) chosen.set(task, options.find(option => option.provider === pick[task]) ?? options[0]!)
+  }
+  return chosen
+}
+
+// Lists each task on its other candidates' entries too; `order` is the picked entries, top to bottom.
+function addAlternatives(
+  chosen: Map<ModelTask, ModelCandidate>,
+  candidates: Partial<Record<ModelTask, ModelCandidate[]>>,
+  order: ModelEntry[],
+  entryFor: (option: ModelCandidate) => ModelEntry
+): void {
+  for (const [task, picked] of chosen) {
+    const pickedAt = order.indexOf(entryFor(picked))
+    for (const option of candidates[task]!) {
+      if (option === picked) continue
+      const entry = entryFor(option)
+      // A picked model of another task sitting above this task's pick can't list it, or it would win.
+      const at = order.indexOf(entry)
+      if (at !== -1 && at < pickedAt) continue
+      entry.tasks.push(task)
+    }
+  }
+}
+
 /**
  * Builds models.toml text for the chosen providers: each task's picked model is the first entry listing it,
  * and every model written is keyed by the slug of its name (a model serving several tasks is one entry). The
@@ -91,16 +134,10 @@ const HEADER = `# Kaja models. Each [models.<id>] names the API it runs on (\`pr
 export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternatives = true }: ModelsSelection): string {
   const out: string[] = [HEADER.trimEnd()]
 
-  for (const provider of providers) {
-    const lines = [...(provider.comment ?? []).map(line => `# ${line}`), `[providers.${provider.id}]`]
-    const url = JSON.stringify(baseUrls[provider.id] ?? provider.baseUrl)
-    const note = provider.note ? `  # ${provider.note}` : ""
-    lines.push(`base_url = ${url}${note}`)
-    out.push(lines.join("\n"))
-  }
+  for (const provider of providers) out.push(providerTable(provider, baseUrls[provider.id] ?? provider.baseUrl))
 
   // One entry per provider and model name, in task order, collecting every task it's written for.
-  const entries = new Map<string, { id: string; provider: string; model: string; tasks: ModelTask[] }>()
+  const entries = new Map<string, ModelEntry>()
   const taken = new Set<string>()
   const entryFor = (option: ModelCandidate) => {
     const key = `${option.provider}\n${option.model}`
@@ -115,27 +152,10 @@ export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternati
   }
 
   const candidates = candidatesByTask(providers)
-  const chosen = new Map<ModelTask, ModelCandidate>()
-  for (const task of TASK_ORDER) {
-    const options = candidates[task]
-    if (options?.length) chosen.set(task, options.find(option => option.provider === pick[task]) ?? options[0]!)
-  }
+  const chosen = pickedModels(candidates, pick)
   // The picked models first, so each is the first entry listing its task.
   for (const [task, option] of chosen) entryFor(option).tasks.push(task)
-  if (alternatives) {
-    const order = [...entries.values()]
-    for (const [task, picked] of chosen) {
-      const pickedAt = order.indexOf(entryFor(picked))
-      for (const option of candidates[task]!) {
-        if (option === picked) continue
-        const entry = entryFor(option)
-        // A picked model of another task sitting above this task's pick can't list it, or it would win.
-        const at = order.indexOf(entry)
-        if (at !== -1 && at < pickedAt) continue
-        entry.tasks.push(task)
-      }
-    }
-  }
+  if (alternatives) addAlternatives(chosen, candidates, [...entries.values()], entryFor)
 
   for (const entry of entries.values()) {
     out.push(
