@@ -1,0 +1,26 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "extends": "//",
+  "overrides": [
+    {
+      "includes": ["src/emails/**"],
+      "linter": {
+        "domains": {
+          "react": "recommended"
+        },
+        "rules": {
+          "performance": {
+            "noSyncScripts": "on"
+          },
+          "security": {
+            "noDangerouslySetInnerHtml": "on",
+            "noDangerouslySetInnerHtmlWithChildren": "on"
+          },
+          "suspicious": {
+            "noUnknownAttribute": "on"
+          }
+        }
+      }
+    }
+  ]
+}

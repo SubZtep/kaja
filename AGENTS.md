@@ -27,7 +27,7 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | What | Path |
 |------|------|
 | Docker Compose | `compose.yaml` |
-| Biome config | `biome.json` (not `biome.jsonc`) |
+| Biome config | `biome.json` (not `biome.jsonc`) at the root, plus `apps/{web,tui,api}/biome.json` that extend it (`"extends": "//"`) |
 | Root TS config | `tsconfig.json` |
 | Lockfile | `bun.lock` |
 | API env examples | `apps/api/.env.example` |
@@ -153,6 +153,7 @@ Each file only creates; there are no patch migrations, so a schema change until 
 ## Code Style
 
 - Biome (`biome.json`): line width 120, double quotes, semicolons asNeeded, no trailing commas, spaces; organizes imports
+- Biome rules: the root `biome.json` holds the formatter and the repo-wide rules (test, import-graph and type-aware ones; those make a full lint scan the project, ~3-4 s); each package with its own needs has a `biome.json` that extends it with `"extends": "//"` (web: React, DOM and Tailwind rules, and the `routeTree.gen.ts` ignore; tui: React rules; api: React and DOM rules for `src/emails`). Root `overrides` and `files.includes` paths don't reach into a package that has its own config, so package rules go in that package's file, with paths relative to it; bump every `$schema` URL together
 - Biome and Tombi aren't dependencies: the lint scripts run the machine's `biome` and `tombi` through `scripts/tool.ts` (`scripts/models.ts` uses its `toolPath`), which says how to install a missing one and warns when its major.minor version isn't the pinned one's; `scripts/lib/tools.ts` pins them (Biome's from `biome.json`'s `$schema` URL), and CI installs those versions with `biomejs/setup-biome` and `tombi-toml/setup-tombi`
 - `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint`/`lint:fix` also run `tombi format`/`tombi lint` on TOML files
 - TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`

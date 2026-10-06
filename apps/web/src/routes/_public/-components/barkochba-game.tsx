@@ -272,6 +272,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
             <div className="mb-3 flex items-center justify-center gap-1">
               {Array.from({ length: MAX_QUESTIONS }, (_, i) => (
                 <span
+                  // biome-ignore lint/suspicious/noArrayIndexKey: one dot per question slot, so the index is its identity
                   key={`q-${i + 1}`}
                   className={`size-1.5 rounded-full ${i < questionCount ? "bg-neon" : "bg-border"}`}
                 />

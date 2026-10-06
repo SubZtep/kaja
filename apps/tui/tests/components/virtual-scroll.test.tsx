@@ -6,6 +6,7 @@ import { renderForTest } from "../test-utils"
 
 // Ten two-row items in a three-row viewport
 const items = Array.from({ length: 10 }, (_, i) => (
+  // biome-ignore lint/suspicious/noArrayIndexKey: a fixed list that never reorders
   <Box key={`item-${i}`} flexDirection="column">
     <Text>item-{i}-top</Text>
     <Text>item-{i}-bottom</Text>

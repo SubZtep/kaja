@@ -33,6 +33,10 @@ import { UserInput } from "./user-input"
 /** Docs shown by the help keybar entry. */
 const HELP_URL = "https://docs.kaja.io/using/tui/"
 
+// Shared empty defaults: a fresh `[]` per render would change the prop each time
+const NO_PERSONAS: Persona[] = []
+const NO_MODELS: CliResolvedModel[] = []
+
 /** Which optional chat capabilities the active backend supports — cloud Nasi has no local TTS to speak replies with. */
 type Capabilities = { persona: boolean; voice: boolean }
 
@@ -121,7 +125,7 @@ function Chrome({
   personaModels,
   history,
   capabilities,
-  personas = [],
+  personas = NO_PERSONAS,
   currentPersonaId,
   switchPersona,
   pendingCommand,
@@ -276,7 +280,7 @@ function Chrome({
 
 function LocalApp({
   initialPreferences,
-  models = [],
+  models = NO_MODELS,
   personas,
   openaiApiModel,
   tools,

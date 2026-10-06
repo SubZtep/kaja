@@ -1,10 +1,10 @@
 import { existsSync } from "node:fs"
-import { join } from "node:path"
 import { statusLine } from "../doctor/status"
 import { t } from "../i18n"
 import { markdownToTerminal } from "../markdown/md-terminal"
 import { fetchModelsToml, getModelsPath } from "../models/models"
 import { listPaths } from "../paths"
+import { pathForBundleKey, pickBundleFiles } from "./bundle"
 import { fetchCommandsToml } from "./commands"
 import { getConfigDir } from "./config"
 import { writeTemplateConfig } from "./fetch"
@@ -13,23 +13,11 @@ import { fetchSecretsToml } from "./secrets"
 
 type FetchResult = { path: string; backedUpTo?: string; unchanged?: boolean; kept?: boolean }
 
-const BUNDLE_FILES = new Set(["models.toml", "commands.toml"])
-
-/** The server bundle's files that `fetch` writes; personas and MCP servers, like the rest of the marketplace, come from `kaja abilities update`. */
-export function pickBundleFiles(files: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(Object.entries(files).filter(([key]) => BUNDLE_FILES.has(key)))
-}
-
 function fetchResultLine({ path, backedUpTo, unchanged, kept }: FetchResult) {
   if (kept) return statusLine("info", t("config.fetchedKept", { path }))
   if (unchanged) return statusLine("info", t("config.fetchedUnchanged", { path }))
   if (backedUpTo) return statusLine("success", t("config.fetchedWithBackup", { path, backup: backedUpTo }))
   return statusLine("success", t("config.fetched", { path }))
-}
-
-/** Maps a bundle file key ("models.toml") to its on-disk path under the config dir. */
-export function pathForBundleKey(key: string): string {
-  return join(getConfigDir(), key)
 }
 
 function matchesOnly(key: string, only: string | undefined): boolean {

@@ -14,20 +14,20 @@ const events: TimelineEvent[] = [
 ]
 
 test("thinking toggle shows or hides reasoning on re-render", async () => {
-  const t = renderForTest(events.map((item, i) => <TimelineItem key={i} item={item} thinking={true} />))
+  const t = renderForTest(events.map(item => <TimelineItem key={item.type} item={item} thinking={true} />))
   await t.tick()
 
   expect(t.output()).toContain("SECRET-THOUGHTS")
   expect(t.output()).toContain("hello")
   expect(t.output()).toContain("world")
 
-  t.rerender(events.map((item, i) => <TimelineItem key={i} item={item} thinking={false} />))
+  t.rerender(events.map(item => <TimelineItem key={item.type} item={item} thinking={false} />))
   await t.tick()
   expect(t.lastFrame()).toContain("hello")
   expect(t.lastFrame()).toContain("world")
   expect(t.lastFrame()).not.toContain("SECRET-THOUGHTS")
 
-  t.rerender(events.map((item, i) => <TimelineItem key={i} item={item} thinking={true} />))
+  t.rerender(events.map(item => <TimelineItem key={item.type} item={item} thinking={true} />))
   await t.tick()
   expect(t.lastFrame()).toContain("SECRET-THOUGHTS")
 

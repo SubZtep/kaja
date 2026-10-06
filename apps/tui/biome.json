@@ -1,0 +1,47 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "extends": "//",
+  "linter": {
+    "domains": {
+      "react": "recommended"
+    },
+    "rules": {
+      "correctness": {
+        "noChildrenProp": "off",
+        "useExhaustiveDependencies": {
+          "level": "warn",
+          "fix": "none"
+        },
+        "noNestedComponentDefinitions": "on",
+        "noReactPropAssignments": "on",
+        "noRenderReturnValue": "on",
+        "useJsxKeyInIterable": "on"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "on",
+        "noDuplicatedSpreadProps": "on",
+        "noReactForwardRef": "on"
+      },
+      "style": {
+        "useReactFunctionComponents": "on"
+      },
+      "nursery": {
+        "noJsxLeakedDollar": "on",
+        "noReactStringRefs": "on",
+        "noReactObjectTypeAsDefaultProp": "on"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["lib/markdown/marked-terminal.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ]
+}

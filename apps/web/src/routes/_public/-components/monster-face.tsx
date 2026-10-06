@@ -318,7 +318,7 @@ export function MonsterFace({ className, onReady }: Readonly<{ className?: strin
     >
       <div
         ref={faceRef}
-        className="relative h-full w-full transition-transform duration-100 ease-out"
+        className="relative size-full transition-transform duration-100 ease-out"
         style={{ transformStyle: "preserve-3d" }}
       >
         {GROUPS.map(g => (

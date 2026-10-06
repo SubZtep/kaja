@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util"
-import pkg from "../../package.json"
+import pkg from "../../package.json" with { type: "json" }
 import { t } from "../i18n"
 
 const options = {
