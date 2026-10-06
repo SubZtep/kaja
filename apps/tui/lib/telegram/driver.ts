@@ -37,7 +37,7 @@ import { DEFAULT_PERSONA_ID, type Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
 
 /** What the running bot loaded: skills (load_skill's list) and tool abilities (community tools' `ability:<name>` source), by name. */
-function loadedAbilities(tools: Tool<any>[]): { skills: string[]; tools: string[] } {
+function loadedAbilities(tools: Tool[]): { skills: string[]; tools: string[] } {
   const loadSkill = tools.find(tool => toolName(tool) === LOAD_SKILL_TOOL) as LoadSkillTool | undefined
   const abilities = tools.flatMap(tool =>
     tool.origin === "community" && tool.source?.startsWith("ability:") ? [tool.source.slice("ability:".length)] : []
@@ -49,7 +49,7 @@ function loadedAbilities(tools: Tool<any>[]): { skills: string[]; tools: string[
 }
 
 /** The /abilities reply: what this bot loaded, and how to change it (on the computer: this bot builds its tools once, at start). */
-function abilitiesMessage(tools: Tool<any>[], personas: Persona[]): string {
+function abilitiesMessage(tools: Tool[], personas: Persona[]): string {
   const loaded = loadedAbilities(tools)
   // default always loads, so like `kaja abilities` it isn't listed as an ability.
   const picked = personas.map(p => p.id).filter(id => id !== DEFAULT_PERSONA_ID)

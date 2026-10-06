@@ -82,7 +82,7 @@ export async function connectMcpServer(
   server: McpServerEntry,
   tempDir: string,
   opts: McpConnectOptions = {}
-): Promise<{ tools: Tool<any>[]; close: () => Promise<void> }> {
+): Promise<{ tools: Tool[]; close: () => Promise<void> }> {
   const transport = createTransport(server, opts)
 
   const client = new Client({ name: "kaja", version: "1.0.0" })

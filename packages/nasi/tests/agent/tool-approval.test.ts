@@ -63,7 +63,7 @@ function agentWith(script: Parameters<typeof fakeClient>[0]) {
 }
 
 async function collect(gen: AsyncGenerator<unknown>) {
-  const events: any[] = []
+  const events: unknown[] = []
   for await (const event of gen) events.push(event)
   return events
 }

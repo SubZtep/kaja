@@ -23,7 +23,7 @@ test("resolver returning undefined for this persona (e.g. not pinned, no active 
 
 test("resolver's model for the given ctx.personaId is used in the outgoing request", async () => {
   let capturedUrl: string | undefined
-  let capturedBody: any
+  let capturedBody: { model?: string } = {}
   let capturedAuth: string | null = null
   globalThis.fetch = (async (url: string, init: RequestInit) => {
     capturedUrl = url

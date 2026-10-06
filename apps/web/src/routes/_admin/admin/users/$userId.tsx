@@ -30,7 +30,7 @@ function UserPageComponent() {
       if (error) toast.error(error.message)
       if (data) setUser(data)
     })()
-  }, [userId])
+  }, [authClient, userId])
 
   if (!user) return <Loader />
 

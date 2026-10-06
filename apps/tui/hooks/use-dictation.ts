@@ -23,6 +23,7 @@ export function useDictation(
   const deliver = useRef(onUtterance)
   deliver.current = onUtterance
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `personaModels` picks the model when STT first starts; a change shouldn't pause or resume it
   useEffect(() => {
     if (!listening) {
       stt.current?.pause()

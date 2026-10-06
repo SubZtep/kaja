@@ -45,7 +45,7 @@ export async function fetchSpeech(
       input: text,
       warmupTts: true,
       warmupStt: true,
-      onmessage: (msg: any) => {
+      onmessage: (msg: { type?: string }) => {
         if (msg.type === "warmup_done") {
           log.debug("tts: warmup done")
         } else if (msg.type === "warmup_error") {

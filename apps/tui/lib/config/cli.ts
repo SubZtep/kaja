@@ -54,8 +54,8 @@ async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number;
     try {
       const results = await runFetchOffline(only)
       return { code: 0, text: results.map(fetchResultLine).join("\n") }
-    } catch (error: any) {
-      return { code: 1, text: error?.message ?? String(error) }
+    } catch (error) {
+      return { code: 1, text: error instanceof Error ? error.message : String(error) }
     }
   }
 
@@ -69,13 +69,18 @@ async function runFetch({ offline, only }: ConfigFlags): Promise<{ code: number;
     const results = [...secretsResult, ...(remoteResults ?? [])]
     if (results.length === 0) return { code: 0, text: statusLine("success", t("config.fetchAllUpToDate")) }
     return { code: 0, text: results.map(fetchResultLine).join("\n") }
-  } catch (error: any) {
-    console.log(statusLine("warning", t("config.fetchOfflineFallback", { message: error?.message ?? String(error) })))
+  } catch (error) {
+    console.log(
+      statusLine(
+        "warning",
+        t("config.fetchOfflineFallback", { message: error instanceof Error ? error.message : String(error) })
+      )
+    )
     try {
       const results = await runFetchOffline(only)
       return { code: 0, text: results.map(fetchResultLine).join("\n") }
-    } catch (fallbackError: any) {
-      return { code: 1, text: fallbackError?.message ?? String(fallbackError) }
+    } catch (fallbackError) {
+      return { code: 1, text: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) }
     }
   }
 }
@@ -93,8 +98,8 @@ async function runDiff({ offline }: ConfigFlags): Promise<{ code: number; text: 
   try {
     const lines = await diffConfig(Boolean(offline))
     return { code: 0, text: lines.join("\n") }
-  } catch (error: any) {
-    return { code: 1, text: error?.message ?? String(error) }
+  } catch (error) {
+    return { code: 1, text: error instanceof Error ? error.message : String(error) }
   }
 }
 

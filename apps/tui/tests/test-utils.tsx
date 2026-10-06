@@ -13,32 +13,35 @@ const ansi = /\x1b\[[0-9;?]*[a-zA-Z]/g
  * chunk written for later inspection.
  */
 export function renderForTest(node: ReactNode, options?: { columns?: number; rows?: number }) {
-  const stdin = new Readable({ read() {} }) as any
-  stdin.isTTY = true
-  stdin.setRawMode = () => {}
-  stdin.setEncoding = () => {}
-  stdin.ref = () => {}
-  stdin.unref = () => {}
+  const stdin = Object.assign(new Readable({ read() {} }), {
+    isTTY: true,
+    setRawMode: () => {},
+    setEncoding: () => {},
+    ref: () => {},
+    unref: () => {}
+  })
 
   const chunks: string[] = []
   // Bumped every time Ink writes a frame, so press() can wait for writes to go quiet instead of sleeping a fixed duration — a wall-clock guess is either wasted time on a fast repaint or, under a loaded runner (this was flaky in CI even at 300ms), not long enough and reads a stale frame. A single keypress can produce more than one write for the same state update, so this waits for the count to stop changing, not just for the first write to land.
   let writeCount = 0
-  const stdout = new EventEmitter() as any
-  stdout.isTTY = true
-  stdout.columns = options?.columns ?? 80
-  stdout.rows = options?.rows ?? 24
-  // Calls back like a real stream: Ink 8 resolves waitUntilExit() from a `write("", callback)` barrier on unmount
-  stdout.write = (chunk: string, encodingOrCallback?: unknown, callback?: () => void) => {
-    chunks.push(chunk)
-    writeCount++
-    const done = typeof encodingOrCallback === "function" ? encodingOrCallback : callback
-    if (done) queueMicrotask(() => done())
-    return true
-  }
+  const stdout = Object.assign(new EventEmitter(), {
+    isTTY: true,
+    columns: options?.columns ?? 80,
+    rows: options?.rows ?? 24,
+    // Calls back like a real stream: Ink 8 resolves waitUntilExit() from a `write("", callback)` barrier on unmount
+    write: (chunk: string, encodingOrCallback?: unknown, callback?: () => void) => {
+      chunks.push(chunk)
+      writeCount++
+      const done = typeof encodingOrCallback === "function" ? encodingOrCallback : callback
+      if (done) queueMicrotask(() => done())
+      return true
+    }
+  })
 
   const app = render(node, {
-    stdout,
-    stdin,
+    // Fakes with only what Ink uses, not whole TTY streams
+    stdout: stdout as unknown as NodeJS.WriteStream,
+    stdin: stdin as unknown as NodeJS.ReadStream,
     exitOnCtrlC: false,
     patchConsole: false,
     // Ink's CI autodetection (is-in-ci) would otherwise force non-interactive mode here too, which stops it painting anything but the final frame.

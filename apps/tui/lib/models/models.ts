@@ -150,8 +150,10 @@ export async function loadModelsFile(): Promise<ResolvedModelsFile> {
       ])
     )
     return { ...parsed, providers }
-  } catch (error: any) {
-    console.log(t("models.invalidAt", { path: modelsPath, message: error.message }))
+  } catch (error) {
+    console.log(
+      t("models.invalidAt", { path: modelsPath, message: error instanceof Error ? error.message : String(error) })
+    )
     process.exit(1)
   }
 }

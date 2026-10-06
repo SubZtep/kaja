@@ -12,6 +12,7 @@ import { useEffect, useState } from "react"
 export function useBlink(intervalMs: number, active: boolean, resetKey?: unknown): boolean {
   const [on, setOn] = useState(true)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `resetKey` isn't read; a change restarts the cycle
   useEffect(() => {
     if (!active) {
       setOn(false)

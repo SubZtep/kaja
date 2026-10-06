@@ -2,20 +2,20 @@ import { join } from "node:path"
 import type { Tool } from "../agent/tools"
 import { warn } from "../warn"
 
-function isTool(value: unknown): value is Tool<any> {
+function isTool(value: unknown): value is Tool {
   return (
     typeof value === "object" &&
     value !== null &&
     "definition" in value &&
     "execute" in value &&
-    typeof (value as Tool<any>).execute === "function"
+    typeof (value as Tool).execute === "function"
   )
 }
 
 /** Loads user-supplied tools from `dir/*.ts`, each tagged with its `plugin:<file>` source. */
-export async function loadPluginTools(dir: string): Promise<Tool<any>[]> {
+export async function loadPluginTools(dir: string): Promise<Tool[]> {
   const glob = new Bun.Glob("*.ts")
-  const tools: Tool<any>[] = []
+  const tools: Tool[] = []
   let entries: string[]
   try {
     entries = []

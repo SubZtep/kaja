@@ -13,7 +13,9 @@ import CATALOG_TOML from "../../../docs/config/catalog.toml" with { type: "text"
 import MODELS_TEMPLATE from "../../../docs/config/models.default.toml" with { type: "text" }
 
 /** Minimal surface both `pg`'s Pool and Client satisfy, so migrate.ts can reuse its own connection. */
-type Queryable = { query: (sql: string, values?: unknown[]) => Promise<{ rows: any[]; rowCount: number | null }> }
+type Queryable = {
+  query: (sql: string, values?: unknown[]) => Promise<{ rows: { id: string }[]; rowCount: number | null }>
+}
 
 async function seedModels(db: Queryable) {
   const data = ModelsFileSchema.parse(TOML.parse(MODELS_TEMPLATE))
@@ -45,7 +47,7 @@ async function seedModels(db: Queryable) {
       `,
       [name, provider.base_url]
     )
-    providerIds[name] = result.rows[0].id
+    providerIds[name] = result.rows[0]!.id
   }
 
   let count = 0

@@ -476,7 +476,7 @@ export function TextInput({
       }
       return prev
     })
-  }, [originalValue, focus, showCursor])
+  }, [originalValue, canFocus, showCursor])
 
   useInput(
     (input, key) => {

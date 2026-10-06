@@ -202,10 +202,10 @@ function responseFromEvents(
 
 export class Nasi {
   readonly opts: NasiOpenOptions
-  private readonly tools: Tool<any>[]
+  private readonly tools: Tool[]
   private readonly closeTools: () => Promise<void>
 
-  private constructor(opts: NasiOpenOptions, tools: Tool<any>[], closeTools: () => Promise<void>) {
+  private constructor(opts: NasiOpenOptions, tools: Tool[], closeTools: () => Promise<void>) {
     this.opts = opts
     this.tools = tools
     this.closeTools = closeTools

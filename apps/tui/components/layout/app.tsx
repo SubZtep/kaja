@@ -292,7 +292,7 @@ function LocalApp({
   models?: CliResolvedModel[]
   personas: Persona[]
   openaiApiModel: string
-  tools: Tool<any>[]
+  tools: Tool[]
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   initialSession?: PersistedSession
@@ -438,7 +438,7 @@ type LocalAppProps = Readonly<{
   models?: CliResolvedModel[]
   personas: Persona[]
   openaiApiModel: string
-  tools: Tool<any>[]
+  tools: Tool[]
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   /** A persisted session to continue (--continue / --session <id>). */

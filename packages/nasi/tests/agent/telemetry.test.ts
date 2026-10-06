@@ -70,7 +70,7 @@ const gated: Tool<{ title: string }> = {
   approval: args => `do ${args.title}`
 }
 
-function agentWith(script: Round[], tools: Tool<any>[] = [echo, boom, gated]) {
+function agentWith(script: Round[], tools: Tool[] = [echo, boom, gated]) {
   return new Agent({ model: "requested", client: fakeClient(script), tools, promptContext: { environment: "test" } })
 }
 

@@ -39,7 +39,7 @@ const CLOUD_SAFE = new Set([
 /** Builtins that stay visible to the model in cloud mode but must run on the client, not the server — the server has no access to the user's machine. See `Tool.requiresClientExecution`. */
 const CLIENT_EXECUTABLE = new Set(["read_file", "list_files"])
 
-function toClientExecutableStub(t: Tool<any>): Tool<any> {
+function toClientExecutableStub(t: Tool): Tool {
   return {
     definition: t.definition,
     requiresClientExecution: true,
@@ -85,7 +85,7 @@ export type ToolGroup = {
   origin: ToolOrigin
   /** Stamped on every tool in the group; when unset, each tool keeps its own `source`. */
   source?: string
-  tools: Tool<any>[]
+  tools: Tool[]
 }
 
 /** A tool left out of the model's list because its name was already in use. */
@@ -105,14 +105,14 @@ const ORIGIN_ORDER: ToolOrigin[] = ["official", "community", "third-party"]
  * duplicate names, so the model never gets two functions with the same name. Official names
  * are reserved; between the others, community beats third-party and the first one in wins.
  */
-export function mergeTools(groups: ToolGroup[]): { tools: Tool<any>[]; skipped: SkippedTool[] } {
+export function mergeTools(groups: ToolGroup[]): { tools: Tool[]; skipped: SkippedTool[] } {
   const ordered = groups.toSorted((a, b) => ORIGIN_ORDER.indexOf(a.origin) - ORIGIN_ORDER.indexOf(b.origin))
-  const byName = new Map<string, Tool<any>>()
+  const byName = new Map<string, Tool>()
   const skipped: SkippedTool[] = []
 
   for (const group of ordered) {
     for (const t of group.tools) {
-      const stamped: Tool<any> = { ...t, origin: group.origin, source: group.source ?? t.source }
+      const stamped: Tool = { ...t, origin: group.origin, source: group.source ?? t.source }
       const name = toolName(t)
       const existing = byName.get(name)
       if (!existing) {
@@ -134,7 +134,7 @@ export function mergeTools(groups: ToolGroup[]): { tools: Tool<any>[]; skipped: 
   return { tools: [...byName.values()], skipped }
 }
 
-type McpConnection = { tools: Tool<any>[]; close: () => Promise<void>; failed: boolean; id: string }
+type McpConnection = { tools: Tool[]; close: () => Promise<void>; failed: boolean; id: string }
 
 type McpTarget = { id: string; server: McpServerEntry; opts?: McpConnectOptions; timeoutMs?: number }
 
@@ -181,7 +181,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
 
   const local = opts.includeLocalTools === true
 
-  const builtin: Tool<any>[] = [
+  const builtin: Tool[] = [
     readFileTool,
     listFilesTool,
     // Local fetches from the user's own machine; cloud egresses from the server, so it needs a proxy configured or it stays off.

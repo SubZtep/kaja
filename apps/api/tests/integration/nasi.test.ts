@@ -183,7 +183,7 @@ describe("nasi", () => {
         })
         expect(res.status).toBe(200)
         const system = capturedMessages.find(
-          (m): m is { role: string; content: string } => (m as any).role === "system"
+          (m): m is { role: string; content: string } => (m as { role?: unknown }).role === "system"
         )
         expect(system?.content).toContain("Hungarian")
       }
@@ -204,7 +204,7 @@ describe("nasi", () => {
         })
         expect(res.status).toBe(200)
         const system = capturedMessages.find(
-          (m): m is { role: string; content: string } => (m as any).role === "system"
+          (m): m is { role: string; content: string } => (m as { role?: unknown }).role === "system"
         )
         expect(system?.content).not.toContain("Hungarian")
       }
