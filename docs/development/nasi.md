@@ -152,7 +152,7 @@ flowchart TD
 
     Calls -->|yes| Dispatch{"which tool?"}
     Dispatch -->|"ask_user"| AskEv["yield ask_user<br>set pendingAskUserId"] --> Wait(["return — wait for host"])
-    Dispatch -->|"run_command"| Risk{"matches a safe pattern,<br>no metacharacters,<br>not dangerous?"}
+    Dispatch -->|"run_command"| Risk{"matches a safe pattern,<br>no metacharacters,<br>not dangerous,<br>no credential path?"}
     Risk -->|yes| AutoRun["run immediately<br>result → messages"] --> Fit
     Risk -->|no| ConfirmEv["yield confirm_command<br>set pendingRunCommandId"] --> Wait
     Dispatch -->|"switch_persona"| Switch["applyPersona()<br>rewrite system message<br>maybe swap model"] --> Fit
@@ -181,7 +181,8 @@ shortened. Only what the model is sent changes (`contextMessages()`).
   `condenseOversizedResults()`, told which call produced them and what the user asked. The model gets the
   condensed text (`Session.toolSummaries`, by call id), and the tool message keeps the full output.
 - **Images** from before the last two user prompts are sent as a short note. The model saw them when they
-  were new, and resending the bytes every round is costly. The log keeps them.
+  were new, and resending the bytes every round is costly. The log keeps them. The cloud store doesn't even
+  download the bytes of images the latest summary covers.
 - **Compaction.** When a character-count estimate, scaled each round to what the provider actually counted,
   passes `Agent.compactAt` (0.8 by default) of the window, `compactSession()` summarises everything before a
   tail that fits a quarter of it. The tail starts at a user turn where it can, never at a tool result.

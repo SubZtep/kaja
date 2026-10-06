@@ -21,7 +21,7 @@ src/banner.ts     # the startup banner: the monster, version and setup
 src/tunnel.ts     # connectTunnel: dials KAJA_API_URL, hello/welcome (instance id+secret kept in SANDBOX_STATE_DIR), heartbeat every minute, reconnect with backoff; TunnelServer runs request/cancel/stats frames
 src/hardware.ts   # hello info (cpu, memory, arch, os, version, cap, abilities) and heartbeat load
 src/capacity.ts   # defaultMaxProcesses (512 MB per server of the memory limit, less 512 MB), hasRoom (512 MB free now)
-src/isolation.ts  # UserIsolation: a uid per user (LRU reuse), asUser: the prlimit + setpriv wrapper
+src/isolation.ts  # UserIsolation: a uid per user (LRU reuse, skipping a uid that still has a process in /proc), asUser: the prlimit + setpriv wrapper
 src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES, else from memory): full or short of memory, it stops the least recently used idle server, 503 + x-kaja-sandbox-full only when that doesn't help; memory watchdog (SANDBOX_SERVER_MEMORY); release
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
 src/stats.ts      # stats frame: pool servers and counts, process-tree RSS from /proc, host + cgroup memory, egress counts

@@ -166,6 +166,44 @@ describe("postgres store", () => {
     ])
   })
 
+  test("images the latest summary already covers are not downloaded again", async () => {
+    const store = createPostgresStore(pool, userId)
+    const early = "data:image/png;base64,AAAA"
+    const late = "data:image/png;base64,BBBB"
+    const messages: Messages = [
+      { role: "system", content: "be helpful" },
+      { role: "user", content: [{ type: "image_url", image_url: { url: early } }] },
+      { role: "assistant", content: "saw it" },
+      { role: "user", content: [{ type: "image_url", image_url: { url: late } }] },
+      { role: "assistant", content: "and that" }
+    ]
+    const id = await store.createSession({
+      ...write(messages, { session: { messages, summary: { text: "earlier", from: 3 } } }),
+      title: "t"
+    })
+    const { rows } = await pool.query(
+      "SELECT seq, parts::text AS parts FROM nasi_message WHERE session_id = $1 AND parts IS NOT NULL ORDER BY seq",
+      [id]
+    )
+    const hashOf = (seq: number) => rows.find(row => row.seq === seq).parts.match(/kaja-image:([0-9a-f]+)/)[1] as string
+    const earlyHash = hashOf(0)
+    const lateHash = hashOf(2)
+    const download = spyOn(files, "download")
+    try {
+      const loaded = (await store.loadSession(id))!
+      const downloads = download.mock.calls.map(([key]) => String(key))
+      expect(loaded.session.summary).toEqual({ text: "earlier", from: 3 })
+      expect(loaded.session.messages.map(message => message.role)).toEqual(messages.map(message => message.role))
+      expect(loaded.session.messages[3]).toEqual(messages[3])
+      expect(JSON.stringify(loaded.session.messages[1])).toContain(`kaja-image:${earlyHash}`)
+      expect(JSON.stringify(loaded.session.messages[1])).not.toContain("base64,AAAA")
+      expect(downloads.some(key => key.endsWith(earlyHash))).toBe(false)
+      expect(downloads.some(key => key.endsWith(lateHash))).toBe(true)
+    } finally {
+      download.mockRestore()
+    }
+  })
+
   test("an inline image goes to object storage, with a reference in the message, and leaves with its session", async () => {
     const store = createPostgresStore(pool, userId)
     const id = await store.createSession({ ...write(TURN), title: "t" })

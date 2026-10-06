@@ -24,7 +24,7 @@ export function Avatar({
       )}
     >
       {src ? (
-        <img alt={alt} className="h-full w-full object-cover" src={src} />
+        <img alt={alt} className="size-full object-cover" src={src} />
       ) : (
         <span className={cn("font-mono font-semibold text-neon", SIZES[size].text)}>{initials}</span>
       )}

@@ -29,7 +29,7 @@ const sendMessage = mock(async (_chatId: number, _text: string) => ({
 }))
 const getMe = mock(async () => ({ id: 1, is_bot: true, first_name: "bot" }))
 const setMyCommands = mock(async (_commands: { command: string; description: string }[]) => true)
-type Handler = (ctx: any) => unknown
+type Handler = (ctx: unknown) => unknown
 let handlers: Record<string, Handler> = {}
 
 mock.module("grammy", () => ({

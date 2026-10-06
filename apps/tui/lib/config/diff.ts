@@ -4,7 +4,7 @@ import COMMANDS_TEMPLATE from "../../../../docs/config/commands.toml" with { typ
 import MODELS_TEMPLATE from "../../../../docs/config/models.default.toml" with { type: "text" }
 import SECRETS_TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
-import { pathForBundleKey, pickBundleFiles } from "./cli"
+import { pathForBundleKey, pickBundleFiles } from "./bundle"
 import { fetchRemoteConfigBundle } from "./remote-fetch"
 
 function offlineBundle(): Record<string, string> {

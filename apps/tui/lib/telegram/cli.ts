@@ -19,7 +19,7 @@ export async function runTelegramCli(deps: {
   ownerIds: number[]
   /** `--pair`: show a code to pair one more person. */
   pair: boolean
-  tools: Tool<any>[]
+  tools: Tool[]
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   personas: Persona[]

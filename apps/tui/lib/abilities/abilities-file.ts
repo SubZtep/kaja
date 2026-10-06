@@ -45,8 +45,8 @@ export async function loadAbilitiesFile(): Promise<AbilitiesFile> {
   if (!(await f.exists())) return AbilitiesFileSchema.parse({})
   try {
     return AbilitiesFileSchema.parse(TOML.parse(await f.text()))
-  } catch (error: any) {
-    console.log(t("abilities.invalidAt", { path, message: error.message }))
+  } catch (error) {
+    console.log(t("abilities.invalidAt", { path, message: error instanceof Error ? error.message : String(error) }))
     process.exit(1)
   }
 }

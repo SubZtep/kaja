@@ -181,11 +181,13 @@ export function ChatViewport({
   }
 
   // Parent layout / terminal resize: ScrollView needs an explicit remeasure after width *and* height change (footer/header row budget shifts).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `remeasure` only touches refs; the terminal size says when to run it
   useEffect(() => {
     const timer = setTimeout(remeasure, 0)
     return () => clearTimeout(timer)
   }, [columns, rows])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `remeasure` only touches refs, so the listener needn't be re-added each render
   useEffect(() => {
     if (!stdout) return
     const onResize = () => {
@@ -206,6 +208,7 @@ export function ChatViewport({
   }
 
   // New messages / streaming tokens: keep the tail in view when pinned.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `followIfPinned` only touches refs; the listed values are what should trigger a follow
   useEffect(() => {
     // Let ScrollView measure new children, then pad + follow.
     const timer = setTimeout(followIfPinned, 0)

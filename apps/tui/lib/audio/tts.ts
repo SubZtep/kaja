@@ -43,17 +43,6 @@ export async function fetchSpeech(
       model,
       voice,
       input: text,
-      warmupTts: true,
-      warmupStt: true,
-      onmessage: (msg: any) => {
-        if (msg.type === "warmup_done") {
-          log.debug("tts: warmup done")
-        } else if (msg.type === "warmup_error") {
-          log.warn("tts: warmup error", {
-            msg
-          })
-        }
-      },
       response_format: "pcm" // s16le mono 24kHz (its wav output minus the header)
     })
   })

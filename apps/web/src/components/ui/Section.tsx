@@ -30,7 +30,7 @@ export function Section({
         BORDERED[bordered],
         tone === "danger" && "paper-card-danger",
         // unpadded (a table inside) still keeps the frame's edge visible
-        padded ? bordered === "always" && "px-5.5 py-5 sm:px-6 sm:py-6" : "p-0.5",
+        padded ? bordered === "always" && "px-5.5 py-5 sm:p-6" : "p-0.5",
         className
       )}
       style={style}

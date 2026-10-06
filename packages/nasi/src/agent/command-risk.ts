@@ -74,9 +74,21 @@ export const DEFAULT_SAFE_PATTERNS = compileSafeCommands(DEFAULT_SAFE_COMMANDS).
 // a safe pattern only ever approves one simple invocation, whatever it says
 const SHELL_METACHARACTERS = /[;&|`$(){}<>\n]/
 
-/** Whether a command may run without asking: it matches a safe pattern, has no shell metacharacters and isn't dangerous. */
+// Path segments a prompt-injected safe command must not read. `read_file` already refuses `secrets.toml`. `.ssh` covers `~/.ssh/id_rsa` (`~` is legal in a safe path, and `sh -c` expands it).
+const CREDENTIAL_SEGMENTS = new Set(["secrets.toml", ".ssh"])
+
+function readsCredentials(command: string): boolean {
+  for (const token of command.split(/\s+/)) {
+    if (!token || token.startsWith("-")) continue
+    if (token.split("/").some(segment => CREDENTIAL_SEGMENTS.has(segment))) return true
+  }
+  return false
+}
+
+/** Whether a command may run without asking: it matches a safe pattern, has no shell metacharacters, isn't dangerous, and doesn't read a credential path. */
 export function isSafeCommand(command: string, patterns: readonly RegExp[]): boolean {
   const trimmed = command.trim()
   if (SHELL_METACHARACTERS.test(trimmed) || isDangerousCommand(trimmed)) return false
-  return patterns.some(pattern => pattern.test(trimmed))
+  if (!patterns.some(pattern => pattern.test(trimmed))) return false
+  return !readsCredentials(trimmed)
 }

@@ -27,7 +27,12 @@ function positive(value: unknown): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined
 }
 
-async function getJson(fetchFn: Fetch, url: string, init: RequestInit = {}): Promise<any> {
+// A field of a parsed JSON answer, or undefined when the value isn't an object with it.
+function prop(value: unknown, key: string): unknown {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>)[key] : undefined
+}
+
+async function getJson(fetchFn: Fetch, url: string, init: RequestInit = {}): Promise<unknown> {
   try {
     const res = await fetchFn(url, { ...init, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) })
     return res.ok ? await res.json() : undefined
@@ -45,15 +50,18 @@ function rootOf(baseUrl: string): string {
 // llama.cpp: /props reports n_ctx, the size the server actually runs with (per slot).
 async function fromLlamaCpp(fetchFn: Fetch, target: ContextWindowTarget) {
   const props = await getJson(fetchFn, `${rootOf(target.baseUrl)}/props`)
-  return positive(props?.default_generation_settings?.n_ctx) ?? positive(props?.n_ctx)
+  return positive(prop(prop(props, "default_generation_settings"), "n_ctx")) ?? positive(prop(props, "n_ctx"))
 }
 
 // Ollama: a loaded model's running size (/api/ps), else a num_ctx the model sets, else what the model supports.
 async function fromOllama(fetchFn: Fetch, target: ContextWindowTarget) {
   const root = rootOf(target.baseUrl)
   const ps = await getJson(fetchFn, `${root}/api/ps`)
-  const loaded = (ps?.models as any[] | undefined)?.find(m => m?.name === target.model || m?.model === target.model)
-  const running = positive(loaded?.context_length)
+  const models = prop(ps, "models")
+  const loaded = Array.isArray(models)
+    ? models.find(m => prop(m, "name") === target.model || prop(m, "model") === target.model)
+    : undefined
+  const running = positive(prop(loaded, "context_length"))
   if (running) return running
 
   const show = await getJson(fetchFn, `${root}/api/show`, {
@@ -61,15 +69,16 @@ async function fromOllama(fetchFn: Fetch, target: ContextWindowTarget) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ model: target.model })
   })
-  const parameters: string = typeof show?.parameters === "string" ? show.parameters : ""
+  const rawParameters = prop(show, "parameters")
+  const parameters = typeof rawParameters === "string" ? rawParameters : ""
   const numCtx = parameters
     .split("\n")
     .map(line => /^num_ctx\s+(\d+)$/.exec(line.trim()))
     .find(Boolean)
   if (numCtx) return positive(Number(numCtx[1]))
-  const info = show?.model_info as Record<string, unknown> | undefined
-  const key = info && Object.keys(info).find(k => k.endsWith(".context_length"))
-  return key ? positive(info[key]) : undefined
+  const info = prop(show, "model_info")
+  const key = typeof info === "object" && info !== null && Object.keys(info).find(k => k.endsWith(".context_length"))
+  return key ? positive(prop(info, key)) : undefined
 }
 
 // OpenAI-compatible /models: several hosts and vLLM add the window to each entry under one of these names.
@@ -77,12 +86,13 @@ async function fromModelsList(fetchFn: Fetch, target: ContextWindowTarget) {
   const list = await getJson(fetchFn, `${trimTrailingSlashes(target.baseUrl)}/models`, {
     headers: target.apiKey ? { authorization: `Bearer ${target.apiKey}` } : {}
   })
-  const entry = (list?.data as any[] | undefined)?.find(m => m?.id === target.model)
+  const data = prop(list, "data")
+  const entry = Array.isArray(data) ? data.find(m => prop(m, "id") === target.model) : undefined
   return (
-    positive(entry?.context_length) ??
-    positive(entry?.context_window) ??
-    positive(entry?.max_model_len) ??
-    positive(entry?.max_context_length)
+    positive(prop(entry, "context_length")) ??
+    positive(prop(entry, "context_window")) ??
+    positive(prop(entry, "max_model_len")) ??
+    positive(prop(entry, "max_context_length"))
   )
 }
 
@@ -92,7 +102,7 @@ async function fromFireworks(fetchFn: Fetch, target: ContextWindowTarget) {
   const model = await getJson(fetchFn, `${new URL(target.baseUrl).origin}/v1/${target.model}`, {
     headers: target.apiKey ? { authorization: `Bearer ${target.apiKey}` } : {}
   })
-  return positive(model?.contextLength)
+  return positive(prop(model, "contextLength"))
 }
 
 // Every probe at once, so a hosted model doesn't wait on the local-server ones failing; the first in this order that answers wins.

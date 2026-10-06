@@ -1,3 +1,4 @@
+import type { ModelTask } from "@kaja/schema/config"
 import { file, TOML } from "bun"
 import { render } from "ink"
 import type { PickerSelection } from "../../components/ability-picker"
@@ -233,6 +234,12 @@ async function offerModelDownloads(print: (line: string) => void) {
   }
 }
 
+// models.toml as the wizard reads it back: loosely, since a hand-edited file needn't match the schema
+type LooseModelsFile = {
+  providers?: Record<string, { base_url?: string }>
+  models?: Record<string, { provider?: string; model: string; tasks?: ModelTask[] }>
+}
+
 /**
  * The providers models.toml already uses, where each local one listens, and which provider serves
  * each task more than one could — for re-offering what the machine already runs. Tolerant: nothing
@@ -242,12 +249,12 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
   try {
     const f = file(getModelsPath())
     if (!(await f.exists())) return {}
-    const data = TOML.parse(await f.text()) as any
+    const data = TOML.parse(await f.text()) as LooseModelsFile
     const known = CATALOG.filter(provider => data?.providers?.[provider.id])
 
     const addresses: Record<string, string> = {}
     for (const provider of known) {
-      const url = data.providers[provider.id].base_url
+      const url = data.providers?.[provider.id]?.base_url
       if (provider.kind === "self-hosted" && typeof url === "string") addresses[provider.id] = url
     }
 
@@ -256,11 +263,11 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
     const custom: NonNullable<WizardResult["custom"]> | undefined = customName
       ? {
           name: customName,
-          baseUrl: data.providers[customName].base_url,
-          models: Object.values<any>(data.models ?? {})
+          baseUrl: data.providers?.[customName]?.base_url,
+          models: Object.values(data.models ?? {})
             .filter(entry => entry.provider === customName)
             .flatMap(entry =>
-              (Array.isArray(entry.tasks) ? entry.tasks : []).map((task: string) => ({ model: entry.model, task }))
+              (Array.isArray(entry.tasks) ? entry.tasks : []).map(task => ({ model: entry.model, task }))
             )
         }
       : undefined
@@ -273,8 +280,8 @@ async function currentModels(): Promise<Pick<WizardResult, "providers" | "addres
     const models: NonNullable<WizardResult["models"]> = {}
     for (const [task, options] of Object.entries(candidatesByTask(chosenProviders({ providers, custom })))) {
       // The first model in the file that lists the task is the one in use.
-      const active = Object.values<any>(data?.models ?? {}).find(
-        entry => Array.isArray(entry.tasks) && entry.tasks.includes(task)
+      const active = Object.values(data?.models ?? {}).find(
+        entry => Array.isArray(entry.tasks) && entry.tasks.includes(task as ModelTask)
       )?.provider
       if (options.length > 1 && typeof active === "string") models[task as keyof typeof models] = active
     }

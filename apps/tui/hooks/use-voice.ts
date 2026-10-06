@@ -43,6 +43,7 @@ export function useVoice(events: TimelineEvent[], enabled = false, personaModels
     if (enabled) void warmupTts(personaModels)
   }, [enabled, personaModels])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `personaModels` picks the model when TTS first starts; new events are what should speak
   useEffect(() => {
     const pending = events.slice(spoken.current)
     spoken.current = events.length

@@ -19,7 +19,7 @@ export function AuthCard({
         {m.hero_badge()}
       </Sticker>
       <div className="paper-card">
-        <div className="px-4 py-7 sm:px-8 sm:py-8">
+        <div className="px-4 py-7 sm:p-8">
           <div className="mb-6">
             <h1 className="m-0 mb-2 font-display font-extrabold text-fg text-[28px] tracking-[-0.03em]">{title}</h1>
             {description ? <p className="m-0 text-[14.5px] text-muted">{description}</p> : null}

@@ -1,4 +1,4 @@
-import pkg from "../package.json"
+import pkg from "../package.json" with { type: "json" }
 
 // The Kaja monster, /(o▣o)\, in block characters.
 const MONSTER = `

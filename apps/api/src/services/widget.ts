@@ -5,6 +5,17 @@ import type { Pool } from "pg"
 
 const KEY_PREFIX = "kwk_"
 
+type WidgetRow = {
+  id: string
+  label: string
+  key_prefix: string
+  allowed_origins: string[]
+  config: unknown
+  enabled: boolean
+  created_at: Date
+  last_used_at: Date | null
+}
+
 function hashKey(rawKey: string): string {
   return createHash("sha256").update(rawKey).digest("hex")
 }
@@ -91,7 +102,7 @@ export class WidgetService {
     await this.#db.query(`UPDATE widget SET last_used_at = NOW() WHERE id = $1`, [id])
   }
 
-  #rowToWidgetKey(row: any): WidgetKey {
+  #rowToWidgetKey(row: WidgetRow): WidgetKey {
     return {
       id: row.id,
       label: row.label,

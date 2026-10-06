@@ -29,8 +29,8 @@ export async function loadMcpServers(): Promise<KajaMcpFile["servers"]> {
         ? { ...server, headers: { ...server.headers, ...creds } }
         : { ...server, env: { ...server.env, ...creds } }
     })
-  } catch (error: any) {
-    console.log(t("mcp.invalidAt", { path: mcpPath, message: error.message }))
+  } catch (error) {
+    console.log(t("mcp.invalidAt", { path: mcpPath, message: error instanceof Error ? error.message : String(error) }))
     process.exit(1)
   }
 }

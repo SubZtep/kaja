@@ -39,7 +39,7 @@ const ORIGIN_LABEL_KEY: Record<ToolOrigin, string> = {
 const sourceTag = (source: string | undefined) => (source ? ` [${source}]` : "")
 
 /** Names grouped by source, e.g. "click, fill [mcp:chrome-devtools]"; official tools have no source so they stay one plain list. */
-function namesBySource(tools: Tool<any>[]): string {
+function namesBySource(tools: Tool[]): string {
   const bySource = new Map<string, string[]>()
   for (const t of tools) {
     const names = bySource.get(t.source ?? "") ?? []
@@ -56,7 +56,7 @@ function skippedLine(skip: SkippedTool): string {
 }
 
 /** The Tools section of `kaja doctor`: one line per origin that has tools, then anything left out and why. */
-export function toolReportLines(tools: Tool<any>[], skipped: SkippedTool[]): string[] {
+export function toolReportLines(tools: Tool[], skipped: SkippedTool[]): string[] {
   if (tools.length === 0 && skipped.length === 0) return []
   const lines = [t("doctor.tools")]
   for (const origin of ["official", "community", "third-party"] as const) {

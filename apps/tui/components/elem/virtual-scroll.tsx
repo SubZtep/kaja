@@ -67,6 +67,7 @@ const MeasuredItem = memo(function MeasuredItem({
     if (ref.current) onMeasure(id, measureElement(ref.current).height)
   }, [id, onMeasure])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `epoch` and `children` aren't read, they say when to measure again
   useLayoutEffect(measure, [epoch, measure, children])
 
   return (
@@ -150,6 +151,7 @@ export function VirtualScroll({
     remeasure: () => force()
   }))
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `contentHeight` only reads a ref, and a new callback each render would re-render every memoized item
   const handleMeasure = useCallback(
     (id: string, height: number) => {
       if (heightsRef.current.get(id) === height) return

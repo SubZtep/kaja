@@ -103,7 +103,7 @@ async function* handleSwitchPersonaCall(
 
 async function* handleToolCall(
   agent: Agent,
-  toolsByName: Map<string, Tool<any>>,
+  toolsByName: Map<string, Tool>,
   messages: ChatCompletionMessageParam[],
   owner: string | null,
   call: FunctionToolCall,
@@ -331,7 +331,7 @@ async function* handleToolCalls(
   agent: Agent,
   messages: ChatCompletionMessageParam[],
   owner: string | null,
-  toolsByName: Map<string, Tool<any>>,
+  toolsByName: Map<string, Tool>,
   toolCalls: ChatCompletionMessageToolCall[],
   granted: readonly string[] | undefined,
   { record, onModelCall }: { record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
@@ -413,7 +413,7 @@ function holdApproval(
 
 /** The approval summary when `tool` wants the human to confirm this call first, else undefined. A tool the user allowed (always, or for this session: `allowLists`) never asks. */
 function approvalSummaryFor(
-  tool: Tool<any> | undefined,
+  tool: Tool | undefined,
   call: FunctionToolCall,
   allowLists: (readonly string[] | undefined)[]
 ): string | undefined {

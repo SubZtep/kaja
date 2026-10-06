@@ -29,6 +29,8 @@ export function createOpenAIClient(opts: {
   baseURL: string
   apiKey: string
   headers?: Record<string, string>
+  /** Replaces global `fetch`. The cloud passes a guarded fetch; the TUI leaves this unset so a model on the local network still works. */
+  fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 }): OpenAI {
   return new OpenAI({
     apiKey: opts.apiKey,
@@ -36,7 +38,8 @@ export function createOpenAIClient(opts: {
     fetch: async (input, init) => {
       const headers = new Headers(init?.headers)
       for (const [key, value] of Object.entries(opts.headers ?? {})) headers.set(key, value)
-      const res = await fetch(input, { ...init, headers })
+      // Global fetch is looked up per request, not when the client is made
+      const res = await (opts.fetch ?? fetch)(input, { ...init, headers })
       const served = res.headers.get(KAJA_MODEL_HEADER)
       if (served) noteServedModel(served)
       return res

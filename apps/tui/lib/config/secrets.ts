@@ -57,8 +57,10 @@ export async function loadSecretsFile(): Promise<SecretsFile> {
   const text = exists ? await f.text() : TEMPLATE
   try {
     return SecretsFileSchema.parse(TOML.parse(text))
-  } catch (error: any) {
-    console.log(t("secrets.invalidAt", { path: secretsPath, message: error.message }))
+  } catch (error) {
+    console.log(
+      t("secrets.invalidAt", { path: secretsPath, message: error instanceof Error ? error.message : String(error) })
+    )
     process.exit(1)
   }
 }

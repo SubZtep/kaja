@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { getLanguage, t } from "../lib/i18n"
 
 /** Tools the server hands back to the client to run locally instead of executing itself — see registry.ts's CLIENT_EXECUTABLE. Keyed by tool name from the `client_tool_call` event. */
-const CLIENT_TOOLS: Record<string, Tool<any>> = {
+const CLIENT_TOOLS: Record<string, Tool> = {
   read_file: readFileTool,
   list_files: listFilesTool
 }
@@ -111,7 +111,7 @@ export function useCloudAgent(options: NasiClientOptions) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [client])
 
   const switchPersona = useCallback(
     (next: { id: string; label: string }) => {

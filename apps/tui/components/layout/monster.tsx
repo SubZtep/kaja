@@ -1,6 +1,6 @@
 import { Box, Text } from "ink"
 import Gradient from "ink-gradient"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { usePalette } from "../theme"
 
 const IDLE = "༼☉ɷ⊙༽" as const
@@ -51,7 +51,7 @@ function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnimation |
     advance()
 
     return () => clearTimeout(timer)
-  }, [eventName])
+  }, [eventName, onDone])
 
   return (
     <Box>
@@ -62,17 +62,20 @@ function Monster({ eventName, onDone }: Readonly<{ eventName: MonsterAnimation |
   )
 }
 
+/** Weighted: mostly blinks, occasional personality */
+function pick(): MonsterAnimation {
+  const r = Math.random() // NOSONAR: animation flavor, not security-sensitive
+  if (r < 0.75) return "blink"
+  if (r < 0.9) return "smile"
+  return "wink"
+}
+
 export function MonsterMate() {
   const [eventName, setEventName] = useState<MonsterAnimation | null>(null)
+  // Stable, so Monster's animation doesn't restart on every render
+  const done = useCallback(() => setEventName(null), [])
 
-  /** Weighted: mostly blinks, occasional personality */
-  const pick = () => {
-    const r = Math.random() // NOSONAR: animation flavor, not security-sensitive
-    if (r < 0.75) return "blink"
-    if (r < 0.9) return "smile"
-    return "wink"
-  }
-
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `eventName` isn't read; each change (an animation starting or ending) schedules the next one
   useEffect(() => {
     let timer: NodeJS.Timeout
 
@@ -86,5 +89,5 @@ export function MonsterMate() {
     return () => clearTimeout(timer)
   }, [eventName])
 
-  return <Monster eventName={eventName} onDone={() => setEventName(null)} />
+  return <Monster eventName={eventName} onDone={done} />
 }

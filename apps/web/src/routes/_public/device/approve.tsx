@@ -44,7 +44,7 @@ function DeviceApprovePage() {
     return () => {
       cancelled = true
     }
-  }, [userCode])
+  }, [authClient, userCode])
 
   if (claimError) {
     return (

@@ -69,8 +69,10 @@ export async function config() {
     try {
       cached = KajaConfigSchema.parse(TOML.parse(await f.text()))
       return cached
-    } catch (error: any) {
-      console.log(t("config.invalidAt", { path: configPath, message: error.message }))
+    } catch (error) {
+      console.log(
+        t("config.invalidAt", { path: configPath, message: error instanceof Error ? error.message : String(error) })
+      )
       process.exit(1)
     }
   } else {

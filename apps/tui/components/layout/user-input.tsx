@@ -1,5 +1,5 @@
 import type { PersonaModels } from "@kaja/schema/cli"
-import { Box, useInput, useWindowSize } from "ink"
+import { Box, type BoxProps, useInput, useWindowSize } from "ink"
 import { useEffect, useState } from "react"
 import { useDictation } from "../../hooks/use-dictation"
 import { usePromptHistory } from "../../hooks/use-prompt-history"
@@ -86,6 +86,7 @@ export function UserInput({
   const prefix = statusPrefix(mic, speaking, sttState)
   const windowFocused = useWindowFocus()
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `pending` and `input` aren't read; any change restarts the hint and border timers
   useEffect(() => {
     setHintHidden(false)
     setPower(false)
@@ -140,7 +141,7 @@ function Border({ children, variant = "solid" }: Readonly<{ children: React.Reac
   const isPower = variant === "power"
   const { inputBox, powerBox } = useKajaTheme()
 
-  const boxProps: any = {
+  const boxProps: BoxProps = {
     ...inputBox(),
     borderStyle: "classic",
     borderDimColor: true,
@@ -149,14 +150,13 @@ function Border({ children, variant = "solid" }: Readonly<{ children: React.Reac
     width: "100%",
     flexShrink: 0,
     maxHeight: INPUT_MAX_HEIGHT,
-    overflow: "hidden"
-  }
-
-  if (isPower) {
-    boxProps.borderStyle = "arrow"
-    boxProps.borderColor = powerBox().borderColor
-    boxProps.borderLeftDimColor = true
-    boxProps.borderRightDimColor = true
+    overflow: "hidden",
+    ...(isPower && {
+      borderStyle: "arrow",
+      borderColor: powerBox().borderColor,
+      borderLeftDimColor: true,
+      borderRightDimColor: true
+    })
   }
 
   return <Box {...boxProps}>{children}</Box>

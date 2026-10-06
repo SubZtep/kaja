@@ -7,7 +7,12 @@ import { t } from "../i18n"
  * Chrome DevTools — dynamic, unknown at build time) and any future tool
  * without an entry here fall back to the raw display.
  */
-const LABELS: Record<string, (args: any) => string> = {
+// The arguments the labels read, as the model sends them (parsed JSON, not checked)
+type LabelArgs = Record<"q" | "url" | "timezone" | "prompt" | "path" | "key" | "query" | "name" | "file", string> & {
+  documents?: unknown[]
+}
+
+const LABELS: Record<string, (args: LabelArgs) => string> = {
   web_search: args => t("toolCall.webSearch", { query: args.q }),
   fetch_url: args => t("toolCall.fetchUrl", { url: args.url }),
   current_time: args =>

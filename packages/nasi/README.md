@@ -51,7 +51,7 @@ for await (const event of run(agent, prompt, createSession(), owner)) { /* … *
 - API: Postgres via `createPostgresStore(pool, userId)` (`apps/api/.../pg-store.ts`)
 - Tests: `createMemoryStore()`
 
-`createOpenAIClient({ baseURL, apiKey, headers? })` builds a client, with no process-wide singleton. The free-chat proxy may set `x-kaja-model`, and `takeLastServedModel()` reads that for usage events.
+`createOpenAIClient({ baseURL, apiKey, headers?, fetch? })` builds a client, with no process-wide singleton. The cloud passes `createGuardedFetch()` as `fetch` (and to `resolveContextWindow`), so a model URL can't reach a private host; the TUI uses plain `fetch`, so a model on the local network works. The free-chat proxy may set `x-kaja-model`, and `takeLastServedModel()` reads that for usage events.
 
 ## Tests
 

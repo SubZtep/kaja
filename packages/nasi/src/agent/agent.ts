@@ -30,7 +30,7 @@ export class Agent {
   name: string
   model: string
   client: OpenAI
-  tools: Tool<any>[]
+  tools: Tool[]
   instructions?: string
   sampling?: SamplingParams
   /** Topic id of the dataset this agent's persona is bound to collecting, if any. */
@@ -60,7 +60,7 @@ export class Agent {
     name?: string
     model: string
     client?: OpenAI
-    tools: Tool<any>[]
+    tools: Tool[]
     instructions?: string
     sampling?: SamplingParams
     dataset?: string

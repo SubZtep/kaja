@@ -16,7 +16,13 @@ test.each([
   "ls\nrm x",
   "git diff --output=/etc/x",
   "touch a",
-  "sudo ls"
+  "sudo ls",
+  "cat secrets.toml",
+  "cat ~/.config/kaja/secrets.toml",
+  "head -n 5 ./secrets.toml",
+  "cat ~/.ssh/id_rsa",
+  "cat .ssh/id_rsa",
+  "ls ~/.ssh/config"
 ])("%s still asks", command => expect(isSafeCommand(command, patterns)).toBe(false))
 
 test("a pattern must match the whole command", () => {

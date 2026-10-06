@@ -1,6 +1,15 @@
 import { capitalized } from "@kaja/shared/text"
 import { cn } from "@kaja/shared/ui"
-import { type Column, type ColumnFiltersState, flexRender, useTable } from "@tanstack/react-table"
+import {
+  type Column,
+  type ColumnFiltersState,
+  flexRender,
+  type Header,
+  type ReactTable,
+  type RowData,
+  type TableOptions,
+  useTable
+} from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { type ReactNode, useState } from "react"
 import { periodDay, periodEnd, periodStart } from "../../lib/period"
@@ -10,15 +19,17 @@ import { DebouncedText } from "../form/primitives/Text"
 
 type PeriodFilter = [Date | undefined, Date | undefined]
 
+type Features = typeof tableFeaturesConfig
+
 const USER_ROLES = ["admin", "user"] as const
 
 const PAGE_SIZES = [10, 25, 50, 100]
 
-export function Table({
+export function Table<TData extends RowData>({
   columns,
   data,
   showFilters = true
-}: Readonly<{ columns: any[]; data: any[]; showFilters?: boolean }>) {
+}: Readonly<{ columns: TableOptions<Features, TData>["columns"]; data: TData[]; showFilters?: boolean }>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
   const table = useTable({
@@ -100,10 +111,10 @@ export function Table({
 
 const ARIA_SORT_BY_STATE = { asc: "ascending", desc: "descending" } as const
 
-function TableHeaderCell({
+function TableHeaderCell<TData extends RowData>({
   header,
   onToggleSort
-}: Readonly<{ header: any; onToggleSort: (columnId: string) => void }>) {
+}: Readonly<{ header: Header<Features, TData, unknown>; onToggleSort: (columnId: string) => void }>) {
   const sorted = header.column.getIsSorted()
   const label = String(header.column.columnDef.header ?? "")
   const canSort = header.column.getCanSort()
@@ -147,7 +158,7 @@ function TableHeaderCell({
   )
 }
 
-function Pagination({ table }: Readonly<{ table: any }>) {
+function Pagination<TData extends RowData>({ table }: Readonly<{ table: ReactTable<Features, TData> }>) {
   const pageIndex = table.state.pagination.pageIndex
   const pageCount = table.getPageCount()
   const pageSize = table.state.pagination.pageSize
@@ -283,7 +294,7 @@ function Pagination({ table }: Readonly<{ table: any }>) {
   )
 }
 
-function Filter({ column }: Readonly<{ column: Column<typeof tableFeaturesConfig, any, unknown> }>) {
+function Filter<TData extends RowData>({ column }: Readonly<{ column: Column<Features, TData, unknown> }>) {
   const columnFilterValue = column.getFilterValue()
   const { filterVariant } = column.columnDef.meta ?? {}
 

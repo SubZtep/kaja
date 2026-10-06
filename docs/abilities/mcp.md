@@ -110,6 +110,7 @@ soon as the turn ends, so nothing (a login, say) stays there. The sandbox's brow
 websites, not Kaja's servers or anything on the sandbox's private network.
 
 A manifest with `trustedSandbox = true` only runs in your own sandboxes or Kaja's, never in a shared one.
+`chrome-devtools` is one, so the browser never runs on someone else's computer.
 A `stdio` ability that needs a key stays local for now.
 
 - Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes them when it

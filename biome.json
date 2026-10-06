@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!apps/web/**/routeTree.gen.ts", "!docs", "!pgdata"]
+    "includes": ["**", "!!docs", "!!pgdata"]
   },
   "formatter": {
     "useEditorconfig": true
@@ -20,35 +20,55 @@
     }
   },
   "linter": {
+    "domains": {
+      "test": "recommended"
+    },
     "rules": {
       "complexity": {
         "noUselessUndefinedInitialization": "off",
-        "noUselessSwitchCase": "off"
+        "noUselessSwitchCase": "off",
+        "noExcessiveNestedTestSuites": "on",
+        "useArrayFind": "on"
       },
       "correctness": {
         "noUnreachable": "warn",
         "noUnusedImports": "warn",
         "noUnusedVariables": "warn",
-        "noChildrenProp": "off",
-        "useExhaustiveDependencies": { "level": "warn", "fix": "none" }
+        "noUndeclaredDependencies": "on",
+        "noPrivateImports": "on",
+        "useJsonImportAttributes": "on"
       },
       "suspicious": {
         "noExplicitAny": "warn",
         "noImplicitAnyLet": "off",
         "noTsIgnore": "off",
-        "useIterableCallbackReturn": "off"
+        "useIterableCallbackReturn": "off",
+        "noDuplicateTestHooks": "on",
+        "noExportsInTest": "on",
+        "noFocusedTests": "error",
+        "noSkippedTests": "on",
+        "noDeprecatedImports": "on",
+        "noImportCycles": "on"
       },
       "style": {
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "useConsistentEnumValueType": "on"
+      },
+      "nursery": {
+        "noIdenticalTestTitle": "on",
+        "useTestHooksInOrder": "on",
+        "noSelfImport": "on",
+        "useAwaitThenable": "on",
+        "useStringStartsEndsWith": "on",
+        "useIncludes": "on",
+        "useRegexpExec": "on",
+        "noUnsafePlusOperands": "on",
+        "noUselessTypeConversion": "on",
+        "noMeaninglessVoidOperator": "on",
+        "useDisposables": "on"
       }
     }
   },
-  "overrides": [
-    {
-      "includes": ["apps/tui/lib/markdown/marked-terminal.ts"],
-      "linter": { "rules": { "suspicious": { "noExplicitAny": "off" } } }
-    }
-  ],
   "css": {
     "parser": {
       "tailwindDirectives": true

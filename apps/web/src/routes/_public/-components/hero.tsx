@@ -95,7 +95,7 @@ export function Hero() {
         }}
       />
       <div
-        className="pointer-events-none absolute top-20 right-0 h-100 w-100"
+        className="pointer-events-none absolute top-20 right-0 size-100"
         style={{
           background:
             "radial-gradient(closest-side,color-mix(in srgb, var(--color-ice) 16%, transparent),transparent 72%)"
@@ -103,7 +103,7 @@ export function Hero() {
       />
 
       {/* Phones stack intro, monster and toys, then the actions; wider screens put intro over actions on the left, and the extra height of the right column goes below the actions */}
-      <ContentWidth className="relative grid gap-12 pt-10 pb-10 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:grid-rows-[auto_1fr] md:gap-8 md:pt-16 md:pb-14 lg:grid-cols-[minmax(0,1fr)_32rem] lg:gap-x-10 xl:grid-cols-[minmax(0,1fr)_34rem] xl:gap-x-12">
+      <ContentWidth className="relative grid gap-12 py-10 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:grid-rows-[auto_1fr] md:gap-8 md:pt-16 md:pb-14 lg:grid-cols-[minmax(0,1fr)_32rem] lg:gap-x-10 xl:grid-cols-[minmax(0,1fr)_34rem] xl:gap-x-12">
         <div className="min-w-0 md:col-start-1 md:row-start-1">
           <Sticker rotate={-8} className="mb-8">
             {m.hero_badge()}

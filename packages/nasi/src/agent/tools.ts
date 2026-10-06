@@ -60,9 +60,10 @@ export type ToolOrigin = "official" | "community" | "third-party"
 
 /**
  * A tool an {@link Agent} can call, pairing the OpenAI function definition
- * with the local implementation that runs when the model calls it.
+ * with the local implementation that runs when the model calls it. A bare `Tool` is any tool, for the mixed lists hosts pass around.
  */
-export type Tool<Args> = {
+// biome-ignore lint/suspicious/noExplicitAny: a list holds tools with different arguments, and `execute`'s parameter rules out `unknown`
+export type Tool<Args = any> = {
   definition: ChatCompletionTool
   /**
    * The arguments' schema, on built-in tools: run() checks the model's arguments against it before `execute` (see
@@ -150,7 +151,7 @@ export function checkToolArgs<Args>(
   return { ok: false, error: `Invalid arguments for ${toolName(t)}:\n${z.prettifyError(parsed.error)}` }
 }
 
-export function toolName(t: Tool<any>): string {
+export function toolName(t: Tool): string {
   if (t.definition.type !== "function") throw new Error("tool is missing function definition")
   return t.definition.function.name
 }
@@ -161,7 +162,7 @@ export function toolName(t: Tool<any>): string {
  * a failure come back as text so the model can react, and `onStatus` hears which way it went.
  */
 export async function runApprovedTool(
-  tools: Tool<any>[],
+  tools: Tool[],
   name: string,
   argumentsJson: string,
   onStatus?: (status: "ok" | "error") => void

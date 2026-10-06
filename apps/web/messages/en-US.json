@@ -570,7 +570,7 @@
   "sandbox_setting_share": "Share my sandboxes",
   "sandbox_setting_share_hint": "Other people who use shared sandboxes may run their tools in yours; you never see who they are. Turn it off to keep your sandboxes for your own tools.",
   "sandbox_setting_use_shared": "Use shared sandboxes",
-  "sandbox_setting_use_shared_hint": "When yours isn't online, your tools may run in someone else's. Its owner can see what runs there, such as the pages the browser opens, so keep private things out of it. Nothing of yours is kept there once your turn ends.",
+  "sandbox_setting_use_shared_hint": "When yours isn't online, your tools may run in someone else's. Its owner can see what runs there, so keep private things out of it. The browser stays on your own sandbox or the official one. Nothing of yours is kept there once your turn ends.",
   "sandbox_mine_title": "Your sandboxes",
   "sandbox_mine_empty": "None yet. Start one with your key and it shows up here.",
   "sandbox_running": "{running} / {max} running",
