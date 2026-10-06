@@ -21,11 +21,11 @@
   "dependencies": {
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@mozilla/readability": "^0.6.0",
     "files-sdk": "^2.6.2",
     "linkedom": "^0.18.13",
-    "openai": "^7.27.0",
+    "openai": "^7.28.0",
     "zod": "^4.6.5"
   }
 }

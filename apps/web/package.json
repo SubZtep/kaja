@@ -19,16 +19,16 @@
     "@fontsource/syne": "^5.3.0",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
-    "@sentry/tanstackstart-react": "^11.2.0",
+    "@sentry/tanstackstart-react": "^11.4.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-form": "^1.33.5",
-    "@tanstack/react-query": "^5.104.0",
+    "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "@tanstack/react-start": "^1.168.60",
-    "@tanstack/react-table": "^9.2.4",
+    "@tanstack/react-table": "^9.2.6",
     "better-auth": "^1.7.7",
-    "lucide-react": "^1.49.0",
-    "nitro": "npm:nitro-nightly@3.0.1-20260928-103646-f72e2ba6",
+    "lucide-react": "^1.52.0",
+    "nitro": "npm:nitro-nightly@3.0.1-20261006-152639-d631065a",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-toastify": "^11.1.0",
@@ -37,11 +37,11 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.25.4",
+    "@inlang/paraglide-js": "^2.26.0",
     "@tanstack/router-cli": "^1.167.40",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.1.1",
-    "vite": "^8.3.2"
+    "@vitejs/plugin-react": "^6.1.2",
+    "vite": "^8.3.3"
   }
 }
