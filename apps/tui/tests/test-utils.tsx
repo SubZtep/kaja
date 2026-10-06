@@ -27,9 +27,12 @@ export function renderForTest(node: ReactNode, options?: { columns?: number; row
   stdout.isTTY = true
   stdout.columns = options?.columns ?? 80
   stdout.rows = options?.rows ?? 24
-  stdout.write = (chunk: string) => {
+  // Calls back like a real stream: Ink 8 resolves waitUntilExit() from a `write("", callback)` barrier on unmount
+  stdout.write = (chunk: string, encodingOrCallback?: unknown, callback?: () => void) => {
     chunks.push(chunk)
     writeCount++
+    const done = typeof encodingOrCallback === "function" ? encodingOrCallback : callback
+    if (done) queueMicrotask(() => done())
     return true
   }
 

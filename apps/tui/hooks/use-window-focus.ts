@@ -1,6 +1,7 @@
-import { useInput, useStdout } from "ink"
+import { useStdout } from "ink"
 import { useEffect, useState } from "react"
 import { FOCUS_REPORTING_DISABLE, FOCUS_REPORTING_ENABLE, windowFocusReport } from "../lib/terminal-input"
+import { useTerminalReports } from "./use-terminal-reports"
 
 /**
  * Tracks whether the terminal window has OS-level focus, via xterm's
@@ -42,7 +43,7 @@ export function useWindowFocus(): boolean {
     }
   }, [stdout])
 
-  useInput(input => {
+  useTerminalReports(input => {
     const report = windowFocusReport(input)
     if (report === "in") setFocused(true)
     else if (report === "out") setFocused(false)

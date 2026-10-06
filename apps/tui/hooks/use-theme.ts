@@ -1,9 +1,10 @@
-import { useInput, useStdout } from "ink"
+import { useStdout } from "ink"
 import { useEffect, useState } from "react"
 import { savePreferences } from "../lib/config/config"
 import { log } from "../lib/logger"
 import { type Brightness, setConsoleTheme, themeFollowsTerminal } from "../lib/terminal-background"
 import { COLOR_SCHEME_REPORTING_DISABLE, COLOR_SCHEME_REPORTING_ENABLE, colorSchemeReport } from "../lib/terminal-input"
+import { useTerminalReports } from "./use-terminal-reports"
 
 /**
  * The chat's theme. Starts on the one resolved before render; while settings.toml says `auto` it follows the
@@ -39,10 +40,10 @@ export function useTheme(initial: Brightness) {
     }
   }, [following, stdout])
 
-  useInput(input => {
-    const scheme = following ? colorSchemeReport(input) : null
+  useTerminalReports(input => {
+    const scheme = colorSchemeReport(input)
     if (scheme) apply(scheme)
-  })
+  }, following)
 
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark"
