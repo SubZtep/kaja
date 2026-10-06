@@ -90,8 +90,8 @@ const MeasuredItem = memo(function MeasuredItem({
  * when it first mounts; heights are cached by child key. While any height
  * is unknown (initial mount, width change) all children render — one
  * expensive pass. Once all heights are known, only the visible slice
- * mounts, vertically shifted by a negative margin for sub-item scroll
- * positions, inside an overflow-hidden container.
+ * mounts, shifted by the overflow-hidden container's contentOffsetY for
+ * sub-item scroll positions.
  */
 export function VirtualScroll({
   ref,
@@ -193,7 +193,8 @@ export function VirtualScroll({
 
   const offset = offsetRef.current
   let start = 0
-  let innerMargin = -offset
+  // Rows of the first mounted item scrolled above the viewport, shifted out by the container's contentOffsetY
+  let skipped = offset
   let mounted = items
   if (allMeasured && viewportRef.current > 0) {
     let acc = 0
@@ -209,7 +210,7 @@ export function VirtualScroll({
       end++
     }
     mounted = items.slice(start, end)
-    innerMargin = -(offset - acc)
+    skipped = offset - acc
   }
 
   return (
@@ -218,11 +219,12 @@ export function VirtualScroll({
         ref={containerRef}
         flexDirection="column"
         overflow="hidden"
+        contentOffsetY={skipped}
         flexGrow={flexGrow}
         flexShrink={flexShrink}
         width={width}
       >
-        <Box flexDirection="column" flexShrink={0} width="100%" marginTop={innerMargin}>
+        <Box flexDirection="column" flexShrink={0} width="100%">
           {mounted.map((item, i) => (
             <MeasuredItem
               key={keys[start + i]!}
