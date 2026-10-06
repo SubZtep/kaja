@@ -32,11 +32,21 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
 
-      # Biome and Tombi ship their binaries as optional dependencies, so no install scripts are needed
+      # Tombi ships its binary as an optional dependency, so no install scripts are needed
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
-      # The same `bun lint` as locally: Biome, then Tombi's TOML format check and lint, from the locked install
+      # Biome isn't a dependency: install the CLI version biome.json's $schema names
+      - name: Read Biome version
+        id: biome
+        run: echo "version=$(jq -r '."$schema"' biome.json | sed -E 's#.*/schemas/([^/]+)/.*#\1#')" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51
+        with:
+          version: ${{ steps.biome.outputs.version }}
+
+      # The same `bun lint` as locally: Biome, then Tombi's TOML format check and lint
       - name: Run linters and format checks
         run: bun run lint
 

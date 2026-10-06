@@ -29,6 +29,7 @@ Never hand-edit their output. Change the input, then regenerate.
 
 ## Dev utilities
 
+- **`biome.ts`** runs the Biome CLI installed on your machine (Biome isn't a dependency) for `bun lint` and the hooks. When `biome` isn't on the `PATH` it fails with the install link and the version `biome.json`'s `$schema` names.
 - **`create_local_secrets.sh`** appends a fresh `BETTER_AUTH_SECRET` to `apps/api/.env`. Run it once.
 - **`db_migration.sh`** runs `apps/api/migrate.ts` against `$DATABASE_URL` (or `apps/api/.env`), like a deploy: the migrations the database hasn't applied, then the config seed. It catches up an existing `pgdata` volume. First-boot init does this on its own.
 - **`mass_user_create.ts [number]`** creates random users against a local API, 10 by default.
