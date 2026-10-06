@@ -14,9 +14,13 @@ summary: "Run Kaja from source: install, commands, hooks, URLs and tests."
 
 - a Bash-compatible shell
 - [**Bun**](https://bun.com/docs/installation): runtime, package manager, test runner and bundler
-- [**Biome**](https://biomejs.dev/guides/manual-installation/): linter and formatter, the version `biome.json`'s
-  `$schema` names. It isn't a dependency, so `bun install` doesn't bring it; without a package manager that
-  has it, `bun add -g @biomejs/biome@<version>` works too
+- [**Biome**](https://biomejs.dev/guides/manual-installation/): linter and formatter for the code
+- [**Tombi**](https://tombi-toml.github.io/tombi/docs/installation): formatter and linter for the TOML files
+
+Neither is a dependency, so `bun install` doesn't bring them. Install the versions the repo expects
+(`bun scripts/tool.ts biome --pinned`, `bun scripts/tool.ts tombi --pinned`); without a package manager that
+has them, `bun add -g @biomejs/biome@<version> tombi@<version>` works too. `bun lint` says what's missing,
+and warns when a version differs from CI's.
 
 **Recommended**
 

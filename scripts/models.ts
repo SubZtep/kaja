@@ -1,13 +1,14 @@
 import { readdir } from "node:fs/promises"
 import { join } from "node:path"
 import { EXAMPLES, exampleToml } from "../apps/tui/lib/models/catalog"
+import { toolPath } from "./lib/tools"
 
 const rootDir = join(import.meta.dir, "..")
 const configDir = join(rootDir, "docs/config")
 
 /** `text` as `tombi format` leaves it (tombi.toml's rules), so the lint never rewrites a generated file. */
 async function tombiFormat(text: string): Promise<string> {
-  const proc = Bun.spawn([join(rootDir, "node_modules/.bin/tombi"), "format", "-"], {
+  const proc = Bun.spawn([await toolPath("tombi"), "format", "-"], {
     cwd: rootDir,
     stdin: new Response(text),
     stdout: "pipe",

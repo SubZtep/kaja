@@ -3,7 +3,7 @@ name: add-mcp
 description: Turn a pasted MCP server config (usually JSON) into a marketplace/mcp/<name>.toml ability, with its tools listed live from the server. Only when the user runs /add-mcp.
 argument-hint: "<MCP server config, e.g. JSON>"
 disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Bash(bun .claude/skills/add-mcp/scripts/list-tools.ts *), Bash(bunx tombi *), WebFetch
+allowed-tools: Read, Write, Edit, Bash(bun .claude/skills/add-mcp/scripts/list-tools.ts *), Bash(bun scripts/tool.ts tombi *), WebFetch
 ---
 
 # Add an MCP server to the marketplace
@@ -93,7 +93,7 @@ Match the existing files:
    ```sh
    bun -e 'import { McpAbilitySchema } from "@kaja/schema/abilities"; console.log(McpAbilitySchema.parse(Bun.TOML.parse(await Bun.file("../../marketplace/mcp/<name>.toml").text())))'
    ```
-2. Format and lint: `bunx tombi format marketplace/mcp/<name>.toml && bunx tombi lint marketplace/mcp/<name>.toml`
+2. Format and lint: `bun scripts/tool.ts tombi format marketplace/mcp/<name>.toml && bun scripts/tool.ts tombi lint marketplace/mcp/<name>.toml`
 3. Rerun `list-tools.ts` if you haven't since the last edit, to confirm every name in `tools` exists.
 
 ## 6. Report
