@@ -112,6 +112,8 @@ refused either way, on every redirect too. Keys and approvals work as described 
 - recursive `chmod`/`chown` on `/`
 - fork bombs
 
+A safe-list command still asks when it names a `secrets.toml` or anything under `.ssh`. Kaja keeps the first 64 KB of a command's output and error streams, and stops a command that runs longer than 15 seconds.
+
 This is a **warning, not a sandbox**. The command runs with your own shell permissions, so read what you're
 approving.
 
