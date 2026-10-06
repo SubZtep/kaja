@@ -64,11 +64,14 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
     )
   ])
   const latest = summary.rows[0]
+  // summary_from is the first message seq the summary does not cover. The prompt uses the summary instead of those
+  // messages, so their image bytes are not downloaded. The rows stay, which keeps compaction's indexes.
+  const coveredUntil = latest ? Number(latest.summary_from) : 0
   const callsBySeq = Map.groupBy(calls.rows, call => call.seq as number)
   const images = await loadImages(
     files,
     sessionImagePrefix(row.id, userId),
-    messages.rows.map(message => message.parts)
+    messages.rows.map((message, seq) => (seq < coveredUntil ? null : message.parts))
   )
   const parsed = PersistedSessionSchema.safeParse({
     id: row.id,
@@ -89,7 +92,7 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
       messages: messages.rows.map((message, seq) => ({
         role: message.role,
         content: message.content,
-        parts: attachImages(message.parts, images),
+        parts: seq < coveredUntil ? message.parts : attachImages(message.parts, images),
         reasoning: message.reasoning,
         toolCallId: message.tool_call_id,
         toolCalls: (callsBySeq.get(seq) ?? []).map(call => ({
