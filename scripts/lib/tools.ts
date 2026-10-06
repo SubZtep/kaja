@@ -20,7 +20,7 @@ export const TOOLS = {
   tombi: {
     install: "https://tombi-toml.github.io/tombi/docs/installation",
     npm: "tombi",
-    pinned: async () => "1.7.3"
+    pinned: () => Promise.resolve("1.7.3")
   }
 } satisfies Record<string, Tool>
 
@@ -36,7 +36,11 @@ export async function toolPath(name: ToolName): Promise<string> {
       `${name} isn't installed. Install the CLI (${version}): ${tool.install} or \`bun add -g ${tool.npm}@${version}\``
     )
   }
-  const installed = /\d+\.\d+\.\d+/.exec(Bun.spawnSync([path, "--version"]).stdout.toString())?.[0]
+  // The first whole word that is a version (anchored per word, so the regex can't backtrack across the output)
+  const installed = Bun.spawnSync([path, "--version"])
+    .stdout.toString()
+    .split(/\s+/)
+    .find(word => /^\d+\.\d+\.\d+$/.test(word))
   // major.minor only: a patch release shouldn't change the output
   const minor = (v?: string) => v?.split(".").slice(0, 2).join(".")
   if (minor(installed) !== minor(version)) {
