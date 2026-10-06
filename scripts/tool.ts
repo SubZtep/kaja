@@ -10,13 +10,12 @@ if (!name || !(name in TOOLS)) {
 }
 const tool = name as ToolName
 
-if (args[0] === "--pinned") {
-  console.log(await TOOLS[tool].pinned())
-  process.exit(0)
-}
-
 let path: string
 try {
+  if (args[0] === "--pinned") {
+    console.log(await TOOLS[tool].pinned())
+    process.exit(0)
+  }
   path = await toolPath(tool)
 } catch (error) {
   console.error((error as Error).message)

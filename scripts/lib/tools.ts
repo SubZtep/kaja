@@ -2,6 +2,12 @@ import { join } from "node:path"
 
 const rootDir = join(import.meta.dir, "../..")
 
+/** Every biome.json git tracks: the root one and the packages' that extend it. */
+function biomeConfigs(): string[] {
+  const out = Bun.spawnSync(["git", "ls-files", "--", ":(glob)**/biome.json"], { cwd: rootDir }).stdout.toString()
+  return out.split("\n").filter(Boolean)
+}
+
 type Tool = { install: string; npm: string; pinned: () => Promise<string> }
 
 /** CLIs the repo runs from the machine, not from node_modules: where to get each, and the version it expects. */
@@ -9,11 +15,21 @@ export const TOOLS = {
   biome: {
     install: "https://biomejs.dev/guides/manual-installation/",
     npm: "@biomejs/biome",
-    // The version biome.json's $schema URL names
+    // The version biome.json's $schema URL names; the packages' configs must name the same one
     pinned: async () => {
-      const config = await Bun.file(join(rootDir, "biome.json")).json()
-      const version = /\/schemas\/([^/]+)\//.exec(config.$schema)?.[1]
+      const versions = await Promise.all(
+        biomeConfigs().map(async path => {
+          const config = await Bun.file(join(rootDir, path)).json()
+          return { path, version: /\/schemas\/([^/]+)\//.exec(config.$schema ?? "")?.[1] }
+        })
+      )
+      const version = versions.find(config => config.path === "biome.json")?.version
       if (!version) throw new Error("biome.json's $schema names no version")
+      const stray = versions.filter(config => config.version !== version)
+      if (stray.length > 0) {
+        const list = stray.map(config => `${config.path} (${config.version ?? "none"})`).join(", ")
+        throw new Error(`Every biome.json's $schema must name Biome ${version}, not: ${list}`)
+      }
       return version
     }
   },
