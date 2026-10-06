@@ -1,5 +1,6 @@
 import {
   ASK_USER_TOOL,
+  createGuardedFetch,
   createOpenAIClient,
   type McpSandbox,
   Nasi,
@@ -39,6 +40,12 @@ export async function resolveModelWithProvider(pinnedModel?: string) {
     : await modelService.getRandomModelWithProvider()
 }
 
+/** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Not the `WEB_PROXY` path: a proxy would resolve the name itself and skip the pin. */
+function cloudModelFetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
+  const guarded = createGuardedFetch()
+  return (input, init) => guarded(input instanceof Request ? input.url : input, init)
+}
+
 async function defaultChatResolver(pinnedModel?: string) {
   const stub = env.NASI_STUB_MODEL
   if (stub) {
@@ -51,16 +58,21 @@ async function defaultChatResolver(pinnedModel?: string) {
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) throw new NoModelError()
   if (!isPublicHttpUrl(result.provider.baseUrl)) throw new Error("unsafe_model_url")
-  const window = await resolveContextWindow({
-    baseUrl: result.provider.baseUrl,
-    apiKey: result.provider.apiKey ?? undefined,
-    model: result.model.model,
-    contextWindow: result.model.contextWindow ?? undefined
-  })
+  const modelFetch = cloudModelFetch()
+  const window = await resolveContextWindow(
+    {
+      baseUrl: result.provider.baseUrl,
+      apiKey: result.provider.apiKey ?? undefined,
+      model: result.model.model,
+      contextWindow: result.model.contextWindow ?? undefined
+    },
+    modelFetch
+  )
   return {
     client: createOpenAIClient({
       baseURL: result.provider.baseUrl,
-      apiKey: result.provider.apiKey ?? "unused"
+      apiKey: result.provider.apiKey ?? "unused",
+      fetch: modelFetch
     }),
     model: result.model.model,
     contextWindow: window.tokens
@@ -78,10 +90,15 @@ async function resolveSummarizer() {
     model: result.model.model,
     contextWindow: result.model.contextWindow ?? undefined
   }
+  const modelFetch = cloudModelFetch()
   return {
-    client: createOpenAIClient({ baseURL: target.baseUrl, apiKey: target.apiKey ?? "unused" }),
+    client: createOpenAIClient({
+      baseURL: target.baseUrl,
+      apiKey: target.apiKey ?? "unused",
+      fetch: modelFetch
+    }),
     model: target.model,
-    contextWindow: (await resolveContextWindow(target)).tokens
+    contextWindow: (await resolveContextWindow(target, modelFetch)).tokens
   }
 }
 
