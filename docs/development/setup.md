@@ -20,7 +20,7 @@ summary: "Run Kaja from source: install, commands, hooks, URLs and tests."
 Neither is a dependency, so `bun install` doesn't bring them. Install the versions the repo expects
 (`bun scripts/tool.ts biome --pinned`, `bun scripts/tool.ts tombi --pinned`); without a package manager that
 has them, `bun add -g @biomejs/biome@<version> tombi@<version>` works too. `bun lint` says what's missing,
-and warns when a version differs from CI's.
+and warns when a major.minor version differs from CI's.
 
 **Recommended**
 

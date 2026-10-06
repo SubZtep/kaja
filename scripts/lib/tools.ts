@@ -26,7 +26,7 @@ export const TOOLS = {
 
 export type ToolName = keyof typeof TOOLS
 
-/** Path of the installed `name` CLI, warning on stderr when its version isn't the pinned one; throws with install help when it isn't on the PATH. */
+/** Path of the installed `name` CLI, warning on stderr when its major.minor version isn't the pinned one's (patches may differ); throws with install help when it isn't on the PATH. */
 export async function toolPath(name: ToolName): Promise<string> {
   const tool = TOOLS[name]
   const version = await tool.pinned()
@@ -37,7 +37,9 @@ export async function toolPath(name: ToolName): Promise<string> {
     )
   }
   const installed = /\d+\.\d+\.\d+/.exec(Bun.spawnSync([path, "--version"]).stdout.toString())?.[0]
-  if (installed !== version) {
+  // major.minor only: a patch release shouldn't change the output
+  const minor = (v?: string) => v?.split(".").slice(0, 2).join(".")
+  if (minor(installed) !== minor(version)) {
     console.error(
       `${name} ${installed ?? "(unknown version)"} is installed, but the repo expects ${version}: its output may differ from CI's.`
     )

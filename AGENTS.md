@@ -153,7 +153,7 @@ Each file only creates; there are no patch migrations, so a schema change until 
 ## Code Style
 
 - Biome (`biome.json`): line width 120, double quotes, semicolons asNeeded, no trailing commas, spaces; organizes imports
-- Biome and Tombi aren't dependencies: the lint scripts run the machine's `biome` and `tombi` through `scripts/tool.ts` (`scripts/models.ts` uses its `toolPath`), which says how to install a missing one and warns when the version isn't the pinned one; `scripts/lib/tools.ts` pins them (Biome's from `biome.json`'s `$schema` URL), and CI installs those versions with `biomejs/setup-biome` and `tombi-toml/setup-tombi`
+- Biome and Tombi aren't dependencies: the lint scripts run the machine's `biome` and `tombi` through `scripts/tool.ts` (`scripts/models.ts` uses its `toolPath`), which says how to install a missing one and warns when its major.minor version isn't the pinned one's; `scripts/lib/tools.ts` pins them (Biome's from `biome.json`'s `$schema` URL), and CI installs those versions with `biomejs/setup-biome` and `tombi-toml/setup-tombi`
 - `bun run generate:schemas` regenerates JSON from `packages/schema/tombi`; `bun lint`/`lint:fix` also run `tombi format`/`tombi lint` on TOML files
 - TypeScript: ESNext, bundler resolution, strict, `react-jsx`; workspace deps via `workspace:*`
 - Prefer surgical diffs; do not drive-by refactor
