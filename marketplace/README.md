@@ -28,7 +28,7 @@ marketplace/
 
 - Names are lowercase letters, digits and single hyphens, up to 64 characters, and match the folder (skills) or file name (everything else).
 - A skill's `description` (up to 1024 characters) is all the model sees before loading it, so make the "when" part concrete.
-- Keep files as text. Binary files, hidden files and `*.bak` files are never shown to the model.
+- Keep files as text. Binary files, hidden files and backups (`*.bak.*`, such as `care.bak.toml`) are never shown to the model.
 - `default.toml` is the persona every user always has. The CLI ships a copy for installs that haven't synced yet.
 - Scripts should work with plain POSIX `sh`, or say what they need in `SKILL.md`.
 - Tool names are what the model calls, so keep them specific (`weather_forecast`, not `get`). A name Kaja already uses is skipped.

@@ -41,7 +41,7 @@ flowchart LR
 Each kind has one manifest format, checked by the schemas in [`@kaja/schema/abilities`](/development/schema).
 Names are lowercase letters, digits and single hyphens, up to 64 characters, and must match the folder
 (skills) or file name (everything else). A file that fails validation is skipped with a warning by whoever
-reads it. Binary files, hidden files and `.bak` backups are never served to the model.
+reads it. Binary files, hidden files and backups (`name.bak.ext`, `name.bak.2.ext`) are never served to the model.
 
 ## The terminal's copy
 
@@ -82,7 +82,7 @@ flowchart TD
     C -->|yes| SAME["nothing to do"]
     C -->|no| D{"same as what the last<br>sync wrote?"}
     D -->|"yes: untouched"| UPD["replace it: updated"]
-    D -->|"no: edited"| BAK["save theirs as .bak,<br>then replace: backed up"]
+    D -->|"no: edited"| BAK["save theirs as name.bak.ext,<br>then replace: backed up"]
 
     G(["a file the last sync wrote,<br>now gone upstream"]) --> H{"still untouched?"}
     H -->|yes| RM["delete it: removed"]

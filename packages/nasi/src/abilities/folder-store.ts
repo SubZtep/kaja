@@ -20,8 +20,8 @@ import { type AbilityStore, SkillFileError, type SkillSummary } from "./types"
 const SKILL_FILE = "SKILL.md"
 const MAX_LISTED_FILES = 200
 const MAX_FILE_BYTES = 256 * 1024
-// Dotfiles and the .bak/.bak2 backups a marketplace sync leaves behind never reach the model.
-const HIDDEN = /^\.|\.bak\d*$/
+// Dotfiles and the backups a marketplace sync leaves behind (care.bak.toml, care.bak.2.toml, run.bak) never reach the model.
+const HIDDEN = /^\.|\.bak(\.\d+)?(\.[^.]+)?$/
 
 export type FolderAbilityStoreOptions = {
   /** The marketplace folder; skills live in `<root>/skills/<name>/`. */

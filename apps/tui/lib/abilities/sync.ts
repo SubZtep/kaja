@@ -86,7 +86,7 @@ async function pruneEmptyDirs(root: string, path: string) {
 /**
  * Copies an upstream marketplace folder into the local one. Files are compared to the lock
  * from the previous sync: untouched copies follow upstream, edited ones are backed up
- * (`.bak`, `.bak2`, …) before upstream replaces them, and files the lock never recorded and
+ * (`name.bak.ext`, `name.bak.2.ext`, …) before upstream replaces them, and files the lock never recorded and
  * upstream doesn't have are yours and never touched.
  */
 export async function syncMarketplace(
