@@ -13,6 +13,11 @@ test("the shipped context7 and chrome-devtools manifests are valid", async () =>
   }
 })
 
+test("chrome-devtools never runs on a sandbox somebody else shares", async () => {
+  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/mcp/chrome-devtools.toml")).text()
+  expect(McpAbilitySchema.parse(Bun.TOML.parse(text)).trustedSandbox).toBe(true)
+})
+
 test("transport decides url vs command and where the key may go", () => {
   const issues = (input: Record<string, unknown>) =>
     McpAbilitySchema.safeParse({ name: "demo", description: "Demo", ...input }).error?.issues.map(i => i.path[0])

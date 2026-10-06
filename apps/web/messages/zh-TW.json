@@ -570,7 +570,7 @@
   "sandbox_setting_share": "分享我的沙箱",
   "sandbox_setting_share_hint": "其他使用共享沙箱的人可能會在你的沙箱中執行他們的工具；你永遠不會知道他們是誰。關閉此選項，你的沙箱就只給你自己的工具使用。",
   "sandbox_setting_use_shared": "使用共享沙箱",
-  "sandbox_setting_use_shared_hint": "當你的沙箱不在線上時，你的工具可能會在別人的沙箱中執行。它的擁有者看得到在裡面執行的內容，例如瀏覽器開啟的網頁，所以請別放入私人資料。你的回合結束後，那裡不會保留任何屬於你的東西。",
+  "sandbox_setting_use_shared_hint": "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat lorem ipsum",
   "sandbox_mine_title": "你的沙箱",
   "sandbox_mine_empty": "目前還沒有。用你的金鑰啟動一個，它就會出現在這裡。",
   "sandbox_running": "{running} / {max} 執行中",

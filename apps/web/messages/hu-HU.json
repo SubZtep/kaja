@@ -570,7 +570,7 @@
   "sandbox_setting_share": "Sandboxaim megosztása",
   "sandbox_setting_share_hint": "Mások, akik megosztott sandboxokat használnak, a tiédben is futtathatják az eszközeiket; sosem látod, kik ők. Kapcsold ki, ha a sandboxaidat csak a saját eszközeidnek tartanád meg.",
   "sandbox_setting_use_shared": "Megosztott sandboxok használata",
-  "sandbox_setting_use_shared_hint": "Ha a tiéd nem online, az eszközeid valaki más sandboxában futhatnak. A tulajdonosa láthatja, mi fut ott, például a böngésző által megnyitott oldalakat, ezért ne vigyél oda privát dolgokat. A köröd végeztével semmi sem marad ott tőled.",
+  "sandbox_setting_use_shared_hint": "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat lorem ipsum",
   "sandbox_mine_title": "A sandboxaid",
   "sandbox_mine_empty": "Még nincs. Indíts egyet a kulcsoddal, és itt megjelenik.",
   "sandbox_running": "{running} / {max} fut",

@@ -136,8 +136,8 @@ export function nasiToolDeps() {
 
 // Said to a user's turns when their stdio abilities may run on a sandbox another person runs.
 const SHARED_SANDBOX_NOTE =
-  " Tools like the browser may run on another person's computer, who can see the pages it opens: never sign in or " +
-  "enter the user's personal data there, and tell the user if a task would need that."
+  " Some tools may run on another person's computer, who can see what they do. The browser does not: it stays on " +
+  "this user's own sandbox or the official one. Never send the user's personal data through a tool that runs elsewhere."
 
 type SandboxPicker = (userId: string) => McpSandbox
 let sandboxOverride: SandboxPicker | undefined
