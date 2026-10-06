@@ -15,8 +15,8 @@ missing, and ends with what's still broken. `kaja config paths` shows which file
 another configured for that task works, it offers to switch. For a local server, check it's running at the
 `base_url` in [`models.toml`](/configuration/models).
 
-**"No chat model" in local mode.** Local mode needs a `chat` model in `[tasks]` and never falls back to
-cloud. Add one, run `kaja config wizard`, or start with `kaja --cloud`.
+**"No chat model" in local mode.** Local mode needs a model in `models.toml` that lists `chat` in its `tasks`, and never
+falls back to cloud. Add one, run `kaja config wizard`, or start with `kaja --cloud`.
 
 **Cloud mode won't sign in: keychain unavailable.** The token is only kept in the OS keychain, with no
 plaintext fallback. Use `kaja --local`, or unlock or install a keychain (on Linux, a Secret Service

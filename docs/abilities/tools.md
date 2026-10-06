@@ -29,7 +29,7 @@ and, locally, your own plugin tools are added on top.
 | `view_image` | look at an image file | ✗ |
 | `run_command` | run a shell command | ✗ |
 
-Locally, `generate_image` needs an `image-generation` model picked in `[tasks]` of
+Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/configuration/models).
 
 Web search isn't built in. Turn on the marketplace's `brave-search` [HTTP tool](#http-tools) to get

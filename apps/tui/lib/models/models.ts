@@ -47,41 +47,37 @@ export function setProviderBaseUrl(text: string, provider: string, baseUrl: stri
   return text
 }
 
+// A TOML table header such as `[models.minimax-m3]`, but not an array's closing or opening line.
+const TABLE_HEADER = /^\s*\[[^\]"=]+\]\s*(#.*)?$/
+
 /**
- * Points `[tasks]`'s `task` at another model id in models.toml text, for the doctor switching a broken
- * model to another that serves the same task. Edits (or adds) that one line, so every model entry and the
- * template's comments stay as they are.
+ * Comments out each `[models.<id>]` table in models.toml text, for the doctor dropping a broken model so
+ * the next one serving its task takes over. Only the table's own lines get a `# `: comments and blank
+ * lines before the next table stay as they are, and a missing id is skipped.
  */
-export function setTaskModel(text: string, task: string, id: string): string {
+export function commentOutModels(text: string, ids: string[]): string {
   const lines = text.split("\n")
-  const line = `${task} = ${JSON.stringify(id)}`
-  const start = lines.findIndex(l => l.trim() === "[tasks]")
-  if (start === -1) return text
-  let end = lines.length
-  for (let index = start + 1; index < lines.length; index++) {
-    if (lines[index]!.trimStart().startsWith("[")) {
-      end = index
-      break
-    }
-    const match = new RegExp(String.raw`^(\s*)"?${task}"?(\s*=\s*)"[^"]*"(.*)$`).exec(lines[index]!)
-    if (match) {
-      lines[index] = `${match[1]}${task}${match[2]}${JSON.stringify(id)}${match[3]}`
-      return lines.join("\n")
+  for (const id of ids) {
+    const start = lines.findIndex(line => line.trim() === `[models.${id}]`)
+    if (start === -1) continue
+    let end = start + 1
+    while (end < lines.length && !TABLE_HEADER.test(lines[end]!)) end++
+    // Stop before the trailing blank lines and comments, which belong to whatever comes next.
+    while (end > start + 1 && (lines[end - 1]!.trim() === "" || lines[end - 1]!.trimStart().startsWith("#"))) end--
+    for (let index = start; index < end; index++) {
+      const line = lines[index]!
+      if (line.trim() !== "" && !line.trimStart().startsWith("#")) lines[index] = `# ${line}`
     }
   }
-  // Not there yet: add it after the table's last line.
-  let at = end
-  while (at > start + 1 && lines[at - 1]!.trim() === "") at--
-  lines.splice(at, 0, line)
   return lines.join("\n")
 }
 
-/** Reads models.toml, points a task at another model id, and writes it back. No-op when the file is missing. */
-export async function saveTaskModel(task: string, id: string) {
+/** Reads models.toml, comments out the given models (see {@link commentOutModels}), and writes it back. No-op when the file is missing. */
+export async function saveCommentedOutModels(ids: string[]) {
   const f = file(getModelsPath())
   if (!(await f.exists())) return
   const text = await f.text()
-  const next = setTaskModel(text, task, id)
+  const next = commentOutModels(text, ids)
   if (next !== text) await write(f, next)
 }
 
@@ -120,7 +116,7 @@ export function findModelById(
   return models.find(m => m.id === id && (!task || m.task === task))
 }
 
-/** Resolves the model to use for a task: a persona's pin for that task wins, else the one [tasks] names. */
+/** Resolves the model to use for a task: a persona's pin for that task wins, else the first model in the file that lists it. */
 export function resolveActiveModel(
   data: ResolvedModelsFile,
   task: ModelTask,
@@ -129,7 +125,7 @@ export function resolveActiveModel(
   const models = resolveModels(data)
   const pinned = findModelById(models, personaModels?.[task], task)
   if (pinned) return pinned
-  return findModelById(models, data.tasks[task], task)
+  return models.find(m => m.task === task)
 }
 
 /**
@@ -166,7 +162,7 @@ export async function loadModels(): Promise<CliResolvedModel[]> {
 }
 
 /**
- * Whether `models.toml` + `secrets.toml` resolves a usable chat model (the one [tasks] names).\
+ * Whether `models.toml` + `secrets.toml` resolves a usable chat model (the first that lists chat).\
  * Providers without an `api_key` are allowed.
  */
 export async function hasConfiguredChatModel(): Promise<boolean> {

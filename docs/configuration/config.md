@@ -51,7 +51,7 @@ voice = false
 | `toolDisplay` | `minimal` (default), `verbose` or `corner`: how [tool calls](/using/tui#tool-calls) show |
 | `codePreviewLines` | default `5`: lines of a code block or approval command shown before it is cut; `<modifier>+E` shows all |
 | `sounds` | play UI sounds |
-| `voice` | speak replies aloud (needs a `tts` model in `models.toml`'s `[tasks]`) |
+| `voice` | speak replies aloud (needs a model listing `tts` in `models.toml`) |
 | `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |
 | `theme` | `auto` (default), `dark` or `light`: the [colours](/using/tui#colours). `auto` follows the terminal |
 
@@ -99,8 +99,8 @@ conversation.
 Images (say, a screenshot a tool took) are sent to the model for your latest two messages. Older ones
 become a short note, since resending them every time costs a lot. They stay in the saved conversation.
 
-Summaries are written by the model that `models.toml`'s `[tasks]` picks for `summarize` (a smaller, cheaper
-one works well), or else the chat model. The `summarize` tool uses the same model.
+Summaries are written by the first model in `models.toml` that lists `summarize` (a smaller, cheaper one
+works well), or else the chat model. The `summarize` tool uses the same model.
 
 ## `[stt]` / `[tts]`
 

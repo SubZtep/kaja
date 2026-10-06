@@ -21,26 +21,6 @@
         ]
       }
     },
-    "tasks": {
-      "default": {},
-      "type": "object",
-      "propertyNames": {
-        "type": "string",
-        "enum": [
-          "chat",
-          "tts",
-          "stt",
-          "embedding",
-          "image-generation",
-          "rerank",
-          "summarize"
-        ]
-      },
-      "additionalProperties": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
     "models": {
       "default": {},
       "type": "object",

@@ -73,17 +73,19 @@ export type ModelsSelection = {
   alternatives?: boolean
 }
 
-const HEADER = `# Kaja models. [tasks] says which model each task uses, by its [models.<id>] id; a task left out
-# is off. Each [models.<id>] names the API it runs on (\`provider\`, a [providers.*] table) and what it
-# can be used for (\`tasks\`); models no task uses are kept for a persona's [models] pin, or for
-# \`kaja doctor\` to switch to when one stops answering. \`model\` is the literal name sent to the API.
+const HEADER = `# Kaja models. Each [models.<id>] names the API it runs on (\`provider\`, a [providers.*] table) and
+# what it can be used for (\`tasks\`); a task no model lists is off. Order matters: each task uses the
+# first model in this file that lists it, so to switch, comment that one out or move another above it.
+# The later ones are kept for a persona's [models] pin, or for \`kaja doctor\` to fall back to when one
+# stops answering. \`model\` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 `
 
 /**
- * Builds models.toml text for the chosen providers: [tasks] names each task's picked model, and every
- * model written is keyed by the slug of its name (a model serving several tasks is one entry). The other
- * candidates are written too, so a persona pin, or the doctor switching a broken model, can reach them.
+ * Builds models.toml text for the chosen providers: each task's picked model is the first entry listing it,
+ * and every model written is keyed by the slug of its name (a model serving several tasks is one entry). The
+ * other candidates are written after the picked ones, so a persona pin, or the doctor dropping a broken
+ * model, can reach them.
  * Text is generated rather than edited, so the comments that explain the file are always there.
  */
 export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternatives = true }: ModelsSelection): string {
@@ -113,20 +115,28 @@ export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternati
   }
 
   const candidates = candidatesByTask(providers)
-  const inUse: string[] = []
+  const chosen = new Map<ModelTask, ModelCandidate>()
   for (const task of TASK_ORDER) {
     const options = candidates[task]
-    if (!options?.length) continue
-    const chosen = options.find(option => option.provider === pick[task]) ?? options[0]!
-    const written = alternatives ? [chosen, ...options.filter(o => o !== chosen)] : [chosen]
-    for (const option of written) {
-      const entry = entryFor(option)
-      entry.tasks.push(task)
-      if (option === chosen) inUse.push(`${task} = ${JSON.stringify(entry.id)}`)
+    if (options?.length) chosen.set(task, options.find(option => option.provider === pick[task]) ?? options[0]!)
+  }
+  // The picked models first, so each is the first entry listing its task.
+  for (const [task, option] of chosen) entryFor(option).tasks.push(task)
+  if (alternatives) {
+    const order = [...entries.values()]
+    for (const [task, picked] of chosen) {
+      const pickedAt = order.indexOf(entryFor(picked))
+      for (const option of candidates[task]!) {
+        if (option === picked) continue
+        const entry = entryFor(option)
+        // A picked model of another task sitting above this task's pick can't list it, or it would win.
+        const at = order.indexOf(entry)
+        if (at !== -1 && at < pickedAt) continue
+        entry.tasks.push(task)
+      }
     }
   }
 
-  if (inUse.length > 0) out.push(["[tasks]", ...inUse].join("\n"))
   for (const entry of entries.values()) {
     out.push(
       [

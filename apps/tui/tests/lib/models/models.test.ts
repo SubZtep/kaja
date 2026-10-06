@@ -17,7 +17,6 @@ const DATA: ResolvedModelsFile = {
     default: { base_url: "https://api.example.test/v1", api_key: "test-key" },
     speaches: { base_url: "http://localhost:8000" }
   },
-  tasks: { chat: "chat", stt: "faster-whisper" },
   models: {
     chat: { model: "accounts/example/models/chat", tasks: ["chat"], provider: "default" },
     "reasoning-chat": { model: "accounts/example/models/reasoning", tasks: ["chat", "summarize"], provider: "default" },
@@ -70,20 +69,25 @@ test("findModelById looks up by id, optionally constrained to a task", () => {
   expect(findModelById(resolveModels(DATA), "nope")).toBeUndefined()
 })
 
-test("resolveActiveModel with no personaModels uses the model [tasks] names", () => {
+test("resolveActiveModel with no personaModels uses the first model in the file that lists the task", () => {
   expect(resolveActiveModel(DATA, "chat")?.id).toBe("chat")
   expect(resolveActiveModel(DATA, "stt")?.id).toBe("faster-whisper")
   expect(resolveActiveModel(DATA, "embedding")).toBeUndefined()
-  // A model can serve a task [tasks] leaves out: it's there to pin, but nothing uses it.
-  expect(resolveActiveModel(DATA, "summarize")).toBeUndefined()
+  // Listing a task is enough to be used for it, even as a model's second task.
+  expect(resolveActiveModel(DATA, "summarize")?.id).toBe("reasoning-chat")
 })
 
-test("resolveActiveModel: a persona's pin for a task wins over the model [tasks] names", () => {
+test("resolveActiveModel: dropping the first model hands its task to the next one listing it", () => {
+  const { chat: _, ...rest } = DATA.models
+  expect(resolveActiveModel({ ...DATA, models: rest }, "chat")?.id).toBe("reasoning-chat")
+})
+
+test("resolveActiveModel: a persona's pin for a task wins over the first model listing it", () => {
   const resolved = resolveActiveModel(DATA, "chat", { chat: "reasoning-chat" })
   expect(resolved?.id).toBe("reasoning-chat")
 })
 
-test("resolveActiveModel: an absent persona pin for a task falls back to the model [tasks] names", () => {
+test("resolveActiveModel: an absent persona pin for a task falls back to the first model listing it", () => {
   const resolved = resolveActiveModel(DATA, "chat", { embedding: "reasoning-chat" })
   expect(resolved?.id).toBe("chat")
 })
@@ -115,7 +119,7 @@ test("no models.toml file: loads no models without writing one", async () => {
   setConfigDirOverride(dir)
 
   const data = await loadModelsFile()
-  expect(data).toEqual({ providers: {}, tasks: {}, models: {} })
+  expect(data).toEqual({ providers: {}, models: {} })
   expect(await Bun.file(getModelsPath()).exists()).toBe(false)
 })
 

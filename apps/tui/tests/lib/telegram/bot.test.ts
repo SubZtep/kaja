@@ -16,9 +16,6 @@ writeFileSync(
 base_url = "http://localhost"
 api_key = "x"
 
-[tasks]
-chat = "chat"
-
 [models.chat]
 model = "x"
 tasks = ["chat"]
