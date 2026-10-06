@@ -19,18 +19,25 @@ export type RunShellCommandOptions = {
 export async function runShellCommand(command: string, opts: RunShellCommandOptions = {}): Promise<string> {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxBytes = opts.maxBytes ?? DEFAULT_MAX_BYTES
-  const proc = trackProcess(
-    Bun.spawn(["sh", "-c", command], {
-      stdout: "pipe",
-      stderr: "pipe"
-    })
-  )
+  // Detached: the shell leads its own process group, so a kill reaches what it started too (dash forks a command rather than exec it, and that child would keep the pipes open)
+  const proc = Bun.spawn(["sh", "-c", command], {
+    stdout: "pipe",
+    stderr: "pipe",
+    detached: true
+  })
+  const stop = () => {
+    try {
+      process.kill(-proc.pid, "SIGTERM")
+    } catch {
+      proc.kill()
+    }
+  }
+  trackProcess(proc, stop)
   let timedOut = false
   const timer = setTimeout(() => {
     timedOut = true
-    proc.kill()
+    stop()
   }, timeoutMs)
-  const stop = () => proc.kill()
   try {
     const [stdout, stderr, exitCode] = await Promise.all([
       readCapped(proc.stdout, maxBytes, stop),

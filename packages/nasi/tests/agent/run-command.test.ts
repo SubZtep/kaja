@@ -17,7 +17,8 @@ test("a stream past the cap is cut and the child is killed", async () => {
 
 test("a command that ignores its pipes is killed at the timeout", async () => {
   const started = Date.now()
-  const result = await runShellCommand("sleep 30", { timeoutMs: 200 })
+  // `; true` keeps any sh from exec-ing sleep, so it runs as the shell's child and holds the pipes like it does under dash
+  const result = await runShellCommand("sleep 30; true", { timeoutMs: 200 })
   expect(Date.now() - started).toBeLessThan(5_000)
   expect(result).toContain("Timed out after 200 ms")
 })
