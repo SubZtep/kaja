@@ -19,6 +19,14 @@ describe("UserIsolation", () => {
     expect(isolation.runAs("a").uid).toBe(30_000)
   })
 
+  test("a busy least-recently-used uid is not handed out", () => {
+    const isolation = new UserIsolation({ first: 30_000, count: 2, busy: uid => uid === 30_001 })
+    isolation.runAs("a")
+    isolation.runAs("b")
+    isolation.runAs("a")
+    expect(isolation.runAs("c").uid).toBe(30_000)
+  })
+
   test.skipIf(process.getuid?.() === 0)("is off unless the sandbox runs as root", async () => {
     expect(await UserIsolation.create({ enabled: true })).toBeUndefined()
   })
