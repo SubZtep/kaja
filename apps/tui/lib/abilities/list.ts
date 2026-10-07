@@ -20,7 +20,7 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
   const keys = (await secrets()).abilities
   const usedBy = await personasByAbility()
 
-  const sorted = rows.sort((a, b) => a.name.localeCompare(b.name))
+  const sorted = rows.toSorted((a, b) => a.name.localeCompare(b.name))
   const width = Math.max(...sorted.map(r => r.name.length))
   // The `local` tag gets a column of its own when any row has it, so the details still line up.
   const tag = sorted.some(r => own.has(r.name)) ? t("ability.local") : ""

@@ -137,11 +137,16 @@ async function loadMcpAbility(
   try {
     return { target: mcpAbilityTarget(ability, apiKey, opts.launch, roots) }
   } catch (error) {
-    if (!(error instanceof McpRunnerMissingError)) throw error
-    if (listed && !listed.has(ability.name)) return {}
-    warn("Ability left out: nothing installed can start it", { ability: ability.name, needs: error.needs })
-    return { missingRunner: { name: ability.name, needs: error.needs } }
+    return runnerMissing(error, ability, listed)
   }
+}
+
+// An ability nothing here can start is left out, reported when a persona uses it (any, without personas); any other error is rethrown.
+function runnerMissing(error: unknown, ability: McpAbility, listed: Set<string> | undefined): LoadedMcpAbility {
+  if (!(error instanceof McpRunnerMissingError)) throw error
+  if (listed && !listed.has(ability.name)) return {}
+  warn("Ability left out: nothing installed can start it", { ability: ability.name, needs: error.needs })
+  return { missingRunner: { name: ability.name, needs: error.needs } }
 }
 
 // Each ability's tool names, where they're known before connecting (an MCP server without a `tools` list isn't).
