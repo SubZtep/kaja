@@ -142,7 +142,7 @@ function SignIn() {
                   size="sm"
                   variant="link"
                   disabled={loading || !captcha.ready}
-                  className="text-[13px] text-muted hover:text-neon mx-0"
+                  className="mx-0 text-[13px] text-muted hover:text-neon"
                 >
                   {m.auth_field_forgot_password()}
                 </Button>

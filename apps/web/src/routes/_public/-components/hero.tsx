@@ -109,7 +109,7 @@ export function Hero() {
             {m.hero_badge()}
           </Sticker>
 
-          <h1 className="m-0 max-w-xl font-display font-extrabold text-fg text-[34px] leading-[0.92] tracking-[-0.04em] wrap-normal [word-break:normal] sm:text-[40px] lg:text-[48px] xl:text-[56px]">
+          <h1 className="wrap-normal m-0 max-w-xl font-display font-extrabold text-[34px] text-fg leading-[0.92] tracking-[-0.04em] [word-break:normal] sm:text-[40px] lg:text-[48px] xl:text-[56px]">
             {greeting(part, firstName)}
           </h1>
           <svg className="mt-1 ml-1 w-48 text-neon md:w-72" viewBox="0 0 220 12" fill="none" aria-hidden>
@@ -121,14 +121,14 @@ export function Hero() {
             />
           </svg>
 
-          <p className="mt-4 mb-0 max-w-md font-display text-lg text-muted wrap-normal [word-break:normal] md:text-xl">
+          <p className="wrap-normal mt-4 mb-0 max-w-md font-display text-lg text-muted [word-break:normal] md:text-xl">
             {m.hero_subline()}
           </p>
         </div>
 
-        <div className="order-last min-w-0 md:order-0 md:col-start-1 md:row-start-2 *:first:mt-0">
+        <div className="order-last min-w-0 *:first:mt-0 md:order-0 md:col-start-1 md:row-start-2">
           {user ? null : (
-            <div className="mt-8 max-w-md flex flex-col gap-4">
+            <div className="mt-8 flex max-w-md flex-col gap-4">
               <CaptchaGate captcha={captcha}>
                 <GoogleButton captcha={captcha} />
               </CaptchaGate>
@@ -179,10 +179,10 @@ export function Hero() {
             <Sticker rotate={8} className="absolute -top-1 right-2 z-1 text-[10px]">
               {m.install_linux_note()}
             </Sticker>
-            <div className="crt-frame flex max-w-xl min-w-0 items-start gap-2.5 px-3 py-2.5 sm:items-center sm:px-3.5">
-              <code className="min-w-0 flex-1 wrap-break-word font-crt text-neon text-sm sm:overflow-x-auto sm:whitespace-nowrap">
+            <div className="crt-frame flex min-w-0 max-w-xl items-start gap-2.5 px-3 py-2.5 sm:items-center sm:px-3.5">
+              <code className="wrap-break-word min-w-0 flex-1 font-crt text-neon text-sm sm:overflow-x-auto sm:whitespace-nowrap">
                 {installCmd}
-                <span className="ml-0.5 inline-block h-3.5 w-1.5 bg-neon align-[-1px] animate-[caret-blink_1.1s_steps(1)_infinite]" />
+                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-[caret-blink_1.1s_steps(1)_infinite] bg-neon align-[-1px]" />
               </code>
               <button
                 type="button"

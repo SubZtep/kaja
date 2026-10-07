@@ -89,7 +89,7 @@ export function TelegramPromo({ className }: Readonly<{ className?: string }>) {
     <div className={cn("crt-frame flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", className)}>
       <Send size={20} className={cn("shrink-0 text-neon", isSpinning && "animate-spin")} />
       <div className="min-w-52 flex-1">
-        <p className="m-0 font-display font-extrabold text-fg text-base leading-tight">{m.hero_telegram_title()}</p>
+        <p className="m-0 font-display font-extrabold text-base text-fg leading-tight">{m.hero_telegram_title()}</p>
         <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
       </div>
       <Link to="/signin" className="font-stamp text-[11px] text-neon uppercase">

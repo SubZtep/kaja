@@ -56,6 +56,12 @@ jobs:
       - name: Run linters and format checks
         run: bun run lint
 
+      # Tailwind's upgrade tool rewrites classes to their canonical form (and bumps Tailwind, so only src/ counts)
+      - name: Check Tailwind classes are canonical
+        run: |
+          bun run --filter @kaja/web tailwind:fix
+          git diff --exit-code -- apps/web/src
+
   typecheck:
     needs: lint
     permissions:

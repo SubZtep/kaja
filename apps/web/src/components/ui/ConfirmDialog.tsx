@@ -36,7 +36,7 @@ export function ConfirmDialog({
     <AlertDialog.Root onOpenChange={open => open || setTyped("")}>
       <AlertDialog.Trigger render={children} />
       <AlertDialog.Portal>
-        <DialogShell kind="alert" className="w-96 -mt-8">
+        <DialogShell kind="alert" className="-mt-8 w-96">
           <AlertDialog.Title className={DIALOG_TITLE}>{title}</AlertDialog.Title>
           <AlertDialog.Description className="mb-6 text-base text-muted">{description}</AlertDialog.Description>
           {typeToConfirm === undefined ? null : (
@@ -61,7 +61,7 @@ export function ConfirmDialog({
               onClick={onConfirm}
               render={
                 <Button
-                  className={cn("whitespace-nowrap text-red-400 font-semibold", confirmClassName)}
+                  className={cn("whitespace-nowrap font-semibold text-red-400", confirmClassName)}
                   autoFocus={typeToConfirm === undefined}
                   disabled={locked}
                 />

@@ -28,7 +28,7 @@ export function SelectField({
         <Field.Label
           htmlFor={field.name}
           className={cn(
-            isStack ? "font-medium text-[13px] text-muted" : "flex w-48 align-middle items-center justify-between"
+            isStack ? "font-medium text-[13px] text-muted" : "flex w-48 items-center justify-between align-middle"
           )}
         >
           {isStack ? label : `${label}:`}
@@ -39,7 +39,7 @@ export function SelectField({
           value={field.state.value}
           onBlur={field.handleBlur}
           onChange={e => field.handleChange(e.target.value)}
-          className="w-full rounded-sm border border-border/60 bg-black/25 px-3 py-2 data-invalid:border-red-500/70 text-base text-fg focus:outline-2 focus:-outline-offset-1 focus:outline-neon/50 dark:scheme-dark"
+          className="dark:scheme-dark w-full rounded-sm border border-border/60 bg-black/25 px-3 py-2 text-base text-fg focus:outline-2 focus:outline-neon/50 focus:-outline-offset-1 data-invalid:border-red-500/70"
           {...props}
         >
           {options.map(option => (

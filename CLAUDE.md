@@ -58,6 +58,7 @@ bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--
 # Lint / types / tests
 bun lint
 bun lint:fix
+bun tailwind:fix       # rewrite apps/web classes to their canonical form (@tailwindcss/upgrade; needs a clean tree, also bumps Tailwind); CI fails if src/ would change
 bun typecheck          # apps/* (with their tests/ and scripts/), packages/*, .claude/skills and root scripts/; incremental (gitignored .tsbuildinfo per tsconfig); fails on first error
 bun test               # every workspace's tests (API integration tests need Postgres + RustFS); run from the repo root
 ```
@@ -173,7 +174,7 @@ Each file only creates; there are no patch migrations, so a schema change until 
 - `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
 - API integration tests need a running Postgres matching `DATABASE_URL`, but run against their own database: the preload (`apps/api/tests/test-database.ts`) points them at `<dev database>_test` (or `TEST_DATABASE_URL`) and rebuilds it from `apps/api/migrations` whenever those files change, so a running `bun dev` (its marketplace sync on every hot restart) can't race them
 - CLI has a large unit suite under `apps/tui/tests/`
-- CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
+- CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi, and canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
 - Separate workflow builds the CLI
 
 ## Import Aliases

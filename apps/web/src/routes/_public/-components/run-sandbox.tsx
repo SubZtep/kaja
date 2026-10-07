@@ -20,7 +20,7 @@ export function RunSandbox() {
     <section>
       <ContentWidth className="py-10 sm:py-16">
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <h2 className="m-0 font-display font-extrabold text-fg text-3xl md:text-4xl">{m.landing_sandbox_title()}</h2>
+          <h2 className="m-0 font-display font-extrabold text-3xl text-fg md:text-4xl">{m.landing_sandbox_title()}</h2>
           {data && (
             <Sticker rotate={-6} className="text-[10px]">
               {m.landing_sandbox_online({ count: data.online })}

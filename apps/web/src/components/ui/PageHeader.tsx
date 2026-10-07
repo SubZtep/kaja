@@ -16,7 +16,7 @@ export function PageHeader({
     <header className="mb-8 flex flex-col justify-between gap-6 lg:mb-10 lg:flex-row lg:items-end">
       <div className="max-w-2xl">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h1 className="m-0 mb-0 font-display font-extrabold text-fg text-[28px] tracking-[-0.01em]">{title}</h1>
+          <h1 className="m-0 mb-0 font-display font-extrabold text-[28px] text-fg tracking-[-0.01em]">{title}</h1>
           {meta ? (
             <span className="sticker sticker-ghost text-[10px]" style={{ "--sticker-rot": "-4deg" } as CSSProperties}>
               {meta}

@@ -15,7 +15,7 @@ const POPUP =
 /**
  * Backdrop and popup of every modal, as the site's paper card: the popup only positions and animates, the
  * frame is its child (paper-card positions itself relative), and the content scrolls inside the frame so its
- * offset shadow isn't clipped. `kind="alert"` for an AlertDialog; `className` sizes it (e.g. `w-[36rem]`).
+ * offset shadow isn't clipped. `kind="alert"` for an AlertDialog; `className` sizes it (e.g. `w-xl`).
  * Render it inside the dialog's Portal.
  */
 export function DialogShell({

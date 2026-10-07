@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "echo \"no tests\"",
     "generate:routes": "tsr generate",
-    "generate:paraglide": "bun scripts/generate-paraglide.ts"
+    "generate:paraglide": "bun scripts/generate-paraglide.ts",
+    "tailwind:fix": "bunx @tailwindcss/upgrade"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -19,7 +20,7 @@
     "@fontsource/syne": "^5.3.0",
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
-    "@sentry/tanstackstart-react": "^11.4.0",
+    "@sentry/tanstackstart-react": "^11.5.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-form": "^1.33.5",
     "@tanstack/react-query": "^5.104.1",
@@ -28,7 +29,7 @@
     "@tanstack/react-table": "^9.2.6",
     "better-auth": "^1.7.7",
     "lucide-react": "^1.52.0",
-    "nitro": "npm:nitro-nightly@3.0.1-20261006-152639-d631065a",
+    "nitro": "npm:nitro-nightly@3.0.1-20261007-081339-ccf4db07",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-toastify": "^11.1.0",

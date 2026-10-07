@@ -58,19 +58,19 @@ const providerColumnHelper = tableColumnHelper<Provider>()
 const modelColumnHelper = tableColumnHelper<Model>()
 
 function ProviderNameCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
-  return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+  return <span className="font-bold font-mono text-fg text-sm">{info.getValue()}</span>
 }
 
 function ProviderBaseUrlCell(info: CellContext<typeof tableFeaturesConfig, Provider, string>) {
-  return <span className="font-mono text-xs text-muted">{info.getValue()}</span>
+  return <span className="font-mono text-muted text-xs">{info.getValue()}</span>
 }
 
 function ProviderApiKeyCell(info: CellContext<typeof tableFeaturesConfig, Provider, boolean>) {
-  return <span className="text-xs text-muted">{info.getValue() ? m.models_column_api_key_set() : "—"}</span>
+  return <span className="text-muted text-xs">{info.getValue() ? m.models_column_api_key_set() : "—"}</span>
 }
 
 function ProviderCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Provider, Date>) {
-  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
 function makeProviderActionsCell(
@@ -103,26 +103,26 @@ function makeProviderActionsCell(
 }
 
 function ModelNameCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
-  return <span className="font-mono text-sm font-bold text-fg">{info.getValue()}</span>
+  return <span className="font-bold font-mono text-fg text-sm">{info.getValue()}</span>
 }
 
 function ModelContextWindowCell(info: CellContext<typeof tableFeaturesConfig, Model, number | null>) {
   const value = info.getValue()
   return (
-    <span className="font-mono text-xs text-muted">
+    <span className="font-mono text-muted text-xs">
       {value ? value.toLocaleString() : m.models_context_window_auto()}
     </span>
   )
 }
 
 function ModelTasksCell(info: CellContext<typeof tableFeaturesConfig, Model, ModelTask[]>) {
-  return <span className="text-xs text-muted">{info.getValue().join(", ")}</span>
+  return <span className="text-muted text-xs">{info.getValue().join(", ")}</span>
 }
 
 function makeModelProviderCell(providers: Provider[]) {
   return function ModelProviderCell(info: CellContext<typeof tableFeaturesConfig, Model, string>) {
     const provider = providers.find(p => p.id === info.getValue())
-    return <span className="font-mono text-xs text-muted">{provider?.name ?? "—"}</span>
+    return <span className="font-mono text-muted text-xs">{provider?.name ?? "—"}</span>
   }
 }
 
@@ -153,12 +153,12 @@ function makeModelFreeCell(onToggle: (args: { id: string; free: boolean }) => vo
 }
 
 function ModelCreatedAtCell(info: CellContext<typeof tableFeaturesConfig, Model, Date>) {
-  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
 function ModelLastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, Model, Date | null>) {
   const value = info.getValue()
-  return <span className="font-mono text-xs text-muted">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
+  return <span className="font-mono text-muted text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
 function makeModelActionsCell(

@@ -55,11 +55,11 @@ function LabelCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, stri
 }
 
 function KeyPrefixCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string>) {
-  return <span className="font-mono text-xs text-muted">{info.getValue()}…</span>
+  return <span className="font-mono text-muted text-xs">{info.getValue()}…</span>
 }
 
 function OriginsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string[]>) {
-  return <span className="font-mono text-xs text-muted">{info.getValue().join(", ")}</span>
+  return <span className="font-mono text-muted text-xs">{info.getValue().join(", ")}</span>
 }
 
 function EnabledCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, boolean>) {
@@ -71,12 +71,12 @@ function EnabledCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, bo
 }
 
 function CreatedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, Date>) {
-  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
 function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, Date | null>) {
   const value = info.getValue()
-  return <span className="font-mono text-xs text-muted">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
+  return <span className="font-mono text-muted text-xs">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
 function makeActionsCell(renderEdit: (key: WidgetKey) => React.ReactNode, onRevoke: (id: string) => void) {

@@ -14,7 +14,7 @@ export function BrandMark({
   return (
     <Link
       to={to}
-      className={cn("font-display font-extrabold text-fg flex gap-2 items-center tracking-tight", className)}
+      className={cn("flex items-center gap-2 font-display font-extrabold text-fg tracking-tight", className)}
     >
       {monster ? (
         // Usually the page's first monster.gif, so React's SSR preload of it takes this priority (it's the hero's LCP image too); fades back while the hero's big monster is on screen
@@ -24,7 +24,7 @@ export function BrandMark({
           width={324}
           height={108}
           fetchPriority="high"
-          className="hidden h-7 w-auto opacity-90 transition-[opacity,filter] duration-500 sm:block in-data-hero-monster:opacity-25 in-data-hero-monster:blur-[1px] in-data-hero-monster:grayscale"
+          className="hidden h-7 w-auto in-data-hero-monster:opacity-25 opacity-90 in-data-hero-monster:blur-[1px] in-data-hero-monster:grayscale transition-[opacity,filter] duration-500 sm:block"
         />
       ) : (
         <span className="text-neon">&gt;</span>

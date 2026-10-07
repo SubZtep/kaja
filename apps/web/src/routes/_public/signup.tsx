@@ -91,7 +91,7 @@ function SignUp() {
         }
       >
         {/* Pre-launch notice. Remove before public release. */}
-        <p className="animate-pulse mb-6 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
+        <p className="mb-6 animate-pulse rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200">
           {m.signup_prelaunch_notice()}
         </p>
 

@@ -25,7 +25,7 @@ const columns = columnHelper.columns([
     cell: info => {
       const parsed = UAParser(info.getValue() || "{}")
       return (
-        <span className="text-xs text-muted">
+        <span className="text-muted text-xs">
           {parsed.browser.name} / {parsed.os.name}
         </span>
       )
@@ -78,7 +78,7 @@ export function UserSessions({ userId, className }: Readonly<{ userId: string; c
   return (
     <div className={className}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="m-0 font-semibold text-fg text-[15px]">{m.user_sessions_title()}</h2>
+        <h2 className="m-0 font-semibold text-[15px] text-fg">{m.user_sessions_title()}</h2>
         <ConfirmDialog title={m.confirm_dialog_are_you_sure()} onConfirm={() => mutate()}>
           <Button size="sm" variant="oval" disabled={sessions.length === 0}>
             <MonitorX size={14} className="mr-2" /> {m.user_sessions_revoke_all()}

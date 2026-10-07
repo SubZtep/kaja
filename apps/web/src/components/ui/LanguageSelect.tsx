@@ -108,8 +108,8 @@ export function LanguageSelect({ className }: Readonly<{ className?: string }> =
         </Select.Icon>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Positioner className="z-20 outline-none select-none" sideOffset={4}>
-          <Select.Popup className="min-w-(--anchor-width) rounded-md border border-border bg-surface py-1 text-fg text-sm shadow-lg outline-none transition-all duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+        <Select.Positioner className="z-20 select-none outline-none" sideOffset={4}>
+          <Select.Popup className="min-w-(--anchor-width) rounded-md border border-border bg-surface py-1 text-fg text-sm shadow-lg outline-none transition-all duration-150 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
             {locales.map(locale => (
               <Select.Item
                 key={locale}
