@@ -44,7 +44,7 @@ don't get these two.
 proxy, and is left out entirely if the server has none.
 
 The **Cloud** column is an explicit allowlist. Anything that touches the server's filesystem or shell is
-never exposed there, and your `mcp.toml` servers and code tools are never attached.
+never exposed there, and code tools are never attached.
 
 ## HTTP tools
 
@@ -95,7 +95,7 @@ type = "string"
 - Locally, a tool may call hosts on your own network (Home Assistant, a NAS, Ollama).
 
 The marketplace has two: `brave-search` adds `web_search` through the Brave Search API (the key goes in the
-`X-Subscription-Token` header, and `kaja abilities` asks for it), and `open-meteo` looks up weather.
+`X-Subscription-Token` header, and `kaja doctor` asks for it), and `open-meteo` looks up weather.
 
 In the cloud, marketplace HTTP tools work in cloud chat and the cloud Telegram bot, unless the `baseUrl` is a
 private or local address. Requests go through the server's proxy when it has one, and private addresses are
@@ -153,10 +153,9 @@ All tools share one list of names, and each is marked by where it comes from:
 | --- | --- |
 | official | Kaja's built-ins |
 | community | [abilities](/abilities), synced or your own, code tools included |
-| third-party | MCP servers from `mcp.toml` |
 
 Official names are reserved: an MCP or code tool called `read_file` is left out instead of replacing the
-built-in. Among the others, community tools come first, and the first tool with a name keeps it.
+built-in. Among the others, the first tool with a name keeps it.
 `kaja doctor` lists every tool by origin, plus anything left out and why. The model only sees the names.
 
 ---

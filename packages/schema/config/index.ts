@@ -1,4 +1,3 @@
-export * from "./abilities"
 export * from "./catalog"
 export * from "./commands"
 export * from "./mcp"

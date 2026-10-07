@@ -15,15 +15,6 @@ toml-version = "v1.1.0"
 
 
 [[schemas]]
-path    = "docs/config/schemas/abilities.json"
-include = [
-  "docs/config/abilities.toml",
-  "**/.config/kaja/abilities.toml",
-  "**/.config/kaja/abilities.bak*.toml"
-]
-
-
-[[schemas]]
 path    = "docs/config/schemas/commands.json"
 include = [
   "docs/config/commands.toml",
@@ -52,15 +43,6 @@ path    = "docs/config/schemas/mcp-ability.json"
 include = [
   "marketplace/abilities/*/mcp.toml",
   "**/.config/kaja/marketplace/abilities/*/mcp.toml"
-]
-
-
-[[schemas]]
-path    = "docs/config/schemas/mcp.json"
-include = [
-  "docs/config/mcp.toml",
-  "**/.config/kaja/mcp.toml",
-  "**/.config/kaja/mcp.bak*.toml"
 ]
 
 

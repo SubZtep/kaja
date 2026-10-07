@@ -52,12 +52,11 @@ export type CreateToolsOptions = {
   /** Cloud only: a client can answer a `client_tool_call` pause (the terminal), so `read_file`/`list_files` are offered as stubs. False (widget, Telegram) leaves them out. Default true. */
   clientTools?: boolean
   deps?: NasiToolDeps
-  mcpServers?: McpServerEntry[]
   tempDir?: string
   /** Tools the host brings in besides the builtins, e.g. `loadAbilities`' groups. Merged under the same name rules. */
   extraTools?: ToolGroup[]
   /**
-   * MCP servers from enabled abilities (`loadAbilities`' `mcp`), connected alongside `mcpServers` as community tools.
+   * MCP servers from abilities (`loadAbilities`' `mcp`), connected as community tools.
    * In the cloud (`includeLocalTools` false) only these connect, and only remote (http/sse) ones, through `mcpFetch`,
    * with images dropped and results capped.
    */
@@ -98,12 +97,12 @@ export type SkippedTool = {
   takenBy?: string
 }
 
-const ORIGIN_ORDER: ToolOrigin[] = ["official", "community", "third-party"]
+const ORIGIN_ORDER: ToolOrigin[] = ["official", "community"]
 
 /**
  * One namespace for every tool: stamps each group's origin/source onto its tools and drops
  * duplicate names, so the model never gets two functions with the same name. Official names
- * are reserved; between the others, community beats third-party and the first one in wins.
+ * are reserved; among the others, the first one in wins.
  */
 export function mergeTools(groups: ToolGroup[]): { tools: Tool[]; skipped: SkippedTool[] } {
   const ordered = groups.toSorted((a, b) => ORIGIN_ORDER.indexOf(a.origin) - ORIGIN_ORDER.indexOf(b.origin))
@@ -219,24 +218,19 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     maxImageBytes: CLOUD_MCP_MAX_IMAGE_BYTES,
     maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS
   }
-  const mcpTargets: McpTarget[] = [
-    ...(local ? (opts.mcpServers ?? []) : []).map(server => ({ id: server.id, server })),
-    ...abilities.map(target => ({
-      id: `ability:${target.name}`,
-      server: target.server,
-      opts: {
-        transport: target.transport === "sse" ? ("sse" as const) : ("http" as const),
-        allow: target.allow,
-        approval: target.approval,
-        readOnly: target.readOnly,
-        label: `ability:${target.name}`,
-        ...(local ? {} : { ...cloudOpts, hideArgs: target.localOnlyArgs })
-      },
-      ...(target.sandboxed
-        ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) }
-        : {})
-    }))
-  ]
+  const mcpTargets: McpTarget[] = abilities.map(target => ({
+    id: `ability:${target.name}`,
+    server: target.server,
+    opts: {
+      transport: target.transport === "sse" ? ("sse" as const) : ("http" as const),
+      allow: target.allow,
+      approval: target.approval,
+      readOnly: target.readOnly,
+      label: `ability:${target.name}`,
+      ...(local ? {} : { ...cloudOpts, hideArgs: target.localOnlyArgs })
+    },
+    ...(target.sandboxed ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) } : {})
+  }))
   // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
   const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
   const connectTimeoutMs = opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
@@ -254,19 +248,15 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     )
     await Promise.all(targets.map(target => connecting.get(target.id)))
   }
-  // mcp.toml servers connect now; abilities' servers too, unless they wait for ensureAbilities.
-  await connect(opts.lazyMcpAbilities ? mcpTargets.filter(target => !abilityIds.has(target.id)) : mcpTargets)
+  // Abilities' servers connect now, unless they wait for ensureAbilities.
+  if (!opts.lazyMcpAbilities) await connect(mcpTargets)
 
   const connections = async () => Promise.all([...connecting.values()])
   const merge = async () =>
     mergeTools([
       { origin: "official", tools: official },
       ...(opts.extraTools ?? []),
-      ...(await connections()).map(c =>
-        abilityIds.has(c.id)
-          ? { origin: "community" as const, source: c.id, tools: c.tools }
-          : { origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools }
-      )
+      ...(await connections()).map(c => ({ origin: "community" as const, source: c.id, tools: c.tools }))
     ])
   let merged = await merge()
   const mcpServers = async () =>

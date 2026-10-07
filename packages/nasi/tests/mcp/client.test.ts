@@ -75,26 +75,44 @@ test(
 )
 
 test(
-  "createTools connects abilities as community tools and mcp.toml servers as third-party",
+  "createTools connects abilities as community tools, keeping only their allowed tools",
   async () => {
     const { tools, mcpServers, closeTools } = await createTools({
       includeLocalTools: true,
       tempDir: tmpdir(),
-      mcpServers: [{ ...fixture, id: "own" }],
       mcpAbilities: [
         { name: "ability", server: fixture, transport: "stdio", approval: "writes", allow: ["write_thing"] }
       ]
     })
     const byName = new Map(tools.map(t => [toolName(t), t]))
-    // The ability's write_thing wins over mcp.toml's (community before third-party); its other tools are filtered out there.
     expect(byName.get("write_thing")).toMatchObject({ origin: "community", source: "ability:ability" })
     expect(byName.get("write_thing")?.approval).toBeDefined()
-    expect(byName.get("read_thing")).toMatchObject({ origin: "third-party", source: "mcp:own" })
-    expect(mcpServers).toEqual([
-      { id: "own", toolCount: 3, failed: false },
-      { id: "ability:ability", toolCount: 1, failed: false }
-    ])
+    expect(byName.has("read_thing")).toBe(false)
+    expect(mcpServers).toEqual([{ id: "ability:ability", toolCount: 1, failed: false }])
     await closeTools()
+  },
+  SPAWN_TIMEOUT
+)
+
+test(
+  "with lazyMcpAbilities, a server connects only when ensureAbilities names it",
+  async () => {
+    const { tools, mcpServers, ensureAbilities, closeTools } = await createTools({
+      includeLocalTools: true,
+      tempDir: tmpdir(),
+      lazyMcpAbilities: true,
+      mcpAbilities: [{ name: "things", server: fixture, transport: "stdio", approval: "never" }]
+    })
+    try {
+      expect(mcpServers).toEqual([])
+      expect(tools.some(t => toolName(t) === "read_thing")).toBe(false)
+      expect((await ensureAbilities(["other"])).some(t => toolName(t) === "read_thing")).toBe(false)
+      const [first, second] = await Promise.all([ensureAbilities(["things"]), ensureAbilities(["things"])])
+      expect(first.some(t => toolName(t) === "read_thing")).toBe(true)
+      expect(second.map(toolName)).toEqual(first.map(toolName))
+    } finally {
+      await closeTools()
+    }
   },
   SPAWN_TIMEOUT
 )
@@ -103,18 +121,23 @@ test(
   "servers that don't answer are skipped after the timeout, all at once rather than one after another",
   async () => {
     // Two silent servers with a 1 s limit: in parallel that's ~1 s, one after another it would be 2 s or more.
-    const silent = (id: string): McpServerEntry => ({ id, command: "sleep", args: ["30"], env: {} })
+    const silent = (id: string) => ({
+      name: id,
+      server: { id, command: "sleep", args: ["30"], env: {} } satisfies McpServerEntry,
+      transport: "stdio" as const,
+      approval: "never" as const
+    })
     const started = Date.now()
     const { mcpServers, closeTools } = await createTools({
       includeLocalTools: true,
       tempDir: tmpdir(),
       mcpConnectTimeoutMs: 1_000,
-      mcpServers: [silent("a"), silent("b")]
+      mcpAbilities: [silent("a"), silent("b")]
     })
     expect(Date.now() - started).toBeLessThan(1_900)
     expect(mcpServers).toEqual([
-      { id: "a", toolCount: 0, failed: true },
-      { id: "b", toolCount: 0, failed: true }
+      { id: "ability:a", toolCount: 0, failed: true },
+      { id: "ability:b", toolCount: 0, failed: true }
     ])
     await closeTools()
   },
@@ -127,9 +150,17 @@ test(
     const { tools, mcpServers, closeTools } = await createTools({
       includeLocalTools: true,
       tempDir: tmpdir(),
-      mcpServers: [{ id: "broken", command: "kaja-test-no-such-command", args: [], env: {} }, fixture]
+      mcpAbilities: [
+        {
+          name: "broken",
+          server: { id: "broken", command: "kaja-test-no-such-command", args: [], env: {} },
+          transport: "stdio",
+          approval: "never"
+        },
+        { name: "things", server: fixture, transport: "stdio", approval: "never" }
+      ]
     })
-    expect(mcpServers.find(s => s.id === "broken")).toMatchObject({ failed: true, toolCount: 0 })
+    expect(mcpServers.find(s => s.id === "ability:broken")).toMatchObject({ failed: true, toolCount: 0 })
     expect(tools.some(t => toolName(t) === "read_thing")).toBe(true)
     await closeTools()
   },

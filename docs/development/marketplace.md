@@ -26,7 +26,7 @@ flowchart LR
 
     subgraph LOCAL["your machine"]
         CACHE["git cache<br><small>sparse checkout</small>"]
-        FOLDER["~/.config/kaja/marketplace/<br><small>+ abilities.toml picks</small>"]
+        FOLDER["~/.config/kaja/marketplace/<br><small>personas pick abilities</small>"]
     end
 
     subgraph CLOUD["the Kaja API"]
@@ -89,8 +89,8 @@ flowchart TD
     H -->|"no: edited"| KEEP["keep it: kept"]
 ```
 
-The sync keeps the executable bit on scripts and prunes folders it emptied. At startup the terminal reads
-only what `abilities.toml` lists.
+The sync keeps the executable bit on scripts and prunes folders it emptied. At startup the terminal loads
+every valid ability and persona in the folder; each persona's `abilities` list decides what a chat gets.
 
 ## The API's copy
 
@@ -150,7 +150,7 @@ are rebuilt every turn, which is why a change applies from the next message.
 
 | Front door | Where the choice is stored |
 | --- | --- |
-| terminal (local), local Telegram bot | `abilities.toml` and the `marketplace/` folder |
+| terminal (local), local Telegram bot | the personas in the `marketplace/` folder |
 | terminal (cloud), cloud Telegram bot | the account's `user_ability` rows |
 | widget | the key's `config.skills` |
 

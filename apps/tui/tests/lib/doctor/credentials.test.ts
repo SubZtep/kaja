@@ -221,13 +221,12 @@ test("declining an optional key leaves the ability as it was", async () => {
 })
 
 test("a scoped pass looks only at the items it was given", async () => {
-  put("abilities.toml", `tools = ["gh", "open"]\n`)
+  put("marketplace/personas/default.toml", `label = "D"\nabilities = ["gh", "open"]\n`)
   const tool = (name: string) =>
     `description = "x"\nbaseUrl = "https://api.${name}.test"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n\n[[tools]]\nname = "${name}_get"\ndescription = "x"\npath = "/x"\n`
   put("marketplace/abilities/gh/tool.toml", tool("gh"))
   put("marketplace/abilities/open/tool.toml", tool("open"))
   put("secrets.toml", "")
-  put("mcp.toml", "servers = []\n")
 
   // runCredentialPass asks only on a terminal; a developer's shell is one, and the missing key would open a real prompt
   const isTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY")
@@ -241,12 +240,12 @@ test("a scoped pass looks only at the items it was given", async () => {
   }
 })
 
-test("collects providers, keyed abilities, declared MCP secrets and a saved Telegram token", async () => {
+test("collects providers, keyed abilities a persona uses, and a saved Telegram token", async () => {
   put(
     "models.toml",
     `[providers.local]\nbase_url = "http://localhost:11434/v1"\n\n[models.m]\nmodel = "m"\ntasks = ["chat"]\nprovider = "local"\n`
   )
-  put("abilities.toml", `tools = ["gh", "open"]\n`)
+  put("marketplace/personas/default.toml", `label = "D"\nabilities = ["gh", "open"]\n`)
   put(
     "marketplace/abilities/gh/tool.toml",
     `description = "x"\nbaseUrl = "https://api.github.com"\nauth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\n\n[[tools]]\nname = "gh_get"\ndescription = "x"\npath = "/x"\n`
@@ -255,30 +254,23 @@ test("collects providers, keyed abilities, declared MCP secrets and a saved Tele
     "marketplace/abilities/open/tool.toml",
     `description = "x"\nbaseUrl = "https://api.open.test"\n\n[[tools]]\nname = "open_get"\ndescription = "x"\npath = "/x"\n`
   )
+  // A keyed ability no persona uses isn't asked about.
   put(
-    "mcp.toml",
-    `[[servers]]\nid = "ctx"\ncommand = "true"\nsecrets = ["CTX_KEY", "CTX_ID"]\n\n[[servers]]\nid = "plain"\nurl = "https://mcp.example.com"\n`
+    "marketplace/abilities/unused/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.unused.test"\nauth = { type = "apiKey", in = "header", name = "X-Key" }\n\n[[tools]]\nname = "unused_get"\ndescription = "x"\npath = "/x"\n`
   )
-  put("secrets.toml", `[mcp.ctx]\nCTX_KEY = "k"\n\n[telegram]\nbot_token = "t"\n`)
+  put("secrets.toml", `[telegram]\nbot_token = "t"\n`)
 
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.present, i.required, i.hint])).toEqual([
     ["[providers.local] api_key", false, false, undefined],
     ["[abilities.gh] api_key", false, true, "header Authorization"],
-    ["[mcp.ctx] CTX_KEY", true, true, "env CTX_KEY"],
-    ["[mcp.ctx] CTX_ID", false, true, "env CTX_ID"],
     ["[telegram] bot_token", true, true, undefined]
   ])
 })
 
-test("an MCP secret can't be tested while another declared one is still missing", async () => {
-  put("mcp.toml", `[[servers]]\nid = "ctx"\ncommand = "true"\nsecrets = ["A", "B"]\n`)
-  const items = await collectCredentials()
-  expect(await items[0]!.check?.("value-for-a")).toBeUndefined()
-})
-
 test("MCP abilities with key auth become items; optional keys aren't required", async () => {
-  put("abilities.toml", `mcp = ["docs", "private", "open"]\ntools = ["weather"]\n`)
+  put("marketplace/personas/default.toml", `label = "D"\nabilities = ["docs", "private", "open", "weather"]\n`)
   put(
     "marketplace/abilities/docs/mcp.toml",
     `description = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", optional = true }\n`
@@ -292,7 +284,6 @@ test("MCP abilities with key auth become items; optional keys aren't required", 
     "marketplace/abilities/weather/tool.toml",
     `description = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", optional = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
   )
-  put("mcp.toml", "servers = []\n")
   put("secrets.toml", "")
 
   const items = await collectCredentials()

@@ -16,7 +16,7 @@ that runs inside the Kaja API and links to your account.
 | Runs | on your machine, while `kaja telegram` runs | always, on the API |
 | Agent | [local mode](/getting-started/modes#local-mode): your models, tools and shell | [cloud mode](/getting-started/modes#cloud-mode) |
 | Who can use it | people you paired with a one-time code | Kaja users who linked their Telegram account |
-| Abilities | what `abilities.toml` loads | what you turned on in the [web app](/using/web-app) |
+| Abilities | what each [persona](/abilities/personas#abilities) lists | what you turned on in the [web app](/using/web-app) |
 
 On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart from
 each other and from your terminal. A call that needs approval, like a shell command or an HTTP tool or MCP
@@ -68,8 +68,8 @@ Commands in the bot's menu:
 - `/new` starts a fresh conversation.
 - `/compact` summarises the conversation to free up space (add what to keep, like
   `/compact keep the dates`). It also happens on its own.
-- `/abilities` shows the skills and tools this bot loaded. It loads them once at start, so restart
-  `kaja telegram` after `kaja abilities`.
+- `/abilities` shows the skills and tools this bot loaded (an MCP server once a persona has connected it).
+  It reads the marketplace folder once at start, so restart `kaja telegram` after changing it.
 
 ## Cloud bot
 

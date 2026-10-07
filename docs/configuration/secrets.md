@@ -10,7 +10,8 @@ summary: "secrets.toml: every key and token in one place."
 
 `secrets.toml` is the only file you paste a key or token into. Each section matches a table in another file,
 or a feature, by name, and is merged in when Kaja starts. Everything else (`base_url`, server addresses,
-model names) stays in `models.toml`, `mcp.toml` and `settings.toml`, so those are safe to commit or share.
+model names) stays in `models.toml`, `settings.toml` and the ability manifests, so those are safe to commit or
+share.
 
 ```toml
 # The local Telegram bot (`kaja telegram`); owner_ids is filled in by pairing
@@ -22,20 +23,17 @@ owner_ids = [123456789]
 [providers.fireworks]
 api_key = "fw_YourSecretKey"
 
-# mcp.toml's [[servers]] by id, merged into that server's env (stdio) or headers (HTTP)
-[mcp.context7]
-CONTEXT7_API_KEY = "ctx7sk-..."
-
-# An HTTP tool or MCP ability, by name
+# An ability, by name; its manifest's `auth` says which header, query parameter or env var it goes in
 [abilities.brave-search]
 api_key = "BSA..."
 ```
 
 A missing section just turns that feature off. The template ships with every section commented out. The
-wizard, `kaja doctor` and `kaja abilities` fill it in for you, testing each key first.
+wizard and `kaja doctor` fill it in for you, testing each key first. The doctor asks for the key of every
+ability a persona uses.
 
 ---
 
 Next:
 
-[abilities.toml](/configuration/abilities){: .btn .btn-green .fs-5 }
+[Local storage](/configuration/storage){: .btn .btn-green .fs-5 }

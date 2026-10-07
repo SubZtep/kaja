@@ -124,7 +124,7 @@ bun run --filter @kaja/sandbox build
 
 - **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
-  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml), plus the repo's model catalog (`docs/config/catalog.toml`)
+  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml), plus the repo's model catalog (`docs/config/catalog.toml`)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/abilities` — marketplace manifests (skill frontmatter, persona, dataset, HTTP tool, MCP server), shared by every host that loads abilities
   - `@kaja/schema/cli` — re-exports the persona and dataset schemas so CLI code keeps one import

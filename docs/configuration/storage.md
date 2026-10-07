@@ -2,7 +2,7 @@
 layout: page
 title: Local storage
 parent: Configuration
-nav_order: 6
+nav_order: 5
 summary: "The local SQLite file and what it holds."
 ---
 

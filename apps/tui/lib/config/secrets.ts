@@ -90,7 +90,6 @@ export async function saveSecrets(
     // A new token keeps the paired owners, and pairing keeps the token.
     telegram: update.telegram ? ({ ...current.telegram, ...update.telegram } as SecretsTelegram) : current.telegram,
     providers: { ...current.providers, ...update.providers },
-    mcp: { ...current.mcp, ...update.mcp },
     abilities: { ...current.abilities, ...update.abilities }
   }
   await write(getSecretsPath(), TOML.stringify(next)!)

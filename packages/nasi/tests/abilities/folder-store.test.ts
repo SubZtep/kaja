@@ -42,18 +42,14 @@ afterEach(() => {
   rmSync(outside, { recursive: true, force: true })
 })
 
-test("a missing marketplace folder lists no skills", async () => {
-  const store = createFolderAbilityStore({ root: join(root, "nope"), enabled: { skills: ["pdf"] } })
+test("a missing marketplace folder lists nothing", async () => {
+  const store = createFolderAbilityStore({ root: join(root, "nope") })
   expect(await store.listSkills()).toEqual([])
+  expect(await store.listHttpTools()).toEqual([])
+  expect(await store.listMcpAbilities()).toEqual([])
 })
 
-test("an empty enabled list lists no skills, even with skills on disk", async () => {
-  putSkill("pdf")
-  const store = createFolderAbilityStore({ root, enabled: { skills: [] } })
-  expect(await store.listSkills()).toEqual([])
-})
-
-test("lists enabled skills with their folder and other files, skipping hidden and backup files", async () => {
+test("lists every skill with their folder and other files, skipping hidden and backup files", async () => {
   putSkill("pdf")
   put("abilities/pdf/reference.md", "ref")
   put("abilities/pdf/scripts/fill.py", "print(1)")
@@ -61,9 +57,8 @@ test("lists enabled skills with their folder and other files, skipping hidden an
   put("abilities/pdf/scripts/fill.bak.2.py", "old")
   put("abilities/pdf/scripts/run.bak", "old")
   put("abilities/pdf/.env", "SECRET=1")
-  putSkill("unlisted")
 
-  const store = createFolderAbilityStore({ root, enabled: { skills: ["pdf"] } })
+  const store = createFolderAbilityStore({ root })
   expect(await store.listSkills()).toEqual([
     {
       name: "pdf",
@@ -74,31 +69,29 @@ test("lists enabled skills with their folder and other files, skipping hidden an
   ])
 })
 
-test("skips broken and missing skills while the others still load", async () => {
+test("skips broken skills while the others still load", async () => {
   putSkill("good")
   put("abilities/no-frontmatter/SKILL.md", "# nothing here")
   put("abilities/named/SKILL.md", "---\nname: named\ndescription: x\n---\n")
-  const store = createFolderAbilityStore({
-    root,
-    enabled: { skills: ["no-frontmatter", "named", "missing", "../escape", "good"] }
-  })
+  const store = createFolderAbilityStore({ root })
   expect((await store.listSkills()).map(s => s.name)).toEqual(["good"])
 })
 
-test("readSkill returns the body without frontmatter, and nothing for skills that aren't enabled", async () => {
+test("readSkill returns the body without frontmatter, and nothing for a folder without a skill", async () => {
   putSkill("pdf", "PDFs.", "Step one.")
-  putSkill("other")
-  const store = createFolderAbilityStore({ root, enabled: { skills: ["pdf"] } })
+  put("abilities/api/tool.toml", "x")
+  const store = createFolderAbilityStore({ root })
   expect(await store.readSkill("pdf")).toBe("Step one.")
-  expect(await store.readSkill("other")).toBeUndefined()
-  expect(await store.readSkill("other", "SKILL.md")).toBeUndefined()
+  expect(await store.readSkill("api")).toBeUndefined()
+  expect(await store.readSkill("api", "tool.toml")).toBeUndefined()
+  expect(await store.readSkill("missing")).toBeUndefined()
 })
 
 test("readSkill reads another file, falling back to a case-insensitive match", async () => {
   putSkill("pdf")
   put("abilities/pdf/reference.md", "the reference")
   put("abilities/pdf/scripts/fill.py", "print(1)")
-  const store = createFolderAbilityStore({ root, enabled: { skills: ["pdf"] } })
+  const store = createFolderAbilityStore({ root })
   expect(await store.readSkill("pdf", "reference.md")).toBe("the reference")
   expect(await store.readSkill("pdf", "REFERENCE.md")).toBe("the reference")
   expect(await store.readSkill("pdf", "Scripts/Fill.py")).toBe("print(1)")
@@ -109,7 +102,7 @@ test("readSkill refuses paths outside the skill folder", async () => {
   putSkill("pdf")
   putSkill("other")
   writeFileSync(join(outside, "secret.txt"), "nope")
-  const store = createFolderAbilityStore({ root, enabled: { skills: ["pdf"] } })
+  const store = createFolderAbilityStore({ root })
   await expect(store.readSkill("pdf", "../other/SKILL.md")).rejects.toThrow(SkillFileError)
   await expect(store.readSkill("pdf", join(outside, "secret.txt"))).rejects.toThrow(SkillFileError)
 })
@@ -118,7 +111,7 @@ test("readSkill refuses a symlink that points outside the skill folder", async (
   putSkill("pdf")
   writeFileSync(join(outside, "secret.txt"), "nope")
   symlinkSync(join(outside, "secret.txt"), join(root, "abilities", "pdf", "link.md"))
-  const store = createFolderAbilityStore({ root, enabled: { skills: ["pdf"] } })
+  const store = createFolderAbilityStore({ root })
   await expect(store.readSkill("pdf", "link.md")).rejects.toThrow(SkillFileError)
 })
 
@@ -126,7 +119,7 @@ test("readSkill refuses binary files and hidden files", async () => {
   putSkill("pdf")
   put("abilities/pdf/logo.png", new Uint8Array([0x89, 0x50, 0x00, 0x47]))
   put("abilities/pdf/.env", "SECRET=1")
-  const store = createFolderAbilityStore({ root, enabled: { skills: ["pdf"] } })
+  const store = createFolderAbilityStore({ root })
   await expect(store.readSkill("pdf", "logo.png")).rejects.toThrow("binary")
   expect(await store.readSkill("pdf", ".env")).toBeUndefined()
 })
@@ -156,16 +149,13 @@ description = "Get something"
 path = "/things"
 `
 
-test("listHttpTools reads enabled manifests and skips broken or named ones", async () => {
+test("listHttpTools reads every manifest and skips broken or named ones", async () => {
   put("abilities/good/tool.toml", manifest("good"))
   put("abilities/renamed/tool.toml", `name = "renamed"\n${manifest("renamed")}`)
   put("abilities/broken/tool.toml", 'description = "broken"\n')
-  put("abilities/off/tool.toml", manifest("off"))
-  const store = createFolderAbilityStore({
-    root,
-    enabled: { skills: [], tools: ["good", "renamed", "broken", "missing", "../x"] }
-  })
-  expect((await store.listHttpTools()).map(p => p.name)).toEqual(["good"])
+  put("abilities/also/tool.toml", manifest("also"))
+  const store = createFolderAbilityStore({ root })
+  expect((await store.listHttpTools()).map(p => p.name)).toEqual(["also", "good"])
 })
 
 test("scanHttpTools lists every manifest with its domain and key need, or its error", async () => {
@@ -188,15 +178,15 @@ test("parseHttpToolManifest reads a manifest's text and says why a bad one is re
   expect(() => parseHttpToolManifest('description = "x"', "x")).toThrow("invalid manifest")
 })
 
-test("listMcpAbilities reads enabled manifests; scanMcpAbilities shows the host or the command", async () => {
+test("listMcpAbilities reads every manifest; scanMcpAbilities shows the host or the command", async () => {
   put("abilities/docs/mcp.toml", 'description = "Docs"\nurl = "https://mcp.docs.test/mcp"\n')
   put(
     "abilities/browser/mcp.toml",
     'description = "Browser"\ntransport = "stdio"\ncommand = "bunx"\nargs = ["browser-mcp", "--headless"]\nauth = { type = "apiKey", in = "env", name = "B_KEY", optional = true }\n'
   )
   put("abilities/broken/mcp.toml", 'description = "x"\ntransport = "stdio"\n')
-  const store = createFolderAbilityStore({ root, enabled: { skills: [], mcp: ["docs", "broken", "missing"] } })
-  expect((await store.listMcpAbilities()).map(p => p.name)).toEqual(["docs"])
+  const store = createFolderAbilityStore({ root })
+  expect((await store.listMcpAbilities()).map(p => p.name)).toEqual(["browser", "docs"])
 
   const entries = await scanMcpAbilities(root)
   expect(entries.map(e => e.name)).toEqual(["broken", "browser", "docs"])
@@ -209,32 +199,15 @@ test("listMcpAbilities reads enabled manifests; scanMcpAbilities shows the host 
   expect(entries[2]).toMatchObject({ transport: "http", domain: "mcp.docs.test", auth: undefined })
 })
 
-test("disabledTools leaves those tools out; an ability with none left, or an MCP one without a list, is handled", async () => {
+test("scans list each ability's tools with what they do", async () => {
   put(
     "abilities/two/tool.toml",
     `${manifest("two")}\n[[tools]]\nname = "two_put"\ndescription = "Put something"\nmethod = "PUT"\npath = "/things"\n`
   )
-  put("abilities/one/tool.toml", manifest("one"))
   put(
     "abilities/listed/mcp.toml",
     'description = "L"\nurl = "https://mcp.l.test/mcp"\ntools = ["read", "write"]\n[toolDescriptions]\nread = "Reads"\n'
   )
-  put("abilities/open/mcp.toml", 'description = "O"\nurl = "https://mcp.o.test/mcp"\n')
-  const store = createFolderAbilityStore({
-    root,
-    enabled: { skills: [], tools: ["two", "one"], mcp: ["listed", "open"] },
-    disabledTools: { two: ["two_put"], one: ["one_get"], listed: ["write"], open: ["anything"] }
-  })
-  const tools = await store.listHttpTools()
-  // one's only tool is off, so it's left out as a whole
-  expect(tools.map(tool => [tool.name, tool.tools.map(t => t.name)])).toEqual([["two", ["two_get"]]])
-  const mcp = await store.listMcpAbilities()
-  expect(mcp.map(ability => [ability.name, ability.tools])).toEqual([
-    ["listed", ["read"]],
-    ["open", undefined]
-  ])
-
-  // The picker gets each ability's tools with what they do
   expect((await scanMcpAbilities(root)).find(entry => entry.name === "listed")?.tools).toEqual([
     { name: "read", description: "Reads" },
     { name: "write", description: undefined }
@@ -329,13 +302,10 @@ test("one folder can hold every part: each list sees its own, and the skill does
     'export const pingTool = { definition: { type: "function", function: { name: "mixed_ping" } }, execute: async () => "pong" }\nexport const notATool = { definition: {} }\n'
   )
   put("abilities/http-only/tool.toml", manifest("http-only"))
-  const store = createFolderAbilityStore({
-    root,
-    enabled: { skills: ["mixed"], tools: ["mixed", "http-only"], mcp: ["mixed"] }
-  })
+  const store = createFolderAbilityStore({ root })
 
   expect((await store.listSkills()).map(skill => [skill.name, skill.files])).toEqual([["mixed", ["notes.md"]]])
-  expect((await store.listHttpTools()).map(tool => tool.name)).toEqual(["mixed", "http-only"])
+  expect((await store.listHttpTools()).map(tool => tool.name)).toEqual(["http-only", "mixed"])
   expect((await store.listMcpAbilities()).map(ability => ability.name)).toEqual(["mixed"])
   expect(await store.readSkill("mixed", "tool.toml")).toBeUndefined()
   expect(await store.readSkill("mixed", "TOOL.TS")).toBeUndefined()
@@ -356,6 +326,6 @@ test("one folder can hold every part: each list sees its own, and the skill does
 
 test("a SKILL.md's sticky suggestion reaches the skill's summary", async () => {
   put("abilities/rules/SKILL.md", "---\ndescription: Rules.\nsticky: true\n---\nAlways.\n")
-  const store = createFolderAbilityStore({ root, enabled: { skills: ["rules"] } })
+  const store = createFolderAbilityStore({ root })
   expect((await store.listSkills())[0]?.sticky).toBe(true)
 })

@@ -44,10 +44,9 @@ const stdioAbility = mcpAbility({
   args: [join(import.meta.dir, "../fixtures/mcp-server.ts")]
 })
 
-test("the cloud connects only remote abilities, through its fetch, never mcp.toml servers or stdio abilities", async () => {
+test("the cloud connects only remote abilities, through its fetch, never stdio ones", async () => {
   const { tools, mcpServers, closeTools } = await createTools({
     mcpAbilities: [mcpAbilityTarget(remoteAbility()), mcpAbilityTarget(stdioAbility)],
-    mcpServers: [{ id: "configured", url: `https://${HOST}/mcp`, headers: {} }],
     mcpFetch: routeHostTo(open, HOST)
   })
   try {

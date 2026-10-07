@@ -16,8 +16,6 @@ account, and on disk has only a minimal `settings.toml` with your language and `
 ├─ settings.toml    # preferences, voice, marketplace, storage location
 ├─ models.toml      # providers and the model for each task
 ├─ secrets.toml     # every key and token, and nothing else
-├─ abilities.toml   # which abilities load
-├─ mcp.toml         # your own MCP servers
 └─ marketplace/     # abilities (skills, HTTP tools, MCP servers, code tools), personas, datasets
 ```
 
@@ -30,8 +28,7 @@ never writes them while running, so restart to apply a change.
 | `settings.toml` | [Settings](/configuration/config) |
 | `models.toml` | [Models](/configuration/models) |
 | `secrets.toml` | [Secrets](/configuration/secrets) |
-| `abilities.toml` | [abilities.toml](/configuration/abilities) |
-| `mcp.toml` | [MCP servers](/abilities/mcp#mcptoml) |
+| `marketplace/` | [The marketplace](/abilities/marketplace), [Personas](/abilities/personas) |
 | the SQLite file | [Local storage](/configuration/storage) |
 
 Only `secrets.toml` holds credentials, so the other files are safe to share or paste into a bug report.

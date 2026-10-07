@@ -10,7 +10,7 @@ process.env.XDG_CONFIG_HOME = join(base, "config")
 const { checkGit, fetchMarketplace, getMarketplaceCacheDir, MarketplaceFetchError, MIN_GIT_VERSION, parseGitVersion } =
   await import("../../../lib/abilities/fetch")
 const { runAbilityUpdate, UPDATE_STEPS } = await import("../../../lib/abilities/cli")
-const { getMarketplaceDir, getAbilitiesPath } = await import("../../../lib/abilities/abilities-file")
+const { getMarketplaceDir } = await import("../../../lib/abilities/abilities-file")
 
 function git(cwd: string, ...args: string[]) {
   const proc = Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd })
@@ -82,9 +82,9 @@ test("a missing branch or marketplace folder is a readable error", async () => {
   await expect(fetchMarketplace({ url: empty, ref: "main" })).rejects.toThrow("marketplace/")
 })
 
-test("kaja abilities update syncs from abilities.toml's [source] into the marketplace folder", async () => {
+test("kaja abilities update syncs from settings.toml's [marketplace] url into the marketplace folder", async () => {
   const repo = makeRepo("repo-f")
-  put(dirname(getAbilitiesPath()), "abilities.toml", `skills = []\n\n[source]\nurl = "${repo}"\n`)
+  put(dirname(getMarketplaceDir()), "settings.toml", `[marketplace]\nurl = "${repo}"\n`)
   let steps = 0
   const first = await runAbilityUpdate(() => steps++)
   expect(first.code).toBe(0)
@@ -101,7 +101,7 @@ test("kaja abilities update syncs from abilities.toml's [source] into the market
 })
 
 test("kaja abilities update reports a fetch failure with exit code 1", async () => {
-  put(dirname(getAbilitiesPath()), "abilities.toml", `[source]\nurl = "${join(base, "no-such-repo")}"\n`)
+  put(dirname(getMarketplaceDir()), "settings.toml", `[marketplace]\nurl = "${join(base, "no-such-repo")}"\n`)
   const result = await runAbilityUpdate()
   expect(result.code).toBe(1)
   expect(result.text).toContain("Could not fetch the marketplace")

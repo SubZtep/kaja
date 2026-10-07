@@ -680,8 +680,7 @@ test("/abilities lists the skills, personas and tool abilities the bot loaded, a
   const forecast = tool({ name: "weather_forecast", description: "x", parameters: {}, execute: async () => "ok" })
   const packaged = [
     { ...forecast, origin: "community" as const, source: "ability:open-meteo" },
-    { ...forecast, origin: "community" as const, source: "ability:context7" },
-    { ...forecast, origin: "third-party" as const, source: "mcp:my-server" }
+    { ...forecast, origin: "community" as const, source: "ability:context7" }
   ]
   const { sender, sent } = fakeSender()
   const driver = createTelegramDriver({
@@ -697,7 +696,6 @@ test("/abilities lists the skills, personas and tool abilities the bot loaded, a
   expect(text).toContain(t("telegram.abilitiesTools", { names: "context7, open-meteo" }))
   // default always loads, so it isn't listed.
   expect(text).toContain(t("telegram.abilitiesPersonas", { names: "kaja" }))
-  expect(text).not.toContain("my-server")
   expect(text).toContain("kaja abilities")
 
   const empty = fakeSender()

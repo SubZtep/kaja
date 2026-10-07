@@ -31,14 +31,13 @@ async function printMcpServers(mcpServers: { id: string; failed: boolean; toolCo
 
 const ORIGIN_LABEL_KEY: Record<ToolOrigin, string> = {
   official: "doctor.toolsOfficial",
-  community: "doctor.toolsCommunity",
-  "third-party": "doctor.toolsThirdParty"
+  community: "doctor.toolsCommunity"
 }
 
 // " [source]" after a tool name, or nothing for a tool without one.
 const sourceTag = (source: string | undefined) => (source ? ` [${source}]` : "")
 
-/** Names grouped by source, e.g. "click, fill [mcp:chrome-devtools]"; official tools have no source so they stay one plain list. */
+/** Names grouped by source, e.g. "click, fill [ability:chrome-devtools]"; official tools have no source so they stay one plain list. */
 function namesBySource(tools: Tool[]): string {
   const bySource = new Map<string, string[]>()
   for (const t of tools) {
@@ -59,7 +58,7 @@ function skippedLine(skip: SkippedTool): string {
 export function toolReportLines(tools: Tool[], skipped: SkippedTool[]): string[] {
   if (tools.length === 0 && skipped.length === 0) return []
   const lines = [t("doctor.tools")]
-  for (const origin of ["official", "community", "third-party"] as const) {
+  for (const origin of ["official", "community"] as const) {
     const group = tools.filter(tool => (tool.origin ?? "official") === origin)
     if (group.length > 0) lines.push(`  ${t(ORIGIN_LABEL_KEY[origin])}: ${namesBySource(group)}`)
   }

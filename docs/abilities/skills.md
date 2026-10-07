@@ -43,10 +43,9 @@ those aren't the skill's files, and `load_skill` never serves them.
 
 ## Writing your own
 
-Create the folder under `~/.config/kaja/marketplace/abilities/` and it loads on the next start, no
-`abilities.toml` entry needed (rename or move the folder to switch it off). `kaja abilities` lists your own
-skills apart, tagged `local`. A skill with missing or broken frontmatter is listed with the reason,
-and the others still load.
+Create the folder under `~/.config/kaja/marketplace/abilities/` and it loads on the next start; a persona
+that lists it in `abilities` gets it. `kaja abilities` tags your own `local`. A skill with missing or broken
+frontmatter is listed with the reason, and the others still load.
 
 ## How the model uses them
 

@@ -41,7 +41,7 @@ kaja telegram --pair      # print a one-time code to pair one more Telegram user
 
 # Config files and abilities
 kaja config paths | fetch | diff | wizard   # see Configuration
-kaja abilities            # pick which skills, tools, MCP servers and personas load
+kaja abilities            # list the abilities, their keys, and the personas that use them
 kaja abilities update     # fetch the marketplace
 ```
 

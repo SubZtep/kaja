@@ -14,17 +14,15 @@ test("groups tools by origin, and non-official ones by source", () => {
       named("read_file", "official"),
       named("summarize", "official"),
       named("weather_forecast", "community", "ability:open-meteo"),
-      named("click", "third-party", "mcp:chrome-devtools"),
-      named("fill", "third-party", "mcp:chrome-devtools"),
-      named("ping", "third-party", "plugin:ping.ts")
+      named("click", "community", "ability:chrome-devtools"),
+      named("fill", "community", "ability:chrome-devtools")
     ],
     []
   )
   expect(lines).toEqual([
     "Tools",
     "  Official: read_file, summarize",
-    "  Community: weather_forecast [ability:open-meteo]",
-    "  Third-party: click, fill [mcp:chrome-devtools]; ping [plugin:ping.ts]"
+    "  Community: weather_forecast [ability:open-meteo]; click, fill [ability:chrome-devtools]"
   ])
 })
 
@@ -32,14 +30,14 @@ test("lists skipped tools with the reason", () => {
   const lines = toolReportLines(
     [named("summarize", "official")],
     [
-      { name: "summarize", origin: "third-party", source: "mcp:foo", reason: "reserved" },
-      { name: "forecast", origin: "third-party", source: "mcp:bar", reason: "taken", takenBy: "ability:a" }
+      { name: "summarize", origin: "community", source: "ability:foo", reason: "reserved" },
+      { name: "forecast", origin: "community", source: "ability:bar", reason: "taken", takenBy: "ability:a" }
     ]
   )
   expect(lines.slice(2)).toEqual([
     "  Skipped:",
-    "    summarize [mcp:foo]: name reserved by Kaja",
-    "    forecast [mcp:bar]: name taken by ability:a"
+    "    summarize [ability:foo]: name reserved by Kaja",
+    "    forecast [ability:bar]: name taken by ability:a"
   ])
 })
 

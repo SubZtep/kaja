@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test"
 import { SecretsFileSchema } from "@kaja/schema/config"
 
-test("empty file validates: every section is optional, providers/mcp default to {}", () => {
+test("empty file validates: every section is optional, providers/abilities default to {}", () => {
   const parsed = SecretsFileSchema.parse({})
   expect(parsed.telegram).toBeUndefined()
   expect(parsed.providers).toEqual({})
-  expect(parsed.mcp).toEqual({})
+  expect(parsed.abilities).toEqual({})
 })
 
 test("telegram group requires bot_token, and owner_ids defaults to none", () => {
@@ -21,7 +21,8 @@ test("providers is keyed by provider name, each requiring api_key", () => {
   expect(() => SecretsFileSchema.parse({ providers: { fireworks: {} } })).toThrow()
 })
 
-test("mcp is keyed by server id, each an arbitrary string record", () => {
-  const parsed = SecretsFileSchema.parse({ mcp: { context7: { CONTEXT7_API_KEY: "ctx7sk-..." } } })
-  expect(parsed.mcp).toEqual({ context7: { CONTEXT7_API_KEY: "ctx7sk-..." } })
+test("abilities are keyed by ability name, each requiring api_key", () => {
+  const parsed = SecretsFileSchema.parse({ abilities: { context7: { api_key: "ctx7sk-..." } } })
+  expect(parsed.abilities).toEqual({ context7: { api_key: "ctx7sk-..." } })
+  expect(() => SecretsFileSchema.parse({ abilities: { context7: {} } })).toThrow()
 })

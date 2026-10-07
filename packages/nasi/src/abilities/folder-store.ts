@@ -16,7 +16,6 @@ import type { Tool } from "../agent/tools"
 import { warn } from "../warn"
 import { loadCodeTool } from "./code-tool"
 import { parseSkillMd } from "./skill-md"
-import { withoutHttpTools, withoutMcpTools } from "./tool-filter"
 import { type AbilityStore, SkillFileError, type SkillSummary } from "./types"
 
 /** Where abilities live under a marketplace root: one folder each, named after the ability. */
@@ -36,12 +35,8 @@ const MAX_FILE_BYTES = 256 * 1024
 const HIDDEN = /^\.|\.bak(\.\d+)?(\.[^.]+)?$/
 
 export type FolderAbilityStoreOptions = {
-  /** The marketplace folder; abilities live in `<root>/abilities/<name>/`. */
+  /** The marketplace folder; abilities live in `<root>/abilities/<name>/`, and every valid one loads (personas pick what a turn uses). */
   root: string
-  /** Ability names the host enabled (abilities.toml) — only these load. */
-  enabled: { skills: string[]; tools?: string[]; mcp?: string[] }
-  /** Tools the user switched off, by HTTP tool or MCP ability name (abilities.toml's `[disabledTools]`). */
-  disabledTools?: Record<string, string[]>
 }
 
 /** Every file under an ability folder except its part files (SKILL.md, tool.toml, mcp.toml, tool.ts) and hidden/backup files, relative with `/` separators, sorted and capped. */
@@ -233,18 +228,14 @@ async function manifestNames(dir: string, ext = ".toml"): Promise<string[]> {
     .sort((a, b) => a.localeCompare(b))
 }
 
-/** Enabled manifests that parse; broken ones are skipped with a warning. */
-async function readEnabled<T>(
-  names: string[] | undefined,
-  read: (name: string) => Promise<T>,
-  what: string
-): Promise<T[]> {
+/** The named manifests that parse; broken ones are skipped with a warning. */
+async function readNamed<T>(names: string[], read: (name: string) => Promise<T>, what: string): Promise<T[]> {
   const found: T[] = []
-  for (const name of new Set(names ?? [])) {
+  for (const name of new Set(names)) {
     try {
       found.push(await read(name))
     } catch (error) {
-      warn(`Skipping enabled ${what}`, { ability: name, error: error instanceof Error ? error.message : error })
+      warn(`Skipping ${what}`, { ability: name, error: error instanceof Error ? error.message : error })
     }
   }
   return found
@@ -356,7 +347,7 @@ export async function scanSkills(root: string): Promise<SkillScanEntry[]> {
 /** The personas in `<root>/personas/` named in `ids`, in that order; broken or missing ones are skipped with a warning. */
 export function readPersonas(root: string, ids: string[]): Promise<Persona[]> {
   const dir = join(resolve(root), "personas")
-  return readEnabled(ids, async id => parsePersonaManifest(await readManifestText(dir, id), id), "persona")
+  return readNamed(ids, async id => parsePersonaManifest(await readManifestText(dir, id), id), "persona")
 }
 
 /** A dataset from its JSON text (the cloud keeps the text, not the file). Throws with the reason when it's invalid. */
@@ -461,36 +452,30 @@ export async function readSkillBundle(root: string, name: string): Promise<Skill
   }
 }
 
-/** {@link AbilityStore} over a marketplace folder on disk — the CLI's store. */
+/** {@link AbilityStore} over a marketplace folder on disk — the CLI's store. Every valid ability in it loads; broken ones are skipped with a warning. */
 export function createFolderAbilityStore(opts: FolderAbilityStoreOptions): AbilityStore {
-  const skillsRoot = join(resolve(opts.root), ABILITIES_DIR)
-  const enabled = new Set(opts.enabled.skills)
+  const abilitiesRoot = join(resolve(opts.root), ABILITIES_DIR)
 
   return {
     async listSkills() {
       const skills: SkillSummary[] = []
-      for (const name of enabled) {
+      for (const name of await namesWith(opts.root, SKILL_FILE)) {
         try {
-          skills.push((await readSkillFolder(skillsRoot, name)).summary)
+          skills.push((await readSkillFolder(abilitiesRoot, name)).summary)
         } catch (error) {
-          warn("Skipping enabled skill", { skill: name, error: error instanceof Error ? error.message : error })
+          warn("Skipping skill", { skill: name, error: error instanceof Error ? error.message : error })
         }
       }
       return skills
     },
 
     listHttpTools: async () =>
-      (await readEnabled(opts.enabled.tools, name => readHttpTool(opts.root, name), "HTTP tool ability")).flatMap(
-        ability => withoutHttpTools(ability, opts.disabledTools?.[ability.name] ?? []) ?? []
-      ),
+      readNamed(await namesWith(opts.root, HTTP_FILE), name => readHttpTool(opts.root, name), "HTTP tool ability"),
 
     listMcpAbilities: async () =>
-      (await readEnabled(opts.enabled.mcp, name => readMcp(opts.root, name), "MCP ability")).flatMap(
-        ability => withoutMcpTools(ability, opts.disabledTools?.[ability.name] ?? []) ?? []
-      ),
+      readNamed(await namesWith(opts.root, MCP_FILE), name => readMcp(opts.root, name), "MCP ability"),
 
     async listCodeTools() {
-      const abilitiesRoot = join(resolve(opts.root), ABILITIES_DIR)
       const tools: { name: string; tools: Tool[] }[] = []
       for (const name of await scanCodeTools(opts.root)) {
         const loaded = await loadCodeTool(join(abilitiesRoot, name, CODE_FILE))
@@ -500,10 +485,11 @@ export function createFolderAbilityStore(opts: FolderAbilityStoreOptions): Abili
     },
 
     async readSkill(name, file) {
-      if (!enabled.has(name) || !SkillNameSchema.safeParse(name).success) return undefined
-      if (file !== undefined) return readConfinedFile(join(skillsRoot, name), file)
+      if (!SkillNameSchema.safeParse(name).success) return undefined
+      if (!(await stat(join(abilitiesRoot, name, SKILL_FILE)).catch(() => undefined))) return undefined
+      if (file !== undefined) return readConfinedFile(join(abilitiesRoot, name), file)
       try {
-        return (await readSkillFolder(skillsRoot, name)).body
+        return (await readSkillFolder(abilitiesRoot, name)).body
       } catch {
         return undefined
       }

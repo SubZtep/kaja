@@ -2,7 +2,7 @@
 layout: page
 title: Commands & doctor
 parent: Configuration
-nav_order: 7
+nav_order: 6
 summary: "Find, refresh and test your config with kaja config and kaja doctor."
 ---
 
@@ -21,8 +21,8 @@ summary: "Find, refresh and test your config with kaja config and kaja doctor."
 `kaja config fetch` takes `models.toml` and `commands.toml` from the Kaja server's defaults, or from the templates
 bundled in the binary when you're offline or pass `--offline`. Your own patterns in `commands.toml`'s `custom` survive a fetch. `secrets.toml` comes from the bundled
 template with every section commented out, and is only written if you have none, so fetching never loses a
-key. `--only models`, `--only commands` or `--only secrets` limits it to one file. It never touches `settings.toml`,
-`abilities.toml` or `mcp.toml`. Use it to pick up new defaults after an upgrade, or to recover a broken file.
+key. `--only models`, `--only commands` or `--only secrets` limits it to one file. It never touches `settings.toml`
+or the `marketplace/` folder. Use it to pick up new defaults after an upgrade, or to recover a broken file.
 
 ## Checking keys and models
 

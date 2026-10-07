@@ -68,7 +68,7 @@ The server picks the model and keeps your sessions, memory and dataset answers. 
   confirmation prompt;
 - the personas, skills, HTTP tools and MCP servers you turned on ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
 
-There is no shell, no `mcp.toml`, no plugin tools and no model switching.
+There is no shell, no code tools and no model switching.
 
 ## Local mode
 

@@ -20,8 +20,9 @@ mode also from files you write yourself.
 | MCP server | the tools of a Model Context Protocol server | [MCP servers](/abilities/mcp) |
 | dataset | questions a persona collects answers to | [Memory & datasets](/abilities/memory#datasets) |
 
-Nothing loads just because it exists. You turn abilities on with `kaja abilities` locally, or on the
-[Abilities page](https://kaja.io/agent/abilities) in the cloud. The two lists are separate.
+Locally, every ability in the folder loads, and each [persona](/abilities/personas#abilities) decides which of
+them a chat uses. In the cloud you still turn abilities on, on the
+[Abilities page](https://kaja.io/agent/abilities).
 
 Right now the marketplace has:
 
@@ -54,15 +55,15 @@ The sync never loses your edits:
 - files you added yourself are never touched.
 
 Besides `kaja abilities update`, Kaja goes online on the first `kaja abilities` (it fetches once before
-showing the picker), and with a background pull at startup when the last sync is over a day old. That one
-applies on the next launch. You can turn both off in [`[marketplace]`](/configuration/config#marketplace).
-To fetch from a fork, a branch or a local checkout, set [`[source]`](/configuration/abilities#source).
+listing), and with a background pull at startup when the last sync is over a day old. That one applies on
+the next launch. You can turn both off in [`[marketplace]`](/configuration/config#marketplace), which also
+takes a `url` and `ref` to fetch from a fork, a branch or a local checkout.
 
-`kaja abilities` is a checklist of everything in the folder (space toggles, Enter saves). It writes
-[`abilities.toml`](/configuration/abilities), and only what's listed there loads. Your own skills and
-personas are the exception: they always load, and the picker lists them apart (rename or move the file to
-switch one off). Your own tools and MCP servers are in the checklist like the rest. Anything that needs a key asks for it, and a stdio MCP server shows its command before you
-enable it. A file that fails to load is skipped with the reason and never stops the rest.
+Every valid ability and persona in the folder loads, your own included. `kaja abilities` lists them: each
+ability's parts, whether its key is saved, the command a stdio MCP server runs, and the personas that use it.
+To change what a chat gets, edit a persona's `abilities` list, or write your own persona (a new id, so the
+sync never replaces it). `kaja doctor` asks for the keys of abilities a persona uses, and tests them. A file
+that fails to load is skipped with the reason and never stops the rest.
 
 Local mode is the most permissive: skills with scripts, stdio MCP servers and hosts on your own network all
 work, because everything runs on your machine.
@@ -108,8 +109,8 @@ one first:
 
 1. Put it in a copy of the repo, following the
    [marketplace README](https://github.com/SubZtep/kaja/blob/main/marketplace/README.md).
-2. Point [`[source]`](/configuration/abilities#source) at that copy, run `kaja abilities update`, and enable
-   it with `kaja abilities`.
+2. Point [`[marketplace]`](/configuration/config#marketplace)'s `url` at that copy, run
+   `kaja abilities update`, and list it in a persona's `abilities`.
 3. `kaja doctor` lists every loaded tool, and anything left out and why.
 
 Once it's merged, local users get it with their next update and the cloud within the hour. How the syncing

@@ -5,10 +5,11 @@ process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-config-cli`
 
 const { runConfigCli } = await import("../../../lib/config/cli")
 const { getConfigDir, getConfigPath } = await import("../../../lib/config/config")
-const { getMcpPath } = await import("../../../lib/config/mcp-servers")
 const { getModelsPath } = await import("../../../lib/models/models")
 const { getPaths } = await import("../../../lib/paths")
 const { join } = await import("node:path")
+// Where an old install kept its own MCP servers; fetch must never write it.
+const getMcpPath = () => join(getConfigDir(), "mcp.toml")
 
 async function clearEtag() {
   const { $ } = await import("bun")
@@ -28,23 +29,15 @@ afterEach(async () => {
   await clearEtag()
 })
 
-test("fetch writes models.toml from the bundled template, and neither personas nor mcp.toml", async () => {
+test("fetch writes models.toml from the bundled template, and neither personas nor an mcp.toml", async () => {
   const { code, text } = await runConfigCli(["fetch"])
   expect(code).toBe(0)
   expect(text).toContain(getModelsPath())
   expect(text).not.toContain("personas")
   expect(text).not.toContain(getMcpPath())
   expect(await Bun.file(getModelsPath()).exists()).toBe(true)
-  // MCP servers come from the marketplace (`kaja abilities`); mcp.toml is the user's own file.
+  // MCP servers are marketplace abilities now; there's no mcp.toml to write.
   expect(await Bun.file(getMcpPath()).exists()).toBe(false)
-})
-
-test("fetch leaves an existing mcp.toml alone", async () => {
-  await Bun.write(getMcpPath(), "servers = []\n# mine\n")
-  const { code } = await runConfigCli(["fetch"])
-  expect(code).toBe(0)
-  expect(await Bun.file(getMcpPath()).text()).toBe("servers = []\n# mine\n")
-  expect(await Bun.file(backup(getMcpPath())).exists()).toBe(false)
 })
 
 test("fetch backs up an existing models.toml instead of overwriting it", async () => {

@@ -12,7 +12,7 @@ Kaja has two databases, and they are deliberately not the same size. The **cloud
 platform needs in **PostgreSQL**: accounts, server config, the ability catalog, widgets, Telegram links,
 users' secrets, MCP sandboxes, and the agent's own state. The **terminal** in [local mode](/getting-started/modes) keeps only that last
 part (one person's conversations, memory and dataset answers) in a single **SQLite** file. Everything
-else a local install needs is a file: [`settings.toml`, `models.toml`, `mcp.toml`, `abilities.toml`](/configuration/files).
+else a local install needs is a file: [`settings.toml`, `models.toml`, `secrets.toml` and the `marketplace/` folder](/configuration/files).
 
 The agent state is the one place the two overlap, and that overlap is a contract: the
 [agent brain](/development/nasi) talks to a `NasiStore` interface, and each host injects its own
@@ -459,8 +459,8 @@ The local file is the second half of the agent state, documented table by table 
 | What the terminal screen showed | not stored | `session_events` |
 | Accounts, sessions, device login | Better Auth tables | none (the token lives in the OS keychain) |
 | Providers and models | `provider`, `model` | `models.toml` |
-| MCP servers | `ability` rows of type `mcp` | `mcp.toml` for your own, and the marketplace folder |
-| Abilities | `ability`, `user_ability`, `marketplace_sync` | the `marketplace/` folder and `abilities.toml` |
+| MCP servers | `ability` rows of type `mcp` | the marketplace folder (an ability's `mcp.toml`) |
+| Abilities | `ability`, `user_ability`, `marketplace_sync` | the `marketplace/` folder, picked by its personas |
 | API keys | `user_secret` (encrypted) | `secrets.toml` |
 | Widgets, Telegram links | `widget`, `telegram_link*` | none (local mode has no widgets; the bot's token is in `secrets.toml`) |
 

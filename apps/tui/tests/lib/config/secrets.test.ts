@@ -29,7 +29,7 @@ test("missing file: writes the template and returns its active (non-commented) s
 
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
   // Every section in the shipped template is commented out.
-  expect(data.mcp).toEqual({})
+  expect(data.abilities).toEqual({})
   expect(data.telegram).toBeUndefined()
   expect(data.providers).toEqual({})
 })
@@ -109,14 +109,14 @@ bot_token = "second"
   expect((await secrets()).telegram).toEqual({ bot_token: "second", owner_ids: [] })
 })
 
-test("provider and mcp tables default to {} when absent, never undefined", async () => {
+test("provider and ability tables default to {} when absent, never undefined", async () => {
   const dir = `${tmpdir()}/kaja-test-secrets-defaults-${Math.random()}`
   setConfigDirOverride(dir)
   await write(join(dir, "secrets.toml"), "")
 
   const data = await loadSecretsFile()
   expect(data.providers).toEqual({})
-  expect(data.mcp).toEqual({})
+  expect(data.abilities).toEqual({})
 })
 
 test("saveSecrets merges [telegram]: a new token keeps the owners, and pairing keeps the token", async () => {

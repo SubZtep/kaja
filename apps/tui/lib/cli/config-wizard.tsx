@@ -1,7 +1,6 @@
 import type { ModelTask } from "@kaja/schema/config"
 import { file, TOML } from "bun"
 import { render } from "ink"
-import type { PickerSelection } from "../../components/ability-picker"
 import type { WizardResult, WizardSaved } from "../../components/config-wizard"
 import { create, createCloud, isConfigExists, readConfigLoose, savePreferences } from "../config/config"
 import type { KajaMode } from "../config/mode"
@@ -62,31 +61,6 @@ async function applyResult(result: WizardResult, print: (line: string) => void) 
   if (speaches) await applySpeachesUrl(result.addresses?.speaches ?? speaches.baseUrl, print)
 }
 
-/**
- * Turns on the abilities that need no key, after the config files exist. The wizard doesn't ask:
- * there is nothing to weigh up, since none of them can cost anything or reach anything on this
- * machine — `starterSelection` leaves out stdio MCP servers and anything needing a key. Choosing
- * among the rest is what `kaja abilities` is for.
- *
- * A machine with abilities already on is left untouched: its list is the user's own, and silently
- * re-adding what they turned off would be the one thing this can get wrong. Optional keys some of
- * them can use are not asked for: nothing needs them, and `kaja abilities` offers them.
- */
-export async function applyStarterAbilities(print: (line: string) => void) {
-  const total = (s: PickerSelection) => s.skills.length + s.personas.length + s.tools.length + s.mcp.length
-
-  const { getAbilitiesPath, getMarketplaceDir, loadAbilitiesFile, marketplaceSettings, saveAbilitiesFile } =
-    await import("../abilities/abilities-file")
-  if (!(await marketplaceSettings()).enabled || total(await loadAbilitiesFile()) > 0) return
-
-  const { ensureMarketplace, scanMarketplace, starterSelection } = await import("../abilities/picker")
-  await ensureMarketplace(print)
-  const selection = starterSelection(await scanMarketplace(getMarketplaceDir()))
-
-  await saveAbilitiesFile(selection)
-  print(statusLine("success", t("ability.saved", { path: getAbilitiesPath(), count: total(selection) })))
-}
-
 async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boolean) {
   const { getConfigPath, invalidateConfigCache } = await import("../config/config")
   const { setTomlValue } = await import("../config/toml")
@@ -124,7 +98,7 @@ export async function offerMarketplace(print: (line: string) => void) {
   }
   await saveMarketplaceSetting("enabled", true)
 
-  const { ensureMarketplace } = await import("../abilities/picker")
+  const { ensureMarketplace } = await import("../abilities/cli")
   await ensureMarketplace(print)
 
   const auto = await askYesNo(t("wizard.autoFetchTitle"), t("wizard.autoFetchYes"), t("wizard.autoFetchNo"), {
@@ -389,11 +363,10 @@ export async function runConfigWizard({
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
   await offerMarketplace(line => console.log(line))
-  await applyStarterAbilities(line => console.log(line))
   const { extra, offered } = await applyExtras(result)
   await offerModelDownloads(line => console.log(line))
 
-  // Reads the config that applyResult, applyStarterAbilities and applyExtras just wrote, then tests
+  // Reads the config that applyResult and applyExtras just wrote, then tests
   // every key it needs. The keys the wizard already asked for come in as `offered`, so they are
   // tested and saved without being asked for twice; it still asks for anything only the finished
   // config reveals — an ability's key, an MCP server's declared secret.

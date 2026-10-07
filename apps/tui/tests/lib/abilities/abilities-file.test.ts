@@ -7,15 +7,9 @@ process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-abilities-file`
 
 const { createFolderAbilityStore, loadAbilities } = await import("@kaja/nasi")
 const { getConfigDir } = await import("../../../lib/config/config")
-const {
-  getMarketplaceDir,
-  getAbilitiesPath,
-  loadAbilitiesFile,
-  ownAbilities,
-  resolveSource,
-  saveAbilitiesFile,
-  DEFAULT_SOURCE
-} = await import("../../../lib/abilities/abilities-file")
+const { getMarketplaceDir, marketplaceSettings, ownAbilities, DEFAULT_SOURCE } = await import(
+  "../../../lib/abilities/abilities-file"
+)
 
 afterEach(() => {
   rmSync(getConfigDir(), { recursive: true, force: true })
@@ -26,25 +20,13 @@ function put(path: string, content: string) {
   writeFileSync(path, content)
 }
 
-test("a missing abilities.toml enables nothing and isn't created", async () => {
-  expect(await loadAbilitiesFile()).toEqual({ skills: [], tools: [], mcp: [], personas: [], disabledTools: {} })
-  expect(await Bun.file(getAbilitiesPath()).exists()).toBe(false)
-})
-
-test("saving keeps [source] and keys this version doesn't know", async () => {
-  put(getAbilitiesPath(), `future = true\nskills = ["old"]\n\n[source]\nurl = "/src/kaja"\nref = "wip"\n`)
-  await saveAbilitiesFile({ skills: ["a", "b"] })
-  const saved = Bun.TOML.parse(await Bun.file(getAbilitiesPath()).text())
-  expect(saved).toEqual({ future: true, skills: ["a", "b"], source: { url: "/src/kaja", ref: "wip" } })
-})
-
-test("resolveSource fills in the Kaja repo and main", () => {
-  expect(resolveSource(undefined)).toEqual(DEFAULT_SOURCE)
-  expect(resolveSource({ ref: "wip" })).toEqual({ url: DEFAULT_SOURCE.url, ref: "wip" })
+test("the marketplace source defaults to the Kaja repo and main, and settings.toml's [marketplace] overrides it", async () => {
+  expect((await marketplaceSettings()).source).toEqual(DEFAULT_SOURCE)
+  put(join(getConfigDir(), "settings.toml"), `[marketplace]\nref = "wip"\n`)
+  expect((await marketplaceSettings()).source).toEqual({ url: DEFAULT_SOURCE.url, ref: "wip" })
 })
 
 test("startup's ability loading uses no network and no git", async () => {
-  put(getAbilitiesPath(), `skills = ["demo"]\n`)
   put(join(getMarketplaceDir(), "abilities/demo/SKILL.md"), "---\ndescription: Demo.\n---\nBody\n")
   const fetchSpy = spyOn(globalThis, "fetch").mockImplementation((() => {
     throw new Error("network used")
@@ -53,8 +35,7 @@ test("startup's ability loading uses no network and no git", async () => {
     throw new Error("process spawned")
   })
   try {
-    const { skills } = await loadAbilitiesFile()
-    const loaded = await loadAbilities(createFolderAbilityStore({ root: getMarketplaceDir(), enabled: { skills } }))
+    const loaded = await loadAbilities(createFolderAbilityStore({ root: getMarketplaceDir() }))
     expect(loaded.skills.map(s => s.name)).toEqual(["demo"])
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(spawnSpy).not.toHaveBeenCalled()
@@ -64,22 +45,26 @@ test("startup's ability loading uses no network and no git", async () => {
   }
 })
 
-test("your own skills and personas are the ones the last sync didn't write", async () => {
+test("your own abilities and personas are the ones the last sync didn't write", async () => {
   const root = getMarketplaceDir()
   put(join(root, "abilities/synced/SKILL.md"), "---\ndescription: Synced.\n---\nBody\n")
   put(join(root, "abilities/mine/SKILL.md"), "---\ndescription: Mine.\n---\nBody\n")
+  put(
+    join(root, "abilities/my-api/tool.toml"),
+    'description = "x"\nbaseUrl = "https://a.test"\n[[tools]]\nname = "x"\ndescription = "x"\npath = "/"\n'
+  )
   put(join(root, "personas/care.toml"), `label = "Care"\ninstructions = "Synced."\n`)
   put(join(root, "personas/so.toml"), `label = "Mine"\ninstructions = "Mine."\n`)
   put(
     join(root, ".sync-lock.json"),
     JSON.stringify({ files: { "abilities/synced/SKILL.md": "x", "personas/care.toml": "x" } })
   )
-  expect(await ownAbilities()).toEqual({ skills: ["mine"], personas: ["so"] })
+  expect(await ownAbilities()).toEqual({ abilities: ["mine", "my-api"], personas: ["so"] })
 })
 
 test("with no sync lock, everything on disk is your own", async () => {
   const root = getMarketplaceDir()
   put(join(root, "abilities/mine/SKILL.md"), "---\ndescription: Mine.\n---\nBody\n")
   put(join(root, "personas/so.toml"), `label = "Mine"\ninstructions = "Mine."\n`)
-  expect(await ownAbilities()).toEqual({ skills: ["mine"], personas: ["so"] })
+  expect(await ownAbilities()).toEqual({ abilities: ["mine"], personas: ["so"] })
 })

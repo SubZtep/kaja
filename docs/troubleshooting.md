@@ -23,13 +23,13 @@ plaintext fallback. Use `kaja --local`, or unlock or install a keychain (on Linu
 provider such as GNOME Keyring or KWallet).
 
 **`kaja abilities update` fails.** It needs `git` 2.25 or newer, and `kaja doctor` shows the version it
-found. A private or mistyped [`[source]`](/configuration/abilities#source) URL fails instead of asking for
-a password. Also check that `[marketplace] enabled` isn't `false`.
+found. A private or mistyped [`[marketplace]`](/configuration/config#marketplace) `url` fails instead of
+asking for a password. Also check that `[marketplace] enabled` isn't `false`.
 
-**An ability doesn't show up.** A synced one loads only when listed in
-[`abilities.toml`](/configuration/abilities) (run `kaja abilities`); your own skills and personas load on
-the next start without that. One one that needs a key stays out until the key is in `secrets.toml`. `kaja doctor`
-lists everything left out and why.
+**An ability doesn't show up.** A chat only gets the abilities its persona lists in `abilities` (see
+[Personas](/abilities/personas#abilities)); `kaja abilities` shows which personas use each one. One that needs
+a key stays out until the key is in `secrets.toml` (`kaja doctor` asks for it). `kaja doctor` lists everything
+left out and why.
 
 **An MCP server's tools are missing.** A server that fails to connect, or takes over 10 seconds, is
 skipped so the session can still start. Check its command or URL, and its secrets.

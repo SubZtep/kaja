@@ -1,7 +1,6 @@
-import { createFolderAbilityStore, mcpAbilityTarget } from "@kaja/nasi"
-import type { CliResolvedModel, McpServerEntry, SecretsFile } from "@kaja/schema/config"
-import { getMarketplaceDir, loadAbilitiesFile } from "../abilities/abilities-file"
-import { loadMcpServers } from "../config/mcp-servers"
+import { createFolderAbilityStore, mcpAbilityTarget, personaAbilities } from "@kaja/nasi"
+import type { CliResolvedModel, SecretsFile } from "@kaja/schema/config"
+import { getMarketplaceDir } from "../abilities/abilities-file"
 import { saveSecrets, secrets } from "../config/secrets"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
@@ -73,16 +72,9 @@ function modelsByProvider(models: CliResolvedModel[]): Map<string, CliResolvedMo
   return byProvider
 }
 
-function withSecret(server: McpServerEntry, name: string, value: string): McpServerEntry {
-  return "url" in server
-    ? { ...server, headers: { ...server.headers, [name]: value } }
-    : { ...server, env: { ...server.env, [name]: value } }
-}
-
 /**
  * Every credential the current local config relies on: providers used by a configured
- * model, enabled HTTP tool and MCP abilities with key auth, secrets MCP servers declare, and the
- * Telegram bot when a token is saved (web search likewise: a saved key is the only sign the user wants it).
+ * model, the keyed abilities some persona uses, and the Telegram bot when a token is saved (web search likewise: a saved key is the only sign the user wants it).
  */
 export async function collectCredentials(): Promise<CredentialItem[]> {
   const creds = await secrets()
@@ -103,28 +95,6 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
 
   items.push(...(await abilityItems(creds)))
 
-  for (const server of await loadMcpServers()) {
-    for (const name of server.secrets ?? []) {
-      items.push({
-        label: t("doctor.itemMcp", { name: server.id }),
-        where: `[mcp.${server.id}] ${name}`,
-        hint: `${"url" in server ? "header" : "env"} ${name}`,
-        present: Boolean(creds.mcp[server.id]?.[name]),
-        required: true,
-        // Testable only once every declared name has a value; read live, since an earlier item may have just saved one.
-        check: async value => {
-          const saved = (await secrets()).mcp[server.id] ?? {}
-          const others = (server.secrets ?? []).filter(other => other !== name)
-          if (others.some(other => !saved[other])) return undefined
-          const current = value ?? saved[name]
-          return current ? checkMcpServer(withSecret(server, name, current)) : undefined
-        },
-        save: async value =>
-          saveSecrets({ mcp: { [server.id]: { ...(await secrets()).mcp[server.id], [name]: value } } })
-      })
-    }
-  }
-
   const telegramToken = creds.telegram?.bot_token
   if (telegramToken) {
     items.push({
@@ -140,13 +110,14 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
   return items
 }
 
-// Enabled HTTP tool and MCP abilities with key auth. An MCP ability is tested by connecting to it.
+// HTTP tool and MCP abilities with key auth that some persona uses (a key nobody's persona needs isn't asked for). An MCP ability is tested by connecting to it.
 async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   const items: CredentialItem[] = []
-  const { tools, mcp } = await loadAbilitiesFile()
-  const store = createFolderAbilityStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
+  const { loadPersonas } = await import("../personas/personas")
+  const used = new Set((await loadPersonas()).flatMap(persona => [...personaAbilities(persona).keys()]))
+  const store = createFolderAbilityStore({ root: getMarketplaceDir() })
   for (const ability of await store.listHttpTools()) {
-    if (ability.auth.type !== "apiKey") continue
+    if (ability.auth.type !== "apiKey" || !used.has(ability.name)) continue
     const saved = creds.abilities[ability.name]?.api_key
     items.push({
       label: t("doctor.itemAbility", { name: ability.name }),
@@ -163,7 +134,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   }
   for (const ability of await store.listMcpAbilities()) {
     const { auth } = ability
-    if (auth.type !== "apiKey") continue
+    if (auth.type !== "apiKey" || !used.has(ability.name)) continue
     const saved = creds.abilities[ability.name]?.api_key
     items.push({
       label: t("doctor.itemMcpAbility", { name: ability.name }),
