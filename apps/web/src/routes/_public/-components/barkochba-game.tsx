@@ -280,7 +280,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
             </div>
             <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
               {pending ? (
-                <span className="text-muted flex items-center gap-1">
+                <span className="flex items-center gap-1 text-muted">
                   <BrainCircuit size={18} /> {m.barkochba_thinking()}
                 </span>
               ) : (
@@ -317,7 +317,7 @@ export function BarkochbaGame({ className }: Readonly<{ className?: string }>) {
                 <button
                   type="button"
                   onClick={playAgain}
-                  className="mt-3 cursor-pointer self-center text-muted text-xs underline underline-offset-2 transition-colors duration-200 hover:underline-offset-0 hover:text-fg"
+                  className="mt-3 cursor-pointer self-center text-muted text-xs underline underline-offset-2 transition-colors duration-200 hover:text-fg hover:underline-offset-0"
                 >
                   {m.barkochba_give_up()}
                 </button>

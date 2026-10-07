@@ -26,6 +26,8 @@ const testTmp = join(root, `${PREFIX}${process.pid}`)
 // Tests call mkdtemp under it directly, so it must exist even on a fresh machine (CI).
 mkdirSync(testTmp, { recursive: true })
 Bun.env.TMPDIR = testTmp
+// A KAJA_PROFILE from the user's shell would rename every config/data dir the tests expect.
+delete Bun.env.KAJA_PROFILE
 // A preload's afterAll runs once, after every test file (bun test fires no "exit" event).
 afterAll(() => rmSync(testTmp, { recursive: true, force: true }))
 

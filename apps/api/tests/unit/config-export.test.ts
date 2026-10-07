@@ -56,20 +56,25 @@ describe("renderModelsToml", () => {
   })
 
   test("omits models from disabled providers or disabled models", () => {
-    const toml = renderModelsToml([makeProvider()], [makeModel({ enabled: false })])
-    const parsed = TOML.parse(toml) as { models: Record<string, unknown> }
+    const parsed = ModelsFileSchema.parse(
+      TOML.parse(renderModelsToml([makeProvider()], [makeModel({ enabled: false })]))
+    )
     expect(Object.keys(parsed.models)).toHaveLength(0)
   })
 
   test("omits paid models — the export endpoint is public", () => {
-    const toml = renderModelsToml([makeProvider()], [makeModel({ free: false })])
-    const parsed = TOML.parse(toml) as { models: Record<string, unknown> }
+    const parsed = ModelsFileSchema.parse(TOML.parse(renderModelsToml([makeProvider()], [makeModel({ free: false })])))
     expect(Object.keys(parsed.models)).toHaveLength(0)
   })
 
   test("omits providers no exported model references", () => {
-    const toml = renderModelsToml([makeProvider()], [makeModel({ free: false })])
-    const parsed = TOML.parse(toml) as { providers: Record<string, unknown> }
+    const parsed = ModelsFileSchema.parse(TOML.parse(renderModelsToml([makeProvider()], [makeModel({ free: false })])))
     expect(Object.keys(parsed.providers)).toHaveLength(0)
+  })
+
+  test("groups the providers and models under their parent tables", () => {
+    const toml = renderModelsToml([makeProvider()], [makeModel()])
+    expect(toml).toContain("[providers]\n  [providers.")
+    expect(toml).toContain("[models]\n  [models.")
   })
 })

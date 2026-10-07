@@ -4,6 +4,7 @@ title: Database
 parent: Development
 nav_order: 5
 summary: "Both databases, the tables and how the schema is managed."
+icon: 🗄️
 ---
 
 # Database
@@ -12,7 +13,7 @@ Kaja has two databases, and they are deliberately not the same size. The **cloud
 platform needs in **PostgreSQL**: accounts, server config, the ability catalog, widgets, Telegram links,
 users' secrets, MCP sandboxes, and the agent's own state. The **terminal** in [local mode](/getting-started/modes) keeps only that last
 part (one person's conversations, memory and dataset answers) in a single **SQLite** file. Everything
-else a local install needs is a file: [`settings.toml`, `models.toml`, `mcp.toml`, `abilities.toml`](/configuration/files).
+else a local install needs is a file: [`settings.toml`, `models.toml`, `secrets.toml` and the `marketplace/` folder](/configuration/files).
 
 The agent state is the one place the two overlap, and that overlap is a contract: the
 [agent brain](/development/nasi) talks to a `NasiStore` interface, and each host injects its own
@@ -47,7 +48,7 @@ flowchart LR
 | `2026-08-31-widget.sql` | `widget` |
 | `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_session_summary`, `nasi_model_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
 | `2026-09-10-telegram-link.sql` | `telegram_link`, `telegram_link_token` |
-| `2026-09-19-ability.sql` | `ability`, `user_ability`, `marketplace_sync` |
+| `2026-09-19-ability.sql` | `ability`, `marketplace_sync` |
 | `2026-09-19-user-secret.sql` | `user_secret` |
 | `2026-09-27-sandbox.sql` | `sandbox`, `sandbox_owner`, `sandbox_sample` |
 
@@ -217,14 +218,6 @@ erDiagram
     timestamptz removed_at "set when it leaves the marketplace"
   }
 
-  user_ability {
-    uuid user_id PK
-    uuid ability_id PK
-    timestamptz enabled_at
-    text_array disabled_tools "tools switched off"
-    text_array allowed_tools "tools that never ask for approval"
-  }
-
   marketplace_sync {
     integer id PK "always 1"
     text commit "last synced commit"
@@ -237,17 +230,14 @@ erDiagram
   }
 
   provider ||--o{ model : offers
-  user ||--o{ user_ability : enables
-  ability ||--o{ user_ability : "enabled as"
 ```
 
 - `ability` rows come from the repo's `marketplace/` folder, synced hourly and on demand (see
-  [Marketplace internals](/development/marketplace)). A sync never deletes: an ability that leaves gets `removed_at`, so users' selections survive and come back if it returns.
-- `user_ability` is a user's on/off switches. `marketplace_sync` is a single row that lets an unchanged
-  branch skip the download.
-- Personas and datasets are `ability` rows too (type `persona` and `dataset`), synced like skills. A user
-  switches skills, tools, MCP servers and personas; datasets come with the personas that use them. There is
-  no separate persona table.
+  [Marketplace internals](/development/marketplace)). A sync never deletes: an ability that leaves gets `removed_at`, and comes back if it returns.
+- Every user has every available ability; each persona's `abilities` list picks what a turn uses, so there's
+  no per-user switch. `marketplace_sync` is a single row that lets an unchanged branch skip the download.
+- Personas and datasets are `ability` rows too (type `persona` and `dataset`), synced like skills; datasets
+  come with the personas that use them. There is no separate persona table.
 
 ### MCP sandboxes
 
@@ -459,8 +449,8 @@ The local file is the second half of the agent state, documented table by table 
 | What the terminal screen showed | not stored | `session_events` |
 | Accounts, sessions, device login | Better Auth tables | none (the token lives in the OS keychain) |
 | Providers and models | `provider`, `model` | `models.toml` |
-| MCP servers | `ability` rows of type `mcp` | `mcp.toml` for your own, and the marketplace folder |
-| Abilities | `ability`, `user_ability`, `marketplace_sync` | the `marketplace/` folder and `abilities.toml` |
+| MCP servers | `ability` rows of type `mcp` | the marketplace folder (an ability's `mcp.toml`) |
+| Abilities | `ability`, `marketplace_sync`, picked by the personas | the `marketplace/` folder, picked by its personas |
 | API keys | `user_secret` (encrypted) | `secrets.toml` |
 | Widgets, Telegram links | `widget`, `telegram_link*` | none (local mode has no widgets; the bot's token is in `secrets.toml`) |
 

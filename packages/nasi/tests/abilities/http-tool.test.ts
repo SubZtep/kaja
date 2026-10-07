@@ -2,14 +2,16 @@ import { afterAll, beforeAll, expect, test } from "bun:test"
 import { join } from "node:path"
 import { type HttpToolAbility, HttpToolAbilitySchema } from "@kaja/schema/abilities"
 import type * as z from "zod"
+import { httpAbility } from "../fixtures/abilities"
 
 type AbilityInput = z.input<typeof HttpToolAbilitySchema>
 
+import { parseHttpToolManifest } from "../../src/abilities/folder-store"
 import { approvalSummary, buildHttpRequest, checkHttpToolKey, createHttpTools } from "../../src/abilities/http-tool"
 import { toolName } from "../../src/agent/tools"
 
 const ability = (over: Partial<AbilityInput> = {}): HttpToolAbility =>
-  HttpToolAbilitySchema.parse({
+  httpAbility({
     name: "demo",
     description: "Demo API",
     baseUrl: "https://api.example.com/v2",
@@ -32,14 +34,14 @@ const ability = (over: Partial<AbilityInput> = {}): HttpToolAbility =>
   })
 
 test("the shipped open-meteo manifest is valid", async () => {
-  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/tools/open-meteo.toml")).text()
-  const parsed = HttpToolAbilitySchema.parse(Bun.TOML.parse(text))
+  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/abilities/open-meteo/tool.toml")).text()
+  const parsed = parseHttpToolManifest(text, "open-meteo")
   expect(parsed.tools.map(t => t.name)).toEqual(["weather_forecast"])
 })
 
-test("the shipped brave-search manifest sends the key as a header and the query as q", async () => {
-  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/tools/brave-search.toml")).text()
-  const parsed = HttpToolAbilitySchema.parse(Bun.TOML.parse(text))
+test("the shipped web-search manifest sends the key as a header and the query as q", async () => {
+  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/abilities/web-search/tool.toml")).text()
+  const parsed = parseHttpToolManifest(text, "web-search")
   const def = parsed.tools[0]!
   expect(def.name).toBe("web_search")
   const request = buildHttpRequest(parsed, def, { q: "kaja ai", freshness: "pw" }, "brave-key")
@@ -48,9 +50,8 @@ test("the shipped brave-search manifest sends the key as a header and the query 
   expect(approvalSummary(parsed, def, { q: "kaja" })).not.toContain("brave-key")
 })
 
-test("schema rejects undeclared placeholders, bad names, duplicates and non-http base URLs", () => {
+test("schema rejects undeclared placeholders, bad tool names, duplicates and non-http base URLs", () => {
   const bad = HttpToolAbilitySchema.safeParse({
-    name: "Bad Name",
     description: "x",
     baseUrl: "ftp://example.com",
     tools: [
@@ -61,7 +62,7 @@ test("schema rejects undeclared placeholders, bad names, duplicates and non-http
   })
   const paths = bad.error!.issues.map(issue => issue.path.join("."))
   expect(paths).toEqual(
-    expect.arrayContaining(["name", "baseUrl", "tools.0.name", "tools.0.path", "tools.2.name", "tools.2.path"])
+    expect.arrayContaining(["baseUrl", "tools.0.name", "tools.0.path", "tools.2.name", "tools.2.path"])
   )
 })
 
@@ -101,10 +102,10 @@ test("puts the key in a header (with prefix) or the query, and needs one when au
   expect(() => buildHttpRequest(query, query.tools[0]!, { id: "1" })).toThrow("no API key")
 })
 
-test("an optional key that isn't set adds nothing, and the summary shows no mask", () => {
-  const optional = ability({ auth: { type: "apiKey", in: "query", name: "api_key", optional: true } })
-  expect(buildHttpRequest(optional, optional.tools[0]!, { id: "1" }).url).toBe("https://api.example.com/v2/items/1")
-  expect(approvalSummary(optional, optional.tools[1]!, { title: "Hi" }, false)).toBe(
+test("a keyless ability without a key adds nothing, and the summary shows no mask", () => {
+  const keyless = ability({ auth: { type: "apiKey", in: "query", name: "api_key", keyless: true } })
+  expect(buildHttpRequest(keyless, keyless.tools[0]!, { id: "1" }).url).toBe("https://api.example.com/v2/items/1")
+  expect(approvalSummary(keyless, keyless.tools[1]!, { title: "Hi" }, false)).toBe(
     'POST https://api.example.com/v2/items {"title":"Hi"}'
   )
 })
@@ -151,7 +152,7 @@ afterAll(() => {
 })
 
 function localAbility(path: string, auth: AbilityInput["auth"] = { type: "none" }) {
-  return HttpToolAbilitySchema.parse({
+  return httpAbility({
     name: "local",
     description: "Local test API",
     baseUrl: base,
@@ -203,7 +204,7 @@ test("checkHttpToolKey runs the manifest's check: works, rejected, or no check a
 })
 
 test("checkHttpToolKey never reaches a private host from the cloud, and keeps the key out of the reason", async () => {
-  const keyed = HttpToolAbilitySchema.parse({
+  const keyed = httpAbility({
     ...localAbility("/echo", { type: "apiKey", in: "query", name: "key" }),
     check: { path: "/check" }
   })

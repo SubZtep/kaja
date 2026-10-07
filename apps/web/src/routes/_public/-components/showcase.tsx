@@ -266,7 +266,7 @@ export function Showcase() {
 
       <div
         ref={scroller}
-        className="hide-scrollbar relative flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pb-6 pt-3 mask-[linear-gradient(to_right,transparent,#000_9%,#000_91%,transparent)]"
+        className="hide-scrollbar mask-[linear-gradient(to_right,transparent,#000_9%,#000_91%,transparent)] relative flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pt-3 pb-6"
       >
         {ordered.map(toy => (
           <Fragment key={toy.key}>{toy.node}</Fragment>

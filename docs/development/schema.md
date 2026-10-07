@@ -4,6 +4,7 @@ title: Schema
 parent: Development
 nav_order: 7
 summary: "Where every Zod schema lives."
+icon: 📐
 ---
 
 # @kaja/schema
@@ -37,8 +38,7 @@ The turn statuses and step types are on [Agent brain](/development/nasi#turn-sta
 
 `bun generate:schemas` turns the `config` and `abilities` schemas into the JSON Schemas in
 [`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas). They give editors
-completion and validation for `settings.toml`, `models.toml`, `mcp.toml`, `secrets.toml`, `abilities.toml`
-and the marketplace manifests. The pre-commit hook regenerates them whenever those schemas change, so never
+completion and validation for `settings.toml`, `models.toml`, `secrets.toml` and the marketplace manifests. The pre-commit hook regenerates them whenever those schemas change, so never
 edit the JSON by hand.
 
 ---

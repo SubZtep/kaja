@@ -4,6 +4,7 @@ title: Marketplace
 parent: Abilities
 nav_order: 7
 summary: "Where abilities come from, and how local and cloud users get them."
+icon: 🛒
 ---
 
 # Marketplace
@@ -20,14 +21,14 @@ mode also from files you write yourself.
 | MCP server | the tools of a Model Context Protocol server | [MCP servers](/abilities/mcp) |
 | dataset | questions a persona collects answers to | [Memory & datasets](/abilities/memory#datasets) |
 
-Nothing loads just because it exists. You turn abilities on with `kaja abilities` locally, or on the
-[Abilities page](https://kaja.io/agent/abilities) in the cloud. The two lists are separate.
+Every ability is on, locally and in the cloud, and each [persona](/abilities/personas#abilities) decides
+which of them a chat uses. There's nothing to turn on; an ability that needs a key waits for yours.
 
 Right now the marketplace has:
 
 - **personas:** `care`, `barkochba`, `onboarding`
 - **skills:** `system-report`, `meeting-notes`
-- **HTTP tools:** `brave-search`, `open-meteo`
+- **HTTP tools:** `web-search`, `open-meteo`
 - **MCP servers:** `chrome-devtools`, `context7`, `geo-service`, `sequential-thinking`, `time`
 
 ## In local mode
@@ -37,10 +38,12 @@ Right now the marketplace has:
 
 ```ini
 ~/.config/kaja/marketplace/
+├─ abilities/<name>/      # one folder per ability, any mix of:
+│  ├─ SKILL.md            #   a skill (plus its other files and scripts/)
+│  ├─ tool.toml           #   an HTTP tool
+│  ├─ mcp.toml            #   an MCP server
+│  └─ tool.ts             #   code tools (local only)
 ├─ personas/<id>.toml
-├─ skills/<name>/SKILL.md
-├─ tools/<name>.toml      # HTTP tools
-├─ mcp/<name>.toml        # MCP servers
 └─ datasets/<id>.json
 ```
 
@@ -52,29 +55,24 @@ The sync never loses your edits:
 - files you added yourself are never touched.
 
 Besides `kaja abilities update`, Kaja goes online on the first `kaja abilities` (it fetches once before
-showing the picker), and with a background pull at startup when the last sync is over a day old. That one
-applies on the next launch. You can turn both off in [`[marketplace]`](/configuration/config#marketplace).
-To fetch from a fork, a branch or a local checkout, set [`[source]`](/configuration/abilities#source).
+listing), and with a background pull at startup when the last sync is over a day old. That one applies on
+the next launch. You can turn both off in [`[marketplace]`](/configuration/config#marketplace), which also
+takes a `url` and `ref` to fetch from a fork, a branch or a local checkout.
 
-`kaja abilities` is a checklist of everything in the folder (space toggles, Enter saves). It writes
-[`abilities.toml`](/configuration/abilities), and only what's listed there loads. Your own skills and
-personas are the exception: they always load, and the picker lists them apart (rename or move the file to
-switch one off). Your own tools and MCP servers are in the checklist like the rest. Anything that needs a key asks for it, and a stdio MCP server shows its command before you
-enable it. A file that fails to load is skipped with the reason and never stops the rest.
+Every valid ability and persona in the folder loads, your own included. `kaja abilities` lists them: each
+ability's parts, whether its key is saved, what a stdio MCP server runs (or what to install for it), and the personas that use it.
+To change what a chat gets, edit a persona's `abilities` list, or write your own persona (a new id, so the
+sync never replaces it). `kaja doctor` asks for the keys of abilities a persona uses, and tests them. A file
+that fails to load is skipped with the reason and never stops the rest.
 
 Local mode is the most permissive: skills with scripts, stdio MCP servers and hosts on your own network all
 work, because everything runs on your machine.
 
 ## In the cloud
 
-The Kaja API keeps its own copy of the marketplace, refreshed every hour. You pick what your account uses:
-
-- on the [Abilities page](https://kaja.io/agent/abilities) of the [web app](/using/web-app), which shows
-  each ability's instructions, host, tools and key need before you turn it on;
-- or with `/abilities` in the [cloud Telegram bot](/using/telegram#cloud-bot).
-
-In cloud mode, `kaja abilities` just points you to the web page. A change reaches a running conversation
-from its next message.
+The Kaja API keeps its own copy of the marketplace, refreshed every hour. Every account gets every persona in
+it, and each persona's `abilities` list picks what a chat uses, the same as locally. A change reaches a
+running conversation from its next message.
 
 The cloud has no shell and serves many people, so it offers less:
 
@@ -84,20 +82,22 @@ The cloud has no shell and serves many people, so it offers less:
 | HTTP tool | its `baseUrl` isn't a public address |
 | MCP server | it has no `tools` allowlist, isn't on a public host, or is `stdio` and needs a key ([keyless `stdio` ones run in the MCP sandbox](/abilities/mcp#in-the-cloud)) |
 
-**Keys.** An ability that needs a key asks for it before you can turn it on. Kaja tests the key, stores it
-encrypted and never shows it again: the page only says "Key saved", with Replace and Remove. It's used for
-your own turns only and never reaches your terminal. Removing it turns off an ability that can't work
-without it. Some abilities, like web search (`brave-search`), come with a key from the server, so you
-need none. If you add your own, it's used instead.
+**Keys.** You save them under **API keys** on your [Profile](https://kaja.io/profile), which lists the
+abilities your personas use that take one. Kaja tests the key, stores it encrypted and never shows it again:
+the page only says "Key saved", with Replace and Remove. It's used for your own turns only and never reaches
+your terminal. An ability that takes a key stays out of your chats until you add one, unless it also works
+without one (like context7, where a key only raises the limits). Some abilities, like web search
+(`web-search`), come with a key from the server, so you need none. If you add your own, it's used instead.
 
 **Approvals.** A call that could change something waits for you: the terminal asks, and the Telegram bot
-shows Approve and Decline buttons. The server runs the exact call it saved, so a client can only say yes or
-no. Writing a message instead of answering skips the call.
+shows Approve and Decline buttons; both can also approve the tool for the rest of the chat. The server runs
+the exact call it saved, so a client can only say yes or no. Writing a message instead of answering skips the
+call.
 
-**Widgets** get skills only, chosen per widget key, so a site's visitors never make a call with your keys.
-Every persona in the catalog is available to them.
+**Widgets** get skills only, the ones the widget's persona lists, so a site's visitors never make a call with
+your keys.
 
-The `default` persona is always on, and datasets come with the personas that use them, so neither is listed.
+Datasets come with the personas that use them.
 
 ## Adding to the marketplace
 
@@ -106,8 +106,8 @@ one first:
 
 1. Put it in a copy of the repo, following the
    [marketplace README](https://github.com/SubZtep/kaja/blob/main/marketplace/README.md).
-2. Point [`[source]`](/configuration/abilities#source) at that copy, run `kaja abilities update`, and enable
-   it with `kaja abilities`.
+2. Point [`[marketplace]`](/configuration/config#marketplace)'s `url` at that copy, run
+   `kaja abilities update`, and list it in a persona's `abilities`.
 3. `kaja doctor` lists every loaded tool, and anything left out and why.
 
 Once it's merged, local users get it with their next update and the cloud within the hour. How the syncing

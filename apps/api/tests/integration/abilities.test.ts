@@ -15,6 +15,7 @@ import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 const tag = faker.string.alphanumeric(6).toLowerCase()
 const plain = `plain-${tag}`
 const scripted = `scripted-${tag}`
+const quiet = `quiet-${tag}`
 
 let base: string
 
@@ -25,15 +26,18 @@ function put(root: string, rel: string, content: string) {
 }
 
 function skill(root: string, name: string, body = `Use ${name}.`) {
-  put(root, `skills/${name}/SKILL.md`, `---\nname: ${name}\ndescription: The ${name} skill.\n---\n${body}\n`)
+  put(root, `abilities/${name}/SKILL.md`, `---\ndescription: The ${name} skill.\n---\n${body}\n`)
 }
 
 /** A marketplace folder holding exactly `names` (the scripted one gets a script). */
 function marketplace(names: string[], body?: string) {
   const root = mkdtempSync(join(base, "mp-"))
   for (const name of names) skill(root, name, body)
-  if (names.includes(scripted)) put(root, `skills/${scripted}/scripts/run.sh`, "echo hi")
-  if (names.includes(plain)) put(root, `skills/${plain}/reference.md`, "the reference")
+  if (names.includes(scripted)) put(root, `abilities/${scripted}/scripts/run.sh`, "echo hi")
+  if (names.includes(plain)) put(root, `abilities/${plain}/reference.md`, "the reference")
+  // Personas fix what a turn may use; the default one here uses every skill in the folder, quiet none.
+  put(root, "personas/default.toml", `label = "Default"\nabilities = ${JSON.stringify(names)}\n`)
+  put(root, `personas/${quiet}.toml`, `label = "Quiet"\n`)
   return root
 }
 
@@ -56,8 +60,9 @@ function capturingChatClient(calls: { tools: { function: { name: string } }[]; m
   }
 }
 
-const catalogNames = async () =>
-  ((await (await app.request("/abilities")).json()).abilities as { name: string }[]).map(p => p.name)
+/** The skills a user's cloud turn can load. */
+const servedSkills = async () =>
+  (await createPostgresAbilityStore({ userId: "any" }).listSkills()).map(skill => skill.name)
 
 describe("abilities", () => {
   let token: string
@@ -75,64 +80,33 @@ describe("abilities", () => {
   afterAll(async () => {
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    // The fixture's default persona too, so later files get the built-in one again.
+    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds skills; the cloud catalog hides ones with scripts", async () => {
+  test("a sync adds skills; turns never get ones with scripts", async () => {
     const result = await marketplaceService.syncFromDir(marketplace([plain, scripted]), "c1")
-    expect(result.added.sort()).toEqual([plain, scripted].sort())
-    const names = await catalogNames()
+    expect(result.added.filter(name => !name.startsWith("personas/")).sort()).toEqual([plain, scripted].sort())
+    const names = await servedSkills()
     expect(names).toContain(plain)
     expect(names).not.toContain(scripted)
   })
 
-  test("a catalog skill can be read in full before enabling; scripted ones can't", async () => {
-    const res = await app.request(`/abilities/skill/${plain}`)
-    expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({
-      name: plain,
-      description: `The ${plain} skill.`,
-      instructions: `Use ${plain}.`,
-      files: ["reference.md"]
-    })
-    expect((await app.request(`/abilities/skill/${scripted}`)).status).toBe(404)
-    expect((await app.request("/abilities/skill/nope-nope")).status).toBe(404)
-  })
-
-  test("the catalog is public; /abilities/me needs sign-in", async () => {
-    expect((await app.request("/abilities")).status).toBe(200)
+  test("/abilities/me needs sign-in, and the old catalog and toggles are gone", async () => {
     expect((await app.request("/abilities/me")).status).toBe(401)
+    expect((await app.request("/abilities")).status).toBe(404)
+    expect((await app.request(`/abilities/me/skill/${plain}`, { method: "PUT", headers: auth() })).status).toBe(404)
   })
 
-  test("enable, list and disable a skill; unknown or scripted skills are 404", async () => {
-    expect((await app.request(`/abilities/me/skill/${plain}`, { method: "PUT", headers: auth() })).status).toBe(200)
-    // Enabling twice is fine.
-    expect((await app.request(`/abilities/me/skill/${plain}`, { method: "PUT", headers: auth() })).status).toBe(200)
-    expect((await app.request(`/abilities/me/skill/${scripted}`, { method: "PUT", headers: auth() })).status).toBe(404)
-    expect((await app.request("/abilities/me/skill/nope-nope", { method: "PUT", headers: auth() })).status).toBe(404)
-
-    const mine = await (await app.request("/abilities/me", { headers: auth() })).json()
-    expect(mine.abilities).toEqual([
-      expect.objectContaining({ type: "skill", name: plain, description: `The ${plain} skill.`, available: true })
-    ])
-
-    expect((await app.request(`/abilities/me/skill/${plain}`, { method: "DELETE", headers: auth() })).status).toBe(200)
-    expect((await (await app.request("/abilities/me", { headers: auth() })).json()).abilities).toEqual([])
-  })
-
-  test("a skill removed upstream stays selected but unavailable, and comes back when restored", async () => {
-    await app.request(`/abilities/me/skill/${plain}`, { method: "PUT", headers: auth() })
-
+  test("a skill removed upstream leaves turns, and comes back when restored", async () => {
     const gone = await marketplaceService.syncFromDir(marketplace([scripted]), "c2")
     expect(gone.removed).toContain(plain)
-    expect(await catalogNames()).not.toContain(plain)
-    const mine = await (await app.request("/abilities/me", { headers: auth() })).json()
-    expect(mine.abilities).toEqual([expect.objectContaining({ name: plain, available: false })])
+    expect(await servedSkills()).not.toContain(plain)
 
     const back = await marketplaceService.syncFromDir(marketplace([plain, scripted]), "c3")
     expect(back.updated).toContain(plain)
-    const again = await (await app.request("/abilities/me", { headers: auth() })).json()
-    expect(again.abilities).toEqual([expect.objectContaining({ name: plain, available: true })])
+    expect(await servedSkills()).toContain(plain)
   })
 
   test("an unchanged skill isn't reported as updated; a changed one is", async () => {
@@ -142,15 +116,17 @@ describe("abilities", () => {
   })
 
   test("the cloud store serves a skill's body and its other files, case-insensitively", async () => {
-    const store = createPostgresAbilityStore({ skills: [plain, scripted] })
-    expect((await store.listSkills()).map(s => [s.name, s.files])).toEqual([[plain, ["reference.md"]]])
+    const store = createPostgresAbilityStore({ skillsOnly: true })
+    expect((await store.listSkills()).filter(s => s.name.endsWith(tag)).map(s => [s.name, s.files])).toEqual([
+      [plain, ["reference.md"]]
+    ])
     expect(await store.readSkill(plain)).toStartWith("New body.")
     expect(await store.readSkill(plain, "REFERENCE.md")).toBe("the reference")
     expect(await store.readSkill(plain, "../other.md")).toBeUndefined()
     expect(await store.readSkill(scripted)).toBeUndefined()
   })
 
-  test("a cloud turn gets load_skill and the skill in the system prompt; info lists load_skill", async () => {
+  test("a cloud turn gets load_skill and the skills its persona lists; info lists load_skill", async () => {
     const calls: Parameters<typeof capturingChatClient>[0] = []
     setNasiChatResolver(async () => ({ client: capturingChatClient(calls) as never, model: "fake-model" }))
 
@@ -178,19 +154,15 @@ describe("abilities", () => {
     expect((await app.request("/admin/abilities/sync", { method: "POST", headers: auth() })).status).toBe(403)
   })
 
-  test("a widget key has its own skill list, validated against the catalog", async () => {
+  test("a widget's visitors get the skills its persona lists", async () => {
     const origin = "https://ability-widget.test"
-    const create = (skills: string[]) =>
+    const create = (config: object) =>
       app.request("/widget/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...auth() },
-        body: JSON.stringify({ label: "w", allowedOrigins: [origin], config: { skills } })
+        body: JSON.stringify({ label: "w", allowedOrigins: [origin], config })
       })
-    expect((await create(["nope-nope"])).status).toBe(400)
-    expect((await create([scripted])).status).toBe(400)
-
-    const withSkill = (await (await create([plain])).json()).rawKey
-    const without = (await (await create([])).json()).rawKey
+    expect((await create({ persona: "nope-nope" })).status).toBe(400)
     const turnTools = async (rawKey: string) => {
       const calls: Parameters<typeof capturingChatClient>[0] = []
       setNasiChatResolver(async () => ({ client: capturingChatClient(calls) as never, model: "fake-model" }))
@@ -202,27 +174,20 @@ describe("abilities", () => {
       expect(res.status).toBe(200)
       return calls[0]!.tools.map(t => t.function.name)
     }
-    // Editing a key: skills can be added later, and unknown ones are still rejected.
-    const keys = (await (await app.request("/widget/admin", { headers: auth() })).json()).keys as {
-      id: string
-      config: { skills?: string[] }
-    }[]
-    const withoutId = keys.find(k => k.config.skills?.length === 0)!.id
-    const patch = (id: string, config: object) =>
-      app.request(`/widget/admin/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...auth() },
-        body: JSON.stringify({ config })
-      })
-    expect((await patch(withoutId, { widgetType: "chat", skills: ["nope-nope"] })).status).toBe(400)
-    const patched = await patch(withoutId, { widgetType: "chat", skills: [plain] })
-    expect(patched.status).toBe(200)
-    expect((await patched.json()).config.skills).toEqual([plain])
-    expect(await turnTools(without)).toContain("load_skill")
-    await patch(withoutId, { widgetType: "chat", skills: [] })
-    expect(await turnTools(withSkill)).toContain("load_skill")
-    // The owner has the skill enabled, but this key didn't pick it.
-    expect(await turnTools(without)).not.toContain("load_skill")
+    const withDefault = (await (await create({})).json()).rawKey
+    const withQuiet = (await (await create({ persona: quiet })).json()).rawKey
+    expect(await turnTools(withDefault)).toContain("load_skill")
+    expect(await turnTools(withQuiet)).not.toContain("load_skill")
+  })
+
+  test("a SKILL.md's sticky suggestion reaches the cloud store", async () => {
+    const sticky = `sticky-${tag}`
+    const root = marketplace([plain])
+    put(root, `abilities/${sticky}/SKILL.md`, "---\ndescription: Always on.\nsticky: true\n---\nKeep this.\n")
+    await marketplaceService.syncFromDir(root, "s1")
+    const skills = await createPostgresAbilityStore({ skillsOnly: true }).listSkills()
+    expect(skills.find(s => s.name === sticky)?.sticky).toBe(true)
+    expect(skills.find(s => s.name === plain)?.sticky).toBeUndefined()
   })
 })
 
@@ -236,8 +201,8 @@ describe("marketplace sync from GitHub", () => {
     const root = mkdtempSync(join(tmpdir(), "kaja-tarball-"))
     put(
       join(root, `kaja-${sha}`),
-      `marketplace/skills/${skillName}/SKILL.md`,
-      `---\nname: ${skillName}\ndescription: From a tarball.\n---\nBody\n`
+      `marketplace/abilities/${skillName}/SKILL.md`,
+      `---\ndescription: From a tarball.\n---\nBody\n`
     )
     put(join(root, `kaja-${sha}`), "apps/other.txt", "not part of the marketplace")
     const archive = join(root, "repo.tar.gz")
@@ -268,7 +233,7 @@ describe("marketplace sync from GitHub", () => {
     const first = await service.sync({ force: true })
     expect(first).toMatchObject({ commit: sha, changed: true })
     expect(first.added).toContain(skillName)
-    expect(await catalogNames()).toContain(skillName)
+    expect(await servedSkills()).toContain(skillName)
 
     requests = []
     const second = await service.sync()

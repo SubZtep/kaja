@@ -35,11 +35,11 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 
 ## Docker image
 
-- One multi-runtime image, so manifests run as written, as on the user's machine: `node:22-trixie-slim` (node/npx; chrome-devtools-mcp needs Node 20.19+/22.12+), `bun`/`bunx` copied from the builder stage, `uv`/`uvx` from `ghcr.io/astral-sh/uv` (pinned tag), and Debian's `python3` for uvx. No compilers or git yet: add them when a server needs to build from source
+- A manifest's `package` goes through nasi's `resolveLaunch` with `self: false`: npm packages run with npx (bun's cache can't be shared between uids, see below), PyPI ones with uvx; nothing here runs docker. One multi-runtime image, so manifests run as on the user's machine: `node:22-trixie-slim` (node/npx; chrome-devtools-mcp needs Node 20.19+/22.12+), `bun`/`bunx` copied from the builder stage, `uv`/`uvx` from `ghcr.io/astral-sh/uv` (pinned tag), and Debian's `python3` for uvx. No compilers or git yet: add them when a server needs to build from source
 - The sandbox itself is one bundled file (`bun build --target=bun`) run by that same `bun`, so Bun isn't in the image twice
 - An override only changes what the host needs (chrome-devtools: a pinned version and Chrome flags); a manifest without one runs its own command
 - `SANDBOX_CACHE_DIR` (`/home/node/.cache/mcp` in the image) gives every server `BUN_INSTALL_CACHE_DIR`, `UV_CACHE_DIR`, `UV_PYTHON_INSTALL_DIR` and `npm_config_cache` under it, so a package uvx/npx fetched stays for later starts and other users despite the throwaway HOME. Except bun's: with per-user uids each server gets its own `BUN_INSTALL_CACHE_DIR` in its HOME, since bunx finds no executable in a cache another uid filled (so a bunx server downloads on each start there)
-- The build installs chrome-devtools-mcp into `/opt/mcp` and fetches mcp-server-time into the uv cache, so they start offline; a new manifest's package is fetched on its first start, which needs the npm/PyPI registries reachable (server processes aren't behind the egress proxy)
+- The build installs chrome-devtools-mcp into `/opt/mcp` and fetches mcp-server-time into the uv cache (`MCP_SERVER_TIME_VERSION`, the manifest's pinned version), so they start offline; a new manifest's package is fetched on its first start, which needs the npm/PyPI registries reachable (server processes aren't behind the egress proxy)
 - Chrome is the Chrome for Testing headless shell at the version chrome-devtools-mcp's Puppeteer pins (`PUPPETEER_REVISIONS` in its bundle): bump `CHROME_DEVTOOLS_MCP_VERSION` (the Dockerfile's `npm install --prefix /opt/mcp`) and `CHROME_HEADLESS_SHELL_VERSION` together
 - Only the libraries the headless shell links are installed; `libgbm.so.1` is copied alone out of its .deb, since its Mesa backends (~190 MB with LLVM) never load for SwiftShader rendering
 - amd64 only: Chrome for Testing has no Linux arm64 builds (Debian's `chromium` would be the arm64 route)
@@ -48,6 +48,7 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 
 ## Rules
 
+- Local-only manifests (`localOnly`, or `roots`: they work on the user's own folders) never run here, nor does the API offer them
 - Commands only ever come from the sandbox's own manifests (`MARKETPLACE_DIR/mcp`) and `SANDBOX_OVERRIDES`; a request only names the ability
 - A child gets PATH, a throwaway HOME (removed when it stops), the cache dirs from `SANDBOX_CACHE_DIR` and its manifest's `env`, nothing else from the sandbox's environment (not `KAJA_SANDBOX_KEY`). The caches are shared by every user's servers, which is fine while only the repo's own manifests run
 - Each user's servers run as their own uid (`src/isolation.ts`: `prlimit` 512 processes per uid and 4096 files, then `setpriv`, no capabilities, umask 002, uids from 20000, private group, plus the `mcp` group owning `SANDBOX_CACHE_DIR`); only when the sandbox is root (the image) and `SANDBOX_ISOLATE_USERS` is on. HOMEs are `0700` and chowned to the uid

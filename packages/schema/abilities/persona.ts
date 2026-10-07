@@ -1,4 +1,5 @@
 import * as z from "zod"
+import { SkillNameSchema } from "./skill"
 
 /** Optional chat completion sampling overrides; unset means provider default. Shared with lib/agents.ts's Agent.sampling. */
 export const SamplingParamsSchema = z.object({
@@ -32,6 +33,39 @@ const PersonaModelsSchema = z
   })
   .optional()
 
+/** How a persona uses an ability's skill: listed for load_skill (`load`), always in the system prompt (`sticky`), or left out (`off`). */
+export const SkillModeSchema = z.enum(["load", "sticky", "off"])
+
+// One `roots` folder: a path (writable), or a table that can make it read-only.
+const PersonaRootSchema = z.union([
+  z.string().min(1),
+  z.object({
+    path: z.string().min(1),
+    readOnly: z.boolean().default(false).describe("The server may read here but not write, edit, move or create")
+  })
+])
+
+// One `abilities` entry: a name uses every part of the ability; a table tweaks it.
+const PersonaAbilitySchema = z.union([
+  SkillNameSchema,
+  z.object({
+    name: SkillNameSchema,
+    skill: SkillModeSchema.optional().describe(
+      "The skill part: load (default, unless SKILL.md says sticky), sticky or off"
+    ),
+    tools: z
+      .array(z.string().min(1))
+      .optional()
+      .describe("Only these of the ability's tools (HTTP, MCP and code tools); unset means all of them"),
+    roots: z
+      .array(PersonaRootSchema)
+      .optional()
+      .describe(
+        'Folders an MCP server with `roots = true` may use while this persona is active, e.g. ["~/notes", { path = "~/site", readOnly = true }]; without them it\'s off'
+      )
+  })
+])
+
 // A marketplace persona, marketplace/personas/<id>.toml; the id comes from the file name (the ability name rule), attached by the loader.
 export const PersonaSchema = z
   .object({
@@ -43,11 +77,14 @@ export const PersonaSchema = z
     dataset: z.string().min(1).optional(),
     // Short clause describing when this persona fits; shown in the system-prompt persona roster.
     when: z.string().min(1).optional(),
-    // Enabled skills (abilities.toml) this persona may use; unset means all of them, [] means none.
-    skills: z.array(z.string().min(1)).optional()
+    // The abilities this persona uses (skills, HTTP tools, MCP servers, code tools), by folder name; unset means builtins only.
+    abilities: z.array(PersonaAbilitySchema).optional()
   })
   .extend(SamplingParamsSchema.shape)
 
 export type Persona = z.infer<typeof PersonaSchema> & { id: string }
+export type PersonaAbility = z.infer<typeof PersonaAbilitySchema>
+export type PersonaRoot = z.infer<typeof PersonaRootSchema>
+export type SkillMode = z.infer<typeof SkillModeSchema>
 export type PersonaModels = NonNullable<z.infer<typeof PersonaModelsSchema>>
 export type SamplingParams = z.infer<typeof SamplingParamsSchema>

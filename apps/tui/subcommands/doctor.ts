@@ -15,9 +15,14 @@ async function printModels(models: CliResolvedModel[]) {
   await runModelPass(models, line => console.log(line), await defaultModelIo())
 }
 
-async function printMcpServers(mcpServers: { id: string; failed: boolean; toolCount: number }[]) {
-  if (mcpServers.length === 0) return
+async function printMcpServers(
+  mcpServers: { id: string; failed: boolean; toolCount: number }[],
+  missingRunners: { name: string; needs: string[] }[],
+  missingRoots: string[]
+) {
+  if (mcpServers.length === 0 && missingRunners.length === 0 && missingRoots.length === 0) return
   const { statusLine } = await import("../lib/doctor/status")
+  const { anyOf } = await import("../lib/abilities/list")
 
   console.log(t("doctor.mcpServers"))
   for (const server of mcpServers) {
@@ -26,19 +31,21 @@ async function printMcpServers(mcpServers: { id: string; failed: boolean; toolCo
       : t("doctor.mcpServerToolCount", { count: server.toolCount })
     console.log(statusLine(server.failed ? "error" : "success", `${server.id} ${status}`))
   }
+  for (const { name, needs } of missingRunners)
+    console.log(statusLine("warning", `${name} ${t("doctor.mcpServerNeeds", { programs: anyOf(needs) })}`))
+  for (const name of missingRoots) console.log(statusLine("warning", `${name} ${t("doctor.mcpServerNoRoots")}`))
   console.log()
 }
 
 const ORIGIN_LABEL_KEY: Record<ToolOrigin, string> = {
   official: "doctor.toolsOfficial",
-  community: "doctor.toolsCommunity",
-  "third-party": "doctor.toolsThirdParty"
+  community: "doctor.toolsCommunity"
 }
 
 // " [source]" after a tool name, or nothing for a tool without one.
 const sourceTag = (source: string | undefined) => (source ? ` [${source}]` : "")
 
-/** Names grouped by source, e.g. "click, fill [mcp:chrome-devtools]"; official tools have no source so they stay one plain list. */
+/** Names grouped by source, e.g. "click, fill [ability:chrome-devtools]"; official tools have no source so they stay one plain list. */
 function namesBySource(tools: Tool[]): string {
   const bySource = new Map<string, string[]>()
   for (const t of tools) {
@@ -59,7 +66,7 @@ function skippedLine(skip: SkippedTool): string {
 export function toolReportLines(tools: Tool[], skipped: SkippedTool[]): string[] {
   if (tools.length === 0 && skipped.length === 0) return []
   const lines = [t("doctor.tools")]
-  for (const origin of ["official", "community", "third-party"] as const) {
+  for (const origin of ["official", "community"] as const) {
     const group = tools.filter(tool => (tool.origin ?? "official") === origin)
     if (group.length > 0) lines.push(`  ${t(ORIGIN_LABEL_KEY[origin])}: ${namesBySource(group)}`)
   }
@@ -110,12 +117,15 @@ export async function runDoctorSubcommand() {
 
   const outcomes = await checkCredentials()
 
-  const { models, tools, skipped, mcpServers, closeTools } = await bootstrapLocalAgentDeps()
+  const { models, tools, skipped, mcpServers, missingRunners, missingRoots, closeTools } =
+    await bootstrapLocalAgentDeps({
+      lazyMcp: false
+    })
 
   await printModels(models)
   console.log()
 
-  await printMcpServers(mcpServers)
+  await printMcpServers(mcpServers, missingRunners, missingRoots)
 
   const toolLines = toolReportLines(tools, skipped)
   if (toolLines.length > 0) {

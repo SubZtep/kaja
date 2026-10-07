@@ -4,6 +4,7 @@ title: Skills
 parent: Abilities
 nav_order: 3
 summary: "Instructions the agent loads when a request matches."
+icon: 📜
 ---
 
 # Skills
@@ -16,15 +17,15 @@ Skills use the Agent Skills folder format (see [anthropics/skills](https://githu
 examples):
 
 ```ini
-~/.config/kaja/marketplace/skills/disk-check/
-├─ SKILL.md         # frontmatter + instructions (required)
+~/.config/kaja/marketplace/abilities/disk-check/
+├─ SKILL.md         # frontmatter + instructions (required for a skill)
 ├─ reference.md     # any other text file the instructions point to
 └─ scripts/df.sh    # scripts the model can run
 ```
 
 ```markdown
 ---
-name: disk-check
+name: disk-space
 description: Report free disk space. Use when the user asks about disk usage or a full disk.
 ---
 
@@ -34,17 +35,21 @@ For thresholds per filesystem type, read reference.md.
 
 | Field | Purpose |
 | --- | --- |
-| `name` | must match the folder name: lowercase letters, digits and single hyphens, up to 64 characters |
+| `name` | the folder's name again, as the [Agent Skills](https://agentskills.io/specification) format requires (editors that check SKILL.md files warn without it). Optional, but when it's there it must match the folder |
 | `description` | what the skill does and when to use it, up to 1024 characters. It's all the model sees before loading |
+| `sticky` | optional: `true` suggests keeping the instructions in the system prompt while a persona uses the ability |
 
-Other frontmatter keys (`license`, `metadata` and so on) are allowed and ignored.
+The folder name is the skill's name (lowercase letters, digits and single hyphens, up to 64 characters), so a
+`name` is an identifier, not a title: put a readable title in the Markdown heading. A `name` that doesn't match
+the folder makes the skill fail to load. Other frontmatter keys (`license`, `metadata` and so on) are allowed
+and ignored. The same folder can also hold the ability's `tool.toml`, `mcp.toml` or `tool.ts`;
+those aren't the skill's files, and `load_skill` never serves them.
 
 ## Writing your own
 
-Create the folder under `~/.config/kaja/marketplace/skills/` and it loads on the next start, no
-`abilities.toml` entry needed (rename or move the folder to switch it off). `kaja abilities` lists your own
-skills apart, tagged `local`. A skill with missing or broken frontmatter is listed with the reason,
-and the others still load.
+Create the folder under `~/.config/kaja/marketplace/abilities/` and it loads on the next start; a persona
+that lists it in `abilities` gets it. `kaja abilities` tags your own `local`. A skill with missing or broken
+frontmatter is listed with the reason, and the others still load.
 
 ## How the model uses them
 
@@ -55,7 +60,8 @@ and the others still load.
 - Scripts run through [`run_command`](/abilities/tools#shell-commands) with the usual approval, which is why
   skills with a `scripts/` folder are local-only.
 
-A [persona](/abilities/personas) can limit which skills it offers with its `skills` list.
+A skill reaches the model only while a [persona](/abilities/personas#abilities) that lists its ability is
+active, which also decides whether it's loaded on demand, kept in the system prompt (`sticky`) or left out.
 
 ---
 

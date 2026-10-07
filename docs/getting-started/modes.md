@@ -4,6 +4,7 @@ title: Cloud or local
 parent: Get started
 nav_order: 2
 summary: "Cloud or local: where the agent runs and what that changes."
+icon: ☁️
 ---
 
 # Cloud or local
@@ -66,9 +67,9 @@ The server picks the model and keeps your sessions, memory and dataset answers. 
 - the cloud [built-in tools](/abilities/tools#built-ins): memory, datasets, `ask_user`, image generation and more;
 - `read_file` and `list_files`, which run in your terminal, limited to the folder you started in and with no
   confirmation prompt;
-- the personas, skills, HTTP tools and MCP servers you turned on ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
+- every persona in the marketplace, each with the skills, HTTP tools and MCP servers it lists ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
 
-There is no shell, no `mcp.toml`, no plugin tools and no model switching.
+There is no shell, no code tools and no model switching.
 
 ## Local mode
 

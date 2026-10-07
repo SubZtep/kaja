@@ -15,7 +15,6 @@ import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
 import { Route as AdminAgentRouteImport } from './routes/_admin/agent'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminProfileRouteImport } from './routes/_admin/profile'
-import { Route as AdminWelcomeRouteImport } from './routes/_admin/welcome'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicDeviceRouteImport } from './routes/_public/device'
 import { Route as PublicResetPasswordRouteImport } from './routes/_public/reset-password'
@@ -23,7 +22,6 @@ import { Route as PublicSigninRouteImport } from './routes/_public/signin'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin/index'
 import { Route as AdminAgentIndexRouteImport } from './routes/_admin/agent/index'
-import { Route as AdminAgentAbilitiesRouteImport } from './routes/_admin/agent/abilities'
 import { Route as AdminAgentSandboxRouteImport } from './routes/_admin/agent/sandbox'
 import { Route as AdminAgentWidgetRouteImport } from './routes/_admin/agent/widget'
 import { Route as AdminDashboardIndexRouteImport } from './routes/_admin/dashboard/index'
@@ -64,11 +62,6 @@ const AdminProfileRoute = AdminProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => AdminRoute,
-} as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -102,11 +95,6 @@ const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
 const AdminAgentIndexRoute = AdminAgentIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminAgentRoute,
-} as any)
-const AdminAgentAbilitiesRoute = AdminAgentAbilitiesRouteImport.update({
-  id: '/abilities',
-  path: '/abilities',
   getParentRoute: () => AdminAgentRoute,
 } as any)
 const AdminAgentSandboxRoute = AdminAgentSandboxRouteImport.update({
@@ -172,12 +160,10 @@ export interface FileRoutesByFullPath {
   '/agent': typeof AdminAgentRouteWithChildren
   '/dashboard': typeof AdminDashboardRouteWithChildren
   '/profile': typeof AdminProfileRoute
-  '/welcome': typeof AdminWelcomeRoute
   '/device': typeof PublicDeviceRouteWithChildren
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
-  '/agent/abilities': typeof AdminAgentAbilitiesRoute
   '/agent/sandbox': typeof AdminAgentSandboxRoute
   '/agent/widget': typeof AdminAgentWidgetRoute
   '/dashboard/stats': typeof AdminDashboardStatsRoute
@@ -195,11 +181,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/profile': typeof AdminProfileRoute
-  '/welcome': typeof AdminWelcomeRoute
   '/reset-password': typeof PublicResetPasswordRoute
   '/signin': typeof PublicSigninRoute
   '/signup': typeof PublicSignupRoute
-  '/agent/abilities': typeof AdminAgentAbilitiesRoute
   '/agent/sandbox': typeof AdminAgentSandboxRoute
   '/agent/widget': typeof AdminAgentWidgetRoute
   '/dashboard/stats': typeof AdminDashboardStatsRoute
@@ -222,13 +206,11 @@ export interface FileRoutesById {
   '/_admin/agent': typeof AdminAgentRouteWithChildren
   '/_admin/dashboard': typeof AdminDashboardRouteWithChildren
   '/_admin/profile': typeof AdminProfileRoute
-  '/_admin/welcome': typeof AdminWelcomeRoute
   '/_public/device': typeof PublicDeviceRouteWithChildren
   '/_public/reset-password': typeof PublicResetPasswordRoute
   '/_public/signin': typeof PublicSigninRoute
   '/_public/signup': typeof PublicSignupRoute
   '/_public/': typeof PublicIndexRoute
-  '/_admin/agent/abilities': typeof AdminAgentAbilitiesRoute
   '/_admin/agent/sandbox': typeof AdminAgentSandboxRoute
   '/_admin/agent/widget': typeof AdminAgentWidgetRoute
   '/_admin/dashboard/stats': typeof AdminDashboardStatsRoute
@@ -251,12 +233,10 @@ export interface FileRouteTypes {
     | '/agent'
     | '/dashboard'
     | '/profile'
-    | '/welcome'
     | '/device'
     | '/reset-password'
     | '/signin'
     | '/signup'
-    | '/agent/abilities'
     | '/agent/sandbox'
     | '/agent/widget'
     | '/dashboard/stats'
@@ -274,11 +254,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/profile'
-    | '/welcome'
     | '/reset-password'
     | '/signin'
     | '/signup'
-    | '/agent/abilities'
     | '/agent/sandbox'
     | '/agent/widget'
     | '/dashboard/stats'
@@ -300,13 +278,11 @@ export interface FileRouteTypes {
     | '/_admin/agent'
     | '/_admin/dashboard'
     | '/_admin/profile'
-    | '/_admin/welcome'
     | '/_public/device'
     | '/_public/reset-password'
     | '/_public/signin'
     | '/_public/signup'
     | '/_public/'
-    | '/_admin/agent/abilities'
     | '/_admin/agent/sandbox'
     | '/_admin/agent/widget'
     | '/_admin/dashboard/stats'
@@ -371,13 +347,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProfileRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/welcome': {
-      id: '/_admin/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof AdminWelcomeRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_public/': {
       id: '/_public/'
       path: '/'
@@ -425,13 +394,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/agent/'
       preLoaderRoute: typeof AdminAgentIndexRouteImport
-      parentRoute: typeof AdminAgentRoute
-    }
-    '/_admin/agent/abilities': {
-      id: '/_admin/agent/abilities'
-      path: '/abilities'
-      fullPath: '/agent/abilities'
-      preLoaderRoute: typeof AdminAgentAbilitiesRouteImport
       parentRoute: typeof AdminAgentRoute
     }
     '/_admin/agent/sandbox': {
@@ -535,14 +497,12 @@ const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
 )
 
 interface AdminAgentRouteChildren {
-  AdminAgentAbilitiesRoute: typeof AdminAgentAbilitiesRoute
   AdminAgentSandboxRoute: typeof AdminAgentSandboxRoute
   AdminAgentWidgetRoute: typeof AdminAgentWidgetRoute
   AdminAgentIndexRoute: typeof AdminAgentIndexRoute
 }
 
 const AdminAgentRouteChildren: AdminAgentRouteChildren = {
-  AdminAgentAbilitiesRoute: AdminAgentAbilitiesRoute,
   AdminAgentSandboxRoute: AdminAgentSandboxRoute,
   AdminAgentWidgetRoute: AdminAgentWidgetRoute,
   AdminAgentIndexRoute: AdminAgentIndexRoute,
@@ -571,7 +531,6 @@ interface AdminRouteChildren {
   AdminAgentRoute: typeof AdminAgentRouteWithChildren
   AdminDashboardRoute: typeof AdminDashboardRouteWithChildren
   AdminProfileRoute: typeof AdminProfileRoute
-  AdminWelcomeRoute: typeof AdminWelcomeRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -579,7 +538,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAgentRoute: AdminAgentRouteWithChildren,
   AdminDashboardRoute: AdminDashboardRouteWithChildren,
   AdminProfileRoute: AdminProfileRoute,
-  AdminWelcomeRoute: AdminWelcomeRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

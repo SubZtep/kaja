@@ -1,14 +1,23 @@
 import { t } from "../i18n"
-import { getMarketplaceDir, loadAbilitiesFile, marketplaceSettings, resolveSource } from "./abilities-file"
+import { getMarketplaceDir, marketplaceSettings } from "./abilities-file"
 import { FETCH_STEPS, fetchMarketplace } from "./fetch"
 import { type SyncReport, syncMarketplace } from "./sync"
 
+// What the sync did: counts for the files that came, changed or went (the progress bar already showed them arrive), and by
+// name only your own edits, which were backed up or kept.
 function reportLines(report: SyncReport): string[] {
+  const counts = (
+    [
+      [report.added.length, "ability.countAdded"],
+      [report.updated.length, "ability.countUpdated"],
+      [report.removed.length, "ability.countRemoved"]
+    ] as const
+  )
+    .filter(([count]) => count > 0)
+    .map(([count, key]) => t(key, { count }))
   return [
-    ...report.added.map(path => t("ability.added", { path })),
-    ...report.updated.map(path => t("ability.updatedFile", { path })),
+    ...(counts.length > 0 ? [`  ${counts.join(", ")}`] : []),
     ...report.backedUp.map(({ path, backup }) => t("ability.backedUp", { path, backup })),
-    ...report.removed.map(path => t("ability.removed", { path })),
     ...report.kept.map(path => t("ability.kept", { path }))
   ]
 }
@@ -21,8 +30,8 @@ export const UPDATE_STEPS = FETCH_STEPS + 1
  * to print and the exit code, like `runConfigCli`. Calls `onStep` after each of its {@link UPDATE_STEPS} steps.
  */
 export async function runAbilityUpdate(onStep: () => void = () => {}): Promise<{ code: number; text: string }> {
-  if (!(await marketplaceSettings()).enabled) return { code: 1, text: t("ability.disabled") }
-  const source = resolveSource((await loadAbilitiesFile()).source)
+  const { enabled, source } = await marketplaceSettings()
+  if (!enabled) return { code: 1, text: t("ability.disabled") }
   try {
     const { dir, commit } = await fetchMarketplace(source, onStep)
     const report = await syncMarketplace(dir, getMarketplaceDir(), { ...source, commit })
@@ -36,4 +45,13 @@ export async function runAbilityUpdate(onStep: () => void = () => {}): Promise<{
       text: t("ability.fetchFailed", { message: error instanceof Error ? error.message : String(error) })
     }
   }
+}
+
+/** Syncs the marketplace the first time, so there is something to load. A failure is reported and leaves whatever is already on disk. */
+export async function ensureMarketplace(print: (line: string) => void): Promise<void> {
+  const { readSyncLock } = await import("./sync")
+  if (!(await marketplaceSettings()).enabled || (await readSyncLock(getMarketplaceDir()))) return
+
+  const { withStepProgress } = await import("./progress")
+  print((await withStepProgress(t("ability.firstSync"), UPDATE_STEPS, runAbilityUpdate)).text)
 }

@@ -22,7 +22,7 @@ export function RunCommand({
   return (
     <div className="flex flex-col gap-3">
       <div className={cn("flex items-start gap-3", LOOKS[look].frame)}>
-        <code className={cn("min-w-0 flex-1 wrap-break-word", LOOKS[look].code)}>{command}</code>
+        <code className={cn("wrap-break-word min-w-0 flex-1", LOOKS[look].code)}>{command}</code>
         <CopyButton text={command} />
       </div>
       <Field.Root>

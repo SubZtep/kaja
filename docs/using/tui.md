@@ -4,6 +4,7 @@ title: Terminal UI
 parent: Using Kaja
 nav_order: 1
 summary: "The terminal chat client and its commands."
+icon: 🖵
 ---
 
 # Terminal UI
@@ -41,7 +42,7 @@ kaja telegram --pair      # print a one-time code to pair one more Telegram user
 
 # Config files and abilities
 kaja config paths | fetch | diff | wizard   # see Configuration
-kaja abilities            # pick which skills, tools, MCP servers and personas load
+kaja abilities            # list the abilities, their keys, and the personas that use them
 kaja abilities update     # fetch the marketplace
 ```
 
@@ -105,7 +106,7 @@ When the agent uses a tool, `preferences.toolDisplay` decides how it shows. `min
 row above the input and leaves a one-line summary of the turn's tools; `verbose` lists every call in the chat;
 `corner` shows the current call in the header's top-right corner and nothing in the chat.
 
-In cloud mode, an approval for an HTTP tool or MCP call also offers to approve that tool for the rest of the chat, or always (saved to your list, see [HTTP tools](/abilities/tools)).
+In cloud mode, an approval for an HTTP tool or MCP call also offers to approve that tool for the rest of the chat.
 
 Thinking, tool display, code preview length, sounds and voice have no in-app toggle. Set them in
 [`settings.toml`](/configuration/config#preferences) and restart.

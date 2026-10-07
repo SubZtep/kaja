@@ -7,11 +7,24 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
+import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js"
 import { write } from "bun"
 import { type Tool, type ToolResult, tool } from "../agent/tools"
 import type { FetchLike } from "../security/ssrf"
+import type { McpRoot } from "./roots"
 
 const MAX_ARGS_PREVIEW = 200
+/** How long a roots-taking server gets to ask for its roots before calls go ahead anyway. */
+const ROOTS_ASK_WAIT_MS = 5_000
+/** After it asks, how long it gets to take them in: MCP has no reply for that, and the filesystem server checks each folder first. */
+const ROOTS_SETTLE_MS = 250
+
+/** `promise`, or nothing once `ms` have passed. */
+async function waitAtMost(promise: Promise<void>, ms: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  await Promise.race([promise, new Promise<void>(resolve => (timer = setTimeout(resolve, ms)))])
+  clearTimeout(timer)
+}
 
 export type McpConnectOptions = {
   /** For a `url` server: Streamable HTTP (default) or the older SSE transport. */
@@ -34,6 +47,10 @@ export type McpConnectOptions = {
   maxImageBytes?: number
   /** Arguments left out of every tool's schema, and dropped from calls, e.g. a file path that would land on the server. */
   hideArgs?: string[]
+  /** The folders the server may work in now, asked for on every `roots/list`; set, the client declares roots support. */
+  roots?: () => McpRoot[]
+  /** Why a call that may write can't run (e.g. it targets a read-only folder), checked before asking and before running; undefined lets it through. */
+  refuse?: (args: Record<string, unknown>) => string | undefined
 }
 
 /** The tool's input schema without `hide` among its properties or required ones. */
@@ -82,31 +99,64 @@ export async function connectMcpServer(
   server: McpServerEntry,
   tempDir: string,
   opts: McpConnectOptions = {}
-): Promise<{ tools: Tool[]; close: () => Promise<void> }> {
+): Promise<{ tools: Tool[]; close: () => Promise<void>; rootsChanged: () => Promise<void> }> {
   const transport = createTransport(server, opts)
 
-  const client = new Client({ name: "kaja", version: "1.0.0" })
+  const client = new Client(
+    { name: "kaja", version: "1.0.0" },
+    opts.roots ? { capabilities: { roots: { listChanged: true } } } : undefined
+  )
+  const roots = opts.roots
+  // A server asks for its roots on its own time (after initializing, after a change), so a caller waits for that ask.
+  let asked: () => void = () => {}
+  const nextAsk = () => {
+    const ask = new Promise<void>(resolve => {
+      asked = resolve
+    })
+    return async () => {
+      await waitAtMost(ask, ROOTS_ASK_WAIT_MS)
+      await Bun.sleep(ROOTS_SETTLE_MS)
+    }
+  }
+  let pendingAsk = nextAsk()
+  if (roots)
+    client.setRequestHandler(ListRootsRequestSchema, () => {
+      const answer = { roots: roots() }
+      queueMicrotask(asked)
+      return answer
+    })
   await client.connect(transport)
+  if (roots) await pendingAsk()
 
   const { tools: mcpTools } = await client.listTools()
   const label = opts.label ?? `mcp:${server.id}`
   const tools = mcpTools
     .filter(mcpTool => !opts.allow || opts.allow.includes(mcpTool.name))
     .map(mcpTool => {
-      const mcpToolDef = tool<Record<string, unknown>>({
-        name: mcpTool.name,
-        description: mcpTool.description ?? mcpTool.name,
-        parameters: withoutArgs(mcpTool.inputSchema, opts.hideArgs),
-        execute: args =>
-          callTool(
-            client,
-            mcpTool.name,
-            Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key))),
-            tempDir,
-            opts
-          )
-      })
       const rule = opts.readOnly?.find(r => r.tool === mcpTool.name)
+      // A call that only reads, by the server's word or the manifest's rule for these arguments.
+      const reads = (args: Record<string, unknown>) =>
+        mcpTool.annotations?.readOnlyHint === true || readOnlyByRule(rule, args)
+      const refusal = (args: Record<string, unknown>) => (reads(args) ? undefined : opts.refuse?.(args))
+      const mcpToolDef: Tool = {
+        ...tool<Record<string, unknown>>({
+          name: mcpTool.name,
+          description: mcpTool.description ?? mcpTool.name,
+          parameters: withoutArgs(mcpTool.inputSchema, opts.hideArgs),
+          execute: async args => {
+            const refused = refusal(args)
+            if (refused) throw new Error(refused)
+            return callTool(
+              client,
+              mcpTool.name,
+              Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key))),
+              tempDir,
+              opts
+            )
+          }
+        }),
+        readOnly: mcpTool.annotations?.readOnlyHint === true || rule?.unless.length === 0
+      }
       const mayAsk =
         opts.approval === "always" || (opts.approval === "writes" && mcpTool.annotations?.readOnlyHint !== true)
       if (!mayAsk) return mcpToolDef
@@ -115,14 +165,25 @@ export async function connectMcpServer(
       // TODO: show the tool's own description and its arguments as a readable list in the prompt, not a raw JSON preview.
       return {
         ...mcpToolDef,
+        // A call that will be refused isn't worth asking about.
         approval: (args: Record<string, unknown>) =>
-          opts.approval === "writes" && readOnlyByRule(rule, args)
+          (opts.approval === "writes" && readOnlyByRule(rule, args)) || refusal(args)
             ? undefined
             : approvalSummary(label, mcpTool.name, args)
       }
     })
 
-  return { tools, close: () => client.close() }
+  return {
+    tools,
+    close: () => client.close(),
+    // The server asks for the new list itself.
+    rootsChanged: async () => {
+      if (!roots) return
+      pendingAsk = nextAsk()
+      await client.sendRootsListChanged()
+      await pendingAsk()
+    }
+  }
 }
 
 /** `text` cut at `max` characters with a note, or whole when there's no limit. */

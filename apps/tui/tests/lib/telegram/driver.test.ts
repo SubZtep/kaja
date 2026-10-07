@@ -663,49 +663,21 @@ test("/compact: nothing to do on a fresh chat, then summarises and saves the con
   expect((saved!.session as { summary?: { text: string } }).summary?.text).toBe("SUMMARY")
 })
 
-test("/abilities lists the skills, personas and tool abilities the bot loaded, and how to change them", async () => {
-  const { createLoadSkillTool } = await import("@kaja/nasi")
-  const loadSkill = createLoadSkillTool({
-    store: {
-      listSkills: async () => [],
-      readSkill: async () => undefined,
-      listHttpTools: async () => [],
-      listMcpAbilities: async () => []
-    },
-    skills: [
-      { name: "notes", description: "Keep notes.", files: [] },
-      { name: "disk-check", description: "Check disks.", files: [] }
-    ]
-  })
-  const forecast = tool({ name: "weather_forecast", description: "x", parameters: {}, execute: async () => "ok" })
-  const packaged = [
-    { ...forecast, origin: "community" as const, source: "ability:open-meteo" },
-    { ...forecast, origin: "community" as const, source: "ability:context7" },
-    { ...forecast, origin: "third-party" as const, source: "mcp:my-server" }
-  ]
+test("/abilities lists what each persona uses, and how to change it", async () => {
   const { sender, sent } = fakeSender()
+  const helper: Persona = { ...defaultPersona, abilities: ["open-meteo", { name: "context7", tools: ["docs"] }] }
   const driver = createTelegramDriver({
-    agentConfig: { model: "fake-model", tools: [askUserTool, loadSkill, ...packaged], store: peekStore() },
-    personas: [defaultPersona, persona],
+    agentConfig: { model: "fake-model", tools: [askUserTool], store: peekStore() },
+    personas: [helper, persona],
     models: [],
     sender
   })
 
   await driver.handleMessage(42, 100, "/abilities@kaja_bot")
   const text = sent.at(-1)!.text
-  expect(text).toContain(t("telegram.abilitiesSkills", { names: "disk-check, notes" }))
-  expect(text).toContain(t("telegram.abilitiesTools", { names: "context7, open-meteo" }))
-  // default always loads, so it isn't listed.
-  expect(text).toContain(t("telegram.abilitiesPersonas", { names: "kaja" }))
-  expect(text).not.toContain("my-server")
+  expect(text).toContain(
+    t("telegram.abilitiesPersona", { persona: "Helpful assistant", names: "open-meteo, context7" })
+  )
+  expect(text).toContain(t("telegram.abilitiesPersonaNone", { persona: "Kaja" }))
   expect(text).toContain("kaja abilities")
-
-  const empty = fakeSender()
-  await createTelegramDriver({
-    agentConfig: { model: "fake-model", tools: [askUserTool], store: peekStore() },
-    personas: [defaultPersona],
-    models: [],
-    sender: empty.sender
-  }).handleMessage(42, 100, "/abilities")
-  expect(empty.sent.at(-1)!.text).toContain(t("telegram.abilitiesNone"))
 })

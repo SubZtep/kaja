@@ -14,8 +14,7 @@ src/
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
   abilities/         # AbilityStore, the marketplace folder store, loadAbilities (skills, HTTP tools, MCP, personas)
-  mcp/               # MCP clients: mcp.toml servers (local) and MCP abilities (local, or remote in the cloud)
-  plugin/            # attached when includeLocalTools and pluginDir are set
+  mcp/               # MCP client for MCP abilities (local, or remote and sandboxed in the cloud)
   client/            # HTTP client for the cloud CLI (no loop)
   security/          # SSRF guard (the path guard is tools/path-guard.ts)
 ```

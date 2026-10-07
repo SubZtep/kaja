@@ -4,6 +4,7 @@ title: Agent brain
 parent: Development
 nav_order: 3
 summary: "Inside the agent loop, stores and model client."
+icon: 🌀
 ---
 
 # @kaja/nasi
@@ -211,7 +212,7 @@ Over HTTP the same loop is buffered into one response:
 | --- | --- |
 | `completed` | the turn finished, and `message` is the reply |
 | `needs_input` | `ask_user` is pending: send the answer as the next `message` |
-| `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval` next: `"approve"`, `"approve_session"` (also stops asking about that tool for the rest of the session), `"approve_always"` (also adds it to the user's allow list) or `"decline"`. The server runs the call it saved, never one the client describes. A plain `message` instead skips it |
+| `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval` next: `"approve"`, `"approve_session"` (also stops asking about that tool for the rest of the session) or `"decline"`. The server runs the call it saved, never one the client describes. A plain `message` instead skips it |
 | `needs_client_tool` | the model asked for `read_file` or `list_files`, which only the client can run on its own disk: the client runs it and sends the output as the next `message` |
 | `error` | the turn failed |
 
@@ -271,7 +272,7 @@ prints them, and the terminal appends them to its opt-in log file, since Ink own
 
 `createTools({ includeLocalTools })` decides the registry. The default is **off**: only an explicit allowlist
 of cloud-safe built-ins is returned, so a newly added tool is never cloud-exposed by accident. Turning it on
-adds file, shell, MCP and plugin tools. See [Tools](/abilities/tools) for the resulting list.
+adds file, shell, MCP and code tools. See [Tools](/abilities/tools) for the resulting list.
 
 Some built-ins also need a **dep**, and only register when the host supplies it: `generate_image` needs
 `imageGeneration`, and cloud `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`

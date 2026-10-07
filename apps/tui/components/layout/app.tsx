@@ -158,7 +158,7 @@ function Chrome({
   pendingCommand?: { command: string; description: string; kind: "command" | "tool" }
   runningCommand?: boolean
   resolvePending?: (approved: boolean, scope?: ApprovalScope) => Promise<void>
-  /** Offer "for this session" and "always" on a tool approval (cloud). */
+  /** Offer "for this session" on a tool approval (cloud). */
   approvalScopes?: boolean
 }>) {
   const {
@@ -284,6 +284,7 @@ function LocalApp({
   personas,
   openaiApiModel,
   tools,
+  ensureTools,
   safeCommands,
   initialSession,
   promptHistory
@@ -293,6 +294,8 @@ function LocalApp({
   personas: Persona[]
   openaiApiModel: string
   tools: Tool[]
+  /** Connects the active persona's MCP abilities (see Agent.ensureTools). */
+  ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   initialSession?: PersistedSession
@@ -319,6 +322,7 @@ function LocalApp({
     summarizer,
     compactAt,
     tools,
+    ensureTools,
     safeCommands,
     personas,
     models,
@@ -439,6 +443,8 @@ type LocalAppProps = Readonly<{
   personas: Persona[]
   openaiApiModel: string
   tools: Tool[]
+  /** Connects the active persona's MCP abilities (see Agent.ensureTools). */
+  ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   /** A persisted session to continue (--continue / --session <id>). */

@@ -19,14 +19,16 @@ function fakeStore(skills: SkillSummary[], files: Record<string, string> = {}): 
   }
 }
 
-const coder: Persona = { id: "coder", label: "Coder", skills: ["pdf"] }
-const quiet: Persona = { id: "quiet", label: "Quiet", skills: [] }
-const plain: Persona = { id: "plain", label: "Plain" }
+const coder: Persona = { id: "coder", label: "Coder", abilities: ["pdf"] }
+const quiet: Persona = { id: "quiet", label: "Quiet", abilities: [] }
+const plain: Persona = { id: "plain", label: "Plain", abilities: ["pdf", "notes"] }
+const unset: Persona = { id: "unset", label: "Unset" }
 
-test("skillsForPersona: unset means all, a list limits, an empty list means none", () => {
+test("skillsForPersona: the persona's abilities limit it, unset or empty means none, no persona means all", () => {
   expect(skillsForPersona([pdf, notes], plain)).toEqual([pdf, notes])
   expect(skillsForPersona([pdf, notes], coder)).toEqual([pdf])
   expect(skillsForPersona([pdf, notes], quiet)).toEqual([])
+  expect(skillsForPersona([pdf, notes], unset)).toEqual([])
   expect(skillsForPersona([pdf, notes], undefined)).toEqual([pdf, notes])
 })
 
@@ -66,7 +68,9 @@ test("loadAbilities adds no tool when no skill is enabled", async () => {
     skills: [],
     httpTools: [],
     mcp: [],
-    missingKeys: []
+    missingKeys: [],
+    missingRunners: [],
+    missingRoots: []
   })
 })
 
@@ -83,7 +87,15 @@ test("loadAbilities survives a store that throws", async () => {
       throw new Error("EACCES")
     }
   }
-  expect(await loadAbilities(broken)).toEqual({ groups: [], skills: [], httpTools: [], mcp: [], missingKeys: [] })
+  expect(await loadAbilities(broken)).toEqual({
+    groups: [],
+    skills: [],
+    httpTools: [],
+    mcp: [],
+    missingKeys: [],
+    missingRunners: [],
+    missingRoots: []
+  })
 })
 
 test("loadAbilities adds load_skill as an official tool carrying the skill list", async () => {

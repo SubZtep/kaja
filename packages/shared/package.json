@@ -29,6 +29,10 @@
       "types": "./text/index.ts",
       "default": "./text/index.ts"
     },
+    "./toml": {
+      "types": "./toml/index.ts",
+      "default": "./toml/index.ts"
+    },
     "./ui": {
       "types": "./ui/index.ts",
       "default": "./ui/index.ts"

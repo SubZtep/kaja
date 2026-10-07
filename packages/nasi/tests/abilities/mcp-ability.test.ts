@@ -1,26 +1,30 @@
 import { expect, test } from "bun:test"
 import { join } from "node:path"
 import { McpAbilitySchema } from "@kaja/schema/abilities"
+import { parseMcpManifest } from "../../src/abilities/folder-store"
 import { mcpAbilityTarget } from "../../src/abilities/mcp-ability"
+import { McpRunnerMissingError } from "../../src/mcp/launch"
+import { mcpAbility } from "../fixtures/abilities"
 
-const parse = (input: Record<string, unknown>) =>
-  McpAbilitySchema.parse({ name: "demo", description: "Demo", ...input })
+const parse = (input: Record<string, unknown>) => mcpAbility({ name: "demo", description: "Demo", ...input })
 
 test("the shipped context7 and chrome-devtools manifests are valid", async () => {
   for (const name of ["context7", "chrome-devtools"]) {
-    const text = await Bun.file(join(import.meta.dir, `../../../../marketplace/mcp/${name}.toml`)).text()
-    expect(McpAbilitySchema.parse(Bun.TOML.parse(text)).name).toBe(name)
+    const text = await Bun.file(join(import.meta.dir, `../../../../marketplace/abilities/${name}/mcp.toml`)).text()
+    expect(parseMcpManifest(text, name).name).toBe(name)
   }
 })
 
 test("chrome-devtools never runs on a sandbox somebody else shares", async () => {
-  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/mcp/chrome-devtools.toml")).text()
-  expect(McpAbilitySchema.parse(Bun.TOML.parse(text)).trustedSandbox).toBe(true)
+  const text = await Bun.file(
+    join(import.meta.dir, "../../../../marketplace/abilities/chrome-devtools/mcp.toml")
+  ).text()
+  expect(parseMcpManifest(text, "chrome-devtools").trustedSandbox).toBe(true)
 })
 
 test("transport decides url vs command and where the key may go", () => {
   const issues = (input: Record<string, unknown>) =>
-    McpAbilitySchema.safeParse({ name: "demo", description: "Demo", ...input }).error?.issues.map(i => i.path[0])
+    McpAbilitySchema.safeParse({ description: "Demo", ...input }).error?.issues.map(i => i.path[0])
   expect(issues({ transport: "stdio" })).toEqual(["command"])
   expect(issues({ transport: "stdio", command: "x", url: "https://a.test" })).toEqual(["url"])
   expect(issues({ url: "https://a.test", command: "x" })).toEqual(["command"])
@@ -29,6 +33,10 @@ test("transport decides url vs command and where the key may go", () => {
   expect(issues({ transport: "stdio", command: "x", auth: { type: "apiKey", in: "header", name: "K" } })).toEqual([
     "auth"
   ])
+  expect(issues({ transport: "stdio", command: "x", package: { npm: "y" } })).toEqual(["package"])
+  expect(issues({ url: "https://a.test", package: { npm: "y" } })).toEqual(["package"])
+  expect(issues({ transport: "stdio", package: {} })).toEqual(["package"])
+  expect(issues({ transport: "stdio", package: { npm: "--eval=x" } })).toEqual(["package"])
   expect(parse({ url: "https://a.test" })).toMatchObject({
     transport: "http",
     approval: "never",
@@ -56,7 +64,7 @@ test("the key lands in the header (with prefix) or env var, next to the static o
     approval: "writes",
     tools: ["a"]
   })
-  expect(mcpAbilityTarget(stdio, "k2")).toEqual({
+  expect(mcpAbilityTarget(stdio, "k2", { which: program => program })).toEqual({
     name: "demo",
     server: { id: "demo", command: "bunx", args: ["demo-mcp"], env: { MODE: "x", DEMO_KEY: "k2" } },
     transport: "stdio",
@@ -65,10 +73,10 @@ test("the key lands in the header (with prefix) or env var, next to the static o
   })
 })
 
-test("an optional key that isn't set leaves the header out", () => {
+test("without a key the header is left out", () => {
   const ability = parse({
     url: "https://a.test/mcp",
-    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer ", optional: true }
+    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " }
   })
   expect(mcpAbilityTarget(ability).server).toEqual({ id: "demo", url: "https://a.test/mcp", headers: {} })
 })
@@ -83,4 +91,9 @@ test("readOnly shorthand names expand to rules with no `unless`", () => {
     { tool: "list_things", unless: [] },
     { tool: "snapshot", unless: ["filePath"] }
   ])
+})
+
+test("a stdio ability nothing here can start throws, naming what to install", () => {
+  const time = parse({ transport: "stdio", package: { pypi: "mcp-server-time@1.0" } })
+  expect(() => mcpAbilityTarget(time, undefined, { which: () => null })).toThrow(McpRunnerMissingError)
 })

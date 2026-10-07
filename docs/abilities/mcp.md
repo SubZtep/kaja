@@ -4,74 +4,64 @@ title: MCP servers
 parent: Abilities
 nav_order: 5
 summary: "Plug in Model Context Protocol servers."
+icon: 🔌
 ---
 
 # MCP servers
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server adds its tools to the agent. There are two
-ways to add one:
+A [Model Context Protocol](https://modelcontextprotocol.io) server adds its tools to the agent. A server is
+an ability: an `mcp.toml` in its folder under `marketplace/abilities/`, synced from the marketplace or written
+by you. It works in the cloud too when it's remote, or a stdio one the MCP sandbox runs.
 
-- **`mcp.toml`**: your own servers, local mode only, loaded as soon as they're listed;
-- **an MCP ability**: a manifest in the marketplace, turned on like any other [ability](/abilities). It
-  works in the cloud too when it's remote, or a stdio one the MCP sandbox runs.
-
-All servers connect in parallel at startup. One that fails, or doesn't answer within 10 seconds, is skipped
-with a warning, and the session starts without its tools. The startup panel shows each connected server and
-its tool count.
-
-## mcp.toml
-
-Local (stdio, needs `command`) or remote (Streamable HTTP, needs `url`):
-
-```toml
-[[servers]]
-id = "docs"
-url = "https://docs.example.com/mcp"
-
-[[servers]]
-id = "context7"
-command = "bunx"
-args = ["-y", "@upstash/context7-mcp"]
-secrets = ["CONTEXT7_API_KEY"]
-```
-
-Secret env vars and headers go in [`secrets.toml`](/configuration/secrets) under `[mcp.<id>]`. They're merged
-into the server's `env` (stdio) or `headers` (HTTP) by key name:
-
-```toml
-[mcp.docs]
-Authorization = "Bearer <token>"
-```
-
-List the ones a server can't work without in `secrets`. `kaja doctor` asks for any that are missing, then
-tests the server.
-
-The template's servers (`chrome-devtools`, `context7`) are commented out, so none is on by default.
+A server connects when a [persona](/abilities/personas#abilities) that lists it becomes active, so one no
+persona in the chat uses never starts. One that fails, or doesn't answer within 10 seconds, is skipped with a
+warning, and the chat goes on without its tools. `kaja doctor` connects every server and shows each one's
+tool count.
 
 ## MCP abilities
 
-An MCP ability lives in `~/.config/kaja/marketplace/mcp/<name>.toml`:
+An MCP ability is the `mcp.toml` of an ability folder, `~/.config/kaja/marketplace/abilities/<name>/mcp.toml`
+(the folder name is the ability's name, so the file has none):
 
 ```toml
-name = "context7"
+# abilities/context7/mcp.toml
 description = "Up-to-date library docs"
 transport = "http"                  # http (Streamable HTTP), sse, or stdio
 url = "https://mcp.context7.com/mcp"
-auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer ", optional = true }
+auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer ", keyless = true }
 tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the model
 approval = "never"                  # never | writes | always
 ```
 
-The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-thinking` and `time`.
+The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking` and `time`.
 
-- A `stdio` ability runs a local `command` (with `args` and `env`) instead of a `url`, and its key goes in an
-  env var (`in = "env"`). `kaja abilities` shows the command and asks before enabling one.
-- The key lives in `secrets.toml` as `[abilities.<name>] api_key`. `optional = true` means the server also
-  works without one.
+- A `stdio` ability starts a program on your machine instead of reaching a `url`, and its key goes in an env
+  var (`in = "env"`). Most servers are packages, so name the package and Kaja picks a way to run it:
+
+  ```toml
+  # abilities/time/mcp.toml
+  transport = "stdio"
+  package = { pypi = "mcp-server-time@2026.8.18", docker = "mcp/time@sha256:9c46a9…" }
+  args = []                           # the server's own arguments, after the package
+  ```
+
+  - `npm` packages run on Kaja itself (it has Bun built in, as `bunx`), with Node.js when you have it, so they
+    need nothing installed.
+  - `pypi` packages run with [uv](https://docs.astral.sh/uv/)'s `uvx`, else `pipx`.
+  - `docker` images run with `docker run`, when nothing else can start the server. Env vars and the key go in
+    by name (`-e NAME`), so they never show in the process list.
+
+  Kaja tries them in that order. When none is installed, the ability is left out, and `kaja abilities` and
+  `kaja doctor` say what to install. A server that isn't a package takes a `command` (with `args` and `env`)
+  instead, and is left out the same way when that command isn't installed. `kaja abilities` shows what each
+  one runs on your machine.
+- The key lives in `secrets.toml` as `[abilities.<name>] api_key`. Every key is optional: without one the
+  ability is simply off, and `kaja doctor` offers to add it. `keyless = true` means the server also works
+  without one (like context7, where a key only raises the limits), so the ability stays on; `kaja doctor`
+  still offers to add one.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only, and `always` asks before
   every call. If a server forgets to mark its read-only tools, list them in `readOnly`, with the arguments
-  that turn a call into a write. In the cloud you can also skip the question for a tool yourself, by answering
-  "always allow" at the prompt or from the tool's dialog on the abilities page:
+  that turn a call into a write:
 
   ```toml
   readOnly = [
@@ -80,9 +70,29 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
   ]
   ```
 
-- Locally, `kaja abilities` lets you choose which tools an ability with several may use. The ones you untick
-  are saved in abilities.toml's `[disabledTools]`, and the rest (and tools it gains later) stay on. This
-  needs the ability to have a `tools` list.
+- A persona can narrow an ability to some of its tools with an entry's `tools` list (see
+  [Personas](/abilities/personas#abilities)).
+- `roots = true` marks a stdio server that works in folders, like `filesystem`. It gets the active persona's
+  folders (its entry's `roots`) as [MCP roots](https://modelcontextprotocol.io/specification/latest/client/roots),
+  and new ones when you switch persona, without a restart. It's off for a persona that gives it none, and
+  `kaja doctor` says so when no persona does. Run in Docker, every persona's folders are mounted at their own
+  paths, and the active persona's roots narrow that down.
+
+  ```toml
+  # marketplace/personas/writer.toml (a persona of your own)
+  abilities = [{ name = "filesystem", roots = ["~/notes", { path = "~/projects/site", readOnly = true }] }]
+  ```
+
+  In a read-only folder the server may only read. The server itself has no such setting, so Kaja refuses
+  any call that may write there before it asks you, checking the arguments the manifest names in `pathArgs`
+  (symlinks followed). The nearest folder decides, so a writable folder inside a read-only one stays writable.
+  While some folder is read-only, those paths must be absolute or `~/…`. A persona whose folders are all
+  read-only doesn't get the server's writing tools at all. In Docker, a folder every persona marks read-only
+  is also mounted read-only. A manifest without `pathArgs` can't be checked, so its read-only folders are
+  left out.
+
+- `localOnly = true` keeps a server off the cloud: it only ever runs on your own machine. A `roots` one is
+  local-only too.
 - `toolDescriptions` says in a line what each listed tool does. The web app shows it, since a server's own
   descriptions only arrive once it runs:
 
@@ -95,8 +105,8 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
 ## In the cloud
 
 Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list (so
-you can see what a server can do before turning it on, and it can't add tools later) and are either remote
-(`http` or `sse`) or `stdio` without a key.
+you can see what a server can do before turning it on, and it can't add tools later), aren't local-only, and
+are either remote (`http` or `sse`) or `stdio` without a key.
 
 A `stdio` ability, like `chrome-devtools`, runs in an **MCP sandbox**, never on the API's host. That can be:
 
@@ -113,11 +123,9 @@ A manifest with `trustedSandbox = true` only runs in your own sandboxes or Kaja'
 `chrome-devtools` is one, so the browser never runs on someone else's computer.
 A `stdio` ability that needs a key stays local for now.
 
-- Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes them when it
-  ends. Nothing is shared with other users.
+- A turn connects the servers its persona lists (giving up on one after 5 seconds), others after a persona
+  switch, and closes them when it ends. Nothing is shared with other users.
 - A saved key is tested by connecting and listing the server's tools.
-- On the web app's Abilities page, a server's **Tools** list lets you untick tools you don't want. They never
-  reach your chats, while the rest (and tools it gains later) stay on.
 - `approval` and `readOnly` work as above. Images, like screenshots, come back to you, and long results are
   cut at about 32 KB. An argument that would save a file on the server (`localOnlyArgs`, like a screenshot's
   `filePath`) is hidden in the cloud.

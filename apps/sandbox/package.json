@@ -13,7 +13,7 @@
     "@kaja/schema": "workspace:*",
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
-    "@sentry/bun": "^11.4.0",
+    "@sentry/bun": "^11.5.0",
     "hono": "^4.13.13",
     "zod": "^4.6.5"
   }

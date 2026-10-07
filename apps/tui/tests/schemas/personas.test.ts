@@ -71,13 +71,20 @@ test("persona without dataset leaves it undefined", () => {
   expect(parsed.dataset).toBeUndefined()
 })
 
-test("persona skills list round-trips, including an empty list (no skills)", () => {
-  expect(PersonaSchema.parse({ label: "Coder", skills: ["pdf", "changelog"] }).skills).toEqual(["pdf", "changelog"])
-  expect(PersonaSchema.parse({ label: "Quiet", skills: [] }).skills).toEqual([])
+test("persona abilities take names and tables, including an empty list", () => {
+  const abilities = [
+    "pdf",
+    { name: "browser", skill: "sticky" as const, tools: ["navigate_page"] },
+    { name: "notes", skill: "off" as const }
+  ]
+  expect(PersonaSchema.parse({ label: "Coder", abilities }).abilities).toEqual(abilities)
+  expect(PersonaSchema.parse({ label: "Quiet", abilities: [] }).abilities).toEqual([])
 })
 
-test("persona without skills leaves it undefined (all enabled skills)", () => {
-  expect(PersonaSchema.parse({ label: "Helpful assistant" }).skills).toBeUndefined()
+test("persona abilities refuse bad names, an unknown skill mode, and the old skills key does nothing", () => {
+  expect(() => PersonaSchema.parse({ label: "X", abilities: ["Bad Name"] })).toThrow()
+  expect(() => PersonaSchema.parse({ label: "X", abilities: [{ name: "pdf", skill: "always" }] })).toThrow()
+  expect(PersonaSchema.parse({ label: "Helpful assistant" }).abilities).toBeUndefined()
 })
 
 test("temperature out of range is rejected", () => {

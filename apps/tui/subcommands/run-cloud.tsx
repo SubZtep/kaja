@@ -70,8 +70,6 @@ export async function runCloudSubcommand() {
       <App mode="cloud" initialPreferences={{ ...preferences, theme }} apiUrl={apiUrl} token={token} />,
       {
         alternateScreen: true,
-        // Rewrites only the changed part of each line, so streaming replies don't redraw the whole screen
-        incrementalRendering: true,
         kittyKeyboard: {
           mode: "auto",
           flags: ["disambiguateEscapeCodes"]

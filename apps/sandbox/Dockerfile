@@ -31,7 +31,7 @@ WORKDIR /tmp
 RUN apt-get update && apt-get download libgbm1 && dpkg -x libgbm1_*.deb gbm \
   && mkdir -p /opt/lib && cp -a gbm/usr/lib/x86_64-linux-gnu/libgbm.so.1* /opt/lib/
 
-# One runtime for every stdio MCP server, so manifests run as written: node/npx, bun/bunx, uv/uvx with python3.
+# One runtime for every stdio MCP server: node/npx for npm packages, uv/uvx with python3 for PyPI ones, bun/bunx for commands.
 FROM node:22-trixie-slim AS runner
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -64,9 +64,11 @@ RUN npm install --prefix /opt/mcp --ignore-scripts --no-audit --no-fund --omit=d
     "chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}" \
   && npm cache clean --force \
   && /opt/mcp/node_modules/.bin/chrome-devtools-mcp --version
+# The time manifest's pinned PyPI version, so its uvx finds this copy.
+ARG MCP_SERVER_TIME_VERSION=2026.8.18
 USER node
 RUN UV_CACHE_DIR="$SANDBOX_CACHE_DIR/uv" UV_PYTHON_INSTALL_DIR="$SANDBOX_CACHE_DIR/python" \
-  uvx mcp-server-time --help >/dev/null
+  uvx "mcp-server-time@${MCP_SERVER_TIME_VERSION}" --help >/dev/null
 # The sandbox runs as root only to start each user's servers as their own uid (prlimit + setpriv, every capability dropped); Chrome
 # never runs as root. Those uids share the package caches through the mcp group: group-writable, new files inheriting it.
 USER root
@@ -76,7 +78,7 @@ RUN groupadd --gid 1500 mcp \
   && find "$SANDBOX_CACHE_DIR" -type d -exec chmod g+s {} + \
   && chmod o+x /home/node /home/node/.cache
 COPY --from=builder /home/bun/app/apps/sandbox/dist/sandbox.js ./sandbox.js
-COPY --chown=node:node marketplace/mcp ./marketplace/mcp
+COPY --chown=node:node marketplace/abilities ./marketplace/abilities
 COPY --chown=node:node apps/sandbox/overrides.json ./overrides.json
 
 # Nothing listens: the sandbox dials KAJA_API_URL (https://api.kaja.io by default) and serves over that socket.

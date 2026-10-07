@@ -30,7 +30,7 @@ export function ForgotPassword({
       const { data, error } = await authClient.requestPasswordReset({
         email: parsed.data.email,
         redirectTo: `${window.location.origin}${localizeHref("/reset-password")}`,
-        fetchOptions: captcha.fetchOptions
+        fetchOptions: await captcha.fetchOptions()
       })
       if (error) {
         toast.error(authErrorMessage(error))
@@ -41,7 +41,6 @@ export function ForgotPassword({
     } catch {
       toast.error(m.error_generic())
     } finally {
-      captcha.reset()
       setLoading(false)
     }
   }
@@ -52,7 +51,7 @@ export function ForgotPassword({
 
   if (sent) {
     return (
-      <div className="flex items-center gap-2 justify-center opacity-65 text-sm">
+      <div className="flex items-center justify-center gap-2 text-sm opacity-65">
         <CheckCircle className="text-green-500" />
         <span>{m.forgot_password_email_sent()}</span>
       </div>

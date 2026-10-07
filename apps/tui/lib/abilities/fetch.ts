@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs"
 import { rm } from "node:fs/promises"
 import { join } from "node:path"
-import type { AbilitiesSource } from "@kaja/schema/config"
 import { t } from "../i18n"
 import { getPaths } from "../paths"
 
@@ -98,7 +97,7 @@ export const FETCH_STEPS = 3
  * {@link FETCH_STEPS} steps (git checked, downloaded, checked out), for a progress bar.
  */
 export async function fetchMarketplace(
-  source: Required<AbilitiesSource>,
+  source: { url: string; ref: string },
   onStep: () => void = () => {}
 ): Promise<{ dir: string; commit: string }> {
   const gitCheck = await checkGit()

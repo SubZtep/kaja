@@ -29,9 +29,14 @@ locale   = "en-GB"
 # enabled = false means Kaja never goes online for abilities: `kaja abilities update` refuses and
 # nothing is pulled at startup. What is already in ~/.config/kaja/marketplace/ still loads.
 # autoFetch pulls at startup when the last sync is over a day old; changes apply on the next launch.
+# url and ref say where to fetch from (a git URL or a local path, and a branch or tag), for testing
+# your own marketplace changes; they default to the Kaja repo's main branch (with KAJA_PROFILE=dev, to
+# the checkout Kaja runs from, on its current branch).
 # [marketplace]
 # enabled = true
 # autoFetch = true
+# url = "https://github.com/SubZtep/kaja.git"
+# ref = "main"
 
 # Long conversations: once the chat model's context is this full (0.3-0.95 of its window), the older
 # messages are summarised so the conversation fits. The summary is written by models.toml's first model

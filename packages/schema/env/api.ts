@@ -47,7 +47,7 @@ const apiEnvFields = z.object({
   TURNSTILE_HOSTNAMES: trimmed
     .optional()
     .describe(
-      "Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET); never localhost in production"
+      "Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET, bar Cloudflare's test secrets); never localhost in production"
     )
     .meta({ example: "localhost", section: "Turnstile" }),
 
@@ -140,7 +140,7 @@ const apiEnvFields = z.object({
   ABILITY_KEYS: trimmed
     .optional()
     .describe(
-      "Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...); every cloud user shares them, and a user's own key wins"
+      "Server-wide ability API keys as comma-separated name=key pairs (e.g. web-search=BSA...); every cloud user shares them, and a user's own key wins"
     )
     .meta({ secret: true, section: "Marketplace" }),
 

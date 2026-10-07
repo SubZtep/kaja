@@ -1,0 +1,16 @@
+# Step-by-step reasoning scratchpad: https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
+# Kaja runs the npm package itself on your machine, so there's nothing to install.
+# In the cloud it runs in the MCP sandbox instead (apps/sandbox). Its one tool only records thoughts, so nothing asks first.
+description = "Work through hard problems in numbered steps that can be revised or branched before answering."
+transport   = "stdio"
+package     = {
+  npm = "@modelcontextprotocol/server-sequential-thinking@2026.8.31"
+}
+tools       = [
+  "sequentialthinking"
+]
+
+
+# What each tool does, for the web's tool list; the server's own descriptions only arrive at run time
+[toolDescriptions]
+sequentialthinking = "Writes down one numbered step of its reasoning, which later steps can revise or branch from."

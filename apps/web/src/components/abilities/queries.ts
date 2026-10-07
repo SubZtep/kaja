@@ -1,73 +1,32 @@
-import type { AbilityType, KeyedAbilityType, ListCatalogResponse, ListUserAbilitiesResponse } from "@kaja/schema/api"
-import { listCatalogResponseSchema, listUserAbilitiesResponseSchema } from "@kaja/schema/api"
+import type { ListAbilityKeysResponse } from "@kaja/schema/api"
+import { listAbilityKeysResponseSchema } from "@kaja/schema/api"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import { useApiFetch } from "../../lib/api-fetch"
 import { m } from "../../paraglide/messages.js"
 
-export const CATALOG_QUERY_KEY = ["abilities", "catalog"]
-export const MY_ABILITIES_QUERY_KEY = ["abilities", "me"]
+export const ABILITY_KEYS_QUERY_KEY = ["abilities", "keys"]
 
-/** The public catalog (skills and HTTP tools anyone can enable). */
-export function useCatalog() {
+/** The abilities that take a key (and some persona uses), whether the signed-in user saved one, and whether keys can be saved at all. */
+export function useAbilityKeys() {
   const apiFetch = useApiFetch()
   return useQuery({
-    queryKey: CATALOG_QUERY_KEY,
-    queryFn: () => apiFetch<ListCatalogResponse>("/abilities").then(r => listCatalogResponseSchema.parse(r).abilities)
+    queryKey: ABILITY_KEYS_QUERY_KEY,
+    queryFn: () => apiFetch<ListAbilityKeysResponse>("/abilities/me").then(r => listAbilityKeysResponseSchema.parse(r))
   })
 }
 
-/** Catalog skills only (what a widget key can pick). */
-export function useSkillCatalog() {
-  const catalog = useCatalog()
-  return { ...catalog, data: catalog.data?.filter(ability => ability.type === "skill") }
-}
-
-/** The signed-in user's selections, which abilities have a saved key, and whether keys can be saved at all. */
-export function useMyAbilities() {
-  const apiFetch = useApiFetch()
-  return useQuery({
-    queryKey: MY_ABILITIES_QUERY_KEY,
-    queryFn: () =>
-      apiFetch<ListUserAbilitiesResponse>("/abilities/me").then(r => listUserAbilitiesResponseSchema.parse(r))
-  })
-}
-
-/** Turns an ability on or off for the signed-in user (saved immediately, with a toast). */
-export function useToggleAbility() {
+/** Removes the signed-in user's key for an ability (with a toast). */
+export function useRemoveAbilityKey() {
   const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ type, name, on }: { type: AbilityType; name: string; on: boolean }) =>
-      apiFetch(`/abilities/me/${type}/${encodeURIComponent(name)}`, undefined, { method: on ? "PUT" : "DELETE" }),
-    onSuccess: (_, { name, on }) => {
-      queryClient.invalidateQueries({ queryKey: MY_ABILITIES_QUERY_KEY })
-      toast.success(on ? m.skills_turned_on({ name }) : m.skills_turned_off({ name }))
+    mutationFn: (name: string) =>
+      apiFetch(`/abilities/me/keys/${encodeURIComponent(name)}`, undefined, { method: "DELETE" }),
+    onSuccess: (_, name) => {
+      queryClient.invalidateQueries({ queryKey: ABILITY_KEYS_QUERY_KEY })
+      toast.success(m.tools_key_removed({ name }))
     },
-    onError: (err: Error) => toast.error(err.message || m.skills_error_toggle())
-  })
-}
-
-/** Saves which of an enabled HTTP tool's or MCP server's tools never ask for approval; quiet on success, a toast when it fails. */
-export function useSetAllowedTools() {
-  const apiFetch = useApiFetch()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ type, name, allowed }: { type: KeyedAbilityType; name: string; allowed: string[] }) =>
-      apiFetch(`/abilities/me/${type}/${encodeURIComponent(name)}/allowed-tools`, { allowed }, { method: "PUT" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_ABILITIES_QUERY_KEY }),
-    onError: (err: Error) => toast.error(err.message || m.tools_allow_error())
-  })
-}
-
-/** Saves which of an enabled HTTP tool's or MCP server's tools are off; quiet on success, a toast when it fails. */
-export function useSetDisabledTools() {
-  const apiFetch = useApiFetch()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ type, name, disabled }: { type: KeyedAbilityType; name: string; disabled: string[] }) =>
-      apiFetch(`/abilities/me/${type}/${encodeURIComponent(name)}/tools`, { disabled }, { method: "PUT" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_ABILITIES_QUERY_KEY }),
-    onError: (err: Error) => toast.error(err.message || m.tools_pick_error())
+    onError: (err: Error) => toast.error(err.message || m.tools_key_error())
   })
 }

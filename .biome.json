@@ -62,6 +62,7 @@
         "useStringStartsEndsWith": "on",
         "useIncludes": "on",
         "useRegexpExec": "on",
+        "useSortedClasses": "warn",
         "noUnsafePlusOperands": "on",
         "noUselessTypeConversion": "on",
         "noMeaninglessVoidOperator": "on",

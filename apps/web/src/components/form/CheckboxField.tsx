@@ -14,7 +14,7 @@ export function CheckboxField({ label, className }: Readonly<{ label: string; cl
       touched={field.state.meta.isTouched}
       className={className}
     >
-      <Field.Label className="flex gap-1.5 items-center cursor-pointer">
+      <Field.Label className="flex cursor-pointer items-center gap-1.5">
         <Checkbox
           name={field.name}
           checked={field.state.value}

@@ -5,21 +5,23 @@
 # stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
-[providers.xai]
-base_url = "https://api.x.ai/v1"
+[providers]
+  [providers.xai]
+  base_url = "https://api.x.ai/v1"
 
 
-[models.grok-4-3]
-model    = "grok-4.3"
-provider = "xai"
-tasks    = [
-  "chat"
-]
+[models]
+  [models.grok-4-3]
+  model    = "grok-4.3"
+  provider = "xai"
+  tasks    = [
+    "chat"
+  ]
 
 
-[models.grok-imagine-image]
-model    = "grok-imagine-image"
-provider = "xai"
-tasks    = [
-  "image-generation"
-]
+  [models.grok-imagine-image]
+  model    = "grok-imagine-image"
+  provider = "xai"
+  tasks    = [
+    "image-generation"
+  ]

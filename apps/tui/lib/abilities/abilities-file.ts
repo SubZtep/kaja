@@ -1,62 +1,60 @@
+import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { type AbilitiesFile, AbilitiesFileSchema, type AbilitiesSource } from "@kaja/schema/config"
-import { file, TOML, write } from "bun"
+import { pathToFileURL } from "node:url"
+import { $ } from "bun"
 import { getConfigDir, readConfigLoose } from "../config/config"
-import { t } from "../i18n"
 import { syncedAbilityPaths } from "./sync"
 
-/** Where `kaja abilities update` fetches from unless abilities.toml's [source] says otherwise: this repo's marketplace/ folder on main. */
-export const DEFAULT_SOURCE: Required<AbilitiesSource> = { url: "https://github.com/SubZtep/kaja.git", ref: "main" }
+/** Where `kaja abilities update` fetches from unless settings.toml's `[marketplace]` says otherwise: this repo's marketplace/ folder on main. */
+export const DEFAULT_SOURCE = { url: "https://github.com/SubZtep/kaja.git", ref: "main" }
 
-export function resolveSource(source: AbilitiesSource | undefined): Required<AbilitiesSource> {
-  return { url: source?.url ?? DEFAULT_SOURCE.url, ref: source?.ref ?? DEFAULT_SOURCE.ref }
+// The checkout this CLI runs from (apps/tui/lib/abilities → the repo root); a compiled binary has none.
+const REPO_ROOT = join(import.meta.dir, "../../../..")
+
+/**
+ * The default source under `KAJA_PROFILE=dev`: the checkout the CLI runs from, on its current branch, so even a first
+ * start syncs the marketplace you're working on (committed changes only: it's fetched through git). Undefined for any
+ * other profile, outside a source checkout, or on a detached HEAD.
+ */
+export async function devSource(root = REPO_ROOT): Promise<{ url: string; ref: string } | undefined> {
+  if (Bun.env.KAJA_PROFILE !== "dev" || !existsSync(join(root, "marketplace"))) return undefined
+  const ref = (await $`git -C ${root} rev-parse --abbrev-ref HEAD`.quiet().nothrow().text()).trim()
+  return ref && ref !== "HEAD" ? { url: pathToFileURL(root).href, ref } : undefined
 }
 
-export function getAbilitiesPath() {
-  return join(getConfigDir(), "abilities.toml")
-}
-
-/** Holds every ability, synced from the marketplace or your own; abilities.toml decides which of them load. */
+/** Holds every ability and persona, synced from the marketplace or your own; all of them load, and personas pick the abilities a chat uses. */
 export function getMarketplaceDir() {
   return join(getConfigDir(), "marketplace")
 }
 
-/** Your own skills and personas: in the marketplace folder but not written by the sync, so they load without an abilities.toml entry (rename or move one to switch it off). Broken ones are listed too, so loading them warns. */
-export async function ownAbilities(root = getMarketplaceDir()): Promise<{ skills: string[]; personas: string[] }> {
-  const { scanPersonas, scanSkills } = await import("@kaja/nasi")
+/** Your own abilities and personas: in the marketplace folder but not written by the sync. Broken ones are listed too. */
+export async function ownAbilities(root = getMarketplaceDir()): Promise<{ abilities: string[]; personas: string[] }> {
+  const { scanCodeTools, scanHttpTools, scanMcpAbilities, scanPersonas, scanSkills } = await import("@kaja/nasi")
   const synced = await syncedAbilityPaths(root)
+  const names = [
+    ...(await scanSkills(root)),
+    ...(await scanHttpTools(root)),
+    ...(await scanMcpAbilities(root)),
+    ...(await scanCodeTools(root)).map(name => ({ name }))
+  ].map(entry => entry.name)
   return {
-    skills: (await scanSkills(root)).map(s => s.name).filter(name => !synced.has(`skills/${name}`)),
+    abilities: [...new Set(names)].filter(name => !synced.has(`abilities/${name}`)).sort((a, b) => a.localeCompare(b)),
     personas: (await scanPersonas(root)).map(s => s.name).filter(name => !synced.has(`personas/${name}.toml`))
   }
 }
 
-/** settings.toml's `[marketplace]`, both switches on unless turned off. Tolerant of a broken file, like the wizard prefill. */
-export async function marketplaceSettings(): Promise<{ enabled: boolean; autoFetch: boolean }> {
+/** settings.toml's `[marketplace]`: both switches on unless turned off, and where to fetch from. Tolerant of a broken file, like the wizard prefill. */
+export async function marketplaceSettings(): Promise<{
+  enabled: boolean
+  autoFetch: boolean
+  source: { url: string; ref: string }
+}> {
   const { marketplace } = await readConfigLoose()
+  const fallback = (await devSource()) ?? DEFAULT_SOURCE
   const enabled = marketplace?.enabled !== false
-  return { enabled, autoFetch: enabled && marketplace?.autoFetch !== false }
-}
-
-/** Loads abilities.toml. Missing file: nothing enabled, and no file is written (it's opt-in). Invalid file: prints the error and exits, same policy as {@link import("../config/mcp-servers").loadMcpServers}. */
-export async function loadAbilitiesFile(): Promise<AbilitiesFile> {
-  const path = getAbilitiesPath()
-  const f = file(path)
-  if (!(await f.exists())) return AbilitiesFileSchema.parse({})
-  try {
-    return AbilitiesFileSchema.parse(TOML.parse(await f.text()))
-  } catch (error) {
-    console.log(t("abilities.invalidAt", { path, message: error instanceof Error ? error.message : String(error) }))
-    process.exit(1)
+  return {
+    enabled,
+    autoFetch: enabled && marketplace?.autoFetch !== false,
+    source: { url: marketplace?.url ?? fallback.url, ref: marketplace?.ref ?? fallback.ref }
   }
-}
-
-/** Writes the enabled lists to abilities.toml, keeping [source] and any keys this version doesn't know. Only `kaja abilities` calls this. */
-export async function saveAbilitiesFile(
-  update: Partial<Pick<AbilitiesFile, "skills" | "tools" | "mcp" | "personas" | "disabledTools">>
-): Promise<void> {
-  const path = getAbilitiesPath()
-  const f = file(path)
-  const current = (await f.exists()) ? (TOML.parse(await f.text()) as Record<string, unknown>) : {}
-  await write(path, TOML.stringify({ ...current, ...update })!)
 }

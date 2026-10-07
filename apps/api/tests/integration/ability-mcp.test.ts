@@ -12,6 +12,7 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
+import { createPostgresAbilityStore } from "../../src/features/nasi/pg-abilities"
 import { createCloudTelegramDriver } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
@@ -24,7 +25,7 @@ const host = `mcp-${tag}.test`
 const GOOD_KEY = `mcp-key-${tag}`
 const TEST_SECRET_KEY = Buffer.alloc(32, 9).toString("base64")
 
-/** A marketplace folder with one usable remote MCP ability, a stdio one for the MCP sandbox, and four the cloud must skip. */
+/** A marketplace folder with one usable remote MCP ability, a stdio one for the MCP sandbox, and six the cloud must skip. */
 function marketplace(base: string) {
   const root = mkdtempSync(join(base, "mp-"))
   const put = (rel: string, content: string) => {
@@ -32,9 +33,9 @@ function marketplace(base: string) {
     writeFileSync(join(root, rel), content)
   }
   const remote = (name: string, url: string, extra = "") =>
-    `name = "${name}"\ndescription = "The ${name} server"\ntransport = "http"\nurl = "${url}"\n${extra}`
+    `description = "The ${name} server"\ntransport = "http"\nurl = "${url}"\n${extra}`
   put(
-    `mcp/${things}.toml`,
+    `abilities/${things}/mcp.toml`,
     remote(
       things,
       `https://${host}/mcp`,
@@ -42,27 +43,52 @@ function marketplace(base: string) {
         `[toolDescriptions]\nread_thing = "Reads a thing"\n`
     )
   )
-  put(`mcp/open-${tag}.toml`, remote(`open-${tag}`, `https://${host}/mcp`))
-  put(`mcp/private-${tag}.toml`, remote(`private-${tag}`, "http://127.0.0.1:9/mcp", `tools = ["read_thing"]\n`))
+  put(`abilities/open-${tag}/mcp.toml`, remote(`open-${tag}`, `https://${host}/mcp`))
   put(
-    `mcp/stdio-${tag}.toml`,
-    `name = "stdio-${tag}"\ndescription = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\n`
+    `abilities/private-${tag}/mcp.toml`,
+    remote(`private-${tag}`, "http://127.0.0.1:9/mcp", `tools = ["read_thing"]\n`)
   )
   put(
-    `mcp/counter-${tag}.toml`,
-    `name = "counter-${tag}"\ndescription = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count", "picture"]\n`
+    `abilities/stdio-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\n`
+  )
+  put(
+    `abilities/counter-${tag}/mcp.toml`,
+    `description = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count", "picture"]\n`
   )
   // Keys aren't forwarded to the MCP sandbox yet, so a stdio server that takes one never reaches the cloud.
   put(
-    `mcp/stdio-keyed-${tag}.toml`,
-    `name = "stdio-keyed-${tag}"\ndescription = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K", optional = true }\n`
+    `abilities/stdio-keyed-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K" }\n`
   )
-  // Same name as an HTTP tool: keys share one namespace per name, so the MCP one is skipped.
-  put(`mcp/same-${tag}.toml`, remote(`same-${tag}`, `https://${host}/mcp`, `tools = ["read_thing"]\n`))
+  // Local-only servers (the user's own files) never reach the cloud, whether marked so or taking a persona's roots.
   put(
-    `tools/same-${tag}.toml`,
-    `name = "same-${tag}"\ndescription = "Same"\nbaseUrl = "https://api.same-${tag}.test"\n[[tools]]\nname = "same_${tag}"\ndescription = "x"\npath = "/"\n`
+    `abilities/local-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nlocalOnly = true\n`
   )
+  put(
+    `abilities/roots-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nroots = true\n`
+  )
+  // One folder, two parts: the cloud keeps the HTTP tool and drops only the MCP server it can't run (no tool list).
+  put(`abilities/mixed-${tag}/mcp.toml`, remote(`mixed-${tag}`, `https://${host}/mcp`))
+  put(
+    `abilities/mixed-${tag}/tool.toml`,
+    `description = "Mixed"\nbaseUrl = "https://api.mixed-${tag}.test"\n[[tools]]\nname = "mixed_${tag}"\ndescription = "x"\npath = "/"\n`
+  )
+  // Personas fix what a turn may use; the default one here uses every ability in the folder.
+  const all = [
+    things,
+    `open-${tag}`,
+    `private-${tag}`,
+    `stdio-${tag}`,
+    `counter-${tag}`,
+    `stdio-keyed-${tag}`,
+    `local-${tag}`,
+    `roots-${tag}`,
+    `mixed-${tag}`
+  ]
+  put("personas/default.toml", `label = "Default"\nabilities = ${JSON.stringify(all)}\n`)
   return root
 }
 
@@ -103,7 +129,7 @@ describe("MCP servers in the cloud", () => {
   const realFetch = globalThis.fetch
   const auth = () => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
   const saveKey = (apiKey: string) =>
-    app.request(`/abilities/me/mcp/${things}/key`, { method: "PUT", headers: auth(), body: JSON.stringify({ apiKey }) })
+    app.request(`/abilities/me/keys/${things}`, { method: "PUT", headers: auth(), body: JSON.stringify({ apiKey }) })
   const turn = (body: object) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify(body) })
 
@@ -124,66 +150,59 @@ describe("MCP servers in the cloud", () => {
     setNasiFetchProxyOverride(undefined)
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    // The fixture's default persona too, so later files get the built-in one again.
+    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
     // The sync below marked the real marketplace's abilities removed; forget the stored commit so the next real sync re-applies it.
     await pool.query("DELETE FROM marketplace_sync")
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, private, unlisted and clashing ones are skipped", async () => {
+  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, local-only, private and unlisted ones are skipped, the ability's other parts kept", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "m1")
-    expect(result.added).toContain(`mcp/${things}`)
-    expect(result.added).toContain(`mcp/stdio-${tag}`)
-    expect(result.added).toContain(`tools/same-${tag}`)
-    for (const skipped of [`open-${tag}`, `private-${tag}`, `stdio-keyed-${tag}`, `same-${tag}`]) {
-      expect(result.added).not.toContain(`mcp/${skipped}`)
+    expect(result.added).toContain(`abilities/${things}/mcp.toml`)
+    expect(result.added).toContain(`abilities/stdio-${tag}/mcp.toml`)
+    expect(result.added).toContain(`abilities/mixed-${tag}/tool.toml`)
+    for (const skipped of [
+      `open-${tag}`,
+      `private-${tag}`,
+      `stdio-keyed-${tag}`,
+      `local-${tag}`,
+      `roots-${tag}`,
+      `mixed-${tag}`
+    ]) {
+      expect(result.added).not.toContain(`abilities/${skipped}/mcp.toml`)
     }
   })
 
   test("a keyless stdio server is offered, running in an MCP sandbox", async () => {
-    const { abilities } = await (await app.request("/abilities")).json()
-    expect(abilities.find((ability: { name: string }) => ability.name === `stdio-${tag}`)).toMatchObject({
-      type: "mcp",
-      mcp: { domain: "sandbox", key: "none", transport: "http", tools: [{ name: "x" }] }
-    })
+    const offered = await createPostgresAbilityStore({ userId: "any" }).listMcpAbilities()
+    expect(offered.find(ability => ability.name === `stdio-${tag}`)).toMatchObject({ transport: "stdio", tools: ["x"] })
+    expect(offered.map(ability => ability.name)).not.toContain(`stdio-keyed-${tag}`)
   })
 
   test("with no sandbox online, a stdio ability's turn still runs, without its tools", async () => {
-    const stdio = `stdio-${tag}`
-    expect((await app.request(`/abilities/me/mcp/${stdio}`, { method: "PUT", headers: auth() })).status).toBe(200)
-    try {
-      const sent: Parameters<typeof scriptedChat>[1] = []
-      setNasiChatResolver(async () => ({
-        client: scriptedChat([{ content: "Hi." }], sent) as never,
-        model: "fake-model"
-      }))
-      expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed", message: "Hi." })
-      expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("x")
-    } finally {
-      await app.request(`/abilities/me/mcp/${stdio}`, { method: "DELETE", headers: auth() })
-    }
+    const sent: Parameters<typeof scriptedChat>[1] = []
+    setNasiChatResolver(async () => ({
+      client: scriptedChat([{ content: "Hi." }], sent) as never,
+      model: "fake-model"
+    }))
+    expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed", message: "Hi." })
+    expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("x")
   })
 
-  test("the catalog shows where an MCP server runs, its key need, when it asks, and its tools with their descriptions", async () => {
-    const { abilities } = await (await app.request("/abilities")).json()
+  test("the keys list shows where a keyed MCP server runs and that it needs the key", async () => {
+    const { abilities } = await (await app.request("/abilities/me", { headers: auth() })).json()
     expect(abilities.find((ability: { name: string }) => ability.name === things)).toMatchObject({
-      type: "mcp",
-      mcp: {
-        domain: host,
-        key: "required",
-        transport: "http",
-        approval: "writes",
-        tools: [{ name: "read_thing", description: "Reads a thing" }, { name: "write_thing" }]
-      }
+      key: "required",
+      domain: host,
+      saved: false
     })
   })
 
-  test("it needs a key before it can be turned on; a saved key is tested by connecting", async () => {
-    const refused = await app.request(`/abilities/me/mcp/${things}`, { method: "PUT", headers: auth() })
-    expect(refused.status).toBe(400)
+  test("a saved key is tested by connecting", async () => {
     const wrong = await (await saveKey("wrong-key")).json()
     expect(wrong.check.ok).toBe(false)
     expect(await (await saveKey(GOOD_KEY)).json()).toEqual({ check: { ok: true } })
-    expect((await app.request(`/abilities/me/mcp/${things}`, { method: "PUT", headers: auth() })).status).toBe(200)
   })
 
   test("a cloud turn connects the server with the user's key; a write waits for approval, then runs", async () => {
@@ -225,12 +244,18 @@ describe("MCP servers in the cloud", () => {
     }
   })
 
-  test("removing the key turns off a server that can't work without it", async () => {
-    const removed = await app.request(`/abilities/me/mcp/${things}/key`, { method: "DELETE", headers: auth() })
+  test("removing the key takes a server that can't work without it out of turns", async () => {
+    const removed = await app.request(`/abilities/me/keys/${things}`, { method: "DELETE", headers: auth() })
     expect(removed.status).toBe(200)
     const mine = await (await app.request("/abilities/me", { headers: auth() })).json()
-    expect(mine.keys).not.toContain(things)
-    expect(mine.abilities.map((ability: { name: string }) => ability.name)).not.toContain(things)
+    expect(mine.abilities.find((ability: { name: string }) => ability.name === things).saved).toBe(false)
+    const sent: Parameters<typeof scriptedChat>[1] = []
+    setNasiChatResolver(async () => ({
+      client: scriptedChat([{ content: "Hi." }], sent) as never,
+      model: "fake-model"
+    }))
+    await turn({ message: "hi" })
+    expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("read_thing")
   })
 
   test("in the user's own sandbox, a stdio server runs for their turns and stays warm between them", async () => {
@@ -241,7 +266,6 @@ describe("MCP servers in the cloud", () => {
     const sandbox = await startSandbox({ apiUrl: `http://127.0.0.1:${server.port}`, abilities: [counter], key })
     const sandboxPool = sandbox.pool
     try {
-      expect((await app.request(`/abilities/me/mcp/${counter}`, { method: "PUT", headers: auth() })).status).toBe(200)
       for (const expected of ["1", "2"]) {
         const sent: Parameters<typeof scriptedChat>[1] = []
         const client = scriptedChat(

@@ -30,7 +30,7 @@ export function TextField({
       <div className={cn(isStack ? "flex flex-col gap-1.5" : "md:flex")}>
         <Field.Label
           className={cn(
-            isStack ? "font-medium text-[13px] text-muted" : "flex w-48 align-middle items-center justify-between"
+            isStack ? "font-medium text-[13px] text-muted" : "flex w-48 items-center justify-between align-middle"
           )}
         >
           {isStack ? label : `${label}:`}

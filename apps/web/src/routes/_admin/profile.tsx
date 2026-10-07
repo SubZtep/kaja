@@ -4,6 +4,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import type { User } from "better-auth"
 import { useState } from "react"
 import { toast } from "react-toastify"
+import { ApiKeys } from "../../components/abilities/ApiKeys"
 import { Button } from "../../components/form/primitives/Button"
 import { Avatar } from "../../components/ui/Avatar"
 import { Badge } from "../../components/ui/Badge"
@@ -54,6 +55,10 @@ function Profile() {
             <ChangePassword />
           </Section>
         </div>
+        <Section className="sm:col-span-2" title={m.profile_api_keys()}>
+          <p className="mt-0 mb-4 text-muted text-sm">{m.profile_api_keys_description()}</p>
+          <ApiKeys />
+        </Section>
         <Section className="sm:col-span-2" tone="danger" title={m.profile_delete_title()}>
           <DeleteAccount email={user.email} />
         </Section>

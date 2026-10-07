@@ -1,5 +1,4 @@
 import * as z from "zod"
-import { SkillNameSchema } from "./skill"
 
 /** The model-facing function name rule (OpenAI): letters, digits, `_` and `-`, up to 64 characters. */
 const ToolFunctionNameSchema = z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/, "letters, digits, _ and - only, up to 64")
@@ -16,7 +15,10 @@ export const HttpToolAuthSchema = z.discriminatedUnion("type", [
     in: z.enum(["header", "query"]),
     name: z.string().min(1).describe("Header or query parameter name"),
     prefix: z.string().optional().describe('Put before the key, e.g. "Bearer "'),
-    optional: z.boolean().default(false).describe("The API works without a key too (e.g. with lower limits)")
+    keyless: z
+      .boolean()
+      .default(false)
+      .describe("The API works without a key too (e.g. with lower limits), so the ability is on without one")
   })
 ])
 
@@ -55,8 +57,6 @@ export const HttpToolSchema = z
 
 export const HttpToolAbilitySchema = z
   .object({
-    /** Must match the file name (marketplace/tools/<name>.toml). */
-    name: SkillNameSchema,
     description: z.string().min(1).max(1024),
     baseUrl: z.url({ protocol: /^https?$/ }).describe("Scheme and host (plus optional base path) every tool calls"),
     auth: HttpToolAuthSchema.default({ type: "none" }),
@@ -78,4 +78,5 @@ export const HttpToolAbilitySchema = z
 export type HttpMethod = z.infer<typeof HttpMethodSchema>
 export type HttpToolAuth = z.infer<typeof HttpToolAuthSchema>
 export type HttpTool = z.infer<typeof HttpToolSchema>
-export type HttpToolAbility = z.infer<typeof HttpToolAbilitySchema>
+/** A loaded HTTP tool ability: its `tool.toml` plus the ability's name, which is its folder's (marketplace/abilities/<name>/). */
+export type HttpToolAbility = z.infer<typeof HttpToolAbilitySchema> & { name: string }

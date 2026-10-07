@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { McpServerEntry } from "@kaja/schema/config"
@@ -46,7 +47,7 @@ test(
     const asking = (tools: Awaited<ReturnType<typeof toolsWith>>) => tools.filter(t => t.approval).map(toolName)
     expect(asking(never)).toEqual([])
     expect(asking(writes)).toEqual(["write_thing", "echo_key"])
-    expect(asking(always)).toEqual(["read_thing", "write_thing", "echo_key"])
+    expect(asking(always)).toEqual(["read_thing", "write_thing", "echo_key", "list_roots"])
     expect(always[0]!.approval?.({ id: "7" })).toBe('ability:fixture read_thing {"id":"7"}')
   },
   SPAWN_TIMEOUT
@@ -75,26 +76,44 @@ test(
 )
 
 test(
-  "createTools connects abilities as community tools and mcp.toml servers as third-party",
+  "createTools connects abilities as community tools, keeping only their allowed tools",
   async () => {
     const { tools, mcpServers, closeTools } = await createTools({
       includeLocalTools: true,
       tempDir: tmpdir(),
-      mcpServers: [{ ...fixture, id: "own" }],
       mcpAbilities: [
         { name: "ability", server: fixture, transport: "stdio", approval: "writes", allow: ["write_thing"] }
       ]
     })
     const byName = new Map(tools.map(t => [toolName(t), t]))
-    // The ability's write_thing wins over mcp.toml's (community before third-party); its other tools are filtered out there.
     expect(byName.get("write_thing")).toMatchObject({ origin: "community", source: "ability:ability" })
     expect(byName.get("write_thing")?.approval).toBeDefined()
-    expect(byName.get("read_thing")).toMatchObject({ origin: "third-party", source: "mcp:own" })
-    expect(mcpServers).toEqual([
-      { id: "own", toolCount: 3, failed: false },
-      { id: "ability:ability", toolCount: 1, failed: false }
-    ])
+    expect(byName.has("read_thing")).toBe(false)
+    expect(mcpServers).toEqual([{ id: "ability:ability", toolCount: 1, failed: false }])
     await closeTools()
+  },
+  SPAWN_TIMEOUT
+)
+
+test(
+  "with lazyMcpAbilities, a server connects only when ensureAbilities names it",
+  async () => {
+    const { tools, mcpServers, ensureAbilities, closeTools } = await createTools({
+      includeLocalTools: true,
+      tempDir: tmpdir(),
+      lazyMcpAbilities: true,
+      mcpAbilities: [{ name: "things", server: fixture, transport: "stdio", approval: "never" }]
+    })
+    try {
+      expect(mcpServers).toEqual([])
+      expect(tools.some(t => toolName(t) === "read_thing")).toBe(false)
+      expect((await ensureAbilities(["other"])).some(t => toolName(t) === "read_thing")).toBe(false)
+      const [first, second] = await Promise.all([ensureAbilities(["things"]), ensureAbilities(["things"])])
+      expect(first.some(t => toolName(t) === "read_thing")).toBe(true)
+      expect(second.map(toolName)).toEqual(first.map(toolName))
+    } finally {
+      await closeTools()
+    }
   },
   SPAWN_TIMEOUT
 )
@@ -103,18 +122,23 @@ test(
   "servers that don't answer are skipped after the timeout, all at once rather than one after another",
   async () => {
     // Two silent servers with a 1 s limit: in parallel that's ~1 s, one after another it would be 2 s or more.
-    const silent = (id: string): McpServerEntry => ({ id, command: "sleep", args: ["30"], env: {} })
+    const silent = (id: string) => ({
+      name: id,
+      server: { id, command: "sleep", args: ["30"], env: {} } satisfies McpServerEntry,
+      transport: "stdio" as const,
+      approval: "never" as const
+    })
     const started = Date.now()
     const { mcpServers, closeTools } = await createTools({
       includeLocalTools: true,
       tempDir: tmpdir(),
       mcpConnectTimeoutMs: 1_000,
-      mcpServers: [silent("a"), silent("b")]
+      mcpAbilities: [silent("a"), silent("b")]
     })
     expect(Date.now() - started).toBeLessThan(1_900)
     expect(mcpServers).toEqual([
-      { id: "a", toolCount: 0, failed: true },
-      { id: "b", toolCount: 0, failed: true }
+      { id: "ability:a", toolCount: 0, failed: true },
+      { id: "ability:b", toolCount: 0, failed: true }
     ])
     await closeTools()
   },
@@ -127,11 +151,107 @@ test(
     const { tools, mcpServers, closeTools } = await createTools({
       includeLocalTools: true,
       tempDir: tmpdir(),
-      mcpServers: [{ id: "broken", command: "kaja-test-no-such-command", args: [], env: {} }, fixture]
+      mcpAbilities: [
+        {
+          name: "broken",
+          server: { id: "broken", command: "kaja-test-no-such-command", args: [], env: {} },
+          transport: "stdio",
+          approval: "never"
+        },
+        { name: "things", server: fixture, transport: "stdio", approval: "never" }
+      ]
     })
-    expect(mcpServers.find(s => s.id === "broken")).toMatchObject({ failed: true, toolCount: 0 })
+    expect(mcpServers.find(s => s.id === "ability:broken")).toMatchObject({ failed: true, toolCount: 0 })
     expect(tools.some(t => toolName(t) === "read_thing")).toBe(true)
     await closeTools()
+  },
+  SPAWN_TIMEOUT
+)
+
+test(
+  "a roots-taking server gets the active persona's folders, and is left out for a persona with none",
+  async () => {
+    const { ensureAbilities, closeTools } = await createTools({
+      includeLocalTools: true,
+      tempDir: tmpdir(),
+      lazyMcpAbilities: true,
+      mcpAbilities: [
+        {
+          name: "things",
+          server: fixture,
+          transport: "stdio",
+          approval: "never",
+          roots: {
+            a: [{ folder: "/tmp/kaja-a", readOnly: false }],
+            b: [
+              { folder: "/tmp/kaja-b", readOnly: false },
+              { folder: "/tmp/kaja-c", readOnly: true }
+            ]
+          }
+        }
+      ]
+    })
+    try {
+      const rootsAs = async (persona?: string) => {
+        const list = (await ensureAbilities(["things"], persona)).find(t => toolName(t) === "list_roots")
+        return list ? ((await list.execute({})) as { text: string }).text : undefined
+      }
+      expect(await rootsAs("a")).toBe("file:///tmp/kaja-a")
+      expect(await rootsAs("b")).toBe("file:///tmp/kaja-b\nfile:///tmp/kaja-c")
+      expect(await rootsAs("other")).toBeUndefined()
+      expect(await rootsAs()).toBeUndefined()
+      expect(await rootsAs("a")).toBe("file:///tmp/kaja-a")
+    } finally {
+      await closeTools()
+    }
+  },
+  SPAWN_TIMEOUT
+)
+
+test(
+  "read-only roots: a write there is refused without asking, and an all-read-only persona gets no write tools",
+  async () => {
+    const base = mkdtempSync(join(tmpdir(), "kaja-ro-"))
+    const [locked, open] = [join(base, "locked"), join(base, "locked", "open")]
+    mkdirSync(open, { recursive: true })
+    const { ensureAbilities, closeTools } = await createTools({
+      includeLocalTools: true,
+      tempDir: tmpdir(),
+      lazyMcpAbilities: true,
+      mcpAbilities: [
+        {
+          name: "things",
+          server: fixture,
+          transport: "stdio",
+          approval: "writes",
+          pathArgs: ["id"],
+          roots: {
+            reader: [{ folder: locked, readOnly: true }],
+            mixed: [
+              { folder: locked, readOnly: true },
+              { folder: open, readOnly: false }
+            ]
+          }
+        }
+      ]
+    })
+    try {
+      const reader = (await ensureAbilities(["things"], "reader")).map(toolName)
+      expect(reader).toContain("read_thing")
+      expect(reader).not.toContain("write_thing")
+
+      const write = (await ensureAbilities(["things"], "mixed")).find(t => toolName(t) === "write_thing")!
+      const inLocked = { id: join(locked, "new.txt") }
+      expect(write.approval?.(inLocked)).toBeUndefined()
+      await expect(write.execute(inLocked)).rejects.toThrow("read-only for this persona")
+      // The nearest root decides: a writable folder inside a read-only one stays writable.
+      const inOpen = { id: join(open, "new.txt") }
+      expect(write.approval?.(inOpen)).toContain("write_thing")
+      expect(await write.execute(inOpen)).toEqual({ text: `wrote ${inOpen.id}` })
+    } finally {
+      await closeTools()
+      rmSync(base, { recursive: true, force: true })
+    }
   },
   SPAWN_TIMEOUT
 )

@@ -13,7 +13,6 @@ changeEmailLink      = "E-mail módosítása"
 
 [telegram]
 commandNew       = "Új beszélgetés indítása"
-commandAbilities = "Képességek be- vagy kikapcsolása"
 commandCompact   = "Az eddigi beszélgetést összegzése, hogy helyet csipkeljünk"
 compacted        = "🗜 Beszélgetés tömörítve: {before} → {after} token."
 compactedDropped = "🗜 Beszélgetés tömörítve: {before} → {after} token. Az összefoglaló nem írható, így a legrégebbi üzenetek kimaradtak."
@@ -36,28 +35,10 @@ photoFailed      = "⚠ Nem sikerült letölteni a képet a Telegramról — pr�
 toolWantsToRun   = "🔐 <b>{name}</b> ezt szeretné futtatni:"
 approve          = "✅ Jóváhagyás"
 approveSession   = "✅ Jóváhagyás ebben a csevegésben"
-approveAlways    = "✅ Mindig engedélyezd ezt az eszközt"
 decline          = "❌ Elutasítás"
 approved         = "✅ Jóváhagyva"
 declined         = "❌ Elutasítva"
 approvalExpired  = "Erre a kérésre már válaszoltak vagy lejárt."
-
-
-  [telegram.abilities]
-  title        = "<b>Képességek</b>"
-  empty        = "Még nincs semmi a katalógusban."
-  hint         = "Koppints az egyikre a be- vagy kikapcsoláshoz; a következő üzenettől érvényes."
-  legend       = "✅ be · ▫️ ki · 🔑 először API-kulcsot kell beállítani · ⚠️ már nem érhető el"
-  webLink      = "Olvass róla többet és kezelj kulcsokat a weboldalon"
-  page         = "Oldal {current} / {total}"
-  previous     = "‹ Előző"
-  next         = "Következő ›"
-  skill        = "készség"
-  persona      = "perszóna"
-  tool         = "eszköz"
-  mcp          = "MCP"
-  needsKey     = "🔑 <b>{name}</b> először API-kulcsot kér. Adj hozzá a weboldalon, ahol titkosítva tárolódik; az itt beírt kulcs a chat-előzményekben maradna."
-  needsKeyLink = "Képességek → Eszközök"
 
 
   [telegram.error]

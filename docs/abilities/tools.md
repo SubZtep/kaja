@@ -4,12 +4,13 @@ title: Tools
 parent: Abilities
 nav_order: 4
 summary: "Built-in tools, HTTP APIs, shell commands and your own."
+icon: 🔧
 ---
 
 # Tools
 
 Every session starts with the built-in toolset. HTTP tools from the marketplace, [MCP servers](/abilities/mcp)
-and, locally, your own plugin tools are added on top.
+and, locally, code tools (an ability's `tool.ts`) are added on top.
 
 ## Built-ins
 
@@ -32,7 +33,7 @@ and, locally, your own plugin tools are added on top.
 Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/configuration/models).
 
-Web search isn't built in. Turn on the marketplace's `brave-search` [HTTP tool](#http-tools) to get
+Web search isn't built in. Turn on the marketplace's `web-search` [HTTP tool](#http-tools) to get
 `web_search`: locally with your own Brave Search API key, in the cloud with the server's key (or yours, if
 you save one).
 
@@ -44,16 +45,18 @@ don't get these two.
 proxy, and is left out entirely if the server has none.
 
 The **Cloud** column is an explicit allowlist. Anything that touches the server's filesystem or shell is
-never exposed there, and your `mcp.toml` servers and plugin tools are never attached.
+never exposed there, and code tools are never attached.
 
 ## HTTP tools
 
 An HTTP tool describes one web API in TOML: where it lives, how it authenticates, and the calls the model can
-make. It lives in `~/.config/kaja/marketplace/tools/<name>.toml`, synced from the marketplace or written by
-you, and loads once you turn it on (see [Abilities](/abilities)).
+make. It's the `tool.toml` of an ability folder, `~/.config/kaja/marketplace/abilities/<name>/tool.toml`,
+synced from the marketplace or written by you. A chat gets it while a persona that lists it is active (see
+[Personas](/abilities/personas#abilities)).
+The folder name is the ability's name, so the file has no `name` of its own.
 
 ```toml
-name = "github-issues"                  # must match the file name
+# abilities/github-issues/tool.toml
 description = "Read and create GitHub issues"
 baseUrl = "https://api.github.com"
 auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }
@@ -83,18 +86,17 @@ type = "string"
   host. The other arguments go in the query string for GET and DELETE, or in a JSON body for POST, PUT and
   PATCH.
 - `auth` puts the key in a header or query parameter (`in`), with an optional `prefix`. Locally the key
-  lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`, and without it the ability is left
-  out with a warning. An optional `check` request lets Kaja test a key before saving it.
+  lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`, and without it the ability is off
+  (`kaja doctor` offers to add it), unless `keyless = true` says the API works without one too. An optional `check` request lets Kaja test a key before saving it.
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
-  approval, like a shell command. At the prompt you can also approve the tool for the rest of the chat, or always;
-  "always" is saved, and the tool's dialog on the web abilities page lists it with a switch to ask again.
+  approval, like a shell command. In the cloud you can also approve the tool for the rest of the chat.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same way, so
   the model can react. Redirects to another host are refused, and the key never appears in what the model
   sees.
 - Locally, a tool may call hosts on your own network (Home Assistant, a NAS, Ollama).
 
-The marketplace has two: `brave-search` adds `web_search` through the Brave Search API (the key goes in the
-`X-Subscription-Token` header, and `kaja abilities` asks for it), and `open-meteo` looks up weather.
+The marketplace has two: `web-search` adds `web_search` through the Brave Search API (the key goes in the
+`X-Subscription-Token` header, and `kaja doctor` asks for it), and `open-meteo` looks up weather.
 
 In the cloud, marketplace HTTP tools work in cloud chat and the cloud Telegram bot, unless the `baseUrl` is a
 private or local address. Requests go through the server's proxy when it has one, and private addresses are
@@ -117,10 +119,12 @@ A safe-list command still asks when it names a `secrets.toml` or anything under 
 This is a **warning, not a sandbox**. The command runs with your own shell permissions, so read what you're
 approving.
 
-## Your own tools
+## Code tools
 
-Local mode only. Drop a `.ts` file in `~/.config/kaja/tools/` that exports a tool object. Every export with
-a `definition` and an `execute` function is picked up on the next start, with no rebuild:
+Local mode only. An ability folder's `tool.ts` (`~/.config/kaja/marketplace/abilities/<name>/tool.ts`) exports
+tool objects. Every export with a `definition` and an `execute` function is picked up on the next start, with
+no rebuild, beside the folder's other parts (a `SKILL.md` that explains when to use them, say). Importing the
+file runs it, so it's only loaded when a [persona](/abilities/personas#abilities) lists the ability:
 
 ```ts
 export const diceTool = {
@@ -150,11 +154,10 @@ All tools share one list of names, and each is marked by where it comes from:
 | Origin | What |
 | --- | --- |
 | official | Kaja's built-ins |
-| community | [abilities](/abilities), synced or your own |
-| third-party | MCP servers from `mcp.toml` and your `tools/*.ts` files |
+| community | [abilities](/abilities), synced or your own, code tools included |
 
-Official names are reserved: an MCP or plugin tool called `read_file` is left out instead of replacing the
-built-in. Among the others, community tools come first, and the first tool with a name keeps it.
+Official names are reserved: an MCP or code tool called `read_file` is left out instead of replacing the
+built-in. Among the others, the first tool with a name keeps it.
 `kaja doctor` lists every tool by origin, plus anything left out and why. The model only sees the names.
 
 ---

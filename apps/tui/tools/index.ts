@@ -1,4 +1,3 @@
-import { join } from "node:path"
 import {
   createFolderAbilityStore,
   createTools,
@@ -8,9 +7,7 @@ import {
   setDatasetLoaders
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
-import { getMarketplaceDir, loadAbilitiesFile, ownAbilities } from "../lib/abilities/abilities-file"
-import { getConfigDir } from "../lib/config/config"
-import { loadMcpServers } from "../lib/config/mcp-servers"
+import { getMarketplaceDir } from "../lib/abilities/abilities-file"
 import { secrets } from "../lib/config/secrets"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
@@ -18,8 +15,8 @@ import { chatModelId, client, summarizer } from "../lib/models/openai"
 import { getPaths } from "../lib/paths"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
-export async function getDefaultTools(personas: Persona[]) {
-  const mcpServers = await loadMcpServers()
+/** Every tool the local agent gets. `lazyMcp` (default) leaves abilities' MCP servers for `ensureAbilities` to connect once a persona that uses them is active; the doctor turns it off to test them all. */
+export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: { lazyMcp?: boolean } = {}) {
   setDatasetLoaders({ loadDataset, loadDatasets })
 
   const modelsFile = await loadModelsFile().catch(() => undefined)
@@ -38,30 +35,22 @@ export async function getDefaultTools(personas: Persona[]) {
       }
     : undefined
 
-  const abilitiesFile = await loadAbilitiesFile()
-  // Your own skill folders load without an abilities.toml entry, like your own personas.
-  const skills = [...new Set([...abilitiesFile.skills, ...(await ownAbilities()).skills])]
+  // Every ability in the marketplace folder loads; the active persona decides which of them a chat gets.
   const { abilities: abilitySecrets } = await secrets()
-  const abilities = await loadAbilities(
-    createFolderAbilityStore({
-      root: getMarketplaceDir(),
-      enabled: { skills, tools: abilitiesFile.tools, mcp: abilitiesFile.mcp },
-      disabledTools: abilitiesFile.disabledTools
-    }),
-    {
-      personas,
-      getApiKey: name => abilitySecrets[name]?.api_key,
-      // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
-      allowPrivate: true
-    }
-  )
+  const abilities = await loadAbilities(createFolderAbilityStore({ root: getMarketplaceDir() }), {
+    personas,
+    getApiKey: name => abilitySecrets[name]?.api_key,
+    // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
+    allowPrivate: true,
+    // The folder is every ability there is, so a persona naming another is a typo worth a warning.
+    warnUnknown: true
+  })
 
-  return createTools({
+  const tools = await createTools({
     includeLocalTools: true,
     extraTools: abilities.groups,
     mcpAbilities: abilities.mcp,
-    mcpServers,
-    pluginDir: join(getConfigDir(), "tools"),
+    lazyMcpAbilities: lazyMcp,
     deps: {
       chat: { client, model: chatModelId },
       summarizer,
@@ -71,4 +60,6 @@ export async function getDefaultTools(personas: Persona[]) {
       storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }
   })
+  // Stdio abilities nothing here can start, and roots-taking ones no persona gives a folder: the doctor says so.
+  return { ...tools, missingRunners: abilities.missingRunners, missingRoots: abilities.missingRoots }
 }

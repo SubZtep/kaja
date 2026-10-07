@@ -18,12 +18,12 @@ export function FeatureStrip() {
     <section className="relative bg-surface-2/50">
       <div className="torn-edge bg-bg" />
       <ContentWidth className="py-12 sm:py-16">
-        <h2 className="m-0 mb-6 font-display font-bold text-fg text-xl md:text-2xl">{m.features_title()}</h2>
+        <h2 className="m-0 mb-6 font-bold font-display text-fg text-xl md:text-2xl">{m.features_title()}</h2>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {getFeatures().map(f => (
             <article key={f.id} className="toy-card gap-2 bg-surface p-4">
               <f.glyph size={20} strokeWidth={1.75} className="text-neon" aria-hidden />
-              <h3 className="m-0 font-display font-bold text-base text-fg leading-tight">{f.title}</h3>
+              <h3 className="m-0 font-bold font-display text-base text-fg leading-tight">{f.title}</h3>
               <p className="m-0 font-crt text-muted text-sm">{f.meta}</p>
             </article>
           ))}
@@ -32,7 +32,7 @@ export function FeatureStrip() {
           href="https://docs.kaja.io"
           target="_blank"
           rel="noopener"
-          className="mt-10 inline-block font-crt text-neon text-base"
+          className="mt-10 inline-block font-crt text-base text-neon"
         >
           {m.features_docs()} →
         </a>

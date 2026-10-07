@@ -1,18 +1,19 @@
-import { MultiSelect, PasswordInput, TextInput, ThemeProvider } from "@inkjs/ui"
+import { ThemeProvider } from "@inkjs/ui"
 import type { ModelTask } from "@kaja/schema/config"
 import { LOCALE_LABELS, locales } from "@kaja/shared/locale"
 import { capitalized } from "@kaja/shared/text"
-import { Box, Static, Text, useInput } from "ink"
-import Gradient from "ink-gradient"
-import { useState } from "react"
+import { Box, Static, Text } from "ink"
+import { useEffect, useRef, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
 import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
 import type { Brightness } from "../lib/terminal-background"
-import { Answered, InputFrame, Question, RailLine } from "./elem/rail"
+import { CheckMenu } from "./elem/check-menu"
+import { Answered, Question, RailLine } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
-import { themes, useKajaTheme, usePalette } from "./theme"
+import { InputPrompt, Problem } from "./secret-prompt"
+import { themes } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "telegram"
@@ -23,14 +24,6 @@ const EXTRA_LABEL_KEY: Record<WizardExtra, string> = {
   telegram: "wizard.extraTelegram"
 }
 
-/**
- * Everything the wizard collects. The typed-in values below are asked for here rather than by the
- * credential pass afterwards, so a key is typed while its question is still on screen — but nothing
- * is written here: the caller hands them to that pass, which tests each one before saving it.
- *
- * `""` means the step was shown and skipped, `undefined` that it never applied. The caller needs
- * both: a key the user has already declined must not be asked for a second time.
- */
 /** A provider that isn't in the catalog: any OpenAI-compatible server the user names. */
 export type WizardCustom = {
   /** The `[providers.<name>]` key, already reduced to letters, numbers and dashes. */
@@ -45,6 +38,14 @@ export type WizardCustom = {
 /** What the checklist stores for "a provider that isn't listed". */
 const CUSTOM = "custom"
 
+/**
+ * Everything the wizard collects. The keys are asked for here rather than by the credential pass afterwards, so a
+ * key is typed while its question is still on screen; but nothing is written here: the caller hands them to that
+ * pass, which tests and saves each one.
+ *
+ * `""` means the step was shown and skipped, `undefined` that it never applied. The caller needs both: a key the
+ * user has already declined must not be asked for a second time.
+ */
 export type WizardResult = {
   mode?: KajaMode
   language?: Language
@@ -89,7 +90,7 @@ type Step =
   | `custom-task:${number}`
   | "extras"
   | "telegramToken"
-  | "summary"
+  | "done"
 
 const PROVIDER_LABEL_KEY: Record<string, string> = {
   fireworks: "wizard.providerFireworks",
@@ -174,7 +175,7 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   // `--cloud`/`--local` already answered the mode. A prefilled mode does not: that's the current
   // setting being re-offered, which the user is here to change.
   const steps: Step[] = forcedMode === undefined ? ["language", "theme", "mode"] : ["language", "theme"]
-  if (result.mode === "cloud") return [...steps, "summary"]
+  if (result.mode === "cloud") return [...steps, "done"]
 
   steps.push("providers")
   for (const provider of catalogChoices(result)) {
@@ -194,59 +195,17 @@ function stepsFor(result: WizardResult, forcedMode?: KajaMode): Step[] {
   // Every extra is a local-agent feature: the Telegram bot.
   steps.push("extras")
   if (result.extras?.includes("telegram")) steps.push("telegramToken")
-  steps.push("summary")
+  steps.push("done")
   return steps
 }
 
 function nextStepAfter(step: Step, result: WizardResult, forcedMode?: KajaMode): Step {
   const steps = stepsFor(result, forcedMode)
   const at = steps.indexOf(step)
-  if (at !== -1) return steps[at + 1] ?? "summary"
+  if (at !== -1) return steps[at + 1] ?? "done"
   // The step that just ended the custom model list is no longer in the list, so carry on after the custom ones.
   const lastCustom = steps.findLastIndex(candidate => candidate.startsWith("custom"))
-  return steps[lastCustom + 1] ?? "summary"
-}
-
-/**
- * One typed answer: an address, an account id, or a key. A key is masked and never prefilled —
- * `saved` only says whether there is one to keep. Submitting nothing skips the step, which the
- * caller reads as "asked and declined" rather than "never asked".
- */
-function InputStep({
-  title,
-  hint,
-  secret,
-  defaultValue,
-  validate,
-  onSubmit
-}: Readonly<{
-  title: string
-  hint: string
-  secret?: boolean
-  defaultValue?: string
-  /** Says what is wrong with an answer, or nothing when it is fine. A wrong answer keeps the question open. */
-  validate?: (value: string) => string | undefined
-  onSubmit: (value: string) => void
-}>) {
-  const [problem, setProblem] = useState<string>()
-  const submit = (raw: string) => {
-    const value = raw.trim()
-    const complaint = validate?.(value)
-    setProblem(complaint)
-    if (!complaint) onSubmit(value)
-  }
-  return (
-    <Question title={title}>
-      <InputFrame>
-        {secret ? (
-          <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={submit} />
-        ) : (
-          <TextInput defaultValue={defaultValue} onSubmit={submit} />
-        )}
-      </InputFrame>
-      {problem ? <Problem>{problem}</Problem> : <Text dimColor>{hint}</Text>}
-    </Question>
-  )
+  return steps[lastCustom + 1] ?? "done"
 }
 
 function providerName(id: string): string {
@@ -336,74 +295,26 @@ function answerLine(step: Step, result: WizardResult, saved?: WizardSaved): Answ
   return ANSWER_LINES[kind]?.(subject, result, saved)
 }
 
-/** Why Enter didn't move on. */
-function Problem({ children }: Readonly<{ children: string }>) {
-  const { danger } = useKajaTheme()
-  return <Text {...danger()}>{children}</Text>
-}
-
-/** The trail's first line: the mascot and the name, in the theme's gradient. */
+/** The trail's first line: the mascot. */
 function Header() {
-  const { gradient } = usePalette()
   return (
     <RailLine marker={<Text dimColor>┌</Text>}>
-      <Gradient colors={gradient}>
-        <Text bold>༼☉ɷ⊙༽ kaja</Text>
-      </Gradient>
+      <Text>༼☉ω⊙༽🪄</Text>
     </RailLine>
   )
 }
 
-/** A few lines drawn in the highlighted theme's colours, so the choice is made by looking rather than guessing. */
-function ThemePreview() {
-  const { inputBox, userText, muted } = useKajaTheme()
-  return (
-    <Box flexDirection="column" width={70}>
-      <Text {...userText()}>{`> ${t("wizard.themePreviewUser")}`}</Text>
-      <Text {...muted()}>{t("wizard.themePreviewMuted")}</Text>
-      <Box {...inputBox()} borderStyle="classic" paddingLeft={1}>
-        <Text>{t("wizard.themePreviewInput")}</Text>
-      </Box>
-    </Box>
-  )
-}
-
-// What happens after Enter: on the first run Kaja carries straight on into the chat (or the cloud sign-in)
-function summaryHintKey(cloud: boolean, firstRun?: boolean): string {
-  if (firstRun) return cloud ? "wizard.summaryHintFirstRunCloud" : "wizard.summaryHintFirstRun"
-  return cloud ? "wizard.summaryHintCloud" : "wizard.summaryHint"
-}
-
-/** The last screen. The answers are already on screen above, so this only says what to do next. */
-function SummaryStep({ result, firstRun }: Readonly<{ result: WizardResult; firstRun?: boolean }>) {
-  const { success } = useKajaTheme()
-  return (
-    <Box flexDirection="column">
-      <Text dimColor>│</Text>
-      <RailLine marker={<Text {...success()}>└</Text>}>
-        <Text bold {...success()}>
-          {t("wizard.summaryTitle")}
-        </Text>
-      </RailLine>
-      <Box paddingLeft={3}>
-        <Text dimColor>{t(summaryHintKey(result.mode === "cloud", firstRun))}</Text>
-      </Box>
-    </Box>
-  )
-}
-
 /**
- * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`.
- * Every step opens on the current value, so holding Enter walks a configured machine through unchanged.
- * Escape on a list cancels the whole wizard. Backspace/Delete don't, unlike other {@link SelectMenu}s: a
- * typo-fixing reflex shouldn't throw every answer away. Nothing is written here — the caller applies the collected {@link WizardResult}
- * once `onDone` fires, via the existing config/secrets writers.
+ * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`. Every step opens
+ * on the current value, so holding Enter walks a configured machine through unchanged, and the last answer finishes
+ * it with no confirmation. Escape on a list cancels the whole wizard; Backspace/Delete don't, unlike other
+ * {@link SelectMenu}s, since a typo-fixing reflex shouldn't throw every answer away. Nothing is written here: the
+ * caller applies the collected {@link WizardResult} once `onDone` fires.
  */
 export function ConfigWizard({
   prefill,
   mode,
   saved,
-  firstRun,
   onDone,
   onCancel
 }: Readonly<{
@@ -412,8 +323,6 @@ export function ConfigWizard({
   mode?: KajaMode
   /** Secrets already on disk, so their step offers to keep them instead of demanding a new one. */
   saved?: WizardSaved
-  /** Launched by a plain `kaja` with no config yet, which goes on into the chat afterwards. */
-  firstRun?: boolean
   onDone: (result: WizardResult) => void
   onCancel: () => void
 }>) {
@@ -429,12 +338,13 @@ export function ConfigWizard({
   // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
   const [preview, setPreview] = useState<Brightness>(initial.theme ?? "dark")
 
-  useInput((_input, key) => {
-    if (step === "summary" && key.return) onDone(result)
-    else if (step === "summary" && key.escape) onCancel()
-    // MultiSelect has no dismissal of its own, so its steps get the same Esc contract as SelectMenu.
-    else if ((step === "providers" || step === "extras") && key.escape) onCancel()
-  })
+  // The last answer finishes it: every answer is already on screen, and there's no step to go back to.
+  const finished = useRef(false)
+  useEffect(() => {
+    if (step !== "done" || finished.current) return
+    finished.current = true
+    onDone(result)
+  }, [step, result, onDone])
 
   function advance(patch: Partial<WizardResult>) {
     const next = { ...result, ...patch }
@@ -455,7 +365,7 @@ export function ConfigWizard({
 
     if (kind === "key" && provider) {
       return (
-        <InputStep
+        <InputPrompt
           secret
           title={t("wizard.providerKeyTitle", { provider: provider.name })}
           hint={t(saved?.providers?.includes(provider.id) ? "wizard.keyHintSaved" : "wizard.keyHint")}
@@ -466,7 +376,7 @@ export function ConfigWizard({
 
     if (kind === "address" && provider) {
       return (
-        <InputStep
+        <InputPrompt
           title={t("wizard.baseUrlTitle", { provider: provider.name })}
           hint={t("wizard.baseUrlHint")}
           defaultValue={result.addresses?.[provider.id] ?? provider.baseUrl}
@@ -504,7 +414,7 @@ export function ConfigWizard({
 
     if (step === "custom-name") {
       return (
-        <InputStep
+        <InputPrompt
           title={t("wizard.customNameTitle")}
           hint={t("wizard.customNameHint")}
           defaultValue={custom.name}
@@ -516,7 +426,7 @@ export function ConfigWizard({
 
     if (step === "custom-url") {
       return (
-        <InputStep
+        <InputPrompt
           title={t("wizard.customUrlTitle")}
           hint={t("wizard.customUrlHint")}
           defaultValue={custom.baseUrl}
@@ -528,7 +438,7 @@ export function ConfigWizard({
 
     if (step === "custom-key") {
       return (
-        <InputStep
+        <InputPrompt
           secret
           title={t("wizard.providerKeyTitle", { provider: nameOf })}
           hint={t(saved?.providers?.includes(nameOf) ? "wizard.keyHintSaved" : "wizard.keyHint")}
@@ -542,7 +452,7 @@ export function ConfigWizard({
       // A model the wizard is re-offering opens on its id; one past the end is a new one, and empty ends the list.
       const existing = custom.models[index]
       return (
-        <InputStep
+        <InputPrompt
           title={t(index === 0 || existing ? "wizard.customModelTitle" : "wizard.customModelMoreTitle", {
             provider: nameOf
           })}
@@ -590,7 +500,7 @@ export function ConfigWizard({
     return undefined
   }
 
-  // The steps asked once: language, mode, providers, extras and their keys, then the summary.
+  // The steps asked once: language, theme, mode, providers, extras and the Telegram token.
   function fixedStepView() {
     switch (step) {
       case "mode": {
@@ -610,14 +520,12 @@ export function ConfigWizard({
 
       case "language": {
         return (
-          <Question title={t("wizard.languageTitle")} plain>
+          <Question title={t("wizard.languageTitle")}>
             <SelectMenu
               closeOnBackspace={false}
               items={locales.map(locale => LOCALE_LABELS[locale])}
               // The code beside the native name, so a language you can't read is still identifiable.
               hints={[...locales]}
-              // Asked before the theme, so no colour at all: it has to read on any background
-              plain
               initialIndex={result.language ? locales.indexOf(result.language) : undefined}
               onSelect={index => {
                 const language = locales[index]!
@@ -640,11 +548,12 @@ export function ConfigWizard({
               items={THEME_CHOICES.map(choice => t(THEME_LABEL_KEY[choice]))}
               width={70}
               initialIndex={THEME_CHOICES.indexOf(result.theme ?? "dark")}
+              // The highlighted row in that theme's own colours, and the whole wizard with it
+              preview
               onFocus={index => setPreview(THEME_CHOICES[index]!)}
               onSelect={index => advance({ theme: THEME_CHOICES[index] })}
               onClose={onCancel}
             />
-            <ThemePreview />
             <Text dimColor>{t("wizard.themeHint")}</Text>
           </Question>
         )
@@ -653,26 +562,22 @@ export function ConfigWizard({
       case "providers": {
         return (
           <Question title={t("wizard.providerTitle")}>
-            <InputFrame>
-              {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
-              <MultiSelect
-                options={[
-                  ...CATALOG.map(provider => ({
-                    label: t(PROVIDER_LABEL_KEY[provider.id] ?? provider.id),
-                    value: provider.id
-                  })),
-                  { label: t("wizard.providerCustom"), value: CUSTOM }
-                ]}
-                defaultValue={result.providers}
-                // The whole list, Custom included, rather than the default 5 rows that hide the rest below.
-                visibleOptionCount={CATALOG.length + 1}
-                onSubmit={values => {
-                  const providers = [...CATALOG.map(p => p.id), CUSTOM].filter(id => values.includes(id))
-                  setNoProvider(providers.length === 0)
-                  if (providers.length > 0) advance({ providers })
-                }}
-              />
-            </InputFrame>
+            {/* A re-run starts with the providers in models.toml ticked; a first run with none, and Enter won't continue until one is. */}
+            <CheckMenu
+              options={[
+                ...CATALOG.map(provider => ({
+                  label: t(PROVIDER_LABEL_KEY[provider.id] ?? provider.id),
+                  value: provider.id
+                })),
+                { label: t("wizard.providerCustom"), value: CUSTOM }
+              ]}
+              defaultValue={result.providers}
+              onSubmit={providers => {
+                setNoProvider(providers.length === 0)
+                if (providers.length > 0) advance({ providers })
+              }}
+              onClose={onCancel}
+            />
             {noProvider ? (
               <Problem>{t("wizard.providerRequired")}</Problem>
             ) : (
@@ -685,14 +590,13 @@ export function ConfigWizard({
       case "extras": {
         return (
           <Question title={t("wizard.extrasTitle")}>
-            <InputFrame>
-              {/* Nothing ticked by default, so one Enter skips the whole step. */}
-              <MultiSelect
-                options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
-                defaultValue={result.extras}
-                onSubmit={values => advance({ extras: values as WizardExtra[] })}
-              />
-            </InputFrame>
+            {/* Nothing ticked by default, so one Enter skips the whole step. */}
+            <CheckMenu
+              options={EXTRA_CHOICES.map(extra => ({ label: t(EXTRA_LABEL_KEY[extra]), value: extra }))}
+              defaultValue={result.extras}
+              onSubmit={values => advance({ extras: values as WizardExtra[] })}
+              onClose={onCancel}
+            />
             <Text dimColor>{t("wizard.extrasHint")}</Text>
           </Question>
         )
@@ -700,7 +604,7 @@ export function ConfigWizard({
 
       case "telegramToken": {
         return (
-          <InputStep
+          <InputPrompt
             secret
             title={t("wizard.telegramTokenTitle")}
             hint={t(saved?.telegram ? "wizard.keyHintSaved" : "wizard.keyHint")}
@@ -710,7 +614,8 @@ export function ConfigWizard({
       }
 
       default:
-        return <SummaryStep result={result} firstRun={firstRun} />
+        // Nothing to draw: the answers are on screen, and the setup carries on below once onDone fires.
+        return null
     }
   }
 

@@ -26,7 +26,7 @@ declare module "bun" {
     GOOGLE_CLIENT_SECRET?: string
     /** Cloudflare Turnstile secret key; when set, email sign-up/sign-in, password reset and Google sign-in need a captcha token */
     TURNSTILE_SECRET?: string
-    /** Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET); never localhost in production */
+    /** Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET, bar Cloudflare's test secrets); never localhost in production */
     TURNSTILE_HOSTNAMES?: string
     /** SMTP server hostname */
     SMTP_HOST?: string
@@ -72,7 +72,7 @@ declare module "bun" {
     WEB_PROXY?: string
     /** Encrypts users' ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one */
     USER_SECRET_KEY?: string
-    /** Server-wide ability API keys as comma-separated name=key pairs (e.g. brave-search=BSA...); every cloud user shares them, and a user's own key wins */
+    /** Server-wide ability API keys as comma-separated name=key pairs (e.g. web-search=BSA...); every cloud user shares them, and a user's own key wins */
     ABILITY_KEYS?: string
     /** GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from */
     MARKETPLACE_REPO?: string

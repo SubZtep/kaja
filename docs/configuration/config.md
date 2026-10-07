@@ -4,6 +4,7 @@ title: Settings
 parent: Configuration
 nav_order: 2
 summary: "settings.toml: preferences, voice, marketplace and storage."
+icon: ⚙️
 ---
 
 # settings.toml
@@ -76,6 +77,8 @@ commands.
 | --- | --- |
 | `enabled` | `false` means Kaja never goes online for abilities: `kaja abilities update` refuses and nothing is fetched. What's already in `marketplace/` still loads. Default `true` |
 | `autoFetch` | pull the [marketplace](/abilities) in the background at startup when the last sync is over a day old, silently on failure. Changes apply on the next launch. Default `true` |
+| `url` | the git URL (or local path) of the repo whose `marketplace/` folder `kaja abilities update` fetches: a fork, or a checkout with your changes. Default the Kaja repo |
+| `ref` | the branch or tag to fetch. Default `main` |
 
 ## `[context]`
 

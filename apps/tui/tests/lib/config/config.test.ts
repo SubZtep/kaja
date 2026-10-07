@@ -17,6 +17,15 @@ test("getConfigDir defaults to the env-paths location", () => {
   expect(getConfigDir()).toBe(`${tmpdir()}/kaja-test-xdg-config-config/kaja`)
 })
 
+test("KAJA_PROFILE is appended to the config folder's name", () => {
+  process.env.KAJA_PROFILE = "dev"
+  try {
+    expect(getConfigDir()).toBe(`${tmpdir()}/kaja-test-xdg-config-config/kaja-dev`)
+  } finally {
+    delete process.env.KAJA_PROFILE
+  }
+})
+
 test("setConfigDirOverride redirects getConfigDir and getConfigPath", () => {
   const dir = `${tmpdir()}/kaja-test-config-override`
   setConfigDirOverride(dir)

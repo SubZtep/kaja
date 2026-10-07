@@ -83,13 +83,10 @@ describe("datasets in the cloud", () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds datasets by their marketplace path, skipping broken ones, and the catalog never lists them", async () => {
+  test("a sync adds datasets by their marketplace path, skipping broken ones", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "d1")
     expect(result.added).toContain(`datasets/${topic}`)
     expect(result.added.join()).not.toContain(`broken-${tag}`)
-    const { abilities } = await (await app.request("/abilities")).json()
-    expect(abilities.map((ability: { type: string }) => ability.type)).not.toContain("dataset")
-    expect((await app.request(`/abilities/me/dataset/${topic}`, { method: "PUT", headers: auth() })).status).toBe(400)
   })
 
   test("a cloud turn asks for the name while it's unknown, records it, and the next conversation knows it", async () => {

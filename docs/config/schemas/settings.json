@@ -53,6 +53,16 @@
         "autoFetch": {
           "description": "Pull the marketplace at startup when the last sync is over a day old (default: true)",
           "type": "boolean"
+        },
+        "url": {
+          "description": "Git URL (or local path) of the repo whose marketplace/ folder `kaja abilities update` fetches (default: the Kaja repo)",
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "description": "Branch or tag to fetch (default: main)",
+          "type": "string",
+          "minLength": 1
         }
       }
     },

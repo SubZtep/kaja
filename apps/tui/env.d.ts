@@ -4,6 +4,8 @@ declare module "bun" {
   interface Env {
     /** The Kaja API the CLI talks to, for pointing it at a local dev API; defaults to https://api.kaja.io */
     KAJA_API_URL?: string
+    /** Appended to the config, data, cache and temp folder names (kaja-<profile>), for separate setups side by side */
+    KAJA_PROFILE?: string
     /** Minimum level written to KAJA_LOG_FILE (trace, debug, info, warn, error, fatal); unset means no log */
     KAJA_LOG_LEVEL?: string
     /** Append JSON-lines logs here (needs KAJA_LOG_LEVEL); the TUI never logs to the terminal */

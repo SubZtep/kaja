@@ -1,6 +1,7 @@
 import { Box, Text, useInput } from "ink"
 import { useState } from "react"
 import { useKajaTheme } from "../theme"
+import { InputFrame } from "./rail"
 
 const VISIBLE_COUNT = 5
 
@@ -20,7 +21,7 @@ export function SelectMenu({
   accented,
   width = 32,
   initialIndex,
-  plain,
+  preview,
   closeOnBackspace = true,
   onFocus,
   onSelect,
@@ -34,8 +35,8 @@ export function SelectMenu({
   width?: number
   /** Option highlighted on open, for menus that re-offer a current value; defaults to the first. */
   initialIndex?: number
-  /** No colours at all, only the marker and bold: for a question asked before the user has picked a theme. */
-  plain?: boolean
+  /** The highlighted row in the theme's preview colours, a band across the menu: the theme step's, which previews itself. */
+  preview?: boolean
   /** Backspace/Delete dismiss like Escape; off where dismissing throws away more than this menu (the setup wizard). */
   closeOnBackspace?: boolean
   /** Called as the highlight moves, e.g. to preview the option under it. */
@@ -78,38 +79,42 @@ export function SelectMenu({
     if (key.return) onSelect(focused)
   })
 
-  const { accent, focus, frame } = useKajaTheme()
-  const focusProps = plain ? { bold: true } : focus()
+  const { accent, previewRow, previewText } = useKajaTheme()
 
   return (
-    <Box {...(plain ? {} : frame())} borderStyle="classic" width={width} paddingLeft={1}>
-      <Box flexDirection="column">
-        {items.slice(from, from + VISIBLE_COUNT).map((item, offset) => {
-          const index = from + offset
-          const isFocused = index === focused
-          const hint = hints?.[index]
-          const accentRow = !plain && !isFocused && accented?.[index]
-          return (
-            <Box
-              key={index}
-              // Only a row with something to push right is given a width; the rest size to their
-              // content, as every menu here did before hints existed. Three columns go to the border
-              // and its left padding, and a fourth keeps the hint off the right border.
-              width={hint === undefined ? undefined : width - 4}
-              justifyContent="space-between"
-              paddingLeft={isFocused ? 0 : 2}
-            >
-              <Box gap={1}>
-                {isFocused && <Text {...focusProps}>❯</Text>}
-                <Text {...(isFocused ? focusProps : {})} {...(accentRow ? accent() : {})}>
-                  {item}
+    // No background and no colour change: the highlighted row is marked by "❯" and bold alone, on any theme (only
+    // `preview` paints it, in the theme's own colours).
+    <InputFrame width={width} plain>
+      {items.slice(from, from + VISIBLE_COUNT).map((item, offset) => {
+        const index = from + offset
+        const isFocused = index === focused
+        const hint = hints?.[index]
+        const accentRow = !isFocused && accented?.[index]
+        return (
+          <Box
+            key={index}
+            // A row with a hint is the menu's width, so the hint sits at its right edge, and a preview band at least that
+            // wide; the rest size to their content.
+            width={hint === undefined ? undefined : width}
+            minWidth={isFocused && preview ? width : undefined}
+            justifyContent="space-between"
+            paddingLeft={isFocused ? 0 : 2}
+            {...(isFocused && preview ? previewRow() : {})}
+          >
+            <Box gap={1}>
+              {isFocused && (
+                <Text bold {...(preview ? previewText() : {})}>
+                  ❯
                 </Text>
-              </Box>
-              {hint !== undefined && <Text dimColor>{hint}</Text>}
+              )}
+              <Text bold={isFocused} {...(accentRow ? accent() : {})} {...(isFocused && preview ? previewText() : {})}>
+                {item}
+              </Text>
             </Box>
-          )
-        })}
-      </Box>
-    </Box>
+            {hint !== undefined && <Text dimColor>{hint}</Text>}
+          </Box>
+        )
+      })}
+    </InputFrame>
   )
 }

@@ -12,6 +12,7 @@ import { Agent, type AgentEvent, createSession, type PromptContext, type Session
 import type { Compaction } from "./agent/compaction"
 import { NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 import { samplingOf } from "./agent/persona"
+import { syncPersonaTools } from "./agent/persona-tools"
 import { compact, run } from "./agent/run"
 import { recordPausedCall } from "./agent/telemetry"
 import { allowKey } from "./agent/tool-allow"
@@ -27,7 +28,7 @@ export type NasiOpenOptions = {
   chat: { client: OpenAI; model: string; contextWindow?: number }
   /** Writes compaction summaries, condenses oversized tool results and runs the `summarize` tool; defaults to {@link chat}. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
-  /** Files, shell, MCP, and plugins. Default false. */
+  /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
   /** Cloud only: whether the caller can run `client_tool_call` tools (`read_file`/`list_files`) on the user's machine. Default true. */
   clientTools?: boolean
@@ -44,10 +45,6 @@ export type NasiOpenOptions = {
   mcpConnectTimeoutMs?: number
   /** Cloud: the MCP sandbox that runs stdio abilities; without it they're left out. */
   mcpSandbox?: McpSandbox
-  /** The caller's "always allow" patterns (see `agent/tool-allow.ts`): tools that never pause for approval. */
-  allowedTools?: string[]
-  /** Saves an `approve_always` answer, by the tool's allow key. */
-  onAlwaysAllow?: (key: string) => Promise<void>
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
@@ -202,13 +199,21 @@ function responseFromEvents(
 
 export class Nasi {
   readonly opts: NasiOpenOptions
-  private readonly tools: Tool[]
+  /** Every tool connected so far; grows as personas' MCP abilities connect. */
+  private tools: Tool[]
   private readonly closeTools: () => Promise<void>
+  private readonly ensureAbilities: (names?: string[]) => Promise<Tool[]>
 
-  private constructor(opts: NasiOpenOptions, tools: Tool[], closeTools: () => Promise<void>) {
+  private constructor(
+    opts: NasiOpenOptions,
+    tools: Tool[],
+    closeTools: () => Promise<void>,
+    ensureAbilities: (names?: string[]) => Promise<Tool[]>
+  ) {
     this.opts = opts
     this.tools = tools
     this.closeTools = closeTools
+    this.ensureAbilities = ensureAbilities
   }
 
   static async open(opts: NasiOpenOptions) {
@@ -223,13 +228,14 @@ export class Nasi {
     // Cloud MCP images (screenshots) wait here for the model to see them; the instance removes it on close.
     const imageDir =
       !opts.includeLocalTools && abilities?.mcp.length ? await mkdtemp(join(tmpdir(), "kaja-mcp-")) : undefined
-    const { tools, closeTools } = await createTools({
+    const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       clientTools: opts.clientTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer },
       extraTools: abilities?.groups,
-      // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request, the operator's own sandbox aside.
+      // MCP abilities connect when a persona that uses them is active, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
+      lazyMcpAbilities: true,
       mcpFetch: withSandbox(createGuardedFetch({ proxy: opts.deps?.fetchProxy }), opts.mcpSandbox),
       mcpImageDir: imageDir,
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
@@ -239,7 +245,7 @@ export class Nasi {
       await opts.mcpSandbox?.close?.()
       if (imageDir) await rm(imageDir, { recursive: true, force: true })
     }
-    return new Nasi(opts, tools, close)
+    return new Nasi(opts, tools, close, ensureAbilities)
   }
 
   /** Closes the instance's MCP connections. Hosts that open one per turn call it once the turn is over. */
@@ -281,7 +287,10 @@ export class Nasi {
       store: this.opts.store,
       contextWindow: this.opts.chat.contextWindow,
       summarizer: this.opts.summarizer,
-      allowedTools: this.opts.allowedTools
+      ensureTools: async names => {
+        this.tools = await this.ensureAbilities(names)
+        return this.tools
+      }
     })
 
     return { agent, session, sessionId, events, title }
@@ -301,7 +310,7 @@ export class Nasi {
       }
       const call = pendingToolCall(session, pendingId)
       if (!call) return "Error: the call waiting for approval is gone."
-      if (input.approval !== "approve") await this.grant(session, call.function.name, input.approval)
+      if (input.approval === "approve_session") this.grant(session, call.function.name)
       const startedAt = performance.now()
       let status: "ok" | "error" = "ok"
       const result = await runApprovedTool(this.tools, call.function.name, call.function.arguments, s => {
@@ -315,13 +324,11 @@ export class Nasi {
     return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
   }
 
-  /** An `approve_session` or `approve_always` answer: the tool stops asking for this session, and `approve_always` also goes to the caller's allow list. */
-  private async grant(session: Session, toolNameApproved: string, approval: "approve_session" | "approve_always") {
+  /** An `approve_session` answer: the tool stops asking for the rest of this session. */
+  private grant(session: Session, toolNameApproved: string) {
     const tool = this.tools.find(candidate => toolName(candidate) === toolNameApproved)
     const key = tool && allowKey(tool)
-    if (!key) return
-    session.grantedTools = [...new Set([...(session.grantedTools ?? []), key])]
-    if (approval === "approve_always") await this.opts.onAlwaysAllow?.(key)
+    if (key) session.grantedTools = [...new Set([...(session.grantedTools ?? []), key])]
   }
 
   async turnBuffered(input: NasiTurnInput): Promise<NasiTurnResponse> {
@@ -346,6 +353,7 @@ export class Nasi {
    */
   async compact(sessionId: string, focus?: string): Promise<Compaction | undefined> {
     const loaded = await this.loadTurn({ session: sessionId })
+    await syncPersonaTools(loaded.agent)
     const result = await compact(loaded.agent, loaded.session, focus)
     if (!result) return undefined
     await this.opts.store.updateSession(sessionId, {
@@ -360,6 +368,8 @@ export class Nasi {
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
     const loaded = await this.loadTurn(input)
+    // An approved call may be an MCP ability's, so the persona's servers connect before promptFor runs it.
+    await syncPersonaTools(loaded.agent)
     const prompt = await this.promptFor(loaded.session, input)
 
     const turnEvents: AgentEvent[] = []

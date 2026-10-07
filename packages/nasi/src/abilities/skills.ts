@@ -1,6 +1,7 @@
 import type { Persona } from "@kaja/schema/cli"
 import { z } from "zod"
 import { type Tool, tool } from "../agent/tools"
+import { skillMode } from "./persona-scope"
 import { type AbilityStore, SkillFileError, type SkillSummary } from "./types"
 
 export const LOAD_SKILL_TOOL = "load_skill"
@@ -14,14 +15,23 @@ const LoadSkillArgsSchema = z.object({
 })
 type LoadSkillArgs = z.output<typeof LoadSkillArgsSchema>
 
-/** The load_skill tool, carrying the skill catalog it serves so the system prompt can list the same skills. */
-export type LoadSkillTool = Tool<LoadSkillArgs> & { skills: SkillSummary[] }
+/** The load_skill tool, carrying the skill catalog it serves (and a way to read a body) so the system prompt can list the same skills and inline the sticky ones. */
+export type LoadSkillTool = Tool<LoadSkillArgs> & {
+  skills: SkillSummary[]
+  /** A skill's SKILL.md body, for a persona that keeps it in the system prompt. */
+  readBody: (name: string) => Promise<string | undefined>
+}
 
-/** Skills a persona may use: its `skills` list (limited to what's enabled) when set, otherwise all of them. */
-export function skillsForPersona(skills: SkillSummary[], persona?: Pick<Persona, "skills">): SkillSummary[] {
-  if (!persona?.skills) return skills
-  const allowed = new Set(persona.skills)
-  return skills.filter(s => allowed.has(s.name))
+/** Skills a persona lists for load_skill (see {@link skillMode}); without a persona, every one of them. */
+export function skillsForPersona(skills: SkillSummary[], persona?: Pick<Persona, "abilities">): SkillSummary[] {
+  if (!persona) return skills
+  return skills.filter(skill => skillMode(skill, persona) === "load")
+}
+
+/** Skills a persona keeps in the system prompt (`sticky`); none without a persona. */
+export function stickySkillsForPersona(skills: SkillSummary[], persona?: Pick<Persona, "abilities">): SkillSummary[] {
+  if (!persona) return []
+  return skills.filter(skill => skillMode(skill, persona) === "sticky")
 }
 
 function skillHeader(skill: SkillSummary): string {
@@ -31,7 +41,7 @@ function skillHeader(skill: SkillSummary): string {
   return lines.join("\n")
 }
 
-/** Builds load_skill over `skills`, enforcing the active persona's limit (see {@link skillsForPersona}) at call time. */
+/** Builds load_skill over `skills`, serving only the active persona's skills (load or sticky, see {@link skillMode}) at call time. */
 export function createLoadSkillTool(opts: {
   store: AbilityStore
   skills: SkillSummary[]
@@ -47,7 +57,8 @@ export function createLoadSkillTool(opts: {
     schema: LoadSkillArgsSchema,
     // Problems come back as text rather than a thrown ToolError, so the model can pick another skill or file instead of the turn failing.
     execute: async (args, ctx) => {
-      const allowed = skillsForPersona(opts.skills, personaById.get(ctx?.personaId ?? ""))
+      const persona = personaById.get(ctx?.personaId ?? "")
+      const allowed = persona ? opts.skills.filter(skill => skillMode(skill, persona) !== "off") : opts.skills
       const skill = allowed.find(s => s.name === args.name)
       if (!skill) {
         const names = allowed.map(s => s.name).join(", ") || "none"
@@ -69,5 +80,5 @@ export function createLoadSkillTool(opts: {
     }
   })
 
-  return { ...loadSkill, skills: opts.skills }
+  return { ...loadSkill, skills: opts.skills, readBody: name => opts.store.readSkill(name) }
 }

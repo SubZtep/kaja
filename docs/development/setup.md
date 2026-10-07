@@ -4,6 +4,7 @@ title: Local setup
 parent: Development
 nav_order: 2
 summary: "Run Kaja from source: install, commands, hooks, URLs and tests."
+icon: 💻
 ---
 
 # Local setup
@@ -85,6 +86,28 @@ the code, with the same TOML schemas as the templates in `docs/config/`:
 ```sh
 ./scripts/link_user_config.sh   # .user-config -> ~/.config/kaja (gitignored)
 ```
+
+To keep the TUI you develop apart from the one you use every day, set `KAJA_PROFILE`. It's appended to the
+config and data folder names, so `KAJA_PROFILE=dev` gives the dev TUI its own `~/.config/kaja-dev/`, and the
+link script points `.user-config` there instead (rerun it after switching profiles to repoint the link). The
+`dev` profile also syncs the marketplace from your checkout's current branch instead of GitHub's `main`, so a
+first start already sees your marketplace changes once they're committed. In fish, this sets the variable
+while you're inside the repo and clears it everywhere else:
+
+```fish
+# ~/.config/fish/config.fish
+function __kaja_profile --on-variable PWD
+    if string match -q -- "$HOME/Projects/kaja" $PWD; or string match -q -- "$HOME/Projects/kaja/*" $PWD
+        set -gx KAJA_PROFILE dev
+    else
+        set -e KAJA_PROFILE
+    end
+end
+__kaja_profile
+```
+
+`--on-variable PWD` runs it on every `cd`, and the call after it covers a shell that opens inside the repo
+(like the editor's terminal), where no `cd` happens. Change the path to where you cloned the repo.
 
 ### Code generation
 

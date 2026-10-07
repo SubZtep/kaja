@@ -53,14 +53,12 @@ export type CloudTimelineEvent =
   | { type: "tool_image"; path: string; mimeType: string }
   | Exclude<NasiStreamEvent, { type: "delta" | "usage" | "tool_image" }>
 
-/** How the user answered a `confirm_tool`: once, for the rest of the session, always (saved to their allow list), or no. */
-export type CloudApproval = "approve" | "approve_session" | "approve_always" | "decline"
+/** How the user answered a `confirm_tool`: once, for the rest of the session, or no. */
+export type CloudApproval = "approve" | "approve_session" | "decline"
 
-function approvalAnswer(approved: boolean, scope?: "session" | "always"): CloudApproval {
+function approvalAnswer(approved: boolean, scope?: "session"): CloudApproval {
   if (!approved) return "decline"
-  if (scope === "session") return "approve_session"
-  if (scope === "always") return "approve_always"
-  return "approve"
+  return scope === "session" ? "approve_session" : "approve"
 }
 
 export type CloudPartialMessage = { reasoning: string; content: string }
@@ -246,7 +244,7 @@ export function useCloudAgent(options: NasiClientOptions) {
 
   /** Answers the pending `confirm_tool`: the server runs (or skips) the call it saved; nothing about the call is sent back. */
   const resolveToolApproval = useCallback(
-    (approved: boolean, scope?: "session" | "always") => runTurns({ approval: approvalAnswer(approved, scope) }),
+    (approved: boolean, scope?: "session") => runTurns({ approval: approvalAnswer(approved, scope) }),
     [runTurns]
   )
 

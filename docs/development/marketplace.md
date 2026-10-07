@@ -4,6 +4,7 @@ title: Marketplace internals
 parent: Development
 nav_order: 8
 summary: "How the marketplace reaches local and cloud users."
+icon: 🏪
 ---
 
 # Marketplace internals
@@ -26,7 +27,7 @@ flowchart LR
 
     subgraph LOCAL["your machine"]
         CACHE["git cache<br><small>sparse checkout</small>"]
-        FOLDER["~/.config/kaja/marketplace/<br><small>+ abilities.toml picks</small>"]
+        FOLDER["~/.config/kaja/marketplace/<br><small>personas pick abilities</small>"]
     end
 
     subgraph CLOUD["the Kaja API"]
@@ -89,8 +90,8 @@ flowchart TD
     H -->|"no: edited"| KEEP["keep it: kept"]
 ```
 
-The sync keeps the executable bit on scripts and prunes folders it emptied. At startup the terminal reads
-only what `abilities.toml` lists.
+The sync keeps the executable bit on scripts and prunes folders it emptied. At startup the terminal loads
+every valid ability and persona in the folder; each persona's `abilities` list decides what a chat gets.
 
 ## The API's copy
 
@@ -144,15 +145,16 @@ the catalog:
 ## Loading
 
 Whichever front door a turn comes in through, [`@kaja/nasi`](/development/nasi#abilities) does the loading.
-It asks an `AbilityStore` (the folder on disk, or the Postgres copy) for the enabled abilities, and turns
-them into tools, skills in the system prompt, and roster personas. The prompt's skill and persona sections
+It asks an `AbilityStore` (the folder on disk, or the Postgres copy) for every ability, and turns them into
+tools, skills in the system prompt, and roster personas; the active persona's `abilities` list picks which a
+turn uses. The prompt's skill and persona sections
 are rebuilt every turn, which is why a change applies from the next message.
 
-| Front door | Where the choice is stored |
+| Front door | Where the personas come from |
 | --- | --- |
-| terminal (local), local Telegram bot | `abilities.toml` and the `marketplace/` folder |
-| terminal (cloud), cloud Telegram bot | the account's `user_ability` rows |
-| widget | the key's `config.skills` |
+| terminal (local), local Telegram bot | the `marketplace/` folder |
+| terminal (cloud), cloud Telegram bot | the `ability` table (with the user's keys) |
+| widget | the `ability` table, skills only, starting from the key's persona |
 
 ---
 

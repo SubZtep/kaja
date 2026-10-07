@@ -14,7 +14,7 @@ export function SiteShell({
   className?: string
 }>) {
   return (
-    <div className={cn("flex min-h-screen flex-col bg-bg font-body leading-normal text-muted", className)}>
+    <div className={cn("flex min-h-screen flex-col bg-bg font-body text-muted leading-normal", className)}>
       {header}
       <main className="flex flex-1 flex-col">{children}</main>
       {footer}

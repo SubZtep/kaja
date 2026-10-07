@@ -15,6 +15,7 @@ export {
   readSkillBundle,
   type SkillBundle,
   type SkillScanEntry,
+  scanCodeTools,
   scanDatasets,
   scanHttpTools,
   scanMcpAbilities,
@@ -38,9 +39,22 @@ export {
   SANDBOX_ORIGIN,
   sandboxedMcpTarget
 } from "./abilities/mcp-ability"
+export {
+  abilityOfTool,
+  type PersonaAbilityEntry,
+  personaAbilities,
+  personaLoadsSkills,
+  skillMode,
+  toolsForPersona
+} from "./abilities/persona-scope"
 export { parseSkillMd } from "./abilities/skill-md"
-export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./abilities/skills"
-export { withoutHttpTools, withoutMcpTools } from "./abilities/tool-filter"
+export {
+  createLoadSkillTool,
+  LOAD_SKILL_TOOL,
+  type LoadSkillTool,
+  skillsForPersona,
+  stickySkillsForPersona
+} from "./abilities/skills"
 export { type AbilityStore, SkillFileError, type SkillSummary } from "./abilities/types"
 export {
   Agent,
@@ -83,6 +97,7 @@ export {
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 export { samplingOf } from "./agent/persona"
+export { activePersona, personaTools, syncPersonaTools } from "./agent/persona-tools"
 export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"
 export { compact, dropImages, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"
@@ -107,6 +122,13 @@ export {
 } from "./agent/tools"
 export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
+  type LaunchOptions,
+  launchLine,
+  McpRunnerMissingError,
+  resolveLaunch,
+  type StdioLaunch
+} from "./mcp/launch"
+export {
   createOpenAIClient,
   KAJA_MODEL_HEADER,
   noteServedModel,
@@ -122,7 +144,6 @@ export {
 } from "./models/context-window"
 export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall, photoLabel } from "./nasi"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
-export { loadPluginTools } from "./plugin/plugin-tools"
 export {
   createGuardedFetch,
   type FetchLike,

@@ -210,7 +210,7 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
 }
 
 function NotFound() {
-  return <p className="text-center my-28 text-red-500 text-xl font-bold">{m.not_found_message()}</p>
+  return <p className="my-28 text-center font-bold text-red-500 text-xl">{m.not_found_message()}</p>
 }
 
 function DefaultError({ error: err }: ErrorComponentProps) {

@@ -19,31 +19,29 @@ test("stamps each group's origin and source onto its tools", () => {
   expect(skipped).toEqual([])
 })
 
-test("a group without a source keeps each tool's own (plugins)", () => {
-  const { tools } = mergeTools([{ origin: "third-party", tools: [named("ping", "plugin:ping.ts")] }])
-  expect(tools[0]!.source).toBe("plugin:ping.ts")
+test("a group without a source keeps each tool's own", () => {
+  const { tools } = mergeTools([{ origin: "community", tools: [named("ping", "ability:ping")] }])
+  expect(tools[0]!.source).toBe("ability:ping")
 })
 
 test("official names are reserved, whatever order the groups come in", () => {
   const { tools, skipped } = mergeTools([
-    { origin: "third-party", source: "mcp:foo", tools: [named("summarize")] },
+    { origin: "community", source: "ability:foo", tools: [named("summarize")] },
     { origin: "official", tools: [named("summarize")] }
   ])
   expect(tools).toHaveLength(1)
   expect(tools[0]!.origin).toBe("official")
-  expect(skipped).toEqual([{ name: "summarize", origin: "third-party", source: "mcp:foo", reason: "reserved" }])
+  expect(skipped).toEqual([{ name: "summarize", origin: "community", source: "ability:foo", reason: "reserved" }])
 })
 
-test("community beats third-party, and the first community tool beats a later one", () => {
+test("the first community tool with a name beats a later one", () => {
   const { tools, skipped } = mergeTools([
-    { origin: "third-party", source: "mcp:weather", tools: [named("forecast")] },
     { origin: "community", source: "ability:a", tools: [named("forecast")] },
     { origin: "community", source: "ability:b", tools: [named("forecast")] }
   ])
   expect(tools.map(t => t.source)).toEqual(["ability:a"])
   expect(skipped).toEqual([
-    { name: "forecast", origin: "community", source: "ability:b", reason: "taken", takenBy: "ability:a" },
-    { name: "forecast", origin: "third-party", source: "mcp:weather", reason: "taken", takenBy: "ability:a" }
+    { name: "forecast", origin: "community", source: "ability:b", reason: "taken", takenBy: "ability:a" }
   ])
 })
 

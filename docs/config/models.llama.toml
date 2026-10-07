@@ -5,14 +5,18 @@
 # stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
-# llama.cpp's server doesn't need an API key.
-[providers.llama]
-base_url = "http://localhost:8080/v1"
+[providers]
 
 
-[models.ministral-3-3b-reasoning-2512-gguf-q4-k-m]
-model    = "mistralai/Ministral-3-3B-Reasoning-2512-GGUF:Q4_K_M"
-provider = "llama"
-tasks    = [
-  "chat"
-]
+  # llama.cpp's server doesn't need an API key.
+  [providers.llama]
+  base_url = "http://localhost:8080/v1"
+
+
+[models]
+  [models.ministral-3-3b-reasoning-2512-gguf-q4-k-m]
+  model    = "mistralai/Ministral-3-3B-Reasoning-2512-GGUF:Q4_K_M"
+  provider = "llama"
+  tasks    = [
+    "chat"
+  ]

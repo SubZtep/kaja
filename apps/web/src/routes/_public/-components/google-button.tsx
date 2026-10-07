@@ -34,7 +34,7 @@ function GoogleMark() {
 /**
  * Starts the Google OAuth flow via the API; on success Better Auth redirects back to `callbackPath` on this origin.
  * Only `signUp` (the sign-up page, after its consent boxes) may create a new account; elsewhere an unknown Google address comes back to /signin with `error=signup_disabled`.
- * Stays disabled until the page's Turnstile `captcha` is solved.
+ * Stays disabled until the page's first Turnstile check passes; a click waits for a fresh token if a background check is still running.
  */
 export function GoogleButton({
   className,
@@ -57,15 +57,13 @@ export function GoogleButton({
         callbackURL: new URL(localizeHref(callbackPath), origin).toString(),
         errorCallbackURL: new URL(localizeHref(signUp ? "/signup" : "/signin"), origin).toString(),
         ...(signUp ? { requestSignUp: true, additionalData: { consent: true } } : {}),
-        fetchOptions: captcha.fetchOptions
+        fetchOptions: await captcha.fetchOptions()
       })
       if (authError) {
-        captcha.reset()
         toast.error(authError.message ?? m.signin_error_generic())
         setLoading(false)
       }
     } catch (err) {
-      captcha.reset()
       toast.error(err instanceof Error ? err.message : m.signin_error_generic())
       setLoading(false)
     }

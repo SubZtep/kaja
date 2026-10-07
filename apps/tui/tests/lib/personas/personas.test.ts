@@ -5,8 +5,7 @@ import { join } from "node:path"
 import { loadPersonas } from "../../../lib/personas/personas"
 
 // getConfigDir() reads XDG_CONFIG_HOME fresh on every call, so setting it per-test isolates each test from the real ~/.config/kaja — same pattern as tests/lib/personas/datasets.test.ts.
-// The fixture's abilities.toml enables unknown-model, barkochba, broken and a missing one; unlisted.toml isn't enabled.
-// Its .sync-lock.json records every persona file but own.toml, which is therefore yours and loads unlisted.
+// Every persona file in the fixture's marketplace loads; its .sync-lock.json records all but own.toml, which is therefore yours.
 const fixtureConfigDir = join(import.meta.dir, "../../fixtures/personas")
 const emptyConfigDir = join(tmpdir(), `kaja-test-personas-empty-${Date.now()}`)
 process.env.NODE_ENV = "test"
@@ -16,14 +15,14 @@ afterEach(async () => {
   await rm(emptyConfigDir, { recursive: true, force: true })
 })
 
-test("loads default first, then the personas abilities.toml enables, by id", async () => {
+test("loads default first, then every other persona in the marketplace folder, by id", async () => {
   process.env.XDG_CONFIG_HOME = fixtureConfigDir
   const personas = await loadPersonas()
   expect(personas.map(p => p.id)).toEqual(["default", "barkochba", "own", "unknown-model"])
   expect(personas.find(p => p.id === "barkochba")?.label).toBe("Barkochba guesser")
 })
 
-test("your own persona (one the sync didn't write) loads without an abilities.toml entry, marked local", async () => {
+test("your own persona (one the sync didn't write) is marked local", async () => {
   process.env.XDG_CONFIG_HOME = fixtureConfigDir
   const personas = await loadPersonas()
   expect(personas.find(p => p.id === "own")).toMatchObject({ label: "Your own persona", local: true })
@@ -36,12 +35,9 @@ test("a marketplace default.toml replaces the built-in default", async () => {
   expect(first).toMatchObject({ id: "default", label: "Your own default" })
 })
 
-test("skips broken, missing and unlisted persona files, without throwing", async () => {
+test("skips a broken persona file, without throwing", async () => {
   process.env.XDG_CONFIG_HOME = fixtureConfigDir
-  const ids = (await loadPersonas()).map(p => p.id)
-  expect(ids).not.toContain("broken")
-  expect(ids).not.toContain("missing")
-  expect(ids).not.toContain("unlisted")
+  expect((await loadPersonas()).map(p => p.id)).not.toContain("broken")
 })
 
 test("a persona naming a model id not present in models.toml still loads (soft fallback at resolution time)", async () => {

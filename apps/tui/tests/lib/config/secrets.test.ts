@@ -6,8 +6,17 @@ import { write } from "bun"
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-secrets`
 
 const { setConfigDirOverride, getConfigDir } = await import("../../../lib/config/config")
-const { getSecretsPath, loadSecretsFile, readSecretsLoose, saveSecrets, secrets, invalidateSecretsCache } =
-  await import("../../../lib/config/secrets")
+const {
+  getSecretsPath,
+  loadSecretsFile,
+  readSecretPlaceholders,
+  readSecretsLoose,
+  saveSecrets,
+  secrets,
+  secretsText,
+  invalidateSecretsCache,
+  updateSecretPlaceholders
+} = await import("../../../lib/config/secrets")
 
 // Other test files sharing this bun test process may have already cached secrets() with their
 // own fixtures — invalidate before every test, not just after.
@@ -29,7 +38,7 @@ test("missing file: writes the template and returns its active (non-commented) s
 
   expect(await Bun.file(getSecretsPath()).exists()).toBe(true)
   // Every section in the shipped template is commented out.
-  expect(data.mcp).toEqual({})
+  expect(data.abilities).toEqual({})
   expect(data.telegram).toBeUndefined()
   expect(data.providers).toEqual({})
 })
@@ -109,14 +118,14 @@ bot_token = "second"
   expect((await secrets()).telegram).toEqual({ bot_token: "second", owner_ids: [] })
 })
 
-test("provider and mcp tables default to {} when absent, never undefined", async () => {
+test("provider and ability tables default to {} when absent, never undefined", async () => {
   const dir = `${tmpdir()}/kaja-test-secrets-defaults-${Math.random()}`
   setConfigDirOverride(dir)
   await write(join(dir, "secrets.toml"), "")
 
   const data = await loadSecretsFile()
   expect(data.providers).toEqual({})
-  expect(data.mcp).toEqual({})
+  expect(data.abilities).toEqual({})
 })
 
 test("saveSecrets merges [telegram]: a new token keeps the owners, and pairing keeps the token", async () => {
@@ -135,4 +144,51 @@ test("getConfigDir affects getSecretsPath the same way it affects the other conf
   const dir = `${tmpdir()}/kaja-test-secrets-path-${Math.random()}`
   setConfigDirOverride(dir)
   expect(getSecretsPath()).toBe(join(getConfigDir(), "secrets.toml"))
+})
+
+const OFF = { group: "abilities", name: "web-search", note: "Off until it has a key." } as const
+const KEYLESS = { group: "abilities", name: "context7" } as const
+
+test("unset keys are written as commented-out tables in their group, and read back", () => {
+  const text = secretsText({ providers: { fireworks: { api_key: "fw" } }, abilities: {} }, [
+    OFF,
+    KEYLESS,
+    { group: "providers", name: "xai" }
+  ])
+  expect(text).toBe(
+    '[providers]\n  [providers.fireworks]\n  api_key = "fw"\n\n  # [providers.xai]\n  # api_key = ""\n\n' +
+      '# [abilities]\n  # Off until it has a key.\n  # [abilities.web-search]\n  # api_key = ""\n\n' +
+      '  # [abilities.context7]\n  # api_key = ""\n'
+  )
+  // Comments only: nothing a placeholder says reaches the parsed file.
+  expect(Bun.TOML.parse(text)).toEqual({ providers: { fireworks: { api_key: "fw" } } })
+  expect(readSecretPlaceholders(text)).toEqual([{ group: "providers", name: "xai" }, OFF, KEYLESS])
+})
+
+test("the template's commented examples hold sample values, so they aren't placeholders", () => {
+  expect(readSecretPlaceholders('# [providers.fireworks]\n# api_key = "fw_YourSecretKey"\n')).toEqual([])
+})
+
+test("saving keeps the placeholders, and one that gets its key turns into the real table", async () => {
+  const dir = `${tmpdir()}/kaja-test-secrets-placeholders-${Math.random()}`
+  setConfigDirOverride(dir)
+  await write(join(dir, "secrets.toml"), "")
+  await updateSecretPlaceholders([OFF, KEYLESS])
+
+  await saveSecrets({ telegram: { bot_token: "t" } })
+  expect(readSecretPlaceholders(await Bun.file(getSecretsPath()).text())).toEqual([OFF, KEYLESS])
+
+  await saveSecrets({ abilities: { "web-search": { api_key: "b" } } })
+  const text = await Bun.file(getSecretsPath()).text()
+  expect(readSecretPlaceholders(text)).toEqual([KEYLESS])
+  expect((await loadSecretsFile()).abilities).toEqual({ "web-search": { api_key: "b" } })
+})
+
+test("updating to the placeholders the file already holds leaves it untouched", async () => {
+  const dir = `${tmpdir()}/kaja-test-secrets-placeholders-same-${Math.random()}`
+  setConfigDirOverride(dir)
+  const template = "# Hand-written notes stay while nothing changes\n"
+  await write(join(dir, "secrets.toml"), template)
+  await updateSecretPlaceholders([])
+  expect(await Bun.file(getSecretsPath()).text()).toBe(template)
 })

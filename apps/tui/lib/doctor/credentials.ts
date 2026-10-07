@@ -1,8 +1,7 @@
-import { createFolderAbilityStore, mcpAbilityTarget } from "@kaja/nasi"
-import type { CliResolvedModel, McpServerEntry, SecretsFile } from "@kaja/schema/config"
-import { getMarketplaceDir, loadAbilitiesFile } from "../abilities/abilities-file"
-import { loadMcpServers } from "../config/mcp-servers"
-import { saveSecrets, secrets } from "../config/secrets"
+import { createFolderAbilityStore, McpRunnerMissingError, mcpAbilityTarget, personaAbilities } from "@kaja/nasi"
+import type { CliResolvedModel, SecretsFile } from "@kaja/schema/config"
+import { getMarketplaceDir } from "../abilities/abilities-file"
+import { type SecretPlaceholder, saveSecrets, secrets, updateSecretPlaceholders } from "../config/secrets"
 import { t } from "../i18n"
 import { loadModelsFile, resolveModels } from "../models/models"
 import { type CheckResult, checkAbilityKey, checkMcpServer, checkProvider, checkTelegramToken } from "./checks"
@@ -19,13 +18,15 @@ export type CredentialItem = {
   present: boolean
   /** Missing only counts as a problem when required: a provider without a key may simply not need one (Ollama). */
   required: boolean
+  /** An ability's key: offered in a terminal when missing (Enter skips); without it the ability is "off", or still works when "keyless" (a key only lifts its limits). Not a to-do, unless a key typed for it fails. */
+  withoutKey?: "off" | "keyless"
   /** Tests `value`, or the saved value when undefined. Absent, or resolving to undefined, when there's no way to test it. */
   check?: (value?: string) => Promise<CheckResult | undefined>
   save: (value: string) => Promise<void>
 }
 
 export type CredentialOutcome =
-  | { item: CredentialItem; status: "ok" | "keyless" | "untested" | "saved" | "saved-untested" }
+  | { item: CredentialItem; status: "ok" | "keyless" | "untested" | "saved" | "saved-untested" | "off" }
   | {
       item: CredentialItem
       status: "missing" | "failing" | "saved-failing"
@@ -42,17 +43,9 @@ export type CredentialOutcome =
  */
 export type OfferedValues = Record<string, string | null>
 
-/** Where an ability's key goes in secrets.toml — the identity a {@link CredentialScope} names it by. */
+/** Where an ability's key goes in secrets.toml. */
 export function abilityKeyWhere(name: string): string {
   return `[abilities.${name}] api_key`
-}
-
-/** Narrows a pass to part of the config, for a caller that just changed only that part. */
-export type CredentialScope = {
-  /** Only these items, by {@link CredentialItem.where}. */
-  only: string[]
-  /** Also ask for a key an item can do without, once — `kaja abilities` does this for what it just enabled. */
-  askOptional?: boolean
 }
 
 /** How resolveCredentials talks to the user; the doctor passes Ink prompts, tests pass fakes. */
@@ -60,7 +53,6 @@ export type CredentialIo = {
   interactive: boolean
   /** Resolves to the entered value, or undefined when skipped. */
   ask: (title: string) => Promise<string | undefined>
-  askSaveAnyway: (title: string) => Promise<boolean>
 }
 
 /** The model a provider is tested with: its chat model when it has one, otherwise its first. */
@@ -73,17 +65,7 @@ function modelsByProvider(models: CliResolvedModel[]): Map<string, CliResolvedMo
   return byProvider
 }
 
-function withSecret(server: McpServerEntry, name: string, value: string): McpServerEntry {
-  return "url" in server
-    ? { ...server, headers: { ...server.headers, [name]: value } }
-    : { ...server, env: { ...server.env, [name]: value } }
-}
-
-/**
- * Every credential the current local config relies on: providers used by a configured
- * model, enabled HTTP tool and MCP abilities with key auth, secrets MCP servers declare, and the
- * Telegram bot when a token is saved (web search likewise: a saved key is the only sign the user wants it).
- */
+/** Every credential the current local config relies on: providers a configured model uses, the keyed abilities some persona uses, and the Telegram bot when a token is saved. */
 export async function collectCredentials(): Promise<CredentialItem[]> {
   const creds = await secrets()
   const items: CredentialItem[] = []
@@ -103,83 +85,79 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
 
   items.push(...(await abilityItems(creds)))
 
-  for (const server of await loadMcpServers()) {
-    for (const name of server.secrets ?? []) {
-      items.push({
-        label: t("doctor.itemMcp", { name: server.id }),
-        where: `[mcp.${server.id}] ${name}`,
-        hint: `${"url" in server ? "header" : "env"} ${name}`,
-        present: Boolean(creds.mcp[server.id]?.[name]),
-        required: true,
-        // Testable only once every declared name has a value; read live, since an earlier item may have just saved one.
-        check: async value => {
-          const saved = (await secrets()).mcp[server.id] ?? {}
-          const others = (server.secrets ?? []).filter(other => other !== name)
-          if (others.some(other => !saved[other])) return undefined
-          const current = value ?? saved[name]
-          return current ? checkMcpServer(withSecret(server, name, current)) : undefined
-        },
-        save: async value =>
-          saveSecrets({ mcp: { [server.id]: { ...(await secrets()).mcp[server.id], [name]: value } } })
-      })
-    }
-  }
-
-  const telegramToken = creds.telegram?.bot_token
-  if (telegramToken) {
-    items.push({
-      label: t("doctor.itemTelegram"),
-      where: "[telegram] bot_token",
-      present: true,
-      required: true,
-      check: value => checkTelegramToken(value ?? telegramToken),
-      save: value => saveSecrets({ telegram: { bot_token: value } })
-    })
-  }
-
+  if (creds.telegram?.bot_token) items.push(telegramItem(creds.telegram.bot_token))
   return items
 }
 
-// Enabled HTTP tool and MCP abilities with key auth. An MCP ability is tested by connecting to it.
+/** The Telegram bot's token: the saved one, or (from the wizard's Telegram extra) one not saved yet. */
+export function telegramItem(saved?: string): CredentialItem {
+  return {
+    label: t("doctor.itemTelegram"),
+    where: "[telegram] bot_token",
+    present: Boolean(saved),
+    required: true,
+    check: async value => {
+      const token = value ?? saved
+      return token ? checkTelegramToken(token) : undefined
+    },
+    save: value => saveSecrets({ telegram: { bot_token: value } })
+  }
+}
+
+// An ability's key item. Without its key the ability is off, or still works when keyless, so it's never required.
+function abilityItem(
+  name: string,
+  label: string,
+  auth: { in: string; name: string; keyless: boolean },
+  saved: string | undefined,
+  check: (key: string | undefined) => Promise<CheckResult | undefined>
+): CredentialItem {
+  return {
+    label,
+    where: abilityKeyWhere(name),
+    hint: `${auth.in} ${auth.name}`,
+    present: Boolean(saved),
+    required: false,
+    withoutKey: auth.keyless ? "keyless" : "off",
+    check: value => check(value ?? saved),
+    save: value => saveSecrets({ abilities: { [name]: { api_key: value } } })
+  }
+}
+
+// HTTP tool and MCP abilities with key auth that some persona uses (a key nobody's persona needs isn't asked for).
 async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   const items: CredentialItem[] = []
-  const { tools, mcp } = await loadAbilitiesFile()
-  const store = createFolderAbilityStore({ root: getMarketplaceDir(), enabled: { skills: [], tools, mcp } })
+  const { loadPersonas } = await import("../personas/personas")
+  const used = new Set((await loadPersonas()).flatMap(persona => [...personaAbilities(persona).keys()]))
+  const store = createFolderAbilityStore({ root: getMarketplaceDir() })
   for (const ability of await store.listHttpTools()) {
-    if (ability.auth.type !== "apiKey") continue
-    const saved = creds.abilities[ability.name]?.api_key
-    items.push({
-      label: t("doctor.itemAbility", { name: ability.name }),
-      where: abilityKeyWhere(ability.name),
-      hint: `${ability.auth.in} ${ability.auth.name}`,
-      present: Boolean(saved),
-      required: !ability.auth.optional,
-      check: async value => {
-        const key = value ?? saved
-        return key ? checkAbilityKey(ability, key) : undefined
-      },
-      save: value => saveSecrets({ abilities: { [ability.name]: { api_key: value } } })
-    })
+    if (ability.auth.type !== "apiKey" || !used.has(ability.name)) continue
+    const label = t("doctor.itemAbility", { name: ability.name })
+    items.push(
+      abilityItem(ability.name, label, ability.auth, creds.abilities[ability.name]?.api_key, async key =>
+        key ? checkAbilityKey(ability, key) : undefined
+      )
+    )
   }
   for (const ability of await store.listMcpAbilities()) {
     const { auth } = ability
-    if (auth.type !== "apiKey") continue
-    const saved = creds.abilities[ability.name]?.api_key
-    items.push({
-      label: t("doctor.itemMcpAbility", { name: ability.name }),
-      where: abilityKeyWhere(ability.name),
-      hint: `${auth.in} ${auth.name}`,
-      present: Boolean(saved),
-      required: !auth.optional,
-      // Connecting proves the server is up and takes the key; an optional key without a value tests the keyless connection.
-      check: async value => {
-        const key = value ?? saved
-        if (!key && !auth.optional) return undefined
-        const target = mcpAbilityTarget(ability, key)
+    if (auth.type !== "apiKey" || !used.has(ability.name)) continue
+    const label = t("doctor.itemMcpAbility", { name: ability.name })
+    // Connecting proves the server is up and takes the key; a keyless one without a key tests the keyless connection.
+    items.push(
+      abilityItem(ability.name, label, auth, creds.abilities[ability.name]?.api_key, async key => {
+        if (!key && !auth.keyless) return undefined
+        let target
+        try {
+          target = mcpAbilityTarget(ability, key)
+        } catch (error) {
+          // A stdio server nothing here can start: the key can't be tested yet.
+          if (error instanceof McpRunnerMissingError) return { ok: false, reason: error.message }
+          throw error
+        }
         return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
-      },
-      save: value => saveSecrets({ abilities: { [ability.name]: { api_key: value } } })
-    })
+      })
+    )
   }
   return items
 }
@@ -192,17 +170,24 @@ function askTitle(item: CredentialItem, failingReason: string | undefined): stri
     : t("doctor.askMissing", { label: item.label, hint })
 }
 
+/** Prompt text offering an ability's missing key: what skipping means depends on whether it works without one. */
+function offerTitle(item: CredentialItem): string {
+  const hint = item.hint ? ` (${item.hint})` : ""
+  return t(item.withoutKey === "keyless" ? "doctor.askKeyless" : "doctor.askOff", { label: item.label, hint })
+}
+
+type ProblemOutcome = Extract<CredentialOutcome, { reason: string }>
+
 /**
  * Tests each item and, when interactive, asks for anything missing or failing: the new value
- * is tested before it's saved, and a value that fails its test is saved only if the user says
- * so. Calls `onOutcome` as each item settles, so the doctor can print results as it goes.
+ * is tested, then saved even when it fails (reported as such, to fix later). Calls `onOutcome`
+ * as each item settles, so the doctor can print results as it goes.
  */
 export async function resolveCredentials(
   items: CredentialItem[],
   io: CredentialIo,
   onOutcome: (outcome: CredentialOutcome) => void = () => {},
-  offered: OfferedValues = {},
-  askOptional = false
+  offered: OfferedValues = {}
 ): Promise<CredentialOutcome[]> {
   const outcomes: CredentialOutcome[] = []
   const settle = (outcome: CredentialOutcome) => {
@@ -213,71 +198,55 @@ export async function resolveCredentials(
   for (const item of items) {
     const offer = offered[item.where]
     if (typeof offer === "string") {
-      settle(await testAndSave(item, offer, item.present ? "failing" : "missing", io))
+      settle(await testAndSave(item, offer))
+      continue
+    }
+
+    // `null` says the caller already asked and was turned down, so there's nothing more to ask.
+    const asking = io.interactive && offer !== null
+    // An ability's missing key is offered first; skipped, it's off, or a keyless one is tested without a key.
+    if (asking && item.withoutKey && !item.present) {
+      const value = await io.ask(offerTitle(item))
+      settle(value ? await testAndSave(item, value) : await savedOutcome(item))
       continue
     }
 
     const saved = await savedOutcome(item)
-    // A key nothing needs isn't a problem to fix, so only a caller that opted in is asking for it.
-    const optionalGap =
-      askOptional && io.interactive && offer === undefined && !item.required && !item.present && !("reason" in saved)
-    if (optionalGap) {
-      const value = await io.ask(t("ability.optionalKeyPrompt", { name: item.label, where: item.hint ?? item.where }))
-      if (value) {
-        settle(await testAndSave(item, value, "missing", io))
-        continue
-      }
-    }
     // Nothing rejected the value, so there's nothing for the user to retype — report and move on.
-    // `null` says the caller already asked and was turned down, which is the same dead end.
-    const worthAsking = "reason" in saved && io.interactive && saved.kind !== "unreachable" && offer !== null
-    settle(worthAsking ? await askAndSave(saved as Extract<CredentialOutcome, { reason: string }>, io) : saved)
+    const askable = "reason" in saved && saved.kind !== "unreachable"
+    settle(askable && asking ? await askAndSave(saved, io) : saved)
   }
 
   return outcomes
 }
 
-// The item as it stands: fine (ok, keyless or untested), or missing or failing its test.
+// The item as it stands: fine (ok, keyless or untested), off without its key, or missing or failing its test.
 async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
+  if (item.withoutKey === "off" && !item.present) return { item, status: "off" }
   if (item.required && !item.present) return { item, status: "missing", reason: t("doctor.missing") }
   const current = await item.check?.()
   if (current?.ok === false) return { item, status: "failing", reason: current.reason, kind: current.kind }
-  if (!current?.ok) return { item, status: "untested" }
+  // Nothing to test it with: a saved value is untested, and a missing one is fine (the item isn't required).
+  if (!current?.ok) return { item, status: item.present ? "untested" : "keyless" }
   return { item, status: item.present ? "ok" : "keyless" }
 }
 
-// Asks for a new value, tests it, and saves it; one that fails its test is saved only if the user says so.
-async function askAndSave(
-  problem: Extract<CredentialOutcome, { reason: string }>,
-  io: CredentialIo
-): Promise<CredentialOutcome> {
+// Asks for a new value, then tests and saves it; skipped, the problem stands.
+async function askAndSave(problem: ProblemOutcome, io: CredentialIo): Promise<CredentialOutcome> {
   const value = await io.ask(askTitle(problem.item, problem.status === "missing" ? undefined : problem.reason))
   if (!value) return problem
-  return testAndSave(problem.item, value, problem.status, io)
+  return testAndSave(problem.item, value)
 }
 
 /**
- * Tests a value and saves it, keeping one that fails only if the user says so — `rejected` is the
- * status to report when they don't. Shared by a value typed at the prompt and one the wizard
- * collected earlier, so a key gathered up front is still never written untested.
+ * Tests a value, then saves it whatever the result: one that fails is kept as typed (in secrets.toml, ready to fix) and
+ * reported as `saved-failing`, which stays on the to-do list. Shared by a value typed at the prompt and one the wizard
+ * collected earlier, so a key gathered up front is still tested before it's written.
  */
-async function testAndSave(
-  item: CredentialItem,
-  value: string,
-  rejected: Extract<CredentialOutcome, { reason: string }>["status"],
-  io: CredentialIo
-): Promise<CredentialOutcome> {
+async function testAndSave(item: CredentialItem, value: string): Promise<CredentialOutcome> {
   const tested = await item.check?.(value)
-  if (tested?.ok === false) {
-    const keep =
-      io.interactive &&
-      (await io.askSaveAnyway(t("doctor.askSaveAnyway", { label: item.label, reason: tested.reason })))
-    if (!keep) return { item, status: rejected, reason: tested.reason, kind: tested.kind }
-    await item.save(value)
-    return { item, status: "saved-failing", reason: tested.reason, kind: tested.kind }
-  }
-
   await item.save(value)
+  if (tested?.ok === false) return { item, status: "saved-failing", reason: tested.reason, kind: tested.kind }
   return { item, status: tested?.ok ? "saved" : "saved-untested" }
 }
 
@@ -291,6 +260,8 @@ export function outcomeLine(outcome: CredentialOutcome): string {
       return statusLine("success", `${label}: ${t("doctor.keyless")}`)
     case "untested":
       return statusLine("info", `${label}: ${t("doctor.untested")}`)
+    case "off":
+      return statusLine("info", `${label}: ${t("doctor.keyOff")}`)
     case "saved":
       return statusLine("success", `${label}: ${t("doctor.savedWorking")}`)
     case "saved-untested":
@@ -313,34 +284,55 @@ export function isUnresolved(outcome: CredentialOutcome): boolean {
  * it's saved). Prints `header` only when there's actually something to check. Reads the config from
  * disk, so a caller that just wrote one must do so before calling this.
  *
- * `offered` carries values the caller has already collected — see {@link OfferedValues}. `scope`
- * limits the pass to the items a caller just changed — see {@link CredentialScope}.
+ * `offered` carries values the caller has already collected — see {@link OfferedValues}.
  */
 export async function runCredentialPass(
   print: (line: string) => void,
   header?: string,
   extra: CredentialItem[] = [],
-  offered: OfferedValues = {},
-  scope?: CredentialScope
+  offered: OfferedValues = {}
 ): Promise<CredentialOutcome[]> {
   // Loaded here rather than at module scope so a non-interactive caller never loads the prompts.
-  const { askSaveAnyway, askSecret } = await import("./prompt")
+  const { askSecret } = await import("./prompt")
 
   // `extra` carries credentials the config gives no sign of — the setup wizard's freshly ticked
   // extras. Anything collectCredentials already found wins, so nothing is asked for twice.
   const collected = await collectCredentials()
   const found = [...collected, ...extra.filter(e => !collected.some(c => c.where === e.where))]
-  const items = scope ? found.filter(item => scope.only.includes(item.where)) : found
-  if (items.length === 0) return []
+  if (found.length === 0) return []
   if (header) print(header)
 
-  return resolveCredentials(
-    items,
-    { interactive: Boolean(process.stdin.isTTY), ask: askSecret, askSaveAnyway },
+  const outcomes = await resolveCredentials(
+    found,
+    { interactive: Boolean(process.stdin.isTTY), ask: askSecret },
     outcome => print(outcomeLine(outcome)),
-    offered,
-    scope?.askOptional
+    offered
   )
+  await updateSecretPlaceholders(placeholdersFor(outcomes))
+  return outcomes
+}
+
+const SECRET_TABLE = /^\[(providers|abilities)\.(.+)\] api_key$/
+
+/**
+ * The keys this pass left unset, as secrets.toml placeholders: an ability's (off, or keyless and working without
+ * one), and a provider's that was asked for or refused. A provider that needs none (Ollama), or that couldn't be
+ * reached, gets none.
+ */
+export function placeholdersFor(outcomes: CredentialOutcome[]): SecretPlaceholder[] {
+  return outcomes.flatMap(outcome => {
+    const { item } = outcome
+    const table = SECRET_TABLE.exec(item.where)
+    if (!table || item.present || outcome.status.startsWith("saved")) return []
+    const unset =
+      item.withoutKey !== undefined ||
+      outcome.status === "missing" ||
+      (outcome.status === "failing" && outcome.kind !== "unreachable")
+    if (!unset) return []
+    const hint = item.hint ? ` (${item.hint})` : ""
+    const note = item.withoutKey && t(item.withoutKey === "off" ? "doctor.noteOff" : "doctor.noteKeyless", { hint })
+    return [{ group: table[1] as SecretPlaceholder["group"], name: table[2]!, ...(note ? { note } : {}) }]
+  })
 }
 
 /** The closing to-do list: each unresolved item's secrets.toml entry and why, or an all-clear line. */

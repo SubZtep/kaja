@@ -19,3 +19,21 @@ for (const [mode, label] of [
     await t.waitUntilExit()
   })
 }
+
+test("a long tool label or model name keeps the header at two rows", async () => {
+  const long = "x".repeat(300)
+  for (const props of [
+    { currentTool: { name: "web_search", arguments: JSON.stringify({ q: long }) } },
+    { model: long }
+  ]) {
+    const t = renderForTest(
+      <Header mode="local" persona="Kaja" model="m" promptTokens={null} contextWindow={null} width={60} {...props} />
+    )
+    await t.tick()
+
+    expect(t.lastFrame().trimEnd().split("\n").length).toBeLessThanOrEqual(2)
+
+    t.unmount()
+    await t.waitUntilExit()
+  }
+})

@@ -4,6 +4,7 @@ title: Config folder
 parent: Configuration
 nav_order: 1
 summary: "The files in ~/.config/kaja and which page covers each."
+icon: 📁
 ---
 
 # Config folder
@@ -16,24 +17,20 @@ account, and on disk has only a minimal `settings.toml` with your language and `
 ├─ settings.toml    # preferences, voice, marketplace, storage location
 ├─ models.toml      # providers and the model for each task
 ├─ secrets.toml     # every key and token, and nothing else
-├─ abilities.toml   # which abilities load
-├─ mcp.toml         # your own MCP servers
-├─ marketplace/     # personas, skills, HTTP tools, MCP servers, datasets
-└─ tools/*.ts       # your own plugin tools
+└─ marketplace/     # abilities (skills, HTTP tools, MCP servers, code tools), personas, datasets
 ```
 
-The folder follows XDG (`$XDG_CONFIG_HOME/kaja` when set). The [setup wizard](/getting-started/wizard)
-writes the first version, and after that the files are yours to edit. Kaja reads them once at startup and
-never writes them while running, so restart to apply a change.
+The folder follows XDG (`$XDG_CONFIG_HOME/kaja` when set). `KAJA_PROFILE` is appended to its name, and to
+the data folder's: `KAJA_PROFILE=dev kaja` uses `~/.config/kaja-dev/`, a separate setup of its own. The
+[setup wizard](/getting-started/wizard) writes the first version, and after that the files are yours to
+edit. Kaja reads them once at startup and never writes them while running, so restart to apply a change.
 
 | File | Reference |
 | --- | --- |
 | `settings.toml` | [Settings](/configuration/config) |
 | `models.toml` | [Models](/configuration/models) |
 | `secrets.toml` | [Secrets](/configuration/secrets) |
-| `abilities.toml` | [abilities.toml](/configuration/abilities) |
-| `mcp.toml` | [MCP servers](/abilities/mcp#mcptoml) |
-| `tools/*.ts` | [Your own tools](/abilities/tools#your-own-tools) |
+| `marketplace/` | [The marketplace](/abilities/marketplace), [Personas](/abilities/personas) |
 | the SQLite file | [Local storage](/configuration/storage) |
 
 Only `secrets.toml` holds credentials, so the other files are safe to share or paste into a bug report.

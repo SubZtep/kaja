@@ -58,6 +58,7 @@ bun dev:tui            # = bun run --env-file=apps/tui/.env apps/tui/cli.ts; `--
 # Lint / types / tests
 bun lint
 bun lint:fix
+bun tailwind:fix       # rewrite apps/web classes to their canonical form (@tailwindcss/upgrade; needs a clean tree, also bumps Tailwind); CI fails if src/ would change
 bun typecheck          # apps/* (with their tests/ and scripts/), packages/*, .claude/skills and root scripts/; incremental (gitignored .tsbuildinfo per tsconfig); fails on first error
 bun test               # every workspace's tests (API integration tests need Postgres + RustFS); run from the repo root
 ```
@@ -91,19 +92,19 @@ bun run --filter @kaja/sandbox build
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
 - **Core**: `db.ts` (pg Pool; UTC and a 15 s `statement_timeout` per connection), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `csrf.ts` (cookie-session writes must come from `CORS_ORIGIN`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (files-sdk object storage for images: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set), `geo.ts` (IP geolocation for sandboxes), `lock.ts` (`withLock`: in-process per-key serialization, so the API runs as one instance), `env.ts` (parsed `ApiEnvSchema`)
-- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (cloud ability catalog + users' keys), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/`, `features/telegram/` (the cloud Telegram bot) + `features/telegram-admin/` (plus config, config-export, health, reference); shared logic in `services/`
+- **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (users' ability keys), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/`, `features/telegram/` (the cloud Telegram bot) + `features/telegram-admin/` (plus config, config-export, health, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
 ### Web (`apps/web/src/`)
 
-- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard with overview and stats tabs, agent with abilities, widget and sandbox tabs, profile, welcome, and the admin-only `/admin/*` layout)
+- TanStack Router file routes: `_public` (landing, auth, device) and `_admin` (dashboard with overview and stats tabs, agent with widget and sandbox tabs, profile with API keys, and the admin-only `/admin/*` layout)
 - auth client in `hooks/auth-client.ts`
 - Generated route tree: `routeTree.gen.ts` (should stay out of Biome; see note below)
 
 ### Sandbox (`apps/sandbox/`)
 
 - `src/cli.ts` bundle entry, `server.ts` startup; `tunnel.ts` dials the API (nothing connects in), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child, `egress.ts` the browsers' public-only forward proxy
-- Runs only the stdio manifests under its own `marketplace/mcp` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
+- Runs only the stdio `mcp.toml` manifests under its own `marketplace/abilities` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
 
 ### CLI (`apps/tui/`)
 
@@ -124,7 +125,7 @@ bun run --filter @kaja/sandbox build
 
 - **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
-  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml), plus the repo's model catalog (`docs/config/catalog.toml`)
+  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml), plus the repo's model catalog (`docs/config/catalog.toml`)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/abilities` — marketplace manifests (skill frontmatter, persona, dataset, HTTP tool, MCP server), shared by every host that loads abilities
   - `@kaja/schema/cli` — re-exports the persona and dataset schemas so CLI code keeps one import
@@ -142,7 +143,7 @@ bun run --filter @kaja/sandbox build
 4. `2026-08-31-widget.sql` — `widget` table
 5. `2026-09-07-nasi.sql` — cloud agent state: `nasi_session`, `nasi_message` (one per message), `nasi_tool_call`, plus memory notes and dataset answers
 6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
-7. `2026-09-19-ability.sql` — `ability`, `user_ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`)
+7. `2026-09-19-ability.sql` — `ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`; every user has every ability)
 8. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`)
 9. `2026-09-27-sandbox.sql` — `sandbox` (registered MCP sandboxes: owner, online, geolocation, hardware, load), `sandbox_owner` (users' sandbox keys and share settings), `sandbox_sample` (heartbeat load, kept 7 days)
 
@@ -173,7 +174,7 @@ Each file only creates; there are no patch migrations, so a schema change until 
 - `bun test` preloads `apps/api/.env.example` then `apps/api/.env` via `apps/api/tests/load-test-env.ts` (configured in `bunfig.toml`)
 - API integration tests need a running Postgres matching `DATABASE_URL`, but run against their own database: the preload (`apps/api/tests/test-database.ts`) points them at `<dev database>_test` (or `TEST_DATABASE_URL`) and rebuilds it from `apps/api/migrations` whenever those files change, so a running `bun dev` (its marketplace sync on every hot restart) can't race them
 - CLI has a large unit suite under `apps/tui/tests/`
-- CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
+- CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi, and canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
 - Separate workflow builds the CLI
 
 ## Import Aliases

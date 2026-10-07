@@ -32,7 +32,6 @@ export const getDashboardItems = (): NavItem[] => [
 
 /** Tabs of the agent section: what it can do and where it runs. */
 export const getAgentItems = (): NavItem[] => [
-  { to: "/agent/abilities", label: m.nav_abilities() },
   { to: "/agent/widget", label: m.nav_widget() },
   { to: "/agent/sandbox", label: m.nav_sandbox() }
 ]

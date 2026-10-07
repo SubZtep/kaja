@@ -68,7 +68,7 @@ function StatusCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, 
 }
 
 function LastSyncCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, Date>) {
-  return <span className="font-mono text-xs text-muted">{getTimeAgo(info.getValue())}</span>
+  return <span className="font-mono text-muted text-xs">{getTimeAgo(info.getValue())}</span>
 }
 
 function ActionsCell(info: { readonly row: { readonly original: { readonly id: string } } }) {
@@ -206,7 +206,7 @@ function UserList() {
                   setSearchQuery("")
                   setRoleFilter("")
                 }}
-                className="ml-1 font-mono text-neon text-[11px] uppercase tracking-wider hover:text-neon-hi"
+                className="ml-1 font-mono text-[11px] text-neon uppercase tracking-wider hover:text-neon-hi"
               >
                 {m.users_clear()}
               </button>

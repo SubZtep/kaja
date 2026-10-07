@@ -1,12 +1,14 @@
 import { expect, test } from "bun:test"
-import { type HttpToolAbility, HttpToolAbilitySchema, type McpAbility, McpAbilitySchema } from "@kaja/schema/abilities"
+import type { HttpToolAbility, HttpToolAbilitySchema, McpAbility } from "@kaja/schema/abilities"
 import type * as z from "zod"
 import { loadAbilities } from "../../src/abilities/load"
 import type { AbilityStore } from "../../src/abilities/types"
 import { toolName } from "../../src/agent/tools"
+import { setWarnHandler } from "../../src/warn"
+import { httpAbility as parseHttp, mcpAbility as parseMcp } from "../fixtures/abilities"
 
 const httpAbility = (name: string, auth: z.input<typeof HttpToolAbilitySchema>["auth"] = { type: "none" }) =>
-  HttpToolAbilitySchema.parse({
+  parseHttp({
     name,
     description: name,
     baseUrl: `https://api.${name}.test`,
@@ -21,12 +23,12 @@ const storeWith = (abilities: HttpToolAbility[], mcp: McpAbility[] = []): Abilit
   listMcpAbilities: async () => mcp
 })
 
-const mcpAbility = (name: string, optional: boolean) =>
-  McpAbilitySchema.parse({
+const mcpAbility = (name: string, keyless = false) =>
+  parseMcp({
     name,
     description: name,
     url: `https://mcp.${name}.test/mcp`,
-    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer ", optional }
+    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer ", keyless }
   })
 
 test("each HTTP tool ability becomes a community group tagged with its source", async () => {
@@ -49,17 +51,14 @@ test("an ability whose key is missing is left out and reported", async () => {
   expect(withKey.missingKeys).toEqual([])
 })
 
-test("an optional key may be missing; a required one leaves the ability out", async () => {
-  const optionalHttp = httpAbility("weather", { type: "apiKey", in: "query", name: "key", optional: true })
-  const loaded = await loadAbilities(
-    storeWith([optionalHttp], [mcpAbility("docs", true), mcpAbility("private", false)])
-  )
-  expect(loaded.groups.map(g => g.source)).toEqual(["ability:weather"])
-  expect(loaded.mcp.map(t => t.name)).toEqual(["docs"])
-  expect(loaded.mcp[0]!.server).toMatchObject({ headers: {} })
-  expect(loaded.missingKeys).toEqual(["private"])
+test("every keyed ability is left out without its key, and gets it in its header with one", async () => {
+  const keyedHttp = httpAbility("weather", { type: "apiKey", in: "query", name: "key" })
+  const loaded = await loadAbilities(storeWith([keyedHttp], [mcpAbility("docs"), mcpAbility("private")]))
+  expect(loaded.groups).toEqual([])
+  expect(loaded.mcp).toEqual([])
+  expect(loaded.missingKeys).toEqual(["weather", "docs", "private"])
 
-  const withKeys = await loadAbilities(storeWith([], [mcpAbility("docs", true), mcpAbility("private", false)]), {
+  const withKeys = await loadAbilities(storeWith([], [mcpAbility("docs"), mcpAbility("private")]), {
     getApiKey: () => "k"
   })
   expect(
@@ -68,4 +67,113 @@ test("an optional key may be missing; a required one leaves the ability out", as
     ["docs", "Bearer k"],
     ["private", "Bearer k"]
   ])
+})
+
+test("a keyless ability loads without its key too, and sends none", async () => {
+  const keylessHttp = httpAbility("weather", { type: "apiKey", in: "query", name: "key", keyless: true })
+  const loaded = await loadAbilities(storeWith([keylessHttp], [mcpAbility("docs", true), mcpAbility("private")]))
+  expect(loaded.groups.map(g => g.source)).toEqual(["ability:weather"])
+  expect(loaded.mcp.map(t => t.name)).toEqual(["docs"])
+  expect(loaded.mcp[0]!.server).toMatchObject({ headers: {} })
+  expect(loaded.missingKeys).toEqual(["private"])
+})
+
+test("with warnUnknown, a persona naming a missing ability or tool gets a warning, once each", async () => {
+  const warnings: { message: string; payload?: unknown }[] = []
+  setWarnHandler((message, payload) => warnings.push({ message, payload }))
+  try {
+    const store = storeWith([httpAbility("weather")])
+    const personas = [
+      { id: "a", label: "A", abilities: ["weather", "nope", { name: "weather", tools: ["weather_get", "gone"] }] }
+    ]
+    await loadAbilities(store, { personas })
+    expect(warnings).toEqual([])
+    await loadAbilities(store, { personas, warnUnknown: true })
+    expect(warnings).toEqual([
+      {
+        message: "Persona lists tools its ability doesn't offer",
+        payload: { persona: "a", ability: "weather", tools: ["gone"] }
+      },
+      { message: "Persona lists an ability that isn't there", payload: { persona: "a", ability: "nope" } }
+    ])
+  } finally {
+    setWarnHandler(() => {})
+  }
+})
+
+test("a stdio ability nothing here can start is left out and reported, only when a persona uses it", async () => {
+  const time = parseMcp({
+    name: "time",
+    description: "time",
+    transport: "stdio",
+    package: { pypi: "mcp-server-time@1.0", docker: "mcp/time:1" }
+  })
+  const launch = { which: () => null }
+  const loaded = await loadAbilities(storeWith([], [time]), { launch })
+  expect(loaded.mcp).toEqual([])
+  expect(loaded.missingRunners).toEqual([{ name: "time", needs: ["uvx", "pipx", "docker"] }])
+
+  const unused = await loadAbilities(storeWith([], [time]), { launch, personas: [{ id: "a", label: "A" }] })
+  expect(unused.missingRunners).toEqual([])
+
+  const withUv = await loadAbilities(storeWith([], [time]), { launch: { which: (p: string) => p } })
+  expect(withUv.mcp.map(target => target.server)).toMatchObject([{ id: "time", command: "uvx" }])
+})
+
+test("a roots-taking ability gets each persona's folders, and is left out when no persona gives any", async () => {
+  const files = parseMcp({ name: "files", description: "f", transport: "stdio", command: "bun", roots: true })
+  const launch = { which: (p: string) => p }
+  const home = (await import("node:os")).homedir()
+  const tmp = (await import("node:os")).tmpdir()
+  const personas = [
+    { id: "a", label: "A", abilities: [{ name: "files", roots: ["~", tmp] }] },
+    { id: "b", label: "B", abilities: ["files"] },
+    { id: "c", label: "C" }
+  ]
+  const loaded = await loadAbilities(storeWith([], [files]), { launch, personas })
+  const real = (await import("node:fs")).realpathSync
+  expect(loaded.mcp.map(target => target.roots)).toEqual([
+    {
+      a: [
+        { folder: real(home), readOnly: false },
+        { folder: real(tmp), readOnly: false }
+      ]
+    }
+  ])
+  expect(loaded.missingRoots).toEqual([])
+
+  const rootless = await loadAbilities(storeWith([], [files]), { launch, personas: personas.slice(1) })
+  expect(rootless.mcp).toEqual([])
+  expect(rootless.missingRoots).toEqual(["files"])
+  expect((await loadAbilities(storeWith([], [files]), { launch })).missingRoots).toEqual([])
+})
+
+test("a read-only root needs the manifest's pathArgs to check writes by, or it's left out", async () => {
+  const tmp = (await import("node:fs")).realpathSync((await import("node:os")).tmpdir())
+  const personas = [{ id: "a", label: "A", abilities: [{ name: "files", roots: [{ path: tmp, readOnly: true }] }] }]
+  const launch = { which: (p: string) => p }
+  const manifest = { name: "files", description: "f", transport: "stdio" as const, command: "bun", roots: true }
+  const unchecked = await loadAbilities(storeWith([], [parseMcp(manifest)]), { launch, personas })
+  expect(unchecked.missingRoots).toEqual(["files"])
+  const checked = await loadAbilities(storeWith([], [parseMcp({ ...manifest, pathArgs: ["path"] })]), {
+    launch,
+    personas
+  })
+  expect(checked.mcp.map(target => [target.roots, target.pathArgs])).toEqual([
+    [{ a: [{ folder: tmp, readOnly: true }] }, ["path"]]
+  ])
+})
+
+test("only the code tools a persona lists are loaded, every one without personas", async () => {
+  const asked: (Set<string> | undefined)[] = []
+  const store: AbilityStore = {
+    ...storeWith([]),
+    listCodeTools: async only => {
+      asked.push(only)
+      return []
+    }
+  }
+  await loadAbilities(store, { personas: [{ id: "a", label: "A", abilities: ["dice"] }] })
+  await loadAbilities(store)
+  expect(asked).toEqual([new Set(["dice"]), undefined])
 })

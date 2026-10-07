@@ -4,6 +4,7 @@ title: Voice & language
 parent: Using Kaja
 nav_order: 5
 summary: "Talk to Kaja and hear it back, in your language."
+icon: 🎙️
 ---
 
 # Voice & language

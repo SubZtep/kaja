@@ -63,7 +63,7 @@ function UserPageComponent() {
               initials={getDisplayName(user).charAt(0).toUpperCase()}
             />
             <div>
-              <h2 className="m-0 font-semibold text-fg text-[15px]">{getDisplayName(user)}</h2>
+              <h2 className="m-0 font-semibold text-[15px] text-fg">{getDisplayName(user)}</h2>
               <span className="text-muted text-sm">{user.email}</span>
             </div>
           </div>

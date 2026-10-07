@@ -80,13 +80,50 @@ test("## Skills is absent without load_skill", async () => {
   expect((await buildSystemPrompt(agent)) ?? "").not.toContain("## Skills")
 })
 
-test("## Skills follows the active persona's skills list, and disappears when it's empty", async () => {
-  const limited = (await buildSystemPrompt(skillAgent({ persona: { id: "c", label: "C", skills: ["pdf"] } }))) ?? ""
+test("## Skills follows the active persona's abilities, and disappears when it lists none", async () => {
+  const limited = (await buildSystemPrompt(skillAgent({ persona: { id: "c", label: "C", abilities: ["pdf"] } }))) ?? ""
   expect(limited).toContain("- pdf:")
   expect(limited).not.toContain("- notes:")
 
-  const none = (await buildSystemPrompt(skillAgent({ persona: { id: "q", label: "Q", skills: [] } }))) ?? ""
+  const none = (await buildSystemPrompt(skillAgent({ persona: { id: "q", label: "Q" } }))) ?? ""
   expect(none).not.toContain("## Skills")
+})
+
+test("a sticky skill's body sits in the system prompt instead of the ## Skills list", async () => {
+  const store: AbilityStore = { ...noStore, readSkill: async (name, file) => (file ? undefined : `Body of ${name}.`) }
+  const persona: Persona = { id: "s", label: "S", abilities: [{ name: "pdf", skill: "sticky" }, "notes"] }
+  const loadSkill = createLoadSkillTool({ store, skills: [pdfSkill, notesSkill], personas: [persona] })
+  const agent = new Agent({ model: "m", tools: [loadSkill], personas: [persona], personaId: "s", promptContext: {} })
+  const prompt = (await buildSystemPrompt(agent)) ?? ""
+  expect(prompt).toContain("## Skill: pdf\nBody of pdf.")
+  expect(prompt).not.toContain("- pdf:")
+  expect(prompt).toContain("- notes: Keep notes.")
+})
+
+test("a sticky skill's section says where its other files are", async () => {
+  const store: AbilityStore = { ...noStore, readSkill: async () => "Fill in template.md.\n" }
+  const notes: SkillSummary = { name: "notes", description: "Notes.", files: ["template.md"], dir: "/m/notes" }
+  const persona: Persona = { id: "s", label: "S", abilities: [{ name: "notes", skill: "sticky" }] }
+  const loadSkill = createLoadSkillTool({ store, skills: [notes], personas: [persona] })
+  const agent = new Agent({ model: "m", tools: [loadSkill], personas: [persona], personaId: "s" })
+  expect(await buildSystemPrompt(agent)).toContain(
+    '## Skill: notes\nFill in template.md.\n\nSkill directory: /m/notes\nIts other files (open with load_skill, name "notes" and file=<path>): template.md'
+  )
+})
+
+test("SKILL.md's sticky suggestion holds until the persona says otherwise", async () => {
+  const store: AbilityStore = { ...noStore, readSkill: async () => "Rules." }
+  const rules: SkillSummary = { name: "rules", description: "Rules.", files: [], sticky: true }
+  const build = async (persona: Persona) => {
+    const loadSkill = createLoadSkillTool({ store, skills: [rules], personas: [persona] })
+    const agent = new Agent({ model: "m", tools: [loadSkill], personas: [persona], personaId: persona.id })
+    return (await buildSystemPrompt(agent)) ?? ""
+  }
+  expect(await build({ id: "a", label: "A", abilities: ["rules"] })).toContain("## Skill: rules\nRules.")
+  const asked = await build({ id: "b", label: "B", abilities: [{ name: "rules", skill: "load" }] })
+  expect(asked).toContain("- rules: Rules.")
+  expect(asked).not.toContain("## Skill: rules")
+  expect(await build({ id: "c", label: "C", abilities: [{ name: "rules", skill: "off" }] })).not.toContain("rules")
 })
 
 test("## Skills mentions running scripts only when run_command is available", async () => {
@@ -233,4 +270,35 @@ test("a dataset that isn't a profile adds no About the user section", async () =
   const agent = await profileAgent({ name: "Andras" })
   agent.promptContext.loadDatasets = async () => new Map([["onboarding", { ...profile, profile: false }]])
   expect((await buildSystemPrompt(agent, null)) ?? "").not.toContain("## About the user")
+})
+
+test("a running conversation picks up a sticky skill's new body, and drops one the persona no longer keeps", async () => {
+  let body = "Old rules."
+  const store: AbilityStore = { ...noStore, readSkill: async () => body }
+  const rules: SkillSummary = { name: "rules", description: "Rules.", files: [], sticky: true }
+  const agentFor = (persona: Persona) =>
+    new Agent({
+      model: "m",
+      tools: [createLoadSkillTool({ store, skills: [rules], personas: [persona] })],
+      personas: [persona],
+      personaId: persona.id
+    })
+  const keeps: Persona = { id: "k", label: "K", abilities: ["rules"] }
+  const messages = await conversationWith(agentFor(keeps))
+  expect(messages[0]!.content).toContain("## Skill: rules\nOld rules.")
+
+  body = "New rules."
+  await refreshAbilitiesInPrompt(agentFor(keeps), messages, null)
+  expect(messages[0]!.content).toContain("## Skill: rules\nNew rules.")
+  expect(messages[0]!.content).not.toContain("Old rules.")
+
+  // Unchanged: the message is left exactly as it was
+  messages[0]!.content += "\n\nmarker"
+  const before = messages[0]!.content
+  await refreshAbilitiesInPrompt(agentFor(keeps), messages, null)
+  expect(messages[0]!.content).toBe(before)
+
+  await refreshAbilitiesInPrompt(agentFor({ ...keeps, abilities: [{ name: "rules", skill: "load" }] }), messages, null)
+  expect(messages[0]!.content).not.toContain("## Skill: rules")
+  expect(messages[0]!.content).toContain("- rules: Rules.")
 })

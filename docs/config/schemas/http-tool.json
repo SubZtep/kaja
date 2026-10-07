@@ -2,12 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 64,
-      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
-    },
     "description": {
       "type": "string",
       "minLength": 1,
@@ -58,9 +52,9 @@
               "description": "Put before the key, e.g. \"Bearer \"",
               "type": "string"
             },
-            "optional": {
+            "keyless": {
               "default": false,
-              "description": "The API works without a key too (e.g. with lower limits)",
+              "description": "The API works without a key too (e.g. with lower limits), so the ability is on without one",
               "type": "boolean"
             }
           },
@@ -187,7 +181,6 @@
     }
   },
   "required": [
-    "name",
     "description",
     "baseUrl",
     "tools"

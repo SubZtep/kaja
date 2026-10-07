@@ -40,7 +40,7 @@ export function Footer() {
           <FooterColumn heading={m.language_select_label()} className="col-span-2 sm:col-span-1">
             <li>
               <Suspense>
-                <LanguageSelect className="border-border/60 bg-transparent whitespace-nowrap" />
+                <LanguageSelect className="whitespace-nowrap border-border/60 bg-transparent" />
               </Suspense>
             </li>
           </FooterColumn>

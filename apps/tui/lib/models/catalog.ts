@@ -1,5 +1,6 @@
 import { type CatalogFile, CatalogFileSchema, type ModelTask } from "@kaja/schema/config"
 import { uniqueModelSlug } from "@kaja/shared/text"
+import { groupTomlTables } from "@kaja/shared/toml"
 import { TOML } from "bun"
 import CATALOG_TOML from "../../../../docs/config/catalog.toml" with { type: "text" }
 
@@ -132,9 +133,7 @@ function addAlternatives(
  * Text is generated rather than edited, so the comments that explain the file are always there.
  */
 export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternatives = true }: ModelsSelection): string {
-  const out: string[] = [HEADER.trimEnd()]
-
-  for (const provider of providers) out.push(providerTable(provider, baseUrls[provider.id] ?? provider.baseUrl))
+  const providerTables = providers.map(provider => providerTable(provider, baseUrls[provider.id] ?? provider.baseUrl))
 
   // One entry per provider and model name, in task order, collecting every task it's written for.
   const entries = new Map<string, ModelEntry>()
@@ -157,15 +156,16 @@ export function buildModelsToml({ providers, pick = {}, baseUrls = {}, alternati
   for (const [task, option] of chosen) entryFor(option).tasks.push(task)
   if (alternatives) addAlternatives(chosen, candidates, [...entries.values()], entryFor)
 
-  for (const entry of entries.values()) {
-    out.push(
-      [
-        `[models.${entry.id}]`,
-        `model = ${JSON.stringify(entry.model)}`,
-        `provider = "${entry.provider}"`,
-        `tasks = [${entry.tasks.map(task => JSON.stringify(task)).join(", ")}]`
-      ].join("\n")
-    )
-  }
+  const modelTables = [...entries.values()].map(entry =>
+    [
+      `[models.${entry.id}]`,
+      `model = ${JSON.stringify(entry.model)}`,
+      `provider = "${entry.provider}"`,
+      `tasks = [${entry.tasks.map(task => JSON.stringify(task)).join(", ")}]`
+    ].join("\n")
+  )
+  const out = [HEADER.trimEnd()]
+  if (providerTables.length > 0) out.push(groupTomlTables("[providers]", providerTables))
+  if (modelTables.length > 0) out.push(groupTomlTables("[models]", modelTables))
   return `${out.join("\n\n")}\n`
 }

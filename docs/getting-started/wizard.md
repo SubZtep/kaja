@@ -4,6 +4,7 @@ title: Setup wizard
 parent: Get started
 nav_order: 3
 summary: "The questions the first-run setup asks, and what they write."
+icon: 🧙
 ---
 
 # Setup wizard
@@ -54,9 +55,10 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
 5. **Which model.** Only asked when two of your providers can do the same job, say chat. You pick one.
 6. **Extras.** Tick **Telegram bot** to chat from [Telegram](/using/telegram) and paste the bot token.
    Press <kbd>Enter</kbd> with nothing ticked to skip.
-7. **Setup complete.** <kbd>Enter</kbd> finishes.
 
-A key is hidden while you type it and never shown again. It's tested before it's saved.
+After the last answer the wizard carries on by itself: the marketplace, any model downloads and a check of
+your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
+before it's saved.
 
 ```mermaid
 ---
@@ -87,11 +89,8 @@ With **your own provider**, Kaja finishes setting up first and may ask a few mor
 1. **Marketplace.** Whether to use the online [marketplace](/abilities) of skills, personas and tools
    (needs `git`), and whether to keep it up to date on its own
    ([`[marketplace]`](/configuration/config#marketplace)).
-2. **Starter abilities.** Everything in the marketplace that needs no key and runs no program on your
-   machine is switched on, so there's something to try. `kaja abilities` picks from the rest. This only
-   happens when no ability is on yet.
-3. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
-4. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
+2. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
+3. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
    it anyway. Keys the finished setup turns out to need, such as an ability's, are asked for here.
 5. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/configuration/commands#checking-keys-and-models)
    runs. If one fails and another can do its job, you're offered the switch.
@@ -117,8 +116,8 @@ Everything is plain text in `~/.config/kaja/`, and yours to edit afterwards:
 ## Running it again
 
 `kaja config wizard` starts from your current setup, so holding <kbd>Enter</kbd> changes nothing. It does
-rewrite `models.toml` from your answers, so keep a copy of hand edits. It never touches `mcp.toml`, your
-`tools/*.ts`, or an `abilities.toml` that already has something switched on.
+rewrite `models.toml` from your answers, so keep a copy of hand edits. It never touches the
+`marketplace/` folder.
 
 The provider list is built in, so the wizard works offline. Without a terminal (piped input, or
 `--headless`) it asks nothing and writes the default config files if you have none.

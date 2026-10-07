@@ -1,12 +1,13 @@
 import { expect, test } from "bun:test"
-import { SecretPrompt, YesNoPrompt } from "../../components/secret-prompt"
+import { InputPrompt, YesNoPrompt } from "../../components/secret-prompt"
 import { renderForTest } from "../test-utils"
 
 test("masks input and submits the trimmed value; an empty Enter skips", async () => {
   const values: string[] = []
   let skipped = 0
   const t = renderForTest(
-    <SecretPrompt
+    <InputPrompt
+      secret
       title="github needs an API key (header Authorization)."
       onSubmit={value => values.push(value)}
       onSkip={() => {
@@ -29,7 +30,8 @@ test("masks input and submits the trimmed value; an empty Enter skips", async ()
 test("escape skips", async () => {
   let skipped = false
   const t = renderForTest(
-    <SecretPrompt
+    <InputPrompt
+      secret
       title="x"
       onSubmit={() => {}}
       onSkip={() => {
@@ -40,6 +42,28 @@ test("escape skips", async () => {
   await t.tick()
   await t.press("\x1b")
   expect(skipped).toBe(true)
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a refused answer keeps the question open with the reason; without onSkip an empty answer is checked too", async () => {
+  const values: string[] = []
+  const t = renderForTest(
+    <InputPrompt
+      title="Model id?"
+      hint="One per line"
+      validate={value => (value ? undefined : "A model is needed.")}
+      onSubmit={value => values.push(value)}
+    />
+  )
+  await t.tick()
+  expect(t.lastFrame()).toContain("One per line")
+  await t.press("\r")
+  expect(t.lastFrame()).toContain("A model is needed.")
+  expect(values).toEqual([])
+  for (const ch of "m1") await t.press(ch)
+  await t.press("\r")
+  expect(values).toEqual(["m1"])
   t.unmount()
   await t.waitUntilExit()
 })

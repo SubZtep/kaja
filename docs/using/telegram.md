@@ -4,6 +4,7 @@ title: Telegram
 parent: Using Kaja
 nav_order: 3
 summary: "Chat with Kaja from Telegram."
+icon: 💬
 ---
 
 # Telegram
@@ -16,11 +17,11 @@ that runs inside the Kaja API and links to your account.
 | Runs | on your machine, while `kaja telegram` runs | always, on the API |
 | Agent | [local mode](/getting-started/modes#local-mode): your models, tools and shell | [cloud mode](/getting-started/modes#cloud-mode) |
 | Who can use it | people you paired with a one-time code | Kaja users who linked their Telegram account |
-| Abilities | what `abilities.toml` loads | what you turned on in the [web app](/using/web-app) |
+| Abilities | what each [persona](/abilities/personas#abilities) lists | the same, with the keys saved in the [web app](/using/web-app) |
 
 On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart from
 each other and from your terminal. A call that needs approval, like a shell command or an HTTP tool or MCP
-call that changes something, comes with Approve and Decline buttons (in the cloud bot also "for this chat" and "always allow this tool"). Replies stay short, like chat
+call that changes something, comes with Approve and Decline buttons (in the cloud bot also "for this chat"). Replies stay short, like chat
 messages, unless you ask for detail. Photos work in both directions.
 
 ## Local bot
@@ -68,8 +69,8 @@ Commands in the bot's menu:
 - `/new` starts a fresh conversation.
 - `/compact` summarises the conversation to free up space (add what to keep, like
   `/compact keep the dates`). It also happens on its own.
-- `/abilities` shows the skills and tools this bot loaded. It loads them once at start, so restart
-  `kaja telegram` after `kaja abilities`.
+- `/abilities` shows the abilities each persona uses. The bot reads the marketplace folder once at start, so
+  restart `kaja telegram` after changing it.
 
 ## Cloud bot
 
@@ -85,10 +86,8 @@ dashboard.
 Commands:
 
 - `/new` and `/compact` work as above.
-- `/abilities` lists every skill, tool and MCP server as a button: ✅ on, ▫️ off, 🔑 needs your API key
-  first, ⚠️ no longer in the marketplace. A tap applies from your next message. Keys are entered on the
-  [Abilities page](https://kaja.io/agent/abilities), never in Telegram, where they'd stay in the chat
-  history.
+- Keys are entered under API keys on your [Profile](https://kaja.io/profile), never in Telegram, where they'd
+  stay in the chat history.
 
 Running your own Kaja API? Set `TELEGRAM_BOT_TOKEN` in its environment and restart to start the cloud bot.
 

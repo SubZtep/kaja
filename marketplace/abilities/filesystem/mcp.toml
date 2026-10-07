@@ -1,0 +1,54 @@
+# Your files, through the MCP filesystem server: https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem
+# Kaja runs the npm package itself on your machine, so there's nothing to install. (No Docker fallback: the mcp/filesystem
+# image is far behind the npm package, without the read-only markings Kaja hides writing tools by.)
+# It only works in the folders a persona gives it, and is off for a persona that gives none:
+#   abilities = [{ name = "filesystem", roots = ["~/notes", { path = "~/projects/site", readOnly = true }] }]
+# In a read-only folder it can only read: Kaja refuses writes there, checking the paths in pathArgs.
+# Switching persona switches the folders. It never runs in the cloud: these are your files.
+# The server marks its reading tools read-only, so only writes, edits, moves and new folders ask first.
+description = "Read, search and edit files in the folders the persona allows."
+transport   = "stdio"
+package     = {
+  npm = "@modelcontextprotocol/server-filesystem@2026.8.31"
+}
+roots       = true
+localOnly   = true
+pathArgs    = [
+  "path",
+  "paths",
+  "source",
+  "destination"
+]
+approval    = "writes"
+tools       = [
+  "list_allowed_directories",
+  "list_directory",
+  "list_directory_with_sizes",
+  "directory_tree",
+  "search_files",
+  "get_file_info",
+  "read_text_file",
+  "read_media_file",
+  "read_multiple_files",
+  "write_file",
+  "edit_file",
+  "create_directory",
+  "move_file"
+]
+
+
+# What each tool does, for the web's tool list; the server's own descriptions only arrive at run time
+[toolDescriptions]
+list_allowed_directories  = "Lists the folders it may work in."
+list_directory            = "Lists a folder's files and subfolders."
+list_directory_with_sizes = "Lists a folder with each file's size."
+directory_tree            = "Shows a folder's whole tree."
+search_files              = "Finds files whose names match a pattern."
+get_file_info             = "A file's size, times and permissions."
+read_text_file            = "Reads a text file, or its first or last lines."
+read_media_file           = "Reads an image or audio file."
+read_multiple_files       = "Reads several files at once."
+write_file                = "Creates a file, or overwrites one."
+edit_file                 = "Replaces text in a file and shows the diff."
+create_directory          = "Creates a folder."
+move_file                 = "Moves or renames a file or folder."

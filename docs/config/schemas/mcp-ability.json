@@ -2,12 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 64,
-      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
-    },
     "description": {
       "type": "string",
       "minLength": 1,
@@ -29,12 +23,34 @@
       "format": "uri"
     },
     "command": {
-      "description": "Command that starts the server (stdio)",
+      "description": "Command that starts the server (stdio), for a server that isn't a package",
       "type": "string",
       "minLength": 1
     },
+    "package": {
+      "description": "The package that is the server (stdio), instead of a command",
+      "type": "object",
+      "properties": {
+        "npm": {
+          "description": "npm package (name@version): run by Kaja's own bun, else npx or pnpm dlx",
+          "type": "string",
+          "pattern": "^(@[a-z0-9][\\w.-]*\\/)?[a-z0-9][\\w.-]*(@[\\w.+-]+)?$"
+        },
+        "pypi": {
+          "description": "PyPI package (name@version, its command named like it): run by uvx or pipx",
+          "type": "string",
+          "pattern": "^[a-z0-9][\\w.-]*(@[\\w.!+-]+)?$"
+        },
+        "docker": {
+          "description": "Docker image (name:tag or name@sha256:digest): docker run, when nothing else can start it",
+          "type": "string",
+          "pattern": "^[a-z0-9][\\w./:-]*(@sha256:[a-f0-9]{64})?$"
+        }
+      }
+    },
     "args": {
       "default": [],
+      "description": "The server's own arguments (after the package, with one)",
       "type": "array",
       "items": {
         "type": "string"
@@ -102,9 +118,9 @@
               "description": "Put before the key, e.g. \"Bearer \"",
               "type": "string"
             },
-            "optional": {
+            "keyless": {
               "default": false,
-              "description": "The server works without a key too (e.g. with lower limits)",
+              "description": "The server works without a key too (e.g. with lower limits), so the ability is on without one",
               "type": "boolean"
             }
           },
@@ -152,6 +168,24 @@
       "description": "In the cloud, only the user's own MCP sandboxes or the official one run it, never one another person shares (stdio)",
       "type": "boolean"
     },
+    "roots": {
+      "default": false,
+      "description": "The server works in folders the persona gives it (its abilities entry's `roots`), sent as MCP roots; off for a persona that gives none (stdio)",
+      "type": "boolean"
+    },
+    "pathArgs": {
+      "description": "Tool arguments that hold paths, for a `roots` server: a write into a folder a persona made read-only is refused (without these, read-only folders are left out)",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "localOnly": {
+      "default": false,
+      "description": "Only runs on the user's own machine, never in the cloud (e.g. it works on their files)",
+      "type": "boolean"
+    },
     "localOnlyArgs": {
       "description": "Tool arguments that only make sense on the user's own machine (e.g. a file path to save to); the cloud hides them",
       "type": "array",
@@ -195,7 +229,6 @@
     }
   },
   "required": [
-    "name",
     "description"
   ]
 }

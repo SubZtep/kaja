@@ -94,12 +94,11 @@ export class MarketplaceService {
       }
       bundles.push({ type: "skill", ...(await readSkillBundle(marketplaceDir, entry.name)) })
     }
-    const tools = await readHttpTools(marketplaceDir)
     bundles.push(
       ...(await readPersonaFiles(marketplaceDir)),
       ...(await readDatasetFiles(marketplaceDir)),
-      ...tools,
-      ...(await readMcpAbilities(marketplaceDir, new Set(tools.map(tool => tool.name))))
+      ...(await readHttpTools(marketplaceDir)),
+      ...(await readMcpAbilities(marketplaceDir))
     )
 
     const client = await this.#db.connect()
@@ -211,12 +210,13 @@ export class MarketplaceService {
 /** Ability types the sync owns; anything else in the table is left alone. */
 const SYNCED_TYPES = ["skill", "persona", "dataset", "tool", "mcp"] as const
 
-const MARKETPLACE_FOLDER: Record<AbilityBundle["type"], string> = {
-  skill: "skills",
-  persona: "personas",
-  dataset: "datasets",
-  tool: "tools",
-  mcp: "mcp"
+/** Where a manifest lives in the marketplace, and the key its text is stored under in `ability.files`. */
+function manifestFile(type: Exclude<AbilityBundle["type"], "skill">, name: string): { path: string; key: string } {
+  if (type === "persona") return { path: `personas/${name}.toml`, key: `${name}.toml` }
+  if (type === "dataset") return { path: `datasets/${name}.json`, key: `${name}.json` }
+  // An ability folder's HTTP tool and MCP server parts.
+  const key = type === "tool" ? "tool.toml" : "mcp.toml"
+  return { path: `abilities/${name}/${key}`, key }
 }
 
 type AbilityBundle = {
@@ -227,9 +227,11 @@ type AbilityBundle = {
   hasScripts: boolean
 }
 
-/** How an ability shows in a sync result: skills by name, others by their marketplace path. */
+/** How an ability shows in a sync result: skills by name, personas and datasets by folder and id, an ability's tool and MCP parts by their file. */
 function reportName(type: AbilityBundle["type"], name: string): string {
-  return type === "skill" ? name : `${MARKETPLACE_FOLDER[type]}/${name}`
+  if (type === "skill") return name
+  if (type === "persona" || type === "dataset") return `${type}s/${name}`
+  return manifestFile(type, name).path
 }
 
 /**
@@ -238,17 +240,17 @@ function reportName(type: AbilityBundle["type"], name: string): string {
  */
 async function readManifests<Entry extends { name: string; error?: string }>(
   marketplaceDir: string,
-  kind: { type: Exclude<AbilityBundle["type"], "skill">; label: string; extension: string },
+  kind: { type: Exclude<AbilityBundle["type"], "skill">; label: string },
   entries: Entry[],
   toBundle: (text: string, entry: Entry) => { name: string; description: string }
 ): Promise<AbilityBundle[]> {
   const bundles = await Promise.all(
     entries.map(async (entry): Promise<AbilityBundle | undefined> => {
-      const file = `${entry.name}.${kind.extension}`
+      const file = manifestFile(kind.type, entry.name)
       try {
         if (entry.error) throw new Error(entry.error)
-        const text = await readFile(join(marketplaceDir, MARKETPLACE_FOLDER[kind.type], file), "utf8")
-        return { type: kind.type, ...toBundle(text, entry), files: { [file]: text }, hasScripts: false }
+        const text = await readFile(join(marketplaceDir, file.path), "utf8")
+        return { type: kind.type, ...toBundle(text, entry), files: { [file.key]: text }, hasScripts: false }
       } catch (error) {
         console.warn(`Marketplace ${kind.label} skipped`, {
           [kind.type]: entry.name,
@@ -265,7 +267,7 @@ async function readManifests<Entry extends { name: string; error?: string }>(
 async function readPersonaFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
   return readManifests(
     marketplaceDir,
-    { type: "persona", label: "persona", extension: "toml" },
+    { type: "persona", label: "persona" },
     await scanPersonas(marketplaceDir),
     (text, entry) => ({ name: entry.name, description: parsePersonaManifest(text, entry.name).label })
   )
@@ -275,7 +277,7 @@ async function readPersonaFiles(marketplaceDir: string): Promise<AbilityBundle[]
 async function readDatasetFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
   return readManifests(
     marketplaceDir,
-    { type: "dataset", label: "dataset", extension: "json" },
+    { type: "dataset", label: "dataset" },
     await scanDatasets(marketplaceDir),
     (_text, entry) => {
       if (!entry.label) throw new Error("no label")
@@ -284,11 +286,11 @@ async function readDatasetFiles(marketplaceDir: string): Promise<AbilityBundle[]
   )
 }
 
-/** Every valid `tools/*.toml`; ones that call a non-public host are skipped. */
+/** Every valid ability `tool.toml`; ones that call a non-public host are skipped (the ability's other parts still sync). */
 async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
   return readManifests(
     marketplaceDir,
-    { type: "tool", label: "HTTP tool", extension: "toml" },
+    { type: "tool", label: "HTTP tool" },
     await scanHttpTools(marketplaceDir),
     (text, entry) => {
       const ability = parseHttpToolManifest(text, entry.name)
@@ -299,17 +301,16 @@ async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
 }
 
 /**
- * Every `mcp/*.toml` the cloud could run. Skipped: ones without a `tools` allowlist or on a non-public host, and names
- * a tool already has (keys share one namespace per name). stdio servers are kept whether or not an MCP sandbox is
- * configured right now; offering them checks that.
+ * Every ability `mcp.toml` the cloud could run. Skipped: ones without a `tools` allowlist, on a non-public host, or local-only (the
+ * ability's other parts still sync). stdio servers are kept whether or not an MCP sandbox is configured right now;
+ * offering them checks that.
  */
-async function readMcpAbilities(marketplaceDir: string, toolNames: Set<string>): Promise<AbilityBundle[]> {
+async function readMcpAbilities(marketplaceDir: string): Promise<AbilityBundle[]> {
   return readManifests(
     marketplaceDir,
-    { type: "mcp", label: "MCP ability", extension: "toml" },
+    { type: "mcp", label: "MCP ability" },
     await scanMcpAbilities(marketplaceDir),
     (text, entry) => {
-      if (toolNames.has(entry.name)) throw new Error(`an HTTP tool is already called ${entry.name}`)
       const ability = parseMcpManifest(text, entry.name)
       const problem = cloudMcpProblem(ability)
       if (problem) throw new Error(problem)

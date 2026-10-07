@@ -4,6 +4,7 @@ title: Website widget
 parent: Using Kaja
 nav_order: 4
 summary: "Embed a chat on your own website."
+icon: 🖼
 ---
 
 # Website widget
@@ -70,8 +71,8 @@ other's, and none of it mixes into yours.
 
 A widget turn runs in [cloud mode](/getting-started/modes#cloud-mode) with the cloud
 [built-in tools](/abilities/tools#built-ins), but no HTTP tools or MCP servers. A key's abilities are
-**skills only**, so a visitor can never trigger a call with your API keys. Every persona in the catalog is
-available, starting with the key's own.
+**skills only** (the ones its persona lists), so a visitor can never trigger a call with your API keys. Every
+persona in the catalog is available, starting with the key's own.
 
 ## Types
 

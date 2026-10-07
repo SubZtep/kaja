@@ -8,8 +8,9 @@ const configRoot = `${tmpdir()}/kaja-test-xdg-config-doctor-credentials`
 process.env.XDG_CONFIG_HOME = configRoot
 
 const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
-const { abilityKeyWhere, collectCredentials, outcomeLine, resolveCredentials, runCredentialPass, summaryLines } =
-  await import("../../../lib/doctor/credentials")
+const { collectCredentials, outcomeLine, placeholdersFor, resolveCredentials, summaryLines } = await import(
+  "../../../lib/doctor/credentials"
+)
 type CredentialItem = import("../../../lib/doctor/credentials").CredentialItem
 
 const kajaDir = join(configRoot, "kaja")
@@ -47,7 +48,7 @@ function fakeItem(over: Partial<CredentialItem> & { works?: (value: string | und
   return { item, saved }
 }
 
-const io = (answers: (string | undefined)[], saveAnyway = false) => {
+const io = (answers: (string | undefined)[]) => {
   const titles: string[] = []
   return {
     titles,
@@ -56,8 +57,7 @@ const io = (answers: (string | undefined)[], saveAnyway = false) => {
       ask: async (title: string) => {
         titles.push(title)
         return answers.shift()
-      },
-      askSaveAnyway: async () => saveAnyway
+      }
     }
   }
 }
@@ -136,14 +136,11 @@ test("a failing saved value asks for a new one with the reason", async () => {
   expect(outcomes[0]!.status).toBe("saved")
 })
 
-test("a new value that fails is saved only when the user says so", async () => {
-  const declined = fakeItem({ works: () => false })
-  const kept = await resolveCredentials([declined.item], io(["bad"], false).io)
-  expect(declined.saved).toEqual([])
-  expect(kept[0]).toMatchObject({ status: "missing", reason: "rejected" })
-
+test("a new value that fails is saved anyway, without asking, and stays on the to-do list", async () => {
   const accepted = fakeItem({ works: () => false })
-  const saved = await resolveCredentials([accepted.item], io(["bad"], true).io)
+  const { io: prompts, titles } = io(["bad"])
+  const saved = await resolveCredentials([accepted.item], prompts)
+  expect(titles).toHaveLength(1)
   expect(accepted.saved).toEqual(["bad"])
   expect(saved[0]).toMatchObject({ status: "saved-failing", reason: "rejected" })
   expect(summaryLines(saved, "/s")).toContain("  [thing] key: rejected")
@@ -160,6 +157,49 @@ test("skipping leaves it on the to-do list; an untestable value is saved as unte
   expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
 })
 
+test("a missing ability key is offered (Enter skips), and without it the ability is off, not a to-do", async () => {
+  const ability = () => fakeItem({ required: false, withoutKey: "off", works: value => value === "good" })
+  const skipped = ability()
+  const { io: prompts, titles } = io([undefined])
+  const outcomes = await resolveCredentials([skipped.item], prompts)
+  expect(titles).toEqual(["thing is off until it has a key. Enter one, or skip."])
+  expect(outcomes[0]!.status).toBe("off")
+  expect(stripVTControlCharacters(outcomeLine(outcomes[0]!))).toContain("thing: no key, off")
+  expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
+
+  const entered = ability()
+  expect((await resolveCredentials([entered.item], io(["good"]).io))[0]!.status).toBe("saved")
+  expect(entered.saved).toEqual(["good"])
+
+  const headless = ability()
+  const reported = await resolveCredentials([headless.item], { ...io([]).io, interactive: false })
+  expect(reported[0]!.status).toBe("off")
+})
+
+test("a keyless ability's missing key is offered too; skipped, it's tested and used without one", async () => {
+  const checked: (string | undefined)[] = []
+  const keyless = () =>
+    fakeItem({
+      required: false,
+      withoutKey: "keyless",
+      check: async value => {
+        checked.push(value)
+        return { ok: true }
+      }
+    })
+  const skipped = keyless()
+  const { io: prompts, titles } = io([undefined])
+  const outcomes = await resolveCredentials([skipped.item], prompts)
+  expect(titles).toEqual(["thing works without a key, but one lifts its limits. Enter one, or skip to use it without."])
+  expect(checked).toEqual([undefined])
+  expect(outcomes[0]!.status).toBe("keyless")
+  expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
+
+  const entered = keyless()
+  expect((await resolveCredentials([entered.item], io(["k"]).io))[0]!.status).toBe("saved")
+  expect(entered.saved).toEqual(["k"])
+})
+
 test("a value the wizard collected is tested and saved without asking again", async () => {
   const item = fakeItem({ works: value => value === "good" })
   const prompts = io([])
@@ -170,16 +210,13 @@ test("a value the wizard collected is tested and saved without asking again", as
   expect(prompts.titles).toEqual([])
 })
 
-test("a collected value that fails is kept only when the user says so", async () => {
-  const declined = fakeItem({ works: () => false })
-  const refused = await resolveCredentials([declined.item], io([], false).io, () => {}, { "[thing] key": "bad" })
-  expect(refused[0]!.status).toBe("missing")
-  expect(declined.saved).toEqual([])
-
-  const accepted = fakeItem({ works: () => false })
-  const kept = await resolveCredentials([accepted.item], io([], true).io, () => {}, { "[thing] key": "bad" })
-  expect(kept[0]!.status).toBe("saved-failing")
-  expect(accepted.saved).toEqual(["bad"])
+test("a collected value that fails is saved anyway, without asking", async () => {
+  const collected = fakeItem({ works: () => false })
+  const { io: prompts, titles } = io([])
+  const outcomes = await resolveCredentials([collected.item], prompts, () => {}, { "[thing] key": "bad" })
+  expect(outcomes[0]!.status).toBe("saved-failing")
+  expect(collected.saved).toEqual(["bad"])
+  expect(titles).toEqual([])
 })
 
 test("null means the caller already asked and was turned down, so the pass doesn't ask twice", async () => {
@@ -192,114 +229,97 @@ test("null means the caller already asked and was turned down, so the pass doesn
   expect(item.saved).toEqual([])
 })
 
-test("a key nothing needs is asked for only when the caller opts in, and is tested before it's saved", async () => {
+test("a key nothing needs is never asked for", async () => {
   const quiet = fakeItem({ required: false, works: () => true })
   const outcomes = await resolveCredentials([quiet.item], io(["k"]).io)
   expect(outcomes[0]!.status).toBe("keyless")
   expect(quiet.saved).toEqual([])
-
-  const asked = fakeItem({
-    label: "context7 (MCP ability)",
-    hint: "header Authorization",
-    required: false,
-    works: v => v === undefined || v === "k"
-  })
-  const prompts = io(["k"])
-  const opted = await resolveCredentials([asked.item], prompts.io, () => {}, {}, true)
-  expect(prompts.titles).toEqual([
-    "context7 (MCP ability) can use an API key (header Authorization). It's optional: it works without one."
-  ])
-  expect(opted[0]!.status).toBe("saved")
-  expect(asked.saved).toEqual(["k"])
 })
 
-test("declining an optional key leaves the ability as it was", async () => {
-  const item = fakeItem({ required: false, works: () => true })
-  const outcomes = await resolveCredentials([item.item], io([undefined]).io, () => {}, {}, true)
-  expect(outcomes[0]!.status).toBe("keyless")
-  expect(item.saved).toEqual([])
-})
-
-test("a scoped pass looks only at the items it was given", async () => {
-  put("abilities.toml", `tools = ["gh", "open"]\n`)
-  const tool = (name: string) =>
-    `name = "${name}"\ndescription = "x"\nbaseUrl = "https://api.${name}.test"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n\n[[tools]]\nname = "${name}_get"\ndescription = "x"\npath = "/x"\n`
-  put("marketplace/tools/gh.toml", tool("gh"))
-  put("marketplace/tools/open.toml", tool("open"))
-  put("secrets.toml", "")
-  put("mcp.toml", "servers = []\n")
-
-  // runCredentialPass asks only on a terminal; a developer's shell is one, and the missing key would open a real prompt
-  const isTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY")
-  Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true })
-  try {
-    const outcomes = await runCredentialPass(() => {}, undefined, [], {}, { only: [abilityKeyWhere("gh")] })
-    expect(outcomes.map(o => o.item.where)).toEqual(["[abilities.gh] api_key"])
-  } finally {
-    if (isTTY) Object.defineProperty(process.stdin, "isTTY", isTTY)
-    else delete (process.stdin as { isTTY?: boolean }).isTTY
-  }
-})
-
-test("collects providers, keyed abilities, declared MCP secrets and a saved Telegram token", async () => {
+test("collects providers, keyed abilities a persona uses, and a saved Telegram token", async () => {
   put(
     "models.toml",
     `[providers.local]\nbase_url = "http://localhost:11434/v1"\n\n[models.m]\nmodel = "m"\ntasks = ["chat"]\nprovider = "local"\n`
   )
-  put("abilities.toml", `tools = ["gh", "open"]\n`)
+  put("marketplace/personas/default.toml", `label = "D"\nabilities = ["gh", "open"]\n`)
   put(
-    "marketplace/tools/gh.toml",
-    `name = "gh"\ndescription = "x"\nbaseUrl = "https://api.github.com"\nauth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\n\n[[tools]]\nname = "gh_get"\ndescription = "x"\npath = "/x"\n`
+    "marketplace/abilities/gh/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.github.com"\nauth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\n\n[[tools]]\nname = "gh_get"\ndescription = "x"\npath = "/x"\n`
   )
   put(
-    "marketplace/tools/open.toml",
-    `name = "open"\ndescription = "x"\nbaseUrl = "https://api.open.test"\n\n[[tools]]\nname = "open_get"\ndescription = "x"\npath = "/x"\n`
+    "marketplace/abilities/open/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.open.test"\n\n[[tools]]\nname = "open_get"\ndescription = "x"\npath = "/x"\n`
   )
+  // A keyed ability no persona uses isn't asked about.
   put(
-    "mcp.toml",
-    `[[servers]]\nid = "ctx"\ncommand = "true"\nsecrets = ["CTX_KEY", "CTX_ID"]\n\n[[servers]]\nid = "plain"\nurl = "https://mcp.example.com"\n`
+    "marketplace/abilities/unused/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.unused.test"\nauth = { type = "apiKey", in = "header", name = "X-Key" }\n\n[[tools]]\nname = "unused_get"\ndescription = "x"\npath = "/x"\n`
   )
-  put("secrets.toml", `[mcp.ctx]\nCTX_KEY = "k"\n\n[telegram]\nbot_token = "t"\n`)
+  put("secrets.toml", `[telegram]\nbot_token = "t"\n`)
 
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.present, i.required, i.hint])).toEqual([
     ["[providers.local] api_key", false, false, undefined],
-    ["[abilities.gh] api_key", false, true, "header Authorization"],
-    ["[mcp.ctx] CTX_KEY", true, true, "env CTX_KEY"],
-    ["[mcp.ctx] CTX_ID", false, true, "env CTX_ID"],
+    ["[abilities.gh] api_key", false, false, "header Authorization"],
     ["[telegram] bot_token", true, true, undefined]
   ])
 })
 
-test("an MCP secret can't be tested while another declared one is still missing", async () => {
-  put("mcp.toml", `[[servers]]\nid = "ctx"\ncommand = "true"\nsecrets = ["A", "B"]\n`)
-  const items = await collectCredentials()
-  expect(await items[0]!.check?.("value-for-a")).toBeUndefined()
-})
-
-test("MCP abilities with key auth become items; optional keys aren't required", async () => {
-  put("abilities.toml", `mcp = ["docs", "private", "open"]\ntools = ["weather"]\n`)
+test("MCP abilities with key auth become items too; only a keyless one stays on without its key", async () => {
+  put("marketplace/personas/default.toml", `label = "D"\nabilities = ["docs", "private", "open", "weather"]\n`)
   put(
-    "marketplace/mcp/docs.toml",
-    `name = "docs"\ndescription = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", optional = true }\n`
+    "marketplace/abilities/docs/mcp.toml",
+    `description = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", keyless = true }\n`
   )
   put(
-    "marketplace/mcp/private.toml",
-    `name = "private"\ndescription = "x"\ntransport = "stdio"\ncommand = "true"\nauth = { type = "apiKey", in = "env", name = "P_KEY" }\n`
+    "marketplace/abilities/private/mcp.toml",
+    `description = "x"\ntransport = "stdio"\ncommand = "true"\nauth = { type = "apiKey", in = "env", name = "P_KEY" }\n`
   )
-  put("marketplace/mcp/open.toml", `name = "open"\ndescription = "x"\nurl = "https://mcp.open.test/mcp"\n`)
+  put("marketplace/abilities/open/mcp.toml", `description = "x"\nurl = "https://mcp.open.test/mcp"\n`)
   put(
-    "marketplace/tools/weather.toml",
-    `name = "weather"\ndescription = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", optional = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
+    "marketplace/abilities/weather/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", keyless = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
   )
-  put("mcp.toml", "servers = []\n")
   put("secrets.toml", "")
 
   const items = await collectCredentials()
-  expect(items.map(i => [i.where, i.required, i.hint])).toEqual([
-    ["[abilities.weather] api_key", false, "query key"],
-    ["[abilities.docs] api_key", false, "header Authorization"],
-    ["[abilities.private] api_key", true, "env P_KEY"]
+  expect(items.map(i => [i.where, i.required, i.withoutKey, i.hint])).toEqual([
+    ["[abilities.weather] api_key", false, "keyless", "query key"],
+    ["[abilities.docs] api_key", false, "keyless", "header Authorization"],
+    ["[abilities.private] api_key", false, "off", "env P_KEY"]
   ])
   expect(items[1]!.label).toBe("docs (MCP ability)")
+
+  // A keyless HTTP tool can't be tested without a key, yet works: skipping its key reports it as working.
+  const { io: prompts, titles } = io([undefined])
+  const [weather] = await resolveCredentials([items[0]!], prompts)
+  expect(weather!.status).toBe("keyless")
+  expect(titles).toHaveLength(1)
+})
+
+test("the keys left unset become secrets.toml placeholders: abilities with a note, providers only when needed", () => {
+  const item = (where: string, over: Partial<CredentialItem> = {}): CredentialItem => ({
+    label: where,
+    where,
+    present: false,
+    required: false,
+    save: async () => {},
+    ...over
+  })
+  const placeholders = placeholdersFor([
+    { item: item("[abilities.web-search] api_key", { withoutKey: "off", hint: "header X-Key" }), status: "off" },
+    { item: item("[abilities.context7] api_key", { withoutKey: "keyless" }), status: "keyless" },
+    { item: item("[providers.xai] api_key"), status: "failing", reason: "401", kind: "credential" },
+    // Needs no key (Ollama), couldn't be reached, already set, or just saved: nothing to fill in.
+    { item: item("[providers.ollama] api_key"), status: "keyless" },
+    { item: item("[providers.llama] api_key"), status: "failing", reason: "down", kind: "unreachable" },
+    { item: item("[providers.fireworks] api_key", { present: true }), status: "ok" },
+    { item: item("[abilities.gh] api_key", { withoutKey: "off" }), status: "saved" },
+    { item: item("[telegram] bot_token", { required: true }), status: "missing", reason: "missing" }
+  ])
+  expect(placeholders).toEqual([
+    { group: "abilities", name: "web-search", note: "Off until it has a key (header X-Key)." },
+    { group: "abilities", name: "context7", note: "Works without a key; one lifts its limits." },
+    { group: "providers", name: "xai" }
+  ])
 })
