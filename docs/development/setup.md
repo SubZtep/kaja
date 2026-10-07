@@ -25,7 +25,9 @@ and warns when a major.minor version differs from CI's.
 **Recommended**
 
 - **Docker Compose** for PostgreSQL, a local mail catcher and S3-compatible object storage (RustFS)
-- **VSCode** (or compatible) with the recommended extensions, which wire up TOML schemas and Biome
+- **VSCode** (or compatible) with the recommended extensions, which wire up TOML schemas and Biome. Biome
+  isn't a dependency, so point the extension at your installed CLI in your user settings:
+  `"biome.lsp.bin": "/usr/bin/biome"` (or wherever `which biome` points)
 - **Claude Code** (the agent notes are `CLAUDE.md` files)
 
 ## Setup
