@@ -58,4 +58,4 @@ The first run starts a short setup wizard: sign in to Kaja Cloud, or point it at
 
 ## Documentation
 
-Want more? 🐓 Visit **[docs.kaja.io/development](https://docs.kaja.io/development/)**.
+Want more? 🐓 Visit [**docs.kaja.io**/development](https://docs.kaja.io/development/).
