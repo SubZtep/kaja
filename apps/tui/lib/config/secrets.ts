@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { type SecretsFile, SecretsFileSchema, type SecretsTelegram } from "@kaja/schema/config"
+import { stringifyToml } from "@kaja/shared/toml"
 import { file, TOML, write } from "bun"
 import TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
@@ -92,6 +93,6 @@ export async function saveSecrets(
     providers: { ...current.providers, ...update.providers },
     abilities: { ...current.abilities, ...update.abilities }
   }
-  await write(getSecretsPath(), TOML.stringify(next)!)
+  await write(getSecretsPath(), stringifyToml(next))
   cached = undefined
 }

@@ -5,13 +5,15 @@
 # stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
-[providers.openrouter]
-base_url = "https://openrouter.ai/api/v1"
+[providers]
+  [providers.openrouter]
+  base_url = "https://openrouter.ai/api/v1"
 
 
-[models.space-bunny-alpha]
-model    = "stealth/space-bunny-alpha"
-provider = "openrouter"
-tasks    = [
-  "chat"
-]
+[models]
+  [models.space-bunny-alpha]
+  model    = "stealth/space-bunny-alpha"
+  provider = "openrouter"
+  tasks    = [
+    "chat"
+  ]

@@ -5,22 +5,26 @@
 # stops answering. `model` is the literal name sent to the API.
 # Provider API keys live in secrets.toml's [providers.<name>] tables, keyed the same way.
 
-# Ollama requires an API key but ignores its value, e.g. [providers.ollama] api_key = "ollama" in secrets.toml.
-[providers.ollama]
-base_url = "http://localhost:11434/v1"
+[providers]
 
 
-[models.qwen3-5-4b]
-model    = "qwen3.5:4b"
-provider = "ollama"
-tasks    = [
-  "chat"
-]
+  # Ollama requires an API key but ignores its value, e.g. [providers.ollama] api_key = "ollama" in secrets.toml.
+  [providers.ollama]
+  base_url = "http://localhost:11434/v1"
 
 
-[models.qwen3-embedding-0-6b]
-model    = "qwen3-embedding:0.6b"
-provider = "ollama"
-tasks    = [
-  "embedding"
-]
+[models]
+  [models.qwen3-5-4b]
+  model    = "qwen3.5:4b"
+  provider = "ollama"
+  tasks    = [
+    "chat"
+  ]
+
+
+  [models.qwen3-embedding-0-6b]
+  model    = "qwen3-embedding:0.6b"
+  provider = "ollama"
+  tasks    = [
+    "embedding"
+  ]

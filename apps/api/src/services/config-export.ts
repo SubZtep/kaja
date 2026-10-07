@@ -1,6 +1,6 @@
 import type { Model, ModelTask, Provider } from "@kaja/schema/api"
 import { uniqueModelSlug } from "@kaja/shared/text"
-import { TOML } from "bun"
+import { stringifyToml } from "@kaja/shared/toml"
 
 // Excluded from ETag hashing (the route layer hashes the un-prefixed body): a live timestamp would
 // otherwise make the ETag change on every request, defeating If-None-Match/304.
@@ -51,5 +51,5 @@ export function renderModelsToml(providers: Provider[], models: Model[]): string
     providers.filter(p => usedProviderNames.has(p.name)).map(p => [p.name, { base_url: p.baseUrl }])
   )
 
-  return generatedHeader() + TOML.stringify({ providers: providersData, models: modelsData })
+  return generatedHeader() + stringifyToml({ providers: providersData, models: modelsData })
 }

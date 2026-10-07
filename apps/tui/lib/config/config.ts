@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { type KajaConfig, KajaConfigSchema, type KajaPreferences } from "@kaja/schema/config"
+import { stringifyToml } from "@kaja/shared/toml"
 import { file, TOML, write } from "bun"
 import rawTemplate from "../../../../docs/config/settings.toml" with { type: "text" }
 import { detectLanguage, t } from "../i18n"
@@ -82,22 +83,22 @@ export async function config() {
 }
 
 export async function saveConfig(data: KajaConfig) {
-  await write(getConfigPath(), TOML.stringify(data)!)
+  await write(getConfigPath(), stringifyToml(data))
   cached = undefined
 }
 
 export async function savePreferences(preferences: KajaPreferences) {
   const current = await config()
   // Merge into the existing block: callers persist only the keys they manage (thinking/sounds/voice) and must not drop others like locale.
-  await write(getConfigPath(), TOML.stringify({ ...current, preferences: { ...current.preferences, ...preferences } })!)
+  await write(getConfigPath(), stringifyToml({ ...current, preferences: { ...current.preferences, ...preferences } }))
   cached = undefined
 }
 
 export async function create() {
-  await write(getConfigPath(), TOML.stringify(TEMPLATE_TOML)!)
+  await write(getConfigPath(), stringifyToml(TEMPLATE_TOML))
 }
 
 /** Cloud config: just the language preference, detected from the system locale. No persona (personas are a local-agent concept) and no stt/tts/memory sections (those don't apply to the cloud client). */
 export async function createCloud() {
-  await write(getConfigPath(), TOML.stringify({ preferences: { locale: detectLanguage() } })!)
+  await write(getConfigPath(), stringifyToml({ preferences: { locale: detectLanguage() } }))
 }
