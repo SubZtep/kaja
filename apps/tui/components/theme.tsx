@@ -1,15 +1,7 @@
-import {
-  type ComponentTheme,
-  defaultTheme,
-  extendTheme,
-  type Theme,
-  ThemeContext,
-  ThemeProvider,
-  useComponentTheme
-} from "@inkjs/ui"
+import { type ComponentTheme, defaultTheme, extendTheme, type Theme, ThemeProvider, useComponentTheme } from "@inkjs/ui"
 import chalk, { type ForegroundColorName } from "chalk"
 import type { BoxProps, TextProps } from "ink"
-import { type ReactNode, useContext, useMemo } from "react"
+import type { ReactNode } from "react"
 import {
   type Brightness,
   consoleTheme,
@@ -278,16 +270,6 @@ export function useKajaTheme(): KajaStyles {
 /** The raw colours of the nearest theme, for painting outside Ink's props (chalk). */
 export function usePalette(): Palette {
   return useKajaComponentTheme().palette
-}
-
-/** The surrounding theme with ink-ui's Spinner label in one of Kaja's styles, for a ThemeProvider around that one spinner. */
-export function useSpinnerTheme(label: "thinkingLabel" | "toolLabel"): Theme {
-  const theme = useContext(ThemeContext)
-  const styles = useKajaTheme()
-  return useMemo(
-    () => extendTheme(theme, { components: { Spinner: { styles: { label: styles[label] } } } }),
-    [theme, styles, label]
-  )
 }
 
 /** Wraps a tree Ink renders on its own (doctor prompts, progress bars, status lines, the ability picker) in the console theme; before one is known, ink-ui's defaults. */

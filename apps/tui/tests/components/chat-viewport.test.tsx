@@ -202,3 +202,29 @@ test("a reply as wide as the terminal keeps its dot, gap and indent; streaming r
   t.unmount()
   await t.waitUntilExit()
 })
+
+test("a thinking line wider than the terminal keeps its spinner, gap and one row", async () => {
+  const t = renderForTest(
+    <Box flexDirection="column" width={30} height={12}>
+      <ChatViewport
+        events={[{ type: "user", text: "hi" }]}
+        thinking={false}
+        partial={{ content: "", reasoning: "x".repeat(40_000) }}
+        pending={true}
+        sounds={false}
+      />
+    </Box>,
+    { columns: 30 }
+  )
+  await t.tick()
+  await t.tick()
+
+  const lines = t.lastFrame().split("\n")
+  const at = lines.findIndex(line => /\d+ ?s/.test(line))
+  expect(at).toBeGreaterThan(-1)
+  expect(lines[at]).toMatch(/^\S \S/)
+  expect(lines[at + 1]?.trim() ?? "").toBe("")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
