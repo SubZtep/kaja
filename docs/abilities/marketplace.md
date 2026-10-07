@@ -28,7 +28,7 @@ Right now the marketplace has:
 
 - **personas:** `care`, `barkochba`, `onboarding`
 - **skills:** `system-report`, `meeting-notes`
-- **HTTP tools:** `brave-search`, `open-meteo`
+- **HTTP tools:** `web-search`, `open-meteo`
 - **MCP servers:** `chrome-devtools`, `context7`, `geo-service`, `sequential-thinking`, `time`
 
 ## In local mode
@@ -87,7 +87,7 @@ abilities your personas use that take one. Kaja tests the key, stores it encrypt
 the page only says "Key saved", with Replace and Remove. It's used for your own turns only and never reaches
 your terminal. An ability that takes a key stays out of your chats until you add one, unless it also works
 without one (like context7, where a key only raises the limits). Some abilities, like web search
-(`brave-search`), come with a key from the server, so you need none. If you add your own, it's used instead.
+(`web-search`), come with a key from the server, so you need none. If you add your own, it's used instead.
 
 **Approvals.** A call that could change something waits for you: the terminal asks, and the Telegram bot
 shows Approve and Decline buttons; both can also approve the tool for the rest of the chat. The server runs

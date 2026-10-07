@@ -5,7 +5,7 @@ label     = "Helpful assistant"
 when      = "no other persona clearly fits the conversation"
 # Every marketplace ability; one that needs a key you haven't saved is left out.
 abilities = [
-  "brave-search",
+  "web-search",
   "open-meteo",
   "geo-service",
   "time",

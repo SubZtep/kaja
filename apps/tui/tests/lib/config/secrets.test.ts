@@ -146,7 +146,7 @@ test("getConfigDir affects getSecretsPath the same way it affects the other conf
   expect(getSecretsPath()).toBe(join(getConfigDir(), "secrets.toml"))
 })
 
-const OFF = { group: "abilities", name: "brave-search", note: "Off until it has a key." } as const
+const OFF = { group: "abilities", name: "web-search", note: "Off until it has a key." } as const
 const KEYLESS = { group: "abilities", name: "context7" } as const
 
 test("unset keys are written as commented-out tables in their group, and read back", () => {
@@ -157,7 +157,7 @@ test("unset keys are written as commented-out tables in their group, and read ba
   ])
   expect(text).toBe(
     '[providers]\n  [providers.fireworks]\n  api_key = "fw"\n\n  # [providers.xai]\n  # api_key = ""\n\n' +
-      '# [abilities]\n  # Off until it has a key.\n  # [abilities.brave-search]\n  # api_key = ""\n\n' +
+      '# [abilities]\n  # Off until it has a key.\n  # [abilities.web-search]\n  # api_key = ""\n\n' +
       '  # [abilities.context7]\n  # api_key = ""\n'
   )
   // Comments only: nothing a placeholder says reaches the parsed file.
@@ -178,10 +178,10 @@ test("saving keeps the placeholders, and one that gets its key turns into the re
   await saveSecrets({ telegram: { bot_token: "t" } })
   expect(readSecretPlaceholders(await Bun.file(getSecretsPath()).text())).toEqual([OFF, KEYLESS])
 
-  await saveSecrets({ abilities: { "brave-search": { api_key: "b" } } })
+  await saveSecrets({ abilities: { "web-search": { api_key: "b" } } })
   const text = await Bun.file(getSecretsPath()).text()
   expect(readSecretPlaceholders(text)).toEqual([KEYLESS])
-  expect((await loadSecretsFile()).abilities).toEqual({ "brave-search": { api_key: "b" } })
+  expect((await loadSecretsFile()).abilities).toEqual({ "web-search": { api_key: "b" } })
 })
 
 test("updating to the placeholders the file already holds leaves it untouched", async () => {

@@ -27,7 +27,7 @@ owner_ids = [123456789]
 
 # An ability, by name; its manifest's `auth` says which header, query parameter or env var it goes in
 [abilities]
-  [abilities.brave-search]
+  [abilities.web-search]
   api_key = "BSA..."
 
   # Works without a key; one lifts its limits (header Authorization).

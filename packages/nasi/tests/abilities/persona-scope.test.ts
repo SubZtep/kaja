@@ -13,7 +13,7 @@ const fn = (name: string, source?: string): Tool => ({
 const tools = [
   fn("ask_user"),
   fn("load_skill"),
-  fn("web_search", "ability:brave-search"),
+  fn("web_search", "ability:web-search"),
   fn("navigate_page", "ability:chrome-devtools"),
   fn("take_screenshot", "ability:chrome-devtools"),
   fn("roll_dice", "ability:dice"),
@@ -26,7 +26,7 @@ const names = (persona: Persona, skills: SkillSummary[] = []) => toolsForPersona
 
 test("a persona gets builtins and mcp.toml servers, plus only the abilities it lists", () => {
   expect(names({ id: "none", label: "None" })).toEqual(["ask_user", "read_thing"])
-  expect(names({ id: "web", label: "Web", abilities: ["brave-search", "dice"] })).toEqual([
+  expect(names({ id: "web", label: "Web", abilities: ["web-search", "dice"] })).toEqual([
     "ask_user",
     "web_search",
     "roll_dice",
@@ -44,7 +44,7 @@ test("load_skill comes along only when the persona has a skill to load", () => {
   expect(names({ id: "o", label: "O", abilities: [{ name: "pdf", skill: "off" }] }, [pdf])).not.toContain("load_skill")
   // A sticky skill is already in the prompt, so it alone doesn't bring load_skill
   expect(names({ id: "s", label: "S", abilities: ["rules"] }, [rules])).not.toContain("load_skill")
-  expect(names({ id: "x", label: "X", abilities: ["brave-search"] }, [pdf])).not.toContain("load_skill")
+  expect(names({ id: "x", label: "X", abilities: ["web-search"] }, [pdf])).not.toContain("load_skill")
 })
 
 test("skillMode: the entry decides, else SKILL.md's sticky suggestion, else load; unlisted is off", () => {

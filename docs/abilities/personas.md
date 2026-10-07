@@ -49,7 +49,7 @@ of that ability; a table tweaks one:
 
 ```toml
 abilities = [
-  "brave-search",                                  # every part of the ability
+  "web-search",                                    # every part of the ability
   { name = "chrome-devtools", tools = ["navigate_page", "take_screenshot"] },  # only these tools
   { name = "meeting-notes", skill = "sticky" },    # the skill's instructions stay in the system prompt
   { name = "system-report", skill = "off" }        # the ability's tools, without its skill

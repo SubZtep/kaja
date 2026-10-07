@@ -33,7 +33,7 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/configuration/models).
 
-Web search isn't built in. Turn on the marketplace's `brave-search` [HTTP tool](#http-tools) to get
+Web search isn't built in. Turn on the marketplace's `web-search` [HTTP tool](#http-tools) to get
 `web_search`: locally with your own Brave Search API key, in the cloud with the server's key (or yours, if
 you save one).
 
@@ -95,7 +95,7 @@ type = "string"
   sees.
 - Locally, a tool may call hosts on your own network (Home Assistant, a NAS, Ollama).
 
-The marketplace has two: `brave-search` adds `web_search` through the Brave Search API (the key goes in the
+The marketplace has two: `web-search` adds `web_search` through the Brave Search API (the key goes in the
 `X-Subscription-Token` header, and `kaja doctor` asks for it), and `open-meteo` looks up weather.
 
 In the cloud, marketplace HTTP tools work in cloud chat and the cloud Telegram bot, unless the `baseUrl` is a

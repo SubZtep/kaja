@@ -19,8 +19,8 @@ test("stringifyToml groups sub-tables under their parent's header and drops empt
 })
 
 test("stringifyToml quotes keys that need it and writes nothing for an empty file", () => {
-  expect(stringifyToml({ abilities: { "brave-search": { api_key: "c" } } })).toBe(
-    '[abilities]\n  [abilities.brave-search]\n  api_key = "c"\n'
+  expect(stringifyToml({ abilities: { "web-search": { api_key: "c" } } })).toBe(
+    '[abilities]\n  [abilities.web-search]\n  api_key = "c"\n'
   )
   expect(stringifyToml({ providers: {}, abilities: { x: {} } })).toBe("")
 })

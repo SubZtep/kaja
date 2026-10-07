@@ -307,7 +307,7 @@ test("the keys left unset become secrets.toml placeholders: abilities with a not
     ...over
   })
   const placeholders = placeholdersFor([
-    { item: item("[abilities.brave-search] api_key", { withoutKey: "off", hint: "header X-Key" }), status: "off" },
+    { item: item("[abilities.web-search] api_key", { withoutKey: "off", hint: "header X-Key" }), status: "off" },
     { item: item("[abilities.context7] api_key", { withoutKey: "keyless" }), status: "keyless" },
     { item: item("[providers.xai] api_key"), status: "failing", reason: "401", kind: "credential" },
     // Needs no key (Ollama), couldn't be reached, already set, or just saved: nothing to fill in.
@@ -318,7 +318,7 @@ test("the keys left unset become secrets.toml placeholders: abilities with a not
     { item: item("[telegram] bot_token", { required: true }), status: "missing", reason: "missing" }
   ])
   expect(placeholders).toEqual([
-    { group: "abilities", name: "brave-search", note: "Off until it has a key (header X-Key)." },
+    { group: "abilities", name: "web-search", note: "Off until it has a key (header X-Key)." },
     { group: "abilities", name: "context7", note: "Works without a key; one lifts its limits." },
     { group: "providers", name: "xai" }
   ])

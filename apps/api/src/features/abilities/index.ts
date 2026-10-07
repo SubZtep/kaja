@@ -15,7 +15,7 @@ const keyParams = z.object({
   name: z
     .string()
     .min(1)
-    .openapi({ param: { name: "name", in: "path" }, example: "brave-search" })
+    .openapi({ param: { name: "name", in: "path" }, example: "web-search" })
 })
 
 /** /abilities/me: the signed-in user's ability keys. Every ability is on for everyone; personas pick what a turn uses. */
