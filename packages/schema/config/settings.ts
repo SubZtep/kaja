@@ -33,9 +33,11 @@ export const KajaPreferencesSchema = z.object({
     .optional()
     .describe("Modifier key for the help/persona hotkeys (default: alt)"),
   theme: z
-    .enum(["auto", "dark", "light"])
+    .enum(["auto", "dark", "light", "terminal"])
     .optional()
-    .describe("Colour theme; auto asks the terminal for its background colour (default: auto)"),
+    .describe(
+      "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme (default: auto)"
+    ),
   yolo: z
     .boolean()
     .optional()

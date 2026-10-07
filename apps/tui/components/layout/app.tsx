@@ -22,7 +22,7 @@ import { client, clientForModel, compactAt, summarizer } from "../../lib/models/
 import type { Persona } from "../../lib/personas/personas"
 import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
-import { themes } from "../theme"
+import { themeFor } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { type ApprovalScope, ConfirmCommand } from "./confirm-command"
 import { Header } from "./header"
@@ -171,7 +171,7 @@ function Chrome({
     yolo,
     theme: initialTheme
   } = usePreferences(initialPreferences)
-  const { theme, toggle: toggleTheme } = useTheme(initialTheme)
+  const theme = useTheme(initialTheme)
   useSound(events, sounds)
   const speaking = useVoice(events, capabilities.voice && voice, personaModels)
   const { columns, rows } = useWindowSize()
@@ -183,7 +183,6 @@ function Chrome({
   const { armed: quitArmed, press: pressQuit } = useQuitGuard(isQuittable(bottomChromeKey), pending || runningCommand)
   // "L" for help, not "H": Ctrl+H is byte-identical to Backspace (0x08), so it could
   // never fire under hotkeyModifier: "ctrl" — Ink has no way to tell the two apart.
-  // "D" for dark/light: T is taken by Ctrl+T (dictation) under hotkeyModifier: "ctrl"
   const bindings: KeyBinding[] = [
     {
       letter: "l",
@@ -201,7 +200,6 @@ function Chrome({
     },
     // "R" for copy, not "C": Ctrl+C is reserved by Ink to quit the app, so under hotkeyModifier: "ctrl" it could never fire
     { letter: "r", label: t("keybar.copy"), when: true, run: () => uiEvents.emit("copy") },
-    { letter: "d", label: t("keybar.theme"), when: true, run: toggleTheme },
     {
       letter: "e",
       label: t("keybar.expand"),
@@ -216,7 +214,7 @@ function Chrome({
   const keyBarItems = buildKeyBarItems(hotkeyModifier, bindings, escKeyBarItem(bottomChromeKey, quitArmed, pressQuit))
 
   return (
-    <ThemeProvider theme={themes[theme]}>
+    <ThemeProvider theme={themeFor(theme)}>
       <CodeViewContext.Provider value={codeView.view}>
         <Box flexDirection="column" width={columns} height={rows}>
           <Header

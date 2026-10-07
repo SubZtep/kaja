@@ -57,8 +57,8 @@ function createParser(p: Palette) {
         del: paint(p.muted).dim.strikethrough,
         link: paint(p.user),
         href: paint(p.user).underline,
-        tableHead: paint(p.tableHead).bold,
-        tableBorder: paint(p.tableBorder),
+        tableHead: paint(p.frame).bold,
+        tableBorder: paint(p.muted),
         tableWidth: () => tableWidth,
         codeLines: () => (expand ? Number.POSITIVE_INFINITY : previewLines),
         codeSeen: (lines: number) => {

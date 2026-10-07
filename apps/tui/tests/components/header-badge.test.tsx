@@ -56,14 +56,40 @@ test("a long tool label or model name keeps the header at two rows", async () =>
   }
 })
 
-test("yolo puts a YOLO badge before the mode badge", async () => {
+test("yolo puts a YOLO badge after the mode badge", async () => {
   const t = renderForTest(
     <Header mode="local" yolo persona="Kaja" model="m" promptTokens={null} contextWindow={null} width={60} />
   )
   await t.tick()
 
-  expect(t.lastFrame().split("\n")[0]!.trimEnd()).toMatch(/YOLO\s+LOCAL$/)
+  expect(t.lastFrame().split("\n")[0]!.trimEnd()).toMatch(/LOCAL\s+YOLO$/)
 
   t.unmount()
   await t.waitUntilExit()
+})
+
+// The second space before LOCAL is the badge's own padding, on its tinted background
+test("one space between the model, the provider, the tokens and the badge", async () => {
+  for (const [promptTokens, expected] of [
+    [null, /Model Provider {2}LOCAL$/],
+    [1200, /Model Provider · 1,200 tokens {2}LOCAL$/]
+  ] as const) {
+    const t = renderForTest(
+      <Header
+        mode="local"
+        persona="Kaja"
+        model="model"
+        provider="provider"
+        promptTokens={promptTokens}
+        contextWindow={null}
+        width={80}
+      />
+    )
+    await t.tick()
+
+    expect(t.lastFrame().split("\n")[0]!.trimEnd()).toMatch(expected)
+
+    t.unmount()
+    await t.waitUntilExit()
+  }
 })

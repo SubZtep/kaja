@@ -89,7 +89,6 @@ Every entry but Cancel and Decline is also a button: it dims under the mouse and
 | `<modifier>+L` | Open these docs in your browser |
 | `<modifier>+P` | Open the persona picker (hidden while a turn runs) |
 | `<modifier>+R` | Copy the latest message (`C` is taken by `Ctrl+C`) |
-| `<modifier>+D` | Switch between dark and light, and save it |
 | `<modifier>+E` | Show every line of long code blocks and of the command awaiting approval (they show `codePreviewLines`, 5 by default, otherwise) |
 
 `<modifier>` is `Alt` by default, or `Ctrl` with `preferences.hotkeyModifier = "ctrl"` in
@@ -117,9 +116,14 @@ There's a dark and a light theme. With `theme = "auto"` (the default), Kaja asks
 fits when it starts. In terminals that announce changes (kitty, Ghostty, Contour and others), it follows
 when you switch your system between dark and light.
 
-`<modifier>+D` switches it yourself, saves the pick in
-[`settings.toml`](/configuration/config#preferences), and stops following the terminal. Set
-`theme = "auto"` to go back.
+`theme = "terminal"` paints Kaja in your terminal's own colour scheme instead: text uses its ANSI
+colours, and the tinted backgrounds (the badges, the input box, your messages) are mixed from them. Load
+any scheme into your terminal, from [terminal.sexy](https://terminal.sexy/) for example, and Kaja wears it
+too. A terminal that doesn't report its colours gets the tints of the dark or light theme. After you
+change the terminal's scheme, restart Kaja so the tints follow.
+
+To pick one, set `theme` in [`settings.toml`](/configuration/config#preferences) (`dark`, `light` or
+`terminal`) and restart; `theme = "auto"` goes back to following the terminal.
 
 ---
 

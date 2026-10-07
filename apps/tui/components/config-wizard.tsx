@@ -8,12 +8,12 @@ import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
 import { CATALOG, type CatalogProvider, candidatesByTask, catalogProvider, TASK_ORDER } from "../lib/models/catalog"
-import type { Brightness } from "../lib/terminal-background"
+import type { ThemeName } from "../lib/terminal-background"
 import { CheckMenu } from "./elem/check-menu"
 import { Answered, Question, RailLine } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
 import { InputPrompt, Problem } from "./secret-prompt"
-import { themes } from "./theme"
+import { themeFor } from "./theme"
 
 /** Optional features, each needing one more answer afterwards. None is ticked by default. */
 export type WizardExtra = "telegram"
@@ -50,7 +50,7 @@ export type WizardResult = {
   mode?: KajaMode
   language?: Language
   /** Prefilled with the saved theme, else the one detected from the terminal's background. */
-  theme?: Brightness
+  theme?: ThemeName
   /** The ticked catalog providers, in catalog order, and `custom` last when that was ticked. Never empty once asked: local mode can't start without one. */
   providers?: string[]
   custom?: WizardCustom
@@ -113,11 +113,12 @@ const TASK_LABEL_KEY: Record<ModelTask, string> = {
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
 
-const THEME_CHOICES: Brightness[] = ["dark", "light"]
+const THEME_CHOICES: ThemeName[] = ["dark", "light", "terminal"]
 
-const THEME_LABEL_KEY: Record<Brightness, string> = {
+const THEME_LABEL_KEY: Record<ThemeName, string> = {
   dark: "wizard.themeDark",
-  light: "wizard.themeLight"
+  light: "wizard.themeLight",
+  terminal: "wizard.themeTerminal"
 }
 
 /** A name reduced to what a TOML table key and a secrets.toml entry can carry; never one the catalog already owns. */
@@ -336,7 +337,7 @@ export function ConfigWizard({
   // Set when Enter was pressed on the providers checklist with nothing ticked.
   const [noProvider, setNoProvider] = useState(false)
   // The theme the wizard is drawn in: follows the highlight on the theme step, so moving it recolours everything at once
-  const [preview, setPreview] = useState<Brightness>(initial.theme ?? "dark")
+  const [preview, setPreview] = useState<ThemeName>(initial.theme ?? "dark")
 
   // The last answer finishes it: every answer is already on screen, and there's no step to go back to.
   const finished = useRef(false)
@@ -620,7 +621,7 @@ export function ConfigWizard({
   }
 
   return (
-    <ThemeProvider theme={themes[preview]}>
+    <ThemeProvider theme={themeFor(preview)}>
       <Box flexDirection="column">
         <Static items={answered}>
           {item =>

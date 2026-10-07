@@ -4,7 +4,7 @@ import { Box, Text } from "ink"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
 import { t } from "../../lib/i18n"
-import { useKajaTheme, usePalette } from "../theme"
+import { useKajaTheme } from "../theme"
 import { MonsterMate } from "./monster"
 
 /**
@@ -61,8 +61,9 @@ export function Header({
 }>) {
   const tokensSuffix = tokensLabel(promptTokens, contextWindow)
   const spinnerType = useRandomSpinner(!!currentTool, "block")
-  const { muted, accent, toolLabel } = useKajaTheme()
-  const palette = usePalette()
+  const { muted, accent, toolLabel, badge } = useKajaTheme()
+  const danger = badge("danger")
+  const modeBadge = badge(mode === "cloud" ? "info" : "success")
 
   return (
     <Box width={width} flexShrink={0} paddingX={1} columnGap={1}>
@@ -85,7 +86,8 @@ export function Header({
             </Text>
           </Box>
         ) : (
-          <Box flexShrink={1} flexGrow={0} minWidth={0} alignItems="center" columnGap={1}>
+          // No columnGap: the provider and token texts bring their own leading space
+          <Box flexShrink={1} flexGrow={0} minWidth={0} alignItems="center">
             <Text {...muted()} wrap="truncate-end">
               {titleCase(model)}
             </Text>
@@ -94,24 +96,24 @@ export function Header({
                 {` ${titleCase(provider)}`}
               </Text>
             ) : null}
-            <Text {...muted()} wrap="truncate-end">
-              {tokensSuffix}
-            </Text>
+            {tokensSuffix ? (
+              <Text {...muted()} wrap="truncate-end">
+                {tokensSuffix}
+              </Text>
+            ) : null}
           </Box>
         )}
       </Box>
       <Box flexShrink={0} columnGap={1}>
-        {yolo ? (
-          <Badge color={palette.yoloBadge}>
-            <Text color={palette.yoloBadgeText}>YOLO</Text>
-          </Badge>
-        ) : null}
-        <Badge color={mode === "cloud" ? palette.cloudBadge : palette.localBadge}>
-          <Text color={mode === "cloud" ? palette.cloudBadgeText : palette.localBadgeText}>
-            {t(`header.${mode}`).toUpperCase()}
-          </Text>
+        <Badge color={modeBadge.background}>
+          <Text color={modeBadge.text}>{t(`header.${mode}`).toUpperCase()}</Text>
           {profile ? <Text dimColor> ·{profile}</Text> : null}
         </Badge>
+        {yolo ? (
+          <Badge color={danger.background}>
+            <Text color={danger.text}>YOLO</Text>
+          </Badge>
+        ) : null}
       </Box>
     </Box>
   )
