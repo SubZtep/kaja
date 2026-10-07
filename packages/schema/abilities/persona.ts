@@ -82,7 +82,11 @@ export const PersonaSchema = z
     // Short clause describing when this persona fits; shown in the system-prompt persona roster.
     when: z.string().min(1).optional(),
     // The abilities this persona uses (skills, HTTP tools, MCP servers, code tools), by folder name; unset means builtins only.
-    abilities: z.array(PersonaAbilitySchema).optional()
+    abilities: z.array(PersonaAbilitySchema).optional(),
+    localOnly: z
+      .boolean()
+      .optional()
+      .describe("Only on the user's own machine: the cloud leaves this persona out (its abilities work only locally)")
   })
   .extend(SamplingParamsSchema.shape)
 

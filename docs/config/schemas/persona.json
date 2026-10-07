@@ -129,6 +129,10 @@
         ]
       }
     },
+    "localOnly": {
+      "description": "Only on the user's own machine: the cloud leaves this persona out (its abilities work only locally)",
+      "type": "boolean"
+    },
     "temperature": {
       "type": "number",
       "minimum": 0,

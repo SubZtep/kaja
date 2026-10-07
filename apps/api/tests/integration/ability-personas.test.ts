@@ -15,7 +15,7 @@ const care = `care-${tag}`
 const quiz = `quiz-${tag}`
 const FIXTURE_DEFAULT = `Fixture default ${tag}`
 
-/** A marketplace folder with its own default, two personas (minus any in `leave`) and a broken one. */
+/** A marketplace folder with its own default, two personas (minus any in `leave`), a broken one and a local-only one. */
 function marketplace(base: string, leave: string[] = []) {
   const root = mkdtempSync(join(base, "mp-"))
   const put = (rel: string, content: string) => {
@@ -27,6 +27,7 @@ function marketplace(base: string, leave: string[] = []) {
     put(`personas/${care}.toml`, `label = "Care"\nwhen = "the user is sad"\ninstructions = "Be kind."\n`)
   put(`personas/${quiz}.toml`, `label = "Quiz"\n`)
   put(`personas/broken-${tag}.toml`, `when = "no label"\n`)
+  put(`personas/local-${tag}.toml`, `label = "Local"\nlocalOnly = true\n`)
   return root
 }
 
@@ -79,11 +80,12 @@ describe("personas in the cloud", () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds personas by their marketplace path, skipping broken ones", async () => {
+  test("a sync adds personas by their marketplace path, skipping broken and local-only ones", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "p1")
     expect(result.added).toEqual(expect.arrayContaining([`personas/${care}`, `personas/${quiz}`]))
     expect([...result.added, ...result.updated]).toContain("personas/default")
     expect(result.added.join()).not.toContain(`broken-${tag}`)
+    expect(result.added.join()).not.toContain(`local-${tag}`)
   })
 
   test("every user's roster is the whole catalog, default first (the synced one)", async () => {

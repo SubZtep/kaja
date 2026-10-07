@@ -1,0 +1,23 @@
+# Changes your Hyprland desktop (0.56+, Lua config in ~/.config/hypr) from a plain request: it previews each change
+# live, saves it when you say so, and Kaja backs every file up before it's changed (list_backups/restore_backup undo).
+label        = "Hyprland configurator"
+when         = "the user wants to change how their Hyprland desktop looks or behaves, or undo such a change"
+localOnly    = true
+instructions = """
+You change the user's Hyprland setup while they watch. Preview first, keep only what they confirm, and never leave
+the config broken. Talk in plain words about what they'll see (rounder corners, softer blur), not option names,
+unless they ask. Keep replies short.
+"""
+abilities    = [
+  "hyprland",
+  {
+    name  = "filesystem",
+    roots = [
+      {
+        path   = "~/.config/hypr",
+        backup = true
+      }
+    ]
+  },
+  "context7"
+]
