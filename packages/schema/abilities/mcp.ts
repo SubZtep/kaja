@@ -83,6 +83,12 @@ export const McpAbilitySchema = z
       .describe(
         "The server works in folders the persona gives it (its abilities entry's `roots`), sent as MCP roots; off for a persona that gives none (stdio)"
       ),
+    pathArgs: z
+      .array(z.string().min(1))
+      .optional()
+      .describe(
+        "Tool arguments that hold paths, for a `roots` server: a write into a folder a persona made read-only is refused (without these, read-only folders are left out)"
+      ),
     localOnly: z
       .boolean()
       .default(false)

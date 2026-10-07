@@ -2,6 +2,7 @@ import type { McpAbility, McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { connectMcpServer } from "../mcp/client"
 import { type LaunchOptions, resolveLaunch } from "../mcp/launch"
+import type { RootFolder } from "../mcp/roots"
 import type { FetchLike } from "../security/ssrf"
 import type { KeyCheckResult } from "./http-tool"
 
@@ -19,8 +20,10 @@ export type McpAbilityTarget = {
   localOnlyArgs?: string[]
   /** A stdio ability the host's MCP sandbox runs for it, reached over Streamable HTTP. */
   sandboxed?: boolean
-  /** A roots-taking server's folders by persona id (absolute, each list non-empty); a persona not here gets it off. */
-  roots?: Record<string, string[]>
+  /** A roots-taking server's folders by persona id (real paths, each list non-empty); a persona not here gets it off. */
+  roots?: Record<string, RootFolder[]>
+  /** Tool arguments that hold paths (the manifest's `pathArgs`), checked against read-only roots. */
+  pathArgs?: string[]
 }
 
 /**
@@ -41,20 +44,28 @@ export function mcpAbilityTarget(
   ability: McpAbility,
   apiKey?: string,
   launch?: LaunchOptions,
-  roots?: Record<string, string[]>
+  roots?: Record<string, RootFolder[]>
 ): McpAbilityTarget {
   const value = ability.auth.type === "apiKey" && apiKey ? `${ability.auth.prefix ?? ""}${apiKey}` : undefined
   const keyEntry = value && ability.auth.type === "apiKey" ? { [ability.auth.name]: value } : {}
   const server: McpServerEntry =
     ability.transport === "stdio"
-      ? { id: ability.name, ...resolveLaunch(ability, { ...ability.env, ...keyEntry }, launch, allFolders(roots)) }
+      ? { id: ability.name, ...resolveLaunch(ability, { ...ability.env, ...keyEntry }, launch, mountFolders(roots)) }
       : { id: ability.name, url: ability.url!, headers: { ...ability.headers, ...keyEntry } }
-  return { ...targetRules(ability), server, transport: ability.transport, ...(roots ? { roots } : {}) }
+  return {
+    ...targetRules(ability),
+    server,
+    transport: ability.transport,
+    ...(roots ? { roots, ...(ability.pathArgs ? { pathArgs: ability.pathArgs } : {}) } : {})
+  }
 }
 
-/** Every persona's folders, once each: what the server may ever be given. */
-export function allFolders(roots: Record<string, string[]> | undefined): string[] {
-  return [...new Set(Object.values(roots ?? {}).flat())]
+/** Every persona's folders, once each: what the server may ever be given. Read-only only where every persona says so. */
+export function mountFolders(roots: Record<string, RootFolder[]> | undefined): RootFolder[] {
+  const byFolder = new Map<string, boolean>()
+  for (const root of Object.values(roots ?? {}).flat())
+    byFolder.set(root.folder, (byFolder.get(root.folder) ?? true) && root.readOnly)
+  return [...byFolder].map(([folder, readOnly]) => ({ folder, readOnly }))
 }
 
 // How the ability's tools are treated, wherever its server runs.

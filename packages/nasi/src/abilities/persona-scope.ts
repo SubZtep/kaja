@@ -1,9 +1,9 @@
-import type { Persona, PersonaAbility, SkillMode } from "@kaja/schema/cli"
+import type { Persona, PersonaAbility, PersonaRoot, SkillMode } from "@kaja/schema/cli"
 import { type Tool, toolName } from "../agent/tools"
 import type { SkillSummary } from "./types"
 
 /** One `abilities` entry with the shorthand expanded. */
-export type PersonaAbilityEntry = { name: string; skill?: SkillMode; tools?: string[]; roots?: string[] }
+export type PersonaAbilityEntry = { name: string; skill?: SkillMode; tools?: string[]; roots?: PersonaRoot[] }
 
 const ABILITY_SOURCE = "ability:"
 

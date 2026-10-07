@@ -49,6 +49,8 @@ export type McpConnectOptions = {
   hideArgs?: string[]
   /** The folders the server may work in now, asked for on every `roots/list`; set, the client declares roots support. */
   roots?: () => McpRoot[]
+  /** Why a call that may write can't run (e.g. it targets a read-only folder), checked before asking and before running; undefined lets it through. */
+  refuse?: (args: Record<string, unknown>) => string | undefined
 }
 
 /** The tool's input schema without `hide` among its properties or required ones. */
@@ -131,20 +133,30 @@ export async function connectMcpServer(
   const tools = mcpTools
     .filter(mcpTool => !opts.allow || opts.allow.includes(mcpTool.name))
     .map(mcpTool => {
-      const mcpToolDef = tool<Record<string, unknown>>({
-        name: mcpTool.name,
-        description: mcpTool.description ?? mcpTool.name,
-        parameters: withoutArgs(mcpTool.inputSchema, opts.hideArgs),
-        execute: args =>
-          callTool(
-            client,
-            mcpTool.name,
-            Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key))),
-            tempDir,
-            opts
-          )
-      })
       const rule = opts.readOnly?.find(r => r.tool === mcpTool.name)
+      // A call that only reads, by the server's word or the manifest's rule for these arguments.
+      const reads = (args: Record<string, unknown>) =>
+        mcpTool.annotations?.readOnlyHint === true || readOnlyByRule(rule, args)
+      const refusal = (args: Record<string, unknown>) => (reads(args) ? undefined : opts.refuse?.(args))
+      const mcpToolDef: Tool = {
+        ...tool<Record<string, unknown>>({
+          name: mcpTool.name,
+          description: mcpTool.description ?? mcpTool.name,
+          parameters: withoutArgs(mcpTool.inputSchema, opts.hideArgs),
+          execute: async args => {
+            const refused = refusal(args)
+            if (refused) throw new Error(refused)
+            return callTool(
+              client,
+              mcpTool.name,
+              Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key))),
+              tempDir,
+              opts
+            )
+          }
+        }),
+        readOnly: mcpTool.annotations?.readOnlyHint === true || rule?.unless.length === 0
+      }
       const mayAsk =
         opts.approval === "always" || (opts.approval === "writes" && mcpTool.annotations?.readOnlyHint !== true)
       if (!mayAsk) return mcpToolDef
@@ -153,8 +165,9 @@ export async function connectMcpServer(
       // TODO: show the tool's own description and its arguments as a readable list in the prompt, not a raw JSON preview.
       return {
         ...mcpToolDef,
+        // A call that will be refused isn't worth asking about.
         approval: (args: Record<string, unknown>) =>
-          opts.approval === "writes" && readOnlyByRule(rule, args)
+          (opts.approval === "writes" && readOnlyByRule(rule, args)) || refusal(args)
             ? undefined
             : approvalSummary(label, mcpTool.name, args)
       }

@@ -131,11 +131,35 @@ test("a roots-taking ability gets each persona's folders, and is left out when n
     { id: "c", label: "C" }
   ]
   const loaded = await loadAbilities(storeWith([], [files]), { launch, personas })
-  expect(loaded.mcp.map(target => target.roots)).toEqual([{ a: [home, tmp] }])
+  const real = (await import("node:fs")).realpathSync
+  expect(loaded.mcp.map(target => target.roots)).toEqual([
+    {
+      a: [
+        { folder: real(home), readOnly: false },
+        { folder: real(tmp), readOnly: false }
+      ]
+    }
+  ])
   expect(loaded.missingRoots).toEqual([])
 
   const rootless = await loadAbilities(storeWith([], [files]), { launch, personas: personas.slice(1) })
   expect(rootless.mcp).toEqual([])
   expect(rootless.missingRoots).toEqual(["files"])
   expect((await loadAbilities(storeWith([], [files]), { launch })).missingRoots).toEqual([])
+})
+
+test("a read-only root needs the manifest's pathArgs to check writes by, or it's left out", async () => {
+  const tmp = (await import("node:fs")).realpathSync((await import("node:os")).tmpdir())
+  const personas = [{ id: "a", label: "A", abilities: [{ name: "files", roots: [{ path: tmp, readOnly: true }] }] }]
+  const launch = { which: (p: string) => p }
+  const manifest = { name: "files", description: "f", transport: "stdio" as const, command: "bun", roots: true }
+  const unchecked = await loadAbilities(storeWith([], [parseMcp(manifest)]), { launch, personas })
+  expect(unchecked.missingRoots).toEqual(["files"])
+  const checked = await loadAbilities(storeWith([], [parseMcp({ ...manifest, pathArgs: ["path"] })]), {
+    launch,
+    personas
+  })
+  expect(checked.mcp.map(target => [target.roots, target.pathArgs])).toEqual([
+    [{ a: [{ folder: tmp, readOnly: true }] }, ["path"]]
+  ])
 })

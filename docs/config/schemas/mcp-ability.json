@@ -173,6 +173,14 @@
       "description": "The server works in folders the persona gives it (its abilities entry's `roots`), sent as MCP roots; off for a persona that gives none (stdio)",
       "type": "boolean"
     },
+    "pathArgs": {
+      "description": "Tool arguments that hold paths, for a `roots` server: a write into a folder a persona made read-only is refused (without these, read-only folders are left out)",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "localOnly": {
       "default": false,
       "description": "Only runs on the user's own machine, never in the cloud (e.g. it works on their files)",

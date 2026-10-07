@@ -1,9 +1,9 @@
 import type { McpServerEntry } from "@kaja/schema/config"
-import { allFolders, type McpAbilityTarget } from "../abilities/mcp-ability"
+import { type McpAbilityTarget, mountFolders } from "../abilities/mcp-ability"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../agent/agent"
 import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
 import { connectMcpServer, type McpConnectOptions } from "../mcp/client"
-import { mcpRoots } from "../mcp/roots"
+import { mcpRoots, type RootFolder, readOnlyRefusal } from "../mcp/roots"
 import type { FetchLike } from "../security/ssrf"
 import { warn } from "../warn"
 import { currentTimeTool } from "./builtin/current-time"
@@ -148,7 +148,9 @@ type McpTarget = {
   opts?: McpConnectOptions
   timeoutMs?: number
   /** A roots-taking server's folders by persona id (see `McpAbilityTarget.roots`). */
-  roots?: Record<string, string[]>
+  roots?: Record<string, RootFolder[]>
+  /** Its tools' path arguments, checked against read-only roots. */
+  pathArgs?: string[]
 }
 
 /** Connects one server, giving up after `timeoutMs` (or the target's own); a connection that turns up late is closed rather than left running. */
@@ -244,14 +246,18 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       ...(local ? {} : { ...cloudOpts, hideArgs: target.localOnlyArgs })
     },
     ...(target.sandboxed ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) } : {}),
-    ...(target.roots ? { roots: target.roots } : {})
+    ...(target.roots ? { roots: target.roots, pathArgs: target.pathArgs } : {})
   }))
   // A roots-taking server's folders now: the active persona's (every persona's before one is known, as the doctor connects).
-  const currentRoots = new Map<string, string[]>()
+  const currentRoots = new Map<string, RootFolder[]>()
   for (const target of mcpTargets) {
     if (!target.roots) continue
-    currentRoots.set(target.id, allFolders(target.roots))
-    target.opts = { ...target.opts, roots: () => mcpRoots(currentRoots.get(target.id) ?? []) }
+    currentRoots.set(target.id, mountFolders(target.roots))
+    target.opts = {
+      ...target.opts,
+      roots: () => mcpRoots(currentRoots.get(target.id) ?? []),
+      refuse: args => readOnlyRefusal(currentRoots.get(target.id) ?? [], target.pathArgs ?? [], args)
+    }
   }
   // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
   const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
@@ -296,12 +302,15 @@ export async function createTools(opts: CreateToolsOptions = {}) {
      * Connects the MCP servers of the named abilities (every ability's when `names` is unset) that haven't been tried
      * yet (see `lazyMcpAbilities`) and returns every tool, theirs included. A server that fails stays failed; names
      * without an MCP ability are ignored. A roots-taking server gets `personaId`'s folders (told when they change);
-     * for a persona that gives it none it isn't started, and its tools are left out of the list.
+     * for a persona that gives it none it isn't started, and its tools are left out of the list, as are its tools
+     * that may write when every folder the persona gives it is read-only.
      */
     ensureAbilities: async (names?: Iterable<string>, personaId?: string): Promise<Tool[]> => {
       const wanted = names && new Set([...names].map(name => `ability:${name}`))
       const rootless = new Set<string>()
+      const readOnly = new Set<string>()
       const changed: string[] = []
+      const paths = (roots: RootFolder[] | undefined) => roots?.map(root => root.folder).join("\n")
       for (const target of mcpTargets) {
         if (!target.roots) continue
         const folders = (personaId !== undefined && target.roots[personaId]) || []
@@ -309,7 +318,9 @@ export async function createTools(opts: CreateToolsOptions = {}) {
           rootless.add(target.id)
           continue
         }
-        if (folders.join("\n") !== currentRoots.get(target.id)?.join("\n")) changed.push(target.id)
+        if (folders.every(root => root.readOnly)) readOnly.add(target.id)
+        // Only the folders reach the server; which are read-only is Kaja's to check.
+        if (paths(folders) !== paths(currentRoots.get(target.id))) changed.push(target.id)
         currentRoots.set(target.id, folders)
       }
       await connect(
@@ -326,7 +337,9 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         )
       )
       merged = await merge()
-      return merged.tools.filter(tool => !tool.source || !rootless.has(tool.source))
+      return merged.tools.filter(
+        tool => !tool.source || !(rootless.has(tool.source) || (readOnly.has(tool.source) && !tool.readOnly))
+      )
     }
   }
 }

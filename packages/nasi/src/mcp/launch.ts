@@ -1,4 +1,5 @@
 import type { McpAbility, McpPackage } from "@kaja/schema/abilities"
+import type { RootFolder } from "./roots"
 
 /** How to start one stdio server on this host. */
 export type StdioLaunch = { command: string; args: string[]; env: Record<string, string> }
@@ -43,14 +44,14 @@ const PYPI_RUNNERS: Runner[] = [
 /**
  * How to start a stdio ability here, with `env` (its static env vars and key) for the server: a manifest's
  * `command` as it is, or its `package` through the first runner this host has (npm, then PyPI, then Docker). `folders`
- * are the ones the server may work in (its roots): a container gets each mounted at the same path. Throws
+ * are the ones the server may work in (its roots): a container gets each mounted at the same path, read-only ones so. Throws
  * {@link McpRunnerMissingError} when nothing installed can start it.
  */
 export function resolveLaunch(
   ability: Pick<McpAbility, "name" | "command" | "package" | "args">,
   env: Record<string, string>,
   opts: LaunchOptions = {},
-  folders: string[] = []
+  folders: RootFolder[] = []
 ): StdioLaunch {
   const which = opts.which ?? Bun.which
   if (ability.command) {
@@ -90,12 +91,12 @@ function dockerLaunch(
   image: string,
   serverArgs: string[],
   env: Record<string, string>,
-  folders: string[]
+  folders: RootFolder[]
 ): StdioLaunch {
   const envFlags = Object.keys(env).flatMap(name => ["-e", name])
-  const mounts = folders.flatMap(folder => [
+  const mounts = folders.flatMap(({ folder, readOnly }) => [
     "--mount",
-    `type=bind,${csvField(`src=${folder}`)},${csvField(`dst=${folder}`)}`
+    `type=bind,${csvField(`src=${folder}`)},${csvField(`dst=${folder}`)}${readOnly ? ",readonly" : ""}`
   ])
   return { command: docker, args: ["run", "-i", "--rm", "--init", ...envFlags, ...mounts, image, ...serverArgs], env }
 }

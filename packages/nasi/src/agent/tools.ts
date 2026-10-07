@@ -79,6 +79,8 @@ export type Tool<Args = any> = {
    * emits `confirm_tool` with it; the host runs the tool itself once the human approves.
    */
   approval?: (args: Args) => string | undefined
+  /** An MCP tool that only reads (the server's readOnlyHint, or a manifest `readOnly` rule without `unless`). */
+  readOnly?: boolean
   /** Stamped by the registry's `mergeTools`; unset on a tool that hasn't been through it. */
   origin?: ToolOrigin
   /** Where a non-official tool came from, e.g. `ability:open-meteo`. */

@@ -80,8 +80,16 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
 
   ```toml
   # marketplace/personas/writer.toml (a persona of your own)
-  abilities = [{ name = "filesystem", roots = ["~/notes", "~/projects/site"] }]
+  abilities = [{ name = "filesystem", roots = ["~/notes", { path = "~/projects/site", readOnly = true }] }]
   ```
+
+  In a read-only folder the server may only read. The server itself has no such setting, so Kaja refuses
+  any call that may write there before it asks you, checking the arguments the manifest names in `pathArgs`
+  (symlinks followed). The nearest folder decides, so a writable folder inside a read-only one stays writable.
+  While some folder is read-only, those paths must be absolute or `~/…`. A persona whose folders are all
+  read-only doesn't get the server's writing tools at all. In Docker, a folder every persona marks read-only
+  is also mounted read-only. A manifest without `pathArgs` can't be checked, so its read-only folders are
+  left out.
 
 - `localOnly = true` keeps a server off the cloud: it only ever runs on your own machine. A `roots` one is
   local-only too.

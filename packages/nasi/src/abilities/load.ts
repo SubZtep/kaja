@@ -2,7 +2,7 @@ import type { HttpToolAbility, McpAbility } from "@kaja/schema/abilities"
 import type { Persona } from "@kaja/schema/cli"
 import { toolName } from "../agent/tools"
 import { type LaunchOptions, McpRunnerMissingError } from "../mcp/launch"
-import { expandRoots } from "../mcp/roots"
+import { expandRoots, type RootFolder } from "../mcp/roots"
 import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
@@ -119,7 +119,7 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
       continue
     }
     if (!ability.roots && opts.warnUnknown) warnRootsIgnored(opts.personas ?? [], ability.name)
-    const roots = ability.roots ? await personaRoots(opts.personas ?? [], ability.name) : undefined
+    const roots = ability.roots ? await personaRoots(opts.personas ?? [], ability) : undefined
     if (roots && Object.keys(roots).length === 0) {
       if (opts.personas?.some(persona => personaAbilities(persona).has(ability.name))) {
         warn("Ability left out: no persona that lists it gives it roots", { ability: ability.name })
@@ -141,12 +141,23 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   return { groups, skills, httpTools, mcp, missingKeys, missingRunners, missingRoots }
 }
 
-/** Each persona's folders for the ability (its entry's `roots`, expanded), leaving out personas that give none. */
-async function personaRoots(personas: Persona[], ability: string): Promise<Record<string, string[]>> {
-  const roots: Record<string, string[]> = {}
+/**
+ * Each persona's folders for the ability (its entry's `roots`, expanded), leaving out personas that give none. A
+ * read-only folder needs the manifest's `pathArgs` to check writes against, so without them it's left out.
+ */
+async function personaRoots(personas: Persona[], ability: McpAbility): Promise<Record<string, RootFolder[]>> {
+  const roots: Record<string, RootFolder[]> = {}
   for (const persona of personas) {
-    const paths = personaAbilities(persona).get(ability)?.roots ?? []
-    const folders = await expandRoots(paths, { persona: persona.id, ability })
+    const where = { persona: persona.id, ability: ability.name }
+    const expanded = await expandRoots(personaAbilities(persona).get(ability.name)?.roots ?? [], where)
+    const folders = expanded.filter(root => {
+      if (!root.readOnly || ability.pathArgs?.length) return true
+      warn("Read-only root left out: the ability's manifest names no pathArgs to check writes by", {
+        ...where,
+        root: root.folder
+      })
+      return false
+    })
     if (folders.length > 0) roots[persona.id] = folders
   }
   return roots

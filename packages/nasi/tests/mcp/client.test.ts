@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { McpServerEntry } from "@kaja/schema/config"
@@ -180,7 +181,13 @@ test(
           server: fixture,
           transport: "stdio",
           approval: "never",
-          roots: { a: ["/tmp/kaja-a"], b: ["/tmp/kaja-b", "/tmp/kaja-c"] }
+          roots: {
+            a: [{ folder: "/tmp/kaja-a", readOnly: false }],
+            b: [
+              { folder: "/tmp/kaja-b", readOnly: false },
+              { folder: "/tmp/kaja-c", readOnly: true }
+            ]
+          }
         }
       ]
     })
@@ -196,6 +203,54 @@ test(
       expect(await rootsAs("a")).toBe("file:///tmp/kaja-a")
     } finally {
       await closeTools()
+    }
+  },
+  SPAWN_TIMEOUT
+)
+
+test(
+  "read-only roots: a write there is refused without asking, and an all-read-only persona gets no write tools",
+  async () => {
+    const base = mkdtempSync(join(tmpdir(), "kaja-ro-"))
+    const [locked, open] = [join(base, "locked"), join(base, "locked", "open")]
+    mkdirSync(open, { recursive: true })
+    const { ensureAbilities, closeTools } = await createTools({
+      includeLocalTools: true,
+      tempDir: tmpdir(),
+      lazyMcpAbilities: true,
+      mcpAbilities: [
+        {
+          name: "things",
+          server: fixture,
+          transport: "stdio",
+          approval: "writes",
+          pathArgs: ["id"],
+          roots: {
+            reader: [{ folder: locked, readOnly: true }],
+            mixed: [
+              { folder: locked, readOnly: true },
+              { folder: open, readOnly: false }
+            ]
+          }
+        }
+      ]
+    })
+    try {
+      const reader = (await ensureAbilities(["things"], "reader")).map(toolName)
+      expect(reader).toContain("read_thing")
+      expect(reader).not.toContain("write_thing")
+
+      const write = (await ensureAbilities(["things"], "mixed")).find(t => toolName(t) === "write_thing")!
+      const inLocked = { id: join(locked, "new.txt") }
+      expect(write.approval?.(inLocked)).toBeUndefined()
+      await expect(write.execute(inLocked)).rejects.toThrow("read-only for this persona")
+      // The nearest root decides: a writable folder inside a read-only one stays writable.
+      const inOpen = { id: join(open, "new.txt") }
+      expect(write.approval?.(inOpen)).toContain("write_thing")
+      expect(await write.execute(inOpen)).toEqual({ text: `wrote ${inOpen.id}` })
+    } finally {
+      await closeTools()
+      rmSync(base, { recursive: true, force: true })
     }
   },
   SPAWN_TIMEOUT

@@ -85,16 +85,20 @@ test("with nothing installed, the error names every program that would do, in or
   expect(() => resolveLaunch(both, {}, { which: pathWith() })).toThrow("demo needs uvx, pipx, docker installed")
 })
 
-test("a container gets each folder mounted at its own path, quoted when it holds a comma", () => {
+test("a container gets each folder mounted at its own path, read-only ones so, quoted when it holds a comma", () => {
   const docker = ability({ package: { docker: "mcp/filesystem:1" } })
-  const launch = resolveLaunch(docker, {}, { which: pathWith("docker") }, ["/home/me/notes", "/home/me/a,b"])
+  const folders = [
+    { folder: "/home/me/notes", readOnly: true },
+    { folder: "/home/me/a,b", readOnly: false }
+  ]
+  const launch = resolveLaunch(docker, {}, { which: pathWith("docker") }, folders)
   expect(launch.args).toEqual([
     "run",
     "-i",
     "--rm",
     "--init",
     "--mount",
-    "type=bind,src=/home/me/notes,dst=/home/me/notes",
+    "type=bind,src=/home/me/notes,dst=/home/me/notes,readonly",
     "--mount",
     'type=bind,"src=/home/me/a,b","dst=/home/me/a,b"',
     "mcp/filesystem:1"

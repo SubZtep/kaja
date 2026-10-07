@@ -36,6 +36,15 @@ const PersonaModelsSchema = z
 /** How a persona uses an ability's skill: listed for load_skill (`load`), always in the system prompt (`sticky`), or left out (`off`). */
 export const SkillModeSchema = z.enum(["load", "sticky", "off"])
 
+// One `roots` folder: a path (writable), or a table that can make it read-only.
+const PersonaRootSchema = z.union([
+  z.string().min(1),
+  z.object({
+    path: z.string().min(1),
+    readOnly: z.boolean().default(false).describe("The server may read here but not write, edit, move or create")
+  })
+])
+
 // One `abilities` entry: a name uses every part of the ability; a table tweaks it.
 const PersonaAbilitySchema = z.union([
   SkillNameSchema,
@@ -49,10 +58,10 @@ const PersonaAbilitySchema = z.union([
       .optional()
       .describe("Only these of the ability's tools (HTTP, MCP and code tools); unset means all of them"),
     roots: z
-      .array(z.string().min(1))
+      .array(PersonaRootSchema)
       .optional()
       .describe(
-        'Folders an MCP server with `roots = true` may use while this persona is active, e.g. ["~/notes"]; without them it\'s off'
+        'Folders an MCP server with `roots = true` may use while this persona is active, e.g. ["~/notes", { path = "~/site", readOnly = true }]; without them it\'s off'
       )
   })
 ])
@@ -75,6 +84,7 @@ export const PersonaSchema = z
 
 export type Persona = z.infer<typeof PersonaSchema> & { id: string }
 export type PersonaAbility = z.infer<typeof PersonaAbilitySchema>
+export type PersonaRoot = z.infer<typeof PersonaRootSchema>
 export type SkillMode = z.infer<typeof SkillModeSchema>
 export type PersonaModels = NonNullable<z.infer<typeof PersonaModelsSchema>>
 export type SamplingParams = z.infer<typeof SamplingParamsSchema>

@@ -89,11 +89,32 @@
                 }
               },
               "roots": {
-                "description": "Folders an MCP server with `roots = true` may use while this persona is active, e.g. [\"~/notes\"]; without them it's off",
+                "description": "Folders an MCP server with `roots = true` may use while this persona is active, e.g. [\"~/notes\", { path = \"~/site\", readOnly = true }]; without them it's off",
                 "type": "array",
                 "items": {
-                  "type": "string",
-                  "minLength": 1
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "readOnly": {
+                          "default": false,
+                          "description": "The server may read here but not write, edit, move or create",
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ]
+                    }
+                  ]
                 }
               }
             },

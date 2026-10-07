@@ -1,17 +1,24 @@
 # Your files, through the MCP filesystem server: https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem
-# Kaja runs the npm package itself on your machine (else Docker's mcp/filesystem image), so there's nothing to install.
+# Kaja runs the npm package itself on your machine, so there's nothing to install. (No Docker fallback: the mcp/filesystem
+# image is far behind the npm package, without the read-only markings Kaja hides writing tools by.)
 # It only works in the folders a persona gives it, and is off for a persona that gives none:
-#   abilities = [{ name = "filesystem", roots = ["~/notes", "~/projects/site"] }]
+#   abilities = [{ name = "filesystem", roots = ["~/notes", { path = "~/projects/site", readOnly = true }] }]
+# In a read-only folder it can only read: Kaja refuses writes there, checking the paths in pathArgs.
 # Switching persona switches the folders. It never runs in the cloud: these are your files.
-# The server marks its reading tools read-only, so only writes, edits and moves ask first.
+# The server marks its reading tools read-only, so only writes, edits, moves and new folders ask first.
 description = "Read, search and edit files in the folders the persona allows."
 transport   = "stdio"
 package     = {
-  npm    = "@modelcontextprotocol/server-filesystem@2026.8.31",
-  docker = "mcp/filesystem@sha256:7030b3d30ca1e662313e3e72cf60fbcd3fb16a337cfda12b59a167686eaa4dae"
+  npm = "@modelcontextprotocol/server-filesystem@2026.8.31"
 }
 roots       = true
 localOnly   = true
+pathArgs    = [
+  "path",
+  "paths",
+  "source",
+  "destination"
+]
 approval    = "writes"
 tools       = [
   "list_allowed_directories",
