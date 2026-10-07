@@ -1,59 +1,65 @@
 import { PasswordInput, TextInput } from "@inkjs/ui"
 import { Text, useInput } from "ink"
+import { useState } from "react"
 import { t } from "../lib/i18n"
 import { InputFrame, Question } from "./elem/rail"
 import { SelectMenu } from "./elem/select-menu"
+import { useKajaTheme } from "./theme"
 
-/** Asks for one secret, masked. Enter with a value submits it; Esc or an empty Enter skips. */
-export function SecretPrompt({
+/** Why Enter didn't move on: the line under a question whose answer was refused. */
+export function Problem({ children }: Readonly<{ children: string }>) {
+  const { danger } = useKajaTheme()
+  return <Text {...danger()}>{children}</Text>
+}
+
+/**
+ * Asks for one typed answer: a key (`secret`, masked and never prefilled) or a plain value such as an address. The
+ * trimmed answer goes through `validate`, and a refused one keeps the question open with the reason under it. With
+ * `onSkip`, Esc or an empty Enter skips; without it, an empty answer is submitted like any other, for the caller to read.
+ */
+export function InputPrompt({
   title,
+  hint,
+  secret,
+  defaultValue,
+  validate,
   onSubmit,
   onSkip
 }: Readonly<{
   /** What's needed and why, e.g. "github needs an API key (header Authorization)." */
   title: string
-  onSubmit: (value: string) => void
-  onSkip: () => void
-}>) {
-  useInput((_input, key) => {
-    if (key.escape) onSkip()
-  })
-  return (
-    <Question title={title}>
-      <InputFrame>
-        <PasswordInput
-          placeholder={t("secretPrompt.placeholder")}
-          onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())}
-        />
-      </InputFrame>
-      <Text dimColor>{t("secretPrompt.hint")}</Text>
-    </Question>
-  )
-}
-
-/** Asks for one value that isn't a secret (a server URL, a numeric id), so it stays readable while typing. Enter with a value submits it; Esc or an empty Enter skips. */
-export function TextPrompt({
-  title,
-  hint,
-  defaultValue,
-  onSubmit,
-  onSkip
-}: Readonly<{
-  title: string
   hint?: string
+  secret?: boolean
   defaultValue?: string
+  /** Says what is wrong with an answer, or nothing when it is fine. */
+  validate?: (value: string) => string | undefined
   onSubmit: (value: string) => void
-  onSkip: () => void
+  onSkip?: () => void
 }>) {
-  useInput((_input, key) => {
-    if (key.escape) onSkip()
-  })
+  const [problem, setProblem] = useState<string>()
+  useInput(
+    (_input, key) => {
+      if (key.escape) onSkip?.()
+    },
+    { isActive: Boolean(onSkip) }
+  )
+  const submit = (raw: string) => {
+    const value = raw.trim()
+    if (!value && onSkip) return onSkip()
+    const complaint = validate?.(value)
+    setProblem(complaint)
+    if (!complaint) onSubmit(value)
+  }
   return (
     <Question title={title}>
       <InputFrame>
-        <TextInput defaultValue={defaultValue} onSubmit={value => (value.trim() ? onSubmit(value.trim()) : onSkip())} />
+        {secret ? (
+          <PasswordInput placeholder={t("secretPrompt.placeholder")} onSubmit={submit} />
+        ) : (
+          <TextInput defaultValue={defaultValue} onSubmit={submit} />
+        )}
       </InputFrame>
-      <Text dimColor>{hint ?? t("secretPrompt.hint")}</Text>
+      {problem ? <Problem>{problem}</Problem> : <Text dimColor>{hint ?? t("secretPrompt.hint")}</Text>}
     </Question>
   )
 }

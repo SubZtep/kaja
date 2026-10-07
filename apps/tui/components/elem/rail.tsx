@@ -23,18 +23,18 @@ export function RailLine({ marker, children }: Readonly<{ marker: ReactNode; chi
   )
 }
 
-/** The open question: a "◆" and its title, then its input on the rail, closed off below. `plain` drops the colour, for a question asked before a theme is chosen. */
-export function Question({
-  title,
-  plain,
-  children
-}: Readonly<{ title: string; plain?: boolean; children: ReactNode }>) {
-  const { accent } = useKajaTheme()
+/** The open question: a "◆" and its title, then its input on the rail, closed off below. */
+export function Question({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
+  // The question in its own colour, so it never reads like one of its answers. The terminal's own magenta, the same on
+  // every question, the ones asked before a theme is chosen included: its palette keeps it readable on its background.
+  const tone = { color: "magenta" }
   return (
     <Box flexDirection="column">
       <Text dimColor>│</Text>
-      <RailLine marker={<Text {...(plain ? { bold: true } : accent())}>◆</Text>}>
-        <Text bold>{title}</Text>
+      <RailLine marker={<Text {...tone}>◆</Text>}>
+        <Text bold {...tone}>
+          {title}
+        </Text>
       </RailLine>
       <Box {...RAIL} flexDirection="column" gap={1} paddingLeft={2}>
         {children}
@@ -56,11 +56,28 @@ export function Answered({ label, value }: Readonly<{ label: string; value: stri
   )
 }
 
-/** The bordered box a typed answer sits in. */
-export function InputFrame({ children }: Readonly<{ children: ReactNode }>) {
-  const { frame } = useKajaTheme()
+/**
+ * The panel an answer sits in: `width` columns wide inside and growing with longer content. A typed answer's panel
+ * has the input box's background, so the field stands out from the question; `plain` drops it, for the menus (their
+ * highlight band is colour enough).
+ */
+export function InputFrame({
+  children,
+  width = 70,
+  plain
+}: Readonly<{ children: ReactNode; width?: number; plain?: boolean }>) {
+  const { field } = useKajaTheme()
   return (
-    <Box {...frame()} borderStyle="classic" width={70} paddingLeft={1}>
+    <Box
+      {...(plain ? {} : field())}
+      flexDirection="column"
+      // Neither the panel nor its rows stretch across the terminal: the panel is `width` (or its content) wide, and
+      // each row keeps its own width, a menu's highlight band at least the panel's
+      alignSelf="flex-start"
+      alignItems="flex-start"
+      minWidth={width + 2}
+      paddingX={1}
+    >
       {children}
     </Box>
   )

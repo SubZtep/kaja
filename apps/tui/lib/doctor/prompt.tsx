@@ -30,28 +30,12 @@ const skipped = () => t("wizard.keyStateSkipped")
 
 /** Asks for a secret in the terminal; resolves to the trimmed value, or undefined when skipped. */
 export async function askSecret(title: string): Promise<string | undefined> {
-  const { SecretPrompt } = await import("../../components/secret-prompt")
+  const { InputPrompt } = await import("../../components/secret-prompt")
   return ask<string | undefined>(title, settle => (
-    <SecretPrompt
+    <InputPrompt
+      secret
       title={title}
       onSubmit={value => settle(value, "••••••••")}
-      onSkip={() => settle(undefined, skipped())}
-    />
-  ))
-}
-
-/** Asks for a non-secret value in the terminal; resolves to the trimmed value, or undefined when skipped. */
-export async function askText(
-  title: string,
-  opts?: { hint?: string; defaultValue?: string }
-): Promise<string | undefined> {
-  const { TextPrompt } = await import("../../components/secret-prompt")
-  return ask<string | undefined>(title, settle => (
-    <TextPrompt
-      title={title}
-      hint={opts?.hint}
-      defaultValue={opts?.defaultValue}
-      onSubmit={value => settle(value, value)}
       onSkip={() => settle(undefined, skipped())}
     />
   ))
@@ -87,9 +71,4 @@ export async function askPick(title: string, items: string[]): Promise<number | 
       onResolve={index => settle(index, index === undefined ? skipped() : items[index]!)}
     />
   ))
-}
-
-/** Asks whether to keep a value that failed its test; not saving is the default. */
-export function askSaveAnyway(title: string): Promise<boolean> {
-  return askYesNo(title, t("secretPrompt.saveAnyway"), t("secretPrompt.dontSave"))
 }

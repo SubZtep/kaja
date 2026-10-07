@@ -28,8 +28,9 @@ or the `marketplace/` folder. Use it to pick up new defaults after an upgrade, o
 ## Checking keys and models
 
 `kaja doctor` tests every credential your config relies on: model providers, HTTP tools and MCP servers, the
-Telegram token and web search. In a terminal it asks for anything missing or failing, tests the new value
-before saving it to `secrets.toml`, and keeps a failing value only if you say so.
+Telegram token and web search. In a terminal it asks for anything missing or failing, tests the new value,
+and saves it to `secrets.toml`. A value that fails is saved too, so you can fix it there, and stays on the
+to-do list until it works.
 
 It then tries every model by task, and shows each chat model's context window and where the number came from
 (`models.toml`, detected from the server, or assumed). When a task's model stops answering and a model further

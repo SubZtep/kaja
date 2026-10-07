@@ -8,7 +8,7 @@ const configRoot = `${tmpdir()}/kaja-test-xdg-config-doctor-credentials`
 process.env.XDG_CONFIG_HOME = configRoot
 
 const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
-const { collectCredentials, outcomeLine, resolveCredentials, summaryLines } = await import(
+const { collectCredentials, outcomeLine, placeholdersFor, resolveCredentials, summaryLines } = await import(
   "../../../lib/doctor/credentials"
 )
 type CredentialItem = import("../../../lib/doctor/credentials").CredentialItem
@@ -48,7 +48,7 @@ function fakeItem(over: Partial<CredentialItem> & { works?: (value: string | und
   return { item, saved }
 }
 
-const io = (answers: (string | undefined)[], saveAnyway = false) => {
+const io = (answers: (string | undefined)[]) => {
   const titles: string[] = []
   return {
     titles,
@@ -57,8 +57,7 @@ const io = (answers: (string | undefined)[], saveAnyway = false) => {
       ask: async (title: string) => {
         titles.push(title)
         return answers.shift()
-      },
-      askSaveAnyway: async () => saveAnyway
+      }
     }
   }
 }
@@ -137,14 +136,11 @@ test("a failing saved value asks for a new one with the reason", async () => {
   expect(outcomes[0]!.status).toBe("saved")
 })
 
-test("a new value that fails is saved only when the user says so", async () => {
-  const declined = fakeItem({ works: () => false })
-  const kept = await resolveCredentials([declined.item], io(["bad"], false).io)
-  expect(declined.saved).toEqual([])
-  expect(kept[0]).toMatchObject({ status: "missing", reason: "rejected" })
-
+test("a new value that fails is saved anyway, without asking, and stays on the to-do list", async () => {
   const accepted = fakeItem({ works: () => false })
-  const saved = await resolveCredentials([accepted.item], io(["bad"], true).io)
+  const { io: prompts, titles } = io(["bad"])
+  const saved = await resolveCredentials([accepted.item], prompts)
+  expect(titles).toHaveLength(1)
   expect(accepted.saved).toEqual(["bad"])
   expect(saved[0]).toMatchObject({ status: "saved-failing", reason: "rejected" })
   expect(summaryLines(saved, "/s")).toContain("  [thing] key: rejected")
@@ -214,16 +210,13 @@ test("a value the wizard collected is tested and saved without asking again", as
   expect(prompts.titles).toEqual([])
 })
 
-test("a collected value that fails is kept only when the user says so", async () => {
-  const declined = fakeItem({ works: () => false })
-  const refused = await resolveCredentials([declined.item], io([], false).io, () => {}, { "[thing] key": "bad" })
-  expect(refused[0]!.status).toBe("missing")
-  expect(declined.saved).toEqual([])
-
-  const accepted = fakeItem({ works: () => false })
-  const kept = await resolveCredentials([accepted.item], io([], true).io, () => {}, { "[thing] key": "bad" })
-  expect(kept[0]!.status).toBe("saved-failing")
-  expect(accepted.saved).toEqual(["bad"])
+test("a collected value that fails is saved anyway, without asking", async () => {
+  const collected = fakeItem({ works: () => false })
+  const { io: prompts, titles } = io([])
+  const outcomes = await resolveCredentials([collected.item], prompts, () => {}, { "[thing] key": "bad" })
+  expect(outcomes[0]!.status).toBe("saved-failing")
+  expect(collected.saved).toEqual(["bad"])
+  expect(titles).toEqual([])
 })
 
 test("null means the caller already asked and was turned down, so the pass doesn't ask twice", async () => {
@@ -302,4 +295,31 @@ test("MCP abilities with key auth become items too; only a keyless one stays on 
   const [weather] = await resolveCredentials([items[0]!], prompts)
   expect(weather!.status).toBe("keyless")
   expect(titles).toHaveLength(1)
+})
+
+test("the keys left unset become secrets.toml placeholders: abilities with a note, providers only when needed", () => {
+  const item = (where: string, over: Partial<CredentialItem> = {}): CredentialItem => ({
+    label: where,
+    where,
+    present: false,
+    required: false,
+    save: async () => {},
+    ...over
+  })
+  const placeholders = placeholdersFor([
+    { item: item("[abilities.brave-search] api_key", { withoutKey: "off", hint: "header X-Key" }), status: "off" },
+    { item: item("[abilities.context7] api_key", { withoutKey: "keyless" }), status: "keyless" },
+    { item: item("[providers.xai] api_key"), status: "failing", reason: "401", kind: "credential" },
+    // Needs no key (Ollama), couldn't be reached, already set, or just saved: nothing to fill in.
+    { item: item("[providers.ollama] api_key"), status: "keyless" },
+    { item: item("[providers.llama] api_key"), status: "failing", reason: "down", kind: "unreachable" },
+    { item: item("[providers.fireworks] api_key", { present: true }), status: "ok" },
+    { item: item("[abilities.gh] api_key", { withoutKey: "off" }), status: "saved" },
+    { item: item("[telegram] bot_token", { required: true }), status: "missing", reason: "missing" }
+  ])
+  expect(placeholders).toEqual([
+    { group: "abilities", name: "brave-search", note: "Off until it has a key (header X-Key)." },
+    { group: "abilities", name: "context7", note: "Works without a key; one lifts its limits." },
+    { group: "providers", name: "xai" }
+  ])
 })

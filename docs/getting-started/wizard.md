@@ -55,9 +55,10 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
 5. **Which model.** Only asked when two of your providers can do the same job, say chat. You pick one.
 6. **Extras.** Tick **Telegram bot** to chat from [Telegram](/using/telegram) and paste the bot token.
    Press <kbd>Enter</kbd> with nothing ticked to skip.
-7. **Setup complete.** The wizard finishes on its own once the last question is answered.
 
-A key is hidden while you type it and never shown again. It's tested before it's saved.
+After the last answer the wizard carries on by itself: the marketplace, any model downloads and a check of
+your keys, then **Setup complete**. A key is hidden while you type it and never shown again. It's tested
+before it's saved.
 
 ```mermaid
 ---

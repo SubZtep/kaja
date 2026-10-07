@@ -18,12 +18,10 @@ export type ThemeName = Brightness
 export type Palette = {
   /** Kaja's pink: the persona name, the agent's "●", markdown headings. */
   accent: string
-  /** Borders of menus, inputs and the chat box, and the progress bar. */
+  /** Borders of inputs and the chat box, and the progress bar. */
   frame: string
   /** What the user typed, and emphasis/code/links in markdown. */
   user: string
-  /** The highlighted row of a menu. */
-  focus: string
   muted: string
   success: string
   warning: string
@@ -43,6 +41,9 @@ export type Palette = {
   cloudBadge: string
   cloudBadgeText: string
   inputBackground: string
+  /** The theme step's highlighted row, drawn in the theme's own colours as a preview of it. */
+  previewBackground: string
+  previewText: string
   /** Behind the user's own messages in the chat; a different tint from the input box. */
   userBackground: string
   tableHead: string
@@ -55,7 +56,6 @@ const darkPalette: Palette = {
   accent: "#ff1493",
   frame: "magenta",
   user: "cyanBright",
-  focus: "cyanBright",
   muted: "gray",
   success: "green",
   warning: "yellow",
@@ -72,6 +72,8 @@ const darkPalette: Palette = {
   cloudBadge: "#182a4a",
   cloudBadgeText: "#8ab4f8",
   inputBackground: "#224",
+  previewBackground: "#3d2a63",
+  previewText: "#f3eaff",
   userBackground: "#12303a",
   tableHead: "magenta",
   tableBorder: "gray",
@@ -83,7 +85,6 @@ const lightPalette: Palette = {
   accent: "#c2185b",
   frame: "#8e24aa",
   user: "blue",
-  focus: "blue",
   muted: "blackBright",
   success: "#2e7d32",
   warning: "#b35c00",
@@ -100,6 +101,8 @@ const lightPalette: Palette = {
   cloudBadge: "#d3e3f8",
   cloudBadgeText: "#1565c0",
   inputBackground: "#e8e8f4",
+  previewBackground: "#e2d6f3",
+  previewText: "#2d1160",
   userBackground: "#d8ecf2",
   tableHead: "magenta",
   tableBorder: "gray",
@@ -115,6 +118,11 @@ type KajaComponentTheme = {
 function kajaStyles(p: Palette) {
   return {
     inputBox: (): BoxProps => ({ backgroundColor: p.inputBackground, borderColor: p.frame }),
+    /** The theme step's highlighted row: a band in the theme's colours, so the choice previews itself. */
+    previewRow: (): BoxProps => ({ backgroundColor: p.previewBackground }),
+    previewText: (): TextProps => ({ color: p.previewText, bold: true }),
+    /** The panel behind an answer field (a typed value or a menu), in the input box's background. */
+    field: (): BoxProps => ({ backgroundColor: p.inputBackground }),
     /** The chat box border while a power command is typed. */
     powerBox: (): BoxProps => ({ borderColor: p.success }),
     frame: (): BoxProps => ({ borderColor: p.frame }),
@@ -124,8 +132,6 @@ function kajaStyles(p: Palette) {
     /** A message the user sent: tinted band with a bar down its left edge. */
     userBox: (): BoxProps => ({ backgroundColor: p.userBackground, borderColor: p.user }),
     muted: (): TextProps => ({ color: p.muted }),
-    /** The highlighted row of a menu. */
-    focus: (): TextProps => ({ color: p.focus }),
     success: (): TextProps => ({ color: p.success }),
     warning: (): TextProps => ({ color: p.warning }),
     danger: (): TextProps => ({ color: p.danger }),
@@ -142,20 +148,6 @@ function kajaTheme(palette: Palette): KajaComponentTheme {
   return { palette, styles: kajaStyles(palette) }
 }
 
-// ink-ui's own select menus: focused row in `focus`, like SelectMenu's, ticked rows in `success`
-function selectTheme(p: Palette) {
-  return {
-    styles: {
-      selectedIndicator: (): TextProps => ({ color: p.success }),
-      focusIndicator: (): TextProps => ({ color: p.focus }),
-      label: ({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }): TextProps => {
-        if (isFocused) return { color: p.focus }
-        return { color: isSelected ? p.success : undefined }
-      }
-    }
-  }
-}
-
 const statusColor = (p: Palette) => ({ success: p.success, error: p.danger, warning: p.warning, info: p.info })
 
 function buildTheme(p: Palette): Theme {
@@ -163,8 +155,6 @@ function buildTheme(p: Palette): Theme {
     components: {
       Kaja: kajaTheme(p),
       Spinner: { styles: { frame: (): TextProps => ({ color: p.info }) } },
-      Select: selectTheme(p),
-      MultiSelect: selectTheme(p),
       ProgressBar: { styles: { completed: (): TextProps => ({ color: p.frame }) } },
       StatusMessage: {
         styles: {
@@ -196,8 +186,8 @@ export const themes: Record<ThemeName, Theme> = {
   light: buildTheme(lightPalette)
 }
 
-// Outside a ThemeProvider (the doctor and abilities prompts render on their own): dark, with the blue highlight those menus have always had, readable on either background
-const unthemed = kajaTheme({ ...darkPalette, focus: "blue" })
+// Outside a ThemeProvider (the doctor and abilities prompts render on their own): the dark palette
+const unthemed = kajaTheme(darkPalette)
 
 function useKajaComponentTheme(): KajaComponentTheme {
   return useComponentTheme<KajaComponentTheme>("Kaja") ?? unthemed

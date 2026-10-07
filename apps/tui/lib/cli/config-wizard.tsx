@@ -118,34 +118,15 @@ function offer(where: string, value: string | undefined): OfferedValues {
 }
 
 /**
- * Applies the ticked extras: hands their keys back for the credential pass rather than saving any here, so every key is still tested before
- * it's written.
- *
- * `extra` is the items that pass can't discover on its own: a token or key that isn't saved yet
- * leaves nothing in the config to look for.
+ * The ticked extras' keys, handed to the credential pass rather than saved here, so each is still tested before it's
+ * written. `extra` is the items that pass can't discover on its own: a token that isn't saved yet leaves nothing in
+ * the config to look for.
  */
 async function applyExtras(result: WizardResult): Promise<{ extra: CredentialItem[]; offered: OfferedValues }> {
-  const extras = result.extras ?? []
-  if (extras.length === 0) return { extra: [], offered: {} }
-
-  const { checkTelegramToken } = await import("../doctor/checks")
-  const { saveSecrets } = await import("../config/secrets")
-  const extra: CredentialItem[] = []
-  let offered: OfferedValues = {}
-
-  if (extras.includes("telegram")) {
-    offered = { ...offered, ...offer("[telegram] bot_token", result.telegramToken) }
-    extra.push({
-      label: t("doctor.itemTelegram"),
-      where: "[telegram] bot_token",
-      present: false,
-      required: true,
-      check: value => (value ? checkTelegramToken(value) : Promise.resolve(undefined)),
-      save: value => saveSecrets({ telegram: { bot_token: value } })
-    })
-  }
-
-  return { extra, offered }
+  if (!result.extras?.includes("telegram")) return { extra: [], offered: {} }
+  const { telegramItem } = await import("../doctor/credentials")
+  const item = telegramItem()
+  return { extra: [item], offered: offer(item.where, result.telegramToken) }
 }
 
 /**
@@ -318,13 +299,10 @@ async function checkModels(): Promise<number> {
  */
 export async function runConfigWizard({
   headless,
-  mode,
-  firstRun
+  mode
 }: {
   headless?: boolean
   mode?: KajaMode
-  /** A plain `kaja` with no config yet, which starts the chat once the wizard is done. */
-  firstRun?: boolean
 } = {}): Promise<{ code: number; text: string }> {
   if (headless || !process.stdin.isTTY) {
     if (!(await isConfigExists())) await create()
@@ -340,7 +318,6 @@ export async function runConfigWizard({
         prefill={prefill}
         mode={mode}
         saved={saved}
-        firstRun={firstRun}
         onDone={r => {
           unmount()
           resolve(r)
@@ -366,10 +343,9 @@ export async function runConfigWizard({
   const { extra, offered } = await applyExtras(result)
   await offerModelDownloads(line => console.log(line))
 
-  // Reads the config that applyResult and applyExtras just wrote, then tests
-  // every key it needs. The keys the wizard already asked for come in as `offered`, so they are
-  // tested and saved without being asked for twice; it still asks for anything only the finished
-  // config reveals — an ability's key, an MCP server's declared secret.
+  // Reads the config that applyResult just wrote, then tests every key it needs. The keys the wizard already asked
+  // for come in as `offered`, so they're tested and saved without being asked twice; it still asks for what only the
+  // finished config reveals: the keys of the abilities some persona uses.
   const { isUnresolved, runCredentialPass } = await import("../doctor/credentials")
   const providerKeys: OfferedValues = {}
   for (const [id, key] of Object.entries(result.keys ?? {})) {

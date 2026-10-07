@@ -79,7 +79,6 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
 
   // Cloud needs no provider or key, so Enter here is the last answer, and the wizard finishes without another.
   await w.t.press(ENTER)
-  expect(w.t.lastFrame()).toContain("Setup complete")
   expect(w.result).toMatchObject({ mode: "cloud", language: "en-GB" })
   expect(w.result?.providers).toBeUndefined()
 
@@ -93,8 +92,6 @@ test("the theme step follows the language, opens on the detected theme and is ca
   expect(w.t.lastFrame()).toContain("Which colours read best in this terminal?")
   expect(w.t.lastFrame()).toContain("❯ Light background")
 
-  // A sample drawn in the highlighted theme sits under the menu
-  expect(w.t.lastFrame()).toContain("Type your message here")
   await w.t.press(ENTER)
   await w.t.press(ENTER) // mode: cloud
   expect(w.result?.theme).toBe("light")
@@ -275,12 +272,12 @@ test("the trail says what became of each key, without showing it", async () => {
   await w.t.press(ENTER) // telegram token: skipped
 
   const trail = w.t.output()
-  expect(trail).toContain("✓  Fireworks API key: entered, tested when you finish")
+  expect(trail).toContain("✓  Fireworks API key: entered, tested at the end")
   expect(trail).toContain("✓  Telegram bot token: skipped")
   expect(trail).not.toContain("fw-secret-value")
-  // The answers are already on screen, so the last screen doesn't repeat them.
-  expect(w.t.lastFrame()).toContain("Setup complete")
-  expect(w.t.lastFrame()).not.toContain("Telegram bot token")
+  // Nothing follows the last answer: no closing screen claiming it's all done while the setup still runs.
+  expect(w.result).toBeDefined()
+  expect(w.t.output()).not.toContain("Setup complete")
 
   await close(w)
 })
@@ -296,7 +293,7 @@ test("local setups are asked about extras, cloud ones are not", async () => {
   await cloud.t.tick()
   await cloud.t.press(ENTER) // language: English
   await cloud.t.press(ENTER) // theme: keep the highlighted one
-  expect(cloud.t.lastFrame()).toContain("Setup complete")
+  expect(cloud.result).toBeDefined()
   expect(cloud.result?.extras).toBeUndefined()
   await close(cloud)
 })
@@ -393,22 +390,6 @@ test("backspace on a menu doesn't cancel: the wizard stays on the question", asy
   expect(w.t.lastFrame()).toContain("Choose your language")
 
   await close(w)
-})
-
-test("the last screen says what comes next: the chat on a first run, `kaja` on a re-run", async () => {
-  for (const [firstRun, hint] of [
-    [true, "then the chat starts"],
-    [false, "From now on, just run `kaja`"]
-  ] as const) {
-    const w = renderWizard({ mode: "local", firstRun })
-    await w.t.tick()
-    await w.t.press(ENTER) // language
-    await w.t.press(ENTER) // theme
-    await pickOllama(w)
-    await w.t.press(ENTER) // extras: nothing ticked
-    expect(w.t.lastFrame()).toContain(hint)
-    await close(w)
-  }
 })
 
 test("escape on the providers checklist cancels too", async () => {

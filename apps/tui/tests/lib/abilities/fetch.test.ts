@@ -90,7 +90,9 @@ test("kaja abilities update syncs from settings.toml's [marketplace] url into th
   expect(first.code).toBe(0)
   // Every step reported, so the progress bar ends full
   expect(steps).toBe(UPDATE_STEPS)
-  expect(first.text).toContain("abilities/demo/SKILL.md")
+  // A count, not a line per file: the progress bar already showed them arrive
+  expect(first.text).toContain("1 added")
+  expect(first.text).not.toContain("abilities/demo/SKILL.md")
   expect(readFileSync(join(getMarketplaceDir(), "abilities/demo/SKILL.md"), "utf8")).toContain("v1")
 
   steps = 0

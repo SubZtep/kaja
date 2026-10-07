@@ -3,12 +3,21 @@ import { getMarketplaceDir, marketplaceSettings } from "./abilities-file"
 import { FETCH_STEPS, fetchMarketplace } from "./fetch"
 import { type SyncReport, syncMarketplace } from "./sync"
 
+// What the sync did: counts for the files that came, changed or went (the progress bar already showed them arrive), and by
+// name only your own edits, which were backed up or kept.
 function reportLines(report: SyncReport): string[] {
+  const counts = (
+    [
+      [report.added.length, "ability.countAdded"],
+      [report.updated.length, "ability.countUpdated"],
+      [report.removed.length, "ability.countRemoved"]
+    ] as const
+  )
+    .filter(([count]) => count > 0)
+    .map(([count, key]) => t(key, { count }))
   return [
-    ...report.added.map(path => t("ability.added", { path })),
-    ...report.updated.map(path => t("ability.updatedFile", { path })),
+    ...(counts.length > 0 ? [`  ${counts.join(", ")}`] : []),
     ...report.backedUp.map(({ path, backup }) => t("ability.backedUp", { path, backup })),
-    ...report.removed.map(path => t("ability.removed", { path })),
     ...report.kept.map(path => t("ability.kept", { path }))
   ]
 }
