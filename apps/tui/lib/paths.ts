@@ -8,6 +8,11 @@ export function getPaths() {
   return envPaths("kaja", { suffix: Bun.env.KAJA_PROFILE ?? "" })
 }
 
+/** Where Kaja copies a file in a persona's backed-up folder before an MCP server changes it (kept forever). */
+export function getBackupDir() {
+  return join(getPaths().data, "backups")
+}
+
 /** Every path the CLI reads/writes, for display (`config paths`, first-run screen). Duplicated as a flat list to avoid importing modules with config side effects. */
 export function listPaths(all = false, configDir = getPaths().config) {
   const paths = getPaths()
@@ -23,6 +28,7 @@ export function listPaths(all = false, configDir = getPaths().config) {
       { label: t("paths.models"), path: join(configDir, "models.toml") },
       { label: t("paths.commands"), path: join(configDir, "commands.toml") },
       { label: t("paths.marketplace"), path: join(configDir, "marketplace") },
+      { label: t("paths.backups"), path: getBackupDir() },
       { label: t("paths.temp"), path: paths.temp }
     )
   }

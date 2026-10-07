@@ -184,17 +184,19 @@ async function personaRoots(personas: Persona[], ability: McpAbility): Promise<R
   return Object.fromEntries(entries.filter(([, folders]) => folders.length > 0))
 }
 
-// One persona's folders for the ability, read-only ones left out when the manifest names no pathArgs.
+// One persona's folders for the ability; without the manifest's pathArgs, read-only ones are left out and backups are off.
 async function personaFolders(persona: Persona, ability: McpAbility): Promise<RootFolder[]> {
   const where = { persona: persona.id, ability: ability.name }
   const expanded = await expandRoots(personaAbilities(persona).get(ability.name)?.roots ?? [], where)
-  return expanded.filter(root => {
-    if (!root.readOnly || ability.pathArgs?.length) return true
+  if (ability.pathArgs?.length) return expanded
+  return expanded.flatMap(({ backup, ...root }) => {
+    if (backup) warn("Root's backup is off: the ability's manifest names no pathArgs to find files by", where)
+    if (!root.readOnly) return [root]
     warn("Read-only root left out: the ability's manifest names no pathArgs to check writes by", {
       ...where,
       root: root.folder
     })
-    return false
+    return []
   })
 }
 

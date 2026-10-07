@@ -51,6 +51,8 @@ export type McpConnectOptions = {
   roots?: () => McpRoot[]
   /** Why a call that may write can't run (e.g. it targets a read-only folder), checked before asking and before running; undefined lets it through. */
   refuse?: (args: Record<string, unknown>) => string | undefined
+  /** Runs before a call that may write (after `refuse`), e.g. to back up the files it names; a throw stops the call. */
+  beforeWrite?: (args: Record<string, unknown>) => Promise<void>
 }
 
 /** The tool's input schema without `hide` among its properties or required ones. */
@@ -146,6 +148,7 @@ export async function connectMcpServer(
           execute: async args => {
             const refused = refusal(args)
             if (refused) throw new Error(refused)
+            if (!reads(args)) await opts.beforeWrite?.(args)
             return callTool(
               client,
               mcpTool.name,

@@ -108,6 +108,10 @@
                           "default": false,
                           "description": "The server may read here but not write, edit, move or create",
                           "type": "boolean"
+                        },
+                        "backup": {
+                          "description": "Kaja copies a file here to its backups folder before the server writes, edits or moves it",
+                          "type": "boolean"
                         }
                       },
                       "required": [

@@ -62,7 +62,7 @@ abilities = [
 | `name` | the ability's folder name |
 | `skill` | `load` (listed under ## Skills, loaded with `load_skill` when needed), `sticky` (always in the system prompt, its other files still opened with `load_skill`) or `off`. Unset follows the SKILL.md's `sticky`, else `load` |
 | `tools` | only these of the ability's tools; unset means all of them |
-| `roots` | the folders an MCP server that takes roots (like `filesystem`) may work in while this persona is active. Absolute paths or `~/…`; one that isn't an existing folder is left out with a warning. Without any, that ability is off for the persona. `{ path = "…", readOnly = true }` lets it only read there (see [MCP servers](/abilities/mcp#mcp-abilities)) |
+| `roots` | the folders an MCP server that takes roots (like `filesystem`) may work in while this persona is active. Absolute paths or `~/…`; one that isn't an existing folder is left out with a warning. Without any, that ability is off for the persona. `{ path = "…", readOnly = true }` lets it only read there, and `backup = true` has Kaja copy each file before it's changed (see [MCP servers](/abilities/mcp#mcp-abilities)) |
 
 An ability that needs a key you haven't saved is left out, and the rest still load. Shipped personas list no
 `roots`, and `kaja abilities update` would replace your edits to them, so give folders in a persona of your own. An MCP server starts

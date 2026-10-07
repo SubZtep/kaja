@@ -4,6 +4,7 @@
 # It only works in the folders a persona gives it, and is off for a persona that gives none:
 #   abilities = [{ name = "filesystem", roots = ["~/notes", { path = "~/projects/site", readOnly = true }] }]
 # In a read-only folder it can only read: Kaja refuses writes there, checking the paths in pathArgs.
+# In a `backup = true` folder Kaja copies each file to its data folder before a write, and adds list_backups/restore_backup.
 # Switching persona switches the folders. It never runs in the cloud: these are your files.
 # The server marks its reading tools read-only, so only writes, edits, moves and new folders ask first.
 description = "Read, search and edit files in the folders the persona allows."

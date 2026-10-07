@@ -3,9 +3,10 @@ import { type McpAbilityTarget, mountFolders } from "../abilities/mcp-ability"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../agent/agent"
 import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
 import { connectMcpServer, type McpConnectOptions } from "../mcp/client"
-import { mcpRoots, type RootFolder, readOnlyRefusal } from "../mcp/roots"
+import { backupFiles, backupPaths, mcpRoots, type RootFolder, readOnlyRefusal } from "../mcp/roots"
 import type { FetchLike } from "../security/ssrf"
 import { warn } from "../warn"
+import { BACKUP_TOOL_NAMES, backupTools } from "./builtin/backups"
 import { currentTimeTool } from "./builtin/current-time"
 import { datasetInfoTool } from "./builtin/dataset-info"
 import { fetchUrlTool } from "./builtin/fetch-url"
@@ -70,6 +71,8 @@ export type CreateToolsOptions = {
   mcpFetch?: FetchLike
   /** Cloud only: where MCP image results (screenshots) are saved for the model to see; unset drops them. Kept apart from `tempDir`, which sets the process-wide tool deps. */
   mcpImageDir?: string
+  /** Local only: where files in a persona's backed-up roots are copied before an MCP server writes them; unset turns backups off. */
+  backupDir?: string
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 10_000
@@ -250,15 +253,31 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   }))
   // A roots-taking server's folders now: the active persona's (every persona's before one is known, as the doctor connects).
   const currentRoots = new Map<string, RootFolder[]>()
+  const backupDir = local ? opts.backupDir : undefined
+  const rootsOf = (id: string) => currentRoots.get(id) ?? []
   for (const target of mcpTargets) {
     if (!target.roots) continue
     currentRoots.set(target.id, mountFolders(target.roots))
     target.opts = {
       ...target.opts,
-      roots: () => mcpRoots(currentRoots.get(target.id) ?? []),
-      refuse: args => readOnlyRefusal(currentRoots.get(target.id) ?? [], target.pathArgs ?? [], args)
+      roots: () => mcpRoots(rootsOf(target.id)),
+      refuse: args => readOnlyRefusal(rootsOf(target.id), target.pathArgs ?? [], args),
+      ...(backupDir
+        ? {
+            beforeWrite: async args => {
+              await backupFiles(backupPaths(rootsOf(target.id), target.pathArgs ?? [], args), backupDir)
+            }
+          }
+        : {})
     }
   }
+  // list_backups/restore_backup go with the first server some persona backs up (in practice the one filesystem server).
+  const backedUp =
+    backupDir &&
+    mcpTargets.find(target => Object.values(target.roots ?? {}).some(roots => roots.some(root => root.backup)))
+  const backupGroup: ToolGroup[] = backedUp
+    ? [{ origin: "community", source: backedUp.id, tools: backupTools(backupDir, () => rootsOf(backedUp.id)) }]
+    : []
   // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
   const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
   const connectTimeoutMs = opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
@@ -284,6 +303,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     mergeTools([
       { origin: "official", tools: official },
       ...(opts.extraTools ?? []),
+      ...backupGroup,
       ...(await connections()).map(c => ({ origin: "community" as const, source: c.id, tools: c.tools }))
     ])
   let merged = await merge()
@@ -309,6 +329,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       const wanted = names && new Set([...names].map(name => `ability:${name}`))
       const rootless = new Set<string>()
       const readOnly = new Set<string>()
+      const unbacked = new Set<string>()
       const changed: string[] = []
       const paths = (roots: RootFolder[] | undefined) => roots?.map(root => root.folder).join("\n")
       for (const target of mcpTargets) {
@@ -319,6 +340,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
           continue
         }
         if (folders.every(root => root.readOnly)) readOnly.add(target.id)
+        if (!folders.some(root => root.backup)) unbacked.add(target.id)
         // Only the folders reach the server; which are read-only is Kaja's to check.
         if (paths(folders) !== paths(currentRoots.get(target.id))) changed.push(target.id)
         currentRoots.set(target.id, folders)
@@ -343,7 +365,13 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       )
       merged = await merge()
       return merged.tools.filter(
-        tool => !tool.source || !(rootless.has(tool.source) || (readOnly.has(tool.source) && !tool.readOnly))
+        tool =>
+          !tool.source ||
+          !(
+            rootless.has(tool.source) ||
+            (readOnly.has(tool.source) && !tool.readOnly) ||
+            (unbacked.has(tool.source) && BACKUP_TOOL_NAMES.has(toolName(tool)))
+          )
       )
     }
   }

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { McpServerEntry } from "@kaja/schema/config"
@@ -248,6 +248,69 @@ test(
       const inOpen = { id: join(open, "new.txt") }
       expect(write.approval?.(inOpen)).toContain("write_thing")
       expect(await write.execute(inOpen)).toEqual({ text: `wrote ${inOpen.id}` })
+    } finally {
+      await closeTools()
+      rmSync(base, { recursive: true, force: true })
+    }
+  },
+  SPAWN_TIMEOUT
+)
+
+test(
+  "backed-up roots: a write copies the file first, a read doesn't, and restore_backup puts it back",
+  async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "kaja-backup-")))
+    const [kept, plain, backups] = [join(base, "kept"), join(base, "plain"), join(base, "backups")]
+    mkdirSync(kept)
+    mkdirSync(plain)
+    const file = join(kept, "a.lua")
+    writeFileSync(file, "old")
+    writeFileSync(join(plain, "b.lua"), "x")
+    const { ensureAbilities, closeTools } = await createTools({
+      includeLocalTools: true,
+      tempDir: tmpdir(),
+      lazyMcpAbilities: true,
+      backupDir: backups,
+      mcpAbilities: [
+        {
+          name: "things",
+          server: fixture,
+          transport: "stdio",
+          approval: "never",
+          pathArgs: ["id"],
+          roots: {
+            careful: [{ folder: kept, readOnly: false, backup: true }],
+            careless: [{ folder: plain, readOnly: false }]
+          }
+        }
+      ]
+    })
+    const copies = (path: string) => readdirSync(join(backups, path.slice(1))).length
+    try {
+      const careless = (await ensureAbilities(["things"], "careless")).map(toolName)
+      expect(careless).not.toContain("restore_backup")
+      const run = async (persona: string, name: string, args: Record<string, unknown>) =>
+        (await ensureAbilities(["things"], persona)).find(t => toolName(t) === name)!.execute(args)
+      await run("careless", "write_thing", { id: join(plain, "b.lua") })
+      expect(readdirSync(base)).not.toContain("backups")
+
+      await run("careful", "read_thing", { id: file })
+      expect(readdirSync(base)).not.toContain("backups")
+      await run("careful", "write_thing", { id: file })
+      expect(copies(file)).toBe(1)
+      await expect(run("careful", "write_thing", { id: "a.lua" })).rejects.toThrow("absolute path")
+
+      writeFileSync(file, "new")
+      const tools = await ensureAbilities(["things"], "careful")
+      const restore = tools.find(t => toolName(t) === "restore_backup")!
+      expect(restore.approval?.({ path: file })).toContain("restore_backup")
+      expect(await restore.execute({ path: file })).toContain("Restored")
+      expect(readFileSync(file, "utf8")).toBe("old")
+      // The file it replaced was backed up too, so a restore can be undone.
+      expect(copies(file)).toBe(2)
+      const list = tools.find(t => toolName(t) === "list_backups")!
+      expect(((await list.execute({ path: file })) as string).split("\n")).toHaveLength(2)
+      await expect(restore.execute({ path: join(plain, "b.lua") })).rejects.toThrow("isn't in a folder")
     } finally {
       await closeTools()
       rmSync(base, { recursive: true, force: true })
