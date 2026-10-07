@@ -89,8 +89,10 @@ the code, with the same TOML schemas as the templates in `docs/config/`:
 
 To keep the TUI you develop apart from the one you use every day, set `KAJA_PROFILE`. It's appended to the
 config and data folder names, so `KAJA_PROFILE=dev` gives the dev TUI its own `~/.config/kaja-dev/`, and the
-link script points `.user-config` there instead (rerun it after switching profiles to repoint the link). In
-fish, this sets the variable while you're inside the repo and clears it everywhere else:
+link script points `.user-config` there instead (rerun it after switching profiles to repoint the link). The
+`dev` profile also syncs the marketplace from your checkout's current branch instead of GitHub's `main`, so a
+first start already sees your marketplace changes once they're committed. In fish, this sets the variable
+while you're inside the repo and clears it everywhere else:
 
 ```fish
 # ~/.config/fish/config.fish

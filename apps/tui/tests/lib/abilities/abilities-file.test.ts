@@ -1,13 +1,15 @@
 import { afterEach, expect, spyOn, test } from "bun:test"
-import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { pathToFileURL } from "node:url"
+import { $ } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-abilities-file`
 
 const { createFolderAbilityStore, loadAbilities } = await import("@kaja/nasi")
 const { getConfigDir } = await import("../../../lib/config/config")
-const { getMarketplaceDir, marketplaceSettings, ownAbilities, DEFAULT_SOURCE } = await import(
+const { devSource, getMarketplaceDir, marketplaceSettings, ownAbilities, DEFAULT_SOURCE } = await import(
   "../../../lib/abilities/abilities-file"
 )
 
@@ -25,6 +27,25 @@ test("the marketplace source defaults to the Kaja repo and main, and settings.to
   put(join(getConfigDir(), "settings.toml"), `[marketplace]\nref = "wip"\n`)
   expect((await marketplaceSettings()).source).toEqual({ url: DEFAULT_SOURCE.url, ref: "wip" })
 })
+
+test("under KAJA_PROFILE=dev the source defaults to the checkout's current branch", async () => {
+  const repo = mkdtempSync(join(tmpdir(), "kaja-dev-source-"))
+  const bare = mkdtempSync(join(tmpdir(), "kaja-dev-source-none-"))
+  try {
+    put(join(repo, "marketplace/README.md"), "x\n")
+    await $`git -C ${repo} init -q -b wip-branch && git -C ${repo} add . && git -C ${repo} -c user.name=t -c user.email=t@t commit -q -m init`.quiet()
+    expect(await devSource(repo)).toBeUndefined()
+
+    process.env.KAJA_PROFILE = "dev"
+    expect(await devSource(repo)).toEqual({ url: pathToFileURL(repo).href, ref: "wip-branch" })
+    // No marketplace/ folder: not a Kaja checkout, so the usual default stays.
+    expect(await devSource(bare)).toBeUndefined()
+  } finally {
+    delete process.env.KAJA_PROFILE
+    rmSync(repo, { recursive: true, force: true })
+    rmSync(bare, { recursive: true, force: true })
+  }
+}, 30_000)
 
 test("startup's ability loading uses no network and no git", async () => {
   put(join(getMarketplaceDir(), "abilities/demo/SKILL.md"), "---\ndescription: Demo.\n---\nBody\n")

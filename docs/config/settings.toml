@@ -30,7 +30,8 @@ locale   = "en-GB"
 # nothing is pulled at startup. What is already in ~/.config/kaja/marketplace/ still loads.
 # autoFetch pulls at startup when the last sync is over a day old; changes apply on the next launch.
 # url and ref say where to fetch from (a git URL or a local path, and a branch or tag), for testing
-# your own marketplace changes; they default to the Kaja repo's main branch.
+# your own marketplace changes; they default to the Kaja repo's main branch (with KAJA_PROFILE=dev, to
+# the checkout Kaja runs from, on its current branch).
 # [marketplace]
 # enabled = true
 # autoFetch = true
