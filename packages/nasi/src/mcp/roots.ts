@@ -14,7 +14,8 @@ export type RootFolder = { folder: string; readOnly: boolean }
 
 // `~` and `~/…` under the home folder, as the filesystem server expands them too.
 function expandHome(path: string): string {
-  return path === "~" ? homedir() : path.startsWith("~/") ? join(homedir(), path.slice(2)) : path
+  if (path === "~") return homedir()
+  return path.startsWith("~/") ? join(homedir(), path.slice(2)) : path
 }
 
 /**
@@ -23,23 +24,26 @@ function expandHome(path: string): string {
  * listed twice keeps its first entry.
  */
 export async function expandRoots(roots: PersonaRoot[], where: Record<string, string>): Promise<RootFolder[]> {
+  const found = await Promise.all(roots.map(root => expandRoot(root, where)))
   const folders: RootFolder[] = []
-  for (const root of roots) {
-    const { path, readOnly } = typeof root === "string" ? { path: root, readOnly: false } : root
-    const expanded = expandHome(path)
-    if (!isAbsolute(expanded)) {
-      warn("Root left out: not an absolute path or ~/…", { ...where, root: path })
-      continue
-    }
-    const info = await stat(expanded).catch(() => undefined)
-    if (!info?.isDirectory()) {
-      warn("Root left out: no such folder", { ...where, root: path })
-      continue
-    }
-    const folder = await realpath(resolve(expanded))
-    if (!folders.some(known => known.folder === folder)) folders.push({ folder, readOnly })
-  }
+  for (const root of found) if (root && !folders.some(known => known.folder === root.folder)) folders.push(root)
   return folders
+}
+
+// One `roots` entry as a real folder, or undefined (with a warning) when it isn't one.
+async function expandRoot(root: PersonaRoot, where: Record<string, string>): Promise<RootFolder | undefined> {
+  const { path, readOnly } = typeof root === "string" ? { path: root, readOnly: false } : root
+  const expanded = expandHome(path)
+  if (!isAbsolute(expanded)) {
+    warn("Root left out: not an absolute path or ~/…", { ...where, root: path })
+    return undefined
+  }
+  const info = await stat(expanded).catch(() => undefined)
+  if (!info?.isDirectory()) {
+    warn("Root left out: no such folder", { ...where, root: path })
+    return undefined
+  }
+  return { folder: await realpath(resolve(expanded)), readOnly }
 }
 
 /** Folders as the roots a server gets, each named after its last segment. */

@@ -371,8 +371,7 @@ async function* handleToolCalls(
     if (call.function.name === SWITCH_PERSONA_TOOL) {
       yield* handleSwitchPersonaCall(agent, messages, call, record)
       // The round's later calls go to the persona it switched to.
-      toolsByName.clear()
-      for (const t of personaTools(agent)) toolsByName.set(toolName(t), t)
+      refreshToolsByName(agent, toolsByName)
       continue
     }
 
@@ -401,6 +400,12 @@ async function* handleToolCalls(
     approval = undefined
   }
   return { ask, confirm, clientTool, approval }
+}
+
+// Points the round's tool lookup at the active persona's tools.
+function refreshToolsByName(agent: Agent, toolsByName: Map<string, Tool>): void {
+  toolsByName.clear()
+  for (const t of personaTools(agent)) toolsByName.set(toolName(t), t)
 }
 
 type ToolApproval = { id: string; name: string; arguments: string; summary: string }

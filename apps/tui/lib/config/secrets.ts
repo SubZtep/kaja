@@ -97,7 +97,7 @@ function placeholderText({ group, name, note }: SecretPlaceholder): string {
 
 const PLACEHOLDER_HEADER = /^\s*#\s*\[(providers|abilities)\.(?:"([^"]+)"|([A-Za-z0-9_-]+))\]\s*$/
 const PLACEHOLDER_KEY = /^\s*#\s*api_key\s*=\s*""\s*$/
-const NOTE = /^\s*#\s*(.+?)\s*$/
+const NOTE = /^\s*#(.*)$/
 
 /**
  * The placeholders in secrets.toml text: a commented-out `[providers.<name>]` or `[abilities.<name>]` followed by
@@ -111,7 +111,7 @@ export function readSecretPlaceholders(text: string): SecretPlaceholder[] {
     const header = PLACEHOLDER_HEADER.exec(line)
     if (!(header && PLACEHOLDER_KEY.test(lines[index + 1] ?? ""))) return
     const above = lines[index - 1] ?? ""
-    const note = !/^\s*#\s*\[/.test(above) ? NOTE.exec(above)?.[1] : undefined
+    const note = !/^\s*#\s*\[/.test(above) ? NOTE.exec(above)?.[1]?.trim() : undefined
     found.push({
       group: header[1] as SecretPlaceholder["group"],
       name: (header[2] ?? header[3])!,

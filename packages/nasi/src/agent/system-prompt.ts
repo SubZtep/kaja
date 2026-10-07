@@ -160,9 +160,11 @@ function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefi
 async function buildStickySkillSections(agent: Agent): Promise<string[]> {
   const loadSkill = loadSkillToolOf(agent)
   if (!loadSkill?.skills) return []
+  const skills = stickySkillsForPersona(loadSkill.skills, activePersona(agent))
+  const bodies = await Promise.all(skills.map(skill => loadSkill.readBody(skill.name).catch(() => undefined)))
   const sections: string[] = []
-  for (const skill of stickySkillsForPersona(loadSkill.skills, activePersona(agent))) {
-    const body = await loadSkill.readBody(skill.name).catch(() => undefined)
+  for (const [index, skill] of skills.entries()) {
+    const body = bodies[index]
     if (!body) continue
     const where = [
       skill.dir ? `Skill directory: ${skill.dir}` : undefined,

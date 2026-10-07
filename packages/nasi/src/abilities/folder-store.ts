@@ -12,7 +12,6 @@ import {
   SkillNameSchema
 } from "@kaja/schema/abilities"
 import type * as z from "zod"
-import type { Tool } from "../agent/tools"
 import { launchLine, McpRunnerMissingError, resolveLaunch } from "../mcp/launch"
 import { warn } from "../warn"
 import { loadCodeTool } from "./code-tool"
@@ -469,15 +468,17 @@ export function createFolderAbilityStore(opts: FolderAbilityStoreOptions): Abili
 
   return {
     async listSkills() {
-      const skills: SkillSummary[] = []
-      for (const name of await namesWith(opts.root, SKILL_FILE)) {
-        try {
-          skills.push((await readSkillFolder(abilitiesRoot, name)).summary)
-        } catch (error) {
-          warn("Skipping skill", { skill: name, error: error instanceof Error ? error.message : error })
-        }
-      }
-      return skills
+      const skills = await Promise.all(
+        (await namesWith(opts.root, SKILL_FILE)).map(async (name): Promise<SkillSummary | undefined> => {
+          try {
+            return (await readSkillFolder(abilitiesRoot, name)).summary
+          } catch (error) {
+            warn("Skipping skill", { skill: name, error: error instanceof Error ? error.message : error })
+            return undefined
+          }
+        })
+      )
+      return skills.filter(skill => skill !== undefined)
     },
 
     listHttpTools: async () =>
@@ -487,13 +488,11 @@ export function createFolderAbilityStore(opts: FolderAbilityStoreOptions): Abili
       readNamed(await namesWith(opts.root, MCP_FILE), name => readMcp(opts.root, name), "MCP ability"),
 
     async listCodeTools(only) {
-      const tools: { name: string; tools: Tool[] }[] = []
-      for (const name of await scanCodeTools(opts.root)) {
-        if (only && !only.has(name)) continue
-        const loaded = await loadCodeTool(join(abilitiesRoot, name, CODE_FILE))
-        if (loaded.length > 0) tools.push({ name, tools: loaded })
-      }
-      return tools
+      const names = (await scanCodeTools(opts.root)).filter(name => !only || only.has(name))
+      const tools = await Promise.all(
+        names.map(async name => ({ name, tools: await loadCodeTool(join(abilitiesRoot, name, CODE_FILE)) }))
+      )
+      return tools.filter(code => code.tools.length > 0)
     },
 
     async readSkill(name, file) {

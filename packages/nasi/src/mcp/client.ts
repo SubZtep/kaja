@@ -120,7 +120,7 @@ export async function connectMcpServer(
   }
   let pendingAsk = nextAsk()
   if (roots)
-    client.setRequestHandler(ListRootsRequestSchema, async () => {
+    client.setRequestHandler(ListRootsRequestSchema, () => {
       const answer = { roots: roots() }
       queueMicrotask(asked)
       return answer

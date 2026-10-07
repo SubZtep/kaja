@@ -96,7 +96,7 @@ function dockerLaunch(
   const envFlags = Object.keys(env).flatMap(name => ["-e", name])
   const mounts = folders.flatMap(({ folder, readOnly }) => [
     "--mount",
-    `type=bind,${csvField(`src=${folder}`)},${csvField(`dst=${folder}`)}${readOnly ? ",readonly" : ""}`
+    ["type=bind", csvField(`src=${folder}`), csvField(`dst=${folder}`), ...(readOnly ? ["readonly"] : [])].join(",")
   ])
   return { command: docker, args: ["run", "-i", "--rm", "--init", ...envFlags, ...mounts, image, ...serverArgs], env }
 }

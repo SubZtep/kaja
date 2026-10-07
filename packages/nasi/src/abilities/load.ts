@@ -1,6 +1,6 @@
 import type { HttpToolAbility, McpAbility } from "@kaja/schema/abilities"
 import type { Persona } from "@kaja/schema/cli"
-import { toolName } from "../agent/tools"
+import { type Tool, toolName } from "../agent/tools"
 import { type LaunchOptions, McpRunnerMissingError } from "../mcp/launch"
 import { expandRoots, type RootFolder } from "../mcp/roots"
 import type { ToolGroup } from "../tools/registry"
@@ -57,24 +57,8 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   const listed = opts.personas && new Set(opts.personas.flatMap(persona => [...personaAbilities(persona).keys()]))
   // Importing a tool.ts runs it, so only the ones a persona lists load (every one without personas).
   const codeTools = store.listCodeTools ? await listOrWarn(() => store.listCodeTools!(listed), "code tools") : []
-  if (opts.warnUnknown && opts.personas) {
-    // Each ability's tool names, where they're known before connecting (an MCP server without a `tools` list isn't).
-    const known = new Map<string, Set<string> | undefined>()
-    const addTools = (name: string, tools: string[] | undefined) => {
-      // Once a part's tools are unknown, the whole ability's are.
-      if (known.has(name) && known.get(name) === undefined) return
-      known.set(name, tools && new Set([...(known.get(name) ?? []), ...tools]))
-    }
-    for (const skill of skills) if (!known.has(skill.name)) known.set(skill.name, new Set())
-    for (const ability of abilities)
-      addTools(
-        ability.name,
-        ability.tools.map(tool => tool.name)
-      )
-    for (const ability of mcpAbilities) addTools(ability.name, ability.tools)
-    for (const code of codeTools) addTools(code.name, code.tools.map(toolName))
-    warnUnknownEntries(opts.personas, known)
-  }
+  if (opts.warnUnknown && opts.personas)
+    warnUnknownEntries(opts.personas, knownTools(skills, abilities, mcpAbilities, codeTools))
 
   // load_skill is Kaja's own mechanism, so it's official (and its name reserved) even though abilities switch it on.
   const groups: ToolGroup[] =
@@ -83,23 +67,11 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
       : []
 
   const missingKeys: string[] = []
-  /** The ability's key (none for a keyless one without it), or null when it's missing (the ability is then left out). */
-  const keyFor = (ability: HttpToolAbility | McpAbility): string | undefined | null => {
-    if (ability.auth.type !== "apiKey") return undefined
-    const apiKey = opts.getApiKey?.(ability.name)
-    if (apiKey || ability.auth.keyless) return apiKey
-    if (!listed || listed.has(ability.name)) {
-      warn("Ability left out: no API key", { ability: ability.name, secret: `[abilities.${ability.name}] api_key` })
-      missingKeys.push(ability.name)
-    }
-    return null
-  }
-
   for (const code of codeTools) groups.push({ origin: "community", source: `ability:${code.name}`, tools: code.tools })
 
   const httpTools: HttpToolAbility[] = []
   for (const ability of abilities) {
-    const apiKey = keyFor(ability)
+    const apiKey = abilityKey(ability, opts, listed, missingKeys)
     if (apiKey === null) continue
     httpTools.push(ability)
     groups.push({
@@ -109,37 +81,91 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
     })
   }
 
-  const mcp: McpAbilityTarget[] = []
-  const missingRunners: LoadedAbilities["missingRunners"] = []
-  const missingRoots: string[] = []
-  for (const ability of mcpAbilities) {
-    const apiKey = keyFor(ability)
-    if (apiKey === null) continue
-    if (ability.transport === "stdio" && opts.mcpSandbox) {
-      mcp.push(sandboxedMcpTarget(ability))
-      continue
-    }
-    if (!ability.roots && opts.warnUnknown) warnRootsIgnored(opts.personas ?? [], ability.name)
-    const roots = ability.roots ? await personaRoots(opts.personas ?? [], ability) : undefined
-    if (roots && Object.keys(roots).length === 0) {
-      if (opts.personas?.some(persona => personaAbilities(persona).has(ability.name))) {
-        warn("Ability left out: no persona that lists it gives it roots", { ability: ability.name })
-        missingRoots.push(ability.name)
-      }
-      continue
-    }
-    try {
-      mcp.push(mcpAbilityTarget(ability, apiKey, opts.launch, roots))
-    } catch (error) {
-      if (!(error instanceof McpRunnerMissingError)) throw error
-      if (!listed || listed.has(ability.name)) {
-        warn("Ability left out: nothing installed can start it", { ability: ability.name, needs: error.needs })
-        missingRunners.push({ name: ability.name, needs: error.needs })
-      }
-    }
+  // Each runs up to its roots synchronously, in order, so their key warnings and `missingKeys` keep the list's order.
+  const loaded = await Promise.all(mcpAbilities.map(ability => loadMcpAbility(ability, opts, listed, missingKeys)))
+  return {
+    groups,
+    skills,
+    httpTools,
+    mcp: loaded.flatMap(one => one.target ?? []),
+    missingKeys,
+    missingRunners: loaded.flatMap(one => one.missingRunner ?? []),
+    missingRoots: loaded.flatMap(one => one.missingRoots ?? [])
   }
+}
 
-  return { groups, skills, httpTools, mcp, missingKeys, missingRunners, missingRoots }
+type LoadedMcpAbility = {
+  target?: McpAbilityTarget
+  missingRunner?: LoadedAbilities["missingRunners"][number]
+  missingRoots?: string
+}
+
+/** The ability's key (none for a keyless one without it), or null when it's missing (the ability is then left out). */
+function abilityKey(
+  ability: HttpToolAbility | McpAbility,
+  opts: LoadAbilitiesOptions,
+  listed: Set<string> | undefined,
+  missingKeys: string[]
+): string | undefined | null {
+  if (ability.auth.type !== "apiKey") return undefined
+  const apiKey = opts.getApiKey?.(ability.name)
+  if (apiKey || ability.auth.keyless) return apiKey
+  if (!listed || listed.has(ability.name)) {
+    warn("Ability left out: no API key", { ability: ability.name, secret: `[abilities.${ability.name}] api_key` })
+    missingKeys.push(ability.name)
+  }
+  return null
+}
+
+// One MCP ability as a target, or why it's left out: a missing key (in `missingKeys`), runner or roots.
+async function loadMcpAbility(
+  ability: McpAbility,
+  opts: LoadAbilitiesOptions,
+  listed: Set<string> | undefined,
+  missingKeys: string[]
+): Promise<LoadedMcpAbility> {
+  const apiKey = abilityKey(ability, opts, listed, missingKeys)
+  if (apiKey === null) return {}
+  if (ability.transport === "stdio" && opts.mcpSandbox) return { target: sandboxedMcpTarget(ability) }
+  if (!ability.roots && opts.warnUnknown) warnRootsIgnored(opts.personas ?? [], ability.name)
+  const roots = ability.roots ? await personaRoots(opts.personas ?? [], ability) : undefined
+  if (roots && Object.keys(roots).length === 0) {
+    if (!opts.personas?.some(persona => personaAbilities(persona).has(ability.name))) return {}
+    warn("Ability left out: no persona that lists it gives it roots", { ability: ability.name })
+    return { missingRoots: ability.name }
+  }
+  try {
+    return { target: mcpAbilityTarget(ability, apiKey, opts.launch, roots) }
+  } catch (error) {
+    if (!(error instanceof McpRunnerMissingError)) throw error
+    if (listed && !listed.has(ability.name)) return {}
+    warn("Ability left out: nothing installed can start it", { ability: ability.name, needs: error.needs })
+    return { missingRunner: { name: ability.name, needs: error.needs } }
+  }
+}
+
+// Each ability's tool names, where they're known before connecting (an MCP server without a `tools` list isn't).
+function knownTools(
+  skills: SkillSummary[],
+  abilities: HttpToolAbility[],
+  mcpAbilities: McpAbility[],
+  codeTools: { name: string; tools: Tool[] }[]
+): Map<string, Set<string> | undefined> {
+  const known = new Map<string, Set<string> | undefined>()
+  const addTools = (name: string, tools: string[] | undefined) => {
+    // Once a part's tools are unknown, the whole ability's are.
+    if (known.has(name) && known.get(name) === undefined) return
+    known.set(name, tools && new Set([...(known.get(name) ?? []), ...tools]))
+  }
+  for (const skill of skills) if (!known.has(skill.name)) known.set(skill.name, new Set())
+  for (const ability of abilities)
+    addTools(
+      ability.name,
+      ability.tools.map(tool => tool.name)
+    )
+  for (const ability of mcpAbilities) addTools(ability.name, ability.tools)
+  for (const code of codeTools) addTools(code.name, code.tools.map(toolName))
+  return known
 }
 
 /**
@@ -147,21 +173,24 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
  * read-only folder needs the manifest's `pathArgs` to check writes against, so without them it's left out.
  */
 async function personaRoots(personas: Persona[], ability: McpAbility): Promise<Record<string, RootFolder[]>> {
-  const roots: Record<string, RootFolder[]> = {}
-  for (const persona of personas) {
-    const where = { persona: persona.id, ability: ability.name }
-    const expanded = await expandRoots(personaAbilities(persona).get(ability.name)?.roots ?? [], where)
-    const folders = expanded.filter(root => {
-      if (!root.readOnly || ability.pathArgs?.length) return true
-      warn("Read-only root left out: the ability's manifest names no pathArgs to check writes by", {
-        ...where,
-        root: root.folder
-      })
-      return false
+  const entries = await Promise.all(
+    personas.map(async persona => [persona.id, await personaFolders(persona, ability)] as const)
+  )
+  return Object.fromEntries(entries.filter(([, folders]) => folders.length > 0))
+}
+
+// One persona's folders for the ability, read-only ones left out when the manifest names no pathArgs.
+async function personaFolders(persona: Persona, ability: McpAbility): Promise<RootFolder[]> {
+  const where = { persona: persona.id, ability: ability.name }
+  const expanded = await expandRoots(personaAbilities(persona).get(ability.name)?.roots ?? [], where)
+  return expanded.filter(root => {
+    if (!root.readOnly || ability.pathArgs?.length) return true
+    warn("Read-only root left out: the ability's manifest names no pathArgs to check writes by", {
+      ...where,
+      root: root.folder
     })
-    if (folders.length > 0) roots[persona.id] = folders
-  }
-  return roots
+    return false
+  })
 }
 
 /** Warns about a persona giving roots to an ability whose server doesn't take them. */

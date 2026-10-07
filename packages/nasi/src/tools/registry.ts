@@ -274,12 +274,12 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         started.then(all => all[index]!)
       )
     )
-    await Promise.all(targets.map(target => connecting.get(target.id)))
+    await Promise.all(targets.map(target => connecting.get(target.id)!))
   }
   // Abilities' servers connect now, unless they wait for ensureAbilities.
   if (!opts.lazyMcpAbilities) await connect(mcpTargets)
 
-  const connections = async () => Promise.all([...connecting.values()])
+  const connections = async () => Promise.all(connecting.values())
   const merge = async () =>
     mergeTools([
       { origin: "official", tools: official },

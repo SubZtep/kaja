@@ -28,11 +28,13 @@ export async function loadSandboxServers(
         npm_config_cache: join(cacheDir, "npm")
       }
     : {}
+  const entries = (await scanMcpAbilities(marketplaceDir)).filter(entry => !entry.error && entry.transport === "stdio")
+  const texts = await Promise.all(
+    entries.map(entry => readFile(join(resolve(marketplaceDir), "abilities", entry.name, "mcp.toml"), "utf8"))
+  )
   const servers = new Map<string, SandboxServer>()
-  for (const entry of await scanMcpAbilities(marketplaceDir)) {
-    if (entry.error || entry.transport !== "stdio") continue
-    const text = await readFile(join(resolve(marketplaceDir), "abilities", entry.name, "mcp.toml"), "utf8")
-    const ability = parseMcpManifest(text, entry.name)
+  for (const [index, entry] of entries.entries()) {
+    const ability = parseMcpManifest(texts[index]!, entry.name)
     if (!ability.tools?.length || ability.auth.type !== "none" || ability.localOnly || ability.roots) {
       console.warn("Sandbox skips MCP ability", { ability: ability.name })
       continue

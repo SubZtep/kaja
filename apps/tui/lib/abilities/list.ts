@@ -13,6 +13,38 @@ type Row = { name: string; parts: string[]; errors: string[]; auth?: AbilityKeyN
  * it; your own marked local), a line per part that can't load, and how to change things. Read-only.
  */
 export async function abilityListLines(root = getMarketplaceDir()): Promise<string[]> {
+  const rows = await scanRows(root)
+  if (rows.length === 0) return [t("ability.empty")]
+
+  const own = new Set((await ownAbilities(root)).abilities)
+  const keys = (await secrets()).abilities
+  const usedBy = await personasByAbility()
+
+  const sorted = rows.sort((a, b) => a.name.localeCompare(b.name))
+  const width = Math.max(...sorted.map(r => r.name.length))
+  // The `local` tag gets a column of its own when any row has it, so the details still line up.
+  const tag = sorted.some(r => own.has(r.name)) ? t("ability.local") : ""
+  const palette = consolePalette()
+  const lines = [paint(palette.accent)(t("ability.title"))]
+  for (const r of sorted) {
+    const local = own.has(r.name) ? tag : ""
+    const name = tag ? `${r.name.padEnd(width)}  ${local.padEnd(tag.length)}` : r.name.padEnd(width)
+    const details = [
+      r.parts.join(" + "),
+      keyStatus(r.auth, Boolean(keys[r.name]?.api_key)),
+      r.runs && t("ability.runs", { command: r.runs }),
+      r.needs && t("ability.needs", { programs: anyOf(r.needs) }),
+      (usedBy.get(r.name) ?? []).join(", ") || t("ability.noPersona")
+    ].filter(Boolean)
+    lines.push(`  ${name}  ${details.join(" · ")}`)
+    for (const error of r.errors) lines.push(paint(palette.danger)(`    ✗ ${error}`))
+  }
+  lines.push("", t("ability.listHint"))
+  return lines
+}
+
+// One row per ability folder, with its parts (or why a part can't load), its key, and what runs its MCP server.
+async function scanRows(root: string): Promise<Row[]> {
   const { scanCodeTools, scanHttpTools, scanMcpAbilities, scanSkills } = await import("@kaja/nasi")
   const rows = new Map<string, Row>()
   const row = (name: string) => rows.get(name) ?? rows.set(name, { name, parts: [], errors: [] }).get(name)!
@@ -32,37 +64,16 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
     if (entry.needs) row(entry.name).needs = entry.needs
   }
   for (const name of await scanCodeTools(root)) add({ name }, t("ability.typeCode"))
-  if (rows.size === 0) return [t("ability.empty")]
+  return [...rows.values()]
+}
 
-  const own = new Set((await ownAbilities(root)).abilities)
-  const keys = (await secrets()).abilities
+// Which personas use each ability, by ability name.
+async function personasByAbility(): Promise<Map<string, string[]>> {
   const usedBy = new Map<string, string[]>()
   for (const persona of await loadPersonas()) {
     for (const name of personaAbilities(persona).keys()) usedBy.set(name, [...(usedBy.get(name) ?? []), persona.id])
   }
-
-  const sorted = [...rows.values()].sort((a, b) => a.name.localeCompare(b.name))
-  const width = Math.max(...sorted.map(r => r.name.length))
-  // The `local` tag gets a column of its own when any row has it, so the details still line up.
-  const tag = sorted.some(r => own.has(r.name)) ? t("ability.local") : ""
-  const palette = consolePalette()
-  const lines = [paint(palette.accent)(t("ability.title"))]
-  for (const r of sorted) {
-    const name = tag
-      ? `${r.name.padEnd(width)}  ${(own.has(r.name) ? tag : "").padEnd(tag.length)}`
-      : r.name.padEnd(width)
-    const details = [
-      r.parts.join(" + "),
-      keyStatus(r.auth, Boolean(keys[r.name]?.api_key)),
-      r.runs && t("ability.runs", { command: r.runs }),
-      r.needs && t("ability.needs", { programs: anyOf(r.needs) }),
-      (usedBy.get(r.name) ?? []).join(", ") || t("ability.noPersona")
-    ].filter(Boolean)
-    lines.push(`  ${name}  ${details.join(" · ")}`)
-    for (const error of r.errors) lines.push(paint(palette.danger)(`    ✗ ${error}`))
-  }
-  lines.push("", t("ability.listHint"))
-  return lines
+  return usedBy
 }
 
 // Whether the ability takes a key and has one (without it, it's off unless keyless); nothing when it takes none.
