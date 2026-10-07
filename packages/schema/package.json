@@ -1,6 +1,6 @@
 {
   "name": "@kaja/schema",
-  "version": "0.21.13",
+  "version": "0.21.14",
   "private": true,
   "sideEffects": false,
   "exports": {
