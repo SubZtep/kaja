@@ -35,8 +35,26 @@ approval = "never"                  # never | writes | always
 
 The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-thinking` and `time`.
 
-- A `stdio` ability runs a local `command` (with `args` and `env`) instead of a `url`, and its key goes in an
-  env var (`in = "env"`). `kaja abilities` shows the command it runs.
+- A `stdio` ability starts a program on your machine instead of reaching a `url`, and its key goes in an env
+  var (`in = "env"`). Most servers are packages, so name the package and Kaja picks a way to run it:
+
+  ```toml
+  # abilities/time/mcp.toml
+  transport = "stdio"
+  package = { pypi = "mcp-server-time@2026.8.18", docker = "mcp/time@sha256:9c46a9…" }
+  args = []                           # the server's own arguments, after the package
+  ```
+
+  - `npm` packages run on Kaja itself (it has Bun built in, as `bunx`), with Node.js when you have it, so they
+    need nothing installed.
+  - `pypi` packages run with [uv](https://docs.astral.sh/uv/)'s `uvx`, else `pipx`.
+  - `docker` images run with `docker run`, when nothing else can start the server. Env vars and the key go in
+    by name (`-e NAME`), so they never show in the process list.
+
+  Kaja tries them in that order. When none is installed, the ability is left out, and `kaja abilities` and
+  `kaja doctor` say what to install. A server that isn't a package takes a `command` (with `args` and `env`)
+  instead, and is left out the same way when that command isn't installed. `kaja abilities` shows what each
+  one runs on your machine.
 - The key lives in `secrets.toml` as `[abilities.<name>] api_key`. Every key is optional: without one the
   ability is simply off, and `kaja doctor` offers to add it. `keyless = true` means the server also works
   without one (like context7, where a key only raises the limits), so the ability stays on; `kaja doctor`

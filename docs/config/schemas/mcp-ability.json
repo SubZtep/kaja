@@ -23,12 +23,34 @@
       "format": "uri"
     },
     "command": {
-      "description": "Command that starts the server (stdio)",
+      "description": "Command that starts the server (stdio), for a server that isn't a package",
       "type": "string",
       "minLength": 1
     },
+    "package": {
+      "description": "The package that is the server (stdio), instead of a command",
+      "type": "object",
+      "properties": {
+        "npm": {
+          "description": "npm package (name@version): run by Kaja's own bun, else npx or pnpm dlx",
+          "type": "string",
+          "pattern": "^(@[a-z0-9][\\w.-]*\\/)?[a-z0-9][\\w.-]*(@[\\w.+-]+)?$"
+        },
+        "pypi": {
+          "description": "PyPI package (name@version, its command named like it): run by uvx or pipx",
+          "type": "string",
+          "pattern": "^[a-z0-9][\\w.-]*(@[\\w.!+-]+)?$"
+        },
+        "docker": {
+          "description": "Docker image (name:tag or name@sha256:digest): docker run, when nothing else can start it",
+          "type": "string",
+          "pattern": "^[a-z0-9][\\w./:-]*(@sha256:[a-f0-9]{64})?$"
+        }
+      }
+    },
     "args": {
       "default": [],
+      "description": "The server's own arguments (after the package, with one)",
       "type": "array",
       "items": {
         "type": "string"

@@ -184,18 +184,21 @@ test("listMcpAbilities reads every manifest; scanMcpAbilities shows the host or 
   put("abilities/docs/mcp.toml", 'description = "Docs"\nurl = "https://mcp.docs.test/mcp"\n')
   put(
     "abilities/browser/mcp.toml",
-    'description = "Browser"\ntransport = "stdio"\ncommand = "bunx"\nargs = ["browser-mcp", "--headless"]\nauth = { type = "apiKey", in = "env", name = "B_KEY" }\n'
+    'description = "Browser"\ntransport = "stdio"\ncommand = "bun"\nargs = ["browser-mcp", "--headless"]\nauth = { type = "apiKey", in = "env", name = "B_KEY" }\n'
   )
   put("abilities/broken/mcp.toml", 'description = "x"\ntransport = "stdio"\n')
+  put("abilities/gone/mcp.toml", 'description = "x"\ntransport = "stdio"\ncommand = "kaja-test-no-such-command"\n')
   const store = createFolderAbilityStore({ root })
-  expect((await store.listMcpAbilities()).map(p => p.name)).toEqual(["browser", "docs"])
+  expect((await store.listMcpAbilities()).map(p => p.name)).toEqual(["browser", "docs", "gone"])
 
   const entries = await scanMcpAbilities(root)
-  expect(entries.map(e => e.name)).toEqual(["broken", "browser", "docs"])
+  expect(entries.map(e => e.name)).toEqual(["broken", "browser", "docs", "gone"])
+  expect(entries[3]).toMatchObject({ needs: ["kaja-test-no-such-command"] })
+  expect(entries[3]).not.toHaveProperty("command")
   expect(entries[0]!.error).toContain("command")
   expect(entries[1]).toMatchObject({
     transport: "stdio",
-    command: "bunx browser-mcp --headless",
+    command: "bun browser-mcp --headless",
     auth: { in: "env", name: "B_KEY" }
   })
   expect(entries[2]).toMatchObject({ transport: "http", domain: "mcp.docs.test", auth: undefined })

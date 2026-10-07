@@ -1,6 +1,7 @@
 import type { HttpToolAbility, McpAbility } from "@kaja/schema/abilities"
 import type { Persona } from "@kaja/schema/cli"
 import { toolName } from "../agent/tools"
+import { type LaunchOptions, McpRunnerMissingError } from "../mcp/launch"
 import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
@@ -20,6 +21,8 @@ export type LoadedAbilities = {
   mcp: McpAbilityTarget[]
   /** Enabled abilities a persona uses (any, without personas) left out because their (required) key is missing. */
   missingKeys: string[]
+  /** Stdio MCP abilities a persona uses (any, without personas) left out because nothing here can start them, with the programs that would. */
+  missingRunners: { name: string; needs: string[] }[]
 }
 
 export type LoadAbilitiesOptions = {
@@ -32,6 +35,8 @@ export type LoadAbilitiesOptions = {
   proxy?: string
   /** Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they are. */
   mcpSandbox?: McpSandbox
+  /** How stdio MCP abilities find a runner on this host (tests fake `which`). */
+  launch?: LaunchOptions
   /** Warn about persona entries naming an ability, or a tool of one, that isn't there: on for a host whose store is every ability the user has (the CLI), off where parts are left out on purpose (the cloud). */
   warnUnknown?: boolean
 }
@@ -101,15 +106,26 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   }
 
   const mcp: McpAbilityTarget[] = []
+  const missingRunners: LoadedAbilities["missingRunners"] = []
   for (const ability of mcpAbilities) {
     const apiKey = keyFor(ability)
     if (apiKey === null) continue
-    mcp.push(
-      ability.transport === "stdio" && opts.mcpSandbox ? sandboxedMcpTarget(ability) : mcpAbilityTarget(ability, apiKey)
-    )
+    if (ability.transport === "stdio" && opts.mcpSandbox) {
+      mcp.push(sandboxedMcpTarget(ability))
+      continue
+    }
+    try {
+      mcp.push(mcpAbilityTarget(ability, apiKey, opts.launch))
+    } catch (error) {
+      if (!(error instanceof McpRunnerMissingError)) throw error
+      if (!listed || listed.has(ability.name)) {
+        warn("Ability left out: nothing installed can start it", { ability: ability.name, needs: error.needs })
+        missingRunners.push({ name: ability.name, needs: error.needs })
+      }
+    }
   }
 
-  return { groups, skills, httpTools, mcp, missingKeys }
+  return { groups, skills, httpTools, mcp, missingKeys, missingRunners }
 }
 
 /** Warns once per persona entry that names an ability the store doesn't have, or a tool its ability doesn't offer. */

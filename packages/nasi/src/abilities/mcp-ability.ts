@@ -1,6 +1,7 @@
 import type { McpAbility, McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
 import { connectMcpServer } from "../mcp/client"
+import { type LaunchOptions, resolveLaunch } from "../mcp/launch"
 import type { FetchLike } from "../security/ssrf"
 import type { KeyCheckResult } from "./http-tool"
 
@@ -29,19 +30,26 @@ export type McpSandbox = { fetch: FetchLike; close?: () => Promise<void> }
 /** The origin sandboxed abilities' URLs are given: never looked up, only routed to {@link McpSandbox.fetch}. */
 export const SANDBOX_ORIGIN = "https://sandbox.invalid"
 
-/** The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var `auth` names. */
-export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbilityTarget {
+/**
+ * The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var `auth`
+ * names. A stdio one starts through `resolveLaunch` (with `launch`), so it throws `McpRunnerMissingError` when this host
+ * has nothing that can run it.
+ */
+export function mcpAbilityTarget(ability: McpAbility, apiKey?: string, launch?: LaunchOptions): McpAbilityTarget {
   const value = ability.auth.type === "apiKey" && apiKey ? `${ability.auth.prefix ?? ""}${apiKey}` : undefined
   const keyEntry = value && ability.auth.type === "apiKey" ? { [ability.auth.name]: value } : {}
   const server: McpServerEntry =
     ability.transport === "stdio"
-      ? { id: ability.name, command: ability.command!, args: ability.args, env: { ...ability.env, ...keyEntry } }
+      ? { id: ability.name, ...resolveLaunch(ability, { ...ability.env, ...keyEntry }, launch) }
       : { id: ability.name, url: ability.url!, headers: { ...ability.headers, ...keyEntry } }
+  return { ...targetRules(ability), server, transport: ability.transport }
+}
+
+// How the ability's tools are treated, wherever its server runs.
+function targetRules(ability: McpAbility) {
   const readOnly = ability.readOnly?.map(rule => (typeof rule === "string" ? { tool: rule, unless: [] } : rule))
   return {
     name: ability.name,
-    server,
-    transport: ability.transport,
     approval: ability.approval,
     allow: ability.tools,
     ...(readOnly ? { readOnly } : {}),
@@ -54,10 +62,9 @@ export function mcpAbilityTarget(ability: McpAbility, apiKey?: string): McpAbili
  * The sandbox starts the command from its own copy of the manifest, so none of it is sent; nor is a key (not forwarded yet).
  */
 export function sandboxedMcpTarget(ability: McpAbility): McpAbilityTarget {
-  const local = mcpAbilityTarget(ability)
   const url = `${SANDBOX_ORIGIN}/mcp/${encodeURIComponent(ability.name)}`
   return {
-    ...local,
+    ...targetRules(ability),
     server: { id: ability.name, url, headers: {} },
     transport: "http",
     sandboxed: true

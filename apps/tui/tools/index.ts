@@ -46,7 +46,7 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
     warnUnknown: true
   })
 
-  return createTools({
+  const tools = await createTools({
     includeLocalTools: true,
     extraTools: abilities.groups,
     mcpAbilities: abilities.mcp,
@@ -60,4 +60,6 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
       storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }
   })
+  // Stdio abilities nothing here can start: the doctor says what to install.
+  return { ...tools, missingRunners: abilities.missingRunners }
 }

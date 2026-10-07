@@ -1,4 +1,4 @@
-import { createFolderAbilityStore, mcpAbilityTarget, personaAbilities } from "@kaja/nasi"
+import { createFolderAbilityStore, McpRunnerMissingError, mcpAbilityTarget, personaAbilities } from "@kaja/nasi"
 import type { CliResolvedModel, SecretsFile } from "@kaja/schema/config"
 import { getMarketplaceDir } from "../abilities/abilities-file"
 import { type SecretPlaceholder, saveSecrets, secrets, updateSecretPlaceholders } from "../config/secrets"
@@ -147,7 +147,14 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
     items.push(
       abilityItem(ability.name, label, auth, creds.abilities[ability.name]?.api_key, async key => {
         if (!key && !auth.keyless) return undefined
-        const target = mcpAbilityTarget(ability, key)
+        let target
+        try {
+          target = mcpAbilityTarget(ability, key)
+        } catch (error) {
+          // A stdio server nothing here can start: the key can't be tested yet.
+          if (error instanceof McpRunnerMissingError) return { ok: false, reason: error.message }
+          throw error
+        }
         return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
       })
     )

@@ -1,12 +1,13 @@
 # Current time and time zone conversion: https://github.com/modelcontextprotocol/servers/tree/main/src/time
-# Runs `uvx mcp-server-time` on your machine and needs uv (https://docs.astral.sh/uv/) installed.
+# Runs on your machine with uv (https://docs.astral.sh/uv/) or pipx, else Docker's mcp/time image, so it needs one of them.
 # In the cloud it runs in the MCP sandbox instead (apps/sandbox). Both tools only read, so nothing asks first.
 description = "The current time in any IANA time zone, and converting times between zones."
 transport   = "stdio"
-command     = "uvx"
-args        = [
-  "mcp-server-time"
-]
+# Keep the PyPI version in step with MCP_SERVER_TIME_VERSION in apps/sandbox/Dockerfile.
+package     = {
+  pypi   = "mcp-server-time@2026.8.18",
+  docker = "mcp/time@sha256:9c46a918633fb474bf8035e3ee90ebac6bcf2b18ccb00679ac4c179cba0ebfcf"
+}
 tools       = [
   "get_current_time",
   "convert_time"

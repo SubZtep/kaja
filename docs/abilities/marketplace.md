@@ -60,7 +60,7 @@ the next launch. You can turn both off in [`[marketplace]`](/configuration/confi
 takes a `url` and `ref` to fetch from a fork, a branch or a local checkout.
 
 Every valid ability and persona in the folder loads, your own included. `kaja abilities` lists them: each
-ability's parts, whether its key is saved, the command a stdio MCP server runs, and the personas that use it.
+ability's parts, whether its key is saved, what a stdio MCP server runs (or what to install for it), and the personas that use it.
 To change what a chat gets, edit a persona's `abilities` list, or write your own persona (a new id, so the
 sync never replaces it). `kaja doctor` asks for the keys of abilities a persona uses, and tests them. A file
 that fails to load is skipped with the reason and never stops the rest.

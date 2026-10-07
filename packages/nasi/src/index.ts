@@ -121,6 +121,13 @@ export {
 } from "./agent/tools"
 export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
+  type LaunchOptions,
+  launchLine,
+  McpRunnerMissingError,
+  resolveLaunch,
+  type StdioLaunch
+} from "./mcp/launch"
+export {
   createOpenAIClient,
   KAJA_MODEL_HEADER,
   noteServedModel,

@@ -19,7 +19,7 @@ marketplace/
 │  ├─ *.md            # optional extra files the instructions point to
 │  ├─ scripts/        # optional scripts, run through run_command with the usual approval
 │  ├─ tool.toml       # an HTTP API: base URL, auth, and the tools the model can call
-│  ├─ mcp.toml        # an MCP server: url (http/sse) or command (stdio), auth, approval, tool allowlist
+│  ├─ mcp.toml        # an MCP server: url (http/sse) or package/command (stdio), auth, approval, tool allowlist
 │  └─ tool.ts         # code tools: exports with a `definition` and an `execute` function (local only)
 ├─ personas/<id>.toml # a persona: label, when to switch to it, instructions, optional sampling
 └─ datasets/<id>.json # a questionnaire a persona fills in (`profile: true`: every persona sees the answers)
@@ -37,6 +37,6 @@ marketplace/
 - Tool names are what the model calls, so keep them specific (`weather_forecast`, not `get`). A name Kaja already uses is skipped.
 - Never put a key in a file. `auth` only says where it goes, and the user's key stays in their `secrets.toml`.
 - Anything but GET asks the user first, so make read-only endpoints GET tools.
-- For an MCP ability, list only useful tools in the `tools` allowlist. Pick `approval = "writes"` when a server can change things, and add `readOnly` entries for tools that only read but aren't marked so (with `unless` for arguments that write, like a `filePath`). Say in the description what a stdio server needs installed.
+- For an MCP ability, list only useful tools in the `tools` allowlist. Pick `approval = "writes"` when a server can change things, and add `readOnly` entries for tools that only read but aren't marked so (with `unless` for arguments that write, like a `filePath`). For a stdio server, prefer `package` (`npm`, `pypi` and/or `docker`, each pinned to an exact version or digest) over a `command`, so it runs with whatever the user has, and say in the comments what that is. Keep a version the sandbox's Dockerfile preinstalls in step with it.
 
 What the cloud leaves out, and how the two copies are kept in step, is in the docs: [Abilities in the cloud](https://docs.kaja.io/abilities/marketplace#in-the-cloud) and [Marketplace internals](https://docs.kaja.io/development/marketplace). The format of each kind: [skills](https://docs.kaja.io/abilities/skills), [personas](https://docs.kaja.io/abilities/personas), [HTTP tools](https://docs.kaja.io/abilities/tools#http-tools), [MCP servers](https://docs.kaja.io/abilities/mcp) and [datasets](https://docs.kaja.io/abilities/memory#datasets).

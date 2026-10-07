@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { McpAbilitySchema } from "@kaja/schema/abilities"
 import { parseMcpManifest } from "../../src/abilities/folder-store"
 import { mcpAbilityTarget } from "../../src/abilities/mcp-ability"
+import { McpRunnerMissingError } from "../../src/mcp/launch"
 import { mcpAbility } from "../fixtures/abilities"
 
 const parse = (input: Record<string, unknown>) => mcpAbility({ name: "demo", description: "Demo", ...input })
@@ -32,6 +33,10 @@ test("transport decides url vs command and where the key may go", () => {
   expect(issues({ transport: "stdio", command: "x", auth: { type: "apiKey", in: "header", name: "K" } })).toEqual([
     "auth"
   ])
+  expect(issues({ transport: "stdio", command: "x", package: { npm: "y" } })).toEqual(["package"])
+  expect(issues({ url: "https://a.test", package: { npm: "y" } })).toEqual(["package"])
+  expect(issues({ transport: "stdio", package: {} })).toEqual(["package"])
+  expect(issues({ transport: "stdio", package: { npm: "--eval=x" } })).toEqual(["package"])
   expect(parse({ url: "https://a.test" })).toMatchObject({
     transport: "http",
     approval: "never",
@@ -59,7 +64,7 @@ test("the key lands in the header (with prefix) or env var, next to the static o
     approval: "writes",
     tools: ["a"]
   })
-  expect(mcpAbilityTarget(stdio, "k2")).toEqual({
+  expect(mcpAbilityTarget(stdio, "k2", { which: program => program })).toEqual({
     name: "demo",
     server: { id: "demo", command: "bunx", args: ["demo-mcp"], env: { MODE: "x", DEMO_KEY: "k2" } },
     transport: "stdio",
@@ -86,4 +91,9 @@ test("readOnly shorthand names expand to rules with no `unless`", () => {
     { tool: "list_things", unless: [] },
     { tool: "snapshot", unless: ["filePath"] }
   ])
+})
+
+test("a stdio ability nothing here can start throws, naming what to install", () => {
+  const time = parse({ transport: "stdio", package: { pypi: "mcp-server-time@1.0" } })
+  expect(() => mcpAbilityTarget(time, undefined, { which: () => null })).toThrow(McpRunnerMissingError)
 })

@@ -100,3 +100,22 @@ test("with warnUnknown, a persona naming a missing ability or tool gets a warnin
     setWarnHandler(() => {})
   }
 })
+
+test("a stdio ability nothing here can start is left out and reported, only when a persona uses it", async () => {
+  const time = parseMcp({
+    name: "time",
+    description: "time",
+    transport: "stdio",
+    package: { pypi: "mcp-server-time@1.0", docker: "mcp/time:1" }
+  })
+  const launch = { which: () => null }
+  const loaded = await loadAbilities(storeWith([], [time]), { launch })
+  expect(loaded.mcp).toEqual([])
+  expect(loaded.missingRunners).toEqual([{ name: "time", needs: ["uvx", "pipx", "docker"] }])
+
+  const unused = await loadAbilities(storeWith([], [time]), { launch, personas: [{ id: "a", label: "A" }] })
+  expect(unused.missingRunners).toEqual([])
+
+  const withUv = await loadAbilities(storeWith([], [time]), { launch: { which: (p: string) => p } })
+  expect(withUv.mcp.map(target => target.server)).toMatchObject([{ id: "time", command: "uvx" }])
+})

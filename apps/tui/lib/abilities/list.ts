@@ -1,12 +1,12 @@
 import { type AbilityKeyNeed, personaAbilities } from "@kaja/nasi"
 import { consolePalette, paint } from "../../components/theme"
 import { secrets } from "../config/secrets"
-import { t } from "../i18n"
+import { getLanguage, t } from "../i18n"
 import { loadPersonas } from "../personas/personas"
 import { getMarketplaceDir, ownAbilities } from "./abilities-file"
 
 /** One ability folder as `kaja abilities` shows it. */
-type Row = { name: string; parts: string[]; errors: string[]; auth?: AbilityKeyNeed; runs?: string }
+type Row = { name: string; parts: string[]; errors: string[]; auth?: AbilityKeyNeed; runs?: string; needs?: string[] }
 
 /**
  * `kaja abilities`' output: one line per ability in the marketplace folder (its parts, its key, which personas use
@@ -29,6 +29,7 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
     add(entry, t("ability.typeMcp"))
     if (entry.auth) row(entry.name).auth = entry.auth
     if (entry.command) row(entry.name).runs = entry.command
+    if (entry.needs) row(entry.name).needs = entry.needs
   }
   for (const name of await scanCodeTools(root)) add({ name }, t("ability.typeCode"))
   if (rows.size === 0) return [t("ability.empty")]
@@ -54,6 +55,7 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
       r.parts.join(" + "),
       keyStatus(r.auth, Boolean(keys[r.name]?.api_key)),
       r.runs && t("ability.runs", { command: r.runs }),
+      r.needs && t("ability.needs", { programs: anyOf(r.needs) }),
       (usedBy.get(r.name) ?? []).join(", ") || t("ability.noPersona")
     ].filter(Boolean)
     lines.push(`  ${name}  ${details.join(" · ")}`)
@@ -68,4 +70,9 @@ function keyStatus(auth: AbilityKeyNeed | undefined, saved: boolean): string | u
   if (!auth) return undefined
   if (saved) return t("ability.keySaved")
   return auth.keyless ? t("ability.keyless") : t("ability.noKey")
+}
+
+/** "uvx, pipx or docker", in the TUI's language. */
+export function anyOf(programs: string[]): string {
+  return new Intl.ListFormat(getLanguage(), { type: "disjunction" }).format(programs)
 }

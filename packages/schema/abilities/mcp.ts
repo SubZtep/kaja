@@ -16,6 +16,32 @@ export const McpAbilityAuthSchema = z.discriminatedUnion("type", [
   })
 ])
 
+// Package names never start with a dash, so one can't pass as a runner's flag; the version after `@` is optional here (the marketplace pins it).
+const NPM_SPEC = /^(@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*(@[\w.+-]+)?$/i
+const PYPI_SPEC = /^[a-z0-9][\w.-]*(@[\w.!+-]+)?$/i
+const DOCKER_IMAGE = /^[a-z0-9][\w./:-]*(@sha256:[a-f0-9]{64})?$/
+
+/** A stdio server published as a package: the host starts it with whichever runner it has (see nasi's `resolveLaunch`). */
+export const McpPackageSchema = z
+  .object({
+    npm: z
+      .string()
+      .regex(NPM_SPEC, "an npm package, e.g. @scope/name@1.2.3")
+      .optional()
+      .describe("npm package (name@version): run by Kaja's own bun, else npx or pnpm dlx"),
+    pypi: z
+      .string()
+      .regex(PYPI_SPEC, "a PyPI package, e.g. name@1.2.3")
+      .optional()
+      .describe("PyPI package (name@version, its command named like it): run by uvx or pipx"),
+    docker: z
+      .string()
+      .regex(DOCKER_IMAGE, "a Docker image, e.g. mcp/time@sha256:<digest>")
+      .optional()
+      .describe("Docker image (name:tag or name@sha256:digest): docker run, when nothing else can start it")
+  })
+  .refine(pkg => pkg.npm || pkg.pypi || pkg.docker, "name at least one of npm, pypi or docker")
+
 export const McpAbilitySchema = z
   .object({
     description: z.string().min(1).max(1024),
@@ -24,8 +50,13 @@ export const McpAbilitySchema = z
       .url({ protocol: /^https?$/ })
       .optional()
       .describe("Server URL (http and sse)"),
-    command: z.string().min(1).optional().describe("Command that starts the server (stdio)"),
-    args: z.array(z.string()).default([]),
+    command: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Command that starts the server (stdio), for a server that isn't a package"),
+    package: McpPackageSchema.optional().describe("The package that is the server (stdio), instead of a command"),
+    args: z.array(z.string()).default([]).describe("The server's own arguments (after the package, with one)"),
     env: z.record(z.string(), z.string()).default({}).describe("Static env vars for the server (stdio)"),
     headers: z.record(z.string(), z.string()).default({}).describe("Static headers (http and sse)"),
     auth: McpAbilityAuthSchema.default({ type: "none" }),
@@ -74,11 +105,18 @@ export const McpAbilitySchema = z
   })
 
 type IssueAt = (path: string, message: string) => void
-type McpEndpoint = { transport: string; url?: string; command?: string; auth: { type: string; in?: string } }
+type McpEndpoint = {
+  transport: string
+  url?: string
+  command?: string
+  package?: object
+  auth: { type: string; in?: string }
+}
 
-// stdio starts a command and takes its key in an env var.
+// stdio starts a command or a package and takes its key in an env var.
 function checkStdio(ability: McpEndpoint, issue: IssueAt) {
-  if (!ability.command) issue("command", "stdio needs a command")
+  if (!ability.command && !ability.package) issue("command", "stdio needs a command or a package")
+  if (ability.command && ability.package) issue("package", "give a command or a package, not both")
   if (ability.url) issue("url", "stdio doesn't take a url")
   if (ability.auth.type === "apiKey" && ability.auth.in !== "env") issue("auth", 'stdio keys go in = "env"')
 }
@@ -87,6 +125,7 @@ function checkStdio(ability: McpEndpoint, issue: IssueAt) {
 function checkRemote(ability: McpEndpoint, issue: IssueAt) {
   if (!ability.url) issue("url", `${ability.transport} needs a url`)
   if (ability.command) issue("command", `${ability.transport} doesn't take a command`)
+  if (ability.package) issue("package", `${ability.transport} doesn't take a package`)
   if (ability.auth.type === "apiKey" && ability.auth.in !== "header")
     issue("auth", `${ability.transport} keys go in = "header"`)
 }
@@ -94,14 +133,15 @@ function checkRemote(ability: McpEndpoint, issue: IssueAt) {
 /** A loaded MCP ability: its `mcp.toml` plus the ability's name, which is its folder's (marketplace/abilities/<name>/). */
 export type McpAbility = z.infer<typeof McpAbilitySchema> & { name: string }
 export type McpAbilityAuth = z.infer<typeof McpAbilityAuthSchema>
+export type McpPackage = z.infer<typeof McpPackageSchema>
 /** A readOnly entry with the shorthand expanded: read-only unless one of `unless` is set in the call. */
 export type McpReadOnlyRule = { tool: string; unless: string[] }
 
-/** The MCP sandbox's per-host swap of a stdio manifest's command/args (e.g. a pinned package version and Chrome flags), by ability name. */
+/** The MCP sandbox's per-host swap of a stdio manifest's command (or package)/args (e.g. a pinned package version and Chrome flags), by ability name. */
 export const McpAbilityOverridesSchema = z.record(
   SkillNameSchema,
   z.object({
-    command: z.string().min(1).optional().describe("Replaces the manifest's command"),
+    command: z.string().min(1).optional().describe("Replaces the manifest's command, or its package and the runner"),
     args: z.array(z.string()).optional().describe("Replaces the manifest's args")
   })
 )

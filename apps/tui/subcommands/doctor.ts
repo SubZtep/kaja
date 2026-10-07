@@ -15,9 +15,13 @@ async function printModels(models: CliResolvedModel[]) {
   await runModelPass(models, line => console.log(line), await defaultModelIo())
 }
 
-async function printMcpServers(mcpServers: { id: string; failed: boolean; toolCount: number }[]) {
-  if (mcpServers.length === 0) return
+async function printMcpServers(
+  mcpServers: { id: string; failed: boolean; toolCount: number }[],
+  missingRunners: { name: string; needs: string[] }[]
+) {
+  if (mcpServers.length === 0 && missingRunners.length === 0) return
   const { statusLine } = await import("../lib/doctor/status")
+  const { anyOf } = await import("../lib/abilities/list")
 
   console.log(t("doctor.mcpServers"))
   for (const server of mcpServers) {
@@ -26,6 +30,8 @@ async function printMcpServers(mcpServers: { id: string; failed: boolean; toolCo
       : t("doctor.mcpServerToolCount", { count: server.toolCount })
     console.log(statusLine(server.failed ? "error" : "success", `${server.id} ${status}`))
   }
+  for (const { name, needs } of missingRunners)
+    console.log(statusLine("warning", `${name} ${t("doctor.mcpServerNeeds", { programs: anyOf(needs) })}`))
   console.log()
 }
 
@@ -109,12 +115,14 @@ export async function runDoctorSubcommand() {
 
   const outcomes = await checkCredentials()
 
-  const { models, tools, skipped, mcpServers, closeTools } = await bootstrapLocalAgentDeps({ lazyMcp: false })
+  const { models, tools, skipped, mcpServers, missingRunners, closeTools } = await bootstrapLocalAgentDeps({
+    lazyMcp: false
+  })
 
   await printModels(models)
   console.log()
 
-  await printMcpServers(mcpServers)
+  await printMcpServers(mcpServers, missingRunners)
 
   const toolLines = toolReportLines(tools, skipped)
   if (toolLines.length > 0) {

@@ -13,6 +13,7 @@ import {
 } from "@kaja/schema/abilities"
 import type * as z from "zod"
 import type { Tool } from "../agent/tools"
+import { launchLine, McpRunnerMissingError, resolveLaunch } from "../mcp/launch"
 import { warn } from "../warn"
 import { loadCodeTool } from "./code-tool"
 import { parseSkillMd } from "./skill-md"
@@ -289,8 +290,10 @@ export type McpScanEntry = {
   transport?: McpAbility["transport"]
   /** Host of a remote server. */
   domain?: string
-  /** The full command line of a stdio server, shown (and confirmed) before enabling. */
+  /** The full command line a stdio server starts with on this host, with the runner its package gets here. */
   command?: string
+  /** The programs a stdio server needs when none of them is installed (it's left out until one is). */
+  needs?: string[]
   auth?: AbilityKeyNeed
   error?: string
 }
@@ -306,9 +309,7 @@ export async function scanMcpAbilities(root: string): Promise<McpScanEntry[]> {
           description: ability.description,
           tools: ability.tools?.map(tool => ({ name: tool, description: ability.toolDescriptions?.[tool] })),
           transport: ability.transport,
-          ...(ability.url
-            ? { domain: new URL(ability.url).host }
-            : { command: [ability.command, ...ability.args].join(" ") }),
+          ...(ability.url ? { domain: new URL(ability.url).host } : stdioCommand(ability)),
           auth:
             ability.auth.type === "apiKey"
               ? { in: ability.auth.in, name: ability.auth.name, keyless: ability.auth.keyless }
@@ -319,6 +320,16 @@ export async function scanMcpAbilities(root: string): Promise<McpScanEntry[]> {
       }
     })
   )
+}
+
+// What a stdio server runs here, or what it needs installed first.
+function stdioCommand(ability: McpAbility): Pick<McpScanEntry, "command" | "needs"> {
+  try {
+    return { command: launchLine(resolveLaunch(ability, ability.env)) }
+  } catch (error) {
+    if (error instanceof McpRunnerMissingError) return { needs: error.needs }
+    throw error
+  }
 }
 
 /** One skill folder found on disk, loadable or not — what a picker shows. */

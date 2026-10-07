@@ -68,7 +68,8 @@ test("loadAbilities adds no tool when no skill is enabled", async () => {
     skills: [],
     httpTools: [],
     mcp: [],
-    missingKeys: []
+    missingKeys: [],
+    missingRunners: []
   })
 })
 
@@ -85,7 +86,14 @@ test("loadAbilities survives a store that throws", async () => {
       throw new Error("EACCES")
     }
   }
-  expect(await loadAbilities(broken)).toEqual({ groups: [], skills: [], httpTools: [], mcp: [], missingKeys: [] })
+  expect(await loadAbilities(broken)).toEqual({
+    groups: [],
+    skills: [],
+    httpTools: [],
+    mcp: [],
+    missingKeys: [],
+    missingRunners: []
+  })
 })
 
 test("loadAbilities adds load_skill as an official tool carrying the skill list", async () => {
