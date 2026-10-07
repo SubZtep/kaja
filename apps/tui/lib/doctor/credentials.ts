@@ -104,7 +104,7 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
   return items
 }
 
-// HTTP tool and MCP abilities with key auth that some persona uses (a key nobody's persona needs isn't asked for). Without its key an ability is off, so none is required. An MCP ability is tested by connecting to it.
+// HTTP tool and MCP abilities with key auth that some persona uses (a key nobody's persona needs isn't asked for). Without its key an ability is off (a keyless one still works), so none is required. An MCP ability is tested by connecting to it.
 async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   const items: CredentialItem[] = []
   const { loadPersonas } = await import("../personas/personas")
@@ -119,7 +119,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
       hint: `${ability.auth.in} ${ability.auth.name}`,
       present: Boolean(saved),
       required: false,
-      missingTurnsOff: true,
+      missingTurnsOff: !ability.auth.keyless,
       check: async value => {
         const key = value ?? saved
         return key ? checkAbilityKey(ability, key) : undefined
@@ -137,11 +137,11 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
       hint: `${auth.in} ${auth.name}`,
       present: Boolean(saved),
       required: false,
-      missingTurnsOff: true,
-      // Connecting proves the server is up and takes the key.
+      missingTurnsOff: !auth.keyless,
+      // Connecting proves the server is up and takes the key; a keyless one without a key tests the keyless connection.
       check: async value => {
         const key = value ?? saved
-        if (!key) return undefined
+        if (!key && !auth.keyless) return undefined
         const target = mcpAbilityTarget(ability, key)
         return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
       },
@@ -205,7 +205,8 @@ async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
   if (item.required && !item.present) return { item, status: "missing", reason: t("doctor.missing") }
   const current = await item.check?.()
   if (current?.ok === false) return { item, status: "failing", reason: current.reason, kind: current.kind }
-  if (!current?.ok) return { item, status: "untested" }
+  // Nothing to test it with: a saved value is untested, and a missing one is fine (the item isn't required).
+  if (!current?.ok) return { item, status: item.present ? "untested" : "keyless" }
   return { item, status: item.present ? "ok" : "keyless" }
 }
 

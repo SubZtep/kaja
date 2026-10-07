@@ -23,12 +23,12 @@ const storeWith = (abilities: HttpToolAbility[], mcp: McpAbility[] = []): Abilit
   listMcpAbilities: async () => mcp
 })
 
-const mcpAbility = (name: string) =>
+const mcpAbility = (name: string, keyless = false) =>
   parseMcp({
     name,
     description: name,
     url: `https://mcp.${name}.test/mcp`,
-    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " }
+    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer ", keyless }
   })
 
 test("each HTTP tool ability becomes a community group tagged with its source", async () => {
@@ -67,6 +67,15 @@ test("every keyed ability is left out without its key, and gets it in its header
     ["docs", "Bearer k"],
     ["private", "Bearer k"]
   ])
+})
+
+test("a keyless ability loads without its key too, and sends none", async () => {
+  const keylessHttp = httpAbility("weather", { type: "apiKey", in: "query", name: "key", keyless: true })
+  const loaded = await loadAbilities(storeWith([keylessHttp], [mcpAbility("docs", true), mcpAbility("private")]))
+  expect(loaded.groups.map(g => g.source)).toEqual(["ability:weather"])
+  expect(loaded.mcp.map(t => t.name)).toEqual(["docs"])
+  expect(loaded.mcp[0]!.server).toMatchObject({ headers: {} })
+  expect(loaded.missingKeys).toEqual(["private"])
 })
 
 test("with warnUnknown, a persona naming a missing ability or tool gets a warning, once each", async () => {

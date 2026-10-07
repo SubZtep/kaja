@@ -87,7 +87,7 @@ type = "string"
   PATCH.
 - `auth` puts the key in a header or query parameter (`in`), with an optional `prefix`. Locally the key
   lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`, and without it the ability is off
-  (`kaja doctor` offers to add it). An optional `check` request lets Kaja test a key before saving it.
+  (`kaja doctor` offers to add it), unless `keyless = true` says the API works without one too. An optional `check` request lets Kaja test a key before saving it.
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
   approval, like a shell command. In the cloud you can also approve the tool for the rest of the chat.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same way, so

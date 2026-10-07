@@ -409,7 +409,7 @@
   "skills_sync_unchanged": "已經是上新个（{commit}）",
   "skills_sync_failed": "同步失敗",
   "tools_key_required": "愛你家己个 API 鎖匙",
-  "tools_key_optional": "[nan-TW] lorem ipsum dolor sit amet consectetur",
+  "tools_key_optional": "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing",
   "tools_key_saved": "鎖匙存起來矣",
   "tools_key_add": "加鎖匙",
   "tools_key_replace": "換鎖匙",

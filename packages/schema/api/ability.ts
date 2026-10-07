@@ -3,7 +3,7 @@ import { z } from "zod"
 /** The persona every user always has, first in the roster. */
 export const DEFAULT_PERSONA = "default"
 
-/** Whether an ability needs the user's own API key: not at all, to work at all, or optional (the server has its own key). */
+/** Whether an ability needs the user's own API key: not at all, to work at all, or optional (it's keyless, or the server has its own key). */
 export const abilityKeyNeedSchema = z.enum(["none", "required", "optional"])
 
 /** An ability that takes the user's key (and some persona uses), for the Profile page's API keys list. */
@@ -11,7 +11,7 @@ export const abilityKeySchema = z.object({
   /** The ability's folder name, which the key is stored by. */
   name: z.string(),
   description: z.string(),
-  /** Required to work at all, or optional (the server has its own key, the user may still bring theirs). */
+  /** Required to work at all, or optional (it works without one, or the server has its own; the user may still bring theirs). */
   key: z.enum(["required", "optional"]),
   /** Where its calls go: a host, or `sandbox` for a stdio MCP server. */
   domain: z.string(),

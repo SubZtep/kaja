@@ -73,9 +73,9 @@ function appendQuery(url: URL, entries: [string, unknown][]) {
   }
 }
 
-// Puts the key in the header or query parameter the ability's `auth` names.
+// Puts the key in the header or query parameter the ability's `auth` names; a keyless one may have none.
 function applyKey(ability: HttpToolAbility, apiKey: string | undefined, headers: Record<string, string>, url: URL) {
-  if (ability.auth.type !== "apiKey") return
+  if (ability.auth.type !== "apiKey" || (!apiKey && ability.auth.keyless)) return
   if (!apiKey) throw new Error(`no API key for ${ability.name}`)
   const value = `${ability.auth.prefix ?? ""}${apiKey}`
   if (ability.auth.in === "header") headers[ability.auth.name] = value
@@ -96,7 +96,7 @@ async function formatResponse(res: Response): Promise<string> {
   return `${status}\n\n${text.slice(0, MAX_RESULT_CHARS)}\n\n[cut: ${text.length} characters in total]`
 }
 
-/** One line for the approval prompt, e.g. `POST https://api.example.com/v1/issues {"title":"…"}`, with the key masked. */
+/** One line for the approval prompt, e.g. `POST https://api.example.com/v1/issues {"title":"…"}`, with the key masked (and left out when a keyless ability has none). */
 export function approvalSummary(
   ability: HttpToolAbility,
   def: HttpTool,

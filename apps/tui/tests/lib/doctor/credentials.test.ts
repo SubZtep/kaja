@@ -248,11 +248,11 @@ test("collects providers, keyed abilities a persona uses, and a saved Telegram t
   ])
 })
 
-test("MCP abilities with key auth become items too; no ability key is required", async () => {
+test("MCP abilities with key auth become items too; only a keyless one stays on without its key", async () => {
   put("marketplace/personas/default.toml", `label = "D"\nabilities = ["docs", "private", "open", "weather"]\n`)
   put(
     "marketplace/abilities/docs/mcp.toml",
-    `description = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n`
+    `description = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", keyless = true }\n`
   )
   put(
     "marketplace/abilities/private/mcp.toml",
@@ -261,15 +261,21 @@ test("MCP abilities with key auth become items too; no ability key is required",
   put("marketplace/abilities/open/mcp.toml", `description = "x"\nurl = "https://mcp.open.test/mcp"\n`)
   put(
     "marketplace/abilities/weather/tool.toml",
-    `description = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key" }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
+    `description = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", keyless = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
   )
   put("secrets.toml", "")
 
   const items = await collectCredentials()
-  expect(items.map(i => [i.where, i.required, i.hint])).toEqual([
-    ["[abilities.weather] api_key", false, "query key"],
-    ["[abilities.docs] api_key", false, "header Authorization"],
-    ["[abilities.private] api_key", false, "env P_KEY"]
+  expect(items.map(i => [i.where, i.required, i.missingTurnsOff, i.hint])).toEqual([
+    ["[abilities.weather] api_key", false, false, "query key"],
+    ["[abilities.docs] api_key", false, false, "header Authorization"],
+    ["[abilities.private] api_key", false, true, "env P_KEY"]
   ])
   expect(items[1]!.label).toBe("docs (MCP ability)")
+
+  // A keyless HTTP tool can't be tested without a key, yet works: reported as such, never asked about.
+  const { io: prompts, titles } = io(["never"])
+  const [weather] = await resolveCredentials([items[0]!], prompts)
+  expect(weather!.status).toBe("keyless")
+  expect(titles).toEqual([])
 })

@@ -74,11 +74,11 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   const missingKeys: string[] = []
   // A missing key only matters for an ability some persona uses; without personas, every one counts.
   const listed = opts.personas && new Set(opts.personas.flatMap(persona => [...personaAbilities(persona).keys()]))
-  /** The ability's key, or null when it's missing (the ability is then left out). */
+  /** The ability's key (none for a keyless one without it), or null when it's missing (the ability is then left out). */
   const keyFor = (ability: HttpToolAbility | McpAbility): string | undefined | null => {
     if (ability.auth.type !== "apiKey") return undefined
     const apiKey = opts.getApiKey?.(ability.name)
-    if (apiKey) return apiKey
+    if (apiKey || ability.auth.keyless) return apiKey
     if (!listed || listed.has(ability.name)) {
       warn("Ability left out: no API key", { ability: ability.name, secret: `[abilities.${ability.name}] api_key` })
       missingKeys.push(ability.name)

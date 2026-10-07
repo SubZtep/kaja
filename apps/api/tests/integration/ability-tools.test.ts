@@ -52,7 +52,7 @@ function marketplace(base: string) {
     `abilities/${extras}/tool.toml`,
     manifest(
       extras,
-      `auth = { type = "apiKey", in = "query", name = "key" }\n` +
+      `auth = { type = "apiKey", in = "query", name = "key", keyless = true }\n` +
         `[[tools]]\nname = "extras_${tag}"\ndescription = "Extras"\npath = "/extras"\n`
     )
   )
@@ -184,7 +184,7 @@ describe("HTTP tools in the cloud", () => {
     const { abilities } = await mine()
     const byName = (name: string) => abilities.find((ability: { name: string }) => ability.name === name)
     expect(byName(issues)).toMatchObject({ key: "required", domain: host(issues), saved: false })
-    expect(byName(extras)).toMatchObject({ key: "required", saved: false })
+    expect(byName(extras)).toMatchObject({ key: "optional", saved: false })
     // It takes no key
     expect(byName(weather)).toBeUndefined()
   })
@@ -479,7 +479,7 @@ describe("HTTP tools in the cloud", () => {
       const listed = await mine()
       expect(listed.keysEnabled).toBe(false)
       const names = listed.abilities.map((ability: { name: string }) => ability.name)
-      expect(names).not.toContain(extras)
+      expect(names).toContain(extras)
       expect(names).not.toContain(issues)
     } finally {
       secretService.setKey(TEST_SECRET_KEY)

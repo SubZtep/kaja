@@ -242,7 +242,7 @@ async function readNamed<T>(names: string[], read: (name: string) => Promise<T>,
 }
 
 /** Where an ability's key goes, for showing before enabling it. */
-export type AbilityKeyNeed = { in: "header" | "query" | "env"; name: string }
+export type AbilityKeyNeed = { in: "header" | "query" | "env"; name: string; keyless: boolean }
 
 /** One HTTP tool ability found on disk, loadable or not — what a picker shows. */
 export type HttpToolScanEntry = {
@@ -268,7 +268,10 @@ export async function scanHttpTools(root: string): Promise<HttpToolScanEntry[]> 
           description: ability.description,
           tools: ability.tools.map(tool => ({ name: tool.name, description: tool.description })),
           domain: new URL(ability.baseUrl).host,
-          auth: ability.auth.type === "apiKey" ? { in: ability.auth.in, name: ability.auth.name } : undefined
+          auth:
+            ability.auth.type === "apiKey"
+              ? { in: ability.auth.in, name: ability.auth.name, keyless: ability.auth.keyless }
+              : undefined
         }
       } catch (error) {
         return { name, error: error instanceof Error ? error.message : String(error) }
@@ -306,7 +309,10 @@ export async function scanMcpAbilities(root: string): Promise<McpScanEntry[]> {
           ...(ability.url
             ? { domain: new URL(ability.url).host }
             : { command: [ability.command, ...ability.args].join(" ") }),
-          auth: ability.auth.type === "apiKey" ? { in: ability.auth.in, name: ability.auth.name } : undefined
+          auth:
+            ability.auth.type === "apiKey"
+              ? { in: ability.auth.in, name: ability.auth.name, keyless: ability.auth.keyless }
+              : undefined
         }
       } catch (error) {
         return { name, error: error instanceof Error ? error.message : String(error) }

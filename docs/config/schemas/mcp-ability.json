@@ -95,6 +95,11 @@
             "prefix": {
               "description": "Put before the key, e.g. \"Bearer \"",
               "type": "string"
+            },
+            "keyless": {
+              "default": false,
+              "description": "The server works without a key too (e.g. with lower limits), so the ability is on without one",
+              "type": "boolean"
             }
           },
           "required": [
