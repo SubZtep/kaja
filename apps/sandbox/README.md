@@ -195,4 +195,4 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `overrides.json` | the image's command and Chrome flags for chrome-devtools |
 | `Dockerfile` | one multi-runtime image (Node 22 slim, bun, uv with Python, Chrome for Testing's headless shell) running the bundled sandbox |
 
-Tests: `bun test apps/sandbox/tests`. More notes for coding agents are in [AGENTS.md](./AGENTS.md).
+Tests: `bun test apps/sandbox/tests`. More notes for coding agents are in [CLAUDE.md](./CLAUDE.md).

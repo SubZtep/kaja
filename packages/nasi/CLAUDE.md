@@ -1,6 +1,6 @@
 # @kaja/nasi
 
-The agent brain: OpenAI-compatible tool loop, per-user SQLite (sessions as message and tool-call rows, memory, datasets), built-in tools.
+The agent brain: OpenAI-compatible tool loop, the store interface (sessions as message and tool-call rows, memory, datasets; the hosts implement it over SQLite or Postgres), built-in tools, and `Nasi`, the cloud turn wrapper the API uses.
 
 Hosts (full CLI, API) construct it and pass a store, model client, prompt context, and `includeLocalTools`. This package has no Ink, Hono, Better Auth, sqlite, or pg.
 
@@ -15,15 +15,18 @@ bun run --filter @kaja/nasi test
 ```
 src/
   index.ts           # public API
-  agent/             # Agent, run(), system prompt, intercepts
-  store/             # NasiStore interface + in-memory adapter; rows.ts splits a session into message/tool-call rows (and joins it back) for the sqlite and Postgres stores
+  nasi.ts            # Nasi: the cloud turn (open a session, run, pause and resume, close)
+  personas.ts        # dataset loaders the host registers (setDatasetLoaders, loadDataset)
+  warn.ts            # warn + setWarnHandler
+  agent/             # Agent, run(), system prompt, compaction, command risk, telemetry
+  store/             # NasiStore interface + in-memory adapter; images.ts saveImages/loadImages/deleteImages; rows.ts splits a session into message/tool-call rows (and joins it back) for the sqlite and Postgres stores
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
-  mcp/               # includeLocalTools only
+  mcp/               # connectMcpServer: mcp.toml servers (local) and MCP abilities (also in the cloud)
   plugin/            # includeLocalTools only
-  abilities/          # AbilityStore interface, folder store, loadAbilities, load_skill (skills), HTTP tool executor + key check, MCP ability targets
-  client/            # HTTP client for lite CLI: turn() buffered, turn_stream() SSE (no sqlite / loop)
-  security/          # SSRF + path guard
+  abilities/         # AbilityStore interface, folder store, loadAbilities, load_skill (skills), HTTP tool executor + key check, MCP ability targets
+  client/            # `@kaja/nasi/client`, the TUI's cloud mode: info(), compact(), turn() buffered, turn_stream() SSE (no store / loop)
+  security/          # SSRF guard (the path guard is tools/path-guard.ts)
 ```
 
 ## Conventions

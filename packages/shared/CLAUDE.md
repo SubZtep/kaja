@@ -12,7 +12,7 @@ text/        # getFirstName, getDisplayName, capitalized, titleCase, formatDevic
 ui/          # cn (clsx + tailwind-merge)
 net/         # isPrivateAddress, isPublicHttpUrl — SSRF guard
 id/          # randomUUIDv7
-locale/      # locales, baseLocale, LOCALE_LABELS, matchLocale, flattenMessages, formatMessage — the one list of supported languages
+locale/      # locales, baseLocale, LOCALE_LABELS, matchLocale, flattenMessages, formatMessage, createMessages — the one list of supported languages
 telegram/    # plumbing both Telegram bots (apps/tui, apps/api) share
   bot.ts       # escapeHtml, isCommand, EditThrottle, TelegramRateLimitError, grammy 429 / "not modified" helpers (matched by error shape: no grammy dependency)
   markdown.ts  # renderTelegramHtml, splitTelegramMessage, truncateForStreaming, TELEGRAM_MESSAGE_LIMIT

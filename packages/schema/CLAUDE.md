@@ -8,11 +8,16 @@ Single source of truth for Zod schemas and related TypeScript types across the m
 api/         # API contracts: shared by API, web, and CLI device auth
   index.ts     # re-exports + KAJA_TUI_CLIENT_ID
   auth.ts      # auth-related payloads
+  ability.ts     # ability catalog + users' abilities and keys
+  config-export.ts # /config/export bundle
   model.ts       # provider/model admin CRUD schemas
-  widget-key.ts    # widget key admin CRUD schemas
-config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml, abilities.toml), plus docs/config/catalog.toml (the model catalog)
+  sandbox.ts     # sandbox tunnel frames, sandbox keys and settings
+  stats.ts       # a user's activity numbers
+  telegram-link.ts # Telegram account linking
+  widget-key.ts  # widget key admin CRUD schemas
+config/      # CLI on-disk config files the user hand-edits (settings.toml, models.toml, mcp.toml, secrets.toml, abilities.toml, commands.toml), plus docs/config/catalog.toml (the model catalog)
 store/       # stored runtime state (sessions, memory notes) used by @kaja/nasi; `StoredConversationSchema` validates a loaded conversation and its type fits nasi's `Session`, so stores hand it over without a cast
-cli/         # Datasets (re-exports abilities/persona.ts)
+cli/         # re-exports abilities/dataset.ts and abilities/persona.ts
 nasi/        # Nasi HTTP turn contract (request/response, steps, session meta)
 abilities/    # Marketplace ability content (SKILL.md frontmatter, HTTP tool, MCP and persona manifests), shared by every host that loads abilities
 env/         # Per-app env var schemas (ApiEnvSchema, WebEnvSchema, SandboxEnvSchema, TuiEnvSchema) + shared parsing helpers (parseEnv, bool/url/positiveInt/trimmed)

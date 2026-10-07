@@ -20,6 +20,7 @@ The route resolves the key to its `config.widgetType` (`@kaja/schema/api`'s `wid
 src/
   index.ts   # the embed script: renders bubble + panel, drives sendMessage
   client.ts  # sendWidgetTurn/createVisitorId, used only by index.ts
+  i18n.ts    # the widget's strings from ../locales/*.toml (inlined), picked by the page's <html lang>, else the browser's
              # (apps/web's barkochba-game.tsx has its own inline copy of the fetch call — it behaves
              # like a third-party page and doesn't import from this workspace)
 ```

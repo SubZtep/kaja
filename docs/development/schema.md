@@ -24,7 +24,7 @@ which also ends up in the generated JSON Schemas.
 | `@kaja/schema/tombi` | JSON Schema generation for the TOML files | `tombi/*.ts` | build scripts |
 
 The last two feed generators and aren't imported at runtime: `bun generate:env`, `bun generate:env-types` and
-`bun generate:schemas` read them. Naming conventions are in `packages/schema/AGENTS.md`.
+`bun generate:schemas` read them. Naming conventions are in `packages/schema/CLAUDE.md`.
 
 Dates are `z.coerce.date()` throughout, so JSON round-trips cleanly. Subpaths don't import each other's
 types. Where one refers to another's concept, it does so by id: a persona's `models.<task>` pin is a

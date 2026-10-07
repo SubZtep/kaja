@@ -1,17 +1,17 @@
 # @kaja/api
 
-Hono REST API for Kaja: Better Auth, admin config, emails.
+Hono REST API for Kaja: Better Auth, the cloud agent (`/nasi`), abilities, sandboxes, widgets, the cloud Telegram bot, admin config, emails.
 
 ## Commands
 
 ```bash
 # From monorepo root
-bun run --filter @kaja/api dev      # hot reload: src/core/server.ts (widget bundle built lazily on first request, see widgets/AGENTS.md)
+bun run --filter @kaja/api dev      # hot reload: src/core/server.ts (widget bundle built lazily on first request, see widgets/CLAUDE.md)
 bun run --filter @kaja/api build    # dist/server.js (bun target) + widget bundle into public/widget.js
 bun run --filter @kaja/api start
 
-# Tests live at monorepo root (needs Postgres + env)
-bun run test
+# Tests run from the monorepo root (needs Postgres + RustFS; uses its own <db>_test database)
+bun test
 ```
 
 Local secrets helper: `../../scripts/create_local_secrets.sh`  
@@ -25,25 +25,39 @@ src/
   app.ts                 # OpenAPIHono app, CORS, route mounts
   core/                  # process infrastructure only
     server.ts            # process entry: cron, startup marketplace sync, export default
+    env.ts               # parsed ApiEnvSchema
     db.ts                # pg Pool
     report.ts            # reportError: console.error + Sentry for failures the code handles itself
     rate-limit.ts        # global + auth + nasi turn limiters (off under bun test)
     csrf.ts              # cookie-session writes must come from CORS_ORIGIN (bearer/cookieless pass)
     cron.ts              # Bun.cron jobs: hourly marketplace sync
+    ssr-client-ip.ts     # trusts the web SSR's visitor IP via SSR_SECRET
+    i18n.ts              # per-call translator over locales/*.toml (emails, Telegram bot)
+    files.ts             # files-sdk object storage for images (Hetzner, or the compose RustFS)
+    geo.ts               # IP geolocation (sandboxes)
+    lock.ts              # withLock: in-process per-key serialization (single instance)
   features/              # one folder per URL mount prefix
     auth/                # Better Auth config + routes + middleware
-    admin/               # /admin — providers, models, abilities/sync
+    admin/               # /admin — providers, models, abilities/sync, sandbox
     config/              # /config — resolve model (CONFIG_API_TOKEN)
+    config-export/       # /config/export — the admin-managed models bundle `kaja config fetch|diff` reads
     nasi/                # /nasi — cloud agent (sessions/memory/datasets in Postgres)
     abilities/            # /abilities — public catalog (skills, HTTP tools, MCP); /abilities/me — the user's abilities and write-only keys
+    sandbox/             # /sandbox — sandboxes' WebSocket (/sandbox/connect), routing, users' sandbox keys and settings
+    stats/               # /stats — a user's own activity numbers
+    telegram/            # the cloud Telegram bot (not a route)
+    telegram-admin/      # /telegram/admin — Telegram account linking
+    widget/              # /widget — the embed script and POST /widget/turn
+    widget-admin/        # /widget/admin — widget key CRUD
     health/              # /health (liveness), /health/ready (database + storage probe; the Docker HEALTHCHECK)
     reference/           # /reference (dev OpenAPI UI)
-  services/              # shared domain logic (mcp-server, model, ability, marketplace sync, …)
+  services/              # shared domain logic (ability, marketplace sync, model, sandbox, secret, stats, widget, …)
   emails/                # React Email templates
   types.ts / types/      # Hono env types, error helpers
-migrations/              # raw SQL, applied on first Postgres boot via compose
-tests/integration/       # auth
-widgets/                 # embeddable browser widget bundle source, own tsconfig (see widgets/AGENTS.md)
+migrations/              # raw SQL, applied by migrate.ts (and on first Postgres boot via compose)
+tests/integration/       # route and service tests against the test database
+tests/unit/              # pure helpers (env, i18n, lock, client IP, …)
+widgets/                 # embeddable browser widget bundle source, own tsconfig (see widgets/CLAUDE.md)
 ```
 
 ### Adding an endpoint
@@ -66,7 +80,7 @@ widgets/                 # embeddable browser widget bundle source, own tsconfig
 - `/config/*` is fail-closed: requires non-empty `CONFIG_API_TOKEN` Bearer match (leaks provider API keys otherwise)
 - OpenAPI UI only when `NODE_ENV === "development"` (`/reference`)
 - Rate limit middleware is mounted (global + `/auth/*` + `/nasi/turn(/stream)`, the last keyed by user id not IP); skipped under `bun test` or `RATE_LIMIT_ENABLED=false`
-- `/admin/*` requires a signed-in non-banned user; `providers`/`models` routes require Better Auth `admin` role
+- `/admin/*` requires a signed-in non-banned user; `providers`/`models`/`abilities`/`sandbox` routes require Better Auth `admin` role
 
 ## Marketplace abilities
 
@@ -80,7 +94,7 @@ See `.env.example`.
 
 **Required / common:** `DATABASE_URL`, `CORS_ORIGIN`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (at least 32 characters; generate with `openssl rand -base64 32`), `SMTP_HOST`/`SMTP_PORT`, `CONFIG_API_TOKEN` (Bearer for `/config/*`; missing/empty denies all config routes), `NODE_ENV`. With `NODE_ENV=production` the API also needs `USER_SECRET_KEY` and a `CONFIG_API_TOKEN` other than the `.env.example` placeholder.
 
-**Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`, `NASI_TURN_RATE_LIMIT_WINDOW_MS` / `NASI_TURN_RATE_LIMIT_MAX`.
+**Optional:** `WEB_PUBLIC_URL` (device auth links), `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, `AUTH_RATE_LIMIT_WINDOW_MS` / `AUTH_RATE_LIMIT_MAX`, `NASI_TURN_RATE_LIMIT_WINDOW_MS` / `NASI_TURN_RATE_LIMIT_MAX`, the widget limits, Google sign-in, Turnstile, `STORAGE_*`, `TELEGRAM_BOT_TOKEN`, `SANDBOX_SYSTEM_KEY`, `GEO_API_*`, `MARKETPLACE_*`, `WEB_PROXY`, `ABILITY_KEYS`. The full list is `packages/schema/env/api.ts`.
 
 **Production:** `NODE_ENV=production` (turns Sentry on), strong secret, real SMTP, `CORS_ORIGIN` matching the public web origin.
 
@@ -93,4 +107,4 @@ See `.env.example`.
 ## Boundaries
 
 - Prefer surgical changes; do not reintroduce ORM layers
-- Keep migrations additive and lexicographically ordered
+- Migrations stay lexicographically ordered; until v1.0 a schema change is edited into the file that creates the table (no patch migrations, see the root CLAUDE.md)

@@ -26,7 +26,7 @@ and warns when a major.minor version differs from CI's.
 
 - **Docker Compose** for PostgreSQL, a local mail catcher and S3-compatible object storage (RustFS)
 - **VSCode** (or compatible) with the recommended extensions, which wire up TOML schemas and Biome
-- **Claude Code**, **OpenCode**, or any `AGENTS.md`-compatible coding agent
+- **Claude Code** (the agent notes are `CLAUDE.md` files)
 
 ## Setup
 

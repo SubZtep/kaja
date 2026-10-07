@@ -8,17 +8,16 @@ summary: "What the repo gives a coding agent, and what runs on commit and push."
 
 # Vibe coding
 
-Most of Kaja is written together with a coding agent (Claude Code, but anything that reads
-`AGENTS.md` works). This page explains what the repo gives the agent, and what runs by itself when a
+Most of Kaja is written together with a coding agent (Claude Code, which reads the `CLAUDE.md`
+files). This page explains what the repo gives the agent, and what runs by itself when a
 commit or a push happens, so the agent's work lands clean without you running checks by hand.
 
 ## What the agent reads
 
 | File | What it holds |
 | --- | --- |
-| `AGENTS.md` | the project map, commands, architecture and house rules; the one file every agent reads first |
-| `CLAUDE.md` | only points Claude Code at `AGENTS.md` |
-| `apps/*/AGENTS.md`, `packages/*/AGENTS.md` | per-workspace detail, read when working there |
+| `CLAUDE.md` | the project map, commands, architecture and house rules; the one file the agent reads first |
+| `apps/*/CLAUDE.md`, `packages/*/CLAUDE.md` | per-workspace detail, loaded when working there |
 | `.claude/settings.json` | shared permissions: the agent may never read or edit a non-English locale file |
 | `.claude/skills/` | slash commands, below |
 | `.claude/agents/` | helper agents a skill spawns |
