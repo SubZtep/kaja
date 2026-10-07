@@ -36,3 +36,19 @@ test("every shipped stdio package is pinned, so local and sandbox start the same
       })
   }
 })
+
+test("every shipped tool.ts loads, and hypr_preview never builds Lua from a name that isn't an option", async () => {
+  const { loadCodeTool } = await import("../../src/abilities/code-tool")
+  const { toolName } = await import("../../src/agent/tools")
+  const files = await Array.fromAsync(new Bun.Glob("abilities/*/tool.ts").scan(marketplace))
+  expect(files).toContain("abilities/hyprland/tool.ts")
+  const loaded = new Map<string, Awaited<ReturnType<typeof loadCodeTool>>>()
+  for (const file of files) {
+    const tools = await loadCodeTool(join(marketplace, file))
+    expect({ file, count: tools.length > 0 }).toEqual({ file, count: true })
+    loaded.set(file, tools)
+  }
+  const preview = loaded.get("abilities/hyprland/tool.ts")!.find(t => toolName(t) === "hypr_preview")!
+  await expect(preview.execute({ options: { 'x"]=os.execute("id")--': 1 } })).rejects.toThrow("not an option name")
+  await expect(preview.execute({ animations: [{ leaf: 'w"}) os.execute("id") --' }] })).rejects.toThrow("leaf")
+})
