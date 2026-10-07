@@ -10,7 +10,7 @@ import { MonsterMate } from "./monster"
 /**
  * Live top bar: current persona on the left; on the right, in-flight tool
  * activity, or the active model name (+ prompt tokens when known), then a
- * badge for where the agent runs (local or cloud) in the corner.
+ * badge for where the agent runs (local or cloud, plus the `KAJA_PROFILE`) in the corner.
  *
  * `width` must be the full terminal width so `space-between` has a real
  * track to lay out against — without it Ink can collapse the row and the
@@ -37,10 +37,13 @@ export function Header({
   promptTokens,
   contextWindow,
   currentTool,
-  width
+  width,
+  profile
 }: Readonly<{
   /** Where the agent runs. */
   mode: "local" | "cloud"
+  /** `KAJA_PROFILE`, after the mode, e.g. "LOCAL·dev". */
+  profile?: string
   persona: string
   model: string
   /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". */
@@ -78,10 +81,16 @@ export function Header({
             </Text>
           </Box>
         ) : (
-          <Box flexShrink={1} flexGrow={0} minWidth={0}>
+          <Box flexShrink={1} flexGrow={0} minWidth={0} alignItems="center" columnGap={1}>
             <Text {...muted()} wrap="truncate-end">
               {titleCase(model)}
-              {provider ? <Text dimColor> {titleCase(provider)}</Text> : null}
+            </Text>
+            {provider ? (
+              <Text dimColor wrap="truncate-end">
+                {` ${titleCase(provider)}`}
+              </Text>
+            ) : null}
+            <Text {...muted()} wrap="truncate-end">
               {tokensSuffix}
             </Text>
           </Box>
@@ -92,6 +101,7 @@ export function Header({
           <Text color={mode === "cloud" ? palette.cloudBadgeText : palette.localBadgeText}>
             {t(`header.${mode}`).toUpperCase()}
           </Text>
+          {profile ? <Text dimColor> ·{profile}</Text> : null}
         </Badge>
       </Box>
     </Box>

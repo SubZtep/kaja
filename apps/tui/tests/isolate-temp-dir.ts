@@ -28,6 +28,9 @@ mkdirSync(testTmp, { recursive: true })
 Bun.env.TMPDIR = testTmp
 // A KAJA_PROFILE from the user's shell would rename every config/data dir the tests expect.
 delete Bun.env.KAJA_PROFILE
+// Run in a terminal or not (a hook, CI), the code under test sees a pipe: no wrapping to the terminal's width
+// (statusLine), no progress bars, no terminal queries.
+process.stdout.isTTY = false
 // A preload's afterAll runs once, after every test file (bun test fires no "exit" event).
 afterAll(() => rmSync(testTmp, { recursive: true, force: true }))
 

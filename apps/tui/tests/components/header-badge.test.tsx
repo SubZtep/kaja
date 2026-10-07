@@ -20,6 +20,24 @@ for (const [mode, label] of [
   })
 }
 
+test("the badge names the KAJA_PROFILE after the mode", async () => {
+  const t = renderForTest(
+    <Header mode="local" profile="dev" persona="Kaja" model="m" promptTokens={null} contextWindow={null} width={60} />
+  )
+  await t.tick()
+
+  expect(
+    t
+      .lastFrame()
+      .split("\n")[0]!
+      .replace(/[^A-Za-z]/g, "")
+      .endsWith("LOCALdev")
+  ).toBe(true)
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
 test("a long tool label or model name keeps the header at two rows", async () => {
   const long = "x".repeat(300)
   for (const props of [

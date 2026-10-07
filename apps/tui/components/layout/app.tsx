@@ -227,6 +227,7 @@ function Chrome({
             contextWindow={contextWindow}
             currentTool={toolDisplay === "corner" ? currentTool : undefined}
             width={columns}
+            profile={Bun.env.KAJA_PROFILE}
           />
           <ChatViewport
             events={events}
