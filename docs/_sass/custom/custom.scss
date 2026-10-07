@@ -151,12 +151,19 @@ blockquote.headsup-title>p:last-child {
   }
 
   strong {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     margin-bottom: 0.25rem;
     color: lighten(rebeccapurple, 20%);
   }
 
-  span {
+  .card-icon {
+    font-size: 1.25em;
+    line-height: 1;
+  }
+
+  > span {
     font-size: 0.9em;
   }
 }

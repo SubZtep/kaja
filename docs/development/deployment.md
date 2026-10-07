@@ -4,6 +4,7 @@ title: Deployment
 parent: Development
 nav_order: 9
 summary: "How kaja.io is deployed and what production needs."
+icon: 🚀
 ---
 
 # Deployment

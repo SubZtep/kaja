@@ -4,6 +4,7 @@ title: Local setup
 parent: Development
 nav_order: 2
 summary: "Run Kaja from source: install, commands, hooks, URLs and tests."
+icon: 💻
 ---
 
 # Local setup

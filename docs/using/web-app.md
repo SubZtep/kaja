@@ -4,6 +4,7 @@ title: Web app
 parent: Using Kaja
 nav_order: 2
 summary: "Where your cloud account lives: choose what the cloud agent can do."
+icon: 🌐
 ---
 
 # Web app

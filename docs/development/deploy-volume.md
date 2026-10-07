@@ -4,6 +4,7 @@ title: Postgres on a volume
 parent: Development
 nav_order: 10
 summary: "Keep Postgres data on a volume that outlives the server."
+icon: 🐘
 ---
 
 # Postgres on a Hetzner Volume

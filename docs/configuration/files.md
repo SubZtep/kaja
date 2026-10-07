@@ -4,6 +4,7 @@ title: Config folder
 parent: Configuration
 nav_order: 1
 summary: "The files in ~/.config/kaja and which page covers each."
+icon: 📁
 ---
 
 # Config folder

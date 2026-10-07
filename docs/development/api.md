@@ -4,6 +4,7 @@ title: API
 parent: Development
 nav_order: 4
 summary: "The Hono API: routes, auth, rate limits and the cloud agent."
+icon: 📡
 ---
 
 # apps/api

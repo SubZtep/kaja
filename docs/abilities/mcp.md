@@ -4,6 +4,7 @@ title: MCP servers
 parent: Abilities
 nav_order: 5
 summary: "Plug in Model Context Protocol servers."
+icon: 🔌
 ---
 
 # MCP servers

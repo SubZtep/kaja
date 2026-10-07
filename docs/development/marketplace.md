@@ -4,6 +4,7 @@ title: Marketplace internals
 parent: Development
 nav_order: 8
 summary: "How the marketplace reaches local and cloud users."
+icon: 🏪
 ---
 
 # Marketplace internals

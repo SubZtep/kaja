@@ -4,6 +4,7 @@ title: Database
 parent: Development
 nav_order: 5
 summary: "Both databases, the tables and how the schema is managed."
+icon: 🗄️
 ---
 
 # Database

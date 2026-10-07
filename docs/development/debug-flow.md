@@ -4,6 +4,7 @@ title: Debug flow
 parent: Development
 nav_order: 11
 summary: "Dump a terminal conversation to markdown and see what happened."
+icon: 🐞
 ---
 
 # Debug flow

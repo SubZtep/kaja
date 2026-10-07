@@ -4,6 +4,7 @@ title: Commands & doctor
 parent: Configuration
 nav_order: 6
 summary: "Find, refresh and test your config with kaja config and kaja doctor."
+icon: 🩺
 ---
 
 # Commands & doctor

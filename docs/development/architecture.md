@@ -4,6 +4,7 @@ title: Architecture
 parent: Development
 nav_order: 1
 summary: "The repository map and the ideas behind it."
+icon: 🏛️
 ---
 
 # Architecture

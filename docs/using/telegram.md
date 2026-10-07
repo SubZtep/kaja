@@ -4,6 +4,7 @@ title: Telegram
 parent: Using Kaja
 nav_order: 3
 summary: "Chat with Kaja from Telegram."
+icon: 💬
 ---
 
 # Telegram

@@ -2,7 +2,7 @@
 <div class="cards">
   {%- for kid in kids %}
   <a class="card" href="{{ kid.url | relative_url }}">
-    <strong>{{ kid.title }}</strong>
+    <strong>{%- if kid.icon %}<span class="card-icon" aria-hidden="true">{{ kid.icon }}</span>{% endif -%}{{ kid.title }}</strong>
     <span>{{ kid.summary }}</span>
   </a>
   {%- endfor %}

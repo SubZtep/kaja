@@ -4,6 +4,7 @@ title: Personas
 parent: Abilities
 nav_order: 2
 summary: "Characters with their own instructions and models."
+icon: 🎭
 ---
 
 # Personas

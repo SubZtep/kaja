@@ -4,6 +4,7 @@ title: Website widget
 parent: Using Kaja
 nav_order: 4
 summary: "Embed a chat on your own website."
+icon: 🖼
 ---
 
 # Website widget

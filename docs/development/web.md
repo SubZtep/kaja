@@ -4,6 +4,7 @@ title: Web
 parent: Development
 nav_order: 6
 summary: "The TanStack Start app: public pages and the signed-in portal."
+icon: 🕸️
 ---
 
 # apps/web

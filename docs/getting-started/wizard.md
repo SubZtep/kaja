@@ -4,6 +4,7 @@ title: Setup wizard
 parent: Get started
 nav_order: 3
 summary: "The questions the first-run setup asks, and what they write."
+icon: 🧙
 ---
 
 # Setup wizard

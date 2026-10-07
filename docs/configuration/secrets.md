@@ -4,6 +4,7 @@ title: Secrets
 parent: Configuration
 nav_order: 4
 summary: "secrets.toml: every key and token in one place."
+icon: 🔑
 ---
 
 # secrets.toml

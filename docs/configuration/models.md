@@ -4,6 +4,7 @@ title: Models
 parent: Configuration
 nav_order: 3
 summary: "models.toml: providers and the model for each task."
+icon: 🤖
 ---
 
 # models.toml

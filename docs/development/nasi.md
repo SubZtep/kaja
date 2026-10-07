@@ -4,6 +4,7 @@ title: Agent brain
 parent: Development
 nav_order: 3
 summary: "Inside the agent loop, stores and model client."
+icon: 🌀
 ---
 
 # @kaja/nasi

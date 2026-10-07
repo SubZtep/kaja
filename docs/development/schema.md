@@ -4,6 +4,7 @@ title: Schema
 parent: Development
 nav_order: 7
 summary: "Where every Zod schema lives."
+icon: 📐
 ---
 
 # @kaja/schema

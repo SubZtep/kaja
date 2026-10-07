@@ -4,6 +4,7 @@ title: Vibe coding
 parent: Development
 nav_order: 12
 summary: "What the repo gives a coding agent, and what runs on commit and push."
+icon: 🎧
 ---
 
 # Vibe coding

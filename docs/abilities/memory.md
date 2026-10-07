@@ -4,6 +4,7 @@ title: Memory & datasets
 parent: Abilities
 nav_order: 6
 summary: "Long-term notes and questionnaires a persona fills in."
+icon: 🧠
 ---
 
 # Memory & datasets
