@@ -733,7 +733,10 @@ pre {
 .Toastify__toast {
   border: 1.5px solid var(--color-border);
   border-left-width: 4px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
 }
 
 /* the close button sits in the corner over the toast; keep the text clear of it */

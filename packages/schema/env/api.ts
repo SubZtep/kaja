@@ -47,7 +47,7 @@ const apiEnvFields = z.object({
   TURNSTILE_HOSTNAMES: trimmed
     .optional()
     .describe(
-      "Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET); never localhost in production"
+      "Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET, bar Cloudflare's test secrets); never localhost in production"
     )
     .meta({ example: "localhost", section: "Turnstile" }),
 

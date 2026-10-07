@@ -24,6 +24,12 @@ How [kaja.io](https://kaja.io) reaches its current environment.
 - **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
 - **Outbound HTTP(S) proxy** for the cloud `fetch_url` tool (`WEB_PROXY`); without one the tool is
   left out of cloud turns. Production uses [Webshare](https://www.webshare.io).
+- **Bot check** on the auth forms and Google buttons (optional): a [Cloudflare Turnstile](https://www.cloudflare.com/application-services/products/turnstile/)
+  widget, its site key in the web's `VITE_TURNSTILE_SITE_KEY` and its secret in the API's `TURNSTILE_SECRET` (with
+  `TURNSTILE_HOSTNAMES`). Production uses an Invisible-mode widget; the mode is the widget's setting in Cloudflare, not
+  in code. For local runs, Cloudflare's [test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
+  `1x00000000000000000000BB` (invisible, passes) and `1x0000000000000000000000000000000AA` work on `localhost`; with a test
+  secret the API skips the action and hostname checks, as the dummy token carries neither.
 - **Server-wide ability keys** (`ABILITY_KEYS`, `name=key` pairs separated by commas), shared by every
   cloud user. Production sets one for web search: `web-search=` with a
   [Brave Search API](https://api-dashboard.search.brave.com) key.

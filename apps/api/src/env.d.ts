@@ -26,7 +26,7 @@ declare module "bun" {
     GOOGLE_CLIENT_SECRET?: string
     /** Cloudflare Turnstile secret key; when set, email sign-up/sign-in, password reset and Google sign-in need a captcha token */
     TURNSTILE_SECRET?: string
-    /** Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET); never localhost in production */
+    /** Comma-separated web hostnames a Turnstile token must come from (required with TURNSTILE_SECRET, bar Cloudflare's test secrets); never localhost in production */
     TURNSTILE_HOSTNAMES?: string
     /** SMTP server hostname */
     SMTP_HOST?: string

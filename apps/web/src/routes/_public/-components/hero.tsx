@@ -2,7 +2,7 @@ import { cn } from "@kaja/shared/ui"
 import { Link } from "@tanstack/react-router"
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
-import { Turnstile, useTurnstile } from "../../../hooks/turnstile"
+import { CaptchaGate, useTurnstile } from "../../../hooks/turnstile"
 import { useUser } from "../../../hooks/user"
 import { detectInstallOs, INSTALL_CMD, type InstallOs } from "../../../lib/vars"
 import { m } from "../../../paraglide/messages.js"
@@ -129,8 +129,9 @@ export function Hero() {
         <div className="order-last min-w-0 md:order-0 md:col-start-1 md:row-start-2 *:first:mt-0">
           {user ? null : (
             <div className="mt-8 max-w-md flex flex-col gap-4">
-              <Turnstile captcha={captcha} />
-              <GoogleButton captcha={captcha} />
+              <CaptchaGate captcha={captcha}>
+                <GoogleButton captcha={captcha} />
+              </CaptchaGate>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-crt text-base">
                 <Link to="/signin" className="text-fg hover:text-neon">
                   {m.nav_sign_in()}

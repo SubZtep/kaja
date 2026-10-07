@@ -78,18 +78,20 @@ if (env.NODE_ENV === "development") {
 
 // Turnstile gates the web's public auth forms and Google buttons (all send one "auth" action); tests run without it.
 if (env.TURNSTILE_SECRET && !env.BUN_TEST) {
+  // Cloudflare's test secrets (local runs) verify a dummy token that carries no action and the hostname "example.com".
+  const testSecret = /^[123]x0+AA$/.test(env.TURNSTILE_SECRET)
   const allowedHostnames = (env.TURNSTILE_HOSTNAMES ?? "")
     .split(",")
     .map(hostname => hostname.trim())
     .filter(Boolean)
-  if (allowedHostnames.length === 0) throw new Error("TURNSTILE_HOSTNAMES must be set with TURNSTILE_SECRET")
+  if (allowedHostnames.length === 0 && !testSecret)
+    throw new Error("TURNSTILE_HOSTNAMES must be set with TURNSTILE_SECRET")
   plugins.push(
     captcha({
       provider: "cloudflare-turnstile",
       secretKey: env.TURNSTILE_SECRET,
       endpoints: ["/sign-up/email", "/sign-in/email", "/request-password-reset", "/sign-in/social"],
-      expectedAction: "auth",
-      allowedHostnames
+      ...(testSecret ? {} : { expectedAction: "auth", allowedHostnames })
     })
   )
 }
