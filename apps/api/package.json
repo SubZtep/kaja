@@ -10,9 +10,9 @@
     "seed:config": "bun run scripts/seed-config.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1146.0",
-    "@aws-sdk/s3-presigned-post": "^3.1146.0",
-    "@aws-sdk/s3-request-presigner": "^3.1146.0",
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@aws-sdk/s3-presigned-post": "^3.1147.0",
+    "@aws-sdk/s3-request-presigner": "^3.1147.0",
     "@hono/zod-openapi": "^1.6.3",
     "@kaja/nasi": "workspace:*",
     "@kaja/schema": "workspace:*",
