@@ -72,8 +72,6 @@ export async function runSubcommand(cli: typeof Cli) {
     />,
     {
       alternateScreen: true,
-      // Rewrites only the changed part of each line, so streaming replies don't redraw the whole screen
-      incrementalRendering: true,
       kittyKeyboard: {
         mode: "auto",
         flags: ["disambiguateEscapeCodes"]

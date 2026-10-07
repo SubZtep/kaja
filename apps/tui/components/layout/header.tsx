@@ -1,10 +1,10 @@
-import { Badge, Spinner, ThemeProvider } from "@inkjs/ui"
+import { Badge, Spinner } from "@inkjs/ui"
 import { titleCase } from "@kaja/shared/text"
 import { Box, Text } from "ink"
 import { useRandomSpinner } from "../../hooks/use-random-spinner"
 import { describeToolCall } from "../../lib/agent/tool-labels"
 import { t } from "../../lib/i18n"
-import { useKajaTheme, usePalette, useSpinnerTheme } from "../theme"
+import { useKajaTheme, usePalette } from "../theme"
 import { MonsterMate } from "./monster"
 
 /**
@@ -15,7 +15,9 @@ import { MonsterMate } from "./monster"
  * `width` must be the full terminal width so `space-between` has a real
  * track to lay out against — without it Ink can collapse the row and the
  * model/tokens slot never paints. When the two sides don't fit on one row
- * the right one wraps below the left instead of being squeezed.
+ * the right one wraps below the left instead of being squeezed; each side
+ * truncates to one line, so the header is never taller than two rows (a
+ * taller one overflows the full-screen frame and garbles the redraw).
  */
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
@@ -52,15 +54,16 @@ export function Header({
 }>) {
   const tokensSuffix = tokensLabel(promptTokens, contextWindow)
   const spinnerType = useRandomSpinner(!!currentTool, "block")
-  const { muted, accent } = useKajaTheme()
-  const spinnerTheme = useSpinnerTheme("toolLabel")
+  const { muted, accent, toolLabel } = useKajaTheme()
   const palette = usePalette()
 
   return (
     <Box width={width} flexShrink={0} paddingX={1} columnGap={1}>
       <Box flexGrow={1} flexShrink={1} minWidth={0} justifyContent="space-between" flexWrap="wrap" columnGap={1}>
         <Box gap={1} flexShrink={1} flexGrow={0} minWidth={0} overflow="hidden">
-          <MonsterMate />
+          <Box flexShrink={0}>
+            <MonsterMate />
+          </Box>
           <Box overflow="hidden" flexShrink={1} minWidth={0}>
             <Text {...accent()} wrap="truncate-end">
               {persona}
@@ -69,13 +72,14 @@ export function Header({
         </Box>
         {currentTool ? (
           <Box flexShrink={1} flexGrow={0} gap={1} overflow="hidden" minWidth={0}>
-            <ThemeProvider theme={spinnerTheme}>
-              <Spinner type={spinnerType} label={describeToolCall(currentTool.name, currentTool.arguments)} />
-            </ThemeProvider>
+            <Spinner type={spinnerType} />
+            <Text {...toolLabel()} wrap="truncate-end">
+              {describeToolCall(currentTool.name, currentTool.arguments)}
+            </Text>
           </Box>
         ) : (
           <Box flexShrink={1} flexGrow={0} minWidth={0}>
-            <Text {...muted()}>
+            <Text {...muted()} wrap="truncate-end">
               {titleCase(model)}
               {provider ? <Text dimColor> {titleCase(provider)}</Text> : null}
               {tokensSuffix}
