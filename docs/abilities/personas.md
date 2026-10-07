@@ -35,6 +35,7 @@ Listen first. Reflect back what you heard before offering anything.
 | `dataset` | id of a [dataset](/abilities/memory#datasets) this persona collects |
 | `models` | a model id per task from your [`models.toml`](/configuration/models), like `chat = "reasoning-chat"` |
 | `abilities` | the [abilities](/abilities) this persona uses, by name (see below). Unset means only the built-in tools |
+| `localOnly` | `true` keeps the persona out of the cloud, for one whose abilities only work on your machine |
 | sampling | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
 
 > Kaja already tells the model to ask questions through `ask_user` and how to collect a dataset. Don't
@@ -92,6 +93,7 @@ Both work in cloud mode too, among every persona in the cloud's copy of the mark
 | `care` | self-care companion: listens, reflects, doesn't lecture |
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
 | `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service`, `time` and `open-meteo` |
+| `config-hyprland` | changes your Hyprland desktop live (Lua config): previews, saves on your yes, backs up `~/.config/hypr` files first; local only |
 
 Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 
