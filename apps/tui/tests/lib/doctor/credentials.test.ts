@@ -162,7 +162,7 @@ test("skipping leaves it on the to-do list; an untestable value is saved as unte
 })
 
 test("a missing ability key is offered (Enter skips), and without it the ability is off, not a to-do", async () => {
-  const ability = () => fakeItem({ required: false, missingTurnsOff: true, works: value => value === "good" })
+  const ability = () => fakeItem({ required: false, withoutKey: "off", works: value => value === "good" })
   const skipped = ability()
   const { io: prompts, titles } = io([undefined])
   const outcomes = await resolveCredentials([skipped.item], prompts)
@@ -178,6 +178,30 @@ test("a missing ability key is offered (Enter skips), and without it the ability
   const headless = ability()
   const reported = await resolveCredentials([headless.item], { ...io([]).io, interactive: false })
   expect(reported[0]!.status).toBe("off")
+})
+
+test("a keyless ability's missing key is offered too; skipped, it's tested and used without one", async () => {
+  const checked: (string | undefined)[] = []
+  const keyless = () =>
+    fakeItem({
+      required: false,
+      withoutKey: "keyless",
+      check: async value => {
+        checked.push(value)
+        return { ok: true }
+      }
+    })
+  const skipped = keyless()
+  const { io: prompts, titles } = io([undefined])
+  const outcomes = await resolveCredentials([skipped.item], prompts)
+  expect(titles).toEqual(["thing works without a key, but one lifts its limits. Enter one, or skip to use it without."])
+  expect(checked).toEqual([undefined])
+  expect(outcomes[0]!.status).toBe("keyless")
+  expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
+
+  const entered = keyless()
+  expect((await resolveCredentials([entered.item], io(["k"]).io))[0]!.status).toBe("saved")
+  expect(entered.saved).toEqual(["k"])
 })
 
 test("a value the wizard collected is tested and saved without asking again", async () => {
@@ -266,16 +290,16 @@ test("MCP abilities with key auth become items too; only a keyless one stays on 
   put("secrets.toml", "")
 
   const items = await collectCredentials()
-  expect(items.map(i => [i.where, i.required, i.missingTurnsOff, i.hint])).toEqual([
-    ["[abilities.weather] api_key", false, false, "query key"],
-    ["[abilities.docs] api_key", false, false, "header Authorization"],
-    ["[abilities.private] api_key", false, true, "env P_KEY"]
+  expect(items.map(i => [i.where, i.required, i.withoutKey, i.hint])).toEqual([
+    ["[abilities.weather] api_key", false, "keyless", "query key"],
+    ["[abilities.docs] api_key", false, "keyless", "header Authorization"],
+    ["[abilities.private] api_key", false, "off", "env P_KEY"]
   ])
   expect(items[1]!.label).toBe("docs (MCP ability)")
 
-  // A keyless HTTP tool can't be tested without a key, yet works: reported as such, never asked about.
-  const { io: prompts, titles } = io(["never"])
+  // A keyless HTTP tool can't be tested without a key, yet works: skipping its key reports it as working.
+  const { io: prompts, titles } = io([undefined])
   const [weather] = await resolveCredentials([items[0]!], prompts)
   expect(weather!.status).toBe("keyless")
-  expect(titles).toEqual([])
+  expect(titles).toHaveLength(1)
 })

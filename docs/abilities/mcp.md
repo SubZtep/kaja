@@ -39,7 +39,8 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
   env var (`in = "env"`). `kaja abilities` shows the command it runs.
 - The key lives in `secrets.toml` as `[abilities.<name>] api_key`. Every key is optional: without one the
   ability is simply off, and `kaja doctor` offers to add it. `keyless = true` means the server also works
-  without one (like context7, where a key only raises the limits), so the ability stays on.
+  without one (like context7, where a key only raises the limits), so the ability stays on; `kaja doctor`
+  still offers to add one.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only, and `always` asks before
   every call. If a server forgets to mark its read-only tools, list them in `readOnly`, with the arguments
   that turn a call into a write:

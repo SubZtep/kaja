@@ -18,8 +18,8 @@ export type CredentialItem = {
   present: boolean
   /** Missing only counts as a problem when required: a provider without a key may simply not need one (Ollama). */
   required: boolean
-  /** Missing just turns something off (an ability): asked for in a terminal (Enter skips), then reported as off, never as a to-do. */
-  missingTurnsOff?: boolean
+  /** An ability's key: offered in a terminal when missing (Enter skips); without it the ability is "off", or still works when "keyless" (a key only lifts its limits). Not a to-do, unless a key typed for it fails. */
+  withoutKey?: "off" | "keyless"
   /** Tests `value`, or the saved value when undefined. Absent, or resolving to undefined, when there's no way to test it. */
   check?: (value?: string) => Promise<CheckResult | undefined>
   save: (value: string) => Promise<void>
@@ -119,7 +119,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
       hint: `${ability.auth.in} ${ability.auth.name}`,
       present: Boolean(saved),
       required: false,
-      missingTurnsOff: !ability.auth.keyless,
+      withoutKey: ability.auth.keyless ? "keyless" : "off",
       check: async value => {
         const key = value ?? saved
         return key ? checkAbilityKey(ability, key) : undefined
@@ -137,7 +137,7 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
       hint: `${auth.in} ${auth.name}`,
       present: Boolean(saved),
       required: false,
-      missingTurnsOff: !auth.keyless,
+      withoutKey: auth.keyless ? "keyless" : "off",
       // Connecting proves the server is up and takes the key; a keyless one without a key tests the keyless connection.
       check: async value => {
         const key = value ?? saved
@@ -151,19 +151,21 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   return items
 }
 
-/** Prompt text for an item that's missing, off for want of a key, or whose saved value failed its test. */
-function askTitle(outcome: AskableOutcome): string {
-  const { item } = outcome
+/** Prompt text for an item that's missing or whose saved value failed its test. */
+function askTitle(item: CredentialItem, failingReason: string | undefined): string {
   const hint = item.hint ? ` (${item.hint})` : ""
-  if (outcome.status === "off") return t("doctor.askOff", { label: item.label, hint })
-  return outcome.status === "missing"
-    ? t("doctor.askMissing", { label: item.label, hint })
-    : t("doctor.askFailing", { label: item.label, reason: outcome.reason, hint })
+  return failingReason
+    ? t("doctor.askFailing", { label: item.label, reason: failingReason, hint })
+    : t("doctor.askMissing", { label: item.label, hint })
+}
+
+/** Prompt text offering an ability's missing key: what skipping means depends on whether it works without one. */
+function offerTitle(item: CredentialItem): string {
+  const hint = item.hint ? ` (${item.hint})` : ""
+  return t(item.withoutKey === "keyless" ? "doctor.askKeyless" : "doctor.askOff", { label: item.label, hint })
 }
 
 type ProblemOutcome = Extract<CredentialOutcome, { reason: string }>
-// What the user can be asked about: a problem, or an ability that's off without its key.
-type AskableOutcome = ProblemOutcome | { item: CredentialItem; status: "off" }
 
 /**
  * Tests each item and, when interactive, asks for anything missing or failing: the new value
@@ -189,11 +191,19 @@ export async function resolveCredentials(
       continue
     }
 
+    // `null` says the caller already asked and was turned down, so there's nothing more to ask.
+    const asking = io.interactive && offer !== null
+    // An ability's missing key is offered first; skipped, it's off, or a keyless one is tested without a key.
+    if (asking && item.withoutKey && !item.present) {
+      const value = await io.ask(offerTitle(item))
+      settle(value ? await testAndSave(item, value, "failing", io) : await savedOutcome(item))
+      continue
+    }
+
     const saved = await savedOutcome(item)
     // Nothing rejected the value, so there's nothing for the user to retype — report and move on.
-    // `null` says the caller already asked and was turned down, which is the same dead end.
-    const askable = saved.status === "off" || ("reason" in saved && saved.kind !== "unreachable")
-    settle(askable && io.interactive && offer !== null ? await askAndSave(saved as AskableOutcome, io) : saved)
+    const askable = "reason" in saved && saved.kind !== "unreachable"
+    settle(askable && asking ? await askAndSave(saved, io) : saved)
   }
 
   return outcomes
@@ -201,7 +211,7 @@ export async function resolveCredentials(
 
 // The item as it stands: fine (ok, keyless or untested), off without its key, or missing or failing its test.
 async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
-  if (item.missingTurnsOff && !item.present) return { item, status: "off" }
+  if (item.withoutKey === "off" && !item.present) return { item, status: "off" }
   if (item.required && !item.present) return { item, status: "missing", reason: t("doctor.missing") }
   const current = await item.check?.()
   if (current?.ok === false) return { item, status: "failing", reason: current.reason, kind: current.kind }
@@ -211,10 +221,10 @@ async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
 }
 
 // Asks for a new value, tests it, and saves it; one that fails its test is saved only if the user says so.
-async function askAndSave(outcome: AskableOutcome, io: CredentialIo): Promise<CredentialOutcome> {
-  const value = await io.ask(askTitle(outcome))
-  if (!value) return outcome
-  return testAndSave(outcome.item, value, outcome.status === "off" ? "failing" : outcome.status, io)
+async function askAndSave(problem: ProblemOutcome, io: CredentialIo): Promise<CredentialOutcome> {
+  const value = await io.ask(askTitle(problem.item, problem.status === "missing" ? undefined : problem.reason))
+  if (!value) return problem
+  return testAndSave(problem.item, value, problem.status, io)
 }
 
 /**
