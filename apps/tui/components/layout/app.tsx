@@ -168,6 +168,7 @@ function Chrome({
     sounds,
     voice,
     hotkeyModifier,
+    yolo,
     theme: initialTheme
   } = usePreferences(initialPreferences)
   const { theme, toggle: toggleTheme } = useTheme(initialTheme)
@@ -228,6 +229,7 @@ function Chrome({
             currentTool={toolDisplay === "corner" ? currentTool : undefined}
             width={columns}
             profile={Bun.env.KAJA_PROFILE}
+            yolo={yolo}
           />
           <ChatViewport
             events={events}
@@ -325,6 +327,7 @@ function LocalApp({
     tools,
     ensureTools,
     safeCommands,
+    yolo: initialPreferences?.yolo,
     personas,
     models,
     // Stored session's persona/model may no longer exist; resolves to undefined and the resume proceeds with defaults — messages restore verbatim anyway.
@@ -406,7 +409,8 @@ function CloudApp({
     contextWindow
   } = useCloudAgent({
     baseUrl: apiUrl,
-    getToken: () => Promise.resolve(token)
+    getToken: () => Promise.resolve(token),
+    yolo: initialPreferences?.yolo
   })
 
   const lastEvent = events.at(-1)

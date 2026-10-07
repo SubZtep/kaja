@@ -55,3 +55,15 @@ test("a long tool label or model name keeps the header at two rows", async () =>
     await t.waitUntilExit()
   }
 })
+
+test("yolo puts a YOLO badge before the mode badge", async () => {
+  const t = renderForTest(
+    <Header mode="local" yolo persona="Kaja" model="m" promptTokens={null} contextWindow={null} width={60} />
+  )
+  await t.tick()
+
+  expect(t.lastFrame().split("\n")[0]!.trimEnd()).toMatch(/YOLO\s+LOCAL$/)
+
+  t.unmount()
+  await t.waitUntilExit()
+})

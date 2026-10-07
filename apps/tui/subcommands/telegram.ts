@@ -8,6 +8,7 @@ export async function runTelegramSubcommand() {
   const { bootstrapLocalAgentDeps, requireConfiguredProvider } = await import("../lib/cli/headless")
   const { runTelegramCli } = await import("../lib/telegram/cli")
   const { secrets } = await import("../lib/config/secrets")
+  const { config } = await import("../lib/config/config")
 
   await requireConfiguredProvider()
 
@@ -23,6 +24,7 @@ export async function runTelegramSubcommand() {
     tools,
     ensureTools: ensureAbilities,
     safeCommands,
+    yolo: (await config()).preferences?.yolo,
     personas,
     models,
     closeTools

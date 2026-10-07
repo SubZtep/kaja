@@ -364,6 +364,7 @@ todoRerun              = "Szerkeszd a fájlt, vagy futtasd a `kaja doctor` paran
 checkModelFailed       = "a(z) {model} nem válaszolt ({error})"
 checkTimeout           = "nem jött válasz 15 másodpercen belül"
 stats                  = "{sessionCount} munkamenet · {memoryNoteCount} memória jegyzet"
+yolo                   = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed {path}"
 
 
 [session]
@@ -377,6 +378,7 @@ listHint  = "Folytasd az egyiket a `kaja -s <id>` paranccsal, vagy a legutóbbit
 notConfigured        = "Mentsd el a bot tokenjét a secrets.toml `[telegram]` blokkjába (a fájl helyéért lásd: `kaja config paths`), hogy használhasd ezt a parancsot."
 invalidToken         = "Érvénytelen Telegram bot token — ellenőrizd a secrets.toml `[telegram] bot_token` értékét."
 starting             = "Telegram bot indítása…"
+yolo                 = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
 ready                = "Telegram bot kész, üzenetekre vár."
 pairFirst            = """
 Még senki sincs párosítva a @{username} bottal, és nem válaszol addig, amíg te nem leszel.

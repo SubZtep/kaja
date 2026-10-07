@@ -364,6 +364,7 @@ todoRerun              = "請編輯該檔案，或在終端機中執行 `kaja do
 checkModelFailed       = "{model} 沒有回應（{error}）"
 checkTimeout           = "15 秒內沒有回應"
 stats                  = "對話：{sessionCount} · 記憶筆記：{memoryNoteCount}"
+yolo                   = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed {path}"
 
 
 [session]
@@ -377,6 +378,7 @@ listHint  = "使用 `kaja -s <id>` 繼續其中一個，或使用 `kaja -c` 繼�
 notConfigured        = "請在 secrets.toml 的 `[telegram]` 中儲存機器人權杖（執行 `kaja config paths` 查看檔案路徑）才能使用此指令。"
 invalidToken         = "Telegram 機器人權杖無效 — 請檢查 secrets.toml 的 `[telegram] bot_token`。"
 starting             = "正在啟動 Telegram 機器人…"
+yolo                 = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
 ready                = "Telegram 機器人已就緒，正在以長輪詢接收訊息。"
 pairFirst            = """
 目前沒有人與 @{username} 配對，機器人無法回應任何人，除非你先配對。

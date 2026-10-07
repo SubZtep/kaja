@@ -38,6 +38,8 @@ export type Palette = {
   /** The header's local/cloud badge: a muted tint of the status colour, so it reads as a label and not a call to action. */
   localBadge: string
   localBadgeText: string
+  yoloBadge: string
+  yoloBadgeText: string
   cloudBadge: string
   cloudBadgeText: string
   inputBackground: string
@@ -69,6 +71,8 @@ const darkPalette: Palette = {
   keyText: "black",
   localBadge: "#16301f",
   localBadgeText: "#7fd99a",
+  yoloBadge: "#4a1414",
+  yoloBadgeText: "#ff8a80",
   cloudBadge: "#182a4a",
   cloudBadgeText: "#8ab4f8",
   inputBackground: "#224",
@@ -98,6 +102,8 @@ const lightPalette: Palette = {
   keyText: "white",
   localBadge: "#d5ebd8",
   localBadgeText: "#2e7d32",
+  yoloBadge: "#f8d7d7",
+  yoloBadgeText: "#c62828",
   cloudBadge: "#d3e3f8",
   cloudBadgeText: "#1565c0",
   inputBackground: "#e8e8f4",

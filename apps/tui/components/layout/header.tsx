@@ -10,7 +10,8 @@ import { MonsterMate } from "./monster"
 /**
  * Live top bar: current persona on the left; on the right, in-flight tool
  * activity, or the active model name (+ prompt tokens when known), then a
- * badge for where the agent runs (local or cloud, plus the `KAJA_PROFILE`) in the corner.
+ * badge for where the agent runs (local or cloud, plus the `KAJA_PROFILE`) in the corner, after a red
+ * YOLO one while every approval is skipped.
  *
  * `width` must be the full terminal width so `space-between` has a real
  * track to lay out against — without it Ink can collapse the row and the
@@ -38,12 +39,15 @@ export function Header({
   contextWindow,
   currentTool,
   width,
-  profile
+  profile,
+  yolo
 }: Readonly<{
   /** Where the agent runs. */
   mode: "local" | "cloud"
   /** `KAJA_PROFILE`, after the mode, e.g. "LOCAL·dev". */
   profile?: string
+  /** settings.toml's `yolo` is on: nothing asks for approval. */
+  yolo?: boolean
   persona: string
   model: string
   /** Provider name shown after the model, e.g. "fireworks" → "Fireworks". */
@@ -96,7 +100,12 @@ export function Header({
           </Box>
         )}
       </Box>
-      <Box flexShrink={0}>
+      <Box flexShrink={0} columnGap={1}>
+        {yolo ? (
+          <Badge color={palette.yoloBadge}>
+            <Text color={palette.yoloBadgeText}>YOLO</Text>
+          </Badge>
+        ) : null}
         <Badge color={mode === "cloud" ? palette.cloudBadge : palette.localBadge}>
           <Text color={mode === "cloud" ? palette.cloudBadgeText : palette.localBadgeText}>
             {t(`header.${mode}`).toUpperCase()}

@@ -144,6 +144,10 @@
             "dark",
             "light"
           ]
+        },
+        "yolo": {
+          "description": "DANGEROUS developer flag: approve every shell command and tool call without asking, risky ones included (the hard guards still apply)",
+          "type": "boolean"
         }
       }
     }

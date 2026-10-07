@@ -22,6 +22,7 @@ sounds = true
 voice = false
 # hotkeyModifier = "alt"
 # theme = "auto"
+# yolo = false
 
 # [marketplace]
 # enabled = true
@@ -55,6 +56,7 @@ voice = false
 | `voice` | speak replies aloud (needs a model listing `tts` in `models.toml`) |
 | `hotkeyModifier` | `alt` (default) or `ctrl`: the [key bar](/using/tui#key-bar)'s modifier |
 | `theme` | `auto` (default), `dark` or `light`: the [colours](/using/tui#colours). `auto` follows the terminal |
+| `yolo` | **dangerous**, for development: `true` approves every shell command and tool call without asking, risky ones such as `sudo` or `rm -rf` included, in the chat, the local Telegram bot and the cloud chat's tool approvals. Kaja's hard limits (read-only folders, files `read_file` never opens) still hold. A red YOLO badge shows while it's on |
 
 ## `commands.toml`: commands that run without asking
 

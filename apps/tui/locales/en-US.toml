@@ -364,6 +364,7 @@ todoRerun              = "Edit the file, or run `kaja doctor` in a terminal to b
 checkModelFailed       = "{model} didn't answer ({error})"
 checkTimeout           = "no answer in 15 seconds"
 stats                  = "Sessions: {sessionCount} · Memory notes: {memoryNoteCount}"
+yolo                   = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed {path}"
 
 
 [session]
@@ -377,6 +378,7 @@ listHint  = "Resume one with `kaja -s <id>`, or the latest with `kaja -c`."
 notConfigured        = "Save a bot token in `[telegram]` of secrets.toml (see `kaja config paths` for the file path) to use this command."
 invalidToken         = "Invalid Telegram bot token — check `[telegram] bot_token` in secrets.toml."
 starting             = "Starting Telegram bot…"
+yolo                 = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
 ready                = "Telegram bot ready, long-polling for messages."
 pairFirst            = """
 No one is paired with @{username} yet, and it answers no one until you are.

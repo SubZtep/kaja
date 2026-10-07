@@ -364,6 +364,7 @@ todoRerun              = "改這个檔案，抑是佇終端機執行 `kaja docto
 checkModelFailed       = "{model} 無應（{error}）"
 checkTimeout           = "15 秒內無回應"
 stats                  = "工作階段：{sessionCount} · 記智筆記：{memoryNoteCount}"
+yolo                   = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit {path}"
 
 
 [session]
@@ -377,6 +378,7 @@ listHint  = "用 `kaja -s <id>` 來接落去其中一个，抑是用 `kaja -c` �
 notConfigured        = "請佇 secrets.toml 个 `[telegram]` 區塊儲存機器人 token（設定檔路徑看 `kaja config paths`），才會使用這个指令。"
 invalidToken         = "Telegram bot token 無效 — 請檢查 secrets.toml 个 `[telegram] bot_token`。"
 starting             = "咧啟動 Telegram bot…"
+yolo                 = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
 ready                = "Telegram bot 已經準備好矣，咧長輪詢等訊息。"
 pairFirst            = """
 到今猶未有人佮 @{username} 配對，伊無法應任何人，除去你袂到。

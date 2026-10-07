@@ -67,7 +67,7 @@ async function handleRunCommandCall(
     record(call.id, { status: "error" })
     return undefined
   }
-  if (isSafeCommand(args.command, agent.safeCommands ?? DEFAULT_SAFE_PATTERNS)) {
+  if (agent.yolo || isSafeCommand(args.command, agent.safeCommands ?? DEFAULT_SAFE_PATTERNS)) {
     const startedAt = performance.now()
     const result = await runShellCommand(args.command)
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
@@ -380,7 +380,8 @@ async function* handleToolCalls(
       continue
     }
 
-    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call, [granted])
+    // Yolo never asks; a call the tool refuses (a read-only folder) still fails when it runs.
+    const summary = agent.yolo ? undefined : approvalSummaryFor(toolsByName.get(call.function.name), call, [granted])
     if (summary !== undefined) {
       approval = holdApproval(messages, record, approval, {
         id: call.id,

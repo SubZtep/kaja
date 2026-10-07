@@ -24,6 +24,8 @@ export async function runTelegramCli(deps: {
   ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
+  /** settings.toml's `yolo`: the bot never asks to approve anything either. */
+  yolo?: boolean
   personas: Persona[]
   models: CliResolvedModel[]
   /** Closes long-lived tool connections (e.g. Playwright MCP subprocess); shared with SIGINT/SIGTERM via installShutdownHandlers. */
@@ -53,6 +55,7 @@ export async function runTelegramCli(deps: {
       tools: deps.tools,
       ensureTools: deps.ensureTools,
       safeCommands: deps.safeCommands,
+      yolo: deps.yolo,
       personas: deps.personas,
       models: deps.models,
       // Replies in the language set for the terminal, as its own chat does.
@@ -72,6 +75,10 @@ export async function runTelegramCli(deps: {
   })
 
   console.log(t("telegram.starting"))
+  if (deps.yolo) {
+    const { statusLine } = await import("../doctor/status")
+    console.log(statusLine("warning", t("telegram.yolo"), 0))
+  }
   try {
     await bot.start()
     return 0

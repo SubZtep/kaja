@@ -35,7 +35,13 @@ export const KajaPreferencesSchema = z.object({
   theme: z
     .enum(["auto", "dark", "light"])
     .optional()
-    .describe("Colour theme; auto asks the terminal for its background colour (default: auto)")
+    .describe("Colour theme; auto asks the terminal for its background colour (default: auto)"),
+  yolo: z
+    .boolean()
+    .optional()
+    .describe(
+      "DANGEROUS developer flag: approve every shell command and tool call without asking, risky ones included (the hard guards still apply)"
+    )
 })
 
 // Per-feature config blocks; the model itself is models.toml's first one listing the task.

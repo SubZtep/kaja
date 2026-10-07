@@ -76,7 +76,13 @@ const DELTA_INTERVAL_MS = 80
  * switching and no run_command confirm flow: cloud never emits those. Tool
  * approvals (`confirm_tool`) are answered with `resolveToolApproval`.
  */
-export function useCloudAgent(options: NasiClientOptions) {
+export function useCloudAgent({
+  yolo,
+  ...options
+}: NasiClientOptions & {
+  /** settings.toml's `yolo`: every `confirm_tool` is approved straight away instead of asking. */
+  yolo?: boolean
+}) {
   const [client] = useState(() => createNasiClient(options))
   const sessionRef = useRef<string | undefined>(undefined)
 
@@ -191,11 +197,16 @@ export function useCloudAgent(options: NasiClientOptions) {
             else if (event.type === "usage") handleUsage(event)
             else if (event.type === "tool_image")
               handleEvent({ type: "tool_image", path: event.url, mimeType: event.mimeType })
-            else handleEvent(event)
+            // Yolo answers it below, so there's no question to show
+            else if (!(yolo && event.type === "confirm_tool")) handleEvent(event)
             if (event.type === "client_tool_call") pendingClientTool = event
             next = await gen.next()
           }
           sessionRef.current = next.value.session
+          if (yolo && next.value.status === "needs_approval") {
+            request = { approval: "approve" }
+            continue
+          }
           if (next.value.status !== "needs_client_tool" || !pendingClientTool) break
           request = { message: await executeClientTool(pendingClientTool.name, pendingClientTool.arguments) }
         }
@@ -207,7 +218,7 @@ export function useCloudAgent(options: NasiClientOptions) {
         setPending(false)
       }
     },
-    [client, pushEvent, followPersonaSwitch]
+    [client, pushEvent, followPersonaSwitch, yolo]
   )
 
   // `/compact [focus]`: the server summarises the session now instead of running a turn.

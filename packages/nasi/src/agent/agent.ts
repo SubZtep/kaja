@@ -53,6 +53,8 @@ export class Agent {
   compactAt?: number
   /** Whole-command patterns that run without asking (commands.toml); defaults to the built-in list. */
   safeCommands?: RegExp[]
+  /** Never pause for approval: every command and every tool that would ask runs straight away (settings.toml's `yolo`). Refusals still stand. */
+  yolo?: boolean
   /** Connects the named abilities' MCP servers (every ability's when unnamed) if they aren't yet and returns the whole tool list, theirs included; {@link run} calls it for the active persona, whose id picks a roots-taking server's folders. Unset: {@link tools} is all there is. */
   ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
 
@@ -74,6 +76,7 @@ export class Agent {
     summarizer?: { client: OpenAI; model: string; contextWindow?: number }
     compactAt?: number
     safeCommands?: RegExp[]
+    yolo?: boolean
     ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   }) {
     this.name = config.name ?? "Assistant"
@@ -93,6 +96,7 @@ export class Agent {
     this.summarizer = config.summarizer
     this.compactAt = config.compactAt
     this.safeCommands = config.safeCommands
+    this.yolo = config.yolo
     this.ensureTools = config.ensureTools
   }
 
