@@ -24,7 +24,7 @@ cli.ts` directly) for interactive use.
 
 - Flags: `--local`, `--cloud`, `--headless`, `-c`/`--continue` (`--local` only), `-s`/`--session <id>` (`--local` only)
 - Subcommands, `--local` only (run **before** LLM config guard): `telegram`
-- `logout` and `config <fetch|paths>` run before the cloud/local mode branch — `logout` is a cloud-only concept (clears the keychain token), `config` only ever touches local files and must never trigger cloud login
+- `logout`, `config <fetch|paths|diff|wizard>` and `sessions` (lists saved local sessions with the ids `-s` resumes) run before the cloud/local mode branch — `logout` is a cloud-only concept (clears the keychain token), `config` only ever touches local files and must never trigger cloud login
 - `abilities [update]` runs there too, for the same reason as `config`: `kaja abilities update` (`lib/abilities/cli.ts`; in a terminal it and the first-use fetch run under `withStepProgress`, ink-ui's `ProgressBar` advanced once per `onStep` of `UPDATE_STEPS` — git checked, downloaded, checked out, synced — since git reports no progress for the slow sparse checkout) sparse-checks-out the source repo's `marketplace/` folder into a cache (`lib/abilities/fetch.ts`, needs `git`) and syncs it into `~/.config/kaja/marketplace/` (`lib/abilities/sync.ts`: a `.sync-lock.json` of hashes tells untouched copies from your edits; edited files are backed up as `name.bak.ext`/`name.bak.2.ext` before upstream replaces them, which nasi's folder store never reads; files you added are never touched). A cloud user (same mode rule as `cli.ts`: `--cloud`, or no configured local chat model without `--local`) only gets a pointer to https://kaja.io/agent/abilities. Bare `kaja abilities` runs that once if never synced, then shows `components/ability-picker.tsx` and writes `abilities.toml`; then, only if an enabled HTTP tool or MCP server has more than one tool, it asks once (default no) and walks `components/tool-picker.tsx` per ability, saving the unticked ones as `[disabledTools]` (nasi's folder store leaves them out, via `withoutHttpTools`/`withoutMcpTools`, the same helpers the API uses for the web's per-tool choice). The only other network touch is `lib/abilities/auto-update.ts`: local-mode startup fires a non-awaited `kaja abilities update` when the lock file is over 24 h old (only on a machine that has synced once; failures are silent; changes apply next launch). settings.toml `[marketplace]` gates all of it (`marketplaceSettings()` in `abilities-file.ts`): `enabled = false` makes `runAbilityUpdate`/`ensureMarketplace`/`applyStarterAbilities` do nothing online, `autoFetch = false` stops only the startup pull; both default on. The wizard asks (`offerMarketplace`, before the starter abilities): no → `enabled = false`; yes → `checkGit` (failure leaves it off), fetch once, then asks about `autoFetch`. Otherwise startup only reads the folder.
 - `doctor` (`subcommands/doctor.ts`, `--local` only): first a keys-and-tokens pass (`lib/doctor/credentials.ts` collects what the config relies on, `lib/doctor/checks.ts` tests each live, `resolveCredentials` asks for missing/failing ones through `lib/doctor/prompt.tsx` when stdin is a TTY, tests before saving via `saveSecrets`; the whole pass is `runCredentialPass`, which the setup wizard reuses. A `CheckResult` failure carries a `kind`: only `"credential"` (a 401/403 — the service saw the value and refused it) is asked about, while `"unreachable"` (a refused connection, a 404 for the model) is reported and skipped, because a local server that isn't running needs starting, not a new key — Ollama and llama.cpp take none at all. The to-do list keeps the two apart: keys point at their secrets.toml entry, unreachable services at models.toml.), then the models/MCP/tools report, then a summary of what's left in secrets.toml. Non-TTY: report only. Every ✔/✘ result line (credentials, models, MCP servers; the wizard prints the same ones) is `statusLine` (`lib/doctor/status.tsx`): ink-ui's `StatusMessage` through `renderToString`, so it stays a plain `console.log` string; piped output isn't wrapped.
 - Handlers: `lib/telegram/cli.ts`
@@ -42,18 +42,18 @@ cli.ts` directly) for interactive use.
 cli.ts                  # entry
 components/             # Ink UI (layout, inputs, timeline, wizard, …)
 hooks/                  # agent, settings, voice, dictation, sounds, …
-lib/                    # domain subfolders: cli, agent, auth, config, models, personas, memory, abilities,
-                        # session, telegram, audio, mcp, image, markdown; cross-cutting utils at lib/ root
-subcommands/            # run.tsx (--local), run-cloud.tsx (cloud)
-tools/                  # LLM tools (files, web, memory, image, summarize, …)
+lib/                    # domain subfolders: cli, agent, auth, config, doctor, models, personas, memory, abilities,
+                        # session, store, telegram, audio, mcp, image, markdown; cross-cutting utils at lib/ root
+subcommands/            # run.tsx (--local), run-cloud.tsx (cloud), abilities, config, doctor, logout, sessions, telegram
+tools/                  # index.ts: getDefaultTools wires @kaja/nasi's built-in tools, abilities and MCP for this host
 locales/                # en-GB.toml, en-US.toml, hu-HU.toml, nan-TW.toml, zh-TW.toml
-assets/                 # sounds, datasets
+assets/                 # sounds
 tests/                  # mirrors source tree
 ```
 
 Skills (local mode): `~/.config/kaja/marketplace/skills/<name>/` holds every skill (synced or your own); synced ones load only when listed in `~/.config/kaja/abilities.toml`, your own always. `tools/index.ts`'s `getDefaultTools` builds `@kaja/nasi`'s folder store from `lib/abilities/abilities-file.ts` and appends `load_skill`, so the TUI and local Telegram both get it. HTTP tool abilities (`marketplace/tools/<name>.toml`, listed in abilities.toml's `tools`) load the same way, with their key from secrets.toml's `[abilities.<name>]` and private hosts allowed; a non-GET one pauses with `confirm_tool`, shown by the same `ConfirmCommand` gate (`kind: "tool"`) and resolved by `use-agent.ts`'s `resolveToolApproval` (local Telegram: a `tool:approve|decline` callback). MCP abilities (`marketplace/mcp/<name>.toml`, abilities.toml's `mcp`) are handed to `createTools` as `mcpAbilities` and connect alongside mcp.toml servers; `kaja abilities` confirms a stdio one's command before enabling it. Personas (`marketplace/personas/<id>.toml`, abilities.toml's `personas`) come from `lib/personas/personas.ts`'s `loadPersonas`: `default` first (that file, else the one bundled from repo `marketplace/personas/default.toml`), then the enabled ones. Your own skills and personas (the ones `.sync-lock.json` doesn't record, `lib/abilities/abilities-file.ts`'s `ownAbilities`) load without an abilities.toml entry: `kaja abilities` lists them apart as always on (`PickerItem.alwaysOn`), and the persona picker draws your own personas (`Persona.local`) in the accent colour. Your own tools and MCP servers still need ticking. Datasets (`marketplace/datasets/<topic>.json`) all load through `lib/personas/datasets.ts`, which registers `@kaja/nasi`'s dataset loaders. A missing abilities.toml means nothing is enabled (only `default`), and it is never auto-created.
 
-Zod schemas for this app's config/store/domain types live in `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli` (see `packages/schema/AGENTS.md`), not under this package.
+Zod schemas for this app's config/store/domain types live in `@kaja/schema/config`, `@kaja/schema/store`, `@kaja/schema/cli` (see `packages/schema/CLAUDE.md`), not under this package.
 
 ### Shared monorepo docs
 
@@ -72,8 +72,7 @@ GitHub Pages content is also under monorepo `docs/`.
 ### Always
 
 - Fetch current docs for dependency versions (Context7) when using libraries
-- Run lint before commit (monorepo `bun lint` or package biome if configured)
-- User-facing strings go through `t()` from `lib/i18n.ts` with keys in **all five** of `locales/en-GB.toml`, `locales/en-US.toml`, `locales/hu-HU.toml`, `locales/nan-TW.toml`, and `locales/zh-TW.toml`
+- User-facing strings go through `t()` from `lib/i18n.ts`, with keys added to `locales/en-GB.toml` only (pre-commit's `bun sync:locales` gives the other languages placeholders; see the root CLAUDE.md)
 - Write short, explicit TSDoc on non-obvious exports
 
 ### Ask first
@@ -98,6 +97,3 @@ GitHub Pages content is also under monorepo `docs/`.
 
 - Tests under `tests/`, mirroring `components/`, `lib/`, `tools/`
 - Shared helpers: `tests/test-utils.tsx`
-## Git
-
-- This monorepo may use feature branches (e.g. `barkochba`); do not assume everything lands on `main` without checking

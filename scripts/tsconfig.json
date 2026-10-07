@@ -5,5 +5,5 @@
     // Scripts with top-level await and no imports are modules too
     "moduleDetection": "force"
   },
-  "include": ["**/*.ts", "../commitlint.config.ts"]
+  "include": ["**/*.ts", "../.commitlintrc.ts"]
 }

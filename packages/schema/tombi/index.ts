@@ -15,7 +15,7 @@ import { KajaConfigSchema } from "../config/settings"
  * JSON Schema documents for the Tombi TOML language server (https://tombi-toml.github.io),
  * one per docs/config/*.toml shape. Each is derived from this package's own Zod schemas via
  * `z.toJSONSchema`, so it can never drift from the runtime validators. Written to static
- * .json files by ./generate.ts, which tombi.toml's [[schemas]] point at — Tombi needs
+ * .json files by ./generate.ts, which .tombi.toml's [[schemas]] point at — Tombi needs
  * files/URLs, not live TypeScript.
  */
 // io: "input" — fields with a Zod .default() become optional-with-default instead of

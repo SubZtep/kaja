@@ -14,6 +14,7 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 ## Layout
 
 ```
+src/env.ts        # parsed SandboxEnvSchema
 src/cli.ts        # bundle entry: `health` (the Docker HEALTHCHECK) or startSandbox()
 src/server.ts     # startSandbox(): banner, env, manifests, the tunnel, status every 15 min, stops every server on SIGTERM/SIGINT
 src/health.ts     # status file the tunnel keeps current (welcome, heartbeats, disconnects); `health` reads it

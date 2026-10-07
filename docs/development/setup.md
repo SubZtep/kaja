@@ -25,8 +25,10 @@ and warns when a major.minor version differs from CI's.
 **Recommended**
 
 - **Docker Compose** for PostgreSQL, a local mail catcher and S3-compatible object storage (RustFS)
-- **VSCode** (or compatible) with the recommended extensions, which wire up TOML schemas and Biome
-- **Claude Code**, **OpenCode**, or any `AGENTS.md`-compatible coding agent
+- **VSCode** (or compatible) with the recommended extensions, which wire up TOML schemas and Biome. Biome
+  isn't a dependency, so point the extension at your installed CLI in your user settings:
+  `"biome.lsp.bin": "/usr/bin/biome"` (or wherever `which biome` points)
+- **Claude Code** (the agent notes are `CLAUDE.md` files)
 
 ## Setup
 
@@ -76,6 +78,13 @@ bun run scripts/barkochba.ts ["secret"]     # self-play the barkochba persona ag
 > Use `bun dev:tui`, not `bun run --filter @kaja/tui start`. The workspace runner doesn't pass the TTY
 > through, so Ink fails with "Raw mode is not supported".
 {: .warning }
+
+After the TUI's first run has written its config (`~/.config/kaja`), link it into the repo to edit it beside
+the code, with the same TOML schemas as the templates in `docs/config/`:
+
+```sh
+./scripts/link_user_config.sh   # .user-config -> ~/.config/kaja (gitignored)
+```
 
 ### Code generation
 

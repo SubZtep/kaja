@@ -1,5 +1,5 @@
 {
-  "biome.configurationPath": "biome.json",
+  "biome.configurationPath": ".biome.json",
   "editor.codeActionsOnSave": {
     "source.fixAll.biome": "explicit",
     "source.organizeImports.biome": "explicit",

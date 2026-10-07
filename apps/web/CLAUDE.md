@@ -10,7 +10,7 @@ bun run --filter @kaja/web build
 bun run --filter @kaja/web preview
 ```
 
-No automated UI tests yet (`test` script is a no-op).
+No UI tests yet (the `test` script is a no-op); `src/lib/*.test.ts` unit tests run with the root `bun test`.
 
 ## Layout
 
@@ -23,7 +23,7 @@ src/
     _public/
       index.tsx                   # landing (/)
       signin|signup|reset-password
-      device/                     # device code approval
+      device.tsx + device/        # device code approval: index, approve, done
       -components/                # landing sections + auth chrome
     _admin.tsx                    # private shell (auth-gated; same max-w-280 + sticky header pattern)
     _admin/
@@ -32,17 +32,20 @@ src/
       profile|welcome
       admin.tsx + admin/          # admin-only layout (role guard, tab nav): dashboard, users, models
   components/
+    Providers.tsx, LocaleSync.tsx
     layout/  SiteShell, SiteHeader, ContentWidth, BrandMark, SignOutButton, nav-items (one static menu for everyone, plus each section's tabs), SectionTabs (a section's tab bar)
-    ui/      Section, PageHeader, LandingSection, Table, ValueBox, ...
-    form/ Providers
+    ui/      Section, PageHeader, Table, ValueBox, DialogShell, ...
+    form/    TanStack Form fields
+    abilities/ sandbox/ stats/ user/   # feature components
   hooks/ lib/ styles.css
+messages/    # Paraglide messages (en-GB.json is the source; see Translations in the root CLAUDE.md)
 public/      favicons, install scripts, PWA bits
 ```
 
 Abilities: `/agent/abilities` (every signed-in user; skills, HTTP tools and MCP servers in one list by name, then a Personas section) and `/welcome` (right after signup, without the Personas section) share `components/abilities/AbilitySections.tsx` — `AbilityCards` renders a `SkillCard` (toggle saved via `/abilities/me`, instructions loaded on demand from `/abilities/skill/{name}`) or a `ToolCard` (HTTP tools and MCP servers: host, key need, tools; one that requires a key opens `KeyDialog` first, which saves the key write-only and shows the server's check) per catalog entry, and `PersonaCards` (label, when, instructions from the catalog; `default` is always on and not listed) is its own section. Queries live in `components/abilities/queries.ts`. Admins also get the marketplace sync panel on `/agent/abilities`. The widget page picks each key's own skills (`SkillChecklist`) and edits keys through `PATCH /widget/admin/{id}`; its persona list comes from `/nasi/personas` (the whole catalog, default first).
 
 Shared layout primitives: `SiteShell` + `SiteHeader` + `BrandMark` + `ContentWidth`.
-Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).
+Cards/titles: `Section`, `PageHeader` (admin).
 
 ## Conventions
 
@@ -60,7 +63,7 @@ Cards/titles: `Section`, `PageHeader` (admin), `LandingSection` (public bands).
 
 ## Env
 
-`.env.example`: `VITE_API_URL`, `VITE_APP_URL`.  
+`.env.example` (generated from `packages/schema/env/web.ts`): `VITE_API_URL`, `API_URL` (server-to-server), `SSR_SECRET`, `VITE_APP_URL`, the landing demo's widget keys, `VITE_TURNSTILE_SITE_KEY`, `SENTRY_AUTH_TOKEN`.  
 Failures worth knowing about go to Sentry (`Sentry.captureException`); user-facing ones already show a toast. There is no logger package.
 
 ## Boundaries
