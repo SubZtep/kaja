@@ -88,7 +88,7 @@ piped = true
 [post-merge]
   [post-merge.commands]
     [post-merge.commands.lefthook-install]
-    run = "git diff --quiet ORIG_HEAD HEAD -- lefthook.toml || bunx lefthook install"
+    run = "git diff --quiet ORIG_HEAD HEAD -- .lefthook.toml || bunx lefthook install"
 
 
 # Checks run first; the locales job last, since it may commit translations and push them itself

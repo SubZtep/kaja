@@ -78,7 +78,7 @@ it's pushed, so a hook would always be a push behind.
 
 ## Git hooks
 
-[Lefthook](https://github.com/evilmartians/lefthook) (`lefthook.toml`) runs these; `bunx lefthook
+[Lefthook](https://github.com/evilmartians/lefthook) (`.lefthook.toml`) runs these; `bunx lefthook
 install` sets them up once.
 
 ```mermaid

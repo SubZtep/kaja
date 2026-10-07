@@ -6,7 +6,7 @@ import { toolPath } from "./lib/tools"
 const rootDir = join(import.meta.dir, "..")
 const configDir = join(rootDir, "docs/config")
 
-/** `text` as `tombi format` leaves it (tombi.toml's rules), so the lint never rewrites a generated file. */
+/** `text` as `tombi format` leaves it (.tombi.toml's rules), so the lint never rewrites a generated file. */
 async function tombiFormat(text: string): Promise<string> {
   const proc = Bun.spawn([await toolPath("tombi"), "format", "-"], {
     cwd: rootDir,
