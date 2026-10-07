@@ -1,5 +1,6 @@
 import type { HttpToolAbility, McpAbility } from "@kaja/schema/abilities"
 import type { Persona } from "@kaja/schema/cli"
+import { toolName } from "../agent/tools"
 import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
@@ -31,6 +32,8 @@ export type LoadAbilitiesOptions = {
   proxy?: string
   /** Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they are. */
   mcpSandbox?: McpSandbox
+  /** Warn about persona entries naming an ability, or a tool of one, that isn't there: on for a host whose store is every ability the user has (the CLI), off where parts are left out on purpose (the cloud). */
+  warnUnknown?: boolean
 }
 
 /**
@@ -43,6 +46,24 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   const abilities = await listOrWarn(() => store.listHttpTools(), "HTTP tools")
   const mcpAbilities = await listOrWarn(() => store.listMcpAbilities(), "MCP abilities")
   const codeTools = store.listCodeTools ? await listOrWarn(() => store.listCodeTools!(), "code tools") : []
+  if (opts.warnUnknown && opts.personas) {
+    // Each ability's tool names, where they're known before connecting (an MCP server without a `tools` list isn't).
+    const known = new Map<string, Set<string> | undefined>()
+    const addTools = (name: string, tools: string[] | undefined) => {
+      // Once a part's tools are unknown, the whole ability's are.
+      if (known.has(name) && known.get(name) === undefined) return
+      known.set(name, tools && new Set([...(known.get(name) ?? []), ...tools]))
+    }
+    for (const skill of skills) if (!known.has(skill.name)) known.set(skill.name, new Set())
+    for (const ability of abilities)
+      addTools(
+        ability.name,
+        ability.tools.map(tool => tool.name)
+      )
+    for (const ability of mcpAbilities) addTools(ability.name, ability.tools)
+    for (const code of codeTools) addTools(code.name, code.tools.map(toolName))
+    warnUnknownEntries(opts.personas, known)
+  }
 
   // load_skill is Kaja's own mechanism, so it's official (and its name reserved) even though abilities switch it on.
   const groups: ToolGroup[] =
@@ -89,6 +110,26 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   }
 
   return { groups, skills, httpTools, mcp, missingKeys }
+}
+
+/** Warns once per persona entry that names an ability the store doesn't have, or a tool its ability doesn't offer. */
+function warnUnknownEntries(personas: Persona[], known: Map<string, Set<string> | undefined>): void {
+  for (const persona of personas) {
+    for (const entry of personaAbilities(persona).values()) {
+      if (!known.has(entry.name)) {
+        warn("Persona lists an ability that isn't there", { persona: persona.id, ability: entry.name })
+        continue
+      }
+      const tools = known.get(entry.name)
+      const missing = tools ? (entry.tools ?? []).filter(tool => !tools.has(tool)) : []
+      if (missing.length > 0)
+        warn("Persona lists tools its ability doesn't offer", {
+          persona: persona.id,
+          ability: entry.name,
+          tools: missing
+        })
+    }
+  }
 }
 
 // A list the store can't read counts as empty, with a warning, so one broken ability type doesn't stop the others.

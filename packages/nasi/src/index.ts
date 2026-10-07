@@ -54,7 +54,6 @@ export {
   skillsForPersona,
   stickySkillsForPersona
 } from "./abilities/skills"
-export { withoutHttpTools, withoutMcpTools } from "./abilities/tool-filter"
 export { type AbilityStore, SkillFileError, type SkillSummary } from "./abilities/types"
 export {
   Agent,

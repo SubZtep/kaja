@@ -4,6 +4,7 @@ import type * as z from "zod"
 import { loadAbilities } from "../../src/abilities/load"
 import type { AbilityStore } from "../../src/abilities/types"
 import { toolName } from "../../src/agent/tools"
+import { setWarnHandler } from "../../src/warn"
 import { httpAbility as parseHttp, mcpAbility as parseMcp } from "../fixtures/abilities"
 
 const httpAbility = (name: string, auth: z.input<typeof HttpToolAbilitySchema>["auth"] = { type: "none" }) =>
@@ -69,4 +70,27 @@ test("an optional key may be missing; a required one leaves the ability out", as
     ["docs", "Bearer k"],
     ["private", "Bearer k"]
   ])
+})
+
+test("with warnUnknown, a persona naming a missing ability or tool gets a warning, once each", async () => {
+  const warnings: { message: string; payload?: unknown }[] = []
+  setWarnHandler((message, payload) => warnings.push({ message, payload }))
+  try {
+    const store = storeWith([httpAbility("weather")])
+    const personas = [
+      { id: "a", label: "A", abilities: ["weather", "nope", { name: "weather", tools: ["weather_get", "gone"] }] }
+    ]
+    await loadAbilities(store, { personas })
+    expect(warnings).toEqual([])
+    await loadAbilities(store, { personas, warnUnknown: true })
+    expect(warnings).toEqual([
+      {
+        message: "Persona lists tools its ability doesn't offer",
+        payload: { persona: "a", ability: "weather", tools: ["gone"] }
+      },
+      { message: "Persona lists an ability that isn't there", payload: { persona: "a", ability: "nope" } }
+    ])
+  } finally {
+    setWarnHandler(() => {})
+  }
 })

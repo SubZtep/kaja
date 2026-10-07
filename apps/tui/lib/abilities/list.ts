@@ -42,10 +42,14 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
 
   const sorted = [...rows.values()].sort((a, b) => a.name.localeCompare(b.name))
   const width = Math.max(...sorted.map(r => r.name.length))
+  // The `local` tag gets a column of its own when any row has it, so the details still line up.
+  const tag = sorted.some(r => own.has(r.name)) ? t("ability.local") : ""
   const palette = consolePalette()
   const lines = [paint(palette.accent)(t("ability.title"))]
   for (const r of sorted) {
-    const name = own.has(r.name) ? `${r.name.padEnd(width)}  ${t("ability.local")}` : r.name.padEnd(width)
+    const name = tag
+      ? `${r.name.padEnd(width)}  ${(own.has(r.name) ? tag : "").padEnd(tag.length)}`
+      : r.name.padEnd(width)
     const details = [
       r.parts.join(" + "),
       keyStatus(r.auth, Boolean(keys[r.name]?.api_key)),

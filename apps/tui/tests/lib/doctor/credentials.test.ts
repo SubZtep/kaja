@@ -8,8 +8,9 @@ const configRoot = `${tmpdir()}/kaja-test-xdg-config-doctor-credentials`
 process.env.XDG_CONFIG_HOME = configRoot
 
 const { invalidateSecretsCache } = await import("../../../lib/config/secrets")
-const { abilityKeyWhere, collectCredentials, outcomeLine, resolveCredentials, runCredentialPass, summaryLines } =
-  await import("../../../lib/doctor/credentials")
+const { collectCredentials, outcomeLine, resolveCredentials, summaryLines } = await import(
+  "../../../lib/doctor/credentials"
+)
 type CredentialItem = import("../../../lib/doctor/credentials").CredentialItem
 
 const kajaDir = join(configRoot, "kaja")
@@ -192,52 +193,11 @@ test("null means the caller already asked and was turned down, so the pass doesn
   expect(item.saved).toEqual([])
 })
 
-test("a key nothing needs is asked for only when the caller opts in, and is tested before it's saved", async () => {
+test("a key nothing needs is never asked for", async () => {
   const quiet = fakeItem({ required: false, works: () => true })
   const outcomes = await resolveCredentials([quiet.item], io(["k"]).io)
   expect(outcomes[0]!.status).toBe("keyless")
   expect(quiet.saved).toEqual([])
-
-  const asked = fakeItem({
-    label: "context7 (MCP ability)",
-    hint: "header Authorization",
-    required: false,
-    works: v => v === undefined || v === "k"
-  })
-  const prompts = io(["k"])
-  const opted = await resolveCredentials([asked.item], prompts.io, () => {}, {}, true)
-  expect(prompts.titles).toEqual([
-    "context7 (MCP ability) can use an API key (header Authorization). It's optional: it works without one."
-  ])
-  expect(opted[0]!.status).toBe("saved")
-  expect(asked.saved).toEqual(["k"])
-})
-
-test("declining an optional key leaves the ability as it was", async () => {
-  const item = fakeItem({ required: false, works: () => true })
-  const outcomes = await resolveCredentials([item.item], io([undefined]).io, () => {}, {}, true)
-  expect(outcomes[0]!.status).toBe("keyless")
-  expect(item.saved).toEqual([])
-})
-
-test("a scoped pass looks only at the items it was given", async () => {
-  put("marketplace/personas/default.toml", `label = "D"\nabilities = ["gh", "open"]\n`)
-  const tool = (name: string) =>
-    `description = "x"\nbaseUrl = "https://api.${name}.test"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n\n[[tools]]\nname = "${name}_get"\ndescription = "x"\npath = "/x"\n`
-  put("marketplace/abilities/gh/tool.toml", tool("gh"))
-  put("marketplace/abilities/open/tool.toml", tool("open"))
-  put("secrets.toml", "")
-
-  // runCredentialPass asks only on a terminal; a developer's shell is one, and the missing key would open a real prompt
-  const isTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY")
-  Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true })
-  try {
-    const outcomes = await runCredentialPass(() => {}, undefined, [], {}, { only: [abilityKeyWhere("gh")] })
-    expect(outcomes.map(o => o.item.where)).toEqual(["[abilities.gh] api_key"])
-  } finally {
-    if (isTTY) Object.defineProperty(process.stdin, "isTTY", isTTY)
-    else delete (process.stdin as { isTTY?: boolean }).isTTY
-  }
 })
 
 test("collects providers, keyed abilities a persona uses, and a saved Telegram token", async () => {

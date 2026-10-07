@@ -68,8 +68,8 @@ Commands in the bot's menu:
 - `/new` starts a fresh conversation.
 - `/compact` summarises the conversation to free up space (add what to keep, like
   `/compact keep the dates`). It also happens on its own.
-- `/abilities` shows the skills and tools this bot loaded (an MCP server once a persona has connected it).
-  It reads the marketplace folder once at start, so restart `kaja telegram` after changing it.
+- `/abilities` shows the abilities each persona uses. The bot reads the marketplace folder once at start, so
+  restart `kaja telegram` after changing it.
 
 ## Cloud bot
 

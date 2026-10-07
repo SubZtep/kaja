@@ -41,7 +41,9 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
     personas,
     getApiKey: name => abilitySecrets[name]?.api_key,
     // Local mode: HTTP tools may call hosts on the user's own network (Home Assistant, a NAS, Ollama).
-    allowPrivate: true
+    allowPrivate: true,
+    // The folder is every ability there is, so a persona naming another is a typo worth a warning.
+    warnUnknown: true
   })
 
   return createTools({

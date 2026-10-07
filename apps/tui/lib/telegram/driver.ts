@@ -4,14 +4,11 @@ import {
   compact,
   dropImages,
   isImageRejection,
-  LOAD_SKILL_TOOL,
-  type LoadSkillTool,
+  personaAbilities,
   photoLabel,
   recordPausedCall,
   runApprovedTool,
-  samplingOf,
-  type Tool,
-  toolName
+  samplingOf
 } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
@@ -33,36 +30,19 @@ import { categorizeError } from "../agent/error-category"
 import { runShellCommand } from "../agent/run-command"
 import { t } from "../i18n"
 import { log } from "../logger"
-import { DEFAULT_PERSONA_ID, type Persona } from "../personas/personas"
+import type { Persona } from "../personas/personas"
 import { createSessionRow, loadLatestSessionRowForOwner, updateSessionRow } from "../session/store"
 
-/** What the running bot loaded: skills (load_skill's list) and tool abilities (community tools' `ability:<name>` source), by name. */
-function loadedAbilities(tools: Tool[]): { skills: string[]; tools: string[] } {
-  const loadSkill = tools.find(tool => toolName(tool) === LOAD_SKILL_TOOL) as LoadSkillTool | undefined
-  const abilities = tools.flatMap(tool =>
-    tool.origin === "community" && tool.source?.startsWith("ability:") ? [tool.source.slice("ability:".length)] : []
-  )
-  return {
-    skills: (loadSkill?.skills ?? []).map(skill => skill.name).sort((a, b) => a.localeCompare(b)),
-    tools: [...new Set(abilities)].sort((a, b) => a.localeCompare(b))
-  }
-}
-
-/** The /abilities reply: what this bot loaded, and how to change it (on the computer: this bot builds its tools once, at start). */
-function abilitiesMessage(tools: Tool[], personas: Persona[]): string {
-  const loaded = loadedAbilities(tools)
-  // default always loads, so like `kaja abilities` it isn't listed as an ability.
-  const picked = personas.map(p => p.id).filter(id => id !== DEFAULT_PERSONA_ID)
-  const names = (list: string[]) => list.map(name => escapeHtml(name)).join(", ")
-  return [
-    `<b>${t("telegram.abilitiesTitle")}</b>`,
-    ...(loaded.skills.length > 0 ? [t("telegram.abilitiesSkills", { names: names(loaded.skills) })] : []),
-    ...(picked.length > 0 ? [t("telegram.abilitiesPersonas", { names: names(picked) })] : []),
-    ...(loaded.tools.length > 0 ? [t("telegram.abilitiesTools", { names: names(loaded.tools) })] : []),
-    ...(loaded.skills.length + picked.length + loaded.tools.length === 0 ? [t("telegram.abilitiesNone")] : []),
-    "",
-    t("telegram.abilitiesHint")
-  ].join("\n")
+/** The /abilities reply: the abilities each persona uses (its `abilities` list), and how to change them (on the computer: this bot reads the folder once, at start). */
+function abilitiesMessage(personas: Persona[]): string {
+  const lines = personas.map(persona => {
+    const names = [...personaAbilities(persona).keys()].map(name => escapeHtml(name))
+    const who = escapeHtml(persona.label)
+    return names.length > 0
+      ? t("telegram.abilitiesPersona", { persona: who, names: names.join(", ") })
+      : t("telegram.abilitiesPersonaNone", { persona: who })
+  })
+  return [`<b>${t("telegram.abilitiesTitle")}</b>`, ...lines, "", t("telegram.abilitiesHint")].join("\n")
 }
 
 const IMAGE_FILE = /\.(?:png|jpe?g|gif|webp)$/i
@@ -449,7 +429,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     if (images.length > 0) return handlePhoto(userId, chatId, text, images)
 
     if (isCommand(text, "abilities")) {
-      await sender.sendMessage(chatId, abilitiesMessage(agentConfig.tools ?? [], personas))
+      await sender.sendMessage(chatId, abilitiesMessage(personas))
       return
     }
 
