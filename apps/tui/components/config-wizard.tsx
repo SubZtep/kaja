@@ -4,7 +4,7 @@ import { LOCALE_LABELS, locales } from "@kaja/shared/locale"
 import { capitalized } from "@kaja/shared/text"
 import { Box, Static, Text, useInput } from "ink"
 import Gradient from "ink-gradient"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { KajaMode } from "../lib/config/mode"
 import type { Language } from "../lib/i18n"
 import { setLanguage, t } from "../lib/i18n"
@@ -368,7 +368,7 @@ function ThemePreview() {
   )
 }
 
-// What happens after Enter: on the first run Kaja carries straight on into the chat (or the cloud sign-in)
+// What happens next: on the first run Kaja carries straight on into the chat (or the cloud sign-in)
 function summaryHintKey(cloud: boolean, firstRun?: boolean): string {
   if (firstRun) return cloud ? "wizard.summaryHintFirstRunCloud" : "wizard.summaryHintFirstRun"
   return cloud ? "wizard.summaryHintCloud" : "wizard.summaryHint"
@@ -395,7 +395,7 @@ function SummaryStep({ result, firstRun }: Readonly<{ result: WizardResult; firs
 /**
  * The setup wizard, for both the first run (no config yet) and a re-run via `kaja config wizard`.
  * Every step opens on the current value, so holding Enter walks a configured machine through unchanged.
- * Escape on a list cancels the whole wizard. Backspace/Delete don't, unlike other {@link SelectMenu}s: a
+ * The last answer finishes it, with no confirmation. Escape on a list cancels the whole wizard. Backspace/Delete don't, unlike other {@link SelectMenu}s: a
  * typo-fixing reflex shouldn't throw every answer away. Nothing is written here — the caller applies the collected {@link WizardResult}
  * once `onDone` fires, via the existing config/secrets writers.
  */
@@ -430,11 +430,17 @@ export function ConfigWizard({
   const [preview, setPreview] = useState<Brightness>(initial.theme ?? "dark")
 
   useInput((_input, key) => {
-    if (step === "summary" && key.return) onDone(result)
-    else if (step === "summary" && key.escape) onCancel()
     // MultiSelect has no dismissal of its own, so its steps get the same Esc contract as SelectMenu.
-    else if ((step === "providers" || step === "extras") && key.escape) onCancel()
+    if ((step === "providers" || step === "extras") && key.escape) onCancel()
   })
+
+  // The last answer finishes it: every answer is already on screen, and there's no step to go back to.
+  const finished = useRef(false)
+  useEffect(() => {
+    if (step !== "summary" || finished.current) return
+    finished.current = true
+    onDone(result)
+  }, [step, result, onDone])
 
   function advance(patch: Partial<WizardResult>) {
     const next = { ...result, ...patch }

@@ -77,11 +77,9 @@ test("opens on the language step, then asks the mode with Kaja Cloud preselected
   await w.t.press(ENTER) // theme: keep the highlighted one
   expect(w.t.lastFrame()).toContain("Kaja Cloud")
 
-  // Cloud needs no provider or key, so Enter here lands straight on the last screen.
+  // Cloud needs no provider or key, so Enter here is the last answer, and the wizard finishes without another.
   await w.t.press(ENTER)
   expect(w.t.lastFrame()).toContain("Setup complete")
-
-  await w.t.press(ENTER)
   expect(w.result).toMatchObject({ mode: "cloud", language: "en-GB" })
   expect(w.result?.providers).toBeUndefined()
 
@@ -99,7 +97,6 @@ test("the theme step follows the language, opens on the detected theme and is ca
   expect(w.t.lastFrame()).toContain("Type your message here")
   await w.t.press(ENTER)
   await w.t.press(ENTER) // mode: cloud
-  await w.t.press(ENTER) // last screen
   expect(w.result?.theme).toBe("light")
 
   await close(w)
@@ -144,7 +141,6 @@ test("the providers step won't continue with nothing ticked: local mode needs a 
   await pickOllama(w)
   expect(w.t.lastFrame()).toContain("Anything else?")
   await w.t.press(ENTER) // extras: nothing ticked
-  await w.t.press(ENTER) // last screen
   expect(w.result).toMatchObject({ mode: "local", providers: ["ollama"] })
   expect(w.t.output()).toContain("✓  Providers: Ollama")
 
@@ -159,7 +155,6 @@ test("a hosted provider is asked for its key, and a typed one is carried out of 
   await w.t.press("sk-typed-here")
   await w.t.press(ENTER)
   await w.t.press(ENTER) // extras: nothing ticked
-  await w.t.press(ENTER) // last screen
   // Collected, not saved: the credential pass tests it before it reaches secrets.toml.
   expect(w.result).toMatchObject({ providers: ["fireworks"], keys: { fireworks: "sk-typed-here" } })
   expect(w.result?.addresses).toBeUndefined()
@@ -173,7 +168,6 @@ test("skipping a key is recorded as empty, not as never having been asked", asyn
   await tick(w, FIREWORKS)
   await w.t.press(ENTER) // key: nothing typed
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
 
   expect(w.result?.keys).toEqual({ fireworks: "" })
   await close(w)
@@ -188,7 +182,6 @@ test("a local provider is asked where it listens, never for a key", async () => 
   // Submitting the prefilled default keeps it, rather than storing an empty URL.
   await w.t.press(ENTER)
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
   expect(w.result).toMatchObject({ providers: ["ollama"], addresses: { ollama: "http://localhost:11434/v1" } })
   expect(w.result?.keys).toBeUndefined()
 
@@ -227,7 +220,6 @@ test("a task two ticked providers can serve asks which one to use, and only that
   expect(w.t.lastFrame()).toContain("Anything else?")
 
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
   expect(w.result?.models).toEqual({ chat: "ollama", embedding: "fireworks" })
   const trail = w.t.output()
   expect(trail).toContain("✓  Chat model: Ollama (qwen3.5:4b)")
@@ -305,8 +297,6 @@ test("local setups are asked about extras, cloud ones are not", async () => {
   await cloud.t.press(ENTER) // language: English
   await cloud.t.press(ENTER) // theme: keep the highlighted one
   expect(cloud.t.lastFrame()).toContain("Setup complete")
-
-  await cloud.t.press(ENTER)
   expect(cloud.result?.extras).toBeUndefined()
   await close(cloud)
 })
@@ -317,7 +307,6 @@ test("the extras step starts with nothing ticked, so Enter skips it", async () =
   expect(w.t.lastFrame()).toContain("Anything else?")
 
   await w.t.press(ENTER) // nothing ticked
-  await w.t.press(ENTER) // last screen
   expect(w.result?.extras).toEqual([])
 
   await close(w)
@@ -332,7 +321,6 @@ test("a ticked extra is asked for what it needs", async () => {
   expect(w.t.lastFrame()).toContain("Telegram bot token")
   await w.t.press("bot-token")
   await w.t.press(ENTER)
-  await w.t.press(ENTER) // last screen
 
   expect(w.result).toMatchObject({ telegramToken: "bot-token" })
 
@@ -359,7 +347,6 @@ test("each step opens on the prefilled value", async () => {
 
   await w.t.press(ENTER) // keeps that address
   await w.t.press(ENTER) // extras: nothing ticked
-  await w.t.press(ENTER) // last screen
   expect(w.result).toMatchObject(prefill)
 
   await close(w)
@@ -381,7 +368,6 @@ test("a model question opens on the provider already in use", async () => {
   await w.t.press(ENTER) // keeps Ollama, not the first option
   await w.t.press(ENTER) // embedding: keeps Fireworks
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
   expect(w.result?.models).toEqual({ chat: "ollama", embedding: "fireworks" })
 
   await close(w)
@@ -412,7 +398,7 @@ test("backspace on a menu doesn't cancel: the wizard stays on the question", asy
 test("the last screen says what comes next: the chat on a first run, `kaja` on a re-run", async () => {
   for (const [firstRun, hint] of [
     [true, "then the chat starts"],
-    [false, "then just run `kaja`"]
+    [false, "From now on, just run `kaja`"]
   ] as const) {
     const w = renderWizard({ mode: "local", firstRun })
     await w.t.tick()
@@ -479,7 +465,6 @@ test("a custom provider is asked its name, address, key, then each model and wha
   await w.t.press(ENTER) // empty: that's all
   expect(w.t.lastFrame()).toContain("Anything else?")
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
 
   expect(w.result?.providers).toEqual(["custom"])
   expect(w.result?.custom).toEqual({
@@ -538,7 +523,6 @@ test("models are listed until an empty answer, each with its own task", async ()
   expect(w.t.lastFrame()).toContain("Another vllm model?")
   await w.t.press(ENTER) // done
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
 
   expect(w.result?.custom?.models).toEqual([
     { model: "big-chat", task: "chat" },
@@ -579,7 +563,6 @@ test("a custom model that overlaps a built-in provider joins the model question"
   // Only chat overlaps: Ollama serves embedding too, but the custom provider does not.
   expect(w.t.lastFrame()).toContain("Anything else?")
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
   expect(w.result?.models).toEqual({ chat: "vllm" })
 
   await close(w)
@@ -606,7 +589,6 @@ test("a custom provider already in models.toml opens on its answers, and Enter k
   expect(w.t.lastFrame()).toContain("Another vllm model?")
   await w.t.press(ENTER) // that's all
   await w.t.press(ENTER) // extras
-  await w.t.press(ENTER) // last screen
 
   expect(w.result?.custom?.models).toEqual([{ model: "big-chat", task: "chat" }])
 
