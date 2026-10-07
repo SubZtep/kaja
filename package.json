@@ -41,5 +41,8 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "patchedDependencies": {
+    "ink@8.0.0": "patches/ink@8.0.0.patch"
+  }
 }

@@ -111,7 +111,9 @@ export function Header({
         </Badge>
         {yolo ? (
           <Badge color={danger.background}>
-            <Text color={danger.text}>YOLO</Text>
+            <Text color={danger.text} bold>
+              YOLO
+            </Text>
           </Badge>
         ) : null}
       </Box>

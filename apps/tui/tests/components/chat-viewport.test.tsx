@@ -113,3 +113,92 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   t.unmount()
   await t.waitUntilExit()
 })
+
+test("blank lines only around the user's messages: an agent's run stacks without gaps", async () => {
+  const events: TimelineEvent[] = [
+    { type: "user", text: "first" },
+    { type: "reasoning", text: "hidden" },
+    { type: "tool_call", name: "web_search", arguments: "{}" },
+    { type: "message", content: "middle" },
+    { type: "final", content: "answer" },
+    { type: "user", text: "second" }
+  ]
+  const t = renderForTest(
+    <Box flexDirection="column" width={60} height={20}>
+      <ChatViewport
+        events={events}
+        thinking={false}
+        partial={null}
+        pending={false}
+        sounds={false}
+        toolDisplay="verbose"
+      />
+    </Box>
+  )
+  await t.tick()
+  await t.tick()
+
+  const lines = t
+    .lastFrame()
+    .split("\n")
+    .map(line => line.trim())
+  const from = lines.findIndex(line => line.includes("first"))
+  const to = lines.findIndex(line => line.includes("second"))
+  expect(lines.slice(from, to + 1).map(line => (line === "" ? "" : line.replace(/^\W+/, "").split(" ")[0]))).toEqual([
+    "first",
+    "",
+    "Searching",
+    "middle",
+    "answer",
+    "",
+    "second"
+  ])
+
+  t.unmount()
+  await t.waitUntilExit()
+})
+
+test("a reply as wide as the terminal keeps its dot, gap and indent; streaming reasoning sits above the reply", async () => {
+  const reply =
+    "Haha, vicces! De komolyan, nem szeretnék így szólítani, inkább maradjunk a barátságos hangnemnél. Van becenév?"
+  const base: TimelineEvent[] = [{ type: "user", text: "hi" }]
+  const t = renderForTest(
+    <Box flexDirection="column" width={80} height={20}>
+      <ChatViewport
+        events={base}
+        thinking={true}
+        partial={{ content: "Haha", reasoning: "hm" }}
+        pending={true}
+        sounds={false}
+      />
+    </Box>,
+    { columns: 80 }
+  )
+  await t.tick()
+  await t.tick()
+  const streaming = t.lastFrame().split("\n")
+  expect(streaming.findIndex(line => line.includes("● Haha"))).toBeGreaterThan(
+    streaming.findIndex(line => line.includes("hm"))
+  )
+
+  t.rerender(
+    <Box flexDirection="column" width={80} height={20}>
+      <ChatViewport
+        events={[...base, { type: "ask_user", question: reply }]}
+        thinking={true}
+        partial={null}
+        pending={false}
+        sounds={false}
+      />
+    </Box>
+  )
+  await t.tick()
+  await t.tick()
+  const lines = t.lastFrame().split("\n")
+  const first = lines.findIndex(line => line.startsWith("● Haha"))
+  expect(first).toBeGreaterThan(-1)
+  expect(lines[first + 1]).toMatch(/^ {2}\S/)
+
+  t.unmount()
+  await t.waitUntilExit()
+})

@@ -8,12 +8,12 @@ import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { isAtBottom, STICK_SLOP } from "../../lib/scroll-stick"
 import { parseWheelDirection } from "../../lib/terminal-input"
-import { foldToolCalls } from "../../lib/tool-summary"
+import { type DisplayEvent, foldToolCalls } from "../../lib/tool-summary"
 import { uiEvents } from "../../lib/ui-events"
 import { Activity } from "../activity"
 import { PartialMessage } from "../elem/partial-message"
 import { VirtualScroll, type VirtualScrollRef } from "../elem/virtual-scroll"
-import { TimelineItem } from "../timeline"
+import { itemShows, TimelineItem } from "../timeline"
 
 const WHEEL_LINES = 3
 
@@ -34,6 +34,20 @@ function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbos
   if (toolDisplay === "corner")
     return events.filter(item => item.type !== "tool_call" && item.type !== "client_tool_call")
   return foldToolCalls(events, pending)
+}
+
+/**
+ * Which items get a blank line above: only the turn boundaries, a user message and the agent's first item after it,
+ * so an agent's run (tool calls, messages, notices) stacks without gaps. Reasoning hidden by `thinking` doesn't count.
+ */
+function spacing(items: DisplayEvent[], thinking: boolean) {
+  let afterUser = false
+  return items.map((item, i) => {
+    const spaced = item.type === "user" ? i > 0 : afterUser
+    if (item.type === "user") afterUser = true
+    else if (itemShows(item, thinking)) afterUser = false
+    return spaced
+  })
 }
 
 /** Timeline event types whose text is worth copying to the clipboard: the agent's words, never the user's own message. */
@@ -287,18 +301,23 @@ export function ChatViewport({
   const showAffordance = canScroll && !stuckToBottom
 
   // Stable element identities across scroll-tick renders: TimelineItem is memo()ed, and keeping the same elements here also stops the ScrollView's per-item measurement effect (keyed on child identity) from re-running.
-  const timelineItems = useMemo(
-    () =>
-      visibleEvents(events, toolDisplay, pending).map((item, i) => (
-        <Box
+  const { timelineItems, afterUser } = useMemo(() => {
+    const items = visibleEvents(events, toolDisplay, pending)
+    const spaced = spacing(items, thinking)
+    return {
+      timelineItems: items.map((item, i) => (
+        <TimelineItem
           key={item.type === "tool_summary" ? `summary-${idFor(item.last)}` : idFor(item)}
-          marginTop={i > 0 && item.type === "user" ? 1 : 0}
-        >
-          <TimelineItem item={item} thinking={thinking} />
-        </Box>
+          item={item}
+          thinking={thinking}
+          spaced={spaced[i]}
+        />
       )),
-    [events, thinking, toolDisplay, pending]
-  )
+      afterUser: items.findLast(item => itemShows(item, thinking))?.type === "user"
+    }
+  }, [events, thinking, toolDisplay, pending])
+  // The streaming reply starts the agent's turn when nothing has shown since the user's message; the spinner sits right under it
+  const partialShows = !!partial?.content || (thinking && !!partial?.reasoning)
 
   return (
     <Box
@@ -337,7 +356,7 @@ export function ChatViewport({
         */}
         {topPad > 0 ? <Box key="top-pad" height={topPad} flexShrink={0} width="100%" /> : null}
         {timelineItems.length === 0 && startupPanel ? <Box key="startup">{startupPanel}</Box> : timelineItems}
-        <Box key="partial">
+        <Box key="partial" flexDirection="column" marginTop={afterUser && partialShows ? 1 : 0}>
           <PartialMessage partial={partial} thinking={thinking} />
         </Box>
         <Box key="activity">
