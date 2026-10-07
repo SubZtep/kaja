@@ -70,7 +70,7 @@ async function readSkillFolder(abilitiesRoot: string, name: string): Promise<{ s
   } catch {
     throw new Error(`no ${SKILL_FILE} in ${dir}`)
   }
-  const { frontmatter, body } = parseSkillMd(text)
+  const { frontmatter, body } = parseSkillMd(text, name)
   return {
     summary: {
       name,

@@ -30,8 +30,12 @@ test("rejects a file without frontmatter", () => {
   expect(() => parseSkillMd("# Just markdown")).toThrow("frontmatter")
 })
 
-test("rejects a name: the folder name is the skill's", () => {
-  expect(() => parseSkillMd(skill("name: pdf\ndescription: PDFs."))).toThrow("folder name")
+test("a name is optional, but must be the folder's: the folder name is the skill's", () => {
+  expect(parseSkillMd(skill("name: pdf\ndescription: PDFs."), "pdf").frontmatter.name).toBe("pdf")
+  expect(parseSkillMd(skill("description: PDFs."), "pdf").frontmatter.name).toBeUndefined()
+  expect(() => parseSkillMd(skill("name: docs\ndescription: PDFs."), "pdf")).toThrow("isn't the folder's, \"pdf\"")
+  // The Agent Skills naming rule applies to it too
+  expect(() => parseSkillMd(skill("name: PDF Files\ndescription: PDFs."))).toThrow("name")
 })
 
 test("rejects a missing or too long description", () => {

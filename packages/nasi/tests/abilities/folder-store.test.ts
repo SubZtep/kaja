@@ -72,9 +72,11 @@ test("lists every skill with their folder and other files, skipping hidden and b
 test("skips broken skills while the others still load", async () => {
   putSkill("good")
   put("abilities/no-frontmatter/SKILL.md", "# nothing here")
+  // A name is fine when it's the folder's, refused when it isn't
   put("abilities/named/SKILL.md", "---\nname: named\ndescription: x\n---\n")
+  put("abilities/misnamed/SKILL.md", "---\nname: other\ndescription: x\n---\n")
   const store = createFolderAbilityStore({ root })
-  expect((await store.listSkills()).map(s => s.name)).toEqual(["good"])
+  expect((await store.listSkills()).map(s => s.name)).toEqual(["good", "named"])
 })
 
 test("readSkill returns the body without frontmatter, and nothing for a folder without a skill", async () => {

@@ -33,7 +33,7 @@ export function createPostgresAbilityStore(source: CloudAbilitySource): AbilityS
       if (!skill) return undefined
       if (file === undefined) {
         try {
-          return parseSkillMd(skill.files[SKILL_FILE] ?? "").body
+          return parseSkillMd(skill.files[SKILL_FILE] ?? "", name).body
         } catch {
           return undefined
         }

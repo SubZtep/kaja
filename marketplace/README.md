@@ -27,7 +27,7 @@ marketplace/
 
 ## Writing one
 
-- Names are lowercase letters, digits and single hyphens, up to 64 characters. An ability's name is its folder's and a persona's or dataset's its file's, so no file has a `name` of its own (one that does is refused).
+- Names are lowercase letters, digits and single hyphens, up to 64 characters. An ability's name is its folder's and a persona's or dataset's its file's, so no file has a `name` of its own (one that does is refused), except SKILL.md: the Agent Skills format wants `name` in its frontmatter, so it may repeat the folder's (and must match it).
 - Each part keeps its own `description`. One key per ability (`secrets.toml`'s `[abilities.<name>]`) serves all its parts.
 - A skill's `description` (up to 1024 characters) is all the model sees before loading it, so make the "when" part concrete.
 - Keep files as text. Binary files, hidden files and backups (`*.bak.*`, such as `care.bak.toml`) are never shown to the model.

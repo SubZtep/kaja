@@ -7,8 +7,10 @@ export const SkillNameSchema = z
   .max(64)
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "lowercase letters, digits and single hyphens only")
 
-// SKILL.md frontmatter; loose so upstream extras (license, allowed-tools, metadata) don't fail validation. No `name`: the folder name is the skill's.
+// SKILL.md frontmatter; loose so upstream extras (license, allowed-tools, metadata) don't fail validation.
 export const SkillFrontmatterSchema = z.looseObject({
+  /** The folder's name again, which the Agent Skills spec (and editors that check it) require; optional here, and it must match the folder, which is what counts. */
+  name: SkillNameSchema.optional(),
   /** What the skill does and when to use it — the only part the model sees before calling load_skill. */
   description: z.string().min(1).max(1024),
   /** Suggests keeping the body in the system prompt while a persona uses the ability; the persona decides. */
