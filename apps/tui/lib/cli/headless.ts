@@ -7,19 +7,19 @@
 
 const SHUTDOWN_TIMEOUT_MS = 3000
 
-/** loadModels + loadPersonas + getDefaultTools, the bootstrap every local-loop entry point needs. */
-export async function bootstrapLocalAgentDeps() {
+/** loadModels + loadPersonas + getDefaultTools, the bootstrap every local-loop entry point needs; `lazyMcp` as in getDefaultTools. */
+export async function bootstrapLocalAgentDeps(options: { lazyMcp?: boolean } = {}) {
   const { loadModels } = await import("../models/models")
   const { loadPersonas } = await import("../personas/personas")
   const { getDefaultTools } = await import("../../tools")
 
   const models = await loadModels()
   const personas = await loadPersonas()
-  const { tools, skipped, mcpServers, closeTools } = await getDefaultTools(personas)
+  const { tools, skipped, mcpServers, closeTools, ensureAbilities } = await getDefaultTools(personas, options)
   const { loadSafeCommands } = await import("../config/commands")
   const safeCommands = await loadSafeCommands()
 
-  return { models, personas, tools, skipped, mcpServers, closeTools, safeCommands }
+  return { models, personas, tools, skipped, mcpServers, closeTools, ensureAbilities, safeCommands }
 }
 
 /** Exits the process if no provider is configured — no silent fallback to Kaja's cloud free tier for --local entry points. */

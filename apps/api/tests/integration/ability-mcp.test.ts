@@ -66,6 +66,17 @@ function marketplace(base: string) {
     `abilities/mixed-${tag}/tool.toml`,
     `description = "Mixed"\nbaseUrl = "https://api.mixed-${tag}.test"\n[[tools]]\nname = "mixed_${tag}"\ndescription = "x"\npath = "/"\n`
   )
+  // Personas fix what a turn may use; the default one here uses every ability in the folder.
+  const all = [
+    things,
+    `open-${tag}`,
+    `private-${tag}`,
+    `stdio-${tag}`,
+    `counter-${tag}`,
+    `stdio-keyed-${tag}`,
+    `mixed-${tag}`
+  ]
+  put("personas/default.toml", `label = "Default"\nabilities = ${JSON.stringify(all)}\n`)
   return root
 }
 
@@ -127,6 +138,8 @@ describe("MCP servers in the cloud", () => {
     setNasiFetchProxyOverride(undefined)
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    // The fixture's default persona too, so later files get the built-in one again.
+    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
     // The sync below marked the real marketplace's abilities removed; forget the stored commit so the next real sync re-applies it.
     await pool.query("DELETE FROM marketplace_sync")
     rmSync(base, { recursive: true, force: true })

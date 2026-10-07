@@ -55,6 +55,8 @@ export class Agent {
   safeCommands?: RegExp[]
   /** Tool allow patterns (see `tool-allow.ts`) whose approval is skipped: the caller's "always allow" list. */
   allowedTools?: string[]
+  /** Connects the named abilities' MCP servers (every ability's when unnamed) if they aren't yet and returns the whole tool list, theirs included; {@link run} calls it for the active persona. Unset: {@link tools} is all there is. */
+  ensureTools?: (abilities?: string[]) => Promise<Tool[]>
 
   constructor(config: {
     name?: string
@@ -75,6 +77,7 @@ export class Agent {
     compactAt?: number
     safeCommands?: RegExp[]
     allowedTools?: string[]
+    ensureTools?: (abilities?: string[]) => Promise<Tool[]>
   }) {
     this.name = config.name ?? "Assistant"
     this.model = config.model
@@ -94,6 +97,7 @@ export class Agent {
     this.compactAt = config.compactAt
     this.safeCommands = config.safeCommands
     this.allowedTools = config.allowedTools
+    this.ensureTools = config.ensureTools
   }
 
   /** Point the agent at another model, swapping the client when {@link createClient} is set. */

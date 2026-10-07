@@ -62,6 +62,8 @@ export type CreateToolsOptions = {
    * with images dropped and results capped.
    */
   mcpAbilities?: McpAbilityTarget[]
+  /** Abilities' MCP servers connect only when `ensureAbilities` names them (a persona that uses them is active), not up front. Default false. */
+  lazyMcpAbilities?: boolean
   /** How long each MCP server gets to connect and list its tools before it's skipped. Default 10 s. */
   mcpConnectTimeoutMs?: number
   /** Fetch for cloud MCP connections (the SSRF-guarded one); cloud MCP abilities don't connect without it. */
@@ -237,31 +239,57 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   ]
   // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
   const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
-  const mcpConnections =
-    mcpTargets.length > 0 && mcpImagesDir !== undefined
-      ? await connectMcpServers(mcpTargets, mcpImagesDir, opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS)
-      : []
-
-  const { tools, skipped } = mergeTools([
-    { origin: "official", tools: official },
-    ...(opts.extraTools ?? []),
-    ...mcpConnections.map(c =>
-      abilityIds.has(c.id)
-        ? { origin: "community" as const, source: c.id, tools: c.tools }
-        : { origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools }
+  const connectTimeoutMs = opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
+  // One connection per target, started at most once, so callers asking for the same ability at once share it.
+  const connecting = new Map<string, Promise<McpConnection>>()
+  const connect = async (targets: McpTarget[]): Promise<void> => {
+    if (mcpImagesDir === undefined) return
+    const fresh = targets.filter(target => !connecting.has(target.id))
+    const started = connectMcpServers(fresh, mcpImagesDir, connectTimeoutMs)
+    fresh.forEach((target, index) =>
+      connecting.set(
+        target.id,
+        started.then(all => all[index]!)
+      )
     )
-  ])
+    await Promise.all(targets.map(target => connecting.get(target.id)))
+  }
+  // mcp.toml servers connect now; abilities' servers too, unless they wait for ensureAbilities.
+  await connect(opts.lazyMcpAbilities ? mcpTargets.filter(target => !abilityIds.has(target.id)) : mcpTargets)
+
+  const connections = async () => Promise.all([...connecting.values()])
+  const merge = async () =>
+    mergeTools([
+      { origin: "official", tools: official },
+      ...(opts.extraTools ?? []),
+      ...(await connections()).map(c =>
+        abilityIds.has(c.id)
+          ? { origin: "community" as const, source: c.id, tools: c.tools }
+          : { origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools }
+      )
+    ])
+  let merged = await merge()
+  const mcpServers = async () =>
+    (await connections()).map(c => ({ id: c.id, toolCount: c.tools.length, failed: c.failed }))
+  const initialServers = await mcpServers()
 
   return {
-    tools,
-    skipped,
-    mcpServers: mcpConnections.map(c => ({
-      id: c.id,
-      toolCount: c.tools.length,
-      failed: c.failed
-    })),
+    tools: merged.tools,
+    skipped: merged.skipped,
+    mcpServers: initialServers,
     closeTools: async () => {
-      await Promise.all(mcpConnections.map(c => c.close()))
+      await Promise.all((await connections()).map(c => c.close()))
+    },
+    /**
+     * Connects the MCP servers of the named abilities (every ability's when `names` is unset) that haven't been tried
+     * yet (see `lazyMcpAbilities`) and returns every tool, theirs included. A server that fails stays failed; names
+     * without an MCP ability are ignored.
+     */
+    ensureAbilities: async (names?: Iterable<string>): Promise<Tool[]> => {
+      const wanted = names && new Set([...names].map(name => `ability:${name}`))
+      await connect(mcpTargets.filter(target => abilityIds.has(target.id) && (!wanted || wanted.has(target.id))))
+      merged = await merge()
+      return merged.tools
     }
   }
 }

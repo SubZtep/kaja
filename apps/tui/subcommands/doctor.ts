@@ -110,7 +110,7 @@ export async function runDoctorSubcommand() {
 
   const outcomes = await checkCredentials()
 
-  const { models, tools, skipped, mcpServers, closeTools } = await bootstrapLocalAgentDeps()
+  const { models, tools, skipped, mcpServers, closeTools } = await bootstrapLocalAgentDeps({ lazyMcp: false })
 
   await printModels(models)
   console.log()

@@ -20,6 +20,8 @@ export async function runTelegramCli(deps: {
   /** `--pair`: show a code to pair one more person. */
   pair: boolean
   tools: Tool[]
+  /** Connects the active persona's MCP abilities (see Agent.ensureTools). */
+  ensureTools?: (abilities?: string[]) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   personas: Persona[]
@@ -49,6 +51,7 @@ export async function runTelegramCli(deps: {
       compactAt,
       store: await getStore(),
       tools: deps.tools,
+      ensureTools: deps.ensureTools,
       safeCommands: deps.safeCommands,
       personas: deps.personas,
       models: deps.models,

@@ -34,6 +34,8 @@ function marketplace(names: string[], body?: string) {
   for (const name of names) skill(root, name, body)
   if (names.includes(scripted)) put(root, `abilities/${scripted}/scripts/run.sh`, "echo hi")
   if (names.includes(plain)) put(root, `abilities/${plain}/reference.md`, "the reference")
+  // Personas fix what a turn may use; the default one here uses every skill in the folder.
+  put(root, "personas/default.toml", `label = "Default"\nabilities = ${JSON.stringify(names)}\n`)
   return root
 }
 
@@ -75,12 +77,14 @@ describe("abilities", () => {
   afterAll(async () => {
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    // The fixture's default persona too, so later files get the built-in one again.
+    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
     rmSync(base, { recursive: true, force: true })
   })
 
   test("a sync adds skills; the cloud catalog hides ones with scripts", async () => {
     const result = await marketplaceService.syncFromDir(marketplace([plain, scripted]), "c1")
-    expect(result.added.sort()).toEqual([plain, scripted].sort())
+    expect(result.added.filter(name => !name.startsWith("personas/")).sort()).toEqual([plain, scripted].sort())
     const names = await catalogNames()
     expect(names).toContain(plain)
     expect(names).not.toContain(scripted)

@@ -57,7 +57,8 @@ and the others still load.
 - Scripts run through [`run_command`](/abilities/tools#shell-commands) with the usual approval, which is why
   skills with a `scripts/` folder are local-only.
 
-A [persona](/abilities/personas) can limit which skills it offers with its `skills` list.
+A skill reaches the model only while a [persona](/abilities/personas#abilities) that lists its ability is
+active, which also decides whether it's loaded on demand, kept in the system prompt (`sticky`) or left out.
 
 ---
 

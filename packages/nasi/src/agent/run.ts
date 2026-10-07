@@ -27,6 +27,7 @@ import {
   isContextOverflow
 } from "./compaction"
 import { ModelUnavailableError } from "./errors"
+import { personaTools, syncPersonaTools } from "./persona-tools"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
 import { msSince, recordCall, recordModelCall, recordStep } from "./telemetry"
@@ -113,7 +114,12 @@ async function* handleToolCall(
   yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
   const t = toolsByName.get(call.function.name)
   if (!t) {
-    messages.push({ role: "tool", tool_call_id: call.id, content: `Error: unknown tool "${call.function.name}"` })
+    // A tool another persona has (the model may remember it from before a switch) gets a reason, not "unknown".
+    const elsewhere = agent.tools.some(other => toolName(other) === call.function.name)
+    const content = elsewhere
+      ? `Error: "${call.function.name}" isn't available to the current persona (${agent.personaId}).`
+      : `Error: unknown tool "${call.function.name}"`
+    messages.push({ role: "tool", tool_call_id: call.id, content })
     record(call.id, { status: "error" })
     return
   }
@@ -609,7 +615,8 @@ async function* streamRoundFitting(
 /** Compacts the session now (`/compact`), whatever its size, keeping only the latest turn; `focus` steers what the summary keeps. Undefined when there is nothing to summarise yet. */
 export async function compact(agent: Agent, session: Session, focus?: string) {
   await ensureContextWindow(agent)
-  return compactSession(agent, session, { focus, definitions: agent.tools.map(t => t.definition), lastTurnOnly: true })
+  const definitions = personaTools(agent).map(t => t.definition)
+  return compactSession(agent, session, { focus, definitions, lastTurnOnly: true })
 }
 
 // The scale that brings the character estimate to what the provider counted; the estimate runs before this round's reply is appended, so it covers exactly what was sent.
@@ -646,9 +653,8 @@ export async function* run(
   owner: string | null = LOCAL_OWNER,
   images: string[] = []
 ): AsyncGenerator<AgentEvent, void, void> {
-  const toolsByName = new Map(agent.tools.map(t => [toolName(t), t]))
-  const definitions = agent.tools.map(t => t.definition)
   const messages = session.messages
+  await syncPersonaTools(agent)
   await openTurn(agent, session, prompt, owner, images)
 
   let emptyRoundRetries = 0
@@ -656,6 +662,10 @@ export async function* run(
   // Scales the character estimate to what the provider counted last round.
   let estimateScale = 1
   while (true) {
+    // Per round: a switch_persona last round changes what the model may call.
+    const tools = personaTools(agent)
+    const toolsByName = new Map(tools.map(t => [toolName(t), t]))
+    const definitions = tools.map(t => t.definition)
     await ensureContextWindow(agent)
     for (const condensed of await condenseOversizedResults(agent, session)) yield { type: "condensed", ...condensed }
     yield* compactIfNeeded(agent, session, definitions, estimateScale)

@@ -2,7 +2,7 @@ import { homedir } from "node:os"
 import { type Dataset, DECLINED_ANSWER, normalizeAnswer, type Persona } from "@kaja/schema/cli"
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
-import { LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "../abilities/skills"
+import { LOAD_SKILL_TOOL, skillsForPersona, stickySkillsForPersona } from "../abilities/skills"
 import { loadDataset as defaultLoadDataset, loadDatasets as defaultLoadDatasets } from "../personas"
 import {
   type Agent,
@@ -13,6 +13,7 @@ import {
   RUN_COMMAND_TOOL,
   SWITCH_PERSONA_TOOL
 } from "./agent"
+import { activePersona, loadSkillToolOf, personaTools, syncPersonaTools } from "./persona-tools"
 import { toolName } from "./tools"
 
 const ASK_USER_INSTRUCTIONS =
@@ -135,12 +136,9 @@ function buildPersonasBlock(agent: Agent, toolNames: Set<string>): string | unde
 }
 
 function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefined {
-  const loadSkill = agent.tools.find(t => toolName(t) === LOAD_SKILL_TOOL) as LoadSkillTool | undefined
-  if (!loadSkill?.skills) return undefined
-  const skills = skillsForPersona(
-    loadSkill.skills,
-    agent.personas.find(p => p.id === agent.personaId)
-  )
+  const loadSkill = loadSkillToolOf(agent)
+  if (!(loadSkill?.skills && toolNames.has(LOAD_SKILL_TOOL))) return undefined
+  const skills = skillsForPersona(loadSkill.skills, activePersona(agent))
   if (skills.length === 0) return undefined
   const scripts = toolNames.has(RUN_COMMAND_TOOL)
     ? ` Run a skill's bundled scripts with ${RUN_COMMAND_TOOL}, using their absolute path under the skill directory ${LOAD_SKILL_TOOL} reports.`
@@ -153,6 +151,18 @@ function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefi
     // One line each, so the section never holds a blank line (refreshAbilitiesInPrompt relies on that).
     skills.map(s => `- ${s.name}: ${s.description.replace(/\s+/g, " ").trim()}`).join("\n")
   )
+}
+
+/** One `## Skill: <name>` section per skill the active persona keeps in the system prompt, its SKILL.md body as written. */
+async function buildStickySkillSections(agent: Agent): Promise<string[]> {
+  const loadSkill = loadSkillToolOf(agent)
+  if (!loadSkill?.skills) return []
+  const sections: string[] = []
+  for (const skill of stickySkillsForPersona(loadSkill.skills, activePersona(agent))) {
+    const body = await loadSkill.readBody(skill.name).catch(() => undefined)
+    if (body) sections.push(`## Skill: ${skill.name}\n${body}`)
+  }
+  return sections
 }
 
 async function buildDatasetBlock(agent: Agent, toolNames: Set<string>): Promise<string | undefined> {
@@ -224,7 +234,7 @@ export const TELEGRAM_CHANNEL_INSTRUCTION =
  * Returns `undefined` if every block is empty.
  */
 export async function buildSystemPrompt(agent: Agent, owner: string | null = LOCAL_OWNER): Promise<string | undefined> {
-  const toolNames = new Set(agent.tools.map(t => toolName(t)))
+  const toolNames = new Set(personaTools(agent).map(t => toolName(t)))
   const ctx = agent.promptContext ?? {}
   const hasMemory = toolNames.has(REMEMBER_NOTE_TOOL)
 
@@ -232,6 +242,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
   const environmentBlock = buildEnvironmentBlock(agent)
   const personasBlock = buildPersonasBlock(agent, toolNames)
   const skillsBlock = buildSkillsBlock(agent, toolNames)
+  const stickySkills = await buildStickySkillSections(agent)
   const datasetBlock = await buildDatasetBlock(agent, toolNames)
   const profileBlock = await buildProfileBlock(agent, toolNames, owner)
 
@@ -249,6 +260,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
       hasMemory ? `## Tool contract: memory\n${MEMORY_INSTRUCTIONS}` : undefined,
       personasBlock ? `## Personas\n${personasBlock}` : undefined,
       skillsBlock ? `## Skills\n${skillsBlock}` : undefined,
+      ...stickySkills,
       datasetBlock ? `## Dataset collection\n${datasetBlock}` : undefined,
       profileBlock ? `## About the user\n${profileBlock}` : undefined,
       stickyBlock,
@@ -273,7 +285,7 @@ export async function refreshAbilitiesInPrompt(
 ): Promise<void> {
   const system = messages[0]
   if (system?.role !== "system" || typeof system.content !== "string") return
-  const toolNames = new Set(agent.tools.map(t => toolName(t)))
+  const toolNames = new Set(personaTools(agent).map(t => toolName(t)))
   const upToDate =
     hasSection(system.content, "Skills", buildSkillsBlock(agent, toolNames)) &&
     hasSection(system.content, "Personas", buildPersonasBlock(agent, toolNames))
@@ -301,6 +313,8 @@ export async function applyPersonaToMessages(
   messages: ChatCompletionMessageParam[]
 ) {
   applyPersona(agent, persona)
+  // The new persona's abilities may need connecting before the prompt lists them.
+  await syncPersonaTools(agent)
   const system = await buildSystemPrompt(agent)
   if (system) {
     if (messages[0]?.role === "system") messages[0].content = system

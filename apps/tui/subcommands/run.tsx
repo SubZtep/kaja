@@ -44,7 +44,7 @@ export async function runSubcommand(cli: typeof Cli) {
   // Background pull, not awaited: it changes the folder for the next launch, and startup must not wait on the network
   void import("../lib/abilities/auto-update").then(m => m.autoUpdateAbilities())
 
-  const { models, personas, tools, closeTools, safeCommands } = await bootstrapLocalAgentDeps()
+  const { models, personas, tools, closeTools, ensureAbilities, safeCommands } = await bootstrapLocalAgentDeps()
 
   // Closes long-lived tool connections (e.g. Playwright MCP subprocess) on SIGINT/normal exit.
   const shutdown = installShutdownHandlers(closeTools)
@@ -65,6 +65,7 @@ export async function runSubcommand(cli: typeof Cli) {
       personas={personas}
       openaiApiModel={chatModelId}
       tools={tools}
+      ensureTools={ensureAbilities}
       safeCommands={safeCommands}
       initialSession={initialSession}
       promptHistory={promptHistory}

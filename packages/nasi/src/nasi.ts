@@ -12,6 +12,7 @@ import { Agent, type AgentEvent, createSession, type PromptContext, type Session
 import type { Compaction } from "./agent/compaction"
 import { NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 import { samplingOf } from "./agent/persona"
+import { syncPersonaTools } from "./agent/persona-tools"
 import { compact, run } from "./agent/run"
 import { recordPausedCall } from "./agent/telemetry"
 import { allowKey } from "./agent/tool-allow"
@@ -202,13 +203,21 @@ function responseFromEvents(
 
 export class Nasi {
   readonly opts: NasiOpenOptions
-  private readonly tools: Tool[]
+  /** Every tool connected so far; grows as personas' MCP abilities connect. */
+  private tools: Tool[]
   private readonly closeTools: () => Promise<void>
+  private readonly ensureAbilities: (names?: string[]) => Promise<Tool[]>
 
-  private constructor(opts: NasiOpenOptions, tools: Tool[], closeTools: () => Promise<void>) {
+  private constructor(
+    opts: NasiOpenOptions,
+    tools: Tool[],
+    closeTools: () => Promise<void>,
+    ensureAbilities: (names?: string[]) => Promise<Tool[]>
+  ) {
     this.opts = opts
     this.tools = tools
     this.closeTools = closeTools
+    this.ensureAbilities = ensureAbilities
   }
 
   static async open(opts: NasiOpenOptions) {
@@ -223,13 +232,14 @@ export class Nasi {
     // Cloud MCP images (screenshots) wait here for the model to see them; the instance removes it on close.
     const imageDir =
       !opts.includeLocalTools && abilities?.mcp.length ? await mkdtemp(join(tmpdir(), "kaja-mcp-")) : undefined
-    const { tools, closeTools } = await createTools({
+    const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       clientTools: opts.clientTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer },
       extraTools: abilities?.groups,
-      // MCP abilities connect when the instance opens, through the same egress rules as every other cloud request, the operator's own sandbox aside.
+      // MCP abilities connect when a persona that uses them is active, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
+      lazyMcpAbilities: true,
       mcpFetch: withSandbox(createGuardedFetch({ proxy: opts.deps?.fetchProxy }), opts.mcpSandbox),
       mcpImageDir: imageDir,
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
@@ -239,7 +249,7 @@ export class Nasi {
       await opts.mcpSandbox?.close?.()
       if (imageDir) await rm(imageDir, { recursive: true, force: true })
     }
-    return new Nasi(opts, tools, close)
+    return new Nasi(opts, tools, close, ensureAbilities)
   }
 
   /** Closes the instance's MCP connections. Hosts that open one per turn call it once the turn is over. */
@@ -281,7 +291,11 @@ export class Nasi {
       store: this.opts.store,
       contextWindow: this.opts.chat.contextWindow,
       summarizer: this.opts.summarizer,
-      allowedTools: this.opts.allowedTools
+      allowedTools: this.opts.allowedTools,
+      ensureTools: async names => {
+        this.tools = await this.ensureAbilities(names)
+        return this.tools
+      }
     })
 
     return { agent, session, sessionId, events, title }
@@ -346,6 +360,7 @@ export class Nasi {
    */
   async compact(sessionId: string, focus?: string): Promise<Compaction | undefined> {
     const loaded = await this.loadTurn({ session: sessionId })
+    await syncPersonaTools(loaded.agent)
     const result = await compact(loaded.agent, loaded.session, focus)
     if (!result) return undefined
     await this.opts.store.updateSession(sessionId, {
@@ -360,6 +375,8 @@ export class Nasi {
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
     const loaded = await this.loadTurn(input)
+    // An approved call may be an MCP ability's, so the persona's servers connect before promptFor runs it.
+    await syncPersonaTools(loaded.agent)
     const prompt = await this.promptFor(loaded.session, input)
 
     const turnEvents: AgentEvent[] = []

@@ -39,8 +39,21 @@ export {
   SANDBOX_ORIGIN,
   sandboxedMcpTarget
 } from "./abilities/mcp-ability"
+export {
+  abilityOfTool,
+  type PersonaAbilityEntry,
+  personaAbilities,
+  skillMode,
+  toolsForPersona
+} from "./abilities/persona-scope"
 export { parseSkillMd } from "./abilities/skill-md"
-export { createLoadSkillTool, LOAD_SKILL_TOOL, type LoadSkillTool, skillsForPersona } from "./abilities/skills"
+export {
+  createLoadSkillTool,
+  LOAD_SKILL_TOOL,
+  type LoadSkillTool,
+  skillsForPersona,
+  stickySkillsForPersona
+} from "./abilities/skills"
 export { withoutHttpTools, withoutMcpTools } from "./abilities/tool-filter"
 export { type AbilityStore, SkillFileError, type SkillSummary } from "./abilities/types"
 export {
@@ -84,6 +97,7 @@ export {
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 export { samplingOf } from "./agent/persona"
+export { activePersona, personaTools, syncPersonaTools } from "./agent/persona-tools"
 export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"
 export { compact, dropImages, run } from "./agent/run"
 export { runShellCommand } from "./agent/run-command"

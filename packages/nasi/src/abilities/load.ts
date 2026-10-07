@@ -4,6 +4,7 @@ import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
 import { type McpAbilityTarget, type McpSandbox, mcpAbilityTarget, sandboxedMcpTarget } from "./mcp-ability"
+import { personaAbilities } from "./persona-scope"
 import { createLoadSkillTool } from "./skills"
 import type { AbilityStore, SkillSummary } from "./types"
 
@@ -16,7 +17,7 @@ export type LoadedAbilities = {
   httpTools: HttpToolAbility[]
   /** Enabled MCP abilities ready to connect — hand them to `createTools`' `mcpAbilities`, which connects them with the other servers. */
   mcp: McpAbilityTarget[]
-  /** Enabled abilities left out because their (required) key is missing. */
+  /** Enabled abilities a persona uses (any, without personas) left out because their (required) key is missing. */
   missingKeys: string[]
 }
 
@@ -50,13 +51,17 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
       : []
 
   const missingKeys: string[] = []
+  // A missing key only matters for an ability some persona uses; without personas, every one counts.
+  const listed = opts.personas && new Set(opts.personas.flatMap(persona => [...personaAbilities(persona).keys()]))
   /** The ability's key, or null when a required one is missing (the ability is then left out). */
   const keyFor = (ability: HttpToolAbility | McpAbility): string | undefined | null => {
     if (ability.auth.type !== "apiKey") return undefined
     const apiKey = opts.getApiKey?.(ability.name)
     if (apiKey || ability.auth.optional) return apiKey
-    warn("Ability left out: no API key", { ability: ability.name, secret: `[abilities.${ability.name}] api_key` })
-    missingKeys.push(ability.name)
+    if (!listed || listed.has(ability.name)) {
+      warn("Ability left out: no API key", { ability: ability.name, secret: `[abilities.${ability.name}] api_key` })
+      missingKeys.push(ability.name)
+    }
     return null
   }
 

@@ -61,6 +61,9 @@ function marketplace(base: string) {
     `description = "Local"\nbaseUrl = "http://127.0.0.1:9"\n[[tools]]\nname = "p_${tag}"\ndescription = "x"\npath = "/"\n`
   )
   put(`abilities/broken-${tag}/tool.toml`, `description = "Broken"\n`)
+  // Personas fix what a turn may use; the default one here uses every tool in the folder.
+  const all = [weather, issues, extras, `private-${tag}`]
+  put("personas/default.toml", `label = "Default"\nabilities = ${JSON.stringify(all)}\n`)
   return root
 }
 
@@ -159,6 +162,8 @@ describe("HTTP tools in the cloud", () => {
     setNasiFetchProxyOverride(undefined)
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
+    // The fixture's default persona too, so later files get the built-in one again.
+    await pool.query("DELETE FROM ability WHERE type = 'persona' AND name = 'default'")
     // The sync below marked the real marketplace's tools removed; forget the stored commit so the next real sync re-applies it.
     await pool.query("DELETE FROM marketplace_sync")
     rmSync(base, { recursive: true, force: true })
