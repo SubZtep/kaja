@@ -9,6 +9,7 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { CaptchaGate, useTurnstile } from "../../hooks/turnstile"
 import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
+import { guestOnly } from "../../lib/loaders"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 import { getLocale } from "../../paraglide/runtime.js"
@@ -18,6 +19,7 @@ import { PRIVACY_URL, TERMS_URL } from "./-components/footer"
 import { GoogleButton } from "./-components/google-button"
 
 export const Route = createFileRoute("/_public/signup")({
+  beforeLoad: () => guestOnly(),
   component: SignUp,
   head: () => ({
     meta: seo({ title: m.nav_sign_up(), description: m.seo_signup_desc() })

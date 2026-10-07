@@ -44,9 +44,18 @@ function greeting(part: DayPart | null, name: string | undefined) {
   return (part ? greet[part] : m.hero_greeting)()
 }
 
+// Its own component so the Turnstile check only runs for a visitor who can use the button, not a signed-in user.
+function GoogleSignIn() {
+  const captcha = useTurnstile()
+  return (
+    <CaptchaGate captcha={captcha}>
+      <GoogleButton captcha={captcha} />
+    </CaptchaGate>
+  )
+}
+
 export function Hero() {
   const user = useUser()
-  const captcha = useTurnstile()
   const [copied, setCopied] = useState(false)
   // The animated face follows the mouse, so phones and tablets keep the plain gif and never download it
   const [finePointer, setFinePointer] = useState(false)
@@ -129,9 +138,7 @@ export function Hero() {
         <div className="order-last min-w-0 *:first:mt-0 md:order-0 md:col-start-1 md:row-start-2">
           {user ? null : (
             <div className="mt-8 flex max-w-md flex-col gap-4">
-              <CaptchaGate captcha={captcha}>
-                <GoogleButton captcha={captcha} />
-              </CaptchaGate>
+              <GoogleSignIn />
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-crt text-base">
                 <Link to="/signin" className="text-fg hover:text-neon">
                   {m.nav_sign_in()}
