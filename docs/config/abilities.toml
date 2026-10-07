@@ -2,17 +2,17 @@
 # next to this file: both the ones `kaja abilities update` syncs from the Kaja repo
 # and your own. Only what is listed here is loaded, your own skills included.
 
-# Skills, by folder name: marketplace/skills/<name>/SKILL.md
+# Skills, by folder name: marketplace/abilities/<name>/SKILL.md
 skills = [
 
 ]
 
-# HTTP tool abilities, by file name: marketplace/tools/<name>.toml
+# HTTP tool abilities, by folder name: marketplace/abilities/<name>/tool.toml
 tools = [
 
 ]
 
-# MCP server abilities, by file name: marketplace/mcp/<name>.toml
+# MCP server abilities, by folder name: marketplace/abilities/<name>/mcp.toml
 mcp = [
 
 ]

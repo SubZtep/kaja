@@ -1,12 +1,13 @@
 import { expect, test } from "bun:test"
-import { type HttpToolAbility, HttpToolAbilitySchema, type McpAbility, McpAbilitySchema } from "@kaja/schema/abilities"
+import type { HttpToolAbility, HttpToolAbilitySchema, McpAbility } from "@kaja/schema/abilities"
 import type * as z from "zod"
 import { loadAbilities } from "../../src/abilities/load"
 import type { AbilityStore } from "../../src/abilities/types"
 import { toolName } from "../../src/agent/tools"
+import { httpAbility as parseHttp, mcpAbility as parseMcp } from "../fixtures/abilities"
 
 const httpAbility = (name: string, auth: z.input<typeof HttpToolAbilitySchema>["auth"] = { type: "none" }) =>
-  HttpToolAbilitySchema.parse({
+  parseHttp({
     name,
     description: name,
     baseUrl: `https://api.${name}.test`,
@@ -22,7 +23,7 @@ const storeWith = (abilities: HttpToolAbility[], mcp: McpAbility[] = []): Abilit
 })
 
 const mcpAbility = (name: string, optional: boolean) =>
-  McpAbilitySchema.parse({
+  parseMcp({
     name,
     description: name,
     url: `https://mcp.${name}.test/mcp`,

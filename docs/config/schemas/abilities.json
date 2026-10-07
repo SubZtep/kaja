@@ -20,7 +20,7 @@
     },
     "skills": {
       "default": [],
-      "description": "Enabled skills, by folder name under marketplace/skills/",
+      "description": "Enabled skills, by folder name under marketplace/abilities/",
       "type": "array",
       "items": {
         "type": "string",
@@ -29,7 +29,7 @@
     },
     "tools": {
       "default": [],
-      "description": "Enabled HTTP tool abilities, by file name under marketplace/tools/",
+      "description": "Enabled HTTP tool abilities (tool.toml), by folder name under marketplace/abilities/",
       "type": "array",
       "items": {
         "type": "string",
@@ -38,7 +38,7 @@
     },
     "mcp": {
       "default": [],
-      "description": "Enabled MCP server abilities, by file name under marketplace/mcp/",
+      "description": "Enabled MCP server abilities (mcp.toml), by folder name under marketplace/abilities/",
       "type": "array",
       "items": {
         "type": "string",

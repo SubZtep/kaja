@@ -223,9 +223,9 @@ test("declining an optional key leaves the ability as it was", async () => {
 test("a scoped pass looks only at the items it was given", async () => {
   put("abilities.toml", `tools = ["gh", "open"]\n`)
   const tool = (name: string) =>
-    `name = "${name}"\ndescription = "x"\nbaseUrl = "https://api.${name}.test"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n\n[[tools]]\nname = "${name}_get"\ndescription = "x"\npath = "/x"\n`
-  put("marketplace/tools/gh.toml", tool("gh"))
-  put("marketplace/tools/open.toml", tool("open"))
+    `description = "x"\nbaseUrl = "https://api.${name}.test"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n\n[[tools]]\nname = "${name}_get"\ndescription = "x"\npath = "/x"\n`
+  put("marketplace/abilities/gh/tool.toml", tool("gh"))
+  put("marketplace/abilities/open/tool.toml", tool("open"))
   put("secrets.toml", "")
   put("mcp.toml", "servers = []\n")
 
@@ -248,12 +248,12 @@ test("collects providers, keyed abilities, declared MCP secrets and a saved Tele
   )
   put("abilities.toml", `tools = ["gh", "open"]\n`)
   put(
-    "marketplace/tools/gh.toml",
-    `name = "gh"\ndescription = "x"\nbaseUrl = "https://api.github.com"\nauth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\n\n[[tools]]\nname = "gh_get"\ndescription = "x"\npath = "/x"\n`
+    "marketplace/abilities/gh/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.github.com"\nauth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\n\n[[tools]]\nname = "gh_get"\ndescription = "x"\npath = "/x"\n`
   )
   put(
-    "marketplace/tools/open.toml",
-    `name = "open"\ndescription = "x"\nbaseUrl = "https://api.open.test"\n\n[[tools]]\nname = "open_get"\ndescription = "x"\npath = "/x"\n`
+    "marketplace/abilities/open/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.open.test"\n\n[[tools]]\nname = "open_get"\ndescription = "x"\npath = "/x"\n`
   )
   put(
     "mcp.toml",
@@ -280,17 +280,17 @@ test("an MCP secret can't be tested while another declared one is still missing"
 test("MCP abilities with key auth become items; optional keys aren't required", async () => {
   put("abilities.toml", `mcp = ["docs", "private", "open"]\ntools = ["weather"]\n`)
   put(
-    "marketplace/mcp/docs.toml",
-    `name = "docs"\ndescription = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", optional = true }\n`
+    "marketplace/abilities/docs/mcp.toml",
+    `description = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", optional = true }\n`
   )
   put(
-    "marketplace/mcp/private.toml",
-    `name = "private"\ndescription = "x"\ntransport = "stdio"\ncommand = "true"\nauth = { type = "apiKey", in = "env", name = "P_KEY" }\n`
+    "marketplace/abilities/private/mcp.toml",
+    `description = "x"\ntransport = "stdio"\ncommand = "true"\nauth = { type = "apiKey", in = "env", name = "P_KEY" }\n`
   )
-  put("marketplace/mcp/open.toml", `name = "open"\ndescription = "x"\nurl = "https://mcp.open.test/mcp"\n`)
+  put("marketplace/abilities/open/mcp.toml", `description = "x"\nurl = "https://mcp.open.test/mcp"\n`)
   put(
-    "marketplace/tools/weather.toml",
-    `name = "weather"\ndescription = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", optional = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
+    "marketplace/abilities/weather/tool.toml",
+    `description = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", optional = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
   )
   put("mcp.toml", "servers = []\n")
   put("secrets.toml", "")

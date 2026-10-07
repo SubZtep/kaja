@@ -15,8 +15,6 @@ export const McpAbilityAuthSchema = z.discriminatedUnion("type", [
 
 export const McpAbilitySchema = z
   .object({
-    /** Must match the file name (marketplace/mcp/<name>.toml). */
-    name: SkillNameSchema,
     description: z.string().min(1).max(1024),
     transport: z.enum(["http", "sse", "stdio"]).default("http").describe("http (Streamable HTTP), sse, or stdio"),
     url: z
@@ -90,7 +88,8 @@ function checkRemote(ability: McpEndpoint, issue: IssueAt) {
     issue("auth", `${ability.transport} keys go in = "header"`)
 }
 
-export type McpAbility = z.infer<typeof McpAbilitySchema>
+/** A loaded MCP ability: its `mcp.toml` plus the ability's name, which is its folder's (marketplace/abilities/<name>/). */
+export type McpAbility = z.infer<typeof McpAbilitySchema> & { name: string }
 export type McpAbilityAuth = z.infer<typeof McpAbilityAuthSchema>
 /** A readOnly entry with the shorthand expanded: read-only unless one of `unless` is set in the call. */
 export type McpReadOnlyRule = { tool: string; unless: string[] }

@@ -1,4 +1,3 @@
-import { join } from "node:path"
 import {
   createFolderAbilityStore,
   createTools,
@@ -9,7 +8,6 @@ import {
 } from "@kaja/nasi"
 import type { Persona } from "@kaja/schema/cli"
 import { getMarketplaceDir, loadAbilitiesFile, ownAbilities } from "../lib/abilities/abilities-file"
-import { getConfigDir } from "../lib/config/config"
 import { loadMcpServers } from "../lib/config/mcp-servers"
 import { secrets } from "../lib/config/secrets"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
@@ -61,7 +59,6 @@ export async function getDefaultTools(personas: Persona[]) {
     extraTools: abilities.groups,
     mcpAbilities: abilities.mcp,
     mcpServers,
-    pluginDir: join(getConfigDir(), "tools"),
     deps: {
       chat: { client, model: chatModelId },
       summarizer,

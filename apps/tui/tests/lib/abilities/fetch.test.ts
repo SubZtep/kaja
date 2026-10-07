@@ -29,7 +29,7 @@ function makeRepo(name: string, skillBody = "v1") {
   const repo = join(base, name)
   mkdirSync(repo, { recursive: true })
   git(repo, "init", "-q", "-b", "main")
-  put(repo, "marketplace/skills/demo/SKILL.md", `---\nname: demo\ndescription: Demo.\n---\n${skillBody}\n`)
+  put(repo, "marketplace/abilities/demo/SKILL.md", `---\ndescription: Demo.\n---\n${skillBody}\n`)
   put(repo, "apps/big-file.txt", "not part of the marketplace")
   git(repo, "add", ".")
   git(repo, "commit", "-q", "-m", "init")
@@ -48,7 +48,7 @@ afterAll(() => {
 test("clones only the marketplace folder and reports the commit", async () => {
   const repo = makeRepo("repo-a")
   const { dir, commit } = await fetchMarketplace({ url: repo, ref: "main" })
-  expect(readFileSync(join(dir, "skills/demo/SKILL.md"), "utf8")).toContain("v1")
+  expect(readFileSync(join(dir, "abilities/demo/SKILL.md"), "utf8")).toContain("v1")
   expect(existsSync(join(getMarketplaceCacheDir(), "apps"))).toBe(false)
   expect(commit).toBe(git(repo, "rev-parse", "HEAD"))
 })
@@ -56,17 +56,17 @@ test("clones only the marketplace folder and reports the commit", async () => {
 test("a second fetch picks up new commits", async () => {
   const repo = makeRepo("repo-b")
   await fetchMarketplace({ url: repo, ref: "main" })
-  put(repo, "marketplace/skills/demo/SKILL.md", "---\nname: demo\ndescription: Demo.\n---\nv2\n")
+  put(repo, "marketplace/abilities/demo/SKILL.md", "---\ndescription: Demo.\n---\nv2\n")
   git(repo, "commit", "-q", "-am", "v2")
   const { dir, commit } = await fetchMarketplace({ url: repo, ref: "main" })
-  expect(readFileSync(join(dir, "skills/demo/SKILL.md"), "utf8")).toContain("v2")
+  expect(readFileSync(join(dir, "abilities/demo/SKILL.md"), "utf8")).toContain("v2")
   expect(commit).toBe(git(repo, "rev-parse", "HEAD"))
 })
 
 test("a different URL re-clones from the new source", async () => {
   await fetchMarketplace({ url: makeRepo("repo-c", "from c"), ref: "main" })
   const { dir } = await fetchMarketplace({ url: makeRepo("repo-d", "from d"), ref: "main" })
-  expect(readFileSync(join(dir, "skills/demo/SKILL.md"), "utf8")).toContain("from d")
+  expect(readFileSync(join(dir, "abilities/demo/SKILL.md"), "utf8")).toContain("from d")
 })
 
 test("a missing branch or marketplace folder is a readable error", async () => {
@@ -90,8 +90,8 @@ test("kaja abilities update syncs from abilities.toml's [source] into the market
   expect(first.code).toBe(0)
   // Every step reported, so the progress bar ends full
   expect(steps).toBe(UPDATE_STEPS)
-  expect(first.text).toContain("skills/demo/SKILL.md")
-  expect(readFileSync(join(getMarketplaceDir(), "skills/demo/SKILL.md"), "utf8")).toContain("v1")
+  expect(first.text).toContain("abilities/demo/SKILL.md")
+  expect(readFileSync(join(getMarketplaceDir(), "abilities/demo/SKILL.md"), "utf8")).toContain("v1")
 
   steps = 0
   const again = await runAbilityUpdate(() => steps++)

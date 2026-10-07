@@ -45,7 +45,7 @@ test("resolveSource fills in the Kaja repo and main", () => {
 
 test("startup's ability loading uses no network and no git", async () => {
   put(getAbilitiesPath(), `skills = ["demo"]\n`)
-  put(join(getMarketplaceDir(), "skills/demo/SKILL.md"), "---\nname: demo\ndescription: Demo.\n---\nBody\n")
+  put(join(getMarketplaceDir(), "abilities/demo/SKILL.md"), "---\ndescription: Demo.\n---\nBody\n")
   const fetchSpy = spyOn(globalThis, "fetch").mockImplementation((() => {
     throw new Error("network used")
   }) as unknown as typeof fetch)
@@ -66,20 +66,20 @@ test("startup's ability loading uses no network and no git", async () => {
 
 test("your own skills and personas are the ones the last sync didn't write", async () => {
   const root = getMarketplaceDir()
-  put(join(root, "skills/synced/SKILL.md"), "---\nname: synced\ndescription: Synced.\n---\nBody\n")
-  put(join(root, "skills/mine/SKILL.md"), "---\nname: mine\ndescription: Mine.\n---\nBody\n")
+  put(join(root, "abilities/synced/SKILL.md"), "---\ndescription: Synced.\n---\nBody\n")
+  put(join(root, "abilities/mine/SKILL.md"), "---\ndescription: Mine.\n---\nBody\n")
   put(join(root, "personas/care.toml"), `label = "Care"\ninstructions = "Synced."\n`)
   put(join(root, "personas/so.toml"), `label = "Mine"\ninstructions = "Mine."\n`)
   put(
     join(root, ".sync-lock.json"),
-    JSON.stringify({ files: { "skills/synced/SKILL.md": "x", "personas/care.toml": "x" } })
+    JSON.stringify({ files: { "abilities/synced/SKILL.md": "x", "personas/care.toml": "x" } })
   )
   expect(await ownAbilities()).toEqual({ skills: ["mine"], personas: ["so"] })
 })
 
 test("with no sync lock, everything on disk is your own", async () => {
   const root = getMarketplaceDir()
-  put(join(root, "skills/mine/SKILL.md"), "---\nname: mine\ndescription: Mine.\n---\nBody\n")
+  put(join(root, "abilities/mine/SKILL.md"), "---\ndescription: Mine.\n---\nBody\n")
   put(join(root, "personas/so.toml"), `label = "Mine"\ninstructions = "Mine."\n`)
   expect(await ownAbilities()).toEqual({ skills: ["mine"], personas: ["so"] })
 })

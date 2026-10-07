@@ -1,6 +1,5 @@
 # IP geolocation over MCP: https://github.com/SubZtep/geo-service
 # Works without a key. The public endpoint is rate limited per client IP.
-name        = "geo-service"
 description = "Look up where an IP address is: country and time zone, or an approximate city."
 transport   = "http"
 url         = "https://ip2geo.demo.land/mcp/public"

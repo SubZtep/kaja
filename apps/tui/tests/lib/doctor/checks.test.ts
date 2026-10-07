@@ -75,14 +75,16 @@ afterAll(() => {
 })
 
 test("an ability key is tested with the manifest's check request; no check means untestable", async () => {
-  const ability = HttpToolAbilitySchema.parse({
-    name: "local",
-    description: "x",
-    baseUrl: `http://localhost:${server.port}`,
-    auth: { type: "apiKey", in: "header", name: "X-Key" },
-    check: { path: "/me" },
-    tools: [{ name: "t", description: "x", path: "/t" }]
-  })
+  const ability = {
+    ...HttpToolAbilitySchema.parse({
+      description: "x",
+      baseUrl: `http://localhost:${server.port}`,
+      auth: { type: "apiKey", in: "header", name: "X-Key" },
+      check: { path: "/me" },
+      tools: [{ name: "t", description: "x", path: "/t" }]
+    }),
+    name: "local"
+  }
   expect(await checkAbilityKey(ability, "good")).toEqual({ ok: true })
   expect(await checkAbilityKey(ability, "bad")).toEqual({ ok: false, reason: "HTTP 401" })
   expect(await checkAbilityKey({ ...ability, check: undefined }, "good")).toBeUndefined()

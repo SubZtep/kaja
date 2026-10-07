@@ -103,7 +103,7 @@ bun run --filter @kaja/sandbox build
 ### Sandbox (`apps/sandbox/`)
 
 - `src/cli.ts` bundle entry, `server.ts` startup; `tunnel.ts` dials the API (nothing connects in), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child, `egress.ts` the browsers' public-only forward proxy
-- Runs only the stdio manifests under its own `marketplace/mcp` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
+- Runs only the stdio `mcp.toml` manifests under its own `marketplace/abilities` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
 
 ### CLI (`apps/tui/`)
 

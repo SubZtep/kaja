@@ -27,7 +27,7 @@ export type NasiOpenOptions = {
   chat: { client: OpenAI; model: string; contextWindow?: number }
   /** Writes compaction summaries, condenses oversized tool results and runs the `summarize` tool; defaults to {@link chat}. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
-  /** Files, shell, MCP, and plugins. Default false. */
+  /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
   /** Cloud only: whether the caller can run `client_tool_call` tools (`read_file`/`list_files`) on the user's machine. Default true. */
   clientTools?: boolean

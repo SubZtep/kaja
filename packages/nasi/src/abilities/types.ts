@@ -1,4 +1,5 @@
 import type { HttpToolAbility, McpAbility } from "@kaja/schema/abilities"
+import type { Tool } from "../agent/tools"
 
 /** An enabled skill's catalog entry — all the model sees of it before calling load_skill. */
 export type SkillSummary = {
@@ -6,8 +7,10 @@ export type SkillSummary = {
   description: string
   /** Absolute folder on disk, set only by folder-backed stores so the model can run bundled scripts by path. */
   dir?: string
-  /** The skill's other files, relative to its folder (SKILL.md itself excluded). */
+  /** The skill's other files, relative to its folder (SKILL.md and the ability's other part files excluded). */
   files: string[]
+  /** SKILL.md suggests keeping the body in the system prompt while a persona uses the ability. */
+  sticky?: boolean
 }
 
 /**
@@ -27,6 +30,8 @@ export type AbilityStore = {
   listHttpTools(): Promise<HttpToolAbility[]>
   /** Enabled, valid MCP server abilities. Broken ones are skipped with a warning, never thrown. */
   listMcpAbilities(): Promise<McpAbility[]>
+  /** Abilities' code tools (`tool.ts`), by ability; only stores on the user's own machine have them. */
+  listCodeTools?(): Promise<{ name: string; tools: Tool[] }[]>
 }
 
 /** A skill file that exists but can't be handed to the model — outside the skill folder, binary, or too large. */

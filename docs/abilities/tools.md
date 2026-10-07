@@ -9,7 +9,7 @@ summary: "Built-in tools, HTTP APIs, shell commands and your own."
 # Tools
 
 Every session starts with the built-in toolset. HTTP tools from the marketplace, [MCP servers](/abilities/mcp)
-and, locally, your own plugin tools are added on top.
+and, locally, code tools (an ability's `tool.ts`) are added on top.
 
 ## Built-ins
 
@@ -44,16 +44,17 @@ don't get these two.
 proxy, and is left out entirely if the server has none.
 
 The **Cloud** column is an explicit allowlist. Anything that touches the server's filesystem or shell is
-never exposed there, and your `mcp.toml` servers and plugin tools are never attached.
+never exposed there, and your `mcp.toml` servers and code tools are never attached.
 
 ## HTTP tools
 
 An HTTP tool describes one web API in TOML: where it lives, how it authenticates, and the calls the model can
-make. It lives in `~/.config/kaja/marketplace/tools/<name>.toml`, synced from the marketplace or written by
-you, and loads once you turn it on (see [Abilities](/abilities)).
+make. It's the `tool.toml` of an ability folder, `~/.config/kaja/marketplace/abilities/<name>/tool.toml`,
+synced from the marketplace or written by you, and loads once you turn it on (see [Abilities](/abilities)).
+The folder name is the ability's name, so the file has no `name` of its own.
 
 ```toml
-name = "github-issues"                  # must match the file name
+# abilities/github-issues/tool.toml
 description = "Read and create GitHub issues"
 baseUrl = "https://api.github.com"
 auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }
@@ -117,10 +118,11 @@ A safe-list command still asks when it names a `secrets.toml` or anything under 
 This is a **warning, not a sandbox**. The command runs with your own shell permissions, so read what you're
 approving.
 
-## Your own tools
+## Code tools
 
-Local mode only. Drop a `.ts` file in `~/.config/kaja/tools/` that exports a tool object. Every export with
-a `definition` and an `execute` function is picked up on the next start, with no rebuild:
+Local mode only. An ability folder's `tool.ts` (`~/.config/kaja/marketplace/abilities/<name>/tool.ts`) exports
+tool objects. Every export with a `definition` and an `execute` function is picked up on the next start, with
+no rebuild, beside the folder's other parts (a `SKILL.md` that explains when to use them, say):
 
 ```ts
 export const diceTool = {
@@ -150,10 +152,10 @@ All tools share one list of names, and each is marked by where it comes from:
 | Origin | What |
 | --- | --- |
 | official | Kaja's built-ins |
-| community | [abilities](/abilities), synced or your own |
-| third-party | MCP servers from `mcp.toml` and your `tools/*.ts` files |
+| community | [abilities](/abilities), synced or your own, code tools included |
+| third-party | MCP servers from `mcp.toml` |
 
-Official names are reserved: an MCP or plugin tool called `read_file` is left out instead of replacing the
+Official names are reserved: an MCP or code tool called `read_file` is left out instead of replacing the
 built-in. Among the others, community tools come first, and the first tool with a name keeps it.
 `kaja doctor` lists every tool by origin, plus anything left out and why. The model only sees the names.
 

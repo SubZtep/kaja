@@ -32,9 +32,9 @@ function marketplace(base: string) {
     writeFileSync(join(root, rel), content)
   }
   const remote = (name: string, url: string, extra = "") =>
-    `name = "${name}"\ndescription = "The ${name} server"\ntransport = "http"\nurl = "${url}"\n${extra}`
+    `description = "The ${name} server"\ntransport = "http"\nurl = "${url}"\n${extra}`
   put(
-    `mcp/${things}.toml`,
+    `abilities/${things}/mcp.toml`,
     remote(
       things,
       `https://${host}/mcp`,
@@ -42,26 +42,29 @@ function marketplace(base: string) {
         `[toolDescriptions]\nread_thing = "Reads a thing"\n`
     )
   )
-  put(`mcp/open-${tag}.toml`, remote(`open-${tag}`, `https://${host}/mcp`))
-  put(`mcp/private-${tag}.toml`, remote(`private-${tag}`, "http://127.0.0.1:9/mcp", `tools = ["read_thing"]\n`))
+  put(`abilities/open-${tag}/mcp.toml`, remote(`open-${tag}`, `https://${host}/mcp`))
   put(
-    `mcp/stdio-${tag}.toml`,
-    `name = "stdio-${tag}"\ndescription = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\n`
+    `abilities/private-${tag}/mcp.toml`,
+    remote(`private-${tag}`, "http://127.0.0.1:9/mcp", `tools = ["read_thing"]\n`)
   )
   put(
-    `mcp/counter-${tag}.toml`,
-    `name = "counter-${tag}"\ndescription = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count", "picture"]\n`
+    `abilities/stdio-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\n`
+  )
+  put(
+    `abilities/counter-${tag}/mcp.toml`,
+    `description = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count", "picture"]\n`
   )
   // Keys aren't forwarded to the MCP sandbox yet, so a stdio server that takes one never reaches the cloud.
   put(
-    `mcp/stdio-keyed-${tag}.toml`,
-    `name = "stdio-keyed-${tag}"\ndescription = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K", optional = true }\n`
+    `abilities/stdio-keyed-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K", optional = true }\n`
   )
-  // Same name as an HTTP tool: keys share one namespace per name, so the MCP one is skipped.
-  put(`mcp/same-${tag}.toml`, remote(`same-${tag}`, `https://${host}/mcp`, `tools = ["read_thing"]\n`))
+  // One folder, two parts: the cloud keeps the HTTP tool and drops only the MCP server it can't run (no tool list).
+  put(`abilities/mixed-${tag}/mcp.toml`, remote(`mixed-${tag}`, `https://${host}/mcp`))
   put(
-    `tools/same-${tag}.toml`,
-    `name = "same-${tag}"\ndescription = "Same"\nbaseUrl = "https://api.same-${tag}.test"\n[[tools]]\nname = "same_${tag}"\ndescription = "x"\npath = "/"\n`
+    `abilities/mixed-${tag}/tool.toml`,
+    `description = "Mixed"\nbaseUrl = "https://api.mixed-${tag}.test"\n[[tools]]\nname = "mixed_${tag}"\ndescription = "x"\npath = "/"\n`
   )
   return root
 }
@@ -129,13 +132,13 @@ describe("MCP servers in the cloud", () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, private, unlisted and clashing ones are skipped", async () => {
+  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, private and unlisted ones are skipped, the ability's other parts kept", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "m1")
-    expect(result.added).toContain(`mcp/${things}`)
-    expect(result.added).toContain(`mcp/stdio-${tag}`)
-    expect(result.added).toContain(`tools/same-${tag}`)
-    for (const skipped of [`open-${tag}`, `private-${tag}`, `stdio-keyed-${tag}`, `same-${tag}`]) {
-      expect(result.added).not.toContain(`mcp/${skipped}`)
+    expect(result.added).toContain(`abilities/${things}/mcp.toml`)
+    expect(result.added).toContain(`abilities/stdio-${tag}/mcp.toml`)
+    expect(result.added).toContain(`abilities/mixed-${tag}/tool.toml`)
+    for (const skipped of [`open-${tag}`, `private-${tag}`, `stdio-keyed-${tag}`, `mixed-${tag}`]) {
+      expect(result.added).not.toContain(`abilities/${skipped}/mcp.toml`)
     }
   })
 

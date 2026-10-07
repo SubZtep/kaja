@@ -16,15 +16,14 @@ Skills use the Agent Skills folder format (see [anthropics/skills](https://githu
 examples):
 
 ```ini
-~/.config/kaja/marketplace/skills/disk-check/
-├─ SKILL.md         # frontmatter + instructions (required)
+~/.config/kaja/marketplace/abilities/disk-check/
+├─ SKILL.md         # frontmatter + instructions (required for a skill)
 ├─ reference.md     # any other text file the instructions point to
 └─ scripts/df.sh    # scripts the model can run
 ```
 
 ```markdown
 ---
-name: disk-check
 description: Report free disk space. Use when the user asks about disk usage or a full disk.
 ---
 
@@ -34,14 +33,17 @@ For thresholds per filesystem type, read reference.md.
 
 | Field | Purpose |
 | --- | --- |
-| `name` | must match the folder name: lowercase letters, digits and single hyphens, up to 64 characters |
 | `description` | what the skill does and when to use it, up to 1024 characters. It's all the model sees before loading |
+| `sticky` | optional: `true` suggests keeping the instructions in the system prompt while a persona uses the ability |
 
-Other frontmatter keys (`license`, `metadata` and so on) are allowed and ignored.
+The folder name is the skill's name (lowercase letters, digits and single hyphens, up to 64 characters), so
+there's no `name` key: a SKILL.md with one is refused. Other frontmatter keys (`license`, `metadata` and so
+on) are allowed and ignored. The same folder can also hold the ability's `tool.toml`, `mcp.toml` or `tool.ts`;
+those aren't the skill's files, and `load_skill` never serves them.
 
 ## Writing your own
 
-Create the folder under `~/.config/kaja/marketplace/skills/` and it loads on the next start, no
+Create the folder under `~/.config/kaja/marketplace/abilities/` and it loads on the next start, no
 `abilities.toml` entry needed (rename or move the folder to switch it off). `kaja abilities` lists your own
 skills apart, tagged `local`. A skill with missing or broken frontmatter is listed with the reason,
 and the others still load.

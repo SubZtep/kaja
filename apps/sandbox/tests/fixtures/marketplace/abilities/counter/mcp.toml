@@ -1,4 +1,3 @@
-name        = "counter"
 description = "Counts its calls (sandbox test fixture)."
 transport   = "stdio"
 command     = "bun"

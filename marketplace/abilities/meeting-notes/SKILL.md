@@ -1,5 +1,4 @@
 ---
-name: meeting-notes
 description: Turn rough meeting notes or a transcript into a clear summary with decisions, action items (owner and due date) and open questions. Use when the user pastes notes, a chat log or a transcript and wants it cleaned up, summarized or turned into a to-do list.
 ---
 

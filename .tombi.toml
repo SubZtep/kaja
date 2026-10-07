@@ -42,16 +42,16 @@ include = [
 [[schemas]]
 path    = "docs/config/schemas/http-tool.json"
 include = [
-  "marketplace/tools/*.toml",
-  "**/.config/kaja/marketplace/tools/*.toml"
+  "marketplace/abilities/*/tool.toml",
+  "**/.config/kaja/marketplace/abilities/*/tool.toml"
 ]
 
 
 [[schemas]]
 path    = "docs/config/schemas/mcp-ability.json"
 include = [
-  "marketplace/mcp/*.toml",
-  "**/.config/kaja/marketplace/mcp/*.toml"
+  "marketplace/abilities/*/mcp.toml",
+  "**/.config/kaja/marketplace/abilities/*/mcp.toml"
 ]
 
 

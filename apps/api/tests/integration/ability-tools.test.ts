@@ -25,7 +25,7 @@ const GOOD_KEY = `good-key-${tag}`
 const host = (name: string) => `api.${name}.test`
 
 function manifest(name: string, body: string) {
-  return `name = "${name}"\ndescription = "The ${name} API"\nbaseUrl = "https://${host(name)}"\n${body}`
+  return `description = "The ${name} API"\nbaseUrl = "https://${host(name)}"\n${body}`
 }
 
 /** A marketplace folder with three valid tools, one that calls a private host and one broken manifest. */
@@ -36,11 +36,11 @@ function marketplace(base: string) {
     writeFileSync(join(root, rel), content)
   }
   put(
-    `tools/${weather}.toml`,
+    `abilities/${weather}/tool.toml`,
     manifest(weather, `[[tools]]\nname = "${forecastTool}"\ndescription = "Forecast"\npath = "/forecast"\n`)
   )
   put(
-    `tools/${issues}.toml`,
+    `abilities/${issues}/tool.toml`,
     manifest(
       issues,
       `auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }\ncheck = { path = "/me" }\n` +
@@ -49,7 +49,7 @@ function marketplace(base: string) {
     )
   )
   put(
-    `tools/${extras}.toml`,
+    `abilities/${extras}/tool.toml`,
     manifest(
       extras,
       `auth = { type = "apiKey", in = "query", name = "key", optional = true }\n` +
@@ -57,10 +57,10 @@ function marketplace(base: string) {
     )
   )
   put(
-    `tools/private-${tag}.toml`,
-    `name = "private-${tag}"\ndescription = "Local"\nbaseUrl = "http://127.0.0.1:9"\n[[tools]]\nname = "p_${tag}"\ndescription = "x"\npath = "/"\n`
+    `abilities/private-${tag}/tool.toml`,
+    `description = "Local"\nbaseUrl = "http://127.0.0.1:9"\n[[tools]]\nname = "p_${tag}"\ndescription = "x"\npath = "/"\n`
   )
-  put(`tools/broken-${tag}.toml`, `name = "broken-${tag}"\n`)
+  put(`abilities/broken-${tag}/tool.toml`, `description = "Broken"\n`)
   return root
 }
 
@@ -166,7 +166,13 @@ describe("HTTP tools in the cloud", () => {
 
   test("a sync adds tools by their marketplace path; broken ones and ones that call a private host are skipped", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "t1")
-    expect(result.added).toEqual(expect.arrayContaining([`tools/${weather}`, `tools/${issues}`, `tools/${extras}`]))
+    expect(result.added).toEqual(
+      expect.arrayContaining([
+        `abilities/${weather}/tool.toml`,
+        `abilities/${issues}/tool.toml`,
+        `abilities/${extras}/tool.toml`
+      ])
+    )
     expect(result.added.join()).not.toContain(`private-${tag}`)
     expect(result.added.join()).not.toContain(`broken-${tag}`)
   })

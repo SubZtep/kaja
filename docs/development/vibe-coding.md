@@ -33,7 +33,7 @@ runs only when you type it; an agent never starts them on its own.
 | Command | What it does |
 | --- | --- |
 | `/translate [locale...]` | fills the `[<locale>] lorem ipsum` placeholders in every other language |
-| `/add-mcp <config>` | turns a pasted MCP server config into a `marketplace/mcp/<name>.toml` ability |
+| `/add-mcp <config>` | turns a pasted MCP server config into a `marketplace/abilities/<name>/mcp.toml` ability |
 | `/sonar-fix [branch]` | fixes the open SonarCloud issues on the branch's pull request |
 
 ### /translate

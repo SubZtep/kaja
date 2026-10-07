@@ -28,14 +28,13 @@ function marketplace(base: string, leave: string[] = []) {
     mkdirSync(dirname(join(root, rel)), { recursive: true })
     writeFileSync(join(root, rel), content)
   }
-  for (const name of skills)
-    put(`skills/${name}/SKILL.md`, `---\nname: ${name}\ndescription: Skill ${name}.\n---\nBody\n`)
+  for (const name of skills) put(`abilities/${name}/SKILL.md`, `---\ndescription: Skill ${name}.\n---\nBody\n`)
   const tool = (name: string, auth = "") =>
-    `name = "${name}"\ndescription = "Tool ${name}"\nbaseUrl = "https://api.${name}.test"\n${auth}` +
+    `description = "Tool ${name}"\nbaseUrl = "https://api.${name}.test"\n${auth}` +
     `[[tools]]\nname = "${name.replaceAll("-", "_")}"\ndescription = "x"\npath = "/"\n`
   put(`personas/${persona}.toml`, 'label = "Test persona"\n')
-  if (!leave.includes(keyless)) put(`tools/${keyless}.toml`, tool(keyless))
-  put(`tools/${keyed}.toml`, tool(keyed, `auth = { type = "apiKey", in = "header", name = "X-Key" }\n`))
+  if (!leave.includes(keyless)) put(`abilities/${keyless}/tool.toml`, tool(keyless))
+  put(`abilities/${keyed}/tool.toml`, tool(keyed, `auth = { type = "apiKey", in = "header", name = "X-Key" }\n`))
   return root
 }
 

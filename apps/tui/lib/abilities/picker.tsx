@@ -21,7 +21,7 @@ export async function scanMarketplace(marketplaceDir: string) {
   const skills = (await scanSkills(marketplaceDir)).map(s => ({
     ...s,
     type: "skill" as const,
-    ...own(`skills/${s.name}`)
+    ...own(`abilities/${s.name}`)
   }))
   // default always loads, so there's nothing to pick.
   const personas = (await scanPersonas(marketplaceDir))
@@ -37,7 +37,7 @@ export async function scanMarketplace(marketplaceDir: string) {
     ...s,
     type: "tool" as const,
     key: keyNeed(auth),
-    local: !synced.has(`tools/${s.name}.toml`)
+    local: !synced.has(`abilities/${s.name}`)
   }))
   const mcpScan = await scanMcpAbilities(marketplaceDir)
   const mcp = mcpScan.map(({ auth, command, transport: _, ...s }) => ({
@@ -45,7 +45,7 @@ export async function scanMarketplace(marketplaceDir: string) {
     type: "mcp" as const,
     runs: command,
     key: keyNeed(auth),
-    local: !synced.has(`mcp/${s.name}.toml`)
+    local: !synced.has(`abilities/${s.name}`)
   }))
   return { skills, personas, tools, mcp, toolScan, mcpScan }
 }

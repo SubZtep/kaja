@@ -271,7 +271,7 @@ prints them, and the terminal appends them to its opt-in log file, since Ink own
 
 `createTools({ includeLocalTools })` decides the registry. The default is **off**: only an explicit allowlist
 of cloud-safe built-ins is returned, so a newly added tool is never cloud-exposed by accident. Turning it on
-adds file, shell, MCP and plugin tools. See [Tools](/abilities/tools) for the resulting list.
+adds file, shell, MCP and code tools. See [Tools](/abilities/tools) for the resulting list.
 
 Some built-ins also need a **dep**, and only register when the host supplies it: `generate_image` needs
 `imageGeneration`, and cloud `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`

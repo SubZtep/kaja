@@ -76,7 +76,7 @@ RUN groupadd --gid 1500 mcp \
   && find "$SANDBOX_CACHE_DIR" -type d -exec chmod g+s {} + \
   && chmod o+x /home/node /home/node/.cache
 COPY --from=builder /home/bun/app/apps/sandbox/dist/sandbox.js ./sandbox.js
-COPY --chown=node:node marketplace/mcp ./marketplace/mcp
+COPY --chown=node:node marketplace/abilities ./marketplace/abilities
 COPY --chown=node:node apps/sandbox/overrides.json ./overrides.json
 
 # Nothing listens: the sandbox dials KAJA_API_URL (https://api.kaja.io by default) and serves over that socket.

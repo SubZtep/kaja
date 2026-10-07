@@ -12,13 +12,13 @@ Which [abilities](/abilities) load in local mode. Synced files in `~/.config/kaj
 when listed here. `kaja abilities` writes it as a checklist, and you can edit it by hand.
 
 ```toml
-# Skills, by folder name: marketplace/skills/<name>/SKILL.md
+# Skills, by folder name: marketplace/abilities/<name>/SKILL.md
 skills = ["system-report", "meeting-notes"]
 
-# HTTP tools, by file name: marketplace/tools/<name>.toml
+# HTTP tools, by folder name: marketplace/abilities/<name>/tool.toml
 tools = ["open-meteo"]
 
-# MCP servers, by file name: marketplace/mcp/<name>.toml
+# MCP servers, by folder name: marketplace/abilities/<name>/mcp.toml
 mcp = ["context7"]
 
 # Personas, by file name: marketplace/personas/<id>.toml

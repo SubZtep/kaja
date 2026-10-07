@@ -14,23 +14,26 @@ Only the repo owner adds abilities here (a merged pull request counts), so there
 
 ```
 marketplace/
-├─ skills/<name>/
-│  ├─ SKILL.md      # frontmatter (name, description) + instructions
-│  ├─ *.md          # optional extra files the instructions point to
-│  └─ scripts/      # optional scripts, run through run_command with the usual approval
+├─ abilities/<name>/  # one folder per ability, named after it; any mix of these parts:
+│  ├─ SKILL.md        # a skill: frontmatter (description, optional sticky) + instructions
+│  ├─ *.md            # optional extra files the instructions point to
+│  ├─ scripts/        # optional scripts, run through run_command with the usual approval
+│  ├─ tool.toml       # an HTTP API: base URL, auth, and the tools the model can call
+│  ├─ mcp.toml        # an MCP server: url (http/sse) or command (stdio), auth, approval, tool allowlist
+│  └─ tool.ts         # code tools: exports with a `definition` and an `execute` function (local only)
 ├─ personas/<id>.toml # a persona: label, when to switch to it, instructions, optional sampling
-├─ datasets/<id>.json # a questionnaire a persona fills in (`profile: true`: every persona sees the answers)
-├─ tools/<name>.toml  # an HTTP API: base URL, auth, and the tools the model can call
-└─ mcp/<name>.toml    # an MCP server: url (http/sse) or command (stdio), auth, approval, tool allowlist
+└─ datasets/<id>.json # a questionnaire a persona fills in (`profile: true`: every persona sees the answers)
 ```
 
 ## Writing one
 
-- Names are lowercase letters, digits and single hyphens, up to 64 characters, and match the folder (skills) or file name (everything else).
+- Names are lowercase letters, digits and single hyphens, up to 64 characters. An ability's name is its folder's and a persona's or dataset's its file's, so no file has a `name` of its own (one that does is refused).
+- Each part keeps its own `description`. One key per ability (`secrets.toml`'s `[abilities.<name>]`) serves all its parts.
 - A skill's `description` (up to 1024 characters) is all the model sees before loading it, so make the "when" part concrete.
 - Keep files as text. Binary files, hidden files and backups (`*.bak.*`, such as `care.bak.toml`) are never shown to the model.
 - `default.toml` is the persona every user always has. The CLI ships a copy for installs that haven't synced yet.
 - Scripts should work with plain POSIX `sh`, or say what they need in `SKILL.md`.
+- `tool.ts` runs on the user's machine, so the cloud skips it; it skips a skill with `scripts/` too, and keeps the ability's other parts.
 - Tool names are what the model calls, so keep them specific (`weather_forecast`, not `get`). A name Kaja already uses is skipped.
 - Never put a key in a file. `auth` only says where it goes, and the user's key stays in their `secrets.toml`.
 - Anything but GET asks the user first, so make read-only endpoints GET tools.

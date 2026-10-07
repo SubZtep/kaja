@@ -25,15 +25,15 @@ function put(root: string, rel: string, content: string) {
 }
 
 function skill(root: string, name: string, body = `Use ${name}.`) {
-  put(root, `skills/${name}/SKILL.md`, `---\nname: ${name}\ndescription: The ${name} skill.\n---\n${body}\n`)
+  put(root, `abilities/${name}/SKILL.md`, `---\ndescription: The ${name} skill.\n---\n${body}\n`)
 }
 
 /** A marketplace folder holding exactly `names` (the scripted one gets a script). */
 function marketplace(names: string[], body?: string) {
   const root = mkdtempSync(join(base, "mp-"))
   for (const name of names) skill(root, name, body)
-  if (names.includes(scripted)) put(root, `skills/${scripted}/scripts/run.sh`, "echo hi")
-  if (names.includes(plain)) put(root, `skills/${plain}/reference.md`, "the reference")
+  if (names.includes(scripted)) put(root, `abilities/${scripted}/scripts/run.sh`, "echo hi")
+  if (names.includes(plain)) put(root, `abilities/${plain}/reference.md`, "the reference")
   return root
 }
 
@@ -236,8 +236,8 @@ describe("marketplace sync from GitHub", () => {
     const root = mkdtempSync(join(tmpdir(), "kaja-tarball-"))
     put(
       join(root, `kaja-${sha}`),
-      `marketplace/skills/${skillName}/SKILL.md`,
-      `---\nname: ${skillName}\ndescription: From a tarball.\n---\nBody\n`
+      `marketplace/abilities/${skillName}/SKILL.md`,
+      `---\ndescription: From a tarball.\n---\nBody\n`
     )
     put(join(root, `kaja-${sha}`), "apps/other.txt", "not part of the marketplace")
     const archive = join(root, "repo.tar.gz")

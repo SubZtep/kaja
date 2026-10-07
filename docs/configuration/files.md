@@ -18,8 +18,7 @@ account, and on disk has only a minimal `settings.toml` with your language and `
 ├─ secrets.toml     # every key and token, and nothing else
 ├─ abilities.toml   # which abilities load
 ├─ mcp.toml         # your own MCP servers
-├─ marketplace/     # personas, skills, HTTP tools, MCP servers, datasets
-└─ tools/*.ts       # your own plugin tools
+└─ marketplace/     # abilities (skills, HTTP tools, MCP servers, code tools), personas, datasets
 ```
 
 The folder follows XDG (`$XDG_CONFIG_HOME/kaja` when set). The [setup wizard](/getting-started/wizard)
@@ -33,7 +32,6 @@ never writes them while running, so restart to apply a change.
 | `secrets.toml` | [Secrets](/configuration/secrets) |
 | `abilities.toml` | [abilities.toml](/configuration/abilities) |
 | `mcp.toml` | [MCP servers](/abilities/mcp#mcptoml) |
-| `tools/*.ts` | [Your own tools](/abilities/tools#your-own-tools) |
 | the SQLite file | [Local storage](/configuration/storage) |
 
 Only `secrets.toml` holds credentials, so the other files are safe to share or paste into a bug report.

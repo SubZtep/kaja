@@ -1,5 +1,4 @@
 ---
-name: system-report
 description: Summarize this computer's OS, uptime, load, memory and disk usage. Use when the user asks how their machine is doing, how much disk or memory is free, or what system they are on.
 ---
 

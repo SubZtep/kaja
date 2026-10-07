@@ -34,13 +34,14 @@ export type LoadAbilitiesOptions = {
 
 /**
  * Turns a store's enabled abilities into agent tool groups, one handler per ability type
- * (skills, HTTP tools, MCP servers). A store that fails outright loads nothing, with a warning, so a broken
+ * (skills, code tools, HTTP tools, MCP servers). A store that fails outright loads nothing, with a warning, so a broken
  * ability folder never stops the agent from starting.
  */
 export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOptions = {}): Promise<LoadedAbilities> {
   const skills = await listOrWarn(() => store.listSkills(), "skills")
   const abilities = await listOrWarn(() => store.listHttpTools(), "HTTP tools")
   const mcpAbilities = await listOrWarn(() => store.listMcpAbilities(), "MCP abilities")
+  const codeTools = store.listCodeTools ? await listOrWarn(() => store.listCodeTools!(), "code tools") : []
 
   // load_skill is Kaja's own mechanism, so it's official (and its name reserved) even though abilities switch it on.
   const groups: ToolGroup[] =
@@ -58,6 +59,8 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
     missingKeys.push(ability.name)
     return null
   }
+
+  for (const code of codeTools) groups.push({ origin: "community", source: `ability:${code.name}`, tools: code.tools })
 
   const httpTools: HttpToolAbility[] = []
   for (const ability of abilities) {

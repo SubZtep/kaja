@@ -171,7 +171,7 @@ export class AbilityService {
     if (!row) return null
     let instructions = ""
     try {
-      instructions = parseSkillMd(row.files["SKILL.md"] ?? "", row.name).body
+      instructions = parseSkillMd(row.files["SKILL.md"] ?? "").body
     } catch (error) {
       // The skill still loads, without instructions; the sync validates SKILL.md, so this means a row it didn't write
       reportError("Stored SKILL.md doesn't parse", error, { skill: row.name })
@@ -489,7 +489,7 @@ export class AbilityService {
   /** The stored manifest, parsed; undefined (with a warning) when it no longer parses or the cloud can't run it. */
   #parse(row: ManifestRow): KeyedAbility | undefined {
     try {
-      const text = row.files[`${row.name}.toml`] ?? ""
+      const text = row.files[row.type === "tool" ? "tool.toml" : "mcp.toml"] ?? ""
       if (row.type === "tool") return { type: "tool", ability: parseHttpToolManifest(text, row.name) }
       const ability = parseMcpManifest(text, row.name)
       const problem = cloudMcpProblem(ability)

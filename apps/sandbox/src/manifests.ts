@@ -7,7 +7,7 @@ import { McpAbilityOverridesSchema } from "@kaja/schema/abilities"
 export type SandboxServer = { name: string; command: string; args: string[]; env: Record<string, string> }
 
 /**
- * The stdio servers under `<marketplaceDir>/mcp` the sandbox may run: a fixed `tools` list and no key (keys aren't
+ * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list and no key (keys aren't
  * forwarded yet), the same rule the API offers them by. `overridesPath` swaps a server's command/args for this host;
  * `cacheDir` points every server's bun/uv/npm caches there, since each one's HOME is thrown away.
  */
@@ -30,7 +30,7 @@ export async function loadSandboxServers(
   const servers = new Map<string, SandboxServer>()
   for (const entry of await scanMcpAbilities(marketplaceDir)) {
     if (entry.error || entry.transport !== "stdio") continue
-    const text = await readFile(join(resolve(marketplaceDir), "mcp", `${entry.name}.toml`), "utf8")
+    const text = await readFile(join(resolve(marketplaceDir), "abilities", entry.name, "mcp.toml"), "utf8")
     const ability = parseMcpManifest(text, entry.name)
     if (!ability.tools?.length || ability.auth.type !== "none" || !ability.command) {
       console.warn("Sandbox skips MCP ability", { ability: ability.name })

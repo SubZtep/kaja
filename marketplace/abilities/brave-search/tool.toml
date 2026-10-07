@@ -1,5 +1,4 @@
 # Brave Search API, key from https://api-dashboard.search.brave.com
-name        = "brave-search"
 description = "Web search through Brave Search, for current information."
 baseUrl     = "https://api.search.brave.com"
 

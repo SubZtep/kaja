@@ -37,10 +37,12 @@ Right now the marketplace has:
 
 ```ini
 ~/.config/kaja/marketplace/
+├─ abilities/<name>/      # one folder per ability, any mix of:
+│  ├─ SKILL.md            #   a skill (plus its other files and scripts/)
+│  ├─ tool.toml           #   an HTTP tool
+│  ├─ mcp.toml            #   an MCP server
+│  └─ tool.ts             #   code tools (local only)
 ├─ personas/<id>.toml
-├─ skills/<name>/SKILL.md
-├─ tools/<name>.toml      # HTTP tools
-├─ mcp/<name>.toml        # MCP servers
 └─ datasets/<id>.json
 ```
 

@@ -26,7 +26,7 @@ export async function ownAbilities(root = getMarketplaceDir()): Promise<{ skills
   const { scanPersonas, scanSkills } = await import("@kaja/nasi")
   const synced = await syncedAbilityPaths(root)
   return {
-    skills: (await scanSkills(root)).map(s => s.name).filter(name => !synced.has(`skills/${name}`)),
+    skills: (await scanSkills(root)).map(s => s.name).filter(name => !synced.has(`abilities/${name}`)),
     personas: (await scanPersonas(root)).map(s => s.name).filter(name => !synced.has(`personas/${name}.toml`))
   }
 }

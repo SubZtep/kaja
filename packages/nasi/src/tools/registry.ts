@@ -3,7 +3,6 @@ import type { McpAbilityTarget } from "../abilities/mcp-ability"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../agent/agent"
 import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
 import { connectMcpServer, type McpConnectOptions } from "../mcp/client"
-import { loadPluginTools } from "../plugin/plugin-tools"
 import type { FetchLike } from "../security/ssrf"
 import { warn } from "../warn"
 import { currentTimeTool } from "./builtin/current-time"
@@ -48,13 +47,12 @@ function toClientExecutableStub(t: Tool): Tool {
 }
 
 export type CreateToolsOptions = {
-  /** Files, shell, MCP, and plugins. Default false. */
+  /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
   /** Cloud only: a client can answer a `client_tool_call` pause (the terminal), so `read_file`/`list_files` are offered as stubs. False (widget, Telegram) leaves them out. Default true. */
   clientTools?: boolean
   deps?: NasiToolDeps
   mcpServers?: McpServerEntry[]
-  pluginDir?: string
   tempDir?: string
   /** Tools the host brings in besides the builtins, e.g. `loadAbilities`' groups. Merged under the same name rules. */
   extraTools?: ToolGroup[]
@@ -244,8 +242,6 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       ? await connectMcpServers(mcpTargets, mcpImagesDir, opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS)
       : []
 
-  const pluginTools = local && opts.pluginDir ? await loadPluginTools(opts.pluginDir) : []
-
   const { tools, skipped } = mergeTools([
     { origin: "official", tools: official },
     ...(opts.extraTools ?? []),
@@ -253,9 +249,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       abilityIds.has(c.id)
         ? { origin: "community" as const, source: c.id, tools: c.tools }
         : { origin: "third-party" as const, source: `mcp:${c.id}`, tools: c.tools }
-    ),
-    // Each plugin tool already carries its own `plugin:<file>` source.
-    { origin: "third-party", tools: pluginTools }
+    )
   ])
 
   return {

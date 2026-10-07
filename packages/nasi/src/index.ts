@@ -15,6 +15,7 @@ export {
   readSkillBundle,
   type SkillBundle,
   type SkillScanEntry,
+  scanCodeTools,
   scanDatasets,
   scanHttpTools,
   scanMcpAbilities,
@@ -122,7 +123,6 @@ export {
 } from "./models/context-window"
 export { Nasi, type NasiOpenOptions, type NasiTurnInput, pendingToolCall, photoLabel } from "./nasi"
 export { loadDataset, loadDatasets, setDatasetLoaders } from "./personas"
-export { loadPluginTools } from "./plugin/plugin-tools"
 export {
   createGuardedFetch,
   type FetchLike,

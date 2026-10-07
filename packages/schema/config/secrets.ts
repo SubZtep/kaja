@@ -14,7 +14,7 @@ const SecretsProviderSchema = z.object({
 // Keyed by the mcp.toml [[servers]] id it credentials; values fold into that server's env (stdio) or headers (HTTP).
 const SecretsMcpServerSchema = z.record(z.string(), z.string())
 
-// Keyed by a marketplace/tools/<name>.toml ability; its manifest's `auth` says where the key goes.
+// Keyed by a marketplace/abilities/<name>/ ability, one key for all its parts; each manifest's `auth` says where it goes.
 const SecretsAbilitySchema = z.object({
   api_key: z.string().min(1)
 })

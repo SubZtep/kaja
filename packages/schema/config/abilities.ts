@@ -9,15 +9,18 @@ export const AbilitiesSourceSchema = z.object({
 // Only abilities listed here are loaded, whether they came from the marketplace or you wrote them.
 export const AbilitiesFileSchema = z.object({
   source: AbilitiesSourceSchema.optional().describe("Marketplace repo override"),
-  skills: z.array(z.string().min(1)).default([]).describe("Enabled skills, by folder name under marketplace/skills/"),
+  skills: z
+    .array(z.string().min(1))
+    .default([])
+    .describe("Enabled skills, by folder name under marketplace/abilities/"),
   tools: z
     .array(z.string().min(1))
     .default([])
-    .describe("Enabled HTTP tool abilities, by file name under marketplace/tools/"),
+    .describe("Enabled HTTP tool abilities (tool.toml), by folder name under marketplace/abilities/"),
   mcp: z
     .array(z.string().min(1))
     .default([])
-    .describe("Enabled MCP server abilities, by file name under marketplace/mcp/"),
+    .describe("Enabled MCP server abilities (mcp.toml), by folder name under marketplace/abilities/"),
   personas: z
     .array(z.string().min(1))
     .default([])

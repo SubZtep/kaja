@@ -22,7 +22,6 @@ export function listPaths(all = false, configDir = getPaths().config) {
       { label: t("paths.models"), path: join(configDir, "models.toml") },
       { label: t("paths.mcpServers"), path: join(configDir, "mcp.toml") },
       { label: t("paths.commands"), path: join(configDir, "commands.toml") },
-      { label: t("paths.tools"), path: join(configDir, "tools") },
       { label: t("paths.abilities"), path: join(configDir, "abilities.toml") },
       { label: t("paths.marketplace"), path: join(configDir, "marketplace") },
       { label: t("paths.temp"), path: paths.temp }

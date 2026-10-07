@@ -50,10 +50,11 @@ The template's servers (`chrome-devtools`, `context7`) are commented out, so non
 
 ## MCP abilities
 
-An MCP ability lives in `~/.config/kaja/marketplace/mcp/<name>.toml`:
+An MCP ability is the `mcp.toml` of an ability folder, `~/.config/kaja/marketplace/abilities/<name>/mcp.toml`
+(the folder name is the ability's name, so the file has none):
 
 ```toml
-name = "context7"
+# abilities/context7/mcp.toml
 description = "Up-to-date library docs"
 transport = "http"                  # http (Streamable HTTP), sse, or stdio
 url = "https://mcp.context7.com/mcp"

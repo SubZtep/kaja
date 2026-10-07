@@ -53,8 +53,8 @@ export class ToolError extends Error {
 
 /**
  * Who stands behind a tool: Kaja itself (`official`), an ability in the marketplace
- * folder, synced or your own (`community`), or an outside MCP server or tools/*.ts
- * plugin (`third-party`). Shown in doctor/ability, never to the model.
+ * folder, synced or your own (`community`), or an outside MCP server (`third-party`).
+ * Shown in doctor/ability, never to the model.
  */
 export type ToolOrigin = "official" | "community" | "third-party"
 
@@ -82,7 +82,7 @@ export type Tool<Args = any> = {
   approval?: (args: Args) => string | undefined
   /** Stamped by the registry's `mergeTools`; unset on a tool that hasn't been through it. */
   origin?: ToolOrigin
-  /** Where a non-official tool came from, e.g. `ability:open-meteo`, `mcp:chrome-devtools`, `plugin:ping.ts`. */
+  /** Where a non-official tool came from, e.g. `ability:open-meteo`, `mcp:chrome-devtools`. */
   source?: string
 }
 
@@ -91,7 +91,7 @@ type FunctionParameters = ChatCompletionFunctionTool["function"]["parameters"]
 /**
  * Defines a tool from a zod schema (built-ins: the model's arguments are checked against it, and its JSON Schema is
  * what the model sees, unless `parameters` spells that out itself) or from an outside JSON Schema (MCP servers, HTTP
- * abilities, plugins: taken as they are).
+ * abilities, code tools: taken as they are).
  */
 export function tool<S extends z.ZodType>(config: {
   name: string

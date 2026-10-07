@@ -2,13 +2,13 @@ import { afterAll, beforeAll, expect, test } from "bun:test"
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { McpAbilitySchema } from "@kaja/schema/abilities"
 import { loadAbilities } from "../../src/abilities/load"
 import { checkMcpAbilityKey, mcpAbilityTarget, SANDBOX_ORIGIN } from "../../src/abilities/mcp-ability"
 import type { AbilityStore } from "../../src/abilities/types"
 import { toolName } from "../../src/agent/tools"
 import { connectMcpServer } from "../../src/mcp/client"
 import { createTools } from "../../src/tools/registry"
+import { mcpAbility } from "../fixtures/abilities"
 import { type HttpMcpFixture, routeHostTo, startHttpMcpFixture } from "../fixtures/mcp-http-server"
 
 const HOST = "mcp.example.test"
@@ -26,7 +26,7 @@ afterAll(() => {
 })
 
 const remoteAbility = (over: Record<string, unknown> = {}) =>
-  McpAbilitySchema.parse({
+  mcpAbility({
     name: "things",
     description: "Things",
     transport: "http",
@@ -36,7 +36,7 @@ const remoteAbility = (over: Record<string, unknown> = {}) =>
     ...over
   })
 
-const stdioAbility = McpAbilitySchema.parse({
+const stdioAbility = mcpAbility({
   name: "local-things",
   description: "Local things",
   transport: "stdio",

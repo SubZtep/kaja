@@ -1,11 +1,11 @@
 import { afterEach, expect, test } from "bun:test"
-import { HttpToolAbilitySchema, McpAbilitySchema } from "@kaja/schema/abilities"
 import type { AbilityStore } from "../src/abilities/types"
 import { createSession } from "../src/agent/agent"
 import { NothingToApproveError } from "../src/agent/errors"
 import { dropImages } from "../src/agent/run"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
 import { createMemoryStore } from "../src/store"
+import { httpAbility, mcpAbility } from "./fixtures/abilities"
 import { routeHostTo, startHttpMcpFixture } from "./fixtures/mcp-http-server"
 
 type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
@@ -213,7 +213,7 @@ test("a session id cannot be resumed by a different owner sharing the same store
 })
 
 // A cloud user's HTTP tool with a key; a proxy is set so the (faked) request skips the DNS check.
-const issuesAbility = HttpToolAbilitySchema.parse({
+const issuesAbility = httpAbility({
   name: "issues",
   description: "Issue tracker",
   baseUrl: "https://api.issues.test",
@@ -336,7 +336,7 @@ test("a cloud user's MCP ability connects with their key when the turn opens; a 
   const fixture = startHttpMcpFixture({ apiKey: "mcp-key" })
   // The guarded fetch goes through the proxy, which here hands the fake host to the local fixture.
   globalThis.fetch = routeHostTo(fixture, "mcp.example.test", realFetch)
-  const things = McpAbilitySchema.parse({
+  const things = mcpAbility({
     name: "things",
     description: "Things",
     transport: "http",
