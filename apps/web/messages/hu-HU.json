@@ -429,7 +429,7 @@
   "widget_success_updated": "Widget kulcs frissítve",
   "widget_error_update_failed": "Nem sikerült frissíteni a widget kulcsot",
   "profile_delete_title": "Fiók törlése",
-  "profile_delete_description": "Véglegesen törli a fiókodat és mindent, ami hozzá tartozik: a beszélgetéseket, a rólad vezetett jegyzeteket, a képességeket és kulcsaikat, a widgetkulcsokat és a Telegram-kapcsolatot.",
+  "profile_delete_description": "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
   "profile_delete_button": "Fiókom törlése",
   "profile_delete_confirm_title": "Törlöd a fiókodat?",
   "profile_delete_confirm_description": "Minden azonnal törlődik, és nem állítható vissza.",

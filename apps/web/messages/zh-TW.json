@@ -429,7 +429,7 @@
   "widget_success_updated": "小工具金鑰已更新",
   "widget_error_update_failed": "無法更新小工具金鑰",
   "profile_delete_title": "刪除帳號",
-  "profile_delete_description": "永久刪除你的帳號及其儲存的所有內容：對話、筆記、能力及其金鑰、小工具金鑰和 Telegram 連結。",
+  "profile_delete_description": "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
   "profile_delete_button": "刪除我的帳號",
   "profile_delete_confirm_title": "要刪除你的帳號嗎？",
   "profile_delete_confirm_description": "一切立即刪除，無法復原。",

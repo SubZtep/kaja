@@ -272,9 +272,9 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
 }
 
 /**
- * Keeps a running conversation in step with the skills and personas enabled now: both lists are written into
- * the system prompt when the conversation starts, so one turned on or off since (on the web, in Telegram)
- * would otherwise never reach it. When the `## Skills` or `## Personas` section no longer matches, the prompt
+ * Keeps a running conversation in step with the skills and personas available now (sticky skills' bodies too): they're written into
+ * the system prompt when the conversation starts, so one changed since (a marketplace sync, a new key) would
+ * otherwise never reach it. When the `## Skills`, `## Personas` or a sticky `## Skill:` section no longer matches, the prompt
  * is rebuilt in place, as a persona switch does; unchanged lists leave the message untouched, so prompt
  * caching holds.
  */
@@ -288,19 +288,30 @@ export async function refreshAbilitiesInPrompt(
   const toolNames = new Set(personaTools(agent).map(t => toolName(t)))
   const upToDate =
     hasSection(system.content, "Skills", buildSkillsBlock(agent, toolNames)) &&
-    hasSection(system.content, "Personas", buildPersonasBlock(agent, toolNames))
+    hasSection(system.content, "Personas", buildPersonasBlock(agent, toolNames)) &&
+    hasStickySkills(system.content, await buildStickySkillSections(agent))
   if (upToDate) return
   const rebuilt = await buildSystemPrompt(agent, owner)
   if (rebuilt) system.content = rebuilt
 }
 
-// Whether `content` holds exactly this `## <title>` section, or no such section when there's no block.
-function hasSection(content: string, title: string, block: string | undefined): boolean {
-  if (!block) return !content.includes(`## ${title}\n`)
-  const section = `## ${title}\n${block}`
+// Whether `content` holds exactly these sticky skill sections and no others (a skill's body changed, or the persona's sticky set did).
+function hasStickySkills(content: string, sections: string[]): boolean {
+  const headers = content.match(/(?:^|\n)## Skill: /g)?.length ?? 0
+  return headers === sections.length && sections.every(section => hasExactly(content, section))
+}
+
+// Whether `content` holds `section` whole: followed by the end or a blank line, not just a prefix of a longer one.
+function hasExactly(content: string, section: string): boolean {
   const at = content.indexOf(section)
   const end = at + section.length
   return at >= 0 && (end === content.length || content.startsWith("\n\n", end))
+}
+
+// Whether `content` holds exactly this `## <title>` section, or no such section when there's no block.
+function hasSection(content: string, title: string, block: string | undefined): boolean {
+  if (!block) return !content.includes(`## ${title}\n`)
+  return hasExactly(content, `## ${title}\n${block}`)
 }
 
 /**

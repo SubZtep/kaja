@@ -85,10 +85,10 @@ Both work in cloud mode too, among every persona in the cloud's copy of the mark
 
 | Id | What it does |
 | --- | --- |
-| `default` | fallback for anything no other persona fits |
+| `default` | fallback for anything no other persona fits; uses every marketplace ability |
 | `care` | self-care companion: listens, reflects, doesn't lecture |
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
-| `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile) |
+| `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service`, `time` and `open-meteo` |
 
 Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 

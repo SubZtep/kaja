@@ -429,7 +429,7 @@
   "widget_success_updated": "Widget key updated",
   "widget_error_update_failed": "Failed to update widget key",
   "profile_delete_title": "Delete account",
-  "profile_delete_description": "Permanently deletes your account and everything stored with it: conversations, memory notes, abilities and their keys, widget keys, and your Telegram link.",
+  "profile_delete_description": "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam",
   "profile_delete_button": "Delete my account",
   "profile_delete_confirm_title": "Delete your account?",
   "profile_delete_confirm_description": "Everything goes immediately and can't be recovered.",

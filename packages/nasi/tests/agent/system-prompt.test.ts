@@ -260,3 +260,34 @@ test("a dataset that isn't a profile adds no About the user section", async () =
   agent.promptContext.loadDatasets = async () => new Map([["onboarding", { ...profile, profile: false }]])
   expect((await buildSystemPrompt(agent, null)) ?? "").not.toContain("## About the user")
 })
+
+test("a running conversation picks up a sticky skill's new body, and drops one the persona no longer keeps", async () => {
+  let body = "Old rules."
+  const store: AbilityStore = { ...noStore, readSkill: async () => body }
+  const rules: SkillSummary = { name: "rules", description: "Rules.", files: [], sticky: true }
+  const agentFor = (persona: Persona) =>
+    new Agent({
+      model: "m",
+      tools: [createLoadSkillTool({ store, skills: [rules], personas: [persona] })],
+      personas: [persona],
+      personaId: persona.id
+    })
+  const keeps: Persona = { id: "k", label: "K", abilities: ["rules"] }
+  const messages = await conversationWith(agentFor(keeps))
+  expect(messages[0]!.content).toContain("## Skill: rules\nOld rules.")
+
+  body = "New rules."
+  await refreshAbilitiesInPrompt(agentFor(keeps), messages, null)
+  expect(messages[0]!.content).toContain("## Skill: rules\nNew rules.")
+  expect(messages[0]!.content).not.toContain("Old rules.")
+
+  // Unchanged: the message is left exactly as it was
+  messages[0]!.content += "\n\nmarker"
+  const before = messages[0]!.content
+  await refreshAbilitiesInPrompt(agentFor(keeps), messages, null)
+  expect(messages[0]!.content).toBe(before)
+
+  await refreshAbilitiesInPrompt(agentFor({ ...keeps, abilities: [{ name: "rules", skill: "load" }] }), messages, null)
+  expect(messages[0]!.content).not.toContain("## Skill: rules")
+  expect(messages[0]!.content).toContain("- rules: Rules.")
+})
