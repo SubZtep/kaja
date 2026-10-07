@@ -5,7 +5,8 @@ import {
   type FinalizedAgentEvent,
   LOAD_SKILL_TOOL,
   listCloudToolNames,
-  personaAbilities
+  personaAbilities,
+  personaLoadsSkills
 } from "@kaja/nasi"
 import {
   NasiCompactRequestSchema,
@@ -39,6 +40,7 @@ import {
   resolveModelWithProvider,
   runUserTurn
 } from "./chat"
+import { createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
 import { toolImageUrl } from "./tool-image"
 
@@ -249,9 +251,9 @@ nasiRoutes.openapi(infoRoute, async c => {
   const mcpTools = (await abilityService.mcpAbilities())
     .filter(loads)
     .flatMap(ability => narrowed(ability.name, ability.tools ?? []))
-  const loadsSkills = (await abilityService.skills()).some(
-    skill => entries.has(skill.name) && entries.get(skill.name)?.skill !== "off"
-  )
+  const loadsSkills = persona
+    ? personaLoadsSkills(persona, await createPostgresAbilityStore({ userId: user.id }).listSkills())
+    : false
   const tools = [
     ...(await listCloudToolNames(nasiToolDeps())),
     ...(loadsSkills ? [LOAD_SKILL_TOOL] : []),

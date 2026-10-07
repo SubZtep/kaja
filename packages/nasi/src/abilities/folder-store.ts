@@ -486,9 +486,10 @@ export function createFolderAbilityStore(opts: FolderAbilityStoreOptions): Abili
     listMcpAbilities: async () =>
       readNamed(await namesWith(opts.root, MCP_FILE), name => readMcp(opts.root, name), "MCP ability"),
 
-    async listCodeTools() {
+    async listCodeTools(only) {
       const tools: { name: string; tools: Tool[] }[] = []
       for (const name of await scanCodeTools(opts.root)) {
+        if (only && !only.has(name)) continue
         const loaded = await loadCodeTool(join(abilitiesRoot, name, CODE_FILE))
         if (loaded.length > 0) tools.push({ name, tools: loaded })
       }

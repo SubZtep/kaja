@@ -119,6 +119,35 @@ test("a call to a tool the active persona doesn't have is refused with the reaso
   }
 })
 
+test("calls after a switch_persona in the same round go to the new persona's tools", async () => {
+  const sent: Sent[] = []
+  const nasi = await Nasi.open({
+    store: createMemoryStore(),
+    chat: {
+      client: fakeClient(
+        [
+          {
+            content: null,
+            tool_calls: [call("c1", "switch_persona", { persona: "forecaster" }), call("c2", "forecast", {})]
+          },
+          { content: "ok" }
+        ],
+        sent
+      ) as never,
+      model: "fake"
+    },
+    personas: [chatty, forecaster],
+    abilities: store()
+  })
+  try {
+    await nasi.turnBuffered({ message: "weather?" })
+    const forecast = sent[1]!.messages.find(message => message.tool_call_id === "c2")
+    expect(forecast?.content).not.toContain("isn't available to the current persona")
+  } finally {
+    await nasi.close()
+  }
+})
+
 test("an MCP ability connects only once a persona that lists it is active", async () => {
   const fixture = startHttpMcpFixture()
   globalThis.fetch = routeHostTo(fixture, "mcp.example.test", realFetch)

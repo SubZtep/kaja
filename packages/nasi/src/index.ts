@@ -43,6 +43,7 @@ export {
   abilityOfTool,
   type PersonaAbilityEntry,
   personaAbilities,
+  personaLoadsSkills,
   skillMode,
   toolsForPersona
 } from "./abilities/persona-scope"

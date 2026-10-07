@@ -3,7 +3,8 @@
 
 label     = "Helpful assistant"
 when      = "no other persona clearly fits the conversation"
-# Every marketplace ability; one that needs a key you haven't saved is left out.
+# Every marketplace ability but filesystem (its folders belong in a persona of your own); one that needs a key you
+# haven't saved is left out.
 abilities = [
   "web-search",
   "open-meteo",

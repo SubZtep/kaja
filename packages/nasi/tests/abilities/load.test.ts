@@ -163,3 +163,17 @@ test("a read-only root needs the manifest's pathArgs to check writes by, or it's
     [{ a: [{ folder: tmp, readOnly: true }] }, ["path"]]
   ])
 })
+
+test("only the code tools a persona lists are loaded, every one without personas", async () => {
+  const asked: (Set<string> | undefined)[] = []
+  const store: AbilityStore = {
+    ...storeWith([]),
+    listCodeTools: async only => {
+      asked.push(only)
+      return []
+    }
+  }
+  await loadAbilities(store, { personas: [{ id: "a", label: "A", abilities: ["dice"] }] })
+  await loadAbilities(store)
+  expect(asked).toEqual([new Set(["dice"]), undefined])
+})

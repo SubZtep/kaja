@@ -320,6 +320,8 @@ test("one folder can hold every part: each list sees its own, and the skill does
   expect(code.map(entry => [entry.name, entry.tools.length])).toEqual([["mixed", 1]])
   expect(await code[0]!.tools[0]!.execute({})).toBe("pong")
   expect(await scanCodeTools(root)).toEqual(["mixed"])
+  // Only the abilities asked for are imported: code no persona uses never runs
+  expect(await store.listCodeTools!(new Set(["other"]))).toEqual([])
 
   // Only folders with a SKILL.md are skills; http-only isn't one
   expect((await scanSkills(root)).map(entry => entry.name)).toEqual(["mixed"])

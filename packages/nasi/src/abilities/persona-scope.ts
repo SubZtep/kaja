@@ -23,19 +23,27 @@ export function skillMode(skill: SkillSummary, persona: Pick<Persona, "abilities
   return entry.skill ?? (skill.sticky ? "sticky" : "load")
 }
 
+/** Whether `persona` gets load_skill: it has a skill to load, or a sticky one whose instructions may point to its other files. */
+export function personaLoadsSkills(persona: Pick<Persona, "abilities">, skills: SkillSummary[]): boolean {
+  return skills.some(skill => {
+    const mode = skillMode(skill, persona)
+    return mode === "load" || (mode === "sticky" && skill.files.length > 0)
+  })
+}
+
 /** The ability a tool belongs to (its `ability:<name>` source), or undefined for one that isn't an ability's. */
 export function abilityOfTool(tool: Tool): string | undefined {
   return tool.source?.startsWith(ABILITY_SOURCE) ? tool.source.slice(ABILITY_SOURCE.length) : undefined
 }
 
 /**
- * The tools `persona` gets: every tool that isn't an ability's (builtins, mcp.toml servers), plus the tools of the
- * abilities it lists, narrowed to an entry's `tools` when it sets them. `load_skill` comes along only when the persona
- * has a skill to load (see {@link skillMode}); `skills` says which skills that tool serves.
+ * The tools `persona` gets: every tool that isn't an ability's (the builtins), plus the tools of the abilities it
+ * lists, narrowed to an entry's `tools` when it sets them. `load_skill` comes along only when the persona needs it
+ * (see {@link personaLoadsSkills}); `skills` says which skills that tool serves.
  */
 export function toolsForPersona(tools: Tool[], persona: Pick<Persona, "abilities">, skills: SkillSummary[]): Tool[] {
   const entries = personaAbilities(persona)
-  const loadable = skills.some(skill => skillMode(skill, persona) === "load")
+  const loadable = personaLoadsSkills(persona, skills)
   return tools.filter(tool => {
     const ability = abilityOfTool(tool)
     if (ability === undefined) return toolName(tool) !== LOAD_SKILL_NAME || loadable

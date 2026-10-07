@@ -7,6 +7,7 @@ import {
   parseHttpToolManifest,
   parseMcpManifest,
   parsePersonaManifest,
+  parseSkillMd,
   personaAbilities
 } from "@kaja/nasi"
 import type { Dataset, HttpToolAbility, McpAbility, Persona } from "@kaja/schema/abilities"
@@ -18,7 +19,8 @@ import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml"
 import type { SecretService } from "./secret"
 
 /** An available skill with its files, for the agent's Postgres AbilityStore. */
-export type CloudSkill = { name: string; description: string; files: Record<string, string> }
+/** A stored skill with its files; `sticky` is its SKILL.md's suggestion to keep it in the system prompt. */
+export type CloudSkill = { name: string; description: string; files: Record<string, string>; sticky?: boolean }
 
 /** A saved key and its live test (null when the ability has no test), or why it wasn't saved. */
 export type SaveKeyResult = { check: KeyCheckResult | null } | "not_found" | "no_key"
@@ -78,6 +80,15 @@ function withDefaultFirst(personas: Persona[]): Persona[] {
   const own = personas.find(persona => persona.id === DEFAULT_PERSONA)
   const others = personas.filter(persona => persona.id !== DEFAULT_PERSONA)
   return [own ?? parsePersonaManifest(DEFAULT_PERSONA_TOML, DEFAULT_PERSONA), ...others]
+}
+
+/** A stored SKILL.md's `sticky` suggestion; false when it has none or no longer parses (the sync checked it). */
+function stickyOf(skillMd: string | undefined, name: string): boolean {
+  try {
+    return parseSkillMd(skillMd ?? "", name).frontmatter.sticky === true
+  } catch {
+    return false
+  }
 }
 
 /** Where an ability's calls go: its HTTP tool's or remote server's host, or the MCP sandbox for a stdio one. */
@@ -141,7 +152,12 @@ export class AbilityService {
     const { rows } = await this.#db.query(
       `SELECT p.name, p.description, p.files FROM ability p WHERE p.type = 'skill' AND ${AVAILABLE} ORDER BY p.name`
     )
-    return rows.map(row => ({ name: row.name, description: row.description, files: row.files }))
+    return rows.map(row => ({
+      name: row.name,
+      description: row.description,
+      files: row.files,
+      ...(stickyOf(row.files["SKILL.md"], row.name) ? { sticky: true } : {})
+    }))
   }
 
   /** Every persona in the catalog, `default` first (the built-in one until a sync brings it): every user's roster. */

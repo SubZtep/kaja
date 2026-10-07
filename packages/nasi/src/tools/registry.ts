@@ -323,18 +323,23 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         if (paths(folders) !== paths(currentRoots.get(target.id))) changed.push(target.id)
         currentRoots.set(target.id, folders)
       }
+      // A server that starts now asks for its roots itself; one already running has to be told they changed.
+      const running = new Set(connecting.keys())
       await connect(
         mcpTargets.filter(
           target => abilityIds.has(target.id) && (!wanted || wanted.has(target.id)) && !rootless.has(target.id)
         )
       )
-      // A server that's already running asks for its new roots once told.
       await Promise.all(
-        changed.map(async id =>
-          (await connecting.get(id))
-            ?.rootsChanged()
-            .catch(error => warn("Couldn't tell an MCP server its roots changed", { server: id, error: String(error) }))
-        )
+        changed
+          .filter(id => running.has(id))
+          .map(async id =>
+            (await connecting.get(id))
+              ?.rootsChanged()
+              .catch(error =>
+                warn("Couldn't tell an MCP server its roots changed", { server: id, error: String(error) })
+              )
+          )
       )
       merged = await merge()
       return merged.tools.filter(

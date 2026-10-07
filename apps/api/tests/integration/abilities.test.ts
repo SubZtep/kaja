@@ -179,6 +179,16 @@ describe("abilities", () => {
     expect(await turnTools(withDefault)).toContain("load_skill")
     expect(await turnTools(withQuiet)).not.toContain("load_skill")
   })
+
+  test("a SKILL.md's sticky suggestion reaches the cloud store", async () => {
+    const sticky = `sticky-${tag}`
+    const root = marketplace([plain])
+    put(root, `abilities/${sticky}/SKILL.md`, "---\ndescription: Always on.\nsticky: true\n---\nKeep this.\n")
+    await marketplaceService.syncFromDir(root, "s1")
+    const skills = await createPostgresAbilityStore({ skillsOnly: true }).listSkills()
+    expect(skills.find(s => s.name === sticky)?.sticky).toBe(true)
+    expect(skills.find(s => s.name === plain)?.sticky).toBeUndefined()
+  })
 })
 
 describe("marketplace sync from GitHub", () => {

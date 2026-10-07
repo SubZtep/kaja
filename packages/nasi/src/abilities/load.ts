@@ -53,7 +53,10 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   const skills = await listOrWarn(() => store.listSkills(), "skills")
   const abilities = await listOrWarn(() => store.listHttpTools(), "HTTP tools")
   const mcpAbilities = await listOrWarn(() => store.listMcpAbilities(), "MCP abilities")
-  const codeTools = store.listCodeTools ? await listOrWarn(() => store.listCodeTools!(), "code tools") : []
+  // A missing key only matters for an ability some persona uses; without personas, every one counts.
+  const listed = opts.personas && new Set(opts.personas.flatMap(persona => [...personaAbilities(persona).keys()]))
+  // Importing a tool.ts runs it, so only the ones a persona lists load (every one without personas).
+  const codeTools = store.listCodeTools ? await listOrWarn(() => store.listCodeTools!(listed), "code tools") : []
   if (opts.warnUnknown && opts.personas) {
     // Each ability's tool names, where they're known before connecting (an MCP server without a `tools` list isn't).
     const known = new Map<string, Set<string> | undefined>()
@@ -80,8 +83,6 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
       : []
 
   const missingKeys: string[] = []
-  // A missing key only matters for an ability some persona uses; without personas, every one counts.
-  const listed = opts.personas && new Set(opts.personas.flatMap(persona => [...personaAbilities(persona).keys()]))
   /** The ability's key (none for a keyless one without it), or null when it's missing (the ability is then left out). */
   const keyFor = (ability: HttpToolAbility | McpAbility): string | undefined | null => {
     if (ability.auth.type !== "apiKey") return undefined

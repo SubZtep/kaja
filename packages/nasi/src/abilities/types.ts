@@ -30,8 +30,11 @@ export type AbilityStore = {
   listHttpTools(): Promise<HttpToolAbility[]>
   /** Enabled, valid MCP server abilities. Broken ones are skipped with a warning, never thrown. */
   listMcpAbilities(): Promise<McpAbility[]>
-  /** Abilities' code tools (`tool.ts`), by ability; only stores on the user's own machine have them. */
-  listCodeTools?(): Promise<{ name: string; tools: Tool[] }[]>
+  /**
+   * Abilities' code tools (`tool.ts`), by ability; only stores on the user's own machine have them. With `only`, the
+   * other abilities' files aren't imported at all, so code no persona uses never runs.
+   */
+  listCodeTools?(only?: Set<string>): Promise<{ name: string; tools: Tool[] }[]>
 }
 
 /** A skill file that exists but can't be handed to the model — outside the skill folder, binary, or too large. */

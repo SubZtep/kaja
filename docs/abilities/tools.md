@@ -123,7 +123,8 @@ approving.
 
 Local mode only. An ability folder's `tool.ts` (`~/.config/kaja/marketplace/abilities/<name>/tool.ts`) exports
 tool objects. Every export with a `definition` and an `execute` function is picked up on the next start, with
-no rebuild, beside the folder's other parts (a `SKILL.md` that explains when to use them, say):
+no rebuild, beside the folder's other parts (a `SKILL.md` that explains when to use them, say). Importing the
+file runs it, so it's only loaded when a [persona](/abilities/personas#abilities) lists the ability:
 
 ```ts
 export const diceTool = {

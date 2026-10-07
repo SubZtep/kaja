@@ -24,7 +24,8 @@ export function createPostgresAbilityStore(source: CloudAbilitySource): AbilityS
         description: skill.description,
         files: Object.keys(skill.files)
           .filter(path => path !== SKILL_FILE)
-          .sort((a, b) => a.localeCompare(b))
+          .sort((a, b) => a.localeCompare(b)),
+        ...(skill.sticky ? { sticky: true } : {})
       }))
     },
 

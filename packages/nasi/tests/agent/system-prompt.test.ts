@@ -100,6 +100,17 @@ test("a sticky skill's body sits in the system prompt instead of the ## Skills l
   expect(prompt).toContain("- notes: Keep notes.")
 })
 
+test("a sticky skill's section says where its other files are", async () => {
+  const store: AbilityStore = { ...noStore, readSkill: async () => "Fill in template.md.\n" }
+  const notes: SkillSummary = { name: "notes", description: "Notes.", files: ["template.md"], dir: "/m/notes" }
+  const persona: Persona = { id: "s", label: "S", abilities: [{ name: "notes", skill: "sticky" }] }
+  const loadSkill = createLoadSkillTool({ store, skills: [notes], personas: [persona] })
+  const agent = new Agent({ model: "m", tools: [loadSkill], personas: [persona], personaId: "s" })
+  expect(await buildSystemPrompt(agent)).toContain(
+    '## Skill: notes\nFill in template.md.\n\nSkill directory: /m/notes\nIts other files (open with load_skill, name "notes" and file=<path>): template.md'
+  )
+})
+
 test("SKILL.md's sticky suggestion holds until the persona says otherwise", async () => {
   const store: AbilityStore = { ...noStore, readSkill: async () => "Rules." }
   const rules: SkillSummary = { name: "rules", description: "Rules.", files: [], sticky: true }

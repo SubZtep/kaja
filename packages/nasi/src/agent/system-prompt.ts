@@ -153,14 +153,26 @@ function buildSkillsBlock(agent: Agent, toolNames: Set<string>): string | undefi
   )
 }
 
-/** One `## Skill: <name>` section per skill the active persona keeps in the system prompt, its SKILL.md body as written. */
+/**
+ * One `## Skill: <name>` section per skill the active persona keeps in the system prompt: its SKILL.md body as
+ * written, then where its other files are, since its instructions may point to them (load_skill opens them).
+ */
 async function buildStickySkillSections(agent: Agent): Promise<string[]> {
   const loadSkill = loadSkillToolOf(agent)
   if (!loadSkill?.skills) return []
   const sections: string[] = []
   for (const skill of stickySkillsForPersona(loadSkill.skills, activePersona(agent))) {
     const body = await loadSkill.readBody(skill.name).catch(() => undefined)
-    if (body) sections.push(`## Skill: ${skill.name}\n${body}`)
+    if (!body) continue
+    const where = [
+      skill.dir ? `Skill directory: ${skill.dir}` : undefined,
+      skill.files.length > 0
+        ? `Its other files (open with ${LOAD_SKILL_TOOL}, name "${skill.name}" and file=<path>): ${skill.files.join(", ")}`
+        : undefined
+    ].filter(Boolean)
+    sections.push(
+      [`## Skill: ${skill.name}\n${body.trimEnd()}`, ...(where.length > 0 ? [where.join("\n")] : [])].join("\n\n")
+    )
   }
   return sections
 }

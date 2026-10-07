@@ -42,8 +42,10 @@ test("an entry's tools list narrows that ability to those tools", () => {
 test("load_skill comes along only when the persona has a skill to load", () => {
   expect(names({ id: "p", label: "P", abilities: ["pdf"] }, [pdf])).toContain("load_skill")
   expect(names({ id: "o", label: "O", abilities: [{ name: "pdf", skill: "off" }] }, [pdf])).not.toContain("load_skill")
-  // A sticky skill is already in the prompt, so it alone doesn't bring load_skill
+  // A sticky skill is already in the prompt, so it alone doesn't bring load_skill, unless it has files to open
   expect(names({ id: "s", label: "S", abilities: ["rules"] }, [rules])).not.toContain("load_skill")
+  const withTemplate = { ...rules, files: ["template.md"] }
+  expect(names({ id: "s", label: "S", abilities: ["rules"] }, [withTemplate])).toContain("load_skill")
   expect(names({ id: "x", label: "X", abilities: ["web-search"] }, [pdf])).not.toContain("load_skill")
 })
 
