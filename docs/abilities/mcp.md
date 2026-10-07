@@ -28,7 +28,7 @@ An MCP ability is the `mcp.toml` of an ability folder, `~/.config/kaja/marketpla
 description = "Up-to-date library docs"
 transport = "http"                  # http (Streamable HTTP), sse, or stdio
 url = "https://mcp.context7.com/mcp"
-auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer ", optional = true }
+auth = { type = "apiKey", in = "header", name = "Authorization", prefix = "Bearer " }
 tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the model
 approval = "never"                  # never | writes | always
 ```
@@ -37,8 +37,8 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
 
 - A `stdio` ability runs a local `command` (with `args` and `env`) instead of a `url`, and its key goes in an
   env var (`in = "env"`). `kaja abilities` shows the command it runs.
-- The key lives in `secrets.toml` as `[abilities.<name>] api_key`. `optional = true` means the server also
-  works without one.
+- The key lives in `secrets.toml` as `[abilities.<name>] api_key`. Every key is optional: without one the
+  ability is simply off, and `kaja doctor` offers to add it.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only, and `always` asks before
   every call. If a server forgets to mark its read-only tools, list them in `readOnly`, with the arguments
   that turn a call into a write:

@@ -18,13 +18,15 @@ export type CredentialItem = {
   present: boolean
   /** Missing only counts as a problem when required: a provider without a key may simply not need one (Ollama). */
   required: boolean
+  /** Missing just turns something off (an ability): asked for in a terminal (Enter skips), then reported as off, never as a to-do. */
+  missingTurnsOff?: boolean
   /** Tests `value`, or the saved value when undefined. Absent, or resolving to undefined, when there's no way to test it. */
   check?: (value?: string) => Promise<CheckResult | undefined>
   save: (value: string) => Promise<void>
 }
 
 export type CredentialOutcome =
-  | { item: CredentialItem; status: "ok" | "keyless" | "untested" | "saved" | "saved-untested" }
+  | { item: CredentialItem; status: "ok" | "keyless" | "untested" | "saved" | "saved-untested" | "off" }
   | {
       item: CredentialItem
       status: "missing" | "failing" | "saved-failing"
@@ -102,7 +104,7 @@ export async function collectCredentials(): Promise<CredentialItem[]> {
   return items
 }
 
-// HTTP tool and MCP abilities with key auth that some persona uses (a key nobody's persona needs isn't asked for). An MCP ability is tested by connecting to it.
+// HTTP tool and MCP abilities with key auth that some persona uses (a key nobody's persona needs isn't asked for). Without its key an ability is off, so none is required. An MCP ability is tested by connecting to it.
 async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   const items: CredentialItem[] = []
   const { loadPersonas } = await import("../personas/personas")
@@ -116,7 +118,8 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
       where: abilityKeyWhere(ability.name),
       hint: `${ability.auth.in} ${ability.auth.name}`,
       present: Boolean(saved),
-      required: !ability.auth.optional,
+      required: false,
+      missingTurnsOff: true,
       check: async value => {
         const key = value ?? saved
         return key ? checkAbilityKey(ability, key) : undefined
@@ -133,11 +136,12 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
       where: abilityKeyWhere(ability.name),
       hint: `${auth.in} ${auth.name}`,
       present: Boolean(saved),
-      required: !auth.optional,
-      // Connecting proves the server is up and takes the key; an optional key without a value tests the keyless connection.
+      required: false,
+      missingTurnsOff: true,
+      // Connecting proves the server is up and takes the key.
       check: async value => {
         const key = value ?? saved
-        if (!key && !auth.optional) return undefined
+        if (!key) return undefined
         const target = mcpAbilityTarget(ability, key)
         return checkMcpServer(target.server, { transport: target.transport === "sse" ? "sse" : "http" })
       },
@@ -147,13 +151,19 @@ async function abilityItems(creds: SecretsFile): Promise<CredentialItem[]> {
   return items
 }
 
-/** Prompt text for an item that's missing or whose saved value failed its test. */
-function askTitle(item: CredentialItem, failingReason: string | undefined): string {
+/** Prompt text for an item that's missing, off for want of a key, or whose saved value failed its test. */
+function askTitle(outcome: AskableOutcome): string {
+  const { item } = outcome
   const hint = item.hint ? ` (${item.hint})` : ""
-  return failingReason
-    ? t("doctor.askFailing", { label: item.label, reason: failingReason, hint })
-    : t("doctor.askMissing", { label: item.label, hint })
+  if (outcome.status === "off") return t("doctor.askOff", { label: item.label, hint })
+  return outcome.status === "missing"
+    ? t("doctor.askMissing", { label: item.label, hint })
+    : t("doctor.askFailing", { label: item.label, reason: outcome.reason, hint })
 }
+
+type ProblemOutcome = Extract<CredentialOutcome, { reason: string }>
+// What the user can be asked about: a problem, or an ability that's off without its key.
+type AskableOutcome = ProblemOutcome | { item: CredentialItem; status: "off" }
 
 /**
  * Tests each item and, when interactive, asks for anything missing or failing: the new value
@@ -182,15 +192,16 @@ export async function resolveCredentials(
     const saved = await savedOutcome(item)
     // Nothing rejected the value, so there's nothing for the user to retype — report and move on.
     // `null` says the caller already asked and was turned down, which is the same dead end.
-    const worthAsking = "reason" in saved && io.interactive && saved.kind !== "unreachable" && offer !== null
-    settle(worthAsking ? await askAndSave(saved as Extract<CredentialOutcome, { reason: string }>, io) : saved)
+    const askable = saved.status === "off" || ("reason" in saved && saved.kind !== "unreachable")
+    settle(askable && io.interactive && offer !== null ? await askAndSave(saved as AskableOutcome, io) : saved)
   }
 
   return outcomes
 }
 
-// The item as it stands: fine (ok, keyless or untested), or missing or failing its test.
+// The item as it stands: fine (ok, keyless or untested), off without its key, or missing or failing its test.
 async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
+  if (item.missingTurnsOff && !item.present) return { item, status: "off" }
   if (item.required && !item.present) return { item, status: "missing", reason: t("doctor.missing") }
   const current = await item.check?.()
   if (current?.ok === false) return { item, status: "failing", reason: current.reason, kind: current.kind }
@@ -199,13 +210,10 @@ async function savedOutcome(item: CredentialItem): Promise<CredentialOutcome> {
 }
 
 // Asks for a new value, tests it, and saves it; one that fails its test is saved only if the user says so.
-async function askAndSave(
-  problem: Extract<CredentialOutcome, { reason: string }>,
-  io: CredentialIo
-): Promise<CredentialOutcome> {
-  const value = await io.ask(askTitle(problem.item, problem.status === "missing" ? undefined : problem.reason))
-  if (!value) return problem
-  return testAndSave(problem.item, value, problem.status, io)
+async function askAndSave(outcome: AskableOutcome, io: CredentialIo): Promise<CredentialOutcome> {
+  const value = await io.ask(askTitle(outcome))
+  if (!value) return outcome
+  return testAndSave(outcome.item, value, outcome.status === "off" ? "failing" : outcome.status, io)
 }
 
 /**
@@ -216,7 +224,7 @@ async function askAndSave(
 async function testAndSave(
   item: CredentialItem,
   value: string,
-  rejected: Extract<CredentialOutcome, { reason: string }>["status"],
+  rejected: ProblemOutcome["status"],
   io: CredentialIo
 ): Promise<CredentialOutcome> {
   const tested = await item.check?.(value)
@@ -243,6 +251,8 @@ export function outcomeLine(outcome: CredentialOutcome): string {
       return statusLine("success", `${label}: ${t("doctor.keyless")}`)
     case "untested":
       return statusLine("info", `${label}: ${t("doctor.untested")}`)
+    case "off":
+      return statusLine("info", `${label}: ${t("doctor.keyOff")}`)
     case "saved":
       return statusLine("success", `${label}: ${t("doctor.savedWorking")}`)
     case "saved-untested":

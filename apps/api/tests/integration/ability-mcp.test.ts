@@ -59,7 +59,7 @@ function marketplace(base: string) {
   // Keys aren't forwarded to the MCP sandbox yet, so a stdio server that takes one never reaches the cloud.
   put(
     `abilities/stdio-keyed-${tag}/mcp.toml`,
-    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K", optional = true }\n`
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K" }\n`
   )
   // One folder, two parts: the cloud keeps the HTTP tool and drops only the MCP server it can't run (no tool list).
   put(`abilities/mixed-${tag}/mcp.toml`, remote(`mixed-${tag}`, `https://${host}/mcp`))

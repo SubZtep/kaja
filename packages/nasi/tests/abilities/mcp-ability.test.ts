@@ -68,10 +68,10 @@ test("the key lands in the header (with prefix) or env var, next to the static o
   })
 })
 
-test("an optional key that isn't set leaves the header out", () => {
+test("without a key the header is left out", () => {
   const ability = parse({
     url: "https://a.test/mcp",
-    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer ", optional: true }
+    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " }
   })
   expect(mcpAbilityTarget(ability).server).toEqual({ id: "demo", url: "https://a.test/mcp", headers: {} })
 })

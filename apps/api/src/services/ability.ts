@@ -56,8 +56,7 @@ function abilitySecretName(name: string): string {
 }
 
 function keyNeed(ability: HttpToolAbility | McpAbility): AbilityKeyNeed {
-  if (ability.auth.type !== "apiKey") return "none"
-  return ability.auth.optional ? "optional" : "required"
+  return ability.auth.type === "apiKey" ? "required" : "none"
 }
 
 /** Parses `ABILITY_KEYS` (`name=key,name=key`) into ability name → key; malformed pairs are skipped. */

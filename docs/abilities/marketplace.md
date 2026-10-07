@@ -85,8 +85,8 @@ The cloud has no shell and serves many people, so it offers less:
 **Keys.** You save them under **API keys** on your [Profile](https://kaja.io/profile), which lists the
 abilities your personas use that take one. Kaja tests the key, stores it encrypted and never shows it again:
 the page only says "Key saved", with Replace and Remove. It's used for your own turns only and never reaches
-your terminal. An ability that can't work without a key stays out of your chats until you add one. Some abilities, like web search (`brave-search`), come with a key from the server, so you
-need none. If you add your own, it's used instead.
+your terminal. An ability that takes a key stays out of your chats until you add one. Some abilities, like
+web search (`brave-search`), come with a key from the server, so you need none. If you add your own, it's used instead.
 
 **Approvals.** A call that could change something waits for you: the terminal asks, and the Telegram bot
 shows Approve and Decline buttons; both can also approve the tool for the rest of the chat. The server runs

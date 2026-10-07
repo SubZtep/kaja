@@ -182,7 +182,7 @@ test("listMcpAbilities reads every manifest; scanMcpAbilities shows the host or 
   put("abilities/docs/mcp.toml", 'description = "Docs"\nurl = "https://mcp.docs.test/mcp"\n')
   put(
     "abilities/browser/mcp.toml",
-    'description = "Browser"\ntransport = "stdio"\ncommand = "bunx"\nargs = ["browser-mcp", "--headless"]\nauth = { type = "apiKey", in = "env", name = "B_KEY", optional = true }\n'
+    'description = "Browser"\ntransport = "stdio"\ncommand = "bunx"\nargs = ["browser-mcp", "--headless"]\nauth = { type = "apiKey", in = "env", name = "B_KEY" }\n'
   )
   put("abilities/broken/mcp.toml", 'description = "x"\ntransport = "stdio"\n')
   const store = createFolderAbilityStore({ root })
@@ -194,7 +194,7 @@ test("listMcpAbilities reads every manifest; scanMcpAbilities shows the host or 
   expect(entries[1]).toMatchObject({
     transport: "stdio",
     command: "bunx browser-mcp --headless",
-    auth: { in: "env", name: "B_KEY", optional: true }
+    auth: { in: "env", name: "B_KEY" }
   })
   expect(entries[2]).toMatchObject({ transport: "http", domain: "mcp.docs.test", auth: undefined })
 })

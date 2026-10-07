@@ -63,9 +63,8 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
   return lines
 }
 
-// Whether the ability needs a key and has one; nothing when it takes none.
+// Whether the ability takes a key and has one (without it, it's off); nothing when it takes none.
 function keyStatus(auth: AbilityKeyNeed | undefined, saved: boolean): string | undefined {
   if (!auth) return undefined
-  if (saved) return t("ability.keySaved")
-  return auth.optional ? t("ability.optionalKey") : t("ability.needsKey")
+  return saved ? t("ability.keySaved") : t("ability.noKey")
 }

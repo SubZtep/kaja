@@ -161,6 +161,25 @@ test("skipping leaves it on the to-do list; an untestable value is saved as unte
   expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
 })
 
+test("a missing ability key is offered (Enter skips), and without it the ability is off, not a to-do", async () => {
+  const ability = () => fakeItem({ required: false, missingTurnsOff: true, works: value => value === "good" })
+  const skipped = ability()
+  const { io: prompts, titles } = io([undefined])
+  const outcomes = await resolveCredentials([skipped.item], prompts)
+  expect(titles).toEqual(["thing is off until it has a key. Enter one, or skip."])
+  expect(outcomes[0]!.status).toBe("off")
+  expect(stripVTControlCharacters(outcomeLine(outcomes[0]!))).toContain("thing: no key, off")
+  expect(summaryLines(outcomes, "/s")).toEqual(["All keys and tokens check out."])
+
+  const entered = ability()
+  expect((await resolveCredentials([entered.item], io(["good"]).io))[0]!.status).toBe("saved")
+  expect(entered.saved).toEqual(["good"])
+
+  const headless = ability()
+  const reported = await resolveCredentials([headless.item], { ...io([]).io, interactive: false })
+  expect(reported[0]!.status).toBe("off")
+})
+
 test("a value the wizard collected is tested and saved without asking again", async () => {
   const item = fakeItem({ works: value => value === "good" })
   const prompts = io([])
@@ -224,16 +243,16 @@ test("collects providers, keyed abilities a persona uses, and a saved Telegram t
   const items = await collectCredentials()
   expect(items.map(i => [i.where, i.present, i.required, i.hint])).toEqual([
     ["[providers.local] api_key", false, false, undefined],
-    ["[abilities.gh] api_key", false, true, "header Authorization"],
+    ["[abilities.gh] api_key", false, false, "header Authorization"],
     ["[telegram] bot_token", true, true, undefined]
   ])
 })
 
-test("MCP abilities with key auth become items; optional keys aren't required", async () => {
+test("MCP abilities with key auth become items too; no ability key is required", async () => {
   put("marketplace/personas/default.toml", `label = "D"\nabilities = ["docs", "private", "open", "weather"]\n`)
   put(
     "marketplace/abilities/docs/mcp.toml",
-    `description = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization", optional = true }\n`
+    `description = "x"\nurl = "https://mcp.docs.test/mcp"\nauth = { type = "apiKey", in = "header", name = "Authorization" }\n`
   )
   put(
     "marketplace/abilities/private/mcp.toml",
@@ -242,7 +261,7 @@ test("MCP abilities with key auth become items; optional keys aren't required", 
   put("marketplace/abilities/open/mcp.toml", `description = "x"\nurl = "https://mcp.open.test/mcp"\n`)
   put(
     "marketplace/abilities/weather/tool.toml",
-    `description = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key", optional = true }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
+    `description = "x"\nbaseUrl = "https://api.weather.test"\nauth = { type = "apiKey", in = "query", name = "key" }\n\n[[tools]]\nname = "forecast"\ndescription = "x"\npath = "/f"\n`
   )
   put("secrets.toml", "")
 
@@ -250,7 +269,7 @@ test("MCP abilities with key auth become items; optional keys aren't required", 
   expect(items.map(i => [i.where, i.required, i.hint])).toEqual([
     ["[abilities.weather] api_key", false, "query key"],
     ["[abilities.docs] api_key", false, "header Authorization"],
-    ["[abilities.private] api_key", true, "env P_KEY"]
+    ["[abilities.private] api_key", false, "env P_KEY"]
   ])
   expect(items[1]!.label).toBe("docs (MCP ability)")
 })

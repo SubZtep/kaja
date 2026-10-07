@@ -23,12 +23,12 @@ const storeWith = (abilities: HttpToolAbility[], mcp: McpAbility[] = []): Abilit
   listMcpAbilities: async () => mcp
 })
 
-const mcpAbility = (name: string, optional: boolean) =>
+const mcpAbility = (name: string) =>
   parseMcp({
     name,
     description: name,
     url: `https://mcp.${name}.test/mcp`,
-    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer ", optional }
+    auth: { type: "apiKey", in: "header", name: "Authorization", prefix: "Bearer " }
   })
 
 test("each HTTP tool ability becomes a community group tagged with its source", async () => {
@@ -51,17 +51,14 @@ test("an ability whose key is missing is left out and reported", async () => {
   expect(withKey.missingKeys).toEqual([])
 })
 
-test("an optional key may be missing; a required one leaves the ability out", async () => {
-  const optionalHttp = httpAbility("weather", { type: "apiKey", in: "query", name: "key", optional: true })
-  const loaded = await loadAbilities(
-    storeWith([optionalHttp], [mcpAbility("docs", true), mcpAbility("private", false)])
-  )
-  expect(loaded.groups.map(g => g.source)).toEqual(["ability:weather"])
-  expect(loaded.mcp.map(t => t.name)).toEqual(["docs"])
-  expect(loaded.mcp[0]!.server).toMatchObject({ headers: {} })
-  expect(loaded.missingKeys).toEqual(["private"])
+test("every keyed ability is left out without its key, and gets it in its header with one", async () => {
+  const keyedHttp = httpAbility("weather", { type: "apiKey", in: "query", name: "key" })
+  const loaded = await loadAbilities(storeWith([keyedHttp], [mcpAbility("docs"), mcpAbility("private")]))
+  expect(loaded.groups).toEqual([])
+  expect(loaded.mcp).toEqual([])
+  expect(loaded.missingKeys).toEqual(["weather", "docs", "private"])
 
-  const withKeys = await loadAbilities(storeWith([], [mcpAbility("docs", true), mcpAbility("private", false)]), {
+  const withKeys = await loadAbilities(storeWith([], [mcpAbility("docs"), mcpAbility("private")]), {
     getApiKey: () => "k"
   })
   expect(

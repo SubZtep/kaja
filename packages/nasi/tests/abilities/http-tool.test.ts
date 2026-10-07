@@ -102,14 +102,6 @@ test("puts the key in a header (with prefix) or the query, and needs one when au
   expect(() => buildHttpRequest(query, query.tools[0]!, { id: "1" })).toThrow("no API key")
 })
 
-test("an optional key that isn't set adds nothing, and the summary shows no mask", () => {
-  const optional = ability({ auth: { type: "apiKey", in: "query", name: "api_key", optional: true } })
-  expect(buildHttpRequest(optional, optional.tools[0]!, { id: "1" }).url).toBe("https://api.example.com/v2/items/1")
-  expect(approvalSummary(optional, optional.tools[1]!, { title: "Hi" }, false)).toBe(
-    'POST https://api.example.com/v2/items {"title":"Hi"}'
-  )
-})
-
 test("the approval summary shows method, URL and body, with the key masked", () => {
   const query = ability({ auth: { type: "apiKey", in: "query", name: "api_key" } })
   const summary = approvalSummary(query, query.tools[1]!, { title: "Hi" })

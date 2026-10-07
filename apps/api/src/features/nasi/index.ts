@@ -233,11 +233,11 @@ nasiRoutes.openapi(infoRoute, async c => {
 
   const personas = await abilityService.personaCatalog()
   const persona = personas[0]
-  // The starting persona's abilities, as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP abilities in the cloud have a fixed tool list.
+  // The starting persona's abilities, as a turn loads them (a keyed one only with the user's or a server-wide key), without connecting: MCP abilities in the cloud have a fixed tool list.
   const entries = persona ? personaAbilities(persona) : new Map()
-  const keys = new Set(await abilityService.keyNames(user.id))
-  const loads = (ability: { name: string; auth: { type: string; optional?: boolean } }) =>
-    entries.has(ability.name) && (ability.auth.type !== "apiKey" || ability.auth.optional || keys.has(ability.name))
+  const keys = await abilityService.keysForUser(user.id)
+  const loads = (ability: { name: string; auth: { type: string } }) =>
+    entries.has(ability.name) && (ability.auth.type !== "apiKey" || keys.has(ability.name))
   const narrowed = (ability: string, names: string[]) =>
     names.filter(name => entries.get(ability)?.tools?.includes(name) ?? true)
   const httpTools = (await abilityService.httpTools()).filter(loads).flatMap(ability =>

@@ -8,8 +8,7 @@ export const McpAbilityAuthSchema = z.discriminatedUnion("type", [
     type: z.literal("apiKey"),
     in: z.enum(["header", "env"]),
     name: z.string().min(1).describe("Header or env var name"),
-    prefix: z.string().optional().describe('Put before the key, e.g. "Bearer "'),
-    optional: z.boolean().default(false).describe("The server works without a key too (e.g. with lower limits)")
+    prefix: z.string().optional().describe('Put before the key, e.g. "Bearer "')
   })
 ])
 
