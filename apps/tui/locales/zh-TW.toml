@@ -187,7 +187,7 @@ invalidAt = "{path} 的能力檔案無效：{message}"
 
 [ability]
 usage               = "用法：kaja abilities [update]"
-cloudHint           = "你正在使用 Kaja 雲端：請到 {url} 選擇你的技能與工具。這台電腦上的能力僅供本機模式使用：`kaja --local abilities`。"
+cloudHint           = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco {url}"
 firstSync           = "正在首次下載市集內容…"
 updating            = "正在更新市集內容…"
 synced              = "已從 {url}（{ref}）同步市集，版本 {commit}。"
@@ -253,7 +253,6 @@ older = "↑ 較早的內容 · 按 PageDown 或 Ctrl+End 跟隨最新"
 [confirmCommand]
 yes         = "是，執行"
 yesSession  = "是，本次對話不再詢問"
-yesAlways   = "是，並一律允許此工具"
 no          = "否，取消"
 running     = "執行中…"
 truncated   = "… 還有 {count} 行"

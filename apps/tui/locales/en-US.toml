@@ -187,7 +187,7 @@ invalidAt = "Invalid abilities file at {path}: {message}"
 
 [ability]
 usage               = "Usage: kaja abilities [update]"
-cloudHint           = "You're using Kaja cloud: pick your skills and tools at {url}. Abilities on this machine are for local mode: `kaja --local abilities`."
+cloudHint           = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco {url}"
 firstSync           = "Fetching the marketplace for the first time..."
 updating            = "Updating the marketplace..."
 synced              = "Marketplace synced from {url} ({ref}) at {commit}."
@@ -253,7 +253,6 @@ older = "↑ older · PageDown or Ctrl+End to follow"
 [confirmCommand]
 yes         = "Yes, run it"
 yesSession  = "Yes, and don't ask again this session"
-yesAlways   = "Yes, and always allow this tool"
 no          = "No, cancel"
 running     = "Running…"
 truncated   = "… {count} more lines"

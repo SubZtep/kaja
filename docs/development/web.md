@@ -27,8 +27,7 @@ flowchart TD
     A --> DA["/dashboard<br><small>tab layout</small>"]
     DA --> DA2["/dashboard · /dashboard/stats"]
     A --> AG["/agent<br><small>tab layout</small>"]
-    AG --> AG2["/agent/abilities · /agent/widget<br>/agent/sandbox"]
-    A --> WE["/welcome"]
+    AG --> AG2["/agent/widget · /agent/sandbox"]
     A --> PR["/profile"]
     A --> AD["/admin<br><small>admin-only layout</small>"]
     AD --> AD2["/admin/dashboard"]
@@ -61,11 +60,9 @@ else to the dashboard. The menu hides the item and the layout enforces it.
 | --- | --- |
 | `/dashboard` | a welcome and the Telegram connect card |
 | `/dashboard/stats` | your [usage stats](/development/api#usage-stats) |
-| `/agent/abilities` | turn skills, HTTP tools and MCP servers on and off in one list, then personas in their own section. Admins also get the marketplace sync panel ([user guide](/using/web-app)) |
-| `/welcome` | the same list without personas, shown right after sign-up |
 | `/agent/widget` | [widget keys](/using/widget#getting-a-key): create, edit, disable, delete |
 | `/agent/sandbox` | your sandbox key and run command, your sandboxes (online or last seen, place, hardware, servers running; offline ones can be removed), and the share and use-shared switches |
-| `/profile` | your account: name and avatar, email, password, and deleting it |
+| `/profile` | your account: name and avatar, email, password, ability API keys, and deleting it |
 | `/admin/dashboard` | what the platform's services are doing right now, starting with the MCP sandboxes (`/admin` redirects here) |
 | `/admin/users`, `/admin/users/$userId` | accounts, roles, bans |
 | `/admin/models` | providers and their models, per task |

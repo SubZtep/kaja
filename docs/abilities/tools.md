@@ -50,7 +50,8 @@ never exposed there, and code tools are never attached.
 
 An HTTP tool describes one web API in TOML: where it lives, how it authenticates, and the calls the model can
 make. It's the `tool.toml` of an ability folder, `~/.config/kaja/marketplace/abilities/<name>/tool.toml`,
-synced from the marketplace or written by you, and loads once you turn it on (see [Abilities](/abilities)).
+synced from the marketplace or written by you. A chat gets it while a persona that lists it is active (see
+[Personas](/abilities/personas#abilities)).
 The folder name is the ability's name, so the file has no `name` of its own.
 
 ```toml
@@ -87,8 +88,7 @@ type = "string"
   lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`, and without it the ability is left
   out with a warning. An optional `check` request lets Kaja test a key before saving it.
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
-  approval, like a shell command. At the prompt you can also approve the tool for the rest of the chat, or always;
-  "always" is saved, and the tool's dialog on the web abilities page lists it with a switch to ask again.
+  approval, like a shell command. In the cloud you can also approve the tool for the rest of the chat.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same way, so
   the model can react. Redirects to another host are refused, and the key never appears in what the model
   sees.

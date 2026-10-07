@@ -18,18 +18,9 @@ import { reportError } from "../../core/report"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
 import { toolImageUrl } from "../nasi/tool-image"
-import {
-  ABILITY_CALLBACK,
-  ABILITY_PAGE_CALLBACK,
-  abilityEntries,
-  findEntry,
-  needsKeyMessage,
-  renderAbilityList,
-  toggleAbility
-} from "./abilities"
 import { type BotLanguage, botLanguage } from "./language"
 
-const TOOL_CALLBACK = /^tool:(approve|approve_session|approve_always|decline):([0-9a-f]{16})$/
+const TOOL_CALLBACK = /^tool:(approve|approve_session|decline):([0-9a-f]{16})$/
 
 /** Short, fixed-length stand-in for a pending call id in callback data (the Bot API caps it at 64 bytes; provider call ids vary in length). */
 function approvalToken(callId: string): string {
@@ -43,8 +34,8 @@ export type TelegramButton = { text: string; data: string }
  * Abstraction over the actual Telegram API calls, so the driver has zero
  * import of grammy itself. bot.ts implements this against the real bot.api,
  * translating grammy's own errors (429s, "message is not modified") at that
- * boundary. Buttons (rows of them) serve tool approvals (`confirm_tool`) and
- * the /abilities list; cloud Nasi never emits confirm_command. Editing a
+ * boundary. Buttons (rows of them) serve tool approvals (`confirm_tool`);
+ * cloud Nasi never emits confirm_command. Editing a
  * message without `rows` removes its buttons.
  */
 export type TelegramSender = {
@@ -125,10 +116,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         { text: t("telegram.approve"), data: `tool:approve:${token}` },
         { text: t("telegram.decline"), data: `tool:decline:${token}` }
       ],
-      [
-        { text: t("telegram.approveSession"), data: `tool:approve_session:${token}` },
-        { text: t("telegram.approveAlways"), data: `tool:approve_always:${token}` }
-      ]
+      [{ text: t("telegram.approveSession"), data: `tool:approve_session:${token}` }]
     ]
     await reply.settle()
     await sender.sendMessage(chatId, text.join("\n"), buttons)
@@ -302,12 +290,6 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return
     }
 
-    if (isCommand(text, "abilities")) {
-      const { text: list, rows } = renderAbilityList(await abilityEntries(ownerUserId), 0, t)
-      await sender.sendMessage(chatId, list, rows)
-      return
-    }
-
     const focus = commandArgument(text, "compact")
     if (focus !== undefined) {
       // After /new there's no conversation to compact yet, and the next message still starts a fresh one.
@@ -336,31 +318,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   }
 
   /**
-   * A tap in the /abilities list: an ability button turns it on or off for the pressing user's own account
-   * and redraws the list; one that needs a key gets a link to the web instead. Page arrows just redraw.
-   */
-  async function handleAbilityCallback(
-    ownerUserId: string,
-    chatId: number,
-    messageId: number,
-    target: { page: number; typeCode?: string; hash?: string },
-    t: Translate
-  ) {
-    let entries = await abilityEntries(ownerUserId)
-    const entry = target.typeCode && target.hash ? findEntry(entries, target.typeCode, target.hash) : undefined
-    if (entry) {
-      if ((await toggleAbility(ownerUserId, entry)) === "needs_key") {
-        await sender.sendMessage(chatId, needsKeyMessage(entry.name, t))
-        return
-      }
-      entries = await abilityEntries(ownerUserId)
-    }
-    const { text, rows } = renderAbilityList(entries, target.page, t)
-    await editSafely(chatId, messageId, text, rows)
-  }
-
-  /**
-   * A button press: Approve/Decline on a tool call, or a tap in the /abilities list. The pressing user comes
+   * A button press: Approve/Decline on a tool call. The pressing user comes
    * from Telegram (never the payload). An approval must match the call their latest session is still waiting
    * on, so an old or foreign button does nothing; the server then runs (or skips) the call it saved.
    * Returns false for callback data that isn't ours.
@@ -373,9 +331,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     telegramLanguage?: string
   ) {
     const match = TOOL_CALLBACK.exec(data)
-    const abilityMatch = ABILITY_CALLBACK.exec(data)
-    const pageMatch = ABILITY_PAGE_CALLBACK.exec(data)
-    if (!match && !abilityMatch && !pageMatch) return false
+    if (!match) return false
     const linked = await resolveLinkedUser(telegramUserId)
     const language = botLanguage(linked?.locale, telegramLanguage)
     const { t } = language
@@ -385,26 +341,8 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
     const ownerUserId = linked.userId
 
-    if (!match) {
-      try {
-        await handleAbilityCallback(
-          ownerUserId,
-          chatId,
-          messageId,
-          {
-            page: Number(abilityMatch?.[3] ?? pageMatch?.[1] ?? 0),
-            typeCode: abilityMatch?.[1],
-            hash: abilityMatch?.[2]
-          },
-          t
-        )
-      } catch (error) {
-        reportError("Telegram ability toggle crashed", error)
-      }
-      return true
-    }
     const owner = telegramOwner(telegramUserId)
-    const approval = match[1] as "approve" | "approve_session" | "approve_always" | "decline"
+    const approval = match[1] as "approve" | "approve_session" | "decline"
 
     try {
       await withLock(`telegram:${owner}`, async () => {

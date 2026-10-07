@@ -4,7 +4,8 @@ import {
   categorizeError,
   type FinalizedAgentEvent,
   LOAD_SKILL_TOOL,
-  listCloudToolNames
+  listCloudToolNames,
+  personaAbilities
 } from "@kaja/nasi"
 import {
   NasiCompactRequestSchema,
@@ -230,20 +231,30 @@ nasiRoutes.openapi(infoRoute, async c => {
   const result = await resolveModelWithProvider(pinnedModel)
   if (!result) return serviceUnavailable(c, "No model available")
 
-  const personas = await abilityService.personasForUser(user.id)
+  const personas = await abilityService.personaCatalog()
   const persona = personas[0]
-  const skills = await abilityService.skillsForUser(user.id)
+  // The starting persona's abilities, as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP abilities in the cloud have a fixed tool list.
+  const entries = persona ? personaAbilities(persona) : new Map()
   const keys = new Set(await abilityService.keyNames(user.id))
-  // Tool and MCP abilities as a turn loads them (one that requires a key only once the user saved it), without connecting: MCP abilities in the cloud have a fixed tool list.
   const loads = (ability: { name: string; auth: { type: string; optional?: boolean } }) =>
-    ability.auth.type !== "apiKey" || ability.auth.optional || keys.has(ability.name)
-  const httpTools = (await abilityService.httpToolsForUser(user.id))
+    entries.has(ability.name) && (ability.auth.type !== "apiKey" || ability.auth.optional || keys.has(ability.name))
+  const narrowed = (ability: string, names: string[]) =>
+    names.filter(name => entries.get(ability)?.tools?.includes(name) ?? true)
+  const httpTools = (await abilityService.httpTools()).filter(loads).flatMap(ability =>
+    narrowed(
+      ability.name,
+      ability.tools.map(t => t.name)
+    )
+  )
+  const mcpTools = (await abilityService.mcpAbilities())
     .filter(loads)
-    .flatMap(ability => ability.tools.map(t => t.name))
-  const mcpTools = (await abilityService.mcpForUser(user.id)).filter(loads).flatMap(ability => ability.tools ?? [])
+    .flatMap(ability => narrowed(ability.name, ability.tools ?? []))
+  const loadsSkills = (await abilityService.skills()).some(
+    skill => entries.has(skill.name) && entries.get(skill.name)?.skill !== "off"
+  )
   const tools = [
     ...(await listCloudToolNames(nasiToolDeps())),
-    ...(skills.length > 0 ? [LOAD_SKILL_TOOL] : []),
+    ...(loadsSkills ? [LOAD_SKILL_TOOL] : []),
     ...httpTools,
     ...mcpTools
   ]

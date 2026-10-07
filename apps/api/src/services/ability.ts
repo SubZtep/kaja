@@ -7,32 +7,18 @@ import {
   parseHttpToolManifest,
   parseMcpManifest,
   parsePersonaManifest,
-  parseSkillMd,
-  withoutHttpTools,
-  withoutMcpTools
+  personaAbilities
 } from "@kaja/nasi"
 import type { Dataset, HttpToolAbility, McpAbility, Persona } from "@kaja/schema/abilities"
-import {
-  type AbilityKeyNeed,
-  type AbilityType,
-  abilityTypeSchema,
-  type CatalogAbility,
-  DEFAULT_PERSONA,
-  type KeyedAbilityType,
-  type SkillDetail,
-  type UserAbility
-} from "@kaja/schema/api"
+import { type AbilityKey, type AbilityKeyNeed, DEFAULT_PERSONA } from "@kaja/schema/api"
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import type { Pool } from "pg"
 // Built in, so the cloud has its default persona before the first sync brings the same file.
 import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml" with { type: "text" }
-import { reportError } from "../core/report"
 import type { SecretService } from "./secret"
 
-/** An enabled skill with its files, for the agent's Postgres AbilityStore. */
+/** An available skill with its files, for the agent's Postgres AbilityStore. */
 export type CloudSkill = { name: string; description: string; files: Record<string, string> }
-
-export type EnableResult = "enabled" | "not_found" | "key_required"
 
 /** A saved key and its live test (null when the ability has no test), or why it wasn't saved. */
 export type SaveKeyResult = { check: KeyCheckResult | null } | "not_found" | "no_key"
@@ -40,24 +26,7 @@ export type SaveKeyResult = { check: KeyCheckResult | null } | "not_found" | "no
 /** An ability that can take the user's key, parsed from its stored TOML. */
 type KeyedAbility = { type: "tool"; ability: HttpToolAbility } | { type: "mcp"; ability: McpAbility }
 
-type ManifestRow = { type: string; name: string; files: Record<string, string> }
-
-export type SetDisabledToolsResult = "ok" | "not_found" | "not_enabled" | "unknown_tool"
-
-/** The tool names an HTTP tool or MCP server ability offers. */
-function toolNames(keyed: KeyedAbility): string[] {
-  return keyed.type === "tool" ? keyed.ability.tools.map(tool => tool.name) : (keyed.ability.tools ?? [])
-}
-
-/** The ability without the tools the user switched off; undefined when none are left, so it's left out as a whole. */
-function withoutTools(keyed: KeyedAbility, disabled: string[]): KeyedAbility | undefined {
-  if (keyed.type === "tool") {
-    const ability = withoutHttpTools(keyed.ability, disabled)
-    return ability && { type: "tool", ability }
-  }
-  const ability = withoutMcpTools(keyed.ability, disabled)
-  return ability && { type: "mcp", ability }
-}
+type ManifestRow = { type: string; name: string; description?: string; files: Record<string, string> }
 
 /**
  * Why the cloud can't offer an MCP ability, or undefined when it can: a fixed tool list, and either a remote server on a
@@ -80,15 +49,6 @@ export const SANDBOX_DOMAIN = "sandbox"
 // Offered in the cloud: still in the marketplace, and nothing that needs a shell.
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
 const KEY_PREFIX = "ability:"
-
-/** Abilities a new account starts with turned on. */
-const DEFAULT_ABILITIES: { type: AbilityType; name: string }[] = [
-  { type: "tool", name: "brave-search" },
-  { type: "mcp", name: "geo-service" },
-  { type: "tool", name: "open-meteo" },
-  { type: "persona", name: "care" },
-  { type: "persona", name: "onboarding" }
-]
 
 /** Where an ability's API key lives in `user_secret`. */
 function abilitySecretName(name: string): string {
@@ -119,6 +79,12 @@ function withDefaultFirst(personas: Persona[]): Persona[] {
   return [own ?? parsePersonaManifest(DEFAULT_PERSONA_TOML, DEFAULT_PERSONA), ...others]
 }
 
+/** Where an ability's calls go: its HTTP tool's or remote server's host, or the MCP sandbox for a stdio one. */
+function domainOf(keyed: KeyedAbility): string {
+  if (keyed.type === "tool") return new URL(keyed.ability.baseUrl).host
+  return keyed.ability.url ? new URL(keyed.ability.url).host : SANDBOX_DOMAIN
+}
+
 export class AbilityService {
   readonly #db: Pool
   readonly #secrets: SecretService
@@ -136,247 +102,51 @@ export class AbilityService {
     return this.#secrets.enabled
   }
 
-  /** What users can enable: available skills, personas (not `default`, which everyone always has), HTTP tools and MCP servers, by type and name. */
-  async listCatalog(): Promise<CatalogAbility[]> {
+  /**
+   * The abilities that take a key and some persona uses, one entry per ability, with whether the user saved one: the
+   * Profile page's API keys list. An ability with a server-wide key counts as optional.
+   */
+  async listKeys(userId: string): Promise<AbilityKey[]> {
+    const used = new Set((await this.personaCatalog()).flatMap(persona => [...personaAbilities(persona).keys()]))
+    const saved = new Set(await this.keyNames(userId))
     const { rows } = await this.#db.query(
-      `
-      SELECT p.type, p.name, p.description, p.updated_at, CASE WHEN p.type <> 'skill' THEN p.files END AS files
-      FROM ability p WHERE ${AVAILABLE} AND p.type = ANY($1) ORDER BY p.type, p.name
-      `,
-      // Datasets come with the personas that use them; they're never listed or toggled.
-      [abilityTypeSchema.options]
+      `SELECT p.type, p.name, p.description, p.files FROM ability p WHERE ${AVAILABLE} AND p.type IN ('tool', 'mcp') ORDER BY p.name, p.type`
     )
-    const catalog: CatalogAbility[] = []
+    const keys = new Map<string, AbilityKey>()
     for (const row of rows) {
-      const details = this.#catalogDetails(row)
-      if (!details) continue
-      catalog.push({
-        type: row.type,
+      const keyed = used.has(row.name) && !keys.has(row.name) ? this.#usable(row) : undefined
+      const need = keyed && this.#keyNeed(keyed.ability)
+      if (!(keyed && need && need !== "none")) continue
+      keys.set(row.name, {
         name: row.name,
         description: row.description,
-        updatedAt: new Date(row.updated_at),
-        ...details
+        key: need,
+        domain: domainOf(keyed),
+        saved: saved.has(row.name)
       })
     }
-    return catalog
+    return [...keys.values()]
   }
 
-  /** One available skill in full (instructions and file names), or null when it isn't in the catalog. */
-  async getSkill(name: string): Promise<SkillDetail | null> {
-    const { rows } = await this.#db.query(
-      `SELECT p.name, p.description, p.files, p.updated_at FROM ability p WHERE p.type = 'skill' AND p.name = $1 AND ${AVAILABLE}`,
-      [name]
-    )
-    const row = rows[0]
-    if (!row) return null
-    let instructions = ""
-    try {
-      instructions = parseSkillMd(row.files["SKILL.md"] ?? "").body
-    } catch (error) {
-      // The skill still loads, without instructions; the sync validates SKILL.md, so this means a row it didn't write
-      reportError("Stored SKILL.md doesn't parse", error, { skill: row.name })
-    }
-    return {
-      name: row.name,
-      description: row.description,
-      instructions,
-      files: Object.keys(row.files)
-        .filter(path => path !== "SKILL.md")
-        .sort((a, b) => a.localeCompare(b)),
-      updatedAt: new Date(row.updated_at)
-    }
-  }
-
-  /** The user's selections, including ones that left the marketplace or can't run here (`available: false`). */
-  async listForUser(userId: string): Promise<UserAbility[]> {
-    const { rows } = await this.#db.query(
-      `
-      SELECT p.type, p.name, p.description, up.enabled_at, up.disabled_tools, up.allowed_tools, (${AVAILABLE}) AS available,
-        CASE WHEN p.type <> 'skill' THEN p.files END AS files
-      FROM user_ability up JOIN ability p ON p.id = up.ability_id
-      WHERE up.user_id = $1
-      ORDER BY p.type, p.name
-      `,
-      [userId]
-    )
-    return rows.map(row => ({
-      type: row.type,
-      name: row.name,
-      description: row.description,
-      enabledAt: new Date(row.enabled_at),
-      available: row.available && this.#runs(row),
-      disabledTools: row.disabled_tools ?? [],
-      allowedTools: row.allowed_tools ?? []
-    }))
-  }
-
-  /** Abilities the user saved a key for, on or off. */
+  /** Abilities the user saved a key for. */
   async keyNames(userId: string): Promise<string[]> {
     return [...(await this.#secrets.names(userId, KEY_PREFIX))]
       .map(name => name.slice(KEY_PREFIX.length))
       .sort((a, b) => a.localeCompare(b))
   }
 
-  /** Turns on {@link DEFAULT_ABILITIES} for a new user; one that's missing from the catalog or needs a key they don't have yet is skipped. */
-  async enableDefaults(userId: string): Promise<void> {
-    for (const { type, name } of DEFAULT_ABILITIES) await this.enable(userId, type, name)
-  }
-
-  /** Enables an available ability for the user. Enabling twice is fine; a tool or MCP server that requires a key needs one saved first. */
-  async enable(userId: string, type: AbilityType, name: string): Promise<EnableResult> {
-    if (type === "tool" || type === "mcp") {
-      const keyed = await this.#getKeyed(type, name)
-      if (!keyed) return "not_found"
-      if (this.#keyNeed(keyed.ability) === "required" && !(await this.#secrets.has(userId, abilitySecretName(name)))) {
-        return "key_required"
-      }
-    }
-    const result = await this.#db.query(
-      `
-      INSERT INTO user_ability (user_id, ability_id)
-      SELECT $1, p.id FROM ability p WHERE p.type = $2 AND p.name = $3 AND ${AVAILABLE}
-      ON CONFLICT (user_id, ability_id) DO NOTHING
-      RETURNING ability_id
-      `,
-      [userId, type, name]
-    )
-    if (result.rowCount) return "enabled"
-    // Nothing inserted: either it was already on (fine) or it isn't in the catalog.
+  /** Every available skill, with its files: a persona's `abilities` decides which of them a turn uses. */
+  async skills(): Promise<CloudSkill[]> {
     const { rows } = await this.#db.query(
-      `SELECT 1 FROM ability p WHERE p.type = $1 AND p.name = $2 AND ${AVAILABLE}`,
-      [type, name]
-    )
-    return rows.length > 0 ? "enabled" : "not_found"
-  }
-
-  /** Turns a selection off, available or not; false when the ability doesn't exist at all. */
-  async disable(userId: string, type: AbilityType, name: string): Promise<boolean> {
-    const { rows } = await this.#db.query("SELECT id FROM ability WHERE type = $1 AND name = $2", [type, name])
-    if (!rows[0]) return false
-    await this.#db.query("DELETE FROM user_ability WHERE user_id = $1 AND ability_id = $2", [userId, rows[0].id])
-    return true
-  }
-
-  /** Switches off some of an enabled HTTP tool's or MCP server's tools (replacing the earlier list); an empty list turns them all back on. */
-  async setDisabledTools(
-    userId: string,
-    type: KeyedAbilityType,
-    name: string,
-    disabled: string[]
-  ): Promise<SetDisabledToolsResult> {
-    const keyed = await this.#getKeyed(type, name)
-    if (!keyed) return "not_found"
-    const offered = new Set(toolNames(keyed))
-    if (disabled.some(tool => !offered.has(tool))) return "unknown_tool"
-    const result = await this.#db.query(
-      `
-      UPDATE user_ability up SET disabled_tools = $4
-      FROM ability p
-      WHERE up.ability_id = p.id AND up.user_id = $1 AND p.type = $2 AND p.name = $3
-      `,
-      [userId, type, name, [...new Set(disabled)].sort((a, b) => a.localeCompare(b))]
-    )
-    return result.rowCount ? "ok" : "not_enabled"
-  }
-
-  /** Sets which of an enabled HTTP tool's or MCP server's tools never ask for approval (names the ability offers, or globs with `*`), replacing the list. */
-  async setAllowedTools(
-    userId: string,
-    type: KeyedAbilityType,
-    name: string,
-    allowed: string[]
-  ): Promise<SetDisabledToolsResult> {
-    const keyed = await this.#getKeyed(type, name)
-    if (!keyed) return "not_found"
-    const offered = new Set(toolNames(keyed))
-    if (allowed.some(tool => !tool.includes("*") && !offered.has(tool))) return "unknown_tool"
-    const result = await this.#db.query(
-      `
-      UPDATE user_ability up SET allowed_tools = $4
-      FROM ability p
-      WHERE up.ability_id = p.id AND up.user_id = $1 AND p.type = $2 AND p.name = $3
-      `,
-      [userId, type, name, [...new Set(allowed)].sort((a, b) => a.localeCompare(b))]
-    )
-    return result.rowCount ? "ok" : "not_enabled"
-  }
-
-  /** The allow patterns of the user's enabled tool and MCP abilities, as the turn matches them: `ability:<name>:<tool or glob>`. */
-  async allowedToolsForUser(userId: string): Promise<string[]> {
-    const { rows } = await this.#db.query(
-      `
-      SELECT p.name, up.allowed_tools
-      FROM user_ability up JOIN ability p ON p.id = up.ability_id
-      WHERE up.user_id = $1 AND p.type IN ('tool', 'mcp') AND ${AVAILABLE} AND cardinality(up.allowed_tools) > 0
-      `,
-      [userId]
-    )
-    return rows.flatMap(row => (row.allowed_tools as string[]).map(tool => `ability:${row.name}:${tool}`))
-  }
-
-  /** Adds one tool to its ability's allow list, from the allow key an "always allow" answer carries (`ability:<name>:<tool>`); does nothing for an ability the user hasn't enabled. */
-  async allowTool(userId: string, key: string): Promise<void> {
-    const match = /^ability:([^:]+):(.+)$/.exec(key)
-    if (!match) return
-    await this.#db.query(
-      `
-      UPDATE user_ability up SET allowed_tools = array_append(up.allowed_tools, $3)
-      FROM ability p
-      WHERE up.ability_id = p.id AND up.user_id = $1 AND p.name = $2 AND p.type IN ('tool', 'mcp')
-        AND NOT ($3 = ANY (up.allowed_tools))
-      `,
-      [userId, match[1], match[2]]
-    )
-  }
-
-  /** The user's enabled skills that are still available, with their files. */
-  async skillsForUser(userId: string): Promise<CloudSkill[]> {
-    const { rows } = await this.#db.query(
-      `
-      SELECT p.name, p.description, p.files
-      FROM user_ability up JOIN ability p ON p.id = up.ability_id
-      WHERE up.user_id = $1 AND p.type = 'skill' AND ${AVAILABLE}
-      ORDER BY p.name
-      `,
-      [userId]
+      `SELECT p.name, p.description, p.files FROM ability p WHERE p.type = 'skill' AND ${AVAILABLE} ORDER BY p.name`
     )
     return rows.map(row => ({ name: row.name, description: row.description, files: row.files }))
   }
 
-  /** Available skills by name (a widget key's own list); unknown or unavailable names are left out. */
-  async skillsByName(names: string[]): Promise<CloudSkill[]> {
-    if (names.length === 0) return []
-    const { rows } = await this.#db.query(
-      `SELECT p.name, p.description, p.files FROM ability p WHERE p.type = 'skill' AND p.name = ANY($1) AND ${AVAILABLE} ORDER BY p.name`,
-      [names]
-    )
-    return rows.map(row => ({ name: row.name, description: row.description, files: row.files }))
-  }
-
-  /** Names from `names` that aren't available skills, for rejecting a widget config. */
-  async unknownSkills(names: string[]): Promise<string[]> {
-    const known = new Set((await this.skillsByName(names)).map(skill => skill.name))
-    return names.filter(name => !known.has(name))
-  }
-
-  /** Every persona in the catalog, `default` first (the built-in one until a sync brings it). */
+  /** Every persona in the catalog, `default` first (the built-in one until a sync brings it): every user's roster. */
   async personaCatalog(): Promise<Persona[]> {
     const { rows } = await this.#db.query(
       `SELECT p.type, p.name, p.files FROM ability p WHERE p.type = 'persona' AND ${AVAILABLE} ORDER BY p.name`
-    )
-    return withDefaultFirst(rows.map(row => this.#parsePersona(row)).filter(persona => persona !== undefined))
-  }
-
-  /** The user's roster: `default` first, then the personas they enabled that are still available. */
-  async personasForUser(userId: string): Promise<Persona[]> {
-    const { rows } = await this.#db.query(
-      `
-      SELECT p.type, p.name, p.files FROM ability p
-      WHERE p.type = 'persona' AND ${AVAILABLE}
-        AND (p.name = $2 OR EXISTS (SELECT 1 FROM user_ability up WHERE up.ability_id = p.id AND up.user_id = $1))
-      ORDER BY p.name
-      `,
-      [userId, DEFAULT_PERSONA]
     )
     return withDefaultFirst(rows.map(row => this.#parsePersona(row)).filter(persona => persona !== undefined))
   }
@@ -400,14 +170,14 @@ export class AbilityService {
     return datasets
   }
 
-  /** The user's enabled HTTP tool abilities that can run here, for the agent's Postgres AbilityStore. */
-  async httpToolsForUser(userId: string): Promise<HttpToolAbility[]> {
-    return (await this.#keyedForUser(userId, "tool")).flatMap(keyed => (keyed.type === "tool" ? [keyed.ability] : []))
+  /** Every HTTP tool ability that can run here, for the agent's Postgres AbilityStore. */
+  async httpTools(): Promise<HttpToolAbility[]> {
+    return (await this.#keyedOfType("tool")).flatMap(keyed => (keyed.type === "tool" ? [keyed.ability] : []))
   }
 
-  /** The user's enabled MCP server abilities that can run here, for the agent's Postgres AbilityStore. */
-  async mcpForUser(userId: string): Promise<McpAbility[]> {
-    return (await this.#keyedForUser(userId, "mcp")).flatMap(keyed => (keyed.type === "mcp" ? [keyed.ability] : []))
+  /** Every MCP server ability that can run here, for the agent's Postgres AbilityStore. */
+  async mcpAbilities(): Promise<McpAbility[]> {
+    return (await this.#keyedOfType("mcp")).flatMap(keyed => (keyed.type === "mcp" ? [keyed.ability] : []))
   }
 
   /** The user's ability keys by ability name, decrypted, for their own turns only. */
@@ -420,19 +190,12 @@ export class AbilityService {
   }
 
   /**
-   * Saves the user's key for an HTTP tool or MCP ability and tests it: the tool's `check` request, or
-   * connecting to the MCP server and listing its tools. Tests go through `proxy` when set and never reach a
-   * private host. The key is kept even when the test fails.
-   * Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
+   * Saves the user's key for an ability and tests it: its HTTP tool's `check` request, or connecting to its MCP
+   * server and listing the tools. Tests go through `proxy` when set and never reach a private host. The key is kept
+   * even when the test fails. Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
    */
-  async saveKey(
-    userId: string,
-    type: KeyedAbilityType,
-    name: string,
-    apiKey: string,
-    opts: { proxy?: string } = {}
-  ): Promise<SaveKeyResult> {
-    const keyed = await this.#getKeyed(type, name)
+  async saveKey(userId: string, name: string, apiKey: string, opts: { proxy?: string } = {}): Promise<SaveKeyResult> {
+    const keyed = await this.#keyedByName(name)
     if (!keyed) return "not_found"
     if (keyed.ability.auth.type !== "apiKey") return "no_key"
     await this.#secrets.set(userId, abilitySecretName(name), apiKey)
@@ -443,47 +206,30 @@ export class AbilityService {
     return { check: check ?? null }
   }
 
-  /** Removes the user's key for a tool or MCP ability; one that can't work without it is turned off too. False when there's no such ability. */
-  async deleteKey(userId: string, type: KeyedAbilityType, name: string): Promise<boolean> {
-    const { rows } = await this.#db.query("SELECT id, type, name, files FROM ability WHERE type = $1 AND name = $2", [
-      type,
-      name
-    ])
-    const row = rows[0]
-    if (!row) return false
+  /** Removes the user's key for an ability; false when there's no such ability. */
+  async deleteKey(userId: string, name: string): Promise<boolean> {
+    const { rows } = await this.#db.query("SELECT 1 FROM ability WHERE type IN ('tool', 'mcp') AND name = $1", [name])
+    if (!rows[0]) return false
     await this.#secrets.delete(userId, abilitySecretName(name))
-    const keyed = this.#parse(row)
-    if (!keyed || this.#keyNeed(keyed.ability) === "required") {
-      await this.#db.query("DELETE FROM user_ability WHERE user_id = $1 AND ability_id = $2", [userId, row.id])
-    }
     return true
   }
 
-  /** An available tool or MCP ability that can run here, or undefined. */
-  async #getKeyed(type: KeyedAbilityType, name: string): Promise<KeyedAbility | undefined> {
+  /** The ability's part that takes a key (its HTTP tool before its MCP server), else its first usable part; undefined when it has none here. */
+  async #keyedByName(name: string): Promise<KeyedAbility | undefined> {
     const { rows } = await this.#db.query(
-      `SELECT p.type, p.name, p.files FROM ability p WHERE p.type = $1 AND p.name = $2 AND ${AVAILABLE}`,
-      [type, name]
+      `SELECT p.type, p.name, p.files FROM ability p WHERE p.type IN ('tool', 'mcp') AND p.name = $1 AND ${AVAILABLE} ORDER BY p.type DESC`,
+      [name]
     )
-    return rows[0] ? this.#usable(rows[0]) : undefined
+    const parts = rows.flatMap(row => this.#usable(row) ?? [])
+    return parts.find(part => part.ability.auth.type === "apiKey") ?? parts[0]
   }
 
-  async #keyedForUser(userId: string, type: KeyedAbilityType): Promise<KeyedAbility[]> {
+  async #keyedOfType(type: "tool" | "mcp"): Promise<KeyedAbility[]> {
     const { rows } = await this.#db.query(
-      `
-      SELECT p.type, p.name, p.files, up.disabled_tools
-      FROM user_ability up JOIN ability p ON p.id = up.ability_id
-      WHERE up.user_id = $1 AND p.type = $2 AND ${AVAILABLE}
-      ORDER BY p.name
-      `,
-      [userId, type]
+      `SELECT p.type, p.name, p.files FROM ability p WHERE p.type = $1 AND ${AVAILABLE} ORDER BY p.name`,
+      [type]
     )
-    // The tools the user switched off never reach the turn
-    return rows.flatMap(row => {
-      const keyed = this.#usable(row)
-      const kept = keyed && withoutTools(keyed, row.disabled_tools ?? [])
-      return kept ? [kept] : []
-    })
+    return rows.flatMap(row => this.#usable(row) ?? [])
   }
 
   /** The stored manifest, parsed; undefined (with a warning) when it no longer parses or the cloud can't run it. */
@@ -505,45 +251,6 @@ export class AbilityService {
     }
   }
 
-  // A catalog entry's type-specific part, or null when the row can't be offered (unparsable, `default`, or unusable).
-  #catalogDetails(row: ManifestRow): Pick<CatalogAbility, "persona" | "http" | "mcp"> | null {
-    if (row.type === "skill") return {}
-    if (row.type === "persona") {
-      const persona = row.name === DEFAULT_PERSONA ? undefined : this.#parsePersona(row)
-      return persona
-        ? { persona: { label: persona.label, when: persona.when, instructions: persona.instructions } }
-        : null
-    }
-    const keyed = this.#usable(row)
-    if (!keyed) return null
-    if (keyed.type === "tool") {
-      return {
-        http: {
-          domain: new URL(keyed.ability.baseUrl).host,
-          key: this.#keyNeed(keyed.ability),
-          tools: keyed.ability.tools.map(tool => ({
-            name: tool.name,
-            method: tool.method,
-            description: tool.description
-          }))
-        }
-      }
-    }
-    return {
-      mcp: {
-        // A stdio server runs in an MCP sandbox, so that's where its calls go.
-        domain: keyed.ability.url ? new URL(keyed.ability.url).host : SANDBOX_DOMAIN,
-        key: this.#keyNeed(keyed.ability),
-        transport: keyed.ability.transport === "sse" ? "sse" : "http",
-        approval: keyed.ability.approval,
-        tools: (keyed.ability.tools ?? []).map(tool => ({
-          name: tool,
-          description: keyed.ability.toolDescriptions?.[tool]
-        }))
-      }
-    }
-  }
-
   /** A stored persona, parsed; undefined (with a warning) when it no longer parses. */
   #parsePersona(row: ManifestRow): Persona | undefined {
     try {
@@ -555,13 +262,6 @@ export class AbilityService {
       })
       return undefined
     }
-  }
-
-  /** Whether an available ability can actually run here: its stored manifest still parses (and a keyed one can get its key). */
-  #runs(row: ManifestRow): boolean {
-    if (row.type === "skill") return true
-    if (row.type === "persona") return this.#parsePersona(row) !== undefined
-    return this.#usable(row) !== undefined
   }
 
   /** An ability's key need, where a server-wide key turns a required one optional: the user may still bring their own. */

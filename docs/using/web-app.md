@@ -39,12 +39,11 @@ The top menu has one item per section, and a section's pages are tabs inside it.
 The language picker at the bottom of every page switches the site. Signed in, it also saves to your
 account, so emails, the Telegram bot and the terminal's cloud mode follow.
 
-What the Abilities page offers, and how keys are kept, is on
-[Abilities in the cloud](/abilities/marketplace#in-the-cloud). A change there reaches a running conversation from its
-next message.
+**Profile → API keys** lists the abilities your personas use that take a key, with Add, Replace and Remove.
+How keys are kept is on [Abilities in the cloud](/abilities/marketplace#in-the-cloud).
 
 Admins also get an **Admin** menu for users, the model catalog and a live view of the MCP sandboxes, plus a
-**Sync now** button for the marketplace on the Abilities page. A catalog model can have a context window
+**Sync now** button for the marketplace on the admin dashboard. A catalog model can have a context window
 (left blank, it's asked from the provider), and a free model with the `summarize` task writes the cloud's
 [summaries](/configuration/config#context).
 

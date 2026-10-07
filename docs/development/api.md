@@ -21,8 +21,7 @@ That's the authoritative, always-current list. This page is the map.
 | `/auth/*` | Better Auth | sign-up, sign-in, verification, password reset, device authorization |
 | `/admin/*` | session + `admin` role | providers, models, marketplace sync, every MCP sandbox with live stats |
 | `/widget/admin/*` | session | list, create, edit and revoke [widget](/using/widget) keys |
-| `/abilities`, `/abilities/skill/{name}` | none | the marketplace catalog (skills, personas, HTTP tools, MCP servers) |
-| `/abilities/me/*` | session | the user's own abilities and their write-only API keys |
+| `/abilities/me/*` | session | the user's write-only ability API keys |
 | `/nasi/*` | bearer | cloud agent: turns, compaction, sessions, and the persona catalog |
 | `/stats` | session | the signed-in user's own [usage numbers](#usage-stats) |
 | `/sandbox/connect` | sandbox key or none | an MCP sandbox's WebSocket: it registers, then serves the MCP requests tunnelled to it |
@@ -56,20 +55,19 @@ Turn requests and responses are the `@kaja/schema/nasi` contracts. [Agent brain]
 explains the status values and how `session` threads a conversation together. Both turn routes are
 rate-limited **per user id**, not per IP, so a shared NAT doesn't starve everyone.
 
-## Abilities and keys: `/abilities`
+## Ability keys: `/abilities/me`
+
+Every user has every ability, and each persona's `abilities` list picks what a turn uses, so there's nothing to
+turn on; the only per-user part is keys.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/abilities` | the catalog. Personas include their label, `when` and instructions (never `default`, which is always on). HTTP tools and MCP servers include their host, key need and tools. Datasets are synced too but never listed: they come with the personas that use them |
-| `GET` | `/abilities/me` | the user's abilities, which ones have a saved key, and whether keys can be saved |
-| `PUT` / `DELETE` | `/abilities/me/{type}/{name}` | turn a skill, persona, tool or MCP server on or off (`key_required` until one that needs a key has it; 400 for the `default` persona) |
-| `PUT` / `DELETE` | `/abilities/me/{tool\|mcp}/{name}/key` | save (and test) or remove a key |
-| `PUT` | `/abilities/me/{tool\|mcp}/{name}/tools` | switch off some of an enabled ability's tools (`{ disabled: [...] }` replaces the list, `[]` turns them all back on). They never reach the user's turns, and one with every tool off is left out. `/abilities/me` lists them as `disabledTools` |
-| `PUT` | `/abilities/me/{tool\|mcp}/{name}/allowed-tools` | choose which of an enabled ability's tools never ask for approval (`{ allowed: [...] }` replaces the list; names the ability offers, or globs with `*`; `[]` makes every call ask again). An "always allow" answer at an approval prompt adds to it. `/abilities/me` lists them as `allowedTools` |
+| `GET` | `/abilities/me` | the abilities that take a key and some persona uses (name, description, required or optional, host or `sandbox`, whether the user saved one), and whether keys can be saved |
+| `PUT` / `DELETE` | `/abilities/me/keys/{name}` | save (and test: an HTTP tool's `check` request, or connecting to an MCP server) or remove a key |
 
 Keys live [encrypted in `user_secret`](/development/database#accounts-and-access), and no endpoint returns
 one. Without `USER_SECRET_KEY` the key routes answer 503, and abilities that need a key are left out of the
-catalog and of turns.
+list and of turns.
 
 `ABILITY_KEYS` (`brave-search=BSA...,other=...`) is a temporary server-wide key per ability, shared by every
 cloud user. An ability with one counts as needing only an optional key, and a user's own key still wins.

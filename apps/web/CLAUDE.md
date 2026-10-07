@@ -28,8 +28,8 @@ src/
     _admin.tsx                    # private shell (auth-gated; same max-w-280 + sticky header pattern)
     _admin/
       dashboard.tsx + dashboard/  # tab layout: overview (index), stats
-      agent.tsx + agent/          # tab layout: abilities, widget, sandbox (/agent redirects to abilities)
-      profile|welcome
+      agent.tsx + agent/          # tab layout: widget, sandbox (/agent redirects to widget)
+      profile
       admin.tsx + admin/          # admin-only layout (role guard, tab nav): dashboard, users, models
   components/
     Providers.tsx, LocaleSync.tsx
@@ -42,7 +42,7 @@ messages/    # Paraglide messages (en-GB.json is the source; see Translations in
 public/      favicons, install scripts, PWA bits
 ```
 
-Abilities: `/agent/abilities` (every signed-in user; skills, HTTP tools and MCP servers in one list by name, then a Personas section) and `/welcome` (right after signup, without the Personas section) share `components/abilities/AbilitySections.tsx` — `AbilityCards` renders a `SkillCard` (toggle saved via `/abilities/me`, instructions loaded on demand from `/abilities/skill/{name}`) or a `ToolCard` (HTTP tools and MCP servers: host, key need, tools; one that requires a key opens `KeyDialog` first, which saves the key write-only and shows the server's check) per catalog entry, and `PersonaCards` (label, when, instructions from the catalog; `default` is always on and not listed) is its own section. Queries live in `components/abilities/queries.ts`. Admins also get the marketplace sync panel on `/agent/abilities`. The widget page picks each key's own skills (`SkillChecklist`) and edits keys through `PATCH /widget/admin/{id}`; its persona list comes from `/nasi/personas` (the whole catalog, default first).
+Abilities: every one is on for everyone, and personas pick what a chat uses, so the web has no ability list. Profile → API keys (`components/abilities/ApiKeys.tsx`) lists the keyed abilities some persona uses from `GET /abilities/me`, with `KeyDialog` (saves the key write-only via `PUT /abilities/me/keys/{name}` and shows the server's check) and Remove; queries live in `components/abilities/queries.ts`. Admins get the marketplace sync panel on `/admin/dashboard` (`MarketplaceSection`). The widget page's persona list comes from `/nasi/personas` (the whole catalog, default first); the persona's `abilities` decide a widget's skills.
 
 Shared layout primitives: `SiteShell` + `SiteHeader` + `BrandMark` + `ContentWidth`.
 Cards/titles: `Section`, `PageHeader` (admin).

@@ -40,8 +40,7 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
   works without one.
 - `approval = "writes"` asks before any tool the server doesn't mark read-only, and `always` asks before
   every call. If a server forgets to mark its read-only tools, list them in `readOnly`, with the arguments
-  that turn a call into a write. In the cloud you can also skip the question for a tool yourself, by answering
-  "always allow" at the prompt or from the tool's dialog on the abilities page:
+  that turn a call into a write:
 
   ```toml
   readOnly = [
@@ -82,11 +81,9 @@ A manifest with `trustedSandbox = true` only runs in your own sandboxes or Kaja'
 `chrome-devtools` is one, so the browser never runs on someone else's computer.
 A `stdio` ability that needs a key stays local for now.
 
-- Each turn connects your servers when it starts (giving up on one after 5 seconds) and closes them when it
-  ends. Nothing is shared with other users.
+- A turn connects the servers its persona lists (giving up on one after 5 seconds), others after a persona
+  switch, and closes them when it ends. Nothing is shared with other users.
 - A saved key is tested by connecting and listing the server's tools.
-- On the web app's Abilities page, a server's **Tools** list lets you untick tools you don't want. They never
-  reach your chats, while the rest (and tools it gains later) stay on.
 - `approval` and `readOnly` work as above. Images, like screenshots, come back to you, and long results are
   cut at about 32 KB. An argument that would save a file on the server (`localOnlyArgs`, like a screenshot's
   `filePath`) is hidden in the cloud.

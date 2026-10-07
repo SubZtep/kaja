@@ -66,7 +66,7 @@ function SignUp() {
           toast.success(m.signup_success())
           // Reload the root loader's session first; a client-side navigate alone keeps the signed-out one (header, dashboard, roles).
           await router.invalidate()
-          navigate({ to: "/welcome" })
+          navigate({ to: "/dashboard" })
         }
       } catch {
         toast.error(m.error_generic())

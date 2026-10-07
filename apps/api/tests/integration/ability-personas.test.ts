@@ -54,8 +54,6 @@ describe("personas in the cloud", () => {
   let token: string
   let providerId: string
   const auth = () => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
-  const toggle = (method: "PUT" | "DELETE", name: string) =>
-    app.request(`/abilities/me/persona/${name}`, { method, headers: auth() })
   const roster = async () =>
     ((await (await app.request("/nasi/info", { headers: auth() })).json()).personas as { id: string }[]).map(p => p.id)
 
@@ -88,33 +86,14 @@ describe("personas in the cloud", () => {
     expect(result.added.join()).not.toContain(`broken-${tag}`)
   })
 
-  test("the catalog shows who each persona is, and leaves out default, which is always on", async () => {
-    const { abilities } = await (await app.request("/abilities")).json()
-    const personas = abilities.filter((ability: { type: string }) => ability.type === "persona")
-    expect(personas.find((ability: { name: string }) => ability.name === care)).toMatchObject({
-      description: "Care",
-      persona: { label: "Care", when: "the user is sad", instructions: "Be kind." }
-    })
-    expect(personas.map((ability: { name: string }) => ability.name)).not.toContain("default")
-  })
-
-  test("default can't be turned on or off; an unknown persona is a 404", async () => {
-    expect((await toggle("PUT", "default")).status).toBe(400)
-    expect((await toggle("DELETE", "default")).status).toBe(400)
-    expect((await toggle("PUT", `nope-${tag}`)).status).toBe(404)
-  })
-
-  test("a user's roster is default first (the synced one), then the personas they turned on", async () => {
-    expect(await roster()).toEqual(["default"])
-    expect((await toggle("PUT", care)).status).toBe(200)
-    expect(await roster()).toEqual(["default", care])
-
+  test("every user's roster is the whole catalog, default first (the synced one)", async () => {
+    expect(await roster()).toEqual(["default", care, quiz])
     const { personas } = await (await app.request("/nasi/personas", { headers: auth() })).json()
     expect(personas[0]).toEqual({ id: "default", label: FIXTURE_DEFAULT })
     expect(personas.map((p: { id: string }) => p.id)).toEqual(expect.arrayContaining([care, quiz]))
   })
 
-  test("a turn's system prompt lists the user's roster", async () => {
+  test("a turn's system prompt lists the roster", async () => {
     const sent: { messages: { role: string; content?: unknown }[] }[] = []
     const client = recordingChat(sent)
     setNasiChatResolver(async () => ({ client: client as never, model: "fake-model" }))
@@ -127,13 +106,11 @@ describe("personas in the cloud", () => {
     const system = String(sent[0]!.messages[0]!.content)
     expect(system).toContain("## Personas")
     expect(system).toContain(`- ${care} (Care): use when the user is sad`)
-    expect(system).not.toContain(quiz)
+    expect(system).toContain(quiz)
   })
 
-  test("a persona that left the marketplace shows as unavailable and leaves the roster", async () => {
+  test("a persona that left the marketplace leaves the roster", async () => {
     await marketplaceService.syncFromDir(marketplace(base, [care]), "p2")
-    const { abilities } = await (await app.request("/abilities/me", { headers: auth() })).json()
-    expect(abilities.find((ability: { name: string }) => ability.name === care)).toMatchObject({ available: false })
-    expect(await roster()).toEqual(["default"])
+    expect(await roster()).toEqual(["default", quiz])
   })
 })

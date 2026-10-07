@@ -144,15 +144,16 @@ the catalog:
 ## Loading
 
 Whichever front door a turn comes in through, [`@kaja/nasi`](/development/nasi#abilities) does the loading.
-It asks an `AbilityStore` (the folder on disk, or the Postgres copy) for the enabled abilities, and turns
-them into tools, skills in the system prompt, and roster personas. The prompt's skill and persona sections
+It asks an `AbilityStore` (the folder on disk, or the Postgres copy) for every ability, and turns them into
+tools, skills in the system prompt, and roster personas; the active persona's `abilities` list picks which a
+turn uses. The prompt's skill and persona sections
 are rebuilt every turn, which is why a change applies from the next message.
 
-| Front door | Where the choice is stored |
+| Front door | Where the personas come from |
 | --- | --- |
-| terminal (local), local Telegram bot | the personas in the `marketplace/` folder |
-| terminal (cloud), cloud Telegram bot | the account's `user_ability` rows |
-| widget | the key's `config.skills` |
+| terminal (local), local Telegram bot | the `marketplace/` folder |
+| terminal (cloud), cloud Telegram bot | the `ability` table (with the user's keys) |
+| widget | the `ability` table, skills only, starting from the key's persona |
 
 ---
 

@@ -135,11 +135,11 @@ const FULL_RETRIES = 3
 export function mcpSandboxFor(userId: string): McpSandbox {
   const picked = new Map<string, Promise<SandboxPick | undefined>>()
   let trusted: Promise<Set<string> | undefined> | undefined
-  // The user's abilities that must stay on their own or the official sandbox (the manifest's trustedSandbox). If that
+  // The abilities that must stay on the user's own or the official sandbox (the manifest's trustedSandbox). If that
   // can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on a stranger's machine.
   const needsTrust = async (ability: string) => {
     trusted ??= abilityService
-      .mcpForUser(userId)
+      .mcpAbilities()
       .then(abilities => new Set(abilities.filter(a => a.trustedSandbox).map(a => a.name)))
       .catch(error => {
         reportError("trusted sandbox abilities lookup failed", error, { userId })

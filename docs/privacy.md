@@ -72,7 +72,7 @@ Kaja is not a medical service, and its replies are not medical advice.
 | Purpose | Data | Legal basis |
 |---|---|---|
 | Create and run your account, sign you in, send account emails | account, authentication, and email data | contract (Article 6(1)(b)) |
-| Answer you in cloud chat, remember what you asked it to, run the abilities you turned on | conversation content, memory notes, dataset answers, ability settings and keys | contract (Article 6(1)(b)) |
+| Answer you in cloud chat, remember what you asked it to, run the abilities your personas use | conversation content, memory notes, dataset answers, ability settings and keys | contract (Article 6(1)(b)) |
 | Health information you choose to share | conversation content and memory notes about your health | explicit consent (Article 9(2)(a)) |
 | Link the Telegram bot to your account | Telegram user id | contract (Article 6(1)(b)) |
 | Keep the service secure: rate limiting, abuse prevention, error monitoring, debugging | technical data, IP addresses, error logs | legitimate interests (Article 6(1)(f)) — running a service that works and isn't abused |

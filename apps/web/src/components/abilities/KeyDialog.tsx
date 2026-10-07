@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog"
 import { Field } from "@base-ui/react/field"
-import type { KeyedAbilityType, SaveAbilityKeyResponse } from "@kaja/schema/api"
+import type { SaveAbilityKeyResponse } from "@kaja/schema/api"
 import { saveAbilityKeyResponseSchema } from "@kaja/schema/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
@@ -10,27 +10,22 @@ import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
 import { Text } from "../form/primitives/Text"
 import { DIALOG_TITLE, DialogShell } from "../ui/DialogShell"
-import { MY_ABILITIES_QUERY_KEY } from "./queries"
+import { ABILITY_KEYS_QUERY_KEY } from "./queries"
 
 /**
- * Asks for an HTTP tool's or MCP server's API key, saves it (encrypted on the server, never shown again) and reports the
- * server's live test. With `enableAfter` the tool is turned on once the key works (or has no test); a
- * failed test keeps the dialog open so another key can be tried. The key is saved either way.
+ * Asks for an ability's API key, saves it (encrypted on the server, never shown again) and reports the server's live
+ * test. A failed test keeps the dialog open so another key can be tried; the key is saved either way.
  */
 export function KeyDialog({
-  type,
   name,
   domain,
   open,
-  onOpenChange,
-  enableAfter = false
+  onOpenChange
 }: Readonly<{
-  type: KeyedAbilityType
   name: string
   domain: string
   open: boolean
   onOpenChange: (open: boolean) => void
-  enableAfter?: boolean
 }>) {
   const apiFetch = useApiFetch()
   const queryClient = useQueryClient()
@@ -39,21 +34,16 @@ export function KeyDialog({
 
   const save = useMutation({
     mutationFn: async () => {
-      const result = saveAbilityKeyResponseSchema.parse(
+      return saveAbilityKeyResponseSchema.parse(
         await apiFetch<SaveAbilityKeyResponse>(
-          `/abilities/me/${type}/${encodeURIComponent(name)}/key`,
+          `/abilities/me/keys/${encodeURIComponent(name)}`,
           { apiKey },
           { method: "PUT" }
         )
       )
-      const works = result.check === null || result.check.ok
-      if (works && enableAfter) {
-        await apiFetch(`/abilities/me/${type}/${encodeURIComponent(name)}`, undefined, { method: "PUT" })
-      }
-      return result
     },
     onSuccess: ({ check }) => {
-      queryClient.invalidateQueries({ queryKey: MY_ABILITIES_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ABILITY_KEYS_QUERY_KEY })
       if (check && !check.ok) {
         setFailure(m.tools_key_check_failed({ reason: check.reason ?? "" }))
         return
@@ -109,7 +99,7 @@ export function KeyDialog({
             <div className="flex justify-end gap-4">
               <Dialog.Close render={<Button type="button" />}>{m.confirm_dialog_cancel()}</Dialog.Close>
               <Button type="submit" variant="primary" loading={save.isPending} disabled={!apiKey.trim()}>
-                {enableAfter ? m.tools_key_save_enable() : m.tools_key_save()}
+                {m.tools_key_save()}
               </Button>
             </div>
           </form>

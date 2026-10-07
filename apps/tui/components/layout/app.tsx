@@ -158,7 +158,7 @@ function Chrome({
   pendingCommand?: { command: string; description: string; kind: "command" | "tool" }
   runningCommand?: boolean
   resolvePending?: (approved: boolean, scope?: ApprovalScope) => Promise<void>
-  /** Offer "for this session" and "always" on a tool approval (cloud). */
+  /** Offer "for this session" on a tool approval (cloud). */
   approvalScopes?: boolean
 }>) {
   const {

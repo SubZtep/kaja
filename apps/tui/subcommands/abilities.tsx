@@ -5,8 +5,8 @@ import type { args as Args } from "../lib/cli/args"
  * `kaja abilities update` (fetch + sync the marketplace), for local mode; a cloud user is pointed to the web instead.
  * Runs before the local/cloud branch like `config`: it never triggers cloud login.
  */
-/** Where cloud users pick their abilities (the web app's /abilities page). */
-const CLOUD_ABILITIES_URL = "https://kaja.io/agent/abilities"
+/** Where cloud users save their ability keys (the web app's Profile page). */
+const CLOUD_KEYS_URL = "https://kaja.io/profile"
 
 export async function runAbilitiesSubcommand(args: typeof Args) {
   const { t } = await import("../lib/i18n")
@@ -16,7 +16,7 @@ export async function runAbilitiesSubcommand(args: typeof Args) {
 
   // Same mode rule as cli.ts. A cloud user's skills live in their account, so point them to the web instead of editing files that cloud chat never reads.
   if ((await resolveMode(args.flags)) === "cloud") {
-    console.log(t("ability.cloudHint", { url: CLOUD_ABILITIES_URL }))
+    console.log(t("ability.cloudHint", { url: CLOUD_KEYS_URL }))
     process.exit(0)
   }
 

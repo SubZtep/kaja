@@ -9,7 +9,6 @@ import {
   resolveContextWindow,
   setDatasetLoaders
 } from "@kaja/nasi"
-import type { Persona } from "@kaja/schema/abilities"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import { pool } from "../../core/db"
@@ -153,7 +152,7 @@ export async function openNasiFor(opts: {
   owner?: string | null
   pinnedModel?: string
   language?: string
-  /** Whose abilities the turn gets; defaults to the user's own selections and keys (a widget passes its key's skill list). */
+  /** Whose abilities the turn gets; defaults to the user's own (every ability, with their keys); a widget passes skills only. */
   abilities?: CloudAbilitySource
   /** The caller is the terminal, which runs `read_file`/`list_files` on the user's machine; the widget and Telegram have no such client, so they leave it off. */
   clientTools?: boolean
@@ -165,16 +164,13 @@ export async function openNasiFor(opts: {
     resolveSummarizer()
   ])
   const source = opts.abilities ?? { userId: opts.userId }
-  const personas = await personasFor(source)
+  // Every user's roster is the whole catalog; each persona's `abilities` picks what a turn uses.
+  const personas = await abilityService.personaCatalog()
   // Only the user's own turns get their keys; a widget's skills-only source never needs one.
-  const [keys, sandboxSettings, allowedTools] =
+  const [keys, sandboxSettings] =
     "userId" in source
-      ? await Promise.all([
-          abilityService.keysForUser(source.userId),
-          sandboxService.settings(source.userId),
-          abilityService.allowedToolsForUser(source.userId)
-        ])
-      : [new Map<string, string>(), undefined, []]
+      ? await Promise.all([abilityService.keysForUser(source.userId), sandboxService.settings(source.userId)])
+      : [new Map<string, string>(), undefined]
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
@@ -185,9 +181,6 @@ export async function openNasiFor(opts: {
     deps: nasiToolDeps(),
     abilities: createPostgresAbilityStore(source),
     abilityKey: name => keys.get(name),
-    allowedTools,
-    // "Always allow" at an approval prompt saves the tool to the user's own list; a widget has no user to save it for
-    onAlwaysAllow: "userId" in source ? key => abilityService.allowTool(source.userId, key) : undefined,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
     mcpSandbox: "userId" in source ? (sandboxOverride ?? mcpSandboxFor)(source.userId) : undefined,
     promptContext: {
@@ -204,11 +197,6 @@ export async function openNasiFor(opts: {
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })
-}
-
-/** The turn's roster: the user's own personas, or for a widget the whole catalog (its key's persona is where a turn starts). */
-function personasFor(source: CloudAbilitySource): Promise<Persona[]> {
-  return "userId" in source ? abilityService.personasForUser(source.userId) : abilityService.personaCatalog()
 }
 
 /** Serializes turns on an existing session so overlapping requests (retries, duplicate tabs) can't race the read-modify-write around session persistence; a new session (no id yet) has no shared row to race on. */

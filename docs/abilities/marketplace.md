@@ -20,9 +20,8 @@ mode also from files you write yourself.
 | MCP server | the tools of a Model Context Protocol server | [MCP servers](/abilities/mcp) |
 | dataset | questions a persona collects answers to | [Memory & datasets](/abilities/memory#datasets) |
 
-Locally, every ability in the folder loads, and each [persona](/abilities/personas#abilities) decides which of
-them a chat uses. In the cloud you still turn abilities on, on the
-[Abilities page](https://kaja.io/agent/abilities).
+Every ability is on, locally and in the cloud, and each [persona](/abilities/personas#abilities) decides
+which of them a chat uses. There's nothing to turn on; an ability that needs a key waits for yours.
 
 Right now the marketplace has:
 
@@ -70,14 +69,9 @@ work, because everything runs on your machine.
 
 ## In the cloud
 
-The Kaja API keeps its own copy of the marketplace, refreshed every hour. You pick what your account uses:
-
-- on the [Abilities page](https://kaja.io/agent/abilities) of the [web app](/using/web-app), which shows
-  each ability's instructions, host, tools and key need before you turn it on;
-- or with `/abilities` in the [cloud Telegram bot](/using/telegram#cloud-bot).
-
-In cloud mode, `kaja abilities` just points you to the web page. A change reaches a running conversation
-from its next message.
+The Kaja API keeps its own copy of the marketplace, refreshed every hour. Every account gets every persona in
+it, and each persona's `abilities` list picks what a chat uses, the same as locally. A change reaches a
+running conversation from its next message.
 
 The cloud has no shell and serves many people, so it offers less:
 
@@ -87,20 +81,21 @@ The cloud has no shell and serves many people, so it offers less:
 | HTTP tool | its `baseUrl` isn't a public address |
 | MCP server | it has no `tools` allowlist, isn't on a public host, or is `stdio` and needs a key ([keyless `stdio` ones run in the MCP sandbox](/abilities/mcp#in-the-cloud)) |
 
-**Keys.** An ability that needs a key asks for it before you can turn it on. Kaja tests the key, stores it
-encrypted and never shows it again: the page only says "Key saved", with Replace and Remove. It's used for
-your own turns only and never reaches your terminal. Removing it turns off an ability that can't work
-without it. Some abilities, like web search (`brave-search`), come with a key from the server, so you
+**Keys.** You save them under **API keys** on your [Profile](https://kaja.io/profile), which lists the
+abilities your personas use that take one. Kaja tests the key, stores it encrypted and never shows it again:
+the page only says "Key saved", with Replace and Remove. It's used for your own turns only and never reaches
+your terminal. An ability that can't work without a key stays out of your chats until you add one. Some abilities, like web search (`brave-search`), come with a key from the server, so you
 need none. If you add your own, it's used instead.
 
 **Approvals.** A call that could change something waits for you: the terminal asks, and the Telegram bot
-shows Approve and Decline buttons. The server runs the exact call it saved, so a client can only say yes or
-no. Writing a message instead of answering skips the call.
+shows Approve and Decline buttons; both can also approve the tool for the rest of the chat. The server runs
+the exact call it saved, so a client can only say yes or no. Writing a message instead of answering skips the
+call.
 
-**Widgets** get skills only, chosen per widget key, so a site's visitors never make a call with your keys.
-Every persona in the catalog is available to them.
+**Widgets** get skills only, the ones the widget's persona lists, so a site's visitors never make a call with
+your keys.
 
-The `default` persona is always on, and datasets come with the personas that use them, so neither is listed.
+Datasets come with the personas that use them.
 
 ## Adding to the marketplace
 

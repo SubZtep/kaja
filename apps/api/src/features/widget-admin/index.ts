@@ -17,13 +17,11 @@ const idParam = z.object({
   id: z.uuidv7().openapi({ param: { name: "id", in: "path" } })
 })
 
-/** Why a config can't be saved (unknown persona or skills), or undefined when it's fine. */
+/** Why a config can't be saved (an unknown persona), or undefined when it's fine. */
 async function configError(config: WidgetConfig | undefined): Promise<string | undefined> {
   if (config?.persona && !(await abilityService.personaCatalog()).some(p => p.id === config.persona)) {
     return `Unknown persona "${config.persona}"`
   }
-  const unknownSkills = config?.skills ? await abilityService.unknownSkills(config.skills) : []
-  if (unknownSkills.length > 0) return `Unknown skills: ${unknownSkills.join(", ")}`
   return undefined
 }
 

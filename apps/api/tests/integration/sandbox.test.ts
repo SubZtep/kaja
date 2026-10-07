@@ -127,7 +127,7 @@ describe("routing", () => {
 
   test("if the user's trusted-only abilities can't be looked up, the turn stays off other people's sandboxes", async () => {
     const theirs = await startSandbox({ apiUrl, abilities: [ability], key: await newKey(tokenB) })
-    const lookup = spyOn(abilityService, "mcpForUser").mockRejectedValue(new Error("database down"))
+    const lookup = spyOn(abilityService, "mcpAbilities").mockRejectedValue(new Error("database down"))
     const logged = spyOn(console, "error").mockImplementation(() => {})
     try {
       await settings(tokenA, { useShared: true })

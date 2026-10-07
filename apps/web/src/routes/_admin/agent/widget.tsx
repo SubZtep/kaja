@@ -14,8 +14,6 @@ import { Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { z } from "zod"
-import { useSkillCatalog } from "../../../components/abilities/queries"
-import { SkillChecklist } from "../../../components/abilities/SkillChecklist"
 import { Button } from "../../../components/form/primitives/Button"
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog"
 import { ErrorNotice } from "../../../components/ui/ErrorNotice"
@@ -81,11 +79,6 @@ function LastUsedAtCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey,
   return <span className="font-mono text-xs text-muted">{value ? getTimeAgo(value) : m.widget_never_used()}</span>
 }
 
-function SkillsCell(info: CellContext<typeof tableFeaturesConfig, WidgetKey, string[]>) {
-  const skills = info.getValue()
-  return <span className="font-mono text-xs text-muted">{skills.length > 0 ? skills.join(", ") : "—"}</span>
-}
-
 function makeActionsCell(renderEdit: (key: WidgetKey) => React.ReactNode, onRevoke: (id: string) => void) {
   return function ActionsCell(info: { row: { original: WidgetKey } }) {
     if (!info.row.original.enabled) return null
@@ -135,8 +128,6 @@ function WidgetPage() {
     queryFn: () =>
       apiFetch<NasiPersonasResponse>("/nasi/personas").then(r => NasiPersonasResponseSchema.parse(r).personas)
   })
-  const { data: catalog, error: catalogError } = useSkillCatalog()
-  const [createSkills, setCreateSkills] = useState<string[]>([])
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["widget-keys"] })
 
@@ -144,7 +135,7 @@ function WidgetPage() {
     mutationFn: (payload: {
       label: string
       allowedOrigins: string[]
-      config?: { widgetType?: string; persona?: string; skills?: string[] }
+      config?: { widgetType?: string; persona?: string }
     }) => apiFetch<CreateWidgetKeyResponse>("/widget/admin", payload),
     onSuccess: response => {
       invalidate()
@@ -180,10 +171,9 @@ function WidgetPage() {
       await createKey.mutateAsync({
         label: value.label,
         allowedOrigins: parseOrigins(value.allowedOrigins),
-        config: { widgetType: value.widgetType, persona: value.persona || undefined, skills: createSkills }
+        config: { widgetType: value.widgetType, persona: value.persona || undefined }
       })
       formApi.reset()
-      setCreateSkills([])
     }
   })
 
@@ -197,12 +187,6 @@ function WidgetPage() {
     columnHelper.accessor("allowedOrigins", {
       header: m.widget_column_allowed_origins(),
       cell: OriginsCell,
-      enableColumnFilter: false
-    }),
-    columnHelper.accessor(key => key.config.skills ?? [], {
-      id: "skills",
-      header: m.widget_column_skills(),
-      cell: SkillsCell,
       enableColumnFilter: false
     }),
     columnHelper.accessor("enabled", {
@@ -228,7 +212,6 @@ function WidgetPage() {
           <EditWidgetDialog
             widgetKey={key}
             personas={personas ?? []}
-            skills={catalog ?? []}
             isPending={updateKey.isPending}
             onSave={payload => updateKey.mutateAsync({ id: key.id, payload })}
           >
@@ -257,7 +240,7 @@ function WidgetPage() {
       </PageHeader>
 
       <ErrorNotice error={error} />
-      <ErrorNotice error={personasError ?? catalogError} />
+      <ErrorNotice error={personasError} />
 
       <Section className="mb-4" title={m.widget_create_title()}>
         <form
@@ -295,9 +278,6 @@ function WidgetPage() {
               />
             )}
           </form.AppField>
-          <div className="sm:col-span-2">
-            <SkillChecklist skills={catalog ?? []} selected={createSkills} onChange={setCreateSkills} />
-          </div>
           <Button type="submit" className="justify-self-start sm:col-span-2" loading={createKey.isPending}>
             {m.widget_create_button()}
           </Button>

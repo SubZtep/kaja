@@ -14,9 +14,8 @@ export const widgetOriginSchema = z
 
 export const widgetConfigSchema = z.object({
   widgetType: widgetTypeSchema.default("chat"),
-  persona: z.string().min(1).max(128).optional(),
-  /** Catalog skills this key's visitors get — its own list, independent of the owner's enabled abilities. */
-  skills: z.array(z.string().min(1).max(128)).max(100).optional()
+  /** Where a visitor's chat starts; its `abilities` decides which skills they get (never keyed tools). */
+  persona: z.string().min(1).max(128).optional()
 })
 
 const widgetLabelSchema = z.string().min(1).max(100)
@@ -39,7 +38,7 @@ export const createWidgetKeyRequestSchema = z.object({
   config: widgetConfigSchema.optional()
 })
 
-/** Any subset; `config` replaces the whole config (send widgetType, persona and skills together). */
+/** Any subset; `config` replaces the whole config (send widgetType and persona together). */
 export const updateWidgetKeyRequestSchema = z.object({
   label: widgetLabelSchema.optional(),
   allowedOrigins: widgetOriginsSchema.optional(),

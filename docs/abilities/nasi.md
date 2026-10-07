@@ -34,7 +34,7 @@ Nasi begins a conversation by writing itself a brief, the system prompt, from wh
 2. where it runs: your OS in the terminal, or the channel (Telegram, widget);
 3. how to use the tools that need care: asking you questions, running shell commands, keeping notes;
 4. the other personas it may switch to, and when;
-5. the names and descriptions of your enabled [skills](/abilities/skills);
+5. the names and descriptions of the persona's [skills](/abilities/skills), and the full text of its sticky ones;
 6. a [dataset](/abilities/memory#datasets) to collect, if the persona has one, and what you've already
    answered in your profile;
 7. your sticky [memory notes](/abilities/memory#notes);

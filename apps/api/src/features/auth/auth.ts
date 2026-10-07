@@ -12,7 +12,6 @@ import { isRateLimitEnabled } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
 import type { EmailPayload } from "../../emails/template"
-import { abilityService } from "../../services"
 import { blankProfileFields, googleProfileFromIdToken } from "./google-profile"
 
 function deviceVerificationUrl() {
@@ -158,12 +157,6 @@ export const auth = betterAuth({
           if (!(await signUpConsented(ctx)))
             throw new APIError("BAD_REQUEST", { message: "Consent is required to sign up" })
           return { data: { ...user, consentedAt: new Date() } }
-        },
-        // A new account starts with the default abilities on; a failure here must not undo the sign-up.
-        after: async user => {
-          await abilityService.enableDefaults(user.id).catch(err => {
-            reportError("Failed to enable default abilities", err, { userId: user.id })
-          })
         }
       },
       // The rows cascade from the user; their images in object storage don't, so they go here (self-service and admin removal alike).

@@ -1,243 +1,52 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import {
-  abilityTypeSchema,
-  DEFAULT_PERSONA,
-  keyedAbilityTypeSchema,
-  listCatalogResponseSchema,
-  listUserAbilitiesResponseSchema,
+  listAbilityKeysResponseSchema,
   saveAbilityKeyRequestSchema,
-  saveAbilityKeyResponseSchema,
-  setAllowedToolsRequestSchema,
-  setDisabledToolsRequestSchema,
-  skillDetailSchema
+  saveAbilityKeyResponseSchema
 } from "@kaja/schema/api"
 import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
-import { badRequest, conflict, notFound, serviceUnavailable } from "../../types/errors"
+import { badRequest, notFound, serviceUnavailable } from "../../types/errors"
 import { requireAuthMiddleware, sessionUser } from "../auth"
 import { nasiToolDeps } from "../nasi/chat"
 
 const errorSchema = z.object({ error: z.string() })
-const ALWAYS_ON = "The default persona is always on"
-const isDefaultPersona = (type: string, name: string) => type === "persona" && name === DEFAULT_PERSONA
-const abilityParams = z.object({
-  type: abilityTypeSchema.openapi({ param: { name: "type", in: "path" }, example: "skill" }),
+const keyParams = z.object({
   name: z
     .string()
     .min(1)
-    .openapi({ param: { name: "name", in: "path" }, example: "system-report" })
+    .openapi({ param: { name: "name", in: "path" }, example: "brave-search" })
 })
 
-/** /abilities: the public cloud catalog (and each skill in full), and each signed-in user's own selections and keys under /abilities/me. */
+/** /abilities/me: the signed-in user's ability keys. Every ability is on for everyone; personas pick what a turn uses. */
 export const abilityRoutes = new OpenAPIHono<{ Variables: RouteVariables }>()
 abilityRoutes.use("/me", requireAuthMiddleware)
 abilityRoutes.use("/me/*", requireAuthMiddleware)
 
-const catalogRoute = createRoute({
-  method: "get",
-  path: "/",
-  tags: ["Abilities"],
-  summary: "The cloud catalog: marketplace skills, personas, HTTP tools and MCP servers anyone can enable",
-  responses: {
-    200: { description: "OK", content: { "application/json": { schema: listCatalogResponseSchema } } }
-  }
-})
-
-abilityRoutes.openapi(catalogRoute, async c => c.json({ abilities: await abilityService.listCatalog() }))
-
-const skillRoute = createRoute({
-  method: "get",
-  path: "/skill/{name}",
-  tags: ["Abilities"],
-  summary: "One catalog skill in full: its instructions and other files",
-  request: {
-    params: z.object({
-      name: z
-        .string()
-        .min(1)
-        .openapi({ param: { name: "name", in: "path" } })
-    })
-  },
-  responses: {
-    200: { description: "OK", content: { "application/json": { schema: skillDetailSchema } } },
-    404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } }
-  }
-})
-
-abilityRoutes.openapi(skillRoute, async c => {
-  const skill = await abilityService.getSkill(c.req.valid("param").name)
-  if (!skill) return notFound(c, "Skill not found")
-  return c.json(skill, 200)
-})
-
-const mineRoute = createRoute({
+const listKeysRoute = createRoute({
   method: "get",
   path: "/me",
   tags: ["Abilities"],
-  summary:
-    "Abilities the signed-in user enabled (ones that left the marketplace show as unavailable) and which have a saved key",
+  summary: "The abilities that take a key (and some persona uses), and whether the signed-in user saved one",
   security: [{ bearerAuth: [] }],
   responses: {
-    200: { description: "OK", content: { "application/json": { schema: listUserAbilitiesResponseSchema } } },
+    200: { description: "OK", content: { "application/json": { schema: listAbilityKeysResponseSchema } } },
     401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } }
   }
 })
 
-abilityRoutes.openapi(mineRoute, async c => {
+abilityRoutes.openapi(listKeysRoute, async c => {
   const user = sessionUser(c)
-  return c.json(
-    {
-      abilities: await abilityService.listForUser(user.id),
-      keys: await abilityService.keyNames(user.id),
-      keysEnabled: abilityService.keysEnabled
-    },
-    200
-  )
-})
-
-const enableRoute = createRoute({
-  method: "put",
-  path: "/me/{type}/{name}",
-  tags: ["Abilities"],
-  summary: "Enable a catalog ability for the signed-in user",
-  security: [{ bearerAuth: [] }],
-  request: { params: abilityParams },
-  responses: {
-    200: { description: "Enabled", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
-    400: {
-      description: "`key_required`: save the tool's key first; or the default persona, which is always on",
-      content: { "application/json": { schema: errorSchema } }
-    },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } }
-  }
-})
-
-abilityRoutes.openapi(enableRoute, async c => {
-  const user = sessionUser(c)
-  const { type, name } = c.req.valid("param")
-  if (isDefaultPersona(type, name)) return badRequest(c, ALWAYS_ON)
-  const result = await abilityService.enable(user.id, type, name)
-  if (result === "not_found") return notFound(c, "Ability not found")
-  if (result === "key_required") return badRequest(c, "key_required")
-  return c.json({ ok: true }, 200)
-})
-
-const disableRoute = createRoute({
-  method: "delete",
-  path: "/me/{type}/{name}",
-  tags: ["Abilities"],
-  summary: "Disable an ability for the signed-in user",
-  security: [{ bearerAuth: [] }],
-  request: { params: abilityParams },
-  responses: {
-    200: { description: "Disabled", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
-    400: {
-      description: "The default persona, which is always on",
-      content: { "application/json": { schema: errorSchema } }
-    },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "No such ability", content: { "application/json": { schema: errorSchema } } }
-  }
-})
-
-abilityRoutes.openapi(disableRoute, async c => {
-  const user = sessionUser(c)
-  const { type, name } = c.req.valid("param")
-  if (isDefaultPersona(type, name)) return badRequest(c, ALWAYS_ON)
-  if (!(await abilityService.disable(user.id, type, name))) return notFound(c, "Ability not found")
-  return c.json({ ok: true }, 200)
-})
-
-const keyParams = z.object({
-  type: keyedAbilityTypeSchema.openapi({ param: { name: "type", in: "path" }, example: "tool" }),
-  name: z
-    .string()
-    .min(1)
-    .openapi({ param: { name: "name", in: "path" }, example: "open-meteo" })
-})
-
-const disabledToolsRoute = createRoute({
-  method: "put",
-  path: "/me/{type}/{name}/tools",
-  tags: ["Abilities"],
-  summary: "Switch off some of an enabled HTTP tool's or MCP server's tools for the signed-in user",
-  description:
-    "Replaces the list; an empty one turns every tool back on. Tools left out never reach the user's turns, and an ability with all of them off is left out as a whole. Turning the ability off and on again clears the list.",
-  security: [{ bearerAuth: [] }],
-  request: {
-    params: keyParams,
-    body: { content: { "application/json": { schema: setDisabledToolsRequestSchema } }, required: true }
-  },
-  responses: {
-    200: { description: "Saved", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
-    400: {
-      description: "`unknown_tool`: a name the ability doesn't offer",
-      content: { "application/json": { schema: errorSchema } }
-    },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } },
-    409: {
-      description: "`not_enabled`: turn the ability on first",
-      content: { "application/json": { schema: errorSchema } }
-    }
-  }
-})
-
-abilityRoutes.openapi(disabledToolsRoute, async c => {
-  const user = sessionUser(c)
-  const { type, name } = c.req.valid("param")
-  const result = await abilityService.setDisabledTools(user.id, type, name, c.req.valid("json").disabled)
-  if (result === "not_found") return notFound(c, "Ability not found")
-  if (result === "unknown_tool") return badRequest(c, "unknown_tool")
-  if (result === "not_enabled") return conflict(c, "not_enabled")
-  return c.json({ ok: true }, 200)
-})
-
-const allowedToolsRoute = createRoute({
-  method: "put",
-  path: "/me/{type}/{name}/allowed-tools",
-  tags: ["Abilities"],
-  summary: "Choose which of an enabled HTTP tool's or MCP server's tools never ask for approval",
-  description:
-    'Replaces the list (tool names, or globs with `*`); an empty one makes every call ask again. The list also grows when the user answers "always allow" at an approval prompt, and is cleared when the ability is turned off and on again.',
-  security: [{ bearerAuth: [] }],
-  request: {
-    params: keyParams,
-    body: { content: { "application/json": { schema: setAllowedToolsRequestSchema } }, required: true }
-  },
-  responses: {
-    200: { description: "Saved", content: { "application/json": { schema: z.object({ ok: z.boolean() }) } } },
-    400: {
-      description: "`unknown_tool`: a name the ability doesn't offer",
-      content: { "application/json": { schema: errorSchema } }
-    },
-    401: { description: "Unauthorized", content: { "application/json": { schema: errorSchema } } },
-    404: { description: "Not in the catalog", content: { "application/json": { schema: errorSchema } } },
-    409: {
-      description: "`not_enabled`: turn the ability on first",
-      content: { "application/json": { schema: errorSchema } }
-    }
-  }
-})
-
-abilityRoutes.openapi(allowedToolsRoute, async c => {
-  const user = sessionUser(c)
-  const { type, name } = c.req.valid("param")
-  const result = await abilityService.setAllowedTools(user.id, type, name, c.req.valid("json").allowed)
-  if (result === "not_found") return notFound(c, "Ability not found")
-  if (result === "unknown_tool") return badRequest(c, "unknown_tool")
-  if (result === "not_enabled") return conflict(c, "not_enabled")
-  return c.json({ ok: true }, 200)
+  return c.json({ abilities: await abilityService.listKeys(user.id), keysEnabled: abilityService.keysEnabled }, 200)
 })
 
 const saveKeyRoute = createRoute({
   method: "put",
-  path: "/me/{type}/{name}/key",
+  path: "/me/keys/{name}",
   tags: ["Abilities"],
-  summary: "Save (or replace) the signed-in user's key for an HTTP tool or MCP server, and test it",
+  summary: "Save (or replace) the signed-in user's key for an ability, and test it",
   description:
-    "Stored encrypted and never sent back. A tool's key is tested with its `check` request, an MCP server's by connecting and listing its tools; the key is saved even when the test fails.",
+    "Stored encrypted and never sent back. An HTTP tool's key is tested with its `check` request, an MCP server's by connecting and listing its tools; the key is saved even when the test fails.",
   security: [{ bearerAuth: [] }],
   request: {
     params: keyParams,
@@ -261,9 +70,8 @@ const saveKeyRoute = createRoute({
 abilityRoutes.openapi(saveKeyRoute, async c => {
   const user = sessionUser(c)
   if (!abilityService.keysEnabled) return serviceUnavailable(c, "keys_unavailable")
-  const { type, name } = c.req.valid("param")
   // Same egress as a turn's tool calls: through WEB_PROXY when set, never to a private host.
-  const result = await abilityService.saveKey(user.id, type, name, c.req.valid("json").apiKey, {
+  const result = await abilityService.saveKey(user.id, c.req.valid("param").name, c.req.valid("json").apiKey, {
     proxy: nasiToolDeps().fetchProxy
   })
   if (result === "not_found") return notFound(c, "Ability not found")
@@ -273,10 +81,9 @@ abilityRoutes.openapi(saveKeyRoute, async c => {
 
 const deleteKeyRoute = createRoute({
   method: "delete",
-  path: "/me/{type}/{name}/key",
+  path: "/me/keys/{name}",
   tags: ["Abilities"],
-  summary:
-    "Remove the signed-in user's key for an HTTP tool or MCP server (one that can't work without it is turned off too)",
+  summary: "Remove the signed-in user's key for an ability",
   security: [{ bearerAuth: [] }],
   request: { params: keyParams },
   responses: {
@@ -288,7 +95,6 @@ const deleteKeyRoute = createRoute({
 
 abilityRoutes.openapi(deleteKeyRoute, async c => {
   const user = sessionUser(c)
-  const { type, name } = c.req.valid("param")
-  if (!(await abilityService.deleteKey(user.id, type, name))) return notFound(c, "Ability not found")
+  if (!(await abilityService.deleteKey(user.id, c.req.valid("param").name))) return notFound(c, "Ability not found")
   return c.json({ ok: true }, 200)
 })

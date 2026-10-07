@@ -118,13 +118,11 @@ describe("HTTP tools in the cloud", () => {
   const realFetch = globalThis.fetch
   const auth = (as = token) => ({ Authorization: `Bearer ${as}`, "Content-Type": "application/json" })
   const saveKey = (name: string, apiKey: string, as = token) =>
-    app.request(`/abilities/me/tool/${name}/key`, {
+    app.request(`/abilities/me/keys/${name}`, {
       method: "PUT",
       headers: auth(as),
       body: JSON.stringify({ apiKey })
     })
-  const enable = (type: string, name: string, as = token) =>
-    app.request(`/abilities/me/${type}/${name}`, { method: "PUT", headers: auth(as) })
   const mine = async (as = token) => (await app.request("/abilities/me", { headers: auth(as) })).json()
   const turn = (body: object) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify(body) })
@@ -182,44 +180,39 @@ describe("HTTP tools in the cloud", () => {
     expect(result.added.join()).not.toContain(`broken-${tag}`)
   })
 
-  test("the catalog shows where each tool calls, whether it needs a key, and its methods", async () => {
-    const { abilities } = await (await app.request("/abilities")).json()
+  test("the keys list shows each keyed tool a persona uses: where it calls and whether it needs the key", async () => {
+    const { abilities } = await mine()
     const byName = (name: string) => abilities.find((ability: { name: string }) => ability.name === name)
-    expect(byName(weather)).toMatchObject({
-      type: "tool",
-      http: {
-        domain: host(weather),
-        key: "none",
-        tools: [{ name: forecastTool, method: "GET", description: "Forecast" }]
-      }
-    })
-    expect(byName(issues).http).toMatchObject({ key: "required", tools: [{ name: createIssueTool, method: "POST" }] })
-    expect(byName(extras).http.key).toBe("optional")
+    expect(byName(issues)).toMatchObject({ key: "required", domain: host(issues), saved: false })
+    expect(byName(extras)).toMatchObject({ key: "optional", saved: false })
+    // It takes no key
+    expect(byName(weather)).toBeUndefined()
   })
 
-  test("a tool that needs a key can't be turned on without one; a saved key is tested and never sent back", async () => {
-    const refused = await enable("tool", issues)
-    expect(refused.status).toBe(400)
-    expect((await refused.json()).error).toBe("key_required")
+  test("a tool that needs a key stays out of turns until the user saves one; a saved key is tested and never sent back", async () => {
+    const sent = useScript([{ content: "Hi." }])
+    await turn({ message: "hi" })
+    const offered = sent[0]!.tools!.map(t => t.function.name)
+    expect(offered).toContain(forecastTool)
+    expect(offered).not.toContain(createIssueTool)
 
     expect(await (await saveKey(issues, "wrong-key")).json()).toEqual({ check: { ok: false, reason: "HTTP 401" } })
     expect(await (await saveKey(issues, GOOD_KEY)).json()).toEqual({ check: { ok: true } })
     expect(requests.at(-1)).toMatchObject({ url: `https://${host(issues)}/me`, authorization: `Bearer ${GOOD_KEY}` })
 
     const listed = await mine()
-    expect(listed).toMatchObject({ keys: [issues], keysEnabled: true })
+    expect(listed.keysEnabled).toBe(true)
+    expect(listed.abilities.find((ability: { name: string }) => ability.name === issues).saved).toBe(true)
     expect(JSON.stringify(listed)).not.toContain(GOOD_KEY)
     const { rows } = await pool.query("SELECT ciphertext FROM user_secret WHERE user_id = $1", [userId])
     expect(Buffer.from(rows[0].ciphertext).toString("utf8")).not.toContain(GOOD_KEY)
 
-    expect((await enable("tool", issues)).status).toBe(200)
     expect((await saveKey(weather, "x")).status).toBe(400)
     expect(await (await saveKey(extras, "extra-key")).json()).toEqual({ check: null })
     expect((await saveKey("nope-nope", "x")).status).toBe(404)
   })
 
-  test("a cloud turn gets the user's tools; a POST waits for approval, and approving runs the call the server saved", async () => {
-    expect((await enable("tool", weather)).status).toBe(200)
+  test("a cloud turn gets the persona's tools; a POST waits for approval, and approving runs the call the server saved", async () => {
     const sent = useScript([{ content: null, tool_calls: [createIssueCall("call_a")] }, { content: "Filed #7." }])
     requests.length = 0
 
@@ -267,33 +260,6 @@ describe("HTTP tools in the cloud", () => {
     }
   })
 
-  test("switched-off tools stay out of turns; unknown tools and abilities that aren't on are refused", async () => {
-    const setTools = (type: string, name: string, disabled: string[]) =>
-      app.request(`/abilities/me/${type}/${name}/tools`, {
-        method: "PUT",
-        headers: auth(),
-        body: JSON.stringify({ disabled })
-      })
-    expect((await setTools("tool", issues, ["no_such_tool"])).status).toBe(400)
-    expect((await setTools("tool", extras, [`extras_${tag}`])).status).toBe(409)
-    expect((await setTools("tool", "nope-nope", [])).status).toBe(404)
-
-    expect((await setTools("tool", issues, [createIssueTool])).status).toBe(200)
-    const listed = (await mine()).abilities.find((ability: { name: string }) => ability.name === issues)
-    expect(listed.disabledTools).toEqual([createIssueTool])
-    const sent = useScript([{ content: "Hi." }])
-    expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed" })
-    const offered = sent[0]!.tools!.map(t => t.function.name)
-    expect(offered).toContain(forecastTool)
-    // Its only tool is off, so the whole ability is left out
-    expect(offered).not.toContain(createIssueTool)
-
-    expect((await setTools("tool", issues, [])).status).toBe(200)
-    expect((await mine()).abilities.find((ability: { name: string }) => ability.name === issues).disabledTools).toEqual(
-      []
-    )
-  })
-
   test("'approve for this session' stops asking about that tool in the session, and only there", async () => {
     useScript([
       { content: null, tool_calls: [createIssueCall("call_s1")] },
@@ -310,42 +276,6 @@ describe("HTTP tools in the cloud", () => {
     expect(requests.filter(request => request.method === "POST")).toHaveLength(2)
     // A different session asks again
     expect((await (await turn({ message: "another bug" })).json()).status).toBe("needs_approval")
-  })
-
-  test("'always allow' saves the tool to the user's list, so later sessions run it without asking until it is removed", async () => {
-    const setAllowed = (allowed: string[]) =>
-      app.request(`/abilities/me/tool/${issues}/allowed-tools`, {
-        method: "PUT",
-        headers: auth(),
-        body: JSON.stringify({ allowed })
-      })
-    const allowedOf = async () =>
-      (await mine()).abilities.find((ability: { name: string }) => ability.name === issues).allowedTools
-    expect((await setAllowed(["no_such_tool"])).status).toBe(400)
-    expect((await setAllowed([])).status).toBe(200)
-
-    useScript([{ content: null, tool_calls: [createIssueCall("call_al1")] }, { content: "Filed." }])
-    const paused = await (await turn({ message: "file a bug" })).json()
-    expect((await (await turn({ session: paused.session, approval: "approve_always" })).json()).status).toBe(
-      "completed"
-    )
-    expect(await allowedOf()).toEqual([createIssueTool])
-
-    requests.length = 0
-    useScript([{ content: null, tool_calls: [createIssueCall("call_al2")] }, { content: "Filed again." }])
-    expect(await (await turn({ message: "file another" })).json()).toMatchObject({
-      status: "completed",
-      message: "Filed again."
-    })
-    expect(requests.filter(request => request.method === "POST")).toHaveLength(1)
-
-    expect((await setAllowed([])).status).toBe(200)
-    useScript([{ content: null, tool_calls: [createIssueCall("call_al3")] }, { content: "Filed." }])
-    expect((await (await turn({ message: "and once more" })).json()).status).toBe("needs_approval")
-    // A glob covers the tool by its name too
-    expect((await setAllowed(["create_*"])).status).toBe(200)
-    expect(await allowedOf()).toEqual(["create_*"])
-    expect((await setAllowed([])).status).toBe(200)
   })
 
   test("the stream forwards confirm_tool, and declining never calls the tool", async () => {
@@ -397,8 +327,7 @@ describe("HTTP tools in the cloud", () => {
     expect(prompt.buttons!.flat().map(button => button.data)).toEqual([
       expect.stringMatching(/^tool:approve:[0-9a-f]{16}$/),
       expect.stringMatching(/^tool:decline:[0-9a-f]{16}$/),
-      expect.stringMatching(/^tool:approve_session:[0-9a-f]{16}$/),
-      expect.stringMatching(/^tool:approve_always:[0-9a-f]{16}$/)
+      expect.stringMatching(/^tool:approve_session:[0-9a-f]{16}$/)
     ])
     const approve = prompt.buttons![0]![0]!.data
 
@@ -483,12 +412,12 @@ describe("HTTP tools in the cloud", () => {
     expect(rows[0].title).toBe("📷 /new")
   })
 
-  test("widget turns never get HTTP tools, even when the owner has them on", async () => {
+  test("widget turns never get HTTP tools, even when their persona lists them", async () => {
     const origin = "https://tools-widget.test"
     const created = await app.request("/widget/admin", {
       method: "POST",
       headers: auth(),
-      body: JSON.stringify({ label: "w", allowedOrigins: [origin], config: { skills: [] } })
+      body: JSON.stringify({ label: "w", allowedOrigins: [origin] })
     })
     const { rawKey } = await created.json()
     const sent = useScript([{ content: "hi" }])
@@ -507,8 +436,7 @@ describe("HTTP tools in the cloud", () => {
     const email = faker.internet.email().toLowerCase()
     const other = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Other")
     const otherId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
-    expect((await mine(other)).keys).toEqual([])
-    expect((await enable("tool", issues, other)).status).toBe(400)
+    expect((await mine(other)).abilities.find((ability: { name: string }) => ability.name === issues).saved).toBe(false)
 
     await pool.query(
       `INSERT INTO user_secret (user_id, name, ciphertext, iv, tag)
@@ -519,27 +447,28 @@ describe("HTTP tools in the cloud", () => {
     expect(await secretService.get(userId, `ability:${issues}`)).toBe(GOOD_KEY)
   })
 
-  test("removing the key turns off a tool that can't work without it", async () => {
-    const removed = await app.request(`/abilities/me/tool/${issues}/key`, { method: "DELETE", headers: auth() })
+  test("removing the key takes a tool that can't work without it out of turns", async () => {
+    const removed = await app.request(`/abilities/me/keys/${issues}`, { method: "DELETE", headers: auth() })
     expect(removed.status).toBe(200)
-    const listed = await mine()
-    expect(listed.keys).not.toContain(issues)
-    expect(listed.abilities.map((ability: { name: string }) => ability.name)).not.toContain(issues)
-    expect(listed.abilities.map((ability: { name: string }) => ability.name)).toContain(weather)
+    expect((await mine()).abilities.find((ability: { name: string }) => ability.name === issues).saved).toBe(false)
+    const sent = useScript([{ content: "Hi." }])
+    await turn({ message: "hi" })
+    const offered = sent[0]!.tools!.map(t => t.function.name)
+    expect(offered).toContain(forecastTool)
+    expect(offered).not.toContain(createIssueTool)
+    expect((await app.request("/abilities/me/keys/nope-nope", { method: "DELETE", headers: auth() })).status).toBe(404)
   })
 
   test("ABILITY_KEYS gives every user a server-wide key; the user's own key still wins", async () => {
     const service = new AbilityService(pool, secretService, parseAbilityKeys(` ${issues} = server-key ,broken,=x`))
-    const listed = (await service.listCatalog()).find(ability => ability.name === issues)
-    expect(listed?.http?.key).toBe("optional")
-    expect(await service.enable(userId, "tool", issues)).toBe("enabled")
+    const listed = (await service.listKeys(userId)).find(ability => ability.name === issues)
+    expect(listed?.key).toBe("optional")
     try {
       expect((await service.keysForUser(userId)).get(issues)).toBe("server-key")
       await secretService.set(userId, `ability:${issues}`, "own-key")
       expect((await service.keysForUser(userId)).get(issues)).toBe("own-key")
     } finally {
       await secretService.delete(userId, `ability:${issues}`)
-      await service.disable(userId, "tool", issues)
     }
   })
 
@@ -547,10 +476,11 @@ describe("HTTP tools in the cloud", () => {
     secretService.setKey(undefined)
     try {
       expect((await saveKey(extras, "x")).status).toBe(503)
-      const names = ((await (await app.request("/abilities")).json()).abilities as { name: string }[]).map(p => p.name)
-      expect(names).toEqual(expect.arrayContaining([weather, extras]))
+      const listed = await mine()
+      expect(listed.keysEnabled).toBe(false)
+      const names = listed.abilities.map((ability: { name: string }) => ability.name)
+      expect(names).toContain(extras)
       expect(names).not.toContain(issues)
-      expect((await mine()).keysEnabled).toBe(false)
     } finally {
       secretService.setKey(TEST_SECRET_KEY)
     }

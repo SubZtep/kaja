@@ -1,9 +1,8 @@
 import { Dialog } from "@base-ui/react/dialog"
-import type { CatalogAbility, UpdateWidgetKeyRequest, WidgetKey } from "@kaja/schema/api"
+import type { UpdateWidgetKeyRequest, WidgetKey } from "@kaja/schema/api"
 import { widgetTypeSchema } from "@kaja/schema/api"
 import { useState } from "react"
 import { z } from "zod"
-import { SkillChecklist } from "../../../../components/abilities/SkillChecklist"
 import { Button } from "../../../../components/form/primitives/Button"
 import { DIALOG_TITLE, DialogShell } from "../../../../components/ui/DialogShell"
 import { useAppForm } from "../../../../lib/form"
@@ -31,24 +30,21 @@ export function parseOrigins(input: string): string[] {
     })
 }
 
-/** Edits a widget key's label, origins, type, persona and skills. The key itself never changes, so the embed snippet keeps working. */
+/** Edits a widget key's label, origins, type and persona (whose `abilities` decide the visitors' skills). The key itself never changes, so the embed snippet keeps working. */
 export function EditWidgetDialog({
   widgetKey,
   personas,
-  skills,
   onSave,
   isPending,
   children
 }: Readonly<{
   widgetKey: WidgetKey
   personas: { id: string; label: string }[]
-  skills: CatalogAbility[]
   onSave: (payload: UpdateWidgetKeyRequest) => Promise<unknown>
   isPending: boolean
   children: React.ReactElement
 }>) {
   const [open, setOpen] = useState(false)
-  const [selectedSkills, setSelectedSkills] = useState(widgetKey.config.skills ?? [])
 
   const form = useAppForm({
     defaultValues: {
@@ -64,8 +60,7 @@ export function EditWidgetDialog({
         allowedOrigins: parseOrigins(value.allowedOrigins),
         config: {
           widgetType: value.widgetType,
-          persona: value.persona || undefined,
-          skills: selectedSkills
+          persona: value.persona || undefined
         }
       })
       // Closed here rather than by a Dialog.Close on the submit button, so a failed request keeps the edits.
@@ -109,7 +104,6 @@ export function EditWidgetDialog({
                 />
               )}
             </form.AppField>
-            <SkillChecklist skills={skills} selected={selectedSkills} onChange={setSelectedSkills} />
 
             <div className="flex justify-end gap-4">
               <Dialog.Close render={<Button type="button" />}>{m.confirm_dialog_cancel()}</Dialog.Close>

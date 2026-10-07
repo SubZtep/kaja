@@ -45,10 +45,6 @@ export type NasiOpenOptions = {
   mcpConnectTimeoutMs?: number
   /** Cloud: the MCP sandbox that runs stdio abilities; without it they're left out. */
   mcpSandbox?: McpSandbox
-  /** The caller's "always allow" patterns (see `agent/tool-allow.ts`): tools that never pause for approval. */
-  allowedTools?: string[]
-  /** Saves an `approve_always` answer, by the tool's allow key. */
-  onAlwaysAllow?: (key: string) => Promise<void>
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
@@ -291,7 +287,6 @@ export class Nasi {
       store: this.opts.store,
       contextWindow: this.opts.chat.contextWindow,
       summarizer: this.opts.summarizer,
-      allowedTools: this.opts.allowedTools,
       ensureTools: async names => {
         this.tools = await this.ensureAbilities(names)
         return this.tools
@@ -315,7 +310,7 @@ export class Nasi {
       }
       const call = pendingToolCall(session, pendingId)
       if (!call) return "Error: the call waiting for approval is gone."
-      if (input.approval !== "approve") await this.grant(session, call.function.name, input.approval)
+      if (input.approval === "approve_session") this.grant(session, call.function.name)
       const startedAt = performance.now()
       let status: "ok" | "error" = "ok"
       const result = await runApprovedTool(this.tools, call.function.name, call.function.arguments, s => {
@@ -329,13 +324,11 @@ export class Nasi {
     return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
   }
 
-  /** An `approve_session` or `approve_always` answer: the tool stops asking for this session, and `approve_always` also goes to the caller's allow list. */
-  private async grant(session: Session, toolNameApproved: string, approval: "approve_session" | "approve_always") {
+  /** An `approve_session` answer: the tool stops asking for the rest of this session. */
+  private grant(session: Session, toolNameApproved: string) {
     const tool = this.tools.find(candidate => toolName(candidate) === toolNameApproved)
     const key = tool && allowKey(tool)
-    if (!key) return
-    session.grantedTools = [...new Set([...(session.grantedTools ?? []), key])]
-    if (approval === "approve_always") await this.opts.onAlwaysAllow?.(key)
+    if (key) session.grantedTools = [...new Set([...(session.grantedTools ?? []), key])]
   }
 
   async turnBuffered(input: NasiTurnInput): Promise<NasiTurnResponse> {

@@ -12,6 +12,7 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
+import { createPostgresAbilityStore } from "../../src/features/nasi/pg-abilities"
 import { createCloudTelegramDriver } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
@@ -117,7 +118,7 @@ describe("MCP servers in the cloud", () => {
   const realFetch = globalThis.fetch
   const auth = () => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" })
   const saveKey = (apiKey: string) =>
-    app.request(`/abilities/me/mcp/${things}/key`, { method: "PUT", headers: auth(), body: JSON.stringify({ apiKey }) })
+    app.request(`/abilities/me/keys/${things}`, { method: "PUT", headers: auth(), body: JSON.stringify({ apiKey }) })
   const turn = (body: object) =>
     app.request("/nasi/turn", { method: "POST", headers: auth(), body: JSON.stringify(body) })
 
@@ -156,50 +157,34 @@ describe("MCP servers in the cloud", () => {
   })
 
   test("a keyless stdio server is offered, running in an MCP sandbox", async () => {
-    const { abilities } = await (await app.request("/abilities")).json()
-    expect(abilities.find((ability: { name: string }) => ability.name === `stdio-${tag}`)).toMatchObject({
-      type: "mcp",
-      mcp: { domain: "sandbox", key: "none", transport: "http", tools: [{ name: "x" }] }
-    })
+    const offered = await createPostgresAbilityStore({ userId: "any" }).listMcpAbilities()
+    expect(offered.find(ability => ability.name === `stdio-${tag}`)).toMatchObject({ transport: "stdio", tools: ["x"] })
+    expect(offered.map(ability => ability.name)).not.toContain(`stdio-keyed-${tag}`)
   })
 
   test("with no sandbox online, a stdio ability's turn still runs, without its tools", async () => {
-    const stdio = `stdio-${tag}`
-    expect((await app.request(`/abilities/me/mcp/${stdio}`, { method: "PUT", headers: auth() })).status).toBe(200)
-    try {
-      const sent: Parameters<typeof scriptedChat>[1] = []
-      setNasiChatResolver(async () => ({
-        client: scriptedChat([{ content: "Hi." }], sent) as never,
-        model: "fake-model"
-      }))
-      expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed", message: "Hi." })
-      expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("x")
-    } finally {
-      await app.request(`/abilities/me/mcp/${stdio}`, { method: "DELETE", headers: auth() })
-    }
+    const sent: Parameters<typeof scriptedChat>[1] = []
+    setNasiChatResolver(async () => ({
+      client: scriptedChat([{ content: "Hi." }], sent) as never,
+      model: "fake-model"
+    }))
+    expect(await (await turn({ message: "hi" })).json()).toMatchObject({ status: "completed", message: "Hi." })
+    expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("x")
   })
 
-  test("the catalog shows where an MCP server runs, its key need, when it asks, and its tools with their descriptions", async () => {
-    const { abilities } = await (await app.request("/abilities")).json()
+  test("the keys list shows where a keyed MCP server runs and that it needs the key", async () => {
+    const { abilities } = await (await app.request("/abilities/me", { headers: auth() })).json()
     expect(abilities.find((ability: { name: string }) => ability.name === things)).toMatchObject({
-      type: "mcp",
-      mcp: {
-        domain: host,
-        key: "required",
-        transport: "http",
-        approval: "writes",
-        tools: [{ name: "read_thing", description: "Reads a thing" }, { name: "write_thing" }]
-      }
+      key: "required",
+      domain: host,
+      saved: false
     })
   })
 
-  test("it needs a key before it can be turned on; a saved key is tested by connecting", async () => {
-    const refused = await app.request(`/abilities/me/mcp/${things}`, { method: "PUT", headers: auth() })
-    expect(refused.status).toBe(400)
+  test("a saved key is tested by connecting", async () => {
     const wrong = await (await saveKey("wrong-key")).json()
     expect(wrong.check.ok).toBe(false)
     expect(await (await saveKey(GOOD_KEY)).json()).toEqual({ check: { ok: true } })
-    expect((await app.request(`/abilities/me/mcp/${things}`, { method: "PUT", headers: auth() })).status).toBe(200)
   })
 
   test("a cloud turn connects the server with the user's key; a write waits for approval, then runs", async () => {
@@ -241,12 +226,18 @@ describe("MCP servers in the cloud", () => {
     }
   })
 
-  test("removing the key turns off a server that can't work without it", async () => {
-    const removed = await app.request(`/abilities/me/mcp/${things}/key`, { method: "DELETE", headers: auth() })
+  test("removing the key takes a server that can't work without it out of turns", async () => {
+    const removed = await app.request(`/abilities/me/keys/${things}`, { method: "DELETE", headers: auth() })
     expect(removed.status).toBe(200)
     const mine = await (await app.request("/abilities/me", { headers: auth() })).json()
-    expect(mine.keys).not.toContain(things)
-    expect(mine.abilities.map((ability: { name: string }) => ability.name)).not.toContain(things)
+    expect(mine.abilities.find((ability: { name: string }) => ability.name === things).saved).toBe(false)
+    const sent: Parameters<typeof scriptedChat>[1] = []
+    setNasiChatResolver(async () => ({
+      client: scriptedChat([{ content: "Hi." }], sent) as never,
+      model: "fake-model"
+    }))
+    await turn({ message: "hi" })
+    expect(sent[0]!.tools?.map(tool => tool.function.name) ?? []).not.toContain("read_thing")
   })
 
   test("in the user's own sandbox, a stdio server runs for their turns and stays warm between them", async () => {
@@ -257,7 +248,6 @@ describe("MCP servers in the cloud", () => {
     const sandbox = await startSandbox({ apiUrl: `http://127.0.0.1:${server.port}`, abilities: [counter], key })
     const sandboxPool = sandbox.pool
     try {
-      expect((await app.request(`/abilities/me/mcp/${counter}`, { method: "PUT", headers: auth() })).status).toBe(200)
       for (const expected of ["1", "2"]) {
         const sent: Parameters<typeof scriptedChat>[1] = []
         const client = scriptedChat(

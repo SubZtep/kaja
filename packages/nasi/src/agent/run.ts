@@ -378,7 +378,7 @@ async function* handleToolCalls(
       continue
     }
 
-    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call, [agent.allowedTools, granted])
+    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call, [granted])
     if (summary !== undefined) {
       approval = holdApproval(messages, record, approval, {
         id: call.id,

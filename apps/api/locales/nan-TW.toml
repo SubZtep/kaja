@@ -13,7 +13,6 @@ changeEmailLink      = "變更電子批"
 
 [telegram]
 commandNew       = "起新个開講"
-commandAbilities = "開起抑是關掉能力"
 commandCompact   = "共目前个開講摘要，才會當解放空間"
 compacted        = "🗜 開講精簡：{before} → {after} 个 token。"
 compactedDropped = "🗜 開講精簡：{before} → {after} 个 token。摘要寫袂落，所以上早个訊息就略掉矣。"
@@ -36,28 +35,10 @@ photoFailed      = "⚠ 無法度對 Telegram 提著這張圖片 — 請閣送�
 toolWantsToRun   = "🔐 <b>{name}</b>想欲執行："
 approve          = "✅ 允准"
 approveSession   = "✅ 這个開講允准"
-approveAlways    = "✅ 這个工具永遠允准"
 decline          = "❌ 拒絕"
 approved         = "✅ 允准了"
 declined         = "❌ 拒絕了"
 approvalExpired  = "這个要求已經答覆過抑是已經過期矣。"
-
-
-  [telegram.abilities]
-  title        = "<b>能力</b>"
-  empty        = "目錄內底猶無物件。"
-  hint         = "揤其中一个來開起抑是關掉；會對下一条訊息起開始生效。"
-  legend       = "✅ 開 · ▫️ 關 · 🔑 著先設定 API 鎖匙 · ⚠️ 已經無提供"
-  webLink      = "佇網站做詳細个管理佮設定鎖匙"
-  page         = "頁 {current} / {total}"
-  previous     = "‹ 頂一个"
-  next         = "下一个 ›"
-  skill        = "技能"
-  persona      = "角色"
-  tool         = "工具"
-  mcp          = "MCP"
-  needsKey     = "🔑 <b>{name}</b> 著先有你个 API 鎖匙。請去網站設定，物件會加密保存；在遮打个鎖匙會留咧聊天紀錄。"
-  needsKeyLink = "能力 → 工具"
 
 
   [telegram.error]

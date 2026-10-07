@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { ConfirmCommand } from "../../components/layout/confirm-command"
 import { renderForTest } from "../test-utils"
 
-test("a cloud tool approval offers session and always, and picking one reports its scope", async () => {
+test("a cloud tool approval also offers the rest of the session, and picking it reports its scope", async () => {
   const answers: [boolean, string | undefined][] = []
   const t = renderForTest(
     <ConfirmCommand
@@ -16,7 +16,7 @@ test("a cloud tool approval offers session and always, and picking one reports i
   )
   await t.tick()
   expect(t.lastFrame()).toContain("this session")
-  expect(t.lastFrame()).toContain("always allow")
+  expect(t.lastFrame()).not.toContain("always allow")
   await t.press("\x1b[B") // down to "this session"
   await t.press("\r")
   await t.tick()
