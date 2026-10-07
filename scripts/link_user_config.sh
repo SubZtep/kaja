@@ -7,7 +7,7 @@ repo_root="$(cd -- "$script_dir/.." && pwd)"
 link="$repo_root/.user-config"
 
 # Same dir the TUI uses: its own env-paths call (apps/tui/lib/paths.ts), resolved from its node_modules
-source_dir="$(cd -- "$repo_root/apps/tui" && bun -e 'import envPaths from "env-paths"; console.log(envPaths("kaja", { suffix: "" }).config)')"
+source_dir="$(cd -- "$repo_root/apps/tui" && bun -e 'import envPaths from "env-paths"; console.log(envPaths("kaja", { suffix: process.env.KAJA_PROFILE ?? "" }).config)')"
 
 if [[ ! -d "$source_dir" ]]; then
   echo "No TUI config at $source_dir yet (run the TUI once); nothing to link."

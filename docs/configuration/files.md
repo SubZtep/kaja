@@ -20,9 +20,10 @@ account, and on disk has only a minimal `settings.toml` with your language and `
 └─ marketplace/     # abilities (skills, HTTP tools, MCP servers, code tools), personas, datasets
 ```
 
-The folder follows XDG (`$XDG_CONFIG_HOME/kaja` when set). The [setup wizard](/getting-started/wizard)
-writes the first version, and after that the files are yours to edit. Kaja reads them once at startup and
-never writes them while running, so restart to apply a change.
+The folder follows XDG (`$XDG_CONFIG_HOME/kaja` when set). `KAJA_PROFILE` is appended to its name, and to
+the data folder's: `KAJA_PROFILE=dev kaja` uses `~/.config/kaja-dev/`, a separate setup of its own. The
+[setup wizard](/getting-started/wizard) writes the first version, and after that the files are yours to
+edit. Kaja reads them once at startup and never writes them while running, so restart to apply a change.
 
 | File | Reference |
 | --- | --- |

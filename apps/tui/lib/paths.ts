@@ -2,9 +2,10 @@ import { join } from "node:path"
 import envPaths from "env-paths"
 import { t } from "./i18n"
 
-// Computed fresh per call, not cached — tests mutate XDG_*_HOME per spec file.
+/** The CLI's config, data, cache and temp dirs; `KAJA_PROFILE` is appended to every folder name (`kaja-<profile>`), for keeping separate setups side by side. */
 export function getPaths() {
-  return envPaths("kaja", { suffix: "" })
+  // Computed fresh per call, not cached — tests mutate XDG_*_HOME per spec file.
+  return envPaths("kaja", { suffix: Bun.env.KAJA_PROFILE ?? "" })
 }
 
 /** Every path the CLI reads/writes, for display (`config paths`, first-run screen). Duplicated as a flat list to avoid importing modules with config side effects. */
