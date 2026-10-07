@@ -77,6 +77,13 @@ bun run scripts/barkochba.ts ["secret"]     # self-play the barkochba persona ag
 > through, so Ink fails with "Raw mode is not supported".
 {: .warning }
 
+After the TUI's first run has written its config (`~/.config/kaja`), link it into the repo to edit it beside
+the code, with the same TOML schemas as the templates in `docs/config/`:
+
+```sh
+./scripts/link_user_config.sh   # .user-config -> ~/.config/kaja (gitignored)
+```
+
 ### Code generation
 
 Never hand-edit the outputs of these. Their inputs are the source of truth:
