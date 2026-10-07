@@ -119,3 +119,23 @@ test("a stdio ability nothing here can start is left out and reported, only when
   const withUv = await loadAbilities(storeWith([], [time]), { launch: { which: (p: string) => p } })
   expect(withUv.mcp.map(target => target.server)).toMatchObject([{ id: "time", command: "uvx" }])
 })
+
+test("a roots-taking ability gets each persona's folders, and is left out when no persona gives any", async () => {
+  const files = parseMcp({ name: "files", description: "f", transport: "stdio", command: "bun", roots: true })
+  const launch = { which: (p: string) => p }
+  const home = (await import("node:os")).homedir()
+  const tmp = (await import("node:os")).tmpdir()
+  const personas = [
+    { id: "a", label: "A", abilities: [{ name: "files", roots: ["~", tmp] }] },
+    { id: "b", label: "B", abilities: ["files"] },
+    { id: "c", label: "C" }
+  ]
+  const loaded = await loadAbilities(storeWith([], [files]), { launch, personas })
+  expect(loaded.mcp.map(target => target.roots)).toEqual([{ a: [home, tmp] }])
+  expect(loaded.missingRoots).toEqual([])
+
+  const rootless = await loadAbilities(storeWith([], [files]), { launch, personas: personas.slice(1) })
+  expect(rootless.mcp).toEqual([])
+  expect(rootless.missingRoots).toEqual(["files"])
+  expect((await loadAbilities(storeWith([], [files]), { launch })).missingRoots).toEqual([])
+})

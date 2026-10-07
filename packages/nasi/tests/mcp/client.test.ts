@@ -46,7 +46,7 @@ test(
     const asking = (tools: Awaited<ReturnType<typeof toolsWith>>) => tools.filter(t => t.approval).map(toolName)
     expect(asking(never)).toEqual([])
     expect(asking(writes)).toEqual(["write_thing", "echo_key"])
-    expect(asking(always)).toEqual(["read_thing", "write_thing", "echo_key"])
+    expect(asking(always)).toEqual(["read_thing", "write_thing", "echo_key", "list_roots"])
     expect(always[0]!.approval?.({ id: "7" })).toBe('ability:fixture read_thing {"id":"7"}')
   },
   SPAWN_TIMEOUT
@@ -163,6 +163,40 @@ test(
     expect(mcpServers.find(s => s.id === "ability:broken")).toMatchObject({ failed: true, toolCount: 0 })
     expect(tools.some(t => toolName(t) === "read_thing")).toBe(true)
     await closeTools()
+  },
+  SPAWN_TIMEOUT
+)
+
+test(
+  "a roots-taking server gets the active persona's folders, and is left out for a persona with none",
+  async () => {
+    const { ensureAbilities, closeTools } = await createTools({
+      includeLocalTools: true,
+      tempDir: tmpdir(),
+      lazyMcpAbilities: true,
+      mcpAbilities: [
+        {
+          name: "things",
+          server: fixture,
+          transport: "stdio",
+          approval: "never",
+          roots: { a: ["/tmp/kaja-a"], b: ["/tmp/kaja-b", "/tmp/kaja-c"] }
+        }
+      ]
+    })
+    try {
+      const rootsAs = async (persona?: string) => {
+        const list = (await ensureAbilities(["things"], persona)).find(t => toolName(t) === "list_roots")
+        return list ? ((await list.execute({})) as { text: string }).text : undefined
+      }
+      expect(await rootsAs("a")).toBe("file:///tmp/kaja-a")
+      expect(await rootsAs("b")).toBe("file:///tmp/kaja-b\nfile:///tmp/kaja-c")
+      expect(await rootsAs("other")).toBeUndefined()
+      expect(await rootsAs()).toBeUndefined()
+      expect(await rootsAs("a")).toBe("file:///tmp/kaja-a")
+    } finally {
+      await closeTools()
+    }
   },
   SPAWN_TIMEOUT
 )

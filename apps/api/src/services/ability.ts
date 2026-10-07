@@ -30,10 +30,11 @@ type ManifestRow = { type: string; name: string; description?: string; files: Re
 
 /**
  * Why the cloud can't offer an MCP ability, or undefined when it can: a fixed tool list, and either a remote server on a
- * public host or a stdio one an MCP sandbox runs (not one that takes a key: keys aren't forwarded there yet).
+ * public host or a stdio one an MCP sandbox runs (not one that takes a key: keys aren't forwarded there yet), and not local-only.
  */
 export function cloudMcpProblem(ability: McpAbility): string | undefined {
   if (!ability.tools?.length) return "no `tools` allowlist"
+  if (ability.localOnly || ability.roots) return "it only runs on the user's own machine"
   if (ability.transport === "stdio" || !ability.url) {
     // Also keeps saveKey's live test from starting the command on this host.
     if (ability.auth.type === "apiKey") return "the MCP sandbox can't take a key yet"

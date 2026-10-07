@@ -295,7 +295,7 @@ function LocalApp({
   openaiApiModel: string
   tools: Tool[]
   /** Connects the active persona's MCP abilities (see Agent.ensureTools). */
-  ensureTools?: (abilities?: string[]) => Promise<Tool[]>
+  ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   initialSession?: PersistedSession
@@ -444,7 +444,7 @@ type LocalAppProps = Readonly<{
   openaiApiModel: string
   tools: Tool[]
   /** Connects the active persona's MCP abilities (see Agent.ensureTools). */
-  ensureTools?: (abilities?: string[]) => Promise<Tool[]>
+  ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   /** A persisted session to continue (--continue / --session <id>). */

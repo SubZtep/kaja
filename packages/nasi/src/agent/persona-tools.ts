@@ -20,9 +20,9 @@ export function personaTools(agent: Agent): Tool[] {
   return toolsForPersona(agent.tools, persona, loadSkillToolOf(agent)?.skills ?? [])
 }
 
-/** Has the host connect what the active persona's abilities need (its MCP servers; every one for an agent without a persona) and takes the tool list that results; a no-op without {@link Agent.ensureTools}. */
+/** Has the host connect what the active persona's abilities need (its MCP servers, with its roots; every one for an agent without a persona) and takes the tool list that results; a no-op without {@link Agent.ensureTools}. */
 export async function syncPersonaTools(agent: Agent): Promise<void> {
   if (!agent.ensureTools) return
   const persona = activePersona(agent)
-  agent.tools = await agent.ensureTools(persona ? [...personaAbilities(persona).keys()] : undefined)
+  agent.tools = await agent.ensureTools(persona ? [...personaAbilities(persona).keys()] : undefined, persona?.id)
 }

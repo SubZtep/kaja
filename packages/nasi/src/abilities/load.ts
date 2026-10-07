@@ -2,6 +2,7 @@ import type { HttpToolAbility, McpAbility } from "@kaja/schema/abilities"
 import type { Persona } from "@kaja/schema/cli"
 import { toolName } from "../agent/tools"
 import { type LaunchOptions, McpRunnerMissingError } from "../mcp/launch"
+import { expandRoots } from "../mcp/roots"
 import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
@@ -23,6 +24,8 @@ export type LoadedAbilities = {
   missingKeys: string[]
   /** Stdio MCP abilities a persona uses (any, without personas) left out because nothing here can start them, with the programs that would. */
   missingRunners: { name: string; needs: string[] }[]
+  /** MCP abilities that take roots, left out because no persona that lists them gives them a folder. */
+  missingRoots: string[]
 }
 
 export type LoadAbilitiesOptions = {
@@ -107,6 +110,7 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
 
   const mcp: McpAbilityTarget[] = []
   const missingRunners: LoadedAbilities["missingRunners"] = []
+  const missingRoots: string[] = []
   for (const ability of mcpAbilities) {
     const apiKey = keyFor(ability)
     if (apiKey === null) continue
@@ -114,8 +118,17 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
       mcp.push(sandboxedMcpTarget(ability))
       continue
     }
+    if (!ability.roots && opts.warnUnknown) warnRootsIgnored(opts.personas ?? [], ability.name)
+    const roots = ability.roots ? await personaRoots(opts.personas ?? [], ability.name) : undefined
+    if (roots && Object.keys(roots).length === 0) {
+      if (opts.personas?.some(persona => personaAbilities(persona).has(ability.name))) {
+        warn("Ability left out: no persona that lists it gives it roots", { ability: ability.name })
+        missingRoots.push(ability.name)
+      }
+      continue
+    }
     try {
-      mcp.push(mcpAbilityTarget(ability, apiKey, opts.launch))
+      mcp.push(mcpAbilityTarget(ability, apiKey, opts.launch, roots))
     } catch (error) {
       if (!(error instanceof McpRunnerMissingError)) throw error
       if (!listed || listed.has(ability.name)) {
@@ -125,7 +138,25 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
     }
   }
 
-  return { groups, skills, httpTools, mcp, missingKeys, missingRunners }
+  return { groups, skills, httpTools, mcp, missingKeys, missingRunners, missingRoots }
+}
+
+/** Each persona's folders for the ability (its entry's `roots`, expanded), leaving out personas that give none. */
+async function personaRoots(personas: Persona[], ability: string): Promise<Record<string, string[]>> {
+  const roots: Record<string, string[]> = {}
+  for (const persona of personas) {
+    const paths = personaAbilities(persona).get(ability)?.roots ?? []
+    const folders = await expandRoots(paths, { persona: persona.id, ability })
+    if (folders.length > 0) roots[persona.id] = folders
+  }
+  return roots
+}
+
+/** Warns about a persona giving roots to an ability whose server doesn't take them. */
+function warnRootsIgnored(personas: Persona[], ability: string): void {
+  for (const persona of personas)
+    if (personaAbilities(persona).get(ability)?.roots)
+      warn("Persona gives roots to an ability that doesn't take them", { persona: persona.id, ability })
 }
 
 /** Warns once per persona entry that names an ability the store doesn't have, or a tool its ability doesn't offer. */

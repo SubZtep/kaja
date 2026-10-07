@@ -121,6 +121,15 @@ describe("manifests", () => {
     expect(servers.get("counter")!.env).not.toHaveProperty("UV_CACHE_DIR")
   })
 
+  test("local-only servers, like filesystem, never run in a sandbox", async () => {
+    const shipped = await loadSandboxServers(
+      join(import.meta.dir, "../../../marketplace"),
+      join(import.meta.dir, "../overrides.json")
+    )
+    expect(shipped.has("chrome-devtools")).toBe(true)
+    expect(shipped.has("filesystem")).toBe(false)
+  })
+
   test("the image's Chrome only opens http(s) pages, never file://", async () => {
     const shipped = await loadSandboxServers(
       join(import.meta.dir, "../../../marketplace"),

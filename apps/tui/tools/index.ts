@@ -60,6 +60,6 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
       storePath: peekStorePath() ?? (await resolveMemoryDbPath())
     }
   })
-  // Stdio abilities nothing here can start: the doctor says what to install.
-  return { ...tools, missingRunners: abilities.missingRunners }
+  // Stdio abilities nothing here can start, and roots-taking ones no persona gives a folder: the doctor says so.
+  return { ...tools, missingRunners: abilities.missingRunners, missingRoots: abilities.missingRoots }
 }

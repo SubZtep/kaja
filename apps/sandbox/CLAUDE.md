@@ -48,6 +48,7 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 
 ## Rules
 
+- Local-only manifests (`localOnly`, or `roots`: they work on the user's own folders) never run here, nor does the API offer them
 - Commands only ever come from the sandbox's own manifests (`MARKETPLACE_DIR/mcp`) and `SANDBOX_OVERRIDES`; a request only names the ability
 - A child gets PATH, a throwaway HOME (removed when it stops), the cache dirs from `SANDBOX_CACHE_DIR` and its manifest's `env`, nothing else from the sandbox's environment (not `KAJA_SANDBOX_KEY`). The caches are shared by every user's servers, which is fine while only the repo's own manifests run
 - Each user's servers run as their own uid (`src/isolation.ts`: `prlimit` 512 processes per uid and 4096 files, then `setpriv`, no capabilities, umask 002, uids from 20000, private group, plus the `mcp` group owning `SANDBOX_CACHE_DIR`); only when the sandbox is root (the image) and `SANDBOX_ISOLATE_USERS` is on. HOMEs are `0700` and chowned to the uid

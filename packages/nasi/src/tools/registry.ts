@@ -1,8 +1,9 @@
 import type { McpServerEntry } from "@kaja/schema/config"
-import type { McpAbilityTarget } from "../abilities/mcp-ability"
+import { allFolders, type McpAbilityTarget } from "../abilities/mcp-ability"
 import { askUserTool, runCommandTool, switchPersonaTool } from "../agent/agent"
 import { type Tool, type ToolOrigin, toolName } from "../agent/tools"
 import { connectMcpServer, type McpConnectOptions } from "../mcp/client"
+import { mcpRoots } from "../mcp/roots"
 import type { FetchLike } from "../security/ssrf"
 import { warn } from "../warn"
 import { currentTimeTool } from "./builtin/current-time"
@@ -133,9 +134,22 @@ export function mergeTools(groups: ToolGroup[]): { tools: Tool[]; skipped: Skipp
   return { tools: [...byName.values()], skipped }
 }
 
-type McpConnection = { tools: Tool[]; close: () => Promise<void>; failed: boolean; id: string }
+type McpConnection = {
+  tools: Tool[]
+  close: () => Promise<void>
+  rootsChanged: () => Promise<void>
+  failed: boolean
+  id: string
+}
 
-type McpTarget = { id: string; server: McpServerEntry; opts?: McpConnectOptions; timeoutMs?: number }
+type McpTarget = {
+  id: string
+  server: McpServerEntry
+  opts?: McpConnectOptions
+  timeoutMs?: number
+  /** A roots-taking server's folders by persona id (see `McpAbilityTarget.roots`). */
+  roots?: Record<string, string[]>
+}
 
 /** Connects one server, giving up after `timeoutMs` (or the target's own); a connection that turns up late is closed rather than left running. */
 async function connectWithTimeout(
@@ -158,7 +172,7 @@ async function connectWithTimeout(
       server: target.id,
       error: error instanceof Error ? error.message : error
     })
-    return { tools: [], close: async () => {}, failed: true, id: target.id }
+    return { tools: [], close: async () => {}, rootsChanged: async () => {}, failed: true, id: target.id }
   } finally {
     clearTimeout(timer)
   }
@@ -229,8 +243,16 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       label: `ability:${target.name}`,
       ...(local ? {} : { ...cloudOpts, hideArgs: target.localOnlyArgs })
     },
-    ...(target.sandboxed ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) } : {})
+    ...(target.sandboxed ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) } : {}),
+    ...(target.roots ? { roots: target.roots } : {})
   }))
+  // A roots-taking server's folders now: the active persona's (every persona's before one is known, as the doctor connects).
+  const currentRoots = new Map<string, string[]>()
+  for (const target of mcpTargets) {
+    if (!target.roots) continue
+    currentRoots.set(target.id, allFolders(target.roots))
+    target.opts = { ...target.opts, roots: () => mcpRoots(currentRoots.get(target.id) ?? []) }
+  }
   // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
   const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
   const connectTimeoutMs = opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
@@ -273,13 +295,38 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     /**
      * Connects the MCP servers of the named abilities (every ability's when `names` is unset) that haven't been tried
      * yet (see `lazyMcpAbilities`) and returns every tool, theirs included. A server that fails stays failed; names
-     * without an MCP ability are ignored.
+     * without an MCP ability are ignored. A roots-taking server gets `personaId`'s folders (told when they change);
+     * for a persona that gives it none it isn't started, and its tools are left out of the list.
      */
-    ensureAbilities: async (names?: Iterable<string>): Promise<Tool[]> => {
+    ensureAbilities: async (names?: Iterable<string>, personaId?: string): Promise<Tool[]> => {
       const wanted = names && new Set([...names].map(name => `ability:${name}`))
-      await connect(mcpTargets.filter(target => abilityIds.has(target.id) && (!wanted || wanted.has(target.id))))
+      const rootless = new Set<string>()
+      const changed: string[] = []
+      for (const target of mcpTargets) {
+        if (!target.roots) continue
+        const folders = (personaId !== undefined && target.roots[personaId]) || []
+        if (folders.length === 0) {
+          rootless.add(target.id)
+          continue
+        }
+        if (folders.join("\n") !== currentRoots.get(target.id)?.join("\n")) changed.push(target.id)
+        currentRoots.set(target.id, folders)
+      }
+      await connect(
+        mcpTargets.filter(
+          target => abilityIds.has(target.id) && (!wanted || wanted.has(target.id)) && !rootless.has(target.id)
+        )
+      )
+      // A server that's already running asks for its new roots once told.
+      await Promise.all(
+        changed.map(async id =>
+          (await connecting.get(id))
+            ?.rootsChanged()
+            .catch(error => warn("Couldn't tell an MCP server its roots changed", { server: id, error: String(error) }))
+        )
+      )
       merged = await merge()
-      return merged.tools
+      return merged.tools.filter(tool => !tool.source || !rootless.has(tool.source))
     }
   }
 }

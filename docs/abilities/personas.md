@@ -52,7 +52,8 @@ abilities = [
   "web-search",                                    # every part of the ability
   { name = "chrome-devtools", tools = ["navigate_page", "take_screenshot"] },  # only these tools
   { name = "meeting-notes", skill = "sticky" },    # the skill's instructions stay in the system prompt
-  { name = "system-report", skill = "off" }        # the ability's tools, without its skill
+  { name = "system-report", skill = "off" },       # the ability's tools, without its skill
+  { name = "filesystem", roots = ["~/notes"] }     # the folders it may work in
 ]
 ```
 
@@ -61,8 +62,10 @@ abilities = [
 | `name` | the ability's folder name |
 | `skill` | `load` (listed under ## Skills, loaded with `load_skill` when needed), `sticky` (always in the system prompt) or `off`. Unset follows the SKILL.md's `sticky`, else `load` |
 | `tools` | only these of the ability's tools; unset means all of them |
+| `roots` | the folders an MCP server that takes roots (like `filesystem`) may work in while this persona is active. Absolute paths or `~/…`; one that isn't an existing folder is left out with a warning. Without any, that ability is off for the persona |
 
-An ability that needs a key you haven't saved is left out, and the rest still load. An MCP server starts
+An ability that needs a key you haven't saved is left out, and the rest still load. Shipped personas list no
+`roots`, and `kaja abilities update` would replace your edits to them, so give folders in a persona of your own. An MCP server starts
 only when a persona that lists it becomes active, so a chat that never needs the browser never starts one.
 
 ## Switching

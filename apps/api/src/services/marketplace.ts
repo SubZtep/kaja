@@ -301,7 +301,7 @@ async function readHttpTools(marketplaceDir: string): Promise<AbilityBundle[]> {
 }
 
 /**
- * Every ability `mcp.toml` the cloud could run. Skipped: ones without a `tools` allowlist or on a non-public host (the
+ * Every ability `mcp.toml` the cloud could run. Skipped: ones without a `tools` allowlist, on a non-public host, or local-only (the
  * ability's other parts still sync). stdio servers are kept whether or not an MCP sandbox is configured right now;
  * offering them checks that.
  */

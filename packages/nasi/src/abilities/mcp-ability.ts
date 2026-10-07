@@ -19,6 +19,8 @@ export type McpAbilityTarget = {
   localOnlyArgs?: string[]
   /** A stdio ability the host's MCP sandbox runs for it, reached over Streamable HTTP. */
   sandboxed?: boolean
+  /** A roots-taking server's folders by persona id (absolute, each list non-empty); a persona not here gets it off. */
+  roots?: Record<string, string[]>
 }
 
 /**
@@ -32,17 +34,27 @@ export const SANDBOX_ORIGIN = "https://sandbox.invalid"
 
 /**
  * The ability as a connectable server: static headers/env, plus the key (with its prefix) in the header or env var `auth`
- * names. A stdio one starts through `resolveLaunch` (with `launch`), so it throws `McpRunnerMissingError` when this host
- * has nothing that can run it.
+ * names. A stdio one starts through `resolveLaunch` (with `launch`, and `roots`' folders for a container to mount), so it
+ * throws `McpRunnerMissingError` when this host has nothing that can run it.
  */
-export function mcpAbilityTarget(ability: McpAbility, apiKey?: string, launch?: LaunchOptions): McpAbilityTarget {
+export function mcpAbilityTarget(
+  ability: McpAbility,
+  apiKey?: string,
+  launch?: LaunchOptions,
+  roots?: Record<string, string[]>
+): McpAbilityTarget {
   const value = ability.auth.type === "apiKey" && apiKey ? `${ability.auth.prefix ?? ""}${apiKey}` : undefined
   const keyEntry = value && ability.auth.type === "apiKey" ? { [ability.auth.name]: value } : {}
   const server: McpServerEntry =
     ability.transport === "stdio"
-      ? { id: ability.name, ...resolveLaunch(ability, { ...ability.env, ...keyEntry }, launch) }
+      ? { id: ability.name, ...resolveLaunch(ability, { ...ability.env, ...keyEntry }, launch, allFolders(roots)) }
       : { id: ability.name, url: ability.url!, headers: { ...ability.headers, ...keyEntry } }
-  return { ...targetRules(ability), server, transport: ability.transport }
+  return { ...targetRules(ability), server, transport: ability.transport, ...(roots ? { roots } : {}) }
+}
+
+/** Every persona's folders, once each: what the server may ever be given. */
+export function allFolders(roots: Record<string, string[]> | undefined): string[] {
+  return [...new Set(Object.values(roots ?? {}).flat())]
 }
 
 // How the ability's tools are treated, wherever its server runs.

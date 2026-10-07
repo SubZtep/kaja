@@ -7,11 +7,24 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
+import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js"
 import { write } from "bun"
 import { type Tool, type ToolResult, tool } from "../agent/tools"
 import type { FetchLike } from "../security/ssrf"
+import type { McpRoot } from "./roots"
 
 const MAX_ARGS_PREVIEW = 200
+/** How long a roots-taking server gets to ask for its roots before calls go ahead anyway. */
+const ROOTS_ASK_WAIT_MS = 5_000
+/** After it asks, how long it gets to take them in: MCP has no reply for that, and the filesystem server checks each folder first. */
+const ROOTS_SETTLE_MS = 250
+
+/** `promise`, or nothing once `ms` have passed. */
+async function waitAtMost(promise: Promise<void>, ms: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  await Promise.race([promise, new Promise<void>(resolve => (timer = setTimeout(resolve, ms)))])
+  clearTimeout(timer)
+}
 
 export type McpConnectOptions = {
   /** For a `url` server: Streamable HTTP (default) or the older SSE transport. */
@@ -34,6 +47,8 @@ export type McpConnectOptions = {
   maxImageBytes?: number
   /** Arguments left out of every tool's schema, and dropped from calls, e.g. a file path that would land on the server. */
   hideArgs?: string[]
+  /** The folders the server may work in now, asked for on every `roots/list`; set, the client declares roots support. */
+  roots?: () => McpRoot[]
 }
 
 /** The tool's input schema without `hide` among its properties or required ones. */
@@ -82,11 +97,34 @@ export async function connectMcpServer(
   server: McpServerEntry,
   tempDir: string,
   opts: McpConnectOptions = {}
-): Promise<{ tools: Tool[]; close: () => Promise<void> }> {
+): Promise<{ tools: Tool[]; close: () => Promise<void>; rootsChanged: () => Promise<void> }> {
   const transport = createTransport(server, opts)
 
-  const client = new Client({ name: "kaja", version: "1.0.0" })
+  const client = new Client(
+    { name: "kaja", version: "1.0.0" },
+    opts.roots ? { capabilities: { roots: { listChanged: true } } } : undefined
+  )
+  const roots = opts.roots
+  // A server asks for its roots on its own time (after initializing, after a change), so a caller waits for that ask.
+  let asked: () => void = () => {}
+  const nextAsk = () => {
+    const ask = new Promise<void>(resolve => {
+      asked = resolve
+    })
+    return async () => {
+      await waitAtMost(ask, ROOTS_ASK_WAIT_MS)
+      await Bun.sleep(ROOTS_SETTLE_MS)
+    }
+  }
+  let pendingAsk = nextAsk()
+  if (roots)
+    client.setRequestHandler(ListRootsRequestSchema, async () => {
+      const answer = { roots: roots() }
+      queueMicrotask(asked)
+      return answer
+    })
   await client.connect(transport)
+  if (roots) await pendingAsk()
 
   const { tools: mcpTools } = await client.listTools()
   const label = opts.label ?? `mcp:${server.id}`
@@ -122,7 +160,17 @@ export async function connectMcpServer(
       }
     })
 
-  return { tools, close: () => client.close() }
+  return {
+    tools,
+    close: () => client.close(),
+    // The server asks for the new list itself.
+    rootsChanged: async () => {
+      if (!roots) return
+      pendingAsk = nextAsk()
+      await client.sendRootsListChanged()
+      await pendingAsk()
+    }
+  }
 }
 
 /** `text` cut at `max` characters with a note, or whole when there's no limit. */

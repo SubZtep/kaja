@@ -77,6 +77,16 @@ export const McpAbilitySchema = z
       .describe(
         "In the cloud, only the user's own MCP sandboxes or the official one run it, never one another person shares (stdio)"
       ),
+    roots: z
+      .boolean()
+      .default(false)
+      .describe(
+        "The server works in folders the persona gives it (its abilities entry's `roots`), sent as MCP roots; off for a persona that gives none (stdio)"
+      ),
+    localOnly: z
+      .boolean()
+      .default(false)
+      .describe("Only runs on the user's own machine, never in the cloud (e.g. it works on their files)"),
     localOnlyArgs: z
       .array(z.string().min(1))
       .optional()
@@ -110,6 +120,7 @@ type McpEndpoint = {
   url?: string
   command?: string
   package?: object
+  roots?: boolean
   auth: { type: string; in?: string }
 }
 
@@ -128,6 +139,7 @@ function checkRemote(ability: McpEndpoint, issue: IssueAt) {
   if (ability.package) issue("package", `${ability.transport} doesn't take a package`)
   if (ability.auth.type === "apiKey" && ability.auth.in !== "header")
     issue("auth", `${ability.transport} keys go in = "header"`)
+  if (ability.roots) issue("roots", "only stdio servers take roots")
 }
 
 /** A loaded MCP ability: its `mcp.toml` plus the ability's name, which is its folder's (marketplace/abilities/<name>/). */

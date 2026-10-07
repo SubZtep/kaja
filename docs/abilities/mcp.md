@@ -33,7 +33,7 @@ tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the 
 approval = "never"                  # never | writes | always
 ```
 
-The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-thinking` and `time`.
+The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking` and `time`.
 
 - A `stdio` ability starts a program on your machine instead of reaching a `url`, and its key goes in an env
   var (`in = "env"`). Most servers are packages, so name the package and Kaja picks a way to run it:
@@ -72,6 +72,19 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
 
 - A persona can narrow an ability to some of its tools with an entry's `tools` list (see
   [Personas](/abilities/personas#abilities)).
+- `roots = true` marks a stdio server that works in folders, like `filesystem`. It gets the active persona's
+  folders (its entry's `roots`) as [MCP roots](https://modelcontextprotocol.io/specification/latest/client/roots),
+  and new ones when you switch persona, without a restart. It's off for a persona that gives it none, and
+  `kaja doctor` says so when no persona does. Run in Docker, every persona's folders are mounted at their own
+  paths, and the active persona's roots narrow that down.
+
+  ```toml
+  # marketplace/personas/writer.toml (a persona of your own)
+  abilities = [{ name = "filesystem", roots = ["~/notes", "~/projects/site"] }]
+  ```
+
+- `localOnly = true` keeps a server off the cloud: it only ever runs on your own machine. A `roots` one is
+  local-only too.
 - `toolDescriptions` says in a line what each listed tool does. The web app shows it, since a server's own
   descriptions only arrive once it runs:
 
@@ -84,8 +97,8 @@ The marketplace ships `chrome-devtools`, `context7`, `geo-service`, `sequential-
 ## In the cloud
 
 Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list (so
-you can see what a server can do before turning it on, and it can't add tools later) and are either remote
-(`http` or `sse`) or `stdio` without a key.
+you can see what a server can do before turning it on, and it can't add tools later), aren't local-only, and
+are either remote (`http` or `sse`) or `stdio` without a key.
 
 A `stdio` ability, like `chrome-devtools`, runs in an **MCP sandbox**, never on the API's host. That can be:
 

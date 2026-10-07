@@ -69,7 +69,8 @@ test("loadAbilities adds no tool when no skill is enabled", async () => {
     httpTools: [],
     mcp: [],
     missingKeys: [],
-    missingRunners: []
+    missingRunners: [],
+    missingRoots: []
   })
 })
 
@@ -92,7 +93,8 @@ test("loadAbilities survives a store that throws", async () => {
     httpTools: [],
     mcp: [],
     missingKeys: [],
-    missingRunners: []
+    missingRunners: [],
+    missingRoots: []
   })
 })
 

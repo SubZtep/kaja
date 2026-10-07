@@ -47,7 +47,13 @@ const PersonaAbilitySchema = z.union([
     tools: z
       .array(z.string().min(1))
       .optional()
-      .describe("Only these of the ability's tools (HTTP, MCP and code tools); unset means all of them")
+      .describe("Only these of the ability's tools (HTTP, MCP and code tools); unset means all of them"),
+    roots: z
+      .array(z.string().min(1))
+      .optional()
+      .describe(
+        'Folders an MCP server with `roots = true` may use while this persona is active, e.g. ["~/notes"]; without them it\'s off'
+      )
   })
 ])
 

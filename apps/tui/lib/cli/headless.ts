@@ -15,14 +15,23 @@ export async function bootstrapLocalAgentDeps(options: { lazyMcp?: boolean } = {
 
   const models = await loadModels()
   const personas = await loadPersonas()
-  const { tools, skipped, mcpServers, missingRunners, closeTools, ensureAbilities } = await getDefaultTools(
-    personas,
-    options
-  )
+  const { tools, skipped, mcpServers, missingRunners, missingRoots, closeTools, ensureAbilities } =
+    await getDefaultTools(personas, options)
   const { loadSafeCommands } = await import("../config/commands")
   const safeCommands = await loadSafeCommands()
 
-  return { models, personas, tools, skipped, mcpServers, missingRunners, closeTools, ensureAbilities, safeCommands }
+  return {
+    models,
+    personas,
+    tools,
+    skipped,
+    mcpServers,
+    missingRunners,
+    missingRoots,
+    closeTools,
+    ensureAbilities,
+    safeCommands
+  }
 }
 
 /** Exits the process if no provider is configured — no silent fallback to Kaja's cloud free tier for --local entry points. */

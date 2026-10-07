@@ -42,13 +42,15 @@ const PYPI_RUNNERS: Runner[] = [
 
 /**
  * How to start a stdio ability here, with `env` (its static env vars and key) for the server: a manifest's
- * `command` as it is, or its `package` through the first runner this host has (npm, then PyPI, then Docker). Throws
+ * `command` as it is, or its `package` through the first runner this host has (npm, then PyPI, then Docker). `folders`
+ * are the ones the server may work in (its roots): a container gets each mounted at the same path. Throws
  * {@link McpRunnerMissingError} when nothing installed can start it.
  */
 export function resolveLaunch(
   ability: Pick<McpAbility, "name" | "command" | "package" | "args">,
   env: Record<string, string>,
-  opts: LaunchOptions = {}
+  opts: LaunchOptions = {},
+  folders: string[] = []
 ): StdioLaunch {
   const which = opts.which ?? Bun.which
   if (ability.command) {
@@ -73,18 +75,34 @@ export function resolveLaunch(
   if (pkg.docker) {
     tried.push("docker")
     const docker = which("docker")
-    if (docker) return dockerLaunch(docker, pkg.docker, ability.args, env)
+    if (docker) return dockerLaunch(docker, pkg.docker, ability.args, env, folders)
   }
   throw new McpRunnerMissingError(ability.name, tried)
 }
 
 /**
  * `docker run` of the image, its stdin kept open for MCP. Each env var goes in by name only (`-e NAME`, the value comes
- * from docker's own env), so a key never shows in the process list.
+ * from docker's own env), so a key never shows in the process list. Each folder is mounted at its own path, so the
+ * paths the model sees are the user's.
  */
-function dockerLaunch(docker: string, image: string, serverArgs: string[], env: Record<string, string>): StdioLaunch {
+function dockerLaunch(
+  docker: string,
+  image: string,
+  serverArgs: string[],
+  env: Record<string, string>,
+  folders: string[]
+): StdioLaunch {
   const envFlags = Object.keys(env).flatMap(name => ["-e", name])
-  return { command: docker, args: ["run", "-i", "--rm", "--init", ...envFlags, image, ...serverArgs], env }
+  const mounts = folders.flatMap(folder => [
+    "--mount",
+    `type=bind,${csvField(`src=${folder}`)},${csvField(`dst=${folder}`)}`
+  ])
+  return { command: docker, args: ["run", "-i", "--rm", "--init", ...envFlags, ...mounts, image, ...serverArgs], env }
+}
+
+// --mount is CSV: a field with a comma or quote is quoted, its quotes doubled.
+function csvField(field: string): string {
+  return /[",]/.test(field) ? `"${field.replaceAll('"', '""')}"` : field
 }
 
 /** The launch as one line for people to read, e.g. `uvx mcp-server-time@1.0`; Kaja's own bun shows as `bunx`. */

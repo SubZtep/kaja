@@ -7,8 +7,8 @@ import { McpAbilityOverridesSchema } from "@kaja/schema/abilities"
 export type SandboxServer = { name: string; command: string; args: string[]; env: Record<string, string> }
 
 /**
- * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list and no key (keys aren't
- * forwarded yet), the same rule the API offers them by. A package runs through the first runner the image has, never bun's own
+ * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list, no key (keys aren't
+ * forwarded yet), and not local-only (`localOnly`, or `roots`: the user's own folders), the same rule the API offers them by. A package runs through the first runner the image has, never bun's own
  * (its cache can't be shared between uids, so npm packages go through npx). `overridesPath` swaps a server's command/args for
  * this host; `cacheDir` points every server's bun/uv/npm caches there, since each one's HOME is thrown away.
  */
@@ -33,7 +33,7 @@ export async function loadSandboxServers(
     if (entry.error || entry.transport !== "stdio") continue
     const text = await readFile(join(resolve(marketplaceDir), "abilities", entry.name, "mcp.toml"), "utf8")
     const ability = parseMcpManifest(text, entry.name)
-    if (!ability.tools?.length || ability.auth.type !== "none") {
+    if (!ability.tools?.length || ability.auth.type !== "none" || ability.localOnly || ability.roots) {
       console.warn("Sandbox skips MCP ability", { ability: ability.name })
       continue
     }

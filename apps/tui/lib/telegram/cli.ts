@@ -21,7 +21,7 @@ export async function runTelegramCli(deps: {
   pair: boolean
   tools: Tool[]
   /** Connects the active persona's MCP abilities (see Agent.ensureTools). */
-  ensureTools?: (abilities?: string[]) => Promise<Tool[]>
+  ensureTools?: (abilities?: string[], personaId?: string) => Promise<Tool[]>
   /** Whole-command patterns that run without asking, from commands.toml. */
   safeCommands?: RegExp[]
   personas: Persona[]

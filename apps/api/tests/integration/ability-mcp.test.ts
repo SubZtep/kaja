@@ -25,7 +25,7 @@ const host = `mcp-${tag}.test`
 const GOOD_KEY = `mcp-key-${tag}`
 const TEST_SECRET_KEY = Buffer.alloc(32, 9).toString("base64")
 
-/** A marketplace folder with one usable remote MCP ability, a stdio one for the MCP sandbox, and four the cloud must skip. */
+/** A marketplace folder with one usable remote MCP ability, a stdio one for the MCP sandbox, and six the cloud must skip. */
 function marketplace(base: string) {
   const root = mkdtempSync(join(base, "mp-"))
   const put = (rel: string, content: string) => {
@@ -61,6 +61,15 @@ function marketplace(base: string) {
     `abilities/stdio-keyed-${tag}/mcp.toml`,
     `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K" }\n`
   )
+  // Local-only servers (the user's own files) never reach the cloud, whether marked so or taking a persona's roots.
+  put(
+    `abilities/local-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nlocalOnly = true\n`
+  )
+  put(
+    `abilities/roots-${tag}/mcp.toml`,
+    `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nroots = true\n`
+  )
   // One folder, two parts: the cloud keeps the HTTP tool and drops only the MCP server it can't run (no tool list).
   put(`abilities/mixed-${tag}/mcp.toml`, remote(`mixed-${tag}`, `https://${host}/mcp`))
   put(
@@ -75,6 +84,8 @@ function marketplace(base: string) {
     `stdio-${tag}`,
     `counter-${tag}`,
     `stdio-keyed-${tag}`,
+    `local-${tag}`,
+    `roots-${tag}`,
     `mixed-${tag}`
   ]
   put("personas/default.toml", `label = "Default"\nabilities = ${JSON.stringify(all)}\n`)
@@ -146,12 +157,19 @@ describe("MCP servers in the cloud", () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, private and unlisted ones are skipped, the ability's other parts kept", async () => {
+  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, local-only, private and unlisted ones are skipped, the ability's other parts kept", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "m1")
     expect(result.added).toContain(`abilities/${things}/mcp.toml`)
     expect(result.added).toContain(`abilities/stdio-${tag}/mcp.toml`)
     expect(result.added).toContain(`abilities/mixed-${tag}/tool.toml`)
-    for (const skipped of [`open-${tag}`, `private-${tag}`, `stdio-keyed-${tag}`, `mixed-${tag}`]) {
+    for (const skipped of [
+      `open-${tag}`,
+      `private-${tag}`,
+      `stdio-keyed-${tag}`,
+      `local-${tag}`,
+      `roots-${tag}`,
+      `mixed-${tag}`
+    ]) {
       expect(result.added).not.toContain(`abilities/${skipped}/mcp.toml`)
     }
   })

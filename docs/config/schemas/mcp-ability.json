@@ -168,6 +168,16 @@
       "description": "In the cloud, only the user's own MCP sandboxes or the official one run it, never one another person shares (stdio)",
       "type": "boolean"
     },
+    "roots": {
+      "default": false,
+      "description": "The server works in folders the persona gives it (its abilities entry's `roots`), sent as MCP roots; off for a persona that gives none (stdio)",
+      "type": "boolean"
+    },
+    "localOnly": {
+      "default": false,
+      "description": "Only runs on the user's own machine, never in the cloud (e.g. it works on their files)",
+      "type": "boolean"
+    },
     "localOnlyArgs": {
       "description": "Tool arguments that only make sense on the user's own machine (e.g. a file path to save to); the cloud hides them",
       "type": "array",
