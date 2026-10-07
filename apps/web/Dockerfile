@@ -1,6 +1,7 @@
 FROM oven/bun:1.4.2 AS builder
 WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
+COPY patches ./patches
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/tui/package.json ./apps/tui/package.json

@@ -1,0 +1,35 @@
+diff --git a/build/wrap-text.js b/build/wrap-text.js
+index fa892d754381545bb4250007cc9cb69d63a66091..118904714bd792c9272ee016e552a9aa77a5bac4 100644
+--- a/build/wrap-text.js
++++ b/build/wrap-text.js
+@@ -3,6 +3,18 @@ import cliTruncate from 'cli-truncate';
+ import { styledCharsFromTokens, styledCharsToString, tokenize, } from '@alcalzone/ansi-tokenize';
+ import QuickLRU from 'quick-lru';
+ export const wrapTextCache = new QuickLRU({ maxSize: 4096 });
++// Kaja patch: wrap-ansi with `trim: false` (which a line's own indentation needs) carries the space at a soft wrap to the start of the next row. Each line is wrapped on its own, as wrap-ansi itself does, so the rows after its first are the soft-wrapped ones: their leading spaces go, and a row left with nothing visible goes too.
++const ESCAPES = /\u001B\[[\d;:]*m|\u001B\]8;[^\u0007\u001B]*(?:\u0007|\u001B\\)/g;
++const LEADING_SPACES = /^((?:\u001B\[[\d;:]*m|\u001B\]8;[^\u0007\u001B]*(?:\u0007|\u001B\\))*) +/;
++const wrapWords = (text, maxWidth) => text
++    .replaceAll('\r\n', '\n')
++    .split('\n')
++    .map(line => {
++    const [first, ...rest] = wrapAnsi(line, maxWidth, { trim: false, hard: true }).split('\n');
++    const soft = rest.map(row => row.replace(LEADING_SPACES, '$1')).filter(row => row.replace(ESCAPES, '') !== '');
++    return [first, ...soft].join('\n');
++})
++    .join('\n');
+ const wrapText = (text, maxWidth, wrapType) => {
+     // `wrapAnsi` only breaks a row once something is on it, so wrapping into zero columns puts every character on its own row and the layout height grows to the character count. Text with no room keeps its natural width instead, like any other content that does not fit. Truncation is left alone: it cuts to nothing at zero columns.
+     if (maxWidth <= 0 && (wrapType === 'wrap' || wrapType === 'hard')) {
+@@ -22,10 +34,7 @@ const wrapText = (text, maxWidth, wrapType) => {
+     }
+     let wrappedText = text;
+     if (wrapType === 'wrap') {
+-        wrappedText = wrapAnsi(text, maxWidth, {
+-            trim: false,
+-            hard: true,
+-        });
++        wrappedText = wrapWords(text, maxWidth);
+     }
+     else if (wrapType === 'hard') {
+         wrappedText = wrapAnsi(text, maxWidth, {

@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test"
 import { PassThrough } from "node:stream"
 import {
   brightnessFromColorFgBg,
+  brightnessFromHex,
   brightnessFromOsc11,
-  queryTerminalBackground,
+  coloursFromReply,
+  queryTerminalColours,
   resolveTheme
 } from "../../lib/terminal-background"
 
@@ -19,6 +21,33 @@ describe("brightnessFromOsc11", () => {
   test("null without a reply", () => {
     expect(brightnessFromOsc11(`${ESC}[?62;22c`)).toBeNull()
   })
+})
+
+describe("coloursFromReply", () => {
+  test("reads the foreground, background and ANSI colours as #rrggbb", () => {
+    const reply = [
+      `${ESC}]10;rgb:d0d0/d0d0/d0d0${ESC}\\`,
+      `${ESC}]11;rgb:1e/1e/2e\u0007`,
+      `${ESC}]4;1;rgb:ffff/0000/0000${ESC}\\`,
+      `${ESC}]4;13;rgb:f/8/0${ESC}\\`,
+      `${ESC}[?62;22c`
+    ].join("")
+    const colours = coloursFromReply(reply)
+    expect(colours?.foreground).toBe("#d0d0d0")
+    expect(colours?.background).toBe("#1e1e2e")
+    expect(colours?.ansi[1]).toBe("#ff0000")
+    expect(colours?.ansi[13]).toBe("#ff8800")
+    expect(colours?.ansi[2]).toBeUndefined()
+  })
+
+  test("null without a colour reply", () => {
+    expect(coloursFromReply(`${ESC}[?62;22c`)).toBeNull()
+  })
+})
+
+test("brightnessFromHex", () => {
+  expect(brightnessFromHex("#fdf6e3")).toBe("light")
+  expect(brightnessFromHex("#002b36")).toBe("dark")
 })
 
 describe("brightnessFromColorFgBg", () => {
@@ -44,24 +73,29 @@ function fakeTerminal(answer: string | null) {
   return { stdin: stdin as unknown as NodeJS.ReadStream, stdout: stdout as unknown as NodeJS.WriteStream }
 }
 
-describe("queryTerminalBackground", () => {
-  test("reads the OSC 11 reply, finishing on the DA1 reply", async () => {
-    const { stdin, stdout } = fakeTerminal(`${ESC}]11;rgb:ffff/ffff/ffff${ESC}\\${ESC}[?62;22c`)
-    expect(await queryTerminalBackground(stdin, stdout, 10_000)).toBe("light")
+describe("queryTerminalColours", () => {
+  test("reads the replies, finishing on the DA1 reply", async () => {
+    const { stdin, stdout } = fakeTerminal(
+      `${ESC}]11;rgb:ffff/ffff/ffff${ESC}\\${ESC}]4;2;rgb:00/80/00${ESC}\\${ESC}[?62;22c`
+    )
+    const colours = await queryTerminalColours(stdin, stdout, 10_000)
+    expect(colours?.background).toBe("#ffffff")
+    expect(colours?.ansi[2]).toBe("#008000")
   })
 
   test("null when the terminal only answers DA1", async () => {
     const { stdin, stdout } = fakeTerminal(`${ESC}[?1;2c`)
-    expect(await queryTerminalBackground(stdin, stdout, 10_000)).toBeNull()
+    expect(await queryTerminalColours(stdin, stdout, 10_000)).toBeNull()
   })
 
   test("null after the timeout when nothing answers", async () => {
     const { stdin, stdout } = fakeTerminal(null)
-    expect(await queryTerminalBackground(stdin, stdout, 50)).toBeNull()
+    expect(await queryTerminalColours(stdin, stdout, 50)).toBeNull()
   })
 })
 
 test("resolveTheme keeps an explicit choice", async () => {
   expect(await resolveTheme("light")).toBe("light")
   expect(await resolveTheme("dark")).toBe("dark")
+  expect(await resolveTheme("terminal")).toBe("terminal")
 })

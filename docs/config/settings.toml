@@ -21,9 +21,13 @@ locale   = "en-GB"
 # hotkeyModifier = "alt"
 # Colour theme: "auto" (default) asks the terminal for its background colour and picks
 # "dark" or "light" to match, then follows the terminal when it switches (where it reports
-# that); set one of those if your terminal doesn't answer. <hotkeyModifier>+D in the chat
-# flips it and saves the choice here.
+# that); set one of those if your terminal doesn't answer. "terminal" paints with the
+# terminal's own colour scheme instead, so any scheme you load there is Kaja's too.
 # theme = "auto"
+# DANGEROUS, for development: approves every shell command and tool call without asking,
+# rm -rf and sudo included, here, in the local Telegram bot and for the cloud's tool
+# approvals. Read-only folders and the files read_file never opens stay off-limits.
+# yolo = false
 
 # Fetching skills, personas, tools and MCP servers from the online marketplace (needs git).
 # enabled = false means Kaja never goes online for abilities: `kaja abilities update` refuses and

@@ -36,12 +36,16 @@ const PersonaModelsSchema = z
 /** How a persona uses an ability's skill: listed for load_skill (`load`), always in the system prompt (`sticky`), or left out (`off`). */
 export const SkillModeSchema = z.enum(["load", "sticky", "off"])
 
-// One `roots` folder: a path (writable), or a table that can make it read-only.
+// One `roots` folder: a path (writable), or a table that can make it read-only or backed up.
 const PersonaRootSchema = z.union([
   z.string().min(1),
   z.object({
     path: z.string().min(1),
-    readOnly: z.boolean().default(false).describe("The server may read here but not write, edit, move or create")
+    readOnly: z.boolean().default(false).describe("The server may read here but not write, edit, move or create"),
+    backup: z
+      .boolean()
+      .optional()
+      .describe("Kaja copies a file here to its backups folder before the server writes, edits or moves it")
   })
 ])
 
@@ -78,7 +82,11 @@ export const PersonaSchema = z
     // Short clause describing when this persona fits; shown in the system-prompt persona roster.
     when: z.string().min(1).optional(),
     // The abilities this persona uses (skills, HTTP tools, MCP servers, code tools), by folder name; unset means builtins only.
-    abilities: z.array(PersonaAbilitySchema).optional()
+    abilities: z.array(PersonaAbilitySchema).optional(),
+    localOnly: z
+      .boolean()
+      .optional()
+      .describe("Only on the user's own machine: the cloud leaves this persona out (its abilities work only locally)")
   })
   .extend(SamplingParamsSchema.shape)
 

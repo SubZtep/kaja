@@ -35,6 +35,7 @@ Listen first. Reflect back what you heard before offering anything.
 | `dataset` | id of a [dataset](/abilities/memory#datasets) this persona collects |
 | `models` | a model id per task from your [`models.toml`](/configuration/models), like `chat = "reasoning-chat"` |
 | `abilities` | the [abilities](/abilities) this persona uses, by name (see below). Unset means only the built-in tools |
+| `localOnly` | `true` keeps the persona out of the cloud, for one whose abilities only work on your machine |
 | sampling | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
 
 > Kaja already tells the model to ask questions through `ask_user` and how to collect a dataset. Don't
@@ -62,7 +63,7 @@ abilities = [
 | `name` | the ability's folder name |
 | `skill` | `load` (listed under ## Skills, loaded with `load_skill` when needed), `sticky` (always in the system prompt, its other files still opened with `load_skill`) or `off`. Unset follows the SKILL.md's `sticky`, else `load` |
 | `tools` | only these of the ability's tools; unset means all of them |
-| `roots` | the folders an MCP server that takes roots (like `filesystem`) may work in while this persona is active. Absolute paths or `~/…`; one that isn't an existing folder is left out with a warning. Without any, that ability is off for the persona. `{ path = "…", readOnly = true }` lets it only read there (see [MCP servers](/abilities/mcp#mcp-abilities)) |
+| `roots` | the folders an MCP server that takes roots (like `filesystem`) may work in while this persona is active. Absolute paths or `~/…`; one that isn't an existing folder is left out with a warning. Without any, that ability is off for the persona. `{ path = "…", readOnly = true }` lets it only read there, and `backup = true` has Kaja copy each file before it's changed (see [MCP servers](/abilities/mcp#mcp-abilities)) |
 
 An ability that needs a key you haven't saved is left out, and the rest still load. Shipped personas list no
 `roots`, and `kaja abilities update` would replace your edits to them, so give folders in a persona of your own. An MCP server starts
@@ -92,6 +93,7 @@ Both work in cloud mode too, among every persona in the cloud's copy of the mark
 | `care` | self-care companion: listens, reflects, doesn't lecture |
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
 | `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service`, `time` and `open-meteo` |
+| `config-hyprland` | changes your Hyprland desktop live (Lua config): previews, saves on your yes, backs up `~/.config/hypr` files first; local only |
 
 Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
 

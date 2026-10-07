@@ -26,10 +26,11 @@ which of them a chat uses. There's nothing to turn on; an ability that needs a k
 
 Right now the marketplace has:
 
-- **personas:** `care`, `barkochba`, `onboarding`
+- **personas:** `care`, `barkochba`, `onboarding`, `config-hyprland` (local only)
 - **skills:** `system-report`, `meeting-notes`
 - **HTTP tools:** `web-search`, `open-meteo`
-- **MCP servers:** `chrome-devtools`, `context7`, `geo-service`, `sequential-thinking`, `time`
+- **MCP servers:** `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking`, `time`
+- **code tools:** `hyprland` (with a skill; local only), which previews and checks Hyprland changes
 
 ## In local mode
 

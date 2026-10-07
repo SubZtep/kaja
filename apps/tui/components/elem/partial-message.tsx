@@ -1,5 +1,6 @@
 import type { PartialMessage as PartialMessageData } from "../../hooks/use-agent"
-import Markdown from "./markdown"
+import { useKajaTheme } from "../theme"
+import { Said } from "../timeline"
 import { ReasoningBox } from "./reasoning-box"
 
 /**
@@ -10,11 +11,13 @@ export function PartialMessage({
   partial,
   thinking
 }: Readonly<{ partial: PartialMessageData | null; thinking: boolean }>) {
+  const { accent } = useKajaTheme()
   if (!partial) return null
+  // The content after a "●", like the timeline's finished message, so it doesn't shift when it lands there
   return (
     <>
       {thinking && partial.reasoning !== "" && <ReasoningBox>{partial.reasoning}</ReasoningBox>}
-      {partial.content !== "" && <Markdown>{partial.content}</Markdown>}
+      {partial.content !== "" && <Said dot={accent()}>{partial.content}</Said>}
     </>
   )
 }

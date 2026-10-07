@@ -263,13 +263,17 @@ async function readManifests<Entry extends { name: string; error?: string }>(
   return bundles.filter(bundle => bundle !== undefined)
 }
 
-/** Every valid `personas/*.toml`, with its label as the description. */
+/** Every valid `personas/*.toml`, with its label as the description; `localOnly` ones are skipped. */
 async function readPersonaFiles(marketplaceDir: string): Promise<AbilityBundle[]> {
   return readManifests(
     marketplaceDir,
     { type: "persona", label: "persona" },
     await scanPersonas(marketplaceDir),
-    (text, entry) => ({ name: entry.name, description: parsePersonaManifest(text, entry.name).label })
+    (text, entry) => {
+      const persona = parsePersonaManifest(text, entry.name)
+      if (persona.localOnly) throw new Error("it only runs on the user's own machine")
+      return { name: entry.name, description: persona.label }
+    }
   )
 }
 

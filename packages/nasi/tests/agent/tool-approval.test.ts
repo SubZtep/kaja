@@ -125,3 +125,34 @@ test("runApprovedTool reports an unknown tool or bad arguments as text", async (
   expect(await runApprovedTool([createIssue], "nope", "{}")).toBe('Error: unknown tool "nope"')
   expect(await runApprovedTool([createIssue], "create_issue", "{not json")).toStartWith("Error:")
 })
+
+test("yolo runs a tool that would ask, and a command that isn't safe, without pausing", async () => {
+  const { runCommandTool } = await import("../../src/agent/agent")
+  executed = []
+  const agent = new Agent({
+    model: "m",
+    client: fakeClient([
+      {
+        content: null,
+        calls: [
+          { id: "c1", name: "create_issue", arguments: '{"title":"Bug"}' },
+          // Shell metacharacters always ask without yolo
+          { id: "c2", name: "run_command", arguments: '{"command":"echo yolo-ran; true"}' }
+        ]
+      },
+      { content: "done" }
+    ]),
+    tools: [createIssue, runCommandTool],
+    promptContext: { environment: "test" },
+    yolo: true
+  })
+  const session = createSession()
+  const events = (await collect(run(agent, "go", session))) as { type: string }[]
+  expect(events.map(event => event.type)).not.toContain("confirm_tool")
+  expect(events.map(event => event.type)).not.toContain("confirm_command")
+  expect(executed).toEqual([{ title: "Bug" }])
+  const results = session.messages.filter(message => message.role === "tool").map(message => String(message.content))
+  expect(results.some(result => result.includes("yolo-ran"))).toBe(true)
+  expect(session.pendingToolApprovalId).toBeUndefined()
+  expect(session.pendingRunCommandId).toBeUndefined()
+})

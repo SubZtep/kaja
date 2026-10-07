@@ -67,7 +67,7 @@ async function handleRunCommandCall(
     record(call.id, { status: "error" })
     return undefined
   }
-  if (isSafeCommand(args.command, agent.safeCommands ?? DEFAULT_SAFE_PATTERNS)) {
+  if (agent.yolo || isSafeCommand(args.command, agent.safeCommands ?? DEFAULT_SAFE_PATTERNS)) {
     const startedAt = performance.now()
     const result = await runShellCommand(args.command)
     messages.push({ role: "tool", tool_call_id: call.id, content: result })
@@ -380,7 +380,8 @@ async function* handleToolCalls(
       continue
     }
 
-    const summary = approvalSummaryFor(toolsByName.get(call.function.name), call, [granted])
+    // Yolo never asks; a call the tool refuses (a read-only folder) still fails when it runs.
+    const summary = agent.yolo ? undefined : approvalSummaryFor(toolsByName.get(call.function.name), call, [granted])
     if (summary !== undefined) {
       approval = holdApproval(messages, record, approval, {
         id: call.id,
@@ -393,13 +394,21 @@ async function* handleToolCalls(
 
     yield* handleToolCall(agent, toolsByName, messages, owner, call, record, onModelCall)
   }
-  // Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
-  if (approval && [ask, confirm, clientTool].some(Boolean)) {
+  if ([ask, confirm, clientTool].some(Boolean)) approval = skipApproval(messages, record, approval)
+  return { ask, confirm, clientTool, approval }
+}
+
+// Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
+function skipApproval(
+  messages: ChatCompletionMessageParam[],
+  record: RecordCall,
+  approval: ToolApproval | undefined
+): undefined {
+  if (approval) {
     messages.push({ role: "tool", tool_call_id: approval.id, content: ONE_APPROVAL_AT_A_TIME })
     record(approval.id, { status: "skipped" })
-    approval = undefined
   }
-  return { ask, confirm, clientTool, approval }
+  return undefined
 }
 
 // Points the round's tool lookup at the active persona's tools.

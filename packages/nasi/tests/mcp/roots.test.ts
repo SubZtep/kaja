@@ -1,8 +1,8 @@
 import { afterAll, expect, test } from "bun:test"
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { homedir, tmpdir } from "node:os"
 import { join } from "node:path"
-import { expandRoots, mcpRoots, readOnlyRefusal } from "../../src/mcp/roots"
+import { backupFiles, backupPaths, expandRoots, listBackups, mcpRoots, readOnlyRefusal } from "../../src/mcp/roots"
 import { setWarnHandler } from "../../src/warn"
 
 // Real paths, as expandRoots gives them (a temp dir can sit behind a symlink).
@@ -61,4 +61,33 @@ test("a write into a read-only folder is refused; the nearest root decides, thro
   expect(refused({ path: "notes/a.md" })).toContain("absolute path")
   expect(refused({ content: join(site, "x") })).toBeUndefined()
   expect(readOnlyRefusal([{ folder: notes, readOnly: false }], ["path"], { path: "relative.md" })).toBeUndefined()
+})
+
+test("backups: only existing paths in a backed-up root count, and each copy lands under its own path by time", async () => {
+  const kept = join(dir, "kept")
+  const inner = join(kept, "inner")
+  mkdirSync(inner, { recursive: true })
+  writeFileSync(join(kept, "a.txt"), "one")
+  writeFileSync(join(inner, "b.txt"), "two")
+  const roots = [
+    { folder: kept, readOnly: false, backup: true },
+    { folder: inner, readOnly: false }
+  ]
+  const paths = (args: Record<string, unknown>) => backupPaths(roots, ["path", "source"], args)
+
+  expect(paths({ path: join(kept, "a.txt") })).toEqual([join(kept, "a.txt")])
+  // The nearest root decides: a folder without backup inside a backed-up one isn't backed up.
+  expect(paths({ path: join(inner, "b.txt") })).toEqual([])
+  expect(paths({ path: "a.txt", source: [join(kept, "a.txt")] })).toEqual([join(kept, "a.txt")])
+  expect(backupPaths([{ folder: kept, readOnly: false }], ["path"], { path: join(kept, "a.txt") })).toEqual([])
+  expect(readOnlyRefusal(roots, ["path"], { path: "a.txt" })).toContain("absolute path")
+
+  const backups = join(dir, "backups")
+  const [first] = await backupFiles([join(kept, "a.txt"), join(kept, "gone.txt")], backups)
+  await backupFiles([join(kept, "a.txt")], backups)
+  expect(readFileSync(first!, "utf8")).toBe("one")
+  const versions = await listBackups(backups, join(kept, "a.txt"))
+  expect(versions).toHaveLength(2)
+  expect(versions[0]! > versions[1]!).toBe(true)
+  expect(await listBackups(backups, join(kept, "gone.txt"))).toEqual([])
 })

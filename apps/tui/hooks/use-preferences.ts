@@ -14,6 +14,7 @@ export function usePreferences(initial?: KajaPreferences) {
     // Spoken replies are opt-in: they need the speaches TTS server running.
     voice: initial?.voice ?? false,
     hotkeyModifier: initial?.hotkeyModifier ?? "alt",
+    yolo: initial?.yolo ?? false,
     // The starting theme: "auto" is resolved before render (lib/terminal-background.ts); left unresolved it means dark
     theme: initial?.theme === "light" ? ("light" as const) : ("dark" as const)
   }

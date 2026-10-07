@@ -12,7 +12,7 @@ import { secrets } from "../lib/config/secrets"
 import { peekStorePath, resolveMemoryDbPath } from "../lib/memory/store"
 import { loadModelsFile, resolveActiveModel } from "../lib/models/models"
 import { chatModelId, client, summarizer } from "../lib/models/openai"
-import { getPaths } from "../lib/paths"
+import { getBackupDir, getPaths } from "../lib/paths"
 import { loadDataset, loadDatasets } from "../lib/personas/datasets"
 
 /** Every tool the local agent gets. `lazyMcp` (default) leaves abilities' MCP servers for `ensureAbilities` to connect once a persona that uses them is active; the doctor turns it off to test them all. */
@@ -51,6 +51,7 @@ export async function getDefaultTools(personas: Persona[], { lazyMcp = true }: {
     extraTools: abilities.groups,
     mcpAbilities: abilities.mcp,
     lazyMcpAbilities: lazyMcp,
+    backupDir: getBackupDir(),
     deps: {
       chat: { client, model: chatModelId },
       summarizer,

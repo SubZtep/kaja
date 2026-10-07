@@ -18,11 +18,9 @@ function KeyBarItem({
   const { left, top, width, height } = useBoxMetrics(ref)
   useEffect(() => onRect(item.key, { left, top, width, height }), [item.key, left, top, width, height, onRect])
   return (
-    <Box ref={ref} marginRight={2} flexShrink={0}>
-      <Text {...keyCap()} dimColor={hovered}>
-        {item.key}
-      </Text>
-      <Text dimColor={hovered}> {item.label}</Text>
+    <Box ref={ref} marginRight={2} flexShrink={0} columnGap={1}>
+      <Text {...keyCap()}>{item.key}</Text>
+      <Text bold={hovered}>{item.label}</Text>
     </Box>
   )
 }

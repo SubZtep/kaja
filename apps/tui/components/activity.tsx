@@ -1,10 +1,11 @@
-import { Spinner, ThemeProvider } from "@inkjs/ui"
+import { type SpinnerProps, useComponentTheme, useSpinner } from "@inkjs/ui"
+import { Box, Text, type TextProps } from "ink"
 import { useEffect, useState } from "react"
 import type { PartialMessage } from "../hooks/use-agent"
 import { useRandomSpinner } from "../hooks/use-random-spinner"
 import { describeToolCall } from "../lib/agent/tool-labels"
 import { t } from "../lib/i18n"
-import { useSpinnerTheme } from "./theme"
+import { useKajaTheme } from "./theme"
 
 const TICK_MS = 120
 
@@ -34,7 +35,7 @@ export function Activity({
 }>) {
   const [tick, setTick] = useState(0)
   const spinnerType = useRandomSpinner(pending, "dots")
-  const spinnerTheme = useSpinnerTheme(tool ? "toolLabel" : "thinkingLabel")
+  const { thinkingLabel, toolLabel } = useKajaTheme()
   useEffect(() => {
     if (!pending) return
     setTick(0)
@@ -47,22 +48,42 @@ export function Activity({
   if (!pending || contentVisible || reasoningVisible) return null
 
   if (tool) {
-    return (
-      <ThemeProvider theme={spinnerTheme}>
-        <Spinner type={spinnerType} label={describeToolCall(tool.name, tool.arguments)} />
-      </ThemeProvider>
-    )
+    return <SpinnerLine type={spinnerType} label={describeToolCall(tool.name, tool.arguments)} style={toolLabel()} />
   }
 
   const seconds = Math.floor((tick * TICK_MS) / 1000)
   const tokens = estimateTokens(partial)
 
   return (
-    <ThemeProvider theme={spinnerTheme}>
-      <Spinner
-        type={spinnerType}
-        label={`${t("activity.thinking", { seconds })}${tokens ? t("activity.tokens", { tokens }) : ""}`}
-      />
-    </ThemeProvider>
+    <SpinnerLine
+      type={spinnerType}
+      label={`${t("activity.thinking", { seconds })}${tokens ? t("activity.tokens", { tokens }) : ""}`}
+      style={thinkingLabel()}
+    />
+  )
+}
+
+/**
+ * ink-ui's Spinner, laid out so a long label can't squeeze the frame: the frame keeps its width, then a space, then
+ * the label on one row; a one-column frame puts the label in the column the agent's messages start in.
+ */
+function SpinnerLine({
+  type,
+  label,
+  style
+}: Readonly<{ type: SpinnerProps["type"]; label: string; style: TextProps }>) {
+  const { frame } = useSpinner({ type })
+  const { styles } = useComponentTheme<{ styles: { frame: () => TextProps } }>("Spinner")
+  return (
+    <Box>
+      <Box flexShrink={0} marginRight={1}>
+        <Text {...styles.frame()}>{frame}</Text>
+      </Box>
+      <Box flexShrink={1} minWidth={0}>
+        <Text {...style} wrap="truncate-end">
+          {label}
+        </Text>
+      </Box>
+    </Box>
   )
 }

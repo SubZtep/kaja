@@ -8,6 +8,7 @@ import { useAuthClient } from "../../hooks/auth-client"
 import { CaptchaGate, useTurnstile } from "../../hooks/turnstile"
 import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
+import { guestOnly } from "../../lib/loaders"
 import { searchString } from "../../lib/search"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
@@ -24,6 +25,7 @@ const signinSearchSchema = (search: Record<string, unknown>): { redirect?: strin
 
 export const Route = createFileRoute("/_public/signin")({
   validateSearch: signinSearchSchema,
+  beforeLoad: ({ search }) => guestOnly(search.redirect),
   component: SignIn,
   head: () => ({
     meta: seo({ title: m.nav_sign_in(), description: m.seo_signin_desc() })

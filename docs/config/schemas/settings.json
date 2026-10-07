@@ -137,13 +137,18 @@
           ]
         },
         "theme": {
-          "description": "Colour theme; auto asks the terminal for its background colour (default: auto)",
+          "description": "Colour theme; auto picks dark or light by the terminal's background colour, terminal uses the terminal's own colour scheme (default: auto)",
           "type": "string",
           "enum": [
             "auto",
             "dark",
-            "light"
+            "light",
+            "terminal"
           ]
+        },
+        "yolo": {
+          "description": "DANGEROUS developer flag: approve every shell command and tool call without asking, risky ones included (the hard guards still apply)",
+          "type": "boolean"
         }
       }
     }

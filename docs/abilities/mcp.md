@@ -91,6 +91,13 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   is also mounted read-only. A manifest without `pathArgs` can't be checked, so its read-only folders are
   left out.
 
+  With `{ path = "~/.config/hypr", backup = true }`, Kaja copies a file there before any call that may change
+  it (found through `pathArgs` too) to its own data folder, at `backups/<the file's full path>/<time>`
+  (`kaja config paths` shows where), and keeps every copy. If the copy fails, the call doesn't run. As
+  with read-only folders, paths must then be absolute or `~/…`. A persona with a backed-up folder also gets
+  `list_backups` and `restore_backup`; a restore asks first and backs up the file it replaces, so it can be
+  undone too.
+
 - `localOnly = true` keeps a server off the cloud: it only ever runs on your own machine. A `roots` one is
   local-only too.
 - `toolDescriptions` says in a line what each listed tool does. The web app shows it, since a server's own

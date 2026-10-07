@@ -138,6 +138,13 @@ export async function runDoctorSubcommand() {
   console.log(t("doctor.stats", { sessionCount, memoryNoteCount }))
   console.log()
   for (const line of summaryLines(outcomes, getSecretsPath())) console.log(line)
+  // Last, so a forgotten `yolo = true` is what the report ends on
+  const { config, getConfigPath } = await import("../lib/config/config")
+  if ((await config()).preferences?.yolo) {
+    const { statusLine } = await import("../lib/doctor/status")
+    console.log()
+    console.log(statusLine("warning", t("doctor.yolo", { path: getConfigPath() }), 0))
+  }
 
   await closeTools()
   process.exit(0)

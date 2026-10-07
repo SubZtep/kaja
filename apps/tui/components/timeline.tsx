@@ -1,6 +1,6 @@
 import { isAbsolute } from "node:path"
 import { StatusMessage, type StatusMessageProps } from "@inkjs/ui"
-import { Box, Text } from "ink"
+import { Box, Text, type TextProps } from "ink"
 import { memo } from "react"
 import type { ErrorCategory } from "../lib/agent/error-category"
 import { describeToolCall } from "../lib/agent/tool-labels"
@@ -21,22 +21,34 @@ const ERROR_VARIANT: Record<ErrorCategory, StatusMessageProps["variant"]> = {
 }
 
 /**
- * One finalized timeline entry (user message, tool call, final reply, …).
+ * One finalized timeline entry (user message, tool call, final reply, …), after a blank line when `spaced`.
  * Memoized: events are immutable once appended, so scroll ticks and
  * streaming flushes (which re-render the whole ScrollView subtree) bail
  * out here instead of re-rendering every history item.
  */
-export const TimelineItem = memo(function TimelineItem({ item, thinking }: { item: DisplayEvent; thinking: boolean }) {
+export const TimelineItem = memo(function TimelineItem({
+  item,
+  thinking,
+  spaced
+}: {
+  item: DisplayEvent
+  thinking: boolean
+  spaced?: boolean
+}) {
   const theme = useKajaTheme()
   const content = renderItem(item, thinking, theme)
   if (content === null) return null
   return (
-    <Box flexDirection="column">
-      <Text> </Text>
+    <Box flexDirection="column" marginTop={spaced ? 1 : 0}>
       {content}
     </Box>
   )
 })
+
+/** Whether an item shows: reasoning only while `thinking`. */
+export function itemShows(item: DisplayEvent, thinking: boolean) {
+  return item.type !== "reasoning" || thinking
+}
 
 // Only the left edge is drawn, as a thin bar
 const USER_BAR = {
@@ -67,6 +79,7 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
           borderTop={false}
           borderBottom={false}
           borderRight={false}
+          // The bar and its padding are as wide as the agent's "●" and its gap, so both texts start in one column
           paddingX={1}
           width="100%"
         >
@@ -89,19 +102,9 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
     case "display_image":
       return <TerminalImage href={item.url} alt={item.alt} />
     case "message":
-      return (
-        <Box gap={2}>
-          <Text {...theme.accent()}>●</Text>
-          <Markdown>{item.content}</Markdown>
-        </Box>
-      )
+      return <Said dot={theme.accent()}>{item.content}</Said>
     case "ask_user":
-      return (
-        <Box gap={2}>
-          <Text {...theme.userText()}>●</Text>
-          <Markdown>{item.question}</Markdown>
-        </Box>
-      )
+      return <Said dot={theme.userText()}>{item.question}</Said>
     case "confirm_command":
       return <CodePreview command={item.command} tone={theme.warning()} />
     case "confirm_tool":
@@ -134,6 +137,21 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
       return <StatusMessage variant={ERROR_VARIANT[item.category]}>{`${errorLabel}: ${item.text}`}</StatusMessage>
     }
     case "final":
-      return <Markdown>{item.content ?? "N/A"}</Markdown>
+      return <Said dot={theme.accent()}>{item.content ?? "N/A"}</Said>
   }
+}
+
+/** The agent's words after a "●" in `dot`'s colour; the text starts in the user messages' column. */
+export function Said({ dot, children }: Readonly<{ dot: TextProps; children: string }>) {
+  return (
+    <Box>
+      {/* Fixed width: a reply as wide as the terminal would otherwise shrink the dot's column and its gap away */}
+      <Box width={2} flexShrink={0}>
+        <Text {...dot}>●</Text>
+      </Box>
+      <Box flexGrow={1} flexShrink={1} minWidth={0}>
+        <Markdown>{children}</Markdown>
+      </Box>
+    </Box>
+  )
 }

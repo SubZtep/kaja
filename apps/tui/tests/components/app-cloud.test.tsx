@@ -274,3 +274,43 @@ test("a client_tool_call pause reads the local file and resumes the turn automat
     rmSync(workspaceRoot, { recursive: true, force: true })
   }
 })
+
+test("yolo approves a cloud tool approval itself and carries on, without showing the question", async () => {
+  const bodies: Record<string, unknown>[] = []
+  const approvalTurn = () => {
+    const body =
+      'event: confirm_tool\ndata: {"type":"confirm_tool","id":"c1","name":"create_issue","arguments":"{}","summary":"POST /issues"}\n\n' +
+      'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"needs_approval"}\n\n'
+    return new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(body))
+          controller.close()
+        }
+      }),
+      { headers: { "content-type": "text/event-stream" } }
+    )
+  }
+  nextTurnResponse = () => (bodies.length === 1 ? approvalTurn() : sseResponse("issue filed"))
+  const fetchWithBodies = globalThis.fetch
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (typeof init?.body === "string" && String(url).endsWith("/nasi/turn/stream")) bodies.push(JSON.parse(init.body))
+    return fetchWithBodies(url, init)
+  }) as typeof fetch
+
+  const t = renderForTest(
+    <App mode="cloud" apiUrl="https://api.kaja.io" token="tok" initialPreferences={{ yolo: true }} />
+  )
+  await t.tick()
+  await t.press("file it")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+
+  expect(bodies.map(body => body.approval)).toEqual([undefined, "approve"])
+  expect(t.lastFrame()).toContain("issue filed")
+  expect(t.lastFrame()).not.toContain("POST /issues")
+  expect(t.lastFrame()).toContain("YOLO")
+
+  t.unmount()
+  await t.waitUntilExit()
+})
