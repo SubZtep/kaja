@@ -188,6 +188,20 @@ function connectMcpServers(targets: McpTarget[], tempDir: string, timeoutMs: num
   return Promise.all(targets.map(target => connectWithTimeout(target, tempDir, timeoutMs)))
 }
 
+// list_backups/restore_backup go with the first server some persona backs up (in practice the one filesystem server).
+function backupToolGroup(
+  mcpTargets: McpTarget[],
+  backupDir: string | undefined,
+  rootsOf: (id: string) => RootFolder[]
+): ToolGroup[] {
+  if (!backupDir) return []
+  const backedUp = mcpTargets.find(target =>
+    Object.values(target.roots ?? {}).some(roots => roots.some(root => root.backup))
+  )
+  if (!backedUp) return []
+  return [{ origin: "community", source: backedUp.id, tools: backupTools(backupDir, () => rootsOf(backedUp.id)) }]
+}
+
 /** Names of builtin tools a cloud turn would actually run given `deps` — same filtering `createTools` applies for `includeLocalTools: false`, without connecting anything. */
 export async function listCloudToolNames(deps?: NasiToolDeps): Promise<string[]> {
   const { tools } = await createTools({ deps })
@@ -271,13 +285,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
         : {})
     }
   }
-  // list_backups/restore_backup go with the first server some persona backs up (in practice the one filesystem server).
-  const backedUp =
-    backupDir &&
-    mcpTargets.find(target => Object.values(target.roots ?? {}).some(roots => roots.some(root => root.backup)))
-  const backupGroup: ToolGroup[] = backedUp
-    ? [{ origin: "community", source: backedUp.id, tools: backupTools(backupDir, () => rootsOf(backedUp.id)) }]
-    : []
+  const backupGroup = backupToolGroup(mcpTargets, backupDir, rootsOf)
   // Image results land in the temp dir locally, and in `mcpImageDir` in the cloud (dropped without one).
   const mcpImagesDir = local ? tempDir : (opts.mcpImageDir ?? "")
   const connectTimeoutMs = opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS

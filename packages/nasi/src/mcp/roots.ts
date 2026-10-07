@@ -94,16 +94,17 @@ export function backupFolder(backupDir: string, path: string): string {
 /** Copies each existing path (a folder whole) to `<backupDir>/<its path>/<time>`; never pruned. Returns the copies made. */
 export async function backupFiles(paths: string[], backupDir: string): Promise<string[]> {
   const version = new Date().toISOString().replaceAll(":", "-")
-  const made: string[] = []
-  for (const path of paths) {
-    if (!(await stat(path).catch(() => undefined))) continue
-    const folder = backupFolder(backupDir, path)
-    await mkdir(folder, { recursive: true })
-    const copy = join(folder, await freeName(folder, version))
-    await cp(path, copy, { recursive: true, errorOnExist: true, force: false, preserveTimestamps: true })
-    made.push(copy)
-  }
-  return made
+  const made = await Promise.all(
+    paths.map(async path => {
+      if (!(await stat(path).catch(() => undefined))) return undefined
+      const folder = backupFolder(backupDir, path)
+      await mkdir(folder, { recursive: true })
+      const copy = join(folder, await freeName(folder, version))
+      await cp(path, copy, { recursive: true, errorOnExist: true, force: false, preserveTimestamps: true })
+      return copy
+    })
+  )
+  return made.filter(copy => copy !== undefined)
 }
 
 /** `path`'s backup versions, newest first. */
@@ -140,7 +141,8 @@ function pathValues(pathArgs: string[], args: Record<string, unknown>): [string,
 async function freeName(folder: string, version: string): Promise<string> {
   const taken = new Set(await readdir(folder))
   let name = version
-  for (let n = 2; taken.has(name); n++) name = `${version}-${n}`
+  let n = 2
+  while (taken.has(name)) name = `${version}-${n++}`
   return name
 }
 

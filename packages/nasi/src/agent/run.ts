@@ -394,13 +394,21 @@ async function* handleToolCalls(
 
     yield* handleToolCall(agent, toolsByName, messages, owner, call, record, onModelCall)
   }
-  // Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
-  if (approval && [ask, confirm, clientTool].some(Boolean)) {
+  if ([ask, confirm, clientTool].some(Boolean)) approval = skipApproval(messages, record, approval)
+  return { ask, confirm, clientTool, approval }
+}
+
+// Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
+function skipApproval(
+  messages: ChatCompletionMessageParam[],
+  record: RecordCall,
+  approval: ToolApproval | undefined
+): undefined {
+  if (approval) {
     messages.push({ role: "tool", tool_call_id: approval.id, content: ONE_APPROVAL_AT_A_TIME })
     record(approval.id, { status: "skipped" })
-    approval = undefined
   }
-  return { ask, confirm, clientTool, approval }
+  return undefined
 }
 
 // Points the round's tool lookup at the active persona's tools.

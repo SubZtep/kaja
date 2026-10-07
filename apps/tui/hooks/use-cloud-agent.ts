@@ -177,6 +177,15 @@ export function useCloudAgent({
         followPersonaSwitch(event)
       }
 
+      const handleStreamEvent = (event: NasiStreamEvent) => {
+        if (event.type === "delta") handleDelta(event)
+        else if (event.type === "usage") handleUsage(event)
+        else if (event.type === "tool_image")
+          handleEvent({ type: "tool_image", path: event.url, mimeType: event.mimeType })
+        // Yolo answers it below, so there's no question to show
+        else if (!(yolo && event.type === "confirm_tool")) handleEvent(event)
+      }
+
       try {
         let request = first
         while (true) {
@@ -193,12 +202,7 @@ export function useCloudAgent({
           let pendingClientTool: Extract<CloudTimelineEvent, { type: "client_tool_call" }> | undefined
           while (!next.done) {
             const event = next.value
-            if (event.type === "delta") handleDelta(event)
-            else if (event.type === "usage") handleUsage(event)
-            else if (event.type === "tool_image")
-              handleEvent({ type: "tool_image", path: event.url, mimeType: event.mimeType })
-            // Yolo answers it below, so there's no question to show
-            else if (!(yolo && event.type === "confirm_tool")) handleEvent(event)
+            handleStreamEvent(event)
             if (event.type === "client_tool_call") pendingClientTool = event
             next = await gen.next()
           }

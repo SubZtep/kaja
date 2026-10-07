@@ -3,7 +3,7 @@
 // since a Lua string could run commands (hl.dsp.exec_cmd, os.execute).
 
 const OPTION = /^[a-z0-9_]+(\.[a-z0-9_]+)+$/
-const LEAF = /^[a-zA-Z0-9_]+$/
+const LEAF = /^\w+$/
 const STYLE = /^[a-z0-9 %]+$/
 const TIMEOUT_MS = 5000
 
@@ -27,9 +27,13 @@ async function hyprctl(...args: string[]): Promise<{ ok: boolean; out: string }>
 
 // A Lua string literal; control characters are refused rather than escaped.
 function luaString(value: string): string {
-  if ([...value].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127))
-    throw new Error(`Control characters aren't allowed in ${JSON.stringify(value)}.`)
-  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`
+  const control = (char: string) => {
+    const code = char.codePointAt(0) ?? 0
+    return code < 32 || code === 127
+  }
+  if ([...value].some(control)) throw new Error(`Control characters aren't allowed in ${JSON.stringify(value)}.`)
+  const escaped = value.replaceAll("\\", String.raw`\\`).replaceAll('"', String.raw`\"`)
+  return `"${escaped}"`
 }
 
 function luaNumber(value: unknown, what: string): string {
@@ -45,7 +49,9 @@ function luaValue(name: string, value: unknown): string {
     const { colors, angle } = value as Gradient
     if (colors.length === 0 || colors.length > 10) throw new Error(`${name}: a gradient takes 1 to 10 colors.`)
     const list = colors.map(color => luaString(String(color))).join(", ")
-    return `{ colors = { ${list} }${angle === undefined ? "" : `, angle = ${luaNumber(angle, `${name}'s angle`)}`} }`
+    const what = `${name}'s angle`
+    const angleField = angle === undefined ? "" : `, angle = ${luaNumber(angle, what)}`
+    return `{ colors = { ${list} }${angleField} }`
   }
   throw new Error(`${name}: a value is a number, true/false, a string, or a gradient { colors, angle }.`)
 }
@@ -94,15 +100,14 @@ export const hyprCheck = {
     const version = (await hyprctl("version")).out.split("\n")[0]
     const errors = (await hyprctl("configerrors")).out
     const lines = [version, errors ? `Config errors:\n${errors}` : "Config errors: none"]
-    for (const option of args.options ?? []) {
-      if (!OPTION.test(option)) {
-        lines.push(`${option}: not an option name (use the dotted form, e.g. decoration.rounding)`)
-        continue
-      }
-      const { out } = await hyprctl("-j", "getoption", option)
-      lines.push(`${option}: ${out}`)
-    }
-    return lines.join("\n")
+    const values = await Promise.all(
+      (args.options ?? []).map(async option => {
+        if (!OPTION.test(option)) return `${option}: not an option name (use the dotted form, e.g. decoration.rounding)`
+        const { out } = await hyprctl("-j", "getoption", option)
+        return `${option}: ${out}`
+      })
+    )
+    return [...lines, ...values].join("\n")
   }
 }
 
@@ -150,12 +155,9 @@ export const hyprPreview = {
     for (const [name] of entries)
       if (!OPTION.test(name))
         throw new Error(`${name}: not an option name (use the dotted form, e.g. decoration.rounding)`)
+    const assignments = entries.map(([name, value]) => `[${luaString(name)}] = ${luaValue(name, value)}`)
     const calls = [
-      ...(entries.length
-        ? [
-            `hl.config({ ${entries.map(([name, value]) => `[${luaString(name)}] = ${luaValue(name, value)}`).join(", ")} })`
-          ]
-        : []),
+      ...(entries.length ? [`hl.config({ ${assignments.join(", ")} })`] : []),
       ...animations.map(luaAnimation)
     ]
     for (const [index, call] of calls.entries()) {
