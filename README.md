@@ -1,8 +1,8 @@
 # 가자⛲
 
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/SubZtep/kaja)
-![Continuous integration](https://github.com/SubZtep/kaja/actions/workflows/ci.yaml/badge.svg)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SubZtep_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SubZtep_kaja)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/kajaio/kaja)
+![Continuous integration](https://github.com/kajaio/kaja/actions/workflows/ci.yaml/badge.svg)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=kajaio_kaja&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=kajaio_kaja)
 
 > [!IMPORTANT]
 > Kaja is still evolving :speaker::godmode::loudspeaker:
@@ -32,7 +32,7 @@ Make sure [Bun](https://bun.com/docs/installation), [Docker Compose](https://doc
 
 ```bash
 # Get the source
-git clone https://github.com/SubZtep/kaja.git
+git clone https://github.com/kajaio/kaja.git
 cd kaja
 
 # Install dependencies

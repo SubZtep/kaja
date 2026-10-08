@@ -53,7 +53,7 @@ agent's warnings: skipped abilities, missing keys, failed MCP connections.
 
 ## Still stuck?
 
-Open an issue on [GitHub](https://github.com/SubZtep/kaja/issues) with the `kaja doctor` output. Every
+Open an issue on [GitHub](https://github.com/kajaio/kaja/issues) with the `kaja doctor` output. Every
 config file except `secrets.toml` is safe to include.
 
 ---

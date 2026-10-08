@@ -8,7 +8,8 @@ import {
   type ErrorComponentProps,
   HeadContent,
   redirect,
-  Scripts
+  Scripts,
+  useMatches
 } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { keepsLinkLanguage, LocaleSync } from "../components/LocaleSync"
@@ -20,19 +21,9 @@ import { m } from "../paraglide/messages.js"
 import { baseLocale, getLocale, getTextDirection, type Locale, locales, localizeHref } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
 
-// Bump `v` whenever public/og-image.png changes: X, Telegram and Facebook cache share images by URL
-const OG_IMAGE = "https://kaja.io/og-image.png?v=2"
-
-// The hero's fonts (headline, subline, stickers); preloaded so they don't wait for the stylesheet, which would shift the layout when they swap in
+const OG_IMAGE = "https://kaja.io/og-image.png"
 const PRELOAD_FONTS = [syneExtraBold, syneRegular, silkscreenBold]
-
-const OG_LOCALE: Record<Locale, string> = {
-  "en-GB": "en_GB",
-  "en-US": "en_US",
-  "hu-HU": "hu_HU",
-  "nan-TW": "nan_TW",
-  "zh-TW": "zh_TW"
-}
+const ogLocale = (locale: Locale) => locale.replace("-", "_")
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async ({ location }) => {
@@ -150,7 +141,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
               name: "Kaja",
               url: "https://kaja.io",
               logo: "https://kaja.io/android-chrome-512x512.png",
-              sameAs: ["https://github.com/SubZtep/kaja", "https://x.com/SubZtep"]
+              sameAs: ["https://github.com/kajaio/kaja", "https://x.com/kaja_io"]
             }
           })
         }
@@ -164,17 +155,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = getLocale()
-  const ogLocale = OG_LOCALE[locale]
-  // The session, sandbox and widget requests all go to the API origin
+  const matches = useMatches()
+  const isHomepage = matches.at(-1)?.pathname === "/"
   const apiUrl = Route.useLoaderData({ select: data => data.apiUrl })
 
-  // Sentry starts right after hydration: off the first paint, yet early enough to catch what goes wrong next
   useEffect(() => {
     loadSentry().catch(() => {})
   }, [])
 
   return (
-    // The Open Graph namespace (ogp.me); spread, since the RDFa `prefix` attribute isn't in every linter's list of HTML attributes
     <html lang={locale} dir={getTextDirection()} {...{ prefix: "og: https://ogp.me/ns#" }} suppressHydrationWarning>
       <head>
         {apiUrl && <link rel="preconnect" href={apiUrl} />}
@@ -187,18 +176,18 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
         <meta property="og:image:type" content="image/png" />
         <meta property="og:image:alt" content={m.site_og_image_alt()} />
         <meta property="og:site_name" content="Kaja" />
-        <meta property="og:locale" content={ogLocale} />
+        <meta property="og:locale" content={ogLocale(locale)} />
         {locales
           .filter(other => other !== locale)
           .map(other => (
-            <meta key={other} property="og:locale:alternate" content={OG_LOCALE[other]} />
+            <meta key={other} property="og:locale:alternate" content={ogLocale(other)} />
           ))}
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={OG_IMAGE} />
         <meta name="twitter:image:alt" content={m.site_og_image_alt()} />
       </head>
-      <body>
+      <body className={isHomepage ? undefined : "font-body"}>
         <Providers>
           {children}
           <LocaleSync />

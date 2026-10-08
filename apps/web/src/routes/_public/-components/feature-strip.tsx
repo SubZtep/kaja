@@ -21,9 +21,16 @@ export function FeatureStrip() {
         <h2 className="m-0 mb-6 font-bold font-display text-fg text-xl md:text-2xl">{m.features_title()}</h2>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {getFeatures().map(f => (
-            <article key={f.id} className="toy-card gap-2 bg-surface p-4">
-              <f.glyph size={20} strokeWidth={1.75} className="text-neon" aria-hidden />
-              <h3 className="m-0 font-bold font-display text-base text-fg leading-tight">{f.title}</h3>
+            <article key={f.id} className="group toy-card gap-2 bg-surface p-4">
+              <div className="flex items-center gap-2">
+                <f.glyph
+                  size={20}
+                  strokeWidth={1.75}
+                  className="shrink-0 text-fg opacity-95 group-hover:animate-pulse group-hover:opacity-100"
+                  aria-hidden
+                />
+                <h3 className="m-0 font-bold font-display text-base text-fg leading-tight">{f.title}</h3>
+              </div>
               <p className="m-0 font-crt text-muted text-sm">{f.meta}</p>
             </article>
           ))}

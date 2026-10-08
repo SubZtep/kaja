@@ -82,10 +82,10 @@ services:
       CORS_ORIGIN: http://localhost:3000
       BETTER_AUTH_SECRET: compose_dev_better_auth_secret_not_for_production # local stack only
       SANDBOX_SYSTEM_KEY: compose_dev_sandbox_system_key_not_for_production # local stack only
+      CONFIG_API_TOKEN: compose_dev_config_api_token_not_for_production # local stack only; the image runs as production, which refuses the .env.example placeholder
     networks:
       - default
       - sandbox
-    # The image has no curl or wget, so Bun's fetch does the check.
     healthcheck:
       test:
         [

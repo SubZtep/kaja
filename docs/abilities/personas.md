@@ -95,7 +95,7 @@ Both work in cloud mode too, among every persona in the cloud's copy of the mark
 | `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service`, `time` and `open-meteo` |
 | `config-hyprland` | changes your Hyprland desktop live (Lua config): previews, saves on your yes, backs up `~/.config/hypr` files first; local only |
 
-Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
+Read them in [`marketplace/personas`](https://github.com/kajaio/kaja/tree/main/marketplace/personas).
 
 ---
 

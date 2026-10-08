@@ -16,12 +16,12 @@ export function Footer() {
   return (
     <footer>
       <ContentWidth className="pt-4 pb-10 font-crt text-[13px] text-muted sm:pt-6 sm:pb-16">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+        <div className="grid xs:grid-cols-2 gap-y-8 sm:grid-cols-3">
           <FooterColumn heading={m.footer_heading_project()}>
             <FooterLink href="https://docs.kaja.io" external>
               {m.nav_docs()}
             </FooterLink>
-            <FooterLink href="https://github.com/SubZtep/kaja" external>
+            <FooterLink href="https://github.com/kajaio/kaja" external>
               {m.hero_cta_source()}
             </FooterLink>
             <FooterLink href="/llms.txt">llms.txt</FooterLink>
@@ -33,28 +33,35 @@ export function Footer() {
             <FooterLink href={PRIVACY_URL} external>
               {m.legal_privacy()}
             </FooterLink>
-            <FooterLink href="https://github.com/SubZtep/kaja/blob/main/LICENSE" external>
+            <FooterLink href="https://github.com/kajaio/kaja/blob/main/LICENSE" external>
               {m.footer_license_name()}
             </FooterLink>
           </FooterColumn>
-          <FooterColumn heading={m.language_select_label()} className="col-span-2 sm:col-span-1">
-            <li>
-              <Suspense>
-                <LanguageSelect className="whitespace-nowrap border-border/60 bg-transparent" />
-              </Suspense>
-            </li>
-          </FooterColumn>
+          <div className="col-span-2 contents flex-col gap-y-6 sm:col-span-1 sm:flex">
+            <FooterColumn heading={m.language_select_label()}>
+              <li>
+                <Suspense>
+                  <LanguageSelect className="whitespace-nowrap border-border/60 bg-transparent" />
+                </Suspense>
+              </li>
+            </FooterColumn>
+            <FooterColumn heading={m.footer_heading_contact()}>
+              <li>
+                <a href="mailto:hello@kaja.io">hello@kaja.io</a>
+              </li>
+            </FooterColumn>
+          </div>
         </div>
 
         <div className="mt-8 grid items-center gap-4 border-border/60 border-t pt-6 sm:grid-cols-3 sm:gap-8">
           <span className="sm:col-span-2">
-            © {new Date().getFullYear()} {m.footer_license_by()}{" "}
-            <a href="https://x.com/SubZtep" target="_blank" rel="noopener" className="text-neon">
-              SubZtep
+            © {new Date().getFullYear()} Kaja ·{" "}
+            <a href="https://x.com/kaja_io" target="_blank" rel="noopener" aria-label="Kaja on X" className="text-neon">
+              𝕏
             </a>
           </span>
           <a
-            href="https://github.com/SubZtep/kaja/stargazers"
+            href="https://github.com/kajaio/kaja/stargazers"
             target="_blank"
             rel="noopener"
             aria-label={m.footer_star()}

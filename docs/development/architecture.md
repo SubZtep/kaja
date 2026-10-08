@@ -59,7 +59,7 @@ flowchart TD
 | `apps/api/widgets` | the embeddable browser chat bundle, built as part of the API |
 | `apps/web` | TanStack Start: the public landing site and the signed-in [web app](/development/web) |
 | `apps/tui` | the [terminal client](/using/tui), Telegram bot, local config and storage |
-| `apps/sandbox` | the [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme): runs stdio MCP servers (a headless Chrome and more) for cloud turns, one per user, behind an egress proxy that only reaches public addresses. Anyone can run one, and it dials the API's WebSocket |
+| `apps/sandbox` | the [MCP sandbox](https://github.com/kajaio/kaja/tree/main/apps/sandbox#readme): runs stdio MCP servers (a headless Chrome and more) for cloud turns, one per user, behind an egress proxy that only reaches public addresses. Anyone can run one, and it dials the API's WebSocket |
 | `packages/nasi` | the [agent brain](/development/nasi): loop, tools, store interface |
 | `packages/schema` | every Zod [schema](/development/schema), in role-based subpaths |
 | `packages/shared` | small pure utilities, including the Telegram plumbing both bots share |

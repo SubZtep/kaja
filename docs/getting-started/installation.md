@@ -25,7 +25,7 @@ irm https://kaja.io/install.ps1 | iex
 
 The script picks the right binary for your system and puts it in `~/.local/bin` (change that with
 `INSTALL_DIR`). If the folder isn't on your `PATH`, it tells you. You can also download a binary
-(x64 or arm64) from [GitHub Releases](https://github.com/SubZtep/kaja/releases).
+(x64 or arm64) from [GitHub Releases](https://github.com/kajaio/kaja/releases).
 
 ## First run
 

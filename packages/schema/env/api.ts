@@ -145,7 +145,7 @@ const apiEnvFields = z.object({
     .meta({ secret: true, section: "Marketplace" }),
 
   MARKETPLACE_REPO: trimmed
-    .default("SubZtep/kaja")
+    .default("kajaio/kaja")
     .describe("GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from")
     .meta({ section: "Marketplace" }),
   MARKETPLACE_REF: trimmed

@@ -146,14 +146,14 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
   redeploy too. A redeploy restarts every browser, so users lose the pages they had open.
 - The sandbox sizes itself from its memory limit (`SANDBOX_MAX_PROCESSES` overrides it), and stops the
   least recently used idle browser when it's full. The
-  [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#one-warm-server-per-user) has the rules.
+  [README](https://github.com/kajaio/kaja/tree/main/apps/sandbox#one-warm-server-per-user) has the rules.
 
 The public image is released from **Release to Docker Hub** (`release_sandbox`), amd64 only, as
-`subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes with
-`docker run subztep/kaja-sandbox`, using their key from the web app's Sandbox page or none at all. With no
+`kajaio/sandbox:<version>` and `:latest`. Anyone can run more sandboxes with
+`docker run kajaio/sandbox`, using their key from the web app's Sandbox page or none at all. With no
 sandbox online for a user, their stdio MCP abilities just have no tools that turn. How the sandbox works,
 including its egress proxy and settings, is in its
-[README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
+[README](https://github.com/kajaio/kaja/tree/main/apps/sandbox#readme).
 
 ## Environment variables
 

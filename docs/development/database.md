@@ -86,7 +86,7 @@ There are 25 tables in four groups.
 ### Accounts and access
 
 Better Auth owns the first five tables; the rest hang off `user`. Only the columns that matter here are
-shown, see the [migration](https://github.com/SubZtep/kaja/blob/main/apps/api/migrations/2026-03-03-better-auth.sql)
+shown, see the [migration](https://github.com/kajaio/kaja/blob/main/apps/api/migrations/2026-03-03-better-auth.sql)
 for the full list.
 
 ```mermaid
@@ -241,7 +241,7 @@ erDiagram
 
 ### MCP sandboxes
 
-The cloud's registry of [MCP sandboxes](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme), the
+The cloud's registry of [MCP sandboxes](https://github.com/kajaio/kaja/tree/main/apps/sandbox#readme), the
 machines that run stdio MCP servers for cloud turns. Anyone can run one. Each dials the API's WebSocket and
 registers itself here.
 

@@ -34,7 +34,7 @@ The top menu has one item per section, and a section's pages are tabs inside it.
 | **Dashboard › Stats** | your usage: sessions, messages, tokens and latency by day, channel, tool, persona and model |
 | **Agent › Abilities** | turn skills, HTTP tools and MCP servers on and off, save the keys they need, then pick personas. A tool's or server's **Tools** list says what each tool does and lets you untick some |
 | **Agent › Widget** | create, edit, disable and delete [widget keys](/using/widget#getting-a-key) |
-| **Agent › Sandbox** | your sandbox key and the `docker run` command for an [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme) on your own machine, the sandboxes you run, and whether others may use yours and you theirs (whoever runs a shared one can see the pages it opens) |
+| **Agent › Sandbox** | your sandbox key and the `docker run` command for an [MCP sandbox](https://github.com/kajaio/kaja/tree/main/apps/sandbox#readme) on your own machine, the sandboxes you run, and whether others may use yours and you theirs (whoever runs a shared one can see the pages it opens) |
 | **Profile** | your name and avatar, email and password, and deleting your account with everything stored under it |
 
 The language picker at the bottom of every page switches the site. Signed in, it also saves to your

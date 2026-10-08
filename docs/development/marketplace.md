@@ -124,7 +124,7 @@ sequenceDiagram
 - **Cheap when idle.** The check is one unauthenticated GitHub API call, so the repo must be public. The
   tarball (capped at 50 MB) is only downloaded when the branch head moved. **Sync now** always downloads it,
   because a new API build may accept abilities the old one skipped on that same commit.
-- **Which repo.** `MARKETPLACE_REPO` (default `SubZtep/kaja`) and `MARKETPLACE_REF` (default `main`).
+- **Which repo.** `MARKETPLACE_REPO` (default `kajaio/kaja`) and `MARKETPLACE_REF` (default `main`).
 - **Failures** are recorded in the single `marketplace_sync` row, shown in the admin panel, and reported to
   Sentry. The previous catalog stays in place.
 - **Nothing is deleted.** An ability that leaves the folder gets `removed_at`. Users' selections survive and
@@ -138,7 +138,7 @@ the catalog:
 - an HTTP tool on a non-public host, or needing a key when the server has no `USER_SECRET_KEY`;
 - an MCP server that has no `tools` allowlist, is on a non-public host, is `stdio` and needs a key, or shares
   a name with an HTTP tool (a key belongs to one name). A keyless `stdio` one is always stored, and offered
-  only while the API has an [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme)
+  only while the API has an [MCP sandbox](https://github.com/kajaio/kaja/tree/main/apps/sandbox#readme)
   configured;
 - anything whose manifest no longer parses.
 

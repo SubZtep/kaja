@@ -1,6 +1,6 @@
 title: 📚 Kaja.io Docs
 description: Kaja is a customisable AI agentic harness. Use it hosted or fully local, from the terminal, Telegram or your own website.
-repository: SubZtep/kaja
+repository: kajaio/kaja
 url: https://docs.kaja.io
 permalink: pretty
 heading_anchors: false
@@ -8,12 +8,12 @@ enable_copy_code_button: true
 
 aux_links:
   "Source on GitHub":
-    - "//github.com/SubZtep/kaja"
+    - "//github.com/kajaio/kaja"
 aux_links_new_tab: true
 
 gh_edit_link: true
 gh_edit_link_text: "Edit this page on GitHub"
-gh_edit_repository: "https://github.com/SubZtep/kaja"
+gh_edit_repository: "https://github.com/kajaio/kaja"
 gh_edit_branch: "main"
 gh_edit_source: docs
 gh_edit_view_mode: "edit"

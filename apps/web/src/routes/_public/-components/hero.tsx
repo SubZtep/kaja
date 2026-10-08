@@ -11,8 +11,6 @@ import { Showcase } from "./showcase"
 import { Sticker } from "./sticker"
 import { TelegramConnectCta, TelegramPromo } from "./telegram-connect-cta"
 
-// Client-only, code-split: keeps the gif below as the SSR'd LCP element and never
-// delays it. Loads after hydration and fades in on top once ready.
 const MonsterFace = lazy(() => import("./monster-face").then(mod => ({ default: mod.MonsterFace })))
 
 type DayPart = "morning" | "afternoon" | "evening" | "night"
@@ -24,7 +22,6 @@ function dayPart(hour: number): DayPart {
   return hour < 22 ? "evening" : "night"
 }
 
-// Greets in the visitor's local time; the server can't know it, so SSR gets the plain hello.
 function greeting(part: DayPart | null, name: string | undefined) {
   if (name) {
     const greet = {
@@ -44,7 +41,6 @@ function greeting(part: DayPart | null, name: string | undefined) {
   return (part ? greet[part] : m.hero_greeting)()
 }
 
-// Its own component so the Turnstile check only runs for a visitor who can use the button, not a signed-in user.
 function GoogleSignIn() {
   const captcha = useTurnstile()
   return (
@@ -73,7 +69,7 @@ export function Hero() {
     setPart(dayPart(new Date().getHours()))
   }, [])
 
-  // While the big monster is on screen, the header's small one steps back (BrandMark styles `data-hero-monster`).
+  // While the big monster is on screen, the header's small one steps back
   useEffect(() => {
     const el = monsterRef.current
     if (!el) return
@@ -111,14 +107,13 @@ export function Hero() {
         }}
       />
 
-      {/* Phones stack intro, monster and toys, then the actions; wider screens put intro over actions on the left, and the extra height of the right column goes below the actions */}
       <ContentWidth className="relative grid gap-12 py-10 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:grid-rows-[auto_1fr] md:gap-8 md:pt-16 md:pb-14 lg:grid-cols-[minmax(0,1fr)_32rem] lg:gap-x-10 xl:grid-cols-[minmax(0,1fr)_34rem] xl:gap-x-12">
         <div className="min-w-0 md:col-start-1 md:row-start-1">
           <Sticker rotate={-8} className="mb-8">
             {m.hero_badge()}
           </Sticker>
 
-          <h1 className="wrap-normal m-0 max-w-xl font-display font-extrabold text-[34px] text-fg leading-[0.92] tracking-[-0.04em] [word-break:normal] sm:text-[40px] lg:text-[48px] xl:text-[56px]">
+          <h1 className="wrap-normal m-0 max-w-xl font-display font-extrabold text-[34px] text-fg leading-[0.92] tracking-[-0.04em] [word-break:auto-phrase] sm:text-[40px] lg:text-[48px] xl:text-[56px]">
             {greeting(part, firstName)}
           </h1>
           <svg className="mt-1 ml-1 w-48 text-neon md:w-72" viewBox="0 0 220 12" fill="none" aria-hidden>
@@ -150,7 +145,7 @@ export function Hero() {
                 {/* On phones the source link takes its own line, so no slash is left dangling */}
                 <span className="hidden text-border sm:inline">/</span>
                 <a
-                  href="https://github.com/SubZtep/kaja"
+                  href="https://github.com/kajaio/kaja"
                   target="_blank"
                   rel="noopener"
                   className="basis-full text-muted sm:basis-auto"
@@ -202,7 +197,7 @@ export function Hero() {
             <p className="mt-3 mb-0 font-crt text-muted text-sm">
               {m.install_binary_prefix()}{" "}
               <a
-                href="https://github.com/SubZtep/kaja/releases"
+                href="https://github.com/kajaio/kaja/releases"
                 target="_blank"
                 rel="noopener"
                 className="text-neon underline underline-offset-2"

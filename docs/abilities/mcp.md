@@ -118,7 +118,7 @@ are either remote (`http` or `sse`) or `stdio` without a key.
 A `stdio` ability, like `chrome-devtools`, runs in an **MCP sandbox**, never on the API's host. That can be:
 
 - Kaja's own sandbox;
-- one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
+- one you run yourself (`docker run kajaio/sandbox`, with the key from the web app's Sandbox page);
 - if you turn on **Use shared sandboxes**, one someone else shares. Whoever runs it can see what runs there.
 
 Each user gets their own copy of the server, started on first use and kept warm between messages (a browser

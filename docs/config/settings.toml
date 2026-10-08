@@ -39,7 +39,7 @@ locale   = "en-GB"
 # [marketplace]
 # enabled = true
 # autoFetch = true
-# url = "https://github.com/SubZtep/kaja.git"
+# url = "https://github.com/kajaio/kaja.git"
 # ref = "main"
 
 # Long conversations: once the chat model's context is this full (0.3-0.95 of its window), the older

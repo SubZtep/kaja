@@ -6,7 +6,7 @@ import { getConfigDir, readConfigLoose } from "../config/config"
 import { syncedAbilityPaths } from "./sync"
 
 /** Where `kaja abilities update` fetches from unless settings.toml's `[marketplace]` says otherwise: this repo's marketplace/ folder on main. */
-export const DEFAULT_SOURCE = { url: "https://github.com/SubZtep/kaja.git", ref: "main" }
+export const DEFAULT_SOURCE = { url: "https://github.com/kajaio/kaja.git", ref: "main" }
 
 // The checkout this CLI runs from (apps/tui/lib/abilities → the repo root); a compiled binary has none.
 const REPO_ROOT = join(import.meta.dir, "../../../..")

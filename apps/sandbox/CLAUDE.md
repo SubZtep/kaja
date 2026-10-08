@@ -1,6 +1,6 @@
 # @kaja/sandbox
 
-Runs stdio MCP servers for cloud turns, which can't start commands on the API host. Anyone can run one (`subztep/kaja-sandbox`): it dials the API's WebSocket (`/sandbox/connect`), registers, and serves the MCP requests the API tunnels to it; nothing connects in.
+Runs stdio MCP servers for cloud turns, which can't start commands on the API host. Anyone can run one (`kajaio/sandbox`): it dials the API's WebSocket (`/sandbox/connect`), registers, and serves the MCP requests the API tunnels to it; nothing connects in.
 
 The human-facing overview (request flow, warm servers, how the egress proxy works and why `SANDBOX_EGRESS_PORT` must match `overrides.json`) is [README.md](./README.md); keep it in step with changes here.
 
@@ -70,7 +70,7 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 
 ## Release
 
-`.github/workflows/dockerhub.yaml` (`release_sandbox`) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
+`.github/workflows/dockerhub.yaml` (`release_sandbox`) builds `apps/sandbox/Dockerfile` for amd64 and pushes `kajaio/sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
 
 ## Testing
 

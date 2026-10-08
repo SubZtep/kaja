@@ -15,7 +15,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
-- **Sandbox** (`apps/sandbox`): runs stdio MCP servers (first: chrome-devtools) for cloud turns; anyone can run one (`subztep/kaja-sandbox`, linked by the owner's sandbox key or anonymous). It dials the API's WebSocket (`/sandbox/connect`), registers in the `sandbox` table (hardware, geolocation), and serves the MCP requests the API tunnels to it; one warm process per (user, ability). Details: `apps/sandbox/CLAUDE.md`
+- **Sandbox** (`apps/sandbox`): runs stdio MCP servers (first: chrome-devtools) for cloud turns; anyone can run one (`kajaio/sandbox`, linked by the owner's sandbox key or anonymous). It dials the API's WebSocket (`/sandbox/connect`), registers in the `sandbox` table (hardware, geolocation), and serves the MCP requests the API tunnels to it; one warm process per (user, ability). Details: `apps/sandbox/CLAUDE.md`
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
 
 There is **no mobile app** in this monorepo.

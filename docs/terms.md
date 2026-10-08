@@ -10,7 +10,7 @@ Effective date: 23 September 2026
 
 These Terms govern your use of Kaja, a free account-based web service operated by Andras Serfozo, an individual based in England, United Kingdom, as a personal project.
 
-Contact: subztep@gmail.com
+Contact: legal@kaja.io
 
 <!-- TODO: This is a practical first draft, not legal advice. Review it before public launch. -->
 
@@ -96,7 +96,7 @@ Kaja’s handling of personal data is described in the [Privacy Policy](/privacy
 
 Good-faith security reports are welcome. Do not access, modify, delete, or disclose other users’ data. Do not perform destructive testing or denial-of-service testing.
 
-Report issues to subztep@gmail.com.
+Report issues to hello@kaja.io.
 
 ## Intellectual Property
 

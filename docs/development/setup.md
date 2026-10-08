@@ -34,7 +34,7 @@ and warns when a major.minor version differs from CI's.
 ## Setup
 
 ```sh
-git clone https://github.com/SubZtep/kaja.git
+git clone https://github.com/kajaio/kaja.git
 cd kaja
 bun install
 bunx lefthook install        # git hooks

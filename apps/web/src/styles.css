@@ -8,10 +8,11 @@
   color-scheme: dark;
 }
 
-/* Utilities use @variant instead of nested `&` rules, which have no scoping root outside a style rule (Sonar css:S8776). */
 @custom-variant webkit-scrollbar (&::-webkit-scrollbar);
 
 @theme {
+  --breakpoint-xs: 24rem;
+
   --radius-DEFAULT: 0.375rem;
   --radius-lg: 0.625rem;
   --radius-xl: 0.875rem;
@@ -125,7 +126,7 @@
     );
     background-attachment: fixed;
     background-repeat: no-repeat;
-    @apply relative m-0 font-body text-base text-fg antialiased wrap-anywhere selection:bg-neon/40 overflow-y-scroll;
+    @apply relative m-0 text-base text-fg antialiased wrap-anywhere selection:bg-neon/40 overflow-y-scroll;
   }
 
   body.bg-drift::before {
@@ -194,7 +195,6 @@
   a:hover {
     @apply text-neon;
   }
-  /* Soft hover/focus fades on everything interactive; a transition-* utility still wins (utilities outrank base) */
   :where(
     a,
     button,
@@ -219,7 +219,6 @@
       --hover-fade: 0s;
     }
   }
-  /* Tailwind v4 leaves buttons on the arrow cursor */
   :where(button:not(:disabled), [role="button"]:not([aria-disabled="true"])) {
     cursor: pointer;
   }
@@ -332,7 +331,6 @@
   }
 }
 
-/* Public-only CRT overlay. Admin shells must not set this class. */
 .public-grit {
   position: relative;
 }
@@ -595,7 +593,6 @@
   );
 }
 
-/* The signed-in card: square paper with slightly cut corners and a hard offset shadow (the sign-in card's look), drawn behind the content so text and inputs stay crisp. Corners are cut in px, so big cards aren't cut deeper */
 @utility paper-card {
   --paper-cut: polygon(
     6px 2px,
@@ -697,7 +694,6 @@ pre {
   }
 }
 
-/* A disabled button shows the not-allowed cursor; unlayered, so it outranks any cursor-pointer utility */
 :is(button, [role="button"]):is(
   :disabled,
   [aria-disabled="true"],
@@ -706,10 +702,8 @@ pre {
   cursor: not-allowed;
 }
 
-/* Toasts as paper notes: surface, square corners, the stickers' hard shadow, and the toast type as a thick left edge. Set on .Toastify so these win over react-toastify's own :root values */
 .Toastify {
-  --toastify-font-family: var(--font-body);
-  /* below the sticky header, not over its menu */
+  --toastify-font-family: var(--font-mono);
   --toastify-toast-top: 5rem;
   --toastify-color-dark: var(--color-surface);
   --toastify-text-color-dark: var(--color-fg);
@@ -739,7 +733,6 @@ pre {
   letter-spacing: -0.005em;
 }
 
-/* the close button sits in the corner over the toast; keep the text clear of it */
 .Toastify__toast:has(.Toastify__close-button) {
   padding-inline-end: 1.75rem;
 }

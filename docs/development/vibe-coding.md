@@ -62,7 +62,7 @@ and checks the result against the schema and tombi. See [MCP abilities](/abiliti
 
 ### /sonar-fix
 
-[SonarCloud](https://sonarcloud.io/project/overview?id=SubZtep_kaja) analyses every pull request and
+[SonarCloud](https://sonarcloud.io/project/overview?id=kajaio_kaja) analyses every pull request and
 `main`. Its quality gate fails on any reliability or security issue, even a low one, which blocks the
 PR. When it notifies you of a failed gate, run `/sonar-fix` on that branch:
 

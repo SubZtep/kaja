@@ -10,7 +10,7 @@ Effective date: 7 October 2026
 
 Kaja is operated by Andras Serfozo, an individual based in England, United Kingdom, as a personal project. For the cloud service described below, he is the data controller. This policy explains what personal data Kaja collects, why, on what legal basis, who receives it, and what rights you have.
 
-Contact: subztep@gmail.com
+Contact: privacy@kaja.io
 
 <!-- TODO: This is a practical first draft, not legal advice. Review it before public launch. -->
 
@@ -152,7 +152,7 @@ You can ask for details of the safeguard for any provider by email.
 
 Kaja uses reasonable technical and organizational measures to protect personal data, including hashed passwords, encrypted ability keys, protected session cookies, rate limiting, and limited access to production systems.
 
-No online service can guarantee perfect security. If a personal data breach puts your rights at risk, Kaja will tell you and the regulator as the law requires. If you believe you found a security issue, contact subztep@gmail.com.
+No online service can guarantee perfect security. If a personal data breach puts your rights at risk, Kaja will tell you and the regulator as the law requires. If you believe you found a security issue, contact hello@kaja.io.
 
 ## Your Rights
 
@@ -166,7 +166,7 @@ Under the UK GDPR (and the EU GDPR, if you are in the EU), you have the right to
 - withdraw consent at any time, without affecting processing that happened before;
 - complain to a data protection authority: in the UK, the Information Commissioner's Office ([ico.org.uk](https://ico.org.uk)); in the EU, the authority where you live or work.
 
-To make any other request, email subztep@gmail.com. Kaja will answer within one month, and may need to verify your identity first.
+To make any other request, email privacy@kaja.io. Kaja will answer within one month, and may need to verify your identity first.
 
 ## EU Representative
 

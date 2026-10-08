@@ -10,7 +10,7 @@ Write-Host "kaja autoinstall"
 Write-Host "░▒▓█▇▅▃▂▂▃▅▇█▓▒░"
 Write-Host ""
 
-$Repo = if ($env:REPO) { $env:REPO } else { "subztep/kaja" }
+$Repo = if ($env:REPO) { $env:REPO } else { "kajaio/kaja" }
 $Version = $env:VERSION
 $InstallDir = if ($env:INSTALL_DIR) { $env:INSTALL_DIR } else { Join-Path $HOME ".local\bin" }
 

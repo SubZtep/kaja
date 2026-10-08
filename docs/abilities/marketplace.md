@@ -10,7 +10,7 @@ icon: 🛒
 # Marketplace
 
 Abilities come from the **marketplace**, a curated
-[`marketplace/`](https://github.com/SubZtep/kaja/tree/main/marketplace) folder in the Kaja repo, and in local
+[`marketplace/`](https://github.com/kajaio/kaja/tree/main/marketplace) folder in the Kaja repo, and in local
 mode also from files you write yourself.
 
 | Kind | What it gives the agent | Read more |
@@ -106,7 +106,7 @@ Only the repo owner adds entries, by committing under `marketplace/` (a merged p
 one first:
 
 1. Put it in a copy of the repo, following the
-   [marketplace README](https://github.com/SubZtep/kaja/blob/main/marketplace/README.md).
+   [marketplace README](https://github.com/kajaio/kaja/blob/main/marketplace/README.md).
 2. Point [`[marketplace]`](/configuration/config#marketplace)'s `url` at that copy, run
    `kaja abilities update`, and list it in a persona's `abilities`.
 3. `kaja doctor` lists every loaded tool, and anything left out and why.
