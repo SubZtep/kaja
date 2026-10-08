@@ -1,25 +1,20 @@
 import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { pathToFileURL } from "node:url"
-import { $ } from "bun"
+import { DEFAULT_MARKETPLACE_SOURCE } from "@kaja/nasi"
 import { getConfigDir, readConfigLoose } from "../config/config"
+import { readSecretsLoose } from "../config/secrets"
 import { syncedAbilityPaths } from "./sync"
-
-/** Where `kaja abilities update` fetches from unless settings.toml's `[marketplace]` says otherwise: this repo's marketplace/ folder on main. */
-export const DEFAULT_SOURCE = { url: "https://github.com/SubZtep/kaja.git", ref: "main" }
 
 // The checkout this CLI runs from (apps/tui/lib/abilities → the repo root); a compiled binary has none.
 const REPO_ROOT = join(import.meta.dir, "../../../..")
 
 /**
- * The default source under `KAJA_PROFILE=dev`: the checkout the CLI runs from, on its current branch, so even a first
- * start syncs the marketplace you're working on (committed changes only: it's fetched through git). Undefined for any
- * other profile, outside a source checkout, or on a detached HEAD.
+ * The default source under `KAJA_PROFILE=dev`: a marketplace checkout beside the Kaja source (`../marketplace`), read
+ * as a folder so uncommitted edits sync too. Undefined for any other profile, or when there is no such checkout.
  */
-export async function devSource(root = REPO_ROOT): Promise<{ url: string; ref: string } | undefined> {
-  if (Bun.env.KAJA_PROFILE !== "dev" || !existsSync(join(root, "marketplace"))) return undefined
-  const ref = (await $`git -C ${root} rev-parse --abbrev-ref HEAD`.quiet().nothrow().text()).trim()
-  return ref && ref !== "HEAD" ? { url: pathToFileURL(root).href, ref } : undefined
+export function devSource(root = REPO_ROOT): string | undefined {
+  const dir = join(root, "..", "marketplace")
+  return Bun.env.KAJA_PROFILE === "dev" && existsSync(join(dir, "abilities")) ? dir : undefined
 }
 
 /** Holds every ability and persona, synced from the marketplace or your own; all of them load, and personas pick the abilities a chat uses. */
@@ -43,18 +38,24 @@ export async function ownAbilities(root = getMarketplaceDir()): Promise<{ abilit
   }
 }
 
-/** settings.toml's `[marketplace]`: both switches on unless turned off, and where to fetch from. Tolerant of a broken file, like the wizard prefill. */
+/**
+ * settings.toml's `[marketplace]`: both switches on unless turned off, the sources to fetch (entries as written, parsed
+ * by the fetch), and secrets.toml's GitHub token for a private one. Tolerant of broken files, like the wizard prefill.
+ */
 export async function marketplaceSettings(): Promise<{
   enabled: boolean
   autoFetch: boolean
-  source: { url: string; ref: string }
+  sources: string[]
+  token?: string
 }> {
   const { marketplace } = await readConfigLoose()
-  const fallback = (await devSource()) ?? DEFAULT_SOURCE
   const enabled = marketplace?.enabled !== false
+  const configured = marketplace?.sources?.filter(entry => typeof entry === "string" && entry.trim())
+  const token: unknown = (await readSecretsLoose()).marketplace?.github_token
   return {
     enabled,
     autoFetch: enabled && marketplace?.autoFetch !== false,
-    source: { url: marketplace?.url ?? fallback.url, ref: marketplace?.ref ?? fallback.ref }
+    sources: configured?.length ? configured : [devSource() ?? DEFAULT_MARKETPLACE_SOURCE],
+    ...(typeof token === "string" && token ? { token } : {})
   }
 }

@@ -10,6 +10,11 @@ import { Section } from "../../../../../components/ui/Section"
 import { useApiFetch } from "../../../../../lib/api-fetch"
 import { m } from "../../../../../paraglide/messages.js"
 
+/** A sync's commit text (each source's `owner/repo#ref@sha`, comma-separated) with every sha cut to 7 characters. */
+function shortCommits(commit: string): string {
+  return commit.replace(/\b([0-9a-f]{7})[0-9a-f]{33}\b/g, "$1")
+}
+
 /** The last marketplace sync and a button to run one now (forced, so a new API build re-reads an unmoved branch). */
 export function MarketplaceSection() {
   const apiFetch = useApiFetch()
@@ -25,7 +30,7 @@ export function MarketplaceSection() {
         marketplaceSyncResultSchema.parse(r)
       ),
     onSuccess: result => {
-      const commit = result.commit.slice(0, 7)
+      const commit = shortCommits(result.commit)
       toast.success(
         result.changed
           ? m.skills_sync_done({
@@ -51,7 +56,7 @@ export function MarketplaceSection() {
         <div className="font-mono text-muted text-xs">
           <p className="m-0">
             {data?.commit && data.syncedAt
-              ? m.skills_sync_status({ time: getTimeAgo(data.syncedAt), commit: data.commit.slice(0, 7) })
+              ? m.skills_sync_status({ time: getTimeAgo(data.syncedAt), commit: shortCommits(data.commit) })
               : m.skills_sync_never()}
           </p>
           {data?.error && <p className="m-0 mt-1 text-red-400">{m.skills_sync_error({ error: data.error })}</p>}

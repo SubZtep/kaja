@@ -36,14 +36,16 @@ export const abilityKeyCheckSchema = z.object({ ok: z.boolean(), reason: z.strin
 export const saveAbilityKeyResponseSchema = z.object({ check: abilityKeyCheckSchema })
 
 export const marketplaceSyncStatusSchema = z.object({
+  /** Each source's commit as `owner/repo#ref@sha` (a folder by its path), comma-separated. */
   commit: z.string().nullable(),
   syncedAt: z.coerce.date().nullable(),
   error: z.string().nullable()
 })
 
 export const marketplaceSyncResultSchema = z.object({
+  /** Each source's commit as `owner/repo#ref@sha` (a folder by its path), comma-separated. */
   commit: z.string(),
-  /** False when the branch hadn't moved since the last sync, so nothing was downloaded. */
+  /** False when no source had moved since the last sync, so nothing was downloaded. */
   changed: z.boolean(),
   /** Skill names; other abilities as their marketplace path (`personas/<name>`, `abilities/<name>/tool.toml`, `abilities/<name>/mcp.toml`). */
   added: z.array(z.string()),

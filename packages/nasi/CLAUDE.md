@@ -23,7 +23,7 @@ src/
   models/            # OpenAI client factory (no singleton)
   tools/             # builtin tools + createTools({ includeLocalTools })
   mcp/               # connectMcpServer: MCP abilities (also in the cloud); launch.ts resolveLaunch: a stdio manifest's package → the runner this host has
-  abilities/         # AbilityStore interface, folder store (marketplace/abilities/<name>/: SKILL.md, tool.toml, mcp.toml, tool.ts), loadAbilities, load_skill (skills), HTTP tool executor + key check, MCP ability targets, code tools
+  abilities/         # AbilityStore interface, folder store (marketplace/abilities/<name>/: SKILL.md, tool.toml, mcp.toml, tool.ts), loadAbilities, load_skill (skills), HTTP tool executor + key check, MCP ability targets, code tools; sources.ts fetches marketplace sources (GitHub tarballs via `Bun.Archive`, or a local folder) and merges them, later sources replacing whole ability folders
   client/            # `@kaja/nasi/client`, the TUI's cloud mode: info(), compact(), turn() buffered, turn_stream() SSE (no store / loop)
   security/          # SSRF guard (the path guard is tools/path-guard.ts)
 ```

@@ -198,18 +198,14 @@ describe("marketplace sync from GitHub", () => {
   let requests: string[]
 
   beforeAll(async () => {
-    const root = mkdtempSync(join(tmpdir(), "kaja-tarball-"))
-    put(
-      join(root, `kaja-${sha}`),
-      `marketplace/abilities/${skillName}/SKILL.md`,
-      `---\ndescription: From a tarball.\n---\nBody\n`
-    )
-    put(join(root, `kaja-${sha}`), "apps/other.txt", "not part of the marketplace")
-    const archive = join(root, "repo.tar.gz")
-    const tar = Bun.spawnSync(["tar", "-czf", archive, "-C", root, `kaja-${sha}`])
-    expect(tar.exitCode).toBe(0)
-    tarball = new Uint8Array(await Bun.file(archive).arrayBuffer())
-    rmSync(root, { recursive: true, force: true })
+    // A GitHub tarball: one <owner>-<repo>-<sha>/ folder holding the marketplace repo.
+    tarball = await new Bun.Archive(
+      {
+        [`owner-repo-${sha}/abilities/${skillName}/SKILL.md`]: `---\ndescription: From a tarball.\n---\nBody\n`,
+        [`owner-repo-${sha}/.github/workflows/ci.yaml`]: "not part of the marketplace"
+      },
+      { compress: "gzip" }
+    ).bytes()
   })
 
   afterAll(async () => {
@@ -223,33 +219,31 @@ describe("marketplace sync from GitHub", () => {
       const url = String(input)
       requests.push(url)
       if (url.startsWith("https://api.github.com/repos/owner/repo/commits/main")) return new Response(commit)
-      if (url === `https://codeload.github.com/owner/repo/tar.gz/${sha}`) return new Response(tarball)
+      if (url === `https://codeload.github.com/owner/repo/tar.gz/${sha}`) return new Response(new Blob([tarball]))
       return new Response("not found", { status: 404 })
     }) as unknown as typeof fetch
 
   test("downloads and applies a new commit, then skips an unchanged one", async () => {
     requests = []
-    const service = new MarketplaceService(pool, { repo: "owner/repo", ref: "main" }, fakeGitHub())
+    const service = new MarketplaceService(pool, [{ repo: "owner/repo", ref: "main" }], { fetch: fakeGitHub() })
     const first = await service.sync({ force: true })
-    expect(first).toMatchObject({ commit: sha, changed: true })
+    expect(first).toMatchObject({ commit: `owner/repo#main@${sha}`, changed: true })
     expect(first.added).toContain(skillName)
     expect(await servedSkills()).toContain(skillName)
 
     requests = []
     const second = await service.sync()
-    expect(second).toEqual({ commit: sha, changed: false, added: [], updated: [], removed: [] })
+    expect(second).toEqual({ commit: `owner/repo#main@${sha}`, changed: false, added: [], updated: [], removed: [] })
     expect(requests).toHaveLength(1)
 
-    expect(await service.status()).toMatchObject({ commit: sha, error: null })
+    expect(await service.status()).toMatchObject({ commit: `owner/repo#main@${sha}`, error: null })
   })
 
   test("a failed fetch is recorded in the status and thrown", async () => {
     requests = []
-    const service = new MarketplaceService(
-      pool,
-      { repo: "owner/repo", ref: "main" },
-      (async () => new Response("rate limited", { status: 403 })) as unknown as typeof fetch
-    )
+    const service = new MarketplaceService(pool, [{ repo: "owner/repo", ref: "main" }], {
+      fetch: (async () => new Response("rate limited", { status: 403 })) as unknown as typeof fetch
+    })
     await expect(service.sync()).rejects.toThrow("HTTP 403")
     expect((await service.status()).error).toContain("HTTP 403")
   })

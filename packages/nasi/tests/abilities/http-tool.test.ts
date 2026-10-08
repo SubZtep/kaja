@@ -1,12 +1,10 @@
 import { afterAll, beforeAll, expect, test } from "bun:test"
-import { join } from "node:path"
 import { type HttpToolAbility, HttpToolAbilitySchema } from "@kaja/schema/abilities"
 import type * as z from "zod"
 import { httpAbility } from "../fixtures/abilities"
 
 type AbilityInput = z.input<typeof HttpToolAbilitySchema>
 
-import { parseHttpToolManifest } from "../../src/abilities/folder-store"
 import { approvalSummary, buildHttpRequest, checkHttpToolKey, createHttpTools } from "../../src/abilities/http-tool"
 import { toolName } from "../../src/agent/tools"
 
@@ -32,23 +30,6 @@ const ability = (over: Partial<AbilityInput> = {}): HttpToolAbility =>
     ],
     ...over
   })
-
-test("the shipped open-meteo manifest is valid", async () => {
-  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/abilities/open-meteo/tool.toml")).text()
-  const parsed = parseHttpToolManifest(text, "open-meteo")
-  expect(parsed.tools.map(t => t.name)).toEqual(["weather_forecast"])
-})
-
-test("the shipped web-search manifest sends the key as a header and the query as q", async () => {
-  const text = await Bun.file(join(import.meta.dir, "../../../../marketplace/abilities/web-search/tool.toml")).text()
-  const parsed = parseHttpToolManifest(text, "web-search")
-  const def = parsed.tools[0]!
-  expect(def.name).toBe("web_search")
-  const request = buildHttpRequest(parsed, def, { q: "kaja ai", freshness: "pw" }, "brave-key")
-  expect(request.url).toBe("https://api.search.brave.com/res/v1/llm/context?q=kaja+ai&freshness=pw")
-  expect(request.headers["X-Subscription-Token"]).toBe("brave-key")
-  expect(approvalSummary(parsed, def, { q: "kaja" })).not.toContain("brave-key")
-})
 
 test("schema rejects undeclared placeholders, bad tool names, duplicates and non-http base URLs", () => {
   const bad = HttpToolAbilitySchema.safeParse({

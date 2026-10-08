@@ -12,7 +12,7 @@ export async function nextBackupPath(path: string): Promise<string> {
   return candidate
 }
 
-/** Writes a bundled docs/config/*.toml template to the local config dir, backing up any existing (differing) file first. */
+/** Writes a bundled config/*.toml template to the local config dir, backing up any existing (differing) file first. */
 export async function writeTemplateConfig(
   templateText: string,
   path: string

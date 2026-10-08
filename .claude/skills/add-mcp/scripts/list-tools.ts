@@ -1,5 +1,5 @@
 // Lists the tools of the MCP server a marketplace manifest describes, over plain JSON-RPC (no dependencies).
-// Usage: bun .claude/skills/add-mcp/scripts/list-tools.ts marketplace/abilities/<name>/mcp.toml
+// Usage: bun .claude/skills/add-mcp/scripts/list-tools.ts ../marketplace/abilities/<name>/mcp.toml
 // A key, when the server needs one, comes from MCP_KEY and goes where the manifest's [auth] says; it is never printed.
 export {}
 

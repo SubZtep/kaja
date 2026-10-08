@@ -22,9 +22,18 @@ export const SandboxEnvSchema = z.object({
       "Folder the sandbox keeps its registration in, so a restart comes back as the same sandbox (mount a volume there in Docker)"
     )
     .meta({ example: "/data" }),
+  MARKETPLACE_SOURCES: trimmed
+    .default("kajaio/marketplace")
+    .describe(
+      "Comma-separated marketplace sources fetched at startup, merged in order (later wins): owner/repo, owner/repo#ref or a local folder; their stdio MCP manifests are the only servers the sandbox runs"
+    ),
+  MARKETPLACE_GITHUB_TOKEN: trimmed
+    .optional()
+    .describe("GitHub token with read access to a private source in MARKETPLACE_SOURCES; sent to api.github.com only"),
   MARKETPLACE_DIR: trimmed
-    .default("../../marketplace")
-    .describe("Folder whose mcp/*.toml stdio manifests are the only servers the sandbox runs"),
+    .optional()
+    .describe("A marketplace folder used as it is instead of fetching MARKETPLACE_SOURCES (development, tests)")
+    .meta({ example: "../../../marketplace" }),
   SANDBOX_OVERRIDES: trimmed
     .optional()
     .describe(

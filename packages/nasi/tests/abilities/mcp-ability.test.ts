@@ -1,26 +1,10 @@
 import { expect, test } from "bun:test"
-import { join } from "node:path"
 import { McpAbilitySchema } from "@kaja/schema/abilities"
-import { parseMcpManifest } from "../../src/abilities/folder-store"
 import { mcpAbilityTarget } from "../../src/abilities/mcp-ability"
 import { McpRunnerMissingError } from "../../src/mcp/launch"
 import { mcpAbility } from "../fixtures/abilities"
 
 const parse = (input: Record<string, unknown>) => mcpAbility({ name: "demo", description: "Demo", ...input })
-
-test("the shipped context7 and chrome-devtools manifests are valid", async () => {
-  for (const name of ["context7", "chrome-devtools"]) {
-    const text = await Bun.file(join(import.meta.dir, `../../../../marketplace/abilities/${name}/mcp.toml`)).text()
-    expect(parseMcpManifest(text, name).name).toBe(name)
-  }
-})
-
-test("chrome-devtools never runs on a sandbox somebody else shares", async () => {
-  const text = await Bun.file(
-    join(import.meta.dir, "../../../../marketplace/abilities/chrome-devtools/mcp.toml")
-  ).text()
-  expect(parseMcpManifest(text, "chrome-devtools").trustedSandbox).toBe(true)
-})
 
 test("transport decides url vs command and where the key may go", () => {
   const issues = (input: Record<string, unknown>) =>

@@ -1,54 +1,96 @@
-import { expect, test } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { join } from "node:path"
-import { readSkillBundle, scanHttpTools, scanMcpAbilities, scanSkills } from "../../src/abilities/folder-store"
+import { shippedMarketplace } from "../../../../scripts/lib/shipped-marketplace"
+import {
+  parseHttpToolManifest,
+  readSkillBundle,
+  scanHttpTools,
+  scanMcpAbilities,
+  scanSkills
+} from "../../src/abilities/folder-store"
+import { approvalSummary, buildHttpRequest } from "../../src/abilities/http-tool"
 
-// The repo's own marketplace/, as users and the cloud sync get it.
-const marketplace = join(import.meta.dir, "../../../../marketplace")
+// The kajaio/marketplace checkout, as users and the cloud sync get it (`bun test:marketplace`; its own CI runs this too).
+const dir = shippedMarketplace()
+const marketplace = dir ?? ""
 
-test("every skill, HTTP tool and MCP server shipped in marketplace/ loads", async () => {
-  const skills = await scanSkills(marketplace)
-  expect(skills.length).toBeGreaterThan(0)
-  for (const entry of [...skills, ...(await scanHttpTools(marketplace)), ...(await scanMcpAbilities(marketplace))]) {
-    expect({ name: entry.name, error: entry.error }).toEqual({ name: entry.name, error: undefined })
-  }
-})
+describe.skipIf(!dir)("shipped marketplace", () => {
+  test("every skill, HTTP tool and MCP server shipped in marketplace/ loads", async () => {
+    const skills = await scanSkills(marketplace)
+    expect(skills.length).toBeGreaterThan(0)
+    for (const entry of [...skills, ...(await scanHttpTools(marketplace)), ...(await scanMcpAbilities(marketplace))]) {
+      expect({ name: entry.name, error: entry.error }).toEqual({ name: entry.name, error: undefined })
+    }
+  })
 
-test("at least one shipped skill has no scripts, so the cloud catalog isn't empty", async () => {
-  const bundles = await Promise.all(
-    (await scanSkills(marketplace)).map(skill => readSkillBundle(marketplace, skill.name))
-  )
-  expect(bundles.filter(bundle => !bundle.hasScripts).map(bundle => bundle.name)).toContain("meeting-notes")
-})
+  test("at least one shipped skill has no scripts, so the cloud catalog isn't empty", async () => {
+    const bundles = await Promise.all(
+      (await scanSkills(marketplace)).map(skill => readSkillBundle(marketplace, skill.name))
+    )
+    expect(bundles.filter(bundle => !bundle.hasScripts).map(bundle => bundle.name)).toContain("meeting-notes")
+  })
 
-test("every shipped stdio package is pinned, so local and sandbox start the same build", async () => {
-  const { parseMcpManifest } = await import("../../src/abilities/folder-store")
-  const pinned = {
-    npm: /@\d+\.\d+\.\d+[\w.+-]*$/,
-    pypi: /@\d[\w.!+-]*$/,
-    docker: /@sha256:[a-f0-9]{64}$|:(?!latest$)[\w.-]+$/
-  }
-  for (const entry of await scanMcpAbilities(marketplace)) {
-    if (entry.transport !== "stdio") continue
-    const text = await Bun.file(join(marketplace, "abilities", entry.name, "mcp.toml")).text()
-    for (const [kind, spec] of Object.entries(parseMcpManifest(text, entry.name).package ?? {}))
-      expect({ ability: entry.name, spec, pinned: pinned[kind as keyof typeof pinned].test(spec) }).toMatchObject({
-        pinned: true
-      })
-  }
-})
+  test("every shipped stdio package is pinned, so local and sandbox start the same build", async () => {
+    const { parseMcpManifest } = await import("../../src/abilities/folder-store")
+    const pinned = {
+      npm: /@\d+\.\d+\.\d+[\w.+-]*$/,
+      pypi: /@\d[\w.!+-]*$/,
+      docker: /@sha256:[a-f0-9]{64}$|:(?!latest$)[\w.-]+$/
+    }
+    for (const entry of await scanMcpAbilities(marketplace)) {
+      if (entry.transport !== "stdio") continue
+      const text = await Bun.file(join(marketplace, "abilities", entry.name, "mcp.toml")).text()
+      for (const [kind, spec] of Object.entries(parseMcpManifest(text, entry.name).package ?? {}))
+        expect({ ability: entry.name, spec, pinned: pinned[kind as keyof typeof pinned].test(spec) }).toMatchObject({
+          pinned: true
+        })
+    }
+  })
 
-test("every shipped tool.ts loads, and hypr_preview never builds Lua from a name that isn't an option", async () => {
-  const { loadCodeTool } = await import("../../src/abilities/code-tool")
-  const { toolName } = await import("../../src/agent/tools")
-  const files = await Array.fromAsync(new Bun.Glob("abilities/*/tool.ts").scan(marketplace))
-  expect(files).toContain("abilities/hyprland/tool.ts")
-  const loaded = new Map<string, Awaited<ReturnType<typeof loadCodeTool>>>()
-  for (const file of files) {
-    const tools = await loadCodeTool(join(marketplace, file))
-    expect({ file, count: tools.length > 0 }).toEqual({ file, count: true })
-    loaded.set(file, tools)
-  }
-  const preview = loaded.get("abilities/hyprland/tool.ts")!.find(t => toolName(t) === "hypr_preview")!
-  await expect(preview.execute({ options: { 'x"]=os.execute("id")--': 1 } })).rejects.toThrow("not an option name")
-  await expect(preview.execute({ animations: [{ leaf: 'w"}) os.execute("id") --' }] })).rejects.toThrow("leaf")
+  test("every shipped tool.ts loads, and hypr_preview never builds Lua from a name that isn't an option", async () => {
+    const { loadCodeTool } = await import("../../src/abilities/code-tool")
+    const { toolName } = await import("../../src/agent/tools")
+    const files = await Array.fromAsync(new Bun.Glob("abilities/*/tool.ts").scan(marketplace))
+    expect(files).toContain("abilities/hyprland/tool.ts")
+    const loaded = new Map<string, Awaited<ReturnType<typeof loadCodeTool>>>()
+    for (const file of files) {
+      const tools = await loadCodeTool(join(marketplace, file))
+      expect({ file, count: tools.length > 0 }).toEqual({ file, count: true })
+      loaded.set(file, tools)
+    }
+    const preview = loaded.get("abilities/hyprland/tool.ts")!.find(t => toolName(t) === "hypr_preview")!
+    await expect(preview.execute({ options: { 'x"]=os.execute("id")--': 1 } })).rejects.toThrow("not an option name")
+    await expect(preview.execute({ animations: [{ leaf: 'w"}) os.execute("id") --' }] })).rejects.toThrow("leaf")
+  })
+
+  test("the shipped open-meteo manifest is valid", async () => {
+    const text = await Bun.file(join(marketplace, "abilities/open-meteo/tool.toml")).text()
+    const parsed = parseHttpToolManifest(text, "open-meteo")
+    expect(parsed.tools.map(t => t.name)).toEqual(["weather_forecast"])
+  })
+
+  test("the shipped web-search manifest sends the key as a header and the query as q", async () => {
+    const text = await Bun.file(join(marketplace, "abilities/web-search/tool.toml")).text()
+    const parsed = parseHttpToolManifest(text, "web-search")
+    const def = parsed.tools[0]!
+    expect(def.name).toBe("web_search")
+    const request = buildHttpRequest(parsed, def, { q: "kaja ai", freshness: "pw" }, "brave-key")
+    expect(request.url).toBe("https://api.search.brave.com/res/v1/llm/context?q=kaja+ai&freshness=pw")
+    expect(request.headers["X-Subscription-Token"]).toBe("brave-key")
+    expect(approvalSummary(parsed, def, { q: "kaja" })).not.toContain("brave-key")
+  })
+
+  test("the shipped context7 and chrome-devtools manifests are valid", async () => {
+    const { parseMcpManifest } = await import("../../src/abilities/folder-store")
+    for (const name of ["context7", "chrome-devtools"]) {
+      const text = await Bun.file(join(marketplace, `abilities/${name}/mcp.toml`)).text()
+      expect(parseMcpManifest(text, name).name).toBe(name)
+    }
+  })
+
+  test("chrome-devtools never runs on a sandbox somebody else shares", async () => {
+    const { parseMcpManifest } = await import("../../src/abilities/folder-store")
+    const text = await Bun.file(join(marketplace, "abilities/chrome-devtools/mcp.toml")).text()
+    expect(parseMcpManifest(text, "chrome-devtools").trustedSandbox).toBe(true)
+  })
 })

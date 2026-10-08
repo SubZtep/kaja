@@ -74,10 +74,10 @@ declare module "bun" {
     USER_SECRET_KEY?: string
     /** Server-wide ability API keys as comma-separated name=key pairs (e.g. web-search=BSA...); every cloud user shares them, and a user's own key wins */
     ABILITY_KEYS?: string
-    /** GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from */
-    MARKETPLACE_REPO?: string
-    /** Branch (or tag) of MARKETPLACE_REPO to sync */
-    MARKETPLACE_REF?: string
+    /** Comma-separated marketplace sources the cloud ability catalog is synced from, merged in order (later wins): owner/repo, owner/repo#ref or a local folder */
+    MARKETPLACE_SOURCES?: string
+    /** GitHub token with read access to a private source in MARKETPLACE_SOURCES; sent to api.github.com only */
+    MARKETPLACE_GITHUB_TOKEN?: string
     /** Key the operator's own MCP sandbox connects with (its KAJA_SANDBOX_KEY), marking it the official one every user falls back to */
     SANDBOX_SYSTEM_KEY?: string
     /** IP geolocation service (github.com/SubZtep/geo-service) a sandbox's public IP is looked up in when it connects */

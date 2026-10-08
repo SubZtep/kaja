@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${REPO:-subztep/kaja}"
+REPO="${REPO:-kajaio/kaja}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 usage() {
@@ -10,7 +10,7 @@ Usage:
   curl -fsSL https://kaja.io/install.sh | bash
 
 Environment (optional):
-  REPO=owner/repo          GitHub repo hosting releases (default: subztep/kaja)
+  REPO=owner/repo          GitHub repo hosting releases (default: kajaio/kaja)
   INSTALL_DIR=path         Install directory (default: $HOME/.local/bin)
   VERSION=v1.2.3           Pin to a specific release tag instead of latest
 

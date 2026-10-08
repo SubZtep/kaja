@@ -26,8 +26,8 @@ const inUse = (parsed: Parsed, task: ModelTask) => {
 
 // The examples are generated from the catalog (`bun generate:models`); a hand edit or a stale file fails here.
 // Content, not bytes: the file is tombi-formatted, which `bun check:models` checks exactly.
-test.each(EXAMPLES)("docs/config/$file is what the catalog writes for it", async example => {
-  const text = await Bun.file(`${import.meta.dir}/../../../../../docs/config/${example.file}`).text()
+test.each(EXAMPLES)("config/$file is what the catalog writes for it", async example => {
+  const text = await Bun.file(`${import.meta.dir}/../../../../../config/${example.file}`).text()
   expect(TOML.parse(text)).toEqual(TOML.parse(exampleToml(example)))
   parse(text)
 })

@@ -1,15 +1,16 @@
 import { createHash } from "node:crypto"
-import { chmod, copyFile, mkdir, readdir, readFile, rm, rmdir, stat } from "node:fs/promises"
+import { chmod, copyFile, readFile, rm, rmdir, stat } from "node:fs/promises"
 import { dirname, join, relative } from "node:path"
+import { copyWithMode, listFiles } from "@kaja/nasi"
 import { file, write } from "bun"
 import { nextBackupPath } from "../config/fetch"
 
 /** Sits in the marketplace folder; the leading dot keeps it out of skill listings and out of the sync itself. */
 export const LOCK_FILE = ".sync-lock.json"
 
-/** What the last sync wrote: its source, and each file's hash as written, so a later sync can tell your edits from untouched upstream copies. */
+/** What the last sync wrote: its sources (a folder has no commit), and each file's hash as written, so a later sync can tell your edits from untouched upstream copies. */
 export type SyncLock = {
-  source?: { url: string; ref: string; commit: string }
+  sources?: { source: string; commit?: string }[]
   files: Record<string, string>
 }
 
@@ -50,26 +51,6 @@ async function hashFile(path: string): Promise<string | undefined> {
   }
 }
 
-/** Every file under `dir`, relative with `/` separators, skipping dot-entries (.git, the lock file). */
-async function listFiles(dir: string, rel = ""): Promise<string[]> {
-  const entries = await readdir(join(dir, rel), { withFileTypes: true })
-  const files: string[] = []
-  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name.startsWith(".")) continue
-    const path = rel ? `${rel}/${entry.name}` : entry.name
-    if (entry.isDirectory()) files.push(...(await listFiles(dir, path)))
-    else if (entry.isFile()) files.push(path)
-  }
-  return files
-}
-
-/** Copies with the source's permission bits, so a script's exec bit survives. */
-async function copyWithMode(from: string, to: string) {
-  await mkdir(dirname(to), { recursive: true })
-  await copyFile(from, to)
-  await chmod(to, (await stat(from)).mode & 0o777)
-}
-
 /** Removes now-empty parent folders of `path`, stopping at `root`. */
 async function pruneEmptyDirs(root: string, path: string) {
   let dir = dirname(path)
@@ -92,7 +73,7 @@ async function pruneEmptyDirs(root: string, path: string) {
 export async function syncMarketplace(
   upstreamDir: string,
   localDir: string,
-  source?: SyncLock["source"]
+  sources?: SyncLock["sources"]
 ): Promise<SyncReport> {
   const lock = (await readSyncLock(localDir)) ?? { files: {} }
   const report: SyncReport = { added: [], updated: [], backedUp: [], removed: [], kept: [] }
@@ -135,7 +116,7 @@ export async function syncMarketplace(
     }
   }
 
-  const nextLock: SyncLock = { ...(source ? { source } : {}), files }
+  const nextLock: SyncLock = { ...(sources ? { sources } : {}), files }
   await write(join(localDir, LOCK_FILE), `${JSON.stringify(nextLock, null, 2)}\n`)
   return report
 }

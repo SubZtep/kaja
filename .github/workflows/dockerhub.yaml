@@ -10,7 +10,7 @@ on:
       release_tui:
         description: "Release TUI"
         type: boolean
-        default: true
+        default: false
       release_web:
         description: "Release Web"
         type: boolean
@@ -18,7 +18,7 @@ on:
       release_sandbox:
         description: "Release Sandbox"
         type: boolean
-        default: false
+        default: true
 
 jobs:
   api-docker:
@@ -116,11 +116,11 @@ jobs:
           VERSION=$(jq -r .version ./apps/sandbox/package.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # subztep/kaja-sandbox, the image anyone can run: docker run subztep/kaja-sandbox (amd64 only, like its Chrome)
+      # kajaio/sandbox, the image anyone can run: docker run kajaio/sandbox (amd64 only, like its Chrome)
       - name: Release Sandbox
         uses: SubZtep/dockerhub-action@3787ebe37aaa0dad4ba0e1aae5d9d6304c99eba6
         with:
-          dockerhub_repository: ${{ vars.DOCKER_IMAGE_SANDBOX || 'subztep/kaja-sandbox' }}
+          dockerhub_repository: ${{ vars.DOCKER_IMAGE_SANDBOX || 'kajaio/sandbox' }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: ./apps/sandbox/Dockerfile

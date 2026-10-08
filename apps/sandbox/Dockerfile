@@ -50,7 +50,6 @@ RUN ln -s bun /usr/local/bin/bunx && ldconfig
 
 WORKDIR /home/node/app
 ENV NODE_ENV=production
-ENV MARKETPLACE_DIR=/home/node/app/marketplace
 ENV SANDBOX_OVERRIDES=/home/node/app/overrides.json
 ENV SANDBOX_CACHE_DIR=/home/node/.cache/mcp
 # Where it keeps its registration, so a restart comes back as the same sandbox: mount a volume here.
@@ -79,7 +78,6 @@ RUN groupadd --gid 1500 mcp \
   && find "$SANDBOX_CACHE_DIR" -type d -exec chmod g+s {} + \
   && chmod o+x /home/node /home/node/.cache
 COPY --from=builder /home/bun/app/apps/sandbox/dist/sandbox.js ./sandbox.js
-COPY --chown=node:node marketplace/abilities ./marketplace/abilities
 COPY --chown=node:node apps/sandbox/overrides.json ./overrides.json
 
 # Nothing listens: the sandbox dials KAJA_API_URL (https://api.kaja.io by default) and serves over that socket.

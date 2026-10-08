@@ -1,0 +1,20 @@
+# The built-in default persona, used until a synced marketplace brings its own personas/default.toml.
+
+# The ask_user contract (questions must go through the ask_user tool) is
+# injected by the app itself, so instructions shouldn't restate it.
+
+label     = "Helpful assistant"
+when      = "no other persona clearly fits the conversation"
+# Every marketplace ability but filesystem (its folders belong in a persona of your own) and hyprland (the
+# config-hyprland persona's); one that needs a key you haven't saved is left out.
+abilities = [
+  "web-search",
+  "open-meteo",
+  "geo-service",
+  "time",
+  "meeting-notes",
+  "system-report",
+  "context7",
+  "sequential-thinking",
+  "chrome-devtools"
+]

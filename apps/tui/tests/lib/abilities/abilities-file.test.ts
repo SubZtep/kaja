@@ -2,14 +2,12 @@ import { afterEach, expect, spyOn, test } from "bun:test"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { pathToFileURL } from "node:url"
-import { $ } from "bun"
 
 process.env.XDG_CONFIG_HOME = `${tmpdir()}/kaja-test-xdg-config-abilities-file`
 
 const { createFolderAbilityStore, loadAbilities } = await import("@kaja/nasi")
 const { getConfigDir } = await import("../../../lib/config/config")
-const { devSource, getMarketplaceDir, marketplaceSettings, ownAbilities, DEFAULT_SOURCE } = await import(
+const { devSource, getMarketplaceDir, marketplaceSettings, ownAbilities } = await import(
   "../../../lib/abilities/abilities-file"
 )
 
@@ -22,30 +20,43 @@ function put(path: string, content: string) {
   writeFileSync(path, content)
 }
 
-test("the marketplace source defaults to the Kaja repo and main, and settings.toml's [marketplace] overrides it", async () => {
-  expect((await marketplaceSettings()).source).toEqual(DEFAULT_SOURCE)
-  put(join(getConfigDir(), "settings.toml"), `[marketplace]\nref = "wip"\n`)
-  expect((await marketplaceSettings()).source).toEqual({ url: DEFAULT_SOURCE.url, ref: "wip" })
+test("the marketplace sources default to the public repo; settings.toml's [marketplace] and secrets.toml's token override", async () => {
+  const saved = process.env.KAJA_PROFILE
+  delete process.env.KAJA_PROFILE
+  try {
+    expect(await marketplaceSettings()).toEqual({ enabled: true, autoFetch: true, sources: ["kajaio/marketplace"] })
+    put(join(getConfigDir(), "settings.toml"), `[marketplace]\nsources = ["kajaio/marketplace", "kajaio/darkmarket"]\n`)
+    put(join(getConfigDir(), "secrets.toml"), `[marketplace]\ngithub_token = "ghp_x"\n`)
+    expect(await marketplaceSettings()).toMatchObject({
+      sources: ["kajaio/marketplace", "kajaio/darkmarket"],
+      token: "ghp_x"
+    })
+  } finally {
+    if (saved !== undefined) process.env.KAJA_PROFILE = saved
+  }
 })
 
-test("under KAJA_PROFILE=dev the source defaults to the checkout's current branch", async () => {
-  const repo = mkdtempSync(join(tmpdir(), "kaja-dev-source-"))
-  const bare = mkdtempSync(join(tmpdir(), "kaja-dev-source-none-"))
+test("under KAJA_PROFILE=dev the source defaults to a marketplace checkout beside the Kaja source", () => {
+  const parent = mkdtempSync(join(tmpdir(), "kaja-dev-source-"))
+  const saved = process.env.KAJA_PROFILE
   try {
-    put(join(repo, "marketplace/README.md"), "x\n")
-    await $`git -C ${repo} init -q -b wip-branch && git -C ${repo} add . && git -C ${repo} -c user.name=t -c user.email=t@t commit -q -m init`.quiet()
-    expect(await devSource(repo)).toBeUndefined()
+    const kaja = join(parent, "kaja")
+    mkdirSync(kaja)
+    delete process.env.KAJA_PROFILE
+    put(join(parent, "marketplace/abilities/demo/SKILL.md"), "x\n")
+    expect(devSource(kaja)).toBeUndefined()
 
     process.env.KAJA_PROFILE = "dev"
-    expect(await devSource(repo)).toEqual({ url: pathToFileURL(repo).href, ref: "wip-branch" })
-    // No marketplace/ folder: not a Kaja checkout, so the usual default stays.
-    expect(await devSource(bare)).toBeUndefined()
+    expect(devSource(kaja)).toBe(join(parent, "marketplace"))
+    // No checkout beside it: the usual default stays.
+    rmSync(join(parent, "marketplace"), { recursive: true })
+    expect(devSource(kaja)).toBeUndefined()
   } finally {
-    delete process.env.KAJA_PROFILE
-    rmSync(repo, { recursive: true, force: true })
-    rmSync(bare, { recursive: true, force: true })
+    if (saved === undefined) delete process.env.KAJA_PROFILE
+    else process.env.KAJA_PROFILE = saved
+    rmSync(parent, { recursive: true, force: true })
   }
-}, 30_000)
+})
 
 test("startup's ability loading uses no network and no git", async () => {
   put(join(getMarketplaceDir(), "abilities/demo/SKILL.md"), "---\ndescription: Demo.\n---\nBody\n")

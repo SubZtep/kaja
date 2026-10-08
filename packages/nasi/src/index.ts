@@ -55,6 +55,23 @@ export {
   skillsForPersona,
   stickySkillsForPersona
 } from "./abilities/skills"
+export {
+  copyWithMode,
+  DEFAULT_MARKETPLACE_SOURCE,
+  downloadSource,
+  FETCH_SOURCES_STEPS,
+  fetchSources,
+  listFiles,
+  MARKETPLACE_FOLDERS,
+  type MarketplaceSource,
+  MarketplaceSourceError,
+  mergeSources,
+  parseMarketplaceSource,
+  parseMarketplaceSources,
+  type ResolvedSource,
+  resolveSources,
+  sourceLabel
+} from "./abilities/sources"
 export { type AbilityStore, SkillFileError, type SkillSummary } from "./abilities/types"
 export {
   Agent,

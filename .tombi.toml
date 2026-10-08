@@ -17,9 +17,9 @@ toml-version = "v1.1.0"
 
 
 [[schemas]]
-path    = "docs/config/schemas/commands.json"
+path    = "config/schemas/commands.json"
 include = [
-  "docs/config/commands.toml",
+  "config/commands.toml",
   "**/.config/kaja*/commands.toml",
   "**/Library/Preferences/kaja*/commands.toml",
   "**/kaja*/Config/commands.toml",
@@ -30,16 +30,15 @@ include = [
 
 
 [[schemas]]
-path    = "docs/config/schemas/catalog.json"
+path    = "config/schemas/catalog.json"
 include = [
-  "docs/config/catalog.toml"
+  "config/catalog.toml"
 ]
 
 
 [[schemas]]
-path    = "docs/config/schemas/http-tool.json"
+path    = "config/schemas/http-tool.json"
 include = [
-  "marketplace/abilities/*/tool.toml",
   "**/.config/kaja*/marketplace/abilities/*/tool.toml",
   "**/Library/Preferences/kaja*/marketplace/abilities/*/tool.toml",
   "**/kaja*/Config/marketplace/abilities/*/tool.toml"
@@ -47,9 +46,8 @@ include = [
 
 
 [[schemas]]
-path    = "docs/config/schemas/mcp-ability.json"
+path    = "config/schemas/mcp-ability.json"
 include = [
-  "marketplace/abilities/*/mcp.toml",
   "**/.config/kaja*/marketplace/abilities/*/mcp.toml",
   "**/Library/Preferences/kaja*/marketplace/abilities/*/mcp.toml",
   "**/kaja*/Config/marketplace/abilities/*/mcp.toml"
@@ -57,9 +55,9 @@ include = [
 
 
 [[schemas]]
-path    = "docs/config/schemas/models.json"
+path    = "config/schemas/models.json"
 include = [
-  "docs/config/models*.toml",
+  "config/models*.toml",
   "**/.config/kaja*/models.toml",
   "**/Library/Preferences/kaja*/models.toml",
   "**/kaja*/Config/models.toml",
@@ -70,9 +68,9 @@ include = [
 
 
 [[schemas]]
-path    = "docs/config/schemas/persona.json"
+path    = "config/schemas/persona.json"
 include = [
-  "marketplace/personas/*.toml",
+  "config/default-persona.toml",
   "**/.config/kaja*/marketplace/personas/*.toml",
   "**/Library/Preferences/kaja*/marketplace/personas/*.toml",
   "**/kaja*/Config/marketplace/personas/*.toml"
@@ -80,9 +78,9 @@ include = [
 
 
 [[schemas]]
-path    = "docs/config/schemas/secrets.json"
+path    = "config/schemas/secrets.json"
 include = [
-  "docs/config/secrets.toml",
+  "config/secrets.toml",
   "**/.config/kaja*/secrets.toml",
   "**/Library/Preferences/kaja*/secrets.toml",
   "**/kaja*/Config/secrets.toml",
@@ -93,9 +91,9 @@ include = [
 
 
 [[schemas]]
-path    = "docs/config/schemas/settings.json"
+path    = "config/schemas/settings.json"
 include = [
-  "docs/config/settings.toml",
+  "config/settings.toml",
   "**/.config/kaja*/settings.toml",
   "**/Library/Preferences/kaja*/settings.toml",
   "**/kaja*/Config/settings.toml",

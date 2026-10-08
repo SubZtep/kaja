@@ -4,7 +4,7 @@ import { readPersonas, scanPersonas } from "@kaja/nasi"
 import { type Persona as PersonaManifest, PersonaSchema } from "@kaja/schema/cli"
 import { TOML } from "bun"
 // Built in, so a fresh install has a persona before any `kaja abilities update`; the same file the marketplace syncs.
-import DEFAULT_TEMPLATE from "../../../../marketplace/personas/default.toml" with { type: "text" }
+import DEFAULT_TEMPLATE from "../../../../config/default-persona.toml" with { type: "text" }
 import { getMarketplaceDir, ownAbilities } from "../abilities/abilities-file"
 
 /** A loaded persona; `local` marks your own file, one the marketplace sync didn't write. */

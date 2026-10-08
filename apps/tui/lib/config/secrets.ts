@@ -2,7 +2,7 @@ import { join } from "node:path"
 import { type SecretsFile, SecretsFileSchema, type SecretsTelegram } from "@kaja/schema/config"
 import { groupTomlTables, stringifyToml } from "@kaja/shared/toml"
 import { file, TOML, write } from "bun"
-import TEMPLATE from "../../../../docs/config/secrets.toml" with { type: "text" }
+import TEMPLATE from "../../../../config/secrets.toml" with { type: "text" }
 import { t } from "../i18n"
 import { getConfigDir } from "./config"
 import { writeTemplateConfig } from "./fetch"
@@ -12,7 +12,7 @@ export function getSecretsPath() {
 }
 
 /**
- * The `kaja config fetch` subcommand: writes the bundled docs/config/secrets.toml template (all commented-out
+ * The `kaja config fetch` subcommand: writes the bundled config/secrets.toml template (all commented-out
  * placeholders) when there's no secrets.toml yet; one with no values already reads the same, so it's left as it is. A file
  * holding any value, or one that doesn't parse, is `kept` as it is: the template has no keys to offer, so replacing it only ever lost the user's own. Never
  * served by the API — admin-managed config has no user secrets to export — so this is the only source `fetch` has for it.

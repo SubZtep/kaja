@@ -2,7 +2,7 @@ import { type CatalogFile, CatalogFileSchema, type ModelTask } from "@kaja/schem
 import { uniqueModelSlug } from "@kaja/shared/text"
 import { groupTomlTables } from "@kaja/shared/toml"
 import { TOML } from "bun"
-import CATALOG_TOML from "../../../../docs/config/catalog.toml" with { type: "text" }
+import CATALOG_TOML from "../../../../config/catalog.toml" with { type: "text" }
 
 /** One model a provider serves, with the task it is used for. */
 export type CatalogModel = { task: ModelTask; model: string }
@@ -29,13 +29,13 @@ export const TASK_ORDER: ModelTask[] = ["chat", "embedding", "rerank", "image-ge
 
 const catalogFile = CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
 
-/** The providers the wizard offers, from `docs/config/catalog.toml`, the one source of model defaults. */
+/** The providers the wizard offers, from `config/catalog.toml`, the one source of model defaults. */
 export const CATALOG: CatalogProvider[] = catalogFile.providers.map(({ base_url, ...provider }) => ({
   ...provider,
   baseUrl: base_url
 }))
 
-/** The generated example files in `docs/config` (`bun generate:models`), each a mix of catalog providers. */
+/** The generated example files in `config` (`bun generate:models`), each a mix of catalog providers. */
 export const EXAMPLES = catalogFile.examples
 
 /** An example's models.toml: its providers in catalog order, one model per task. */

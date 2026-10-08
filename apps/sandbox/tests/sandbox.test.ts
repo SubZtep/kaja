@@ -3,7 +3,6 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { apiSandboxFrameSchema, SANDBOX_FULL_HEADER, sandboxFrameSchema } from "@kaja/schema/api"
-import { SandboxEnvSchema } from "@kaja/schema/env"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { SandboxTunnel } from "../../api/src/features/sandbox/tunnel"
@@ -119,39 +118,6 @@ describe("manifests", () => {
       npm_config_cache: "/cache/npm"
     })
     expect(servers.get("counter")!.env).not.toHaveProperty("UV_CACHE_DIR")
-  })
-
-  test("local-only servers, like filesystem, never run in a sandbox", async () => {
-    const shipped = await loadSandboxServers(
-      join(import.meta.dir, "../../../marketplace"),
-      join(import.meta.dir, "../overrides.json")
-    )
-    expect(shipped.has("chrome-devtools")).toBe(true)
-    expect(shipped.has("filesystem")).toBe(false)
-  })
-
-  test("the image's Chrome only opens http(s) pages, never file://", async () => {
-    const shipped = await loadSandboxServers(
-      join(import.meta.dir, "../../../marketplace"),
-      join(import.meta.dir, "../overrides.json")
-    )
-    const args = shipped.get("chrome-devtools")!.args
-    expect(args.filter(arg => arg.startsWith("--allowedUrlPattern="))).toEqual([
-      "--allowedUrlPattern=http://*",
-      "--allowedUrlPattern=https://*"
-    ])
-  })
-
-  test("the image's Chrome goes out only through the egress proxy, loopback included", async () => {
-    const shipped = await loadSandboxServers(
-      join(import.meta.dir, "../../../marketplace"),
-      join(import.meta.dir, "../overrides.json")
-    )
-    const args = shipped.get("chrome-devtools")!.args
-    const { SANDBOX_EGRESS_PORT } = SandboxEnvSchema.parse({})
-    expect(args).toContain(`--proxyServer=http://127.0.0.1:${SANDBOX_EGRESS_PORT}`)
-    expect(args).toContain("--chromeArg=--proxy-bypass-list=<-loopback>")
-    expect(args).toContain("--chromeArg=--force-webrtc-ip-handling-policy=disable_non_proxied_udp")
   })
 })
 

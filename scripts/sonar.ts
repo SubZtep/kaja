@@ -2,7 +2,7 @@
 // Usage: bun scripts/sonar.ts <branch>
 
 const API = "https://sonarcloud.io/api"
-const PROJECT = "SubZtep_kaja"
+const PROJECT = "kajaio_kaja"
 
 type PullRequest = { key: string; branch: string }
 type Issue = { component: string; line?: number; rule: string; severity: string; message: string }

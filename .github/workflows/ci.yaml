@@ -165,6 +165,10 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
+      # The shipped-content tests (bun test:marketplace, also part of bun test) read a marketplace checkout beside this one
+      - name: Checkout marketplace
+        run: git clone --depth 1 https://github.com/kajaio/marketplace.git ../marketplace
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
 

@@ -30,4 +30,4 @@ Kaja is a highly customisable, multi-purpose AI agent: a single executable binar
 - [Terms of Service](https://docs.kaja.io/terms/)
 
 ## Source
-- [GitHub](https://github.com/SubZtep/kaja)
+- [GitHub](https://github.com/kajaio/kaja)

@@ -12,7 +12,11 @@ declare module "bun" {
     SANDBOX_NAME?: string
     /** Folder the sandbox keeps its registration in, so a restart comes back as the same sandbox (mount a volume there in Docker) */
     SANDBOX_STATE_DIR?: string
-    /** Folder whose mcp/*.toml stdio manifests are the only servers the sandbox runs */
+    /** Comma-separated marketplace sources fetched at startup, merged in order (later wins): owner/repo, owner/repo#ref or a local folder; their stdio MCP manifests are the only servers the sandbox runs */
+    MARKETPLACE_SOURCES?: string
+    /** GitHub token with read access to a private source in MARKETPLACE_SOURCES; sent to api.github.com only */
+    MARKETPLACE_GITHUB_TOKEN?: string
+    /** A marketplace folder used as it is instead of fetching MARKETPLACE_SOURCES (development, tests) */
     MARKETPLACE_DIR?: string
     /** JSON file replacing a manifest's command/args for this host, e.g. a preinstalled binary and Chrome flags */
     SANDBOX_OVERRIDES?: string

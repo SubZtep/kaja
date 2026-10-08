@@ -70,9 +70,8 @@ async function saveMarketplaceSetting(key: "enabled" | "autoFetch", value: boole
 
 /**
  * Asks whether to use the online marketplace and records it in settings.toml's `[marketplace]`. "No" means
- * Kaja never goes online for abilities. "Yes" checks git (the one thing the fetch needs), fetches once, and only
- * then asks about fetching periodically, so the question comes with something the user has seen work. A git that
- * can't fetch leaves the marketplace off rather than on and failing at every start.
+ * Kaja never goes online for abilities. "Yes" fetches once, and only then asks about fetching periodically, so the
+ * question comes with something the user has seen work.
  */
 export async function offerMarketplace(print: (line: string) => void) {
   const { marketplaceSettings } = await import("../abilities/abilities-file")
@@ -89,13 +88,6 @@ export async function offerMarketplace(print: (line: string) => void) {
     return
   }
 
-  const { checkGit } = await import("../abilities/fetch")
-  const git = await checkGit()
-  if (!git.ok) {
-    await saveMarketplaceSetting("enabled", false)
-    print(statusLine("warning", t("wizard.marketplaceNoGit", { reason: git.reason })))
-    return
-  }
   await saveMarketplaceSetting("enabled", true)
 
   const { ensureMarketplace } = await import("../abilities/cli")

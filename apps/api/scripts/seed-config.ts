@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// Idempotent upsert of docs/config/models.default.toml (generated from docs/config/catalog.toml) into Postgres —
+// Idempotent upsert of config/models.default.toml (generated from config/catalog.toml) into Postgres —
 // the admin-managed model defaults the cloud API and `kaja config fetch` serve from the DB.
 // Only the models in use are seeded (each task's first entry that lists it), with the tasks they win: they are marked free, and free models'
 // credentials are handed out publicly, so an alternative, should the file ever gain one, is left for an admin to add.
@@ -9,8 +9,8 @@
 import { CatalogFileSchema, ModelsFileSchema, type ModelTask } from "@kaja/schema/config"
 import { TOML } from "bun"
 import { Pool } from "pg"
-import CATALOG_TOML from "../../../docs/config/catalog.toml" with { type: "text" }
-import MODELS_TEMPLATE from "../../../docs/config/models.default.toml" with { type: "text" }
+import CATALOG_TOML from "../../../config/catalog.toml" with { type: "text" }
+import MODELS_TEMPLATE from "../../../config/models.default.toml" with { type: "text" }
 
 /** Minimal surface both `pg`'s Pool and Client satisfy, so migrate.ts can reuse its own connection. */
 type Queryable = {
