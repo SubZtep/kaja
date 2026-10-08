@@ -17,6 +17,7 @@ Kaja is a TypeScript monorepo built with Bun:
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
 - **Sandbox** (`apps/sandbox`): runs stdio MCP servers (first: chrome-devtools) for cloud turns; anyone can run one (`kajaio/sandbox`, linked by the owner's sandbox key or anonymous). It dials the API's WebSocket (`/sandbox/connect`), registers in the `sandbox` table (hardware, geolocation), and serves the MCP requests the API tunnels to it; one warm process per (user, ability). Details: `apps/sandbox/CLAUDE.md`
 - **Packages**: `@kaja/schema`, `@kaja/shared`, `@kaja/nasi` (agent brain)
+- **Marketplace**: abilities, personas and datasets live in their own repos, `kajaio/marketplace` (public, checked out at `../marketplace`) and `kajaio/darkmarket` (private). Every host fetches them as GitHub tarballs and merges them in order (`@kaja/nasi`'s `sources.ts`); `bun test:marketplace` checks the `../marketplace` content (CI clones it there)
 
 There is **no mobile app** in this monorepo.
 
@@ -36,9 +37,9 @@ Device authorization still applies where relevant: Better Auth device flow for A
 | Migration runner | `apps/api/scripts/migrations.ts` (`applyMigrations`: files not yet in `schema_migrations`, each in a transaction; edited files re-applied only while the API is 0.x), used by `apps/api/migrate.ts` (deploy, CI, and `scripts/db_migration.sh` locally; then the config seed) and the test database build |
 | `.env.example` generator | `scripts/env.ts` (`bun generate:env` / `bun check:env`) |
 | `env.d.ts` generator | `scripts/env-types.ts` (`bun generate:env-types`) |
-| Model defaults | `docs/config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `docs/config/models.*.toml` |
+| Model defaults | `config/catalog.toml` (schema `@kaja/schema/config` `CatalogFileSchema`, loaded by `apps/tui/lib/models/catalog.ts`) → `scripts/models.ts` (`bun generate:models` / `bun check:models`) writes `config/models.*.toml` |
 | Test env preload | `apps/api/tests/load-test-env.ts` (wired via `bunfig.toml` `[test].preload`; also switches to the test database) |
-| Docs / GitHub Pages | `docs/` (includes CLI config templates under `docs/config/`) |
+| CLI config templates | `config/` (settings, secrets, commands, model catalog and generated examples, TOML JSON Schemas); the docs site is its own repo, `kajaio/docs` |
 
 ## Development Commands
 
@@ -104,13 +105,13 @@ bun run --filter @kaja/sandbox build
 ### Sandbox (`apps/sandbox/`)
 
 - `src/cli.ts` bundle entry, `server.ts` startup; `tunnel.ts` dials the API (nothing connects in), `pool.ts` one process per (user, ability) with idle stop and a cap, `relay.ts` JSON-RPC relay between Streamable HTTP sessions and one stdio child, `egress.ts` the browsers' public-only forward proxy
-- Runs only the stdio `mcp.toml` manifests under its own `marketplace/abilities` copy; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
+- Runs only the stdio `mcp.toml` manifests of `MARKETPLACE_SOURCES`, fetched at startup; `overrides.json` swaps command/args per host (the Docker image's pinned chrome-devtools-mcp + Chrome headless shell)
 
 ### CLI (`apps/tui/`)
 
 - Entry: `cli.ts` (Ink TUI)
 - Local host for `@kaja/nasi`'s agent loop (tools, MCP, personas, sessions, memory) plus the Telegram bot and optional STT/TTS; the cloud client for `/nasi/*`
-- Config templates import from monorepo-root `docs/config/`
+- Config templates import from monorepo-root `config/`
 - Detailed agent notes: `apps/tui/CLAUDE.md`
 
 ### Packages
@@ -125,7 +126,7 @@ bun run --filter @kaja/sandbox build
 
 - **All Zod schemas live in `@kaja/schema`**, split into role-based subpaths — no bare `@kaja/schema` import, and no app keeps its own local schema files
   - `@kaja/schema/api` — API contracts (request/response schemas), shared by `apps/api`, `apps/web`
-  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml), plus the repo's model catalog (`docs/config/catalog.toml`)
+  - `@kaja/schema/config` — CLI on-disk config files the user hand-edits (settings.toml, models.toml, secrets.toml), plus the repo's model catalog (`config/catalog.toml`)
   - `@kaja/schema/store` — CLI SQLite-backed runtime state (sessions, memory notes)
   - `@kaja/schema/abilities` — marketplace manifests (skill frontmatter, persona, dataset, HTTP tool, MCP server), shared by every host that loads abilities
   - `@kaja/schema/cli` — re-exports the persona and dataset schemas so CLI code keeps one import
@@ -143,7 +144,7 @@ bun run --filter @kaja/sandbox build
 4. `2026-08-31-widget.sql` — `widget` table
 5. `2026-09-07-nasi.sql` — cloud agent state: `nasi_session`, `nasi_message` (one per message), `nasi_tool_call`, plus memory notes and dataset answers
 6. `2026-09-10-telegram-link.sql` — `telegram_link`, `telegram_link_token` (cloud Telegram account linking)
-7. `2026-09-19-ability.sql` — `ability`, `marketplace_sync` (cloud ability catalog synced from `marketplace/`; personas are `ability` rows of type `persona`; every user has every ability)
+7. `2026-09-19-ability.sql` — `ability`, `marketplace_sync` (cloud ability catalog synced from the marketplace repos; personas are `ability` rows of type `persona`; every user has every ability)
 8. `2026-09-19-user-secret.sql` — `user_secret` (users' ability API keys, AES-256-GCM with `USER_SECRET_KEY`)
 9. `2026-09-27-sandbox.sql` — `sandbox` (registered MCP sandboxes: owner, online, geolocation, hardware, load), `sandbox_owner` (users' sandbox keys and share settings), `sandbox_sample` (heartbeat load, kept 7 days)
 
@@ -165,8 +166,8 @@ Each file only creates; there are no patch migrations, so a schema change until 
 ## Notes
 
 - Git hooks already run `bun lint:fix:safe` (safe fixes only, staged) and typecheck on commit, and lint and typecheck on push (plus `bun test` when pushing `main`; then `scripts/translate_push.sh` runs `/translate` headless on leftover placeholders, commits and pushes the translations, and stops the original push), so don't proactively run those yourself as a matter of course — commit/push will catch issues. Run them manually only when you need feedback before that point (e.g. mid-task, or to fix a hook failure).
-- CLI config templates import from monorepo-root `docs/config/` (not under `apps/tui/`).
-- model defaults: edit `docs/config/catalog.toml`, run `bun generate:models`, never edit `docs/config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`).
+- CLI config templates import from monorepo-root `config/` (not under `apps/tui/`).
+- model defaults: edit `config/catalog.toml`, run `bun generate:models`, never edit `config/models.*.toml` by hand — pre-commit regenerates them when the catalog changes and `bun check:models` (CI, and the catalog test) fails if they drift. `models.default.toml` is what `kaja config fetch --offline` writes and what the API seed loads (task defaults of hosted providers only). Provider order in the catalog decides a contested task's default, in the wizard and the examples (an example can override it with `pick`).
 - env vars: edit `packages/schema/env/{api,web,sandbox,tui}.ts`, run `bun generate:env`, never edit the api/web/sandbox `.env.example` by hand (tui's is hand-written) — `bun check:env` (wired into pre-commit and CI) fails if they drift. `bun generate:env-types` regenerates each workspace's `env.d.ts` (ambient `Bun.Env` typing) from the same schemas — both generators are wired into pre-commit whenever `packages/schema/env/*.ts` changes.
 
 ## Testing & CI

@@ -74,14 +74,12 @@ export const KajaMarketplaceSchema = z.object({
     .boolean()
     .optional()
     .describe("Pull the marketplace at startup when the last sync is over a day old (default: true)"),
-  url: z
-    .string()
-    .min(1)
+  sources: z
+    .array(z.string().min(1))
     .optional()
     .describe(
-      "Git URL (or local path) of the repo whose marketplace/ folder `kaja abilities update` fetches (default: the Kaja repo)"
-    ),
-  ref: z.string().min(1).optional().describe("Branch or tag to fetch (default: main)")
+      'Where to fetch abilities from, merged in order (later wins): "owner/repo", "owner/repo#ref" or a local folder (default: ["kajaio/marketplace"])'
+    )
 })
 
 export const KajaContextSchema = z.object({

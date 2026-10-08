@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!!docs", "!!pgdata"]
+    "includes": ["**", "!!config/schemas", "!!pgdata"]
   },
   "formatter": {
     "useEditorconfig": true

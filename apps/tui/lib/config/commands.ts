@@ -3,7 +3,7 @@ import { compileSafeCommands, DEFAULT_SAFE_COMMANDS } from "@kaja/nasi"
 import { CommandsFileSchema } from "@kaja/schema/config"
 import { file, TOML, write } from "bun"
 // First-run commands.toml template (also documents commands.toml on the docs site).
-import TEMPLATE from "../../../../docs/config/commands.toml" with { type: "text" }
+import TEMPLATE from "../../../../config/commands.toml" with { type: "text" }
 import { log } from "../logger"
 import { getConfigDir } from "./config"
 import { writeTemplateConfig } from "./fetch"

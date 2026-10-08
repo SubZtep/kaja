@@ -6,6 +6,7 @@ import { sandboxInfo, sandboxLoad } from "./hardware"
 import { markHealth } from "./health"
 import { UserIsolation } from "./isolation"
 import { loadSandboxServers } from "./manifests"
+import { prepareMarketplace } from "./marketplace"
 import { ProcessPool } from "./pool"
 import { initReporting } from "./report"
 import { collectStats } from "./stats"
@@ -21,7 +22,7 @@ export async function startSandbox(): Promise<void> {
     counts: egressCounts,
     upstream: env.WEB_PROXY
   })
-  const servers = await loadSandboxServers(env.MARKETPLACE_DIR, env.SANDBOX_OVERRIDES, env.SANDBOX_CACHE_DIR)
+  const servers = await loadSandboxServers(await prepareMarketplace(env), env.SANDBOX_OVERRIDES, env.SANDBOX_CACHE_DIR)
   const isolation = await UserIsolation.create({ enabled: env.SANDBOX_ISOLATE_USERS, cacheDir: env.SANDBOX_CACHE_DIR })
   const maxProcesses = env.SANDBOX_MAX_PROCESSES ?? (await defaultMaxProcesses())
   const pool = new ProcessPool({

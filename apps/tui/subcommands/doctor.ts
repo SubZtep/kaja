@@ -94,13 +94,6 @@ async function checkCredentials() {
  * then prints the configuration/connectivity info the old startup panel used to
  * show, and ends with what's still left to fix.
  */
-/** One line on the host's git, which the marketplace fetch needs. */
-async function gitLine() {
-  const { checkGit } = await import("../lib/abilities/fetch")
-  const result = await checkGit()
-  return result.ok ? t("doctor.gitOk", { version: result.version ?? "?" }) : `${t("doctor.gitBad")}${result.reason}`
-}
-
 export async function runDoctorSubcommand() {
   const { bootstrapLocalAgentDeps } = await import("../lib/cli/headless")
   const { listSessions } = await import("../lib/session/store")
@@ -112,7 +105,6 @@ export async function runDoctorSubcommand() {
   await resolveConsoleTheme()
 
   console.log(t("doctor.cwd") + process.cwd())
-  console.log(await gitLine())
   console.log()
 
   const outcomes = await checkCredentials()

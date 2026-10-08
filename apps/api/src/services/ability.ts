@@ -15,7 +15,7 @@ import { type AbilityKey, type AbilityKeyNeed, DEFAULT_PERSONA } from "@kaja/sch
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import type { Pool } from "pg"
 // Built in, so the cloud has its default persona before the first sync brings the same file.
-import DEFAULT_PERSONA_TOML from "../../../../marketplace/personas/default.toml" with { type: "text" }
+import DEFAULT_PERSONA_TOML from "../../../../config/default-persona.toml" with { type: "text" }
 import type { SecretService } from "./secret"
 
 /** An available skill with its files, for the agent's Postgres AbilityStore. */

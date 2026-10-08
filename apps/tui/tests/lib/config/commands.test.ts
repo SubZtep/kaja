@@ -7,7 +7,7 @@ const { DEFAULT_SAFE_COMMANDS, isSafeCommand } = await import("@kaja/nasi")
 const { fetchCommandsToml, getCommandsPath, loadSafeCommands } = await import("../../../lib/config/commands")
 const { getConfigDir } = await import("../../../lib/config/config")
 const { TOML, write, file, $ } = await import("bun")
-const TEMPLATE = (await import("../../../../../docs/config/commands.toml", { with: { type: "text" } })).default
+const TEMPLATE = (await import("../../../../../config/commands.toml", { with: { type: "text" } })).default
 
 async function reset() {
   await $`rm -rf ${getConfigDir()}`.quiet().nothrow()

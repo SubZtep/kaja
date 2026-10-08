@@ -144,7 +144,8 @@ services:
       KAJA_API_URL: http://api:3001
       KAJA_SANDBOX_KEY: compose_dev_sandbox_system_key_not_for_production # local stack only: the api's SANDBOX_SYSTEM_KEY
       # The image's own paths: apps/sandbox/.env may point these at host files for `bun dev:sandbox`.
-      MARKETPLACE_DIR: /home/node/app/marketplace
+      # Empty, so the image fetches MARKETPLACE_SOURCES instead of a host folder from apps/sandbox/.env.
+      MARKETPLACE_DIR: ""
       SANDBOX_OVERRIDES: /home/node/app/overrides.json
       SANDBOX_CACHE_DIR: /home/node/.cache/mcp
       SANDBOX_STATE_DIR: /data

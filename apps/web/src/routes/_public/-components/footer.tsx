@@ -8,7 +8,7 @@ const LanguageSelect = lazy(() =>
   import("../../../components/ui/LanguageSelect").then(mod => ({ default: mod.LanguageSelect }))
 )
 
-/** The legal pages live on the docs site (docs/terms.md, docs/privacy.md). */
+/** The legal pages live on the docs site (kajaio/docs: terms.md, privacy.md). */
 export const TERMS_URL = "https://docs.kaja.io/terms/"
 export const PRIVACY_URL = "https://docs.kaja.io/privacy/"
 

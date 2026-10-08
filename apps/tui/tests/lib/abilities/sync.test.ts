@@ -29,11 +29,11 @@ afterEach(() => {
 test("first sync copies everything into a missing folder and writes the lock", async () => {
   put(upstream, "abilities/a/SKILL.md", "a1")
   put(upstream, "README.md", "readme")
-  const report = await syncMarketplace(upstream, local, { url: "u", ref: "main", commit: "c1" })
+  const report = await syncMarketplace(upstream, local, [{ source: "kajaio/marketplace#main", commit: "c1" }])
   expect(report.added.sort()).toEqual(["README.md", "abilities/a/SKILL.md"])
   expect(read("abilities/a/SKILL.md")).toBe("a1")
   const lock = await readSyncLock(local)
-  expect(lock?.source).toEqual({ url: "u", ref: "main", commit: "c1" })
+  expect(lock?.sources).toEqual([{ source: "kajaio/marketplace#main", commit: "c1" }])
   expect(Object.keys(lock!.files).sort()).toEqual(["README.md", "abilities/a/SKILL.md"])
 })
 

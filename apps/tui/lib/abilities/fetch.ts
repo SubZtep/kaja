@@ -1,139 +1,29 @@
-import { existsSync } from "node:fs"
-import { rm } from "node:fs/promises"
 import { join } from "node:path"
-import { t } from "../i18n"
+import { FETCH_SOURCES_STEPS, fetchSources, parseMarketplaceSource } from "@kaja/nasi"
 import { getPaths } from "../paths"
 
-/** The repo folder that holds the marketplace, the only path the sparse checkout pulls down. */
-const MARKETPLACE_PATH = "marketplace"
-const GIT_TIMEOUT_MS = 120_000
-/** The oldest git with `clone --sparse` and `sparse-checkout`, which the marketplace checkout relies on. */
-export const MIN_GIT_VERSION = "2.25"
-
-/** A fetch problem worth showing the user as-is (git missing, network, no marketplace folder). */
-export class MarketplaceFetchError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "MarketplaceFetchError"
-  }
-}
-
-/** A sparse git checkout of the source repo, kept between updates so only changes are fetched. */
+/** Where the fetched sources are merged before the sync copies them into the marketplace folder. */
 export function getMarketplaceCacheDir() {
-  return join(getPaths().cache, "marketplace-repo")
-}
-
-async function git(args: string[], cwd?: string): Promise<string> {
-  let proc: ReturnType<typeof Bun.spawn>
-  try {
-    proc = Bun.spawn(["git", ...args], {
-      cwd,
-      stdout: "pipe",
-      stderr: "pipe",
-      // Never hang on a credential prompt: a private or mistyped URL should fail, not wait for input.
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
-    })
-  } catch {
-    throw new MarketplaceFetchError(t("ability.gitMissing"))
-  }
-  let timedOut = false
-  const timer = setTimeout(() => {
-    timedOut = true
-    proc.kill()
-  }, GIT_TIMEOUT_MS)
-  const [stdout, stderr, code] = await Promise.all([
-    new Response(proc.stdout as ReadableStream).text(),
-    new Response(proc.stderr as ReadableStream).text(),
-    proc.exited
-  ])
-  clearTimeout(timer)
-  const command = `git ${args[0]}`
-  if (timedOut) throw new MarketplaceFetchError(t("ability.gitTimeout", { command }))
-  if (code !== 0)
-    throw new MarketplaceFetchError(t("ability.gitFailed", { command, message: stderr.trim() || `exit ${code}` }))
-  return stdout.trim()
-}
-
-/** The `major.minor.patch` numbers in `git --version` output ("git version 2.39.3 (Apple Git-145)"), or undefined. */
-export function parseGitVersion(output: string): number[] | undefined {
-  for (const word of output.split(" ")) {
-    const match = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(word)
-    if (match) return [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)]
-  }
-  return undefined
-}
-
-function atLeast(version: number[], min: string) {
-  const [major = 0, minor = 0] = min.split(".").map(Number)
-  return version[0]! > major || (version[0] === major && version[1]! >= minor)
-}
-
-/** Whether the host has a git new enough for the marketplace checkout: its version, or why not. */
-export async function checkGit(
-  run: (args: string[]) => Promise<string> = args => git(args)
-): Promise<{ ok: true; version?: string } | { ok: false; reason: string }> {
-  let output: string
-  try {
-    output = await run(["--version"])
-  } catch (error) {
-    return { ok: false, reason: error instanceof Error ? error.message : String(error) }
-  }
-  const version = parseGitVersion(output)
-  // An output we can't read (a vendor build) isn't proof it is too old, so let the real command decide.
-  if (!version) return { ok: true }
-  const text = version.join(".")
-  if (!atLeast(version, MIN_GIT_VERSION))
-    return { ok: false, reason: t("ability.gitTooOld", { version: text, min: MIN_GIT_VERSION }) }
-  return { ok: true, version: text }
+  return join(getPaths().cache, "marketplace")
 }
 
 /** How many times {@link fetchMarketplace} calls its `onStep`. */
-export const FETCH_STEPS = 3
+export const FETCH_STEPS = FETCH_SOURCES_STEPS
 
 /**
- * Brings the cache up to date with `source` (cloning on first use, or when the URL changed)
- * and returns the fetched marketplace folder with the commit it came from. Only this touches the network: `kaja abilities`
- * and the throttled background pull at local startup (`auto-update.ts`). Calls `onStep` after each of its
- * {@link FETCH_STEPS} steps (git checked, downloaded, checked out), for a progress bar.
+ * Downloads every source (GitHub tarballs, or local folders as they are) and merges them, later sources winning, into
+ * the cache; returns the merged folder and each source's commit. Only this touches the network: `kaja abilities` and
+ * the throttled background pull at local startup (`auto-update.ts`). Calls `onStep` after each of its {@link FETCH_STEPS} steps.
  */
 export async function fetchMarketplace(
-  source: { url: string; ref: string },
-  onStep: () => void = () => {}
-): Promise<{ dir: string; commit: string }> {
-  const gitCheck = await checkGit()
-  if (!gitCheck.ok) throw new MarketplaceFetchError(gitCheck.reason)
-  onStep()
-
-  const cache = getMarketplaceCacheDir()
-  const origin = existsSync(join(cache, ".git"))
-    ? await git(["remote", "get-url", "origin"], cache).catch(() => undefined)
-    : undefined
-
-  if (origin === source.url) {
-    await git(["fetch", "--depth", "1", "origin", source.ref], cache)
-    onStep()
-    await git(["reset", "--hard", "FETCH_HEAD"], cache)
-  } else {
-    await rm(cache, { recursive: true, force: true })
-    await git([
-      "clone",
-      "--depth",
-      "1",
-      "--filter=blob:none",
-      "--sparse",
-      "--branch",
-      source.ref,
-      "--",
-      source.url,
-      cache
-    ])
-    onStep()
-    // The slow part of a first fetch: with --filter=blob:none the files only arrive here, and git reports no progress for it
-    await git(["sparse-checkout", "set", MARKETPLACE_PATH], cache)
-  }
-
-  const dir = join(cache, MARKETPLACE_PATH)
-  if (!existsSync(dir)) throw new MarketplaceFetchError(t("ability.noMarketplaceFolder", source))
-  onStep()
-  return { dir, commit: await git(["rev-parse", "HEAD"], cache) }
+  entries: string[],
+  opts: { token?: string; onStep?: () => void } = {}
+): Promise<{ dir: string; sources: { source: string; commit?: string }[] }> {
+  const dir = getMarketplaceCacheDir()
+  const { sources } = await fetchSources(entries.map(parseMarketplaceSource), dir, {
+    workDir: `${dir}-download`,
+    token: opts.token,
+    onStep: opts.onStep
+  })
+  return { dir, sources: sources.map(({ label, commit }) => ({ source: label, ...(commit ? { commit } : {}) })) }
 }

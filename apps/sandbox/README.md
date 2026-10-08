@@ -36,7 +36,7 @@ It starts with the Kaja monster and a summary (API, owner, servers, capacity), t
 1. At start the sandbox connects to `KAJA_API_URL`'s `/sandbox/connect` with its owner's key (`X-Kaja-Sandbox-Key`; none: anonymous) and, after the first time, the id and secret it was welcomed with (`X-Kaja-Sandbox-Instance`). It says `hello` with its hardware, version, cap and abilities; the API records it, with its public IP's location from the geolocation service, and answers `welcome`. Every minute it sends a `heartbeat` with its load.
 2. A cloud turn picks a sandbox per ability: the one the user's last turn used while it still fits, else their own, else (only if they allow it) one another user shares or an anonymous one, nearest first, else the official one. See `apps/api/src/features/sandbox/registry.ts`.
 3. The API sends the MCP request as a `request` frame; the sandbox runs it and streams the answer back as `head`, `chunk`… and `end` frames (`cancel` stops it). Frames are JSON and checked against `sandboxFrameSchema`/`apiSandboxFrameSchema` in `@kaja/schema/api` on both sides.
-4. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what npx and uvx fetched stays cached in `SANDBOX_CACHE_DIR` (chrome-devtools-mcp is installed in the image, and the time server fetched when it's built).
+4. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of the marketplace's `mcp.toml` manifests (fetched from `MARKETPLACE_SOURCES` at startup), with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what npx and uvx fetched stays cached in `SANDBOX_CACHE_DIR` (chrome-devtools-mcp is installed in the image, and the time server fetched when it's built).
 
 ## Trust
 
@@ -151,7 +151,9 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `KAJA_SANDBOX_KEY` | — | your key from the web's Sandbox page (or the API's `SANDBOX_SYSTEM_KEY`); unset: anonymous |
 | `SANDBOX_NAME` | — | a name shown for it |
 | `SANDBOX_STATE_DIR` | `./.sandbox` (`/data` in the image) | where it keeps the id and secret it was welcomed with |
-| `MARKETPLACE_DIR` | `../../marketplace` | whose `mcp/*.toml` stdio manifests are the only servers it runs |
+| `MARKETPLACE_SOURCES` | `kajaio/marketplace` | marketplace repos (`owner/repo`, `owner/repo#ref`) or folders fetched at startup and merged in order; their stdio `mcp.toml` manifests are the only servers it runs. A failed fetch keeps the last copy in `SANDBOX_STATE_DIR` |
+| `MARKETPLACE_GITHUB_TOKEN` | | read access to a private source in `MARKETPLACE_SOURCES` |
+| `MARKETPLACE_DIR` | | a marketplace folder used as it is instead of fetching (development, tests) |
 | `SANDBOX_OVERRIDES` | — | JSON replacing a manifest's command/args on this host (the image uses `overrides.json`) |
 | `SANDBOX_CACHE_DIR` | — | shared bun/uv/npm caches for the servers, so fetched packages stay (the image uses `/home/node/.cache/mcp`) |
 | `SANDBOX_IDLE_MS` | `600000` | how long an unused server stays warm |

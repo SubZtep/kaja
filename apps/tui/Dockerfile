@@ -13,7 +13,7 @@ COPY packages/shared/package.json ./packages/shared/package.json
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY packages ./packages
 # The TUI runs from source and imports its config templates from the repo root
-COPY docs/config ./docs/config
+COPY config ./config
 COPY apps/tui ./apps/tui
 
 FROM oven/bun:1.4.2-slim AS runner
@@ -23,7 +23,7 @@ ENV NODE_ENV=production
 USER bun
 COPY --chown=bun:bun --from=builder /home/bun/app/node_modules ./node_modules
 COPY --chown=bun:bun --from=builder /home/bun/app/packages ./packages
-COPY --chown=bun:bun --from=builder /home/bun/app/docs/config ./docs/config
+COPY --chown=bun:bun --from=builder /home/bun/app/config ./config
 COPY --chown=bun:bun --from=builder /home/bun/app/apps/tui ./apps/tui
 
 WORKDIR /home/bun/app/apps/tui

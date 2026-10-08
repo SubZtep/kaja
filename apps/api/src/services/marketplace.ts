@@ -1,12 +1,17 @@
 import { createHash } from "node:crypto"
-import { mkdtemp, readdir, readFile, rm } from "node:fs/promises"
+import { mkdtemp, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import {
+  downloadSource,
+  type MarketplaceSource,
+  mergeSources,
   parseHttpToolManifest,
   parseMcpManifest,
   parsePersonaManifest,
+  type ResolvedSource,
   readSkillBundle,
+  resolveSources,
   scanDatasets,
   scanHttpTools,
   scanMcpAbilities,
@@ -20,25 +25,27 @@ import { withLock } from "../core/lock"
 import { reportError } from "../core/report"
 import { cloudMcpProblem } from "./ability"
 
-const MAX_TARBALL_BYTES = 50 * 1024 * 1024
-const COMMIT_SHA = /^[0-9a-f]{40}$/
-
-export type MarketplaceSource = { repo: string; ref: string }
+/** What the sync records as its commit: each source as `owner/repo#ref@sha` (a folder by its path), comma-separated. */
+function fingerprint(sources: ResolvedSource[]): string {
+  return sources.map(({ label, commit }) => (commit ? `${label}@${commit}` : label)).join(", ")
+}
 
 /**
- * Keeps the `ability` table in step with the `marketplace/` folder (skills, personas, datasets, HTTP tools, MCP servers) of a GitHub repo. A sync asks
- * GitHub for the branch's commit first and only downloads the tarball when it moved. Abilities are
- * never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
+ * Keeps the `ability` table in step with the marketplace sources (GitHub repos merged in order, later ones winning: skills, personas, datasets, HTTP
+ * tools, MCP servers). A sync asks GitHub for each source's commit first and only downloads the tarballs when one moved; a folder source (development)
+ * is re-read every time. Abilities are never deleted: one that leaves the marketplace gets `removed_at`, so users' selections survive.
  */
 export class MarketplaceService {
   readonly #db: Pool
-  readonly #source: MarketplaceSource
+  readonly #sources: MarketplaceSource[]
+  readonly #token: string | undefined
   readonly #fetch: typeof fetch
 
-  constructor(db: Pool, source: MarketplaceSource, fetchImpl: typeof fetch = fetch) {
+  constructor(db: Pool, sources: MarketplaceSource[], opts: { token?: string; fetch?: typeof fetch } = {}) {
     this.#db = db
-    this.#source = source
-    this.#fetch = fetchImpl
+    this.#sources = sources
+    this.#token = opts.token
+    this.#fetch = opts.fetch ?? fetch
   }
 
   async status(): Promise<MarketplaceSyncStatus> {
@@ -55,14 +62,21 @@ export class MarketplaceService {
   sync(opts: { force?: boolean } = {}): Promise<MarketplaceSyncResult> {
     return withLock("marketplace-sync", async () => {
       try {
-        const commit = await this.#latestCommit()
-        if (!opts.force && (await this.status()).commit === commit) {
+        const fetchOpts = { token: this.#token, fetch: this.#fetch }
+        const resolved = await resolveSources(this.#sources, fetchOpts)
+        const commit = fingerprint(resolved)
+        const hasFolder = resolved.some(source => !source.commit)
+        if (!opts.force && !hasFolder && (await this.status()).commit === commit) {
           await this.#recordSuccess(commit)
           return { commit, changed: false, added: [], updated: [], removed: [] }
         }
         const dir = await mkdtemp(join(tmpdir(), "kaja-marketplace-"))
         try {
-          const marketplaceDir = await this.#download(commit, dir)
+          const dirs: { label: string; dir: string }[] = []
+          for (const [i, source] of resolved.entries())
+            dirs.push({ label: source.label, dir: await downloadSource(source, join(dir, String(i)), fetchOpts) })
+          const marketplaceDir = join(dir, "merged")
+          await mergeSources(dirs, marketplaceDir)
           const result = await this.syncFromDir(marketplaceDir, commit)
           await this.#recordSuccess(commit)
           return { commit, changed: true, ...result }
@@ -158,42 +172,6 @@ export class MarketplaceService {
     } finally {
       client.release()
     }
-  }
-
-  /** The branch's head commit, via GitHub's sha-only response (one small, unauthenticated call). */
-  async #latestCommit(): Promise<string> {
-    const { repo, ref } = this.#source
-    const res = await this.#fetch(`https://api.github.com/repos/${repo}/commits/${encodeURIComponent(ref)}`, {
-      headers: { Accept: "application/vnd.github.sha", "User-Agent": "kaja-api" },
-      signal: AbortSignal.timeout(15_000)
-    })
-    if (!res.ok) throw new Error(`GitHub commit lookup for ${repo}@${ref} failed: HTTP ${res.status}`)
-    const sha = (await res.text()).trim()
-    if (!COMMIT_SHA.test(sha)) throw new Error(`GitHub returned an unexpected commit for ${repo}@${ref}`)
-    return sha
-  }
-
-  /** Downloads the commit's tarball into `dir`, extracts it with tar, and returns the extracted marketplace/ folder. */
-  async #download(commit: string, dir: string): Promise<string> {
-    const { repo } = this.#source
-    const res = await this.#fetch(`https://codeload.github.com/${repo}/tar.gz/${commit}`, {
-      headers: { "User-Agent": "kaja-api" },
-      signal: AbortSignal.timeout(60_000)
-    })
-    if (!res.ok) throw new Error(`Downloading ${repo}@${commit} failed: HTTP ${res.status}`)
-    const tarball = await res.arrayBuffer()
-    if (tarball.byteLength > MAX_TARBALL_BYTES) throw new Error(`${repo}@${commit} is larger than expected`)
-
-    const archive = join(dir, "repo.tar.gz")
-    await Bun.write(archive, tarball)
-    const tar = Bun.spawn(["tar", "-xzf", archive, "-C", dir], { stdout: "ignore", stderr: "pipe" })
-    if ((await tar.exited) !== 0) {
-      throw new Error(`Extracting ${repo}@${commit} failed: ${(await new Response(tar.stderr).text()).trim()}`)
-    }
-    // GitHub tarballs hold one top-level folder, <repo>-<sha>/.
-    const top = (await readdir(dir, { withFileTypes: true })).find(entry => entry.isDirectory())
-    if (!top) throw new Error(`${repo}@${commit} tarball has no top-level folder`)
-    return join(dir, top.name, "marketplace")
   }
 
   async #recordSuccess(commit: string) {

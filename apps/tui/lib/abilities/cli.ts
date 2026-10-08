@@ -30,14 +30,15 @@ export const UPDATE_STEPS = FETCH_STEPS + 1
  * to print and the exit code, like `runConfigCli`. Calls `onStep` after each of its {@link UPDATE_STEPS} steps.
  */
 export async function runAbilityUpdate(onStep: () => void = () => {}): Promise<{ code: number; text: string }> {
-  const { enabled, source } = await marketplaceSettings()
+  const { enabled, sources: entries, token } = await marketplaceSettings()
   if (!enabled) return { code: 1, text: t("ability.disabled") }
   try {
-    const { dir, commit } = await fetchMarketplace(source, onStep)
-    const report = await syncMarketplace(dir, getMarketplaceDir(), { ...source, commit })
+    const { dir, sources } = await fetchMarketplace(entries, { token, onStep })
+    const report = await syncMarketplace(dir, getMarketplaceDir(), sources)
     onStep()
     const lines = reportLines(report)
-    const summary = t("ability.synced", { url: source.url, ref: source.ref, commit: commit.slice(0, 7) })
+    const from = sources.map(({ source, commit }) => (commit ? `${source} (${commit.slice(0, 7)})` : source)).join(", ")
+    const summary = t("ability.synced", { sources: from })
     return { code: 0, text: [summary, ...(lines.length > 0 ? lines : [t("ability.nothingChanged")])].join("\n") }
   } catch (error) {
     return {

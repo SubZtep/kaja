@@ -144,13 +144,15 @@ const apiEnvFields = z.object({
     )
     .meta({ secret: true, section: "Marketplace" }),
 
-  MARKETPLACE_REPO: trimmed
-    .default("kajaio/kaja")
-    .describe("GitHub owner/repo whose marketplace/ folder the cloud ability catalog is synced from")
+  MARKETPLACE_SOURCES: trimmed
+    .default("kajaio/marketplace")
+    .describe(
+      "Comma-separated marketplace sources the cloud ability catalog is synced from, merged in order (later wins): owner/repo, owner/repo#ref or a local folder"
+    )
     .meta({ section: "Marketplace" }),
-  MARKETPLACE_REF: trimmed
-    .default("main")
-    .describe("Branch (or tag) of MARKETPLACE_REPO to sync")
+  MARKETPLACE_GITHUB_TOKEN: trimmed
+    .optional()
+    .describe("GitHub token with read access to a private source in MARKETPLACE_SOURCES; sent to api.github.com only")
     .meta({ section: "Marketplace" }),
 
   SANDBOX_SYSTEM_KEY: trimmed

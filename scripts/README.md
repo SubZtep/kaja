@@ -10,7 +10,7 @@ Never hand-edit their output. Change the input, then regenerate.
 
 - **`env.ts`** writes each app's `.env.example` from `packages/schema/env/`. `bun generate:env` writes, `bun check:env` fails on drift (and on a `compose.yaml` key no schema knows). The TUI's is hand-written.
 - **`env-types.ts`** writes each workspace's ambient `Bun.Env` typing from the same schemas: `bun generate:env-types`.
-- **`models.ts`** writes `docs/config/models.*.toml` from `docs/config/catalog.toml`: `bun generate:models`, and `bun check:models` fails on drift (CI and the catalog test).
+- **`models.ts`** writes `config/models.*.toml` from `config/catalog.toml`: `bun generate:models`, and `bun check:models` fails on drift (CI and the catalog test).
 - **`locales.ts`** keeps every non-en-GB locale file in step with en-GB: same keys, same order. New or changed English gets a `[<locale>] lorem ipsum…` placeholder, and removed keys go away.
   ```sh
   bun sync:locales           # rewrite the other languages
@@ -34,4 +34,4 @@ Never hand-edit their output. Change the input, then regenerate.
 - **`link_user_config.sh`** links the TUI's config dir (resolved with the TUI's own `env-paths`, so `~/.config/kaja` on Linux) into the repo as the gitignored `.user-config`, when that dir exists.
 - **`db_migration.sh`** runs `apps/api/migrate.ts` against `$DATABASE_URL` (or `apps/api/.env`), like a deploy: the migrations the database hasn't applied, then the config seed. It catches up an existing `pgdata` volume. First-boot init does this on its own.
 - **`mass_user_create.ts [number]`** creates random users against a local API, 10 by default.
-- **`barkochba.ts ["secret"]`** self-plays Twenty Questions: a guesser driven by `marketplace/personas/barkochba.toml` against a thinker holding the secret. Uses your local `models.toml` and `secrets.toml`.
+- **`barkochba.ts ["secret"]`** self-plays Twenty Questions: a guesser driven by `../marketplace/personas/barkochba.toml` (the kajaio/marketplace checkout) against a thinker holding the secret. Uses your local `models.toml` and `secrets.toml`.

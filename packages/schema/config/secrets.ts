@@ -16,12 +16,18 @@ const SecretsAbilitySchema = z.object({
   api_key: z.string().min(1)
 })
 
+// For a private marketplace source; sent to api.github.com only.
+const SecretsMarketplaceSchema = z.object({
+  github_token: z.string().min(1).optional()
+})
+
 // The only file you should need to hand-edit for credentials. A provider's key is keyed like its
 // models.toml [providers.<name>] table, an ability's by its folder name.
 export const SecretsFileSchema = z.object({
   telegram: SecretsTelegramSchema.optional(),
   providers: z.record(z.string(), SecretsProviderSchema).default({}),
-  abilities: z.record(z.string(), SecretsAbilitySchema).default({})
+  abilities: z.record(z.string(), SecretsAbilitySchema).default({}),
+  marketplace: SecretsMarketplaceSchema.optional()
 })
 
 export type SecretsFile = z.infer<typeof SecretsFileSchema>
