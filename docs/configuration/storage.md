@@ -156,4 +156,4 @@ up.
 
 Next:
 
-[Commands & doctor](/configuration/commands){: .btn .btn-green .fs-5 }
+[Doctor & troubleshooting](/configuration/commands){: .btn .btn-green .fs-5 }
