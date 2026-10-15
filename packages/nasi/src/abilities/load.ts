@@ -3,6 +3,7 @@ import type { Persona } from "@kaja/schema/cli"
 import { type Tool, toolName } from "../agent/tools"
 import { type LaunchOptions, McpRunnerMissingError } from "../mcp/launch"
 import { expandRoots, type RootFolder } from "../mcp/roots"
+import type { FetchLike } from "../security/ssrf"
 import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
@@ -34,8 +35,8 @@ export type LoadAbilitiesOptions = {
   getApiKey?: (abilityName: string) => string | undefined
   /** Let HTTP tools reach private/loopback hosts. Local mode only. */
   allowPrivate?: boolean
-  /** HTTP(S) proxy HTTP tools egress through (the cloud's WEB_PROXY); unset goes direct. */
-  proxy?: string
+  /** The sender each HTTP tool's requests go through (the cloud: a sandbox, picked by the key it carries); unset connects directly. */
+  send?: (abilityName: string) => FetchLike
   /** Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they are. */
   mcpSandbox?: McpSandbox
   /** How stdio MCP abilities find a runner on this host (tests fake `which`). */
@@ -77,7 +78,7 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
     groups.push({
       origin: "community",
       source: `ability:${ability.name}`,
-      tools: createHttpTools(ability, { apiKey, allowPrivate: opts.allowPrivate, proxy: opts.proxy })
+      tools: createHttpTools(ability, { apiKey, allowPrivate: opts.allowPrivate, send: opts.send?.(ability.name) })
     })
   }
 

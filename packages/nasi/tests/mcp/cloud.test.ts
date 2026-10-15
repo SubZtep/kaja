@@ -47,7 +47,7 @@ const stdioAbility = mcpAbility({
 test("the cloud connects only remote abilities, through its fetch, never stdio ones", async () => {
   const { tools, mcpServers, closeTools } = await createTools({
     mcpAbilities: [mcpAbilityTarget(remoteAbility()), mcpAbilityTarget(stdioAbility)],
-    mcpFetch: routeHostTo(open, HOST)
+    mcpFetch: () => routeHostTo(open, HOST)
   })
   try {
     expect(mcpServers).toEqual([{ id: "ability:things", toolCount: 4, failed: false }])
@@ -69,7 +69,7 @@ test("without the guarded fetch the cloud connects nothing", async () => {
 test("cloud results drop images with a note and cut long text", async () => {
   const { tools, closeTools } = await createTools({
     mcpAbilities: [mcpAbilityTarget(remoteAbility())],
-    mcpFetch: routeHostTo(open, HOST)
+    mcpFetch: () => routeHostTo(open, HOST)
   })
   try {
     const run = (name: string) => tools.find(t => toolName(t) === name)!.execute({})
@@ -95,7 +95,7 @@ test("with an image dir, cloud results keep images for the model", async () => {
   const dir = await mkdtemp(join(tmpdir(), "kaja-cloud-images-"))
   const { tools, closeTools } = await createTools({
     mcpAbilities: [mcpAbilityTarget(remoteAbility())],
-    mcpFetch: routeHostTo(open, HOST),
+    mcpFetch: () => routeHostTo(open, HOST),
     mcpImageDir: dir
   })
   try {
@@ -149,7 +149,7 @@ test("an image over the size cap is dropped with a note", async () => {
 test("the cloud hides a manifest's localOnlyArgs from the schema and drops them from calls", async () => {
   const { tools, closeTools } = await createTools({
     mcpAbilities: [mcpAbilityTarget(remoteAbility({ localOnlyArgs: ["id"] }))],
-    mcpFetch: routeHostTo(open, HOST)
+    mcpFetch: () => routeHostTo(open, HOST)
   })
   try {
     const read = tools.find(t => toolName(t) === "read_thing")!

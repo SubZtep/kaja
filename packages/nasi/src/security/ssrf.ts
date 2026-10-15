@@ -13,14 +13,6 @@ export class UnsafeUrlError extends Error {
   }
 }
 
-/** A proxied fetch that never reached the proxy. Separate from an origin-side failure so "the proxy is down" and "that site is down" are distinguishable in logs; the request is never retried direct, which would silently defeat the proxy. */
-export class ProxyUnavailableError extends Error {
-  constructor(url: string, cause: unknown) {
-    super(`Proxy unreachable fetching ${url}: ${cause instanceof Error ? cause.message : String(cause)}`)
-    this.name = "ProxyUnavailableError"
-  }
-}
-
 /** The address a checked hop connects to, so the name can't resolve differently between the check and the connection. */
 type Pin = { address: string; family: number }
 
@@ -28,7 +20,7 @@ type Pin = { address: string; family: number }
  * `isPublicHttpUrl` only inspects the literal hostname, so a DNS name that resolves to a private/loopback address
  * (attacker-controlled DNS) sails through it. This resolves the hostname once and refuses it if any answer is private;
  * the hop then connects to that very address (see {@link pinned}), so a second lookup that answers differently (DNS
- * rebinding) never happens. Not used behind a `proxy`: the proxy resolves for itself, a trust boundary this can't see into.
+ * rebinding) never happens. Not used with a `send`: the sender (the sandbox) resolves and checks for itself.
  */
 async function checkedAddress(hostname: string): Promise<Pin | undefined> {
   try {
@@ -65,26 +57,17 @@ type HopRequest = { method: string; headers?: Record<string, string>; body?: str
 async function fetchHop(
   url: string,
   timeoutMs: number,
-  proxy: string | undefined,
+  send: FetchLike | undefined,
   request: HopRequest,
   pin: Pin | undefined
 ): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
-  const hop = pinned(url, pin, request.headers)
+  const init = { method: request.method, body: request.body, redirect: "manual", signal: controller.signal } as const
   try {
-    return await fetch(hop.url, {
-      ...hop.init,
-      method: request.method,
-      body: request.body,
-      redirect: "manual",
-      signal: controller.signal,
-      ...(proxy ? { proxy } : {})
-    })
-  } catch (error) {
-    // A timeout aborts the same way with or without a proxy, so it stays a timeout; anything else on a proxied fetch failed before reaching the origin.
-    if (proxy && !controller.signal.aborted) throw new ProxyUnavailableError(url, error)
-    throw error
+    if (send) return await send(url, { ...init, headers: request.headers })
+    const hop = pinned(url, pin, request.headers)
+    return await fetch(hop.url, { ...hop.init, ...init })
   } finally {
     clearTimeout(timer)
   }
@@ -145,12 +128,12 @@ function requestAfterRedirect(status: number, request: HopRequest): HopRequest {
 
 /**
  * Throws {@link UnsafeUrlError} unless `url` may be fetched: http(s) only, and (without `allowPrivate`) a public host
- * whose DNS answers are public too. Returns the address the hop must connect to when it looked the name up (not behind
- * a proxy, which resolves for itself; not for an IP literal, which is what it is).
+ * whose DNS answers are public too. Returns the address the hop must connect to when it looked the name up (not with a
+ * `send`, which resolves for itself; not for an IP literal, which is what it is).
  */
 async function assertHopAllowed(
   url: string,
-  opts: { allowPrivate?: boolean; proxy?: string }
+  opts: { allowPrivate?: boolean; send?: FetchLike }
 ): Promise<Pin | undefined> {
   if (opts.allowPrivate) {
     if (!isHttpUrl(url)) throw new UnsafeUrlError(url)
@@ -158,7 +141,7 @@ async function assertHopAllowed(
   }
   if (!isPublicHttpUrl(url)) throw new UnsafeUrlError(url)
   const { hostname } = new URL(url)
-  if (opts.proxy || isIP(hostname) || hostname.startsWith("[")) return undefined
+  if (opts.send || isIP(hostname) || hostname.startsWith("[")) return undefined
   const pin = await checkedAddress(hostname)
   if (!pin) throw new UnsafeUrlError(url)
   return pin
@@ -168,7 +151,8 @@ export type FetchPublicHttpOptions = {
   timeoutMs?: number
   maxBytes?: number
   maxRedirects?: number
-  proxy?: string
+  /** Sends each hop instead of connecting from here (the cloud: through a sandbox, which checks the address itself). */
+  send?: FetchLike
   /** Default GET. */
   method?: string
   headers?: Record<string, string>
@@ -182,7 +166,7 @@ export type FetchPublicHttpOptions = {
 /**
  * Fetch a public http(s) URL (GET unless `opts.method` says otherwise). Re-checks each redirect hop against {@link isPublicHttpUrl}.
  *
- * @param opts.proxy - HTTP(S) proxy to egress through. Applies to every redirect hop. Fails closed: if the proxy is unreachable the request throws {@link ProxyUnavailableError} rather than falling back to a direct connection.
+ * @param opts.send - Sends every hop (redirects too) instead of a direct, DNS-pinned connection; never falls back to one.
  */
 export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions): Promise<Response> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -194,7 +178,7 @@ export async function fetchPublicHttp(url: string, opts?: FetchPublicHttpOptions
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const pin = await assertHopAllowed(current, opts ?? {})
 
-    const res = await fetchHop(current, timeoutMs, opts?.proxy, request, pin)
+    const res = await fetchHop(current, timeoutMs, opts?.send, request, pin)
     const next = redirectTarget(res, current)
     if (next) {
       if (opts?.sameOriginRedirects && new URL(next).origin !== new URL(current).origin) {
@@ -218,17 +202,16 @@ export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Respo
  * A `fetch` for long-lived clients such as the MCP SDK's transports: every hop gets the same checks as
  * {@link fetchPublicHttp} (public http(s) host, DNS answers public unless proxied), redirects are
  * followed here and only within the same origin (headers may carry the user's key), and the body is
- * streamed rather than buffered, so an SSE stream stays open. Egresses through `proxy` when set, failing
- * closed with {@link ProxyUnavailableError} rather than going direct.
+ * streamed rather than buffered, so an SSE stream stays open. Sends every hop through `send` when set, never direct.
  */
-export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number } = {}): FetchLike {
+export function createGuardedFetch(opts: { send?: FetchLike; maxRedirects?: number } = {}): FetchLike {
   const maxRedirects = opts.maxRedirects ?? DEFAULT_MAX_REDIRECTS
   return async (input, init) => {
     let current = String(input)
     let request: RequestInit = init ?? {}
     for (let hop = 0; hop <= maxRedirects; hop++) {
       const pin = await assertHopAllowed(current, opts)
-      const res = await streamHop(current, request, opts.proxy, pin)
+      const res = await streamHop(current, request, opts.send, pin)
       const next = redirectTarget(res, current)
       if (!next) return res
       await res.body?.cancel()
@@ -243,18 +226,9 @@ export function createGuardedFetch(opts: { proxy?: string; maxRedirects?: number
   }
 }
 
-// One hop of the guarded fetch: the body is left to stream, redirects aren't followed, and an unreachable proxy fails closed.
-async function streamHop(
-  url: string,
-  request: RequestInit,
-  proxy: string | undefined,
-  pin: Pin | undefined
-): Promise<Response> {
+// One hop of the guarded fetch: the body is left to stream and redirects aren't followed.
+function streamHop(url: string, request: RequestInit, send: FetchLike | undefined, pin: Pin | undefined) {
+  if (send) return send(url, { ...request, redirect: "manual" })
   const hop = pinned(url, pin, request.headers)
-  try {
-    return await fetch(hop.url, { ...request, ...hop.init, redirect: "manual", ...(proxy ? { proxy } : {}) })
-  } catch (error) {
-    if (proxy && !request.signal?.aborted) throw new ProxyUnavailableError(url, error)
-    throw error
-  }
+  return fetch(hop.url, { ...request, ...hop.init, redirect: "manual" })
 }

@@ -33,8 +33,8 @@ import {
 import { requireAuthMiddleware, sessionUser } from "../auth/middleware"
 import { rememberPlace } from "../sandbox"
 import {
+  cloudEgress,
   compactUserSession,
-  nasiToolDeps,
   openUserTurnStream,
   pinnedModelFor,
   resolveModelWithProvider,
@@ -254,7 +254,7 @@ nasiRoutes.openapi(infoRoute, async c => {
     ? personaLoadsSkills(persona, await createPostgresAbilityStore({ userId: user.id }).listSkills())
     : false
   const tools = [
-    ...(await listCloudToolNames(nasiToolDeps())),
+    ...(await listCloudToolNames({ fetchSend: cloudEgress()?.() })),
     ...(loadsSkills ? [LOAD_SKILL_TOOL] : []),
     ...httpTools,
     ...mcpTools

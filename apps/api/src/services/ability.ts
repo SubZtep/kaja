@@ -2,6 +2,7 @@ import {
   checkHttpToolKey,
   checkMcpAbilityKey,
   createGuardedFetch,
+  type FetchLike,
   type KeyCheckResult,
   parseDatasetManifest,
   parseHttpToolManifest,
@@ -208,18 +209,18 @@ export class AbilityService {
 
   /**
    * Saves the user's key for an ability and tests it: its HTTP tool's `check` request, or connecting to its MCP
-   * server and listing the tools. Tests go through `proxy` when set and never reach a private host. The key is kept
+   * server and listing the tools. Tests go through `send` when set and never reach a private host. The key is kept
    * even when the test fails. Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
    */
-  async saveKey(userId: string, name: string, apiKey: string, opts: { proxy?: string } = {}): Promise<SaveKeyResult> {
+  async saveKey(userId: string, name: string, apiKey: string, opts: { send?: FetchLike } = {}): Promise<SaveKeyResult> {
     const keyed = await this.#keyedByName(name)
     if (!keyed) return "not_found"
     if (keyed.ability.auth.type !== "apiKey") return "no_key"
     await this.#secrets.set(userId, abilitySecretName(name), apiKey)
     const check =
       keyed.type === "tool"
-        ? await checkHttpToolKey(keyed.ability, apiKey, { proxy: opts.proxy })
-        : await checkMcpAbilityKey(keyed.ability, apiKey, { fetch: createGuardedFetch({ proxy: opts.proxy }) })
+        ? await checkHttpToolKey(keyed.ability, apiKey, { send: opts.send })
+        : await checkMcpAbilityKey(keyed.ability, apiKey, { fetch: createGuardedFetch({ send: opts.send }) })
     return { check: check ?? null }
   }
 

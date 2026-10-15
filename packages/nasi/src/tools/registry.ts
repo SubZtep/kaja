@@ -32,7 +32,7 @@ const CLOUD_SAFE = new Set([
   "current_time",
   "summarize",
   "rerank",
-  // Only ever reaches a cloud turn with `fetchProxy` set — see the conditional in `builtin` below.
+  // Only ever reaches a cloud turn with `fetchSend` set — see the conditional in `builtin` below.
   "fetch_url",
   "generate_image"
 ])
@@ -54,8 +54,8 @@ export type CreateToolsOptions = {
   lazyMcpAbilities?: boolean
   /** How long each MCP server gets to connect and list its tools before it's skipped. Default 10 s. */
   mcpConnectTimeoutMs?: number
-  /** Fetch for cloud MCP connections (the SSRF-guarded one); cloud MCP abilities don't connect without it. */
-  mcpFetch?: FetchLike
+  /** Fetch for each cloud MCP ability's connection (the SSRF-guarded one, sent the ability's way); cloud MCP abilities don't connect without it. */
+  mcpFetch?: (ability: string) => FetchLike
   /** Cloud only: where MCP image results (screenshots) are saved for the model to see; unset drops them. Kept apart from `tempDir`, which sets the process-wide tool deps. */
   mcpImageDir?: string
   /** Local only: where files in a persona's backed-up roots are copied before an MCP server writes them; unset turns backups off. */
@@ -203,8 +203,8 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   const builtin: Tool[] = [
     readFileTool,
     listFilesTool,
-    // Local fetches from the user's own machine; cloud egresses from the server, so it needs a proxy configured or it stays off.
-    ...(local || opts.deps?.fetchProxy ? [fetchUrlTool] : []),
+    // Local fetches from the user's own machine; a cloud turn never fetches from the server, so without a sender it stays off.
+    ...(local || opts.deps?.fetchSend ? [fetchUrlTool] : []),
     viewImageTool,
     summarizeTool,
     rerankTool,
@@ -228,7 +228,6 @@ export async function createTools(opts: CreateToolsOptions = {}) {
   const abilities = local ? (opts.mcpAbilities ?? []) : cloudAbilities
   const abilityIds = new Set(abilities.map(target => `ability:${target.name}`))
   const cloudOpts: McpConnectOptions = {
-    fetch: opts.mcpFetch,
     images: opts.mcpImageDir !== undefined,
     maxImageBytes: CLOUD_MCP_MAX_IMAGE_BYTES,
     maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS
@@ -242,7 +241,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       approval: target.approval,
       readOnly: target.readOnly,
       label: `ability:${target.name}`,
-      ...(local ? {} : { ...cloudOpts, hideArgs: target.localOnlyArgs })
+      ...(local ? {} : { ...cloudOpts, fetch: opts.mcpFetch?.(target.name), hideArgs: target.localOnlyArgs })
     },
     ...(target.sandboxed ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) } : {}),
     ...(target.roots ? { roots: target.roots, pathArgs: target.pathArgs } : {})

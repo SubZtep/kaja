@@ -26,11 +26,11 @@ test("rejects a hostname that resolves to a private address", async () => {
   await expect(fetchPublicHttp("http://looks-public.example.com/")).rejects.toThrow(UnsafeUrlError)
 })
 
-test("does not DNS-check when a proxy is set (proxy owns egress resolution)", async () => {
+test("does not DNS-check when a sender is set (the sender owns egress resolution)", async () => {
   const origin = Bun.serve({ port: 0, fetch: () => new Response("ok") })
   try {
     const res = await fetchPublicHttp("http://looks-public.example.com/", {
-      proxy: `http://127.0.0.1:${origin.port}`,
+      send: (_url, init) => fetch(`http://127.0.0.1:${origin.port}/`, init),
       timeoutMs: 3_000
     })
     expect(await res.text()).toBe("ok")

@@ -262,8 +262,7 @@ does.
 
 ## Warnings
 
-Nasi never logs. A recoverable problem (a skipped ability, a missing key, a failed MCP connection, an
-unreachable fetch proxy) goes to a handler the host installs with `setWarnHandler`, silent until set. The API
+Nasi never logs. A recoverable problem (a skipped ability, a missing key, a failed MCP connection) goes to a handler the host installs with `setWarnHandler`, silent until set. The API
 prints them, and the terminal appends them to its opt-in log file, since Ink owns the screen.
 
 ## Tool exposure
@@ -273,11 +272,15 @@ of cloud-safe built-ins is returned, so a newly added tool is never cloud-expose
 adds file, shell, MCP and code tools. See [Tools](/abilities/tools) for the resulting list.
 
 Some built-ins also need a **dep**, and only register when the host supplies it: `generate_image` needs
-`imageGeneration`, and cloud `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`
-unconditionally, since it fetches from the user's own machine. The cloud egresses from the server, so without
-a proxy the tool is left out instead of fetching directly. Failing closed is deliberate: a proxied fetch that
-can't reach its proxy raises `ProxyUnavailableError` instead of retrying direct, which would silently defeat
-the point of configuring one.
+`imageGeneration`, and cloud `fetch_url` needs `fetchSend`. A local registry exposes `fetch_url`
+unconditionally, since it fetches from the user's own machine. A cloud turn never fetches from the server, so
+without a sender the tool is left out instead of fetching directly.
+
+`Nasi.open`'s `egress(ability?)` hands out those senders: `egress()` for `fetch_url`, `egress(name)` for an
+ability's HTTP tool or remote MCP server. `fetchPublicHttp` and `createGuardedFetch` take one as `send`: every
+hop (redirects included) goes to it instead of a direct, DNS-pinned connection, and a sender that fails never
+falls back to one. Redirect rules, size caps and streaming stay the same either way, so a tool behaves alike
+wherever its requests go out.
 
 ---
 

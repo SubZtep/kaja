@@ -187,7 +187,7 @@ test("a session id cannot be resumed by a different owner sharing the same store
   await expect(nasiOwnerB.turnBuffered({ session: first.session, message: "hijack attempt" })).rejects.toThrow()
 })
 
-// A cloud user's HTTP tool with a key; a proxy is set so the (faked) request skips the DNS check.
+// A cloud user's HTTP tool with a key; a sender is set so the (faked) request skips the DNS check.
 const issuesAbility = httpAbility({
   name: "issues",
   description: "Issue tracker",
@@ -245,7 +245,7 @@ function openWithIssues(script: { content: string | null; tool_calls?: unknown[]
     {
       abilities,
       abilityKey: name => (name === "issues" ? "user-key" : undefined),
-      deps: { fetchProxy: "http://proxy.test:3128" }
+      egress: () => (url, init) => fetch(url, init)
     },
     sent
   )
@@ -309,7 +309,7 @@ test("an approval with nothing waiting for one is refused", async () => {
 
 test("a cloud user's MCP ability connects with their key when the turn opens; a write waits for approval", async () => {
   const fixture = startHttpMcpFixture({ apiKey: "mcp-key" })
-  // The guarded fetch goes through the proxy, which here hands the fake host to the local fixture.
+  // The guarded fetch goes through the sender, which here hands the fake host to the local fixture.
   globalThis.fetch = routeHostTo(fixture, "mcp.example.test", realFetch)
   const things = mcpAbility({
     name: "things",
@@ -335,7 +335,7 @@ test("a cloud user's MCP ability connects with their key when the turn opens; a 
     {
       abilities: { ...abilities, listHttpTools: async () => [], listMcpAbilities: async () => [things] },
       abilityKey: name => (name === "things" ? "mcp-key" : undefined),
-      deps: { fetchProxy: "http://proxy.test:3128" }
+      egress: () => (url, init) => fetch(url, init)
     },
     sent
   )

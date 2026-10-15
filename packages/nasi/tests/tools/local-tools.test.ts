@@ -22,19 +22,19 @@ test("includeLocalTools registers files and shell with their real implementation
   await closeTools()
 })
 
-test("cloud fetch_url is off without a proxy", async () => {
+test("cloud fetch_url is off without a sender", async () => {
   const { tools, closeTools } = await createTools()
   expect(tools.map(t => toolName(t))).not.toContain("fetch_url")
   await closeTools()
 })
 
-test("cloud fetch_url is on with a proxy", async () => {
-  const { tools, closeTools } = await createTools({ deps: { fetchProxy: "http://proxy.example.com:8080" } })
+test("cloud fetch_url is on with a sender", async () => {
+  const { tools, closeTools } = await createTools({ deps: { fetchSend: () => Promise.resolve(new Response("ok")) } })
   expect(tools.map(t => toolName(t))).toContain("fetch_url")
   await closeTools()
 })
 
-test("local fetch_url needs no proxy", async () => {
+test("local fetch_url needs no sender", async () => {
   const { tools, closeTools } = await createTools({ includeLocalTools: true })
   expect(tools.map(t => toolName(t))).toContain("fetch_url")
   await closeTools()

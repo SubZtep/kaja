@@ -8,7 +8,7 @@ import { abilityService } from "../../services"
 import type { RouteVariables } from "../../types"
 import { badRequest, notFound, serviceUnavailable } from "../../types/errors"
 import { requireAuthMiddleware, sessionUser } from "../auth"
-import { nasiToolDeps } from "../nasi/chat"
+import { cloudEgress } from "../nasi/chat"
 
 const errorSchema = z.object({ error: z.string() })
 const keyParams = z.object({
@@ -71,8 +71,9 @@ abilityRoutes.openapi(saveKeyRoute, async c => {
   const user = sessionUser(c)
   if (!abilityService.keysEnabled) return serviceUnavailable(c, "keys_unavailable")
   // Same egress as a turn's tool calls: through WEB_PROXY when set, never to a private host.
-  const result = await abilityService.saveKey(user.id, c.req.valid("param").name, c.req.valid("json").apiKey, {
-    proxy: nasiToolDeps().fetchProxy
+  const name = c.req.valid("param").name
+  const result = await abilityService.saveKey(user.id, name, c.req.valid("json").apiKey, {
+    send: cloudEgress()?.(name)
   })
   if (result === "not_found") return notFound(c, "Ability not found")
   if (result === "no_key") return badRequest(c, "no_key")

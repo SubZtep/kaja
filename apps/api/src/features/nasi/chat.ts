@@ -2,6 +2,7 @@ import {
   ASK_USER_TOOL,
   createGuardedFetch,
   createOpenAIClient,
+  type FetchLike,
   type McpSandbox,
   Nasi,
   NoModelError,
@@ -123,14 +124,17 @@ setDatasetLoaders({
 
 let fetchProxyOverride: string | undefined
 
-/** Test seam: forces the proxy `nasiToolDeps` reports, so a test can exercise proxy-gated tools without a real proxy. Pass undefined to restore the env value. */
+/** Test seam: forces the proxy {@link cloudEgress} sends through, so a test can exercise proxy-gated tools without a real proxy. Pass undefined to restore the env value. */
 export function setNasiFetchProxyOverride(proxy: string | undefined) {
   fetchProxyOverride = proxy
 }
 
-/** Tool deps every cloud turn runs with. `fetchProxy` unset leaves `fetch_url` out of the cloud tool set entirely — cloud fetches egress from the server, so they go through a proxy or not at all. HTTP tool abilities use it too when set, and otherwise go direct (their hosts are fixed by reviewed manifests, and private addresses are refused). */
-export function nasiToolDeps() {
-  return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
+/** Where a cloud turn's tool requests go: through `WEB_PROXY` when set. Unset leaves `fetch_url` out of the cloud tool set, and HTTP tools and remote MCP go direct (their hosts are fixed by reviewed manifests, and private addresses are refused). */
+export function cloudEgress(): ((ability?: string) => FetchLike) | undefined {
+  const proxy = fetchProxyOverride ?? env.WEB_PROXY
+  if (!proxy) return undefined
+  const send: FetchLike = (url, init) => fetch(url, { ...init, proxy })
+  return () => send
 }
 
 // Said to a user's turns when their stdio abilities may run on a sandbox another person runs.
@@ -175,7 +179,7 @@ export async function openNasiFor(opts: {
     summarizer,
     personas,
     owner: opts.owner,
-    deps: nasiToolDeps(),
+    egress: cloudEgress(),
     abilities: createPostgresAbilityStore(source),
     abilityKey: name => keys.get(name),
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.

@@ -1,7 +1,7 @@
 import type { HttpTool, HttpToolAbility } from "@kaja/schema/abilities"
 import { trimTrailingSlashes } from "@kaja/shared/text"
 import { type Tool, tool } from "../agent/tools"
-import { fetchPublicHttp } from "../security/ssrf"
+import { type FetchLike, fetchPublicHttp } from "../security/ssrf"
 
 const TIMEOUT_MS = 15_000
 const MAX_RESPONSE_BYTES = 1024 * 1024
@@ -122,7 +122,7 @@ export function approvalSummary(
  */
 export function createHttpTools(
   ability: HttpToolAbility,
-  opts: { apiKey?: string; allowPrivate?: boolean; proxy?: string } = {}
+  opts: { apiKey?: string; allowPrivate?: boolean; send?: FetchLike } = {}
 ): Tool<Record<string, unknown>>[] {
   const redact = (text: string) => (opts.apiKey ? text.replaceAll(opts.apiKey, KEY_MASK) : text)
 
@@ -144,7 +144,7 @@ export function createHttpTools(
             headers: request.headers,
             body: request.body,
             allowPrivate: opts.allowPrivate,
-            proxy: opts.proxy,
+            send: opts.send,
             sameOriginRedirects: true,
             timeoutMs: TIMEOUT_MS,
             maxBytes: MAX_RESPONSE_BYTES
@@ -170,7 +170,7 @@ export type KeyCheckResult = { ok: true } | { ok: false; reason: string }
 export async function checkHttpToolKey(
   ability: HttpToolAbility,
   apiKey: string,
-  opts: { allowPrivate?: boolean; proxy?: string } = {}
+  opts: { allowPrivate?: boolean; send?: FetchLike } = {}
 ): Promise<KeyCheckResult | undefined> {
   if (!ability.check) return undefined
   try {
@@ -179,7 +179,7 @@ export async function checkHttpToolKey(
       method: request.method,
       headers: request.headers,
       allowPrivate: opts.allowPrivate,
-      proxy: opts.proxy,
+      send: opts.send,
       sameOriginRedirects: true,
       timeoutMs: TIMEOUT_MS
     })

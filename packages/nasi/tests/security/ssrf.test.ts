@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { fetchPublicHttp, ProxyUnavailableError, UnsafeUrlError } from "../../src/security/ssrf"
+import { type FetchLike, fetchPublicHttp, UnsafeUrlError } from "../../src/security/ssrf"
 
 test("rejects loopback and private URLs", async () => {
   for (const url of [
@@ -14,8 +14,8 @@ test("rejects loopback and private URLs", async () => {
   }
 })
 
-// The origin here is reachable and would answer a direct request, so a pass proves the fetch failed closed rather than quietly bypassing the dead proxy.
-test("a dead proxy fails closed instead of falling back to direct egress", async () => {
+// The origin here is reachable and would answer a direct request, so a pass proves the fetch failed rather than quietly going direct.
+test("a failing sender fails instead of falling back to direct egress", async () => {
   let reached = false
   const origin = Bun.serve({
     port: 0,
@@ -24,12 +24,11 @@ test("a dead proxy fails closed instead of falling back to direct egress", async
       return new Response("secret")
     }
   })
-  // Port 9 is the RFC 863 discard port — nothing accepts connections there.
-  const deadProxy = "http://127.0.0.1:9"
+  const failing: FetchLike = () => Promise.reject(new Error("no sandbox is online"))
   try {
     await expect(
-      fetchPublicHttp(`http://example.com:${origin.port}/`, { proxy: deadProxy, timeoutMs: 2_000 })
-    ).rejects.toBeInstanceOf(ProxyUnavailableError)
+      fetchPublicHttp(`http://example.com:${origin.port}/`, { send: failing, timeoutMs: 2_000 })
+    ).rejects.toThrow("no sandbox is online")
     expect(reached).toBe(false)
   } finally {
     await origin.stop(true)
