@@ -73,7 +73,7 @@
   "feature_abilities_meta": "技能、工具佮 MCP 伺服器，揤一下就好。",
   "features_docs": "其餘看文件",
   "install_title": "安裝",
-  "install_terminal_note": "[nan-TW] lorem ipsum",
+  "install_terminal_note": "佇終端機執行",
   "install_mac_linux_label": "Mac / Linux",
   "install_windows_label": "Windows",
   "install_binary_prefix": "想欲純執行檔？",

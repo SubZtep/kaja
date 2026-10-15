@@ -73,7 +73,7 @@
   "feature_abilities_meta": "Skills, tools and MCP servers in one click.",
   "features_docs": "The rest is in the docs",
   "install_title": "Install",
-  "install_terminal_note": "[en-US] lorem ipsum",
+  "install_terminal_note": "Run in terminal",
   "install_mac_linux_label": "Mac / Linux",
   "install_windows_label": "Windows",
   "install_binary_prefix": "Prefer a plain binary?",
