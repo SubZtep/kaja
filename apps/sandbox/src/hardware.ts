@@ -16,7 +16,8 @@ export async function sandboxInfo(opts: { name?: string; pool: ProcessPool }): P
     cpu: { model: (cores[0]?.model ?? "unknown").trim().slice(0, 200), cores: cores.length },
     memory: { total: totalmem(), limit: container?.max ?? null },
     maxProcesses: opts.pool.limits.maxProcesses,
-    abilities: opts.pool.abilities
+    abilities: opts.pool.abilities,
+    fetch: true
   }
 }
 

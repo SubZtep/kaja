@@ -1,5 +1,5 @@
 import { createHmac, hkdfSync } from "node:crypto"
-import type { McpSandbox } from "@kaja/nasi"
+import type { FetchLike, McpSandbox } from "@kaja/nasi"
 import { SANDBOX_FULL_HEADER, type Sandbox } from "@kaja/schema/api"
 import { env } from "../../core/env"
 import { lookupGeo } from "../../core/geo"
@@ -79,19 +79,32 @@ function fullness(sandbox: Sandbox, tunnel: SandboxTunnel): number {
 export type SandboxPick = { tunnel: SandboxTunnel; borrowed: boolean }
 
 /**
- * The sandbox a user's turn runs its stdio abilities in: the last one while it's still usable, else their own (the
- * least full), else, when they allow it and the ability doesn't need a trusted box, one another user shares (the
- * nearest, then the least full), else the official box. `skip` leaves out sandboxes that just answered they're full.
+ * Which sandboxes may take a call: `any` (a keyless one: the user's own, shared ones when they allow it, the official
+ * box), `trusted` (the user's own or the official box), `official` (only the official box).
+ */
+export type SandboxTrust = "any" | "trusted" | "official"
+
+/**
+ * The sandbox a user's turn runs a stdio ability in (`ability`), or sends a tool request out through (`ability`
+ * null): the last one while it's still usable, else their own (the least full), else, when they allow it and `trust`
+ * is `any`, one another user shares (the nearest, then the least full), else the official box. `skip` leaves out
+ * sandboxes that just answered they're full.
  */
 export async function pickSandbox(
   userId: string,
-  ability: string,
-  opts: { trusted?: boolean; skip?: Set<string> } = {}
+  ability: string | null,
+  opts: { trust?: SandboxTrust; skip?: Set<string> } = {}
 ): Promise<SandboxPick | undefined> {
+  const trust = opts.trust ?? "any"
   const { useShared } = await sandboxService.settings(userId)
-  const usable = (await sandboxService.usableBy(userId, useShared && !opts.trusted)).flatMap(sandbox => {
+  const usable = (await sandboxService.usableBy(userId, useShared && trust === "any")).flatMap(sandbox => {
     const tunnel = tunnels.get(sandbox.id)
-    return tunnel && !tunnel.closed && !opts.skip?.has(sandbox.id) && tunnel.info.abilities.includes(ability)
+    const serves = ability === null ? tunnel?.info.fetch === true : tunnel?.info.abilities.includes(ability)
+    return tunnel &&
+      !tunnel.closed &&
+      !opts.skip?.has(sandbox.id) &&
+      serves &&
+      (trust !== "official" || sandbox.kind === "official")
       ? [{ sandbox, tunnel }]
       : []
   })
@@ -120,7 +133,8 @@ export async function pickSandbox(
   const official = usable.filter(entry => entry.sandbox.kind === "official").sort(byFullness)
   const ordered = [...own, ...shared, ...official]
   const picked = ordered.find(entry => fullness(entry.sandbox, entry.tunnel) < 1) ?? ordered[0]
-  if (picked) lastPick.set(userId, picked.sandbox.id)
+  // A request sent out leaves nothing warm behind, so it doesn't move where the user's servers go next
+  if (picked && ability !== null) lastPick.set(userId, picked.sandbox.id)
   return picked && pick(picked)
 }
 
@@ -155,7 +169,7 @@ export function mcpSandboxFor(userId: string): McpSandbox {
       if (!picked.has(ability)) {
         picked.set(
           ability,
-          needsTrust(ability).then(trust => pickSandbox(userId, ability, { trusted: trust }))
+          needsTrust(ability).then(trust => pickSandbox(userId, ability, { trust: trust ? "trusted" : "any" }))
         )
       }
       // A retry resends the body, so it's read once up front.
@@ -175,7 +189,7 @@ export function mcpSandboxFor(userId: string): McpSandbox {
         await response.body?.cancel()
         skip.add(tunnel.id)
         const trust = await needsTrust(ability)
-        picked.set(ability, pickSandbox(userId, ability, { trusted: trust, skip }))
+        picked.set(ability, pickSandbox(userId, ability, { trust: trust ? "trusted" : "any", skip }))
       }
     },
     close: async () => {
@@ -185,4 +199,38 @@ export function mcpSandboxFor(userId: string): McpSandbox {
       }
     }
   }
+}
+
+/** Thrown by {@link egressFor}'s senders when no sandbox can send the request: a cloud turn never sends it from here. */
+export class NoSandboxError extends Error {
+  constructor() {
+    super("no sandbox is online to send this request right now")
+    this.name = "NoSandboxError"
+  }
+}
+
+/**
+ * A turn's egress (nasi's `egress`): every tool request goes out through a sandbox, never from the API. `fetch_url`
+ * (no ability) may use any sandbox the user may; an ability's requests may carry a key, so they stay on the official
+ * box. Each kind keeps the sandbox it first picked for the turn, picking again only when that one disconnects.
+ */
+export function egressFor(userId: string): (ability?: string) => FetchLike {
+  const picked = new Map<SandboxTrust, Promise<SandboxPick | undefined>>()
+  const sender = (trust: SandboxTrust): FetchLike => {
+    const pick = async () => {
+      let current = await picked.get(trust)
+      if (!current || current.tunnel.closed) {
+        const next = pickSandbox(userId, null, { trust })
+        picked.set(trust, next)
+        current = await next
+      }
+      return current
+    }
+    return async (input, init) => {
+      const current = await pick()
+      if (!current) throw new NoSandboxError()
+      return current.tunnel.fetch(pseudonymFor(userId, current.tunnel.id), input, init)
+    }
+  }
+  return ability => sender(ability === undefined ? "any" : "official")
 }

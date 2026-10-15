@@ -34,6 +34,8 @@ export async function startSandbox(opts: {
   maxProcesses?: number
   /** Whether it has memory for another server (default yes). */
   hasRoom?: () => Promise<boolean>
+  /** How it sends `fetch` frames out (default: refuses them); null makes it an image from before them. */
+  fetch?: ((request: Request) => Promise<Response>) | null
 }): Promise<TestSandbox> {
   const servers = new Map(
     opts.abilities.map(name => [name, { name, command: process.execPath, args: [COUNTER_SCRIPT], env: {} }])
@@ -51,10 +53,11 @@ export async function startSandbox(opts: {
     apiUrl: opts.apiUrl,
     key: opts.key,
     stateDir,
-    info: () => sandboxInfo({ name: "test", pool }),
+    info: async () => ({ ...(await sandboxInfo({ name: "test", pool })), fetch: opts.fetch !== null }),
     load: () => sandboxLoad(pool),
     handler: {
       mcp: (user, ability, request) => pool.handle(user, ability, request),
+      fetch: (_user, request) => (opts.fetch ?? noFetch)(request),
       release: (user, ability) => pool.release(user, ability),
       stats: () => collectStats({ pool, egress }),
       running: () => pool.size
@@ -80,6 +83,8 @@ export async function startSandbox(opts: {
     }
   }
 }
+
+const noFetch = () => Promise.reject(new Error("this test sandbox sends nothing out"))
 
 /** Polls `check` until it returns something, for up to 10 s. */
 export async function waitFor<T>(check: () => Promise<T | undefined>): Promise<T> {

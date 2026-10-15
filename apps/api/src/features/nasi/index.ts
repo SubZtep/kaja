@@ -254,7 +254,7 @@ nasiRoutes.openapi(infoRoute, async c => {
     ? personaLoadsSkills(persona, await createPostgresAbilityStore({ userId: user.id }).listSkills())
     : false
   const tools = [
-    ...(await listCloudToolNames({ fetchSend: cloudEgress()?.() })),
+    ...(await listCloudToolNames({ fetchSend: cloudEgress(user.id)() })),
     ...(loadsSkills ? [LOAD_SKILL_TOOL] : []),
     ...httpTools,
     ...mcpTools

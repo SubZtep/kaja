@@ -70,7 +70,9 @@ export const sandboxInfoSchema = z.object({
   memory: z.object({ total: z.number().nonnegative(), limit: z.number().nonnegative().nullable() }),
   maxProcesses: z.number().int().min(0).max(1000),
   /** The abilities it can run. */
-  abilities: z.array(z.string().max(100)).max(200)
+  abilities: z.array(z.string().max(100)).max(200),
+  /** It takes `fetch` frames (a cloud turn's outgoing tool requests); images from before them leave it out. */
+  fetch: z.boolean().optional()
 })
 
 /** How busy a sandbox is, sent every minute (the `heartbeat` frame). */
@@ -104,7 +106,7 @@ export const sandboxFrameSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("stats"), id: frameId, stats: sandboxStatsSchema })
 ])
 
-/** Frames the API sends a sandbox: its identity, MCP requests to run (for an opaque `user`), cancels and stats requests. */
+/** Frames the API sends a sandbox: its identity, MCP requests to run and tool requests to send out (for an opaque `user`), cancels and stats requests. */
 export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
   /** `secret` only when the API made a new row: the sandbox keeps it to come back as the same one. */
   z.object({ t: z.literal("welcome"), id: z.string(), secret: z.string().optional() }),
@@ -113,6 +115,17 @@ export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
     id: frameId,
     user: z.string(),
     ability: z.string(),
+    method: z.string(),
+    headers: z.array(z.tuple([z.string(), z.string()])),
+    /** The request body, base64. */
+    body: z.string().nullable()
+  }),
+  /** An outgoing request of a tool (`fetch_url`, an HTTP tool, a remote MCP server), sent out through the egress proxy; the answer comes back like a request's. */
+  z.object({
+    t: z.literal("fetch"),
+    id: frameId,
+    user: z.string(),
+    url: z.string(),
     method: z.string(),
     headers: z.array(z.tuple([z.string(), z.string()])),
     /** The request body, base64. */

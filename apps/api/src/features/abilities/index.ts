@@ -70,10 +70,10 @@ const saveKeyRoute = createRoute({
 abilityRoutes.openapi(saveKeyRoute, async c => {
   const user = sessionUser(c)
   if (!abilityService.keysEnabled) return serviceUnavailable(c, "keys_unavailable")
-  // Same egress as a turn's tool calls: through WEB_PROXY when set, never to a private host.
+  // Tested the way a turn's calls go: through a sandbox, never from here.
   const name = c.req.valid("param").name
   const result = await abilityService.saveKey(user.id, name, c.req.valid("json").apiKey, {
-    send: cloudEgress()?.(name)
+    send: cloudEgress(user.id)(name)
   })
   if (result === "not_found") return notFound(c, "Ability not found")
   if (result === "no_key") return badRequest(c, "no_key")

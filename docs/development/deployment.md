@@ -22,8 +22,6 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   uses [Hetzner Object Storage](https://www.hetzner.com/storage/object-storage); see
   [Object storage](#object-storage).
 - **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
-- **Outbound HTTP(S) proxy** for the cloud `fetch_url` tool (`WEB_PROXY`); without one the tool is
-  left out of cloud turns. Production uses [Webshare](https://www.webshare.io).
 - **Bot check** on the auth forms and Google buttons (optional): a [Cloudflare Turnstile](https://www.cloudflare.com/application-services/products/turnstile/)
   widget, its site key in the web's `VITE_TURNSTILE_SITE_KEY` and its secret in the API's `TURNSTILE_SECRET` (with
   `TURNSTILE_HOSTNAMES`). Production uses an Invisible-mode widget; the mode is the widget's setting in Cloudflare, not
@@ -123,8 +121,9 @@ credentials, can delete a folder too.
 
 ### MCP sandbox
 
-The sandbox (`apps/sandbox`) runs stdio MCP servers for cloud turns, starting with a headless Chrome. Its
-browsers go out through the sandbox's own egress proxy, which only connects to public addresses (no
+The sandbox (`apps/sandbox`) runs stdio MCP servers for cloud turns, starting with a headless Chrome, and
+sends their tool requests out (`fetch_url`, HTTP tools, remote MCP): the API never connects to a tool's host.
+Its browsers and those requests go out through the sandbox's own egress proxy, which only connects to public addresses (no
 loopback, private ranges or the cloud metadata service). Still deploy it as its own project on a **separate
 Disco server** with nothing else on it, so a gap in that proxy can't reach the database or the other projects.
 The server must be amd64: the Chrome headless shell has no Linux arm64 build.
@@ -137,8 +136,9 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
   `https://api.kaja.io` in the image. Admins see every sandbox live on the web's **Admin → Dashboard**.
 - Set the API's `GEO_API_KEY` for [ip2geo](https://github.com/SubZtep/geo-service) (`GEO_API_URL`), which
   places each sandbox by its public IP when it connects; without it sandboxes register without a location.
-- Optionally set `WEB_PROXY` (`http://` only, same format as the API's) so the browsers' traffic leaves
-  through that proxy instead of the sandbox server's own IP; it must allow `CONNECT` to IPs on any port.
+- Optionally set `WEB_PROXY` (`http://` only, credentials allowed) so the browsers' and tools' traffic
+  leaves through that proxy instead of the sandbox server's own IP; it must allow `CONNECT` to IPs on any
+  port. Production uses [Webshare](https://www.webshare.io).
 - Errors go to the sandbox's own Sentry project (DSN in `apps/sandbox/src/report.ts`), only in production;
   the image sets `NODE_ENV=production`. It reports MCP servers that won't start, die on their own, or error,
   with their last stderr lines; no tracing, and request headers are dropped.
@@ -151,7 +151,8 @@ The server must be amd64: the Chrome headless shell has no Linux arm64 build.
 The public image is released from **Release to Docker Hub** (`release_sandbox`), amd64 only, as
 `subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes with
 `docker run subztep/kaja-sandbox`, using their key from the web app's Sandbox page or none at all. With no
-sandbox online for a user, their stdio MCP abilities just have no tools that turn. How the sandbox works,
+sandbox online for a user, their stdio MCP abilities just have no tools that turn, and `fetch_url`, HTTP
+tools and remote MCP calls fail; without the official one, so do the calls of abilities that may carry a key. How the sandbox works,
 including its egress proxy and settings, is in its
 [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
 

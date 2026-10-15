@@ -20,7 +20,7 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | `switch_persona` | change [persona](/abilities/personas) mid-conversation | ✓ |
 | `load_skill` | read an enabled [skill](/abilities/skills) | ✓ |
 | `current_time` | current date and time | ✓ |
-| `fetch_url` | fetch a URL | proxy |
+| `fetch_url` | fetch a URL | sandbox |
 | `summarize` | summarize long text | ✓ |
 | `rerank` | rerank passages against a query | ✓ |
 | `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/abilities/memory) | ✓ |
@@ -37,8 +37,10 @@ Web search isn't built in. Turn on the marketplace's `web-search` [HTTP tool](#h
 `web_search`: locally with your own Brave Search API key, in the cloud with the server's key (or yours, if
 you save one).
 
-`fetch_url` runs from your own machine and IP in local mode. In the cloud it goes through the server's
-proxy, and is left out entirely if the server has none.
+`fetch_url` runs from your own machine and IP in local mode. In the cloud it never fetches from the server:
+it goes out through an [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme), your
+own, a shared one if you allow it, or the official one. HTTP tools and remote MCP servers do the same, only
+through the official sandbox, since their requests may carry a key. With no sandbox online, these calls fail.
 
 The **Cloud** column is an explicit allowlist. Anything that touches the server's filesystem or shell is
 never exposed there, and code tools are never attached.

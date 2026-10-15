@@ -6,8 +6,9 @@ import { faker } from "@faker-js/faker"
 import { SANDBOX_KEY_HEADER } from "@kaja/schema/api"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
+import { env } from "../../src/core/env"
 import { lookupGeo, setGeoLookupOverride } from "../../src/core/geo"
-import { mcpSandboxFor, pickSandbox } from "../../src/features/sandbox/registry"
+import { egressFor, mcpSandboxFor, NoSandboxError, pickSandbox } from "../../src/features/sandbox/registry"
 import { abilityService, sandboxService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, waitFor } from "./sandbox-helpers"
@@ -115,7 +116,7 @@ describe("routing", () => {
       expect((await settings(tokenA, { useShared: true })).status).toBe(200)
       expect(await pickSandbox(userA, ability)).toMatchObject({ tunnel: { id: theirs.id }, borrowed: true })
       // An ability that needs a trusted sandbox never goes to another person's.
-      expect(await pickSandbox(userA, ability, { trusted: true })).toBeUndefined()
+      expect(await pickSandbox(userA, ability, { trust: "trusted" })).toBeUndefined()
       expect(await (await settings(tokenB, { share: false })).json()).toMatchObject({ share: false, useShared: false })
       expect(await pickSandbox(userA, ability)).toBeUndefined()
     } finally {
@@ -234,4 +235,66 @@ describe("geolocation", () => {
       setGeoLookupOverride(undefined)
     }
   })
+})
+
+describe("egress", () => {
+  /** A sandbox's sender that answers with `who` and records the URLs it was asked for. */
+  const answering = (who: string, urls: string[]) => async (request: Request) => {
+    urls.push(request.url)
+    return new Response(who)
+  }
+
+  test("fetch_url goes out through a sandbox that takes fetch frames, never from the API; with none it fails", async () => {
+    const urls: string[] = []
+    const old = await startSandbox({ apiUrl, abilities: [], key: await newKey(tokenA), fetch: null })
+    try {
+      await expect(egressFor(userA)()("https://example.com/")).rejects.toBeInstanceOf(NoSandboxError)
+    } finally {
+      await old.close()
+    }
+    const own = await startSandbox({ apiUrl, abilities: [], key: await newKey(tokenA), fetch: answering("own", urls) })
+    try {
+      const res = await egressFor(userA)()("https://example.com/page", { method: "GET" })
+      expect(await res.text()).toBe("own")
+      expect(urls).toEqual(["https://example.com/page"])
+    } finally {
+      await own.close()
+    }
+  }, 30_000)
+
+  test("an ability's requests, which may carry a key, go only through the official sandbox", async () => {
+    const ownUrls: string[] = []
+    const officialUrls: string[] = []
+    const own = await startSandbox({
+      apiUrl,
+      abilities: [],
+      key: await newKey(tokenA),
+      fetch: answering("own", ownUrls)
+    })
+    const systemKey = env.SANDBOX_SYSTEM_KEY
+    env.SANDBOX_SYSTEM_KEY = `system-${tag}`
+    try {
+      await expect(egressFor(userA)("web-search")("https://api.example.com/search")).rejects.toBeInstanceOf(
+        NoSandboxError
+      )
+      const official = await startSandbox({
+        apiUrl,
+        abilities: [],
+        key: `system-${tag}`,
+        fetch: answering("official", officialUrls)
+      })
+      try {
+        const egress = egressFor(userA)
+        expect(await (await egress("web-search")("https://api.example.com/search")).text()).toBe("official")
+        expect(await (await egress()("https://example.com/")).text()).toBe("own")
+        expect(officialUrls).toEqual(["https://api.example.com/search"])
+        expect(ownUrls).toEqual(["https://example.com/"])
+      } finally {
+        await official.close()
+      }
+    } finally {
+      env.SANDBOX_SYSTEM_KEY = systemKey
+      await own.close()
+    }
+  }, 30_000)
 })

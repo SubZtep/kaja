@@ -16,7 +16,7 @@ import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { abilityService, modelService, sandboxService } from "../../services"
-import { mcpSandboxFor } from "../sandbox"
+import { egressFor, mcpSandboxFor } from "../sandbox"
 import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
 
@@ -122,19 +122,17 @@ setDatasetLoaders({
   loadDataset: async topic => (await abilityService.datasets()).get(topic)
 })
 
-let fetchProxyOverride: string | undefined
+type Egress = (ability?: string) => FetchLike
+let egressOverride: ((userId: string) => Egress) | undefined
 
-/** Test seam: forces the proxy {@link cloudEgress} sends through, so a test can exercise proxy-gated tools without a real proxy. Pass undefined to restore the env value. */
-export function setNasiFetchProxyOverride(proxy: string | undefined) {
-  fetchProxyOverride = proxy
+/** Test seam: where a user's turns send their tool requests. Pass undefined to restore the connected sandboxes. */
+export function setNasiEgressOverride(egress: ((userId: string) => Egress) | undefined) {
+  egressOverride = egress
 }
 
-/** Where a cloud turn's tool requests go: through `WEB_PROXY` when set. Unset leaves `fetch_url` out of the cloud tool set, and HTTP tools and remote MCP go direct (their hosts are fixed by reviewed manifests, and private addresses are refused). */
-export function cloudEgress(): ((ability?: string) => FetchLike) | undefined {
-  const proxy = fetchProxyOverride ?? env.WEB_PROXY
-  if (!proxy) return undefined
-  const send: FetchLike = (url, init) => fetch(url, { ...init, proxy })
-  return () => send
+/** Where a user's cloud turn sends its tool requests (`fetch_url`, HTTP tools, remote MCP): a sandbox, never this host. */
+export function cloudEgress(userId: string): Egress {
+  return (egressOverride ?? egressFor)(userId)
 }
 
 // Said to a user's turns when their stdio abilities may run on a sandbox another person runs.
@@ -179,7 +177,7 @@ export async function openNasiFor(opts: {
     summarizer,
     personas,
     owner: opts.owner,
-    egress: cloudEgress(),
+    egress: "userId" in source ? cloudEgress(source.userId) : undefined,
     abilities: createPostgresAbilityStore(source),
     abilityKey: name => keys.get(name),
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.

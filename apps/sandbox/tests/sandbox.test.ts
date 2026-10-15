@@ -51,19 +51,23 @@ afterAll(async () => {
 
 /** A sandbox and the API's end of its tunnel, wired in-process: every frame goes through JSON and its schema, as over the socket. */
 function sandbox(
-  opts: Partial<Pick<PoolOptions, "idleMs" | "maxProcesses" | "hasRoom" | "serverMemory" | "treeRss">> = {}
+  opts: Partial<Pick<PoolOptions, "idleMs" | "maxProcesses" | "hasRoom" | "serverMemory" | "treeRss">> & {
+    send?: (request: Request) => Promise<Response>
+  } = {}
 ) {
+  const { send = () => Promise.reject(new Error("nothing goes out here")), ...poolOpts } = opts
   const pool = new ProcessPool({
     servers,
     idleMs: 60_000,
     maxProcesses: 8,
     hasRoom: async () => true,
-    ...opts
+    ...poolOpts
   })
   pools.push(pool)
   const egress = { open: 0, allowed: 0, refused: 0, failed: 0 }
   const handler = {
     mcp: (user: string, ability: string, request: Request) => pool.handle(user, ability, request),
+    fetch: (_user: string, request: Request) => send(request),
     release: (user: string, ability: string) => pool.release(user, ability),
     stats: () => collectStats({ pool, egress }),
     running: () => pool.size
@@ -79,7 +83,8 @@ function sandbox(
       cpu: { model: "test", cores: 1 },
       memory: { total: 1, limit: null },
       maxProcesses: pool.limits.maxProcesses,
-      abilities: pool.abilities
+      abilities: pool.abilities,
+      fetch: true
     },
     send: text => queueMicrotask(() => server?.receive(apiSandboxFrameSchema.parse(JSON.parse(text))))
   })
@@ -170,6 +175,56 @@ describe("tunnel", () => {
     tunnel.close()
     await expect(post(tunnel, "/mcp/counter")).rejects.toThrow("the sandbox disconnected")
     await expect(tunnel.stats()).rejects.toThrow("the sandbox disconnected")
+  })
+})
+
+describe("fetch frames", () => {
+  test("a tool's request goes to the sandbox's sender as one hop, and its answer streams back", async () => {
+    const seen: { url: string; method: string; auth: string | null; body: string }[] = []
+    const { tunnel } = sandbox({
+      send: async request => {
+        seen.push({
+          url: request.url,
+          method: request.method,
+          auth: request.headers.get("authorization"),
+          body: await request.text()
+        })
+        return new Response("found it", { status: 201, headers: { "x-site": "yes" } })
+      }
+    })
+    const res = await tunnel.fetch("user-a", "https://api.example.com/v1/search?q=kaja", {
+      method: "POST",
+      headers: { authorization: "Bearer k" },
+      body: "{}"
+    })
+    expect(res.status).toBe(201)
+    expect(res.headers.get("x-site")).toBe("yes")
+    expect(await res.text()).toBe("found it")
+    expect(seen).toEqual([
+      { url: "https://api.example.com/v1/search?q=kaja", method: "POST", auth: "Bearer k", body: "{}" }
+    ])
+  })
+
+  test("a sender that fails answers with an error, and aborting a fetch cancels it on the sandbox", async () => {
+    let aborted = false
+    const { tunnel } = sandbox({
+      send: request =>
+        request.url.endsWith("/fail")
+          ? Promise.reject(new Error("Blocked non-public URL: http://10.0.0.1/fail"))
+          : new Promise((_resolve, reject) =>
+              request.signal.addEventListener("abort", () => {
+                aborted = true
+                reject(new Error("aborted"))
+              })
+            )
+    })
+    await expect(tunnel.fetch("user-a", "http://10.0.0.1/fail")).rejects.toThrow("Blocked non-public URL")
+    const controller = new AbortController()
+    const pending = tunnel.fetch("user-a", "https://slow.example.com/", { signal: controller.signal })
+    await Bun.sleep(20)
+    controller.abort()
+    await expect(pending).rejects.toThrow()
+    await until(() => aborted)
   })
 })
 

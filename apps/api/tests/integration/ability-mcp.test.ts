@@ -11,7 +11,7 @@ import {
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
+import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createPostgresAbilityStore } from "../../src/features/nasi/pg-abilities"
 import { createCloudTelegramDriver } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
@@ -138,8 +138,8 @@ describe("MCP servers in the cloud", () => {
     token = await signUpAndSignIn(faker.internet.email(), faker.internet.password({ length: 8, prefix: "P4$s" }), "Mcp")
     secretService.setKey(TEST_SECRET_KEY)
     fixture = startHttpMcpFixture({ apiKey: GOOD_KEY })
-    // With a proxy set the guard leaves DNS to it; the faked proxy hands the fake host to the local fixture.
-    setNasiFetchProxyOverride("http://proxy.test:3128")
+    // With a sender set the guard leaves DNS to it; this one is the faked fetch, which hands the fake host to the local fixture.
+    setNasiEgressOverride(() => () => (url, init) => fetch(url, init))
     globalThis.fetch = routeHostTo(fixture, host, realFetch)
   })
 
@@ -147,7 +147,7 @@ describe("MCP servers in the cloud", () => {
     globalThis.fetch = realFetch
     fixture.stop()
     secretService.setKey(env.USER_SECRET_KEY)
-    setNasiFetchProxyOverride(undefined)
+    setNasiEgressOverride(undefined)
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
     // The fixture's default persona too, so later files get the built-in one again.

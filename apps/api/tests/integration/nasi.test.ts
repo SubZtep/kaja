@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
-import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
+import { setNasiChatResolver } from "../../src/features/nasi/chat"
 import { cleanupModel, expectUnauthenticated, fakeChatClient, seedModel, signUpAndSignIn } from "./helpers"
 
 const turnRequestInit = {
@@ -63,14 +63,12 @@ function fetchUrlToolCallChatClient(onMessages: (messages: unknown[]) => void = 
   }
 }
 
-/** Stubs the nasi chat resolver with `client` for the duration of `fn`, then restores the default fake resolver. Also sets a proxy so proxy-gated tools (fetch_url) are present — no proxy is contacted, since these turns fail before any connection. */
+/** Stubs the nasi chat resolver with `client` for the duration of `fn`, then restores the default fake resolver. */
 async function withStubbedResolver<T>(client: unknown, fn: () => Promise<T>) {
   setNasiChatResolver(async () => ({ client: client as never, model: "fake-model" }))
-  setNasiFetchProxyOverride("http://proxy.invalid:8080")
   try {
     return await fn()
   } finally {
-    setNasiFetchProxyOverride(undefined)
     setNasiChatResolver(async () => ({ client: fakeChatClient("hello from nasi") as never, model: "fake-model" }))
   }
 }

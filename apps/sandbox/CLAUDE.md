@@ -1,6 +1,6 @@
 # @kaja/sandbox
 
-Runs stdio MCP servers for cloud turns, which can't start commands on the API host. Anyone can run one (`subztep/kaja-sandbox`): it dials the API's WebSocket (`/sandbox/connect`), registers, and serves the MCP requests the API tunnels to it; nothing connects in.
+Runs stdio MCP servers for cloud turns, which can't start commands on the API host, and sends their tool requests out (`fetch_url`, HTTP tools, remote MCP: the API never connects to a tool's host). Anyone can run one (`subztep/kaja-sandbox`): it dials the API's WebSocket (`/sandbox/connect`), registers, and serves the MCP and fetch requests the API tunnels to it; nothing connects in.
 
 The human-facing overview (request flow, warm servers, how the egress proxy works and why `SANDBOX_EGRESS_PORT` must match `overrides.json`) is [README.md](./README.md); keep it in step with changes here.
 
@@ -8,6 +8,7 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 
 - Keyless stdio MCP abilities with a `tools` list are always offered in the cloud (`cloudMcpProblem` in `apps/api/src/services/ability.ts`); a cloud turn always gets `mcpSandbox` (`apps/api/src/features/nasi/chat.ts`), so a stdio ability never runs on the API host. nasi's `sandboxedMcpTarget` points each at `SANDBOX_ORIGIN/mcp/<name>`, and requests to that origin go to `mcpSandbox.fetch` instead of the guarded fetch
 - API side (`apps/api/src/features/sandbox/`): `connect.ts` (owner from `X-Kaja-Sandbox-Key`: `SANDBOX_SYSTEM_KEY` = official, a user's `sandbox_owner` key, none = anonymous; resume by `X-Kaja-Sandbox-Instance`), `tunnel.ts` (fetch ⇄ frames), `registry.ts` (connected tunnels in memory, pseudonyms, `pickSandbox`: last pick → own → shared if the user's `use_shared` and the owner's `share` → official). Rows in `sandbox`/`sandbox_owner` (`services/sandbox.ts`); geolocation in `core/geo.ts`
+- A tool request is a `fetch` frame (one hop, redirects back to the API, which checks each): `sendThroughEgress` (`src/egress.ts`) sends it through the egress proxy (http(s) only, a refused address throws "Blocked non-public URL", the decoded body loses `content-encoding`/`content-length`). `hello` says `fetch: true`; the API's `egressFor` (`registry.ts`) picks only such sandboxes: any the user may for `fetch_url`, the official one for an ability's requests (they may carry a key)
 - Frames are JSON, schemas in `@kaja/schema/api` (`sandboxFrameSchema` from the sandbox, `apiSandboxFrameSchema` from the API). A sandbox sees users only as `pseudonymFor(userId, sandboxId)` (HMAC with a key HKDF-derived from `BETTER_AUTH_SECRET`)
 - The API holds the sockets in memory, so it must run as one instance
 
@@ -19,14 +20,14 @@ src/cli.ts        # bundle entry: `health` (the Docker HEALTHCHECK) or startSand
 src/server.ts     # startSandbox(): banner, env, manifests, the tunnel, status every 15 min, stops every server on SIGTERM/SIGINT
 src/health.ts     # status file the tunnel keeps current (welcome, heartbeats, disconnects); `health` reads it
 src/banner.ts     # the startup banner: the monster, version and setup
-src/tunnel.ts     # connectTunnel: dials KAJA_API_URL, hello/welcome (instance id+secret kept in SANDBOX_STATE_DIR), heartbeat every minute, reconnect with backoff; TunnelServer runs request/cancel/stats frames
+src/tunnel.ts     # connectTunnel: dials KAJA_API_URL, hello/welcome (instance id+secret kept in SANDBOX_STATE_DIR), heartbeat every minute, reconnect with backoff; TunnelServer runs request/fetch/cancel/stats frames
 src/hardware.ts   # hello info (cpu, memory, arch, os, version, cap, abilities) and heartbeat load
 src/capacity.ts   # defaultMaxProcesses (512 MB per server of the memory limit, less 512 MB), hasRoom (512 MB free now)
 src/isolation.ts  # UserIsolation: a uid per user (LRU reuse, skipping a uid that still has a process in /proc), asUser: the prlimit + setpriv wrapper
 src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES, else from memory): full or short of memory, it stops the least recently used idle server, 503 + x-kaja-sandbox-full only when that doesn't help; memory watchdog (SANDBOX_SERVER_MEMORY); release
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
 src/stats.ts      # stats frame: pool servers and counts, process-tree RSS from /proc, host + cgroup memory, egress counts
-src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked)
+src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked); sendThroughEgress sends fetch frames through it
 src/manifests.ts  # the stdio manifests it may run, plus overrides.json
 src/report.ts     # Sentry in production (its own project): failed starts, servers that exit on their own (last 20 stderr lines), child errors
 overrides.json    # the Docker image's command/args: chrome-devtools (the image's npm-installed /opt/mcp copy, pinned, with the Chrome for Testing headless shell, --no-sandbox, http(s) pages only, the egress proxy, a 512 MB JS heap per page)

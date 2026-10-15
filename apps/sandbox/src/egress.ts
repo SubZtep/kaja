@@ -9,6 +9,10 @@ const CONNECT_TIMEOUT_MS = 10_000
 const HEAD_END = "\r\n\r\n"
 /** Hop-by-hop headers a forwarded plain-HTTP request drops; `Connection: close` replaces them. */
 const HOP_HEADERS = new Set(["connection", "keep-alive", "proxy-connection", "proxy-authorization"])
+/** Statuses a Response can't carry a body with. */
+const NULL_BODY_STATUSES = new Set([101, 204, 205, 304])
+/** Marks the proxy's own refusals, so a plain-HTTP 403 from it isn't taken for the site's. */
+const REFUSED_HEADER = "x-kaja-egress-refused"
 
 type Resolve = (hostname: string) => Promise<string[]>
 /** Connections open now, and ones let through, refused and failed upstream since the proxy started. */
@@ -169,5 +173,34 @@ function originFormHead(method: string, url: URL, version: string, headers: stri
 
 function refuse(client: Socket, deps: Deps, status: number, reason: string) {
   deps.counts[status === 502 ? "failed" : "refused"]++
-  client.end(`HTTP/1.1 ${status} ${reason}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`)
+  client.end(`HTTP/1.1 ${status} ${reason}\r\n${REFUSED_HEADER}: 1\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`)
+}
+
+/**
+ * Sends a cloud turn's tool request (a `fetch` frame) out through the egress proxy on `port`, so it gets the browsers'
+ * checks: public addresses only, the one it checked, `WEB_PROXY` when set. http(s) only (Bun's fetch would read a
+ * `file:` URL itself); redirects come back to the API, which checks every hop.
+ */
+export function sendThroughEgress(port: number): (request: Request) => Promise<Response> {
+  const proxy = `http://127.0.0.1:${port}`
+  return async request => {
+    const { protocol } = new URL(request.url)
+    if (protocol !== "http:" && protocol !== "https:") throw new Error(`Only http(s) URLs: ${request.url}`)
+    const blocked = () => new Error(`Blocked non-public URL: ${request.url}`)
+    let response: Response
+    try {
+      response = await fetch(request, { proxy, redirect: "manual" })
+    } catch (error) {
+      // An https request's CONNECT the proxy refused (a private address); its 502s stay as they are
+      if (error instanceof Error && /tunnel: 403/.test(error.message)) throw blocked()
+      throw error
+    }
+    if (response.status === 403 && response.headers.has(REFUSED_HEADER)) throw blocked()
+    // Bun has decompressed the body already, so the encoding and length it arrived with no longer describe it.
+    const headers = new Headers(response.headers)
+    headers.delete("content-encoding")
+    headers.delete("content-length")
+    const body = NULL_BODY_STATUSES.has(response.status) ? null : response.body
+    return new Response(body, { status: response.status, statusText: response.statusText, headers })
+  }
 }

@@ -12,7 +12,7 @@ import { notFound } from "../../types/errors"
 import { requireAuthMiddleware, sessionUser } from "../auth"
 import { sandboxConnect, sandboxOwnerMiddleware } from "./connect"
 
-export { mcpSandboxFor, rememberPlace, tunnelFor, userForPseudonym } from "./registry"
+export { egressFor, mcpSandboxFor, rememberPlace, tunnelFor, userForPseudonym } from "./registry"
 
 const errorSchema = z.object({ error: z.string() })
 const unauthorizedResponse = {

@@ -22,8 +22,8 @@ export class SandboxGoneError extends Error {
 }
 
 /**
- * The API's end of one connected sandbox's WebSocket: sends it MCP requests as frames and turns its answer frames back
- * into streamed Responses (so an SSE reply streams), plus its stats on request.
+ * The API's end of one connected sandbox's WebSocket: sends it MCP requests and tool requests as frames and turns its
+ * answer frames back into streamed Responses (so an SSE reply streams), plus its stats on request.
  */
 export class SandboxTunnel {
   readonly id: string
@@ -53,13 +53,44 @@ export class SandboxTunnel {
 
   /** Sends `<any origin>/mcp/<ability>` to the sandbox for the opaque `user`; its answer streams back. */
   async request(user: string, input: string | URL, init?: RequestInit): Promise<Response> {
-    if (this.#closed) throw new SandboxGoneError()
     const request = new Request(input, init)
     const match = /^\/mcp\/([^/]+)$/.exec(new URL(request.url).pathname)
     if (!match) return Response.json({ error: "not found" }, { status: 404 })
+    const ability = decodeURIComponent(match[1]!)
+    return this.#exchange(request, init?.signal, (id, body) => ({
+      t: "request",
+      id,
+      user,
+      ability,
+      method: request.method,
+      headers: [...request.headers],
+      body
+    }))
+  }
+
+  /** Has the sandbox send a tool's request (one hop, redirects not followed) out through its egress proxy for the opaque `user`; its answer streams back. */
+  async fetch(user: string, input: string | URL, init?: RequestInit): Promise<Response> {
+    const request = new Request(input, init)
+    return this.#exchange(request, init?.signal, (id, body) => ({
+      t: "fetch",
+      id,
+      user,
+      url: request.url,
+      method: request.method,
+      headers: [...request.headers],
+      body
+    }))
+  }
+
+  // Sends one request frame and resolves with the answer's head, its body streaming in after; an abort sends a cancel.
+  async #exchange(
+    request: Request,
+    signal: AbortSignal | null | undefined,
+    frame: (id: string, body: string | null) => Extract<ApiSandboxFrame, { t: "request" | "fetch" }>
+  ): Promise<Response> {
+    if (this.#closed) throw new SandboxGoneError()
     const body = request.body ? Buffer.from(await request.arrayBuffer()).toString("base64") : null
     const id = String(++this.#next)
-    const signal = init?.signal ?? undefined
     return new Promise<Response>((resolve, reject) => {
       const pending: PendingRequest = { kind: "request", resolve, reject, headed: false }
       this.#pending.set(id, pending)
@@ -75,15 +106,7 @@ export class SandboxTunnel {
         },
         { once: true }
       )
-      this.#frame({
-        t: "request",
-        id,
-        user,
-        ability: decodeURIComponent(match[1]!),
-        method: request.method,
-        headers: [...request.headers],
-        body
-      })
+      this.#frame(frame(id, body))
     })
   }
 
