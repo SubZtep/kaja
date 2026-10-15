@@ -7,6 +7,7 @@ headlessNoSubcommand   = "--headless 需要一个有支援个子指令，比如 
 pleaseSignIn           = "請登入！"
 deviceLoginGoTo        = "請去："
 deviceLoginEnterCode   = "輸入代碼："
+deviceLoginScan        = "[nan-TW] lorem ipsum dolor sit"
 deviceLoginCodeCopied  = "代碼已經拷貝去剪貼簿矣"
 secretsUnavailable     = "袂當使用系統金鑰圈來貯登入資訊。請改用 --local 執行，這个模式免用著系統憑證儲存。"
 connecting             = "連線中…"

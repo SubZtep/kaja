@@ -1,8 +1,10 @@
 import { formatDeviceUserCode } from "@kaja/shared/text"
+import chalk from "chalk"
 import { render } from "ink"
 import notifier from "node-notifier"
 import open from "open"
 import { writeText } from "tinyclip"
+import { renderUnicodeCompact } from "uqr"
 import App from "../components/layout/app"
 import { consolePalette, paint } from "../components/theme"
 import { loadToken, SecretsAccessError } from "../lib/auth/credentials"
@@ -13,6 +15,37 @@ import { getLanguage, t } from "../lib/i18n"
 import { log } from "../lib/logger"
 import { resolveTheme } from "../lib/terminal-background"
 
+// The opener (xdg-open, open, PowerShell) exits at once when it hands the URL over; still running this long, it started a browser in the foreground.
+const OPENER_WAIT_MS = 3000
+
+// `open` resolves as soon as the opener spawns, so only its exit code says whether a browser took the URL (none on a headless box).
+async function openBrowser(url: string): Promise<boolean> {
+  try {
+    const opener = await open(url)
+    const code = await new Promise<number | null | undefined>(resolve => {
+      if (opener.exitCode !== null) return resolve(opener.exitCode)
+      const timer = setTimeout(resolve, OPENER_WAIT_MS)
+      opener.once("exit", exitCode => {
+        clearTimeout(timer)
+        resolve(exitCode)
+      })
+    })
+    if (code === undefined || code === 0) return true
+    log.warn("Browser opener failed for device login", { code })
+  } catch (error) {
+    log.warn("Failed to open browser for device login", { error })
+  }
+  return false
+}
+
+// Light modules are the glyphs, so they're painted white on black: a light terminal theme would invert the code otherwise.
+function qrCode(text: string): string {
+  return renderUnicodeCompact(text, { border: 2 })
+    .split("\n")
+    .map(line => chalk.whiteBright.bgBlack(line))
+    .join("\n")
+}
+
 async function resolveToken(apiUrl: string): Promise<string> {
   try {
     const stored = await loadToken()
@@ -22,17 +55,19 @@ async function resolveToken(apiUrl: string): Promise<string> {
 
     const { token } = await deviceLogin(apiUrl, async prompt => {
       const code = formatDeviceUserCode(prompt.userCode)
-      await writeText(code)
-      notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
-        if (error) log.warn("Device login notification failed", { error })
-      })
+      const url = prompt.verificationUriComplete ?? prompt.verificationUri
 
       const palette = consolePalette()
       console.log(`\n${t("cli.deviceLoginGoTo")} ${paint(palette.user)(prompt.verificationUri)}`)
       console.log(`${t("cli.deviceLoginEnterCode")} ${paint(palette.warning).bold(code)}\n`)
+      console.log(`${t("cli.deviceLoginScan")}\n${qrCode(url)}\n`)
 
-      const url = prompt.verificationUriComplete ?? prompt.verificationUri
-      open(url).catch(error => log.warn("Failed to open browser for device login", { error }))
+      // With the page open the code is already in it; otherwise it goes to the clipboard, for a browser opened by hand.
+      if (await openBrowser(url)) return
+      await writeText(code)
+      notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
+        if (error) log.warn("Device login notification failed", { error })
+      })
     })
     const { saveAccountLocale } = await import("../lib/auth/account-locale")
     await saveAccountLocale(getLanguage())
