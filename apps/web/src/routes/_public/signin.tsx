@@ -5,7 +5,7 @@ import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { ForgotPassword } from "../../components/user/ForgotPassword"
 import { useAuthClient } from "../../hooks/auth-client"
-import { CaptchaGate, useTurnstile } from "../../hooks/turnstile"
+import { CaptchaAlert, useTurnstile } from "../../hooks/turnstile"
 import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { guestOnly } from "../../lib/loaders"
@@ -96,66 +96,65 @@ function SignIn() {
             </Link>
           </p>
         ) : null}
-        <CaptchaGate captcha={captcha}>
-          <GoogleButton className="mb-5" callbackPath={redirect} captcha={captcha} />
-          <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
-            {m.auth_or_email()}
-          </p>
-          <form
-            noValidate
-            onSubmit={event => {
-              event.preventDefault()
-              const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement
-              form.handleSubmit({ action: submitter?.value })
-            }}
-            className="flex flex-col gap-4"
-          >
-            <form.AppField name="email">
-              {field => (
-                <field.TextField
-                  label={m.auth_field_email()}
-                  layout="stack"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                />
-              )}
+        <CaptchaAlert captcha={captcha} />
+        <GoogleButton className="mb-5" callbackPath={redirect} captcha={captcha} />
+        <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+          {m.auth_or_email()}
+        </p>
+        <form
+          noValidate
+          onSubmit={event => {
+            event.preventDefault()
+            const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement
+            form.handleSubmit({ action: submitter?.value })
+          }}
+          className="flex flex-col gap-4"
+        >
+          <form.AppField name="email">
+            {field => (
+              <field.TextField
+                label={m.auth_field_email()}
+                layout="stack"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+              />
+            )}
+          </form.AppField>
+
+          <form.AppField name="password">
+            {field => (
+              <field.TextField
+                label={m.auth_field_password()}
+                layout="stack"
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
+            )}
+          </form.AppField>
+
+          <div className="flex items-center justify-between gap-3">
+            <form.AppField name="rememberMe">
+              {field => <field.CheckboxField label={m.auth_field_remember_me()} className="text-[13px] text-muted" />}
             </form.AppField>
 
-            <form.AppField name="password">
-              {field => (
-                <field.TextField
-                  label={m.auth_field_password()}
-                  layout="stack"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                />
-              )}
-            </form.AppField>
+            <ForgotPassword getEmail={() => form.state.values.email} captcha={captcha}>
+              <Button
+                size="sm"
+                variant="link"
+                disabled={loading || !captcha.ready}
+                className="mx-0 text-[13px] text-muted hover:text-neon"
+              >
+                {m.auth_field_forgot_password()}
+              </Button>
+            </ForgotPassword>
+          </div>
 
-            <div className="flex items-center justify-between gap-3">
-              <form.AppField name="rememberMe">
-                {field => <field.CheckboxField label={m.auth_field_remember_me()} className="text-[13px] text-muted" />}
-              </form.AppField>
-
-              <ForgotPassword getEmail={() => form.state.values.email} captcha={captcha}>
-                <Button
-                  size="sm"
-                  variant="link"
-                  disabled={loading || !captcha.ready}
-                  className="mx-0 text-[13px] text-muted hover:text-neon"
-                >
-                  {m.auth_field_forgot_password()}
-                </Button>
-              </ForgotPassword>
-            </div>
-
-            <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
-              {m.signin_submit()}
-            </Button>
-          </form>
-        </CaptchaGate>
+          <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
+            {m.signin_submit()}
+          </Button>
+        </form>
       </AuthCard>
     </AuthShell>
   )

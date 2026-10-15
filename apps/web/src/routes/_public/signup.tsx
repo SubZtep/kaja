@@ -6,7 +6,7 @@ import { toast } from "react-toastify"
 import { Button } from "../../components/form/primitives/Button"
 import { Checkbox } from "../../components/form/primitives/Checkbox"
 import { useAuthClient } from "../../hooks/auth-client"
-import { CaptchaGate, useTurnstile } from "../../hooks/turnstile"
+import { CaptchaAlert, useTurnstile } from "../../hooks/turnstile"
 import { authErrorMessage, validationMessage } from "../../lib/error-messages"
 import { useAppForm } from "../../lib/form"
 import { guestOnly } from "../../lib/loaders"
@@ -97,78 +97,77 @@ function SignUp() {
           {m.signup_prelaunch_notice()}
         </p>
 
-        <CaptchaGate captcha={captcha}>
-          <div className="mb-5 flex flex-col gap-3 text-[13.5px]">
-            <ConsentBox checked={agreed} onChange={setAgreed}>
-              <LegalAgreement />
-            </ConsentBox>
-            <ConsentBox checked={healthConsent} onChange={setHealthConsent}>
-              {m.signup_health_consent()}
-            </ConsentBox>
-          </div>
+        <CaptchaAlert captcha={captcha} />
+        <div className="mb-5 flex flex-col gap-3 text-[13.5px]">
+          <ConsentBox checked={agreed} onChange={setAgreed}>
+            <LegalAgreement />
+          </ConsentBox>
+          <ConsentBox checked={healthConsent} onChange={setHealthConsent}>
+            {m.signup_health_consent()}
+          </ConsentBox>
+        </div>
 
-          <GoogleButton className="mb-5" signUp disabled={!consented} captcha={captcha} />
-          <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
-            {m.auth_or_email()}
-          </p>
-          <form
-            noValidate
-            onSubmit={e => {
-              e.preventDefault()
-              form.handleSubmit()
-            }}
-            className="flex flex-col gap-4"
-          >
-            <form.AppField name="name">
-              {field => (
-                <field.TextField
-                  label={m.auth_field_name()}
-                  layout="stack"
-                  placeholder={m.auth_field_name_placeholder()}
-                  autoComplete="name"
-                />
-              )}
-            </form.AppField>
+        <GoogleButton className="mb-5" signUp disabled={!consented} captcha={captcha} />
+        <p className="mb-4 text-center font-stamp text-[10px] text-muted uppercase tracking-widest">
+          {m.auth_or_email()}
+        </p>
+        <form
+          noValidate
+          onSubmit={e => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+          className="flex flex-col gap-4"
+        >
+          <form.AppField name="name">
+            {field => (
+              <field.TextField
+                label={m.auth_field_name()}
+                layout="stack"
+                placeholder={m.auth_field_name_placeholder()}
+                autoComplete="name"
+              />
+            )}
+          </form.AppField>
 
-            <form.AppField name="email">
-              {field => (
-                <field.TextField
-                  label={m.auth_field_email()}
-                  layout="stack"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                />
-              )}
-            </form.AppField>
+          <form.AppField name="email">
+            {field => (
+              <field.TextField
+                label={m.auth_field_email()}
+                layout="stack"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            )}
+          </form.AppField>
 
-            <form.AppField name="password">
-              {field => (
-                <field.TextField
-                  label={m.auth_field_password()}
-                  layout="stack"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                />
-              )}
-            </form.AppField>
+          <form.AppField name="password">
+            {field => (
+              <field.TextField
+                label={m.auth_field_password()}
+                layout="stack"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+              />
+            )}
+          </form.AppField>
 
-            <form.AppField name="image">
-              {field => (
-                <field.TextField
-                  label={m.auth_field_image_url()}
-                  layout="stack"
-                  placeholder={m.auth_field_image_url_placeholder()}
-                />
-              )}
-            </form.AppField>
+          <form.AppField name="image">
+            {field => (
+              <field.TextField
+                label={m.auth_field_image_url()}
+                layout="stack"
+                placeholder={m.auth_field_image_url_placeholder()}
+              />
+            )}
+          </form.AppField>
 
-            <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
-              {m.signup_submit()}
-            </Button>
-          </form>
-        </CaptchaGate>
+          <Button type="submit" variant="primary" loading={loading} disabled={!captcha.ready} className="mt-1 w-full">
+            {m.signup_submit()}
+          </Button>
+        </form>
       </AuthCard>
     </AuthShell>
   )
