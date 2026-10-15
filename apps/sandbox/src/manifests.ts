@@ -13,6 +13,12 @@ export type SandboxServer = {
   key?: { env: string; prefix: string; keyless: boolean }
 }
 
+// A keyed manifest's `key` field; none for one without a key.
+function serverKey(ability: ReturnType<typeof parseMcpManifest>): Pick<SandboxServer, "key"> {
+  if (ability.auth.type !== "apiKey") return {}
+  return { key: { env: ability.auth.name, prefix: ability.auth.prefix ?? "", keyless: ability.auth.keyless } }
+}
+
 /**
  * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list (a key, if it
  * takes one, comes with each request), and not local-only (`localOnly`, or `roots`: the user's own folders), the same rule the API offers them by. A package runs through the first runner the image has, never bun's own
@@ -53,11 +59,7 @@ export async function loadSandboxServers(
       const launch = override?.command
         ? { command: override.command, args, env }
         : resolveLaunch({ ...ability, args }, env, { self: false })
-      const key =
-        ability.auth.type === "apiKey"
-          ? { env: ability.auth.name, prefix: ability.auth.prefix ?? "", keyless: ability.auth.keyless }
-          : undefined
-      servers.set(ability.name, { name: ability.name, ...launch, ...(key ? { key } : {}) })
+      servers.set(ability.name, { name: ability.name, ...launch, ...serverKey(ability) })
     } catch (error) {
       if (!(error instanceof McpRunnerMissingError)) throw error
       console.warn("Sandbox skips MCP ability: nothing here can start it", {

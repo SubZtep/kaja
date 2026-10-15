@@ -219,10 +219,12 @@ export function mcpSandboxFor(userId: string, keys: SandboxKeys = () => undefine
       }
     },
     close: async () => {
-      for (const [ability, pending] of picked) {
-        const current = await pending.catch(() => undefined)
-        if (current?.borrowed) current.tunnel.release(pseudonymFor(userId, current.tunnel.id), ability)
-      }
+      await Promise.all(
+        [...picked].map(async ([ability, pending]) => {
+          const current = await pending.catch(() => undefined)
+          if (current?.borrowed) current.tunnel.release(pseudonymFor(userId, current.tunnel.id), ability)
+        })
+      )
     }
   }
 }
@@ -258,9 +260,11 @@ export function egressFor(userId: string, keys?: SandboxKeys): (ability?: string
       return current.tunnel.fetch(pseudonymFor(userId, current.tunnel.id), input, init)
     }
   return ability => {
-    if (ability === undefined) return sendAt(async () => "any")
-    return sendAt(async () =>
-      keys ? strictest((await needsTrust(ability)) ? "trusted" : "any", keyTrust(keys(ability))) : "official"
-    )
+    if (ability === undefined) return sendAt(() => Promise.resolve("any"))
+    return sendAt(async () => {
+      if (!keys) return "official"
+      const needed = (await needsTrust(ability)) ? "trusted" : "any"
+      return strictest(needed, keyTrust(keys(ability)))
+    })
   }
 }

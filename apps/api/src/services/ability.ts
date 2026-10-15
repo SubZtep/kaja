@@ -225,15 +225,16 @@ export class AbilityService {
     if (!keyed) return "not_found"
     if (keyed.ability.auth.type !== "apiKey") return "no_key"
     await this.#secrets.set(userId, abilitySecretName(name), apiKey)
-    const check =
-      keyed.type === "tool"
-        ? await checkHttpToolKey(keyed.ability, apiKey, { send: opts.send })
-        : keyed.ability.transport === "stdio" && !opts.sandbox
-          ? { ok: false as const, reason: "no MCP sandbox to start it in" }
-          : await checkMcpAbilityKey(keyed.ability, apiKey, {
-              fetch: createGuardedFetch({ send: opts.send }),
-              sandbox: opts.sandbox
-            })
+    if (keyed.type === "tool") {
+      return { check: (await checkHttpToolKey(keyed.ability, apiKey, { send: opts.send })) ?? null }
+    }
+    if (keyed.ability.transport === "stdio" && !opts.sandbox) {
+      return { check: { ok: false, reason: "no MCP sandbox to start it in" } }
+    }
+    const check = await checkMcpAbilityKey(keyed.ability, apiKey, {
+      fetch: createGuardedFetch({ send: opts.send }),
+      sandbox: opts.sandbox
+    })
     return { check: check ?? null }
   }
 
