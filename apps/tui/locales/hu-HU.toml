@@ -25,6 +25,18 @@ personaSwitchedTitle   = "Perszóna váltva"
 personaSwitchedMessage = "Váltva erre: {label}"
 
 
+[update]
+available        = "[hu-HU] lorem ipsum dolor {latest} {current}"
+cloudNeedsLatest = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+title            = "[hu-HU] lorem"
+yes              = "[hu-HU] lorem"
+later            = "[hu-HU] lorem"
+quit             = "[hu-HU] lorem"
+done             = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {latest}"
+failed           = "[hu-HU] lorem ipsum dolor"
+manual           = "[hu-HU] lorem ipsum dolor sit amet consectetur {command} {url}"
+
+
 [paths]
 settings       = "beállítások"
 memorySessions = "memória és munkamenetek"

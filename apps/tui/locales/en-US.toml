@@ -25,6 +25,18 @@ personaSwitchedTitle   = "Persona Switched"
 personaSwitchedMessage = "Switched to {label}"
 
 
+[update]
+available        = "[en-US] lorem ipsum dolor {latest} {current}"
+cloudNeedsLatest = "[en-US] lorem ipsum dolor sit amet consectetur"
+title            = "[en-US] lorem"
+yes              = "[en-US] lorem"
+later            = "[en-US] lorem"
+quit             = "[en-US] lorem"
+done             = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing {latest}"
+failed           = "[en-US] lorem ipsum dolor"
+manual           = "[en-US] lorem ipsum dolor sit amet consectetur {command} {url}"
+
+
 [paths]
 settings       = "settings"
 memorySessions = "memory & sessions"

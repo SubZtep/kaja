@@ -25,6 +25,18 @@ personaSwitchedTitle   = "Persona Switched"
 personaSwitchedMessage = "Switched to {label}"
 
 
+[update]
+available        = "Kaja {latest} is out (this is {current})."
+cloudNeedsLatest = "Cloud chat only works with the latest version."
+title            = "Update now?"
+yes              = "Yes, update"
+later            = "Not now"
+quit             = "No, quit"
+done             = "Kaja {latest} is installed. Start kaja again to use it."
+failed           = "The update didn't finish."
+manual           = "Update by hand with {command}, or download it from {url}"
+
+
 [paths]
 settings       = "settings"
 memorySessions = "memory & sessions"

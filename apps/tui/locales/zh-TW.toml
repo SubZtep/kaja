@@ -25,6 +25,18 @@ personaSwitchedTitle   = "已切換角色"
 personaSwitchedMessage = "已切換為 {label}"
 
 
+[update]
+available        = "[zh-TW] lorem ipsum dolor {latest} {current}"
+cloudNeedsLatest = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+title            = "[zh-TW] lorem"
+yes              = "[zh-TW] lorem"
+later            = "[zh-TW] lorem"
+quit             = "[zh-TW] lorem"
+done             = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing {latest}"
+failed           = "[zh-TW] lorem ipsum dolor"
+manual           = "[zh-TW] lorem ipsum dolor sit amet consectetur {command} {url}"
+
+
 [paths]
 settings       = "設定"
 memorySessions = "記憶與對話"

@@ -25,6 +25,18 @@ personaSwitchedTitle   = "已經換角色矣"
 personaSwitchedMessage = "已經換做 {label} 矣"
 
 
+[update]
+available        = "[nan-TW] lorem ipsum dolor {latest} {current}"
+cloudNeedsLatest = "[nan-TW] lorem ipsum dolor sit amet consectetur"
+title            = "[nan-TW] lorem"
+yes              = "[nan-TW] lorem"
+later            = "[nan-TW] lorem"
+quit             = "[nan-TW] lorem"
+done             = "[nan-TW] lorem ipsum dolor sit amet consectetur {latest}"
+failed           = "[nan-TW] lorem ipsum dolor"
+manual           = "[nan-TW] lorem ipsum dolor sit amet consectetur {command} {url}"
+
+
 [paths]
 settings       = "設定"
 memorySessions = "記智佮工作階段"
