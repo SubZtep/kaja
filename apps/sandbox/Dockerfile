@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.2 AS builder
+FROM oven/bun:1.4.3 AS builder
 WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
 COPY patches ./patches
