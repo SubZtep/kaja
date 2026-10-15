@@ -25,7 +25,7 @@ That's the authoritative, always-current list. This page is the map.
 | `/abilities/me/*` | session | the user's write-only ability API keys |
 | `/nasi/*` | bearer | cloud agent: turns, compaction, sessions, and the persona catalog |
 | `/stats` | session | the signed-in user's own [usage numbers](#usage-stats) |
-| `/sandbox/connect` | sandbox key or none | an MCP sandbox's WebSocket: it registers, then serves the MCP requests tunnelled to it |
+| `/sandbox/connect` | sandbox key or none | a sandbox's WebSocket: it registers, then serves the MCP and tool requests tunnelled to it |
 | `/sandbox`, `/sandbox/key`, `/sandbox/settings` | session | the user's own sandboxes, their sandbox key, and whether they share or use shared ones |
 | `/sandbox/public` | none | how many sandboxes are online, by country |
 | `/telegram/admin/link` | session | `POST` starts linking a Telegram account to the cloud bot (returns a one-time deep link), `GET` says whether it's linked and since when, `DELETE` disconnects it |
@@ -69,6 +69,10 @@ turn on; the only per-user part is keys.
 Keys live [encrypted in `user_secret`](/development/database#accounts-and-access), and no endpoint returns
 one. Without `USER_SECRET_KEY` the key routes answer 503, and abilities that need a key are left out of the
 list and of turns.
+
+The API never connects to a tool's host: `fetch_url`, HTTP tools and MCP servers (and the key test on save)
+go out through a sandbox. A user's own key only goes to their own sandbox or the official one, a server-wide
+key only to the official one (`keyTrust` in `features/sandbox/registry.ts`).
 
 `ABILITY_KEYS` (`web-search=BSA...,other=...`) is a temporary server-wide key per ability, shared by every
 cloud user. An ability with one counts as needing only an optional key, and a user's own key still wins.

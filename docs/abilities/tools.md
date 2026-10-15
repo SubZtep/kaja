@@ -18,7 +18,7 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | --- | --- | :---: |
 | `ask_user` | ask a clarifying question mid-task | ✓ |
 | `switch_persona` | change [persona](/abilities/personas) mid-conversation | ✓ |
-| `load_skill` | read an enabled [skill](/abilities/skills) | ✓ |
+| `load_skill` | read one of the persona's [skills](/abilities/skills) | ✓ |
 | `current_time` | current date and time | ✓ |
 | `fetch_url` | fetch a URL | sandbox |
 | `summarize` | summarize long text | ✓ |
@@ -33,18 +33,15 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/configuration/models).
 
-Web search isn't built in. Turn on the marketplace's `web-search` [HTTP tool](#http-tools) to get
-`web_search`: locally with your own Brave Search API key, in the cloud with the server's key (or yours, if
-you save one).
+Web search isn't built in: the marketplace's `web-search` [HTTP tool](#http-tools) adds `web_search`,
+locally with your own Brave Search API key, in the cloud with the server's key (or yours, if you save one).
 
-`fetch_url` runs from your own machine and IP in local mode. In the cloud it never fetches from the server:
-it goes out through an [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme), your
-own, a shared one if you allow it, or the official one. HTTP tools and remote MCP servers do the same; a call that
-carries your key only goes through your own sandbox or the official one, and one with the server's key only
-through the official one. With no sandbox online, these calls fail.
+Locally, `fetch_url` runs from your own machine. In the cloud it goes out through a
+[sandbox](/abilities/mcp#in-the-cloud), never from the server, and so do HTTP tools and remote MCP servers.
+With no sandbox online, these calls fail.
 
-The **Cloud** column is an explicit allowlist. Anything that touches the server's filesystem or shell is
-never exposed there, and code tools are never attached.
+The **Cloud** column is an allowlist: nothing that touches the server's files or shell is offered there, and
+neither are code tools.
 
 ## HTTP tools
 
@@ -86,7 +83,8 @@ type = "string"
   PATCH.
 - `auth` puts the key in a header or query parameter (`in`), with an optional `prefix`. Locally the key
   lives in `secrets.toml` as `[abilities.github-issues] api_key = "..."`, and without it the ability is off
-  (`kaja doctor` offers to add it), unless `keyless = true` says the API works without one too. An optional `check` request lets Kaja test a key before saving it.
+  (`kaja doctor` offers to add it), unless `keyless = true` says the API works without one too. An optional
+  `check` request lets Kaja test a key before saving it.
 - **GET runs straight away. Anything else shows the request** (method, URL, body) and waits for your
   approval, like a shell command. In the cloud you can also approve the tool for the rest of the chat.
 - The model gets the status line and the body, cut at about 32 KB. Error statuses come back the same way, so
@@ -98,13 +96,14 @@ The marketplace has two: `web-search` adds `web_search` through the Brave Search
 `X-Subscription-Token` header, and `kaja doctor` asks for it), and `open-meteo` looks up weather.
 
 In the cloud, marketplace HTTP tools work in cloud chat and the cloud Telegram bot, unless the `baseUrl` is a
-private or local address. Requests go through the server's proxy when it has one, and private addresses are
-refused either way, on every redirect too. Keys and approvals work as described in
-[Abilities in the cloud](/abilities/marketplace#in-the-cloud).
+private or local address. Requests go out through a sandbox, and private addresses are refused, on every
+redirect too. Keys and approvals work as described in [Abilities in the cloud](/abilities/marketplace#in-the-cloud).
 
 ## Shell commands
 
-`run_command` asks first, except for simple read-only commands on the [safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (`ls`, `pwd`, `git status`, and the like), which you can edit. Known-risky patterns get a louder warning, and never skip the question:
+`run_command` asks first, except for simple read-only commands on the
+[safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (`ls`, `pwd`, `git status`,
+and the like), which you can edit. Known-risky patterns get a louder warning and always ask:
 
 - `rm -rf` (any flag order, and the long form `--recursive --force`)
 - `sudo`, `mkfs`, writes to `/dev/sd*`
@@ -113,7 +112,8 @@ refused either way, on every redirect too. Keys and approvals work as described 
 - recursive `chmod`/`chown` on `/`
 - fork bombs
 
-A safe-list command still asks when it names a `secrets.toml` or anything under `.ssh`. Kaja keeps the first 64 KB of a command's output and error streams, and stops a command that runs longer than 15 seconds.
+A safe-list command still asks when it names a `secrets.toml` or anything under `.ssh`. Kaja keeps the first
+64 KB of a command's output and error streams, and stops a command that runs longer than 15 seconds.
 
 This is a **warning, not a sandbox**. The command runs with your own shell permissions, so read what you're
 approving.

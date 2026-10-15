@@ -18,7 +18,7 @@ There are two [ways to run](/getting-started/modes) it:
 | Needs an account | Yes (device login) | No |
 | Needs your own LLM | No | Yes |
 | Sessions & memory stored | Postgres, server-side | SQLite, in your home dir |
-| Shell, your own MCP servers and plugins | No | Yes |
+| Your files, shell and own MCP servers | No | Yes |
 
 ## What’s in the box
 

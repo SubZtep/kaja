@@ -42,7 +42,7 @@ Nasi begins a conversation by writing itself a brief, the system prompt, from wh
 8. the language to reply in ([Voice & language](/using/voice#language)).
 
 Anything that isn't set up is left out, so a cloud or widget conversation sees a subset of what a local one
-does. Turning an ability on or off applies from your next message, even mid-conversation.
+does. A change to a persona's abilities applies from your next message, even mid-conversation.
 
 ## How a turn works
 
@@ -51,7 +51,9 @@ answer. Along the way it can stop and hand control back to you:
 
 - **a question** (`ask_user`): your next message is the answer;
 - **an approval**: a shell command, or an HTTP tool or MCP call that changes something, waits for your OK.
-  Simple read-only shell commands on your [safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (listing files, `git status`) run without asking.
+  Simple read-only shell commands on your
+  [safe list](/configuration/config#commandstoml-commands-that-run-without-asking) (listing files,
+  `git status`) run without asking.
 
 It can also [switch persona](/abilities/personas) mid-turn, which may switch the model too, and carry on.
 The diagram on [Cloud or local](/getting-started/modes#how-a-turn-runs) shows the whole loop.

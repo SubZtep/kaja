@@ -22,17 +22,20 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   uses [Hetzner Object Storage](https://www.hetzner.com/storage/object-storage); see
   [Object storage](#object-storage).
 - **SMTP server** for authentication emails (`SMTP_*`). Production uses [Brevo](https://www.brevo.com).
-- **Bot check** on the auth forms and Google buttons (optional): a [Cloudflare Turnstile](https://www.cloudflare.com/application-services/products/turnstile/)
-  widget, its site key in the web's `VITE_TURNSTILE_SITE_KEY` and its secret in the API's `TURNSTILE_SECRET` (with
-  `TURNSTILE_HOSTNAMES`). Production uses an Invisible-mode widget; the mode is the widget's setting in Cloudflare, not
-  in code. For local runs, Cloudflare's [test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
-  `1x00000000000000000000BB` (invisible, passes) and `1x0000000000000000000000000000000AA` work on `localhost`; with a test
-  secret the API skips the action and hostname checks, as the dummy token carries neither.
+- **Bot check** on the auth forms and Google buttons (optional): a
+  [Cloudflare Turnstile](https://www.cloudflare.com/application-services/products/turnstile/) widget, its site
+  key in the web's `VITE_TURNSTILE_SITE_KEY` and its secret in the API's `TURNSTILE_SECRET` (with
+  `TURNSTILE_HOSTNAMES`). Production uses an Invisible-mode widget (a Cloudflare setting, not code). Locally,
+  Cloudflare's [test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
+  `1x00000000000000000000BB` (invisible, passes) and `1x0000000000000000000000000000000AA` work on
+  `localhost`; with a test secret the API skips the action and hostname checks, as the dummy token carries
+  neither.
 - **Server-wide ability keys** (`ABILITY_KEYS`, `name=key` pairs separated by commas), shared by every
   cloud user. Production sets one for web search: `web-search=` with a
   [Brave Search API](https://api-dashboard.search.brave.com) key.
 
-Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data). Add, remove or swap a provider there too.
+Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data).
+Add, remove or swap a provider there too.
 
 ## Projects
 
@@ -122,11 +125,11 @@ credentials, can delete a folder too.
 ### MCP sandbox
 
 The sandbox (`apps/sandbox`) runs stdio MCP servers for cloud turns, starting with a headless Chrome, and
-sends their tool requests out (`fetch_url`, HTTP tools, remote MCP): the API never connects to a tool's host.
-Its browsers and those requests go out through the sandbox's own egress proxy, which only connects to public addresses (no
-loopback, private ranges or the cloud metadata service). Still deploy it as its own project on a **separate
-Disco server** with nothing else on it, so a gap in that proxy can't reach the database or the other projects.
-The server must be amd64: the Chrome headless shell has no Linux arm64 build.
+sends the cloud's tool requests out (`fetch_url`, HTTP tools, remote MCP): the API never connects to a tool's
+host. Browsers and requests both leave through the sandbox's egress proxy, which only connects to public
+addresses (no loopback, private ranges or the cloud metadata service). Still deploy it as its own project on
+a **separate Disco server** with nothing else on it, so a gap in that proxy can't reach the database or the
+other projects. The server must be amd64: the Chrome headless shell has no Linux arm64 build.
 
 - Nothing connects in: the sandbox dials the API's WebSocket (`/sandbox/connect`) and serves over it, so
   `apps/sandbox/disco.json` runs it as a worker with no public port. Its registration is kept in the
@@ -206,18 +209,19 @@ matching limit and a line in the Privacy Policy.
 
 ## Production checklist
 
-- A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`; the API refuses one under 32 characters) and real SMTP
-  credentials.
+- A strong `BETTER_AUTH_SECRET` (`openssl rand -base64 32`; the API refuses one under 32 characters) and real
+  SMTP credentials.
 - `USER_SECRET_KEY` (`openssl rand -base64 32`). The API won't boot in production without it.
 - The storage bucket and its credentials (see [Object storage](#object-storage)).
-- A strong `CONFIG_API_TOKEN` (`openssl rand -hex 32`). Without it `/config/*` is [fail-closed](/development/api#fail-closed-config-routes),
-  and the `.env.example` placeholder stops the API from booting.
+- A strong `CONFIG_API_TOKEN` (`openssl rand -hex 32`). Without it `/config/*` is
+  [fail-closed](/development/api#fail-closed-config-routes), and the `.env.example` placeholder stops the API
+  from booting.
 - `CORS_ORIGIN` matching the public web origin exactly. Note the [widget](/using/widget) routes are
   deliberately exempt: they reflect origins and gate on the key's own allowlist instead.
 - `NODE_ENV=production` (Sentry on, no `/reference` UI).
 - Rate limits left on. They only switch off under `bun test`.
-- The same `SSR_SECRET` (at least 32 characters) on both the API and the web project, or busy pages start getting 429s (see
-  [rate limits and the visitor's IP](/development/api#rate-limits-and-the-visitors-ip)). Disco projects
+- The same `SSR_SECRET` (at least 32 characters) on both the API and the web project, or busy pages start
+  getting 429s (see [rate limits and the visitor's IP](/development/api#rate-limits-and-the-visitors-ip)). Disco projects
   don't share a private network, so the web's `API_URL` is the public API URL.
 
 ## CLI release automation

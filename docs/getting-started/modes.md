@@ -12,7 +12,7 @@ icon: ☁️
 Kaja is one agent with several front doors: the terminal, Telegram and a website widget. The two modes
 differ in *where the agent loop runs*, and so in which tools it can use.
 
-| Front door | Loop runs on | Store | Your files, shell, own MCP servers and plugins |
+| Front door | Loop runs on | Store | Your files, shell and own MCP servers |
 |---|---|---|---|
 | `kaja`, local mode | your machine | SQLite | ✓ |
 | `kaja telegram` | your machine | SQLite | ✓ |
@@ -67,7 +67,9 @@ The server picks the model and keeps your sessions, memory and dataset answers. 
 - the cloud [built-in tools](/abilities/tools#built-ins): memory, datasets, `ask_user`, image generation and more;
 - every persona in the marketplace, each with the skills, HTTP tools and MCP servers it lists ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
 
-There is no shell, no code tools and no model switching.
+Tools that reach the internet (`fetch_url`, HTTP tools, MCP servers) run on a
+[sandbox](/abilities/mcp#in-the-cloud), never on the API itself. There is no shell, no access to your files
+and no model switching.
 
 ## Local mode
 
@@ -76,7 +78,7 @@ The whole agent runs in your process:
 - config comes from `~/.config/kaja/` ([Configuration](/configuration/files));
 - models come from your `models.toml`. Without a chat model Kaja exits with an error; it never falls back
   to the cloud;
-- every tool works: files, shell, MCP servers, plugins, hosts on your own network;
+- every tool works: files, shell, MCP servers, hosts on your own network;
 - sessions, memory and dataset answers live in a [SQLite file](/configuration/storage);
 - `kaja -c` resumes the last session, `kaja -s <id>` a specific one, and `kaja sessions` lists them.
 

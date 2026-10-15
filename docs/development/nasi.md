@@ -64,13 +64,17 @@ runs one turn and saves it back.
 
 ```ts
 const nasi = await Nasi.open({
-  store,                 // NasiStore — Postgres for API/widget
+  store,                   // NasiStore — Postgres for API/widget
   chat: { client, model }, // OpenAI-compatible client + default model id
   includeLocalTools: false,
-  personas,               // this account's/persona's roster, or []
-  promptContext,          // environment/askUser/language overrides
+  personas,                // this account's/persona's roster, or []
+  promptContext,           // environment/askUser/language overrides
   owner,                   // null, or a namespaced widget-visitor id
-  deps                     // extra tool deps, merged over `chat` — gates dep-conditional tools
+  deps,                    // extra tool deps, merged over `chat` — gates dep-conditional tools
+  abilities,               // AbilityStore: skills, HTTP tools, MCP servers, personas
+  abilityKey,              // ability name → the user's key
+  egress,                  // ability? → the sender its requests go out through (a sandbox)
+  mcpSandbox               // where stdio MCP servers run (a sandbox)
 })
 
 const response = await nasi.turnBuffered({ session, message, includeThinking, language })
@@ -231,7 +235,7 @@ concatenates whichever of these blocks apply, in order:
 5. `## Tool contract: memory`, only when `remember_note` is in the registry
 6. `## Personas`: the roster and switching rules, only with more than one persona and `switch_persona`
    available
-7. `## Skills`: the enabled skills' names and descriptions, when `load_skill` is available
+7. `## Skills`: the persona's skills' names and descriptions, when `load_skill` is available
 8. `## Dataset collection`, only when the persona is bound to a dataset topic
 9. `## About the user`: the answers to a profile dataset, such as onboarding
 10. sticky memory notes (from the store, or `PromptContext.loadStickyNotes`)
@@ -255,21 +259,23 @@ stops two widget visitors on one account from reading each other's chats.
 
 Skills, HTTP tools, MCP servers and personas come from an `AbilityStore` the host provides. The CLI reads the
 `marketplace/` folder through `createFolderAbilityStore`, and the API reads its Postgres copy of the catalog.
-`loadAbilities` turns a store's enabled abilities into extra tools for the host to append. One that can't load
+`loadAbilities` turns a store's abilities into extra tools for the host to append. One that can't load
 (a broken manifest, a required key the user hasn't saved) is left out instead of stopping the agent. See
 [Skills](/abilities/skills), [Tools](/abilities/tools) and [Personas](/abilities/personas) for what each kind
 does.
 
 ## Warnings
 
-Nasi never logs. A recoverable problem (a skipped ability, a missing key, a failed MCP connection) goes to a handler the host installs with `setWarnHandler`, silent until set. The API
-prints them, and the terminal appends them to its opt-in log file, since Ink owns the screen.
+Nasi never logs. A recoverable problem (a skipped ability, a missing key, a failed MCP connection) goes to a
+handler the host installs with `setWarnHandler`, silent until set. The API prints them, and the terminal
+appends them to its opt-in log file, since Ink owns the screen.
 
 ## Tool exposure
 
 `createTools({ includeLocalTools })` decides the registry. The default is **off**: only an explicit allowlist
 of cloud-safe built-ins is returned, so a newly added tool is never cloud-exposed by accident. Turning it on
-adds file, shell, MCP and code tools. See [Tools](/abilities/tools) for the resulting list.
+adds the file and shell tools, and local MCP servers and code tools. See [Tools](/abilities/tools) for the
+resulting list.
 
 Some built-ins also need a **dep**, and only register when the host supplies it: `generate_image` needs
 `imageGeneration`, and cloud `fetch_url` needs `fetchSend`. A local registry exposes `fetch_url`

@@ -82,7 +82,9 @@ Prompt history spans all past sessions, newest first.
 
 ### Key bar
 
-Every entry but Cancel and Decline is also a button: it dims under the mouse and a click runs it, for a terminal or system that takes the hotkey (hover needs a terminal that reports mouse movement). Quit is clickable too, with the same double press while something is running. Expand shows only while some code on screen is longer than `codePreviewLines`, and its hotkey works only then.
+Every entry but Cancel and Decline is also a button you can click, handy when your terminal or system takes
+the hotkey. Quit needs the same double press while something runs. Expand shows only while some code on
+screen is longer than `codePreviewLines`.
 
 | Key | Action |
 |---|---|

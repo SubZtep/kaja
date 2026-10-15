@@ -11,7 +11,7 @@ icon: 🔌
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server adds its tools to the agent. A server is
 an ability: an `mcp.toml` in its folder under `marketplace/abilities/`, synced from the marketplace or written
-by you. It works in the cloud too when it's remote, or a stdio one the MCP sandbox runs.
+by you. Most work [in the cloud](#in-the-cloud) too.
 
 A server connects when a [persona](/abilities/personas#abilities) that lists it becomes active, so one no
 persona in the chat uses never starts. One that fails, or doesn't answer within 10 seconds, is skipped with a
@@ -33,7 +33,8 @@ tools = ["resolve-library-id", "query-docs"]   # optional: only these reach the 
 approval = "never"                  # never | writes | always
 ```
 
-The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking` and `time`.
+The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking` and
+`time`.
 
 - A `stdio` ability starts a program on your machine instead of reaching a `url`, and its key goes in an env
   var (`in = "env"`). Most servers are packages, so name the package and Kaja picks a way to run it:
@@ -112,10 +113,10 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
 ## In the cloud
 
 Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list (so
-you can see what a server can do before turning it on, and it can't add tools later) and aren't local-only.
+what a server can do is known up front, and it can't add tools later) and aren't local-only.
 
-A `stdio` ability, like `chrome-devtools`, runs in an **MCP sandbox**, never on the API's host, and a remote
-one's requests go out through one too. That can be:
+A `stdio` ability, like `chrome-devtools`, runs in a **sandbox**, never on the API's host, and a remote one's
+requests go out through one too. That can be:
 
 - Kaja's own sandbox;
 - one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
@@ -127,9 +128,9 @@ soon as the turn ends, so nothing (a login, say) stays there. The sandbox's brow
 websites, not Kaja's servers or anything on the sandbox's private network.
 
 A manifest with `trustedSandbox = true` only runs in your own sandboxes or Kaja's, never in a shared one.
-`chrome-devtools` is one, so the browser never runs on someone else's computer.
-A server that needs a key gets it with each request, never stored: yours only in your own sandbox or Kaja's,
-the server's own key only in Kaja's.
+`chrome-devtools` is one, so the browser never runs on someone else's computer. A key travels with each
+request and is never stored there: yours only to your own sandbox or Kaja's, the server's own key only to
+Kaja's. The same goes for HTTP tools.
 
 - A turn connects the servers its persona lists (giving up on one after 5 seconds), others after a persona
   switch, and closes them when it ends. Nothing is shared with other users.
@@ -137,8 +138,8 @@ the server's own key only in Kaja's.
 - `approval` and `readOnly` work as above. Images, like screenshots, come back to you, and long results are
   cut at about 32 KB. An argument that would save a file on the server (`localOnlyArgs`, like a screenshot's
   `filePath`) is hidden in the cloud.
-- A server that works without a key is shared by everyone on the Kaja server's IP, with its rate limits. Add
-  your own key to get yours.
+- A server that works without a key sees every user of a sandbox as one IP, with its rate limits. Add your
+  own key to get yours.
 
 Keys and approvals otherwise work as described in [Abilities in the cloud](/abilities/marketplace#in-the-cloud).
 

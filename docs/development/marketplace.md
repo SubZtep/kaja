@@ -42,7 +42,8 @@ flowchart LR
 Each kind has one manifest format, checked by the schemas in [`@kaja/schema/abilities`](/development/schema).
 Names are lowercase letters, digits and single hyphens, up to 64 characters, and must match the folder
 (skills) or file name (everything else). A file that fails validation is skipped with a warning by whoever
-reads it. Binary files, hidden files and backups (`name.bak.ext`, `name.bak.2.ext`) are never served to the model.
+reads it. Binary files, hidden files and backups (`name.bak.ext`, `name.bak.2.ext`) are never served to the
+model.
 
 ## The terminal's copy
 
@@ -66,7 +67,7 @@ sequenceDiagram
 
 - It needs `git` 2.25+ (`clone --sparse`). The version is checked first, and `kaja doctor` shows it. Prompts
   are off, so a private or mistyped URL fails instead of waiting for a password, and every git call has a
-  two-minute timeout. Changing `[source] url` re-clones.
+  two-minute timeout. Changing `[marketplace] url` re-clones.
 - Each sync compares three things per file: the upstream copy, the user's copy, and the hash the previous
   sync recorded in `.sync-lock.json`:
 
@@ -127,28 +128,29 @@ sequenceDiagram
 - **Which repo.** `MARKETPLACE_REPO` (default `SubZtep/kaja`) and `MARKETPLACE_REF` (default `main`).
 - **Failures** are recorded in the single `marketplace_sync` row, shown in the admin panel, and reported to
   Sentry. The previous catalog stays in place.
-- **Nothing is deleted.** An ability that leaves the folder gets `removed_at`. Users' selections survive and
-  come back if it returns. `updated_at` only moves when the content hash changes, and that hash covers just
-  what the agent sees.
+- **Nothing is deleted.** An ability that leaves the folder gets `removed_at`, and comes back if it returns.
+  `updated_at` only moves when the content hash changes, and that hash covers just what the agent sees.
 
 An ability that can't run in the cloud is skipped at sync time, and one that stops qualifying is hidden from
 the catalog:
 
-- a skill with `scripts/`;
-- an HTTP tool on a non-public host, or needing a key when the server has no `USER_SECRET_KEY`;
-- an MCP server that has no `tools` allowlist, is on a non-public host, is `stdio` and needs a key, or shares
-  a name with an HTTP tool (a key belongs to one name). A keyless `stdio` one is always stored, and offered
-  only while the API has an [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme)
-  configured;
+- a skill with `scripts/`, or a `localOnly` persona;
+- an HTTP tool on a non-public host;
+- an MCP server with no `tools` allowlist, a local-only one (`localOnly` or `roots`), or a remote one on a
+  non-public host. A `stdio` one is stored and runs on a
+  [sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme);
 - anything whose manifest no longer parses.
+
+An ability that needs a key is also left out while the server has no `USER_SECRET_KEY` to keep keys with,
+unless `ABILITY_KEYS` gives it one.
 
 ## Loading
 
 Whichever front door a turn comes in through, [`@kaja/nasi`](/development/nasi#abilities) does the loading.
 It asks an `AbilityStore` (the folder on disk, or the Postgres copy) for every ability, and turns them into
 tools, skills in the system prompt, and roster personas; the active persona's `abilities` list picks which a
-turn uses. The prompt's skill and persona sections
-are rebuilt every turn, which is why a change applies from the next message.
+turn uses. The prompt's skill and persona sections are rebuilt every turn, which is why a change applies
+from the next message.
 
 | Front door | Where the personas come from |
 | --- | --- |

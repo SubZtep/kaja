@@ -40,7 +40,8 @@ Your answers stay on screen with a ✓, so you can see what you've chosen so far
    preselected. You can switch later with <kbd>Alt</kbd>+<kbd>D</kbd> ([Colours](/using/tui#colours)).
 3. **How to run Kaja.**
    - **Kaja Cloud** (default): after the wizard, Kaja shows a code, you approve it in your browser, and
-     you're chatting. Abilities, personas and models are chosen in the [web app](/using/web-app).
+     you're chatting. The server picks the models, and every persona is yours; ability keys go in the
+     [web app](/using/web-app).
    - **Your own provider**: Kaja runs on your machine with the models you choose. The next questions
      set them up.
 
@@ -92,7 +93,7 @@ With **your own provider**, Kaja finishes setting up first and may ask a few mor
 2. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
 3. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
    it anyway. Keys the finished setup turns out to need, such as an ability's, are asked for here.
-5. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/configuration/commands#checking-keys-and-models)
+4. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/configuration/commands#checking-keys-and-models)
    runs. If one fails and another can do its job, you're offered the switch.
 
 The first time, the chat starts right after. After `kaja config wizard`, you're back at your prompt.
