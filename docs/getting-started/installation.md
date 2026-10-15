@@ -36,7 +36,9 @@ one launch.
 
 ## Updating
 
-Run the install script again. Set `VERSION=v1.2.3` to pin a release.
+Kaja checks for a newer version each time it starts and offers to install it. Cloud chat only runs on the latest version; local mode can carry on with the one you have.
+
+To update by hand, run the install script again. Set `VERSION=v1.2.3` to pin a release.
 
 Your config files stay as they are. `kaja config diff` shows what
 [`kaja config fetch`](/configuration/commands) would change, and `kaja abilities update` refreshes the

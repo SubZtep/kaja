@@ -7,6 +7,10 @@ headlessNoSubcommand   = "A --headless kapcsolóhoz ezt támogató alparancs sz�
 pleaseSignIn           = "Kérlek jelentkezz be!"
 deviceLoginGoTo        = "Nyisd meg:"
 deviceLoginEnterCode   = "Add meg a kódot:"
+deviceLoginScan        = "Olvasd be a telefonoddal:"
+deviceLoginOpened      = "A bejelentkezési oldal megnyílt a böngésződben, a kóddal együtt."
+deviceLoginKeyLink     = "link és kód"
+deviceLoginKeyQr       = "QR-kód a telefonodhoz"
 deviceLoginCodeCopied  = "A kód a vágólapra másolva"
 secretsUnavailable     = "Nem sikerült elérni a rendszer kulcstartóját a bejelentkezés tárolásához. Próbáld a --local kapcsolóval futtatni, ahhoz nem szükséges rendszerszintű hitelesítő-adat tárolás."
 connecting             = "Csatlakozás…"
@@ -19,6 +23,18 @@ deviceLoginFailed      = "Az eszközös bejelentkezés sikertelen"
 deviceLoginTimedOut    = "Az eszközös bejelentkezés túllépte az időkorlátot"
 personaSwitchedTitle   = "Perszóna váltva"
 personaSwitchedMessage = "Váltva erre: {label}"
+
+
+[update]
+available        = "Megjelent a Kaja {latest} (a tiéd: {current})."
+cloudNeedsLatest = "A felhő alapú csevegés csak a legújabb verzióval működik."
+title            = "Frissítesz most?"
+yes              = "Igen, frissítés"
+later            = "Most nem"
+quit             = "Nem, kilépés"
+done             = "A Kaja {latest} telepítve. Indítsd újra a kaja parancsot a használatához."
+failed           = "A frissítés nem fejeződött be."
+manual           = "Frissíts kézzel ezzel: {command}, vagy töltsd le innen: {url}"
 
 
 [paths]

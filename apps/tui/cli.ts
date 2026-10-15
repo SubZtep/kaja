@@ -65,7 +65,12 @@ try {
     await detectAndSetLanguage()
   }
 
-  if ((await resolveMode(args.flags)) === "cloud") {
+  const mode = await resolveMode(args.flags)
+  // The API only supports the latest TUI, so an outdated one is offered the update first (cloud mode won't start without it).
+  const { checkForUpdate } = await import("./lib/cli/update-check")
+  await checkForUpdate(mode, args.flags.headless)
+
+  if (mode === "cloud") {
     if (!(await isConfigExists())) await createCloud()
     await runCloudSubcommand()
     process.exit(0)

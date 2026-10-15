@@ -7,6 +7,10 @@ headlessNoSubcommand   = "--headless needs a subcommand that supports it, like `
 pleaseSignIn           = "Please sign in!"
 deviceLoginGoTo        = "Go to:"
 deviceLoginEnterCode   = "Enter code:"
+deviceLoginScan        = "Scan it with your phone:"
+deviceLoginOpened      = "The sign-in page is open in your browser, with your code."
+deviceLoginKeyLink     = "link and code"
+deviceLoginKeyQr       = "QR code for your phone"
 deviceLoginCodeCopied  = "Code is in your clipboard"
 secretsUnavailable     = "Could not access the system keychain to store your login. Try running with --local instead, which does not require OS credential storage."
 connecting             = "Connecting…"
@@ -19,6 +23,18 @@ deviceLoginFailed      = "Device login failed"
 deviceLoginTimedOut    = "Device login timed out"
 personaSwitchedTitle   = "Persona Switched"
 personaSwitchedMessage = "Switched to {label}"
+
+
+[update]
+available        = "Kaja {latest} is out (this is {current})."
+cloudNeedsLatest = "Cloud chat only works with the latest version."
+title            = "Update now?"
+yes              = "Yes, update"
+later            = "Not now"
+quit             = "No, quit"
+done             = "Kaja {latest} is installed. Start kaja again to use it."
+failed           = "The update didn't finish."
+manual           = "Update by hand with {command}, or download it from {url}"
 
 
 [paths]

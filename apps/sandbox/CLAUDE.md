@@ -16,7 +16,7 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 
 ```
 src/env.ts        # parsed SandboxEnvSchema
-src/cli.ts        # bundle entry: `health` (the Docker HEALTHCHECK) or startSandbox()
+src/cli.ts        # bundle entry: `health` (the Docker HEALTHCHECK), `egress-check <url>` (egress-check.ts) or startSandbox()
 src/server.ts     # startSandbox(): banner, env, manifests, the tunnel, status every 15 min, stops every server on SIGTERM/SIGINT
 src/health.ts     # status file the tunnel keeps current (welcome, heartbeats, disconnects); `health` reads it
 src/banner.ts     # the startup banner: the monster, version and setup
@@ -27,7 +27,8 @@ src/isolation.ts  # UserIsolation: a uid per user (LRU reuse, skipping a uid tha
 src/pool.ts       # ProcessPool: one relay per (user, ability); idle stop (SANDBOX_IDLE_MS), cap (SANDBOX_MAX_PROCESSES, else from memory): full or short of memory, it stops the least recently used idle server, 503 + x-kaja-sandbox-full only when that doesn't help; memory watchdog (SANDBOX_SERVER_MEMORY); release
 src/relay.ts      # McpRelay: one stdio child shared by many HTTP sessions; renumbers request ids, initializes the child once
 src/stats.ts      # stats frame: pool servers and counts, process-tree RSS from /proc, host + cgroup memory, egress counts
-src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked); sendThroughEgress sends fetch frames through it
+src/egress.ts     # forward proxy on 127.0.0.1:SANDBOX_EGRESS_PORT the browsers must use: resolves each host itself, connects only to public addresses (the one it checked); a failed connection is a 502 whose reason says why (`Bad Gateway: WEB_PROXY answered …`), logged; sendThroughEgress sends fetch frames through it, a failure thrown as `Couldn't connect to <host>: <why>`
+src/egress-check.ts # `egress-check <url>`: one GET through a fresh egress proxy with this env's WEB_PROXY, step by step; on a WEB_PROXY refusal it compares CONNECT by IP and by name
 src/manifests.ts  # the stdio manifests it may run, plus overrides.json
 src/report.ts     # Sentry in production (its own project): failed starts, servers that exit on their own (last 20 stderr lines), child errors
 overrides.json    # the Docker image's command/args: chrome-devtools (the image's npm-installed /opt/mcp copy, pinned, with the Chrome for Testing headless shell, --no-sandbox, http(s) pages only, the egress proxy, a 512 MB JS heap per page)
@@ -71,7 +72,7 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 
 ## Release
 
-`.github/workflows/dockerhub.yaml` (`release_sandbox`) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
+`.github/workflows/dockerhub.yaml` (`release_sandbox`; Automatic Versioning dispatches it whenever it bumps the sandbox) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
 
 ## Testing
 

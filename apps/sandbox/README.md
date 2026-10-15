@@ -106,9 +106,17 @@ The two ends of the proxy are configured in two places:
 
 ### Going out through `WEB_PROXY`
 
-Set `WEB_PROXY` (an `http://` proxy URL, credentials allowed: `http://user:pass@proxy.example.com:8080`) and the egress proxy stops connecting directly. After the same checks, it opens a `CONNECT` tunnel through `WEB_PROXY` to **the address it checked** (not the name, so the upstream can't resolve it to something else), with the credentials as `Proxy-Authorization: Basic …`. HTTPS rides that tunnel as before; plain HTTP is sent inside it in origin form, so the site still gets its `Host` header. If the upstream doesn't answer `200`, Chrome gets a `502` and the stats count it as failed.
+Set `WEB_PROXY` (an `http://` proxy URL, credentials allowed: `http://user:pass@proxy.example.com:8080`) and the egress proxy stops connecting directly. After the same checks, it opens a `CONNECT` tunnel through `WEB_PROXY` to **the address it checked** (not the name, so the upstream can't resolve it to something else), with the credentials as `Proxy-Authorization: Basic …`. HTTPS rides that tunnel as before; plain HTTP is sent inside it in origin form, so the site still gets its `Host` header. If the upstream doesn't answer `200`, or can't be reached, Chrome gets a `502` whose reason says why (`Bad Gateway: WEB_PROXY answered HTTP/1.1 407 …`), the sandbox logs `Egress couldn't connect`, and the stats count it as failed. A tool request fails with the same reason (`Couldn't connect to <host>: …`), which is what the chat shows.
 
 Chrome can't point at `WEB_PROXY` itself: it has no way to take proxy credentials from a flag, and it would skip the private-address checks. The upstream must allow `CONNECT` to IP addresses on any port (commercial proxies do; Squid by default only allows `443`, which leaves plain `http://` pages failing).
+
+To see why requests fail, run one through a fresh egress proxy with the sandbox's own environment:
+
+```sh
+bun sandbox.js egress-check https://api.search.brave.com/   # in the container; from a checkout: bun apps/sandbox/src/cli.ts egress-check <url>
+```
+
+It prints `WEB_PROXY` (without its credentials), what the name resolved to, and the request's status or the reason it failed, and exits 1 on a failure. When `WEB_PROXY` refuses the tunnel, it also asks `WEB_PROXY` for the checked IP and for the name, so an upstream that won't `CONNECT` to IP addresses shows up as one refused and one `200`.
 
 ### What the proxy doesn't cover
 
@@ -191,6 +199,7 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `src/isolation.ts` | a Linux uid per user, and the `prlimit` + `setpriv` wrapper that starts a server as it |
 | `src/relay.ts` | shares one stdio child between many HTTP sessions, renumbering request ids |
 | `src/egress.ts` | the egress proxy |
+| `src/egress-check.ts` | `egress-check <url>`: one request through the egress proxy and `WEB_PROXY`, step by step |
 | `src/stats.ts` | the stats: the pool's servers and counts, memory per process tree, host and container memory |
 | `src/manifests.ts` | the stdio manifests it may run, plus the overrides |
 | `src/report.ts` | Sentry in production |

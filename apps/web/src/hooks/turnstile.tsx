@@ -1,4 +1,3 @@
-import { Fieldset } from "@base-ui/react/fieldset"
 import { useLoaderData } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Flip, toast } from "react-toastify"
@@ -68,7 +67,7 @@ export type Captcha = {
   ready: boolean
   /** The first check is still running. */
   checking: boolean
-  /** The check errored, timed out, or can't run in this browser; `<CaptchaGate>` says so and offers a retry. */
+  /** The check errored, timed out, or can't run in this browser; `<CaptchaAlert>` says so and offers a retry. */
   failed: boolean
   /** Better Auth `fetchOptions` with a token (spread into a client call): waits for a running check, and starts the next one, as each token is single-use. */
   fetchOptions: () => Promise<{ headers: Record<string, string> } | undefined>
@@ -76,7 +75,7 @@ export type Captcha = {
   retry: () => void
 }
 
-/** One Turnstile widget per page, shared by every auth action on it, in its own element on `<body>`; gate the page's controls with `<CaptchaGate captcha={…}>`. */
+/** One Turnstile widget per page, shared by every auth action on it, in its own element on `<body>`; show `<CaptchaAlert captcha={…}>` above the page's auth controls. */
 export function useTurnstile(): Captcha {
   const { turnstileSiteKey: siteKey } = useLoaderData({ from: "__root__" })
   const [token, setToken] = useState<string | null>(null)
@@ -198,28 +197,18 @@ export function useTurnstile(): Captcha {
   }
 }
 
-/** Disables every field and button inside until the page's Turnstile check passes; on failure, says so above them with a retry. */
-export function CaptchaGate({
-  captcha,
-  className,
-  children
-}: Readonly<{ captcha: Captcha; className?: string; children: React.ReactNode }>) {
+/** Says when the page's Turnstile check failed, with a retry; renders nothing otherwise. Each auth button disables itself on `captcha.ready`, and fields stay open so password managers can fill them. */
+export function CaptchaAlert({ captcha }: Readonly<{ captcha: Captcha }>) {
+  if (!captcha.failed) return null
   return (
-    <div className={className}>
-      {captcha.failed ? (
-        <p
-          role="alert"
-          className="mb-4 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200"
-        >
-          {m.auth_captcha_failed()}{" "}
-          <Button size="sm" variant="link" onClick={captcha.retry} className="mx-0 text-[13.5px]">
-            {m.auth_captcha_retry()}
-          </Button>
-        </p>
-      ) : null}
-      <Fieldset.Root disabled={!captcha.ready} aria-busy={captcha.checking} className="min-w-0">
-        {children}
-      </Fieldset.Root>
-    </div>
+    <p
+      role="alert"
+      className="mb-4 rounded-sm border border-amber-800 bg-amber-950/40 px-3 py-2 text-[13.5px] text-amber-200"
+    >
+      {m.auth_captcha_failed()}{" "}
+      <Button size="sm" variant="link" onClick={captcha.retry} className="mx-0 text-[13.5px]">
+        {m.auth_captcha_retry()}
+      </Button>
+    </p>
   )
 }

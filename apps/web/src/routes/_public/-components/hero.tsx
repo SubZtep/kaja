@@ -2,7 +2,7 @@ import { cn } from "@kaja/shared/ui"
 import { Link } from "@tanstack/react-router"
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
-import { CaptchaGate, useTurnstile } from "../../../hooks/turnstile"
+import { CaptchaAlert, useTurnstile } from "../../../hooks/turnstile"
 import { useUser } from "../../../hooks/user"
 import { detectInstallOs, INSTALL_CMD, type InstallOs } from "../../../lib/vars"
 import { m } from "../../../paraglide/messages.js"
@@ -48,9 +48,10 @@ function greeting(part: DayPart | null, name: string | undefined) {
 function GoogleSignIn() {
   const captcha = useTurnstile()
   return (
-    <CaptchaGate captcha={captcha}>
+    <div>
+      <CaptchaAlert captcha={captcha} />
       <GoogleButton captcha={captcha} />
-    </CaptchaGate>
+    </div>
   )
 }
 
