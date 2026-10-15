@@ -41,7 +41,7 @@ export async function resolveModelWithProvider(pinnedModel?: string) {
     : await modelService.getRandomModelWithProvider()
 }
 
-/** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Not the `WEB_PROXY` path: a proxy would resolve the name itself and skip the pin. */
+/** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Never sent through a sandbox like tool requests: the provider's key stays on this host. */
 function cloudModelFetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
   const guarded = createGuardedFetch()
   return (input, init) => guarded(input instanceof Request ? input.url : input, init)

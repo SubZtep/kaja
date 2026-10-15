@@ -152,8 +152,8 @@ The public image is released from **Release to Docker Hub** (`release_sandbox`),
 `subztep/kaja-sandbox:<version>` and `:latest`. Anyone can run more sandboxes with
 `docker run subztep/kaja-sandbox`, using their key from the web app's Sandbox page or none at all. With no
 sandbox online for a user, their stdio MCP abilities just have no tools that turn, and `fetch_url`, HTTP
-tools and remote MCP calls fail; without the official one, so do the calls of abilities that may carry a key. How the sandbox works,
-including its egress proxy and settings, is in its
+tools and remote MCP calls fail; without the official one, so do calls made with a server-wide key. How the
+sandbox works, including its egress proxy and settings, is in its
 [README](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme).
 
 ## Environment variables

@@ -117,11 +117,6 @@ const apiEnvFields = z.object({
     .optional()
     .describe("When set, /nasi turns use a stub model instead of resolving a real provider (test/dev only)"),
 
-  WEB_PROXY: trimmed
-    .optional()
-    .describe("HTTP(S) proxy for cloud fetch_url egress; unset leaves fetch_url out of cloud turns entirely")
-    .meta({ secret: true, example: "http://user:pass@proxy.example.com:8080" }),
-
   USER_SECRET_KEY: trimmed
     .refine(value => {
       try {
