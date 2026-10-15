@@ -69,6 +69,7 @@ jobs:
           set -euo pipefail
 
           echo "tui_bumped=false" >> "$GITHUB_OUTPUT"
+          echo "sandbox_bumped=false" >> "$GITHUB_OUTPUT"
           echo "api_tag=" >> "$GITHUB_OUTPUT"
           echo "web_tag=" >> "$GITHUB_OUTPUT"
 
@@ -158,6 +159,7 @@ jobs:
           fi
           if [[ "$FILTER_SANDBOX" == "true" ]]; then
             bump_workspace "sandbox" "apps/sandbox"
+            echo "sandbox_bumped=true" >> "$GITHUB_OUTPUT"
           fi
           if [[ "$FILTER_NASI" == "true" ]]; then
             bump_workspace "nasi" "packages/nasi"
@@ -223,3 +225,12 @@ jobs:
           set -euo pipefail
           echo "web was bumped — dispatching Release api/web for ${{ steps.bump.outputs.web_tag }}"
           gh workflow run "Release api/web" --ref main -f app=web -f "tag=${{ steps.bump.outputs.web_tag }}"
+
+      - name: Trigger sandbox image release
+        if: steps.bump.outputs.sandbox_bumped == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "sandbox was bumped — dispatching Release to Docker Hub for the sandbox image"
+          gh workflow run "Release to Docker Hub" --ref main -f release_sandbox=true

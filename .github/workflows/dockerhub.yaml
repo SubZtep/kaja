@@ -10,7 +10,7 @@ on:
       release_tui:
         description: "Release TUI"
         type: boolean
-        default: true
+        default: false
       release_web:
         description: "Release Web"
         type: boolean

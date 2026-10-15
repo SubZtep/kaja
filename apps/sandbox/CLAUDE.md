@@ -72,7 +72,7 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 
 ## Release
 
-`.github/workflows/dockerhub.yaml` (`release_sandbox`) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
+`.github/workflows/dockerhub.yaml` (`release_sandbox`; Automatic Versioning dispatches it whenever it bumps the sandbox) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
 
 ## Testing
 
