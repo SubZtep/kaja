@@ -48,7 +48,7 @@ jobs:
           version: ${{ steps.tools.outputs.biome }}
 
       - name: Setup Tombi
-        uses: tombi-toml/setup-tombi@d8f3250344c4e9107b91c02bc11efcf72baf5793
+        uses: tombi-toml/setup-tombi@ebc771afde2bfb9192c91338a71b2c5d6152e2c3
         with:
           version: ${{ steps.tools.outputs.tombi }}
 
@@ -190,7 +190,7 @@ jobs:
         run: echo "version=$(bun scripts/tool.ts tombi --pinned)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Tombi
-        uses: tombi-toml/setup-tombi@d8f3250344c4e9107b91c02bc11efcf72baf5793
+        uses: tombi-toml/setup-tombi@ebc771afde2bfb9192c91338a71b2c5d6152e2c3
         with:
           version: ${{ steps.tombi.outputs.version }}
 
