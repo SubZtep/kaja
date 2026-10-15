@@ -76,8 +76,7 @@ jobs:
             --minify \
             --outfile kaja \
             --target="${{ matrix.bun_target }}" \
-            --define process.env.KAJA_LOG_LEVEL="\"warn\"" \
-            --define process.env.API_URL="\"${API_URL}\""
+            --define process.env.KAJA_API_URL="\"${API_URL}\""
 
       - name: Rename artifact
         shell: bash

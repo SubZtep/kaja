@@ -1,3 +1,4 @@
+-- uuidv7() for every table's id default. Postgres 18 has it built in, so this only creates it on older versions.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DO $$

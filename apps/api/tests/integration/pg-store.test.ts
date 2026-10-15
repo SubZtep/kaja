@@ -214,7 +214,7 @@ describe("postgres store", () => {
     expect(rows).toHaveLength(1)
     const hash = rows[0].parts.match(/kaja-image:([0-9a-f]+)/)[1]
     const key = `${sessionImagePrefix(id, userId)}/${hash}`
-    expect((await files.head(key)).type).toBe("image/png")
+    expect((await files.head(key)).contentType).toBe("image/png")
     expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
 
     await store.deleteSession(id)
