@@ -110,7 +110,6 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   reasoning: "reasoning",
   message: "message",
   tool_call: "tool_call",
-  client_tool_call: "client_tool_call",
   confirm_tool: "confirm_tool",
   ask_user: "ask_user",
   persona_switch: "persona_switch",

@@ -37,22 +37,9 @@ const CLOUD_SAFE = new Set([
   "generate_image"
 ])
 
-/** Builtins that stay visible to the model in cloud mode but must run on the client, not the server — the server has no access to the user's machine. See `Tool.requiresClientExecution`. */
-const CLIENT_EXECUTABLE = new Set(["read_file", "list_files"])
-
-function toClientExecutableStub(t: Tool): Tool {
-  return {
-    definition: t.definition,
-    requiresClientExecution: true,
-    execute: () => Promise.reject(new Error(`${toolName(t)} should be intercepted by run(), not executed server-side`))
-  }
-}
-
 export type CreateToolsOptions = {
   /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
-  /** Cloud only: a client can answer a `client_tool_call` pause (the terminal), so `read_file`/`list_files` are offered as stubs. False (widget, Telegram) leaves them out. Default true. */
-  clientTools?: boolean
   deps?: NasiToolDeps
   tempDir?: string
   /** Tools the host brings in besides the builtins, e.g. `loadAbilities`' groups. Merged under the same name rules. */
@@ -233,12 +220,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     ...(opts.deps?.imageGeneration ? [generateImageTool] : [])
   ]
 
-  const clientTools = opts.clientTools !== false
-  const official = local
-    ? builtin
-    : builtin
-        .filter(t => CLOUD_SAFE.has(toolName(t)) || (clientTools && CLIENT_EXECUTABLE.has(toolName(t))))
-        .map(t => (CLIENT_EXECUTABLE.has(toolName(t)) ? toClientExecutableStub(t) : t))
+  const official = local ? builtin : builtin.filter(t => CLOUD_SAFE.has(toolName(t)))
   const tempDir = opts.tempDir ?? opts.deps?.tempDir
 
   // The cloud never runs a command on the server (the sandbox runs stdio ones behind a url), and never connects without the guarded fetch.

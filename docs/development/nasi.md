@@ -86,7 +86,7 @@ generator to its return value:
 | Field | Meaning |
 | --- | --- |
 | `session` | the session id, passed back on the next turn |
-| `status` | `completed` / `needs_input` / `needs_approval` / `needs_client_tool` / `error` |
+| `status` | `completed` / `needs_input` / `needs_approval` / `error` |
 | `message` | the reply, or the pending question/command when not `completed` |
 | `steps` | ordered `NasiStep[]` (reasoning, messages, tool calls, handoffs) for rendering a transcript |
 | `thinking` | full reasoning text, only when `includeThinking` was set |
@@ -110,7 +110,6 @@ consistent shape.
 | `ask_user` | stop and wait: the next prompt becomes the tool result |
 | `confirm_command` | stop and wait for shell approval |
 | `confirm_tool` | stop and wait for approval of an HTTP tool or MCP call that changes something |
-| `client_tool_call` | stop so the client can run `read_file` / `list_files` on the user's own disk (cloud only) |
 | `persona_switch` | the persona (and maybe the model) changed mid-turn |
 | `compacted` | the conversation was summarised before a round (`beforeTokens`, `afterTokens`, `dropped`), see [Long conversations](#long-conversations) |
 | `condensed` | an oversized tool result was condensed before a round (`tool`, `beforeTokens`, `afterTokens`) |
@@ -213,7 +212,6 @@ Over HTTP the same loop is buffered into one response:
 | `completed` | the turn finished, and `message` is the reply |
 | `needs_input` | `ask_user` is pending: send the answer as the next `message` |
 | `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval` next: `"approve"`, `"approve_session"` (also stops asking about that tool for the rest of the session) or `"decline"`. The server runs the call it saved, never one the client describes. A plain `message` instead skips it |
-| `needs_client_tool` | the model asked for `read_file` or `list_files`, which only the client can run on its own disk: the client runs it and sends the output as the next `message` |
 | `error` | the turn failed |
 
 `session` comes back on every response. Send it again to continue the conversation.
@@ -280,10 +278,6 @@ unconditionally, since it fetches from the user's own machine. The cloud egresse
 a proxy the tool is left out instead of fetching directly. Failing closed is deliberate: a proxied fetch that
 can't reach its proxy raises `ProxyUnavailableError` instead of retrying direct, which would silently defeat
 the point of configuring one.
-
-`read_file` and `list_files` reach a cloud turn only as stubs that pause it with `client_tool_call`, for the
-terminal to run on the user's machine. `clientTools: false` (on `createTools` and `Nasi.open`) leaves them
-out for hosts with no such client: the API's widget and Telegram turns.
 
 ---
 

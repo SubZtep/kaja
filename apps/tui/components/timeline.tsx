@@ -87,7 +87,6 @@ function renderItem(item: DisplayEvent, thinking: boolean, theme: ReturnType<typ
         </Box>
       )
     case "tool_call":
-    case "client_tool_call":
       return <Text dimColor>{`⚙ ${describeToolCall(item.name, item.arguments)}`}</Text>
     case "tool_summary":
       return (

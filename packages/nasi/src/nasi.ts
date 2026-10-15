@@ -30,8 +30,6 @@ export type NasiOpenOptions = {
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
-  /** Cloud only: whether the caller can run `client_tool_call` tools (`read_file`/`list_files`) on the user's machine. Default true. */
-  clientTools?: boolean
   personas?: Persona[]
   promptContext?: PromptContext
   owner?: string | null
@@ -91,8 +89,6 @@ function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | 
       return { type: "persona_switch", personaId: event.personaId, label: event.label }
     case "confirm_command":
       return { type: "confirm_command", command: event.command, description: event.description }
-    case "client_tool_call":
-      return { type: "client_tool_call", name: event.name, arguments: event.arguments }
     case "confirm_tool":
       return { type: "confirm_tool", name: event.name, arguments: event.arguments, summary: event.summary }
     default:
@@ -112,7 +108,6 @@ function stepsFromEvents(events: AgentEvent[], includeThinking: boolean): NasiSt
 function statusFromEvents(session: Session): NasiTurnStatus {
   if (session.pendingAskUserId) return "needs_input"
   if (session.pendingRunCommandId || session.pendingToolApprovalId) return "needs_approval"
-  if (session.pendingClientToolCallId) return "needs_client_tool"
   return "completed"
 }
 
@@ -230,7 +225,6 @@ export class Nasi {
       !opts.includeLocalTools && abilities?.mcp.length ? await mkdtemp(join(tmpdir(), "kaja-mcp-")) : undefined
     const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
-      clientTools: opts.clientTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer },
       extraTools: abilities?.groups,
       // MCP abilities connect when a persona that uses them is active, through the same egress rules as every other cloud request, the operator's own sandbox aside.

@@ -70,31 +70,6 @@ test("ask_user tool yields needs_input and the next message binds as a tool resu
   expect(second.message).toBe("Noted, blue.")
 })
 
-test("read_file yields needs_client_tool in cloud mode, and the next message binds as its tool result", async () => {
-  const nasi = await open([
-    {
-      content: null,
-      tool_calls: [
-        {
-          id: "call_1",
-          type: "function",
-          function: { name: "read_file", arguments: JSON.stringify({ path: "notes.txt" }) }
-        }
-      ]
-    },
-    { content: "The file says hello." }
-  ])
-
-  const first = await nasi.turnBuffered({ message: "what does notes.txt say?" })
-  expect(first.status).toBe("needs_client_tool")
-  expect(first.steps).toContainEqual({ type: "client_tool_call", name: "read_file", arguments: '{"path":"notes.txt"}' })
-  expect(first.session).toBeTruthy()
-
-  const second = await nasi.turnBuffered({ session: first.session, message: "hello" })
-  expect(second.status).toBe("completed")
-  expect(second.message).toBe("The file says hello.")
-})
-
 test("personaId on the request re-resolves the active persona every turn, including on a resumed session", async () => {
   const personaA = { id: "a", label: "A", instructions: "You are A" }
   const personaB = { id: "b", label: "B", instructions: "You are B" }

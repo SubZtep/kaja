@@ -26,7 +26,7 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/abilities/memory) | ✓ |
 | `dataset_info` | collect answers for a persona's [dataset](/abilities/memory#datasets) | ✓ |
 | `generate_image` | text-to-image | ✓ |
-| `read_file` / `list_files` | read a file, list a directory | client |
+| `read_file` / `list_files` | read a file, list a directory | ✗ |
 | `view_image` | look at an image file | ✗ |
 | `run_command` | run a shell command | ✗ |
 
@@ -36,10 +36,6 @@ Locally, `generate_image` needs a model listing `image-generation` in
 Web search isn't built in. Turn on the marketplace's `web-search` [HTTP tool](#http-tools) to get
 `web_search`: locally with your own Brave Search API key, in the cloud with the server's key (or yours, if
 you save one).
-
-In the cloud, `read_file` and `list_files` pause the turn so your terminal can run them on your machine,
-limited to the folder you started in. The widget and the cloud Telegram bot have no such client, so they
-don't get these two.
 
 `fetch_url` runs from your own machine and IP in local mode. In the cloud it goes through the server's
 proxy, and is left out entirely if the server has none.

@@ -16,7 +16,7 @@ differ in *where the agent loop runs*, and so in which tools it can use.
 |---|---|---|---|
 | `kaja`, local mode | your machine | SQLite | ✓ |
 | `kaja telegram` | your machine | SQLite | ✓ |
-| `kaja`, cloud mode | the API | Postgres | ✗ (files are [read locally](#cloud-mode)) |
+| `kaja`, cloud mode | the API | Postgres | ✗ |
 | cloud [Telegram bot](/using/telegram#cloud-bot) | the API | Postgres | ✗ |
 | Website [widget](/using/widget) | the API | Postgres | ✗ |
 
@@ -65,8 +65,6 @@ disk. One account is signed in at a time, and `kaja logout` clears it.
 The server picks the model and keeps your sessions, memory and dataset answers. The agent can use:
 
 - the cloud [built-in tools](/abilities/tools#built-ins): memory, datasets, `ask_user`, image generation and more;
-- `read_file` and `list_files`, which run in your terminal, limited to the folder you started in and with no
-  confirmation prompt;
 - every persona in the marketplace, each with the skills, HTTP tools and MCP servers it lists ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
 
 There is no shell, no code tools and no model switching.

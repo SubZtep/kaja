@@ -36,7 +36,6 @@ export const NasiStepSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ask_user"), question: z.string(), note: z.string().optional() }),
   z.object({ type: z.literal("persona_switch"), personaId: z.string(), label: z.string() }),
   z.object({ type: z.literal("confirm_command"), command: z.string(), description: z.string() }),
-  z.object({ type: z.literal("client_tool_call"), name: z.string(), arguments: z.string() }),
   /** A tool call waiting for the user's OK; answer with the next turn's `approval`. `summary` is the request in one line. */
   z.object({ type: z.literal("confirm_tool"), name: z.string(), arguments: z.string(), summary: z.string() })
 ])
@@ -48,7 +47,7 @@ export const NasiUsageSchema = z.object({
   contextWindow: z.number().optional()
 })
 
-export const NasiTurnStatusSchema = z.enum(["completed", "needs_input", "needs_approval", "needs_client_tool", "error"])
+export const NasiTurnStatusSchema = z.enum(["completed", "needs_input", "needs_approval", "error"])
 
 export const NasiTurnResponseSchema = z.object({
   session: z.uuidv7(),
@@ -65,7 +64,6 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("reasoning"), text: z.string() }),
   z.object({ type: z.literal("message"), content: z.string() }),
   z.object({ type: z.literal("tool_call"), name: z.string(), arguments: z.string() }),
-  z.object({ type: z.literal("client_tool_call"), name: z.string(), arguments: z.string() }),
   z.object({
     type: z.literal("confirm_tool"),
     id: z.string(),

@@ -411,7 +411,7 @@ function eventBlurb(event: EventRow): string {
       ? String(value)
       : event.type
   }
-  if (event.type === "tool_call" || event.type === "client_tool_call") return pick("name")
+  if (event.type === "tool_call") return pick("name")
   if (event.type === "confirm_command" || event.type === "confirm_tool") return pick("command", "name")
   if (event.type === "error") return pick("category", "text")
   if (event.type === "usage") return pick("model")
@@ -427,7 +427,7 @@ function eventBlurb(event: EventRow): string {
 
 function eventParticipant(event: EventRow): string {
   if (event.type === "user" || event.type === "ask_user") return "User"
-  if (event.type === "tool_call" || event.type === "client_tool_call" || event.type === "tool_image") return "Tools"
+  if (event.type === "tool_call" || event.type === "tool_image") return "Tools"
   if (event.type === "confirm_command" || event.type === "confirm_tool" || event.type === "tool_approval") return "Host"
   return "Model"
 }
@@ -498,7 +498,6 @@ function renderPayload(type: string, payload: Record<string, unknown>): string {
     case "final":
       return textBlock(payload.content)
     case "tool_call":
-    case "client_tool_call":
       return joinBlocks([textBlock(payload.name), jsonBlock(payload.arguments)])
     case "tool_image":
       return textBlock(payload.path)

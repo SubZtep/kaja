@@ -40,7 +40,7 @@ const agent = new Agent({ model, client, tools })
 for await (const event of run(agent, prompt, createSession(), owner)) { /* … */ }
 ```
 
-`Nasi.open` also takes `personas`, `promptContext`, `owner`, `deps` and `clientTools`. The [docs](https://docs.kaja.io/development/nasi#inputs-and-outputs) explain each.
+`Nasi.open` also takes `personas`, `promptContext`, `owner` and `deps`. The [docs](https://docs.kaja.io/development/nasi#inputs-and-outputs) explain each.
 
 ## Stores and model client
 
