@@ -6,7 +6,7 @@ nav_order: 1
 
 # Welcome to our Documentation 🦋
 
-**Kaja is a customisable, multi-purpose AI agentic[^1] harness[^2].**
+Kaja is a customisable, multi-purpose **AI agentic[^1] harness[^2]**.
 Give it a task and it keeps looping with an LLM – calling tools, switching personas, remembering
 what matters – until the job is done.
 
@@ -18,7 +18,7 @@ There are two [ways to run](/getting-started/modes) it:
 | Needs an account | Yes (device login) | No |
 | Needs your own LLM | No | Yes |
 | Sessions & memory stored | Postgres, server-side | SQLite, in your home dir |
-| Shell, your own MCP servers and plugins | No | Yes |
+| Your files, shell and own MCP servers | No | Yes |
 
 ## What’s in the box
 

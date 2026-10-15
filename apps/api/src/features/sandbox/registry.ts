@@ -1,10 +1,11 @@
 import { createHmac, hkdfSync } from "node:crypto"
-import type { McpSandbox } from "@kaja/nasi"
+import type { FetchLike, McpSandbox } from "@kaja/nasi"
 import { SANDBOX_FULL_HEADER, type Sandbox } from "@kaja/schema/api"
 import { env } from "../../core/env"
 import { lookupGeo } from "../../core/geo"
 import { reportError } from "../../core/report"
 import { abilityService, sandboxService } from "../../services"
+import type { AbilityKeyValue } from "../../services/ability"
 import type { SandboxTunnel } from "./tunnel"
 
 /** Connected sandboxes by id. Their rows say `online`, but only this process holds their sockets (one API instance). */
@@ -79,19 +80,32 @@ function fullness(sandbox: Sandbox, tunnel: SandboxTunnel): number {
 export type SandboxPick = { tunnel: SandboxTunnel; borrowed: boolean }
 
 /**
- * The sandbox a user's turn runs its stdio abilities in: the last one while it's still usable, else their own (the
- * least full), else, when they allow it and the ability doesn't need a trusted box, one another user shares (the
- * nearest, then the least full), else the official box. `skip` leaves out sandboxes that just answered they're full.
+ * Which sandboxes may take a call: `any` (a keyless one: the user's own, shared ones when they allow it, the official
+ * box), `trusted` (the user's own or the official box), `official` (only the official box).
+ */
+export type SandboxTrust = "any" | "trusted" | "official"
+
+/**
+ * The sandbox a user's turn runs a stdio ability in (`ability`), or sends a tool request out through (`ability`
+ * null): the last one while it's still usable, else their own (the least full), else, when they allow it and `trust`
+ * is `any`, one another user shares (the nearest, then the least full), else the official box. `skip` leaves out
+ * sandboxes that just answered they're full.
  */
 export async function pickSandbox(
   userId: string,
-  ability: string,
-  opts: { trusted?: boolean; skip?: Set<string> } = {}
+  ability: string | null,
+  opts: { trust?: SandboxTrust; skip?: Set<string> } = {}
 ): Promise<SandboxPick | undefined> {
+  const trust = opts.trust ?? "any"
   const { useShared } = await sandboxService.settings(userId)
-  const usable = (await sandboxService.usableBy(userId, useShared && !opts.trusted)).flatMap(sandbox => {
+  const usable = (await sandboxService.usableBy(userId, useShared && trust === "any")).flatMap(sandbox => {
     const tunnel = tunnels.get(sandbox.id)
-    return tunnel && !tunnel.closed && !opts.skip?.has(sandbox.id) && tunnel.info.abilities.includes(ability)
+    const serves = ability === null ? tunnel?.info.fetch === true : tunnel?.info.abilities.includes(ability)
+    return tunnel &&
+      !tunnel.closed &&
+      !opts.skip?.has(sandbox.id) &&
+      serves &&
+      (trust !== "official" || sandbox.kind === "official")
       ? [{ sandbox, tunnel }]
       : []
   })
@@ -120,24 +134,37 @@ export async function pickSandbox(
   const official = usable.filter(entry => entry.sandbox.kind === "official").sort(byFullness)
   const ordered = [...own, ...shared, ...official]
   const picked = ordered.find(entry => fullness(entry.sandbox, entry.tunnel) < 1) ?? ordered[0]
-  if (picked) lastPick.set(userId, picked.sandbox.id)
+  // A request sent out leaves nothing warm behind, so it doesn't move where the user's servers go next
+  if (picked && ability !== null) lastPick.set(userId, picked.sandbox.id)
   return picked && pick(picked)
 }
 
 /** How many other sandboxes a request that found its sandbox full tries. */
 const FULL_RETRIES = 3
 
+/** The key a user's turn would send an ability's calls with (theirs, else a server-wide one), if any. */
+export type SandboxKeys = (ability: string) => AbilityKeyValue | undefined
+
+const TRUST_ORDER: SandboxTrust[] = ["any", "trusted", "official"]
+
+/** Where a call carrying `key` may go: anywhere without one, the user's own or the official sandbox with their own, only the official one with a server-wide key (an operator could log it). */
+export function keyTrust(key: AbilityKeyValue | undefined): SandboxTrust {
+  if (!key) return "any"
+  return key.own ? "trusted" : "official"
+}
+
+function strictest(a: SandboxTrust, b: SandboxTrust): SandboxTrust {
+  return TRUST_ORDER[Math.max(TRUST_ORDER.indexOf(a), TRUST_ORDER.indexOf(b))]!
+}
+
 /**
- * A turn's MCP sandbox: an ability's first request picks a sandbox for the user (another one when that answers it's
- * full), and the turn's later ones go there too. Closing it releases the user's servers on sandboxes they borrowed,
- * so nothing of the turn (a browser's logins) stays on someone else's machine.
+ * Whether an ability must stay on the user's own or the official sandbox (the manifest's trustedSandbox), looked up
+ * once. If that can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on
+ * a stranger's machine.
  */
-export function mcpSandboxFor(userId: string): McpSandbox {
-  const picked = new Map<string, Promise<SandboxPick | undefined>>()
+function trustedAbilities(userId: string): (ability: string) => Promise<boolean> {
   let trusted: Promise<Set<string> | undefined> | undefined
-  // The abilities that must stay on the user's own or the official sandbox (the manifest's trustedSandbox). If that
-  // can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on a stranger's machine.
-  const needsTrust = async (ability: string) => {
+  return async ability => {
     trusted ??= abilityService
       .mcpAbilities()
       .then(abilities => new Set(abilities.filter(a => a.trustedSandbox).map(a => a.name)))
@@ -148,6 +175,19 @@ export function mcpSandboxFor(userId: string): McpSandbox {
     const names = await trusted
     return names === undefined || names.has(ability)
   }
+}
+
+/**
+ * A turn's MCP sandbox: an ability's first request picks a sandbox for the user (another one when that answers it's
+ * full), and the turn's later ones go there too. A keyed server gets its key with every request, so it only runs where
+ * that key may go ({@link keyTrust}). Closing it releases the user's servers on sandboxes they borrowed, so nothing
+ * of the turn (a browser's logins) stays on someone else's machine.
+ */
+export function mcpSandboxFor(userId: string, keys: SandboxKeys = () => undefined): McpSandbox {
+  const picked = new Map<string, Promise<SandboxPick | undefined>>()
+  const needsTrust = trustedAbilities(userId)
+  const trustOf = async (ability: string) =>
+    strictest((await needsTrust(ability)) ? "trusted" : "any", keyTrust(keys(ability)))
 
   return {
     fetch: async (input, init) => {
@@ -155,7 +195,7 @@ export function mcpSandboxFor(userId: string): McpSandbox {
       if (!picked.has(ability)) {
         picked.set(
           ability,
-          needsTrust(ability).then(trust => pickSandbox(userId, ability, { trusted: trust }))
+          trustOf(ability).then(trust => pickSandbox(userId, ability, { trust }))
         )
       }
       // A retry resends the body, so it's read once up front.
@@ -168,21 +208,63 @@ export function mcpSandboxFor(userId: string): McpSandbox {
           return Response.json({ error: "no MCP sandbox is online for you right now" }, { status: 503 })
         }
         const { tunnel } = current
-        const response = await tunnel.request(pseudonymFor(userId, tunnel.id), input, { ...init, body })
+        const key = keys(ability)?.value
+        const response = await tunnel.request(pseudonymFor(userId, tunnel.id), input, { ...init, body }, key)
         if (response.status !== 503 || !response.headers.has(SANDBOX_FULL_HEADER) || attempt >= FULL_RETRIES) {
           return response
         }
         await response.body?.cancel()
         skip.add(tunnel.id)
-        const trust = await needsTrust(ability)
-        picked.set(ability, pickSandbox(userId, ability, { trusted: trust, skip }))
+        picked.set(ability, pickSandbox(userId, ability, { trust: await trustOf(ability), skip }))
       }
     },
     close: async () => {
-      for (const [ability, pending] of picked) {
-        const current = await pending.catch(() => undefined)
-        if (current?.borrowed) current.tunnel.release(pseudonymFor(userId, current.tunnel.id), ability)
-      }
+      await Promise.all(
+        [...picked].map(async ([ability, pending]) => {
+          const current = await pending.catch(() => undefined)
+          if (current?.borrowed) current.tunnel.release(pseudonymFor(userId, current.tunnel.id), ability)
+        })
+      )
     }
+  }
+}
+
+/** Thrown by {@link egressFor}'s senders when no sandbox can send the request: a cloud turn never sends it from here. */
+export class NoSandboxError extends Error {
+  constructor() {
+    super("no sandbox is online to send this request right now")
+    this.name = "NoSandboxError"
+  }
+}
+
+/**
+ * A turn's egress (nasi's `egress`): every tool request goes out through a sandbox, never from the API. `fetch_url`
+ * (no ability) may use any sandbox the user may; an ability's requests go where the key they carry may go
+ * ({@link keyTrust}, by `keys`; without `keys`, only the official box), and a trustedSandbox one never to a borrowed
+ * sandbox. Each trust level keeps the sandbox it first picked for the turn, picking again only when that one disconnects.
+ */
+export function egressFor(userId: string, keys?: SandboxKeys): (ability?: string) => FetchLike {
+  const picked = new Map<SandboxTrust, Promise<SandboxPick | undefined>>()
+  const needsTrust = trustedAbilities(userId)
+  const sendAt =
+    (trust: () => Promise<SandboxTrust>): FetchLike =>
+    async (input, init) => {
+      const level = await trust()
+      let current = await picked.get(level)
+      if (!current || current.tunnel.closed) {
+        const next = pickSandbox(userId, null, { trust: level })
+        picked.set(level, next)
+        current = await next
+      }
+      if (!current) throw new NoSandboxError()
+      return current.tunnel.fetch(pseudonymFor(userId, current.tunnel.id), input, init)
+    }
+  return ability => {
+    if (ability === undefined) return sendAt(() => Promise.resolve("any"))
+    return sendAt(async () => {
+      if (!keys) return "official"
+      const needed = (await needsTrust(ability)) ? "trusted" : "any"
+      return strictest(needed, keyTrust(keys(ability)))
+    })
   }
 }

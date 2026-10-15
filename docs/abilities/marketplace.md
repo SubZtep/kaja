@@ -26,7 +26,7 @@ which of them a chat uses. There's nothing to turn on; an ability that needs a k
 
 Right now the marketplace has:
 
-- **personas:** `care`, `barkochba`, `onboarding`, `config-hyprland` (local only)
+- **personas:** `default`, `care`, `barkochba`, `onboarding`, `config-hyprland` (local only)
 - **skills:** `system-report`, `meeting-notes`
 - **HTTP tools:** `web-search`, `open-meteo`
 - **MCP servers:** `chrome-devtools`, `context7`, `filesystem`, `geo-service`, `sequential-thinking`, `time`
@@ -51,7 +51,8 @@ Right now the marketplace has:
 The sync never loses your edits:
 
 - files you never touched follow the marketplace, removals included;
-- a file you edited is replaced, and yours is saved beside it with `.bak` before the extension (`care.bak.toml`, then `care.bak.2.toml` and so on), so it keeps its highlighting and Kaja never loads it;
+- a file you edited is replaced, and yours is saved beside it with `.bak` before the extension
+  (`care.bak.toml`, then `care.bak.2.toml`), so it keeps its highlighting and Kaja never loads it;
 - a file the marketplace removed but you edited stays, as your own;
 - files you added yourself are never touched.
 
@@ -61,9 +62,9 @@ the next launch. You can turn both off in [`[marketplace]`](/configuration/confi
 takes a `url` and `ref` to fetch from a fork, a branch or a local checkout.
 
 Every valid ability and persona in the folder loads, your own included. `kaja abilities` lists them: each
-ability's parts, whether its key is saved, what a stdio MCP server runs (or what to install for it), and the personas that use it.
-To change what a chat gets, edit a persona's `abilities` list, or write your own persona (a new id, so the
-sync never replaces it). `kaja doctor` asks for the keys of abilities a persona uses, and tests them. A file
+ability's parts, whether its key is saved, what a stdio MCP server runs (or what to install for it), and the
+personas that use it. To change what a chat gets, edit a persona's `abilities` list, or write your own
+persona (a new id, so the sync never replaces it). `kaja doctor` asks for the keys of abilities a persona uses, and tests them. A file
 that fails to load is skipped with the reason and never stops the rest.
 
 Local mode is the most permissive: skills with scripts, stdio MCP servers and hosts on your own network all
@@ -81,12 +82,12 @@ The cloud has no shell and serves many people, so it offers less:
 | --- | --- |
 | skill | it has a `scripts/` folder |
 | HTTP tool | its `baseUrl` isn't a public address |
-| MCP server | it has no `tools` allowlist, isn't on a public host, or is `stdio` and needs a key ([keyless `stdio` ones run in the MCP sandbox](/abilities/mcp#in-the-cloud)) |
+| MCP server | it has no `tools` allowlist, or isn't on a public host (`stdio` ones [run in a sandbox](/abilities/mcp#in-the-cloud)) |
 
 **Keys.** You save them under **API keys** on your [Profile](https://kaja.io/profile), which lists the
 abilities your personas use that take one. Kaja tests the key, stores it encrypted and never shows it again:
-the page only says "Key saved", with Replace and Remove. It's used for your own turns only and never reaches
-your terminal. An ability that takes a key stays out of your chats until you add one, unless it also works
+the page only says "Key saved", with Replace and Remove. It's used for your own turns only, never reaches
+your terminal, and goes only to your own sandbox or Kaja's. An ability that takes a key stays out of your chats until you add one, unless it also works
 without one (like context7, where a key only raises the limits). Some abilities, like web search
 (`web-search`), come with a key from the server, so you need none. If you add your own, it's used instead.
 

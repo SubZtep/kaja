@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test"
 import { fetchUrlTool } from "../../src/tools/builtin/fetch-url"
 import { getToolDeps, setToolDeps } from "../../src/tools/deps"
 
-// A public-looking URL through a proxy pointed at a local Bun.serve, as in ssrf-size.test.ts
+// A public-looking URL through a sender pointed at a local Bun.serve, as in ssrf-size.test.ts
 const PUBLIC_URL = "http://172.32.0.1/cat.jpg"
 const saved = getToolDeps()
 
@@ -10,7 +10,7 @@ afterEach(() => setToolDeps(saved))
 
 async function fetchFrom(response: Response) {
   const origin = Bun.serve({ port: 0, fetch: () => response })
-  setToolDeps({ ...saved, fetchProxy: `http://127.0.0.1:${origin.port}` })
+  setToolDeps({ ...saved, fetchSend: (_url, init) => fetch(`http://127.0.0.1:${origin.port}/`, init) })
   try {
     return await fetchUrlTool.execute({ url: PUBLIC_URL })
   } finally {

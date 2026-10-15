@@ -37,7 +37,7 @@ beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "kaja-sandbox-test-"))
   const overrides = join(dir, "overrides.json")
   const counter = { command: process.execPath, args: [join(import.meta.dir, "fixtures/counter-server.ts")] }
-  await writeFile(overrides, JSON.stringify({ counter }))
+  await writeFile(overrides, JSON.stringify({ counter, keyed: counter }))
   servers = await loadSandboxServers(MARKETPLACE, overrides)
 })
 
@@ -51,19 +51,23 @@ afterAll(async () => {
 
 /** A sandbox and the API's end of its tunnel, wired in-process: every frame goes through JSON and its schema, as over the socket. */
 function sandbox(
-  opts: Partial<Pick<PoolOptions, "idleMs" | "maxProcesses" | "hasRoom" | "serverMemory" | "treeRss">> = {}
+  opts: Partial<Pick<PoolOptions, "idleMs" | "maxProcesses" | "hasRoom" | "serverMemory" | "treeRss">> & {
+    send?: (request: Request) => Promise<Response>
+  } = {}
 ) {
+  const { send = () => Promise.reject(new Error("nothing goes out here")), ...poolOpts } = opts
   const pool = new ProcessPool({
     servers,
     idleMs: 60_000,
     maxProcesses: 8,
     hasRoom: async () => true,
-    ...opts
+    ...poolOpts
   })
   pools.push(pool)
   const egress = { open: 0, allowed: 0, refused: 0, failed: 0 }
   const handler = {
-    mcp: (user: string, ability: string, request: Request) => pool.handle(user, ability, request),
+    mcp: (user: string, ability: string, request: Request, key?: string) => pool.handle(user, ability, request, key),
+    fetch: (_user: string, request: Request) => send(request),
     release: (user: string, ability: string) => pool.release(user, ability),
     stats: () => collectStats({ pool, egress }),
     running: () => pool.size
@@ -79,7 +83,8 @@ function sandbox(
       cpu: { model: "test", cores: 1 },
       memory: { total: 1, limit: null },
       maxProcesses: pool.limits.maxProcesses,
-      abilities: pool.abilities
+      abilities: pool.abilities,
+      fetch: true
     },
     send: text => queueMicrotask(() => server?.receive(apiSandboxFrameSchema.parse(JSON.parse(text))))
   })
@@ -90,9 +95,9 @@ function sandbox(
 }
 
 /** An MCP client of `ability` for `user`, over Streamable HTTP through the tunnel. */
-async function connect(tunnel: SandboxTunnel, user: string, ability = "counter"): Promise<Client> {
+async function connect(tunnel: SandboxTunnel, user: string, ability = "counter", key?: string): Promise<Client> {
   const transport = new StreamableHTTPClientTransport(new URL(`http://sandbox.invalid/mcp/${ability}`), {
-    fetch: (url, init) => tunnel.request(user, url, init)
+    fetch: (url, init) => tunnel.request(user, url, init, key)
   })
   const client = new Client({ name: "test", version: "1.0.0" })
   await client.connect(transport)
@@ -105,9 +110,11 @@ async function callText(client: Client, name: string): Promise<string> {
 }
 
 describe("manifests", () => {
-  test("only keyless stdio servers load, with this host's overrides", () => {
-    expect([...servers.keys()]).toEqual(["counter"])
+  test("stdio servers load with this host's overrides, a keyed one with where its key goes", () => {
+    expect([...servers.keys()]).toEqual(["counter", "keyed"])
     expect(servers.get("counter")!.command).toBe(process.execPath)
+    expect(servers.get("counter")!.key).toBeUndefined()
+    expect(servers.get("keyed")!.key).toEqual({ env: "KEYED_API_KEY", prefix: "Key ", keyless: false })
   })
 
   test("a cache dir sends every server's bun/uv/npm caches there", async () => {
@@ -161,7 +168,7 @@ describe("tunnel", () => {
 
   test("an ability the sandbox doesn't run is 404, and so is any path but /mcp/<ability>", async () => {
     const { tunnel } = sandbox()
-    expect((await post(tunnel, "/mcp/keyed")).status).toBe(404)
+    expect((await post(tunnel, "/mcp/nothing")).status).toBe(404)
     expect((await post(tunnel, "/stats")).status).toBe(404)
   })
 
@@ -173,13 +180,85 @@ describe("tunnel", () => {
   })
 })
 
+describe("keyed servers", () => {
+  test(
+    "a keyed server needs the key, starts with it in its env, and starts anew when the key changes",
+    async () => {
+      const { tunnel, pool } = sandbox()
+      expect(
+        (await tunnel.request("u1", "http://sandbox.invalid/mcp/keyed", { method: "POST", body: "{}" })).status
+      ).toBe(400)
+      const first = await connect(tunnel, "u1", "keyed", "one")
+      expect(JSON.parse(await callText(first, "whoami")).key).toBe("Key one")
+      expect(await callText(first, "count")).toBe("1")
+      await first.close()
+      const second = await connect(tunnel, "u1", "keyed", "two")
+      expect(JSON.parse(await callText(second, "whoami")).key).toBe("Key two")
+      expect(await callText(second, "count")).toBe("1")
+      expect(pool.size).toBe(1)
+      await second.close()
+    },
+    SPAWN_TIMEOUT_MS
+  )
+})
+
+describe("fetch frames", () => {
+  test("a tool's request goes to the sandbox's sender as one hop, and its answer streams back", async () => {
+    const seen: { url: string; method: string; auth: string | null; body: string }[] = []
+    const { tunnel } = sandbox({
+      send: async request => {
+        seen.push({
+          url: request.url,
+          method: request.method,
+          auth: request.headers.get("authorization"),
+          body: await request.text()
+        })
+        return new Response("found it", { status: 201, headers: { "x-site": "yes" } })
+      }
+    })
+    const res = await tunnel.fetch("user-a", "https://api.example.com/v1/search?q=kaja", {
+      method: "POST",
+      headers: { authorization: "Bearer k" },
+      body: "{}"
+    })
+    expect(res.status).toBe(201)
+    expect(res.headers.get("x-site")).toBe("yes")
+    expect(await res.text()).toBe("found it")
+    expect(seen).toEqual([
+      { url: "https://api.example.com/v1/search?q=kaja", method: "POST", auth: "Bearer k", body: "{}" }
+    ])
+  })
+
+  test("a sender that fails answers with an error, and aborting a fetch cancels it on the sandbox", async () => {
+    let aborted = false
+    const { tunnel } = sandbox({
+      send: request =>
+        request.url.endsWith("/fail")
+          ? Promise.reject(new Error("Blocked non-public URL: http://10.0.0.1/fail"))
+          : new Promise((_resolve, reject) =>
+              request.signal.addEventListener("abort", () => {
+                aborted = true
+                reject(new Error("aborted"))
+              })
+            )
+    })
+    await expect(tunnel.fetch("user-a", "http://10.0.0.1/fail")).rejects.toThrow("Blocked non-public URL")
+    const controller = new AbortController()
+    const pending = tunnel.fetch("user-a", "https://slow.example.com/", { signal: controller.signal })
+    await Bun.sleep(20)
+    controller.abort()
+    await expect(pending).rejects.toThrow()
+    await until(() => aborted)
+  })
+})
+
 describe("stats", () => {
   test(
     "show each running server with its user, memory and calls, and what the pool did",
     async () => {
       const { tunnel } = sandbox({ maxProcesses: 3 })
       const empty = await tunnel.stats()
-      expect(empty).toMatchObject({ abilities: ["counter"], limits: { maxProcesses: 3 }, servers: [] })
+      expect(empty).toMatchObject({ abilities: ["counter", "keyed"], limits: { maxProcesses: 3 }, servers: [] })
 
       const client = await connect(tunnel, "u1")
       void client.callTool({ name: "hang", arguments: {} }).catch(() => {})

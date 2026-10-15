@@ -11,7 +11,7 @@ import {
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
+import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createPostgresAbilityStore } from "../../src/features/nasi/pg-abilities"
 import { createCloudTelegramDriver } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
@@ -56,7 +56,7 @@ function marketplace(base: string) {
     `abilities/counter-${tag}/mcp.toml`,
     `description = "Counts"\ntransport = "stdio"\ncommand = "unused"\ntools = ["count", "picture"]\n`
   )
-  // Keys aren't forwarded to the MCP sandbox yet, so a stdio server that takes one never reaches the cloud.
+  // A stdio server that takes a key runs in a sandbox too: the key comes with each request.
   put(
     `abilities/stdio-keyed-${tag}/mcp.toml`,
     `description = "Local"\ntransport = "stdio"\ncommand = "echo"\ntools = ["x"]\nauth = { type = "apiKey", in = "env", name = "K" }\n`
@@ -138,8 +138,8 @@ describe("MCP servers in the cloud", () => {
     token = await signUpAndSignIn(faker.internet.email(), faker.internet.password({ length: 8, prefix: "P4$s" }), "Mcp")
     secretService.setKey(TEST_SECRET_KEY)
     fixture = startHttpMcpFixture({ apiKey: GOOD_KEY })
-    // With a proxy set the guard leaves DNS to it; the faked proxy hands the fake host to the local fixture.
-    setNasiFetchProxyOverride("http://proxy.test:3128")
+    // With a sender set the guard leaves DNS to it; this one is the faked fetch, which hands the fake host to the local fixture.
+    setNasiEgressOverride(() => () => (url, init) => fetch(url, init))
     globalThis.fetch = routeHostTo(fixture, host, realFetch)
   })
 
@@ -147,7 +147,7 @@ describe("MCP servers in the cloud", () => {
     globalThis.fetch = realFetch
     fixture.stop()
     secretService.setKey(env.USER_SECRET_KEY)
-    setNasiFetchProxyOverride(undefined)
+    setNasiEgressOverride(undefined)
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
     // The fixture's default persona too, so later files get the built-in one again.
@@ -157,27 +157,21 @@ describe("MCP servers in the cloud", () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  test("a sync adds MCP abilities with a tool list, remote or keyless stdio; keyed stdio, local-only, private and unlisted ones are skipped, the ability's other parts kept", async () => {
+  test("a sync adds MCP abilities with a tool list, remote or stdio; local-only, private and unlisted ones are skipped, the ability's other parts kept", async () => {
     const result = await marketplaceService.syncFromDir(marketplace(base), "m1")
     expect(result.added).toContain(`abilities/${things}/mcp.toml`)
     expect(result.added).toContain(`abilities/stdio-${tag}/mcp.toml`)
+    expect(result.added).toContain(`abilities/stdio-keyed-${tag}/mcp.toml`)
     expect(result.added).toContain(`abilities/mixed-${tag}/tool.toml`)
-    for (const skipped of [
-      `open-${tag}`,
-      `private-${tag}`,
-      `stdio-keyed-${tag}`,
-      `local-${tag}`,
-      `roots-${tag}`,
-      `mixed-${tag}`
-    ]) {
+    for (const skipped of [`open-${tag}`, `private-${tag}`, `local-${tag}`, `roots-${tag}`, `mixed-${tag}`]) {
       expect(result.added).not.toContain(`abilities/${skipped}/mcp.toml`)
     }
   })
 
-  test("a keyless stdio server is offered, running in an MCP sandbox", async () => {
+  test("stdio servers are offered, keyed or not, running in an MCP sandbox", async () => {
     const offered = await createPostgresAbilityStore({ userId: "any" }).listMcpAbilities()
     expect(offered.find(ability => ability.name === `stdio-${tag}`)).toMatchObject({ transport: "stdio", tools: ["x"] })
-    expect(offered.map(ability => ability.name)).not.toContain(`stdio-keyed-${tag}`)
+    expect(offered.find(ability => ability.name === `stdio-keyed-${tag}`)).toMatchObject({ transport: "stdio" })
   })
 
   test("with no sandbox online, a stdio ability's turn still runs, without its tools", async () => {
@@ -197,6 +191,16 @@ describe("MCP servers in the cloud", () => {
       domain: host,
       saved: false
     })
+  })
+
+  test("a keyed stdio server's key is tested in a sandbox, never started here", async () => {
+    const res = await app.request(`/abilities/me/keys/stdio-keyed-${tag}`, {
+      method: "PUT",
+      headers: auth(),
+      body: JSON.stringify({ apiKey: "stdio-key" })
+    })
+    expect(res.status).toBe(200)
+    expect((await res.json()).check.ok).toBe(false)
   })
 
   test("a saved key is tested by connecting", async () => {

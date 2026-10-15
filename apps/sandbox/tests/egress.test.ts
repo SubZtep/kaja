@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { connect, createServer, type Server } from "node:net"
-import { type EgressCounts, parseUpstream, startEgressProxy } from "../src/egress"
+import { gzipSync } from "node:zlib"
+import { type EgressCounts, parseUpstream, sendThroughEgress, startEgressProxy } from "../src/egress"
 
 let upstream: ReturnType<typeof Bun.serve>
 const proxies: Server[] = []
@@ -11,6 +12,11 @@ beforeAll(() => {
     hostname: "127.0.0.1",
     fetch: request => {
       const url = new URL(request.url)
+      if (url.pathname === "/moved") return new Response(null, { status: 302, headers: { location: "/elsewhere" } })
+      if (url.pathname === "/gzip")
+        return new Response(gzipSync("squeezed"), {
+          headers: { "content-encoding": "gzip", "content-type": "text/plain" }
+        })
       return Response.json({ path: `${url.pathname}${url.search}`, host: request.headers.get("host") })
     }
   })
@@ -194,5 +200,29 @@ describe("egress proxy with an upstream proxy (WEB_PROXY)", () => {
       port: 8080,
       auth: undefined
     })
+  })
+})
+
+describe("a cloud turn's tool request (sendThroughEgress)", () => {
+  test("goes out through the proxy to the address it checked, one hop, with a decoded body", async () => {
+    const send = sendThroughEgress(await proxy({ names: { "site.test": ["127.0.0.1"] }, allowLoopback: true }))
+    const site = `http://site.test:${upstream.port}`
+    expect(await (await send(new Request(`${site}/page?q=1`))).json()).toEqual({
+      path: "/page?q=1",
+      host: `site.test:${upstream.port}`
+    })
+    const moved = await send(new Request(`${site}/moved`))
+    expect([moved.status, moved.headers.get("location")]).toEqual([302, "/elsewhere"])
+    const gzipped = await send(new Request(`${site}/gzip`))
+    expect(gzipped.headers.get("content-encoding")).toBeNull()
+    expect(await gzipped.text()).toBe("squeezed")
+  })
+
+  test("a private address is refused, for http and https alike, and only http(s) goes out", async () => {
+    const send = sendThroughEgress(await proxy({ names: { "inside.test": ["10.0.0.5"] } }))
+    await expect(send(new Request(`http://127.0.0.1:${upstream.port}/`))).rejects.toThrow("Blocked non-public URL")
+    await expect(send(new Request("http://inside.test/"))).rejects.toThrow("Blocked non-public URL")
+    await expect(send(new Request("https://127.0.0.1:1/"))).rejects.toThrow("Blocked non-public URL")
+    await expect(send(new Request("file:///etc/passwd"))).rejects.toThrow("Only http(s) URLs")
   })
 })

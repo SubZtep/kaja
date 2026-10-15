@@ -13,11 +13,12 @@ function renderLine(field: FieldInfo): string {
   }
 
   if (field.secret) {
-    const value = field.example ?? ""
+    // An example shows the value's shape (a proxy URL, say), so it isn't a random key to generate.
+    if (field.example !== undefined) return `# ${field.key}=${field.example}${comment}`
     const hint = comment
       ? `${comment} (generate with: openssl rand -base64 32)`
       : " # generate with: openssl rand -base64 32"
-    return `# ${field.key}=${value}${hint}`
+    return `# ${field.key}=${hint}`
   }
 
   if (field.defaultValue !== undefined) {

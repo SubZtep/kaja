@@ -12,9 +12,12 @@ import {
 } from "@kaja/schema/api"
 import { reportError } from "./report"
 
-/** What the tunnel serves: an MCP request for a (pseudonymous) user's ability, a release of one, and the stats. */
+/** What the tunnel serves: an MCP request for a (pseudonymous) user's ability, a tool's outgoing request, a release of one, and the stats. */
 export type SandboxHandler = {
-  mcp: (user: string, ability: string, request: Request) => Promise<Response>
+  /** `key`: a keyed server's key, which it starts with. */
+  mcp: (user: string, ability: string, request: Request, key?: string) => Promise<Response>
+  /** Sends a tool's request (`fetch_url`, an HTTP tool, a remote MCP server) out through the egress proxy. */
+  fetch: (user: string, request: Request) => Promise<Response>
   release: (user: string, ability: string) => Promise<void>
   stats: () => Promise<SandboxStats>
   /** Servers running or starting now, sent with every answer. */
@@ -25,6 +28,8 @@ export type SandboxHandler = {
 const BunWebSocket = WebSocket as unknown as new (url: string, options: Bun.WebSocketOptions) => WebSocket
 
 const HEARTBEAT_MS = 60_000
+/** A head frame carries at most this many headers (the API's schema refuses more). */
+const MAX_HEADERS = 100
 const MIN_BACKOFF_MS = 1000
 const MAX_BACKOFF_MS = 60_000
 
@@ -42,7 +47,19 @@ export class TunnelServer {
   receive(frame: ApiSandboxFrame) {
     switch (frame.t) {
       case "request":
-        void this.#request(frame)
+        void this.#answer(frame.id, signal =>
+          this.#handler.mcp(
+            frame.user,
+            frame.ability,
+            new Request(`http://sandbox.local/mcp/${encodeURIComponent(frame.ability)}`, requestInit(frame, signal)),
+            frame.key
+          )
+        )
+        return
+      case "fetch":
+        void this.#answer(frame.id, signal =>
+          this.#handler.fetch(frame.user, new Request(frame.url, requestInit(frame, signal)))
+        )
         return
       case "cancel":
         this.#inflight.get(frame.id)?.abort()
@@ -70,27 +87,22 @@ export class TunnelServer {
     this.#inflight.clear()
   }
 
-  async #request(frame: Extract<ApiSandboxFrame, { t: "request" }>) {
+  // Runs one request frame and streams its answer back as head, chunks and end (or error); a cancel frame aborts it.
+  async #answer(id: string, run: (signal: AbortSignal) => Promise<Response>) {
     const controller = new AbortController()
-    this.#inflight.set(frame.id, controller)
+    this.#inflight.set(id, controller)
     const { signal } = controller
     try {
-      const request = new Request(`http://sandbox.local/mcp/${encodeURIComponent(frame.ability)}`, {
-        method: frame.method,
-        headers: frame.headers,
-        body: frame.body === null ? undefined : Buffer.from(frame.body, "base64"),
-        signal
-      })
-      const response = await this.#handler.mcp(frame.user, frame.ability, request)
+      const response = await run(signal)
       if (signal.aborted) {
         await response.body?.cancel()
         return
       }
       this.#send({
         t: "head",
-        id: frame.id,
+        id,
         status: response.status,
-        headers: [...response.headers],
+        headers: [...response.headers].slice(0, MAX_HEADERS),
         running: this.#handler.running()
       })
       if (response.body) {
@@ -98,15 +110,24 @@ export class TunnelServer {
         signal.addEventListener("abort", () => void reader.cancel().catch(() => {}), { once: true })
         for (let read = await reader.read(); !read.done; read = await reader.read()) {
           if (signal.aborted) return
-          this.#send({ t: "chunk", id: frame.id, data: Buffer.from(read.value).toString("base64") })
+          this.#send({ t: "chunk", id, data: Buffer.from(read.value).toString("base64") })
         }
       }
-      if (!signal.aborted) this.#send({ t: "end", id: frame.id })
+      if (!signal.aborted) this.#send({ t: "end", id })
     } catch (error) {
-      if (!signal.aborted) this.#send({ t: "error", id: frame.id, message: messageOf(error).slice(0, 500) })
+      if (!signal.aborted) this.#send({ t: "error", id, message: messageOf(error).slice(0, 500) })
     } finally {
-      this.#inflight.delete(frame.id)
+      this.#inflight.delete(id)
     }
+  }
+}
+
+function requestInit(frame: { method: string; headers: [string, string][]; body: string | null }, signal: AbortSignal) {
+  return {
+    method: frame.method,
+    headers: frame.headers,
+    body: frame.body === null ? undefined : Buffer.from(frame.body, "base64"),
+    signal
   }
 }
 

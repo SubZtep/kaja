@@ -40,7 +40,6 @@ export const StoredConversationSchema = z.object({
   messages: z.array(SessionMessageSchema),
   pendingAskUserId: z.string().optional(),
   pendingRunCommandId: z.string().optional(),
-  pendingClientToolCallId: z.string().optional(),
   pendingToolApprovalId: z.string().optional(),
   grantedTools: z.array(z.string()).optional(),
   summary: z.object({ text: z.string(), from: z.int().nonnegative() }).optional(),

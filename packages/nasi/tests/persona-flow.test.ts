@@ -168,7 +168,7 @@ test("an MCP ability connects only once a persona that lists it is active", asyn
     },
     personas: [chatty, forecaster],
     abilities: store({ listMcpAbilities: async () => [things] }),
-    deps: { fetchProxy: "http://proxy.test:3128" }
+    egress: () => (url, init) => fetch(url, init)
   })
   try {
     const first = await nasi.turnBuffered({ message: "hi" })
@@ -193,7 +193,7 @@ test("without personas, every ability's MCP server connects, as before", async (
     store: createMemoryStore(),
     chat: { client: fakeClient([{ content: "hi" }], sent) as never, model: "fake" },
     abilities: store({ listMcpAbilities: async () => [things] }),
-    deps: { fetchProxy: "http://proxy.test:3128" }
+    egress: () => (url, init) => fetch(url, init)
   })
   try {
     await nasi.turnBuffered({ message: "hi" })

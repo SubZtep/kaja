@@ -2,8 +2,7 @@ import { Readability } from "@mozilla/readability"
 import { parseHTML } from "linkedom"
 import { z } from "zod"
 import { ToolError, tool } from "../../agent/agent"
-import { fetchPublicHttp, ProxyUnavailableError, UnsafeUrlError } from "../../security/ssrf"
-import { warn } from "../../warn"
+import { fetchPublicHttp, UnsafeUrlError } from "../../security/ssrf"
 import { getToolDeps } from "../deps"
 
 /** Raised well above the ssrf default: heavy modern pages run past it, and Readability strips the HTML to a few KB of text before the model ever sees it. */
@@ -32,14 +31,9 @@ export const fetchUrlTool = tool({
   execute: async args => {
     let res: Response
     try {
-      res = await fetchPublicHttp(args.url, { maxBytes: MAX_PAGE_BYTES, proxy: getToolDeps().fetchProxy })
+      res = await fetchPublicHttp(args.url, { maxBytes: MAX_PAGE_BYTES, send: getToolDeps().fetchSend })
     } catch (error) {
       if (error instanceof UnsafeUrlError) throw new ToolError("fetch_url", error.message)
-      // The model (and user) can't act on a proxy outage, so they get a generic failure; the operator needs it named.
-      if (error instanceof ProxyUnavailableError) {
-        warn("fetch_url proxy unreachable", { url: args.url, error: error.message })
-        throw new ToolError("fetch_url", `Fetch failed: ${args.url}`)
-      }
       throw new ToolError("fetch_url", error instanceof Error ? error.message : String(error))
     }
     if (!res.ok) throw new ToolError("fetch_url", `Fetch failed: ${res.status} ${args.url}`)

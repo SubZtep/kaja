@@ -70,9 +70,9 @@ other's, and none of it mixes into yours.
 ## What the agent can do
 
 A widget turn runs in [cloud mode](/getting-started/modes#cloud-mode) with the cloud
-[built-in tools](/abilities/tools#built-ins), but no HTTP tools or MCP servers. A key's abilities are
-**skills only** (the ones its persona lists), so a visitor can never trigger a call with your API keys. Every
-persona in the catalog is available, starting with the key's own.
+[built-in tools](/abilities/tools#built-ins) except `fetch_url`, and no HTTP tools or MCP servers. A key's
+abilities are **skills only** (the ones its persona lists), so a visitor can never make a request with your
+API keys. Every persona in the catalog is available, starting with the key's own.
 
 ## Types
 

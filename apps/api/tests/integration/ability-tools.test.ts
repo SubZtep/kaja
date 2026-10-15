@@ -6,7 +6,7 @@ import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
-import { setNasiChatResolver, setNasiFetchProxyOverride } from "../../src/features/nasi/chat"
+import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
 import { marketplaceService, secretService } from "../../src/services"
 import { AbilityService, parseAbilityKeys } from "../../src/services/ability"
@@ -140,8 +140,8 @@ describe("HTTP tools in the cloud", () => {
     token = await signUpAndSignIn(email, faker.internet.password({ length: 8, prefix: "P4$s" }), "Tools")
     userId = (await pool.query('SELECT id FROM "user" WHERE email = $1', [email])).rows[0].id
     secretService.setKey(TEST_SECRET_KEY)
-    // With a proxy set, the SSRF guard leaves DNS to the proxy, so the fake hosts below are reachable through the faked fetch.
-    setNasiFetchProxyOverride("http://proxy.test:3128")
+    // With a sender set, the SSRF guard leaves DNS to it, so the fake hosts below are reachable through the faked fetch.
+    setNasiEgressOverride(() => () => (url, init) => fetch(url, init))
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = new URL(String(input))
       if (!url.hostname.endsWith(".test")) return realFetch(input, init)
@@ -157,7 +157,7 @@ describe("HTTP tools in the cloud", () => {
   afterAll(async () => {
     globalThis.fetch = realFetch
     secretService.setKey(env.USER_SECRET_KEY)
-    setNasiFetchProxyOverride(undefined)
+    setNasiEgressOverride(undefined)
     setNasiChatResolver(undefined)
     await pool.query("DELETE FROM ability WHERE name LIKE $1", [`%-${tag}`])
     // The fixture's default persona too, so later files get the built-in one again.
@@ -464,9 +464,9 @@ describe("HTTP tools in the cloud", () => {
     const listed = (await service.listKeys(userId)).find(ability => ability.name === issues)
     expect(listed?.key).toBe("optional")
     try {
-      expect((await service.keysForUser(userId)).get(issues)).toBe("server-key")
+      expect((await service.keysForUser(userId)).get(issues)).toEqual({ value: "server-key", own: false })
       await secretService.set(userId, `ability:${issues}`, "own-key")
-      expect((await service.keysForUser(userId)).get(issues)).toBe("own-key")
+      expect((await service.keysForUser(userId)).get(issues)).toEqual({ value: "own-key", own: true })
     } finally {
       await secretService.delete(userId, `ability:${issues}`)
     }

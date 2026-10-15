@@ -18,7 +18,7 @@ which also ends up in the generated JSON Schemas.
 | `@kaja/schema/api` | REST contracts: providers and models, widget keys, the ability catalog and users' keys, usage stats, sandboxes, the Telegram link, auth payloads, the config export bundle | `api/*.ts` | `apps/api`, `apps/web` |
 | `@kaja/schema/nasi` | the HTTP turn contract: `NasiTurnRequest`, `WidgetTurnRequest`, `NasiTurnResponse` and its steps | `nasi/index.ts` | `apps/api`, `apps/tui`, `packages/nasi` |
 | `@kaja/schema/abilities` | marketplace manifests: skill frontmatter, persona, dataset, HTTP tool, MCP server | `abilities/*.ts` | `apps/api`, `apps/tui`, `packages/nasi` |
-| `@kaja/schema/config` | the CLI's hand-edited TOML files (`settings`, `models`, `mcp`, `secrets`, `abilities`) and `docs/config/catalog.toml`, the model catalog | `config/*.ts` | `apps/tui` |
+| `@kaja/schema/config` | the CLI's hand-edited TOML files (`settings`, `models`, `commands`, `secrets`, `mcp`) and `docs/config/catalog.toml`, the model catalog | `config/*.ts` | `apps/tui` |
 | `@kaja/schema/store` | runtime state behind `NasiStore`: sessions and memory notes | `store/*.ts` | `apps/tui`, `packages/nasi` |
 | `@kaja/schema/cli` | a re-export of the persona and dataset schemas, so CLI code keeps one import | `cli/index.ts` | `apps/tui` |
 | `@kaja/schema/env` | env-var schemas, the source of every `.env.example` and `env.d.ts` | `env/*.ts` | build scripts |
@@ -38,8 +38,8 @@ The turn statuses and step types are on [Agent brain](/development/nasi#turn-sta
 
 `bun generate:schemas` turns the `config` and `abilities` schemas into the JSON Schemas in
 [`docs/config/schemas`](https://github.com/SubZtep/kaja/tree/main/docs/config/schemas). They give editors
-completion and validation for `settings.toml`, `models.toml`, `secrets.toml` and the marketplace manifests. The pre-commit hook regenerates them whenever those schemas change, so never
-edit the JSON by hand.
+completion and validation for `settings.toml`, `models.toml`, `secrets.toml` and the marketplace manifests.
+The pre-commit hook regenerates them whenever those schemas change, so never edit the JSON by hand.
 
 ---
 

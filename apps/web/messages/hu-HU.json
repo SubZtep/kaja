@@ -73,7 +73,7 @@
   "feature_abilities_meta": "Készségek, eszközök és MCP-szerverek egy kattintással.",
   "features_docs": "A többi a doksiban van",
   "install_title": "Telepítés",
-  "install_linux_note": "Linuxon tesztelve",
+  "install_terminal_note": "Futtasd terminálban",
   "install_mac_linux_label": "Mac / Linux",
   "install_windows_label": "Windows",
   "install_binary_prefix": "Inkább sima bináris kellene?",

@@ -1,6 +1,6 @@
 import { printBanner } from "./banner"
 import { defaultMaxProcesses } from "./capacity"
-import { type EgressCounts, startEgressProxy } from "./egress"
+import { type EgressCounts, sendThroughEgress, startEgressProxy } from "./egress"
 import { env } from "./env"
 import { sandboxInfo, sandboxLoad } from "./hardware"
 import { markHealth } from "./health"
@@ -21,6 +21,7 @@ export async function startSandbox(): Promise<void> {
     counts: egressCounts,
     upstream: env.WEB_PROXY
   })
+  const sendOut = sendThroughEgress(env.SANDBOX_EGRESS_PORT)
   const servers = await loadSandboxServers(env.MARKETPLACE_DIR, env.SANDBOX_OVERRIDES, env.SANDBOX_CACHE_DIR)
   const isolation = await UserIsolation.create({ enabled: env.SANDBOX_ISOLATE_USERS, cacheDir: env.SANDBOX_CACHE_DIR })
   const maxProcesses = env.SANDBOX_MAX_PROCESSES ?? (await defaultMaxProcesses())
@@ -59,7 +60,8 @@ export async function startSandbox(): Promise<void> {
       connectedAs = id
     },
     handler: {
-      mcp: (user, ability, request) => pool.handle(user, ability, request),
+      mcp: (user, ability, request, key) => pool.handle(user, ability, request, key),
+      fetch: (_user, request) => sendOut(request),
       release: (user, ability) => pool.release(user, ability),
       running: () => pool.size,
       stats: () => collectStats({ pool, egress: egressCounts })

@@ -1,33 +1,8 @@
-import { listFilesTool, readFileTool, type Tool } from "@kaja/nasi"
 import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStreamEvent } from "@kaja/nasi/client"
 import type { NasiInfoResponse } from "@kaja/schema/nasi"
 import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getLanguage, t } from "../lib/i18n"
-
-/** Tools the server hands back to the client to run locally instead of executing itself — see registry.ts's CLIENT_EXECUTABLE. Keyed by tool name from the `client_tool_call` event. */
-const CLIENT_TOOLS: Record<string, Tool> = {
-  read_file: readFileTool,
-  list_files: listFilesTool
-}
-
-/**
- * Runs a server-requested tool against the local filesystem and returns the
- * text to feed back as that tool's result. Errors (bad args, path-guard
- * denials) are caught and returned as a string rather than thrown, so a bad
- * path lets the model see the failure and react instead of crashing the turn.
- */
-async function executeClientTool(name: string, argumentsJson: string): Promise<string> {
-  const tool = CLIENT_TOOLS[name]
-  if (!tool) return `Error: unknown client tool "${name}"`
-  try {
-    const args = JSON.parse(argumentsJson)
-    const result = await tool.execute(args)
-    return typeof result === "string" ? result : result.text
-  } catch (error) {
-    return `Error: ${error instanceof Error ? error.message : String(error)}`
-  }
-}
 
 /** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai ability into the lite bundle for nothing. */
 export type CloudErrorCategory = "network" | "tool" | "agent" | "unknown"
@@ -139,7 +114,7 @@ export function useCloudAgent({
     setSelectedPersona({ id: event.personaId, label: event.label })
   }, [])
 
-  /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while the server hands back client tools. */
+  /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while yolo approves what the server asks about. */
   const runTurns = useCallback(
     async (first: { message: string } | { approval: CloudApproval }) => {
       setPending(true)
@@ -199,20 +174,14 @@ export function useCloudAgent({
             personaId: personaIdRef.current
           })
           let next = await gen.next()
-          let pendingClientTool: Extract<CloudTimelineEvent, { type: "client_tool_call" }> | undefined
           while (!next.done) {
             const event = next.value
             handleStreamEvent(event)
-            if (event.type === "client_tool_call") pendingClientTool = event
             next = await gen.next()
           }
           sessionRef.current = next.value.session
-          if (yolo && next.value.status === "needs_approval") {
-            request = { approval: "approve" }
-            continue
-          }
-          if (next.value.status !== "needs_client_tool" || !pendingClientTool) break
-          request = { message: await executeClientTool(pendingClientTool.name, pendingClientTool.arguments) }
+          if (!yolo || next.value.status !== "needs_approval") break
+          request = { approval: "approve" }
         }
       } catch (error) {
         const { category, message } = categorizeCloudError(error)
@@ -265,8 +234,7 @@ export function useCloudAgent({
 
   // Mirrors useAgent's currentTool: derived from the last event rather than tracked separately, since a later event naturally supersedes it.
   const lastEvent = events.at(-1)
-  const currentTool =
-    pending && (lastEvent?.type === "tool_call" || lastEvent?.type === "client_tool_call") ? lastEvent : undefined
+  const currentTool = pending && lastEvent?.type === "tool_call" ? lastEvent : undefined
 
   return {
     model: responseModel ?? info?.model ?? "kaja",

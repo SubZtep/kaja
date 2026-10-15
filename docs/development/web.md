@@ -59,7 +59,7 @@ else to the dashboard. The menu hides the item and the layout enforces it.
 
 | Route | What it is |
 | --- | --- |
-| `/dashboard` | a welcome and the Telegram connect card |
+| `/dashboard` | where you're signed in, the Telegram connect card and a sandbox summary |
 | `/dashboard/stats` | your [usage stats](/development/api#usage-stats) |
 | `/agent/widget` | [widget keys](/using/widget#getting-a-key): create, edit, disable, delete |
 | `/agent/sandbox` | your sandbox key and run command, your sandboxes (online or last seen, place, hardware, servers running; offline ones can be removed), and the share and use-shared switches |

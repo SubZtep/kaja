@@ -5,10 +5,9 @@ export type ToolSummary = { type: "tool_summary"; last: TimelineEvent; names: st
 
 export type DisplayEvent = TimelineEvent | ToolSummary
 
-type ToolCallEvent = Extract<TimelineEvent, { type: "tool_call" | "client_tool_call" }>
+type ToolCallEvent = Extract<TimelineEvent, { type: "tool_call" }>
 
-const isToolCall = (event: TimelineEvent): event is ToolCallEvent =>
-  event.type === "tool_call" || event.type === "client_tool_call"
+const isToolCall = (event: TimelineEvent): event is ToolCallEvent => event.type === "tool_call"
 
 /**
  * Minimal display: replaces each turn's tool calls with one summary where its last call was. A turn runs from one user

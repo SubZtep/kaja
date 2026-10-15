@@ -65,7 +65,6 @@ test("a session without a system message stays without one", () => {
 test.each([
   ["pendingAskUserId", "ask_user"],
   ["pendingRunCommandId", "run_command"],
-  ["pendingClientToolCallId", "client_tool"],
   ["pendingToolApprovalId", "tool_approval"]
 ] as const)("%s round-trips as a %s pause", (field, kind) => {
   const session = { messages: messages.slice(0, 3), [field]: "c1" }

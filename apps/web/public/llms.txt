@@ -23,7 +23,7 @@ Kaja is a highly customisable, multi-purpose AI agent: a single executable binar
 - [Memory & datasets](https://docs.kaja.io/abilities/memory/)
 - [Marketplace](https://docs.kaja.io/abilities/marketplace/)
 - [Configuration](https://docs.kaja.io/configuration/)
-- [Troubleshooting](https://docs.kaja.io/troubleshooting/)
+- [Doctor & troubleshooting](https://docs.kaja.io/configuration/commands/)
 
 ## Legal
 - [Privacy Policy](https://docs.kaja.io/privacy/)

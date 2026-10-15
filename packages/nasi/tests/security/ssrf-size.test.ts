@@ -1,10 +1,15 @@
 import { expect, test } from "bun:test"
-import { fetchPublicHttp } from "../../src/security/ssrf"
+import { type FetchLike, fetchPublicHttp } from "../../src/security/ssrf"
 
 // isPublicHttpUrl only inspects the literal hostname (no DNS), so a public-looking
-// address plus a proxy pointed at a local Bun.serve is the only way to exercise a
+// address plus a sender pointed at a local Bun.serve is the only way to exercise a
 // real response body without egressing to the internet.
 const PUBLIC_URL = "http://172.32.0.1/"
+
+/** A sender that delivers every hop to the local server on `port`. */
+function toLocal(port: number | undefined): FetchLike {
+  return (_url, init) => fetch(`http://127.0.0.1:${port}/`, init)
+}
 
 function serveBody(body: BodyInit) {
   return Bun.serve({ port: 0, fetch: () => new Response(body) })
@@ -14,7 +19,7 @@ test("a response over maxBytes is rejected", async () => {
   const origin = serveBody("x".repeat(4096))
   try {
     await expect(
-      fetchPublicHttp(PUBLIC_URL, { proxy: `http://127.0.0.1:${origin.port}`, maxBytes: 1024, timeoutMs: 3_000 })
+      fetchPublicHttp(PUBLIC_URL, { send: toLocal(origin.port), maxBytes: 1024, timeoutMs: 3_000 })
     ).rejects.toThrow(/Response too large/)
   } finally {
     await origin.stop(true)
@@ -26,7 +31,7 @@ test("a response under maxBytes is returned intact", async () => {
   const origin = serveBody(body)
   try {
     const res = await fetchPublicHttp(PUBLIC_URL, {
-      proxy: `http://127.0.0.1:${origin.port}`,
+      send: toLocal(origin.port),
       maxBytes: 8192,
       timeoutMs: 3_000
     })
@@ -56,7 +61,7 @@ test("an oversized stream is aborted instead of buffered whole", async () => {
   try {
     await expect(
       fetchPublicHttp(PUBLIC_URL, {
-        proxy: `http://127.0.0.1:${origin.port}`,
+        send: toLocal(origin.port),
         maxBytes: 128 * 1024,
         timeoutMs: 3_000
       })

@@ -11,9 +11,10 @@ icon: 🗄️
 
 Kaja has two databases, and they are deliberately not the same size. The **cloud** keeps everything the
 platform needs in **PostgreSQL**: accounts, server config, the ability catalog, widgets, Telegram links,
-users' secrets, MCP sandboxes, and the agent's own state. The **terminal** in [local mode](/getting-started/modes) keeps only that last
-part (one person's conversations, memory and dataset answers) in a single **SQLite** file. Everything
-else a local install needs is a file: [`settings.toml`, `models.toml`, `secrets.toml` and the `marketplace/` folder](/configuration/files).
+users' secrets, MCP sandboxes, and the agent's own state. The **terminal** in
+[local mode](/getting-started/modes) keeps only that last part (one person's conversations, memory and
+dataset answers) in a single **SQLite** file. Everything else a local install needs is a file:
+[`settings.toml`, `models.toml`, `secrets.toml` and the `marketplace/` folder](/configuration/files).
 
 The agent state is the one place the two overlap, and that overlap is a contract: the
 [agent brain](/development/nasi) talks to a `NasiStore` interface, and each host injects its own
@@ -77,7 +78,8 @@ Conventions:
 
 **SQLite** has no migration files. `createSchema()` in `apps/tui/lib/store/sqlite.ts` runs every time the file
 is opened: it creates missing tables, adds the columns older installs lack (`notes.owner`,
-`tool_calls.resultSummary`), and drops the earlier session layouts rather than converting them. It opens in WAL mode with foreign keys on.
+`tool_calls.resultSummary`), and drops the earlier session layouts rather than converting them. It opens in
+WAL mode with foreign keys on.
 
 ## PostgreSQL
 
@@ -233,7 +235,8 @@ erDiagram
 ```
 
 - `ability` rows come from the repo's `marketplace/` folder, synced hourly and on demand (see
-  [Marketplace internals](/development/marketplace)). A sync never deletes: an ability that leaves gets `removed_at`, and comes back if it returns.
+  [Marketplace internals](/development/marketplace)). A sync never deletes: an ability that leaves gets
+  `removed_at`, and comes back if it returns.
 - Every user has every available ability; each persona's `abilities` list picks what a turn uses, so there's
   no per-user switch. `marketplace_sync` is a single row that lets an unchanged branch skip the download.
 - Personas and datasets are `ability` rows too (type `persona` and `dataset`), synced like skills; datasets
@@ -242,8 +245,8 @@ erDiagram
 ### MCP sandboxes
 
 The cloud's registry of [MCP sandboxes](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme), the
-machines that run stdio MCP servers for cloud turns. Anyone can run one. Each dials the API's WebSocket and
-registers itself here.
+machines that run stdio MCP servers and send tool requests out for cloud turns. Anyone can run one. Each dials
+the API's WebSocket and registers itself here.
 
 ```mermaid
 erDiagram
@@ -289,8 +292,8 @@ erDiagram
 
 ### The cloud agent's state
 
-This is the group that mirrors the SQLite file. Everything hangs off one `user`, so a person's cloud terminal chats,
-Telegram bot and widget visitors are all partitioned by `user_id`, and by `owner` within it.
+This is the group that mirrors the SQLite file. Everything hangs off one `user`, so a person's cloud terminal
+chats, Telegram bot and widget visitors are all partitioned by `user_id`, and by `owner` within it.
 
 ```mermaid
 erDiagram

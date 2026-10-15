@@ -1,7 +1,7 @@
 import type { CallStat, ModelCallStat, Session, StepStat } from "../agent/agent"
 
 /** Which kind of pause a session's pending tool call is waiting on. */
-export type PendingKind = "ask_user" | "run_command" | "client_tool" | "tool_approval"
+export type PendingKind = "ask_user" | "run_command" | "tool_approval"
 
 export type ToolCallRow = { callId: string; name: string; arguments: string }
 
@@ -105,7 +105,6 @@ export function attachImages(
 const PENDING_FIELDS = [
   ["pendingAskUserId", "ask_user"],
   ["pendingRunCommandId", "run_command"],
-  ["pendingClientToolCallId", "client_tool"],
   ["pendingToolApprovalId", "tool_approval"]
 ] as const satisfies readonly (readonly [keyof Session, PendingKind])[]
 

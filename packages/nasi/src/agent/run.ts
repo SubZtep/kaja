@@ -286,13 +286,6 @@ function pushPromptText(session: Session, prompt: string, images: string[]): voi
       content: prompt
     })
     session.pendingRunCommandId = undefined
-  } else if (session.pendingClientToolCallId) {
-    session.messages.push({
-      role: "tool",
-      tool_call_id: session.pendingClientToolCallId,
-      content: prompt
-    })
-    session.pendingClientToolCallId = undefined
   } else if (session.pendingToolApprovalId) {
     session.messages.push({
       role: "tool",
@@ -346,14 +339,12 @@ async function* handleToolCalls(
   {
     ask?: { id: string; question: string; note?: string }
     confirm?: { id: string; command: string; description: string }
-    clientTool?: { id: string; name: string; arguments: string }
     approval?: ToolApproval
   },
   void
 > {
   let ask: { id: string; question: string; note?: string } | undefined
   let confirm: { id: string; command: string; description: string } | undefined
-  let clientTool: { id: string; name: string; arguments: string } | undefined
   let approval: ToolApproval | undefined
   for (const call of toolCalls) {
     if (call.type !== "function") continue
@@ -375,11 +366,6 @@ async function* handleToolCalls(
       continue
     }
 
-    if (toolsByName.get(call.function.name)?.requiresClientExecution) {
-      clientTool = { id: call.id, name: call.function.name, arguments: call.function.arguments }
-      continue
-    }
-
     // Yolo never asks; a call the tool refuses (a read-only folder) still fails when it runs.
     const summary = agent.yolo ? undefined : approvalSummaryFor(toolsByName.get(call.function.name), call, [granted])
     if (summary !== undefined) {
@@ -394,11 +380,11 @@ async function* handleToolCalls(
 
     yield* handleToolCall(agent, toolsByName, messages, owner, call, record, onModelCall)
   }
-  if ([ask, confirm, clientTool].some(Boolean)) approval = skipApproval(messages, record, approval)
-  return { ask, confirm, clientTool, approval }
+  if (ask || confirm) approval = skipApproval(messages, record, approval)
+  return { ask, confirm, approval }
 }
 
-// Another pause (ask_user, run_command, a client tool) wins the handoff; answer the approval now rather than leave its call unanswered.
+// Another pause (ask_user, run_command) wins the handoff; answer the approval now rather than leave its call unanswered.
 function skipApproval(
   messages: ChatCompletionMessageParam[],
   record: RecordCall,
@@ -505,7 +491,6 @@ function* handlePendingHandoff(
   session: Session,
   ask: { id: string; question: string; note?: string } | undefined,
   confirm: { id: string; command: string; description: string } | undefined,
-  clientTool: { id: string; name: string; arguments: string } | undefined,
   approval: ToolApproval | undefined
 ): Generator<AgentEvent, boolean, void> {
   if (ask) {
@@ -521,12 +506,6 @@ function* handlePendingHandoff(
       command: confirm.command,
       description: confirm.description
     }
-    return true
-  }
-
-  if (clientTool) {
-    session.pendingClientToolCallId = clientTool.id
-    yield { type: "client_tool_call", name: clientTool.name, arguments: clientTool.arguments }
     return true
   }
 
@@ -712,7 +691,7 @@ export async function* run(
     if (typeof message.content === "string" && message.content.trim())
       yield { type: "message", content: message.content }
 
-    const { ask, confirm, clientTool, approval } = yield* handleToolCalls(
+    const { ask, confirm, approval } = yield* handleToolCalls(
       agent,
       messages,
       owner,
@@ -727,6 +706,6 @@ export async function* run(
 
     failingToolRounds = countFailingRounds(session, message.tool_calls, failingToolRounds)
 
-    if (yield* handlePendingHandoff(session, ask, confirm, clientTool, approval)) return
+    if (yield* handlePendingHandoff(session, ask, confirm, approval)) return
   }
 }

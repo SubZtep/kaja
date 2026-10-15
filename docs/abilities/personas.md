@@ -14,8 +14,8 @@ model and sampling. Each one is a file, `~/.config/kaja/marketplace/personas/<id
 is the persona's id.
 
 Every persona in the folder loads, `default` first, and the persona picker shows the ones you added yourself
-in a different colour; rename or move a file to switch it off. A fresh
-install has `default` built in, and a `default.toml` in the folder (the marketplace brings one) replaces it.
+in a different colour; rename or move a file to switch it off. A fresh install has `default` built in, and a
+`default.toml` in the folder (the marketplace brings one) replaces it.
 
 ```toml
 label = "Self-care companion"
@@ -66,8 +66,8 @@ abilities = [
 | `roots` | the folders an MCP server that takes roots (like `filesystem`) may work in while this persona is active. Absolute paths or `~/…`; one that isn't an existing folder is left out with a warning. Without any, that ability is off for the persona. `{ path = "…", readOnly = true }` lets it only read there, and `backup = true` has Kaja copy each file before it's changed (see [MCP servers](/abilities/mcp#mcp-abilities)) |
 
 An ability that needs a key you haven't saved is left out, and the rest still load. Shipped personas list no
-`roots`, and `kaja abilities update` would replace your edits to them, so give folders in a persona of your own. An MCP server starts
-only when a persona that lists it becomes active, so a chat that never needs the browser never starts one.
+`roots`, and `kaja abilities update` would replace your edits to them, so give folders in a persona of your
+own. An MCP server starts only when a persona that lists it becomes active.
 
 ## Switching
 
@@ -79,9 +79,9 @@ mid-conversation. A persona without `when` can only be reached from the
 - **Manual** (the picker) starts a fresh one, and isn't remembered: every launch starts from `default`.
 
 The new persona's abilities apply from the next model call: its tools replace the old ones, and its MCP
-servers connect then. A persona with a `models` pin swaps the model too, otherwise the current one stays. A pin to an id your
-`models.toml` doesn't have (expected for a persona written elsewhere) falls back to that task's default
-instead of failing to load.
+servers connect then. A persona with a `models` pin swaps the model too, otherwise the current one stays. A
+pin to an id your `models.toml` doesn't have (expected for a persona written elsewhere) falls back to that
+task's default instead of failing to load.
 
 Both work in cloud mode too, among every persona in the cloud's copy of the marketplace.
 

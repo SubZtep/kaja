@@ -42,7 +42,8 @@ docker compose up -d db mail storage
 ```
 
 The database volume lives in `./pgdata`, and the migrations in `apps/api/migrations` run **on first boot
-only**. After pulling a schema change, see [how the schema is managed](/development/database#how-the-schema-is-managed).
+only**. After pulling a schema change, see
+[how the schema is managed](/development/database#how-the-schema-is-managed).
 
 Bootstrap the env files and generate a local auth secret:
 
@@ -129,7 +130,7 @@ inputs change.
 
 ## Git hooks
 
-Lefthook checks your commit message (conventional commits), runs the generators and `lint:fix` and
+Lefthook checks your commit message (conventional commits), runs the generators, `lint:fix:safe` and
 `typecheck` on commit, and `lint`, `typecheck` (plus `test` on `main`) and the translations on push. That's
 why you rarely run them by hand. [Vibe coding](/development/vibe-coding#git-hooks) has the details.
 

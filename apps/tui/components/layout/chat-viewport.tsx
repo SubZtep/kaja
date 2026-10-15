@@ -31,8 +31,7 @@ function idFor(event: TimelineEvent) {
 
 function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbose" | "corner", pending: boolean) {
   if (toolDisplay === "verbose") return events
-  if (toolDisplay === "corner")
-    return events.filter(item => item.type !== "tool_call" && item.type !== "client_tool_call")
+  if (toolDisplay === "corner") return events.filter(item => item.type !== "tool_call")
   return foldToolCalls(events, pending)
 }
 

@@ -2,6 +2,7 @@ import {
   ASK_USER_TOOL,
   createGuardedFetch,
   createOpenAIClient,
+  type FetchLike,
   type McpSandbox,
   Nasi,
   NoModelError,
@@ -15,7 +16,8 @@ import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { abilityService, modelService, sandboxService } from "../../services"
-import { mcpSandboxFor } from "../sandbox"
+import type { AbilityKeyValue } from "../../services/ability"
+import { egressFor, mcpSandboxFor, type SandboxKeys } from "../sandbox"
 import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
 
@@ -39,7 +41,7 @@ export async function resolveModelWithProvider(pinnedModel?: string) {
     : await modelService.getRandomModelWithProvider()
 }
 
-/** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Not the `WEB_PROXY` path: a proxy would resolve the name itself and skip the pin. */
+/** Cloud model HTTP. Public hosts only, DNS pinned, redirects stay on that host, and the body is streamed (chat completions are not buffered). Never sent through a sandbox like tool requests: the provider's key stays on this host. */
 function cloudModelFetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
   const guarded = createGuardedFetch()
   return (input, init) => guarded(input instanceof Request ? input.url : input, init)
@@ -121,16 +123,17 @@ setDatasetLoaders({
   loadDataset: async topic => (await abilityService.datasets()).get(topic)
 })
 
-let fetchProxyOverride: string | undefined
+type Egress = (ability?: string) => FetchLike
+let egressOverride: ((userId: string) => Egress) | undefined
 
-/** Test seam: forces the proxy `nasiToolDeps` reports, so a test can exercise proxy-gated tools without a real proxy. Pass undefined to restore the env value. */
-export function setNasiFetchProxyOverride(proxy: string | undefined) {
-  fetchProxyOverride = proxy
+/** Test seam: where a user's turns send their tool requests. Pass undefined to restore the connected sandboxes. */
+export function setNasiEgressOverride(egress: ((userId: string) => Egress) | undefined) {
+  egressOverride = egress
 }
 
-/** Tool deps every cloud turn runs with. `fetchProxy` unset leaves `fetch_url` out of the cloud tool set entirely — cloud fetches egress from the server, so they go through a proxy or not at all. HTTP tool abilities use it too when set, and otherwise go direct (their hosts are fixed by reviewed manifests, and private addresses are refused). */
-export function nasiToolDeps() {
-  return { fetchProxy: fetchProxyOverride ?? env.WEB_PROXY }
+/** Where a user's cloud turn sends its tool requests (`fetch_url`, HTTP tools, remote MCP): a sandbox, never this host, and one the key a call carries may go to (`keys`; without them an ability's calls only go to the official sandbox). */
+export function cloudEgress(userId: string, keys?: SandboxKeys): Egress {
+  return egressOverride ? egressOverride(userId) : egressFor(userId, keys)
 }
 
 // Said to a user's turns when their stdio abilities may run on a sandbox another person runs.
@@ -138,12 +141,17 @@ const SHARED_SANDBOX_NOTE =
   " Some tools may run on another person's computer, who can see what they do. The browser does not: it stays on " +
   "this user's own sandbox or the official one. Never send the user's personal data through a tool that runs elsewhere."
 
-type SandboxPicker = (userId: string) => McpSandbox
+type SandboxPicker = (userId: string, keys: SandboxKeys) => McpSandbox
 let sandboxOverride: SandboxPicker | undefined
 
 /** Test seam: how a user's turns reach an MCP sandbox. Pass undefined to restore the connected sandboxes. */
 export function setNasiSandboxOverride(picker: SandboxPicker | undefined) {
   sandboxOverride = picker
+}
+
+/** Where a user's stdio abilities run: a sandbox, with the key each one starts with (`keys`). The caller closes it. */
+export function cloudSandbox(userId: string, keys: SandboxKeys): McpSandbox {
+  return (sandboxOverride ?? mcpSandboxFor)(userId, keys)
 }
 
 /** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. The caller closes it after the turn (its MCP connections). */
@@ -154,8 +162,6 @@ export async function openNasiFor(opts: {
   language?: string
   /** Whose abilities the turn gets; defaults to the user's own (every ability, with their keys); a widget passes skills only. */
   abilities?: CloudAbilitySource
-  /** The caller is the terminal, which runs `read_file`/`list_files` on the user's machine; the widget and Telegram have no such client, so they leave it off. */
-  clientTools?: boolean
   /** How replies should read where they're shown (see `PromptContext.channelInstruction`). */
   channelInstruction?: string
 }): Promise<Nasi> {
@@ -170,26 +176,22 @@ export async function openNasiFor(opts: {
   const [keys, sandboxSettings] =
     "userId" in source
       ? await Promise.all([abilityService.keysForUser(source.userId), sandboxService.settings(source.userId)])
-      : [new Map<string, string>(), undefined]
+      : [new Map<string, AbilityKeyValue>(), undefined]
+  const keyOf: SandboxKeys = name => keys.get(name)
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
     summarizer,
     personas,
     owner: opts.owner,
-    clientTools: opts.clientTools === true,
-    deps: nasiToolDeps(),
+    egress: "userId" in source ? cloudEgress(source.userId, keyOf) : undefined,
     abilities: createPostgresAbilityStore(source),
-    abilityKey: name => keys.get(name),
+    abilityKey: name => keys.get(name)?.value,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
-    mcpSandbox: "userId" in source ? (sandboxOverride ?? mcpSandboxFor)(source.userId) : undefined,
+    mcpSandbox: "userId" in source ? cloudSandbox(source.userId, keyOf) : undefined,
     promptContext: {
       environment:
-        "You are Kaja cloud chat. " +
-        (opts.clientTools
-          ? "read_file and list_files run on the user's own machine, scoped to their current directory — "
-          : "You have no access to the user's machine — ") +
-        "you cannot run a shell. " +
+        "You are Kaja cloud chat. You have no access to the user's machine — you cannot run a shell. " +
         "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing." +
         (sandboxSettings?.useShared ? SHARED_SANDBOX_NOTE : ""),
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
@@ -219,8 +221,7 @@ export async function runUserTurn(userId: string, body: NasiTurnRequest): Promis
     const nasi = await openNasiFor({
       userId,
       pinnedModel: await pinnedModelFor(userId, body.session),
-      language: body.language,
-      clientTools: true
+      language: body.language
     })
     try {
       return await nasi.turnBuffered(body)
@@ -251,8 +252,7 @@ export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
     const nasi = await openNasiFor({
       userId,
       pinnedModel: await pinnedModelFor(userId, body.session),
-      language: body.language,
-      clientTools: true
+      language: body.language
     })
     // Also runs when the client goes away mid-stream, so a dropped turn never leaves its MCP connections open.
     try {

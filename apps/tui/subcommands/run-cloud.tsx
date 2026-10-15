@@ -1,4 +1,3 @@
-import { setToolDeps } from "@kaja/nasi"
 import { formatDeviceUserCode } from "@kaja/shared/text"
 import { render } from "ink"
 import notifier from "node-notifier"
@@ -63,8 +62,6 @@ export async function runCloudSubcommand() {
     // Before the sign-in prompt, which is coloured by it, and before render: "auto" queries the terminal over stdin, which Ink is about to take over
     const theme = await resolveTheme(preferences?.theme)
     const token = await resolveToken(apiUrl)
-    // Scopes read_file/list_files (run client-side when the server hands them back via a client_tool_call pause) to the same directory local mode defaults to.
-    setToolDeps({ workspaceRoot: process.cwd() })
 
     const { waitUntilExit } = render(
       <App mode="cloud" initialPreferences={{ ...preferences, theme }} apiUrl={apiUrl} token={token} />,

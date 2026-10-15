@@ -235,7 +235,6 @@ export type Session = {
   telemetry?: SessionTelemetry
   pendingAskUserId?: string
   pendingRunCommandId?: string
-  pendingClientToolCallId?: string
   /** A tool call waiting on the human's approval (see `Tool.approval`); the host answers it by running the tool itself. */
   pendingToolApprovalId?: string
   /** Tools (allow keys, see `tool-allow.ts`) the user approved for the rest of this session. */
@@ -265,7 +264,6 @@ export type AgentEvent =
   | { type: "display_image"; url: string; alt: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }
-  | { type: "client_tool_call"; name: string; arguments: string }
   /** `id` is the pending call's id (`session.pendingToolApprovalId`), for hosts that correlate the answer themselves. */
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "persona_switch"; personaId: string; label: string }

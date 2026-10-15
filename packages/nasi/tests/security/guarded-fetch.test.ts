@@ -1,25 +1,19 @@
 import { afterEach, expect, test } from "bun:test"
-import { createGuardedFetch, ProxyUnavailableError, UnsafeUrlError } from "../../src/security/ssrf"
+import { createGuardedFetch, type FetchLike, UnsafeUrlError } from "../../src/security/ssrf"
 
-// A proxy is set in every case, so the DNS check is left to it and the fake hosts below need no real DNS.
-const PROXY = "http://proxy.test:3128"
+// A sender is set in every case, so the DNS check is left to it and the fake hosts below need no real DNS.
 const realFetch = globalThis.fetch
-let calls: { url: string; method?: string; body?: unknown; proxy?: string; redirect?: string }[] = []
+let calls: { url: string; method?: string; body?: unknown; redirect?: string }[] = []
+let send: FetchLike = () => Promise.reject(new Error("no fake server"))
 
-/** Answers requests from `routes` (path → response) and records them. */
+/** A sender answering from `routes` (path → response) that records each hop. */
 function fakeServer(routes: Record<string, () => Response>) {
   calls = []
-  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit & { proxy?: string }) => {
+  send = async (input, init) => {
     const url = new URL(String(input))
-    calls.push({
-      url: url.toString(),
-      method: init?.method,
-      body: init?.body,
-      proxy: init?.proxy,
-      redirect: init?.redirect
-    })
+    calls.push({ url: url.toString(), method: init?.method, body: init?.body, redirect: init?.redirect })
     return routes[url.pathname]?.() ?? new Response("not found", { status: 404 })
-  }) as typeof fetch
+  }
 }
 
 afterEach(() => {
@@ -28,27 +22,27 @@ afterEach(() => {
 
 test("refuses private and non-http addresses before sending anything", async () => {
   fakeServer({})
-  const guarded = createGuardedFetch({ proxy: PROXY })
+  const guarded = createGuardedFetch({ send })
   await expect(guarded("http://127.0.0.1:9/mcp")).rejects.toBeInstanceOf(UnsafeUrlError)
   await expect(guarded("http://localhost/mcp")).rejects.toBeInstanceOf(UnsafeUrlError)
   await expect(guarded("file:///etc/passwd")).rejects.toBeInstanceOf(UnsafeUrlError)
   expect(calls).toEqual([])
 })
 
-test("follows a same-origin redirect itself, through the proxy, and refuses one to another host", async () => {
+test("follows a same-origin redirect itself, through the sender, and refuses one to another host", async () => {
   fakeServer({
     "/old": () => new Response(null, { status: 307, headers: { location: "/new" } }),
     "/new": () => new Response("here"),
     "/away": () => new Response(null, { status: 302, headers: { location: "https://other.example.test/x" } }),
     "/inside": () => new Response(null, { status: 302, headers: { location: "http://127.0.0.1/admin" } })
   })
-  const guarded = createGuardedFetch({ proxy: PROXY })
+  const guarded = createGuardedFetch({ send })
 
   const res = await guarded("https://mcp.example.test/old", { method: "POST", body: "{}" })
   expect(await res.text()).toBe("here")
-  expect(calls.map(call => [call.url, call.method, call.proxy, call.redirect])).toEqual([
-    ["https://mcp.example.test/old", "POST", PROXY, "manual"],
-    ["https://mcp.example.test/new", "POST", PROXY, "manual"]
+  expect(calls.map(call => [call.url, call.method, call.redirect])).toEqual([
+    ["https://mcp.example.test/old", "POST", "manual"],
+    ["https://mcp.example.test/new", "POST", "manual"]
   ])
 
   await expect(guarded("https://mcp.example.test/away")).rejects.toThrow("Refused a redirect to another host")
@@ -60,7 +54,7 @@ test("a 303 turns a POST into a body-less GET", async () => {
     "/submit": () => new Response(null, { status: 303, headers: { location: "/result" } }),
     "/result": () => new Response("done")
   })
-  await createGuardedFetch({ proxy: PROXY })("https://mcp.example.test/submit", { method: "POST", body: "{}" })
+  await createGuardedFetch({ send })("https://mcp.example.test/submit", { method: "POST", body: "{}" })
   expect(calls[1]).toMatchObject({ url: "https://mcp.example.test/result", method: "GET", body: undefined })
 })
 
@@ -77,19 +71,22 @@ test("hands back a streaming body straight away instead of buffering it", async 
         { headers: { "content-type": "text/event-stream" } }
       )
   })
-  const res = await createGuardedFetch({ proxy: PROXY })("https://mcp.example.test/events")
+  const res = await createGuardedFetch({ send })("https://mcp.example.test/events")
   const reader = res.body!.getReader()
   push!("data: one\n\n")
   expect(new TextDecoder().decode((await reader.read()).value)).toBe("data: one\n\n")
   await reader.cancel()
 })
 
-test("a proxy that can't be reached fails closed instead of going direct", async () => {
-  calls = []
+test("a sender that fails never falls back to a direct connection", async () => {
+  let direct = false
   globalThis.fetch = (async () => {
-    throw new Error("connection refused")
+    direct = true
+    return new Response("direct")
   }) as unknown as typeof fetch
-  await expect(createGuardedFetch({ proxy: PROXY })("https://mcp.example.test/mcp")).rejects.toBeInstanceOf(
-    ProxyUnavailableError
+  const failing: FetchLike = () => Promise.reject(new Error("no sandbox is online"))
+  await expect(createGuardedFetch({ send: failing })("https://mcp.example.test/mcp")).rejects.toThrow(
+    "no sandbox is online"
   )
+  expect(direct).toBe(false)
 })

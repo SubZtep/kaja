@@ -20,9 +20,9 @@ that runs inside the Kaja API and links to your account.
 | Abilities | what each [persona](/abilities/personas#abilities) lists | the same, with the keys saved in the [web app](/using/web-app) |
 
 On both, each Telegram user gets their own conversations, memory notes and dataset answers, kept apart from
-each other and from your terminal. A call that needs approval, like a shell command or an HTTP tool or MCP
-call that changes something, comes with Approve and Decline buttons (in the cloud bot also "for this chat"). Replies stay short, like chat
-messages, unless you ask for detail. Photos work in both directions.
+each other and from your terminal. A call that needs approval (a shell command, or an HTTP tool or MCP call
+that changes something) comes with Approve and Decline buttons, plus "for this chat" in the cloud bot.
+Replies stay short unless you ask for detail. Photos work both ways.
 
 ## Local bot
 

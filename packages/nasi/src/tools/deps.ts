@@ -1,4 +1,5 @@
 import type OpenAI from "openai"
+import type { FetchLike } from "../security/ssrf"
 
 export type ImageGenModel = {
   model: string
@@ -20,8 +21,8 @@ export type NasiToolDeps = {
   rerank?: (personaId?: string) => RerankModel | undefined
   /** Resolves the image-generation model to use, given the active persona's id (if any) — see {@link rerank}. */
   imageGeneration?: (personaId?: string) => ImageGenModel | undefined
-  /** HTTP(S) proxy for outbound tool fetches. Cloud only — local mode fetches from the user's own machine, with their own network identity. */
-  fetchProxy?: string
+  /** Sends `fetch_url`'s requests (the cloud: through a sandbox). Unset connects from this machine, which only local mode does: a cloud registry leaves `fetch_url` out without it. */
+  fetchSend?: FetchLike
   tempDir?: string
   workspaceRoot?: string
   /** Absolute path of the local sqlite file, denied by the path guard. */

@@ -64,13 +64,17 @@ runs one turn and saves it back.
 
 ```ts
 const nasi = await Nasi.open({
-  store,                 // NasiStore — Postgres for API/widget
+  store,                   // NasiStore — Postgres for API/widget
   chat: { client, model }, // OpenAI-compatible client + default model id
   includeLocalTools: false,
-  personas,               // this account's/persona's roster, or []
-  promptContext,          // environment/askUser/language overrides
+  personas,                // this account's/persona's roster, or []
+  promptContext,           // environment/askUser/language overrides
   owner,                   // null, or a namespaced widget-visitor id
-  deps                     // extra tool deps, merged over `chat` — gates dep-conditional tools
+  deps,                    // extra tool deps, merged over `chat` — gates dep-conditional tools
+  abilities,               // AbilityStore: skills, HTTP tools, MCP servers, personas
+  abilityKey,              // ability name → the user's key
+  egress,                  // ability? → the sender its requests go out through (a sandbox)
+  mcpSandbox               // where stdio MCP servers run (a sandbox)
 })
 
 const response = await nasi.turnBuffered({ session, message, includeThinking, language })
@@ -86,7 +90,7 @@ generator to its return value:
 | Field | Meaning |
 | --- | --- |
 | `session` | the session id, passed back on the next turn |
-| `status` | `completed` / `needs_input` / `needs_approval` / `needs_client_tool` / `error` |
+| `status` | `completed` / `needs_input` / `needs_approval` / `error` |
 | `message` | the reply, or the pending question/command when not `completed` |
 | `steps` | ordered `NasiStep[]` (reasoning, messages, tool calls, handoffs) for rendering a transcript |
 | `thinking` | full reasoning text, only when `includeThinking` was set |
@@ -110,7 +114,6 @@ consistent shape.
 | `ask_user` | stop and wait: the next prompt becomes the tool result |
 | `confirm_command` | stop and wait for shell approval |
 | `confirm_tool` | stop and wait for approval of an HTTP tool or MCP call that changes something |
-| `client_tool_call` | stop so the client can run `read_file` / `list_files` on the user's own disk (cloud only) |
 | `persona_switch` | the persona (and maybe the model) changed mid-turn |
 | `compacted` | the conversation was summarised before a round (`beforeTokens`, `afterTokens`, `dropped`), see [Long conversations](#long-conversations) |
 | `condensed` | an oversized tool result was condensed before a round (`tool`, `beforeTokens`, `afterTokens`) |
@@ -213,7 +216,6 @@ Over HTTP the same loop is buffered into one response:
 | `completed` | the turn finished, and `message` is the reply |
 | `needs_input` | `ask_user` is pending: send the answer as the next `message` |
 | `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval` next: `"approve"`, `"approve_session"` (also stops asking about that tool for the rest of the session) or `"decline"`. The server runs the call it saved, never one the client describes. A plain `message` instead skips it |
-| `needs_client_tool` | the model asked for `read_file` or `list_files`, which only the client can run on its own disk: the client runs it and sends the output as the next `message` |
 | `error` | the turn failed |
 
 `session` comes back on every response. Send it again to continue the conversation.
@@ -233,7 +235,7 @@ concatenates whichever of these blocks apply, in order:
 5. `## Tool contract: memory`, only when `remember_note` is in the registry
 6. `## Personas`: the roster and switching rules, only with more than one persona and `switch_persona`
    available
-7. `## Skills`: the enabled skills' names and descriptions, when `load_skill` is available
+7. `## Skills`: the persona's skills' names and descriptions, when `load_skill` is available
 8. `## Dataset collection`, only when the persona is bound to a dataset topic
 9. `## About the user`: the answers to a profile dataset, such as onboarding
 10. sticky memory notes (from the store, or `PromptContext.loadStickyNotes`)
@@ -257,33 +259,34 @@ stops two widget visitors on one account from reading each other's chats.
 
 Skills, HTTP tools, MCP servers and personas come from an `AbilityStore` the host provides. The CLI reads the
 `marketplace/` folder through `createFolderAbilityStore`, and the API reads its Postgres copy of the catalog.
-`loadAbilities` turns a store's enabled abilities into extra tools for the host to append. One that can't load
+`loadAbilities` turns a store's abilities into extra tools for the host to append. One that can't load
 (a broken manifest, a required key the user hasn't saved) is left out instead of stopping the agent. See
 [Skills](/abilities/skills), [Tools](/abilities/tools) and [Personas](/abilities/personas) for what each kind
 does.
 
 ## Warnings
 
-Nasi never logs. A recoverable problem (a skipped ability, a missing key, a failed MCP connection, an
-unreachable fetch proxy) goes to a handler the host installs with `setWarnHandler`, silent until set. The API
-prints them, and the terminal appends them to its opt-in log file, since Ink owns the screen.
+Nasi never logs. A recoverable problem (a skipped ability, a missing key, a failed MCP connection) goes to a
+handler the host installs with `setWarnHandler`, silent until set. The API prints them, and the terminal
+appends them to its opt-in log file, since Ink owns the screen.
 
 ## Tool exposure
 
 `createTools({ includeLocalTools })` decides the registry. The default is **off**: only an explicit allowlist
 of cloud-safe built-ins is returned, so a newly added tool is never cloud-exposed by accident. Turning it on
-adds file, shell, MCP and code tools. See [Tools](/abilities/tools) for the resulting list.
+adds the file and shell tools, and local MCP servers and code tools. See [Tools](/abilities/tools) for the
+resulting list.
 
 Some built-ins also need a **dep**, and only register when the host supplies it: `generate_image` needs
-`imageGeneration`, and cloud `fetch_url` needs `fetchProxy`. A local registry exposes `fetch_url`
-unconditionally, since it fetches from the user's own machine. The cloud egresses from the server, so without
-a proxy the tool is left out instead of fetching directly. Failing closed is deliberate: a proxied fetch that
-can't reach its proxy raises `ProxyUnavailableError` instead of retrying direct, which would silently defeat
-the point of configuring one.
+`imageGeneration`, and cloud `fetch_url` needs `fetchSend`. A local registry exposes `fetch_url`
+unconditionally, since it fetches from the user's own machine. A cloud turn never fetches from the server, so
+without a sender the tool is left out instead of fetching directly.
 
-`read_file` and `list_files` reach a cloud turn only as stubs that pause it with `client_tool_call`, for the
-terminal to run on the user's machine. `clientTools: false` (on `createTools` and `Nasi.open`) leaves them
-out for hosts with no such client: the API's widget and Telegram turns.
+`Nasi.open`'s `egress(ability?)` hands out those senders: `egress()` for `fetch_url`, `egress(name)` for an
+ability's HTTP tool or remote MCP server. `fetchPublicHttp` and `createGuardedFetch` take one as `send`: every
+hop (redirects included) goes to it instead of a direct, DNS-pinned connection, and a sender that fails never
+falls back to one. Redirect rules, size caps and streaming stay the same either way, so a tool behaves alike
+wherever its requests go out.
 
 ---
 

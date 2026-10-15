@@ -53,7 +53,7 @@ frontmatter is listed with the reason, and the others still load.
 
 ## How the model uses them
 
-- The system prompt lists every enabled skill's name and description.
+- The system prompt lists the name and description of every skill the persona uses.
 - `load_skill(name)` returns the instructions, the skill's folder and its other files.
 - `load_skill(name, file)` reads one of those files. Reads stay inside the skill folder, and file names
   match case-insensitively. Binary files, hidden files and backups (`SKILL.bak.md`) are never served.

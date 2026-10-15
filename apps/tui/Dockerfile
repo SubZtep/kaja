@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.2 AS builder
+FROM oven/bun:1.4.3 AS builder
 WORKDIR /home/bun/app
 COPY package.json bun.lock tsconfig.json ./
 COPY patches ./patches
@@ -16,7 +16,7 @@ COPY packages ./packages
 COPY docs/config ./docs/config
 COPY apps/tui ./apps/tui
 
-FROM oven/bun:1.4.2-slim AS runner
+FROM oven/bun:1.4.3-slim AS runner
 WORKDIR /home/bun/app
 ENV NODE_ENV=production
 

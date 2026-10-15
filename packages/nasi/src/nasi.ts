@@ -30,15 +30,15 @@ export type NasiOpenOptions = {
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
   /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
-  /** Cloud only: whether the caller can run `client_tool_call` tools (`read_file`/`list_files`) on the user's machine. Default true. */
-  clientTools?: boolean
   personas?: Persona[]
   promptContext?: PromptContext
   owner?: string | null
-  /** Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `fetch_url` needs `fetchProxy`). */
+  /** Extra tool dependencies merged over `chat` — gates dep-conditional tools (e.g. `generate_image` needs `imageGeneration`). */
   deps?: Omit<NasiToolDeps, "chat">
-  /** Where this caller's enabled abilities come from (the cloud: Postgres); their tools join through `loadAbilities`, egressing through `deps.fetchProxy` when set. */
+  /** Where this caller's enabled abilities come from (the cloud: Postgres); their tools join through `loadAbilities`. */
   abilities?: AbilityStore
+  /** Sends the turn's tool requests (the cloud: through a sandbox): `egress()` for `fetch_url`, `egress(name)` for an ability's HTTP tool or remote MCP server. Unset connects from this host; a cloud turn then has no `fetch_url`. */
+  egress?: (ability?: string) => FetchLike
   /** An ability's API key (the cloud decrypts the caller's own up front). Never shown to the model. */
   abilityKey?: (abilityName: string) => string | undefined
   /** How long each MCP ability gets to connect when the turn opens before it's left out. Default 5 s. */
@@ -91,8 +91,6 @@ function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | 
       return { type: "persona_switch", personaId: event.personaId, label: event.label }
     case "confirm_command":
       return { type: "confirm_command", command: event.command, description: event.description }
-    case "client_tool_call":
-      return { type: "client_tool_call", name: event.name, arguments: event.arguments }
     case "confirm_tool":
       return { type: "confirm_tool", name: event.name, arguments: event.arguments, summary: event.summary }
     default:
@@ -112,7 +110,6 @@ function stepsFromEvents(events: AgentEvent[], includeThinking: boolean): NasiSt
 function statusFromEvents(session: Session): NasiTurnStatus {
   if (session.pendingAskUserId) return "needs_input"
   if (session.pendingRunCommandId || session.pendingToolApprovalId) return "needs_approval"
-  if (session.pendingClientToolCallId) return "needs_client_tool"
   return "completed"
 }
 
@@ -221,7 +218,7 @@ export class Nasi {
       ? await loadAbilities(opts.abilities, {
           personas: opts.personas,
           getApiKey: opts.abilityKey,
-          proxy: opts.deps?.fetchProxy,
+          send: opts.egress,
           mcpSandbox: opts.mcpSandbox
         })
       : undefined
@@ -230,13 +227,12 @@ export class Nasi {
       !opts.includeLocalTools && abilities?.mcp.length ? await mkdtemp(join(tmpdir(), "kaja-mcp-")) : undefined
     const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
-      clientTools: opts.clientTools,
-      deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer },
+      deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer, fetchSend: opts.egress?.() },
       extraTools: abilities?.groups,
       // MCP abilities connect when a persona that uses them is active, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
       lazyMcpAbilities: true,
-      mcpFetch: withSandbox(createGuardedFetch({ proxy: opts.deps?.fetchProxy }), opts.mcpSandbox),
+      mcpFetch: name => withSandbox(createGuardedFetch({ send: opts.egress?.(name) }), opts.mcpSandbox),
       mcpImageDir: imageDir,
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
     })

@@ -6,6 +6,8 @@ Anyone can run one: it **dials out** to the API over a WebSocket, so it needs no
 
 It runs **chrome-devtools**, a headless Chrome the assistant can browse with, read pages from and screenshot. It also runs **time** (Python `mcp-server-time`), which tells the current time and converts it between time zones.
 
+It also sends cloud turns' **tool requests** out: `fetch_url`, HTTP tools and remote MCP servers never connect from the API. Each request comes over the same socket and leaves through the sandbox's [egress proxy](#the-egress-proxy).
+
 ## Run one
 
 ```sh
@@ -36,11 +38,12 @@ It starts with the Kaja monster and a summary (API, owner, servers, capacity), t
 1. At start the sandbox connects to `KAJA_API_URL`'s `/sandbox/connect` with its owner's key (`X-Kaja-Sandbox-Key`; none: anonymous) and, after the first time, the id and secret it was welcomed with (`X-Kaja-Sandbox-Instance`). It says `hello` with its hardware, version, cap and abilities; the API records it, with its public IP's location from the geolocation service, and answers `welcome`. Every minute it sends a `heartbeat` with its load.
 2. A cloud turn picks a sandbox per ability: the one the user's last turn used while it still fits, else their own, else (only if they allow it) one another user shares or an anonymous one, nearest first, else the official one. See `apps/api/src/features/sandbox/registry.ts`.
 3. The API sends the MCP request as a `request` frame; the sandbox runs it and streams the answer back as `head`, `chunk`… and `end` frames (`cancel` stops it). Frames are JSON and checked against `sandboxFrameSchema`/`apiSandboxFrameSchema` in `@kaja/schema/api` on both sides.
-4. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what npx and uvx fetched stays cached in `SANDBOX_CACHE_DIR` (chrome-devtools-mcp is installed in the image, and the time server fetched when it's built).
+4. A tool's request (`fetch_url`, an HTTP tool's call, a remote MCP server's traffic) comes as a `fetch` frame instead: one hop, which the sandbox sends out through its egress proxy (`sendThroughEgress` in `src/egress.ts`) and streams back the same way. Redirects come back to the API, which checks each one. A sandbox that takes them says `fetch: true` in its `hello`; older images get none. `fetch_url` may use any sandbox the user may; an ability's requests go wherever the key they carry may (see [Trust](#trust)).
+5. The request only ever *names* an ability and a user **pseudonym** (an HMAC of the user and the sandbox): an operator never learns who's using their sandbox. The command that runs comes from the sandbox's own copy of `marketplace/mcp`, with `overrides.json` swapping in this host's flags where needed. The image has node, bun and uv (with Python), so a manifest's `npx`, `bunx` or `uvx` runs as written, and what npx and uvx fetched stays cached in `SANDBOX_CACHE_DIR` (chrome-devtools-mcp is installed in the image, and the time server fetched when it's built).
 
 ## Trust
 
-The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Users' ability keys are never sent to any sandbox, so keyed stdio abilities stay local-only. When a turn borrowed someone else's sandbox, the API sends `release` as it ends and the user's server stops at once, so no browser profile (cookies, logins) waits there for the operator; and the model is told not to send personal data through a tool that runs elsewhere when shared sandboxes are on. A manifest with `trustedSandbox = true` never runs in a shared one at all; chrome-devtools is one, so a browser only ever runs in its user's own sandbox or the official one.
+The operator of a sandbox can see everything that runs on it: the pages its browsers open, what's typed into them. So a user's turns only run in other people's sandboxes when they switch **Use shared sandboxes** on; their own and the official one are always fine. Owners share theirs by default (**Share my sandboxes**). Keys follow one rule, for an HTTP tool's or remote MCP server's requests and for a keyed stdio server alike: a call without a key may go to any sandbox the user may use; one with the user's own key only to their own or the official sandbox; one with the server's key (shared by every user) only to the official sandbox. A key travels with each request and is never written to disk: a keyed stdio server gets it in the env var its manifest names, and starts anew when it changes. When a turn borrowed someone else's sandbox, the API sends `release` as it ends and the user's server stops at once, so no browser profile (cookies, logins) waits there for the operator; and the model is told not to send personal data through a tool that runs elsewhere when shared sandboxes are on. A manifest with `trustedSandbox = true` never runs in a shared one at all; chrome-devtools is one, so a browser only ever runs in its user's own sandbox or the official one.
 
 ## One Linux user per user
 
@@ -61,7 +64,7 @@ This keeps users apart from each other. It doesn't keep anything from the operat
 
 Chrome will open whatever a page (or the model) points it at. Without a guard, that includes `http://169.254.169.254/` (the cloud metadata service), the operator's router and anything else on the host's private network. The API's SSRF checks can't help: the browsing happens here, not in the API.
 
-So the sandbox runs its own small **forward proxy** (`src/egress.ts`), and Chrome is told to send all of its traffic through it:
+So the sandbox runs its own small **forward proxy** (`src/egress.ts`), and Chrome is told to send all of its traffic through it. The tool requests the API sends (`fetch` frames) go through it too, so a `fetch_url` gets exactly the browser's checks:
 
 ```
  sandbox container
@@ -159,7 +162,7 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `SANDBOX_SERVER_MEMORY` | `1073741824` | bytes one server (a browser with all its processes) may use before it's stopped |
 | `SANDBOX_ISOLATE_USERS` | `true` | each user's servers as their own Linux user (only when running as root) |
 | `SANDBOX_EGRESS_PORT` | `3128` | the egress proxy's port; must match `overrides.json` |
-| `WEB_PROXY` | — | `http://` proxy the egress proxy tunnels checked traffic through; unset connects directly |
+| `WEB_PROXY` | — | `http://` proxy the egress proxy tunnels checked traffic (the browsers' and the tool requests') through; unset connects directly |
 | `NODE_ENV` | — | `production` turns on Sentry (the image sets it) |
 
 `.env.example` is generated from `packages/schema/env/sandbox.ts` (`bun generate:env`).
@@ -173,7 +176,6 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 
 ## Not yet
 
-- Abilities that need the user's key (`auth.in = "env"`): keys aren't forwarded, so keyed stdio abilities are refused on both sides.
 - Per-user limits beyond one server per (user, ability) (CPU, memory per uid).
 - Servers that build from source: the image has no compilers or git yet.
 

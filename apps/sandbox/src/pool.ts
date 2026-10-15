@@ -32,6 +32,8 @@ export type PoolOptions = {
 
 type Entry = {
   relay: Promise<McpRelay>
+  /** A hash of the key it started with, so another key starts it anew. */
+  keyHash?: string
   /** The relay once it's started, for choosing a server to stop without waiting. */
   started?: McpRelay
   startedAt: number
@@ -96,30 +98,17 @@ export class ProcessPool {
    * Serves an MCP request for `user`'s own `ability` server: 404 for an ability the sandbox doesn't run, 503 when it
    * won't start, and 503 with {@link SANDBOX_FULL_HEADER} when every server is mid-call or memory is short.
    */
-  async handle(user: string, ability: string, request: Request): Promise<Response> {
+  async handle(user: string, ability: string, request: Request, apiKey?: string): Promise<Response> {
     const server = this.#opts.servers.get(ability)
     if (!server) return Response.json({ error: "unknown ability" }, { status: 404 })
+    if (server.key && !server.key.keyless && !apiKey)
+      return Response.json({ error: "this server needs a key" }, { status: 400 })
+    const keyHash = server.key && apiKey ? new Bun.CryptoHasher("sha256").update(apiKey).digest("hex") : undefined
     const key = `${user}\n${ability}`
-    let entry = this.#entries.get(key)
-    if (!entry) {
-      if (this.#entries.size >= this.#opts.maxProcesses && !this.#evictIdlest()) {
-        this.#counts.refusedFull++
-        console.warn("Sandbox is full", { ability, processes: this.#entries.size })
-        return full()
-      }
-      if (!(await this.#hasRoom())) {
-        this.#counts.refusedMemory++
-        console.warn("Sandbox is short of memory", { ability, processes: this.#entries.size })
-        return full()
-      }
-      // Another request for the same server may have started it while memory was checked.
-      entry = this.#entries.get(key)
-      if (!entry) {
-        entry = { relay: this.#start(key, server, user), startedAt: Date.now(), lastUsed: Date.now() }
-        this.#entries.set(key, entry)
-        this.#watchMemory()
-      }
-    }
+    // The user changed their key: the server running with the old one stops, and the next one starts with the new.
+    if (this.#entries.get(key) && this.#entries.get(key)?.keyHash !== keyHash) await this.release(user, ability)
+    const entry = this.#entries.get(key) ?? (await this.#admit(user, server, apiKey, keyHash))
+    if (!entry) return full()
     let relay: McpRelay
     try {
       relay = await entry.relay
@@ -129,6 +118,35 @@ export class ProcessPool {
     }
     this.#touch(key, entry)
     return relay.handle(request)
+  }
+
+  // Starts `user`'s server when there's room for it; undefined when the sandbox is full or short of memory.
+  async #admit(user: string, server: SandboxServer, apiKey?: string, keyHash?: string): Promise<Entry | undefined> {
+    const ability = server.name
+    const key = `${user}\n${ability}`
+    if (this.#entries.size >= this.#opts.maxProcesses && !this.#evictIdlest()) {
+      this.#counts.refusedFull++
+      console.warn("Sandbox is full", { ability, processes: this.#entries.size })
+      return undefined
+    }
+    if (!(await this.#hasRoom())) {
+      this.#counts.refusedMemory++
+      console.warn("Sandbox is short of memory", { ability, processes: this.#entries.size })
+      return undefined
+    }
+    // Another request for the same server may have started it while memory was checked.
+    const running = this.#entries.get(key)
+    if (running) return running
+    const env = server.key && apiKey ? { [server.key.env]: `${server.key.prefix}${apiKey}` } : {}
+    const entry: Entry = {
+      relay: this.#start(key, { ...server, env: { ...server.env, ...env } }, user),
+      keyHash,
+      startedAt: Date.now(),
+      lastUsed: Date.now()
+    }
+    this.#entries.set(key, entry)
+    this.#watchMemory()
+    return entry
   }
 
   /** Stops `user`'s `ability` server now, whether or not it's idle (their turn on a borrowed sandbox ended). */

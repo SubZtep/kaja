@@ -6,7 +6,7 @@ nav_exclude: true
 
 # Privacy Policy
 
-Effective date: 7 October 2026
+Effective date: 15 October 2026
 
 Kaja is operated by Andras Serfozo, an individual based in England, United Kingdom, as a personal project. For the cloud service described below, he is the data controller. This policy explains what personal data Kaja collects, why, on what legal basis, who receives it, and what rights you have.
 
@@ -54,7 +54,7 @@ IP address handling details:
 
 - Kaja processes IP addresses temporarily for authentication, session security, and rate limiting.
 - Each login session record keeps the IP address and browser user agent it was created from, until the session ends or expires.
-- Kaja does not store your location. When you use shared sandboxes, Kaja looks your IP address up once a day and keeps the rough coordinates in memory only, to pick a sandbox near you; the assistant is never told. Otherwise the assistant only knows where you are if you tell it, or if you turn on a location ability that looks it up.
+- Kaja does not store your location. When you use shared sandboxes, Kaja looks your IP address up once a day and keeps the rough coordinates in memory only, to pick a sandbox near you; the assistant is never told. Otherwise the assistant only knows where you are if you tell it, or if a location ability looks it up.
 
 Kaja does not collect payment data because accounts are currently free.
 
@@ -105,7 +105,7 @@ Personal data is processed by these service providers, on Kaja's behalf, only as
 | Fireworks AI | the messages in a cloud conversation that a Fireworks-hosted model answers; not stored or used for training | United States |
 | xAI | the prompt of an image the assistant generates for you; kept by xAI for up to 30 days for abuse monitoring, not used for training | United States |
 | Brave | the search query, when the assistant searches the web; kept by Brave for up to 90 days for billing and troubleshooting | United States |
-| Webshare | the address of a web page the assistant's page-fetching tool reads for you; those fetches leave through this proxy rather than directly from Kaja's servers (tools that run in the sandbox, such as its browser, connect directly) | United States |
+| Webshare | the addresses Kaja's own sandbox connects to for you (web pages the assistant fetches, the services behind HTTP tools and MCP servers, pages its browser opens); those connections leave through this proxy rather than directly from Kaja's servers, and it can read only unencrypted (`http://`) ones | United States |
 
 
 Some conversations are answered by models Kaja runs itself, on its own servers in the EU; those don't leave Kaja's infrastructure.
@@ -115,7 +115,7 @@ These parties also receive data, but under their own terms as independent contro
 - **Google**, if you use Google sign-in;
 - **Cloudflare**, which also uses the browser signals from the bot check, on its own account, to improve how it detects bots (under its legitimate interests), as described in the [Turnstile Privacy Addendum](https://www.cloudflare.com/turnstile-privacy-policy/);
 - **Telegram**, if you chat with the Kaja Telegram bot — those messages pass through Telegram's servers;
-- **the services behind abilities you turn on** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed. Websites a sandbox tool visits for you (such as pages its browser opens) receive the requests it makes, from the sandbox's address rather than yours; in a shared sandbox, its operator can see them too.
+- **the services behind abilities you use** — an HTTP tool or MCP server receives what the assistant sends it (a weather lookup gets coordinates, a documentation search gets the query), plus your API key for it if one is needed. In the cloud, websites and services a tool reaches for you (a page the assistant fetches, an HTTP tool's API, pages a browser opens) get the request from a sandbox's address rather than yours; in a shared sandbox, its operator can see them too.
 
 Kaja may also disclose data if required by law, to protect users, or to investigate abuse or security incidents.
 

@@ -70,31 +70,6 @@ test("ask_user tool yields needs_input and the next message binds as a tool resu
   expect(second.message).toBe("Noted, blue.")
 })
 
-test("read_file yields needs_client_tool in cloud mode, and the next message binds as its tool result", async () => {
-  const nasi = await open([
-    {
-      content: null,
-      tool_calls: [
-        {
-          id: "call_1",
-          type: "function",
-          function: { name: "read_file", arguments: JSON.stringify({ path: "notes.txt" }) }
-        }
-      ]
-    },
-    { content: "The file says hello." }
-  ])
-
-  const first = await nasi.turnBuffered({ message: "what does notes.txt say?" })
-  expect(first.status).toBe("needs_client_tool")
-  expect(first.steps).toContainEqual({ type: "client_tool_call", name: "read_file", arguments: '{"path":"notes.txt"}' })
-  expect(first.session).toBeTruthy()
-
-  const second = await nasi.turnBuffered({ session: first.session, message: "hello" })
-  expect(second.status).toBe("completed")
-  expect(second.message).toBe("The file says hello.")
-})
-
 test("personaId on the request re-resolves the active persona every turn, including on a resumed session", async () => {
   const personaA = { id: "a", label: "A", instructions: "You are A" }
   const personaB = { id: "b", label: "B", instructions: "You are B" }
@@ -212,7 +187,7 @@ test("a session id cannot be resumed by a different owner sharing the same store
   await expect(nasiOwnerB.turnBuffered({ session: first.session, message: "hijack attempt" })).rejects.toThrow()
 })
 
-// A cloud user's HTTP tool with a key; a proxy is set so the (faked) request skips the DNS check.
+// A cloud user's HTTP tool with a key; a sender is set so the (faked) request skips the DNS check.
 const issuesAbility = httpAbility({
   name: "issues",
   description: "Issue tracker",
@@ -270,7 +245,7 @@ function openWithIssues(script: { content: string | null; tool_calls?: unknown[]
     {
       abilities,
       abilityKey: name => (name === "issues" ? "user-key" : undefined),
-      deps: { fetchProxy: "http://proxy.test:3128" }
+      egress: () => (url, init) => fetch(url, init)
     },
     sent
   )
@@ -334,7 +309,7 @@ test("an approval with nothing waiting for one is refused", async () => {
 
 test("a cloud user's MCP ability connects with their key when the turn opens; a write waits for approval", async () => {
   const fixture = startHttpMcpFixture({ apiKey: "mcp-key" })
-  // The guarded fetch goes through the proxy, which here hands the fake host to the local fixture.
+  // The guarded fetch goes through the sender, which here hands the fake host to the local fixture.
   globalThis.fetch = routeHostTo(fixture, "mcp.example.test", realFetch)
   const things = mcpAbility({
     name: "things",
@@ -360,7 +335,7 @@ test("a cloud user's MCP ability connects with their key when the turn opens; a 
     {
       abilities: { ...abilities, listHttpTools: async () => [], listMcpAbilities: async () => [things] },
       abilityKey: name => (name === "things" ? "mcp-key" : undefined),
-      deps: { fetchProxy: "http://proxy.test:3128" }
+      egress: () => (url, init) => fetch(url, init)
     },
     sent
   )

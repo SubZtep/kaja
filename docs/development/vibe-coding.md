@@ -89,7 +89,7 @@ config:
 ---
 flowchart TD
     C["git commit"] --> G["<b>pre-commit: generate</b><br>only for changed inputs<br>schemas, env, models, locales, routes"]
-    G --> K["<b>pre-commit: check</b><br>lint:fix + typecheck"]
+    G --> K["<b>pre-commit: check</b><br>lint:fix:safe + typecheck"]
     K --> M["<b>commit-msg</b><br>commitlint"]
     P["git push"] --> L["<b>pre-push: check</b><br>lint + typecheck<br>(+ test on main)"]
     L --> T{"untranslated<br>placeholders?"}
@@ -106,7 +106,8 @@ flowchart TD
 - **The locale sync** (`bun sync:locales --stage`) gives every other language the same keys as en-GB. New
   or changed English becomes a `[<locale>] lorem ipsum…` placeholder, so the app never shows a missing
   key, and the push knows what's left to translate.
-- **Checks**: `bun lint:fix` (Biome, plus tombi for TOML) stages what it fixes, then `bun typecheck`.
+- **Checks**: `bun lint:fix:safe` (Biome's safe fixes, plus tombi for TOML) stages what it fixes, then
+  `bun typecheck`. Unsafe fixes wait for a manual `bun lint:fix` and a look at the diff.
 - **commitlint** checks the message: [conventional commits](https://www.conventionalcommits.org/), a
   lower-case subject, body lines of 100 characters at most.
 
