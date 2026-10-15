@@ -183,21 +183,23 @@ export function Hero() {
                 </button>
               ))}
             </fieldset>
-            <Sticker rotate={8} className="absolute -top-1 right-2 z-1 text-[10px]">
-              {m.install_linux_note()}
-            </Sticker>
-            <div className="crt-frame flex min-w-0 max-w-xl items-start gap-2.5 px-3 py-2.5 sm:items-center sm:px-3.5">
-              <code className="wrap-break-word min-w-0 flex-1 font-crt text-neon text-sm sm:overflow-x-auto sm:whitespace-nowrap">
-                {installCmd}
-                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-[caret-blink_1.1s_steps(1)_infinite] bg-neon align-[-1px]" />
-              </code>
-              <button
-                type="button"
-                onClick={copyInstall}
-                className="shrink-0 cursor-pointer border border-ice/70 bg-surface px-2 py-1 font-crt text-[11px] text-ice uppercase"
-              >
-                {copied ? m.hero_copy_copied() : m.hero_copy_copy()}
-              </button>
+            <div className="relative">
+              <Sticker rotate={8} className="absolute -top-6 right-2 z-1 text-[10px]">
+                {m.install_terminal_note()}
+              </Sticker>
+              <div className="crt-frame flex min-w-0 max-w-xl items-start gap-2.5 px-3 py-2.5 sm:items-center sm:px-3.5">
+                <code className="wrap-break-word min-w-0 flex-1 font-crt text-neon text-sm sm:overflow-x-auto sm:whitespace-nowrap">
+                  {installCmd}
+                  <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-[caret-blink_1.1s_steps(1)_infinite] bg-neon align-[-1px]" />
+                </code>
+                <button
+                  type="button"
+                  onClick={copyInstall}
+                  className="shrink-0 cursor-pointer border border-ice/70 bg-surface px-2 py-1 font-crt text-[11px] text-ice uppercase"
+                >
+                  {copied ? m.hero_copy_copied() : m.hero_copy_copy()}
+                </button>
+              </div>
             </div>
             <p className="mt-3 mb-0 font-crt text-muted text-sm">
               {m.install_binary_prefix()}{" "}
