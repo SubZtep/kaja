@@ -112,10 +112,10 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
 ## In the cloud
 
 Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list (so
-you can see what a server can do before turning it on, and it can't add tools later), aren't local-only, and
-are either remote (`http` or `sse`) or `stdio` without a key.
+you can see what a server can do before turning it on, and it can't add tools later) and aren't local-only.
 
-A `stdio` ability, like `chrome-devtools`, runs in an **MCP sandbox**, never on the API's host. That can be:
+A `stdio` ability, like `chrome-devtools`, runs in an **MCP sandbox**, never on the API's host, and a remote
+one's requests go out through one too. That can be:
 
 - Kaja's own sandbox;
 - one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);
@@ -128,7 +128,8 @@ websites, not Kaja's servers or anything on the sandbox's private network.
 
 A manifest with `trustedSandbox = true` only runs in your own sandboxes or Kaja's, never in a shared one.
 `chrome-devtools` is one, so the browser never runs on someone else's computer.
-A `stdio` ability that needs a key stays local for now.
+A server that needs a key gets it with each request, never stored: yours only in your own sandbox or Kaja's,
+the server's own key only in Kaja's.
 
 - A turn connects the servers its persona lists (giving up on one after 5 seconds), others after a persona
   switch, and closes them when it ends. Nothing is shared with other users.

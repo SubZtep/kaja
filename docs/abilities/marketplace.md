@@ -81,7 +81,7 @@ The cloud has no shell and serves many people, so it offers less:
 | --- | --- |
 | skill | it has a `scripts/` folder |
 | HTTP tool | its `baseUrl` isn't a public address |
-| MCP server | it has no `tools` allowlist, isn't on a public host, or is `stdio` and needs a key ([keyless `stdio` ones run in the MCP sandbox](/abilities/mcp#in-the-cloud)) |
+| MCP server | it has no `tools` allowlist, or isn't on a public host (`stdio` ones [run in the MCP sandbox](/abilities/mcp#in-the-cloud)) |
 
 **Keys.** You save them under **API keys** on your [Profile](https://kaja.io/profile), which lists the
 abilities your personas use that take one. Kaja tests the key, stores it encrypted and never shows it again:

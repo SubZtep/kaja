@@ -51,8 +51,8 @@ export class SandboxTunnel {
     return this.#pending.size
   }
 
-  /** Sends `<any origin>/mcp/<ability>` to the sandbox for the opaque `user`; its answer streams back. */
-  async request(user: string, input: string | URL, init?: RequestInit): Promise<Response> {
+  /** Sends `<any origin>/mcp/<ability>` to the sandbox for the opaque `user`, with the key a keyed server starts with; its answer streams back. */
+  async request(user: string, input: string | URL, init?: RequestInit, key?: string): Promise<Response> {
     const request = new Request(input, init)
     const match = /^\/mcp\/([^/]+)$/.exec(new URL(request.url).pathname)
     if (!match) return Response.json({ error: "not found" }, { status: 404 })
@@ -64,7 +64,8 @@ export class SandboxTunnel {
       ability,
       method: request.method,
       headers: [...request.headers],
-      body
+      body,
+      ...(key ? { key } : {})
     }))
   }
 

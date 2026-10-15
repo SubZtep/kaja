@@ -37,7 +37,7 @@ beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "kaja-sandbox-test-"))
   const overrides = join(dir, "overrides.json")
   const counter = { command: process.execPath, args: [join(import.meta.dir, "fixtures/counter-server.ts")] }
-  await writeFile(overrides, JSON.stringify({ counter }))
+  await writeFile(overrides, JSON.stringify({ counter, keyed: counter }))
   servers = await loadSandboxServers(MARKETPLACE, overrides)
 })
 
@@ -66,7 +66,7 @@ function sandbox(
   pools.push(pool)
   const egress = { open: 0, allowed: 0, refused: 0, failed: 0 }
   const handler = {
-    mcp: (user: string, ability: string, request: Request) => pool.handle(user, ability, request),
+    mcp: (user: string, ability: string, request: Request, key?: string) => pool.handle(user, ability, request, key),
     fetch: (_user: string, request: Request) => send(request),
     release: (user: string, ability: string) => pool.release(user, ability),
     stats: () => collectStats({ pool, egress }),
@@ -95,9 +95,9 @@ function sandbox(
 }
 
 /** An MCP client of `ability` for `user`, over Streamable HTTP through the tunnel. */
-async function connect(tunnel: SandboxTunnel, user: string, ability = "counter"): Promise<Client> {
+async function connect(tunnel: SandboxTunnel, user: string, ability = "counter", key?: string): Promise<Client> {
   const transport = new StreamableHTTPClientTransport(new URL(`http://sandbox.invalid/mcp/${ability}`), {
-    fetch: (url, init) => tunnel.request(user, url, init)
+    fetch: (url, init) => tunnel.request(user, url, init, key)
   })
   const client = new Client({ name: "test", version: "1.0.0" })
   await client.connect(transport)
@@ -110,9 +110,11 @@ async function callText(client: Client, name: string): Promise<string> {
 }
 
 describe("manifests", () => {
-  test("only keyless stdio servers load, with this host's overrides", () => {
-    expect([...servers.keys()]).toEqual(["counter"])
+  test("stdio servers load with this host's overrides, a keyed one with where its key goes", () => {
+    expect([...servers.keys()]).toEqual(["counter", "keyed"])
     expect(servers.get("counter")!.command).toBe(process.execPath)
+    expect(servers.get("counter")!.key).toBeUndefined()
+    expect(servers.get("keyed")!.key).toEqual({ env: "KEYED_API_KEY", prefix: "Key ", keyless: false })
   })
 
   test("a cache dir sends every server's bun/uv/npm caches there", async () => {
@@ -166,7 +168,7 @@ describe("tunnel", () => {
 
   test("an ability the sandbox doesn't run is 404, and so is any path but /mcp/<ability>", async () => {
     const { tunnel } = sandbox()
-    expect((await post(tunnel, "/mcp/keyed")).status).toBe(404)
+    expect((await post(tunnel, "/mcp/nothing")).status).toBe(404)
     expect((await post(tunnel, "/stats")).status).toBe(404)
   })
 
@@ -176,6 +178,28 @@ describe("tunnel", () => {
     await expect(post(tunnel, "/mcp/counter")).rejects.toThrow("the sandbox disconnected")
     await expect(tunnel.stats()).rejects.toThrow("the sandbox disconnected")
   })
+})
+
+describe("keyed servers", () => {
+  test(
+    "a keyed server needs the key, starts with it in its env, and starts anew when the key changes",
+    async () => {
+      const { tunnel, pool } = sandbox()
+      expect(
+        (await tunnel.request("u1", "http://sandbox.invalid/mcp/keyed", { method: "POST", body: "{}" })).status
+      ).toBe(400)
+      const first = await connect(tunnel, "u1", "keyed", "one")
+      expect(JSON.parse(await callText(first, "whoami")).key).toBe("Key one")
+      expect(await callText(first, "count")).toBe("1")
+      await first.close()
+      const second = await connect(tunnel, "u1", "keyed", "two")
+      expect(JSON.parse(await callText(second, "whoami")).key).toBe("Key two")
+      expect(await callText(second, "count")).toBe("1")
+      expect(pool.size).toBe(1)
+      await second.close()
+    },
+    SPAWN_TIMEOUT_MS
+  )
 })
 
 describe("fetch frames", () => {
@@ -234,7 +258,7 @@ describe("stats", () => {
     async () => {
       const { tunnel } = sandbox({ maxProcesses: 3 })
       const empty = await tunnel.stats()
-      expect(empty).toMatchObject({ abilities: ["counter"], limits: { maxProcesses: 3 }, servers: [] })
+      expect(empty).toMatchObject({ abilities: ["counter", "keyed"], limits: { maxProcesses: 3 }, servers: [] })
 
       const client = await connect(tunnel, "u1")
       void client.callTool({ name: "hang", arguments: {} }).catch(() => {})

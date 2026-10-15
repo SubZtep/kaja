@@ -60,7 +60,7 @@ export async function startSandbox(): Promise<void> {
       connectedAs = id
     },
     handler: {
-      mcp: (user, ability, request) => pool.handle(user, ability, request),
+      mcp: (user, ability, request, key) => pool.handle(user, ability, request, key),
       fetch: (_user, request) => sendOut(request),
       release: (user, ability) => pool.release(user, ability),
       running: () => pool.size,

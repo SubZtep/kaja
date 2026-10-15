@@ -118,7 +118,9 @@ export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
     method: z.string(),
     headers: z.array(z.tuple([z.string(), z.string()])),
     /** The request body, base64. */
-    body: z.string().nullable()
+    body: z.string().nullable(),
+    /** A keyed server's key (the user's own, or the server-wide one on the official sandbox), for the env var its manifest names. */
+    key: z.string().optional()
   }),
   /** An outgoing request of a tool (`fetch_url`, an HTTP tool, a remote MCP server), sent out through the egress proxy; the answer comes back like a request's. */
   z.object({

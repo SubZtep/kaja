@@ -464,9 +464,9 @@ describe("HTTP tools in the cloud", () => {
     const listed = (await service.listKeys(userId)).find(ability => ability.name === issues)
     expect(listed?.key).toBe("optional")
     try {
-      expect((await service.keysForUser(userId)).get(issues)).toBe("server-key")
+      expect((await service.keysForUser(userId)).get(issues)).toEqual({ value: "server-key", own: false })
       await secretService.set(userId, `ability:${issues}`, "own-key")
-      expect((await service.keysForUser(userId)).get(issues)).toBe("own-key")
+      expect((await service.keysForUser(userId)).get(issues)).toEqual({ value: "own-key", own: true })
     } finally {
       await secretService.delete(userId, `ability:${issues}`)
     }

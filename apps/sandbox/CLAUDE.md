@@ -6,9 +6,9 @@ The human-facing overview (request flow, warm servers, how the egress proxy work
 
 ## How it fits
 
-- Keyless stdio MCP abilities with a `tools` list are always offered in the cloud (`cloudMcpProblem` in `apps/api/src/services/ability.ts`); a cloud turn always gets `mcpSandbox` (`apps/api/src/features/nasi/chat.ts`), so a stdio ability never runs on the API host. nasi's `sandboxedMcpTarget` points each at `SANDBOX_ORIGIN/mcp/<name>`, and requests to that origin go to `mcpSandbox.fetch` instead of the guarded fetch
+- Stdio MCP abilities with a `tools` list are always offered in the cloud (`cloudMcpProblem` in `apps/api/src/services/ability.ts`); a cloud turn always gets `mcpSandbox` (`apps/api/src/features/nasi/chat.ts`), so a stdio ability never runs on the API host. nasi's `sandboxedMcpTarget` points each at `SANDBOX_ORIGIN/mcp/<name>`, and requests to that origin go to `mcpSandbox.fetch` instead of the guarded fetch
 - API side (`apps/api/src/features/sandbox/`): `connect.ts` (owner from `X-Kaja-Sandbox-Key`: `SANDBOX_SYSTEM_KEY` = official, a user's `sandbox_owner` key, none = anonymous; resume by `X-Kaja-Sandbox-Instance`), `tunnel.ts` (fetch ⇄ frames), `registry.ts` (connected tunnels in memory, pseudonyms, `pickSandbox`: last pick → own → shared if the user's `use_shared` and the owner's `share` → official). Rows in `sandbox`/`sandbox_owner` (`services/sandbox.ts`); geolocation in `core/geo.ts`
-- A tool request is a `fetch` frame (one hop, redirects back to the API, which checks each): `sendThroughEgress` (`src/egress.ts`) sends it through the egress proxy (http(s) only, a refused address throws "Blocked non-public URL", the decoded body loses `content-encoding`/`content-length`). `hello` says `fetch: true`; the API's `egressFor` (`registry.ts`) picks only such sandboxes: any the user may for `fetch_url`, the official one for an ability's requests (they may carry a key)
+- A tool request is a `fetch` frame (one hop, redirects back to the API, which checks each): `sendThroughEgress` (`src/egress.ts`) sends it through the egress proxy (http(s) only, a refused address throws "Blocked non-public URL", the decoded body loses `content-encoding`/`content-length`). `hello` says `fetch: true`; the API's `egressFor` (`registry.ts`) picks only such sandboxes: any the user may for `fetch_url`, for an ability's requests wherever the key they carry may go (`keyTrust`: none → any, the user's own → their own or the official one, a server-wide `ABILITY_KEYS` one → only the official one)
 - Frames are JSON, schemas in `@kaja/schema/api` (`sandboxFrameSchema` from the sandbox, `apiSandboxFrameSchema` from the API). A sandbox sees users only as `pseudonymFor(userId, sandboxId)` (HMAC with a key HKDF-derived from `BETTER_AUTH_SECRET`)
 - The API holds the sockets in memory, so it must run as one instance
 
@@ -55,6 +55,7 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 - Each user's servers run as their own uid (`src/isolation.ts`: `prlimit` 512 processes per uid and 4096 files, then `setpriv`, no capabilities, umask 002, uids from 20000, private group, plus the `mcp` group owning `SANDBOX_CACHE_DIR`); only when the sandbox is root (the image) and `SANDBOX_ISOLATE_USERS` is on. HOMEs are `0700` and chowned to the uid
 - Chrome only opens `http://` and `https://` (`--allowedUrlPattern` in `overrides.json`), as a second wall around other users' profiles under `/tmp`. The allowlist needs Chrome 149+
 - Chrome only goes out through the egress proxy (`--proxyServer`, with `--proxy-bypass-list=<-loopback>` so loopback isn't skipped, and WebRTC kept off direct UDP); `--proxyServer`'s port must match `SANDBOX_EGRESS_PORT`. With `WEB_PROXY` set (`http://` only), the egress proxy tunnels each checked connection through it (`CONNECT <checked-ip>:<port>`, Basic auth from the URL) instead of connecting directly. A new stdio server that makes its own requests needs the same, or it isn't covered
+- A keyed stdio server (`auth.in = "env"`): the API's `request` frame brings the key (`mcpSandboxFor`'s `keys`, under the same `keyTrust` as fetches), the manifest says which env var and prefix (`SandboxServer.key`), and the pool starts the (user, ability) server with it, anew when the key changes (a hash on the entry); without one a non-keyless server answers 400. Nothing is written to disk
 - A sandbox that isn't the user's own or the official one is borrowed: the API's `McpSandbox.close` (called by `Nasi.close`) sends `release`, and the pool stops that server at once. Abilities with the manifest's `trustedSandbox` never go to a borrowed one (`pickSandbox`'s `trusted`)
 - The pool's 503s for a full or short-of-memory sandbox carry `x-kaja-sandbox-full`; `mcpSandboxFor` then picks another (up to 3), and every `head` frame carries `running`, so routing doesn't wait for the heartbeat
 - Every new API turn opens a new MCP session; the relay answers later `initialize` calls from the first one, so the server's state (a browser's pages) survives between turns
@@ -66,7 +67,6 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 
 ## Not yet
 
-- Forwarding users' keys (`auth.in = "env"`) — keyed stdio abilities are refused on both sides
 - Per-user limits beyond one process per (user, ability)
 
 ## Release

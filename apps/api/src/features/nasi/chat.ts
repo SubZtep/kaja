@@ -16,7 +16,8 @@ import { pool } from "../../core/db"
 import { env } from "../../core/env"
 import { withLock, withLockGenerator } from "../../core/lock"
 import { abilityService, modelService, sandboxService } from "../../services"
-import { egressFor, mcpSandboxFor } from "../sandbox"
+import type { AbilityKeyValue } from "../../services/ability"
+import { egressFor, mcpSandboxFor, type SandboxKeys } from "../sandbox"
 import { type CloudAbilitySource, createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
 
@@ -130,9 +131,9 @@ export function setNasiEgressOverride(egress: ((userId: string) => Egress) | und
   egressOverride = egress
 }
 
-/** Where a user's cloud turn sends its tool requests (`fetch_url`, HTTP tools, remote MCP): a sandbox, never this host. */
-export function cloudEgress(userId: string): Egress {
-  return (egressOverride ?? egressFor)(userId)
+/** Where a user's cloud turn sends its tool requests (`fetch_url`, HTTP tools, remote MCP): a sandbox, never this host, and one the key a call carries may go to (`keys`; without them an ability's calls only go to the official sandbox). */
+export function cloudEgress(userId: string, keys?: SandboxKeys): Egress {
+  return egressOverride ? egressOverride(userId) : egressFor(userId, keys)
 }
 
 // Said to a user's turns when their stdio abilities may run on a sandbox another person runs.
@@ -140,12 +141,17 @@ const SHARED_SANDBOX_NOTE =
   " Some tools may run on another person's computer, who can see what they do. The browser does not: it stays on " +
   "this user's own sandbox or the official one. Never send the user's personal data through a tool that runs elsewhere."
 
-type SandboxPicker = (userId: string) => McpSandbox
+type SandboxPicker = (userId: string, keys: SandboxKeys) => McpSandbox
 let sandboxOverride: SandboxPicker | undefined
 
 /** Test seam: how a user's turns reach an MCP sandbox. Pass undefined to restore the connected sandboxes. */
 export function setNasiSandboxOverride(picker: SandboxPicker | undefined) {
   sandboxOverride = picker
+}
+
+/** Where a user's stdio abilities run: a sandbox, with the key each one starts with (`keys`). The caller closes it. */
+export function cloudSandbox(userId: string, keys: SandboxKeys): McpSandbox {
+  return (sandboxOverride ?? mcpSandboxFor)(userId, keys)
 }
 
 /** Shared by cloud (`/nasi/turn*`) and widget (`/widget/turn`) turns — same account, `owner` distinguishes whose rows within it. The caller closes it after the turn (its MCP connections). */
@@ -170,18 +176,19 @@ export async function openNasiFor(opts: {
   const [keys, sandboxSettings] =
     "userId" in source
       ? await Promise.all([abilityService.keysForUser(source.userId), sandboxService.settings(source.userId)])
-      : [new Map<string, string>(), undefined]
+      : [new Map<string, AbilityKeyValue>(), undefined]
+  const keyOf: SandboxKeys = name => keys.get(name)
   return Nasi.open({
     store: createPostgresStore(pool, opts.userId),
     chat,
     summarizer,
     personas,
     owner: opts.owner,
-    egress: "userId" in source ? cloudEgress(source.userId) : undefined,
+    egress: "userId" in source ? cloudEgress(source.userId, keyOf) : undefined,
     abilities: createPostgresAbilityStore(source),
-    abilityKey: name => keys.get(name),
+    abilityKey: name => keys.get(name)?.value,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
-    mcpSandbox: "userId" in source ? (sandboxOverride ?? mcpSandboxFor)(source.userId) : undefined,
+    mcpSandbox: "userId" in source ? cloudSandbox(source.userId, keyOf) : undefined,
     promptContext: {
       environment:
         "You are Kaja cloud chat. You have no access to the user's machine — you cannot run a shell. " +

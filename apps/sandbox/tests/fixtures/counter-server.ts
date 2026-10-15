@@ -1,4 +1,4 @@
-// A stdio MCP server for the sandbox tests: `count` remembers how often it ran, `whoami` shows the env it got, `picture` returns an image, `hang` never answers, `crash` complains on stderr and exits.
+// A stdio MCP server for the sandbox tests: `count` remembers how often it ran, `whoami` shows the env it got (its key too), `picture` returns an image, `hang` never answers, `crash` complains on stderr and exits.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
@@ -7,9 +7,16 @@ const server = new McpServer({ name: "counter", version: "1.0.0" })
 server.registerTool("count", { description: "Counts its calls" }, () => ({
   content: [{ type: "text", text: String(++count) }]
 }))
-server.registerTool("whoami", { description: "The server's HOME and a leaked secret, if any" }, () => ({
+server.registerTool("whoami", { description: "The server's HOME, its key and a leaked secret, if any" }, () => ({
   content: [
-    { type: "text", text: JSON.stringify({ home: process.env.HOME, secret: process.env.KAJA_SANDBOX_KEY ?? null }) }
+    {
+      type: "text",
+      text: JSON.stringify({
+        home: process.env.HOME,
+        key: process.env.KEYED_API_KEY ?? null,
+        secret: process.env.KAJA_SANDBOX_KEY ?? null
+      })
+    }
   ]
 }))
 // A 1×1 PNG, like a screenshot the cloud has to hand back to its client.

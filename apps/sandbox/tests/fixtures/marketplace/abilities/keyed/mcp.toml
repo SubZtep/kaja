@@ -1,4 +1,4 @@
-description = "Needs a key, so the sandbox skips it (sandbox test fixture)."
+description = "Needs a key, which comes with each request (sandbox test fixture)."
 transport   = "stdio"
 command     = "bun"
 args        = [
@@ -10,6 +10,7 @@ tools       = [
 
 
 [auth]
-type = "apiKey"
-in   = "env"
-name = "KEYED_API_KEY"
+type   = "apiKey"
+in     = "env"
+name   = "KEYED_API_KEY"
+prefix = "Key "

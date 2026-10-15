@@ -4,6 +4,7 @@ import {
   createGuardedFetch,
   type FetchLike,
   type KeyCheckResult,
+  type McpSandbox,
   parseDatasetManifest,
   parseHttpToolManifest,
   parseMcpManifest,
@@ -33,14 +34,13 @@ type ManifestRow = { type: string; name: string; description?: string; files: Re
 
 /**
  * Why the cloud can't offer an MCP ability, or undefined when it can: a fixed tool list, and either a remote server on a
- * public host or a stdio one an MCP sandbox runs (not one that takes a key: keys aren't forwarded there yet), and not local-only.
+ * public host or a stdio one an MCP sandbox runs (a key comes with each request), and not local-only.
  */
 export function cloudMcpProblem(ability: McpAbility): string | undefined {
   if (!ability.tools?.length) return "no `tools` allowlist"
   if (ability.localOnly || ability.roots) return "it only runs on the user's own machine"
   if (ability.transport === "stdio" || !ability.url) {
     // Also keeps saveKey's live test from starting the command on this host.
-    if (ability.auth.type === "apiKey") return "the MCP sandbox can't take a key yet"
     return undefined
   }
   if (!isPublicHttpUrl(ability.url)) return `${ability.url} isn't a public address`
@@ -53,6 +53,9 @@ export const SANDBOX_DOMAIN = "sandbox"
 // Offered in the cloud: still in the marketplace, and nothing that needs a shell.
 const AVAILABLE = "p.removed_at IS NULL AND NOT p.has_scripts"
 const KEY_PREFIX = "ability:"
+
+/** An ability key a user's turn uses: `own` when it's the user's, else the server-wide one (which only the official sandbox may see). */
+export type AbilityKeyValue = { value: string; own: boolean }
 
 /** Where an ability's API key lives in `user_secret`. */
 function abilitySecretName(name: string): string {
@@ -198,21 +201,26 @@ export class AbilityService {
     return (await this.#keyedOfType("mcp")).flatMap(keyed => (keyed.type === "mcp" ? [keyed.ability] : []))
   }
 
-  /** The user's ability keys by ability name, decrypted, for their own turns only. */
-  async keysForUser(userId: string): Promise<Map<string, string>> {
+  /** The user's ability keys by ability name, decrypted, for their own turns only: their own, else a server-wide one. */
+  async keysForUser(userId: string): Promise<Map<string, AbilityKeyValue>> {
     // Server-wide keys first, so the user's own key replaces one.
-    const keys = new Map(this.#serviceKeys)
+    const keys = new Map([...this.#serviceKeys].map(([name, value]) => [name, { value, own: false }]))
     for (const [name, value] of await this.#secrets.getAll(userId, KEY_PREFIX))
-      keys.set(name.slice(KEY_PREFIX.length), value)
+      keys.set(name.slice(KEY_PREFIX.length), { value, own: true })
     return keys
   }
 
   /**
    * Saves the user's key for an ability and tests it: its HTTP tool's `check` request, or connecting to its MCP
-   * server and listing the tools. Tests go through `send` when set and never reach a private host. The key is kept
+   * server and listing the tools (a stdio one's in `sandbox`). Tests go through `send` when set and never reach a private host. The key is kept
    * even when the test fails. Throws {@link import("./secret").SecretsUnavailableError} when keys can't be stored.
    */
-  async saveKey(userId: string, name: string, apiKey: string, opts: { send?: FetchLike } = {}): Promise<SaveKeyResult> {
+  async saveKey(
+    userId: string,
+    name: string,
+    apiKey: string,
+    opts: { send?: FetchLike; sandbox?: McpSandbox } = {}
+  ): Promise<SaveKeyResult> {
     const keyed = await this.#keyedByName(name)
     if (!keyed) return "not_found"
     if (keyed.ability.auth.type !== "apiKey") return "no_key"
@@ -220,7 +228,12 @@ export class AbilityService {
     const check =
       keyed.type === "tool"
         ? await checkHttpToolKey(keyed.ability, apiKey, { send: opts.send })
-        : await checkMcpAbilityKey(keyed.ability, apiKey, { fetch: createGuardedFetch({ send: opts.send }) })
+        : keyed.ability.transport === "stdio" && !opts.sandbox
+          ? { ok: false as const, reason: "no MCP sandbox to start it in" }
+          : await checkMcpAbilityKey(keyed.ability, apiKey, {
+              fetch: createGuardedFetch({ send: opts.send }),
+              sandbox: opts.sandbox
+            })
     return { check: check ?? null }
   }
 

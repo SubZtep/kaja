@@ -14,7 +14,8 @@ import { reportError } from "./report"
 
 /** What the tunnel serves: an MCP request for a (pseudonymous) user's ability, a tool's outgoing request, a release of one, and the stats. */
 export type SandboxHandler = {
-  mcp: (user: string, ability: string, request: Request) => Promise<Response>
+  /** `key`: a keyed server's key, which it starts with. */
+  mcp: (user: string, ability: string, request: Request, key?: string) => Promise<Response>
   /** Sends a tool's request (`fetch_url`, an HTTP tool, a remote MCP server) out through the egress proxy. */
   fetch: (user: string, request: Request) => Promise<Response>
   release: (user: string, ability: string) => Promise<void>
@@ -50,7 +51,8 @@ export class TunnelServer {
           this.#handler.mcp(
             frame.user,
             frame.ability,
-            new Request(`http://sandbox.local/mcp/${encodeURIComponent(frame.ability)}`, requestInit(frame, signal))
+            new Request(`http://sandbox.local/mcp/${encodeURIComponent(frame.ability)}`, requestInit(frame, signal)),
+            frame.key
           )
         )
         return

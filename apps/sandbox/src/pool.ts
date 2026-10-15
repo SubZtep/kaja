@@ -32,6 +32,8 @@ export type PoolOptions = {
 
 type Entry = {
   relay: Promise<McpRelay>
+  /** A hash of the key it started with, so another key starts it anew. */
+  keyHash?: string
   /** The relay once it's started, for choosing a server to stop without waiting. */
   started?: McpRelay
   startedAt: number
@@ -96,10 +98,15 @@ export class ProcessPool {
    * Serves an MCP request for `user`'s own `ability` server: 404 for an ability the sandbox doesn't run, 503 when it
    * won't start, and 503 with {@link SANDBOX_FULL_HEADER} when every server is mid-call or memory is short.
    */
-  async handle(user: string, ability: string, request: Request): Promise<Response> {
+  async handle(user: string, ability: string, request: Request, apiKey?: string): Promise<Response> {
     const server = this.#opts.servers.get(ability)
     if (!server) return Response.json({ error: "unknown ability" }, { status: 404 })
+    if (server.key && !server.key.keyless && !apiKey)
+      return Response.json({ error: "this server needs a key" }, { status: 400 })
+    const keyHash = server.key && apiKey ? new Bun.CryptoHasher("sha256").update(apiKey).digest("hex") : undefined
     const key = `${user}\n${ability}`
+    // The user changed their key: the server running with the old one stops, and the next one starts with the new.
+    if (this.#entries.get(key) && this.#entries.get(key)?.keyHash !== keyHash) await this.release(user, ability)
     let entry = this.#entries.get(key)
     if (!entry) {
       if (this.#entries.size >= this.#opts.maxProcesses && !this.#evictIdlest()) {
@@ -115,7 +122,13 @@ export class ProcessPool {
       // Another request for the same server may have started it while memory was checked.
       entry = this.#entries.get(key)
       if (!entry) {
-        entry = { relay: this.#start(key, server, user), startedAt: Date.now(), lastUsed: Date.now() }
+        const env = server.key && apiKey ? { [server.key.env]: `${server.key.prefix}${apiKey}` } : {}
+        entry = {
+          relay: this.#start(key, { ...server, env: { ...server.env, ...env } }, user),
+          keyHash,
+          startedAt: Date.now(),
+          lastUsed: Date.now()
+        }
         this.#entries.set(key, entry)
         this.#watchMemory()
       }

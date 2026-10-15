@@ -4,11 +4,18 @@ import { McpRunnerMissingError, parseMcpManifest, resolveLaunch, scanMcpAbilitie
 import { McpAbilityOverridesSchema } from "@kaja/schema/abilities"
 
 /** What the sandbox starts for one ability: always from its own manifests, never from a request. */
-export type SandboxServer = { name: string; command: string; args: string[]; env: Record<string, string> }
+export type SandboxServer = {
+  name: string
+  command: string
+  args: string[]
+  env: Record<string, string>
+  /** A keyed server's key: the env var it goes in (after `prefix`), and whether it starts without one. A request only brings the value. */
+  key?: { env: string; prefix: string; keyless: boolean }
+}
 
 /**
- * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list, no key (keys aren't
- * forwarded yet), and not local-only (`localOnly`, or `roots`: the user's own folders), the same rule the API offers them by. A package runs through the first runner the image has, never bun's own
+ * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list (a key, if it
+ * takes one, comes with each request), and not local-only (`localOnly`, or `roots`: the user's own folders), the same rule the API offers them by. A package runs through the first runner the image has, never bun's own
  * (its cache can't be shared between uids, so npm packages go through npx). `overridesPath` swaps a server's command/args for
  * this host; `cacheDir` points every server's bun/uv/npm caches there, since each one's HOME is thrown away.
  */
@@ -35,7 +42,7 @@ export async function loadSandboxServers(
   const servers = new Map<string, SandboxServer>()
   for (const [index, entry] of entries.entries()) {
     const ability = parseMcpManifest(texts[index]!, entry.name)
-    if (!ability.tools?.length || ability.auth.type !== "none" || ability.localOnly || ability.roots) {
+    if (!ability.tools?.length || ability.localOnly || ability.roots) {
       console.warn("Sandbox skips MCP ability", { ability: ability.name })
       continue
     }
@@ -46,7 +53,11 @@ export async function loadSandboxServers(
       const launch = override?.command
         ? { command: override.command, args, env }
         : resolveLaunch({ ...ability, args }, env, { self: false })
-      servers.set(ability.name, { name: ability.name, ...launch })
+      const key =
+        ability.auth.type === "apiKey"
+          ? { env: ability.auth.name, prefix: ability.auth.prefix ?? "", keyless: ability.auth.keyless }
+          : undefined
+      servers.set(ability.name, { name: ability.name, ...launch, ...(key ? { key } : {}) })
     } catch (error) {
       if (!(error instanceof McpRunnerMissingError)) throw error
       console.warn("Sandbox skips MCP ability: nothing here can start it", {

@@ -5,6 +5,7 @@ import { env } from "../../core/env"
 import { lookupGeo } from "../../core/geo"
 import { reportError } from "../../core/report"
 import { abilityService, sandboxService } from "../../services"
+import type { AbilityKeyValue } from "../../services/ability"
 import type { SandboxTunnel } from "./tunnel"
 
 /** Connected sandboxes by id. Their rows say `online`, but only this process holds their sockets (one API instance). */
@@ -141,17 +142,29 @@ export async function pickSandbox(
 /** How many other sandboxes a request that found its sandbox full tries. */
 const FULL_RETRIES = 3
 
+/** The key a user's turn would send an ability's calls with (theirs, else a server-wide one), if any. */
+export type SandboxKeys = (ability: string) => AbilityKeyValue | undefined
+
+const TRUST_ORDER: SandboxTrust[] = ["any", "trusted", "official"]
+
+/** Where a call carrying `key` may go: anywhere without one, the user's own or the official sandbox with their own, only the official one with a server-wide key (an operator could log it). */
+export function keyTrust(key: AbilityKeyValue | undefined): SandboxTrust {
+  if (!key) return "any"
+  return key.own ? "trusted" : "official"
+}
+
+function strictest(a: SandboxTrust, b: SandboxTrust): SandboxTrust {
+  return TRUST_ORDER[Math.max(TRUST_ORDER.indexOf(a), TRUST_ORDER.indexOf(b))]!
+}
+
 /**
- * A turn's MCP sandbox: an ability's first request picks a sandbox for the user (another one when that answers it's
- * full), and the turn's later ones go there too. Closing it releases the user's servers on sandboxes they borrowed,
- * so nothing of the turn (a browser's logins) stays on someone else's machine.
+ * Whether an ability must stay on the user's own or the official sandbox (the manifest's trustedSandbox), looked up
+ * once. If that can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on
+ * a stranger's machine.
  */
-export function mcpSandboxFor(userId: string): McpSandbox {
-  const picked = new Map<string, Promise<SandboxPick | undefined>>()
+function trustedAbilities(userId: string): (ability: string) => Promise<boolean> {
   let trusted: Promise<Set<string> | undefined> | undefined
-  // The abilities that must stay on the user's own or the official sandbox (the manifest's trustedSandbox). If that
-  // can't be looked up, every ability is treated as trusted-only: a browser's logins must never land on a stranger's machine.
-  const needsTrust = async (ability: string) => {
+  return async ability => {
     trusted ??= abilityService
       .mcpAbilities()
       .then(abilities => new Set(abilities.filter(a => a.trustedSandbox).map(a => a.name)))
@@ -162,6 +175,19 @@ export function mcpSandboxFor(userId: string): McpSandbox {
     const names = await trusted
     return names === undefined || names.has(ability)
   }
+}
+
+/**
+ * A turn's MCP sandbox: an ability's first request picks a sandbox for the user (another one when that answers it's
+ * full), and the turn's later ones go there too. A keyed server gets its key with every request, so it only runs where
+ * that key may go ({@link keyTrust}). Closing it releases the user's servers on sandboxes they borrowed, so nothing
+ * of the turn (a browser's logins) stays on someone else's machine.
+ */
+export function mcpSandboxFor(userId: string, keys: SandboxKeys = () => undefined): McpSandbox {
+  const picked = new Map<string, Promise<SandboxPick | undefined>>()
+  const needsTrust = trustedAbilities(userId)
+  const trustOf = async (ability: string) =>
+    strictest((await needsTrust(ability)) ? "trusted" : "any", keyTrust(keys(ability)))
 
   return {
     fetch: async (input, init) => {
@@ -169,7 +195,7 @@ export function mcpSandboxFor(userId: string): McpSandbox {
       if (!picked.has(ability)) {
         picked.set(
           ability,
-          needsTrust(ability).then(trust => pickSandbox(userId, ability, { trust: trust ? "trusted" : "any" }))
+          trustOf(ability).then(trust => pickSandbox(userId, ability, { trust }))
         )
       }
       // A retry resends the body, so it's read once up front.
@@ -182,14 +208,14 @@ export function mcpSandboxFor(userId: string): McpSandbox {
           return Response.json({ error: "no MCP sandbox is online for you right now" }, { status: 503 })
         }
         const { tunnel } = current
-        const response = await tunnel.request(pseudonymFor(userId, tunnel.id), input, { ...init, body })
+        const key = keys(ability)?.value
+        const response = await tunnel.request(pseudonymFor(userId, tunnel.id), input, { ...init, body }, key)
         if (response.status !== 503 || !response.headers.has(SANDBOX_FULL_HEADER) || attempt >= FULL_RETRIES) {
           return response
         }
         await response.body?.cancel()
         skip.add(tunnel.id)
-        const trust = await needsTrust(ability)
-        picked.set(ability, pickSandbox(userId, ability, { trust: trust ? "trusted" : "any", skip }))
+        picked.set(ability, pickSandbox(userId, ability, { trust: await trustOf(ability), skip }))
       }
     },
     close: async () => {
@@ -211,26 +237,30 @@ export class NoSandboxError extends Error {
 
 /**
  * A turn's egress (nasi's `egress`): every tool request goes out through a sandbox, never from the API. `fetch_url`
- * (no ability) may use any sandbox the user may; an ability's requests may carry a key, so they stay on the official
- * box. Each kind keeps the sandbox it first picked for the turn, picking again only when that one disconnects.
+ * (no ability) may use any sandbox the user may; an ability's requests go where the key they carry may go
+ * ({@link keyTrust}, by `keys`; without `keys`, only the official box), and a trustedSandbox one never to a borrowed
+ * sandbox. Each trust level keeps the sandbox it first picked for the turn, picking again only when that one disconnects.
  */
-export function egressFor(userId: string): (ability?: string) => FetchLike {
+export function egressFor(userId: string, keys?: SandboxKeys): (ability?: string) => FetchLike {
   const picked = new Map<SandboxTrust, Promise<SandboxPick | undefined>>()
-  const sender = (trust: SandboxTrust): FetchLike => {
-    const pick = async () => {
-      let current = await picked.get(trust)
+  const needsTrust = trustedAbilities(userId)
+  const sendAt =
+    (trust: () => Promise<SandboxTrust>): FetchLike =>
+    async (input, init) => {
+      const level = await trust()
+      let current = await picked.get(level)
       if (!current || current.tunnel.closed) {
-        const next = pickSandbox(userId, null, { trust })
-        picked.set(trust, next)
+        const next = pickSandbox(userId, null, { trust: level })
+        picked.set(level, next)
         current = await next
       }
-      return current
-    }
-    return async (input, init) => {
-      const current = await pick()
       if (!current) throw new NoSandboxError()
       return current.tunnel.fetch(pseudonymFor(userId, current.tunnel.id), input, init)
     }
+  return ability => {
+    if (ability === undefined) return sendAt(async () => "any")
+    return sendAt(async () =>
+      keys ? strictest((await needsTrust(ability)) ? "trusted" : "any", keyTrust(keys(ability))) : "official"
+    )
   }
-  return ability => sender(ability === undefined ? "any" : "official")
 }

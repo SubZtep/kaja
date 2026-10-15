@@ -39,8 +39,9 @@ you save one).
 
 `fetch_url` runs from your own machine and IP in local mode. In the cloud it never fetches from the server:
 it goes out through an [MCP sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme), your
-own, a shared one if you allow it, or the official one. HTTP tools and remote MCP servers do the same, only
-through the official sandbox, since their requests may carry a key. With no sandbox online, these calls fail.
+own, a shared one if you allow it, or the official one. HTTP tools and remote MCP servers do the same; a call that
+carries your key only goes through your own sandbox or the official one, and one with the server's key only
+through the official one. With no sandbox online, these calls fail.
 
 The **Cloud** column is an explicit allowlist. Anything that touches the server's filesystem or shell is
 never exposed there, and code tools are never attached.

@@ -94,17 +94,22 @@ export function sandboxedMcpTarget(ability: McpAbility): McpAbilityTarget {
   }
 }
 
-/** Connects to the ability's server with `apiKey` and lists its tools, then disconnects: it works, or why not (the key never appears in the reason). */
+/**
+ * Connects to the ability's server with `apiKey` and lists its tools, then disconnects: it works, or why not (the key
+ * never appears in the reason). With `sandbox`, a stdio server starts there (the sandbox's fetch carries the key) instead
+ * of on this host.
+ */
 export async function checkMcpAbilityKey(
   ability: McpAbility,
   apiKey: string,
-  opts: { fetch?: FetchLike; timeoutMs?: number } = {}
+  opts: { fetch?: FetchLike; sandbox?: McpSandbox; timeoutMs?: number } = {}
 ): Promise<KeyCheckResult> {
-  const target = mcpAbilityTarget(ability, apiKey)
+  const sandboxed = ability.transport === "stdio" && opts.sandbox
+  const target = sandboxed ? sandboxedMcpTarget(ability) : mcpAbilityTarget(ability, apiKey)
   const timeoutMs = opts.timeoutMs ?? CHECK_TIMEOUT_MS
   const pending = connectMcpServer(target.server, "", {
     transport: target.transport === "sse" ? "sse" : "http",
-    fetch: opts.fetch,
+    fetch: sandboxed ? opts.sandbox!.fetch : opts.fetch,
     images: false
   })
   let timer: ReturnType<typeof setTimeout> | undefined

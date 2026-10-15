@@ -8,7 +8,13 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { lookupGeo, setGeoLookupOverride } from "../../src/core/geo"
-import { egressFor, mcpSandboxFor, NoSandboxError, pickSandbox } from "../../src/features/sandbox/registry"
+import {
+  egressFor,
+  mcpSandboxFor,
+  NoSandboxError,
+  pickSandbox,
+  type SandboxKeys
+} from "../../src/features/sandbox/registry"
 import { abilityService, sandboxService } from "../../src/services"
 import { signUpAndSignIn } from "./helpers"
 import { serveApi, startSandbox, waitFor } from "./sandbox-helpers"
@@ -294,6 +300,55 @@ describe("egress", () => {
       }
     } finally {
       env.SANDBOX_SYSTEM_KEY = systemKey
+      await own.close()
+    }
+  }, 30_000)
+
+  test("an ability's key decides where its calls go: the user's own key to their own sandbox, a server-wide one never", async () => {
+    const urls: string[] = []
+    const keys: SandboxKeys = name =>
+      name === "mine" ? { value: "k1", own: true } : name === "server" ? { value: "k2", own: false } : undefined
+    const own = await startSandbox({ apiUrl, abilities: [], key: await newKey(tokenA), fetch: answering("own", urls) })
+    try {
+      const egress = egressFor(userA, keys)
+      expect(await (await egress("mine")("https://api.example.com/")).text()).toBe("own")
+      expect(await (await egress("keyless")("https://open.example.com/")).text()).toBe("own")
+      await expect(egress("server")("https://api.example.com/")).rejects.toBeInstanceOf(NoSandboxError)
+    } finally {
+      await own.close()
+    }
+    const theirs = await startSandbox({
+      apiUrl,
+      abilities: [],
+      key: await newKey(tokenB),
+      fetch: answering("theirs", urls)
+    })
+    try {
+      await settings(tokenA, { useShared: true })
+      const egress = egressFor(userA, keys)
+      expect(await (await egress("keyless")("https://open.example.com/")).text()).toBe("theirs")
+      await expect(egress("mine")("https://api.example.com/")).rejects.toBeInstanceOf(NoSandboxError)
+    } finally {
+      await settings(tokenA, { useShared: false })
+      await theirs.close()
+    }
+  }, 30_000)
+
+  test("a keyed stdio server gets the user's key with each request, and only on a sandbox that key may go to", async () => {
+    const keyedAbility = `keyed-${tag}`
+    const own = await startSandbox({
+      apiUrl,
+      abilities: [keyedAbility],
+      keyed: [keyedAbility],
+      key: await newKey(tokenA)
+    })
+    try {
+      const url = `http://sandbox.invalid/mcp/${keyedAbility}`
+      expect((await mcpSandboxFor(userA).fetch(url, initialize)).status).toBe(400)
+      expect((await mcpSandboxFor(userA, () => ({ value: "k1", own: true })).fetch(url, initialize)).status).toBe(200)
+      const server = mcpSandboxFor(userA, () => ({ value: "k2", own: false }))
+      expect((await server.fetch(url, initialize)).status).toBe(503)
+    } finally {
       await own.close()
     }
   }, 30_000)
