@@ -8,7 +8,7 @@ enable_copy_code_button: true
 
 aux_links:
   "Source on GitHub":
-    - "//github.com/SubZtep/kaja"
+    - "https://github.com/SubZtep/kaja"
 aux_links_new_tab: true
 
 gh_edit_link: true
