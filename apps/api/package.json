@@ -19,7 +19,7 @@
     "@kaja/shared": "workspace:*",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
-    "@scalar/hono-api-reference": "^0.12.10",
+    "@scalar/hono-api-reference": "^0.12.11",
     "@sentry/bun": "^11.5.0",
     "@sentry/hono": "^11.5.0",
     "better-auth": "^1.7.7",
@@ -30,7 +30,7 @@
     "nodemailer": "^10.0.16",
     "pg": "^8.23.1",
     "react": "^19.3.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.6.0",

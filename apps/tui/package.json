@@ -25,13 +25,13 @@
     "marked": "^18.1.0",
     "node-notifier": "^10.0.1",
     "open": "^11.0.4",
-    "openai": "^7.30.0",
+    "openai": "^7.30.1",
     "play-sound": "^1.1.6",
     "react": "^19.3.0",
     "supports-hyperlinks": "^4.6.0",
     "terminal-image": "^5.0.1",
     "tinyclip": "^1.0.3",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/node-notifier": "^8.0.5",
