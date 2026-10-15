@@ -176,7 +176,7 @@ describe("egress proxy with an upstream proxy (WEB_PROXY)", () => {
     expect(recorder.heads).toEqual([])
   })
 
-  test("the upstream is sent the checked IP with Basic credentials, and its refusal becomes a 502", async () => {
+  test("the upstream is sent the checked IP with Basic credentials, and its refusal becomes a 502 that says why", async () => {
     const recorder = await recordingProxy("HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n")
     const counts = { open: 0, allowed: 0, refused: 0, failed: 0 }
     const port = await proxy({
@@ -185,12 +185,33 @@ describe("egress proxy with an upstream proxy (WEB_PROXY)", () => {
       upstream: `http://us%40er:p%3Ass@127.0.0.1:${recorder.port}`
     })
     expect(await exchange(port, "CONNECT site.test:443 HTTP/1.1\r\nHost: site.test:443\r\n\r\n")).toStartWith(
-      "HTTP/1.1 502"
+      "HTTP/1.1 502 Bad Gateway: WEB_PROXY answered HTTP/1.1 407 Proxy Authentication Required\r\n"
     )
     const [head = ""] = recorder.heads
     expect(head).toStartWith("CONNECT 93.184.215.14:443 HTTP/1.1\r\n")
     expect(head).toContain(`Proxy-Authorization: Basic ${Buffer.from("us@er:p:ss").toString("base64")}\r\n`)
     expect(counts).toEqual({ open: 0, allowed: 0, refused: 0, failed: 1 })
+  })
+
+  test("a tool request names the host and why WEB_PROXY failed it, never the URL's query", async () => {
+    const recorder = await recordingProxy("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n")
+    const send = sendThroughEgress(
+      await proxy({ names: { "site.test": ["93.184.215.14"] }, upstream: `http://127.0.0.1:${recorder.port}` })
+    )
+    for (const scheme of ["http", "https"]) {
+      const error = await send(new Request(`${scheme}://site.test/search?key=secret`)).catch((error: Error) => error)
+      expect((error as Error).message).toBe("Couldn't connect to site.test: WEB_PROXY answered HTTP/1.1 403 Forbidden")
+    }
+    const closed = createServer()
+    await new Promise<void>(done => closed.listen(0, "127.0.0.1", done))
+    const deadPort = (closed.address() as { port: number }).port
+    closed.close()
+    const unreachable = sendThroughEgress(
+      await proxy({ names: { "site.test": ["93.184.215.14"] }, upstream: `http://127.0.0.1:${deadPort}` })
+    )
+    await expect(unreachable(new Request("https://site.test/"))).rejects.toThrow(
+      `Couldn't connect to site.test: WEB_PROXY: connect ECONNREFUSED 127.0.0.1:${deadPort}`
+    )
   })
 
   test("only an http:// upstream is accepted", () => {

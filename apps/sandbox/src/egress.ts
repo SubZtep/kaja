@@ -13,6 +13,8 @@ const HOP_HEADERS = new Set(["connection", "keep-alive", "proxy-connection", "pr
 const NULL_BODY_STATUSES = new Set([101, 204, 205, 304])
 /** Marks the proxy's own refusals, so a plain-HTTP 403 from it isn't taken for the site's. */
 const REFUSED_HEADER = "x-kaja-egress-refused"
+/** Starts the proxy's 502 reason; why it couldn't connect (WEB_PROXY's answer, or the socket error) follows it. */
+const FAILED_REASON = "Bad Gateway: "
 
 type Resolve = (hostname: string) => Promise<string[]>
 /** Connections open now, and ones let through, refused and failed upstream since the proxy started. */
@@ -87,15 +89,26 @@ async function forward(client: Socket, head: string, rest: Buffer, deps: Deps) {
 
   const via = deps.upstream
   const upstream = createConnection(via ? { host: via.host, port: via.port } : { host: address, port })
-  upstream.setTimeout(CONNECT_TIMEOUT_MS, () => upstream.destroy(new Error("connect timeout")))
+  upstream.setTimeout(CONNECT_TIMEOUT_MS, () =>
+    upstream.destroy(new Error(`no answer in ${CONNECT_TIMEOUT_MS / 1000} s`))
+  )
   let state: "connecting" | "open" | "done" = "connecting"
+  let failure = via ? "WEB_PROXY closed without an answer" : "the connection closed"
   // Before the path is open there is still an answer to give; after it, the tunnel or response just ends.
   const end = () => {
     if (state === "open") client.destroy()
-    else if (state === "connecting") refuse(client, deps, 502, "Bad Gateway")
+    else if (state === "connecting") {
+      const target = `${hostname}:${port}`
+      console.warn("Egress couldn't connect", { target, via: via ? "WEB_PROXY" : "direct", reason: failure })
+      // Printable ASCII only, so a strange answer from WEB_PROXY can't break the head
+      refuse(client, deps, 502, `${FAILED_REASON}${failure.replace(/[^\x20-\x7e]/g, "").slice(0, 200)}`)
+    }
     state = "done"
   }
-  upstream.once("error", end)
+  upstream.once("error", error => {
+    failure = via ? `WEB_PROXY: ${error.message}` : error.message
+    end()
+  })
   upstream.once("close", end)
   const open = (early: Buffer) => {
     state = "open"
@@ -120,8 +133,9 @@ async function forward(client: Socket, head: string, rest: Buffer, deps: Deps) {
     const auth = via.auth ? `Proxy-Authorization: ${via.auth}\r\n` : ""
     upstream.write(`CONNECT ${authority} HTTP/1.1\r\nHost: ${authority}\r\n${auth}\r\n`)
     void readHead(upstream).then(answer => {
-      if (answer && /^HTTP\/1\.[01] 200 /.test(answer.head)) open(answer.rest)
-      else upstream.destroy()
+      if (answer && /^HTTP\/1\.[01] 200 /.test(answer.head)) return open(answer.rest)
+      if (answer) failure = `WEB_PROXY answered ${answer.head.split("\r\n")[0]}`
+      upstream.destroy()
     })
   })
   client.once("close", () => upstream.destroy())
@@ -187,15 +201,26 @@ export function sendThroughEgress(port: number): (request: Request) => Promise<R
     const { protocol } = new URL(request.url)
     if (protocol !== "http:" && protocol !== "https:") throw new Error(`Only http(s) URLs: ${request.url}`)
     const blocked = () => new Error(`Blocked non-public URL: ${request.url}`)
+    // Only the host: an ability's URL may carry its key in the query
+    const unreachable = (reason: string) =>
+      new Error(`Couldn't connect to ${new URL(request.url).host}: ${reason.slice(FAILED_REASON.length)}`)
     let response: Response
     try {
       response = await fetch(request, { proxy, redirect: "manual" })
     } catch (error) {
-      // An https request's CONNECT the proxy refused (a private address); its 502s stay as they are
+      // An https request's CONNECT the proxy refused (a private address) or couldn't open
       if (error instanceof Error && /tunnel: 403/.test(error.message)) throw blocked()
+      const failed = error instanceof Error ? /tunnel: 502 (Bad Gateway: .*)/.exec(error.message) : null
+      if (failed?.[1]) throw unreachable(failed[1])
       throw error
     }
     if (response.status === 403 && response.headers.has(REFUSED_HEADER)) throw blocked()
+    if (
+      response.status === 502 &&
+      response.statusText.startsWith(FAILED_REASON) &&
+      response.headers.has(REFUSED_HEADER)
+    )
+      throw unreachable(response.statusText)
     // Bun has decompressed the body already, so the encoding and length it arrived with no longer describe it.
     const headers = new Headers(response.headers)
     headers.delete("content-encoding")
