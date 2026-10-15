@@ -46,6 +46,29 @@ function qrCode(text: string): string {
     .join("\n")
 }
 
+// Cursor up one line and clear it: the hints line, which is always the last one printed.
+const ERASE_LAST_LINE = "\x1b[1A\x1b[2K"
+
+// Single-key shortcuts while the sign-in waits, before Ink owns stdin; raw mode swallows Ctrl+C, so it exits here. No pause(): under Bun a paused stdin never wakes for Ink's reader (see terminal-background.ts).
+function listenForKeys(onKey: (key: string) => void): () => void {
+  const stdin = process.stdin
+  const wasRaw = stdin.isRaw
+  stdin.setRawMode(true)
+  const onData = (chunk: Buffer | string) => {
+    const key = chunk.toString()
+    if (key === "\u0003") {
+      stdin.setRawMode(wasRaw)
+      process.exit(130)
+    }
+    onKey(key.toLowerCase())
+  }
+  stdin.on("data", onData)
+  return () => {
+    stdin.off("data", onData)
+    stdin.setRawMode(wasRaw)
+  }
+}
+
 async function resolveToken(apiUrl: string): Promise<string> {
   try {
     const stored = await loadToken()
@@ -53,21 +76,58 @@ async function resolveToken(apiUrl: string): Promise<string> {
 
     console.log(t("cli.pleaseSignIn"))
 
+    let stopKeys: (() => void) | undefined
+    let signedIn = false
     const { token } = await deviceLogin(apiUrl, async prompt => {
       const code = formatDeviceUserCode(prompt.userCode)
       const url = prompt.verificationUriComplete ?? prompt.verificationUri
-
       const palette = consolePalette()
-      console.log(`\n${t("cli.deviceLoginGoTo")} ${paint(palette.user)(prompt.verificationUri)}`)
-      console.log(`${t("cli.deviceLoginEnterCode")} ${paint(palette.warning).bold(code)}\n`)
-      console.log(`${t("cli.deviceLoginScan")}\n${qrCode(url)}\n`)
+      const showLink = () => {
+        console.log(`\n${t("cli.deviceLoginGoTo")} ${paint(palette.user)(prompt.verificationUri)}`)
+        console.log(`${t("cli.deviceLoginEnterCode")} ${paint(palette.warning).bold(code)}\n`)
+      }
+      const showQr = () => console.log(`\n${t("cli.deviceLoginScan")}\n${qrCode(url)}\n`)
 
-      // With the page open the code is already in it; otherwise it goes to the clipboard, for a browser opened by hand.
-      if (await openBrowser(url)) return
-      await writeText(code)
-      notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
-        if (error) log.warn("Device login notification failed", { error })
+      // With the page open the code is already in it, so the link and code are only a key away; otherwise they're printed, and the code goes to the clipboard for a browser opened by hand.
+      const opened = await openBrowser(url)
+      if (opened) console.log(`\n${t("cli.deviceLoginOpened")}`)
+      else {
+        showLink()
+        await writeText(code)
+        notifier.notify({ title: "Kaja", message: t("cli.deviceLoginCodeCopied") }, error => {
+          if (error) log.warn("Device login notification failed", { error })
+        })
+      }
+      if (!process.stdin.isTTY || !process.stdout.isTTY || signedIn) return
+      // Each key works once: its hint goes, and the hints line is redrawn under what it printed.
+      const shortcuts = new Map<string, { label: string; run: () => void }>()
+      if (opened) shortcuts.set("l", { label: t("cli.deviceLoginKeyLink"), run: showLink })
+      shortcuts.set("q", { label: t("cli.deviceLoginKeyQr"), run: showQr })
+      const hints = () =>
+        [...shortcuts]
+          .map(
+            ([letter, { label }]) => `${paint(palette.user).bold(letter.toUpperCase())} ${paint(palette.muted)(label)}`
+          )
+          .join("   ")
+      console.log(hints())
+      const stop = listenForKeys(letter => {
+        const shortcut = shortcuts.get(letter)
+        if (!shortcut) return
+        shortcuts.delete(letter)
+        process.stdout.write(ERASE_LAST_LINE)
+        shortcut.run()
+        if (shortcuts.size) console.log(hints())
+        else stop()
       })
+      // Signed in: the hints left over go too.
+      stopKeys = () => {
+        stop()
+        if (shortcuts.size) process.stdout.write(ERASE_LAST_LINE)
+        shortcuts.clear()
+      }
+    }).finally(() => {
+      signedIn = true
+      stopKeys?.()
     })
     const { saveAccountLocale } = await import("../lib/auth/account-locale")
     await saveAccountLocale(getLanguage())
