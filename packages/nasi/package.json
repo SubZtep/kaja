@@ -23,9 +23,9 @@
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@mozilla/readability": "^0.6.0",
-    "files-sdk": "^2.6.2",
+    "files-sdk": "^3.1.1",
     "linkedom": "^0.18.13",
-    "openai": "^7.30.0",
-    "zod": "^4.6.5"
+    "openai": "^7.34.0",
+    "zod": "^4.6.7"
   }
 }
