@@ -14,23 +14,10 @@ export async function runEgressCheck(target: string | undefined): Promise<void> 
     console.error("Usage: bun sandbox.js egress-check <http(s) URL>")
     process.exit(2)
   }
-  const proxyUrl = env.WEB_PROXY ? new URL(env.WEB_PROXY) : undefined
-  console.log(
-    `WEB_PROXY  ${proxyUrl ? `${proxyUrl.protocol}//${proxyUrl.host}${proxyUrl.username ? " (with credentials)" : ""}` : "unset, connecting directly"}`
-  )
+  console.log(`WEB_PROXY  ${describeProxy(env.WEB_PROXY)}`)
 
   const hostname = url.hostname.replace(/^\[|\]$/g, "")
-  const addresses = await lookup(hostname, { all: true }).then(
-    found => found.map(entry => entry.address),
-    (error: Error) => {
-      console.log(`Resolve    ${hostname}: ${error.message}`)
-      return []
-    }
-  )
-  if (addresses.length) {
-    const kind = addresses.every(address => !isPrivateAddress(address)) ? "public" : "includes a private address"
-    console.log(`Resolve    ${hostname} → ${addresses.join(", ")} (${kind})`)
-  }
+  const addresses = await resolve(hostname)
 
   const proxy = await startEgressProxy({ port: 0, upstream: env.WEB_PROXY })
   const port = (proxy.address() as { port: number }).port
@@ -60,6 +47,30 @@ export async function runEgressCheck(target: string | undefined): Promise<void> 
     console.log(`CONNECT    ${hostname}:${port} → ${byName}`)
   }
   process.exit(ok ? 0 : 1)
+}
+
+// WEB_PROXY without its password.
+function describeProxy(proxy: string | undefined): string {
+  if (!proxy) return "unset, connecting directly"
+  const { protocol, host, username } = new URL(proxy)
+  const credentials = username ? " (with credentials)" : ""
+  return `${protocol}//${host}${credentials}`
+}
+
+// The host's addresses, printed with whether they're all public.
+async function resolve(hostname: string): Promise<string[]> {
+  const addresses = await lookup(hostname, { all: true }).then(
+    found => found.map(entry => entry.address),
+    (error: Error) => {
+      console.log(`Resolve    ${hostname}: ${error.message}`)
+      return []
+    }
+  )
+  if (addresses.length) {
+    const kind = addresses.every(address => !isPrivateAddress(address)) ? "public" : "includes a private address"
+    console.log(`Resolve    ${hostname} → ${addresses.join(", ")} (${kind})`)
+  }
+  return addresses
 }
 
 function bracketed(address: string): string {

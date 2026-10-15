@@ -65,6 +65,7 @@ async function fetchHop(
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   const init = { method: request.method, body: request.body, redirect: "manual", signal: controller.signal } as const
   try {
+    // biome-ignore lint/nursery/useAwaitThenable: FetchLike returns a Promise; Biome misses it
     if (send) return await send(url, { ...init, headers: request.headers })
     const hop = pinned(url, pin, request.headers)
     return await fetch(hop.url, { ...hop.init, ...init })

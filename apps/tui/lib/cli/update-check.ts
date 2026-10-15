@@ -20,7 +20,7 @@ const TIMEOUT_MS = 3000
 export function manifestVersion(manifest: unknown): string | null {
   const version = (manifest as { version?: unknown } | null)?.version
   if (typeof version !== "string") return null
-  const match = /^tui@(\d+\.\d+\.\d+\S*)$/.exec(version)
+  const match = /^tui@(\d+\.\d+\.\d+(?:[-+]\S*)?)$/.exec(version)
   return match?.[1] ?? null
 }
 
