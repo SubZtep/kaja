@@ -112,6 +112,7 @@ export {
 export { recordPausedCall } from "./agent/telemetry"
 export { allowKey, isAllowed } from "./agent/tool-allow"
 export {
+  checkToolArgs,
   LOCAL_OWNER_CTX,
   runApprovedTool,
   type Tool,

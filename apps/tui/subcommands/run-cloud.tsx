@@ -158,9 +158,21 @@ export async function runCloudSubcommand() {
     // Before the sign-in prompt, which is coloured by it, and before render: "auto" queries the terminal over stdin, which Ink is about to take over
     const theme = await resolveTheme(preferences?.theme)
     const token = await resolveToken(apiUrl)
+    // This computer's tools for cloud turns, opened while the chat renders (its MCP servers take a moment); without it the chat still runs, with the cloud's tools only.
+    const { openComputer } = await import("../lib/cloud/computer")
+    const computer = openComputer().catch(error => {
+      log.warn("This computer's tools couldn't be opened for cloud chat", { error })
+      return undefined
+    })
 
     const { waitUntilExit } = render(
-      <App mode="cloud" initialPreferences={{ ...preferences, theme }} apiUrl={apiUrl} token={token} />,
+      <App
+        mode="cloud"
+        initialPreferences={{ ...preferences, theme }}
+        apiUrl={apiUrl}
+        token={token}
+        computer={computer}
+      />,
       {
         alternateScreen: true,
         kittyKeyboard: {
@@ -170,6 +182,7 @@ export async function runCloudSubcommand() {
       }
     )
     await waitUntilExit()
+    await (await computer)?.close()
     console.log(t("cli.bye"))
   } catch (error) {
     const text = error instanceof Error ? error.message : String(error)

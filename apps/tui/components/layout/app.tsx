@@ -16,6 +16,7 @@ import { useSound } from "../../hooks/use-sound"
 import { useTheme } from "../../hooks/use-theme"
 import { useVoice } from "../../hooks/use-voice"
 import type { Tool } from "../../lib/agent/agents"
+import type { Computer } from "../../lib/cloud/computer"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
 import { client, clientForModel, compactAt, summarizer } from "../../lib/models/openai"
@@ -392,8 +393,14 @@ function LocalApp({
 function CloudApp({
   initialPreferences,
   apiUrl,
-  token
-}: Readonly<{ initialPreferences?: KajaPreferences; apiUrl: string; token: string }>) {
+  token,
+  computer
+}: Readonly<{
+  initialPreferences?: KajaPreferences
+  apiUrl: string
+  token: string
+  computer?: Computer | Promise<Computer | undefined>
+}>) {
   const {
     model,
     persona,
@@ -406,16 +413,25 @@ function CloudApp({
     currentTool,
     send,
     resolveToolApproval,
+    localApproval,
     promptTokens,
     contextWindow
   } = useCloudAgent({
     baseUrl: apiUrl,
     getToken: () => Promise.resolve(token),
-    yolo: initialPreferences?.yolo
+    yolo: initialPreferences?.yolo,
+    computer
   })
 
   const lastEvent = events.at(-1)
-  const pendingEvent = !pending && lastEvent?.type === "confirm_tool" ? lastEvent : undefined
+  // A call on this computer asks while its turn is still running; a cloud approval only once the turn ended.
+  const cloudEvent = !pending && lastEvent?.type === "confirm_tool" ? lastEvent : undefined
+  const pendingEvent = localApproval?.event ?? cloudEvent
+  const resolvePending = localApproval
+    ? async (approved: boolean) => localApproval.resolve(approved)
+    : cloudEvent
+      ? resolveToolApproval
+      : undefined
 
   return (
     <Chrome
@@ -436,8 +452,8 @@ function CloudApp({
       switchPersona={switchPersona}
       pendingCommand={pendingEvent && confirmPrompt(pendingEvent)}
       runningCommand={false}
-      resolvePending={pendingEvent ? resolveToolApproval : undefined}
-      approvalScopes
+      resolvePending={resolvePending}
+      approvalScopes={!localApproval}
     />
   )
 }
@@ -466,6 +482,8 @@ type CloudAppProps = Readonly<{
   initialPreferences?: KajaPreferences
   apiUrl: string
   token: string
+  /** This computer, when cloud turns may use it (see lib/cloud/computer.ts); the first turn waits for it to open. */
+  computer?: Computer | Promise<Computer | undefined>
 }>
 
 /**

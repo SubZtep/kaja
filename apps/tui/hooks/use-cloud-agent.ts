@@ -1,7 +1,8 @@
 import { createNasiClient, type NasiClientOptions, NasiStreamError, type NasiStreamEvent } from "@kaja/nasi/client"
-import type { NasiInfoResponse } from "@kaja/schema/nasi"
+import type { NasiClientCall, NasiInfoResponse, NasiToolResult, NasiTurnRequest } from "@kaja/schema/nasi"
 import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useEffect, useRef, useState } from "react"
+import type { Approve, Computer } from "../lib/cloud/computer"
 import { getLanguage, t } from "../lib/i18n"
 
 /** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai ability into the lite bundle for nothing. */
@@ -26,7 +27,15 @@ export type CloudTimelineEvent =
   | { type: "error"; text: string; category: CloudErrorCategory }
   | { type: "notice"; text: string }
   | { type: "tool_image"; path: string; mimeType: string }
-  | Exclude<NasiStreamEvent, { type: "delta" | "usage" | "tool_image" }>
+  /** A shell command a call on this computer waits to run (only with the opted-in shell). */
+  | { type: "confirm_command"; command: string; description: string }
+  | Exclude<NasiStreamEvent, { type: "delta" | "usage" | "tool_image" | "client_tool_calls" }>
+
+/** A call on this computer waiting for the user's answer: its prompt, and how to give it. */
+export type LocalApproval = {
+  event: Extract<CloudTimelineEvent, { type: "confirm_command" | "confirm_tool" }>
+  resolve: (approved: boolean) => void
+}
 
 /** How the user answered a `confirm_tool`: once, for the rest of the session, or no. */
 export type CloudApproval = "approve" | "approve_session" | "decline"
@@ -53,10 +62,13 @@ const DELTA_INTERVAL_MS = 80
  */
 export function useCloudAgent({
   yolo,
+  computer,
   ...options
 }: NasiClientOptions & {
   /** settings.toml's `yolo`: every `confirm_tool` is approved straight away instead of asking. */
   yolo?: boolean
+  /** This computer, when cloud turns may use it: its declarations go with every turn, and it runs their calls. The first turn waits for it to open. */
+  computer?: Computer | Promise<Computer | undefined>
 }) {
   const [client] = useState(() => createNasiClient(options))
   const sessionRef = useRef<string | undefined>(undefined)
@@ -74,6 +86,18 @@ export function useCloudAgent({
   const [contextWindow, setContextWindow] = useState<number | null>(null)
   const [responseModel, setResponseModel] = useState<string | null>(null)
   const [info, setInfo] = useState<NasiInfoResponse | null>(null)
+  const [localApproval, setLocalApproval] = useState<LocalApproval | null>(null)
+  // This computer's personas (your own, local-only ones): /nasi/info lists only the catalog's, but every turn sends these.
+  const [ownPersonas, setOwnPersonas] = useState<{ id: string; label: string }[]>([])
+  useEffect(() => {
+    let cancelled = false
+    Promise.resolve(computer).then(here => {
+      if (!cancelled && here) setOwnPersonas(here.personas.map(persona => ({ id: persona.id, label: persona.label })))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [computer])
 
   // Selected persona: undefined until either /nasi/info resolves the default, or the user picks one. personaIdRef is the source of truth send() reads synchronously; selectedPersona just mirrors it for display.
   const [selectedPersona, setSelectedPersona] = useState<{ id: string; label: string } | null>(null)
@@ -114,7 +138,52 @@ export function useCloudAgent({
     setSelectedPersona({ id: event.personaId, label: event.label })
   }, [])
 
-  /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while yolo approves what the server asks about. */
+  /** Asks the user about a call on this computer, through the same prompt as a cloud approval; yolo says yes at once. */
+  const approve: Approve = useCallback(
+    request => {
+      if (yolo) return Promise.resolve(true)
+      const event: LocalApproval["event"] =
+        request.kind === "command"
+          ? { type: "confirm_command", command: request.command, description: "" }
+          : { type: "confirm_tool", id: "", name: request.name, arguments: "", summary: request.summary }
+      pushEvent(event)
+      return new Promise<boolean>(resolve =>
+        setLocalApproval({
+          event,
+          resolve: approved => {
+            setLocalApproval(null)
+            resolve(approved)
+          }
+        })
+      )
+    },
+    [yolo, pushEvent]
+  )
+
+  /** Runs the calls a turn paused for here, one at a time, each shown as a tool call; their results resume the turn. */
+  const runOnComputer = useCallback(
+    async (calls: NasiClientCall[]): Promise<NasiToolResult[]> => {
+      const here = await computer
+      const results: NasiToolResult[] = []
+      for (const call of calls) {
+        pushEvent({ type: "tool_call", name: call.name, arguments: call.arguments })
+        const result = here
+          ? await here.run(call, approve, personaIdRef.current ?? info?.persona.id)
+          : { id: call.id, text: "Error: this terminal can't run tools on the user's computer." }
+        results.push(result)
+        for (const image of result.images ?? [])
+          pushEvent({
+            type: "tool_image",
+            path: `data:${image.mimeType};base64,${image.data}`,
+            mimeType: image.mimeType
+          })
+      }
+      return results
+    },
+    [computer, approve, pushEvent, info]
+  )
+
+  /** Runs a turn (a message, or the answer to a `confirm_tool`), then keeps going while yolo approves what the server asks about and while it waits on this computer. */
   const runTurns = useCallback(
     async (first: { message: string } | { approval: CloudApproval }) => {
       setPending(true)
@@ -152,8 +221,10 @@ export function useCloudAgent({
         followPersonaSwitch(event)
       }
 
+      let clientCalls: NasiClientCall[] = []
       const handleStreamEvent = (event: NasiStreamEvent) => {
         if (event.type === "delta") handleDelta(event)
+        else if (event.type === "client_tool_calls") clientCalls = event.calls
         else if (event.type === "usage") handleUsage(event)
         else if (event.type === "tool_image")
           handleEvent({ type: "tool_image", path: event.url, mimeType: event.mimeType })
@@ -161,14 +232,21 @@ export function useCloudAgent({
         else if (!(yolo && event.type === "confirm_tool")) handleEvent(event)
       }
 
+      // Sent with every turn: what this computer runs, so the cloud never runs those itself.
+      const here = await computer
+      const declared: Partial<NasiTurnRequest> = here
+        ? { clientTools: here.tools, clientSkills: here.skills, clientPersonas: here.personas }
+        : {}
       try {
-        let request = first
+        let request: { message: string } | { approval: CloudApproval } | { toolResults: NasiToolResult[] } = first
         while (true) {
+          clientCalls = []
           // TODO: forward includeThinking (from the thinking preference) once something depends on the request
           // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
           // display is already gated client-side by the `thinking` prop threaded through Chrome.
           const gen = client.turn_stream({
             session: sessionRef.current,
+            ...declared,
             ...request,
             language: getLanguage(),
             personaId: personaIdRef.current
@@ -180,6 +258,10 @@ export function useCloudAgent({
             next = await gen.next()
           }
           sessionRef.current = next.value.session
+          if (next.value.status === "needs_client_tool") {
+            request = { toolResults: await runOnComputer(clientCalls) }
+            continue
+          }
           if (!yolo || next.value.status !== "needs_approval") break
           request = { approval: "approve" }
         }
@@ -191,7 +273,7 @@ export function useCloudAgent({
         setPending(false)
       }
     },
-    [client, pushEvent, followPersonaSwitch, yolo]
+    [client, pushEvent, followPersonaSwitch, yolo, computer, runOnComputer]
   )
 
   // `/compact [focus]`: the server summarises the session now instead of running a turn.
@@ -239,7 +321,10 @@ export function useCloudAgent({
   return {
     model: responseModel ?? info?.model ?? "kaja",
     persona: selectedPersona ?? info?.persona,
-    personas: info?.personas ?? [],
+    personas: [
+      ...(info?.personas ?? []).filter(persona => !ownPersonas.some(own => own.id === persona.id)),
+      ...ownPersonas
+    ],
     currentPersonaId: selectedPersona?.id ?? info?.persona?.id,
     switchPersona,
     tools: info?.tools ?? [],
@@ -249,6 +334,7 @@ export function useCloudAgent({
     currentTool,
     send,
     resolveToolApproval,
+    localApproval,
     promptTokens,
     contextWindow
   }
