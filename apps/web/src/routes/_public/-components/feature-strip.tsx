@@ -1,6 +1,7 @@
 import { Brain, Drama, Globe, Image, PanelsTopLeft, Puzzle } from "lucide-react"
 import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { m } from "../../../paraglide/messages.js"
+import { SectionTitle } from "./section-title"
 
 const getFeatures = () =>
   [
@@ -18,7 +19,7 @@ export function FeatureStrip() {
     <section className="relative bg-surface-2/50">
       <div className="torn-edge bg-bg" />
       <ContentWidth className="py-12 sm:py-16">
-        <h2 className="m-0 mb-6 font-bold font-display text-fg text-xl md:text-2xl">{m.features_title()}</h2>
+        <SectionTitle title={m.features_title()} />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {getFeatures().map(f => (
             <article key={f.id} className="toy-card gap-2 bg-surface p-4">
@@ -30,14 +31,6 @@ export function FeatureStrip() {
             </article>
           ))}
         </div>
-        <a
-          href="https://docs.kaja.io"
-          target="_blank"
-          rel="noopener"
-          className="mt-10 inline-block font-crt text-base text-neon"
-        >
-          {m.features_docs()} →
-        </a>
       </ContentWidth>
       <div className="torn-edge rotate-180 bg-bg" />
     </section>

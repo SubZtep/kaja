@@ -4,6 +4,7 @@ import { ContentWidth } from "../../../components/layout/ContentWidth"
 import { RunCommand } from "../../../components/sandbox/RunCommand"
 import { useApiFetch } from "../../../lib/api-fetch"
 import { m } from "../../../paraglide/messages.js"
+import { SectionTitle } from "./section-title"
 import { Sticker } from "./sticker"
 
 /** The anonymous `docker run` anyone can start a shared sandbox with, and how many are online. */
@@ -19,17 +20,24 @@ export function RunSandbox() {
   return (
     <section>
       <ContentWidth className="py-10 sm:py-16">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <h2 className="m-0 font-display font-extrabold text-3xl text-fg md:text-4xl">{m.landing_sandbox_title()}</h2>
-          {data && (
-            <Sticker rotate={-6} className="text-[10px]">
-              {m.landing_sandbox_online({ count: data.online })}
-            </Sticker>
-          )}
-        </div>
-        <p className="mb-6 max-w-2xl font-crt text-muted text-sm">{m.landing_sandbox_body()}</p>
-        <div className="max-w-3xl">
-          <RunCommand look="crt" />
+        <SectionTitle
+          title={m.landing_sandbox_title()}
+          sticker={
+            data && (
+              <Sticker rotate={-6} className="text-[10px]">
+                {m.landing_sandbox_online({ count: data.online })}
+              </Sticker>
+            )
+          }
+        />
+        <div className="grid gap-6 md:grid-cols-2 md:gap-10">
+          <div className="flex flex-col gap-3 font-crt text-muted text-sm">
+            <p className="m-0">{m.landing_sandbox_why()}</p>
+            <p className="m-0">{m.landing_sandbox_how()}</p>
+          </div>
+          <div className="min-w-0">
+            <RunCommand look="crt" />
+          </div>
         </div>
       </ContentWidth>
     </section>

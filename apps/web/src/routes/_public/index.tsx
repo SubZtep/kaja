@@ -4,9 +4,11 @@ import { getRequestHeaders, getRequestUrl } from "@tanstack/react-start/server"
 import { seo } from "../../lib/seo"
 import { m } from "../../paraglide/messages.js"
 import { cookieName, isLocale, localizeHref } from "../../paraglide/runtime.js"
+import { Channels } from "./-components/channels"
 import { FeatureStrip } from "./-components/feature-strip"
 import { Hero } from "./-components/hero"
 import { RunSandbox } from "./-components/run-sandbox"
+import { Showcase } from "./-components/showcase"
 
 /** The homepage has no locale prefix for en-GB, so the url strategy always wins there over the cookie. Redirect here once, on the actual unprefixed root request, to honor a returning visitor's saved language. */
 const getReturningVisitorLocale = createServerFn({ method: "GET" }).handler(() => {
@@ -40,7 +42,9 @@ function LandingPage() {
   return (
     <>
       <Hero />
+      <Channels />
       <FeatureStrip />
+      <Showcase />
       <RunSandbox />
     </>
   )

@@ -1,9 +1,8 @@
 import type { StartTelegramLinkResponse } from "@kaja/schema/api"
 import { cn } from "@kaja/shared/ui"
 import { useMutation } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
 import { Send } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toast } from "react-toastify"
 import { Button } from "../../../components/form/primitives/Button"
 import { useApiFetch } from "../../../lib/api-fetch"
@@ -44,57 +43,6 @@ export function TelegramConnectCta({ className }: Readonly<{ className?: string 
           </a>
         </div>
       ) : null}
-    </div>
-  )
-}
-
-const IDLE_GAPS_MS = [9000, 6500, 13000, 7500, 15000, 11000]
-const SPIN_DURATIONS_MS = [1000, 1800, 2500, 3000, 1400, 2200]
-
-/** Signed-out banner under the hero's install line; the plane takes an occasional spin. */
-export function TelegramPromo({ className }: Readonly<{ className?: string }>) {
-  const [isSpinning, setIsSpinning] = useState(false)
-
-  useEffect(() => {
-    let spins = 0
-    let idleTimeout: ReturnType<typeof setTimeout>
-    let spinTimeout: ReturnType<typeof setTimeout>
-
-    const scheduleSpin = () => {
-      idleTimeout = setTimeout(
-        () => {
-          spins++
-          setIsSpinning(true)
-          spinTimeout = setTimeout(
-            () => {
-              setIsSpinning(false)
-              scheduleSpin()
-            },
-            SPIN_DURATIONS_MS[(spins - 1) % SPIN_DURATIONS_MS.length]
-          )
-        },
-        IDLE_GAPS_MS[spins % IDLE_GAPS_MS.length]
-      )
-    }
-
-    scheduleSpin()
-
-    return () => {
-      clearTimeout(idleTimeout)
-      clearTimeout(spinTimeout)
-    }
-  }, [])
-
-  return (
-    <div className={cn("crt-frame flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", className)}>
-      <Send size={20} className={cn("shrink-0 text-neon", isSpinning && "animate-spin")} />
-      <div className="min-w-52 flex-1">
-        <p className="m-0 font-display font-extrabold text-base text-fg leading-tight">{m.hero_telegram_title()}</p>
-        <p className="mt-0.5 mb-0 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
-      </div>
-      <Link to="/signin" className="font-stamp text-[11px] text-neon uppercase">
-        {m.hero_telegram_action()}
-      </Link>
     </div>
   )
 }
