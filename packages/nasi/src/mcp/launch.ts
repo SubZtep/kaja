@@ -14,8 +14,8 @@ export type LaunchOptions = {
    * itself otherwise. Default `process.execPath`; false skips it (the sandbox, whose bun cache can't be shared between uids).
    */
   self?: string | false
-  /** Whether a manifest's `requires` entry is installed here (default {@link isInstalled}); tests pass their own. */
-  installed?: (requirement: McpRequirement) => boolean
+  /** Where the browser a `chrome` requirement drives is (default {@link findChrome}); tests pass their own. */
+  findChrome?: () => FoundChrome | undefined
 }
 
 /** A program a stdio server drives besides its runner, as a manifest's `requires` names it. */
@@ -42,13 +42,23 @@ export class McpRunnerMissingError extends Error {
   }
 }
 
-/**
- * Whether `requirement` is installed here. Chrome: where its stable channel installs itself on each OS, the one
- * chrome-devtools-mcp opens (a Chromium elsewhere isn't found by it either).
- */
+/** Whether `requirement` is installed here. */
 export function isInstalled(requirement: McpRequirement): boolean {
-  if (requirement !== "chrome") return false
-  return chromePaths().some(path => existsSync(path))
+  return requirement === "chrome" && !!findChrome()
+}
+
+/** A browser chrome-devtools-mcp can drive: `stable` it opens by itself, any other needs `--executablePath`. */
+export type FoundChrome = { path: string; stable: boolean }
+
+/** Chrome's stable channel where it installs itself, else a Chromium (installed by a distro, or on macOS). */
+export function findChrome(which: (program: string) => string | null = Bun.which): FoundChrome | undefined {
+  const stable = chromePaths().find(path => existsSync(path))
+  if (stable) return { path: stable, stable: true }
+  const chromium =
+    process.platform === "darwin"
+      ? ["/Applications/Chromium.app/Contents/MacOS/Chromium"].find(path => existsSync(path))
+      : (which("chromium") ?? which("chromium-browser") ?? undefined)
+  return chromium ? { path: chromium, stable: false } : undefined
 }
 
 function chromePaths(): string[] {
@@ -85,12 +95,17 @@ export function resolveLaunch(
   opts: LaunchOptions = {},
   folders: RootFolder[] = []
 ): StdioLaunch {
-  const installed = opts.installed ?? isInstalled
+  const chrome = ability.requires?.includes("chrome") ? (opts.findChrome ?? findChrome)() : undefined
   const missing = (ability.requires ?? [])
-    .filter(requirement => !installed(requirement))
+    .filter(requirement => requirement !== "chrome" || !chrome)
     .map(r => REQUIREMENT_LABELS[r])
+  // A Chromium isn't where the server looks for Chrome, so it's named, unless the manifest already names one.
+  const args =
+    chrome && !chrome.stable && !ability.args.some(arg => arg.startsWith("--executablePath"))
+      ? [...ability.args, `--executablePath=${chrome.path}`]
+      : ability.args
   try {
-    const launch = launchWith(ability, env, opts, folders)
+    const launch = launchWith({ ...ability, args }, env, opts, folders)
     if (missing.length) throw new McpRunnerMissingError(ability.name, [], missing)
     return launch
   } catch (error) {

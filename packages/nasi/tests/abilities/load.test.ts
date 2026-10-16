@@ -118,7 +118,7 @@ test("with an MCP sandbox, only the stdio abilities `sandboxed` names go there; 
   const loaded = await loadAbilities(storeWith([], [time, browser]), {
     mcpSandbox: { fetch: async () => new Response() },
     sandboxed: name => name === "browser",
-    launch: { which: (p: string) => p, installed: () => false }
+    launch: { which: (p: string) => p, findChrome: () => undefined }
   })
   expect(loaded.mcp.map(target => [target.name, target.sandboxed ?? false])).toEqual([
     ["time", false],
