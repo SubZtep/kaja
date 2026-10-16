@@ -56,6 +56,9 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   `kaja doctor` say what to install. A server that isn't a package takes a `command` (with `args` and `env`)
   instead, and is left out the same way when that command isn't installed. `kaja abilities` shows what each
   one runs on your machine.
+- `requires` names a program the server drives besides its runner. Today that's `chrome`, Google Chrome, which
+  `chrome-devtools` opens (its stable channel, where Chrome installs itself on each OS). Without it the ability
+  is left out too, and `kaja abilities` and `kaja doctor` say so, instead of the first tool call failing.
 - The key lives in `secrets.toml` as `[abilities.<name>] api_key`. Every key is optional: without one the
   ability is simply off, and `kaja doctor` offers to add it. `keyless = true` means the server also works
   without one (like context7, where a key only raises the limits), so the ability stays on; `kaja doctor`

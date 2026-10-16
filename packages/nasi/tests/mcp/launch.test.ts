@@ -104,3 +104,32 @@ test("a container gets each folder mounted at its own path, read-only ones so, q
     "mcp/filesystem:1"
   ])
 })
+
+test("a requirement that isn't installed leaves it out, whether or not a runner is here", () => {
+  const browser = {
+    ...ability({ package: { npm: "browser-mcp@1.0", pypi: "browser-mcp@1.0" } }),
+    requires: ["chrome" as const]
+  }
+  const missing = (run: () => unknown) => {
+    try {
+      run()
+    } catch (error) {
+      if (error instanceof McpRunnerMissingError)
+        return { needs: error.needs, requires: error.requires, message: error.message }
+      throw error
+    }
+  }
+  expect(missing(() => resolveLaunch(browser, {}, { self: SELF, installed: () => false }))).toEqual({
+    needs: [],
+    requires: ["Chrome"],
+    message: "demo needs Chrome installed"
+  })
+  expect(missing(() => resolveLaunch(browser, {}, { which: pathWith(), self: false, installed: () => false }))).toEqual(
+    {
+      needs: ["npx", "pnpm", "uvx", "pipx"],
+      requires: ["Chrome"],
+      message: "demo needs npx, pnpm, uvx, pipx and Chrome installed"
+    }
+  )
+  expect(resolveLaunch(browser, {}, { self: SELF, installed: () => true }).command).toBe(SELF)
+})

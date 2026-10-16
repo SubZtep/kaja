@@ -101,6 +101,33 @@ test("with warnUnknown, a persona naming a missing ability or tool gets a warnin
   }
 })
 
+test("with an MCP sandbox, only the stdio abilities `sandboxed` names go there; the rest start here", async () => {
+  const time = parseMcp({
+    name: "time",
+    description: "time",
+    transport: "stdio",
+    package: { pypi: "mcp-server-time@1.0" }
+  })
+  const browser = parseMcp({
+    name: "browser",
+    description: "browser",
+    transport: "stdio",
+    package: { npm: "browser-mcp@1.0" },
+    requires: ["chrome"]
+  })
+  const loaded = await loadAbilities(storeWith([], [time, browser]), {
+    mcpSandbox: { fetch: async () => new Response() },
+    sandboxed: name => name === "browser",
+    launch: { which: (p: string) => p, installed: () => false }
+  })
+  expect(loaded.mcp.map(target => [target.name, target.sandboxed ?? false])).toEqual([
+    ["time", false],
+    ["browser", true]
+  ])
+  // On the sandbox, this machine's missing Chrome doesn't matter.
+  expect(loaded.missingRunners).toEqual([])
+})
+
 test("a stdio ability nothing here can start is left out and reported, only when a persona uses it", async () => {
   const time = parseMcp({
     name: "time",
@@ -111,7 +138,7 @@ test("a stdio ability nothing here can start is left out and reported, only when
   const launch = { which: () => null }
   const loaded = await loadAbilities(storeWith([], [time]), { launch })
   expect(loaded.mcp).toEqual([])
-  expect(loaded.missingRunners).toEqual([{ name: "time", needs: ["uvx", "pipx", "docker"] }])
+  expect(loaded.missingRunners).toEqual([{ name: "time", needs: ["uvx", "pipx", "docker"], requires: [] }])
 
   const unused = await loadAbilities(storeWith([], [time]), { launch, personas: [{ id: "a", label: "A" }] })
   expect(unused.missingRunners).toEqual([])

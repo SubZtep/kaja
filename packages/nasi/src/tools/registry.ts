@@ -54,7 +54,7 @@ export type CreateToolsOptions = {
   lazyMcpAbilities?: boolean
   /** How long each MCP server gets to connect and list its tools before it's skipped. Default 10 s. */
   mcpConnectTimeoutMs?: number
-  /** Fetch for each cloud MCP ability's connection (the SSRF-guarded one, sent the ability's way); cloud MCP abilities don't connect without it. */
+  /** Fetch for each cloud MCP ability's connection (the SSRF-guarded one, sent the ability's way); cloud MCP abilities don't connect without it. Locally, only sandboxed abilities use it. */
   mcpFetch?: (ability: string) => FetchLike
   /** Cloud only: where MCP image results (screenshots) are saved for the model to see; unset drops them. Kept apart from `tempDir`, which sets the process-wide tool deps. */
   mcpImageDir?: string
@@ -241,7 +241,12 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       approval: target.approval,
       readOnly: target.readOnly,
       label: `ability:${target.name}`,
-      ...(local ? {} : { ...cloudOpts, fetch: opts.mcpFetch?.(target.name), hideArgs: target.localOnlyArgs })
+      // Locally only a sandboxed target (the user's choice) needs mcpFetch: it reaches the sandbox through the API.
+      ...(local
+        ? target.sandboxed
+          ? { fetch: opts.mcpFetch?.(target.name) }
+          : {}
+        : { ...cloudOpts, fetch: opts.mcpFetch?.(target.name), hideArgs: target.localOnlyArgs })
     },
     ...(target.sandboxed ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) } : {}),
     ...(target.roots ? { roots: target.roots, pathArgs: target.pathArgs } : {})

@@ -24,10 +24,13 @@ export type LoadedAbilities = {
   /** Enabled abilities a persona uses (any, without personas) left out because their (required) key is missing. */
   missingKeys: string[]
   /** Stdio MCP abilities a persona uses (any, without personas) left out because nothing here can start them, with the programs that would. */
-  missingRunners: { name: string; needs: string[] }[]
+  missingRunners: MissingRunner[]
   /** MCP abilities that take roots, left out because no persona that lists them gives them a folder. */
   missingRoots: string[]
 }
+
+/** A stdio ability this host can't start: the runners that would do (any one; empty when one is here), and the programs it drives that are missing (all needed). */
+export type MissingRunner = { name: string; needs: string[]; requires: string[] }
 
 export type LoadAbilitiesOptions = {
   personas?: Persona[]
@@ -39,6 +42,8 @@ export type LoadAbilitiesOptions = {
   send?: (abilityName: string) => FetchLike
   /** Where stdio MCP abilities run when the host can't start commands itself (the cloud); unset connects them as they are. */
   mcpSandbox?: McpSandbox
+  /** With `mcpSandbox`, which stdio abilities go there (a local user's choice per ability); default every one. */
+  sandboxed?: (abilityName: string) => boolean
   /** How stdio MCP abilities find a runner on this host (tests fake `which`). */
   launch?: LaunchOptions
   /** Warn about persona entries naming an ability, or a tool of one, that isn't there: on for a host whose store is every ability the user has (the CLI), off where parts are left out on purpose (the cloud). */
@@ -127,7 +132,8 @@ async function loadMcpAbility(
 ): Promise<LoadedMcpAbility> {
   const apiKey = abilityKey(ability, opts, listed, missingKeys)
   if (apiKey === null) return {}
-  if (ability.transport === "stdio" && opts.mcpSandbox) return { target: sandboxedMcpTarget(ability) }
+  if (ability.transport === "stdio" && opts.mcpSandbox && (opts.sandboxed?.(ability.name) ?? true))
+    return { target: sandboxedMcpTarget(ability) }
   if (!ability.roots && opts.warnUnknown) warnRootsIgnored(opts.personas ?? [], ability.name)
   const roots = ability.roots ? await personaRoots(opts.personas ?? [], ability) : undefined
   if (roots && Object.keys(roots).length === 0) {
@@ -146,8 +152,12 @@ async function loadMcpAbility(
 function runnerMissing(error: unknown, ability: McpAbility, listed: Set<string> | undefined): LoadedMcpAbility {
   if (!(error instanceof McpRunnerMissingError)) throw error
   if (listed && !listed.has(ability.name)) return {}
-  warn("Ability left out: nothing installed can start it", { ability: ability.name, needs: error.needs })
-  return { missingRunner: { name: ability.name, needs: error.needs } }
+  warn("Ability left out: nothing installed can start it", {
+    ability: ability.name,
+    needs: error.needs,
+    requires: error.requires
+  })
+  return { missingRunner: { name: ability.name, needs: error.needs, requires: error.requires } }
 }
 
 // Each ability's tool names, where they're known before connecting (an MCP server without a `tools` list isn't).

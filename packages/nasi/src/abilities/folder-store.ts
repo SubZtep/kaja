@@ -291,8 +291,10 @@ export type McpScanEntry = {
   domain?: string
   /** The full command line a stdio server starts with on this host, with the runner its package gets here. */
   command?: string
-  /** The programs a stdio server needs when none of them is installed (it's left out until one is). */
+  /** The runners a stdio server could start with when none of them is installed (it's left out until one is). */
   needs?: string[]
+  /** Programs a stdio server drives that aren't installed (its manifest's `requires`), e.g. Chrome. */
+  requires?: string[]
   auth?: AbilityKeyNeed
   error?: string
 }
@@ -322,12 +324,15 @@ export async function scanMcpAbilities(root: string): Promise<McpScanEntry[]> {
 }
 
 // What a stdio server runs here, or what it needs installed first.
-function stdioCommand(ability: McpAbility): Pick<McpScanEntry, "command" | "needs"> {
+function stdioCommand(ability: McpAbility): Pick<McpScanEntry, "command" | "needs" | "requires"> {
   try {
     return { command: launchLine(resolveLaunch(ability, ability.env)) }
   } catch (error) {
-    if (error instanceof McpRunnerMissingError) return { needs: error.needs }
-    throw error
+    if (!(error instanceof McpRunnerMissingError)) throw error
+    return {
+      ...(error.needs.length ? { needs: error.needs } : {}),
+      ...(error.requires.length ? { requires: error.requires } : {})
+    }
   }
 }
 

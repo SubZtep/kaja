@@ -6,7 +6,7 @@ import { loadPersonas } from "../personas/personas"
 import { getMarketplaceDir, ownAbilities } from "./abilities-file"
 
 /** One ability folder as `kaja abilities` shows it. */
-type Row = { name: string; parts: string[]; errors: string[]; auth?: AbilityKeyNeed; runs?: string; needs?: string[] }
+type Row = { name: string; parts: string[]; errors: string[]; auth?: AbilityKeyNeed; runs?: string; needs?: string }
 
 /**
  * `kaja abilities`' output: one line per ability in the marketplace folder (its parts, its key, which personas use
@@ -33,7 +33,7 @@ export async function abilityListLines(root = getMarketplaceDir()): Promise<stri
       r.parts.join(" + "),
       keyStatus(r.auth, Boolean(keys[r.name]?.api_key)),
       r.runs && t("ability.runs", { command: r.runs }),
-      r.needs && t("ability.needs", { programs: anyOf(r.needs) }),
+      r.needs && t("ability.needs", { programs: r.needs }),
       (usedBy.get(r.name) ?? []).join(", ") || t("ability.noPersona")
     ].filter(Boolean)
     lines.push(`  ${name}  ${details.join(" · ")}`)
@@ -61,7 +61,7 @@ async function scanRows(root: string): Promise<Row[]> {
     add(entry, t("ability.typeMcp"))
     if (entry.auth) row(entry.name).auth = entry.auth
     if (entry.command) row(entry.name).runs = entry.command
-    if (entry.needs) row(entry.name).needs = entry.needs
+    if (entry.needs || entry.requires) row(entry.name).needs = missingPrograms(entry.needs, entry.requires)
   }
   for (const name of await scanCodeTools(root)) add({ name }, t("ability.typeCode"))
   return [...rows.values()]
@@ -81,6 +81,12 @@ function keyStatus(auth: AbilityKeyNeed | undefined, saved: boolean): string | u
   if (!auth) return undefined
   if (saved) return t("ability.keySaved")
   return auth.keyless ? t("ability.keyless") : t("ability.noKey")
+}
+
+/** What to install so a stdio ability can start: one of its runners, and every program it drives, e.g. "uvx, pipx or docker and Chrome". */
+export function missingPrograms(needs: string[] = [], requires: string[] = []): string {
+  const parts = [...(needs.length ? [anyOf(needs)] : []), ...requires]
+  return new Intl.ListFormat(getLanguage(), { type: "conjunction" }).format(parts)
 }
 
 /** "uvx, pipx or docker", in the TUI's language. */

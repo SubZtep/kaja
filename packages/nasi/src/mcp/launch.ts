@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 import type { McpAbility, McpPackage } from "@kaja/schema/abilities"
 import type { RootFolder } from "./roots"
 
@@ -12,20 +14,50 @@ export type LaunchOptions = {
    * itself otherwise. Default `process.execPath`; false skips it (the sandbox, whose bun cache can't be shared between uids).
    */
   self?: string | false
+  /** Whether a manifest's `requires` entry is installed here (default {@link isInstalled}); tests pass their own. */
+  installed?: (requirement: McpRequirement) => boolean
 }
 
-/** Why a stdio ability can't start here: none of the programs that could run it is installed. */
+/** A program a stdio server drives besides its runner, as a manifest's `requires` names it. */
+export type McpRequirement = McpAbility["requires"][number]
+
+/** How each requirement is named to people. */
+export const REQUIREMENT_LABELS: Record<McpRequirement, string> = { chrome: "Chrome" }
+
+/** Why a stdio ability can't start here: none of the programs that could run it is installed, or one it drives isn't. */
 export class McpRunnerMissingError extends Error {
   readonly ability: string
-  /** The programs that would do, in the order they're tried, e.g. ["uvx", "pipx", "docker"]. */
+  /** The runners that would do, in the order they're tried, e.g. ["uvx", "pipx", "docker"]; empty when one is installed. */
   readonly needs: string[]
+  /** Programs it drives that are all needed and missing here, as {@link REQUIREMENT_LABELS} names them, e.g. ["Chrome"]. */
+  readonly requires: string[]
 
-  constructor(ability: string, needs: string[]) {
-    super(`${ability} needs ${needs.join(", ")} installed`)
+  constructor(ability: string, needs: string[], requires: string[] = []) {
+    const missing = [...(needs.length ? [needs.join(", ")] : []), ...requires]
+    super(`${ability} needs ${missing.join(" and ")} installed`)
     this.name = "McpRunnerMissingError"
     this.ability = ability
     this.needs = needs
+    this.requires = requires
   }
+}
+
+/**
+ * Whether `requirement` is installed here. Chrome: where its stable channel installs itself on each OS, the one
+ * chrome-devtools-mcp opens (a Chromium elsewhere isn't found by it either).
+ */
+export function isInstalled(requirement: McpRequirement): boolean {
+  if (requirement !== "chrome") return false
+  return chromePaths().some(path => existsSync(path))
+}
+
+function chromePaths(): string[] {
+  if (process.platform === "darwin") return ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
+  if (process.platform === "win32") {
+    const bases = [process.env.PROGRAMFILES, process.env["PROGRAMFILES(X86)"], process.env.LOCALAPPDATA]
+    return bases.flatMap(base => (base ? [join(base, "Google", "Chrome", "Application", "chrome.exe")] : []))
+  }
+  return ["/opt/google/chrome/chrome"]
 }
 
 type Runner = { program: string; args: (spec: string) => string[] }
@@ -48,10 +80,32 @@ const PYPI_RUNNERS: Runner[] = [
  * {@link McpRunnerMissingError} when nothing installed can start it.
  */
 export function resolveLaunch(
-  ability: Pick<McpAbility, "name" | "command" | "package" | "args">,
+  ability: Pick<McpAbility, "name" | "command" | "package" | "args"> & { requires?: McpRequirement[] },
   env: Record<string, string>,
   opts: LaunchOptions = {},
   folders: RootFolder[] = []
+): StdioLaunch {
+  const installed = opts.installed ?? isInstalled
+  const missing = (ability.requires ?? [])
+    .filter(requirement => !installed(requirement))
+    .map(r => REQUIREMENT_LABELS[r])
+  try {
+    const launch = launchWith(ability, env, opts, folders)
+    if (missing.length) throw new McpRunnerMissingError(ability.name, [], missing)
+    return launch
+  } catch (error) {
+    if (error instanceof McpRunnerMissingError && !error.requires.length && missing.length)
+      throw new McpRunnerMissingError(ability.name, error.needs, missing)
+    throw error
+  }
+}
+
+// resolveLaunch's runner part: the command, or the first runner this host has for the package.
+function launchWith(
+  ability: Pick<McpAbility, "name" | "command" | "package" | "args">,
+  env: Record<string, string>,
+  opts: LaunchOptions,
+  folders: RootFolder[]
 ): StdioLaunch {
   const which = opts.which ?? Bun.which
   if (ability.command) {
