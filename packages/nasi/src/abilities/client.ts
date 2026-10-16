@@ -1,11 +1,9 @@
 import type { NasiClientSkill, NasiClientTool, NasiToolResult } from "@kaja/schema/nasi"
-import type { Session } from "../agent/agent"
-import { imageLabel } from "../agent/describe"
-import { altFrom, type ImageParts } from "../agent/images"
+import type { Agent, Session } from "../agent/agent"
+import { altFrom, type ImageParts, storeImage } from "../agent/images"
 import { recordCall } from "../agent/telemetry"
 import { type Tool, tool, toolName } from "../agent/tools"
-import { ImageError, normalizeImage } from "../images/normalize"
-import { imageDataUrl, withImageNote } from "../images/parts"
+import { withImageNote } from "../images/parts"
 import { imageRefId } from "../store/images"
 import { viewLinkedImageTool } from "../tools/builtin/view-image"
 import type { ToolGroup } from "../tools/registry"
@@ -79,37 +77,13 @@ export function withClientAbilities(store: AbilityStore, client: NasiClient): Ab
   }
 }
 
-/** Keeps one of the client's images: its parts in the message (see `storeImage`), or why it can't be used. */
-export type KeepImage = (bytes: Uint8Array, alt: string) => Promise<{ parts: ImageParts } | { error: string }>
-
-// Without a store the image stays inline, normalised like any other.
-const keepInline: KeepImage = async (bytes, alt) => {
-  try {
-    const image = await normalizeImage(bytes)
-    const url = imageDataUrl(image)
-    return {
-      parts: [
-        { type: "text", text: imageLabel(url, image, alt) },
-        { type: "image_url", image_url: { url } }
-      ]
-    }
-  } catch (error) {
-    if (error instanceof ImageError) return { error: error.message }
-    throw error
-  }
-}
-
 /**
  * Answers the calls the session waits on with the client's results, in the order the model made them; a call without
  * one gets {@link CLIENT_GONE}. Images (normalised and kept here too: the client is untrusted, so the bytes decide what
  * they are) follow as one user message, since a tool message can't carry them; one that can't be used leaves a note in
  * its call's text. Each call's status is recorded as the client reports it (a missing one as skipped).
  */
-export async function answerClientCalls(
-  session: Session,
-  results: NasiToolResult[] = [],
-  keep: KeepImage = keepInline
-): Promise<void> {
+export async function answerClientCalls(agent: Agent, session: Session, results: NasiToolResult[] = []): Promise<void> {
   const pending = session.pendingClientCalls
   if (!pending?.length) return
   const byId = new Map(results.map(result => [result.id, result]))
@@ -118,7 +92,9 @@ export async function answerClientCalls(
     pending.map(async id => {
       const result = byId.get(id)
       const alt = altFrom(result?.text, "an image from the user's computer")
-      const kept = await Promise.all((result?.images ?? []).map(image => keep(Buffer.from(image.data, "base64"), alt)))
+      const kept = await Promise.all(
+        (result?.images ?? []).map(image => storeImage(agent, session, Buffer.from(image.data, "base64"), alt))
+      )
       return { id, result, kept }
     })
   )

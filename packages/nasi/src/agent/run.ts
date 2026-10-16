@@ -8,6 +8,7 @@ import type {
 import { withImageNote } from "../images/parts"
 import { takeLastServedModel } from "../models/client"
 import { lowerContextWindow, resolveContextWindow } from "../models/context-window"
+import { resolveImageLinks, type SessionImages } from "../store/images"
 import {
   type Agent,
   type AgentEvent,
@@ -33,6 +34,7 @@ import { ModelUnavailableError } from "./errors"
 import {
   altFrom,
   type ImageParts,
+  type PromptImage,
   resetImageCache,
   resolveImageRefs,
   sessionImagesFor,
@@ -304,17 +306,15 @@ function pushPromptToMessages(session: Session, prompt: string, images: PromptPa
 }
 
 // The prompt's images, stored, each with its label; one that can't be read becomes a note, so the model knows something was sent.
-async function promptImageParts(
-  agent: Agent,
-  session: Session,
-  prompt: string,
-  images: (string | Uint8Array)[]
-): Promise<PromptPart[]> {
-  // An approved tool's images come with its answer: what the tool said about them is their alt text.
-  const alt = session.pendingToolApprovalId
-    ? altFrom(prompt, "an image from the approved tool")
-    : "an image the user sent"
-  const stored = await Promise.all(images.map(image => storeImage(agent, session, image, alt)))
+async function promptImageParts(agent: Agent, session: Session, images: PromptImage[]): Promise<PromptPart[]> {
+  // An approved tool's images carry what it said about them; anything else is the user's
+  const stored = await Promise.all(
+    images.map(image =>
+      typeof image === "object" && "alt" in image
+        ? storeImage(agent, session, image.data, image.alt)
+        : storeImage(agent, session, image, "an image the user sent")
+    )
+  )
   return stored.flatMap(image =>
     "parts" in image
       ? image.parts
@@ -622,7 +622,7 @@ async function openTurn(
   session: Session,
   prompt: string | undefined,
   owner: string | null,
-  images: (string | Uint8Array)[]
+  images: PromptImage[]
 ): Promise<void> {
   const messages = session.messages
   if (messages.length === 0) {
@@ -631,8 +631,7 @@ async function openTurn(
   } else {
     await refreshAbilitiesInPrompt(agent, messages, owner)
   }
-  if (prompt !== undefined)
-    pushPromptToMessages(session, prompt, await promptImageParts(agent, session, prompt, images))
+  if (prompt !== undefined) pushPromptToMessages(session, prompt, await promptImageParts(agent, session, images))
 }
 
 // Records the telemetry step for the round whose message was just appended.
@@ -749,17 +748,28 @@ export async function* run(
   prompt: string | undefined,
   session: Session,
   owner: string | null = LOCAL_OWNER,
-  images: (string | Uint8Array)[] = []
+  images: PromptImage[] = []
 ): AsyncGenerator<AgentEvent, void, void> {
+  const stored = sessionImagesFor(agent, session)
   try {
-    yield* runTurn(agent, prompt, session, owner, images)
-    // A turn ends with its images' descriptions in, so the session the host saves keeps them.
-    yield* described(await applyDescriptions(session, true))
+    for await (const event of runTurn(agent, prompt, session, owner, images)) yield placeImageLinks(event, stored)
+    // A blind model's session waits for its descriptions; one that sees takes those written so far, the rest next turn.
+    yield* described(await applyDescriptions(session, !seesImages(agent)))
   } finally {
-    // A turn that ended early (an error, the host stopped reading) takes the descriptions written so far, without
-    // waiting for the rest, which are still kept beside their images.
+    // An early end takes what's written so far; the rest are still kept beside their images.
     await applyDescriptions(session, false)
+    // Dropped as the run ends, not as the next starts, so what a host stored just before it (a client's results) stays
+    resetImageCache(session)
   }
+}
+
+// A reply's `kaja-image:` links as where its images open, so every host gets them placed; the session keeps the refs.
+function placeImageLinks(event: AgentEvent, images: SessionImages): AgentEvent {
+  const place = (text: string) => resolveImageLinks(text, id => images.location(id))
+  if (event.type === "message") return { ...event, content: place(event.content) }
+  if (event.type === "final" && event.content) return { ...event, content: place(event.content) }
+  if (event.type === "ask_user") return { ...event, question: place(event.question) }
+  return event
 }
 
 // The descriptions just put into labels, as events for the hosts' image rows.
@@ -772,10 +782,9 @@ async function* runTurn(
   prompt: string | undefined,
   session: Session,
   owner: string | null,
-  images: (string | Uint8Array)[]
+  images: PromptImage[]
 ): AsyncGenerator<AgentEvent, void, void> {
   const messages = session.messages
-  resetImageCache(session)
   await syncPersonaTools(agent)
   await openTurn(agent, session, prompt, owner, images)
 

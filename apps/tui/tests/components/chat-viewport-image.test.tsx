@@ -2,7 +2,6 @@ import { expect, spyOn, test } from "bun:test"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Box } from "ink"
-import { ImageLinkContext } from "../../components/elem/image-links"
 import { ChatViewport } from "../../components/layout/chat-viewport"
 import type { TimelineEvent } from "../../hooks/use-agent"
 import * as renderImage from "../../lib/image/render-terminal-image"
@@ -31,11 +30,9 @@ function slowArrivals() {
 
 function render(events: TimelineEvent[]) {
   return renderForTest(
-    <ImageLinkContext value={ref => (ref === REF ? IMAGE : undefined)}>
-      <Box flexDirection="column" width={120} height={30}>
-        <ChatViewport events={events} thinking={false} partial={null} pending={false} sounds={false} />
-      </Box>
-    </ImageLinkContext>,
+    <Box flexDirection="column" width={120} height={30}>
+      <ChatViewport events={events} thinking={false} partial={null} pending={false} sounds={false} />
+    </Box>,
     { columns: 120, rows: 30 }
   )
 }
@@ -59,7 +56,7 @@ const turn: TimelineEvent[] = [
   { type: "tool_image", mimeType: "image/png", path: IMAGE, ref: REF, alt: "Viewing image: /tmp/444_first.jpeg" },
   {
     type: "final",
-    content: `![First image on 444.hu](${REF})\n\nThe lead picture is the hero image of the top article.`
+    content: `![First image on 444.hu](${IMAGE})\n\nThe lead picture is the hero image of the top article.`
   }
 ]
 

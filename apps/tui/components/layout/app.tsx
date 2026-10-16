@@ -23,7 +23,6 @@ import { client, clientForModel, compactAt, describer, summarizer } from "../../
 import type { Persona } from "../../lib/personas/personas"
 import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
-import { ImageLinkContext } from "../elem/image-links"
 import { themeFor } from "../theme"
 import { ChatViewport } from "./chat-viewport"
 import { type ApprovalScope, ConfirmCommand } from "./confirm-command"
@@ -308,7 +307,6 @@ function LocalApp({
 }>) {
   const {
     displayModel,
-    imageLink,
     persona,
     switchPersona: switchPersonaAgent,
     events,
@@ -367,31 +365,29 @@ function LocalApp({
   const provider = models.find(m => m.model === displayModel)?.provider
 
   return (
-    <ImageLinkContext value={imageLink}>
-      <Chrome
-        mode="local"
-        personaLabel={persona.label}
-        model={displayModel}
-        provider={provider}
-        promptTokens={promptTokens}
-        contextWindow={contextWindow}
-        currentTool={currentTool}
-        events={events}
-        partial={partial}
-        pending={pending}
-        send={send}
-        initialPreferences={initialPreferences}
-        personaModels={persona.models}
-        history={promptHistory}
-        capabilities={{ persona: true, voice: true }}
-        personas={personas}
-        currentPersonaId={persona.id}
-        switchPersona={switchPersona}
-        pendingCommand={pendingCommand}
-        runningCommand={runningCommand}
-        resolvePending={resolvePending}
-      />
-    </ImageLinkContext>
+    <Chrome
+      mode="local"
+      personaLabel={persona.label}
+      model={displayModel}
+      provider={provider}
+      promptTokens={promptTokens}
+      contextWindow={contextWindow}
+      currentTool={currentTool}
+      events={events}
+      partial={partial}
+      pending={pending}
+      send={send}
+      initialPreferences={initialPreferences}
+      personaModels={persona.models}
+      history={promptHistory}
+      capabilities={{ persona: true, voice: true }}
+      personas={personas}
+      currentPersonaId={persona.id}
+      switchPersona={switchPersona}
+      pendingCommand={pendingCommand}
+      runningCommand={runningCommand}
+      resolvePending={resolvePending}
+    />
   )
 }
 

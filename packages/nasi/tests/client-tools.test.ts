@@ -1,9 +1,9 @@
-import { expect, test } from "bun:test"
+import { expect, spyOn, test } from "bun:test"
 import { answerClientCalls, CLIENT_GONE, clientToolGroups } from "../src/abilities/client"
 import type { AbilityStore } from "../src/abilities/types"
-import type { Session } from "../src/agent/agent"
+import { Agent, type Session } from "../src/agent/agent"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
-import { createMemoryStore } from "../src/store"
+import { createMemoryStore, memoryObjects } from "../src/store"
 import { mcpAbility } from "./fixtures/abilities"
 import { TINY_PNG_BASE64 } from "./fixtures/images"
 
@@ -54,7 +54,8 @@ function open(script: Parameters<typeof fakeClient>[0], sent: Sent[], extra?: Pa
 
 test("a round's client calls pause the turn together, and their results resume it", async () => {
   const sent: Sent[] = []
-  const store = createMemoryStore()
+  const objects = memoryObjects()
+  const store = createMemoryStore({ objects })
   const script = [
     { content: null, tool_calls: [call("c1", "read_file", { path: "/a" }), call("c2", "read_file", { path: "/b" })] },
     { content: "Both read." }
@@ -70,7 +71,9 @@ test("a round's client calls pause the turn together, and their results resume i
     ]
   })
 
-  // A later turn opens its own instance, as the API does.
+  // A later turn opens its own instance, as the API does. The results' images are sent from what was just stored,
+  // never fetched back from the store
+  const get = spyOn(objects, "get")
   const second = await (await open(script.slice(1), sent, { store })).turnBuffered({
     session: first.session,
     toolResults: [
@@ -86,6 +89,8 @@ test("a round's client calls pause the turn together, and their results resume i
     ["c2", "beta"]
   ])
   expect(JSON.stringify(resumed.at(-1))).toContain(`data:image/png;base64,${TINY_PNG_BASE64}`)
+  expect(get.mock.calls.filter(([key]) => !key.endsWith(".json"))).toEqual([])
+  get.mockRestore()
 })
 
 test("a message instead of results answers the waiting calls as gone, then goes on", async () => {
@@ -150,7 +155,7 @@ test("the cloud's copy of an ability the client declares is left out, and load_s
 
 test("each answered call's status goes into telemetry as the client reports it; an unanswered one is skipped", async () => {
   const session: Session = { messages: [], pendingClientCalls: ["a", "b", "c", "d"] }
-  await answerClientCalls(session, [
+  await answerClientCalls(new Agent({ model: "m", tools: [] }), session, [
     { id: "a", text: "fine" },
     { id: "b", text: "Error: no such file", status: "error" },
     { id: "c", text: "User declined this request.", status: "declined" }

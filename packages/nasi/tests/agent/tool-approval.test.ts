@@ -165,6 +165,23 @@ test("an approved tool's images reach the model with its answer, normalised", as
   expect((await new Bun.Image(Buffer.from(url.split(",")[1]!, "base64")).metadata()).width).toBe(1568)
 })
 
+test("a photo the user sends instead of approving is labelled as theirs, not with the skipped call's note", async () => {
+  const session = createSession()
+  session.pendingToolApprovalId = "c1"
+  session.messages.push(
+    { role: "user", content: "file it" },
+    {
+      role: "assistant",
+      content: null,
+      tool_calls: [{ id: "c1", type: "function", function: { name: "create_issue", arguments: "{}" } }]
+    }
+  )
+  const photo = `data:image/png;base64,${Buffer.from(png(4, 4)).toString("base64")}`
+  const prompt = "Not run: the user didn't approve it and wrote instead: here it is"
+  await collect(run(agentWith([{ content: "Got it." }]), prompt, session, undefined, [photo]))
+  expect(JSON.stringify(session.messages)).toContain("(4×4): an image the user sent]")
+})
+
 test("yolo runs a tool that would ask, and a command that isn't safe, without pausing", async () => {
   const { runCommandTool } = await import("../../src/agent/agent")
   executed = []

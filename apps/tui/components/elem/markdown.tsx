@@ -7,7 +7,6 @@ import { dedent } from "../../lib/markdown/dedent"
 import { markedTerminal } from "../../lib/markdown/marked-terminal"
 import { type Palette, paint, usePalette } from "../theme"
 import { type CodeView, CodeViewContext, useReportOverflow } from "./code-expand"
-import { useImageLink } from "./image-links"
 import { TerminalImage } from "./terminal-image"
 
 // cli-highlight's token colours from the palette, in the spirit of its default theme
@@ -162,11 +161,10 @@ export function splitSegments(source: string): Segment[] {
   return segments
 }
 
-// A reply's image; a kaja-image: link is drawn from where the host places it, else (a reply still streaming in the cloud, before the API swaps in its URL) it's just its alt text.
+// A reply's image; a kaja-image: link nasi hasn't placed yet (a reply still streaming) is just its alt text.
 function ReplyImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
-  const placed = useImageLink()(href)
-  if (href.startsWith("kaja-image:") && !placed) return <Text dimColor>{alt || "[image]"}</Text>
-  return <TerminalImage href={placed ?? href} alt={alt} />
+  if (href.startsWith("kaja-image:")) return <Text dimColor>{alt || "[image]"}</Text>
+  return <TerminalImage href={href} alt={alt} />
 }
 
 // memo() so scroll ticks (which re-render mounted subtrees) skip items

@@ -43,6 +43,8 @@ export type SessionImages = {
   /** Stores an image once; `ref` is what the message holds, `key` its object key. */
   put(image: SessionImage): Promise<{ ref: string; key?: string }>
   get(id: string): Promise<SessionImage | undefined>
+  /** Where a viewer opens the image: its public URL, or its file; undefined where the host has none. */
+  location(id: string): string | undefined
   /** Keeps an image's description beside it (`<key>.json`), with the model that wrote it. */
   describe(id: string, description: string, model: string): Promise<void>
   /** The description kept beside an image, if one was written. */
@@ -75,6 +77,7 @@ export function objectSessionImages(objects: ObjectStore, prefix: string): Sessi
       // The bytes say what they are: a folder keeps no content type.
       return { data, mimeType: await typeOf(data) }
     },
+    location: id => objects.location?.(imageKey(prefix, id)),
     async describe(id, description, model) {
       const sidecar = { description, model, at: new Date().toISOString() }
       await objects.put(`${imageKey(prefix, id)}.json`, JSON.stringify(sidecar), "application/json")
@@ -93,6 +96,7 @@ export function objectSessionImages(objects: ObjectStore, prefix: string): Sessi
 export const inlineImages: SessionImages = {
   put: image => Promise.resolve({ ref: imageDataUrl(image) }),
   get: () => Promise.resolve(undefined),
+  location: () => undefined,
   describe: () => Promise.resolve(),
   description: () => Promise.resolve(undefined),
   clear: () => Promise.resolve()

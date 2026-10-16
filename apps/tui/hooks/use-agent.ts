@@ -1,12 +1,10 @@
 import {
   compact,
-  imageKey,
-  imageRefId,
+  type PromptImage,
   recordPausedCall,
   replyLanguageInstructionFor,
   runApprovedTool,
-  samplingOf,
-  sessionImagePrefix
+  samplingOf
 } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
@@ -17,6 +15,7 @@ import {
   Agent,
   type AgentDelta,
   applyPersona,
+  applyVisionPin,
   createSession,
   type FinalizedAgentEvent,
   run,
@@ -28,7 +27,7 @@ import { timelineEvent } from "../lib/agent/timeline"
 import { getLanguage, t } from "../lib/i18n"
 import { withDescription } from "../lib/image/rows"
 import { log } from "../lib/logger"
-import { peekStore, storedImagePath } from "../lib/memory/store"
+import { peekStore } from "../lib/memory/store"
 import type { Persona } from "../lib/personas/personas"
 import { createSessionRow, updateSessionRow } from "../lib/session/store"
 
@@ -42,10 +41,7 @@ export type TimelineEvent =
   | { type: "error"; text: string; category: ErrorCategory }
   /** A line from the app itself, e.g. that `/compact` found nothing to do. */
   | { type: "notice"; text: string }
-  /**
-   * A tool's image: `path` shows it (its stored file, a URL, or a data URL), `alt` its text until
-   * `description` is written; `key` is the stored object a saved timeline keeps.
-   */
+  /** A tool's image: `path` shows it, `alt` until `description` is in; `key` is what a saved timeline keeps. */
   | {
       type: "tool_image"
       path: string
@@ -130,6 +126,7 @@ export function useAgent(
         ? models.find(m => m.id === startingPersona.models!.chat && m.task === "chat")
         : undefined)
     if (startingModel) created.setModel(startingModel)
+    applyVisionPin(created, startingPersona)
     return created
   })
   const sessionRef = useRef<Session>(undefined)
@@ -264,7 +261,7 @@ export function useAgent(
   )
 
   const send = useCallback(
-    async (prompt: string, showUserEvent = true, images: Uint8Array[] = []) => {
+    async (prompt: string, showUserEvent = true, images: PromptImage[] = []) => {
       const focus = showUserEvent ? commandArgument(prompt, "compact") : undefined
       if (focus !== undefined) return compactNow(prompt, focus)
       setPending(true)
@@ -357,16 +354,8 @@ export function useAgent(
     [agent, send, runningCommand]
   )
 
-  // A reply's kaja-image: link, as the current session's stored file.
-  const imageLink = useCallback((ref: string) => {
-    const id = imageRefId(ref)
-    const session = sessionRef.current?.id
-    return id && session ? storedImagePath(imageKey(sessionImagePrefix(session), id)) : undefined
-  }, [])
-
   return {
     agent,
-    imageLink,
     model,
     /** Provider-reported model from the last completion; falls back to the request model when none yet. */
     displayModel: responseModel ?? model,

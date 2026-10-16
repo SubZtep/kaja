@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test"
+import { expect, spyOn, test } from "bun:test"
 import { ImageError, MAX_IMAGE_BYTES, MAX_IMAGE_EDGE, normalizeImage } from "../../src/images/normalize"
 import { jpeg, png } from "../fixtures/images"
 
@@ -42,4 +42,17 @@ test("bytes that aren't an image are refused with a reason", async () => {
   expect(refused).toBeInstanceOf(ImageError)
   expect(refused.code).toBe("not-an-image")
   expect(refused.message).toBe("not an image")
+})
+
+test("a decoder failure it has no words for is still an ImageError, so the turn goes on", async () => {
+  const image = spyOn(Bun, "Image").mockImplementation((() => {
+    throw Object.assign(new Error("Image: something new"), { code: "ERR_IMAGE_SOMETHING_NEW" })
+  }) as never)
+  try {
+    const refused = await normalizeImage(png(4, 4)).catch(error => error)
+    expect(refused).toBeInstanceOf(ImageError)
+    expect(refused.code).toBe("undecodable")
+  } finally {
+    image.mockRestore()
+  }
 })

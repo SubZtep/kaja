@@ -64,6 +64,7 @@ export {
   type AgentEvent,
   ASK_USER_TOOL,
   applyPersona,
+  applyVisionPin,
   askUserTool,
   type CallStat,
   type CallStatus,
@@ -98,6 +99,7 @@ export {
 } from "./agent/compaction"
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "./agent/errors"
+export type { PromptImage } from "./agent/images"
 export { samplingOf } from "./agent/persona"
 export { activePersona, personaTools, syncPersonaTools } from "./agent/persona-tools"
 export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"

@@ -12,11 +12,12 @@ const editFormSchema = z.object({
   providerId: z.string().min(1, m.models_validation_required()),
   model: z.string().min(1, m.models_validation_required()),
   tasks: z.array(z.string()).min(1, m.models_validation_select_task()),
+  textOnly: z.boolean(),
   // Blank means detect it from the provider.
   contextWindow: z.string().regex(/^\d*$/, m.models_validation_context_window())
 })
 
-/** Edits an existing model's provider, name, tasks and context window; clearing the window goes back to asking the provider. */
+/** Edits an existing model's provider, name, tasks, whether it takes images and context window; clearing the window goes back to asking the provider. */
 export function EditModelDialog({
   model,
   providers,
@@ -37,6 +38,7 @@ export function EditModelDialog({
       providerId: model.providerId,
       model: model.model,
       tasks: model.tasks as string[],
+      textOnly: !model.images,
       contextWindow: model.contextWindow ? String(model.contextWindow) : ""
     },
     validators: { onSubmit: editFormSchema },
@@ -45,6 +47,7 @@ export function EditModelDialog({
         providerId: value.providerId,
         model: value.model.trim(),
         tasks: value.tasks as ModelTask[],
+        images: !value.textOnly,
         contextWindow: Number(value.contextWindow) || null
       })
       // Closed here rather than by a Dialog.Close on the submit button, so a validation error or a
@@ -95,6 +98,9 @@ export function EditModelDialog({
                   <TaskCheckboxes value={field.state.value} onChange={value => field.handleChange(value)} />
                 </div>
               )}
+            </form.AppField>
+            <form.AppField name="textOnly">
+              {field => <field.CheckboxField label={m.models_field_text_only()} />}
             </form.AppField>
             <form.AppField name="contextWindow">
               {field => (

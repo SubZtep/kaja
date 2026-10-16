@@ -3,14 +3,11 @@ import {
   type AgentDelta,
   categorizeError,
   type FinalizedAgentEvent,
-  imageKey,
   LOAD_SKILL_TOOL,
   listCloudToolNames,
   personaAbilities,
   personaGetsBuiltin,
-  personaLoadsSkills,
-  resolveImageLinks,
-  sessionImagePrefix
+  personaLoadsSkills
 } from "@kaja/nasi"
 import {
   NasiCompactRequestSchema,
@@ -126,12 +123,8 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   image_described: "image_described"
 }
 
-/**
- * What the client gets for an event: as is, except a tool image, stored by now, which goes as its public URL, and a reply's `kaja-image:` links, which become their images' public URLs.
- */
-function sseEvent(event: FinalizedAgentEvent | AgentDelta, imageAt: (id: string) => string | undefined): object {
-  if (event.type === "message") return { ...event, content: resolveImageLinks(event.content, imageAt) }
-  if (event.type === "final" && event.content) return { ...event, content: resolveImageLinks(event.content, imageAt) }
+// An event as the client gets it: as is (nasi placed the reply's image links), a tool image as its public URL
+function sseEvent(event: FinalizedAgentEvent | AgentDelta): object {
   if (event.type !== "tool_image") return event
   const { mimeType, key, ref, alt } = event
   const url = key ? imageUrl(key) : ref
@@ -162,19 +155,14 @@ nasiRoutes.post("/turn/stream", async c => {
     stream.onAbort(() => clearInterval(heartbeat))
 
     try {
-      let sessionId = body.session
-      const imageAt = (id: string) =>
-        sessionId ? imageUrl(imageKey(sessionImagePrefix(sessionId, user.id), id)) : undefined
-      const gen = openUserTurnStream(user.id, body, id => {
-        sessionId = id
-      })
+      const gen = openUserTurnStream(user.id, body)
       let next = await gen.next()
       while (!next.done) {
         const name = SSE_EVENT_NAME[next.value.type]
         if (name)
           await stream.writeSSE({
             event: name,
-            data: JSON.stringify(sseEvent(next.value, imageAt))
+            data: JSON.stringify(sseEvent(next.value))
           })
         next = await gen.next()
       }

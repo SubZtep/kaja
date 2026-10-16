@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 import { z } from "zod"
-import { Agent, type AgentEvent, createSession, seesImages, tool } from "../../src/agent/agent"
+import { Agent, type AgentEvent, applyPersona, createSession, seesImages, tool } from "../../src/agent/agent"
 import { run } from "../../src/agent/run"
 import { Nasi } from "../../src/nasi"
-import { createMemoryStore, IMAGE_REF_PREFIX, imageId, resolveImageLinks } from "../../src/store"
+import { createMemoryStore, IMAGE_REF_PREFIX, imageId, memoryObjects, resolveImageLinks } from "../../src/store"
 import { TINY_PNG, TINY_PNG_BASE64 } from "../fixtures/images"
 
 type SentMessage = { role: string; content?: unknown }
@@ -67,11 +67,15 @@ test("a chat model that can't see gets the image's description, not its pixels, 
   expect(labelled(sent[0]!)).not.toContain("image_url")
 })
 
-test("a description replaces the alt text in the saved session, and is kept beside the image for next time", async () => {
+test("a blind model's saved session has the description in place of the alt text, kept beside the image for next time", async () => {
   const store = createMemoryStore()
   const { asked, describer: vision } = describer()
   const open = (sent: SentMessage[][]) =>
-    Nasi.open({ store, chat: { client: chat(["Seen."], sent) as never, model: "sees" }, describer: vision })
+    Nasi.open({
+      store,
+      chat: { client: chat(["Seen."], sent) as never, model: "blind", seesImages: false },
+      describer: vision
+    })
   const first = await (await open([])).turnBuffered({ message: "look", images: [PHOTO] })
   const saved = (await store.loadSession(first.session))!.session.messages.find(m => m.role === "user")!
   expect(JSON.stringify(saved.content)).toContain(`(1×1): ${DESCRIPTION}`.replaceAll('"', '\\"'))
@@ -83,6 +87,18 @@ test("a description replaces the alt text in the saved session, and is kept besi
   expect(asked).toHaveLength(1)
   expect(labelled(sent[0]!).split(DESCRIPTION.slice(0, 12)).length - 1).toBe(2)
 })
+
+test("a chat model that sees doesn't wait for a description at the turn's end", async () => {
+  // Never answers: a turn that waited would hang for the describe timeout
+  const hung = { client: { chat: { completions: { create: () => new Promise(() => {}) } } } as never, model: "v" }
+  const nasi = await Nasi.open({
+    store: createMemoryStore(),
+    chat: { client: chat(["Seen."], []) as never, model: "sees" },
+    describer: hung
+  })
+  const done = await nasi.turnBuffered({ message: "look", images: [PHOTO] })
+  expect(done.status).toBe("completed")
+}, 10_000)
 
 test("an image whose description fails keeps its alt text, and the turn goes on", async () => {
   const sent: SentMessage[][] = []
@@ -97,11 +113,18 @@ test("an image whose description fails keeps its alt text, and the turn goes on"
   expect(labelled(sent[0]!)).toContain(`[Image ${LINK} (1×1): an image the user sent]`)
 })
 
-test("a chat model sees images when its models.toml entry lists vision; with no entries to tell, it's assumed to", () => {
-  const entry = (task: "chat" | "vision") => ({ id: "m", model: "m", task, baseUrl: "http://x", provider: "p" })
+test("a chat model sees images unless its models.toml entry says images = false", () => {
+  const entry = (images?: boolean) => ({
+    id: "m",
+    model: "m",
+    task: "chat" as const,
+    baseUrl: "http://x",
+    provider: "p",
+    ...(images === undefined ? {} : { images })
+  })
   const agent = (models: ReturnType<typeof entry>[]) => new Agent({ model: "m", tools: [], models })
-  expect(seesImages(agent([entry("chat")]))).toBe(false)
-  expect(seesImages(agent([entry("chat"), entry("vision")]))).toBe(true)
+  expect(seesImages(agent([entry()]))).toBe(true)
+  expect(seesImages(agent([entry(false)]))).toBe(false)
   expect(seesImages(agent([]))).toBe(true)
   expect(seesImages(new Agent({ model: "m", tools: [], chatSeesImages: false }))).toBe(false)
 })
@@ -139,6 +162,8 @@ test("a tool image's event carries its alt text, and an image_described event fo
     model: "m",
     client: client as never,
     tools: [snap],
+    // Blind, so the turn waits for the description at its end
+    chatSeesImages: false,
     describer: vision,
     store: createMemoryStore()
   })
@@ -159,4 +184,32 @@ test("a reply's kaja-image: links become their images' URLs; one with nowhere to
   expect(resolveImageLinks(text, url)).toBe(
     "Here: ![a cat](https://img/0123456789abcdef) and ![a dog](kaja-image:fedcba9876543210)"
   )
+})
+
+test("a reply's kaja-image: links reach every host placed where their images open; the session keeps the refs", async () => {
+  const store = createMemoryStore({ objects: { ...memoryObjects(), location: key => `https://img/${key}` } })
+  const nasi = await Nasi.open({
+    store,
+    chat: { client: chat([`Here: ![a square](${LINK})`], []) as never, model: "m" }
+  })
+  const done = await nasi.turnBuffered({ message: "show it", images: [PHOTO] })
+  expect(done.message).toBe(`Here: ![a square](https://img/images/${done.session}/${imageId(TINY_PNG)})`)
+  const saved = (await store.loadSession(done.session))!.session.messages.at(-1)!
+  expect(saved.content).toBe(`Here: ![a square](${LINK})`)
+})
+
+test("a persona's models.vision pin describes its images; one without goes back to the host's describer", () => {
+  const { describer: host } = describer()
+  const pinned = { id: "local-vlm", model: "vlm", task: "vision" as const, baseUrl: "http://x", provider: "p" }
+  const agent = new Agent({
+    model: "m",
+    tools: [],
+    models: [pinned],
+    describer: host,
+    createClient: model => ({ for: model.id }) as never
+  })
+  applyPersona(agent, { id: "eyes", label: "Eyes", instructions: "", models: { vision: "local-vlm" } } as never)
+  expect(agent.describer).toEqual({ client: { for: "local-vlm" } as never, model: "vlm" })
+  applyPersona(agent, { id: "plain", label: "Plain", instructions: "" } as never)
+  expect(agent.describer).toBe(host)
 })

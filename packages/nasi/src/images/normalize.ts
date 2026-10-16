@@ -18,8 +18,8 @@ const FALLBACK_EDGE = 1024
 export class ImageError extends Error {
   readonly code: "not-an-image" | "unsupported" | "too-large" | "undecodable"
 
-  constructor(message: string, code: ImageError["code"]) {
-    super(message)
+  constructor(message: string, code: ImageError["code"], options?: ErrorOptions) {
+    super(message, options)
     this.name = "ImageError"
     this.code = code
   }
@@ -89,7 +89,7 @@ async function decoding<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-function imageError(error: unknown): unknown {
+function imageError(error: unknown): ImageError {
   const code = (error as { code?: string })?.code
   switch (code) {
     case "ERR_IMAGE_UNKNOWN_FORMAT":
@@ -104,6 +104,7 @@ function imageError(error: unknown): unknown {
     case "ERR_IMAGE_DECODE_FAILED":
       return new ImageError("the image is damaged and can't be read", "undecodable")
     default:
-      return error
+      // Any other decoder failure is still this image's, never a reason to end the turn
+      return new ImageError("the image can't be read", "undecodable", { cause: error })
   }
 }

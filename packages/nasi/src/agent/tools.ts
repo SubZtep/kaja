@@ -3,6 +3,7 @@ import type { ChatCompletionFunctionTool, ChatCompletionTool } from "openai/reso
 import { z } from "zod"
 import type { SessionImages } from "../store/images"
 import type { NasiStore } from "../store/types"
+import { altFrom, type PromptImage } from "./images"
 
 /** Identifies who's talking to a {@link Tool}'s `execute`, and which persona is active — `owner` is `null` for a terminal session, `"telegram:<id>"` for a Telegram user; `personaId` mirrors {@link Agent.personaId}. Supplied by {@link run}, never by the model. */
 export type ToolContext = {
@@ -164,8 +165,8 @@ export function toolName(t: Tool): string {
   return t.definition.function.name
 }
 
-/** What an approved call returned: its text, and the bytes of any images, for the host to pass to `run()` with it. */
-export type ApprovedToolResult = { text: string; images: Uint8Array[] }
+/** What an approved call returned: its text, and its images labelled by it, for the host to pass to `run()` with it. */
+export type ApprovedToolResult = { text: string; images: PromptImage[] }
 
 /**
  * Runs a tool call the human approved after a `confirm_tool` pause, returning what to feed back as its result.
@@ -190,7 +191,8 @@ export async function runApprovedTool(
     const result = await target.execute(checked.args)
     onStatus?.("ok")
     if (typeof result === "string") return { text: result, images: [] }
-    return { text: result.text, images: (result.images ?? []).map(image => image.data) }
+    const alt = altFrom(result.text, `an image from ${name}`)
+    return { text: result.text, images: (result.images ?? []).map(image => ({ data: image.data, alt })) }
   } catch (error) {
     return failed(`Error: ${error instanceof Error ? error.message : String(error)}`)
   }

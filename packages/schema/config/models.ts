@@ -24,7 +24,9 @@ const ModelEntrySchema = z.object({
   // What it can be used for; for each task, the first [models.*] in the file that lists it is the one used.
   tasks: z.array(TaskSchema).min(1),
   // Tokens the model can take in; omit it and Kaja asks the server, else assumes 32768.
-  context_window: z.number().int().positive().optional()
+  context_window: z.number().int().positive().optional(),
+  // false for a text-only chat model: it gets each image's description instead of its pixels.
+  images: z.boolean().optional()
 })
 
 export const ModelsFileSchema = z
@@ -67,4 +69,6 @@ export type CliResolvedModel = {
   provider: string
   /** `context_window` from models.toml; unset means detect it from the server. */
   contextWindow?: number
+  /** `images` from models.toml: false for a text-only model, which is sent image descriptions instead of pixels. */
+  images?: boolean
 }

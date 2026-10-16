@@ -61,9 +61,7 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
   // Re-render only once the size has settled (a resize drag, the input growing), not on every step.
   const [settled, setSettled] = useState(target)
   const size = { width: settled.columns, height: settled.rows }
-  // What a picture drawn at this size already looks like, if it is: a row that scrolls back into the window paints
-  // it at once, at the height it had before. Without it the row would paint blank, measure its alt text instead and
-  // send the chat scrolling, which unmounted it again before its own render came back (see renderTerminalImage).
+  // A row scrolling back into the window paints its cached picture at once, or it would measure blank and scroll away again
   const [result, setResult] = useState<TerminalImageResult | null>(() => drawnTerminalImage(href, size) ?? null)
   const renderedHref = useRef<string | null>(href)
 

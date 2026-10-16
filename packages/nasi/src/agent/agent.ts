@@ -50,9 +50,11 @@ export class Agent {
   contextWindow?: number
   /** Writes compaction summaries (the summarize task's model); defaults to this agent's own chat model. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
-  /** Describes arriving images (the vision task's model); unset, an image keeps its alt text. */
+  /** Describes arriving images (the vision task's model, or the persona's `models.vision` pin); unset, an image keeps its alt text. */
   describer?: Describer
-  /** Whether the chat model takes images; unset, it does when its {@link models} entry lists `vision` (or there are no entries to tell). See {@link seesImages}. */
+  /** The host's describer, which a persona without a `models.vision` pin goes back to. */
+  readonly defaultDescriber?: Describer
+  /** Whether the chat model takes images; unset, it does unless its {@link models} entry says `images = false`. See {@link seesImages}. */
   chatSeesImages?: boolean
   /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
   compactAt?: number
@@ -102,6 +104,7 @@ export class Agent {
     this.contextWindow = config.contextWindow
     this.summarizer = config.summarizer
     this.describer = config.describer
+    this.defaultDescriber = config.describer
     this.chatSeesImages = config.chatSeesImages
     this.compactAt = config.compactAt
     this.safeCommands = config.safeCommands
@@ -205,6 +208,15 @@ export function applyPersona(agent: Agent, persona: Persona) {
     const model = agent.models.find(m => m.id === persona.models!.chat)
     if (model) agent.setModel(model)
   }
+  applyVisionPin(agent, persona)
+}
+
+/** Points the agent's describer at the persona's `models.vision` pin, or back at the host's when it has none. */
+export function applyVisionPin(agent: Agent, persona: Persona | undefined) {
+  const id = persona?.models?.vision
+  const vision = id && agent.models.find(m => m.id === id && m.task === "vision")
+  agent.describer =
+    vision && agent.createClient ? { client: agent.createClient(vision), model: vision.model } : agent.defaultDescriber
 }
 
 /** What one model round cost, recorded beside the assistant message it produced; `at` is that message's row index (the system prompt not counted). */
@@ -258,11 +270,10 @@ export type Session = {
   toolSummaries?: Record<string, string>
 }
 
-/** Whether the agent's chat model is sent images, or only their labels: a models.toml entry for it that lists `vision` says it can see. */
+/** Whether the agent's chat model is sent images, or only their labels: it is unless its models.toml entry says `images = false`. */
 export function seesImages(agent: Agent): boolean {
   if (agent.chatSeesImages !== undefined) return agent.chatSeesImages
-  const own = agent.models?.filter(entry => entry.model === agent.model) ?? []
-  return own.length === 0 || own.some(entry => entry.task === "vision")
+  return !agent.models?.some(entry => entry.model === agent.model && entry.images === false)
 }
 
 export function createSession(): Session {

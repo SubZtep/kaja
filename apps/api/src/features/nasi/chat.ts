@@ -88,7 +88,7 @@ async function defaultChatResolver(pinnedModel?: string) {
     }),
     model: result.model.model,
     contextWindow: window.tokens,
-    seesImages: result.model.tasks.includes("vision")
+    seesImages: result.model.images
   }
 }
 
@@ -308,7 +308,7 @@ export async function compactUserSession(
   })
 }
 
-export function openUserTurnStream(userId: string, body: NasiTurnRequest, onSession?: (sessionId: string) => void) {
+export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
   const run = async function* () {
     const nasi = await openNasiFor({
       userId,
@@ -318,7 +318,7 @@ export function openUserTurnStream(userId: string, body: NasiTurnRequest, onSess
     })
     // Also runs when the client goes away mid-stream, so a dropped turn never leaves its MCP connections open.
     try {
-      return yield* nasi.turn({ ...body, onSession })
+      return yield* nasi.turn(body)
     } finally {
       await nasi.close()
     }

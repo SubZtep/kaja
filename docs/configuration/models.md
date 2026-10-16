@@ -43,9 +43,7 @@ The tasks:
 - `rerank`
 - `summarize`: writes the summary a long conversation is [compacted](/configuration/config#context) into,
   condenses oversized tool results and runs the `summarize` tool. The chat model does it when there's none.
-- `vision`: the model can see images. Listed on the chat model, the chat gets the pixels of recent images;
-  without it, the chat gets each image's short description and link instead (it can still `view_image` the
-  link). The first model listing `vision` writes those descriptions, in the background as images arrive.
+- `vision`: the first model listing it writes each arriving image's short description, in the background.
   With none, an image keeps its alt text (what the tool said about it, say).
 
 Each `[models.<id>]` entry has:
@@ -53,7 +51,9 @@ Each `[models.<id>]` entry has:
 - `model`: the provider's own model name, sent in API requests;
 - `provider`: a key from `[providers.*]`;
 - `tasks`: what it can be used for. One model can serve several, like chat and summarize above;
-- `context_window`: optional, how many tokens the model takes in.
+- `context_window`: optional, how many tokens the model takes in;
+- `images`: optional, `false` for a text-only chat model. It then gets each recent image's description and
+  link instead of its pixels (it can still `view_image` the link), and waits for the descriptions to be written.
 
 The id is yours to choose. The wizard uses the last part of the model name, cleaned up (`qwen3.5:4b` becomes
 `qwen3-5-4b`, `accounts/fireworks/models/glm-5p3-flash` becomes `glm-5p3-flash`), and adds `-<provider>` when

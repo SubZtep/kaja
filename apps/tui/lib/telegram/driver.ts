@@ -1,20 +1,21 @@
 import { existsSync } from "node:fs"
 import { homedir } from "node:os"
+import { resolve } from "node:path"
 import {
   type AgentEvent,
+  applyVisionPin,
   compact,
   dataUrlBytes,
   dropImages,
   type FinalizedAgentEvent,
-  imageKey,
   imageRefId,
   isImageRejection,
+  type PromptImage,
   personaAbilities,
   photoLabel,
   recordPausedCall,
   runApprovedTool,
-  samplingOf,
-  sessionImagePrefix
+  samplingOf
 } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { telegramOwner } from "@kaja/schema/store"
@@ -56,6 +57,12 @@ function abilitiesMessage(personas: Persona[]): string {
 
 const IMAGE_FILE = /\.(?:png|jpe?g|gif|webp)$/i
 
+// This conversation's stored images: nasi places a reply's kaja-image: links at these files, which have no extension.
+const isStoredImage = (path: string) => {
+  const root = storedImagePath("images")
+  return root !== undefined && path.startsWith(`${root}/`)
+}
+
 /** Where a reply's `![alt](src)` photo comes from: a public URL, or an existing image file by absolute or `~/` path (nothing else, so a reply can't upload an arbitrary file). */
 function photoSource(src: string): { url: string } | { path: string } | undefined {
   if (isPublicHttpUrl(src)) return { url: src }
@@ -67,16 +74,15 @@ function photoSource(src: string): { url: string } | { path: string } | undefine
     return undefined
   }
   if (path.startsWith("~/")) path = homedir() + path.slice(1)
-  if (!path.startsWith("/") || !IMAGE_FILE.test(path) || !existsSync(path)) return undefined
+  if (!path.startsWith("/")) return undefined
+  // Resolved, so a "../" can't climb out of the images folder
+  path = resolve(path)
+  if (!(IMAGE_FILE.test(path) || isStoredImage(path)) || !existsSync(path)) return undefined
   return { path }
 }
 
-// An image of this conversation by its kaja-image: link: the session's stored file.
-function storedPhoto(state: { session: { id?: string } }, src: string): { path: string } | undefined {
-  const id = imageRefId(src)
-  const path = id && state.session.id && storedImagePath(imageKey(sessionImagePrefix(state.session.id), id))
-  return path && existsSync(path) ? { path } : undefined
-}
+/** Photos whose caption a late description can still replace, per user. */
+const MAX_CAPTIONED_PHOTOS = 32
 
 /** Command preview cap, matching components/layout/confirm-command.tsx's terminal UI. */
 const MAX_COMMAND_LINES = 6
@@ -190,6 +196,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
         ? models.find(m => m.id === persona.models!.chat && m.task === "chat")
         : undefined)
     if (startingModel) agent.setModel(startingModel)
+    applyVisionPin(agent, persona)
 
     return {
       agent,
@@ -371,7 +378,12 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       case "tool_image": {
         const data = await toolImageBytes(state, event.ref)
         const sent = data && (await sendPhotoSafely(chatId, { data }, event.alt))
-        if (sent) state.photos.set(event.ref, sent.messageId)
+        if (sent) {
+          // Kept past the turn (a description can land on the next one), but only the latest few
+          state.photos.delete(event.ref)
+          state.photos.set(event.ref, sent.messageId)
+          if (state.photos.size > MAX_CAPTIONED_PHOTOS) state.photos.delete(state.photos.keys().next().value!)
+        }
         return false
       }
 
@@ -455,7 +467,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     state: UserState,
     prompt: string,
     showUserEvent: boolean,
-    images: (string | Uint8Array)[] = []
+    images: PromptImage[] = []
   ) {
     state.busy = true
     if (showUserEvent) state.events.push({ type: "user", text: images.length > 0 ? photoLabel(prompt) : prompt })
@@ -467,7 +479,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
       sendPhoto: async (photo: { path: string } | { url: string }, caption) => {
         await sender.sendPhoto(chatId, photo, caption ? { caption } : undefined)
       },
-      photoSource: src => storedPhoto(state, src) ?? photoSource(src),
+      photoSource,
       emptyReply: t("telegram.emptyResponse"),
       warn: (message, error) => log.warn(message, { error })
     })
@@ -580,7 +592,7 @@ export function createTelegramDriver(config: TelegramDriverConfig) {
     await editSafely(chatId, pendingCommand.messageId, `${pendingCommand.body}\n\n${statusLine}`, { replyMarkup: [] })
 
     let result: string
-    let images: Uint8Array[] = []
+    let images: PromptImage[] = []
     const startedAt = performance.now()
     if (pendingCommand.kind === "command") {
       result = approved ? await runShellCommand(pendingCommand.command) : "User declined to run this command."

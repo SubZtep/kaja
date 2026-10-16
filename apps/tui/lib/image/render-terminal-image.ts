@@ -12,13 +12,7 @@ const RENDERED_CACHE_SIZE = 16
 // Remote bytes by source, so re-rendering at another size (resize) doesn't download again. Local files are re-read, they may be overwritten.
 const remoteCache = new Map<string, Promise<ArrayBuffer>>()
 
-/**
- * Pictures already drawn, by source and size: the promise (so rows showing the same one at once share the work) and
- * what it resolved to. An image row is unmounted every time it scrolls out of the chat's window and mounted again
- * when it scrolls back, and a picture kept only in the row's own state would come back blank: the row would measure
- * its alt text's height again, the chat would scroll, and the row would leave the window once more — the picture
- * never settling. Cached, a remounted row paints the same picture at the same height at once.
- */
+// Drawn pictures by source and size (the shared promise, then its result), so a row remounted on scroll paints at once
 const rendered = new Map<string, Promise<TerminalImageResult>>()
 const drawn = new Map<string, TerminalImageResult>()
 
@@ -26,8 +20,7 @@ function remote(src: string) {
   return src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")
 }
 
-// A local file may be overwritten under its path (a tool rewriting it), so its render is keyed by what the file was
-// when read as well; a URL's bytes are what they are. A data URL is keyed by its hash, not the megabytes of base64.
+// A local file is keyed by its size and mtime too (a tool may rewrite it), a data URL by its hash rather than its base64
 function renderKey(src: string, options?: { width?: string | number; height?: string | number }) {
   let source = src
   if (!remote(src)) {
@@ -71,8 +64,7 @@ export function renderTerminalImage(
   const cached = rendered.get(key)
   if (cached) return cached
   const pending = drawTerminalImage(src, options).then(result => {
-    // A failure isn't kept, so a URL that was briefly out of reach (or a file not written yet) is drawn again when a
-    // row asks for it next. An entry dropped meanwhile (the cache moved on) doesn't get one either.
+    // A failure isn't kept, so a briefly unreachable source is drawn again; nor is an entry the cache dropped meanwhile
     if ("error" in result) rendered.delete(key)
     else if (rendered.has(key)) drawn.set(key, result)
     return result

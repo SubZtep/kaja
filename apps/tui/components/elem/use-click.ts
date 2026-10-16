@@ -12,8 +12,7 @@ const intersect = (a: Rect, b: Rect): Rect => ({
   bottom: Math.min(a.bottom, b.bottom)
 })
 
-// Where an element is drawn on screen: its layout position less every scroll offset above it, clipped by each
-// overflow-hidden box it sits in (the chat viewport). The app runs on the alternate screen, so layout row 0 is screen row 0.
+// Where an element is on screen (alternate screen: layout row 0 is row 0), less scroll offsets, clipped by overflow-hidden boxes
 function screenRect(node: DOMElement): Rect | undefined {
   const rectOf = (element: DOMElement, scrolled: number): Rect => {
     const { x, y, width, height } = measureElement(element)

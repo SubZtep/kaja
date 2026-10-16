@@ -101,8 +101,7 @@ function providerTable(provider: CatalogProvider, baseUrl: string): string {
   return lines.join("\n")
 }
 
-// Each task's model: the candidate of the provider picked for it, else the first one. Vision follows chat's provider
-// when that one can see too, so the chat model that sees images is the first listing vision, not another provider's.
+// Each task's model: the picked provider's candidate, else the first; vision follows chat's provider when it can see
 function pickedModels(
   candidates: Partial<Record<ModelTask, ModelCandidate[]>>,
   pick: Partial<Record<ModelTask, string>>

@@ -4,12 +4,9 @@ import {
   categorizeError,
   dataUrlBytes,
   type FinalizedAgentEvent,
-  imageKey,
-  imageRefId,
   isImageRejection,
   type NasiTurnInput,
   pendingToolCall,
-  sessionImagePrefix,
   TELEGRAM_CHANNEL_INSTRUCTION
 } from "@kaja/nasi"
 import { telegramOwner } from "@kaja/schema/store"
@@ -217,8 +214,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     let ended = false
     const photos = new Map<string, number>()
     for await (const event of turn) {
-      // Read to the end even after the reply is out: the turn is only saved once the generator finishes (and a
-      // tool image's description, written by then, still reaches its photo's caption).
+      // Read to the end after the reply too: the turn saves when the generator finishes, and late descriptions caption photos
       if (ended && event.type !== "image_described") continue
       if (event.type === "delta") {
         if (event.channel === "content") reply.append(event.text)
@@ -237,20 +233,14 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     resume: boolean,
     language: BotLanguage
   ) {
-    // The turn's session, once Nasi has it: a reply's kaja-image: links are its images.
-    let sessionId: string | undefined
     const reply = await openReply({
       send: text => sender.sendMessage(chatId, text),
       edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
       sendPhoto: async (url: string, caption) => {
         await sender.sendPhoto(chatId, url, caption)
       },
-      // Public URLs only, never a server path; an image of this conversation by its link, at its public URL
-      photoSource: src => {
-        const id = imageRefId(src)
-        const url = id && sessionId ? imageUrl(imageKey(sessionImagePrefix(sessionId, ownerUserId), id)) : src
-        return isPublicHttpUrl(url) ? url : undefined
-      },
+      // Public URLs only, never a server path (nasi has placed this conversation's images at theirs)
+      photoSource: src => (isPublicHttpUrl(src) ? src : undefined),
       emptyReply: language.t("telegram.emptyResponse"),
       warn: (message, error) => console.warn(message, { error })
     })
@@ -266,12 +256,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         channelInstruction: TELEGRAM_CHANNEL_INSTRUCTION
       })
       try {
-        await readTurn(
-          nasi.turn({ session: resumeRow?.id, ...input, onSession: id => (sessionId = id) }),
-          chatId,
-          reply,
-          language
-        )
+        await readTurn(nasi.turn({ session: resumeRow?.id, ...input }), chatId, reply, language)
       } finally {
         await nasi.close()
       }

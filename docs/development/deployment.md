@@ -94,8 +94,8 @@ to Postgres. Set it up once in the [Hetzner Cloud Console](https://console.hetzn
 
 An image is stored the moment it arrives (a photo sent to the bot, a tool's screenshot), already resized,
 under its session's folder: sessions get their id when they start, not when they're first saved. A new
-session whose first turn fails takes its images with it. Each image also keeps its untouched original
-beside it (`<id>.orig`, for debugging only; it keeps the photo's EXIF data), which nothing reads.
+session whose first turn fails takes its images with it. Only that resized copy is kept (EXIF dropped),
+with its description beside it as `<id>.json` once the vision model has written one.
 
 The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<id>`,
 where `<id>` is the start of the image's sha256. Deleting a session removes its folder, and deleting a user

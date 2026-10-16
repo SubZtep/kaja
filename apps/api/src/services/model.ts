@@ -30,6 +30,7 @@ type ModelRow = {
   enabled: boolean
   free: boolean
   context_window: number | null
+  images: boolean
   created_at: Date
   updated_at: Date
   last_used_at?: Date | null
@@ -85,11 +86,11 @@ export class ModelService {
   async createModel(input: CreateModelRequest): Promise<Model> {
     const result = await this.#db.query(
       `
-      INSERT INTO model (provider_id, model, tasks, enabled, free, context_window)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO model (provider_id, model, tasks, enabled, free, context_window, images)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
       `,
-      [input.providerId, input.model, input.tasks, input.enabled, input.free, input.contextWindow]
+      [input.providerId, input.model, input.tasks, input.enabled, input.free, input.contextWindow, input.images]
     )
 
     return this.#rowToModel(result.rows[0])
@@ -105,6 +106,7 @@ export class ModelService {
           enabled = COALESCE($5, enabled),
           free = COALESCE($6, free),
           context_window = CASE WHEN $7 THEN $8 ELSE context_window END,
+          images = COALESCE($9, images),
           updated_at = NOW()
       WHERE id = $1
       RETURNING *
@@ -117,7 +119,8 @@ export class ModelService {
         input.enabled ?? null,
         input.free ?? null,
         input.contextWindow !== undefined,
-        input.contextWindow ?? null
+        input.contextWindow ?? null,
+        input.images ?? null
       ]
     )
 
@@ -299,6 +302,7 @@ export class ModelService {
       enabled: row.enabled,
       free: row.free,
       contextWindow: row.context_window,
+      images: row.images,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : null

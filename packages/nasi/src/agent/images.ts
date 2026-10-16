@@ -12,7 +12,7 @@ export const MISSING_IMAGE = "[an image that is no longer stored]"
 // Each run's images as data URLs by ref, so a round after the first fetches nothing it already has.
 const caches = new WeakMap<Session, Map<string, string>>()
 
-/** Starts a run's image cache afresh: earlier runs' bytes aren't kept around. */
+/** Empties a session's image cache: a run's bytes aren't kept around after it. */
 export function resetImageCache(session: Session): void {
   caches.set(session, new Map())
 }
@@ -32,6 +32,9 @@ export type ArrivedImage = {
   width: number
   height: number
 }
+
+/** An image going to the model with a prompt: a data URL or bytes, or either with the alt text its source gave it. */
+export type PromptImage = string | Uint8Array | { data: string | Uint8Array; alt: string }
 
 /** An image's parts in its message: its label (alt text, later its description) and the image itself. */
 export type ImageParts = [{ type: "text"; text: string }, { type: "image_url"; image_url: { url: string } }]

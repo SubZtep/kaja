@@ -716,7 +716,14 @@ test("a tool image goes out captioned with its alt text, and takes its descripti
     models: [],
     sender,
     createAgent: () =>
-      ({ ...fakeAgent(script, [imageTool]), store: createMemoryStore(), describer }) as unknown as Agent
+      // Blind, so the turn waits for the description before it ends
+      ({
+        ...fakeAgent(script, [imageTool]),
+        store: createMemoryStore(),
+        describer,
+        defaultDescriber: describer,
+        chatSeesImages: false
+      }) as unknown as Agent
   })
 
   await driver.handleMessage(42, 100, "draw me something")

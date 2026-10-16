@@ -15,23 +15,18 @@ jobs:
     name: Sandbox Image
     permissions:
       contents: read
-      # Scout writes its report as a PR comment (it keeps one, updated per run)
+      # For the compare comment
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      # Scout reads images, it never builds one: fs:// would read apps/sandbox as a plain directory (its SBOM,
-      # no base image, which quickview rejects), so the image the PR would release is built here first and Scout
-      # reads it out of the runner's local image store. A plain docker build loads the image into that store as
-      # it goes, which is all Scout needs, so there is nothing to load or to configure afterwards. It costs a few
-      # minutes per run (the Chrome download is most of it) as nothing is cached between them.
+      # Scout only reads images, so the one the release would push is built into the local store first
       - name: Build the sandbox image
         run: docker build --file apps/sandbox/Dockerfile --tag kaja-sandbox:pr .
 
-      # The same Docker Hub credentials the release pushes with; without them Scout reads the public base images
-      # anonymously. A fork's PR has neither the secrets nor a token that can comment, so it only gets the summary.
+      # A fork's PR has no secrets, so it scouts anonymously and only gets the summary
       - name: Log in to Docker Hub
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -39,8 +34,7 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # The PR comment says only what the PR changes against the released image: the base image's own CVEs and
-      # Scout's org-wide policies would otherwise fill it on every PR whatever the PR touched.
+      # Comments only what this PR changes, not the base image's standing CVEs
       - name: Compare with the released sandbox
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:
@@ -52,7 +46,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           write-comment: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
 
-      # The whole picture, critical and high CVEs with their advisories, goes to the run summary only.
+      # The full report, for the run summary only
       - name: Scout the sandbox
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:

@@ -10,8 +10,7 @@ import { Agent, type AgentEvent, createSession, type PromptContext, type Session
 import type { Compaction } from "./agent/compaction"
 import type { Describer } from "./agent/describe"
 import { NothingToApproveError, SessionNotFoundError } from "./agent/errors"
-import { storeImage } from "./agent/images"
-
+import type { PromptImage } from "./agent/images"
 import { samplingOf } from "./agent/persona"
 import { syncPersonaTools } from "./agent/persona-tools"
 import { compact, run } from "./agent/run"
@@ -57,11 +56,7 @@ export type NasiOpenOptions = {
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
 
 /** A turn as the host runs it: the HTTP request, plus images (data URLs) a host like the Telegram bot got with the message. */
-export type NasiTurnInput = NasiTurnRequest & {
-  images?: string[]
-  /** Hears the turn's session id once it's known (a new session's is minted as the turn opens), e.g. to resolve the `kaja-image:` links of its replies. */
-  onSession?: (sessionId: string) => void
-}
+export type NasiTurnInput = NasiTurnRequest & { images?: string[] }
 
 /** How a message sent with a photo shows in history and titles: "📷", then its caption. */
 export function photoLabel(caption: string): string {
@@ -328,9 +323,9 @@ export class Nasi {
     agent: Agent,
     session: Session,
     input: NasiTurnInput
-  ): Promise<{ prompt?: string; images?: Uint8Array[] }> {
+  ): Promise<{ prompt?: string; images?: PromptImage[] }> {
     if (session.pendingClientCalls?.length) {
-      await answerClientCalls(session, input.toolResults, (bytes, alt) => storeImage(agent, session, bytes, alt))
+      await answerClientCalls(agent, session, input.toolResults)
       if (input.message === undefined) return {}
     }
     const pendingId = session.pendingToolApprovalId
@@ -400,7 +395,6 @@ export class Nasi {
 
   private async *turnInner(input: NasiTurnInput): AsyncGenerator<AgentEvent, NasiTurnResponse, void> {
     const loaded = await this.loadTurn(input)
-    if (loaded.session.id) input.onSession?.(loaded.session.id)
     // An approved call may be an MCP ability's, so the persona's servers connect before promptFor runs it.
     await syncPersonaTools(loaded.agent)
     const { prompt, images = [] } = await this.promptFor(loaded.agent, loaded.session, input)
