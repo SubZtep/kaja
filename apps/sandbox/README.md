@@ -93,6 +93,8 @@ Two more Chrome flags keep it from going around the proxy:
 
 Chrome also only opens `http://` and `https://` URLs (`--allowedUrlPattern`), so a page can't read files on the machine at all.
 
+The MCP server processes go through it too, for their own requests (a server that fetches a URL the model gave it, or npx/uvx downloading a package): each one starts with `HTTP_PROXY`/`HTTPS_PROXY` (and the lowercase pair) pointing at the proxy, plus `NODE_USE_ENV_PROXY=1`, which Node needs before it follows them. Node, Bun, Python, npm and uv honour these. A manifest's own `env` can't override them. `NO_PROXY` keeps loopback direct, since chrome-devtools talks to its own Chrome there.
+
 ### The port: `SANDBOX_EGRESS_PORT`
 
 The two ends of the proxy are configured in two places:
@@ -149,7 +151,8 @@ It exits `0` when an answer came back, `1` when the request failed, and `2` on a
 
 ### What the proxy doesn't cover
 
-- Only the browsers go through it. The MCP server processes themselves (Node) connect directly. A new stdio server that makes its own requests needs its own guard.
+- For the server processes it's cooperative: the proxy variables are a request, not a wall. A program that ignores them (or opens raw sockets) still connects directly, and so can anything on loopback. Every server here comes from the repo's own manifests, so the risk this covers is a careless server, not a hostile one; walling it in for real needs per-uid firewall rules, which take `--cap-add NET_ADMIN`.
+- With `WEB_PROXY` set, the servers' package downloads (a new manifest's first start) go through it too, so they count towards its traffic.
 - It limits *where* Chrome connects, not *what* it does there: any public site is fair game, like in a normal browser.
 
 That's why production also runs the sandbox on a **separate server** with nothing else on it, and why in `compose.yaml` it has its own network with only the API on it.
@@ -230,7 +233,7 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `src/egress.ts` | the egress proxy |
 | `src/egress-check.ts` | `egress-check <url>`: one request through the egress proxy and `WEB_PROXY`, step by step |
 | `src/stats.ts` | the stats: the pool's servers and counts, memory per process tree, host and container memory |
-| `src/manifests.ts` | the stdio manifests it may run, plus the overrides |
+| `src/manifests.ts` | the stdio manifests it may run, plus the overrides, and the proxy env each server starts with |
 | `src/report.ts` | Sentry in production |
 | `overrides.json` | the image's command and Chrome flags for chrome-devtools |
 | `Dockerfile` | one multi-runtime image (Node 22 slim, bun, uv with Python, Chrome for Testing's headless shell) running the bundled sandbox |

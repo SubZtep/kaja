@@ -128,6 +128,20 @@ describe("manifests", () => {
     expect(servers.get("counter")!.env).not.toHaveProperty("UV_CACHE_DIR")
   })
 
+  test("with the egress port, every server's own requests go through the egress proxy; loopback stays direct", async () => {
+    const proxied = await loadSandboxServers(MARKETPLACE, undefined, undefined, 3128)
+    for (const server of proxied.values()) {
+      expect(server.env).toMatchObject({
+        HTTPS_PROXY: "http://127.0.0.1:3128",
+        https_proxy: "http://127.0.0.1:3128",
+        HTTP_PROXY: "http://127.0.0.1:3128",
+        NODE_USE_ENV_PROXY: "1",
+        NO_PROXY: "localhost,127.0.0.1,::1"
+      })
+    }
+    expect(servers.get("counter")!.env).not.toHaveProperty("HTTPS_PROXY")
+  })
+
   test("local-only servers, like filesystem, never run in a sandbox", async () => {
     const shipped = await loadSandboxServers(
       join(import.meta.dir, "../../../marketplace"),
