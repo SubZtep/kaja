@@ -1,7 +1,11 @@
 import { Box, type DOMElement, measureElement, Text, useWindowSize } from "ink"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { t } from "../../lib/i18n"
-import { renderTerminalImage, type TerminalImageResult } from "../../lib/image/render-terminal-image"
+import {
+  drawnTerminalImage,
+  renderTerminalImage,
+  type TerminalImageResult
+} from "../../lib/image/render-terminal-image"
 import { useRemeasure, useViewportHeight } from "./virtual-scroll"
 
 /** Rows the chat viewport never gets: header 1, input up to 8, key bar 1, caption 1, one spare. */
@@ -48,7 +52,6 @@ export function imageBox(opts: {
  * so a broken link doesn't look like a missing feature.
  */
 export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
-  const [result, setResult] = useState<TerminalImageResult | null>(null)
   const remeasure = useRemeasure()
   const viewportHeight = useViewportHeight()
   const { rows, columns } = useWindowSize()
@@ -57,7 +60,12 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
   const target = imageBox({ terminalColumns: columns, terminalRows: rows, containerWidth, viewportHeight })
   // Re-render only once the size has settled (a resize drag, the input growing), not on every step.
   const [settled, setSettled] = useState(target)
-  const renderedHref = useRef<string | null>(null)
+  const size = { width: settled.columns, height: settled.rows }
+  // What a picture drawn at this size already looks like, if it is: a row that scrolls back into the window paints
+  // it at once, at the height it had before. Without it the row would paint blank, measure its alt text instead and
+  // send the chat scrolling, which unmounted it again before its own render came back (see renderTerminalImage).
+  const [result, setResult] = useState<TerminalImageResult | null>(() => drawnTerminalImage(href, size) ?? null)
+  const renderedHref = useRef<string | null>(href)
 
   // The width this item really has (indentation, nesting), known once laid out.
   useLayoutEffect(() => {
@@ -72,12 +80,13 @@ export function TerminalImage({ href, alt }: Readonly<{ href: string; alt: strin
     return () => clearTimeout(timer)
   }, [target.columns, target.rows])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `size` is a new object every render; the measures in the deps are what a drawing changes with
   useEffect(() => {
     let cancelled = false
-    // A resize keeps the old picture up until the resized one is ready.
+    // Another picture starts blank; a resize keeps the one on screen up until the resized one is ready.
     if (renderedHref.current !== href) setResult(null)
     renderedHref.current = href
-    void renderTerminalImage(href, { width: settled.columns, height: settled.rows }).then(next => {
+    void renderTerminalImage(href, size).then(next => {
       if (!cancelled) setResult(next)
     })
     return () => {
