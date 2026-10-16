@@ -231,11 +231,15 @@ matching limit and a line in the Privacy Policy.
 
 `.github/workflows/auto-version.yaml` runs on `main`:
 
-1. Detects which workspaces changed under `apps/**` / `packages/**`.
+1. Detects which workspaces changed. An app counts as changed when anything its build takes in did:
+   its own folder, the workspace packages it imports (a `shared` change bumps every app), and the
+   repo files it bundles (`docs/config/*.toml` for the API and TUI, `marketplace/personas` for them
+   too, a stdio ability's `mcp.toml` for the sandbox image).
 2. Bumps the matching `package.json` versions, commits with `[skip ci]`, and pushes tags
    (`tui@x.y.z`, …).
-3. If the **TUI** was bumped, it dispatches **Build and release TUI** on `main` via
-   `gh workflow run`.
+3. Dispatches the releases via `gh workflow run`: **Build and release TUI** when the **TUI** was
+   bumped, **Release api/web** for the API and web, and **Release to Docker Hub** for the sandbox
+   image.
 
 `[skip ci]` keeps the bump commit from re-triggering CI and auto-version, which is also why the
 explicit dispatch, not a tag trigger, is what ships the binary. No personal access token is

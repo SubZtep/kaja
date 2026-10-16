@@ -7,6 +7,9 @@ on:
     paths:
       - "apps/**"
       - "packages/**"
+      - "docs/config/*.toml"
+      - "marketplace/personas/**"
+      - "marketplace/abilities/*/mcp.toml"
   workflow_dispatch:
 
 permissions:
@@ -31,19 +34,30 @@ jobs:
         id: filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
         with:
+          # An app is also bumped by what its build takes in: the workspace packages it imports and the repo files it bundles.
           filters: |
             api:
               - 'apps/api/**'
+              - 'packages/**'
+              - 'docs/config/*.toml'
+              - 'marketplace/personas/**'
             tui:
               - 'apps/tui/**'
+              - 'packages/**'
+              - 'docs/config/*.toml'
+              - 'marketplace/personas/default.toml'
             web:
               - 'apps/web/**'
+              - 'packages/schema/**'
+              - 'packages/shared/**'
             shared:
               - 'packages/shared/**'
             schema:
               - 'packages/schema/**'
             sandbox:
               - 'apps/sandbox/**'
+              - 'packages/**'
+              - 'marketplace/abilities/*/mcp.toml'
             nasi:
               - 'packages/nasi/**'
 
