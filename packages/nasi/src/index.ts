@@ -1,3 +1,4 @@
+export { answerClientCalls, CLIENT_GONE, clientAbilities, type NasiClient } from "./abilities/client"
 export {
   type AbilityKeyNeed,
   createFolderAbilityStore,

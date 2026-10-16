@@ -41,11 +41,15 @@ function skillHeader(skill: SkillSummary): string {
   return lines.join("\n")
 }
 
-/** Builds load_skill over `skills`, serving only the active persona's skills (load or sticky, see {@link skillMode}) at call time. */
+/**
+ * Builds load_skill over `skills`, serving only the active persona's skills (load or sticky, see {@link skillMode}) at
+ * call time. A skill in `clientSkills` is the client's (a cloud turn's own ability): its call runs on the client.
+ */
 export function createLoadSkillTool(opts: {
   store: AbilityStore
   skills: SkillSummary[]
   personas?: Persona[]
+  clientSkills?: ReadonlySet<string>
 }): LoadSkillTool {
   const personaById = new Map((opts.personas ?? []).map(p => [p.id, p]))
 
@@ -80,5 +84,11 @@ export function createLoadSkillTool(opts: {
     }
   })
 
-  return { ...loadSkill, skills: opts.skills, readBody: name => opts.store.readSkill(name) }
+  const clientSkills = opts.clientSkills
+  return {
+    ...loadSkill,
+    ...(clientSkills?.size ? { runsOnClient: (args: LoadSkillArgs) => clientSkills.has(args.name) } : {}),
+    skills: opts.skills,
+    readBody: name => opts.store.readSkill(name)
+  }
 }

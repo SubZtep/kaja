@@ -44,6 +44,8 @@ export type LoadAbilitiesOptions = {
   mcpSandbox?: McpSandbox
   /** With `mcpSandbox`, which stdio abilities go there (a local user's choice per ability); default every one. */
   sandboxed?: (abilityName: string) => boolean
+  /** Skills the client serves (a cloud turn's own abilities): load_skill hands their calls to it. */
+  clientSkills?: ReadonlySet<string>
   /** How stdio MCP abilities find a runner on this host (tests fake `which`). */
   launch?: LaunchOptions
   /** Warn about persona entries naming an ability, or a tool of one, that isn't there: on for a host whose store is every ability the user has (the CLI), off where parts are left out on purpose (the cloud). */
@@ -69,7 +71,12 @@ export async function loadAbilities(store: AbilityStore, opts: LoadAbilitiesOpti
   // load_skill is Kaja's own mechanism, so it's official (and its name reserved) even though abilities switch it on.
   const groups: ToolGroup[] =
     skills.length > 0
-      ? [{ origin: "official", tools: [createLoadSkillTool({ store, skills, personas: opts.personas })] }]
+      ? [
+          {
+            origin: "official",
+            tools: [createLoadSkillTool({ store, skills, personas: opts.personas, clientSkills: opts.clientSkills })]
+          }
+        ]
       : []
 
   const missingKeys: string[] = []

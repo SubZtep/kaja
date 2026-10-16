@@ -79,6 +79,11 @@ export type Tool<Args = any> = {
   approval?: (args: Args) => string | undefined
   /** An MCP tool that only reads (the server's readOnlyHint, or a manifest `readOnly` rule without `unless`). */
   readOnly?: boolean
+  /**
+   * Runs on the user's computer, not here (a cloud turn's client tools): run() pauses with `client_tool_calls` and the
+   * host's client answers. A function decides per call (load_skill, for the skills the client serves).
+   */
+  runsOnClient?: boolean | ((args: Args) => boolean)
   /** Stamped by the registry's `mergeTools`; unset on a tool that hasn't been through it. */
   origin?: ToolOrigin
   /** Where a non-official tool came from, e.g. `ability:open-meteo`. */

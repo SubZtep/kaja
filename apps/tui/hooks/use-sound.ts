@@ -8,6 +8,7 @@ const eventSound = {
   tool_image: "magic",
   display_image: "magic",
   persona_switch: "magic",
+  client_tool_calls: "magic",
   compacted: "wind",
   condensed: "wind",
   notice: "wind",

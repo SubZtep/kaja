@@ -1,4 +1,5 @@
 import * as z from "zod"
+import { PersonaSchema } from "../abilities/persona"
 
 const turnFields = {
   session: z.uuidv7().optional(),
@@ -10,15 +11,53 @@ const turnFields = {
   personaId: z.string().max(128).optional()
 }
 
+/** A tool the client runs on the user's computer, declared each turn: what the model sees of it, and the ability it belongs to (none: a builtin). */
+export const NasiClientToolSchema = z.object({
+  name: z.string().min(1).max(128),
+  description: z.string().max(4096),
+  parameters: z.record(z.string(), z.unknown()),
+  ability: z.string().min(1).max(64).optional()
+})
+
+/** A skill of an ability the client runs: its catalog entry; a sticky one's body comes along for the system prompt. */
+export const NasiClientSkillSchema = z.object({
+  name: z.string().min(1).max(64),
+  description: z.string().max(1024),
+  files: z.array(z.string().max(512)).max(200).default([]),
+  sticky: z.boolean().optional(),
+  body: z.string().max(65_536).optional()
+})
+
+/** The client's answer to one `client_tool_calls` call: its text, and any images it returned (base64). */
+export const NasiToolResultSchema = z.object({
+  id: z.string().min(1).max(256),
+  text: z.string().max(262_144),
+  images: z
+    .array(z.object({ data: z.string().max(4_000_000), mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/) }))
+    .max(4)
+    .optional()
+})
+
 export const NasiTurnRequestSchema = z
   .object({
     ...turnFields,
     message: turnFields.message.optional(),
     /** Answers the session's `confirm_tool` step: the server runs (or skips) the call it saved, so the client never supplies a tool result. `approve_session` also stops asking about that tool for the rest of the session, `approve_always` adds it to the user's allow list. */
-    approval: z.enum(["approve", "approve_session", "decline"]).optional()
+    approval: z.enum(["approve", "approve_session", "decline"]).optional(),
+    /** Answers the session's `client_tool_calls` step; a call left out is answered as if the computer went away. */
+    toolResults: z.array(NasiToolResultSchema).max(32).optional(),
+    /** The tools the client runs on the user's computer this turn; the cloud drops its own copy of any ability named here. */
+    clientTools: z.array(NasiClientToolSchema).max(256).optional(),
+    /** Skills of the abilities the client runs (load_skill asks the client for them). */
+    clientSkills: z.array(NasiClientSkillSchema).max(128).optional(),
+    /** The user's own personas, for this turn only; one with a catalog persona's id takes its place. */
+    clientPersonas: z
+      .array(PersonaSchema.extend({ id: z.string().min(1).max(64) }))
+      .max(64)
+      .optional()
   })
-  .refine(turn => turn.message !== undefined || turn.approval !== undefined, {
-    message: "message or approval is required",
+  .refine(turn => turn.message !== undefined || turn.approval !== undefined || turn.toolResults !== undefined, {
+    message: "message, approval or toolResults is required",
     path: ["message"]
   })
 
@@ -27,6 +66,9 @@ export const WidgetTurnRequestSchema = z.object({
   ...turnFields,
   visitorId: z.string().min(1).max(128)
 })
+
+/** One call a client runs: the provider's call id, which its result answers. */
+export const NasiClientCallSchema = z.object({ id: z.string(), name: z.string(), arguments: z.string() })
 
 export const NasiStepSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("reasoning"), text: z.string() }),
@@ -37,7 +79,9 @@ export const NasiStepSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("persona_switch"), personaId: z.string(), label: z.string() }),
   z.object({ type: z.literal("confirm_command"), command: z.string(), description: z.string() }),
   /** A tool call waiting for the user's OK; answer with the next turn's `approval`. `summary` is the request in one line. */
-  z.object({ type: z.literal("confirm_tool"), name: z.string(), arguments: z.string(), summary: z.string() })
+  z.object({ type: z.literal("confirm_tool"), name: z.string(), arguments: z.string(), summary: z.string() }),
+  /** Calls for the client to run on the user's computer; answer them with the next turn's `toolResults`. */
+  z.object({ type: z.literal("client_tool_calls"), calls: z.array(NasiClientCallSchema) })
 ])
 
 export const NasiUsageSchema = z.object({
@@ -47,7 +91,7 @@ export const NasiUsageSchema = z.object({
   contextWindow: z.number().optional()
 })
 
-export const NasiTurnStatusSchema = z.enum(["completed", "needs_input", "needs_approval", "error"])
+export const NasiTurnStatusSchema = z.enum(["completed", "needs_input", "needs_approval", "needs_client_tool", "error"])
 
 export const NasiTurnResponseSchema = z.object({
   session: z.uuidv7(),
@@ -73,6 +117,7 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("ask_user"), question: z.string(), note: z.string().optional() }),
   z.object({ type: z.literal("persona_switch"), personaId: z.string(), label: z.string() }),
+  z.object({ type: z.literal("client_tool_calls"), calls: z.array(NasiClientCallSchema) }),
   z.object({
     type: z.literal("compacted"),
     beforeTokens: z.number(),
@@ -117,6 +162,10 @@ export const NasiCompactResponseSchema = z.object({
 })
 
 export type NasiTurnRequest = z.infer<typeof NasiTurnRequestSchema>
+export type NasiClientTool = z.infer<typeof NasiClientToolSchema>
+export type NasiClientSkill = z.infer<typeof NasiClientSkillSchema>
+export type NasiToolResult = z.infer<typeof NasiToolResultSchema>
+export type NasiClientCall = z.infer<typeof NasiClientCallSchema>
 export type WidgetTurnRequest = z.infer<typeof WidgetTurnRequestSchema>
 export type NasiStep = z.infer<typeof NasiStepSchema>
 export type NasiTurnResponse = z.infer<typeof NasiTurnResponseSchema>
