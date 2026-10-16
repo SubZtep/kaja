@@ -7,9 +7,11 @@
 > [!IMPORTANT]
 > Kaja is still evolving :speaker::godmode::loudspeaker:
 
-Kaja is an AI agentic harness. Give it a task and it keeps looping with an LLM, using tools and switching personas as needed, until the job is done. Point it at a local model or a cloud-based one, chat with it in the terminal, on Telegram, or through a widget on your own website.
+Kaja is an agentic AI harness. Give it a task and it keeps looping with an LLM, using tools — on the user’s machine or in an isolated sandbox environment — and switching personas as needed, until the job is done.
 
-Under the hood it is a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent.
+Point it at a local model or a cloud-based one, chat with it in a terminal, on Telegram, or through a widget on your own website.
+
+Under the hood it’s a full-stack playground: a **Hono API** secured by **Better Auth**, a **TanStack Start** web app, and a **React Ink** terminal agent.
 
 ## What’s inside
 
@@ -18,7 +20,7 @@ Under the hood it is a full-stack playground: a **Hono API** secured by **Better
 - [`api`](./apps/api/) ― REST API, cloud agent loop, auth, emails, and the [widget](./apps/api/widgets/) bundle
 - [`tui`](./apps/tui/) ― Terminal UI and Telegram bot
 - [`web`](./apps/web/) ― Public homepage and admin portal
-- [`sandbox`](./apps/sandbox/) ― Runs stdio MCP servers (and headless Chrome) for cloud turns
+- [`sandbox`](./apps/sandbox/) ― Runs stdio tools and MCP servers (and headless Chrome)
 
 **Packages**
 
@@ -38,10 +40,10 @@ cd kaja
 # Install dependencies
 bun i
 
-# Start services
+# Start all the services
 docker compose up -d
 
-# Create config for local run
+# Configure local API endpoint
 cp apps/tui/.env.example apps/tui/.env
 
 # Run the terminal UI
