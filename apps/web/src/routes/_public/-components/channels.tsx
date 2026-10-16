@@ -22,12 +22,14 @@ function ChannelCard({
 }: Readonly<{ label: string; title: string; sticker?: string; children: ReactNode }>) {
   return (
     <article className="toy-card gap-2 bg-surface p-4 md:min-h-56">
-      {sticker ? (
-        <Sticker rotate={7} className="absolute top-3 right-3 z-1 text-[10px]">
-          {sticker}
-        </Sticker>
-      ) : null}
-      <p className="m-0 font-stamp text-[11px] text-neon uppercase">{label}</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="m-0 font-stamp text-[11px] text-neon uppercase">{label}</p>
+        {sticker ? (
+          <Sticker rotate={7} className="text-[10px]">
+            {sticker}
+          </Sticker>
+        ) : null}
+      </div>
       <h3 className="m-0 font-bold font-display text-fg text-lg leading-tight">{title}</h3>
       {children}
     </article>
@@ -98,7 +100,7 @@ export function Channels() {
 
           <ChannelCard label={m.channel_telegram_label()} title={m.hero_telegram_title()}>
             {user ? (
-              <TelegramConnectCta className="mt-auto" />
+              <TelegramConnectCta actionClassName={ACTION} />
             ) : (
               <>
                 <p className="m-0 font-crt text-muted text-sm">{m.hero_telegram_body()}</p>
