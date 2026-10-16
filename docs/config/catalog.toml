@@ -19,6 +19,11 @@ base_url = "https://api.fireworks.ai/inference/v1"
 
 
   [[providers.models]]
+  task  = "vision"
+  model = "accounts/fireworks/models/minimax-m3"
+
+
+  [[providers.models]]
   task  = "embedding"
   model = "accounts/fireworks/models/qwen3-embedding-8b"
 
@@ -45,6 +50,11 @@ comment  = [
 
   [[providers.models]]
   task  = "chat"
+  model = "qwen3.5:4b"
+
+
+  [[providers.models]]
+  task  = "vision"
   model = "qwen3.5:4b"
 
 
@@ -77,6 +87,11 @@ base_url = "https://api.x.ai/v1"
 
   [[providers.models]]
   task  = "chat"
+  model = "grok-4.3"
+
+
+  [[providers.models]]
+  task  = "vision"
   model = "grok-4.3"
 
 

@@ -18,7 +18,8 @@
   model    = "qwen3.5:4b"
   provider = "ollama"
   tasks    = [
-    "chat"
+    "chat",
+    "vision"
   ]
 
 

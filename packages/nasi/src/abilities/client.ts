@@ -1,9 +1,13 @@
 import type { NasiClientSkill, NasiClientTool, NasiToolResult } from "@kaja/schema/nasi"
 import type { Session } from "../agent/agent"
+import { imageLabel } from "../agent/describe"
+import { altFrom, type ImageParts } from "../agent/images"
 import { recordCall } from "../agent/telemetry"
-import { type Tool, tool } from "../agent/tools"
+import { type Tool, tool, toolName } from "../agent/tools"
 import { ImageError, normalizeImage } from "../images/normalize"
 import { imageDataUrl, withImageNote } from "../images/parts"
+import { imageRefId } from "../store/images"
+import { viewLinkedImageTool } from "../tools/builtin/view-image"
 import type { ToolGroup } from "../tools/registry"
 import type { AbilityStore } from "./types"
 
@@ -39,6 +43,11 @@ export function clientToolGroups(client: NasiClient): ToolGroup[] {
       }),
       runsOnClient: true
     }
+    // view_image's files are on the computer, the conversation's own images (by link) here.
+    if (!declared.ability && declared.name === toolName(viewLinkedImageTool)) {
+      stub.execute = viewLinkedImageTool.execute
+      stub.runsOnClient = (args: Record<string, unknown>) => !imageRefId(String(args.path ?? ""))
+    }
     byAbility.set(declared.ability, [...(byAbility.get(declared.ability) ?? []), stub])
   }
   return [...byAbility].map(([ability, tools]) =>
@@ -70,13 +79,20 @@ export function withClientAbilities(store: AbilityStore, client: NasiClient): Ab
   }
 }
 
-/** Keeps one of the client's images: its ref, or why it can't be used (see `storeImage`). */
-export type KeepImage = (bytes: Uint8Array) => Promise<{ ref: string } | { error: string }>
+/** Keeps one of the client's images: its parts in the message (see `storeImage`), or why it can't be used. */
+export type KeepImage = (bytes: Uint8Array, alt: string) => Promise<{ parts: ImageParts } | { error: string }>
 
 // Without a store the image stays inline, normalised like any other.
-const keepInline: KeepImage = async bytes => {
+const keepInline: KeepImage = async (bytes, alt) => {
   try {
-    return { ref: imageDataUrl(await normalizeImage(bytes)) }
+    const image = await normalizeImage(bytes)
+    const url = imageDataUrl(image)
+    return {
+      parts: [
+        { type: "text", text: imageLabel(url, image, alt) },
+        { type: "image_url", image_url: { url } }
+      ]
+    }
   } catch (error) {
     if (error instanceof ImageError) return { error: error.message }
     throw error
@@ -97,18 +113,18 @@ export async function answerClientCalls(
   const pending = session.pendingClientCalls
   if (!pending?.length) return
   const byId = new Map(results.map(result => [result.id, result]))
-  const refs: string[] = []
+  const parts: ImageParts[number][] = []
   for (const id of pending) {
     const result = byId.get(id)
-    const kept = await Promise.all((result?.images ?? []).map(image => keep(Buffer.from(image.data, "base64"))))
+    const alt = altFrom(result?.text, "an image from the user's computer")
+    const kept = await Promise.all((result?.images ?? []).map(image => keep(Buffer.from(image.data, "base64"), alt)))
     const refused = kept.flatMap(image => ("error" in image ? [image.error] : []))
     const text = result ? withImageNote(result.text, refused) : CLIENT_GONE
     session.messages.push({ role: "tool", tool_call_id: id, content: text })
     const status = result ? (result.status ?? "ok") : "skipped"
     recordCall(session, id, status === "declined" ? { status, approval: "declined" } : { status })
-    refs.push(...kept.flatMap(image => ("ref" in image ? [image.ref] : [])))
+    parts.push(...kept.flatMap(image => ("parts" in image ? image.parts : [])))
   }
-  if (refs.length)
-    session.messages.push({ role: "user", content: refs.map(url => ({ type: "image_url", image_url: { url } })) })
+  if (parts.length) session.messages.push({ role: "user", content: parts })
   session.pendingClientCalls = undefined
 }

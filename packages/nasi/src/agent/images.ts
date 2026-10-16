@@ -4,6 +4,7 @@ import { dataUrlBytes, imageDataUrl } from "../images/parts"
 import { imageRefId, inlineImages, type SessionImages } from "../store/images"
 import { warn } from "../warn"
 import type { Agent, Session } from "./agent"
+import { describeInBackground, imageLabel } from "./describe"
 
 /** The note a model gets where a stored image is gone. */
 export const MISSING_IMAGE = "[an image that is no longer stored]"
@@ -23,25 +24,57 @@ export function sessionImagesFor(agent: Agent, session: Session): SessionImages 
   return agent.store && session.id ? agent.store.images(session.id) : inlineImages
 }
 
-/** An arriving image as stored: the ref its message holds (a data URL when inline), and the object key hosts show it from. */
-export type ArrivedImage = { ref: string; key?: string; mimeType: string }
+/** An arriving image as stored: the ref its message holds (a data URL when inline), the object key hosts show it from, and its size. */
+export type ArrivedImage = { ref: string; key?: string; mimeType: string; width: number; height: number }
+
+/** An image's parts in its message: its label (alt text, later its description) and the image itself. */
+export type ImageParts = [{ type: "text"; text: string }, { type: "image_url"; image_url: { url: string } }]
+
+/** Longest alt text taken from the image's source (a tool's text, a caption). */
+const MAX_ALT = 125
+
+/** The first line of `text`, as alt text: what a tool said about its image, say. */
+export function altFrom(text: string | undefined, fallback: string): string {
+  const line = text
+    ?.split("\n")
+    .find(candidate => candidate.trim())
+    ?.trim()
+  if (!line) return fallback
+  return line.length > MAX_ALT ? `${line.slice(0, MAX_ALT - 1)}…` : line
+}
 
 /**
  * Normalises and stores one arriving image (bytes, or a data URL as a bot downloads a photo): the untouched bytes go
- * beside it for debugging. Another URL passes as it is; one that can't be used comes back as the reason why.
+ * beside it for debugging. Its label starts as `alt`, which the vision model's description replaces once it's
+ * written (see `describeInBackground`); seen before in this session, it takes that description at once. One that
+ * can't be used comes back as the reason why.
  */
 export async function storeImage(
   agent: Agent,
   session: Session,
-  input: Uint8Array | string
-): Promise<ArrivedImage | { error: string }> {
+  input: Uint8Array | string,
+  alt: string
+): Promise<(ArrivedImage & { parts: ImageParts }) | { error: string }> {
   const bytes = typeof input === "string" ? dataUrlBytes(input) : input
-  if (!bytes) return { ref: input as string, mimeType: "" }
+  if (!bytes) return { error: "only images sent as data can be shown" }
   try {
     const image = await normalizeImage(bytes)
-    const stored = await sessionImagesFor(agent, session).put(image, bytes)
-    cacheOf(session).set(stored.ref, imageDataUrl(image))
-    return { ...stored, mimeType: image.mimeType }
+    const images = sessionImagesFor(agent, session)
+    const stored = await images.put(image, bytes)
+    const dataUrl = imageDataUrl(image)
+    cacheOf(session).set(stored.ref, dataUrl)
+    const size = { width: image.width, height: image.height }
+    const id = imageRefId(stored.ref)
+    if (id)
+      describeInBackground(agent, session, { ref: stored.ref, size }, dataUrl, {
+        saved: () => images.description(id),
+        save: (text, model) => images.describe(id, text, model)
+      })
+    const parts: ImageParts = [
+      { type: "text", text: imageLabel(stored.ref, size, alt) },
+      { type: "image_url", image_url: { url: stored.ref } }
+    ]
+    return { ...stored, mimeType: image.mimeType, ...size, parts }
   } catch (error) {
     if (error instanceof ImageError) return { error: error.message }
     throw error
@@ -94,5 +127,14 @@ function hasRef(message: ChatCompletionMessageParam): boolean {
     message.role === "user" &&
     Array.isArray(message.content) &&
     message.content.some(part => part.type === "image_url" && imageRefId(part.image_url.url) !== undefined)
+  )
+}
+
+/** `messages` with their images left out, labels kept: what a chat model that can't see is sent. */
+export function withoutImageParts(messages: ChatCompletionMessageParam[]): ChatCompletionMessageParam[] {
+  return messages.map(message =>
+    message.role === "user" && Array.isArray(message.content) && message.content.some(part => part.type === "image_url")
+      ? { ...message, content: message.content.filter(part => part.type !== "image_url") }
+      : message
   )
 }

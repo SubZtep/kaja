@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { ToolResult } from "../../src/agent/tools"
-import { viewImageTool } from "../../src/tools/builtin/view-image"
+import { createMemoryStore } from "../../src/store"
+import { viewImageTool, viewLinkedImageTool } from "../../src/tools/builtin/view-image"
 import { setToolDeps } from "../../src/tools/deps"
 import { png } from "../fixtures/images"
 
@@ -54,4 +55,22 @@ test("a file that isn't an image is refused; a big one comes back model-sized", 
   const image = result.images![0]!
   expect(image.mimeType).toBe("image/png")
   expect((await new Bun.Image(image.data).metadata()).width).toBe(1568)
+})
+
+test("an image of the conversation is viewed again by its link, without asking; the cloud's view_image takes only links", async () => {
+  const images = createMemoryStore().images(Bun.randomUUIDv7())
+  const data = png(2, 2)
+  const { ref } = await images.put({ data, mimeType: "image/png" })
+  expect(viewImageTool.approval?.({ path: ref })).toBeUndefined()
+  const viewed = (await viewImageTool.execute({ path: ref }, { owner: null, images })) as ToolResult
+  expect(viewed.images![0]!.data).toEqual(new Uint8Array(data))
+  await expect(viewImageTool.execute({ path: `${ref.slice(0, -1)}0` }, { owner: null, images })).rejects.toThrow(
+    "No image"
+  )
+  expect(((await viewLinkedImageTool.execute({ path: ref }, { owner: null, images })) as ToolResult).text).toBe(
+    `Viewing image: ${ref}`
+  )
+  await expect(viewLinkedImageTool.execute({ path: "/etc/hostname" }, { owner: null, images })).rejects.toThrow(
+    "Only an image's kaja-image: link"
+  )
 })

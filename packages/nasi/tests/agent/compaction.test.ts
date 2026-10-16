@@ -358,3 +358,22 @@ test("a stored image's ref costs what an inline image does, and text that only m
   expect(estimateTokens([stored])).toBe(estimateTokens([inline]))
   expect(estimateTokens([mention])).toBeLessThan(50)
 })
+
+test("an image from before the last two prompts loses its pixels but keeps its label", () => {
+  const session = createSession()
+  session.messages.push(
+    {
+      role: "user",
+      content: [
+        { type: "text", text: "[Image kaja-image:0123456789abcdef (4×4): A red square.]" },
+        { type: "image_url", image_url: { url: "kaja-image:0123456789abcdef" } }
+      ]
+    },
+    { role: "user", content: "and now?" },
+    { role: "user", content: "still?" }
+  )
+  expect(contextMessages(session)[0]).toEqual({
+    role: "user",
+    content: [{ type: "text", text: "[Image kaja-image:0123456789abcdef (4×4): A red square.]" }]
+  })
+})

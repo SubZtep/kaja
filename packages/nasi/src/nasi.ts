@@ -8,6 +8,7 @@ import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import type { Compaction } from "./agent/compaction"
+import type { Describer } from "./agent/describe"
 import { NothingToApproveError, SessionNotFoundError } from "./agent/errors"
 import { storeImage } from "./agent/images"
 
@@ -19,16 +20,19 @@ import { allowKey } from "./agent/tool-allow"
 import { runApprovedTool, type Tool, toolName } from "./agent/tools"
 import { createGuardedFetch, type FetchLike } from "./security/ssrf"
 import type { NasiStore } from "./store/types"
+import { viewLinkedImageTool } from "./tools/builtin/view-image"
 import type { NasiToolDeps } from "./tools/deps"
 import { createTools } from "./tools/registry"
 import { warn } from "./warn"
 
 export type NasiOpenOptions = {
   store: NasiStore
-  /** `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row). */
-  chat: { client: OpenAI; model: string; contextWindow?: number }
+  /** `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row); `seesImages`: whether it takes images (its row lists `vision`), unset meaning it does. */
+  chat: { client: OpenAI; model: string; contextWindow?: number; seesImages?: boolean }
   /** Writes compaction summaries, condenses oversized tool results and runs the `summarize` tool; defaults to {@link chat}. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+  /** Describes arriving images (the vision task's model); unset, an image keeps its alt text. */
+  describer?: Describer
   /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
   personas?: Persona[]
@@ -239,7 +243,14 @@ export class Nasi {
     const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer, fetchSend: opts.egress?.() },
-      extraTools: [...(abilities?.groups ?? []), ...(client ? clientToolGroups(client) : [])],
+      extraTools: [
+        ...(abilities?.groups ?? []),
+        ...(client ? clientToolGroups(client) : []),
+        // The conversation's own images by link; a computer that declares view_image takes its files too.
+        ...(client?.tools.some(tool => tool.name === "view_image")
+          ? []
+          : [{ origin: "official" as const, tools: [viewLinkedImageTool] }])
+      ],
       // MCP abilities connect when a persona that uses them is active, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
       lazyMcpAbilities: true,
@@ -292,6 +303,8 @@ export class Nasi {
       store: this.opts.store,
       contextWindow: this.opts.chat.contextWindow,
       summarizer: this.opts.summarizer,
+      describer: this.opts.describer,
+      chatSeesImages: this.opts.chat.seesImages,
       ensureTools: async names => {
         this.tools = await this.ensureAbilities(names)
         return this.tools
@@ -313,7 +326,7 @@ export class Nasi {
     input: NasiTurnInput
   ): Promise<{ prompt?: string; images?: Uint8Array[] }> {
     if (session.pendingClientCalls?.length) {
-      await answerClientCalls(session, input.toolResults, bytes => storeImage(agent, session, bytes))
+      await answerClientCalls(session, input.toolResults, (bytes, alt) => storeImage(agent, session, bytes, alt))
       if (input.message === undefined) return {}
     }
     const pendingId = session.pendingToolApprovalId

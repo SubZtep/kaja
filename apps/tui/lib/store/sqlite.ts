@@ -59,6 +59,7 @@ function createSchema(db: Database) {
   migrateNotesOwnerColumn(db)
   dropLegacySessions(db)
   dropSessionImages(db)
+  const oldModelCalls = setAsideOldModelCalls(db)
   db.run(`
     CREATE TABLE IF NOT EXISTS notes (
       owner       TEXT NOT NULL,
@@ -147,11 +148,11 @@ function createSchema(db: Database) {
       PRIMARY KEY (sessionId, summaryFrom)
     )
   `)
-  // Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool), for their tokens.
+  // Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool; image descriptions), for their tokens.
   db.run(`
     CREATE TABLE IF NOT EXISTS model_calls (
       sessionId        TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
-      kind             TEXT NOT NULL CHECK (kind IN ('compact','condense','summarize')),
+      kind             TEXT NOT NULL CHECK (kind IN ('compact','condense','summarize','describe')),
       model            TEXT NOT NULL,
       promptTokens     INTEGER,
       completionTokens INTEGER,
@@ -160,6 +161,7 @@ function createSchema(db: Database) {
     )
   `)
   db.run("CREATE INDEX IF NOT EXISTS model_calls_session_idx ON model_calls (sessionId)")
+  if (oldModelCalls) copyOldModelCalls(db)
   db.run(`
     CREATE TABLE IF NOT EXISTS dataset_answers (
       topic      TEXT NOT NULL,
@@ -212,6 +214,23 @@ function noteParams(key: string, note: MemoryNote) {
     $lastUsedAt: note.lastUsedAt,
     $useCount: note.useCount
   }
+}
+
+// model_calls from before image descriptions has a CHECK without 'describe': set it aside, for createSchema to copy into the new table.
+function setAsideOldModelCalls(db: Database): boolean {
+  const table = db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'model_calls'").get() as {
+    sql: string
+  } | null
+  if (!table || table.sql.includes("'describe'")) return false
+  db.run("DROP INDEX IF EXISTS model_calls_session_idx")
+  db.run("ALTER TABLE model_calls RENAME TO model_calls_old")
+  return true
+}
+
+function copyOldModelCalls(db: Database) {
+  db.run(`INSERT INTO model_calls (sessionId, kind, model, promptTokens, completionTokens, latencyMs, createdAt)
+          SELECT sessionId, kind, model, promptTokens, completionTokens, latencyMs, createdAt FROM model_calls_old`)
+  db.run("DROP TABLE model_calls_old")
 }
 
 type MessageDbRow = {

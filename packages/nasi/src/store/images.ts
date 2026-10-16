@@ -32,6 +32,10 @@ export type SessionImages = {
   /** Stores an image once (and the untouched original beside it, `<key>.orig`, for debugging only); `ref` is what the message holds, `key` its object key. */
   put(image: SessionImage, original?: Uint8Array): Promise<{ ref: string; key?: string }>
   get(id: string): Promise<SessionImage | undefined>
+  /** Keeps an image's description beside it (`<key>.json`), with the model that wrote it. */
+  describe(id: string, description: string, model: string): Promise<void>
+  /** The description kept beside an image, if one was written. */
+  description(id: string): Promise<string | undefined>
   /** Removes every image of the session. */
   clear(): Promise<void>
 }
@@ -69,6 +73,20 @@ export function filesSessionImages(files: Files, prefix: string): SessionImages 
         throw error
       }
     },
+    async describe(id, description, model) {
+      const sidecar = { description, model, at: new Date().toISOString() }
+      await files.upload(`${imageKey(prefix, id)}.json`, JSON.stringify(sidecar), { contentType: "application/json" })
+    },
+    async description(id) {
+      try {
+        const file = await files.download(`${imageKey(prefix, id)}.json`)
+        const { description } = JSON.parse(await file.text()) as { description?: unknown }
+        return typeof description === "string" ? description : undefined
+      } catch (error) {
+        if (error instanceof FilesError && error.code === "NotFound") return undefined
+        throw error
+      }
+    },
     clear: () => deleteImages(files, prefix)
   }
 }
@@ -77,6 +95,8 @@ export function filesSessionImages(files: Files, prefix: string): SessionImages 
 export const inlineImages: SessionImages = {
   put: async image => ({ ref: imageDataUrl(image) }),
   get: async () => undefined,
+  describe: async () => {},
+  description: async () => undefined,
   clear: async () => {}
 }
 

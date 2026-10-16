@@ -16,7 +16,8 @@ import {
   type ClientCall,
   RUN_COMMAND_TOOL,
   type Session,
-  SWITCH_PERSONA_TOOL
+  SWITCH_PERSONA_TOOL,
+  seesImages
 } from "./agent"
 import { DEFAULT_SAFE_PATTERNS, isSafeCommand } from "./command-risk"
 import {
@@ -27,8 +28,17 @@ import {
   estimateTokens,
   isContextOverflow
 } from "./compaction"
+import { applyDescriptions } from "./describe"
 import { ModelUnavailableError } from "./errors"
-import { resetImageCache, resolveImageRefs, storeImage } from "./images"
+import {
+  altFrom,
+  type ImageParts,
+  resetImageCache,
+  resolveImageRefs,
+  sessionImagesFor,
+  storeImage,
+  withoutImageParts
+} from "./images"
 import { personaTools, syncPersonaTools } from "./persona-tools"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
@@ -150,6 +160,7 @@ async function* handleToolCall(
       owner,
       personaId: agent.personaId,
       store: agent.store,
+      images: sessionImagesFor(agent, session),
       onModelCall
     })
   } catch (error) {
@@ -166,15 +177,17 @@ async function* handleToolCall(
     return
   }
 
-  // Stored as they arrive, so the message holds a ref; one that can't be used becomes a note.
-  const images = await Promise.all((result.images ?? []).map(image => storeImage(agent, session, image.data)))
+  // Stored as they arrive, so the message holds a ref (and a label, what the tool said, until it's described); one that can't be used becomes a note.
+  const alt = altFrom(result.text, `an image from ${call.function.name}`)
+  const images = await Promise.all((result.images ?? []).map(image => storeImage(agent, session, image.data, alt)))
   const refused = images.flatMap(image => ("error" in image ? [image.error] : []))
   messages.push({ role: "tool", tool_call_id: call.id, content: withImageNote(result.text, refused) })
   if (result.displayImage) yield { type: "display_image", ...result.displayImage }
   for (const stored of images) {
     if ("error" in stored) continue
-    yield { type: "tool_image", ...stored }
-    messages.push({ role: "user", content: [imagePart(stored.ref)] })
+    const { ref, key, mimeType } = stored
+    yield { type: "tool_image", ref, mimeType, ...(key ? { key } : {}) }
+    messages.push({ role: "user", content: stored.parts })
   }
 }
 
@@ -262,7 +275,7 @@ async function* streamRound(
   }
 }
 
-type PromptPart = ReturnType<typeof imagePart> | { type: "text"; text: string }
+type PromptPart = ImageParts[number]
 
 function pushPromptToMessages(session: Session, prompt: string, images: PromptPart[]): void {
   pushPromptText(session, prompt, images)
@@ -271,21 +284,22 @@ function pushPromptToMessages(session: Session, prompt: string, images: PromptPa
     session.messages.push({ role: "user", content: images })
 }
 
-function imagePart(url: string) {
-  return { type: "image_url" as const, image_url: { url } }
-}
-
-// The prompt's images, stored; one that can't be read becomes a note, so the model knows something was sent.
+// The prompt's images, stored, each with its label; one that can't be read becomes a note, so the model knows something was sent.
 async function promptImageParts(
   agent: Agent,
   session: Session,
+  prompt: string,
   images: (string | Uint8Array)[]
 ): Promise<PromptPart[]> {
-  const parts = await Promise.all(images.map(image => storeImage(agent, session, image)))
-  return parts.map(part =>
-    "ref" in part
-      ? imagePart(part.ref)
-      : { type: "text" as const, text: `[An image was sent here, but it can't be shown: ${part.error}.]` }
+  // An approved tool's images come with its answer: what the tool said about them is their alt text.
+  const alt = session.pendingToolApprovalId
+    ? altFrom(prompt, "an image from the approved tool")
+    : "an image the user sent"
+  const stored = await Promise.all(images.map(image => storeImage(agent, session, image, alt)))
+  return stored.flatMap(image =>
+    "parts" in image
+      ? image.parts
+      : [{ type: "text" as const, text: `[An image was sent here, but it can't be shown: ${image.error}.]` }]
   )
 }
 
@@ -598,7 +612,8 @@ async function openTurn(
   } else {
     await refreshAbilitiesInPrompt(agent, messages, owner)
   }
-  if (prompt !== undefined) pushPromptToMessages(session, prompt, await promptImageParts(agent, session, images))
+  if (prompt !== undefined)
+    pushPromptToMessages(session, prompt, await promptImageParts(agent, session, prompt, images))
 }
 
 // Records the telemetry step for the round whose message was just appended.
@@ -653,7 +668,13 @@ async function* streamRoundFitting(
   definitions: import("openai/resources/chat/completions").ChatCompletionTool[],
   estimateScale: number
 ): AsyncGenerator<AgentEvent, StreamedRound, void> {
-  const sendable = () => resolveImageRefs(agent, session, contextMessages(session))
+  // A model that can't see gets the images' labels only, so it waits for their descriptions; one that can gets those written so far.
+  const sees = seesImages(agent)
+  const sendable = async () => {
+    await applyDescriptions(session, !sees)
+    const messages = contextMessages(session)
+    return sees ? resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
+  }
   try {
     return yield* streamRound(agent, await sendable(), definitions)
   } catch (error) {
@@ -710,6 +731,21 @@ export async function* run(
   session: Session,
   owner: string | null = LOCAL_OWNER,
   images: (string | Uint8Array)[] = []
+): AsyncGenerator<AgentEvent, void, void> {
+  try {
+    yield* runTurn(agent, prompt, session, owner, images)
+  } finally {
+    // A turn ends with its images' descriptions in, so the session the host saves keeps them.
+    await applyDescriptions(session, true)
+  }
+}
+
+async function* runTurn(
+  agent: Agent,
+  prompt: string | undefined,
+  session: Session,
+  owner: string | null,
+  images: (string | Uint8Array)[]
 ): AsyncGenerator<AgentEvent, void, void> {
   const messages = session.messages
   resetImageCache(session)

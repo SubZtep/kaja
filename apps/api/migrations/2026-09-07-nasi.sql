@@ -71,11 +71,11 @@ CREATE TABLE IF NOT EXISTS nasi_session_summary (
   PRIMARY KEY (session_id, summary_from)
 );
 
--- Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool), so stats count their tokens.
+-- Model calls besides the conversation's rounds (summaries for compaction, condensing, the summarize tool; image descriptions), so stats count their tokens.
 CREATE TABLE IF NOT EXISTS nasi_model_call (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   session_id uuid NOT NULL REFERENCES nasi_session (id) ON DELETE CASCADE,
-  kind text NOT NULL CHECK (kind IN ('compact', 'condense', 'summarize')),
+  kind text NOT NULL CHECK (kind IN ('compact', 'condense', 'summarize', 'describe')),
   model text NOT NULL,
   prompt_tokens integer,
   completion_tokens integer,

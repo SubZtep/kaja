@@ -52,7 +52,7 @@ function condensed(session: Session, messages: ChatCompletionMessageParam[]): Ch
   )
 }
 
-// The messages with images from before the last few user prompts replaced by a note: the model saw them then, and resending them each round costs a lot.
+// The messages with images from before the last few user prompts left out (their labels stay, else a note): the model saw them then, and resending them each round costs a lot.
 function withoutOldImages(messages: ChatCompletionMessageParam[]): ChatCompletionMessageParam[] {
   let prompts = 0
   const keepFrom = messages.findLastIndex(
@@ -64,14 +64,14 @@ function withoutOldImages(messages: ChatCompletionMessageParam[]): ChatCompletio
   return messages.map((message, at) => {
     if (at >= keepFrom || message.role !== "user" || !Array.isArray(message.content) || !hasImage(message))
       return message
-    return {
-      ...message,
-      content: message.content.map(part =>
-        part.type === "image_url"
-          ? { type: "text" as const, text: "[an image shown earlier in the conversation]" }
-          : part
-      )
-    }
+    // A labelled image keeps its label (what it shows, its link) and loses only its pixels; one without gets a note.
+    const content = message.content.flatMap((part, at, parts) => {
+      if (part.type !== "image_url") return [part]
+      const label = parts[at - 1]
+      if (label?.type === "text" && label.text.startsWith("[Image")) return []
+      return [{ type: "text" as const, text: "[an image shown earlier in the conversation]" }]
+    })
+    return { ...message, content }
   })
 }
 

@@ -402,6 +402,10 @@ describe("HTTP tools in the cloud", () => {
       role: "user",
       content: [
         { type: "text", text: "/new" },
+        {
+          type: "text",
+          text: expect.stringMatching(/^\[Image kaja-image:[0-9a-f]{16} \(2×2\): an image the user sent]$/)
+        },
         { type: "image_url", image_url: { url: photo } }
       ]
     })

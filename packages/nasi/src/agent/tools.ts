@@ -1,6 +1,7 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionFunctionTool, ChatCompletionTool } from "openai/resources/chat/completions"
 import { z } from "zod"
+import type { SessionImages } from "../store/images"
 import type { NasiStore } from "../store/types"
 
 /** Identifies who's talking to a {@link Tool}'s `execute`, and which persona is active — `owner` is `null` for a terminal session, `"telegram:<id>"` for a Telegram user; `personaId` mirrors {@link Agent.personaId}. Supplied by {@link run}, never by the model. */
@@ -8,6 +9,8 @@ export type ToolContext = {
   owner: string | null
   personaId?: string
   store?: NasiStore
+  /** The session's stored images, for a tool that reads them back by link (view_image). */
+  images?: SessionImages
   /** Records a model call the tool made itself (the summarize tool's), so the session's usage counts it. */
   onModelCall?: (usage: ModelCallUsage) => void
 }

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { answerClientCalls, CLIENT_GONE } from "../src/abilities/client"
+import { answerClientCalls, CLIENT_GONE, clientToolGroups } from "../src/abilities/client"
 import type { AbilityStore } from "../src/abilities/types"
 import type { Session } from "../src/agent/agent"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
@@ -161,4 +161,15 @@ test("each answered call's status goes into telemetry as the client reports it; 
     c: { status: "declined", approval: "declined" },
     d: { status: "skipped" }
   })
+})
+
+test("a computer's view_image runs a file there, and an image of the conversation (by link) here", () => {
+  const [group] = clientToolGroups({
+    tools: [{ name: "view_image", description: "View an image", parameters: { type: "object", properties: {} } }],
+    skills: []
+  })
+  const stub = group!.tools[0]!
+  const runsThere = stub.runsOnClient as (args: Record<string, unknown>) => boolean
+  expect(runsThere({ path: "shot.png" })).toBe(true)
+  expect(runsThere({ path: "kaja-image:0123456789abcdef" })).toBe(false)
 })

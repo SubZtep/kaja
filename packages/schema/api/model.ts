@@ -1,6 +1,15 @@
 import { z } from "zod"
 
-export const modelTaskSchema = z.enum(["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize"])
+export const modelTaskSchema = z.enum([
+  "chat",
+  "tts",
+  "stt",
+  "embedding",
+  "image-generation",
+  "rerank",
+  "summarize",
+  "vision"
+])
 
 export const providerSchema = z.object({
   id: z.string(),

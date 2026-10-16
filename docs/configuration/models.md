@@ -43,6 +43,10 @@ The tasks:
 - `rerank`
 - `summarize`: writes the summary a long conversation is [compacted](/configuration/config#context) into,
   condenses oversized tool results and runs the `summarize` tool. The chat model does it when there's none.
+- `vision`: the model can see images. Listed on the chat model, the chat gets the pixels of recent images;
+  without it, the chat gets each image's short description and link instead (it can still `view_image` the
+  link). The first model listing `vision` writes those descriptions, in the background as images arrive.
+  With none, an image keeps its alt text (what the tool said about it, say).
 
 Each `[models.<id>]` entry has:
 
@@ -88,10 +92,10 @@ the wizard also keeps the models it didn't pick, for pins and switching.
 
 | File | Providers | Tasks |
 | --- | --- | --- |
-| `models.ollama.toml` | Ollama | chat (`qwen3.5:4b`), embedding. Fully local |
-| `models.default.toml` | Fireworks, xAI, Speaches | chat, summarize, embedding, rerank, image-generation, tts, stt. What `kaja config fetch --offline` writes |
+| `models.ollama.toml` | Ollama | chat and vision (`qwen3.5:4b`), embedding. Fully local |
+| `models.default.toml` | Fireworks, xAI, Speaches | chat, vision, summarize, embedding, rerank, image-generation, tts, stt. What `kaja config fetch --offline` writes |
 | `models.llama.toml` | llama.cpp | chat against a local `llama-server` |
-| `models.xai.toml` | xAI | chat (`grok-4.3`), image-generation. One hosted key |
+| `models.xai.toml` | xAI | chat and vision (`grok-4.3`), image-generation. One hosted key |
 | `models.openrouter.toml` | OpenRouter | chat (`stealth/space-bunny-alpha`). One hosted key |
 
 ---

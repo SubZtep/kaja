@@ -503,3 +503,26 @@ test("timestamps are UTC instants whatever timezone the machine is in, so newest
     else process.env.TZ = originalTz
   }
 })
+
+test("a sqlite file from before image descriptions keeps its model calls and can record a description's", async () => {
+  const { Database } = await import("bun:sqlite")
+  const { createSqliteStore } = await import("../../../lib/store/sqlite")
+  const path = `${tmpdir()}/kaja-model-calls-${Bun.randomUUIDv7()}.sqlite`
+  const id = await createSqliteStore(path).createSession({ ...row(), title: "old" })
+  const old = new Database(path)
+  old.run("DROP TABLE model_calls")
+  old.run(`CREATE TABLE model_calls (
+    sessionId TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+    kind TEXT NOT NULL CHECK (kind IN ('compact','condense','summarize')),
+    model TEXT NOT NULL, promptTokens INTEGER, completionTokens INTEGER, latencyMs INTEGER NOT NULL, createdAt TEXT NOT NULL)`)
+  old.run(`INSERT INTO model_calls VALUES ('${id}', 'compact', 'm', 1, 1, 5, 'x')`)
+  old.close()
+
+  const store = createSqliteStore(path)
+  const telemetry = { steps: [], calls: {}, modelCalls: [{ kind: "describe", model: "vision-m", latencyMs: 7 }] }
+  await store.updateSession(id, row({ session: { ...SESSION, telemetry } }))
+  const db = new Database(path)
+  const kinds = db.query("SELECT kind FROM model_calls ORDER BY rowid").all() as { kind: string }[]
+  db.close()
+  expect(kinds.map(call => call.kind)).toEqual(["compact", "describe"])
+})

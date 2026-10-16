@@ -4,7 +4,16 @@ import type { ModelTask } from "@kaja/schema/api"
 import { Checkbox } from "../../../../../components/form/primitives/Checkbox"
 
 /** Every task a model can serve, in the order the checkboxes show them. */
-export const MODEL_TASKS: ModelTask[] = ["chat", "tts", "stt", "embedding", "image-generation", "rerank", "summarize"]
+export const MODEL_TASKS: ModelTask[] = [
+  "chat",
+  "tts",
+  "stt",
+  "embedding",
+  "image-generation",
+  "rerank",
+  "summarize",
+  "vision"
+]
 
 /** A checkbox per {@link MODEL_TASKS} entry, for the add and edit model forms. */
 export function TaskCheckboxes({

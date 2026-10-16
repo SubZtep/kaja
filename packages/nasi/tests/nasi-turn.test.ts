@@ -378,10 +378,12 @@ test("a turn's images reach the model with its text, and history shows them as a
   )
 
   const first = await nasi.turnBuffered({ message: "what is this?", images: [PHOTO] })
+  const label = `[Image ${IMAGE_REF_PREFIX}${imageId(TINY_PNG)} (1×1): an image the user sent]`
   expect(sent[0]!.at(-1)).toEqual({
     role: "user",
     content: [
       { type: "text", text: "what is this?" },
+      { type: "text", text: label },
       { type: "image_url", image_url: { url: PHOTO } }
     ]
   })
@@ -393,7 +395,13 @@ test("a turn's images reach the model with its text, and history shows them as a
   await nasi.turnBuffered({ session: first.session, message: "", images: [PHOTO] })
   expect(sent[1]!.slice(-2)).toEqual([
     { role: "tool", tool_call_id: "call_1", content: "" },
-    { role: "user", content: [{ type: "image_url", image_url: { url: PHOTO } }] }
+    {
+      role: "user",
+      content: [
+        { type: "text", text: label },
+        { type: "image_url", image_url: { url: PHOTO } }
+      ]
+    }
   ])
 })
 
@@ -410,6 +418,7 @@ test("an image is stored the moment it arrives: the session keeps its ref, the m
   const asked = row!.session.messages.find(message => message.role === "user")!
   expect(asked.content).toEqual([
     { type: "text", text: "what is this?" },
+    { type: "text", text: `[Image ${IMAGE_REF_PREFIX}${id} (1×1): an image the user sent]` },
     { type: "image_url", image_url: { url: `${IMAGE_REF_PREFIX}${id}` } }
   ])
   expect((await store.images(done.session).get(id))?.mimeType).toBe("image/png")

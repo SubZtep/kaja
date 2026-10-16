@@ -251,6 +251,7 @@ test("a photo reaches the model with its caption; a model that refuses it gets a
     role: "user",
     content: [
       { type: "text", text: "what is it?" },
+      { type: "text", text: "[Image (1×1): an image the user sent]" },
       { type: "image_url", image_url: { url: photo } }
     ]
   })

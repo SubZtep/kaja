@@ -154,9 +154,13 @@ test("an approved tool's images reach the model with its answer, normalised", as
   )
   await collect(run(agentWith([{ content: "Nice." }]), result.text, session, undefined, result.images))
   expect(session.messages[2]).toEqual({ role: "tool", tool_call_id: "c1", content: "snapped" })
-  const image = session.messages[3] as { role: string; content: { type: string; image_url: { url: string } }[] }
+  const image = session.messages[3] as {
+    role: string
+    content: { type: string; text?: string; image_url?: { url: string } }[]
+  }
   expect(image.role).toBe("user")
-  const url = image.content[0]!.image_url.url
+  expect(image.content[0]).toEqual({ type: "text", text: "[Image (1568×52): snapped]" })
+  const url = image.content[1]!.image_url!.url
   expect(url).toStartWith("data:image/png;base64,")
   expect((await new Bun.Image(Buffer.from(url.split(",")[1]!, "base64")).metadata()).width).toBe(1568)
 })

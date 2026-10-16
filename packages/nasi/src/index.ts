@@ -199,7 +199,7 @@ export { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool } fro
 export { readFileTool } from "./tools/builtin/read-file"
 export { rerankTool } from "./tools/builtin/rerank"
 export { summarizeTool } from "./tools/builtin/summarize"
-export { viewImageTool } from "./tools/builtin/view-image"
+export { viewImageTool, viewLinkedImageTool } from "./tools/builtin/view-image"
 export { getToolDeps, type ImageGenModel, type NasiToolDeps, type RerankModel, setToolDeps } from "./tools/deps"
 export {
   type CreateToolsOptions,

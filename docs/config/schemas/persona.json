@@ -41,6 +41,10 @@
         "summarize": {
           "type": "string",
           "minLength": 1
+        },
+        "vision": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },

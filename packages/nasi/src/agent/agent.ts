@@ -3,6 +3,7 @@ import type { CliResolvedModel } from "@kaja/schema/config"
 import type OpenAI from "openai"
 import { z } from "zod"
 import type { NasiStore } from "../store/types"
+import type { Describer } from "./describe"
 import { samplingOf } from "./persona"
 import { type Tool, tool } from "./tools"
 
@@ -49,6 +50,10 @@ export class Agent {
   contextWindow?: number
   /** Writes compaction summaries (the summarize task's model); defaults to this agent's own chat model. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+  /** Describes arriving images (the vision task's model); unset, an image keeps its alt text. */
+  describer?: Describer
+  /** Whether the chat model takes images; unset, it does when its {@link models} entry lists `vision` (or there are no entries to tell). See {@link seesImages}. */
+  chatSeesImages?: boolean
   /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
   compactAt?: number
   /** Whole-command patterns that run without asking (commands.toml); defaults to the built-in list. */
@@ -74,6 +79,8 @@ export class Agent {
     store?: NasiStore
     contextWindow?: number
     summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+    describer?: Describer
+    chatSeesImages?: boolean
     compactAt?: number
     safeCommands?: RegExp[]
     yolo?: boolean
@@ -94,6 +101,8 @@ export class Agent {
     this.store = config.store
     this.contextWindow = config.contextWindow
     this.summarizer = config.summarizer
+    this.describer = config.describer
+    this.chatSeesImages = config.chatSeesImages
     this.compactAt = config.compactAt
     this.safeCommands = config.safeCommands
     this.yolo = config.yolo
@@ -216,9 +225,9 @@ export type CallStatus = "ok" | "error" | "declined" | "skipped"
 
 export type CallStat = { status?: CallStatus; approval?: "approved" | "declined"; durationMs?: number }
 
-/** What one model call besides the conversation's own rounds cost: a summary written for compaction, condensing or the summarize tool. */
+/** What one model call besides the conversation's own rounds cost: a summary written for compaction, condensing or the summarize tool, or an image's description. */
 export type ModelCallStat = {
-  kind: "compact" | "condense" | "summarize"
+  kind: "compact" | "condense" | "summarize" | "describe"
   /** The provider-reported model, else the requested one. */
   model: string
   promptTokens?: number
@@ -247,6 +256,13 @@ export type Session = {
   summary?: { text: string; from: number }
   /** Condensed versions of oversized tool results, by call id, sent to the model in place of the full output. */
   toolSummaries?: Record<string, string>
+}
+
+/** Whether the agent's chat model is sent images, or only their labels: a models.toml entry for it that lists `vision` says it can see. */
+export function seesImages(agent: Agent): boolean {
+  if (agent.chatSeesImages !== undefined) return agent.chatSeesImages
+  const own = agent.models?.filter(entry => entry.model === agent.model) ?? []
+  return own.length === 0 || own.some(entry => entry.task === "vision")
 }
 
 export function createSession(): Session {

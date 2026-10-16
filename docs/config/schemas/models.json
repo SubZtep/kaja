@@ -50,7 +50,8 @@
                 "embedding",
                 "image-generation",
                 "rerank",
-                "summarize"
+                "summarize",
+                "vision"
               ]
             }
           },
