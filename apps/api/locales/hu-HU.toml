@@ -1,15 +1,15 @@
 [email]
 greeting               = "Halló{name} 👋"
-signInCodeSubject      = "[hu-HU] lorem ipsum dolor sit amet {otp}"
-signInCodeText         = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-signInCodeIgnore       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-changeEmailCodeSubject = "[hu-HU] lorem ipsum dolor sit amet consectetur {otp}"
-changeEmailCodeText    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-changeEmailCodeIgnore  = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-newEmailCodeSubject    = "[hu-HU] lorem ipsum dolor sit amet consectetur {otp}"
-newEmailCodeText       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
-newEmailCodeIgnore     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
-footer                 = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+signInCodeSubject      = "[kaja.io] {otp} a bejelentkezési kódod"
+signInCodeText         = "A kódod a Kajába való bejelentkezéshez. 10 percig érvényes:"
+signInCodeIgnore       = "Nem te kérted? Nyugodtan hagyd figyelmen kívül ezt az e-mailt, a kód nélkül senki sem tud belépni."
+changeEmailCodeSubject = "[kaja.io] {otp} a kódod az e-mail címed módosításához"
+changeEmailCodeText    = "A kódod a Kaja e-mail címed módosításának jóváhagyásához. 10 percig érvényes:"
+changeEmailCodeIgnore  = "Nem te kérted? Nyugodtan hagyd figyelmen kívül ezt az e-mailt, a kód nélkül a címed nem változhat meg."
+newEmailCodeSubject    = "[kaja.io] {otp} a kódod ennek az e-mail címnek a megerősítéséhez"
+newEmailCodeText       = "A kódod, hogy ez a cím legyen a Kaja e-mail címed. 10 percig érvényes:"
+newEmailCodeIgnore     = "Nem te kérted? Nyugodtan hagyd figyelmen kívül ezt az e-mailt, a kód nélkül semmi sem változik."
+footer                 = "A Kaja szórakozásra és személyes használatra készült."
 
 
 [telegram]

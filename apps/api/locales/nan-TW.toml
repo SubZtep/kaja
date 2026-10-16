@@ -1,15 +1,15 @@
 [email]
 greeting               = "你好{name} 👋"
-signInCodeSubject      = "[nan-TW] lorem ipsum dolor sit amet {otp}"
-signInCodeText         = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing"
-signInCodeIgnore       = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-changeEmailCodeSubject = "[nan-TW] lorem ipsum dolor sit amet consectetur {otp}"
-changeEmailCodeText    = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-changeEmailCodeIgnore  = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
-newEmailCodeSubject    = "[nan-TW] lorem ipsum dolor sit amet consectetur {otp}"
-newEmailCodeText       = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
-newEmailCodeIgnore     = "[nan-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
-footer                 = "[nan-TW] lorem ipsum dolor sit amet consectetur"
+signInCodeSubject      = "[kaja.io] {otp} 是你个登入碼"
+signInCodeText         = "這是你登入 Kaja 个碼，10 分鐘內有效："
+signInCodeIgnore       = "毋是你討个？莫插這張批就好，無這个碼啥人都袂當登入。"
+changeEmailCodeSubject = "[kaja.io] {otp} 是你改電子批信址个碼"
+changeEmailCodeText    = "這是核准改你 Kaja 電子批信址个碼，10 分鐘內有效："
+changeEmailCodeIgnore  = "毋是你討个？莫插這張批就好，無這个碼你个信址袂改。"
+newEmailCodeSubject    = "[kaja.io] {otp} 是確認這个電子批信址个碼"
+newEmailCodeText       = "這是予這个信址做你 Kaja 電子批信址个碼，10 分鐘內有效："
+newEmailCodeIgnore     = "毋是你討个？莫插這張批就好，無這个碼啥物都袂變。"
+footer                 = "Kaja 是為著趣味佮個人使用做个。"
 
 
 [telegram]
