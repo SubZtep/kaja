@@ -9,6 +9,7 @@ import { warn } from "../warn"
 import { BACKUP_TOOL_NAMES, backupTools } from "./builtin/backups"
 import { currentTimeTool } from "./builtin/current-time"
 import { datasetInfoTool } from "./builtin/dataset-info"
+import { editImageTool } from "./builtin/edit-image"
 import { fetchUrlTool } from "./builtin/fetch-url"
 import { generateImageTool } from "./builtin/generate-image"
 import { listFilesTool } from "./builtin/list-files"
@@ -34,7 +35,9 @@ const CLOUD_SAFE = new Set([
   "rerank",
   // Only ever reaches a cloud turn with `fetchSend` set — see the conditional in `builtin` below.
   "fetch_url",
-  "generate_image"
+  "generate_image",
+  // Only the conversation's own images, by link
+  "edit_image"
 ])
 
 export type CreateToolsOptions = {
@@ -200,6 +203,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     // Local fetches from the user's own machine; a cloud turn never fetches from the server, so without a sender it stays off.
     ...(local || opts.deps?.fetchSend ? [fetchUrlTool] : []),
     viewImageTool,
+    editImageTool,
     summarizeTool,
     rerankTool,
     currentTimeTool,

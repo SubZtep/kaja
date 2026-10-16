@@ -68,6 +68,7 @@ sequenceDiagram
 - It needs `git` 2.25+ (`clone --sparse`). The version is checked first, and `kaja doctor` shows it. Prompts
   are off, so a private or mistyped URL fails instead of waiting for a password, and every git call has a
   two-minute timeout. Changing `[marketplace] url` re-clones.
+- Only the files inside its folders are synced; loose top-level files (its `README.md`) stay in the repo.
 - Each sync compares three things per file: the upstream copy, the user's copy, and the hash the previous
   sync recorded in `.sync-lock.json`:
 

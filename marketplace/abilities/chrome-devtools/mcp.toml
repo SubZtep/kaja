@@ -1,6 +1,6 @@
 # Drives a headless Chrome through the Chrome DevTools MCP server:
 # https://github.com/ChromeDevTools/chrome-devtools-mcp
-# Kaja runs the npm package itself on your machine (with Node.js when you have it) and needs Chrome installed.
+# Kaja runs the npm package itself on your machine (with Node.js when you have it) and needs Chrome or Chromium installed.
 # In the cloud it runs in the MCP sandbox instead (apps/sandbox), one browser per user,
 # and only on that user's own sandbox or the official one — never one somebody else shares.
 # Reading pages runs straight away; clicking, typing and navigating ask first.
@@ -11,7 +11,7 @@ transport      = "stdio"
 package        = {
   npm = "chrome-devtools-mcp@1.10.1"
 }
-# Google Chrome itself: without it here, Kaja offers to run this ability on a sandbox instead.
+# Google Chrome, or a Chromium it points the server at: without either, Kaja offers to run this ability on a sandbox instead.
 requires       = [
   "chrome"
 ]

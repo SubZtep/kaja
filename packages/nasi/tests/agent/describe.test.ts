@@ -178,6 +178,27 @@ test("a tool image's event carries its alt text, and an image_described event fo
   ])
 })
 
+test("an approved tool's images reach the host as tool_image events; the user's own don't", async () => {
+  const agent = new Agent({
+    model: "m",
+    client: chat(["Here it is."], []) as never,
+    tools: [],
+    store: createMemoryStore()
+  })
+  const events: AgentEvent[] = []
+  const images = [{ data: TINY_PNG, alt: "Viewing image: /tmp/photo.png" }, PHOTO]
+  for await (const event of run(agent, "approved", createSession(), undefined, images)) events.push(event)
+  expect(events.filter(event => event.type === "tool_image")).toEqual([
+    {
+      type: "tool_image",
+      ref: LINK,
+      mimeType: "image/png",
+      alt: "Viewing image: /tmp/photo.png",
+      key: expect.any(String)
+    }
+  ])
+})
+
 test("a reply's kaja-image: links become their images' URLs; one with nowhere to go stays as it is", () => {
   const text = `Here: ![a cat](kaja-image:0123456789abcdef) and ![a dog](kaja-image:fedcba9876543210)`
   const url = (id: string) => (id === "0123456789abcdef" ? `https://img/${id}` : undefined)

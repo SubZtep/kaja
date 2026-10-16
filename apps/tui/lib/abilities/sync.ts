@@ -50,7 +50,7 @@ async function hashFile(path: string): Promise<string | undefined> {
   }
 }
 
-/** Every file under `dir`, relative with `/` separators, skipping dot-entries (.git, the lock file). */
+/** Every file under `dir`'s folders, relative with `/` separators, skipping dot-entries (.git, the lock file). */
 async function listFiles(dir: string, rel = ""): Promise<string[]> {
   const entries = await readdir(join(dir, rel), { withFileTypes: true })
   const files: string[] = []
@@ -58,7 +58,8 @@ async function listFiles(dir: string, rel = ""): Promise<string[]> {
     if (entry.name.startsWith(".")) continue
     const path = rel ? `${rel}/${entry.name}` : entry.name
     if (entry.isDirectory()) files.push(...(await listFiles(dir, path)))
-    else if (entry.isFile()) files.push(path)
+    // Loose top-level files (the repo's README.md) are for the repo, not abilities
+    else if (entry.isFile() && rel) files.push(path)
   }
   return files
 }

@@ -23,6 +23,7 @@ const LABELS: Record<string, (args: LabelArgs) => string> = {
   list_files: args => t("toolCall.listFiles", { path: args.path }),
   read_file: args => t("toolCall.readFile", { path: args.path }),
   view_image: args => t("toolCall.viewImage", { path: args.path }),
+  edit_image: () => t("toolCall.editImage"),
   remember_note: args => t("toolCall.rememberNote", { key: args.key }),
   recall_memory: args =>
     t("toolCall.recallMemory", {

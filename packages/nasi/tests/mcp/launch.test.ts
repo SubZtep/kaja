@@ -119,17 +119,39 @@ test("a requirement that isn't installed leaves it out, whether or not a runner 
       throw error
     }
   }
-  expect(missing(() => resolveLaunch(browser, {}, { self: SELF, installed: () => false }))).toEqual({
+  expect(missing(() => resolveLaunch(browser, {}, { self: SELF, findChrome: () => undefined }))).toEqual({
     needs: [],
     requires: ["Chrome"],
     message: "demo needs Chrome installed"
   })
-  expect(missing(() => resolveLaunch(browser, {}, { which: pathWith(), self: false, installed: () => false }))).toEqual(
+  expect(
+    missing(() => resolveLaunch(browser, {}, { which: pathWith(), self: false, findChrome: () => undefined }))
+  ).toEqual({
+    needs: ["npx", "pnpm", "uvx", "pipx"],
+    requires: ["Chrome"],
+    message: "demo needs npx, pnpm, uvx, pipx and Chrome installed"
+  })
+  expect(resolveLaunch(browser, {}, { self: SELF, findChrome: () => ({ path: "/opt/chrome", stable: true }) })).toEqual(
     {
-      needs: ["npx", "pnpm", "uvx", "pipx"],
-      requires: ["Chrome"],
-      message: "demo needs npx, pnpm, uvx, pipx and Chrome installed"
+      command: SELF,
+      args: ["x", "browser-mcp@1.0"],
+      env: { BUN_BE_BUN: "1" }
     }
   )
-  expect(resolveLaunch(browser, {}, { self: SELF, installed: () => true }).command).toBe(SELF)
+})
+
+test("a Chromium in place of Chrome is named to the server, unless the manifest names a browser itself", () => {
+  const browser = { ...ability({ package: { npm: "browser-mcp@1.0" } }), requires: ["chrome" as const] }
+  const chromium = () => ({ path: "/usr/bin/chromium", stable: false })
+  expect(resolveLaunch(browser, {}, { self: SELF, findChrome: chromium }).args).toEqual([
+    "x",
+    "browser-mcp@1.0",
+    "--executablePath=/usr/bin/chromium"
+  ])
+  const named = { ...browser, args: ["--executablePath=/opt/shell"] }
+  expect(resolveLaunch(named, {}, { self: SELF, findChrome: chromium }).args).toEqual([
+    "x",
+    "browser-mcp@1.0",
+    "--executablePath=/opt/shell"
+  ])
 })

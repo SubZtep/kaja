@@ -31,10 +31,11 @@ export function personaLoadsSkills(persona: Pick<Persona, "abilities">, skills: 
   })
 }
 
-/** Builtins a persona with an `abilities` list gets only by listing them, under these names: they reach the web or cost per call. */
+/** Builtins a persona with an `abilities` list gets only by listing them, under these names: they reach the web, cost per call, or only matter to a persona that works with images. */
 export const OPT_IN_BUILTINS: Readonly<Record<string, string>> = {
   fetch_url: "fetch-url",
-  generate_image: "generate-image"
+  generate_image: "generate-image",
+  edit_image: "edit-image"
 }
 
 /** Whether `persona` gets the builtin tool `name`: every one without an `abilities` list, else an opt-in one only when listed. */

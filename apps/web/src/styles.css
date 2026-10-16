@@ -448,6 +448,11 @@
   }
 }
 
+.grit-still::after {
+  animation: none;
+  opacity: 0;
+}
+
 @utility sticker {
   --sticker-rot: -2deg;
   display: inline-flex;

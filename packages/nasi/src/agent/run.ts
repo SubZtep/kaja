@@ -306,20 +306,39 @@ function pushPromptToMessages(session: Session, prompt: string, images: PromptPa
 }
 
 // The prompt's images, stored, each with its label; one that can't be read becomes a note, so the model knows something was sent.
-async function promptImageParts(agent: Agent, session: Session, images: PromptImage[]): Promise<PromptPart[]> {
+// An approved tool's images come back as tool_image events too, since the user hasn't seen them yet.
+async function promptImageParts(
+  agent: Agent,
+  session: Session,
+  images: PromptImage[]
+): Promise<{ parts: PromptPart[]; shown: AgentEvent[] }> {
   // An approved tool's images carry what it said about them; anything else is the user's
   const stored = await Promise.all(
-    images.map(image =>
-      typeof image === "object" && "alt" in image
-        ? storeImage(agent, session, image.data, image.alt)
-        : storeImage(agent, session, image, "an image the user sent")
-    )
+    images.map(async image => {
+      const fromTool = typeof image === "object" && "alt" in image
+      const alt = fromTool ? image.alt : "an image the user sent"
+      return { fromTool, alt, image: await storeImage(agent, session, fromTool ? image.data : image, alt) }
+    })
   )
-  return stored.flatMap(image =>
+  const parts = stored.flatMap(({ image }) =>
     "parts" in image
       ? image.parts
       : [{ type: "text" as const, text: `[An image was sent here, but it can't be shown: ${image.error}.]` }]
   )
+  const shown = stored.flatMap(({ fromTool, alt, image }): AgentEvent[] =>
+    fromTool && "parts" in image
+      ? [
+          {
+            type: "tool_image",
+            ref: image.ref,
+            mimeType: image.mimeType,
+            alt,
+            ...(image.key ? { key: image.key } : {})
+          }
+        ]
+      : []
+  )
+  return { parts, shown }
 }
 
 function pushPromptText(session: Session, prompt: string, images: PromptPart[]): void {
@@ -623,7 +642,7 @@ async function openTurn(
   prompt: string | undefined,
   owner: string | null,
   images: PromptImage[]
-): Promise<void> {
+): Promise<AgentEvent[]> {
   const messages = session.messages
   if (messages.length === 0) {
     const system = await buildSystemPrompt(agent, owner)
@@ -631,7 +650,10 @@ async function openTurn(
   } else {
     await refreshAbilitiesInPrompt(agent, messages, owner)
   }
-  if (prompt !== undefined) pushPromptToMessages(session, prompt, await promptImageParts(agent, session, images))
+  if (prompt === undefined) return []
+  const { parts, shown } = await promptImageParts(agent, session, images)
+  pushPromptToMessages(session, prompt, parts)
+  return shown
 }
 
 // Records the telemetry step for the round whose message was just appended.
@@ -786,7 +808,7 @@ async function* runTurn(
 ): AsyncGenerator<AgentEvent, void, void> {
   const messages = session.messages
   await syncPersonaTools(agent)
-  await openTurn(agent, session, prompt, owner, images)
+  yield* await openTurn(agent, session, prompt, owner, images)
 
   let emptyRoundRetries = 0
   let failingToolRounds = 0
