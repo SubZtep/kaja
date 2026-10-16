@@ -4,7 +4,8 @@ import { getTimeAgo } from "@kaja/shared/date"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { RefreshCw } from "lucide-react"
 import { toast } from "react-toastify"
-import { ABILITY_KEYS_QUERY_KEY } from "../../../../../components/abilities/queries"
+import { ApiKeys } from "../../../../../components/abilities/ApiKeys"
+import { invalidateAbilityKeys } from "../../../../../components/abilities/queries"
 import { Button } from "../../../../../components/form/primitives/Button"
 import { Section } from "../../../../../components/ui/Section"
 import { useApiFetch } from "../../../../../lib/api-fetch"
@@ -39,8 +40,8 @@ export function MarketplaceSection() {
     },
     onError: (err: Error) => toast.error(err.message || m.skills_sync_failed()),
     onSettled: () => {
-      for (const queryKey of [["abilities", "sync"], ABILITY_KEYS_QUERY_KEY])
-        queryClient.invalidateQueries({ queryKey })
+      queryClient.invalidateQueries({ queryKey: ["abilities", "sync"] })
+      invalidateAbilityKeys(queryClient)
     }
   })
 
@@ -61,6 +62,16 @@ export function MarketplaceSection() {
           {m.skills_sync_button()}
         </Button>
       </div>
+    </Section>
+  )
+}
+
+/** The server-wide ability keys every user without their own shares; calls with one go only through the official sandbox. */
+export function ServiceKeysSection() {
+  return (
+    <Section className="mb-6" title={m.service_keys_title()}>
+      <p className="mt-0 mb-4 text-muted text-sm">{m.service_keys_description()}</p>
+      <ApiKeys scope="service" />
     </Section>
   )
 }

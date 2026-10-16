@@ -30,9 +30,9 @@ How [kaja.io](https://kaja.io) reaches its current environment.
   `1x00000000000000000000BB` (invisible, passes) and `1x0000000000000000000000000000000AA` work on
   `localhost`; with a test secret the API skips the action and hostname checks, as the dummy token carries
   neither.
-- **Server-wide ability keys** (`ABILITY_KEYS`, `name=key` pairs separated by commas), shared by every
-  cloud user. Production sets one for web search: `web-search=` with a
-  [Brave Search API](https://api-dashboard.search.brave.com) key.
+- **Server-wide ability keys**, shared by every cloud user without their own: not env vars, but set after
+  deploy on the web's Admin → Dashboard (**Service keys**), stored encrypted with `USER_SECRET_KEY`.
+  Production sets one for `web-search`, a [Brave Search API](https://api-dashboard.search.brave.com) key.
 
 Every outside service that receives users' data is listed in the [Privacy Policy](/privacy#sharing-data).
 Add, remove or swap a provider there too.

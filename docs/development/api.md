@@ -74,9 +74,10 @@ The API never connects to a tool's host: `fetch_url`, HTTP tools and MCP servers
 go out through a sandbox. A user's own key only goes to their own sandbox or the official one, a server-wide
 key only to the official one (`keyTrust` in `features/sandbox/registry.ts`).
 
-`ABILITY_KEYS` (`web-search=BSA...,other=...`) is a temporary server-wide key per ability, shared by every
-cloud user. An ability with one counts as needing only an optional key, and a user's own key still wins.
-Admin-managed service keys, like provider keys, are meant to replace it.
+An admin can give an ability a server-wide key (`/admin/abilities/keys`, the **Service keys** card on Admin →
+Dashboard), shared by every cloud user who hasn't saved their own. It's stored encrypted in `service_secret`,
+tested through the official sandbox on save, and never returned. An ability with one counts as needing only
+an optional key, and a user's own key still wins.
 
 ## Usage stats
 

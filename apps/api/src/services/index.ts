@@ -1,6 +1,6 @@
 import { pool } from "../core/db"
 import { env } from "../core/env"
-import { AbilityService, parseAbilityKeys } from "./ability"
+import { AbilityService } from "./ability"
 import { MarketplaceService } from "./marketplace"
 import { ModelService } from "./model"
 import { SandboxService } from "./sandbox"
@@ -12,7 +12,7 @@ import { WidgetService } from "./widget"
 export const marketplaceService = new MarketplaceService(pool, { repo: env.MARKETPLACE_REPO, ref: env.MARKETPLACE_REF })
 export const modelService = new ModelService(pool)
 export const secretService = new SecretService(pool, env.USER_SECRET_KEY)
-export const abilityService = new AbilityService(pool, secretService, parseAbilityKeys(env.ABILITY_KEYS))
+export const abilityService = new AbilityService(pool, secretService)
 export const sandboxService = new SandboxService(pool)
 export const statsService = new StatsService(pool)
 export const telegramLinkService = new TelegramLinkService(pool)

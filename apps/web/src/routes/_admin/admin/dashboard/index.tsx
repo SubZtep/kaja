@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { PageHeader } from "../../../../components/ui/PageHeader"
 import { seo } from "../../../../lib/seo"
 import { m } from "../../../../paraglide/messages.js"
-import { MarketplaceSection } from "./-components/MarketplaceSection"
+import { MarketplaceSection, ServiceKeysSection } from "./-components/MarketplaceSection"
 import { SandboxSection } from "./-components/SandboxSection"
 
 export const Route = createFileRoute("/_admin/admin/dashboard/")({
@@ -15,6 +15,7 @@ function AdminDashboard() {
     <>
       <PageHeader title={m.nav_dashboard()} description={m.admin_dashboard_description()} />
       <MarketplaceSection />
+      <ServiceKeysSection />
       <SandboxSection />
     </>
   )

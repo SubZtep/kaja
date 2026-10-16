@@ -141,8 +141,8 @@ the catalog:
   [sandbox](https://github.com/SubZtep/kaja/tree/main/apps/sandbox#readme);
 - anything whose manifest no longer parses.
 
-An ability that needs a key is also left out while the server has no `USER_SECRET_KEY` to keep keys with,
-unless `ABILITY_KEYS` gives it one.
+An ability that needs a key is also left out while the server has no `USER_SECRET_KEY` to keep keys with
+(server-wide keys are stored with it too).
 
 ## Loading
 
