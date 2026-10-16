@@ -67,18 +67,6 @@ function keyNeed(ability: HttpToolAbility | McpAbility): AbilityKeyNeed {
   return ability.auth.keyless ? "optional" : "required"
 }
 
-/** Parses `ABILITY_KEYS` (`name=key,name=key`) into ability name → key; malformed pairs are skipped. */
-export function parseAbilityKeys(value: string | undefined): Map<string, string> {
-  const keys = new Map<string, string>()
-  for (const pair of (value ?? "").split(",")) {
-    const at = pair.indexOf("=")
-    const name = pair.slice(0, at).trim()
-    const key = pair.slice(at + 1).trim()
-    if (at > 0 && name && key) keys.set(name, key)
-  }
-  return keys
-}
-
 /** `default` first: the catalog's own, or the built-in one when the catalog has none. */
 function withDefaultFirst(personas: Persona[]): Persona[] {
   const own = personas.find(persona => persona.id === DEFAULT_PERSONA)
@@ -95,6 +83,22 @@ function stickyOf(skillMd: string | undefined, name: string): boolean {
   }
 }
 
+/** Tests a key the way a turn would use it: its HTTP tool's `check` request, or connecting to its MCP server (a stdio one's in `sandbox`); null when there's no test. */
+async function checkKey(
+  keyed: KeyedAbility,
+  apiKey: string,
+  opts: { send?: FetchLike; sandbox?: McpSandbox }
+): Promise<KeyCheckResult | null> {
+  if (keyed.type === "tool") return (await checkHttpToolKey(keyed.ability, apiKey, { send: opts.send })) ?? null
+  if (keyed.ability.transport === "stdio" && !opts.sandbox)
+    return { ok: false, reason: "no MCP sandbox to start it in" }
+  const check = await checkMcpAbilityKey(keyed.ability, apiKey, {
+    fetch: createGuardedFetch({ send: opts.send }),
+    sandbox: opts.sandbox
+  })
+  return check ?? null
+}
+
 /** Where an ability's calls go: its HTTP tool's or remote server's host, or the MCP sandbox for a stdio one. */
 function domainOf(keyed: KeyedAbility): string {
   if (keyed.type === "tool") return new URL(keyed.ability.baseUrl).host
@@ -104,13 +108,10 @@ function domainOf(keyed: KeyedAbility): string {
 export class AbilityService {
   readonly #db: Pool
   readonly #secrets: SecretService
-  // TODO: temporary server-wide keys from ABILITY_KEYS, until admin-managed service keys (like providers) replace them.
-  readonly #serviceKeys: Map<string, string>
 
-  constructor(db: Pool, secrets: SecretService, serviceKeys = new Map<string, string>()) {
+  constructor(db: Pool, secrets: SecretService) {
     this.#db = db
     this.#secrets = secrets
-    this.#serviceKeys = serviceKeys
   }
 
   /** Whether users' keys can be stored (USER_SECRET_KEY is set); without it, abilities that require a key are left out everywhere. */
@@ -125,13 +126,39 @@ export class AbilityService {
   async listKeys(userId: string): Promise<AbilityKey[]> {
     const used = new Set((await this.personaCatalog()).flatMap(persona => [...personaAbilities(persona).keys()]))
     const saved = new Set(await this.keyNames(userId))
+    const service = await this.#serviceKeyNames()
     const { rows } = await this.#db.query(
       `SELECT p.type, p.name, p.description, p.files FROM ability p WHERE ${AVAILABLE} AND p.type IN ('tool', 'mcp') ORDER BY p.name, p.type`
     )
     const keys = new Map<string, AbilityKey>()
     for (const row of rows) {
-      const keyed = used.has(row.name) && !keys.has(row.name) ? this.#usable(row) : undefined
-      const need = keyed && this.#keyNeed(keyed.ability)
+      const keyed = used.has(row.name) && !keys.has(row.name) ? this.#usable(row, service) : undefined
+      const need = keyed && this.#keyNeed(keyed.ability, service)
+      if (!(keyed && need && need !== "none")) continue
+      keys.set(row.name, {
+        name: row.name,
+        description: row.description,
+        key: need,
+        domain: domainOf(keyed),
+        saved: saved.has(row.name)
+      })
+    }
+    return [...keys.values()]
+  }
+
+  /**
+   * Every ability in the catalog that takes a key, one entry per ability, with whether a server-wide key is set: the
+   * admin's service keys list. `key` is what the ability itself needs, whatever key is saved.
+   */
+  async listServiceKeys(): Promise<AbilityKey[]> {
+    const saved = await this.#serviceKeyNames()
+    const { rows } = await this.#db.query(
+      `SELECT p.type, p.name, p.description, p.files FROM ability p WHERE ${AVAILABLE} AND p.type IN ('tool', 'mcp') ORDER BY p.name, p.type`
+    )
+    const keys = new Map<string, AbilityKey>()
+    for (const row of rows) {
+      const keyed = keys.has(row.name) ? undefined : this.#usable(row, saved)
+      const need = keyed && keyNeed(keyed.ability)
       if (!(keyed && need && need !== "none")) continue
       keys.set(row.name, {
         name: row.name,
@@ -203,8 +230,10 @@ export class AbilityService {
 
   /** The user's ability keys by ability name, decrypted, for their own turns only: their own, else a server-wide one. */
   async keysForUser(userId: string): Promise<Map<string, AbilityKeyValue>> {
+    const keys = new Map<string, AbilityKeyValue>()
     // Server-wide keys first, so the user's own key replaces one.
-    const keys = new Map([...this.#serviceKeys].map(([name, value]) => [name, { value, own: false }]))
+    for (const [name, value] of await this.#secrets.getAllService(KEY_PREFIX))
+      keys.set(name.slice(KEY_PREFIX.length), { value, own: false })
     for (const [name, value] of await this.#secrets.getAll(userId, KEY_PREFIX))
       keys.set(name.slice(KEY_PREFIX.length), { value, own: true })
     return keys
@@ -225,25 +254,48 @@ export class AbilityService {
     if (!keyed) return "not_found"
     if (keyed.ability.auth.type !== "apiKey") return "no_key"
     await this.#secrets.set(userId, abilitySecretName(name), apiKey)
-    if (keyed.type === "tool") {
-      return { check: (await checkHttpToolKey(keyed.ability, apiKey, { send: opts.send })) ?? null }
-    }
-    if (keyed.ability.transport === "stdio" && !opts.sandbox) {
-      return { check: { ok: false, reason: "no MCP sandbox to start it in" } }
-    }
-    const check = await checkMcpAbilityKey(keyed.ability, apiKey, {
-      fetch: createGuardedFetch({ send: opts.send }),
-      sandbox: opts.sandbox
-    })
-    return { check: check ?? null }
+    return { check: await checkKey(keyed, apiKey, opts) }
   }
 
   /** Removes the user's key for an ability; false when there's no such ability. */
   async deleteKey(userId: string, name: string): Promise<boolean> {
-    const { rows } = await this.#db.query("SELECT 1 FROM ability WHERE type IN ('tool', 'mcp') AND name = $1", [name])
-    if (!rows[0]) return false
+    if (!(await this.#isKeyedAbility(name))) return false
     await this.#secrets.delete(userId, abilitySecretName(name))
     return true
+  }
+
+  /**
+   * {@link saveKey} for the server-wide key every user without their own shares (an admin's). The caller's `send`
+   * and `sandbox` must reach only the official sandbox, the only one a server-wide key may go to.
+   */
+  async saveServiceKey(
+    name: string,
+    apiKey: string,
+    opts: { send?: FetchLike; sandbox?: McpSandbox } = {}
+  ): Promise<SaveKeyResult> {
+    const keyed = await this.#keyedByName(name)
+    if (!keyed) return "not_found"
+    if (keyed.ability.auth.type !== "apiKey") return "no_key"
+    await this.#secrets.setService(abilitySecretName(name), apiKey)
+    return { check: await checkKey(keyed, apiKey, opts) }
+  }
+
+  /** Removes an ability's server-wide key; false when there's no such ability. */
+  async deleteServiceKey(name: string): Promise<boolean> {
+    if (!(await this.#isKeyedAbility(name))) return false
+    await this.#secrets.deleteService(abilitySecretName(name))
+    return true
+  }
+
+  async #isKeyedAbility(name: string): Promise<boolean> {
+    const { rows } = await this.#db.query("SELECT 1 FROM ability WHERE type IN ('tool', 'mcp') AND name = $1", [name])
+    return rows.length > 0
+  }
+
+  /** Abilities with a server-wide key. */
+  async #serviceKeyNames(): Promise<Set<string>> {
+    const names = await this.#secrets.serviceNames(KEY_PREFIX)
+    return new Set([...names].map(name => name.slice(KEY_PREFIX.length)))
   }
 
   /** The ability's part that takes a key (its HTTP tool before its MCP server), else its first usable part; undefined when it has none here. */
@@ -252,7 +304,8 @@ export class AbilityService {
       `SELECT p.type, p.name, p.files FROM ability p WHERE p.type IN ('tool', 'mcp') AND p.name = $1 AND ${AVAILABLE} ORDER BY p.type DESC`,
       [name]
     )
-    const parts = rows.flatMap(row => this.#usable(row) ?? [])
+    const service = await this.#serviceKeyNames()
+    const parts = rows.flatMap(row => this.#usable(row, service) ?? [])
     return parts.find(part => part.ability.auth.type === "apiKey") ?? parts[0]
   }
 
@@ -261,7 +314,8 @@ export class AbilityService {
       `SELECT p.type, p.name, p.files FROM ability p WHERE p.type = $1 AND ${AVAILABLE} ORDER BY p.name`,
       [type]
     )
-    return rows.flatMap(row => this.#usable(row) ?? [])
+    const service = await this.#serviceKeyNames()
+    return rows.flatMap(row => this.#usable(row, service) ?? [])
   }
 
   /** The stored manifest, parsed; undefined (with a warning) when it no longer parses or the cloud can't run it. */
@@ -296,16 +350,16 @@ export class AbilityService {
     }
   }
 
-  /** An ability's key need, where a server-wide key turns a required one optional: the user may still bring their own. */
-  #keyNeed(ability: HttpToolAbility | McpAbility): AbilityKeyNeed {
+  /** An ability's key need, where a server-wide key (`service` names them) turns a required one optional: the user may still bring their own. */
+  #keyNeed(ability: HttpToolAbility | McpAbility, service: ReadonlySet<string>): AbilityKeyNeed {
     const need = keyNeed(ability)
-    return need === "required" && this.#serviceKeys.has(ability.name) ? "optional" : need
+    return need === "required" && service.has(ability.name) ? "optional" : need
   }
 
   /** {@link #parse}, but also undefined when it requires a key while keys can't be stored. */
-  #usable(row: ManifestRow): KeyedAbility | undefined {
+  #usable(row: ManifestRow, service: ReadonlySet<string>): KeyedAbility | undefined {
     const keyed = this.#parse(row)
-    if (keyed && this.#keyNeed(keyed.ability) === "required" && !this.#secrets.enabled) return undefined
+    if (keyed && this.#keyNeed(keyed.ability, service) === "required" && !this.#secrets.enabled) return undefined
     return keyed
   }
 }

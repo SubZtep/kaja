@@ -16,7 +16,7 @@ differ in *where the agent loop runs*, and so in which tools it can use.
 |---|---|---|---|
 | `kaja`, local mode | your machine | SQLite | ✓ |
 | `kaja telegram` | your machine | SQLite | ✓ |
-| `kaja`, cloud mode | the API | Postgres | ✗ |
+| `kaja`, cloud mode | the API | Postgres | ✓ through the terminal ([below](#your-computer-in-cloud-mode)) |
 | cloud [Telegram bot](/using/telegram#cloud-bot) | the API | Postgres | ✗ |
 | Website [widget](/using/widget) | the API | Postgres | ✗ |
 
@@ -57,7 +57,8 @@ kaja --cloud     # cloud login, even if a local config exists
 
 The first time, Kaja does a **device login**: it shows a code, you approve it at
 [kaja.io/device](https://kaja.io/device), and a token goes into your OS keychain. Nothing is written to
-disk. One account is signed in at a time, and `kaja logout` clears it.
+disk. One account is signed in at a time: `kaja login` signs in without starting a chat, and `kaja logout`
+clears it.
 
 > Without a keychain, cloud mode stops and suggests `--local`. There is no plaintext fallback.
 {: .warning }
@@ -68,8 +69,24 @@ The server picks the model and keeps your sessions, memory and dataset answers. 
 - every persona in the marketplace, each with the skills, HTTP tools and MCP servers it lists ([Abilities in the cloud](/abilities/marketplace#in-the-cloud)).
 
 Tools that reach the internet (`fetch_url`, HTTP tools, MCP servers) run on a
-[sandbox](/abilities/mcp#in-the-cloud), never on the API itself. There is no shell, no access to your files
-and no model switching.
+[sandbox](/abilities/mcp#in-the-cloud), never on the API itself. There's no model switching.
+
+### Your computer in cloud mode
+
+In the terminal, cloud chat can also use your own computer. The terminal runs those tools itself and sends
+the cloud only their results:
+
+- your own abilities (the ones in your marketplace folder that no sync wrote), and local-only ones like
+  `filesystem`, with the folders your personas give them;
+- any `stdio` [MCP ability](/abilities/mcp) you set to `computer` in
+  [`[tools.hosts]`](/configuration/config#toolshosts);
+- `read_file`, `list_files` and `view_image`;
+- your shell (`run_command`), only once you allow it with `shell = "computer"` in `[tools.hosts]`.
+
+They ask first exactly as in local mode: a shell command unless [`commands.toml`](/configuration/commands)
+lists it as safe, an MCP or HTTP call that changes something. Your own personas, and local-only ones like
+`config-hyprland`, join the persona picker. Nothing of this is stored in the cloud beyond the conversation
+itself. The cloud Telegram bot and the widget have no computer behind them, so they never get these tools.
 
 ## Local mode
 

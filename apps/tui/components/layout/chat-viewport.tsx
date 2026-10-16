@@ -35,16 +35,22 @@ function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbos
   return foldToolCalls(events, pending)
 }
 
+// The agent's own words, each set apart; tool lines and notices stay under whatever they follow.
+const SAID: ReadonlySet<DisplayEvent["type"]> = new Set(["message", "final", "ask_user"])
+
 /**
- * Which items get a blank line above: only the turn boundaries, a user message and the agent's first item after it,
- * so an agent's run (tool calls, messages, notices) stacks without gaps. Reasoning hidden by `thinking` doesn't count.
+ * Which items get a blank line above: a user message, the agent's first item after it, and each of the agent's words
+ * (except straight under the reasoning that led to them), so tool calls and notices stack without gaps. Reasoning
+ * hidden by `thinking` doesn't count.
  */
 function spacing(items: DisplayEvent[], thinking: boolean) {
-  let afterUser = false
-  return items.map((item, i) => {
-    const spaced = item.type === "user" ? i > 0 : afterUser
-    if (item.type === "user") afterUser = true
-    else if (itemShows(item, thinking)) afterUser = false
+  let previous: DisplayEvent["type"] | undefined
+  return items.map(item => {
+    const spaced =
+      item.type === "user"
+        ? previous !== undefined
+        : previous === "user" || (SAID.has(item.type) && previous !== undefined && previous !== "reasoning")
+    if (itemShows(item, thinking)) previous = item.type
     return spaced
   })
 }
@@ -300,7 +306,7 @@ export function ChatViewport({
   const showAffordance = canScroll && !stuckToBottom
 
   // Stable element identities across scroll-tick renders: TimelineItem is memo()ed, and keeping the same elements here also stops the ScrollView's per-item measurement effect (keyed on child identity) from re-running.
-  const { timelineItems, afterUser } = useMemo(() => {
+  const { timelineItems, lastShown } = useMemo(() => {
     const items = visibleEvents(events, toolDisplay, pending)
     const spaced = spacing(items, thinking)
     return {
@@ -312,11 +318,14 @@ export function ChatViewport({
           spaced={spaced[i]}
         />
       )),
-      afterUser: items.findLast(item => itemShows(item, thinking))?.type === "user"
+      lastShown: items.findLast(item => itemShows(item, thinking))?.type
     }
   }, [events, thinking, toolDisplay, pending])
-  // The streaming reply starts the agent's turn when nothing has shown since the user's message; the spinner sits right under it
+  // Spaced like a finished item: after the user's message, or as the agent's words; the spinner sits right under it
   const partialShows = !!partial?.content || (thinking && !!partial?.reasoning)
+  const partialSpaced =
+    partialShows &&
+    (lastShown === "user" || (!!partial?.content && lastShown !== undefined && lastShown !== "reasoning"))
 
   return (
     <Box
@@ -355,7 +364,7 @@ export function ChatViewport({
         */}
         {topPad > 0 ? <Box key="top-pad" height={topPad} flexShrink={0} width="100%" /> : null}
         {timelineItems.length === 0 && startupPanel ? <Box key="startup">{startupPanel}</Box> : timelineItems}
-        <Box key="partial" flexDirection="column" marginTop={afterUser && partialShows ? 1 : 0}>
+        <Box key="partial" flexDirection="column" marginTop={partialSpaced ? 1 : 0}>
           <PartialMessage partial={partial} thinking={thinking} />
         </Box>
         <Box key="activity">

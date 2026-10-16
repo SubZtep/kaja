@@ -265,3 +265,60 @@ test("yolo approves a cloud tool approval itself and carries on, without showing
   t.unmount()
   await t.waitUntilExit()
 })
+
+test("a turn waiting on this computer runs the call here, asking first, and resumes with its result", async () => {
+  const bodies: Record<string, unknown>[] = []
+  const pausedTurn = () => {
+    const body =
+      'event: client_tool_calls\ndata: {"type":"client_tool_calls","calls":[{"id":"c1","name":"read_file","arguments":"{\\"path\\":\\"/etc/hostname\\"}"}]}\n\n' +
+      'event: done\ndata: {"session":"01900000-0000-7000-8000-000000000000","status":"needs_client_tool"}\n\n'
+    return new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(body))
+          controller.close()
+        }
+      }),
+      { headers: { "content-type": "text/event-stream" } }
+    )
+  }
+  nextTurnResponse = () => (bodies.length === 1 ? pausedTurn() : sseResponse("your host is kaja"))
+  const fetchWithBodies = globalThis.fetch
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (typeof init?.body === "string" && String(url).endsWith("/nasi/turn/stream")) bodies.push(JSON.parse(init.body))
+    return fetchWithBodies(url, init)
+  }) as typeof fetch
+
+  const ran: { name: string; approved: boolean }[] = []
+  const computer = {
+    tools: [{ name: "read_file", description: "Reads a file", parameters: { type: "object" } }],
+    skills: [],
+    personas: [],
+    run: async (
+      call: { id: string; name: string },
+      approve: (request: { kind: "tool"; name: string; summary: string }) => Promise<boolean>
+    ) => {
+      const approved = await approve({ kind: "tool", name: call.name, summary: "read /etc/hostname" })
+      ran.push({ name: call.name, approved })
+      return { id: call.id, text: approved ? "kaja" : "User declined this request." }
+    },
+    close: async () => {}
+  }
+  const t = renderForTest(<App mode="cloud" apiUrl="https://api.kaja.io" token="tok" computer={computer} />)
+  await t.tick()
+  await t.press("what's my hostname?")
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(t.lastFrame()).toContain("read /etc/hostname")
+
+  await t.press("\r")
+  for (let i = 0; i < 4; i++) await t.tick()
+  expect(ran).toEqual([{ name: "read_file", approved: true }])
+  expect(bodies[0]?.clientTools).toEqual(computer.tools)
+  expect(bodies[1]?.toolResults).toEqual([{ id: "c1", text: "kaja" }])
+  expect(bodies[1]?.message).toBeUndefined()
+  expect(t.lastFrame()).toContain("your host is kaja")
+
+  t.unmount()
+  await t.waitUntilExit()
+})

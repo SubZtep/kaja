@@ -31,7 +31,9 @@ commented out, and is only written if you have none, so fetching never loses a k
 `kaja doctor` (local mode) tests every credential your config relies on: model providers, HTTP tools and MCP
 servers, the Telegram token and web search. In a terminal it asks for anything missing or failing, tests the
 new value, and saves it to `secrets.toml`. A value that fails is saved too, so you can fix it there, and
-stays on the to-do list until it works.
+stays on the to-do list until it works. Then, like the [setup wizard](/getting-started/wizard#after-the-last-question),
+it offers to install what an ability a persona uses is missing (uv, Chrome), or to run that ability on a
+[Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode).
 
 It then tries every model by task, and shows each chat model's context window and where the number came from
 (`models.toml`, detected from the server, or assumed). When a task's model stops answering and a model

@@ -9,10 +9,13 @@ export async function runTelegramSubcommand() {
   const { runTelegramCli } = await import("../lib/telegram/cli")
   const { secrets } = await import("../lib/config/secrets")
   const { config } = await import("../lib/config/config")
+  const { t } = await import("../lib/i18n")
 
   await requireConfiguredProvider()
 
-  const { models, personas, tools, closeTools, ensureAbilities, safeCommands } = await bootstrapLocalAgentDeps()
+  const { models, personas, tools, closeTools, ensureAbilities, safeCommands, signedOutSandboxed } =
+    await bootstrapLocalAgentDeps()
+  if (signedOutSandboxed.length) console.warn(t("ability.sandboxSignedOut", { names: signedOutSandboxed.join(", ") }))
 
   const { args } = await import("../lib/cli/args")
   const telegram = (await secrets()).telegram

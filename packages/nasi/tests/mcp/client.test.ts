@@ -318,3 +318,33 @@ test(
   },
   SPAWN_TIMEOUT
 )
+
+test("with reconnect, a call whose session is gone opens a new one and runs once more; without, it fails", async () => {
+  const { startHttpMcpFixture } = await import("../fixtures/mcp-http-server")
+  const http = startHttpMcpFixture()
+  let lose = false
+  // Answers one tool call the way a server does for a session it no longer knows.
+  const fetchOnce = (async (input: string | URL | Request, init?: RequestInit) => {
+    if (lose && String(init?.body ?? "").includes('"tools/call"')) {
+      lose = false
+      return new Response("session not found", { status: 404 })
+    }
+    return fetch(input, init)
+  }) as typeof fetch
+  const server: McpServerEntry = { id: "http", url: http.url, headers: {} }
+  try {
+    const reconnecting = await connectMcpServer(server, tmpdir(), { fetch: fetchOnce, reconnect: true })
+    const read = reconnecting.tools.find(t => toolName(t) === "read_thing")!
+    lose = true
+    expect(await read.execute({ id: "7" })).toEqual({ text: "thing 7" })
+    expect(http.initializations()).toBe(2)
+    await reconnecting.close()
+
+    const plain = await connectMcpServer(server, tmpdir(), { fetch: fetchOnce })
+    lose = true
+    await expect(plain.tools.find(t => toolName(t) === "read_thing")!.execute({ id: "7" })).rejects.toThrow()
+    await plain.close()
+  } finally {
+    http.stop()
+  }
+})

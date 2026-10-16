@@ -73,6 +73,13 @@ test.each([
   expect(joinConversation(rows) as unknown).toEqual(session)
 })
 
+test("several client calls wait as one pause; joining finds every call still unanswered", () => {
+  const session = { messages: messages.slice(0, 3), pendingClientCalls: ["c1", "c2"] }
+  const rows = splitConversation(session)
+  expect(rows.pending).toEqual({ callId: "c1", kind: "client_tools" })
+  expect(joinConversation(rows) as unknown).toEqual(session)
+})
+
 test("no pending call leaves no pending field", () => {
   expect(splitConversation({ messages }).pending).toBeNull()
   expect(Object.keys(joinConversation(splitConversation({ messages })))).toEqual(["messages"])

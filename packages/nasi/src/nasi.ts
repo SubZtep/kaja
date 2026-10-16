@@ -5,6 +5,7 @@ import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import { sessionTitle } from "@kaja/shared/text"
 import type OpenAI from "openai"
+import { answerClientCalls, clientToolGroups, type NasiClient, withClientAbilities } from "./abilities/client"
 import { loadAbilities } from "./abilities/load"
 import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
@@ -45,6 +46,8 @@ export type NasiOpenOptions = {
   mcpConnectTimeoutMs?: number
   /** Cloud: the MCP sandbox that runs stdio abilities; without it they're left out. */
   mcpSandbox?: McpSandbox
+  /** Cloud: what the turn's client (the terminal) runs on the user's computer; its calls pause the turn for the client. */
+  client?: NasiClient
 }
 
 const DEFAULT_MCP_CONNECT_TIMEOUT_MS = 5_000
@@ -93,6 +96,8 @@ function stepFromEvent(event: AgentEvent, includeThinking: boolean): NasiStep | 
       return { type: "confirm_command", command: event.command, description: event.description }
     case "confirm_tool":
       return { type: "confirm_tool", name: event.name, arguments: event.arguments, summary: event.summary }
+    case "client_tool_calls":
+      return { type: "client_tool_calls", calls: event.calls }
     default:
       return undefined
   }
@@ -110,6 +115,7 @@ function stepsFromEvents(events: AgentEvent[], includeThinking: boolean): NasiSt
 function statusFromEvents(session: Session): NasiTurnStatus {
   if (session.pendingAskUserId) return "needs_input"
   if (session.pendingRunCommandId || session.pendingToolApprovalId) return "needs_approval"
+  if (session.pendingClientCalls?.length) return "needs_client_tool"
   return "completed"
 }
 
@@ -150,9 +156,7 @@ async function persistTurn(
 ): Promise<string> {
   const persistedEvents = [
     ...loaded.events,
-    input.approval
-      ? { type: "tool_approval", approved: input.approval !== "decline" }
-      : { type: "user", text: userText(input) },
+    ...turnStartEvents(input),
     ...turnEvents.filter(e => e.type !== "delta" && e.type !== "usage")
   ]
   const row = {
@@ -165,6 +169,13 @@ async function persistTurn(
   if (!loaded.sessionId) return opts.store.createSession({ ...row, title: loaded.title })
   await opts.store.updateSession(loaded.sessionId, row)
   return loaded.sessionId
+}
+
+// What the turn's request adds to the history: the approval, the client's results, and the user's message.
+function turnStartEvents(input: NasiTurnInput): unknown[] {
+  if (input.approval) return [{ type: "tool_approval", approved: input.approval !== "decline" }]
+  const results = input.toolResults ? [{ type: "client_tool_results", count: input.toolResults.length }] : []
+  return input.message === undefined ? results : [...results, { type: "user", text: userText(input) }]
 }
 
 function responseFromEvents(
@@ -214,12 +225,15 @@ export class Nasi {
   }
 
   static async open(opts: NasiOpenOptions) {
-    const abilities = opts.abilities
-      ? await loadAbilities(opts.abilities, {
+    const client = opts.client
+    const store = opts.abilities && client ? withClientAbilities(opts.abilities, client) : opts.abilities
+    const abilities = store
+      ? await loadAbilities(store, {
           personas: opts.personas,
           getApiKey: opts.abilityKey,
           send: opts.egress,
-          mcpSandbox: opts.mcpSandbox
+          mcpSandbox: opts.mcpSandbox,
+          clientSkills: client && new Set(client.skills.map(skill => skill.name))
         })
       : undefined
     // Cloud MCP images (screenshots) wait here for the model to see them; the instance removes it on close.
@@ -228,7 +242,7 @@ export class Nasi {
     const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer, fetchSend: opts.egress?.() },
-      extraTools: abilities?.groups,
+      extraTools: [...(abilities?.groups ?? []), ...(client ? clientToolGroups(client) : [])],
       // MCP abilities connect when a persona that uses them is active, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
       lazyMcpAbilities: true,
@@ -295,8 +309,14 @@ export class Nasi {
   /**
    * What the turn feeds the loop. A pending tool approval is answered here, on the server: `approve` runs
    * the call the session saved (never one the client describes), `decline` or a plain message skips it.
+   * Calls waiting on the client are answered with its results (or as gone); with no message, the loop
+   * carries on from them.
    */
-  private async promptFor(session: Session, input: NasiTurnInput): Promise<string> {
+  private async promptFor(session: Session, input: NasiTurnInput): Promise<string | undefined> {
+    if (session.pendingClientCalls?.length) {
+      answerClientCalls(session, input.toolResults)
+      if (input.message === undefined) return undefined
+    }
     const pendingId = session.pendingToolApprovalId
     if (input.approval) {
       if (!pendingId) throw new NothingToApproveError()

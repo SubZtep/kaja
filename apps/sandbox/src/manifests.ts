@@ -20,15 +20,36 @@ function serverKey(ability: ReturnType<typeof parseMcpManifest>): Pick<SandboxSe
 }
 
 /**
+ * The standard proxy variables, pointing at the egress proxy, so a server's own requests get the same public-only check
+ * as its browser's. Cooperative: Node (with NODE_USE_ENV_PROXY), Bun, Python, npm and uv follow them, but a process
+ * that ignores them still connects directly. Loopback stays direct, where chrome-devtools reaches its own Chrome.
+ */
+export function proxyEnv(port: number): Record<string, string> {
+  const proxy = `http://127.0.0.1:${port}`
+  const direct = "localhost,127.0.0.1,::1"
+  return {
+    HTTP_PROXY: proxy,
+    HTTPS_PROXY: proxy,
+    http_proxy: proxy,
+    https_proxy: proxy,
+    NO_PROXY: direct,
+    no_proxy: direct,
+    NODE_USE_ENV_PROXY: "1"
+  }
+}
+
+/**
  * The stdio servers in `<marketplaceDir>/abilities/<name>/mcp.toml` the sandbox may run: a fixed `tools` list (a key, if it
  * takes one, comes with each request), and not local-only (`localOnly`, or `roots`: the user's own folders), the same rule the API offers them by. A package runs through the first runner the image has, never bun's own
  * (its cache can't be shared between uids, so npm packages go through npx). `overridesPath` swaps a server's command/args for
  * this host; `cacheDir` points every server's bun/uv/npm caches there, since each one's HOME is thrown away.
+ * `egressPort` sends every server's own requests through the egress proxy (see {@link proxyEnv}).
  */
 export async function loadSandboxServers(
   marketplaceDir: string,
   overridesPath?: string,
-  cacheDir?: string
+  cacheDir?: string,
+  egressPort?: number
 ): Promise<Map<string, SandboxServer>> {
   const overrides = overridesPath
     ? McpAbilityOverridesSchema.parse(JSON.parse(await readFile(overridesPath, "utf8")))
@@ -54,7 +75,8 @@ export async function loadSandboxServers(
     }
     const override = overrides[ability.name]
     const args = override?.args ?? ability.args
-    const env = { ...cacheEnv, ...ability.env }
+    // The proxy last, so a manifest's env can't switch it off.
+    const env = { ...cacheEnv, ...ability.env, ...(egressPort ? proxyEnv(egressPort) : {}) }
     try {
       const launch = override?.command
         ? { command: override.command, args, env }

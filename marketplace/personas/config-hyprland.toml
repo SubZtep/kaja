@@ -9,6 +9,7 @@ the config broken. Talk in plain words about what they'll see (rounder corners, 
 unless they ask. Keep replies short.
 """
 abilities    = [
+  "fetch-url",
   "hyprland",
   {
     name  = "filesystem",

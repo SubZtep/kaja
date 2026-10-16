@@ -22,7 +22,12 @@ export async function startSandbox(): Promise<void> {
     upstream: env.WEB_PROXY
   })
   const sendOut = sendThroughEgress(env.SANDBOX_EGRESS_PORT)
-  const servers = await loadSandboxServers(env.MARKETPLACE_DIR, env.SANDBOX_OVERRIDES, env.SANDBOX_CACHE_DIR)
+  const servers = await loadSandboxServers(
+    env.MARKETPLACE_DIR,
+    env.SANDBOX_OVERRIDES,
+    env.SANDBOX_CACHE_DIR,
+    env.SANDBOX_EGRESS_PORT
+  )
   const isolation = await UserIsolation.create({ enabled: env.SANDBOX_ISOLATE_USERS, cacheDir: env.SANDBOX_CACHE_DIR })
   const maxProcesses = env.SANDBOX_MAX_PROCESSES ?? (await defaultMaxProcesses())
   const pool = new ProcessPool({

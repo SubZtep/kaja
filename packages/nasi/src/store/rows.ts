@@ -1,7 +1,7 @@
 import type { CallStat, ModelCallStat, Session, StepStat } from "../agent/agent"
 
 /** Which kind of pause a session's pending tool call is waiting on. */
-export type PendingKind = "ask_user" | "run_command" | "tool_approval"
+export type PendingKind = "ask_user" | "run_command" | "tool_approval" | "client_tools"
 
 export type ToolCallRow = { callId: string; name: string; arguments: string }
 
@@ -134,9 +134,14 @@ export function splitConversation(session: unknown): ConversationRows {
   const [first, ...others] = all
   const hasSystem = first?.role === "system" && typeof first.content === "string"
   const pendingField = PENDING_FIELDS.find(([field]) => typeof rest[field] === "string")
+  // Several client calls can wait at once; the row keeps the first, and joining finds the rest unanswered.
+  const clientCall = rest.pendingClientCalls?.[0]
+  let pending: ConversationRows["pending"] = null
+  if (pendingField) pending = { callId: rest[pendingField[0]]!, kind: pendingField[1] }
+  else if (clientCall) pending = { callId: clientCall, kind: "client_tools" }
   return {
     systemPrompt: hasSystem ? (first!.content as string) : null,
-    pending: pendingField ? { callId: rest[pendingField[0]]!, kind: pendingField[1] } : null,
+    pending,
     summary: rest.summary ? { text: rest.summary.text, from: rest.summary.from - (hasSystem ? 1 : 0) } : null,
     toolSummaries: rest.toolSummaries ?? {},
     grantedTools: rest.grantedTools ?? [],
@@ -171,6 +176,15 @@ function fromRow(row: MessageRow): RawMessage {
   return message
 }
 
+// The last assistant message's calls that no tool message answers yet: the client calls a session waits on.
+function unansweredCalls(messages: Session["messages"]): string[] {
+  const at = messages.findLastIndex(message => message.role === "assistant")
+  const assistant = messages[at]
+  if (assistant?.role !== "assistant") return []
+  const answered = new Set(messages.slice(at + 1).flatMap(m => (m.role === "tool" ? [m.tool_call_id] : [])))
+  return (assistant.tool_calls ?? []).map(call => call.id).filter(id => !answered.has(id))
+}
+
 /** The inverse of {@link splitConversation}. */
 export function joinConversation(rows: ConversationRows): Session {
   const session: Session = {
@@ -181,6 +195,7 @@ export function joinConversation(rows: ConversationRows): Session {
   }
   const pendingField = rows.pending && PENDING_FIELDS.find(([, kind]) => kind === rows.pending!.kind)
   if (rows.pending && pendingField) session[pendingField[0]] = rows.pending.callId
+  if (rows.pending?.kind === "client_tools") session.pendingClientCalls = unansweredCalls(session.messages)
   if (rows.summary)
     session.summary = { text: rows.summary.text, from: rows.summary.from + (rows.systemPrompt !== null ? 1 : 0) }
   if (Object.keys(rows.toolSummaries).length > 0) session.toolSummaries = rows.toolSummaries

@@ -82,7 +82,8 @@ const response = await nasi.turnBuffered({ session, message, includeThinking, la
 ```
 
 **In:** `NasiTurnInput` has `session` (a UUIDv7 to resume, omitted to start fresh), `message` (1 to 32,768
-chars), and optional `includeThinking`, `language` and `personaId`.
+chars), and optional `includeThinking`, `language` and `personaId`. A terminal also sends what it runs on the
+user's computer (see [Client tools](#client-tools)).
 
 **Out:** `NasiTurnResponse`, the same shape whether you awaited `turnBuffered()` or drained `turn()`'s
 generator to its return value:
@@ -90,7 +91,7 @@ generator to its return value:
 | Field | Meaning |
 | --- | --- |
 | `session` | the session id, passed back on the next turn |
-| `status` | `completed` / `needs_input` / `needs_approval` / `error` |
+| `status` | `completed` / `needs_input` / `needs_approval` / `needs_client_tool` / `error` |
 | `message` | the reply, or the pending question/command when not `completed` |
 | `steps` | ordered `NasiStep[]` (reasoning, messages, tool calls, handoffs) for rendering a transcript |
 | `thinking` | full reasoning text, only when `includeThinking` was set |
@@ -115,6 +116,7 @@ consistent shape.
 | `confirm_command` | stop and wait for shell approval |
 | `confirm_tool` | stop and wait for approval of an HTTP tool or MCP call that changes something |
 | `persona_switch` | the persona (and maybe the model) changed mid-turn |
+| `client_tool_calls` | stop and wait for the client to run these calls on the user's computer |
 | `compacted` | the conversation was summarised before a round (`beforeTokens`, `afterTokens`, `dropped`), see [Long conversations](#long-conversations) |
 | `condensed` | an oversized tool result was condensed before a round (`tool`, `beforeTokens`, `afterTokens`) |
 | `final` | the turn is done |
@@ -216,9 +218,26 @@ Over HTTP the same loop is buffered into one response:
 | `completed` | the turn finished, and `message` is the reply |
 | `needs_input` | `ask_user` is pending: send the answer as the next `message` |
 | `needs_approval` | a tool call waits for the user's OK (a `confirm_tool` step): send `approval` next: `"approve"`, `"approve_session"` (also stops asking about that tool for the rest of the session) or `"decline"`. The server runs the call it saved, never one the client describes. A plain `message` instead skips it |
+| `needs_client_tool` | calls wait on the client (a `client_tool_calls` step): run them and send `toolResults` next, one per call id (`text`, and up to 4 base64 `images`). A `message` instead answers them as gone |
 | `error` | the turn failed |
 
 `session` comes back on every response. Send it again to continue the conversation.
+
+## Client tools
+
+A cloud turn can use the user's own computer through their terminal. With each turn the terminal declares:
+
+- `clientTools`: the tools it runs there (name, description, JSON Schema parameters, and the ability each
+  belongs to; none for builtins like `read_file` or `run_command`);
+- `clientSkills`: the skills of those abilities (summaries; a sticky one with its body);
+- `clientPersonas`: the user's own personas, for this turn only. One with a catalog persona's id takes its place.
+
+`Nasi.open({ client })` turns the tools into stubs the loop never runs itself (`Tool.runsOnClient`), hides
+the host's own copy of every ability the client declares (so one ability never runs in two places), and
+hands `load_skill` calls for the client's skills to the client. A round's client calls run after the round's
+other calls and pause the turn together (`client_tool_calls`, status `needs_client_tool`). The next turn's
+`toolResults` answer them in the order the model made them, and the loop carries on without a new message.
+The client asks the user first wherever its own rules say so (as in `--local`); the server doesn't.
 
 ## System prompt
 

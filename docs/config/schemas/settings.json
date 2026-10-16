@@ -78,6 +78,27 @@
         }
       }
     },
+    "tools": {
+      "description": "Where abilities' tools run",
+      "type": "object",
+      "properties": {
+        "hosts": {
+          "description": "Where each stdio MCP ability runs, by name: \"computer\" or \"sandbox\"; the default follows the mode (local: computer, cloud: sandbox). Local \"sandbox\" needs a Kaja cloud sign-in; cloud \"computer\" has the terminal run it. shell = \"computer\" lets cloud chat use this shell",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "computer",
+              "sandbox"
+            ]
+          }
+        }
+      }
+    },
     "preferences": {
       "description": "In-app preferences",
       "type": "object",

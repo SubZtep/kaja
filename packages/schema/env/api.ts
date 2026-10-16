@@ -127,15 +127,7 @@ const apiEnvFields = z.object({
     }, "must be 32 bytes, base64-encoded")
     .optional()
     .describe(
-      "Encrypts users' ability API keys (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one"
-    )
-    .meta({ secret: true, section: "Marketplace" }),
-
-  // TODO: temporary until admin-managed service keys (like providers) replace it.
-  ABILITY_KEYS: trimmed
-    .optional()
-    .describe(
-      "Server-wide ability API keys as comma-separated name=key pairs (e.g. web-search=BSA...); every cloud user shares them, and a user's own key wins"
+      "Encrypts ability API keys, users' own and the admins' server-wide ones (AES-256-GCM); required in production, elsewhere unset turns key entry off and hides tools that need one"
     )
     .meta({ secret: true, section: "Marketplace" }),
 

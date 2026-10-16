@@ -7,7 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js"
+import { ListRootsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js"
 import { write } from "bun"
 import { type Tool, type ToolResult, tool } from "../agent/tools"
 import type { FetchLike } from "../security/ssrf"
@@ -53,6 +53,8 @@ export type McpConnectOptions = {
   refuse?: (args: Record<string, unknown>) => string | undefined
   /** Runs before a call that may write (after `refuse`), e.g. to back up the files it names; a throw stops the call. */
   beforeWrite?: (args: Record<string, unknown>) => Promise<void>
+  /** For a `url` server whose session can end under it (a sandboxed one, when its sandbox restarts): a call that fails in transport opens a new session and is tried once more. */
+  reconnect?: boolean
 }
 
 /** The tool's input schema without `hide` among its properties or required ones. */
@@ -102,12 +104,6 @@ export async function connectMcpServer(
   tempDir: string,
   opts: McpConnectOptions = {}
 ): Promise<{ tools: Tool[]; close: () => Promise<void>; rootsChanged: () => Promise<void> }> {
-  const transport = createTransport(server, opts)
-
-  const client = new Client(
-    { name: "kaja", version: "1.0.0" },
-    opts.roots ? { capabilities: { roots: { listChanged: true } } } : undefined
-  )
   const roots = opts.roots
   // A server asks for its roots on its own time (after initializing, after a change), so a caller waits for that ask.
   let asked: () => void = () => {}
@@ -120,15 +116,49 @@ export async function connectMcpServer(
       await Bun.sleep(ROOTS_SETTLE_MS)
     }
   }
+  const open = async () => {
+    const fresh = new Client(
+      { name: "kaja", version: "1.0.0" },
+      roots ? { capabilities: { roots: { listChanged: true } } } : undefined
+    )
+    if (roots)
+      fresh.setRequestHandler(ListRootsRequestSchema, () => {
+        const answer = { roots: roots() }
+        queueMicrotask(asked)
+        return answer
+      })
+    await fresh.connect(createTransport(server, opts))
+    return fresh
+  }
   let pendingAsk = nextAsk()
-  if (roots)
-    client.setRequestHandler(ListRootsRequestSchema, () => {
-      const answer = { roots: roots() }
-      queueMicrotask(asked)
-      return answer
-    })
-  await client.connect(transport)
+  let client = await open()
   if (roots) await pendingAsk()
+
+  // Calls that fail together share one new session.
+  let reopening: Promise<Client> | undefined
+  const reopen = (stale: Client): Promise<Client> => {
+    if (client !== stale) return Promise.resolve(client)
+    reopening ??= (async () => {
+      await stale.close().catch(() => undefined)
+      pendingAsk = nextAsk()
+      client = await open()
+      if (roots) await pendingAsk()
+      return client
+    })().finally(() => {
+      reopening = undefined
+    })
+    return reopening
+  }
+  // An McpError is the server's own answer (an unknown tool, a timeout), not a lost session.
+  const call = async (name: string, args: Record<string, unknown>): Promise<ToolResult> => {
+    const used = client
+    try {
+      return await callTool(used, name, args, tempDir, opts)
+    } catch (error) {
+      if (!opts.reconnect || !("url" in server) || error instanceof McpError) throw error
+      return callTool(await reopen(used), name, args, tempDir, opts)
+    }
+  }
 
   const { tools: mcpTools } = await client.listTools()
   const label = opts.label ?? `mcp:${server.id}`
@@ -149,12 +179,9 @@ export async function connectMcpServer(
             const refused = refusal(args)
             if (refused) throw new Error(refused)
             if (!reads(args)) await opts.beforeWrite?.(args)
-            return callTool(
-              client,
+            return call(
               mcpTool.name,
-              Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key))),
-              tempDir,
-              opts
+              Object.fromEntries(Object.entries(args).filter(([key]) => !opts.hideArgs?.includes(key)))
             )
           }
         }),

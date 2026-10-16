@@ -8,8 +8,7 @@ import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
-import { marketplaceService, secretService } from "../../src/services"
-import { AbilityService, parseAbilityKeys } from "../../src/services/ability"
+import { abilityService, marketplaceService, secretService } from "../../src/services"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
@@ -459,16 +458,70 @@ describe("HTTP tools in the cloud", () => {
     expect((await app.request("/abilities/me/keys/nope-nope", { method: "DELETE", headers: auth() })).status).toBe(404)
   })
 
-  test("ABILITY_KEYS gives every user a server-wide key; the user's own key still wins", async () => {
-    const service = new AbilityService(pool, secretService, parseAbilityKeys(` ${issues} = server-key ,broken,=x`))
-    const listed = (await service.listKeys(userId)).find(ability => ability.name === issues)
-    expect(listed?.key).toBe("optional")
+  test("an admin's service key is every user's, tested and listed without its value; the user's own key still wins", async () => {
+    const adminEmail = faker.internet.email().toLowerCase()
+    const adminToken = await signUpAndSignIn(adminEmail, "password123!", "Keys Admin")
+    await pool.query(`UPDATE "user" SET role = 'admin' WHERE email = $1`, [adminEmail])
+    const serviceKey = (apiKey: string, as = adminToken) =>
+      app.request(`/admin/abilities/keys/${issues}`, {
+        method: "PUT",
+        headers: auth(as),
+        body: JSON.stringify({ apiKey })
+      })
+    const listed = async () =>
+      (await (await app.request("/admin/abilities/keys", { headers: auth(adminToken) })).json()).abilities.find(
+        (ability: { name: string }) => ability.name === issues
+      )
     try {
-      expect((await service.keysForUser(userId)).get(issues)).toEqual({ value: "server-key", own: false })
+      expect((await serviceKey(GOOD_KEY, token)).status).toBe(403)
+      expect(await listed()).toMatchObject({ key: "required", saved: false })
+
+      const saved = await serviceKey(GOOD_KEY)
+      expect(saved.status).toBe(200)
+      expect((await saved.json()).check).toEqual({ ok: true })
+      expect(JSON.stringify(await listed())).not.toContain(GOOD_KEY)
+      expect(await listed()).toMatchObject({ key: "required", saved: true })
+      // A user without their own key may bring one, but no longer needs to.
+      expect((await mine()).abilities.find((ability: { name: string }) => ability.name === issues).key).toBe("optional")
+      expect((await abilityService.keysForUser(userId)).get(issues)).toEqual({ value: GOOD_KEY, own: false })
       await secretService.set(userId, `ability:${issues}`, "own-key")
-      expect((await service.keysForUser(userId)).get(issues)).toEqual({ value: "own-key", own: true })
+      expect((await abilityService.keysForUser(userId)).get(issues)).toEqual({ value: "own-key", own: true })
+
+      const removed = await app.request(`/admin/abilities/keys/${issues}`, {
+        method: "DELETE",
+        headers: auth(adminToken)
+      })
+      expect(removed.status).toBe(200)
+      expect(await listed()).toMatchObject({ saved: false })
+      expect(
+        (
+          await app.request("/admin/abilities/keys/nope-nope", {
+            method: "PUT",
+            headers: auth(adminToken),
+            body: JSON.stringify({ apiKey: "x" })
+          })
+        ).status
+      ).toBe(404)
     } finally {
       await secretService.delete(userId, `ability:${issues}`)
+      await secretService.deleteService(`ability:${issues}`)
+      await pool.query('DELETE FROM "user" WHERE email = $1', [adminEmail])
+    }
+  })
+
+  test("a service key doesn't decrypt as a user's secret, nor the other way round", async () => {
+    await secretService.setService(`ability:${issues}`, "server-key")
+    try {
+      await pool.query(
+        `INSERT INTO user_secret (user_id, name, ciphertext, iv, tag)
+         SELECT $1, name, ciphertext, iv, tag FROM service_secret WHERE name = $2`,
+        [userId, `ability:${issues}`]
+      )
+      expect(await secretService.get(userId, `ability:${issues}`)).toBeUndefined()
+      expect((await secretService.getAllService("ability:")).get(`ability:${issues}`)).toBe("server-key")
+    } finally {
+      await secretService.delete(userId, `ability:${issues}`)
+      await secretService.deleteService(`ability:${issues}`)
     }
   })
 

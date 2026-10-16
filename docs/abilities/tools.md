@@ -26,12 +26,16 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 | `remember_note` / `recall_memory` / `forget_note` / `list_notes` | long-term [memory](/abilities/memory) | ✓ |
 | `dataset_info` | collect answers for a persona's [dataset](/abilities/memory#datasets) | ✓ |
 | `generate_image` | text-to-image | ✓ |
-| `read_file` / `list_files` | read a file, list a directory | ✗ |
-| `view_image` | look at an image file | ✗ |
-| `run_command` | run a shell command | ✗ |
+| `read_file` / `list_files` | read a file, list a directory | your computer |
+| `view_image` | look at an image file | your computer |
+| `run_command` | run a shell command | your computer, opt-in |
 
 Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/configuration/models).
+
+`fetch_url` and `generate_image` are opt-in: a persona with an `abilities` list gets them only by listing
+`fetch-url` or `generate-image` there (see [Personas](/abilities/personas#abilities)). The shipped `default`
+persona lists both.
 
 Web search isn't built in: the marketplace's `web-search` [HTTP tool](#http-tools) adds `web_search`,
 locally with your own Brave Search API key, in the cloud with the server's key (or yours, if you save one).
@@ -41,7 +45,9 @@ Locally, `fetch_url` runs from your own machine. In the cloud it goes out throug
 With no sandbox online, these calls fail.
 
 The **Cloud** column is an allowlist: nothing that touches the server's files or shell is offered there, and
-neither are code tools.
+neither are code tools. "Your computer" means cloud chat in the terminal runs it there, asking first as in
+local mode; the shell only after you allow it (see
+[Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)).
 
 ## HTTP tools
 

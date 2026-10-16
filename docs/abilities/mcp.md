@@ -56,6 +56,9 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   `kaja doctor` say what to install. A server that isn't a package takes a `command` (with `args` and `env`)
   instead, and is left out the same way when that command isn't installed. `kaja abilities` shows what each
   one runs on your machine.
+- `requires` names a program the server drives besides its runner. Today that's `chrome`, Google Chrome, which
+  `chrome-devtools` opens (its stable channel, where Chrome installs itself on each OS). Without it the ability
+  is left out too, and `kaja abilities` and `kaja doctor` say so, instead of the first tool call failing.
 - The key lives in `secrets.toml` as `[abilities.<name>] api_key`. Every key is optional: without one the
   ability is simply off, and `kaja doctor` offers to add it. `keyless = true` means the server also works
   without one (like context7, where a key only raises the limits), so the ability stays on; `kaja doctor`
@@ -99,8 +102,8 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   `list_backups` and `restore_backup`; a restore asks first and backs up the file it replaces, so it can be
   undone too.
 
-- `localOnly = true` keeps a server off the cloud: it only ever runs on your own machine. A `roots` one is
-  local-only too.
+- `localOnly = true` keeps a server off the cloud's own hosts: it only ever runs on your own machine (in cloud
+  chat, through your terminal). A `roots` one is local-only too.
 - `toolDescriptions` says in a line what each listed tool does. The web app shows it, since a server's own
   descriptions only arrive once it runs:
 
@@ -110,13 +113,32 @@ The marketplace ships `chrome-devtools`, `context7`, `filesystem`, `geo-service`
   "query-docs"         = "Fetches current documentation and code examples for a library."
   ```
 
+## On a sandbox, from local mode
+
+In local mode a `stdio` ability can run on a Kaja sandbox instead of your machine: handy when its runner
+(`uvx` for a Python package) or Chrome isn't installed here, or when you'd rather keep a browser off it. Set
+it in [`settings.toml`](/configuration/config#toolshosts):
+
+```toml
+[tools.hosts]
+chrome-devtools = "sandbox"
+```
+
+Its requests go through the Kaja API, so you need to be signed in (`kaja login`). The sandbox is picked the
+same way as for cloud chat (below): your own, a shared one if you allow that, else Kaja's; `trustedSandbox`
+and keyed abilities only your own or Kaja's. Your key from `secrets.toml` travels with each request and isn't
+stored there. `kaja abilities` shows which abilities run on a sandbox. If the sandbox restarts, the next call
+opens a new session (a browser's open pages are lost).
+
 ## In the cloud
 
 Marketplace MCP abilities work in cloud chat and the cloud Telegram bot when they have a `tools` list (so
 what a server can do is known up front, and it can't add tools later) and aren't local-only.
 
 A `stdio` ability, like `chrome-devtools`, runs in a **sandbox**, never on the API's host, and a remote one's
-requests go out through one too. That can be:
+requests go out through one too. In the terminal you can send one to your own computer instead
+(`computer` in [`[tools.hosts]`](/configuration/config#toolshosts)), and local-only ones always run there; see
+[Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode). That can be:
 
 - Kaja's own sandbox;
 - one you run yourself (`docker run subztep/kaja-sandbox`, with the key from the web app's Sandbox page);

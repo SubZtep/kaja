@@ -31,6 +31,10 @@ voice = false
 # [context]
 # compact_at = 0.8
 
+# [tools.hosts]
+# chrome-devtools = "sandbox"
+# shell = "computer"
+
 # [stt]
 # speachesUrl = "ws://localhost:8000"
 # language = "en"
@@ -81,6 +85,20 @@ pattern that isn't a valid regex is skipped with a warning. The list applies to 
 | `autoFetch` | pull the [marketplace](/abilities) in the background at startup when the last sync is over a day old, silently on failure. Changes apply on the next launch. Default `true` |
 | `url` | the git URL (or local path) of the repo whose `marketplace/` folder `kaja abilities update` fetches: a fork, or a checkout with your changes. Default the Kaja repo |
 | `ref` | the branch or tag to fetch. Default `main` |
+
+## `[tools.hosts]`
+
+Where each `stdio` [MCP ability](/abilities/mcp) runs, by name: `computer` (this machine) or `sandbox` (a
+Kaja sandbox). The default follows the loop: local mode runs it here, cloud mode on a sandbox.
+
+- **Local mode**, `sandbox`: a [Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode), reached through
+  the Kaja API. It needs a cloud sign-in (`kaja login`); signed out, those abilities are off and the chat
+  says so. Network tools (`fetch_url`, HTTP tools, remote MCP servers) always run here.
+- **Cloud mode**, `computer`: your terminal runs it for cloud chat
+  ([Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)). Local-only abilities
+  and your own always run here anyway.
+- `shell = "computer"` lets cloud chat use your shell (`run_command`), asking first unless
+  [`commands.toml`](/configuration/commands) lists the command as safe. Off by default.
 
 ## `[context]`
 

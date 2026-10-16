@@ -55,8 +55,12 @@ app.use("*", (c, next) => {
   if (PUBLIC_WIDGET_PATH.test(c.req.path)) return next()
   return cors({ origin: env.CORS_ORIGIN, credentials: true })(c, next)
 })
-// No route takes more than a turn's text (images reach the API through Telegram, not request bodies); without this Bun buffers up to 128 MB before zod runs.
-app.use("*", bodyLimit({ maxSize: 1024 * 1024, onError: c => c.json({ error: "Request body too large" }, 413) }))
+// No route takes more than a turn's text, except a terminal's tool results with their images (screenshots); without this Bun buffers up to 128 MB before zod runs.
+const TURN_PATH = /^\/nasi\/turn(\/stream)?$/
+const limitBody = (megabytes: number) =>
+  bodyLimit({ maxSize: megabytes * 1024 * 1024, onError: c => c.json({ error: "Request body too large" }, 413) })
+const [smallBody, turnBody] = [limitBody(1), limitBody(16)]
+app.use("*", (c, next) => (TURN_PATH.test(c.req.path) ? turnBody : smallBody)(c, next))
 app.use("*", globalRateLimiter)
 app.use("*", csrfProtection)
 app.use("*", authMiddleware)

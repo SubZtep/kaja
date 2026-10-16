@@ -10,6 +10,7 @@ import {
   resolveContextWindow,
   setDatasetLoaders
 } from "@kaja/nasi"
+import type { Persona } from "@kaja/schema/abilities"
 import type { NasiTurnRequest, NasiTurnResponse } from "@kaja/schema/nasi"
 import { isPublicHttpUrl } from "@kaja/shared/net"
 import { pool } from "../../core/db"
@@ -164,14 +165,16 @@ export async function openNasiFor(opts: {
   abilities?: CloudAbilitySource
   /** How replies should read where they're shown (see `PromptContext.channelInstruction`). */
   channelInstruction?: string
+  /** What the user's terminal runs on their computer this turn, and their own personas (see {@link clientOf}). */
+  client?: TurnClient
 }): Promise<Nasi> {
   const [chat, summarizer] = await Promise.all([
     chatResolver ? chatResolver() : defaultChatResolver(opts.pinnedModel),
     resolveSummarizer()
   ])
   const source = opts.abilities ?? { userId: opts.userId }
-  // Every user's roster is the whole catalog; each persona's `abilities` picks what a turn uses.
-  const personas = await abilityService.personaCatalog()
+  // Every user's roster is the whole catalog, plus the terminal's own personas; each persona's `abilities` picks what a turn uses.
+  const personas = withOwnPersonas(await abilityService.personaCatalog(), opts.client?.personas ?? [])
   // Only the user's own turns get their keys; a widget's skills-only source never needs one.
   const [keys, sandboxSettings] =
     "userId" in source
@@ -189,9 +192,10 @@ export async function openNasiFor(opts: {
     abilityKey: name => keys.get(name)?.value,
     // Always set, so a stdio ability never runs on this host: with no sandbox online, its requests fail instead.
     mcpSandbox: "userId" in source ? cloudSandbox(source.userId, keyOf) : undefined,
+    client: opts.client && { tools: opts.client.tools, skills: opts.client.skills },
     promptContext: {
       environment:
-        "You are Kaja cloud chat. You have no access to the user's machine — you cannot run a shell. " +
+        (opts.client ? TERMINAL_ENVIRONMENT : CLOUD_ENVIRONMENT) +
         "Use only the tools you were given — if a tool you'd want isn't there, say so instead of guessing." +
         (sandboxSettings?.useShared ? SHARED_SANDBOX_NOTE : ""),
       askUserInstruction: CLOUD_ASK_USER_INSTRUCTION,
@@ -199,6 +203,34 @@ export async function openNasiFor(opts: {
       replyLanguageInstruction: opts.language ? replyLanguageInstructionFor(opts.language) : undefined
     }
   })
+}
+
+const CLOUD_ENVIRONMENT = "You are Kaja cloud chat. You have no access to the user's machine — you cannot run a shell. "
+const TERMINAL_ENVIRONMENT =
+  "You are Kaja cloud chat, talking to the user's terminal: some of your tools run on their own computer through it " +
+  "(their files, programs and, if they allowed it, their shell), each asking them first when it needs to. "
+
+/** What a terminal declares with a turn: the tools and skills it runs on the user's computer, and the user's own personas. */
+export type TurnClient = {
+  tools: NonNullable<NasiTurnRequest["clientTools"]>
+  skills: NonNullable<NasiTurnRequest["clientSkills"]>
+  personas: NonNullable<NasiTurnRequest["clientPersonas"]>
+}
+
+/** The terminal's declarations in a turn request, or undefined when it declared none (every non-terminal caller). */
+export function clientOf(body: NasiTurnRequest): TurnClient | undefined {
+  if (!body.clientTools && !body.clientSkills && !body.clientPersonas) return undefined
+  return { tools: body.clientTools ?? [], skills: body.clientSkills ?? [], personas: body.clientPersonas ?? [] }
+}
+
+/** The catalog with the user's own personas added; one with a catalog persona's id takes its place, `default` staying first. */
+export function withOwnPersonas(catalog: Persona[], own: Persona[]): Persona[] {
+  if (own.length === 0) return catalog
+  const mine = new Map(own.map(persona => [persona.id, persona]))
+  return [
+    ...catalog.map(persona => mine.get(persona.id) ?? persona),
+    ...own.filter(persona => !catalog.some(c => c.id === persona.id))
+  ]
 }
 
 /** Serializes turns on an existing session so overlapping requests (retries, duplicate tabs) can't race the read-modify-write around session persistence; a new session (no id yet) has no shared row to race on. */
@@ -221,7 +253,8 @@ export async function runUserTurn(userId: string, body: NasiTurnRequest): Promis
     const nasi = await openNasiFor({
       userId,
       pinnedModel: await pinnedModelFor(userId, body.session),
-      language: body.language
+      language: body.language,
+      client: clientOf(body)
     })
     try {
       return await nasi.turnBuffered(body)
@@ -252,7 +285,8 @@ export function openUserTurnStream(userId: string, body: NasiTurnRequest) {
     const nasi = await openNasiFor({
       userId,
       pinnedModel: await pinnedModelFor(userId, body.session),
-      language: body.language
+      language: body.language,
+      client: clientOf(body)
     })
     // Also runs when the client goes away mid-stream, so a dropped turn never leaves its MCP connections open.
     try {

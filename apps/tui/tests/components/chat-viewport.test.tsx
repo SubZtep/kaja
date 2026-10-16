@@ -114,13 +114,15 @@ test("scrolling doesn't re-parse markdown history (memoized)", async () => {
   await t.waitUntilExit()
 })
 
-test("blank lines only around the user's messages: an agent's run stacks without gaps", async () => {
+test("blank lines around the user's messages and the agent's words; tool lines stack under what they follow", async () => {
   const events: TimelineEvent[] = [
     { type: "user", text: "first" },
     { type: "reasoning", text: "hidden" },
     { type: "tool_call", name: "web_search", arguments: "{}" },
     { type: "message", content: "middle" },
+    { type: "tool_call", name: "fetch_url", arguments: "{}" },
     { type: "final", content: "answer" },
+    { type: "ask_user", question: "which" },
     { type: "user", text: "second" }
   ]
   const t = renderForTest(
@@ -148,8 +150,13 @@ test("blank lines only around the user's messages: an agent's run stacks without
     "first",
     "",
     "Searching",
+    "",
     "middle",
+    "Fetching",
+    "",
     "answer",
+    "",
+    "which",
     "",
     "second"
   ])

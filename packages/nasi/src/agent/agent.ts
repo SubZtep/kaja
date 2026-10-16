@@ -237,6 +237,8 @@ export type Session = {
   pendingRunCommandId?: string
   /** A tool call waiting on the human's approval (see `Tool.approval`); the host answers it by running the tool itself. */
   pendingToolApprovalId?: string
+  /** Calls waiting on the client to run them on the user's computer (see `Tool.runsOnClient`), by call id. */
+  pendingClientCalls?: string[]
   /** Tools (allow keys, see `tool-allow.ts`) the user approved for the rest of this session. */
   grantedTools?: string[]
   /** Once compacted: the latest summary, which stands in for `messages` before index `from` in what the model is sent. */
@@ -267,6 +269,8 @@ export type AgentEvent =
   /** `id` is the pending call's id (`session.pendingToolApprovalId`), for hosts that correlate the answer themselves. */
   | { type: "confirm_tool"; id: string; name: string; arguments: string; summary: string }
   | { type: "persona_switch"; personaId: string; label: string }
+  /** Calls the client runs on the user's computer; the session waits on their results (`session.pendingClientCalls`). */
+  | { type: "client_tool_calls"; calls: ClientCall[] }
   | { type: "final"; content: string | null }
   /** The conversation was compacted before a round; `dropped` when the summarizer failed and older messages were cut without one. */
   | { type: "compacted"; beforeTokens: number; afterTokens: number; dropped: boolean }
@@ -276,3 +280,6 @@ export type AgentEvent =
   | { type: "usage"; promptTokens?: number; model?: string; contextWindow?: number }
 
 export type FinalizedAgentEvent = Exclude<AgentEvent, AgentDelta>
+
+/** A call for the client to run: the provider's call id, the tool and its arguments as the model wrote them. */
+export type ClientCall = { id: string; name: string; arguments: string }

@@ -7,7 +7,6 @@ dataset      = "onboarding"
 # Where and when the user is, for small talk while getting to know them.
 abilities    = [
   "geo-service",
-  "time",
   "open-meteo"
 ]
 instructions = """

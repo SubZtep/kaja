@@ -57,6 +57,12 @@ export const McpAbilitySchema = z
       .describe("Command that starts the server (stdio), for a server that isn't a package"),
     package: McpPackageSchema.optional().describe("The package that is the server (stdio), instead of a command"),
     args: z.array(z.string()).default([]).describe("The server's own arguments (after the package, with one)"),
+    requires: z
+      .array(z.enum(["chrome"]))
+      .default([])
+      .describe(
+        "Programs the server drives besides its runner (stdio): chrome = Google Chrome, the stable channel chrome-devtools-mcp opens"
+      ),
     env: z.record(z.string(), z.string()).default({}).describe("Static env vars for the server (stdio)"),
     headers: z.record(z.string(), z.string()).default({}).describe("Static headers (http and sse)"),
     auth: McpAbilityAuthSchema.default({ type: "none" }),

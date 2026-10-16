@@ -13,6 +13,7 @@ import {
   type AgentEvent,
   ASK_USER_TOOL,
   type CallStat,
+  type ClientCall,
   RUN_COMMAND_TOOL,
   type Session,
   SWITCH_PERSONA_TOOL
@@ -334,20 +335,19 @@ async function* handleToolCalls(
   toolCalls: ChatCompletionMessageToolCall[],
   granted: readonly string[] | undefined,
   { record, onModelCall }: { record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
-): AsyncGenerator<
-  AgentEvent,
-  {
-    ask?: { id: string; question: string; note?: string }
-    confirm?: { id: string; command: string; description: string }
-    approval?: ToolApproval
-  },
-  void
-> {
+): AsyncGenerator<AgentEvent, RoundPauses, void> {
   let ask: { id: string; question: string; note?: string } | undefined
   let confirm: { id: string; command: string; description: string } | undefined
   let approval: ToolApproval | undefined
+  const clientCalls: ClientCall[] = []
   for (const call of toolCalls) {
     if (call.type !== "function") continue
+
+    // The client runs it on the user's computer, asking there first when it needs to.
+    if (runsOnClient(toolsByName.get(call.function.name), call)) {
+      clientCalls.push({ id: call.id, name: call.function.name, arguments: call.function.arguments })
+      continue
+    }
 
     if (call.function.name === ASK_USER_TOOL) {
       ask = handleAskUserCall(call)
@@ -380,11 +380,42 @@ async function* handleToolCalls(
 
     yield* handleToolCall(agent, toolsByName, messages, owner, call, record, onModelCall)
   }
-  if (ask || confirm) approval = skipApproval(messages, record, approval)
-  return { ask, confirm, approval }
+  return settlePauses(messages, record, { ask, confirm, approval, clientCalls })
 }
 
-// Another pause (ask_user, run_command) wins the handoff; answer the approval now rather than leave its call unanswered.
+/** What a round of tool calls left waiting: at most one pause hands off, see {@link settlePauses}. */
+type RoundPauses = {
+  ask?: { id: string; question: string; note?: string }
+  confirm?: { id: string; command: string; description: string }
+  approval?: ToolApproval
+  clientCalls: ClientCall[]
+}
+
+// The client's calls go first: anything else that would pause waits for a later round.
+function settlePauses(messages: ChatCompletionMessageParam[], record: RecordCall, pauses: RoundPauses): RoundPauses {
+  const { ask, confirm, clientCalls } = pauses
+  if (clientCalls.length) {
+    for (const held of [ask, confirm]) if (held) answerHeld(messages, record, held.id)
+    return { clientCalls, approval: skipApproval(messages, record, pauses.approval) }
+  }
+  if (ask || confirm) return { ...pauses, approval: skipApproval(messages, record, pauses.approval) }
+  return pauses
+}
+
+// Whether `tool` runs this call on the client (see `Tool.runsOnClient`).
+function runsOnClient(tool: Tool | undefined, call: FunctionToolCall): boolean {
+  if (typeof tool?.runsOnClient !== "function") return tool?.runsOnClient === true
+  const args = parseToolArgs(call.function.arguments)
+  return args !== null && tool.runsOnClient(args)
+}
+
+// A pause that lost to the client's calls is answered now, so every call keeps a response.
+function answerHeld(messages: ChatCompletionMessageParam[], record: RecordCall, id: string) {
+  messages.push({ role: "tool", tool_call_id: id, content: ONE_APPROVAL_AT_A_TIME })
+  record(id, { status: "skipped" })
+}
+
+// Another pause (ask_user, run_command, the client's calls) wins the handoff; answer the approval now rather than leave its call unanswered.
 function skipApproval(
   messages: ChatCompletionMessageParam[],
   record: RecordCall,
@@ -491,8 +522,15 @@ function* handlePendingHandoff(
   session: Session,
   ask: { id: string; question: string; note?: string } | undefined,
   confirm: { id: string; command: string; description: string } | undefined,
-  approval: ToolApproval | undefined
+  approval: ToolApproval | undefined,
+  clientCalls: ClientCall[]
 ): Generator<AgentEvent, boolean, void> {
+  if (clientCalls.length) {
+    session.pendingClientCalls = clientCalls.map(call => call.id)
+    yield { type: "client_tool_calls", calls: clientCalls }
+    return true
+  }
+
   if (ask) {
     session.pendingAskUserId = ask.id
     yield { type: "ask_user", question: ask.question, note: ask.note }
@@ -524,11 +562,11 @@ function* handlePendingHandoff(
   return false
 }
 
-// Seeds a new conversation's system prompt (or refreshes an ongoing one's abilities), then adds the prompt.
+// Seeds a new conversation's system prompt (or refreshes an ongoing one's abilities), then adds the prompt (none: the loop carries on from tool results already in the session).
 async function openTurn(
   agent: Agent,
   session: Session,
-  prompt: string,
+  prompt: string | undefined,
   owner: string | null,
   images: string[]
 ): Promise<void> {
@@ -539,7 +577,7 @@ async function openTurn(
   } else {
     await refreshAbilitiesInPrompt(agent, messages, owner)
   }
-  pushPromptToMessages(session, prompt, images)
+  if (prompt !== undefined) pushPromptToMessages(session, prompt, images)
 }
 
 // Records the telemetry step for the round whose message was just appended.
@@ -640,11 +678,12 @@ function countFailingRounds(session: Session, toolCalls: { id: string }[], previ
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
- * `images` (data URLs) go to the model with the prompt, e.g. a photo sent to a bot.
+ * `images` (data URLs) go to the model with the prompt, e.g. a photo sent to a bot. Without a prompt it carries on from
+ * the session as it is, e.g. after the client's tool results were added (see `answerClientCalls`).
  */
 export async function* run(
   agent: Agent,
-  prompt: string,
+  prompt: string | undefined,
   session: Session,
   owner: string | null = LOCAL_OWNER,
   images: string[] = []
@@ -691,7 +730,7 @@ export async function* run(
     if (typeof message.content === "string" && message.content.trim())
       yield { type: "message", content: message.content }
 
-    const { ask, confirm, approval } = yield* handleToolCalls(
+    const { ask, confirm, approval, clientCalls } = yield* handleToolCalls(
       agent,
       messages,
       owner,
@@ -706,6 +745,6 @@ export async function* run(
 
     failingToolRounds = countFailingRounds(session, message.tool_calls, failingToolRounds)
 
-    if (yield* handlePendingHandoff(session, ask, confirm, approval)) return
+    if (yield* handlePendingHandoff(session, ask, confirm, approval, clientCalls)) return
   }
 }

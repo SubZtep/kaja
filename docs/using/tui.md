@@ -10,7 +10,8 @@ icon: 🖵
 # Terminal UI
 
 A scrollable chat, a multi-line input, and a bar of hotkeys at the bottom. Both [modes](/getting-started/modes)
-use it. Cloud mode has no model switching and no shell approvals, because the cloud agent never needs them.
+use it. Cloud mode has no model switching. It asks before a call on your computer the same way local mode does (see
+[Your computer in cloud mode](/getting-started/modes#your-computer-in-cloud-mode)).
 
 A local session opens with a summary of what loaded: the persona and model, connected MCP servers with
 their tool counts, and how many saved conversations and memory notes you have.
@@ -30,6 +31,7 @@ kaja --local              # force the local agent loop for this launch
 kaja --cloud              # force cloud login for this launch
 kaja --help               # flags and subcommands
 kaja --version
+kaja login                # sign in to the cloud account without starting a chat
 kaja logout               # clear the stored cloud token
 
 # Local mode only

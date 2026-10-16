@@ -16,6 +16,8 @@ secretsUnavailable     = "無法存取系統金鑰圈來儲存你的登入資訊
 connecting             = "連線中…"
 logoutSuccess          = "已登出。"
 logoutNotSignedIn      = "你尚未登入。"
+loginDone              = "已登入 Kaja 雲端。"
+loginAlready           = "你已經登入 Kaja 雲端。執行 `kaja logout` 即可登出。"
 deviceLoginStartFailed = "無法啟動裝置登入"
 deviceLoginDenied      = "裝置登入已被拒絕"
 deviceLoginExpired     = "裝置登入代碼已過期 — 請重新執行登入"
@@ -57,19 +59,20 @@ Kaja 命令列工具 • v{version} • https://kaja.io
 
 指令
   config <wizard|fetch|diff|paths>
-                       以互動方式設定，或管理設定檔
+                       互動式設定，或管理設定檔
   doctor               列出已設定的模型、MCP 伺服器與工具，並檢查連線
-  telegram [--pair]    執行你的 Telegram 機器人；--pair 顯示一個代碼以配對另一個人
-  abilities [update]   選擇要載入的技能，或下載市集內容
-  sessions             列出已儲存的本機對話及其 id
+  telegram [--pair]    執行你的 Telegram 機器人；--pair 會顯示配對碼，讓多一個人配對
+  abilities [update]   選擇要載入哪些技能，或抓取 marketplace
+  sessions             列出已儲存的本機工作階段及其 id
+  login                登入雲端帳號，但不開始對話
   logout               登出雲端帳號，並清除已儲存的憑證
 
 選項
-  --local         使用你自己的供應商執行本機代理，而非雲端登入
-  --cloud         即使已有本機設定，也強制使用雲端登入（預設）
-  --continue, -c  繼續最近一次的對話（僅限 --local）
-  --headless      不顯示終端機介面；供支援的子指令使用（例如 telegram）
-  --session, -s   依 id 繼續指定的對話（僅限 --local；參見：kaja sessions）
+  --local         以你自己的供應商執行本機代理迴圈，而不是登入雲端
+  --cloud         即使有本機設定也強制登入雲端（預設）
+  --continue, -c  繼續最近的工作階段（僅限 --local）
+  --headless      不使用終端介面；用於支援此模式的子指令（例如 telegram）
+  --session, -s   依 id 繼續工作階段（僅限 --local；見：kaja sessions）
   --help          顯示此說明
   --version       顯示版本
 """
@@ -164,6 +167,19 @@ pullStarted          = "下載中 — 可能需要幾分鐘。"
 pullSkipped          = "已跳過 — 需要時再執行 `ollama pull <model>`。"
 pullDone             = "{model} 已就緒。"
 pullFailed           = "無法下載 {model}：{error}"
+hostTitle            = "{name} 無法在這台電腦上執行：需要 {programs}。"
+hostSkip             = "暫時跳過"
+hostInstallUv        = "立即安裝 uv（執行官方安裝程式）"
+hostGetChrome        = "取得 Chrome（開啟下載頁面）"
+hostSandbox          = "改在 Kaja 沙盒上執行（需要登入 Kaja 雲端）"
+hostSkipped          = "在安裝 {programs} 之前，{name} 會保持停用。"
+hostSkippedUv        = "{name} 保持停用。自行安裝 uv：{command}"
+hostSkippedChrome    = "{name} 保持停用。請從 {url} 安裝 Chrome，然後重新啟動 Kaja。"
+hostChromeAt         = "請從 {url} 安裝 Chrome，然後重新啟動 Kaja。"
+hostInstalled        = "uv 已安裝。"
+hostInstallFailed    = "uv 未安裝。請自行嘗試：{command}"
+hostSandboxSet       = "{name} 現在改在 Kaja 沙盒上執行（settings.toml 中的 [tools.hosts]）。"
+hostSignInFailed     = "{name} 已設定在沙盒上執行，但登入失敗，所以暫時停用。執行 `kaja login` 再試一次。"
 summaryMode          = "模式"
 summaryLanguage      = "語言"
 summaryTheme         = "配色"
@@ -221,12 +237,18 @@ typeSkill           = "技能"
 typeTool            = "工具"
 typeMcp             = "mcp"
 typeCode            = "程式碼"
+onSandbox           = "Kaja 沙盒"
+sandboxSignedOut    = "{names}：已設定在沙盒上執行，但你尚未登入 Kaja 雲端，所以暫時停用。執行 `kaja login` 即可登入。"
 brokenPart          = "{part}：{error}"
 keySaved            = "金鑰已儲存"
 noKey               = "沒有金鑰，已停用"
 keyless             = "不需金鑰也能運作"
-runs                = "執行：{command}"
-needs               = "已停用：需安裝 {programs} 才能執行"
+needs               = "停用：需安裝 {programs}"
+colName             = "能力"
+colParts            = "組成"
+colRuns             = "執行"
+colKey              = "金鑰"
+colPersonas         = "角色"
 noPersona           = "沒有角色使用"
 listHint            = "角色決定對話使用哪些能力：見 marketplace/personas/<id>.toml 中的 `abilities` 清單。`kaja doctor` 會詢問缺少的金鑰。"
 
@@ -308,6 +330,7 @@ compacted        = "已壓縮文脈：{before} → {after} 個 token"
 compactedDropped = "已壓縮文脈：{before} → {after} 個 token。無法寫入摘要，最舊的訊息已移除。"
 condensed        = "{tool} 輸出已壓縮：{before} → {after} 個 token"
 nothingToCompact = "目前沒有要壓縮的內容。"
+computerStopped  = "已停止：這台電腦上的工具呼叫連續 {count} 輪全部失敗。傳送下一則訊息即可繼續。"
 imageFailed      = "無法載入：{reason}"
 imageMissing     = "找不到檔案"
 imageUnreachable = "無法連線"

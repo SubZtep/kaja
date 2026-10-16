@@ -16,6 +16,8 @@ secretsUnavailable     = "袂當使用系統金鑰圈來貯登入資訊。請改
 connecting             = "連線中…"
 logoutSuccess          = "已經登出矣。"
 logoutNotSignedIn      = "猶未登入。"
+loginDone              = "已經登入 Kaja 雲端矣。"
+loginAlready           = "你已經登入 Kaja 雲端矣。`kaja logout` 會共你登出。"
 deviceLoginStartFailed = "裝置登入啟動袂起來"
 deviceLoginDenied      = "裝置登入已經予人拒絕矣"
 deviceLoginExpired     = "裝置登入代碼過期矣 — 請重新登入"
@@ -57,19 +59,20 @@ Kaja 命令列工具 • v{version} • https://kaja.io
 
 指令
   config <wizard|fetch|diff|paths>
-                       互動式設定，抑是管理設定檔
+                       一步一步設定，抑是管理設定檔
   doctor               印出設定好个模型、MCP 伺服器佮工具，閣檢查連線
-  telegram [--pair]    執行你个 Telegram 機器人；--pair 顯示一个代碼來配對別外一个人
-  abilities [update]   揀欲載入个技能，抑是提市集
-  sessions             列出存起來个本機工作階段佮伊的 id
-  logout               登出雲端帳號，共儲存个憑證清掉
+  telegram [--pair]    行你个 Telegram 機器人；--pair 會顯示一个代碼，予閣一个人配對
+  abilities [update]   揀欲載入佗一寡技能，抑是提 marketplace
+  sessions             列出存起來个本機工作階段佮怹个 id
+  login                登入雲端帳號，毋免開始開講
+  logout               登出雲端帳號，清掉存起來个憑證
 
 選項
-  --local         用家己个供應商執行本機代理迴圈，代替雲端登入
-  --cloud         強制用雲端登入，就算已經有本機設定嘛仝款（預設）
-  --continue, -c  接落去上新个工作階段（干焦 --local 有效）
-  --headless      無顯示終端機介面；用佇有支援這个模式个子指令（比如 telegram）
-  --session, -s   用 id 接落去工作階段（干焦 --local 有效；看 kaja sessions）
+  --local         用你家己个供應商行本機代理迴圈，毋是登入雲端
+  --cloud         就算有本機設定嘛強制登入雲端（預設）
+  --continue, -c  接續上尾个工作階段（干焦 --local）
+  --headless      無終端介面；予有支援个子指令用（親像 telegram）
+  --session, -s   照 id 接續工作階段（干焦 --local；看：kaja sessions）
   --help          顯示這个說明
   --version       印出版本
 """
@@ -164,6 +167,19 @@ pullStarted          = "咧落載 — 可能愛幾若分鐘。"
 pullSkipped          = "已經略過 — 隨時會使用 `ollama pull <模型>` 落載。"
 pullDone             = "{model} 好勢矣。"
 pullFailed           = "{model} 落載失敗：{error}"
+hostTitle            = "{name} 袂當佇這台電腦行：伊愛 {programs}。"
+hostSkip             = "先略過"
+hostInstallUv        = "這馬安裝 uv（行伊官方个安裝程式）"
+hostGetChrome        = "提 Chrome（拍開伊个落載頁）"
+hostSandbox          = "改佇 Kaja 沙盒行（愛登入 Kaja 雲端）"
+hostSkipped          = "{programs} 猶未安裝進前，{name} 會一直關掉。"
+hostSkippedUv        = "{name} 繼續關掉。家己安裝 uv：{command}"
+hostSkippedChrome    = "{name} 繼續關掉。對 {url} 安裝 Chrome，才閣重新開 Kaja。"
+hostChromeAt         = "對 {url} 安裝 Chrome，才閣重新開 Kaja。"
+hostInstalled        = "uv 安裝好矣。"
+hostInstallFailed    = "uv 無安裝起來。家己試看覓：{command}"
+hostSandboxSet       = "{name} 這馬佇 Kaja 沙盒行（settings.toml 內底个 [tools.hosts]）。"
+hostSignInFailed     = "{name} 設定佇沙盒行，毋過登入無成功，所以先關掉。`kaja login` 會閣試一擺。"
 summaryMode          = "模式"
 summaryLanguage      = "語言"
 summaryTheme         = "色彩"
@@ -221,12 +237,18 @@ typeSkill           = "技能"
 typeTool            = "工具"
 typeMcp             = "mcp"
 typeCode            = "程式碼"
+onSandbox           = "Kaja 沙盒"
+sandboxSignedOut    = "{names}：設定佇沙盒行，毋過你猶未登入 Kaja 雲端，所以先關掉。`kaja login` 會共你登入。"
 brokenPart          = "{part}：{error}"
 keySaved            = "鎖匙存起來矣"
 noKey               = "無鎖匙，關掉"
 keyless             = "無鎖匙嘛會用"
-runs                = "執行：{command}"
-needs               = "關掉：愛裝 {programs} 才會當執行"
+needs               = "關掉：愛安裝 {programs}"
+colName             = "能力"
+colParts            = "部分"
+colRuns             = "行佇"
+colKey              = "鎖匙"
+colPersonas         = "角色"
 noPersona           = "無角色用伊"
 listHint            = "角色揀開講欲用个能力：就是 marketplace/personas/<id>.toml 內底个 `abilities` 清單。`kaja doctor` 會問欠个鎖匙。"
 
@@ -308,6 +330,7 @@ compacted        = "語境精簡：{before} → {after} 个 token"
 compactedDropped = "語境精簡：{before} → {after} 个 token。摘要寫袂落，所以上早个訊息就略掉矣。"
 condensed        = "{tool} 輸出精簡：{before} → {after} 个 token"
 nothingToCompact = "猶無啥物通精簡个。"
+computerStopped  = "停矣：佇這台電腦，連紲 {count} 輪逐个工具呼叫攏失敗。你後一个訊息會繼續。"
 imageFailed      = "提袂著：{reason}"
 imageMissing     = "揣無檔案"
 imageUnreachable = "連袂著"

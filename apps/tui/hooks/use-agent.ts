@@ -67,6 +67,8 @@ export function useAgent(
     models: CliResolvedModel[]
     /** Fallback persona when not resuming a session; defaults to personas[0]. */
     initialPersona?: Persona
+    /** Shown as notices after the (resumed) timeline, before anything is sent. */
+    notices?: string[]
     resume?: {
       session: PersistedSession
       persona?: Persona
@@ -74,7 +76,7 @@ export function useAgent(
     }
   }
 ) {
-  const { resume, personas, initialPersona, models, ...agentConfig } = config
+  const { resume, personas, initialPersona, models, notices, ...agentConfig } = config
   const [agent] = useState(() => {
     const startingPersona = resume?.persona ?? initialPersona
     const created = new Agent({
@@ -115,9 +117,10 @@ export function useAgent(
   const [model, setModel] = useState(agent.model)
   const [responseModel, setResponseModel] = useState<string | null>(null)
 
-  const [events, setEvents] = useState<TimelineEvent[]>(
-    () => (resume?.session.events as TimelineEvent[] | undefined) ?? []
-  )
+  const [events, setEvents] = useState<TimelineEvent[]>(() => [
+    ...((resume?.session.events as TimelineEvent[] | undefined) ?? []),
+    ...(notices ?? []).map(text => ({ type: "notice" as const, text }))
+  ])
   // Ref mirror of `events` for send/persistSession, whose closures are memoized on [agent] and would otherwise read a stale array.
   const eventsRef = useRef(events)
   const pushEvent = useCallback((event: TimelineEvent) => {

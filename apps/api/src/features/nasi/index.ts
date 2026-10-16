@@ -6,6 +6,7 @@ import {
   LOAD_SKILL_TOOL,
   listCloudToolNames,
   personaAbilities,
+  personaGetsBuiltin,
   personaLoadsSkills
 } from "@kaja/nasi"
 import {
@@ -113,6 +114,7 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   confirm_tool: "confirm_tool",
   ask_user: "ask_user",
   persona_switch: "persona_switch",
+  client_tool_calls: "client_tool_calls",
   compacted: "compacted",
   condensed: "condensed",
   usage: "usage",
@@ -254,7 +256,9 @@ nasiRoutes.openapi(infoRoute, async c => {
     ? personaLoadsSkills(persona, await createPostgresAbilityStore({ userId: user.id }).listSkills())
     : false
   const tools = [
-    ...(await listCloudToolNames({ fetchSend: cloudEgress(user.id)() })),
+    ...(await listCloudToolNames({ fetchSend: cloudEgress(user.id)() })).filter(
+      name => !persona || personaGetsBuiltin(persona, name)
+    ),
     ...(loadsSkills ? [LOAD_SKILL_TOOL] : []),
     ...httpTools,
     ...mcpTools

@@ -1,6 +1,12 @@
 import { expect, test } from "bun:test"
 import type { Persona } from "@kaja/schema/cli"
-import { abilityOfTool, personaAbilities, skillMode, toolsForPersona } from "../../src/abilities/persona-scope"
+import {
+  abilityOfTool,
+  personaAbilities,
+  personaGetsBuiltin,
+  skillMode,
+  toolsForPersona
+} from "../../src/abilities/persona-scope"
 import type { SkillSummary } from "../../src/abilities/types"
 import { type Tool, toolName } from "../../src/agent/tools"
 
@@ -12,6 +18,7 @@ const fn = (name: string, source?: string): Tool => ({
 
 const tools = [
   fn("ask_user"),
+  fn("fetch_url"),
   fn("load_skill"),
   fn("web_search", "ability:web-search"),
   fn("navigate_page", "ability:chrome-devtools"),
@@ -25,13 +32,24 @@ const rules: SkillSummary = { name: "rules", description: "Rules.", files: [], s
 const names = (persona: Persona, skills: SkillSummary[] = []) => toolsForPersona(tools, persona, skills).map(toolName)
 
 test("a persona gets builtins and mcp.toml servers, plus only the abilities it lists", () => {
-  expect(names({ id: "none", label: "None" })).toEqual(["ask_user", "read_thing"])
-  expect(names({ id: "web", label: "Web", abilities: ["web-search", "dice"] })).toEqual([
+  expect(names({ id: "none", label: "None" })).toEqual(["ask_user", "fetch_url", "read_thing"])
+  expect(names({ id: "web", label: "Web", abilities: ["fetch-url", "web-search", "dice"] })).toEqual([
     "ask_user",
+    "fetch_url",
     "web_search",
     "roll_dice",
     "read_thing"
   ])
+})
+
+test("an opt-in builtin: every one without an abilities list, else only when listed", () => {
+  expect(names({ id: "none", label: "None" })).toContain("fetch_url")
+  expect(names({ id: "empty", label: "Empty", abilities: [] })).not.toContain("fetch_url")
+  expect(names({ id: "dice", label: "Dice", abilities: ["dice"] })).not.toContain("fetch_url")
+  expect(names({ id: "web", label: "Web", abilities: ["fetch-url"] })).toContain("fetch_url")
+  expect(personaGetsBuiltin({ abilities: ["dice"] }, "generate_image")).toBe(false)
+  expect(personaGetsBuiltin({ abilities: ["generate-image"] }, "generate_image")).toBe(true)
+  expect(personaGetsBuiltin({ abilities: ["dice"] }, "ask_user")).toBe(true)
 })
 
 test("an entry's tools list narrows that ability to those tools", () => {

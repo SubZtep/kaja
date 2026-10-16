@@ -93,6 +93,8 @@ Two more Chrome flags keep it from going around the proxy:
 
 Chrome also only opens `http://` and `https://` URLs (`--allowedUrlPattern`), so a page can't read files on the machine at all.
 
+The MCP server processes go through it too, for their own requests (a server that fetches a URL the model gave it, or npx/uvx downloading a package): each one starts with `HTTP_PROXY`/`HTTPS_PROXY` (and the lowercase pair) pointing at the proxy, plus `NODE_USE_ENV_PROXY=1`, which Node needs before it follows them. Node, Bun, Python, npm and uv honour these. A manifest's own `env` can't override them. `NO_PROXY` keeps loopback direct, since chrome-devtools talks to its own Chrome there.
+
 ### The port: `SANDBOX_EGRESS_PORT`
 
 The two ends of the proxy are configured in two places:
@@ -110,17 +112,47 @@ Set `WEB_PROXY` (an `http://` proxy URL, credentials allowed: `http://user:pass@
 
 Chrome can't point at `WEB_PROXY` itself: it has no way to take proxy credentials from a flag, and it would skip the private-address checks. The upstream must allow `CONNECT` to IP addresses on any port (commercial proxies do; Squid by default only allows `443`, which leaves plain `http://` pages failing).
 
-To see why requests fail, run one through a fresh egress proxy with the sandbox's own environment:
+### Checking the egress
+
+When a browser page or a tool request fails, `egress-check` sends one `GET` through a fresh egress proxy with the sandbox's own environment, so you see the same path the real traffic takes, step by step. It starts its own proxy on a free port, so it runs beside a live sandbox without touching it.
 
 ```sh
-bun sandbox.js egress-check https://api.search.brave.com/   # in the container; from a checkout: bun apps/sandbox/src/cli.ts egress-check <url>
+bun sandbox.js egress-check <url>                                              # inside the container
+docker exec <container> bun sandbox.js egress-check <url>                      # a running docker container
+disco run --project kaja-sandbox --service worker "bun sandbox.js egress-check <url>"  # the official box
+bun apps/sandbox/src/cli.ts egress-check <url>                                 # a checkout, with your shell's env
 ```
 
-It prints `WEB_PROXY` (without its credentials), what the name resolved to, and the request's status or the reason it failed, and exits 1 on a failure. When `WEB_PROXY` refuses the tunnel, it also asks `WEB_PROXY` for the checked IP and for the name, so an upstream that won't `CONNECT` to IP addresses shows up as one refused and one `200`.
+Quote a URL with a query string (`'https://…?q=test'`), or the shell takes the `?`. Each line is one step:
+
+| Line | What it says |
+| --- | --- |
+| `WEB_PROXY` | the upstream proxy without its password (`(with credentials)` when it has some), or `unset, connecting directly` |
+| `Resolve` | what the name resolved to here, and whether every address is public; a private one is refused, as for real traffic |
+| `Request` | the status, content type and size of the answer, or `failed:` and the reason a tool request would show |
+| `CONNECT` | only when `WEB_PROXY` refused the tunnel: its answer for the checked IP and for the name |
+
+Any HTTP answer means the path works, whatever the status: it came from the site. A healthy run against Brave's API, which answers `422` to a request with no key:
+
+```
+WEB_PROXY  http://proxy.example.com:8080 (with credentials)
+Resolve    api.search.brave.com → 3.33.153.106, 15.197.138.111 (public)
+Request    422  (application/json, 233 bytes)
+```
+
+It doesn't follow redirects (tool requests don't either; the API checks each hop), so a site's bare root often shows a `301`; check the endpoint the tool calls instead. When `Request` fails:
+
+- `Blocked non-public URL`: the name resolves to a private address, or doesn't resolve at all (the `Resolve` line says which); the sandbox never connects to either.
+- `Couldn't connect to <host>: WEB_PROXY answered HTTP/1.1 407 …`: wrong or missing proxy credentials.
+- `Couldn't connect to <host>: WEB_PROXY answered …`, with the `CONNECT` lines showing the IP refused and the name `200`: the upstream won't `CONNECT` to IP addresses, which the egress proxy needs (see above).
+- `Couldn't connect to <host>: no answer in 10 s`, `ECONNREFUSED` or `WEB_PROXY closed without an answer`: `WEB_PROXY` (or, without one, the site) can't be reached from this host.
+
+It exits `0` when an answer came back, `1` when the request failed, and `2` on a missing or non-http(s) URL.
 
 ### What the proxy doesn't cover
 
-- Only the browsers go through it. The MCP server processes themselves (Node) connect directly. A new stdio server that makes its own requests needs its own guard.
+- For the server processes it's cooperative: the proxy variables are a request, not a wall. A program that ignores them (or opens raw sockets) still connects directly, and so can anything on loopback. Every server here comes from the repo's own manifests, so the risk this covers is a careless server, not a hostile one; walling it in for real needs per-uid firewall rules, which take `--cap-add NET_ADMIN`.
+- With `WEB_PROXY` set, the servers' package downloads (a new manifest's first start) go through it too, so they count towards its traffic.
 - It limits *where* Chrome connects, not *what* it does there: any public site is fair game, like in a normal browser.
 
 That's why production also runs the sandbox on a **separate server** with nothing else on it, and why in `compose.yaml` it has its own network with only the API on it.
@@ -201,7 +233,7 @@ Deploying to production is covered in [Deployment](https://docs.kaja.io/developm
 | `src/egress.ts` | the egress proxy |
 | `src/egress-check.ts` | `egress-check <url>`: one request through the egress proxy and `WEB_PROXY`, step by step |
 | `src/stats.ts` | the stats: the pool's servers and counts, memory per process tree, host and container memory |
-| `src/manifests.ts` | the stdio manifests it may run, plus the overrides |
+| `src/manifests.ts` | the stdio manifests it may run, plus the overrides, and the proxy env each server starts with |
 | `src/report.ts` | Sentry in production |
 | `overrides.json` | the image's command and Chrome flags for chrome-devtools |
 | `Dockerfile` | one multi-runtime image (Node 22 slim, bun, uv with Python, Chrome for Testing's headless shell) running the bundled sandbox |

@@ -2,45 +2,84 @@ import { type AbilityKeyNeed, personaAbilities } from "@kaja/nasi"
 import { consolePalette, paint } from "../../components/theme"
 import { secrets } from "../config/secrets"
 import { getLanguage, t } from "../i18n"
+import { renderTable } from "../markdown/table"
 import { loadPersonas } from "../personas/personas"
 import { getMarketplaceDir, ownAbilities } from "./abilities-file"
+import { toolHosts } from "./sandbox-relay"
 
 /** One ability folder as `kaja abilities` shows it. */
-type Row = { name: string; parts: string[]; errors: string[]; auth?: AbilityKeyNeed; runs?: string; needs?: string[] }
+type Row = {
+  name: string
+  parts: string[]
+  errors: string[]
+  auth?: AbilityKeyNeed
+  /** A remote MCP server's host. */
+  host?: string
+  /** What starts a stdio MCP server here: its runner (bunx, uvx, docker) or the manifest's command. */
+  runs?: string
+  needs?: string
+}
 
 /**
- * `kaja abilities`' output: one line per ability in the marketplace folder (its parts, its key, which personas use
- * it; your own marked local), a line per part that can't load, and how to change things. Read-only.
+ * `kaja abilities`' output: a table with one row per ability in the marketplace folder (its parts, what runs it, its
+ * key, which personas use it; your own marked local), a line per part that can't load under it, and how to change
+ * things. Fits `width` columns. Read-only.
  */
-export async function abilityListLines(root = getMarketplaceDir()): Promise<string[]> {
+export async function abilityListLines(
+  root = getMarketplaceDir(),
+  width = process.stdout.columns || 100
+): Promise<string[]> {
   const rows = await scanRows(root)
   if (rows.length === 0) return [t("ability.empty")]
 
   const own = new Set((await ownAbilities(root)).abilities)
   const keys = (await secrets()).abilities
   const usedBy = await personasByAbility()
+  const hosts = await toolHosts()
+  const palette = consolePalette()
+  const muted = paint(palette.muted)
 
   const sorted = rows.toSorted((a, b) => a.name.localeCompare(b.name))
-  const width = Math.max(...sorted.map(r => r.name.length))
-  // The `local` tag gets a column of its own when any row has it, so the details still line up.
-  const tag = sorted.some(r => own.has(r.name)) ? t("ability.local") : ""
-  const palette = consolePalette()
-  const lines = [paint(palette.accent)(t("ability.title"))]
-  for (const r of sorted) {
-    const local = own.has(r.name) ? tag : ""
-    const name = tag ? `${r.name.padEnd(width)}  ${local.padEnd(tag.length)}` : r.name.padEnd(width)
-    const details = [
+  const table = renderTable({
+    head: [
+      t("ability.colName"),
+      t("ability.colParts"),
+      t("ability.colRuns"),
+      t("ability.colKey"),
+      t("ability.colPersonas")
+    ],
+    rows: sorted.map(r => [
+      own.has(r.name) ? `${r.name} ${paint(palette.accent)(t("ability.local"))}` : r.name,
       r.parts.join(" + "),
-      keyStatus(r.auth, Boolean(keys[r.name]?.api_key)),
-      r.runs && t("ability.runs", { command: r.runs }),
-      r.needs && t("ability.needs", { programs: anyOf(r.needs) }),
-      (usedBy.get(r.name) ?? []).join(", ") || t("ability.noPersona")
-    ].filter(Boolean)
-    lines.push(`  ${name}  ${details.join(" · ")}`)
-    for (const error of r.errors) lines.push(paint(palette.danger)(`    ✗ ${error}`))
-  }
-  lines.push("", t("ability.listHint"))
-  return lines
+      runsCell(r, hosts[r.name] === "sandbox"),
+      keyCell(r.auth, Boolean(keys[r.name]?.api_key)),
+      (usedBy.get(r.name) ?? []).join(", ") || muted(t("ability.noPersona"))
+    ]),
+    align: [null, null, null, null, null],
+    maxWidth: width,
+    headStyle: text => paint(palette.accent).bold(text),
+    borderStyle: muted
+  })
+  const errors = sorted.flatMap(r => r.errors.map(error => paint(palette.danger)(`✗ ${r.name}: ${error}`)))
+  return [table, ...(errors.length ? ["", ...errors] : []), "", muted(t("ability.listHint"))]
+}
+
+// Where an MCP server runs: a remote one's host; a stdio one's runner here, a sandbox when settings.toml sends it there, or what to install.
+function runsCell(r: Row, onSandbox: boolean): string {
+  const palette = consolePalette()
+  if (r.host) return r.host
+  if (!r.runs && !r.needs) return ""
+  if (onSandbox) return paint(palette.user)(t("ability.onSandbox"))
+  if (r.needs) return paint(palette.warning)(t("ability.needs", { programs: r.needs }))
+  return r.runs ?? ""
+}
+
+// Whether the ability takes a key and has one (without it, it's off unless keyless); empty when it takes none.
+function keyCell(auth: AbilityKeyNeed | undefined, saved: boolean): string {
+  const palette = consolePalette()
+  if (!auth) return ""
+  if (saved) return paint(palette.success)(t("ability.keySaved"))
+  return auth.keyless ? paint(palette.muted)(t("ability.keyless")) : paint(palette.warning)(t("ability.noKey"))
 }
 
 // One row per ability folder, with its parts (or why a part can't load), its key, and what runs its MCP server.
@@ -60,8 +99,10 @@ async function scanRows(root: string): Promise<Row[]> {
   for (const entry of await scanMcpAbilities(root)) {
     add(entry, t("ability.typeMcp"))
     if (entry.auth) row(entry.name).auth = entry.auth
-    if (entry.command) row(entry.name).runs = entry.command
-    if (entry.needs) row(entry.name).needs = entry.needs
+    // The runner alone (bunx, uvx, docker, or the manifest's command): the whole command line would wrap the table.
+    if (entry.command) row(entry.name).runs = entry.command.split(" ")[0]
+    if (entry.domain) row(entry.name).host = entry.domain
+    if (entry.needs || entry.requires) row(entry.name).needs = missingPrograms(entry.needs, entry.requires)
   }
   for (const name of await scanCodeTools(root)) add({ name }, t("ability.typeCode"))
   return [...rows.values()]
@@ -76,11 +117,10 @@ async function personasByAbility(): Promise<Map<string, string[]>> {
   return usedBy
 }
 
-// Whether the ability takes a key and has one (without it, it's off unless keyless); nothing when it takes none.
-function keyStatus(auth: AbilityKeyNeed | undefined, saved: boolean): string | undefined {
-  if (!auth) return undefined
-  if (saved) return t("ability.keySaved")
-  return auth.keyless ? t("ability.keyless") : t("ability.noKey")
+/** What to install so a stdio ability can start: one of its runners, and every program it drives, e.g. "uvx, pipx or docker and Chrome". */
+export function missingPrograms(needs: string[] = [], requires: string[] = []): string {
+  const parts = [...(needs.length ? [anyOf(needs)] : []), ...requires]
+  return new Intl.ListFormat(getLanguage(), { type: "conjunction" }).format(parts)
 }
 
 /** "uvx, pipx or docker", in the TUI's language. */

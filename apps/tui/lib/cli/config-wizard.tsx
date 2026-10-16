@@ -340,6 +340,9 @@ export async function runConfigWizard({
   if (result.mode === "cloud") return { code: 0, text: t("wizard.doneCloud") }
 
   await offerMarketplace(line => console.log(line))
+  // Right after the sync: abilities a persona uses that can't start here get install / sandbox / skip.
+  const { offerAbilityHosts } = await import("../abilities/hosts")
+  await offerAbilityHosts(line => console.log(line))
   const { extra, offered } = await applyExtras(result)
   await offerModelDownloads(line => console.log(line))
 

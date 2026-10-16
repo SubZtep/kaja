@@ -16,6 +16,8 @@ secretsUnavailable     = "Nem sikerült elérni a rendszer kulcstartóját a bej
 connecting             = "Csatlakozás…"
 logoutSuccess          = "Kijelentkezve."
 logoutNotSignedIn      = "Nem voltál bejelentkezve."
+loginDone              = "Bejelentkeztél a Kaja felhőbe."
+loginAlready           = "Már be vagy jelentkezve a Kaja felhőbe. A `kaja logout` kijelentkeztet."
 deviceLoginStartFailed = "Nem sikerült elindítani az eszközös bejelentkezést"
 deviceLoginDenied      = "Az eszközös bejelentkezés elutasítva"
 deviceLoginExpired     = "Az eszközös bejelentkezési kód lejárt — futtasd újra a bejelentkezést"
@@ -50,28 +52,29 @@ temp           = "ideiglenes"
 
 [args]
 help        = """
-Kaja parancssoros felület • v{version} • https://kaja.io
+Kaja parancssori eszköz • v{version} • https://kaja.io
 
 HASZNÁLAT
   $ kaja [OPCIÓK] [PARANCS]
 
 PARANCSOK
   config <wizard|fetch|diff|paths>
-                       Interaktív beállítás, vagy konfigurációs fájlok kezelése
-  doctor               Beállított modellek, MCP szerverek és eszközök kiírása, kapcsolatok ellenőrzése
-  telegram [--pair]    Telegram bot futtatása; --pair egy kódot mutat egy másik személy párosításához
-  abilities [update]   Betöltendő készségek kiválasztása, vagy a piactér letöltése
-  sessions             Mentett helyi munkamenetek megjelenítése az azonosítójukkal
-  logout               Kijelentkezés a felhő alapú fiókból, a tárolt hitelesítő adat törlésével
+                       Interaktív beállítás vagy a konfigurációs fájlok kezelése
+  doctor               Kiírja a beállított modelleket, MCP szervereket és eszközöket, és ellenőrzi a kapcsolatokat
+  telegram [--pair]    Elindítja a Telegram botodat; a --pair kódot mutat még egy személy párosításához
+  abilities [update]   Kiválaszthatod, mely készségek töltődjenek be, vagy letöltheted a marketplace-t
+  sessions             Kilistázza a mentett helyi munkameneteket az azonosítóikkal
+  login                Bejelentkezés a felhőfiókba csevegés indítása nélkül
+  logout               Kijelentkezés a felhőfiókból, a tárolt hitelesítő adat törlésével
 
 OPCIÓK
-  --local         A helyi ágens futtatása saját szolgáltatóval a felhő alapú bejelentkezés helyett
-  --cloud         Felhő alapú bejelentkezés kényszerítése akkor is, ha van helyi konfiguráció (alapértelmezett)
-  --continue, -c  A legutóbbi munkamenet folytatása (csak --local esetén)
-  --headless      Nincs terminál felület; ezt támogató alparancshoz (pl. telegram)
-  --session, -s   Munkamenet folytatása azonosító alapján (csak --local esetén; lásd: kaja sessions)
-  --help          Ennek a súgónak a megjelenítése
-  --version       A verziószám kiírása
+  --local         A helyi ágensciklust a saját szolgáltatódon futtatja felhős bejelentkezés helyett
+  --cloud         Felhős bejelentkezés akkor is, ha van helyi konfiguráció (alapértelmezett)
+  --continue, -c  A legutóbbi munkamenet folytatása (csak --local)
+  --headless      Terminálos felület nélkül; az ezt támogató alparancsokhoz (pl. telegram)
+  --session, -s   Munkamenet folytatása azonosító alapján (csak --local; lásd: kaja sessions)
+  --help          Kiírja ezt a súgót
+  --version       Kiírja a verziót
 """
 unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opciókért."
 
@@ -164,6 +167,19 @@ pullStarted          = "Letöltés folyamatban — ez eltarthat pár percig."
 pullSkipped          = "Kihagyva — az `ollama pull <modell>` bármikor letölti őket."
 pullDone             = "{model} kész."
 pullFailed           = "{model} letöltése nem sikerült: {error}"
+hostTitle            = "{name} nem tud futni ezen a gépen, mert kell hozzá: {programs}."
+hostSkip             = "Most kihagyom"
+hostInstallUv        = "uv telepítése most (a hivatalos telepítőjével)"
+hostGetChrome        = "Chrome beszerzése (megnyitja a letöltési oldalt)"
+hostSandbox          = "Futtatás inkább Kaja sandboxon (Kaja felhős bejelentkezés kell hozzá)"
+hostSkipped          = "{name} kikapcsolva marad, amíg nincs telepítve: {programs}."
+hostSkippedUv        = "{name} kikapcsolva marad. Az uv-t magad így telepítheted: {command}"
+hostSkippedChrome    = "{name} kikapcsolva marad. Telepítsd a Chrome-ot innen: {url}, aztán indítsd újra a Kaját."
+hostChromeAt         = "Telepítsd a Chrome-ot innen: {url}, aztán indítsd újra a Kaját."
+hostInstalled        = "Az uv telepítve."
+hostInstallFailed    = "Az uv nincs telepítve. Próbáld meg magad: {command}"
+hostSandboxSet       = "{name} mostantól Kaja sandboxon fut ([tools.hosts] a settings.toml-ban)."
+hostSignInFailed     = "{name} sandboxon futna, de a bejelentkezés nem sikerült, ezért egyelőre ki van kapcsolva. A `kaja login` újrapróbálja."
 summaryMode          = "Mód"
 summaryLanguage      = "Nyelv"
 summaryTheme         = "Színek"
@@ -221,12 +237,18 @@ typeSkill           = "készség"
 typeTool            = "eszköz"
 typeMcp             = "mcp"
 typeCode            = "kód"
+onSandbox           = "Kaja sandbox"
+sandboxSignedOut    = "{names}: sandboxon futna, de nem vagy bejelentkezve a Kaja felhőbe, ezért egyelőre ki van kapcsolva. A `kaja login` bejelentkeztet."
 brokenPart          = "{part}: {error}"
 keySaved            = "kulcs elmentve"
 noKey               = "nincs kulcs, kikapcsolva"
 keyless             = "kulcs nélkül is működik"
-runs                = "futtatja: {command}"
-needs               = "kikapcsolva: a futtatásához telepítsd ezt: {programs}"
+needs               = "ki, kell: {programs}"
+colName             = "Képesség"
+colParts            = "Részek"
+colRuns             = "Futás"
+colKey              = "Kulcs"
+colPersonas         = "Personák"
 noPersona           = "egy persona sem használja"
 listHint            = "A personák választják ki, milyen képességeket használ egy beszélgetés: ez a marketplace/personas/<id>.toml `abilities` listája. A `kaja doctor` bekéri a hiányzó kulcsokat."
 
@@ -308,6 +330,7 @@ compacted        = "Kontextus tömörítve: {before} → {after} token"
 compactedDropped = "Kontextus tömörítve: {before} → {after} token. Az összefoglaló nem írható, így a legrégebbi üzenetek kimaradtak."
 condensed        = "{tool} kimenet tömörítve: {before} → {after} token"
 nothingToCompact = "Még nincs tömöríthető."
+computerStopped  = "Leállítva: ezen a gépen {count} körön át egymás után minden eszközhívás sikertelen volt. A következő üzeneteddel folytatódik."
 imageFailed      = "nem tölthető be: {reason}"
 imageMissing     = "a fájl nem található"
 imageUnreachable = "nem sikerült csatlakozni"

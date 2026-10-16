@@ -90,10 +90,15 @@ With **your own provider**, Kaja finishes setting up first and may ask a few mor
 1. **Marketplace.** Whether to use the online [marketplace](/abilities) of skills, personas and tools
    (needs `git`), and whether to keep it up to date on its own
    ([`[marketplace]`](/configuration/config#marketplace)).
-2. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
-3. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
+2. **Abilities that can't run here.** An [MCP ability](/abilities/mcp) a persona uses that's missing what it
+   needs on this machine (`uv` for a Python package, Chrome for `chrome-devtools`) is offered three ways out:
+   install it (uv's official installer runs; for Chrome, its download page opens), run it on a
+   [Kaja sandbox](/abilities/mcp#on-a-sandbox-from-local-mode) instead (signing you in to Kaja cloud if you
+   aren't yet), or skip it and see how to install it yourself.
+3. **Model downloads.** If your Ollama server lacks the models, one question covers all of them.
+4. **Key tests.** A key is saved once the service accepts it. If it's rejected, Kaja asks whether to keep
    it anyway. Keys the finished setup turns out to need, such as an ability's, are asked for here.
-4. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/configuration/commands#checking-keys-and-models)
+5. **Model tests.** Every model gets one try, the same check [`kaja doctor`](/configuration/commands#checking-keys-and-models)
    runs. If one fails and another can do its job, you're offered the switch.
 
 The first time, the chat starts right after. After `kaja config wizard`, you're back at your prompt.

@@ -141,6 +141,9 @@ export const apiSandboxFrameSchema = z.discriminatedUnion("t", [
 
 /** Headers a sandbox connects with: the owner's sandbox key (none: anonymous) and the `<id>.<secret>` it was welcomed with before. */
 export const SANDBOX_KEY_HEADER = "x-kaja-sandbox-key"
+
+/** The header a `--local` client sends an ability's key in through the sandbox relay; it counts as the user's own. */
+export const SANDBOX_RELAY_KEY_HEADER = "x-kaja-ability-key"
 export const SANDBOX_INSTANCE_HEADER = "x-kaja-sandbox-instance"
 
 /** Set on a sandbox's 503 when it has no room for another server, so the API tries another sandbox. */

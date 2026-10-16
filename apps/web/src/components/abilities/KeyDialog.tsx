@@ -10,20 +10,23 @@ import { m } from "../../paraglide/messages.js"
 import { Button } from "../form/primitives/Button"
 import { Text } from "../form/primitives/Text"
 import { DIALOG_TITLE, DialogShell } from "../ui/DialogShell"
-import { ABILITY_KEYS_QUERY_KEY } from "./queries"
+import { invalidateAbilityKeys, type KeyScope, keyPath } from "./queries"
 
 /**
  * Asks for an ability's API key, saves it (encrypted on the server, never shown again) and reports the server's live
- * test. A failed test keeps the dialog open so another key can be tried; the key is saved either way.
+ * test. A failed test keeps the dialog open so another key can be tried; the key is saved either way. `scope` says
+ * whether it's the user's own key or the server-wide one.
  */
 export function KeyDialog({
   name,
   domain,
+  scope = "user",
   open,
   onOpenChange
 }: Readonly<{
   name: string
   domain: string
+  scope?: KeyScope
   open: boolean
   onOpenChange: (open: boolean) => void
 }>) {
@@ -35,15 +38,11 @@ export function KeyDialog({
   const save = useMutation({
     mutationFn: async () => {
       return saveAbilityKeyResponseSchema.parse(
-        await apiFetch<SaveAbilityKeyResponse>(
-          `/abilities/me/keys/${encodeURIComponent(name)}`,
-          { apiKey },
-          { method: "PUT" }
-        )
+        await apiFetch<SaveAbilityKeyResponse>(keyPath(scope, name), { apiKey }, { method: "PUT" })
       )
     },
     onSuccess: ({ check }) => {
-      queryClient.invalidateQueries({ queryKey: ABILITY_KEYS_QUERY_KEY })
+      invalidateAbilityKeys(queryClient)
       if (check && !check.ok) {
         setFailure(m.tools_key_check_failed({ reason: check.reason ?? "" }))
         return
@@ -69,7 +68,9 @@ export function KeyDialog({
         <DialogShell className="w-120">
           <Dialog.Title className={DIALOG_TITLE}>{m.tools_key_dialog_title({ name })}</Dialog.Title>
           <Dialog.Description className="mb-6 text-muted text-sm">
-            {m.tools_key_dialog_description({ domain })}
+            {scope === "service"
+              ? m.service_key_dialog_description({ domain })
+              : m.tools_key_dialog_description({ domain })}
           </Dialog.Description>
           <form
             noValidate

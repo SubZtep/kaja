@@ -50,7 +50,7 @@ flowchart LR
 | `2026-09-07-nasi.sql` | `nasi_session`, `nasi_message`, `nasi_tool_call`, `nasi_session_summary`, `nasi_model_call`, `nasi_note`, `nasi_dataset_answer`, `nasi_dataset_version` |
 | `2026-09-10-telegram-link.sql` | `telegram_link`, `telegram_link_token` |
 | `2026-09-19-ability.sql` | `ability`, `marketplace_sync` |
-| `2026-09-19-user-secret.sql` | `user_secret` |
+| `2026-09-19-user-secret.sql` | `user_secret`, `service_secret` |
 | `2026-09-27-sandbox.sql` | `sandbox`, `sandbox_owner`, `sandbox_sample` |
 
 Every file only *creates* (`IF NOT EXISTS`). The API's `migrate.ts` runs on every deploy and records each
@@ -227,6 +227,13 @@ erDiagram
     text error
   }
 
+  service_secret {
+    text name PK "ability:name"
+    bytea ciphertext "AES-256-GCM"
+    bytea iv
+    bytea tag
+  }
+
   user {
     uuid id PK
   }
@@ -234,6 +241,9 @@ erDiagram
   provider ||--o{ model : offers
 ```
 
+- `service_secret` holds an ability's server-wide key, set on Admin → Dashboard, which every user without
+  their own shares. It's encrypted like `user_secret`, with the `name` as associated data under an owner no
+  user id can be, so a row moved between the two tables fails to decrypt.
 - `ability` rows come from the repo's `marketplace/` folder, synced hourly and on demand (see
   [Marketplace internals](/development/marketplace)). A sync never deletes: an ability that leaves gets
   `removed_at`, and comes back if it returns.
@@ -454,7 +464,7 @@ The local file is the second half of the agent state, documented table by table 
 | Providers and models | `provider`, `model` | `models.toml` |
 | MCP servers | `ability` rows of type `mcp` | the marketplace folder (an ability's `mcp.toml`) |
 | Abilities | `ability`, `marketplace_sync`, picked by the personas | the `marketplace/` folder, picked by its personas |
-| API keys | `user_secret` (encrypted) | `secrets.toml` |
+| API keys | `user_secret`, and `service_secret` for the server-wide ones (encrypted) | `secrets.toml` |
 | Widgets, Telegram links | `widget`, `telegram_link*` | none (local mode has no widgets; the bot's token is in `secrets.toml`) |
 
 ### How they differ

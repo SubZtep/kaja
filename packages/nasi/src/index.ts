@@ -1,3 +1,4 @@
+export { answerClientCalls, CLIENT_GONE, clientAbilities, type NasiClient } from "./abilities/client"
 export {
   type AbilityKeyNeed,
   createFolderAbilityStore,
@@ -30,7 +31,7 @@ export {
   type HttpRequestSpec,
   type KeyCheckResult
 } from "./abilities/http-tool"
-export { type LoadAbilitiesOptions, type LoadedAbilities, loadAbilities } from "./abilities/load"
+export { type LoadAbilitiesOptions, type LoadedAbilities, loadAbilities, type MissingRunner } from "./abilities/load"
 export {
   checkMcpAbilityKey,
   type McpAbilityTarget,
@@ -43,6 +44,7 @@ export {
   abilityOfTool,
   type PersonaAbilityEntry,
   personaAbilities,
+  personaGetsBuiltin,
   personaLoadsSkills,
   skillMode,
   toolsForPersona
@@ -110,6 +112,7 @@ export {
 export { recordPausedCall } from "./agent/telemetry"
 export { allowKey, isAllowed } from "./agent/tool-allow"
 export {
+  checkToolArgs,
   LOCAL_OWNER_CTX,
   runApprovedTool,
   type Tool,
@@ -122,9 +125,12 @@ export {
 } from "./agent/tools"
 export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
+  isInstalled,
   type LaunchOptions,
   launchLine,
+  type McpRequirement,
   McpRunnerMissingError,
+  REQUIREMENT_LABELS,
   resolveLaunch,
   type StdioLaunch
 } from "./mcp/launch"

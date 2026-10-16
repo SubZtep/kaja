@@ -1,4 +1,4 @@
-import type { SkippedTool, ToolOrigin } from "@kaja/nasi"
+import type { MissingRunner, SkippedTool, ToolOrigin } from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import { type Tool, toolName } from "../lib/agent/agents"
@@ -17,12 +17,12 @@ async function printModels(models: CliResolvedModel[]) {
 
 async function printMcpServers(
   mcpServers: { id: string; failed: boolean; toolCount: number }[],
-  missingRunners: { name: string; needs: string[] }[],
+  missingRunners: MissingRunner[],
   missingRoots: string[]
 ) {
   if (mcpServers.length === 0 && missingRunners.length === 0 && missingRoots.length === 0) return
   const { statusLine } = await import("../lib/doctor/status")
-  const { anyOf } = await import("../lib/abilities/list")
+  const { missingPrograms } = await import("../lib/abilities/list")
 
   console.log(t("doctor.mcpServers"))
   for (const server of mcpServers) {
@@ -31,8 +31,10 @@ async function printMcpServers(
       : t("doctor.mcpServerToolCount", { count: server.toolCount })
     console.log(statusLine(server.failed ? "error" : "success", `${server.id} ${status}`))
   }
-  for (const { name, needs } of missingRunners)
-    console.log(statusLine("warning", `${name} ${t("doctor.mcpServerNeeds", { programs: anyOf(needs) })}`))
+  for (const { name, needs, requires } of missingRunners)
+    console.log(
+      statusLine("warning", `${name} ${t("doctor.mcpServerNeeds", { programs: missingPrograms(needs, requires) })}`)
+    )
   for (const name of missingRoots) console.log(statusLine("warning", `${name} ${t("doctor.mcpServerNoRoots")}`))
   console.log()
 }
@@ -116,6 +118,10 @@ export async function runDoctorSubcommand() {
   console.log()
 
   const outcomes = await checkCredentials()
+  if (process.stdin.isTTY) {
+    const { offerAbilityHosts } = await import("../lib/abilities/hosts")
+    await offerAbilityHosts(line => console.log(line))
+  }
 
   const { models, tools, skipped, mcpServers, missingRunners, missingRoots, closeTools } =
     await bootstrapLocalAgentDeps({

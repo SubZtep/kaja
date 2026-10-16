@@ -28,6 +28,7 @@ That's the authoritative, always-current list. This page is the map.
 | `/sandbox/connect` | sandbox key or none | a sandbox's WebSocket: it registers, then serves the MCP and tool requests tunnelled to it |
 | `/sandbox`, `/sandbox/key`, `/sandbox/settings` | session | the user's own sandboxes, their sandbox key, and whether they share or use shared ones |
 | `/sandbox/public` | none | how many sandboxes are online, by country |
+| `/sandbox/relay/mcp/{ability}` | session | a `--local` terminal's stdio ability on a sandbox: MCP requests carried to the sandbox the same rules pick for a cloud turn (a key in `X-Kaja-Ability-Key` counts as the user's own), one relay per user kept until 15 minutes idle |
 | `/telegram/admin/link` | session | `POST` starts linking a Telegram account to the cloud bot (returns a one-time deep link), `GET` says whether it's linked and since when, `DELETE` disconnects it |
 | `/widget/<key>.js`, `/widget/turn` | widget key + Origin | the public embed |
 | `/config/models` | shared secret | model resolution for tooling |
@@ -43,7 +44,7 @@ login.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/nasi/turn` | run one turn, buffered: returns the whole response |
+| `POST` | `/nasi/turn` | run one turn, buffered: returns the whole response. A terminal adds the tools, skills and personas it runs on the user's computer, and answers paused calls with `toolResults` ([Client tools](/development/nasi#client-tools)); these two routes take bodies up to 16 MB for result images, the rest 1 MB |
 | `POST` | `/nasi/turn/stream` | the same turn as SSE, with token deltas and a heartbeat |
 | `POST` | `/nasi/compact` | summarise a session now (`/compact`), keeping its latest turn. `compacted` is null when there was nothing to summarise |
 | `GET` | `/nasi/info` | which persona, model and tools this account resolves to |
@@ -74,9 +75,10 @@ The API never connects to a tool's host: `fetch_url`, HTTP tools and MCP servers
 go out through a sandbox. A user's own key only goes to their own sandbox or the official one, a server-wide
 key only to the official one (`keyTrust` in `features/sandbox/registry.ts`).
 
-`ABILITY_KEYS` (`web-search=BSA...,other=...`) is a temporary server-wide key per ability, shared by every
-cloud user. An ability with one counts as needing only an optional key, and a user's own key still wins.
-Admin-managed service keys, like provider keys, are meant to replace it.
+An admin can give an ability a server-wide key (`/admin/abilities/keys`, the **Service keys** card on Admin →
+Dashboard), shared by every cloud user who hasn't saved their own. It's stored encrypted in `service_secret`,
+tested through the official sandbox on save, and never returned. An ability with one counts as needing only
+an optional key, and a user's own key still wins.
 
 ## Usage stats
 
