@@ -26,12 +26,19 @@ export async function cleanupModel(providerId: string) {
 
 // The email OTP plugin's server-only endpoint; auth.ts types its plugin list loosely, so `auth.api` doesn't infer it.
 const otpApi = auth.api as unknown as {
-  createVerificationOTP: (args: { body: { email: string; type: "sign-in" } }) => Promise<string>
+  createVerificationOTP: (args: { body: { email: string; type: CodeType } }) => Promise<string>
+}
+
+type CodeType = "sign-in" | "email-verification" | "change-email"
+
+/** A fresh code of `type` for `email`, standing in for the one the email would carry; an email change's new-address code is keyed `<current>-<new>`. */
+export async function emailCode(email: string, type: CodeType): Promise<string> {
+  return await otpApi.createVerificationOTP({ body: { email, type } })
 }
 
 /** A fresh sign-in code for `email`, standing in for the one the email would carry. */
 export async function signInCode(email: string): Promise<string> {
-  return await otpApi.createVerificationOTP({ body: { email, type: "sign-in" } })
+  return await emailCode(email, "sign-in")
 }
 
 /** Signs in with a fresh emailed code; `body` adds fields such as `consent`, which a new address needs to become an account. */

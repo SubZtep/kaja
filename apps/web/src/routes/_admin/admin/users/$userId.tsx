@@ -2,7 +2,7 @@ import { getDateTime } from "@kaja/shared/date"
 import { getDisplayName } from "@kaja/shared/text"
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
 import type { UserWithRole } from "better-auth/plugins"
-import { ArrowLeft, Calendar, CheckCircle2, Clock, Mail, Shield } from "lucide-react"
+import { ArrowLeft, Calendar, Mail, Shield } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { Avatar } from "../../../../components/ui/Avatar"
@@ -70,15 +70,6 @@ function UserPageComponent() {
 
           <div className="space-y-3 border-border border-t pt-4">
             <DetailRow icon={Mail} label={m.user_detail_field_email()} value={user.email} />
-            <DetailRow
-              icon={user.emailVerified ? CheckCircle2 : Clock}
-              label={m.user_detail_field_verification()}
-              value={
-                user.emailVerified
-                  ? m.user_detail_field_verification_verified()
-                  : m.user_detail_field_verification_pending()
-              }
-            />
             <DetailRow icon={Shield} label={m.user_detail_field_role()} value={user.role ?? "user"} />
             <DetailRow
               icon={Calendar}

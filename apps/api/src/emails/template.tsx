@@ -1,34 +1,19 @@
 import type { Locale } from "@kaja/shared/locale"
-import { Body, Button, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from "@react-email/components"
-import type { User } from "better-auth"
+import { Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from "@react-email/components"
 import { env } from "../core/env"
 import type { Translate } from "../core/i18n"
 
-export type EmailType = "verification" | "changeEmail" | "signInCode"
+/** Why a code is emailed: to sign in, to approve an email change from the current address, or to confirm the new one. */
+export type CodePurpose = "signIn" | "changeEmail" | "newEmail"
 
-export interface EmailPayload {
-  /** Better Auth hands over the stored user, so it carries the saved `locale` too. */
-  user: User & { locale?: string | null }
-  url: string
-  [key: string]: string | number | boolean | User | Record<string, unknown>
-}
-
-export interface ChangeEmailPayload extends EmailPayload {
-  newEmail: string
-}
-
-/** A sign-in code goes to an address that may have no account yet, so it carries what a stored user would. */
-export interface SignInCodePayload {
+/** A code can go to an address with no account yet (a sign-up, a new email), so it carries what a stored user would. */
+export interface CodeEmailPayload {
+  purpose: CodePurpose
   email: string
   name: string
   locale?: string | null
   otp: string
 }
-
-export type SendEmailArgs =
-  | { type: "changeEmail"; payload: ChangeEmailPayload }
-  | { type: "verification"; payload: EmailPayload }
-  | { type: "signInCode"; payload: SignInCodePayload }
 
 /** What every template renders with: the user's language and its strings. */
 export type EmailLanguage = {
@@ -151,42 +136,7 @@ export function EmailCode({ code }: Readonly<{ code: string }>) {
   )
 }
 
-/** The card's action, with the bare link under it for clients that mangle buttons. */
-export function EmailButton({
-  href,
-  t,
-  children
-}: Readonly<{ href: string; t: Translate; children: React.ReactNode }>) {
-  return (
-    <>
-      <Section style={{ margin: "0 0 20px" }}>
-        <Button
-          href={href}
-          style={{
-            backgroundColor: color.neon,
-            color: color.bg,
-            borderRadius: "8px",
-            padding: "12px 22px",
-            fontSize: "15px",
-            fontWeight: 700,
-            textDecoration: "none"
-          }}
-        >
-          {children}
-        </Button>
-      </Section>
-      <EmailText small>
-        {t("email.linkFallback")}
-        <br />
-        <Link href={href} style={{ color: color.neonHi, wordBreak: "break-all" }}>
-          {href}
-        </Link>
-      </EmailText>
-    </>
-  )
-}
-
-/** A thin rule between the card's action and its aside. */
+/** A thin rule between the code and its aside. */
 export function EmailRule() {
   return <Hr style={{ margin: "4px 0 20px", border: "none", borderTop: `1px solid ${color.border}` }} />
 }

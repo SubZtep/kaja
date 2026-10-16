@@ -24,8 +24,6 @@ const AUTH_ERRORS: Record<string, () => string> = {
   USER_ALREADY_EXISTS: m.auth_error_user_exists,
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: m.auth_error_user_exists,
   INVALID_EMAIL: m.validation_invalid_email,
-  INVALID_TOKEN: m.auth_error_link_expired,
-  TOKEN_EXPIRED: m.auth_error_link_expired,
   SESSION_EXPIRED: m.auth_error_session_expired,
   SESSION_NOT_FRESH: m.auth_error_session_expired,
   VERIFICATION_FAILED: m.auth_error_captcha,

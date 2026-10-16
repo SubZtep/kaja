@@ -11,7 +11,7 @@ import { objects } from "../../core/files"
 import { isRateLimitEnabled } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { sendEmail } from "../../emails"
-import type { EmailPayload } from "../../emails/template"
+import type { CodePurpose } from "../../emails/template"
 import { copyGooglePicture, fillFromGravatar } from "./avatar"
 import { blankProfileFields, googleProfileFromIdToken } from "./google-profile"
 
@@ -30,13 +30,19 @@ function deviceVerificationUrl() {
  * Re-delivery / in-app banners can be layered on later without blocking the request path.
  */
 function sendAuthEmail(args: Parameters<typeof sendEmail>[0]) {
-  void sendEmail(args).catch(err => {
-    const userId = args.type === "signInCode" ? undefined : args.payload.user.id
-    reportError("Failed to send auth email", err, { type: args.type, userId })
-  })
+  // Tests never mail anyone; they read codes from the database
+  if (env.BUN_TEST) return
+  void sendEmail(args).catch(err => reportError("Failed to send auth email", err, { purpose: args.purpose }))
 }
 
-/** The language a sign-in code email goes out in when the address has no account yet: the web sends its page locale as `Accept-Language`. */
+// The email each code type sends; the plugin's "email-verification" is the current address approving an email change.
+const CODE_PURPOSE: Partial<Record<string, CodePurpose>> = {
+  "sign-in": "signIn",
+  "email-verification": "changeEmail",
+  "change-email": "newEmail"
+}
+
+/** The language a code email goes out in when the address has no account yet: the web sends its page locale as `Accept-Language`. */
 function requestLocale(request: Request | undefined): string | undefined {
   return request?.headers.get("accept-language")?.split(/[,;]/)[0]?.trim()
 }
@@ -78,18 +84,28 @@ const plugins: BetterAuthPlugin[] = [
     validateClient: clientId => clientId === KAJA_TUI_CLIENT_ID
   }),
   // Passwordless: an emailed code signs in, and creates the account when the sign-up page sent its consent.
+  // An email change takes two codes: one to the current address, then one to the new address.
   emailOTP({
     expiresIn: 600,
     storeOTP: "hashed",
     // Per IP, and many people share one; guessing is capped per code anyway (3 tries), and sending needs Turnstile.
     rateLimit: { window: 60, max: 20 },
-    // Only sign-in codes are made (the before hook refuses other types), so this only ever sends those.
-    sendVerificationOTP: async ({ email, otp }, ctx) => {
-      const user = await ctx?.context.internalAdapter.findUserByEmail(email)
-      const saved = user?.user as { name: string; locale?: string | null } | undefined
+    changeEmail: { enabled: true, verifyCurrentEmail: true },
+    sendVerificationOTP: async ({ email, otp, type }, ctx) => {
+      const purpose = CODE_PURPOSE[type]
+      if (!purpose) return
+      // A new address has no account yet, so its code goes out in the signed-in user's name and language
+      const user =
+        type === "change-email"
+          ? ctx?.context.session?.user
+          : (await ctx?.context.internalAdapter.findUserByEmail(email))?.user
+      const saved = user as { name: string; locale?: string | null } | undefined
       sendAuthEmail({
-        type: "signInCode",
-        payload: { email, otp, name: saved?.name ?? "", locale: saved?.locale ?? requestLocale(ctx?.request) }
+        purpose,
+        email,
+        otp,
+        name: saved?.name ?? "",
+        locale: saved?.locale ?? requestLocale(ctx?.request)
       })
     }
   })
@@ -109,25 +125,40 @@ if (env.TURNSTILE_SECRET && !env.BUN_TEST) {
     .filter(Boolean)
   if (allowedHostnames.length === 0 && !testSecret)
     throw new Error("TURNSTILE_HOSTNAMES must be set with TURNSTILE_SECRET")
-  plugins.push(
-    captcha({
-      provider: "cloudflare-turnstile",
-      secretKey: env.TURNSTILE_SECRET,
-      endpoints: ["/email-otp/send-verification-otp", "/sign-in/social"],
-      ...(testSecret ? {} : { expectedAction: "auth", allowedHostnames })
-    })
-  )
+  const turnstile = captcha({
+    provider: "cloudflare-turnstile",
+    secretKey: env.TURNSTILE_SECRET,
+    endpoints: ["/email-otp/send-verification-otp", "/sign-in/social"],
+    ...(testSecret ? {} : { expectedAction: "auth", allowedHostnames })
+  })
+  plugins.push({
+    ...turnstile,
+    // An email change code goes only to a signed-in user's own address (the before hook), so the profile page needs no check
+    onRequest: async (request, ctx) =>
+      (await isEmailChangeCode(request)) ? undefined : turnstile.onRequest?.(request, ctx)
+  })
 }
 
-// The plugin's other code flows. Kaja never emails their codes, yet verify-email would sign in on a guessed one (autoSignInAfterVerification), so none of them is served.
-const UNUSED_OTP_PATHS = [
+/** Whether a request asks for the current address's code of an email change. */
+async function isEmailChangeCode(request: Request): Promise<boolean> {
+  if (!new URL(request.url).pathname.endsWith("/email-otp/send-verification-otp")) return false
+  const body = (await request
+    .clone()
+    .json()
+    .catch(() => undefined)) as { type?: unknown } | undefined
+  return body?.type === "email-verification"
+}
+
+// Flows Kaja doesn't use: emailed links (codes do their job) and the code plugin's password and verify flows; check-verification-otp would even test codes without using up tries.
+const UNUSED_PATHS = [
+  "/send-verification-email",
+  "/verify-email",
+  "/change-email",
   "/email-otp/check-verification-otp",
   "/email-otp/verify-email",
   "/email-otp/request-password-reset",
   "/email-otp/reset-password",
-  "/forget-password/email-otp",
-  "/email-otp/request-email-change",
-  "/email-otp/change-email"
+  "/forget-password/email-otp"
 ]
 
 /** Prefix of Better Auth's cookies (`kaja.session_token`, or `__Secure-kaja.session_token` over HTTPS). */
@@ -173,12 +204,17 @@ export const auth = betterAuth({
   database: pool,
   basePath: "/auth",
   plugins,
-  disabledPaths: UNUSED_OTP_PATHS,
+  disabledPaths: UNUSED_PATHS,
   hooks: {
-    // Another type's code would only sit unused, its endpoints being off
+    // Codes go out to sign in, or to a signed-in user's own address to approve an email change; another type's would sit unused
     before: createAuthMiddleware(async ctx => {
-      if (ctx.path === "/email-otp/send-verification-otp" && ctx.body?.type !== "sign-in")
-        throw new APIError("BAD_REQUEST", { message: "Only sign-in codes are sent" })
+      if (ctx.path !== "/email-otp/send-verification-otp" || ctx.body?.type === "sign-in") return
+      if (ctx.body?.type === "email-verification") {
+        // Through auth.api, since a hook sees the request before the bearer plugin turns a token into a session
+        const session = await auth.api.getSession({ headers: ctx.headers ?? new Headers() })
+        if (session && session.user.email.toLowerCase() === String(ctx.body.email).toLowerCase()) return
+      }
+      throw new APIError("BAD_REQUEST", { message: "Only sign-in and email change codes are sent" })
     }),
     // A Google sign-in fills a blank name or avatar (say, an email account that linked Google) but never overwrites what the user set.
     after: createAuthMiddleware(async ctx => {
@@ -235,16 +271,6 @@ export const auth = betterAuth({
         }
       }
     : {}),
-  // Only an email change verifies an address by link now; a sign-in code proves the address itself.
-  emailVerification: {
-    sendVerificationEmail: async ({ user, url }: Readonly<EmailPayload>) => {
-      const urlObj = new URL(url)
-      urlObj.searchParams.set("callbackURL", new URL("/dashboard", env.CORS_ORIGIN).toString())
-      sendAuthEmail({ type: "verification", payload: { user, url: urlObj.toString() } })
-    },
-    autoSignInAfterVerification: true,
-    expiresIn: 3600 * 24 // 1 day
-  },
   session: {
     fields: {
       expiresAt: "expires_at",
@@ -282,12 +308,6 @@ export const auth = betterAuth({
       locale: { type: [...locales], required: false, validator: { input: z.enum(locales) } }
     },
     // Self-service deletion from the profile page; needs a recent sign-in. Everything the user owns cascades from the user row, and the delete hook above removes their images.
-    deleteUser: { enabled: true },
-    changeEmail: {
-      enabled: true,
-      sendChangeEmailConfirmation: async ({ user, url, newEmail }) => {
-        sendAuthEmail({ type: "changeEmail", payload: { user, url, newEmail } })
-      }
-    }
+    deleteUser: { enabled: true }
   }
 })

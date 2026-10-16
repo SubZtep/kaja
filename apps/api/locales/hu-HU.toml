@@ -1,17 +1,15 @@
 [email]
-greeting            = "Halló{name} 👋"
-verificationSubject = "[kaja.io] Erősítsd meg az e-mail címedet"
-verificationText    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-verificationLink    = "[hu-HU] lorem"
-signInCodeSubject   = "[hu-HU] lorem ipsum dolor sit {otp}"
-signInCodeText      = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
-signInCodeIgnore    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-changeEmailSubject  = "[kaja.io] E-mail cím módosítása"
-changeEmailText     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua {oldEmail} {newEmail}"
-changeEmailLink     = "[hu-HU] lorem ipsum"
-ignore              = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
-linkFallback        = "[hu-HU] lorem ipsum dolor sit amet consectetur"
-footer              = "[hu-HU] lorem ipsum dolor sit amet consectetur"
+greeting               = "Halló{name} 👋"
+signInCodeSubject      = "[hu-HU] lorem ipsum dolor sit amet {otp}"
+signInCodeText         = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing"
+signInCodeIgnore       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+changeEmailCodeSubject = "[hu-HU] lorem ipsum dolor sit amet consectetur {otp}"
+changeEmailCodeText    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+changeEmailCodeIgnore  = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+newEmailCodeSubject    = "[hu-HU] lorem ipsum dolor sit amet consectetur {otp}"
+newEmailCodeText       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+newEmailCodeIgnore     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+footer                 = "[hu-HU] lorem ipsum dolor sit amet consectetur"
 
 
 [telegram]

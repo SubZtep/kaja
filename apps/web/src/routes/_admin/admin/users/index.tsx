@@ -14,7 +14,6 @@ import { IconButton } from "../../../../components/ui/IconButton"
 import { Loader } from "../../../../components/ui/Loader"
 import { PageHeader } from "../../../../components/ui/PageHeader"
 import { Section } from "../../../../components/ui/Section"
-import { StatusDot } from "../../../../components/ui/StatusDot"
 import { Table } from "../../../../components/ui/Table"
 import { ValueBox } from "../../../../components/ui/ValueBox"
 import { useAuthClient } from "../../../../hooks/auth-client"
@@ -27,7 +26,7 @@ export const Route = createFileRoute("/_admin/admin/users/")({
   head: () => ({ meta: seo({ title: m.nav_users() }) })
 })
 
-type UsersColumns = Pick<UserWithRole, "id" | "name" | "email" | "emailVerified" | "role" | "createdAt" | "image">
+type UsersColumns = Pick<UserWithRole, "id" | "name" | "email" | "role" | "createdAt" | "image">
 const columnHelper = tableColumnHelper<UsersColumns>()
 
 const ROLE_TONES: Record<string, "ice" | "muted"> = {
@@ -60,11 +59,6 @@ function IdentityCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns
 function AccessLevelCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, string | undefined>) {
   const role = info.getValue() ?? "user"
   return <Badge tone={ROLE_TONES[role] ?? ROLE_TONES.user}>{capitalized(role)}</Badge>
-}
-
-function StatusCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, boolean>) {
-  const verified = info.getValue()
-  return <StatusDot active={verified} label={verified ? m.users_status_authenticated() : m.users_status_pending()} />
 }
 
 function LastSyncCell(info: CellContext<typeof tableFeaturesConfig, UsersColumns, Date>) {
@@ -133,11 +127,6 @@ function UserList() {
           header: m.users_column_access_level(),
           cell: AccessLevelCell
         }),
-        columnHelper.accessor("emailVerified", {
-          header: m.users_column_status(),
-          cell: StatusCell,
-          enableColumnFilter: false
-        }),
         columnHelper.accessor("createdAt", {
           header: m.users_column_last_sync(),
           cell: LastSyncCell,
@@ -156,7 +145,6 @@ function UserList() {
   if (!users || users.length === 0) return null
 
   const userCount = users.length
-  const activeCount = users.filter(u => u.emailVerified).length
 
   return (
     <>
@@ -164,7 +152,6 @@ function UserList() {
         <ValueBox label={m.users_total()} variant="neon">
           {userCount.toLocaleString()}
         </ValueBox>
-        <ValueBox label={m.users_verified()}>{activeCount}</ValueBox>
       </PageHeader>
 
       <Section padded={false}>

@@ -1,17 +1,15 @@
 [email]
-greeting            = "Hey-ho{name} 👋"
-verificationSubject = "[kaja.io] Verify your email address"
-verificationText    = "Confirm this address to make it your Kaja email."
-verificationLink    = "Confirm email"
-signInCodeSubject   = "[kaja.io] Your sign-in code: {otp}"
-signInCodeText      = "Your code to sign in to Kaja. It works for 10 minutes:"
-signInCodeIgnore    = "Didn't ask for it? Just ignore this email, nobody can sign in without the code."
-changeEmailSubject  = "[kaja.io] Change your email address"
-changeEmailText     = "You asked to change your Kaja email from {oldEmail} to {newEmail}. Approve it here, then confirm the new address from the email that arrives there."
-changeEmailLink     = "Approve change"
-ignore              = "Didn't ask for this? Just ignore this email, and nothing changes."
-linkFallback        = "Button not working? Open this link:"
-footer              = "Kaja is made for fun and personal use."
+greeting               = "Hey-ho{name} 👋"
+signInCodeSubject      = "[kaja.io] {otp} is your sign-in code"
+signInCodeText         = "Your code to sign in to Kaja. It works for 10 minutes:"
+signInCodeIgnore       = "Didn't ask for it? Just ignore this email, nobody can sign in without the code."
+changeEmailCodeSubject = "[kaja.io] {otp} is your code to change your email"
+changeEmailCodeText    = "Your code to approve changing your Kaja email address. It works for 10 minutes:"
+changeEmailCodeIgnore  = "Didn't ask for it? Just ignore this email, your address can't change without the code."
+newEmailCodeSubject    = "[kaja.io] {otp} is your code to confirm this email"
+newEmailCodeText       = "Your code to make this address your Kaja email. It works for 10 minutes:"
+newEmailCodeIgnore     = "Didn't ask for it? Just ignore this email, nothing changes without the code."
+footer                 = "Kaja is made for fun and personal use."
 
 
 [telegram]

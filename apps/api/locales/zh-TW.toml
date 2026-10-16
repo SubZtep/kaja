@@ -1,17 +1,15 @@
 [email]
-greeting            = "嘿{name} 👋"
-verificationSubject = "[kaja.io] 驗證你的電子郵件"
-verificationText    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
-verificationLink    = "[zh-TW] lorem"
-signInCodeSubject   = "[zh-TW] lorem ipsum dolor sit {otp}"
-signInCodeText      = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
-signInCodeIgnore    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-changeEmailSubject  = "[kaja.io] 更改你的電子郵件"
-changeEmailText     = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua {oldEmail} {newEmail}"
-changeEmailLink     = "[zh-TW] lorem ipsum"
-ignore              = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
-linkFallback        = "[zh-TW] lorem ipsum dolor sit amet consectetur"
-footer              = "[zh-TW] lorem ipsum dolor sit amet consectetur"
+greeting               = "嘿{name} 👋"
+signInCodeSubject      = "[zh-TW] lorem ipsum dolor sit amet {otp}"
+signInCodeText         = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing"
+signInCodeIgnore       = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+changeEmailCodeSubject = "[zh-TW] lorem ipsum dolor sit amet consectetur {otp}"
+changeEmailCodeText    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+changeEmailCodeIgnore  = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+newEmailCodeSubject    = "[zh-TW] lorem ipsum dolor sit amet consectetur {otp}"
+newEmailCodeText       = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+newEmailCodeIgnore     = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+footer                 = "[zh-TW] lorem ipsum dolor sit amet consectetur"
 
 
 [telegram]

@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test"
 import { baseLocale, locales } from "@kaja/shared/locale"
 import { dictionaries, toLocale, translator } from "../../src/core/i18n"
-import { getChangeEmailHtml } from "../../src/emails/ChangeEmail"
-import { getSignInCodeHtml } from "../../src/emails/SignInCode"
+import { getCodeHtml } from "../../src/emails/CodeEmail"
 import { botLanguage, localeFromTelegram } from "../../src/features/telegram/language"
 
 const WIDGET_LOCALES = `${import.meta.dir}/../../widgets/locales`
@@ -31,29 +30,22 @@ test("interpolates params and falls back to the key", () => {
   expect(t("no.such.key")).toBe("no.such.key")
 })
 
-test("an email renders in the user's language", async () => {
-  const user = {
-    id: "1",
-    name: "Anna Kiss",
-    email: "old@example.com",
-    emailVerified: true,
-    image: null,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-  const payload = { user: { ...user, locale: "hu-HU" }, url: "https://kaja.io/x", newEmail: "new@example.com" }
-  const html = await getChangeEmailHtml(payload, { locale: "hu-HU", t: translator("hu-HU") })
-  expect(html).toContain('lang="hu-HU"')
-  expect(html).toContain(translator("hu-HU")("email.changeEmailLink"))
-  expect(html).not.toContain(translator("en-GB")("email.changeEmailLink"))
-})
-
-test("a sign-in code email carries the code, in the language asked for", async () => {
+test("a code email renders in the user's language", async () => {
   const t = translator("hu-HU")
-  const html = await getSignInCodeHtml({ email: "new@example.com", name: "", otp: "482913" }, { locale: "hu-HU", t })
+  const payload = { purpose: "newEmail", email: "new@example.com", name: "Anna Kiss", otp: "482913" } as const
+  const html = await getCodeHtml(payload, { locale: "hu-HU", t })
   expect(html).toContain('lang="hu-HU"')
   expect(html).toContain("482913")
-  expect(t("email.signInCodeSubject", { otp: "482913" })).toContain("482913")
+  expect(html).toContain(t("email.newEmailCodeText"))
+  expect(html).not.toContain(translator("en-GB")("email.newEmailCodeText"))
+})
+
+test("every code's subject shows the code right after the prefix", () => {
+  const t = translator("en-GB")
+  // So a push notification's cut-off subject still shows it
+  for (const purpose of ["signIn", "changeEmail", "newEmail"])
+    expect(t(`email.${purpose}CodeSubject`, { otp: "482913" })).toStartWith("[kaja.io] 482913 ")
+  expect(translator("hu-HU")("email.signInCodeSubject", { otp: "482913" })).toContain("482913")
 })
 
 test("a Telegram app language maps to a supported locale", () => {

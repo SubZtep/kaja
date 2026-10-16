@@ -31,10 +31,10 @@ When you create or use an account, Kaja collects:
 - if you sign up with your email address, the display name and picture of your public [Gravatar](https://gravatar.com) profile, if you have one. To look it up, Kaja sends Gravatar a one-way hash (SHA-256) of your email address, never the address itself;
 - a copy of your profile picture (Gravatar's or Google's) in Kaja's own storage, so showing it doesn't load it from Gravatar or Google each time. You can change or remove your name and picture on your profile page;
 - a record of your consent: when you confirmed you are 18 or over, accepted the Terms of Service and this policy, and gave the health data consent described below;
-- authentication data, such as login sessions, sign-in codes (stored only as a hash, and only until used or after 10 minutes), verification status, email change requests, and device authorization requests;
+- authentication data, such as login sessions, sign-in and email change codes (stored only as a hash, and only until used or after 10 minutes), verification status, and device authorization requests;
 - technical data, such as IP address, browser or device information, request times, error logs, and security logs;
 - when you open the sign-in or sign-up forms, or a Google sign-in button, an automatic check that you're not a bot (Cloudflare Turnstile) runs in the background. It reads signals from your browser, such as your IP address, user agent, and TLS fingerprint, and never your form entries;
-- email data needed to send account emails, such as sign-in codes, verification, and email change messages;
+- email data needed to send account emails, such as sign-in and email change codes;
 - if you link Telegram, your Telegram user id, so the bot knows which account you are;
 - which abilities (skills, personas, and tools) you have turned on, and any API keys you save for them. Keys are stored encrypted, are never shown back to you or anyone else, and are only sent to the service that ability calls.
 

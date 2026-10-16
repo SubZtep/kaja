@@ -1,17 +1,15 @@
 [email]
-greeting            = "Hey-ho{name} 👋"
-verificationSubject = "[kaja.io] Verify your email address"
-verificationText    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
-verificationLink    = "[en-US] lorem"
-signInCodeSubject   = "[en-US] lorem ipsum dolor sit {otp}"
-signInCodeText      = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
-signInCodeIgnore    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
-changeEmailSubject  = "[kaja.io] Change your email address"
-changeEmailText     = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua {oldEmail} {newEmail}"
-changeEmailLink     = "[en-US] lorem ipsum"
-ignore              = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed"
-linkFallback        = "[en-US] lorem ipsum dolor sit amet consectetur"
-footer              = "[en-US] lorem ipsum dolor sit amet consectetur"
+greeting               = "Hey-ho{name} 👋"
+signInCodeSubject      = "[en-US] lorem ipsum dolor sit amet {otp}"
+signInCodeText         = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing"
+signInCodeIgnore       = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+changeEmailCodeSubject = "[en-US] lorem ipsum dolor sit amet consectetur {otp}"
+changeEmailCodeText    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor"
+changeEmailCodeIgnore  = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt"
+newEmailCodeSubject    = "[en-US] lorem ipsum dolor sit amet consectetur {otp}"
+newEmailCodeText       = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+newEmailCodeIgnore     = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod"
+footer                 = "[en-US] lorem ipsum dolor sit amet consectetur"
 
 
 [telegram]

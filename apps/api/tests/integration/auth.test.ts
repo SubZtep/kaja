@@ -5,7 +5,15 @@ import { app } from "../../src/app"
 import { pool } from "../../src/core/db"
 import { env } from "../../src/core/env"
 import { objects } from "../../src/core/files"
-import { signInCode, signInWithCode, signUpAndSignIn } from "./helpers"
+import { emailCode, signInCode, signInWithCode, signUpAndSignIn } from "./helpers"
+
+/** A JSON POST, signed in when `token` is given. */
+const post = (path: string, body: object, token?: string) =>
+  app.request(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify(body)
+  })
 
 describe("authentication flow", () => {
   const firstName = faker.person.firstName()
@@ -79,19 +87,12 @@ describe("authentication flow", () => {
       expect((await signIn()).status).toBe(400)
     })
 
-    test("only sign-in codes are sent, and the plugin's other code flows are off", async () => {
-      const post = (path: string, body: object) =>
-        app.request(path, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        })
-      expect((await post("/auth/email-otp/send-verification-otp", { email, type: "email-verification" })).status).toBe(
-        400
-      )
+    test("only sign-in and email change codes are sent, and the other flows are off", async () => {
       expect((await post("/auth/email-otp/send-verification-otp", { email, type: "forget-password" })).status).toBe(400)
       expect((await post("/auth/email-otp/verify-email", { email, otp: "123456" })).status).toBe(404)
       expect((await post("/auth/email-otp/reset-password", { email, otp: "123456", password: "x" })).status).toBe(404)
+      expect((await post("/auth/send-verification-email", { email })).status).toBe(404)
+      expect((await post("/auth/change-email", { newEmail: faker.internet.email() })).status).toBe(404)
     })
 
     test("sign in", async () => {
@@ -114,6 +115,50 @@ describe("authentication flow", () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       expect(res.status).toBe(200)
+    })
+  })
+
+  describe("email change", () => {
+    const send = (email: string, token?: string) =>
+      post("/auth/email-otp/send-verification-otp", { email, type: "email-verification" }, token)
+
+    test("the current address's code goes only to a signed-in user's own address", async () => {
+      const own = faker.internet.email().toLowerCase()
+      const token = await signUpAndSignIn(own, "")
+      expect((await send(own)).status).toBe(400)
+      expect((await send(faker.internet.email(), token)).status).toBe(400)
+      expect((await send(own.toUpperCase(), token)).status).toBe(200)
+    })
+
+    test("takes the current address's code, then the new address's", async () => {
+      const current = faker.internet.email().toLowerCase()
+      const next = faker.internet.email().toLowerCase()
+      const token = await signUpAndSignIn(current, "")
+
+      const requestChange = (otp: string) =>
+        post("/auth/email-otp/request-email-change", { newEmail: next, otp }, token)
+      const approve = await emailCode(current, "email-verification")
+      expect((await requestChange(approve === "000000" ? "111111" : "000000")).status).toBe(400)
+      expect((await requestChange(approve)).status).toBe(200)
+
+      // The emailed code is stored hashed, so a fresh one replaces it
+      const identifier = `change-email-otp-${current}-${next}`
+      await pool.query("DELETE FROM verification WHERE identifier = $1", [identifier])
+      const confirm = await emailCode(`${current}-${next}`, "change-email")
+      expect((await post("/auth/email-otp/change-email", { newEmail: next, otp: confirm }, token)).status).toBe(200)
+
+      const { rows } = await pool.query('SELECT email, email_verified FROM "user" WHERE email = $1', [next])
+      expect(rows).toEqual([{ email: next, email_verified: true }])
+    })
+
+    test("a new address's code alone changes nothing", async () => {
+      const current = faker.internet.email().toLowerCase()
+      const next = faker.internet.email().toLowerCase()
+      const token = await signUpAndSignIn(current, "")
+      expect((await post("/auth/email-otp/request-email-change", { newEmail: next }, token)).status).toBe(400)
+      expect((await post("/auth/email-otp/change-email", { newEmail: next, otp: "123456" }, token)).status).toBe(400)
+      const { rowCount } = await pool.query('SELECT 1 FROM "user" WHERE email = $1', [current])
+      expect(rowCount).toBe(1)
     })
   })
 
