@@ -89,16 +89,14 @@ async function apply(choice: Choice, ability: Unrunnable, print: (line: string) 
     await open(CHROME_URL).catch(error => log.warn("Couldn't open the Chrome download page", { error }))
     return print(statusLine("info", t("wizard.hostChromeAt", { url: CHROME_URL })))
   }
-  print(
-    statusLine(
-      "info",
-      ability.needs.includes("uvx")
-        ? t("wizard.hostSkippedUv", { name: ability.name, command: uvCommand() })
-        : ability.requires.includes("Chrome")
-          ? t("wizard.hostSkippedChrome", { name: ability.name, url: CHROME_URL })
-          : t("wizard.hostSkipped", { name: ability.name, programs: missingPrograms(ability.needs, ability.requires) })
-    )
-  )
+  print(statusLine("info", skippedHint(ability)))
+}
+
+// How to install what a skipped ability needs by hand.
+function skippedHint(ability: Unrunnable): string {
+  if (ability.needs.includes("uvx")) return t("wizard.hostSkippedUv", { name: ability.name, command: uvCommand() })
+  if (ability.requires.includes("Chrome")) return t("wizard.hostSkippedChrome", { name: ability.name, url: CHROME_URL })
+  return t("wizard.hostSkipped", { name: ability.name, programs: missingPrograms(ability.needs, ability.requires) })
 }
 
 /** Records `name` as a sandbox ability in settings.toml, and signs in to Kaja cloud when there's no token yet. */

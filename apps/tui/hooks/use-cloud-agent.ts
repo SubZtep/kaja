@@ -91,7 +91,8 @@ export function useCloudAgent({
   const [ownPersonas, setOwnPersonas] = useState<{ id: string; label: string }[]>([])
   useEffect(() => {
     let cancelled = false
-    Promise.resolve(computer).then(here => {
+    // run-cloud's promise logs its own failure and resolves undefined.
+    void Promise.resolve(computer).then(here => {
       if (!cancelled && here) setOwnPersonas(here.personas.map(persona => ({ id: persona.id, label: persona.label })))
     })
     return () => {

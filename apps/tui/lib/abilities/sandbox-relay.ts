@@ -45,5 +45,5 @@ export function relayTo(api: string, token: string, keyOf: (ability: string) => 
 
 /** Stands in for the relay when there's no token: every request is refused at once, so those abilities stay off. */
 export const signedOutSandbox: McpSandbox = {
-  fetch: async () => Response.json({ error: "not signed in to Kaja cloud" }, { status: 401 })
+  fetch: () => Promise.resolve(Response.json({ error: "not signed in to Kaja cloud" }, { status: 401 }))
 }

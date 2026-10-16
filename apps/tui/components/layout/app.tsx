@@ -427,11 +427,9 @@ function CloudApp({
   // A call on this computer asks while its turn is still running; a cloud approval only once the turn ended.
   const cloudEvent = !pending && lastEvent?.type === "confirm_tool" ? lastEvent : undefined
   const pendingEvent = localApproval?.event ?? cloudEvent
-  const resolvePending = localApproval
-    ? async (approved: boolean) => localApproval.resolve(approved)
-    : cloudEvent
-      ? resolveToolApproval
-      : undefined
+  let resolvePending: ((approved: boolean) => Promise<void>) | undefined
+  if (localApproval) resolvePending = approved => Promise.resolve(localApproval.resolve(approved))
+  else if (cloudEvent) resolvePending = resolveToolApproval
 
   return (
     <Chrome

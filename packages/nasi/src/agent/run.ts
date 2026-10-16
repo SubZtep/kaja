@@ -335,16 +335,7 @@ async function* handleToolCalls(
   toolCalls: ChatCompletionMessageToolCall[],
   granted: readonly string[] | undefined,
   { record, onModelCall }: { record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
-): AsyncGenerator<
-  AgentEvent,
-  {
-    ask?: { id: string; question: string; note?: string }
-    confirm?: { id: string; command: string; description: string }
-    approval?: ToolApproval
-    clientCalls: ClientCall[]
-  },
-  void
-> {
+): AsyncGenerator<AgentEvent, RoundPauses, void> {
   let ask: { id: string; question: string; note?: string } | undefined
   let confirm: { id: string; command: string; description: string } | undefined
   let approval: ToolApproval | undefined
@@ -389,14 +380,26 @@ async function* handleToolCalls(
 
     yield* handleToolCall(agent, toolsByName, messages, owner, call, record, onModelCall)
   }
-  // The client's calls go first: anything else that would pause waits for a later round.
+  return settlePauses(messages, record, { ask, confirm, approval, clientCalls })
+}
+
+/** What a round of tool calls left waiting: at most one pause hands off, see {@link settlePauses}. */
+type RoundPauses = {
+  ask?: { id: string; question: string; note?: string }
+  confirm?: { id: string; command: string; description: string }
+  approval?: ToolApproval
+  clientCalls: ClientCall[]
+}
+
+// The client's calls go first: anything else that would pause waits for a later round.
+function settlePauses(messages: ChatCompletionMessageParam[], record: RecordCall, pauses: RoundPauses): RoundPauses {
+  const { ask, confirm, clientCalls } = pauses
   if (clientCalls.length) {
     for (const held of [ask, confirm]) if (held) answerHeld(messages, record, held.id)
-    ask = undefined
-    confirm = undefined
+    return { clientCalls, approval: skipApproval(messages, record, pauses.approval) }
   }
-  if (ask || confirm || clientCalls.length) approval = skipApproval(messages, record, approval)
-  return { ask, confirm, approval, clientCalls }
+  if (ask || confirm) return { ...pauses, approval: skipApproval(messages, record, pauses.approval) }
+  return pauses
 }
 
 // Whether `tool` runs this call on the client (see `Tool.runsOnClient`).

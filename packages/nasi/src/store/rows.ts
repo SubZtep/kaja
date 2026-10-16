@@ -136,13 +136,12 @@ export function splitConversation(session: unknown): ConversationRows {
   const pendingField = PENDING_FIELDS.find(([field]) => typeof rest[field] === "string")
   // Several client calls can wait at once; the row keeps the first, and joining finds the rest unanswered.
   const clientCall = rest.pendingClientCalls?.[0]
+  let pending: ConversationRows["pending"] = null
+  if (pendingField) pending = { callId: rest[pendingField[0]]!, kind: pendingField[1] }
+  else if (clientCall) pending = { callId: clientCall, kind: "client_tools" }
   return {
     systemPrompt: hasSystem ? (first!.content as string) : null,
-    pending: pendingField
-      ? { callId: rest[pendingField[0]]!, kind: pendingField[1] }
-      : clientCall
-        ? { callId: clientCall, kind: "client_tools" }
-        : null,
+    pending,
     summary: rest.summary ? { text: rest.summary.text, from: rest.summary.from - (hasSystem ? 1 : 0) } : null,
     toolSummaries: rest.toolSummaries ?? {},
     grantedTools: rest.grantedTools ?? [],

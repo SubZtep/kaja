@@ -151,17 +151,10 @@ function parseArgs(json: string): Record<string, unknown> | undefined {
 
 // Runs one tool here as `--local` would: the shell's safe list and every tool's own approval rule decide when to ask.
 async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Promise<Omit<NasiToolResult, "id">> {
-  const { checkToolArgs, isSafeCommand, runShellCommand } = await import("@kaja/nasi")
+  const { checkToolArgs } = await import("@kaja/nasi")
   const args = parseArgs(call.arguments)
   if (!args) return { text: `Error: the arguments for ${call.name} aren't valid JSON.` }
-  if (call.name === SHELL) {
-    const command = typeof args.command === "string" ? args.command : ""
-    if (!command) return { text: "Invalid run_command arguments." }
-    const { loadSafeCommands } = await import("../config/commands")
-    const safe = isSafeCommand(command, await loadSafeCommands())
-    if (!safe && !(await approve({ kind: "command", command }))) return { text: "User declined to run this command." }
-    return { text: await runShellCommand(command) }
-  }
+  if (call.name === SHELL) return { text: await runCommandHere(args, approve) }
   const checked = checkToolArgs(target, args)
   if (!checked.ok) return { text: `Error: ${checked.error}` }
   const summary = target.approval?.(checked.args)
@@ -181,4 +174,15 @@ async function runHere(target: Tool, call: NasiClientCall, approve: Approve): Pr
     log.warn("A cloud turn's call failed on this computer", { tool: call.name, error })
     return { text: `Error: ${error instanceof Error ? error.message : String(error)}` }
   }
+}
+
+// run_command here: commands.toml's safe list runs at once, anything else asks first.
+async function runCommandHere(args: Record<string, unknown>, approve: Approve): Promise<string> {
+  const { isSafeCommand, runShellCommand } = await import("@kaja/nasi")
+  const command = typeof args.command === "string" ? args.command : ""
+  if (!command) return "Invalid run_command arguments."
+  const { loadSafeCommands } = await import("../config/commands")
+  const safe = isSafeCommand(command, await loadSafeCommands())
+  if (!safe && !(await approve({ kind: "command", command }))) return "User declined to run this command."
+  return runShellCommand(command)
 }

@@ -232,6 +232,11 @@ export async function createTools(opts: CreateToolsOptions = {}) {
     maxImageBytes: CLOUD_MCP_MAX_IMAGE_BYTES,
     maxResultChars: CLOUD_MCP_MAX_RESULT_CHARS
   }
+  // Locally only a sandboxed target (the user's choice) needs mcpFetch: it reaches the sandbox through the API.
+  const fetchOpts = (target: (typeof abilities)[number]) => {
+    if (!local) return { ...cloudOpts, fetch: opts.mcpFetch?.(target.name), hideArgs: target.localOnlyArgs }
+    return target.sandboxed ? { fetch: opts.mcpFetch?.(target.name) } : {}
+  }
   const mcpTargets: McpTarget[] = abilities.map(target => ({
     id: `ability:${target.name}`,
     server: target.server,
@@ -243,12 +248,7 @@ export async function createTools(opts: CreateToolsOptions = {}) {
       label: `ability:${target.name}`,
       // A sandbox can restart under a long-lived session: the next call opens a new one.
       reconnect: target.sandboxed === true,
-      // Locally only a sandboxed target (the user's choice) needs mcpFetch: it reaches the sandbox through the API.
-      ...(local
-        ? target.sandboxed
-          ? { fetch: opts.mcpFetch?.(target.name) }
-          : {}
-        : { ...cloudOpts, fetch: opts.mcpFetch?.(target.name), hideArgs: target.localOnlyArgs })
+      ...fetchOpts(target)
     },
     ...(target.sandboxed ? { timeoutMs: Math.max(opts.mcpConnectTimeoutMs ?? 0, SANDBOX_MCP_CONNECT_TIMEOUT_MS) } : {}),
     ...(target.roots ? { roots: target.roots, pathArgs: target.pathArgs } : {})
