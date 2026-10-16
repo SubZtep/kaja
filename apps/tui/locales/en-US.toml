@@ -16,8 +16,8 @@ secretsUnavailable     = "Could not access the system keychain to store your log
 connecting             = "Connecting…"
 logoutSuccess          = "Logged out."
 logoutNotSignedIn      = "You weren't signed in."
-loginDone              = "[en-US] lorem ipsum dolor"
-loginAlready           = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
+loginDone              = "Signed in to Kaja cloud."
+loginAlready           = "You're already signed in to Kaja cloud. `kaja logout` signs you out."
 deviceLoginStartFailed = "Failed to start device login"
 deviceLoginDenied      = "Device login was denied"
 deviceLoginExpired     = "Device login code expired — run login again"
@@ -52,29 +52,29 @@ temp           = "temp"
 
 [args]
 help        = """
-[en-US] lorem ipsum dolor sit amet consectetur {version}
+Kaja command line tool • v{version} • https://kaja.io
 
-[en-US] lorem
-  [en-US] lorem ipsum dolor sit
+USAGE
+  $ kaja [OPTIONS] [COMMAND]
 
-[en-US] lorem
-  [en-US] lorem ipsum dolor sit amet
-                       [en-US] lorem ipsum dolor sit amet consectetur
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+COMMANDS
+  config <wizard|fetch|diff|paths>
+                       Set up interactively, or manage config files
+  doctor               Print configured models, MCP servers and tools, and check connections
+  telegram [--pair]    Run your Telegram bot; --pair shows a code to pair one more person
+  abilities [update]   Pick which skills load, or fetch the marketplace
+  sessions             List saved local sessions with their ids
+  login                Sign in to the cloud account without starting a chat
+  logout               Log out of the cloud account, clearing its stored credential
 
-[en-US] lorem
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
-  [en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [en-US] lorem ipsum dolor sit amet
-  [en-US] lorem ipsum dolor sit amet
+OPTIONS
+  --local         Run the local agent loop against your own provider instead of cloud login
+  --cloud         Force cloud login even if a local config exists (default)
+  --continue, -c  Resume the most recent session (--local only)
+  --headless      No terminal UI; for a subcommand that supports it (e.g. telegram)
+  --session, -s   Resume a session by id (--local only; see: kaja sessions)
+  --help          Show this help
+  --version       Print the version
 """
 unknownFlag = "{message}. Run `kaja --help` to see the available options."
 
@@ -167,19 +167,19 @@ pullStarted          = "Downloading — this can take a few minutes."
 pullSkipped          = "Skipped — `ollama pull <model>` whenever you want them."
 pullDone             = "{model} is ready."
 pullFailed           = "{model} could not be downloaded: {error}"
-hostTitle            = "[en-US] lorem ipsum dolor sit amet consectetur {name} {programs}"
-hostSkip             = "[en-US] lorem ipsum"
-hostInstallUv        = "[en-US] lorem ipsum dolor sit amet consectetur"
-hostGetChrome        = "[en-US] lorem ipsum dolor sit amet consectetur"
-hostSandbox          = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit"
-hostSkipped          = "[en-US] lorem ipsum dolor sit amet {name} {programs}"
-hostSkippedUv        = "[en-US] lorem ipsum dolor sit amet consectetur {name} {command}"
-hostSkippedChrome    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing {name} {url}"
-hostChromeAt         = "[en-US] lorem ipsum dolor sit amet consectetur {url}"
-hostInstalled        = "[en-US] lorem ipsum"
-hostInstallFailed    = "[en-US] lorem ipsum dolor sit amet consectetur {command}"
-hostSandboxSet       = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit {name}"
-hostSignInFailed     = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore {name}"
+hostTitle            = "{name} can't run on this computer: it needs {programs}."
+hostSkip             = "Skip it for now"
+hostInstallUv        = "Install uv now (runs its official installer)"
+hostGetChrome        = "Get Chrome (opens its download page)"
+hostSandbox          = "Run it on a Kaja sandbox instead (needs a Kaja cloud sign-in)"
+hostSkipped          = "{name} stays off until {programs} is installed."
+hostSkippedUv        = "{name} stays off. To install uv yourself: {command}"
+hostSkippedChrome    = "{name} stays off. Install Chrome from {url}, then start Kaja again."
+hostChromeAt         = "Install Chrome from {url}, then start Kaja again."
+hostInstalled        = "uv is installed."
+hostInstallFailed    = "uv isn't installed. Try it yourself: {command}"
+hostSandboxSet       = "{name} runs on a Kaja sandbox now ([tools.hosts] in settings.toml)."
+hostSignInFailed     = "{name} is set to run on a sandbox, but signing in didn't work, so it's off for now. `kaja login` tries again."
 summaryMode          = "Mode"
 summaryLanguage      = "Language"
 summaryTheme         = "Colors"
@@ -237,18 +237,18 @@ typeSkill           = "skill"
 typeTool            = "tool"
 typeMcp             = "mcp"
 typeCode            = "code"
-onSandbox           = "[en-US] lorem ipsum"
-sandboxSignedOut    = "[en-US] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore {names}"
+onSandbox           = "a Kaja sandbox"
+sandboxSignedOut    = "{names}: set to run on a sandbox, but you're not signed in to Kaja cloud, so off for now. `kaja login` signs you in."
 brokenPart          = "{part}: {error}"
 keySaved            = "key saved"
 noKey               = "no key, off"
 keyless             = "works without a key"
-needs               = "[en-US] lorem {programs}"
-colName             = "[en-US] lorem"
-colParts            = "[en-US] lorem"
-colRuns             = "[en-US] lorem"
-colKey              = "[en-US] lorem"
-colPersonas         = "[en-US] lorem"
+needs               = "off: install {programs}"
+colName             = "Ability"
+colParts            = "Parts"
+colRuns             = "Runs"
+colKey              = "Key"
+colPersonas         = "Personas"
 noPersona           = "no persona uses it"
 listHint            = "Personas pick the abilities a chat uses: the `abilities` list in marketplace/personas/<id>.toml. `kaja doctor` asks for missing keys."
 

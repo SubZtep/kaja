@@ -16,8 +16,8 @@ secretsUnavailable     = "無法存取系統金鑰圈來儲存你的登入資訊
 connecting             = "連線中…"
 logoutSuccess          = "已登出。"
 logoutNotSignedIn      = "你尚未登入。"
-loginDone              = "[zh-TW] lorem ipsum dolor"
-loginAlready           = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
+loginDone              = "已登入 Kaja 雲端。"
+loginAlready           = "你已經登入 Kaja 雲端。執行 `kaja logout` 即可登出。"
 deviceLoginStartFailed = "無法啟動裝置登入"
 deviceLoginDenied      = "裝置登入已被拒絕"
 deviceLoginExpired     = "裝置登入代碼已過期 — 請重新執行登入"
@@ -52,29 +52,29 @@ temp           = "暫存"
 
 [args]
 help        = """
-[zh-TW] lorem ipsum dolor sit amet consectetur {version}
+Kaja 命令列工具 • v{version} • https://kaja.io
 
-[zh-TW] lorem
-  [zh-TW] lorem ipsum dolor sit
+用法
+  $ kaja [選項] [指令]
 
-[zh-TW] lorem
-  [zh-TW] lorem ipsum dolor sit amet
-                       [zh-TW] lorem ipsum dolor sit amet consectetur
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+指令
+  config <wizard|fetch|diff|paths>
+                       互動式設定，或管理設定檔
+  doctor               列出已設定的模型、MCP 伺服器與工具，並檢查連線
+  telegram [--pair]    執行你的 Telegram 機器人；--pair 會顯示配對碼，讓多一個人配對
+  abilities [update]   選擇要載入哪些技能，或抓取 marketplace
+  sessions             列出已儲存的本機工作階段及其 id
+  login                登入雲端帳號，但不開始對話
+  logout               登出雲端帳號，並清除已儲存的憑證
 
-[zh-TW] lorem
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
-  [zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [zh-TW] lorem ipsum dolor sit amet
-  [zh-TW] lorem ipsum dolor sit amet
+選項
+  --local         以你自己的供應商執行本機代理迴圈，而不是登入雲端
+  --cloud         即使有本機設定也強制登入雲端（預設）
+  --continue, -c  繼續最近的工作階段（僅限 --local）
+  --headless      不使用終端介面；用於支援此模式的子指令（例如 telegram）
+  --session, -s   依 id 繼續工作階段（僅限 --local；見：kaja sessions）
+  --help          顯示此說明
+  --version       顯示版本
 """
 unknownFlag = "{message}。執行 `kaja --help` 查看可用的選項。"
 
@@ -167,19 +167,19 @@ pullStarted          = "下載中 — 可能需要幾分鐘。"
 pullSkipped          = "已跳過 — 需要時再執行 `ollama pull <model>`。"
 pullDone             = "{model} 已就緒。"
 pullFailed           = "無法下載 {model}：{error}"
-hostTitle            = "[zh-TW] lorem ipsum dolor sit amet consectetur {name} {programs}"
-hostSkip             = "[zh-TW] lorem ipsum"
-hostInstallUv        = "[zh-TW] lorem ipsum dolor sit amet consectetur"
-hostGetChrome        = "[zh-TW] lorem ipsum dolor sit amet consectetur"
-hostSandbox          = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit"
-hostSkipped          = "[zh-TW] lorem ipsum dolor sit amet {name} {programs}"
-hostSkippedUv        = "[zh-TW] lorem ipsum dolor sit amet consectetur {name} {command}"
-hostSkippedChrome    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing {name} {url}"
-hostChromeAt         = "[zh-TW] lorem ipsum dolor sit amet consectetur {url}"
-hostInstalled        = "[zh-TW] lorem ipsum"
-hostInstallFailed    = "[zh-TW] lorem ipsum dolor sit amet consectetur {command}"
-hostSandboxSet       = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit {name}"
-hostSignInFailed     = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore {name}"
+hostTitle            = "{name} 無法在這台電腦上執行：需要 {programs}。"
+hostSkip             = "暫時跳過"
+hostInstallUv        = "立即安裝 uv（執行官方安裝程式）"
+hostGetChrome        = "取得 Chrome（開啟下載頁面）"
+hostSandbox          = "改在 Kaja 沙盒上執行（需要登入 Kaja 雲端）"
+hostSkipped          = "在安裝 {programs} 之前，{name} 會保持停用。"
+hostSkippedUv        = "{name} 保持停用。自行安裝 uv：{command}"
+hostSkippedChrome    = "{name} 保持停用。請從 {url} 安裝 Chrome，然後重新啟動 Kaja。"
+hostChromeAt         = "請從 {url} 安裝 Chrome，然後重新啟動 Kaja。"
+hostInstalled        = "uv 已安裝。"
+hostInstallFailed    = "uv 未安裝。請自行嘗試：{command}"
+hostSandboxSet       = "{name} 現在改在 Kaja 沙盒上執行（settings.toml 中的 [tools.hosts]）。"
+hostSignInFailed     = "{name} 已設定在沙盒上執行，但登入失敗，所以暫時停用。執行 `kaja login` 再試一次。"
 summaryMode          = "模式"
 summaryLanguage      = "語言"
 summaryTheme         = "配色"
@@ -237,18 +237,18 @@ typeSkill           = "技能"
 typeTool            = "工具"
 typeMcp             = "mcp"
 typeCode            = "程式碼"
-onSandbox           = "[zh-TW] lorem ipsum"
-sandboxSignedOut    = "[zh-TW] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore {names}"
+onSandbox           = "Kaja 沙盒"
+sandboxSignedOut    = "{names}：已設定在沙盒上執行，但你尚未登入 Kaja 雲端，所以暫時停用。執行 `kaja login` 即可登入。"
 brokenPart          = "{part}：{error}"
 keySaved            = "金鑰已儲存"
 noKey               = "沒有金鑰，已停用"
 keyless             = "不需金鑰也能運作"
-needs               = "[zh-TW] lorem {programs}"
-colName             = "[zh-TW] lorem"
-colParts            = "[zh-TW] lorem"
-colRuns             = "[zh-TW] lorem"
-colKey              = "[zh-TW] lorem"
-colPersonas         = "[zh-TW] lorem"
+needs               = "停用：需安裝 {programs}"
+colName             = "能力"
+colParts            = "組成"
+colRuns             = "執行"
+colKey              = "金鑰"
+colPersonas         = "角色"
 noPersona           = "沒有角色使用"
 listHint            = "角色決定對話使用哪些能力：見 marketplace/personas/<id>.toml 中的 `abilities` 清單。`kaja doctor` 會詢問缺少的金鑰。"
 

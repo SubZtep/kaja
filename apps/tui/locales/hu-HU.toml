@@ -16,8 +16,8 @@ secretsUnavailable     = "Nem sikerült elérni a rendszer kulcstartóját a bej
 connecting             = "Csatlakozás…"
 logoutSuccess          = "Kijelentkezve."
 logoutNotSignedIn      = "Nem voltál bejelentkezve."
-loginDone              = "[hu-HU] lorem ipsum dolor"
-loginAlready           = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do"
+loginDone              = "Bejelentkeztél a Kaja felhőbe."
+loginAlready           = "Már be vagy jelentkezve a Kaja felhőbe. A `kaja logout` kijelentkeztet."
 deviceLoginStartFailed = "Nem sikerült elindítani az eszközös bejelentkezést"
 deviceLoginDenied      = "Az eszközös bejelentkezés elutasítva"
 deviceLoginExpired     = "Az eszközös bejelentkezési kód lejárt — futtasd újra a bejelentkezést"
@@ -52,29 +52,29 @@ temp           = "ideiglenes"
 
 [args]
 help        = """
-[hu-HU] lorem ipsum dolor sit amet consectetur {version}
+Kaja parancssori eszköz • v{version} • https://kaja.io
 
-[hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit
+HASZNÁLAT
+  $ kaja [OPCIÓK] [PARANCS]
 
-[hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit amet
-                       [hu-HU] lorem ipsum dolor sit amet consectetur
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
+PARANCSOK
+  config <wizard|fetch|diff|paths>
+                       Interaktív beállítás vagy a konfigurációs fájlok kezelése
+  doctor               Kiírja a beállított modelleket, MCP szervereket és eszközöket, és ellenőrzi a kapcsolatokat
+  telegram [--pair]    Elindítja a Telegram botodat; a --pair kódot mutat még egy személy párosításához
+  abilities [update]   Kiválaszthatod, mely készségek töltődjenek be, vagy letöltheted a marketplace-t
+  sessions             Kilistázza a mentett helyi munkameneteket az azonosítóikkal
+  login                Bejelentkezés a felhőfiókba csevegés indítása nélkül
+  logout               Kijelentkezés a felhőfiókból, a tárolt hitelesítő adat törlésével
 
-[hu-HU] lorem
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
-  [hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod
-  [hu-HU] lorem ipsum dolor sit amet
-  [hu-HU] lorem ipsum dolor sit amet
+OPCIÓK
+  --local         A helyi ágensciklust a saját szolgáltatódon futtatja felhős bejelentkezés helyett
+  --cloud         Felhős bejelentkezés akkor is, ha van helyi konfiguráció (alapértelmezett)
+  --continue, -c  A legutóbbi munkamenet folytatása (csak --local)
+  --headless      Terminálos felület nélkül; az ezt támogató alparancsokhoz (pl. telegram)
+  --session, -s   Munkamenet folytatása azonosító alapján (csak --local; lásd: kaja sessions)
+  --help          Kiírja ezt a súgót
+  --version       Kiírja a verziót
 """
 unknownFlag = "{message}. Futtasd a `kaja --help` parancsot az elérhető opciókért."
 
@@ -167,19 +167,19 @@ pullStarted          = "Letöltés folyamatban — ez eltarthat pár percig."
 pullSkipped          = "Kihagyva — az `ollama pull <modell>` bármikor letölti őket."
 pullDone             = "{model} kész."
 pullFailed           = "{model} letöltése nem sikerült: {error}"
-hostTitle            = "[hu-HU] lorem ipsum dolor sit amet consectetur {name} {programs}"
-hostSkip             = "[hu-HU] lorem ipsum"
-hostInstallUv        = "[hu-HU] lorem ipsum dolor sit amet consectetur"
-hostGetChrome        = "[hu-HU] lorem ipsum dolor sit amet consectetur"
-hostSandbox          = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit"
-hostSkipped          = "[hu-HU] lorem ipsum dolor sit amet {name} {programs}"
-hostSkippedUv        = "[hu-HU] lorem ipsum dolor sit amet consectetur {name} {command}"
-hostSkippedChrome    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing {name} {url}"
-hostChromeAt         = "[hu-HU] lorem ipsum dolor sit amet consectetur {url}"
-hostInstalled        = "[hu-HU] lorem ipsum"
-hostInstallFailed    = "[hu-HU] lorem ipsum dolor sit amet consectetur {command}"
-hostSandboxSet       = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit {name}"
-hostSignInFailed     = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore {name}"
+hostTitle            = "{name} nem tud futni ezen a gépen, mert kell hozzá: {programs}."
+hostSkip             = "Most kihagyom"
+hostInstallUv        = "uv telepítése most (a hivatalos telepítőjével)"
+hostGetChrome        = "Chrome beszerzése (megnyitja a letöltési oldalt)"
+hostSandbox          = "Futtatás inkább Kaja sandboxon (Kaja felhős bejelentkezés kell hozzá)"
+hostSkipped          = "{name} kikapcsolva marad, amíg nincs telepítve: {programs}."
+hostSkippedUv        = "{name} kikapcsolva marad. Az uv-t magad így telepítheted: {command}"
+hostSkippedChrome    = "{name} kikapcsolva marad. Telepítsd a Chrome-ot innen: {url}, aztán indítsd újra a Kaját."
+hostChromeAt         = "Telepítsd a Chrome-ot innen: {url}, aztán indítsd újra a Kaját."
+hostInstalled        = "Az uv telepítve."
+hostInstallFailed    = "Az uv nincs telepítve. Próbáld meg magad: {command}"
+hostSandboxSet       = "{name} mostantól Kaja sandboxon fut ([tools.hosts] a settings.toml-ban)."
+hostSignInFailed     = "{name} sandboxon futna, de a bejelentkezés nem sikerült, ezért egyelőre ki van kapcsolva. A `kaja login` újrapróbálja."
 summaryMode          = "Mód"
 summaryLanguage      = "Nyelv"
 summaryTheme         = "Színek"
@@ -237,18 +237,18 @@ typeSkill           = "készség"
 typeTool            = "eszköz"
 typeMcp             = "mcp"
 typeCode            = "kód"
-onSandbox           = "[hu-HU] lorem ipsum"
-sandboxSignedOut    = "[hu-HU] lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore {names}"
+onSandbox           = "Kaja sandbox"
+sandboxSignedOut    = "{names}: sandboxon futna, de nem vagy bejelentkezve a Kaja felhőbe, ezért egyelőre ki van kapcsolva. A `kaja login` bejelentkeztet."
 brokenPart          = "{part}: {error}"
 keySaved            = "kulcs elmentve"
 noKey               = "nincs kulcs, kikapcsolva"
 keyless             = "kulcs nélkül is működik"
-needs               = "[hu-HU] lorem {programs}"
-colName             = "[hu-HU] lorem"
-colParts            = "[hu-HU] lorem"
-colRuns             = "[hu-HU] lorem"
-colKey              = "[hu-HU] lorem"
-colPersonas         = "[hu-HU] lorem"
+needs               = "ki, kell: {programs}"
+colName             = "Képesség"
+colParts            = "Részek"
+colRuns             = "Futás"
+colKey              = "Kulcs"
+colPersonas         = "Personák"
 noPersona           = "egy persona sem használja"
 listHint            = "A personák választják ki, milyen képességeket használ egy beszélgetés: ez a marketplace/personas/<id>.toml `abilities` listája. A `kaja doctor` bekéri a hiányzó kulcsokat."
 
