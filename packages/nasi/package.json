@@ -23,8 +23,13 @@
     "@kaja/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@mozilla/readability": "^0.6.0",
+    "jimp": "1.6.1",
     "linkedom": "^0.18.13",
     "openai": "^7.34.0",
+    "turndown": "7",
     "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/turndown": "^5.0.6"
   }
 }
