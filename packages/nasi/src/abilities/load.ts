@@ -8,7 +8,7 @@ import type { ToolGroup } from "../tools/registry"
 import { warn } from "../warn"
 import { createHttpTools } from "./http-tool"
 import { type McpAbilityTarget, type McpSandbox, mcpAbilityTarget, sandboxedMcpTarget } from "./mcp-ability"
-import { personaAbilities } from "./persona-scope"
+import { OPT_IN_BUILTINS, personaAbilities } from "./persona-scope"
 import { createLoadSkillTool } from "./skills"
 import type { AbilityStore, SkillSummary } from "./types"
 
@@ -209,9 +209,12 @@ function warnRootsIgnored(personas: Persona[], ability: string): void {
 }
 
 /** Warns once per persona entry that names an ability the store doesn't have, or a tool its ability doesn't offer. */
+const OPT_IN_NAMES = new Set(Object.values(OPT_IN_BUILTINS))
+
 function warnUnknownEntries(personas: Persona[], known: Map<string, Set<string> | undefined>): void {
   for (const persona of personas) {
     for (const entry of personaAbilities(persona).values()) {
+      if (OPT_IN_NAMES.has(entry.name)) continue
       if (!known.has(entry.name)) {
         warn("Persona lists an ability that isn't there", { persona: persona.id, ability: entry.name })
         continue

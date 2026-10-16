@@ -31,14 +31,26 @@ export function personaLoadsSkills(persona: Pick<Persona, "abilities">, skills: 
   })
 }
 
+/** Builtins a persona with an `abilities` list gets only by listing them, under these names: they reach the web or cost per call. */
+export const OPT_IN_BUILTINS: Readonly<Record<string, string>> = {
+  fetch_url: "fetch-url",
+  generate_image: "generate-image"
+}
+
+/** Whether `persona` gets the builtin tool `name`: every one without an `abilities` list, else an opt-in one only when listed. */
+export function personaGetsBuiltin(persona: Pick<Persona, "abilities">, name: string): boolean {
+  const optIn = OPT_IN_BUILTINS[name]
+  return optIn === undefined || persona.abilities === undefined || personaAbilities(persona).has(optIn)
+}
+
 /** The ability a tool belongs to (its `ability:<name>` source), or undefined for one that isn't an ability's. */
 export function abilityOfTool(tool: Tool): string | undefined {
   return tool.source?.startsWith(ABILITY_SOURCE) ? tool.source.slice(ABILITY_SOURCE.length) : undefined
 }
 
 /**
- * The tools `persona` gets: every tool that isn't an ability's (the builtins), plus the tools of the abilities it
- * lists, narrowed to an entry's `tools` when it sets them. `load_skill` comes along only when the persona needs it
+ * The tools `persona` gets: every tool that isn't an ability's (the builtins, the opt-in ones only as
+ * {@link personaGetsBuiltin} says), plus the tools of the abilities it lists, narrowed to an entry's `tools` when it sets them. `load_skill` comes along only when the persona needs it
  * (see {@link personaLoadsSkills}); `skills` says which skills that tool serves.
  */
 export function toolsForPersona(tools: Tool[], persona: Pick<Persona, "abilities">, skills: SkillSummary[]): Tool[] {
@@ -46,7 +58,8 @@ export function toolsForPersona(tools: Tool[], persona: Pick<Persona, "abilities
   const loadable = personaLoadsSkills(persona, skills)
   return tools.filter(tool => {
     const ability = abilityOfTool(tool)
-    if (ability === undefined) return toolName(tool) !== LOAD_SKILL_NAME || loadable
+    if (ability === undefined)
+      return toolName(tool) === LOAD_SKILL_NAME ? loadable : personaGetsBuiltin(persona, toolName(tool))
     const entry = entries.get(ability)
     return entry !== undefined && (!entry.tools || entry.tools.includes(toolName(tool)))
   })

@@ -6,6 +6,7 @@ import {
   LOAD_SKILL_TOOL,
   listCloudToolNames,
   personaAbilities,
+  personaGetsBuiltin,
   personaLoadsSkills
 } from "@kaja/nasi"
 import {
@@ -254,7 +255,9 @@ nasiRoutes.openapi(infoRoute, async c => {
     ? personaLoadsSkills(persona, await createPostgresAbilityStore({ userId: user.id }).listSkills())
     : false
   const tools = [
-    ...(await listCloudToolNames({ fetchSend: cloudEgress(user.id)() })),
+    ...(await listCloudToolNames({ fetchSend: cloudEgress(user.id)() })).filter(
+      name => !persona || personaGetsBuiltin(persona, name)
+    ),
     ...(loadsSkills ? [LOAD_SKILL_TOOL] : []),
     ...httpTools,
     ...mcpTools

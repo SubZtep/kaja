@@ -33,6 +33,10 @@ and, locally, code tools (an ability's `tool.ts`) are added on top.
 Locally, `generate_image` needs a model listing `image-generation` in
 [`models.toml`](/configuration/models).
 
+`fetch_url` and `generate_image` are opt-in: a persona with an `abilities` list gets them only by listing
+`fetch-url` or `generate-image` there (see [Personas](/abilities/personas#abilities)). The shipped `default`
+persona lists both.
+
 Web search isn't built in: the marketplace's `web-search` [HTTP tool](#http-tools) adds `web_search`,
 locally with your own Brave Search API key, in the cloud with the server's key (or yours, if you save one).
 

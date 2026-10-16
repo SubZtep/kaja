@@ -3,13 +3,15 @@
 
 label     = "Helpful assistant"
 when      = "no other persona clearly fits the conversation"
-# Every marketplace ability but filesystem (its folders belong in a persona of your own) and hyprland (the
-# config-hyprland persona's); one that needs a key you haven't saved is left out.
+# The two opt-in builtins, and every marketplace ability but filesystem (its folders belong in a persona of your
+# own), hyprland (the config-hyprland persona's) and time (the builtin current_time covers it); one that needs a key
+# you haven't saved is left out.
 abilities = [
+  "fetch-url",
+  "generate-image",
   "web-search",
   "open-meteo",
   "geo-service",
-  "time",
   "meeting-notes",
   "system-report",
   "context7",

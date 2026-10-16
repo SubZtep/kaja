@@ -43,6 +43,7 @@ export {
   abilityOfTool,
   type PersonaAbilityEntry,
   personaAbilities,
+  personaGetsBuiltin,
   personaLoadsSkills,
   skillMode,
   toolsForPersona

@@ -81,7 +81,7 @@ export const PersonaSchema = z
     dataset: z.string().min(1).optional(),
     // Short clause describing when this persona fits; shown in the system-prompt persona roster.
     when: z.string().min(1).optional(),
-    // The abilities this persona uses (skills, HTTP tools, MCP servers, code tools), by folder name; unset means builtins only.
+    // A filter: the abilities this persona uses by folder name, plus the opt-in builtins fetch-url and generate-image; unset means every builtin and no abilities.
     abilities: z.array(PersonaAbilitySchema).optional(),
     localOnly: z
       .boolean()

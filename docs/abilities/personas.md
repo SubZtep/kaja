@@ -34,7 +34,7 @@ Listen first. Reflect back what you heard before offering anything.
 | `when` | short clause telling the model when to switch here on its own |
 | `dataset` | id of a [dataset](/abilities/memory#datasets) this persona collects |
 | `models` | a model id per task from your [`models.toml`](/configuration/models), like `chat = "reasoning-chat"` |
-| `abilities` | the [abilities](/abilities) this persona uses, by name (see below). Unset means only the built-in tools |
+| `abilities` | the [abilities](/abilities) this persona uses, by name (see below). Unset means every built-in tool and no abilities |
 | `localOnly` | `true` keeps the persona out of the cloud, for one whose abilities only work on your machine |
 | sampling | `temperature`, `top_p`, `top_k`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `seed` |
 
@@ -44,12 +44,18 @@ Listen first. Reflect back what you heard before offering anything.
 
 ## Abilities
 
-A persona's `abilities` list decides which skills, HTTP tools, MCP servers and code tools the model gets while
-it's active. Built-in tools (files, memory, `ask_user` and the rest) don't depend on it. A name uses every part
-of that ability; a table tweaks one:
+A persona's `abilities` list is a filter: the model gets only what it names while the persona is active. It
+names skills, HTTP tools, MCP servers and code tools, plus two built-in tools that are opt-in: `fetch-url`
+(the `fetch_url` tool, which reads any public web page) and `generate-image` (`generate_image`, which costs a
+call to an image model). The other built-ins (memory, `ask_user`, `current_time` and the rest) are always there.
+A persona with no `abilities` list at all filters nothing out of the built-ins, the opt-in ones included, and
+gets no abilities.
+
+A name uses every part of that ability; a table tweaks one:
 
 ```toml
 abilities = [
+  "fetch-url",                                     # an opt-in built-in tool
   "web-search",                                    # every part of the ability
   { name = "chrome-devtools", tools = ["navigate_page", "take_screenshot"] },  # only these tools
   { name = "meeting-notes", skill = "sticky" },    # the skill's instructions stay in the system prompt
@@ -60,7 +66,7 @@ abilities = [
 
 | Key | Purpose |
 | --- | --- |
-| `name` | the ability's folder name |
+| `name` | the ability's folder name, or `fetch-url` / `generate-image` for those built-ins |
 | `skill` | `load` (listed under ## Skills, loaded with `load_skill` when needed), `sticky` (always in the system prompt, its other files still opened with `load_skill`) or `off`. Unset follows the SKILL.md's `sticky`, else `load` |
 | `tools` | only these of the ability's tools; unset means all of them |
 | `roots` | the folders an MCP server that takes roots (like `filesystem`) may work in while this persona is active. Absolute paths or `~/…`; one that isn't an existing folder is left out with a warning. Without any, that ability is off for the persona. `{ path = "…", readOnly = true }` lets it only read there, and `backup = true` has Kaja copy each file before it's changed (see [MCP servers](/abilities/mcp#mcp-abilities)) |
@@ -89,10 +95,10 @@ Both work in cloud mode too, among every persona in the cloud's copy of the mark
 
 | Id | What it does |
 | --- | --- |
-| `default` | fallback for anything no other persona fits; uses every marketplace ability |
+| `default` | fallback for anything no other persona fits; uses `fetch-url`, `generate-image` and every marketplace ability but `filesystem`, `hyprland` and `time` (the built-in `current_time` covers it) |
 | `care` | self-care companion: listens, reflects, doesn't lecture |
 | `barkochba` | plays Twenty Questions, asking through `ask_user` |
-| `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service`, `time` and `open-meteo` |
+| `onboarding` | walks a new user through the [`onboarding` profile](/abilities/memory#the-onboarding-profile); uses `geo-service` and `open-meteo` |
 | `config-hyprland` | changes your Hyprland desktop live (Lua config): previews, saves on your yes, backs up `~/.config/hypr` files first; local only |
 
 Read them in [`marketplace/personas`](https://github.com/SubZtep/kaja/tree/main/marketplace/personas).
