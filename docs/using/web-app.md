@@ -45,7 +45,8 @@ persona and ability is yours already; there's nothing to switch on. How keys are
 Admins also get an **Admin** menu for users, the model catalog and a live view of the MCP sandboxes, plus a
 **Sync now** button for the marketplace on the admin dashboard. A catalog model can have a context window
 (left blank, it's asked from the provider), and a free model with the `summarize` task writes the cloud's
-[summaries](/configuration/config#context).
+[summaries](/configuration/config#context). A chat model with the `vision` task gets images' pixels, and a free
+`vision` model writes their short descriptions.
 
 ---
 

@@ -38,7 +38,7 @@ services:
 
   # S3-compatible object storage for images (Hetzner Object Storage in production); the API creates the bucket on boot
   storage:
-    image: rustfs/rustfs:1.0.0
+    image: rustfs/rustfs:1.0.1
     restart: unless-stopped
     ports:
       - "127.0.0.1:9000:9000" # S3 API

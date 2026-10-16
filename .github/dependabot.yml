@@ -5,7 +5,16 @@ updates:
     schedule:
       interval: "weekly"
     commit-message:
-      prefix: "chore: "
+      prefix: "chore(gh): "
+
+  # Base images in the Dockerfiles (node, bun, uv, …) — keeps FROM tags current
+  # so Docker Scout stops flagging stale trixie layers between releases.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(docker): "
 
   # Every workspace's packages, from the root bun.lock
   - package-ecosystem: "bun"
@@ -13,7 +22,7 @@ updates:
     schedule:
       interval: "weekly"
     commit-message:
-      prefix: "chore: "
+      prefix: "chore(bun): "
     # A new release waits a few days before it's proposed, so a bad or compromised one can be yanked first
     cooldown:
       default-days: 3

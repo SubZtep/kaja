@@ -38,7 +38,7 @@ Dockerfile        # one multi-runtime image (node, bun, uv + python3, Chrome hea
 
 ## Docker image
 
-- A manifest's `package` goes through nasi's `resolveLaunch` with `self: false`: npm packages run with npx (bun's cache can't be shared between uids, see below), PyPI ones with uvx; nothing here runs docker. One multi-runtime image, so manifests run as on the user's machine: `node:22-trixie-slim` (node/npx; chrome-devtools-mcp needs Node 20.19+/22.12+), `bun`/`bunx` copied from the builder stage, `uv`/`uvx` from `ghcr.io/astral-sh/uv` (pinned tag), and Debian's `python3` for uvx. No compilers or git yet: add them when a server needs to build from source
+- A manifest's `package` goes through nasi's `resolveLaunch` with `self: false`: npm packages run with npx (bun's cache can't be shared between uids, see below), PyPI ones with uvx; nothing here runs docker. One multi-runtime image, so manifests run as on the user's machine: `node:26.12.0-trixie-slim` (node/npx; chrome-devtools-mcp needs Node 20.19+/22.12+), `bun`/`bunx` copied from the builder stage, `uv`/`uvx` from `ghcr.io/astral-sh/uv` (pinned tag), and Debian's `python3` for uvx. No compilers or git yet: add them when a server needs to build from source
 - The sandbox itself is one bundled file (`bun build --target=bun`) run by that same `bun`, so Bun isn't in the image twice
 - An override only changes what the host needs (chrome-devtools: a pinned version and Chrome flags); a manifest without one runs its own command
 - `SANDBOX_CACHE_DIR` (`/home/node/.cache/mcp` in the image) gives every server `BUN_INSTALL_CACHE_DIR`, `UV_CACHE_DIR`, `UV_PYTHON_INSTALL_DIR` and `npm_config_cache` under it, so a package uvx/npx fetched stays for later starts and other users despite the throwaway HOME. Except bun's: with per-user uids each server gets its own `BUN_INSTALL_CACHE_DIR` in its HOME, since bunx finds no executable in a cache another uid filled (so a bunx server downloads on each start there)
@@ -74,6 +74,8 @@ Chrome's traffic goes through `src/egress.ts`, which refuses loopback, private, 
 ## Release
 
 `.github/workflows/dockerhub.yaml` (`release_sandbox`; Automatic Versioning dispatches it whenever it bumps the sandbox) builds `apps/sandbox/Dockerfile` for amd64 and pushes `subztep/kaja-sandbox:<apps/sandbox version>` and `:latest` (repo from `vars.DOCKER_IMAGE_SANDBOX`, that by default). The official box still deploys from `apps/sandbox/disco.json`.
+
+`.github/workflows/scout.yaml` has every PR build this Dockerfile (repo root context) into the runner's local image store – the same image `dockerhub.yaml` would push, a few minutes per run since nothing is cached between them – and hands it to Scout (`local://`; Scout reads images, it never builds them, and `fs://` on the directory would only index a lockless SBOM with no base image for `quickview` to report on). It comments a quickview – packages, CVEs, base image, recommendations – plus the critical and high CVEs, updated on every push, with the Docker Hub credentials the release pushes with. Nothing fails the run over a finding; a fork's PR (no secrets, read-only token) keeps the same output in the run summary instead.
 
 ## Testing
 

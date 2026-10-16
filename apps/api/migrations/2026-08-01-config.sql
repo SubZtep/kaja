@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS model (
   free boolean NOT NULL DEFAULT false,
   -- Tokens the model takes in; null means ask its server, else assume 32768.
   context_window integer CHECK (context_window > 0),
+  -- false for a text-only chat model: it gets image descriptions instead of pixels.
+  images boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

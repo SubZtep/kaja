@@ -1,11 +1,9 @@
 import { afterAll, beforeAll, expect, test } from "bun:test"
-import { mkdtemp, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { loadAbilities } from "../../src/abilities/load"
 import { checkMcpAbilityKey, mcpAbilityTarget, SANDBOX_ORIGIN } from "../../src/abilities/mcp-ability"
 import type { AbilityStore } from "../../src/abilities/types"
-import { toolName } from "../../src/agent/tools"
+import { type ToolResult, toolName } from "../../src/agent/tools"
 import { connectMcpServer } from "../../src/mcp/client"
 import { createTools } from "../../src/tools/registry"
 import { mcpAbility } from "../fixtures/abilities"
@@ -66,14 +64,13 @@ test("without the guarded fetch the cloud connects nothing", async () => {
   expect(mcpServers).toEqual([])
 })
 
-test("cloud results drop images with a note and cut long text", async () => {
+test("cloud results cut long text", async () => {
   const { tools, closeTools } = await createTools({
     mcpAbilities: [mcpAbilityTarget(remoteAbility())],
     mcpFetch: () => routeHostTo(open, HOST)
   })
   try {
     const run = (name: string) => tools.find(t => toolName(t) === name)!.execute({})
-    expect(await run("picture")).toEqual({ text: "a picture\n\n(1 image not shown)" })
     const long = (await run("long_answer")) as { text: string }
     expect(long.text).toEndWith("[cut: 40000 characters in total]")
     expect(long.text.length).toBeLessThan(33 * 1024)
@@ -91,24 +88,18 @@ test("a key is checked by connecting and listing tools, and never shows in the r
   expect(JSON.stringify(wrong)).not.toContain("wrong-key-123")
 })
 
-test("with an image dir, cloud results keep images for the model", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "kaja-cloud-images-"))
+test("cloud results keep their images, as bytes for run() to store", async () => {
   const { tools, closeTools } = await createTools({
     mcpAbilities: [mcpAbilityTarget(remoteAbility())],
-    mcpFetch: () => routeHostTo(open, HOST),
-    mcpImageDir: dir
+    mcpFetch: () => routeHostTo(open, HOST)
   })
   try {
-    const result = (await tools.find(t => toolName(t) === "picture")!.execute({})) as {
-      text: string
-      images: { path: string }[]
-    }
+    const result = (await tools.find(t => toolName(t) === "picture")!.execute({})) as ToolResult
     expect(result.text).toBe("a picture")
     expect(result.images).toHaveLength(1)
-    expect(result.images[0]!.path.startsWith(dir)).toBe(true)
+    expect(result.images![0]!.data.length).toBeGreaterThan(0)
   } finally {
     await closeTools()
-    await rm(dir, { recursive: true, force: true })
   }
 })
 
@@ -134,15 +125,13 @@ test("with a sandbox, a stdio ability connects to <SANDBOX_ORIGIN>/mcp/<name>, w
 })
 
 test("an image over the size cap is dropped with a note", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "kaja-cloud-images-"))
   const target = mcpAbilityTarget(remoteAbility())
-  const connection = await connectMcpServer(target.server, dir, { fetch: routeHostTo(open, HOST), maxImageBytes: 1 })
+  const connection = await connectMcpServer(target.server, { fetch: routeHostTo(open, HOST), maxImageBytes: 1 })
   try {
     const picture = connection.tools.find(t => toolName(t) === "picture")!
     expect(await picture.execute({})).toEqual({ text: "a picture\n\n(1 image not shown)" })
   } finally {
     await connection.close()
-    await rm(dir, { recursive: true, force: true })
   }
 })
 

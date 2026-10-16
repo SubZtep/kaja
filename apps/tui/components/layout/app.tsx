@@ -19,7 +19,7 @@ import type { Tool } from "../../lib/agent/agents"
 import type { Computer } from "../../lib/cloud/computer"
 import { t } from "../../lib/i18n"
 import { log } from "../../lib/logger"
-import { client, clientForModel, compactAt, summarizer } from "../../lib/models/openai"
+import { client, clientForModel, compactAt, describer, summarizer } from "../../lib/models/openai"
 import type { Persona } from "../../lib/personas/personas"
 import { uiEvents } from "../../lib/ui-events"
 import { CodeViewContext } from "../elem/code-expand"
@@ -324,6 +324,7 @@ function LocalApp({
     client,
     createClient: clientForModel,
     summarizer,
+    describer,
     compactAt,
     tools,
     ensureTools,

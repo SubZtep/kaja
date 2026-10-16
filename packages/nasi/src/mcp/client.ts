@@ -1,14 +1,11 @@
-import { mkdir } from "node:fs/promises"
-import { join } from "node:path"
 import type { McpReadOnlyRule } from "@kaja/schema/abilities"
 import type { McpServerEntry } from "@kaja/schema/config"
-import { randomUUIDv7 } from "@kaja/shared/id"
+import { capText } from "@kaja/shared/text"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { ListRootsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js"
-import { write } from "bun"
 import { type Tool, type ToolResult, tool } from "../agent/tools"
 import type { FetchLike } from "../security/ssrf"
 import type { McpRoot } from "./roots"
@@ -39,7 +36,7 @@ export type McpConnectOptions = {
   label?: string
   /** Fetch for a `url` server's transport (the cloud passes its SSRF-guarded one). */
   fetch?: FetchLike
-  /** Keep image results (saved under the temp dir). False drops them with a note: the cloud has nowhere to show them. Default true. */
+  /** Keep image results. False drops them with a note (a key check has no use for them). Default true. */
   images?: boolean
   /** Cut a result's text at this many characters, with a note. Unset keeps it whole. */
   maxResultChars?: number
@@ -101,7 +98,6 @@ function createTransport(server: McpServerEntry, opts: McpConnectOptions) {
 
 export async function connectMcpServer(
   server: McpServerEntry,
-  tempDir: string,
   opts: McpConnectOptions = {}
 ): Promise<{ tools: Tool[]; close: () => Promise<void>; rootsChanged: () => Promise<void> }> {
   const roots = opts.roots
@@ -153,10 +149,10 @@ export async function connectMcpServer(
   const call = async (name: string, args: Record<string, unknown>): Promise<ToolResult> => {
     const used = client
     try {
-      return await callTool(used, name, args, tempDir, opts)
+      return await callTool(used, name, args, opts)
     } catch (error) {
       if (!opts.reconnect || !("url" in server) || error instanceof McpError) throw error
-      return callTool(await reopen(used), name, args, tempDir, opts)
+      return callTool(await reopen(used), name, args, opts)
     }
   }
 
@@ -216,17 +212,10 @@ export async function connectMcpServer(
   }
 }
 
-/** `text` cut at `max` characters with a note, or whole when there's no limit. */
-function capText(text: string, max: number | undefined): string {
-  if (max === undefined || text.length <= max) return text
-  return `${text.slice(0, max)}\n\n[cut: ${text.length} characters in total]`
-}
-
 async function callTool(
   client: Client,
   name: string,
   args: Record<string, unknown>,
-  tempDir: string,
   opts: Pick<McpConnectOptions, "images" | "maxResultChars" | "maxImageBytes">
 ): Promise<ToolResult> {
   const result = await client.callTool({ name, arguments: args })
@@ -257,15 +246,6 @@ async function callTool(
   }
   if (imageBlocks.length === 0) return { text: withNote }
 
-  await mkdir(tempDir, { recursive: true })
-  const images = await Promise.all(
-    imageBlocks.map(async block => {
-      const ext = block.mimeType.split("/")[1] ?? "png"
-      const path = join(tempDir, `${randomUUIDv7()}.${ext}`)
-      await write(path, Buffer.from(block.data, "base64"))
-      return { path, mimeType: block.mimeType }
-    })
-  )
-
+  const images = imageBlocks.map(block => ({ data: Buffer.from(block.data, "base64"), mimeType: block.mimeType }))
   return { text: withNote, images }
 }

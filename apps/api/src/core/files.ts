@@ -1,42 +1,69 @@
-import {
-  CreateBucketCommand,
-  HeadBucketCommand,
-  PutBucketLifecycleConfigurationCommand,
-  S3Client
-} from "@aws-sdk/client-s3"
-import { Files } from "files-sdk"
-import { hetzner } from "files-sdk/hetzner"
-import { minio } from "files-sdk/minio"
+import { CreateBucketCommand, HeadBucketCommand, PutBucketPolicyCommand, S3Client } from "@aws-sdk/client-s3"
+import type { ObjectStore } from "@kaja/nasi"
 import { env } from "./env"
 
 const credentials = { accessKeyId: env.STORAGE_ACCESS_KEY_ID, secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY }
+const endpoint = env.STORAGE_ENDPOINT ?? `https://${env.STORAGE_REGION}.your-objectstorage.com`
+const region = env.STORAGE_ENDPOINT ? "us-east-1" : env.STORAGE_REGION
 
-/** Object storage for images: Hetzner Object Storage, or the S3-compatible server at `STORAGE_ENDPOINT` (RustFS in dev, tests, CI). */
-export const files = storage(env.STORAGE_ENDPOINT)
+/** The images bucket: Hetzner Object Storage, or the S3-compatible server at `STORAGE_ENDPOINT` (RustFS in dev, tests, CI). */
+const bucket = new Bun.S3Client({ bucket: env.STORAGE_BUCKET, endpoint, region, ...credentials })
 
-// Signing is offline, so URLs for clients are signed against the host they reach the server by (the compose API reaches storage:9000, the browser localhost:9000).
-const signer = env.STORAGE_PUBLIC_ENDPOINT ? storage(env.STORAGE_PUBLIC_ENDPOINT) : files
+/** What anyone may read: the images, never a listing (see {@link prepareBucket}). */
+const PUBLIC_PREFIX = "images/"
 
-function storage(endpoint: string | undefined) {
-  return new Files({
-    adapter: endpoint
-      ? minio({ bucket: env.STORAGE_BUCKET, endpoint, ...credentials })
-      : hetzner({ bucket: env.STORAGE_BUCKET, region: env.STORAGE_REGION, ...credentials })
-  })
+/** The endpoint without its trailing slashes, so the key path below adds exactly one (a regex would backtrack on a run of them). */
+function withoutTrailingSlashes(value: string): string {
+  let end = value.length
+  while (end > 0 && value[end - 1] === "/") end -= 1
+  return value.slice(0, end)
 }
 
-/** A time-limited URL a client can fetch the object from. */
-export const signedUrl = (key: string, expiresIn: number) => signer.url(key, { expiresIn })
+/**
+ * An object's public URL, which needs no signing: `images/` is public-read. Path-style on a server of our own
+ * (`STORAGE_PUBLIC_ENDPOINT` as clients reach it, else `STORAGE_ENDPOINT`), Hetzner's virtual-hosted form otherwise.
+ */
+export function imageUrl(key: string): string {
+  const path = key.split("/").map(encodeURIComponent).join("/")
+  const base = env.STORAGE_PUBLIC_ENDPOINT ?? env.STORAGE_ENDPOINT
+  if (base) return `${withoutTrailingSlashes(base)}/${env.STORAGE_BUCKET}/${path}`
+  return `https://${env.STORAGE_BUCKET}.${env.STORAGE_REGION}.your-objectstorage.com/${path}`
+}
 
-/** Where a user's tool images go when their turn's session doesn't exist yet (a new one is saved at the turn's end); the bucket expires them after a day. */
-export const toolImagePrefix = (userId: string) => `tool-images/${userId}`
+const isMissing = (error: unknown) => (error as { code?: string })?.code === "NoSuchKey"
 
-/** Days a leftover tool image lives under `tool-images/` before the bucket's lifecycle rule deletes it. */
-const TOOL_IMAGE_DAYS = 1
+/** The bucket as nasi's object store: session images and their descriptions. */
+export const objects: ObjectStore = {
+  put: async (key, data, type) => {
+    await bucket.write(key, data, type ? { type } : undefined)
+  },
+  get: async key => {
+    try {
+      return new Uint8Array(await bucket.file(key).arrayBuffer())
+    } catch (error) {
+      if (isMissing(error)) return undefined
+      throw error
+    }
+  },
+  exists: key => bucket.exists(key),
+  deletePrefix: async prefix => {
+    // A page at a time; deleting them doesn't move the listing, since each page starts after the last.
+    let startAfter: string | undefined
+    while (true) {
+      const page = await bucket.list({ prefix, ...(startAfter ? { startAfter } : {}) })
+      const keys = (page.contents ?? []).map(object => object.key)
+      await Promise.all(keys.map(key => bucket.delete(key)))
+      if (!page.isTruncated || keys.length === 0) return
+      startAfter = keys.at(-1)
+    }
+  },
+  location: imageUrl
+}
 
 /**
- * Readies the bucket on boot: creates it on a dev server (`STORAGE_ENDPOINT` starts empty; Hetzner's is made once in its console),
- * then sets the rule that expires `tool-images/`. Hetzner only takes lifecycle rules through the S3 API, so the API sets it itself.
+ * Readies the bucket on boot: creates it on a dev server (`STORAGE_ENDPOINT` starts empty; Hetzner's is made once in
+ * its console), then lets anyone read `images/` (never list it), so clients and Telegram fetch images by plain URL.
+ * Hetzner only takes bucket policies through the S3 API, so the API sets it itself.
  */
 export async function prepareBucket(): Promise<void> {
   const client = s3Client()
@@ -45,45 +72,37 @@ export async function prepareBucket(): Promise<void> {
     if (env.STORAGE_ENDPOINT) {
       await client.send(new HeadBucketCommand({ Bucket })).catch(() => client.send(new CreateBucketCommand({ Bucket })))
     }
-    await client.send(
-      new PutBucketLifecycleConfigurationCommand({
-        Bucket,
-        LifecycleConfiguration: {
-          Rules: [
-            {
-              ID: "expire-tool-images",
-              Status: "Enabled",
-              Filter: { Prefix: "tool-images/" },
-              Expiration: { Days: TOOL_IMAGE_DAYS }
-            }
-          ]
-        }
-      })
-    )
+    const statement = {
+      Effect: "Allow",
+      Principal: "*",
+      Action: ["s3:GetObject"],
+      Resource: [`arn:aws:s3:::${Bucket}/${PUBLIC_PREFIX}*`]
+    }
+    const Policy = JSON.stringify({ Version: "2012-10-17", Statement: [statement] })
+    await client.send(new PutBucketPolicyCommand({ Bucket, Policy }))
   } finally {
     client.destroy()
   }
 }
 
-// The raw S3 client for what files-sdk doesn't do: bucket setup and the readiness probe.
+// The AWS client for what Bun's S3 client doesn't do: creating the bucket and setting its policy.
 function s3Client() {
-  return new S3Client({
-    endpoint: env.STORAGE_ENDPOINT ?? `https://${env.STORAGE_REGION}.your-objectstorage.com`,
-    region: env.STORAGE_ENDPOINT ? "us-east-1" : env.STORAGE_REGION,
-    forcePathStyle: !!env.STORAGE_ENDPOINT,
-    credentials
-  })
+  return new S3Client({ endpoint, region, forcePathStyle: !!env.STORAGE_ENDPOINT, credentials })
 }
 
-let probeClient: S3Client | undefined
-
-/** Whether the bucket answers a HEAD within `timeoutMs`, for `/health/ready`. */
+/** Whether the bucket answers within `timeoutMs`, for `/health/ready`. */
 export async function storageReachable(timeoutMs: number): Promise<boolean> {
-  probeClient ??= s3Client()
-  return await probeClient
-    .send(new HeadBucketCommand({ Bucket: env.STORAGE_BUCKET }), { abortSignal: AbortSignal.timeout(timeoutMs) })
-    .then(
-      () => true,
-      () => false
-    )
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<false>(resolve => {
+    timer = setTimeout(() => resolve(false), timeoutMs)
+  })
+  const answered = bucket.list({ maxKeys: 1 }).then(
+    () => true,
+    () => false
+  )
+  try {
+    return await Promise.race([answered, timeout])
+  } finally {
+    clearTimeout(timer)
+  }
 }

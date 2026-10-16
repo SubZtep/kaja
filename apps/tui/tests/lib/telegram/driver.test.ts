@@ -6,6 +6,7 @@ import type { Persona } from "@kaja/schema/cli"
 import { APIError } from "openai"
 import type { Agent, Tool } from "../../../lib/agent/agents"
 import type { InlineKeyboardLike, TelegramSender } from "../../../lib/telegram/driver"
+import { TINY_PNG, TINY_PNG_BASE64 } from "../../fixtures/images"
 
 // Same isolation/dynamic-import discipline as tests/lib/agents.test.ts: env vars and a minimal settings.toml fixture must be in place before lib/agents.ts (transitively pulled in by lib/telegram-driver.ts) is ever evaluated, since lib/openai.ts reads config() at its own module top level.
 const dataDir = `${tmpdir()}/kaja-test-xdg-data-telegram-driver`
@@ -119,9 +120,10 @@ function fakeSender() {
   const answered: { callbackQueryId: string; text?: string }[] = []
   const photos: {
     chatId: number
-    photo: { path: string } | { url: string }
+    photo: { data: Uint8Array } | { path: string } | { url: string }
     caption?: string
   }[] = []
+  const captions: { chatId: number; messageId: number; caption: string }[] = []
   const sender: TelegramSender = {
     async sendMessage(chatId, text, opts) {
       const messageId = nextMessageId++
@@ -136,9 +138,13 @@ function fakeSender() {
     },
     async sendPhoto(chatId, photo, opts) {
       photos.push({ chatId, photo, caption: opts?.caption })
+      return { messageId: 100 + photos.length }
+    },
+    async editCaption(chatId, messageId, caption) {
+      captions.push({ chatId, messageId, caption })
     }
   }
-  return { sender, sent, edited, answered, photos }
+  return { sender, sent, edited, answered, photos, captions }
 }
 
 /** One driver, one scripted fake LLM conversation. */
@@ -170,15 +176,13 @@ test("first message from a user creates a session and finalizes the reply", asyn
 })
 
 test("tool_image and display_image events are delivered as photos", async () => {
-  const imagePath = join(tmpdir(), "kaja-test-telegram-photo.png")
-  writeFileSync(imagePath, "not-a-real-png")
   const imageTool = tool<Record<string, never>>({
     name: "make_picture",
     description: "test tool that returns images",
     parameters: { type: "object", properties: {} },
     execute: async () => ({
       text: "made a picture",
-      images: [{ path: imagePath, mimeType: "image/png" }],
+      images: [{ data: TINY_PNG, mimeType: "image/png" }],
       displayImage: { url: "https://example.com/pic.png", alt: "a preview" }
     })
   })
@@ -206,7 +210,8 @@ test("tool_image and display_image events are delivered as photos", async () => 
   expect(photos).toHaveLength(2)
   expect(photos[0]!.photo).toEqual({ url: "https://example.com/pic.png" })
   expect(photos[0]!.caption).toBe("a preview")
-  expect(photos[1]!.photo).toEqual({ path: imagePath })
+  // The stored copy, read back from the session's store
+  expect(photos[1]!.photo).toEqual({ data: new Uint8Array(TINY_PNG) })
   expect(edited.at(-1)!.text).toBe("Here is your picture.")
 })
 
@@ -241,7 +246,7 @@ test("a reply that is only an image leaves a 📷 placeholder instead of an empt
 })
 
 test("a photo reaches the model with its caption; a model that refuses it gets a plain note, and the photo is dropped", async () => {
-  const photo = "data:image/jpeg;base64,/9j/4AAQ"
+  const photo = `data:image/png;base64,${TINY_PNG_BASE64}`
   const { sender, edited } = fakeSender()
   const driver = makeDriver([{ content: "A cat." }, { content: null, reject: 400 }, { content: "Sure." }], sender)
 
@@ -251,6 +256,7 @@ test("a photo reaches the model with its caption; a model that refuses it gets a
     role: "user",
     content: [
       { type: "text", text: "what is it?" },
+      { type: "text", text: "[Image (1×1): an image the user sent]" },
       { type: "image_url", image_url: { url: photo } }
     ]
   })
@@ -680,4 +686,49 @@ test("/abilities lists what each persona uses, and how to change it", async () =
   )
   expect(text).toContain(t("telegram.abilitiesPersonaNone", { persona: "Kaja" }))
   expect(text).toContain("kaja abilities")
+})
+
+test("a tool image goes out captioned with its alt text, and takes its description as its caption once written", async () => {
+  const { createMemoryStore } = await import("@kaja/nasi")
+  const imageTool = tool<Record<string, never>>({
+    name: "make_picture",
+    description: "test tool that returns images",
+    parameters: { type: "object", properties: {} },
+    execute: async () => ({ text: "Made a picture", images: [{ data: TINY_PNG, mimeType: "image/png" }] })
+  })
+  const describer = {
+    client: {
+      chat: { completions: { create: async () => ({ choices: [{ message: { content: "A tiny square." } }] }) } }
+    },
+    model: "vision-m"
+  }
+  const { sender, photos, captions } = fakeSender()
+  const script: FakeMessage[] = [
+    {
+      content: null,
+      tool_calls: [{ id: "call_1", type: "function", function: { name: "make_picture", arguments: "{}" } }]
+    },
+    { content: "Here." }
+  ]
+  const driver = createTelegramDriver({
+    agentConfig: { model: "fake-model", tools: [askUserTool, runCommandTool] },
+    personas: [persona],
+    models: [],
+    sender,
+    createAgent: () =>
+      // Blind, so the turn waits for the description before it ends
+      ({
+        ...fakeAgent(script, [imageTool]),
+        store: createMemoryStore(),
+        describer,
+        defaultDescriber: describer,
+        chatSeesImages: false
+      }) as unknown as Agent
+  })
+
+  await driver.handleMessage(42, 100, "draw me something")
+
+  expect(photos).toHaveLength(1)
+  expect(photos[0]!.caption).toBe("Made a picture")
+  expect(captions).toEqual([{ chatId: 100, messageId: 101, caption: "A tiny square." }])
 })

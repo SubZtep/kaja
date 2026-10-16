@@ -1,5 +1,8 @@
 import type { MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { PersistedSessionSchema } from "@kaja/schema/store"
+import { objectSessionImages, sessionImagePrefix } from "./images"
+import { memoryObjects, type ObjectStore } from "./objects"
+import { sessionIdOf } from "./rows"
 import type { DatasetAnswer, NasiStore, SessionWrite } from "./types"
 
 function ownerKey(owner: string | null): string {
@@ -20,8 +23,9 @@ function datasetKey(topic: string, owner: string | null, version: number, field?
   return field !== undefined ? `${base}\0${field}` : base
 }
 
-/** In-memory store for tests and hosts that do not persist. */
-export function createMemoryStore(): NasiStore {
+/** In-memory store for tests and hosts that do not persist; `objects` holds the session images (in memory too by default). */
+export function createMemoryStore(opts: { objects?: ObjectStore } = {}): NasiStore {
+  const objects = opts.objects ?? memoryObjects()
   const sessions = new Map<string, PersistedSession>()
   const memoryByOwner = new Map<string, MemoryStore>()
   const answers = new Map<string, DatasetAnswer & { topic: string; owner: string | null; version: number }>()
@@ -31,7 +35,7 @@ export function createMemoryStore(): NasiStore {
     createSession(data: SessionWrite & { title: string }) {
       return Promise.try(() => {
         const now = new Date().toISOString()
-        const id = Bun.randomUUIDv7()
+        const id = sessionIdOf(data.session)
         sessions.set(id, {
           id,
           createdAt: now,
@@ -40,7 +44,7 @@ export function createMemoryStore(): NasiStore {
           model: data.model,
           title: data.title,
           owner: data.owner,
-          session: clone(data.session) as PersistedSession["session"],
+          session: { ...(clone(data.session) as PersistedSession["session"]), id },
           events: clone(data.events) as PersistedSession["events"]
         })
         return id
@@ -56,7 +60,7 @@ export function createMemoryStore(): NasiStore {
           updatedAt: new Date().toISOString(),
           persona: data.persona,
           model: data.model,
-          session: clone(data.session) as PersistedSession["session"],
+          session: { ...(clone(data.session) as PersistedSession["session"]), id },
           events: clone(data.events) as PersistedSession["events"]
         })
       })
@@ -78,11 +82,13 @@ export function createMemoryStore(): NasiStore {
       })
     },
 
-    deleteSession(id) {
-      return Promise.try(() => {
-        return sessions.delete(id)
-      })
+    async deleteSession(id) {
+      if (!sessions.delete(id)) return false
+      await objectSessionImages(objects, sessionImagePrefix(id)).clear()
+      return true
     },
+
+    images: id => objectSessionImages(objects, sessionImagePrefix(id)),
 
     listSessions(): Promise<SessionMeta[]> {
       return Promise.try(() => {

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { setToolDeps } from "../../src/tools/deps"
-import { guardWorkspacePath, PathDeniedError, PathEscapeError } from "../../src/tools/path-guard"
+import { guardWorkspacePath, PathDeniedError, PathEscapeError, resolveWorkspacePath } from "../../src/tools/path-guard"
 
 let root: string
 let outside: string
@@ -57,4 +57,21 @@ test("rejects reading the configured sqlite file", () => {
 test("allows a not-yet-existing path inside the workspace root (list_files on empty dir)", () => {
   mkdirSync(join(root, "empty"))
   expect(guardWorkspacePath("empty/new-subdir")).toBe(join(root, "empty/new-subdir"))
+})
+
+test("resolveWorkspacePath tells inside from outside instead of throwing", () => {
+  writeFileSync(join(root, "in.png"), "")
+  writeFileSync(join(outside, "out.png"), "")
+  expect(resolveWorkspacePath("in.png")).toEqual({ path: join(root, "in.png"), inWorkspace: true })
+  expect(resolveWorkspacePath(join(outside, "out.png"))).toEqual({ path: join(outside, "out.png"), inWorkspace: false })
+})
+
+test("secrets.toml and the sqlite file with its siblings are refused outside the workspace too", () => {
+  const dbPath = join(outside, "memory.sqlite")
+  setToolDeps({ workspaceRoot: root, storePath: dbPath })
+  writeFileSync(join(outside, "secrets.toml"), "")
+  for (const name of ["secrets.toml", "memory.sqlite", "memory.sqlite-wal", "memory.sqlite-shm"]) {
+    writeFileSync(join(outside, name), "")
+    expect(() => resolveWorkspacePath(join(outside, name))).toThrow(PathDeniedError)
+  }
 })

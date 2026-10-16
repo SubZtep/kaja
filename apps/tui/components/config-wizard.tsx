@@ -108,7 +108,8 @@ const TASK_LABEL_KEY: Record<ModelTask, string> = {
   "image-generation": "wizard.taskImageGeneration",
   tts: "wizard.taskTts",
   stt: "wizard.taskStt",
-  summarize: "wizard.taskSummarize"
+  summarize: "wizard.taskSummarize",
+  vision: "wizard.taskVision"
 }
 
 const MODE_CHOICES: KajaMode[] = ["cloud", "local"]
@@ -160,10 +161,10 @@ export function chosenProviders(result: WizardResult): CatalogProvider[] {
   return custom ? [...catalogChoices(result), custom] : catalogChoices(result)
 }
 
-/** The tasks more than one ticked provider can serve: the only model questions worth asking. */
+/** The tasks more than one ticked provider can serve: the only model questions worth asking (vision follows the chat pick, see `buildModelsToml`). */
 function contestedTasks(result: WizardResult): ModelTask[] {
   const candidates = candidatesByTask(chosenProviders(result))
-  return TASK_ORDER.filter(task => (candidates[task]?.length ?? 0) > 1)
+  return TASK_ORDER.filter(task => task !== "vision" && (candidates[task]?.length ?? 0) > 1)
 }
 
 /**

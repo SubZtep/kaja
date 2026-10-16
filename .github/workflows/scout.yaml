@@ -1,0 +1,56 @@
+name: Docker Scout
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# A newer push to a PR supersedes its running check
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  sandbox:
+    name: Sandbox Image
+    permissions:
+      contents: read
+      # For the compare comment
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      # Scout only reads images, so the one the release would push is built into the local store first
+      - name: Build the sandbox image
+        run: docker build --file apps/sandbox/Dockerfile --tag kaja-sandbox:pr .
+
+      # A fork's PR has no secrets, so it scouts anonymously and only gets the summary
+      - name: Log in to Docker Hub
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Comments only what this PR changes, not the base image's standing CVEs
+      - name: Compare with the released sandbox
+        uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
+        with:
+          command: compare
+          image: local://kaja-sandbox:pr
+          to: registry://${{ vars.DOCKER_IMAGE_SANDBOX || 'subztep/kaja-sandbox' }}:latest
+          ignore-unchanged: true
+          only-severities: critical,high
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          write-comment: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+
+      # The full report, for the run summary only
+      - name: Scout the sandbox
+        uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
+        with:
+          command: quickview,cves
+          image: local://kaja-sandbox:pr
+          only-severities: critical,high
+          write-comment: false

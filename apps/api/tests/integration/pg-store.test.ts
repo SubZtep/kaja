@@ -3,8 +3,9 @@ import { faker } from "@faker-js/faker"
 import { sessionImagePrefix } from "@kaja/nasi"
 import type { StoredConversation } from "@kaja/schema/store"
 import { pool } from "../../src/core/db"
-import { files } from "../../src/core/files"
+import { imageUrl, objects } from "../../src/core/files"
 import { createPostgresStore } from "../../src/features/nasi/pg-store"
+import { noisyPng } from "../fixtures/images"
 import { signUpAndSignIn } from "./helpers"
 
 async function signUp(name: string) {
@@ -21,7 +22,7 @@ const TURN: Messages = [
   { role: "user", content: "hi" },
   { role: "assistant", content: null, reasoning_content: "hmm", tool_calls: [call("c1", "read"), call("c2", "write")] },
   { role: "tool", tool_call_id: "c1", content: "ok" },
-  { role: "user", content: [{ type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } }] }
+  { role: "user", content: [{ type: "image_url", image_url: { url: "kaja-image:0123456789abcdef" } }] }
 ]
 const write = (messages: unknown[], extra = {}) => ({
   persona: "default",
@@ -53,7 +54,7 @@ describe("postgres store", () => {
       title: "hi"
     })
     const loaded = (await store.loadSession(id))!
-    expect(loaded.session).toEqual({ messages: TURN, pendingToolApprovalId: "c2" })
+    expect(loaded.session).toEqual({ id, messages: TURN, pendingToolApprovalId: "c2" })
     expect(loaded.events).toEqual([])
     expect((await store.listSessions()).map(s => s.id)).toContain(id)
   })
@@ -166,59 +167,45 @@ describe("postgres store", () => {
     ])
   })
 
-  test("images the latest summary already covers are not downloaded again", async () => {
+  test("loading a session downloads no images: its messages keep their refs", async () => {
     const store = createPostgresStore(pool, userId)
-    const early = "data:image/png;base64,AAAA"
-    const late = "data:image/png;base64,BBBB"
-    const messages: Messages = [
-      { role: "system", content: "be helpful" },
-      { role: "user", content: [{ type: "image_url", image_url: { url: early } }] },
-      { role: "assistant", content: "saw it" },
-      { role: "user", content: [{ type: "image_url", image_url: { url: late } }] },
-      { role: "assistant", content: "and that" }
-    ]
-    const id = await store.createSession({
-      ...write(messages, { session: { messages, summary: { text: "earlier", from: 3 } } }),
-      title: "t"
-    })
-    const { rows } = await pool.query(
-      "SELECT seq, parts::text AS parts FROM nasi_message WHERE session_id = $1 AND parts IS NOT NULL ORDER BY seq",
-      [id]
-    )
-    const hashOf = (seq: number) => rows.find(row => row.seq === seq).parts.match(/kaja-image:([0-9a-f]+)/)[1] as string
-    const earlyHash = hashOf(0)
-    const lateHash = hashOf(2)
-    const download = spyOn(files, "download")
+    const id = await store.createSession({ ...write(TURN), title: "t" })
+    const download = spyOn(objects, "get")
     try {
-      const loaded = (await store.loadSession(id))!
-      const downloads = download.mock.calls.map(([key]) => String(key))
-      expect(loaded.session.summary).toEqual({ text: "earlier", from: 3 })
-      expect(loaded.session.messages.map(message => message.role)).toEqual(messages.map(message => message.role))
-      expect(loaded.session.messages[3]).toEqual(messages[3])
-      expect(JSON.stringify(loaded.session.messages[1])).toContain(`kaja-image:${earlyHash}`)
-      expect(JSON.stringify(loaded.session.messages[1])).not.toContain("base64,AAAA")
-      expect(downloads.some(key => key.endsWith(earlyHash))).toBe(false)
-      expect(downloads.some(key => key.endsWith(lateHash))).toBe(true)
+      expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
+      expect(download).not.toHaveBeenCalled()
     } finally {
       download.mockRestore()
     }
   })
 
-  test("an inline image goes to object storage, with a reference in the message, and leaves with its session", async () => {
+  test("a session's images live under its prefix from the moment they arrive, and leave with it", async () => {
     const store = createPostgresStore(pool, userId)
-    const id = await store.createSession({ ...write(TURN), title: "t" })
-    const { rows } = await pool.query(
-      "SELECT parts::text AS parts FROM nasi_message WHERE session_id = $1 AND parts IS NOT NULL",
-      [id]
-    )
-    expect(rows).toHaveLength(1)
-    const hash = rows[0].parts.match(/kaja-image:([0-9a-f]+)/)[1]
-    const key = `${sessionImagePrefix(id, userId)}/${hash}`
-    expect((await files.head(key)).contentType).toBe("image/png")
-    expect((await store.loadSession(id))!.session.messages).toEqual(TURN)
+    const id = Bun.randomUUIDv7()
+    const data = noisyPng(2, 2)
+    const { ref, key } = await store.images(id).put({ data, mimeType: "image/png" })
+    expect(key).toStartWith(`${sessionImagePrefix(id, userId)}/`)
+    const messages: Messages = [{ role: "user", content: [{ type: "image_url", image_url: { url: ref } }] }]
+    expect(await store.createSession({ ...write(messages, { session: { id, messages } }), title: "t" })).toBe(id)
+    // images/ is public-read: anyone with the URL gets it, with its type
+    const fetched = await fetch(imageUrl(key!))
+    expect(fetched.status).toBe(200)
+    expect(fetched.headers.get("content-type")).toBe("image/png")
+    expect((await store.images(id).get(ref.slice("kaja-image:".length)))?.data).toEqual(new Uint8Array(data))
 
     await store.deleteSession(id)
-    expect(await files.exists(key)).toBe(false)
+    expect(await objects.exists(key!)).toBe(false)
+  })
+
+  test("an image still inline when a session is saved is stored then, so no row holds its bytes", async () => {
+    const store = createPostgresStore(pool, userId)
+    const inline = `data:image/png;base64,${noisyPng(2, 2).toString("base64")}`
+    const messages: Messages = [{ role: "user", content: [{ type: "image_url", image_url: { url: inline } }] }]
+    const id = await store.createSession({ ...write(messages), title: "t" })
+    const { rows } = await pool.query("SELECT parts::text AS parts FROM nasi_message WHERE session_id = $1", [id])
+    expect(rows[0].parts).toContain("kaja-image:")
+    expect(rows[0].parts).not.toContain("base64")
+    await store.deleteSession(id)
   })
 
   test("a NUL byte in a message (a binary tool result) is dropped instead of failing the save", async () => {

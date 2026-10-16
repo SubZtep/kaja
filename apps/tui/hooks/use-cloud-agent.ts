@@ -3,7 +3,9 @@ import type { NasiClientCall, NasiInfoResponse, NasiToolResult, NasiTurnRequest 
 import { commandArgument } from "@kaja/shared/telegram"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { Approve, Computer } from "../lib/cloud/computer"
+import { fitTurnBody } from "../lib/cloud/turn-body"
 import { getLanguage, t } from "../lib/i18n"
+import { withDescription } from "../lib/image/rows"
 
 /** Same categories `@kaja/nasi`'s categorizeError produces server-side — the server does the actual classification (it's the one that sees the real error), a NasiStreamError just carries its `category` across the wire. Lite never runs categorizeError itself: no local agent tool errors, no raw OpenAI SDK errors to `instanceof`-check, and importing it would pull the openai ability into the lite bundle for nothing. */
 export type CloudErrorCategory = "network" | "tool" | "agent" | "unknown"
@@ -26,10 +28,17 @@ export type CloudTimelineEvent =
   | { type: "user"; text: string }
   | { type: "error"; text: string; category: CloudErrorCategory }
   | { type: "notice"; text: string }
-  | { type: "tool_image"; path: string; mimeType: string }
+  | {
+      type: "tool_image"
+      path: string
+      mimeType: string
+      ref?: string
+      alt?: string
+      description?: string
+    }
   /** A shell command a call on this computer waits to run (only with the opted-in shell). */
   | { type: "confirm_command"; command: string; description: string }
-  | Exclude<NasiStreamEvent, { type: "delta" | "usage" | "tool_image" | "client_tool_calls" }>
+  | Exclude<NasiStreamEvent, { type: "delta" | "usage" | "tool_image" | "image_described" | "client_tool_calls" }>
 
 /** A call on this computer waiting for the user's answer: its prompt, and how to give it. */
 export type LocalApproval = {
@@ -273,7 +282,17 @@ export function useCloudAgent({
         else if (event.type === "client_tool_calls") clientCalls = event.calls
         else if (event.type === "usage") handleUsage(event)
         else if (event.type === "tool_image")
-          handleEvent({ type: "tool_image", path: event.url, mimeType: event.mimeType })
+          handleEvent({
+            type: "tool_image",
+            path: event.url,
+            mimeType: event.mimeType,
+            ...(event.ref ? { ref: event.ref } : {}),
+            ...(event.alt ? { alt: event.alt } : {})
+          })
+        else if (event.type === "image_described") {
+          eventsRef.current = withDescription(eventsRef.current, event.ref, event.description)
+          setEvents(eventsRef.current)
+        }
         // Yolo answers it below, so there's no question to show
         else if (!(yolo && event.type === "confirm_tool")) handleEvent(event)
       }
@@ -289,13 +308,15 @@ export function useCloudAgent({
         // TODO: forward includeThinking (from the thinking preference) once something depends on the request
         // body reflecting it — the stream currently emits reasoning events unconditionally regardless, and
         // display is already gated client-side by the `thinking` prop threaded through Chrome.
-        const gen = client.turn_stream({
-          session: sessionRef.current,
-          ...declared,
-          ...request,
-          language: getLanguage(),
-          personaId: personaIdRef.current
-        })
+        const gen = client.turn_stream(
+          fitTurnBody({
+            session: sessionRef.current,
+            ...declared,
+            ...request,
+            language: getLanguage(),
+            personaId: personaIdRef.current
+          })
+        )
         let next = await gen.next()
         while (!next.done) {
           const event = next.value

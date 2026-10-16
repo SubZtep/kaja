@@ -11,7 +11,7 @@ Translations: edit only the en-GB locale files; never read or edit other languag
 Kaja is a TypeScript monorepo built with Bun:
 
 - **API** (`apps/api`): Hono REST API with Better Auth, PostgreSQL
-- **Images**: session images are never in a database: `@kaja/nasi` store helpers (`saveImages`/`loadImages`/`deleteImages`) put them in files-sdk storage under a per-session prefix (API: Hetzner Object Storage at `images/<userId>/<sessionId>/`; TUI: the fs adapter in `files/` beside the SQLite file). Cloud tool images reach clients as signed URLs from `tool-images/<userId>/`
+- **Images**: never in a database. Each image is normalised and stored the moment it arrives (`@kaja/nasi`'s `NasiStore.images(sessionId)`, nasi's `ObjectStore` under a per-session prefix: API Bun's S3 client on Hetzner Object Storage at `images/<userId>/<sessionId>/`, TUI plain files in `files/` beside the SQLite file; only the normalised copy is kept, with its description as `<id>.json`, and opening an image opens that copy). Messages hold `kaja-image:<id>` refs, even in memory; only a model request gets the bytes. `images/` is public-read (the API sets the bucket policy on boot), so cloud clients and Telegram get plain URLs
 - **Web** (`apps/web`): TanStack Start frontend — public landing + admin portal
 - **TUI** (`apps/tui`): Ink TUI — default talks to the cloud API (`/nasi/*`); `--local` embeds `@kaja/nasi` to run the agent loop locally against your own provider
 - **Widget** (`apps/api/widgets`): embeddable browser chat bundle, built as part of the API build and served by the API at `/widget/<widget-key>.js` (key resolves the persona/mode server-side)
@@ -91,7 +91,7 @@ bun run --filter @kaja/sandbox build
 
 - **Entry**: `core/server.ts` — Hono app, `CronService`
 - **App**: `app.ts` — middleware, route mounts
-- **Core**: `db.ts` (pg Pool; UTC and a 15 s `statement_timeout` per connection), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `csrf.ts` (cookie-session writes must come from `CORS_ORIGIN`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (files-sdk object storage for images: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set), `geo.ts` (IP geolocation for sandboxes), `lock.ts` (`withLock`: in-process per-key serialization, so the API runs as one instance), `env.ts` (parsed `ApiEnvSchema`)
+- **Core**: `db.ts` (pg Pool; UTC and a 15 s `statement_timeout` per connection), `report.ts` (`reportError`), `rate-limit.ts` (global + auth; auto-off under `bun test`), `csrf.ts` (cookie-session writes must come from `CORS_ORIGIN`), `ssr-client-ip.ts` (trusts the web SSR's visitor IP via `SSR_SECRET`), `cron.ts` (hourly marketplace sync), `i18n.ts` (per-call translator over `apps/api/locales/*.toml`, for emails and the Telegram bot; the language is the user's saved `locale`), `files.ts` (the images bucket through `Bun.S3Client`: Hetzner in production, the compose RustFS when `STORAGE_ENDPOINT` is set; public URLs, and the boot-time bucket setup through `@aws-sdk/client-s3`), `geo.ts` (IP geolocation for sandboxes), `lock.ts` (`withLock`: in-process per-key serialization, so the API runs as one instance), `env.ts` (parsed `ApiEnvSchema`)
 - **Features**: `features/auth/`, `features/admin/`, `features/nasi/` (cloud agent), `features/abilities/` (users' ability keys), `features/stats/` (a user's own activity numbers), `features/sandbox/` (sandboxes' WebSocket, routing, users' keys and settings), `features/widget/` + `features/widget-admin/`, `features/telegram/` (the cloud Telegram bot) + `features/telegram-admin/` (plus config, config-export, health, reference); shared logic in `services/`
 - Raw SQL + private row→API mappers; UUIDv7 PKs
 
@@ -176,6 +176,7 @@ Each file only creates; there are no patch migrations, so a schema change until 
 - CLI has a large unit suite under `apps/tui/tests/`
 - CI (`.github/workflows/ci.yaml`): lint (Biome + Tombi, and canonical Tailwind classes), then typecheck, the Docker builds (api with widget, sandbox, web), tests with Postgres + RustFS (after a deploy-style migrate and seed), locale and env/model drift checks, and a TUI compile
 - Separate workflow builds the CLI
+- Docker Scout (`.github/workflows/scout.yaml`) runs on every PR: it builds `apps/sandbox/Dockerfile` (repo root context, the same image the release pushes) into the runner's local image store and comments what the PR changes against the released `subztep/kaja-sandbox:latest` (`compare`, critical and high only, unchanged left out); the full quickview and critical/high CVEs go to the run summary only. Scout only reads images, never builds them, so that build is what the scan needs (`fs://` reads a directory as an SBOM with no base image, which `quickview` rejects). A fork's PR has no secrets and a read-only token, so there it only logs in anonymously and leaves the report in the summary
 
 ## Import Aliases
 

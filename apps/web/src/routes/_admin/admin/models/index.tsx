@@ -50,6 +50,7 @@ const modelFormSchema = z.object({
   model: z.string().min(1, m.models_validation_required()),
   tasks: z.array(z.string()).min(1, m.models_validation_select_task()),
   free: z.boolean(),
+  textOnly: z.boolean(),
   // Blank means detect it from the provider.
   contextWindow: z.string().regex(/^\d*$/, m.models_validation_context_window())
 })
@@ -250,6 +251,7 @@ function ModelsPage() {
       model: string
       tasks: ModelTask[]
       free: boolean
+      images: boolean
       contextWindow: number | null
     }) => apiFetch("/admin/models", { ...payload, enabled: true }).then(r => modelSchema.parse(r)),
     onSuccess: () => {
@@ -313,6 +315,7 @@ function ModelsPage() {
       model: "",
       tasks: ["chat"] as string[],
       free: false,
+      textOnly: false,
       contextWindow: ""
     },
     validators: { onSubmit: modelFormSchema },
@@ -322,6 +325,7 @@ function ModelsPage() {
         model: value.model,
         tasks: value.tasks as ModelTask[],
         free: value.free,
+        images: !value.textOnly,
         contextWindow: Number(value.contextWindow) || null
       })
       formApi.reset()
@@ -515,6 +519,9 @@ function ModelsPage() {
             </modelForm.AppField>
             <modelForm.AppField name="free">
               {field => <field.CheckboxField label={m.models_field_free()} className="sm:col-span-3" />}
+            </modelForm.AppField>
+            <modelForm.AppField name="textOnly">
+              {field => <field.CheckboxField label={m.models_field_text_only()} className="sm:col-span-3" />}
             </modelForm.AppField>
             <Button type="submit" className="justify-self-start sm:col-span-3" loading={createModel.isPending}>
               {m.models_add_model_button()}

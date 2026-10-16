@@ -37,11 +37,12 @@ function visibleEvents(events: TimelineEvent[], toolDisplay: "minimal" | "verbos
 
 // The agent's own words, each set apart; tool lines and notices stay under whatever they follow.
 const SAID: ReadonlySet<DisplayEvent["type"]> = new Set(["message", "final", "ask_user"])
+const TOOL_LINES: ReadonlySet<DisplayEvent["type"]> = new Set(["tool_call", "tool_summary"])
 
 /**
- * Which items get a blank line above: a user message, the agent's first item after it, and each of the agent's words
- * (except straight under the reasoning that led to them), so tool calls and notices stack without gaps. Reasoning
- * hidden by `thinking` doesn't count.
+ * Which items get a blank line above: a user message, the agent's first item after it (unless a tool line), and each of
+ * the agent's words (except straight under the reasoning that led to them), so tool calls and notices stack without
+ * gaps. Reasoning hidden by `thinking` doesn't count.
  */
 function spacing(items: DisplayEvent[], thinking: boolean) {
   let previous: DisplayEvent["type"] | undefined
@@ -49,7 +50,8 @@ function spacing(items: DisplayEvent[], thinking: boolean) {
     const spaced =
       item.type === "user"
         ? previous !== undefined
-        : previous === "user" || (SAID.has(item.type) && previous !== undefined && previous !== "reasoning")
+        : (previous === "user" && !TOOL_LINES.has(item.type)) ||
+          (SAID.has(item.type) && previous !== undefined && previous !== "reasoning")
     if (itemShows(item, thinking)) previous = item.type
     return spaced
   })

@@ -15,7 +15,8 @@
   model    = "grok-4.3"
   provider = "xai"
   tasks    = [
-    "chat"
+    "chat",
+    "vision"
   ]
 
 

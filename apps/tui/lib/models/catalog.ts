@@ -25,7 +25,16 @@ export type CatalogProvider = {
 }
 
 /** The order tasks appear in models.toml. */
-export const TASK_ORDER: ModelTask[] = ["chat", "embedding", "rerank", "image-generation", "tts", "stt", "summarize"]
+export const TASK_ORDER: ModelTask[] = [
+  "chat",
+  "embedding",
+  "rerank",
+  "image-generation",
+  "tts",
+  "stt",
+  "summarize",
+  "vision"
+]
 
 const catalogFile = CatalogFileSchema.parse(TOML.parse(CATALOG_TOML))
 
@@ -92,7 +101,7 @@ function providerTable(provider: CatalogProvider, baseUrl: string): string {
   return lines.join("\n")
 }
 
-// Each task's model: the candidate of the provider picked for it, else the first one.
+// Each task's model: the picked provider's candidate, else the first; vision follows chat's provider when it can see
 function pickedModels(
   candidates: Partial<Record<ModelTask, ModelCandidate[]>>,
   pick: Partial<Record<ModelTask, string>>
@@ -100,7 +109,8 @@ function pickedModels(
   const chosen = new Map<ModelTask, ModelCandidate>()
   for (const task of TASK_ORDER) {
     const options = candidates[task]
-    if (options?.length) chosen.set(task, options.find(option => option.provider === pick[task]) ?? options[0]!)
+    const wanted = pick[task] ?? (task === "vision" ? chosen.get("chat")?.provider : undefined)
+    if (options?.length) chosen.set(task, options.find(option => option.provider === wanted) ?? options[0]!)
   }
   return chosen
 }

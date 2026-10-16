@@ -9,6 +9,7 @@ import { env } from "../../src/core/env"
 import { setNasiChatResolver, setNasiEgressOverride } from "../../src/features/nasi/chat"
 import { createCloudTelegramDriver, type TelegramButton } from "../../src/features/telegram/driver"
 import { abilityService, marketplaceService, secretService } from "../../src/services"
+import { noisyPng } from "../fixtures/images"
 import { cleanupModel, seedModel, signUpAndSignIn } from "./helpers"
 
 // Unique per run, so the assertions only look at this file's rows even on a shared dev database.
@@ -316,7 +317,10 @@ describe("HTTP tools in the cloud", () => {
         async editMessageText(_chatId, messageId, text) {
           edits.push({ id: messageId, text })
         },
-        async sendPhoto() {}
+        async sendPhoto() {
+          return { messageId: 2 }
+        },
+        async editCaption() {}
       }
     })
 
@@ -366,7 +370,9 @@ describe("HTTP tools in the cloud", () => {
         },
         async sendPhoto(_chatId, url, caption) {
           photos.push({ url, caption })
-        }
+          return { messageId: 2 }
+        },
+        async editCaption() {}
       }
     })
 
@@ -382,7 +388,7 @@ describe("HTTP tools in the cloud", () => {
   })
 
   test("a photo sent to the Telegram bot reaches the model with its caption, even one that looks like a command", async () => {
-    const photo = "data:image/jpeg;base64,/9j/4AAQ"
+    const photo = `data:image/png;base64,${noisyPng(2, 2).toString("base64")}`
     const sent = useScript([{ content: "A cat." }])
     const driver = createCloudTelegramDriver({
       resolveLinkedUser: async telegramUserId => (telegramUserId === 1001 ? { userId, locale: null } : undefined),
@@ -391,7 +397,10 @@ describe("HTTP tools in the cloud", () => {
           return { messageId: 1 }
         },
         async editMessageText() {},
-        async sendPhoto() {}
+        async sendPhoto() {
+          return { messageId: 2 }
+        },
+        async editCaption() {}
       }
     })
 
@@ -401,6 +410,10 @@ describe("HTTP tools in the cloud", () => {
       role: "user",
       content: [
         { type: "text", text: "/new" },
+        {
+          type: "text",
+          text: expect.stringMatching(/^\[Image kaja-image:[0-9a-f]{16} \(2×2\): an image the user sent]$/)
+        },
         { type: "image_url", image_url: { url: photo } }
       ]
     })

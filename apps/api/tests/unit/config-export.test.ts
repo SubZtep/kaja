@@ -25,6 +25,7 @@ function makeModel(overrides: Partial<Model> = {}): Model {
     enabled: true,
     free: true,
     contextWindow: null,
+    images: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastUsedAt: null,
@@ -53,6 +54,14 @@ describe("renderModelsToml", () => {
     expect(parsed.models["minimax-m3"]?.tasks).toEqual(["chat", "summarize"])
     // The second model lost chat to the first, so it only lists the task it wins.
     expect(parsed.models["chat-model"]?.tasks).toEqual(["embedding"])
+  })
+
+  test("a text-only model says images = false; one that sees leaves it out", () => {
+    const blind = makeModel({ id: "m1", model: "blind/chat", tasks: ["chat"], images: false })
+    const sees = makeModel({ id: "m2", model: "sees/describer", tasks: ["vision"] })
+    const parsed = ModelsFileSchema.parse(TOML.parse(renderModelsToml([makeProvider()], [blind, sees])))
+    expect(parsed.models.chat?.images).toBe(false)
+    expect(parsed.models.describer?.images).toBeUndefined()
   })
 
   test("omits models from disabled providers or disabled models", () => {

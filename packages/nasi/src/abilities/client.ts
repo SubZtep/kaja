@@ -1,7 +1,11 @@
 import type { NasiClientSkill, NasiClientTool, NasiToolResult } from "@kaja/schema/nasi"
-import type { Session } from "../agent/agent"
+import type { Agent, Session } from "../agent/agent"
+import { altFrom, type ImageParts, storeImage } from "../agent/images"
 import { recordCall } from "../agent/telemetry"
-import { type Tool, tool } from "../agent/tools"
+import { type Tool, tool, toolName } from "../agent/tools"
+import { withImageNote } from "../images/parts"
+import { imageRefId } from "../store/images"
+import { viewLinkedImageTool } from "../tools/builtin/view-image"
 import type { ToolGroup } from "../tools/registry"
 import type { AbilityStore } from "./types"
 
@@ -37,6 +41,11 @@ export function clientToolGroups(client: NasiClient): ToolGroup[] {
       }),
       runsOnClient: true
     }
+    // view_image's files are on the computer, the conversation's own images (by link) here.
+    if (!declared.ability && declared.name === toolName(viewLinkedImageTool)) {
+      stub.execute = viewLinkedImageTool.execute
+      stub.runsOnClient = (args: Record<string, unknown>) => !imageRefId(typeof args.path === "string" ? args.path : "")
+    }
     byAbility.set(declared.ability, [...(byAbility.get(declared.ability) ?? []), stub])
   }
   return [...byAbility].map(([ability, tools]) =>
@@ -70,22 +79,34 @@ export function withClientAbilities(store: AbilityStore, client: NasiClient): Ab
 
 /**
  * Answers the calls the session waits on with the client's results, in the order the model made them; a call without
- * one gets {@link CLIENT_GONE}. Images follow as one user message, since a tool message can't carry them. Each call's
- * status is recorded as the client reports it (a missing one as skipped).
+ * one gets {@link CLIENT_GONE}. Images (normalised and kept here too: the client is untrusted, so the bytes decide what
+ * they are) follow as one user message, since a tool message can't carry them; one that can't be used leaves a note in
+ * its call's text. Each call's status is recorded as the client reports it (a missing one as skipped).
  */
-export function answerClientCalls(session: Session, results: NasiToolResult[] = []): void {
+export async function answerClientCalls(agent: Agent, session: Session, results: NasiToolResult[] = []): Promise<void> {
   const pending = session.pendingClientCalls
   if (!pending?.length) return
   const byId = new Map(results.map(result => [result.id, result]))
-  const images: string[] = []
-  for (const id of pending) {
-    const result = byId.get(id)
-    session.messages.push({ role: "tool", tool_call_id: id, content: result?.text ?? CLIENT_GONE })
+  // Every call's images are kept alongside the others, then the answers go to the session in the order the model made them.
+  const answered = await Promise.all(
+    pending.map(async id => {
+      const result = byId.get(id)
+      const alt = altFrom(result?.text, "an image from the user's computer")
+      const kept = await Promise.all(
+        (result?.images ?? []).map(image => storeImage(agent, session, Buffer.from(image.data, "base64"), alt))
+      )
+      return { id, result, kept }
+    })
+  )
+  const parts: ImageParts[number][] = []
+  for (const { id, result, kept } of answered) {
+    const refused = kept.flatMap(image => ("error" in image ? [image.error] : []))
+    const text = result ? withImageNote(result.text, refused) : CLIENT_GONE
+    session.messages.push({ role: "tool", tool_call_id: id, content: text })
     const status = result ? (result.status ?? "ok") : "skipped"
     recordCall(session, id, status === "declined" ? { status, approval: "declined" } : { status })
-    for (const image of result?.images ?? []) images.push(`data:${image.mimeType};base64,${image.data}`)
+    parts.push(...kept.flatMap(image => ("parts" in image ? image.parts : [])))
   }
-  if (images.length)
-    session.messages.push({ role: "user", content: images.map(url => ({ type: "image_url", image_url: { url } })) })
+  if (parts.length) session.messages.push({ role: "user", content: parts })
   session.pendingClientCalls = undefined
 }

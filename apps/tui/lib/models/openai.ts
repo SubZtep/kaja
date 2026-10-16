@@ -8,6 +8,7 @@ export { createOpenAIClient } from "@kaja/nasi"
 const modelsFile = await loadModelsFile()
 const chatEntry = resolveActiveModel(modelsFile, "chat")
 const summarizeEntry = resolveActiveModel(modelsFile, "summarize")
+const visionEntry = resolveActiveModel(modelsFile, "vision")
 export const isFreeChat = !chatEntry
 
 // chatEntry is only undefined when isFreeChat is true, which every caller of chatModelId/client
@@ -32,6 +33,9 @@ export const summarizer = summarizeEntry && {
   model: summarizeEntry.model,
   contextWindow: summarizeEntry.contextWindow
 }
+
+/** The first model listing vision in models.toml, which describes the images a conversation gets; unset, images keep their alt text. */
+export const describer = visionEntry && { client: clientForModel(visionEntry), model: visionEntry.model }
 
 // Read leniently: config() exits when settings.toml is missing, and this module loads before any config guard (e.g. in cloud mode).
 const compactSetting = (await readConfigLoose()).context?.compact_at

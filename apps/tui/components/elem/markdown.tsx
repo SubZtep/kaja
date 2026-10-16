@@ -161,6 +161,12 @@ export function splitSegments(source: string): Segment[] {
   return segments
 }
 
+// A reply's image; a kaja-image: link nasi hasn't placed yet (a reply still streaming) is just its alt text.
+function ReplyImage({ href, alt }: Readonly<{ href: string; alt: string }>) {
+  if (href.startsWith("kaja-image:")) return <Text dimColor>{alt || "[image]"}</Text>
+  return <TerminalImage href={href} alt={alt} />
+}
+
 // memo() so scroll ticks (which re-render mounted subtrees) skip items
 // whose text is unchanged entirely.
 export default memo(function Markdown({ children }: { children: string }) {
@@ -175,7 +181,7 @@ export default memo(function Markdown({ children }: { children: string }) {
         segment.type === "text" ? (
           <Text key={segmentKey(segment, i)}>{rendered[i]!.text}</Text>
         ) : (
-          <TerminalImage key={segmentKey(segment, i)} href={segment.href} alt={segment.alt} />
+          <ReplyImage key={segmentKey(segment, i)} href={segment.href} alt={segment.alt} />
         )
       )}
     </Box>

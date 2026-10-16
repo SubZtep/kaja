@@ -97,7 +97,8 @@ export function resolveModels(data: ResolvedModelsFile): CliResolvedModel[] {
       baseUrl: provider.base_url,
       apiKey: provider.api_key,
       provider: entry.provider,
-      ...(entry.context_window ? { contextWindow: entry.context_window } : {})
+      ...(entry.context_window ? { contextWindow: entry.context_window } : {}),
+      ...(entry.images === false ? { images: false } : {})
     }))
   })
 }

@@ -75,6 +75,11 @@ function datasetInstructions(topic: string, label: string) {
   )
 }
 
+const IMAGE_INSTRUCTIONS =
+  "Images in this conversation are labelled [Image kaja-image:<id> (width×height): what it shows]. Call view_image " +
+  "with an image's kaja-image: link to look at it again. An image a tool returned is already shown to the user; to " +
+  "show one again (say, one the user sent earlier), put ![a short description](kaja-image:<id>) in your reply."
+
 const RUN_COMMAND_INSTRUCTIONS =
   `Use ${RUN_COMMAND_TOOL} to run a shell command on the user's computer — ` +
   `e.g. playing a sound, converting a file, checking installed tools. Set ` +
@@ -272,6 +277,7 @@ export async function buildSystemPrompt(agent: Agent, owner: string | null = LOC
         ? `## Tool contract: ${RUN_COMMAND_TOOL}\n${RUN_COMMAND_INSTRUCTIONS}`
         : undefined,
       hasMemory ? `## Tool contract: memory\n${MEMORY_INSTRUCTIONS}` : undefined,
+      toolNames.has("view_image") ? `## Images\n${IMAGE_INSTRUCTIONS}` : undefined,
       personasBlock ? `## Personas\n${personasBlock}` : undefined,
       skillsBlock ? `## Skills\n${skillsBlock}` : undefined,
       ...stickySkills,

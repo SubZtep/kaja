@@ -1,13 +1,14 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
-import { file } from "bun"
 import OpenAI from "openai"
 import type {
   ChatCompletionChunk,
   ChatCompletionMessageParam,
   ChatCompletionMessageToolCall
 } from "openai/resources/chat/completions"
+import { withImageNote } from "../images/parts"
 import { takeLastServedModel } from "../models/client"
 import { lowerContextWindow, resolveContextWindow } from "../models/context-window"
+import { resolveImageLinks, type SessionImages } from "../store/images"
 import {
   type Agent,
   type AgentEvent,
@@ -16,7 +17,8 @@ import {
   type ClientCall,
   RUN_COMMAND_TOOL,
   type Session,
-  SWITCH_PERSONA_TOOL
+  SWITCH_PERSONA_TOOL,
+  seesImages
 } from "./agent"
 import { DEFAULT_SAFE_PATTERNS, isSafeCommand } from "./command-risk"
 import {
@@ -27,7 +29,18 @@ import {
   estimateTokens,
   isContextOverflow
 } from "./compaction"
+import { applyDescriptions } from "./describe"
 import { ModelUnavailableError } from "./errors"
+import {
+  altFrom,
+  type ImageParts,
+  type PromptImage,
+  resetImageCache,
+  resolveImageRefs,
+  sessionImagesFor,
+  storeImage,
+  withoutImageParts
+} from "./images"
 import { personaTools, syncPersonaTools } from "./persona-tools"
 import { runShellCommand } from "./run-command"
 import { applyPersonaToMessages, buildSystemPrompt, refreshAbilitiesInPrompt } from "./system-prompt"
@@ -103,42 +116,67 @@ async function* handleSwitchPersonaCall(
   record(call.id, { status: target ? "ok" : "error" })
 }
 
-async function* handleToolCall(
-  agent: Agent,
-  toolsByName: Map<string, Tool>,
+/** Answers a call that never ran with the reason why, as the model sees it. */
+function toolCallFailed(
   messages: ChatCompletionMessageParam[],
-  owner: string | null,
   call: FunctionToolCall,
   record: RecordCall,
-  onModelCall: (usage: ModelCallUsage) => void
+  content: string
+): void {
+  messages.push({ role: "tool", tool_call_id: call.id, content })
+  record(call.id, { status: "error" })
+}
+
+/** A call's images as the turn's: an event and a user message each, so the session keeps them; the ones that couldn't be kept are noted in the call's text. */
+function* yieldStoredImages(
+  stored: Awaited<ReturnType<typeof storeImage>>[],
+  alt: string,
+  messages: ChatCompletionMessageParam[]
+): Generator<AgentEvent, void, void> {
+  for (const image of stored) {
+    if ("error" in image) continue
+    const { ref, key, mimeType } = image
+    yield { type: "tool_image", ref, mimeType, alt, ...(key ? { key } : {}) }
+    messages.push({ role: "user", content: image.parts })
+  }
+}
+
+async function* handleToolCall(
+  agent: Agent,
+  messages: ChatCompletionMessageParam[],
+  owner: string | null,
+  toolsByName: Map<string, Tool>,
+  call: FunctionToolCall,
+  {
+    session,
+    record,
+    onModelCall
+  }: { session: Session; record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
 ): AsyncGenerator<AgentEvent, void, void> {
   yield { type: "tool_call", name: call.function.name, arguments: call.function.arguments }
   const t = toolsByName.get(call.function.name)
   if (!t) {
     // A tool another persona has (the model may remember it from before a switch) gets a reason, not "unknown".
     const elsewhere = agent.tools.some(other => toolName(other) === call.function.name)
-    const content = elsewhere
-      ? `Error: "${call.function.name}" isn't available to the current persona (${agent.personaId}).`
-      : `Error: unknown tool "${call.function.name}"`
-    messages.push({ role: "tool", tool_call_id: call.id, content })
-    record(call.id, { status: "error" })
+    toolCallFailed(
+      messages,
+      call,
+      record,
+      elsewhere
+        ? `Error: "${call.function.name}" isn't available to the current persona (${agent.personaId}).`
+        : `Error: unknown tool "${call.function.name}"`
+    )
     return
   }
   const args = parseToolArgs(call.function.arguments)
   if (args === null) {
-    messages.push({
-      role: "tool",
-      tool_call_id: call.id,
-      content: "Invalid JSON in tool arguments."
-    })
-    record(call.id, { status: "error" })
+    toolCallFailed(messages, call, record, "Invalid JSON in tool arguments.")
     return
   }
   // Arguments that don't fit the tool's schema go back to the model to fix, like invalid JSON, instead of reaching execute.
   const checked = checkToolArgs(t, args)
   if (!checked.ok) {
-    messages.push({ role: "tool", tool_call_id: call.id, content: checked.error })
-    record(call.id, { status: "error" })
+    toolCallFailed(messages, call, record, checked.error)
     return
   }
   const startedAt = performance.now()
@@ -148,6 +186,7 @@ async function* handleToolCall(
       owner,
       personaId: agent.personaId,
       store: agent.store,
+      images: sessionImagesFor(agent, session),
       onModelCall
     })
   } catch (error) {
@@ -164,17 +203,13 @@ async function* handleToolCall(
     return
   }
 
-  messages.push({ role: "tool", tool_call_id: call.id, content: result.text })
+  // Stored as they arrive, so the message holds a ref (and a label, what the tool said, until it's described); one that can't be used becomes a note.
+  const alt = altFrom(result.text, `an image from ${call.function.name}`)
+  const images = await Promise.all((result.images ?? []).map(image => storeImage(agent, session, image.data, alt)))
+  const refused = images.flatMap(image => ("error" in image ? [image.error] : []))
+  messages.push({ role: "tool", tool_call_id: call.id, content: withImageNote(result.text, refused) })
   if (result.displayImage) yield { type: "display_image", ...result.displayImage }
-  for (const image of result.images ?? []) {
-    yield { type: "tool_image", path: image.path, mimeType: image.mimeType }
-    const data = await file(image.path).arrayBuffer()
-    const base64 = Buffer.from(data).toString("base64")
-    messages.push({
-      role: "user",
-      content: [{ type: "image_url", image_url: { url: `data:${image.mimeType};base64,${base64}` } }]
-    })
-  }
+  yield* yieldStoredImages(images, alt, messages)
 }
 
 type StreamedRound = {
@@ -261,18 +296,33 @@ async function* streamRound(
   }
 }
 
-function pushPromptToMessages(session: Session, prompt: string, images: string[]): void {
+type PromptPart = ImageParts[number]
+
+function pushPromptToMessages(session: Session, prompt: string, images: PromptPart[]): void {
   pushPromptText(session, prompt, images)
   // A tool result can't carry an image, so one sent with an answer follows as its own user message
   if (images.length > 0 && session.messages.at(-1)?.role === "tool")
-    session.messages.push({ role: "user", content: images.map(imagePart) })
+    session.messages.push({ role: "user", content: images })
 }
 
-function imagePart(url: string) {
-  return { type: "image_url" as const, image_url: { url } }
+// The prompt's images, stored, each with its label; one that can't be read becomes a note, so the model knows something was sent.
+async function promptImageParts(agent: Agent, session: Session, images: PromptImage[]): Promise<PromptPart[]> {
+  // An approved tool's images carry what it said about them; anything else is the user's
+  const stored = await Promise.all(
+    images.map(image =>
+      typeof image === "object" && "alt" in image
+        ? storeImage(agent, session, image.data, image.alt)
+        : storeImage(agent, session, image, "an image the user sent")
+    )
+  )
+  return stored.flatMap(image =>
+    "parts" in image
+      ? image.parts
+      : [{ type: "text" as const, text: `[An image was sent here, but it can't be shown: ${image.error}.]` }]
+  )
 }
 
-function pushPromptText(session: Session, prompt: string, images: string[]): void {
+function pushPromptText(session: Session, prompt: string, images: PromptPart[]): void {
   if (session.pendingAskUserId) {
     session.messages.push({
       role: "tool",
@@ -296,7 +346,7 @@ function pushPromptText(session: Session, prompt: string, images: string[]): voi
     session.pendingToolApprovalId = undefined
   } else if (images.length > 0) {
     const text = prompt ? [{ type: "text" as const, text: prompt }] : []
-    session.messages.push({ role: "user", content: [...text, ...images.map(imagePart)] })
+    session.messages.push({ role: "user", content: [...text, ...images] })
   } else {
     session.messages.push({ role: "user", content: prompt })
   }
@@ -334,7 +384,11 @@ async function* handleToolCalls(
   toolsByName: Map<string, Tool>,
   toolCalls: ChatCompletionMessageToolCall[],
   granted: readonly string[] | undefined,
-  { record, onModelCall }: { record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
+  {
+    session,
+    record,
+    onModelCall
+  }: { session: Session; record: RecordCall; onModelCall: (usage: ModelCallUsage) => void }
 ): AsyncGenerator<AgentEvent, RoundPauses, void> {
   let ask: { id: string; question: string; note?: string } | undefined
   let confirm: { id: string; command: string; description: string } | undefined
@@ -378,7 +432,7 @@ async function* handleToolCalls(
       continue
     }
 
-    yield* handleToolCall(agent, toolsByName, messages, owner, call, record, onModelCall)
+    yield* handleToolCall(agent, messages, owner, toolsByName, call, { session, record, onModelCall })
   }
   return settlePauses(messages, record, { ask, confirm, approval, clientCalls })
 }
@@ -568,7 +622,7 @@ async function openTurn(
   session: Session,
   prompt: string | undefined,
   owner: string | null,
-  images: string[]
+  images: PromptImage[]
 ): Promise<void> {
   const messages = session.messages
   if (messages.length === 0) {
@@ -577,7 +631,7 @@ async function openTurn(
   } else {
     await refreshAbilitiesInPrompt(agent, messages, owner)
   }
-  if (prompt !== undefined) pushPromptToMessages(session, prompt, images)
+  if (prompt !== undefined) pushPromptToMessages(session, prompt, await promptImageParts(agent, session, images))
 }
 
 // Records the telemetry step for the round whose message was just appended.
@@ -632,8 +686,15 @@ async function* streamRoundFitting(
   definitions: import("openai/resources/chat/completions").ChatCompletionTool[],
   estimateScale: number
 ): AsyncGenerator<AgentEvent, StreamedRound, void> {
+  // A model that can't see gets the images' labels only, so it waits for their descriptions; one that can gets those written so far.
+  const sees = seesImages(agent)
+  async function* sendable(): AsyncGenerator<AgentEvent, ChatCompletionMessageParam[], void> {
+    yield* described(await applyDescriptions(session, !sees))
+    const messages = contextMessages(session)
+    return sees ? await resolveImageRefs(agent, session, messages) : withoutImageParts(messages)
+  }
   try {
-    return yield* streamRound(agent, contextMessages(session), definitions)
+    return yield* streamRound(agent, yield* sendable(), definitions)
   } catch (error) {
     if (!(error instanceof ModelUnavailableError && error.contextOverflow)) throw error
     const sent = Math.round(estimateTokens(contextMessages(session), definitions) * estimateScale)
@@ -642,7 +703,7 @@ async function* streamRoundFitting(
     const entry = agent.models?.find(m => m.task === "chat" && m.model === agent.model)
     if (entry) lowerContextWindow(entry, smaller)
     if (!(yield* compactIfNeeded(agent, session, definitions, estimateScale, true))) throw error
-    return yield* streamRound(agent, contextMessages(session), definitions)
+    return yield* streamRound(agent, yield* sendable(), definitions)
   }
 }
 
@@ -678,7 +739,8 @@ function countFailingRounds(session: Session, toolCalls: { id: string }[], previ
 /**
  * Runs an {@link Agent} on a prompt to completion, looping through
  * tool calls until the model asks the user a question or returns a final message.
- * `images` (data URLs) go to the model with the prompt, e.g. a photo sent to a bot. Without a prompt it carries on from
+ * `images` (data URLs or bytes, normalised here) go to the model with the prompt, e.g. a photo sent to a bot or what an
+ * approved tool returned. Without a prompt it carries on from
  * the session as it is, e.g. after the client's tool results were added (see `answerClientCalls`).
  */
 export async function* run(
@@ -686,7 +748,41 @@ export async function* run(
   prompt: string | undefined,
   session: Session,
   owner: string | null = LOCAL_OWNER,
-  images: string[] = []
+  images: PromptImage[] = []
+): AsyncGenerator<AgentEvent, void, void> {
+  const stored = sessionImagesFor(agent, session)
+  try {
+    for await (const event of runTurn(agent, prompt, session, owner, images)) yield placeImageLinks(event, stored)
+    // A blind model's session waits for its descriptions; one that sees takes those written so far, the rest next turn.
+    yield* described(await applyDescriptions(session, !seesImages(agent)))
+  } finally {
+    // An early end takes what's written so far; the rest are still kept beside their images.
+    await applyDescriptions(session, false)
+    // Dropped as the run ends, not as the next starts, so what a host stored just before it (a client's results) stays
+    resetImageCache(session)
+  }
+}
+
+// A reply's `kaja-image:` links as where its images open, so every host gets them placed; the session keeps the refs.
+function placeImageLinks(event: AgentEvent, images: SessionImages): AgentEvent {
+  const place = (text: string) => resolveImageLinks(text, id => images.location(id))
+  if (event.type === "message") return { ...event, content: place(event.content) }
+  if (event.type === "final" && event.content) return { ...event, content: place(event.content) }
+  if (event.type === "ask_user") return { ...event, question: place(event.question) }
+  return event
+}
+
+// The descriptions just put into labels, as events for the hosts' image rows.
+function* described(descriptions: { ref: string; description: string }[]): Generator<AgentEvent, void, void> {
+  for (const { ref, description } of descriptions) yield { type: "image_described", ref, description }
+}
+
+async function* runTurn(
+  agent: Agent,
+  prompt: string | undefined,
+  session: Session,
+  owner: string | null,
+  images: PromptImage[]
 ): AsyncGenerator<AgentEvent, void, void> {
   const messages = session.messages
   await syncPersonaTools(agent)
@@ -738,6 +834,7 @@ export async function* run(
       message.tool_calls,
       session.grantedTools,
       {
+        session,
         record: (callId, stat) => recordCall(session, callId, stat),
         onModelCall: usage => recordModelCall(session, { kind: "summarize", ...usage })
       }

@@ -51,7 +51,8 @@
                     "embedding",
                     "image-generation",
                     "rerank",
-                    "summarize"
+                    "summarize",
+                    "vision"
                   ]
                 },
                 "model": {
@@ -103,7 +104,8 @@
                 "embedding",
                 "image-generation",
                 "rerank",
-                "summarize"
+                "summarize",
+                "vision"
               ]
             },
             "additionalProperties": {

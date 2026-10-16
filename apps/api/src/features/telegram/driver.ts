@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto"
 import {
+  type AgentEvent,
   categorizeError,
+  dataUrlBytes,
   type FinalizedAgentEvent,
   isImageRejection,
   type NasiTurnInput,
@@ -12,12 +14,12 @@ import { isPublicHttpUrl } from "@kaja/shared/net"
 import { commandArgument, compactedLine, escapeHtml, isCommand, openReply, type Reply } from "@kaja/shared/telegram"
 import { withQuestion } from "@kaja/shared/text"
 import { pool } from "../../core/db"
+import { imageUrl, objects } from "../../core/files"
 import type { Translate } from "../../core/i18n"
 import { withLock } from "../../core/lock"
 import { reportError } from "../../core/report"
 import { openNasiFor, pinnedModelFor } from "../nasi/chat"
 import { createPostgresStore } from "../nasi/pg-store"
-import { toolImageUrl } from "../nasi/tool-image"
 import { type BotLanguage, botLanguage } from "./language"
 
 const TOOL_CALLBACK = /^tool:(approve|approve_session|decline):([0-9a-f]{16})$/
@@ -42,7 +44,9 @@ export type TelegramSender = {
   sendMessage(chatId: number, text: string, rows?: TelegramButton[][]): Promise<{ messageId: number }>
   editMessageText(chatId: number, messageId: number, text: string, rows?: TelegramButton[][]): Promise<void>
   /** Sends a photo by URL (Telegram fetches it) or as the image's bytes, with an optional plain-text caption. */
-  sendPhoto(chatId: number, photo: string | Uint8Array, caption?: string): Promise<void>
+  sendPhoto(chatId: number, photo: string | Uint8Array, caption?: string): Promise<{ messageId: number }>
+  /** Replaces a sent photo's caption (a tool image's alt text, once its description is written). */
+  editCaption(chatId: number, messageId: number, caption: string): Promise<void>
 }
 
 export type CloudTelegramDriverConfig = {
@@ -77,24 +81,25 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     }
   }
 
-  /** A tool's image file (only there during the turn) as a photo: by its signed storage URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
-  async function sendToolImage(
-    chatId: number,
-    userId: string,
-    sessionId: string | undefined,
-    path: string,
-    mimeType: string
-  ) {
+  /** A tool's image as a photo: by its public URL, or as bytes when Telegram can't fetch that (the local dev storage, say); a failed send is logged, never ends the turn. */
+  async function sendToolImage(chatId: number, image: { ref: string; key?: string; alt: string }) {
     try {
-      const url = await toolImageUrl(userId, sessionId, path, mimeType)
-      if (isPublicHttpUrl(url)) return await sender.sendPhoto(chatId, url)
-    } catch (error) {
-      console.warn("Telegram tool image by URL failed, sending the bytes", { error })
-    }
-    try {
-      await sender.sendPhoto(chatId, new Uint8Array(await Bun.file(path).arrayBuffer()))
+      if (image.key && isPublicHttpUrl(imageUrl(image.key)))
+        return await sender.sendPhoto(chatId, imageUrl(image.key), image.alt)
+      const bytes = image.key ? await objects.get(image.key) : dataUrlBytes(image.ref)
+      if (bytes) return await sender.sendPhoto(chatId, bytes, image.alt)
     } catch (error) {
       console.warn("Telegram tool image send failed", { error })
+    }
+  }
+
+  /** A tool image's description, written after its photo went out, becomes the photo's caption. */
+  async function describePhoto(chatId: number, messageId: number | undefined, description: string) {
+    if (messageId === undefined) return
+    try {
+      await sender.editCaption(chatId, messageId, description)
+    } catch (error) {
+      console.warn("Telegram caption edit failed", { error })
     }
   }
 
@@ -126,9 +131,9 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
   async function handleFinalizedEvent(
     reply: Reply,
     chatId: number,
-    turn: { userId: string; sessionId: string | undefined },
     event: FinalizedAgentEvent,
-    language: BotLanguage
+    language: BotLanguage,
+    photos: Map<string, number>
   ): Promise<boolean> {
     if (event.type === "ask_user") {
       await reply.finish(withQuestion(reply.streamed, event.question))
@@ -143,8 +148,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
       return true
     }
     if (event.type === "compacted") await sender.sendMessage(chatId, compactedLine(event, language.t))
-    else if (event.type === "tool_image")
-      await sendToolImage(chatId, turn.userId, turn.sessionId, event.path, event.mimeType)
+    else if (event.type === "tool_image") {
+      const sent = await sendToolImage(chatId, event)
+      if (sent) photos.set(event.ref, sent.messageId)
+    } else if (event.type === "image_described") await describePhoto(chatId, photos.get(event.ref), event.description)
     return false
   }
 
@@ -197,6 +204,27 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     )
   }
 
+  /** Reads a turn's events to the end, handling each as it arrives. */
+  async function readTurn(
+    turn: AsyncIterable<AgentEvent>,
+    chatId: number,
+    reply: Reply,
+    language: BotLanguage
+  ): Promise<void> {
+    let ended = false
+    const photos = new Map<string, number>()
+    for await (const event of turn) {
+      // Read to the end after the reply too: the turn saves when the generator finishes, and late descriptions caption photos
+      if (ended && event.type !== "image_described") continue
+      if (event.type === "delta") {
+        if (event.channel === "content") reply.append(event.text)
+        continue
+      }
+      if (event.type === "usage") continue
+      ended = (await handleFinalizedEvent(reply, chatId, event, language, photos)) || ended
+    }
+  }
+
   async function runTurnLocked(
     ownerUserId: string,
     owner: string,
@@ -208,8 +236,10 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
     const reply = await openReply({
       send: text => sender.sendMessage(chatId, text),
       edit: (messageId, text) => sender.editMessageText(chatId, messageId, text),
-      sendPhoto: (url: string, caption) => sender.sendPhoto(chatId, url, caption),
-      // Public URLs only, never a server path
+      sendPhoto: async (url: string, caption) => {
+        await sender.sendPhoto(chatId, url, caption)
+      },
+      // Public URLs only, never a server path (nasi has placed this conversation's images at theirs)
       photoSource: src => (isPublicHttpUrl(src) ? src : undefined),
       emptyReply: language.t("telegram.emptyResponse"),
       warn: (message, error) => console.warn(message, { error })
@@ -226,23 +256,7 @@ export function createCloudTelegramDriver(config: CloudTelegramDriverConfig) {
         channelInstruction: TELEGRAM_CHANNEL_INSTRUCTION
       })
       try {
-        let ended = false
-        for await (const event of nasi.turn({ session: resumeRow?.id, ...input })) {
-          // Read to the end even after the reply is out: the turn is only saved once the generator finishes.
-          if (ended) continue
-          if (event.type === "delta") {
-            if (event.channel === "content") reply.append(event.text)
-            continue
-          }
-          if (event.type === "usage") continue
-          ended = await handleFinalizedEvent(
-            reply,
-            chatId,
-            { userId: ownerUserId, sessionId: resumeRow?.id },
-            event,
-            language
-          )
-        }
+        await readTurn(nasi.turn({ session: resumeRow?.id, ...input }), chatId, reply, language)
       } finally {
         await nasi.close()
       }

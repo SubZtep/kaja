@@ -1,23 +1,21 @@
 import {
-  attachImages,
   clearTelemetry,
   type DatasetAnswer,
-  deleteImages,
-  detachImages,
   joinConversation,
-  loadImages,
   type MessageRow,
   type NasiStore,
+  objectSessionImages,
   type PendingKind,
   type SessionWrite,
-  saveImages,
+  sessionIdOf,
   sessionImagePrefix,
-  splitConversation
+  splitConversation,
+  storeInlineImages
 } from "@kaja/nasi"
 import type { MemoryNote, MemoryStore, PersistedSession, SessionMeta } from "@kaja/schema/store"
 import { channelOf, PersistedSessionSchema } from "@kaja/schema/store"
 import type { Pool, PoolClient } from "pg"
-import { files } from "../../core/files"
+import { objects } from "../../core/files"
 import { reportError } from "../../core/report"
 
 function ownerKey(owner: string | null): string {
@@ -45,8 +43,8 @@ type SessionRow = {
 const SESSION_COLUMNS =
   "id, created_at, updated_at, persona, model, title, owner, system_prompt, pending_call_id, pending_kind, granted_tools"
 
-/** Rebuilds a session from its rows. The cloud keeps no timeline, so `events` is always empty. */
-async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<PersistedSession | undefined> {
+/** Rebuilds a session from its rows (images stay refs: a model request fetches the ones it sends). The cloud keeps no timeline, so `events` is always empty. */
+async function hydrate(db: Pool, row: SessionRow): Promise<PersistedSession | undefined> {
   const [messages, calls, summary] = await Promise.all([
     db.query(
       "SELECT role, content, parts, reasoning, tool_call_id FROM nasi_message WHERE session_id = $1 ORDER BY seq",
@@ -64,15 +62,7 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
     )
   ])
   const latest = summary.rows[0]
-  // summary_from is the first message seq the summary does not cover. The prompt uses the summary instead of those
-  // messages, so their image bytes are not downloaded. The rows stay, which keeps compaction's indexes.
-  const coveredUntil = latest ? Number(latest.summary_from) : 0
   const callsBySeq = Map.groupBy(calls.rows, call => call.seq as number)
-  const images = await loadImages(
-    files,
-    sessionImagePrefix(row.id, userId),
-    messages.rows.map((message, seq) => (seq < coveredUntil ? null : message.parts))
-  )
   const parsed = PersistedSessionSchema.safeParse({
     id: row.id,
     createdAt: iso(row.created_at),
@@ -81,27 +71,31 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
     model: row.model,
     title: row.title,
     owner: row.owner,
-    session: joinConversation({
-      systemPrompt: row.system_prompt,
-      pending: row.pending_call_id && row.pending_kind ? { callId: row.pending_call_id, kind: row.pending_kind } : null,
-      summary: latest ? { text: latest.summary, from: latest.summary_from } : null,
-      grantedTools: row.granted_tools,
-      toolSummaries: Object.fromEntries(
-        calls.rows.filter(call => call.result_summary !== null).map(call => [call.call_id, call.result_summary])
-      ),
-      messages: messages.rows.map((message, seq) => ({
-        role: message.role,
-        content: message.content,
-        parts: seq < coveredUntil ? message.parts : attachImages(message.parts, images),
-        reasoning: message.reasoning,
-        toolCallId: message.tool_call_id,
-        toolCalls: (callsBySeq.get(seq) ?? []).map(call => ({
-          callId: call.call_id,
-          name: call.name,
-          arguments: call.arguments
+    session: {
+      id: row.id,
+      ...joinConversation({
+        systemPrompt: row.system_prompt,
+        pending:
+          row.pending_call_id && row.pending_kind ? { callId: row.pending_call_id, kind: row.pending_kind } : null,
+        summary: latest ? { text: latest.summary, from: latest.summary_from } : null,
+        grantedTools: row.granted_tools,
+        toolSummaries: Object.fromEntries(
+          calls.rows.filter(call => call.result_summary !== null).map(call => [call.call_id, call.result_summary])
+        ),
+        messages: messages.rows.map((message, seq) => ({
+          role: message.role,
+          content: message.content,
+          parts: message.parts,
+          reasoning: message.reasoning,
+          toolCallId: message.tool_call_id,
+          toolCalls: (callsBySeq.get(seq) ?? []).map(call => ({
+            callId: call.call_id,
+            name: call.name,
+            arguments: call.arguments
+          }))
         }))
-      }))
-    }),
+      })
+    },
     events: []
   })
   if (parsed.success) return parsed.data
@@ -110,14 +104,16 @@ async function hydrate(db: Pool, userId: string, row: SessionRow): Promise<Persi
   return undefined
 }
 
+const sessionImages = (userId: string, sessionId: string) =>
+  objectSessionImages(objects, sessionImagePrefix(sessionId, userId))
+
 // Postgres text can't hold a NUL byte; a tool that returned binary data (a fetched image, say) would fail the whole turn's save
 const pgText = (text: string | null | undefined) => text?.replaceAll("\0", "") ?? null
 
 async function insertMessage(client: PoolClient, userId: string, sessionId: string, seq: number, row: MessageRow) {
   const id = Bun.randomUUIDv7()
-  // Inline images go to object storage, once per session; the message keeps a reference to each.
-  const { parts, images } = detachImages(row.parts)
-  await saveImages(files, sessionImagePrefix(sessionId, userId), images)
+  // Images were stored when they arrived; one still inline (a run without the store) is stored now, never put in a row.
+  const parts = await storeInlineImages(row.parts, sessionImages(userId, sessionId))
   await client.query(
     `INSERT INTO nasi_message (id, session_id, seq, role, content, parts, reasoning, tool_call_id,
                                persona, model, prompt_tokens, completion_tokens, latency_ms, finish_reason)
@@ -227,7 +223,7 @@ async function inTransaction<T>(db: Pool, body: (client: PoolClient) => Promise<
 export function createPostgresStore(db: Pool, userId: string): NasiStore {
   return {
     async createSession(data: SessionWrite & { title: string }) {
-      const id = Bun.randomUUIDv7()
+      const id = sessionIdOf(data.session)
       await inTransaction(db, async client => {
         await client.query(
           `INSERT INTO nasi_session (id, user_id, persona, model, title, owner, channel)
@@ -256,7 +252,7 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
         id,
         userId
       ])
-      return result.rows[0] ? hydrate(db, userId, result.rows[0]) : undefined
+      return result.rows[0] ? hydrate(db, result.rows[0]) : undefined
     },
 
     async loadLatestSession(owner) {
@@ -272,15 +268,17 @@ export function createPostgresStore(db: Pool, userId: string): NasiStore {
                ORDER BY updated_at DESC, id DESC LIMIT 1`,
               [userId, owner]
             )
-      return result.rows[0] ? hydrate(db, userId, result.rows[0]) : undefined
+      return result.rows[0] ? hydrate(db, result.rows[0]) : undefined
     },
 
     async deleteSession(id) {
       const result = await db.query("DELETE FROM nasi_session WHERE id = $1 AND user_id = $2", [id, userId])
       if (!result.rowCount) return false
-      await deleteImages(files, sessionImagePrefix(id, userId))
+      await sessionImages(userId, id).clear()
       return true
     },
+
+    images: id => sessionImages(userId, id),
 
     async listSessions(): Promise<SessionMeta[]> {
       const result = await db.query(

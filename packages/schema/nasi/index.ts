@@ -28,14 +28,30 @@ export const NasiClientSkillSchema = z.object({
   body: z.string().max(65_536).optional()
 })
 
+/** Longest text one client tool result may carry; the client cuts longer ones. */
+export const TOOL_RESULT_TEXT_MAX = 262_144
+/** Most images one client tool result may carry. */
+export const TOOL_RESULT_IMAGES_MAX = 4
+/** Longest base64 of one client tool result image. */
+export const TOOL_RESULT_IMAGE_BASE64_MAX = 4_000_000
+/** Most client tool results one turn may answer. */
+export const TOOL_RESULTS_MAX = 32
+/** Largest `/nasi/turn` request body (a terminal's tool results with their images); every other route takes 1 MB. */
+export const TURN_BODY_MAX_BYTES = 16 * 1024 * 1024
+
 /** The client's answer to one `client_tool_calls` call: its text, how it went (unset: ok), and any images it returned (base64). */
 export const NasiToolResultSchema = z.object({
   id: z.string().min(1).max(256),
-  text: z.string().max(262_144),
+  text: z.string().max(TOOL_RESULT_TEXT_MAX),
   status: z.enum(["ok", "error", "declined"]).optional(),
   images: z
-    .array(z.object({ data: z.string().max(4_000_000), mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/) }))
-    .max(4)
+    .array(
+      z.object({
+        data: z.string().max(TOOL_RESULT_IMAGE_BASE64_MAX),
+        mimeType: z.string().regex(/^image\/[a-z0-9.+-]+$/)
+      })
+    )
+    .max(TOOL_RESULT_IMAGES_MAX)
     .optional()
 })
 
@@ -46,7 +62,7 @@ export const NasiTurnRequestSchema = z
     /** Answers the session's `confirm_tool` step: the server runs (or skips) the call it saved, so the client never supplies a tool result. `approve_session` also stops asking about that tool for the rest of the session, `approve_always` adds it to the user's allow list. */
     approval: z.enum(["approve", "approve_session", "decline"]).optional(),
     /** Answers the session's `client_tool_calls` step; a call left out is answered as if the computer went away. */
-    toolResults: z.array(NasiToolResultSchema).max(32).optional(),
+    toolResults: z.array(NasiToolResultSchema).max(TOOL_RESULTS_MAX).optional(),
     /** The tools the client runs on the user's computer this turn; the cloud drops its own copy of any ability named here. */
     clientTools: z.array(NasiClientToolSchema).max(256).optional(),
     /** Skills of the abilities the client runs (load_skill asks the client for them). */
@@ -128,8 +144,16 @@ export const NasiStreamEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("condensed"), tool: z.string(), beforeTokens: z.number(), afterTokens: z.number() }),
   z.object({ type: z.literal("usage"), ...NasiUsageSchema.shape }),
   z.object({ type: z.literal("final"), content: z.string().nullable() }),
-  /** An image a tool returned (a screenshot, say), as a signed or data URL. */
-  z.object({ type: z.literal("tool_image"), mimeType: z.string(), url: z.string() })
+  /** An image a tool returned (a screenshot, say), as its public (or data) URL; `alt` its text until `image_described` replaces it. */
+  z.object({
+    type: z.literal("tool_image"),
+    mimeType: z.string(),
+    url: z.string(),
+    ref: z.string().optional(),
+    alt: z.string().optional()
+  }),
+  /** The image `ref` (a `tool_image`'s) has its description now. */
+  z.object({ type: z.literal("image_described"), ref: z.string(), description: z.string() })
 ])
 
 /** The stream's closing `done` event. */

@@ -89,7 +89,9 @@ test("with two providers for one task, the picked one is the default and the oth
   const picked = parse(buildModelsToml({ providers, pick: { chat: "ollama" } }))
   expect(inUseId(picked, "chat")).toBe("qwen3-5-4b")
   expect(inUse(picked, "chat")).toMatchObject({ provider: "ollama", model: "qwen3.5:4b" })
-  expect(picked.models["minimax-m3"]).toMatchObject({ provider: "fireworks", tasks: ["chat"] })
+  expect(picked.models["minimax-m3"]).toMatchObject({ provider: "fireworks", tasks: ["chat", "vision"] })
+  // Vision follows the chat pick, so the chat model that sees images is the one in use for vision too
+  expect(inUse(picked, "vision")).toMatchObject({ provider: "ollama", model: "qwen3.5:4b" })
 
   // No answer means the first candidate, so a silent choice is still a sensible one.
   const unpicked = parse(buildModelsToml({ providers }))

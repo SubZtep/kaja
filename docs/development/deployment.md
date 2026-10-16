@@ -82,22 +82,25 @@ saved before the recreate are gone with it.
 Session images, and the images tools return in cloud turns, go to a Hetzner Object Storage bucket, never
 to Postgres. Set it up once in the [Hetzner Cloud Console](https://console.hetzner.cloud/):
 
-1. Create a bucket in the same location as the API server (`fsn1`, `nbg1` or `hel1`). Keep it **private**:
-   clients only ever get signed URLs that expire after an hour.
+1. Create a bucket in the same location as the API server (`fsn1`, `nbg1` or `hel1`). Leave its visibility
+   private in the console: the API itself makes `images/` public-read on every boot (a bucket policy that allows
+   anonymous `GetObject` there and nothing else, so nobody can list it), and clients and Telegram get plain URLs.
+   An image's URL holds the user's and session's ids and the start of the image's hash, so it can't be guessed,
+   but anyone given one can open it.
 2. Under **Security → S3 credentials**, create a key pair.
 3. On the API project, set `STORAGE_BUCKET`, `STORAGE_REGION` (default `fsn1`), `STORAGE_ACCESS_KEY_ID`
    and `STORAGE_SECRET_ACCESS_KEY`. Leave `STORAGE_ENDPOINT` unset: it points the API at another
    S3-compatible server (the compose RustFS in dev, tests and CI) instead of Hetzner.
 
-The API sets the bucket's lifecycle rule itself on every boot: objects under `tool-images/` expire after
-1 day. Hetzner has no console setting for this; it only takes rules through the S3 API, which the API uses
-anyway. A tool image from a turn that starts a new session is stored there, because the session has no id
-until the turn is saved; the saved session keeps its own copy under `images/`. If the rule can't be set, the
-API still starts and reports it to Sentry, and those copies just stay until someone deletes them.
+An image is stored the moment it arrives (a photo sent to the bot, a tool's screenshot), already resized,
+under its session's folder: sessions get their id when they start, not when they're first saved. A new
+session whose first turn fails takes its images with it. Only that resized copy is kept (EXIF dropped),
+with its description beside it as `<id>.json` once the vision model has written one.
 
-The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<sha256>`.
-Deleting a session removes its folder, and deleting a user removes both of their prefixes. Recreating
-the database doesn't empty the bucket, so empty it too (see below), or its old images just sit there unused.
+The API won't start without the storage variables. Objects live under `images/<userId>/<sessionId>/<id>`,
+where `<id>` is the start of the image's sha256. Deleting a session removes its folder, and deleting a user
+removes theirs. Recreating the database doesn't empty the bucket, so empty it too (see below), or its old
+images just sit there unused.
 
 #### Deleting images by hand
 
@@ -106,17 +109,16 @@ AWS CLI, list first, then delete:
 
 ```sh
 export AWS_ACCESS_KEY_ID=<STORAGE_ACCESS_KEY_ID> AWS_SECRET_ACCESS_KEY=<STORAGE_SECRET_ACCESS_KEY>
-aws s3 ls s3://<bucket>/tool-images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
-aws s3 rm s3://<bucket>/tool-images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
+aws s3 ls s3://<bucket>/images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
+aws s3 rm s3://<bucket>/images/ --recursive --endpoint-url https://fsn1.your-objectstorage.com
 ```
 
 Use your bucket's location in the endpoint (`fsn1`, `nbg1` or `hel1`).
 
-- `tool-images/` is always safe to delete. It only holds display copies, the saved sessions keep their own,
-  and their signed URLs expire after an hour anyway. Do it when the expiry rule couldn't be set, which the
-  API reports on boot.
-- `images/` holds the sessions' real images; a deleted one shows as "[an image that is no longer
-  stored]". Empty it (`s3://<bucket>/` as a whole) only when you also recreate the database.
+- `images/` holds the sessions' images; a deleted one shows as "[an image that is no longer stored]".
+  Empty it only when you also recreate the database.
+- `tool-images/` is gone: older API versions kept display copies there, with a 1-day expiry rule. Delete
+  the folder if a bucket still has it; the leftover rule is harmless.
 
 Locally, the same commands work against the compose RustFS with `--endpoint-url http://localhost:9000` and
 the dev credentials from `apps/api/.env.example`. Its console, at <http://localhost:9001> with the same

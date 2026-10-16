@@ -19,35 +19,44 @@ export class PathDeniedError extends Error {
 }
 
 /**
- * Resolves `path` against the configured workspace root (default `process.cwd()`)
- * and throws {@link PathEscapeError} if it lands outside that root — blocks `..`
- * traversal and symlink escapes via `realpath`. Also denies the configured
- * sqlite file and any `secrets.toml`, regardless of workspace root, since a
- * prompt-injected read_file/list_files call should never surface credentials.
- * Local-only guard, not a sandbox: a full CLI session already has shell access
- * to the same filesystem.
+ * Resolves `path` against the configured workspace root (default `process.cwd()`), following symlinks via `realpath`,
+ * and says whether it lands inside that root. Always throws {@link PathDeniedError} for any `secrets.toml` and the
+ * configured sqlite file (with its `-wal`/`-shm`/`-journal` siblings), wherever they are, since a prompt-injected call
+ * should never surface credentials or the conversation store.
  */
-export function guardWorkspacePath(path: string): string {
+export function resolveWorkspacePath(path: string): { path: string; inWorkspace: boolean } {
   const root = getToolDeps().workspaceRoot ?? process.cwd()
   const realRoot = realpathSync(root)
-  const resolved = resolve(root, path)
-
-  let realResolved: string
-  try {
-    realResolved = realpathSync(resolved)
-  } catch {
-    // Path doesn't exist yet (e.g. list_files on a fresh dir) — fall back to the
-    // lexically resolved path, still checked against realRoot below.
-    realResolved = resolved
-  }
-
-  if (realResolved !== realRoot && !realResolved.startsWith(`${realRoot}/`)) {
-    throw new PathEscapeError(path)
-  }
+  // Doesn't exist yet (e.g. list_files on a fresh dir): the lexically resolved path, still checked below.
+  const realResolved = realOrSame(resolve(root, path))
 
   if (DENIED_FILENAMES.has(basename(realResolved))) throw new PathDeniedError(path)
   const storePath = getToolDeps().storePath
-  if (storePath && realResolved === storePath) throw new PathDeniedError(path)
+  if (storePath) {
+    const store = realOrSame(storePath)
+    if (STORE_SIBLINGS.some(suffix => realResolved === `${store}${suffix}`)) throw new PathDeniedError(path)
+  }
 
-  return realResolved
+  return { path: realResolved, inWorkspace: realResolved === realRoot || realResolved.startsWith(`${realRoot}/`) }
+}
+
+/**
+ * {@link resolveWorkspacePath}, throwing {@link PathEscapeError} if the path lands outside the workspace root — blocks
+ * `..` traversal and symlink escapes. Local-only guard, not a sandbox: a full CLI session already has shell access to
+ * the same filesystem.
+ */
+export function guardWorkspacePath(path: string): string {
+  const resolved = resolveWorkspacePath(path)
+  if (!resolved.inWorkspace) throw new PathEscapeError(path)
+  return resolved.path
+}
+
+const STORE_SIBLINGS = ["", "-wal", "-shm", "-journal"]
+
+function realOrSame(path: string): string {
+  try {
+    return realpathSync(path)
+  } catch {
+    return path
+  }
 }

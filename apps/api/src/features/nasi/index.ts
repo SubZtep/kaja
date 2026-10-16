@@ -19,6 +19,7 @@ import {
 } from "@kaja/schema/nasi"
 import { streamSSE } from "hono/streaming"
 import { pool } from "../../core/db"
+import { imageUrl } from "../../core/files"
 import { clientIp, nasiTurnRateLimiter } from "../../core/rate-limit"
 import { reportError } from "../../core/report"
 import { abilityService } from "../../services"
@@ -43,7 +44,6 @@ import {
 } from "./chat"
 import { createPostgresAbilityStore } from "./pg-abilities"
 import { createPostgresStore } from "./pg-store"
-import { toolImageUrl } from "./tool-image"
 
 const HEARTBEAT_INTERVAL_MS = 15_000
 
@@ -105,7 +105,7 @@ nasiRoutes.openapi(turnRoute, async c => {
   }
 })
 
-/** SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not forwarded, and tool_image goes as a signed URL (see {@link sseEvent}). */
+/** SSE event name for each AgentEvent type the client should see; events with no entry (display_image) are not forwarded, and tool_image goes as a public URL (see {@link sseEvent}). */
 const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   delta: "delta",
   reasoning: "reasoning",
@@ -119,18 +119,16 @@ const SSE_EVENT_NAME: Partial<Record<string, string>> = {
   condensed: "condensed",
   usage: "usage",
   final: "final",
-  tool_image: "tool_image"
+  tool_image: "tool_image",
+  image_described: "image_described"
 }
 
-/** What the client gets for an event: as is, except a tool image, whose server-side file goes to storage and becomes a signed URL (the file is gone after the turn). */
-async function sseEvent(
-  event: FinalizedAgentEvent | AgentDelta,
-  userId: string,
-  sessionId: string | undefined
-): Promise<object> {
+// An event as the client gets it: as is (nasi placed the reply's image links), a tool image as its public URL
+function sseEvent(event: FinalizedAgentEvent | AgentDelta): object {
   if (event.type !== "tool_image") return event
-  const { path, mimeType } = event
-  return { type: "tool_image", mimeType, url: await toolImageUrl(userId, sessionId, path, mimeType) }
+  const { mimeType, key, ref, alt } = event
+  const url = key ? imageUrl(key) : ref
+  return { type: "tool_image", mimeType, url, ref, alt }
 }
 
 /** The `error` event's body for a failed stream: a known failure's message, anything else categorized and logged. */
@@ -164,7 +162,7 @@ nasiRoutes.post("/turn/stream", async c => {
         if (name)
           await stream.writeSSE({
             event: name,
-            data: JSON.stringify(await sseEvent(next.value, user.id, body.session))
+            data: JSON.stringify(sseEvent(next.value))
           })
         next = await gen.next()
       }

@@ -1,6 +1,3 @@
-import { mkdtemp, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import type { Persona } from "@kaja/schema/cli"
 import type { NasiStep, NasiTurnRequest, NasiTurnResponse, NasiTurnStatus } from "@kaja/schema/nasi"
 import { sessionTitle } from "@kaja/shared/text"
@@ -11,7 +8,9 @@ import { type McpSandbox, SANDBOX_ORIGIN } from "./abilities/mcp-ability"
 import type { AbilityStore } from "./abilities/types"
 import { Agent, type AgentEvent, createSession, type PromptContext, type Session } from "./agent/agent"
 import type { Compaction } from "./agent/compaction"
+import type { Describer } from "./agent/describe"
 import { NothingToApproveError, SessionNotFoundError } from "./agent/errors"
+import type { PromptImage } from "./agent/images"
 import { samplingOf } from "./agent/persona"
 import { syncPersonaTools } from "./agent/persona-tools"
 import { compact, run } from "./agent/run"
@@ -20,15 +19,19 @@ import { allowKey } from "./agent/tool-allow"
 import { runApprovedTool, type Tool, toolName } from "./agent/tools"
 import { createGuardedFetch, type FetchLike } from "./security/ssrf"
 import type { NasiStore } from "./store/types"
+import { viewLinkedImageTool } from "./tools/builtin/view-image"
 import type { NasiToolDeps } from "./tools/deps"
 import { createTools } from "./tools/registry"
+import { warn } from "./warn"
 
 export type NasiOpenOptions = {
   store: NasiStore
-  /** `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row). */
-  chat: { client: OpenAI; model: string; contextWindow?: number }
+  /** `contextWindow`: the model's size in tokens, when the host knows it (the cloud resolves it per model row); `seesImages`: whether it takes images (its row lists `vision`), unset meaning it does. */
+  chat: { client: OpenAI; model: string; contextWindow?: number; seesImages?: boolean }
   /** Writes compaction summaries, condenses oversized tool results and runs the `summarize` tool; defaults to {@link chat}. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+  /** Describes arriving images (the vision task's model); unset, an image keeps its alt text. */
+  describer?: Describer
   /** Files, shell and MCP. Default false. */
   includeLocalTools?: boolean
   personas?: Persona[]
@@ -236,24 +239,26 @@ export class Nasi {
           clientSkills: client && new Set(client.skills.map(skill => skill.name))
         })
       : undefined
-    // Cloud MCP images (screenshots) wait here for the model to see them; the instance removes it on close.
-    const imageDir =
-      !opts.includeLocalTools && abilities?.mcp.length ? await mkdtemp(join(tmpdir(), "kaja-mcp-")) : undefined
     const { tools, closeTools, ensureAbilities } = await createTools({
       includeLocalTools: opts.includeLocalTools,
       deps: { ...opts.deps, chat: opts.chat, summarizer: opts.summarizer, fetchSend: opts.egress?.() },
-      extraTools: [...(abilities?.groups ?? []), ...(client ? clientToolGroups(client) : [])],
+      extraTools: [
+        ...(abilities?.groups ?? []),
+        ...(client ? clientToolGroups(client) : []),
+        // The conversation's own images by link; a computer that declares view_image takes its files too.
+        ...(client?.tools.some(tool => tool.name === "view_image")
+          ? []
+          : [{ origin: "official" as const, tools: [viewLinkedImageTool] }])
+      ],
       // MCP abilities connect when a persona that uses them is active, through the same egress rules as every other cloud request, the operator's own sandbox aside.
       mcpAbilities: abilities?.mcp,
       lazyMcpAbilities: true,
       mcpFetch: name => withSandbox(createGuardedFetch({ send: opts.egress?.(name) }), opts.mcpSandbox),
-      mcpImageDir: imageDir,
       mcpConnectTimeoutMs: opts.mcpConnectTimeoutMs ?? DEFAULT_MCP_CONNECT_TIMEOUT_MS
     })
     const close = async () => {
       await closeTools()
       await opts.mcpSandbox?.close?.()
-      if (imageDir) await rm(imageDir, { recursive: true, force: true })
     }
     return new Nasi(opts, tools, close, ensureAbilities)
   }
@@ -297,6 +302,8 @@ export class Nasi {
       store: this.opts.store,
       contextWindow: this.opts.chat.contextWindow,
       summarizer: this.opts.summarizer,
+      describer: this.opts.describer,
+      chatSeesImages: this.opts.chat.seesImages,
       ensureTools: async names => {
         this.tools = await this.ensureAbilities(names)
         return this.tools
@@ -312,20 +319,24 @@ export class Nasi {
    * Calls waiting on the client are answered with its results (or as gone); with no message, the loop
    * carries on from them.
    */
-  private async promptFor(session: Session, input: NasiTurnInput): Promise<string | undefined> {
+  private async promptFor(
+    agent: Agent,
+    session: Session,
+    input: NasiTurnInput
+  ): Promise<{ prompt?: string; images?: PromptImage[] }> {
     if (session.pendingClientCalls?.length) {
-      answerClientCalls(session, input.toolResults)
-      if (input.message === undefined) return undefined
+      await answerClientCalls(agent, session, input.toolResults)
+      if (input.message === undefined) return {}
     }
     const pendingId = session.pendingToolApprovalId
     if (input.approval) {
       if (!pendingId) throw new NothingToApproveError()
       if (input.approval === "decline") {
         recordPausedCall(session, "tool_approval", "declined")
-        return TOOL_DECLINED
+        return { prompt: TOOL_DECLINED }
       }
       const call = pendingToolCall(session, pendingId)
-      if (!call) return "Error: the call waiting for approval is gone."
+      if (!call) return { prompt: "Error: the call waiting for approval is gone." }
       if (input.approval === "approve_session") this.grant(session, call.function.name)
       const startedAt = performance.now()
       let status: "ok" | "error" = "ok"
@@ -333,11 +344,11 @@ export class Nasi {
         status = s
       })
       recordPausedCall(session, "tool_approval", { status, startedAt })
-      return result
+      return { prompt: result.text, images: result.images }
     }
     const message = input.message ?? ""
     if (pendingId) recordPausedCall(session, "tool_approval", "skipped")
-    return pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message
+    return { prompt: pendingId ? `Not run: the user didn't approve it and wrote instead: ${message}` : message }
   }
 
   /** An `approve_session` answer: the tool stops asking for the rest of this session. */
@@ -386,15 +397,26 @@ export class Nasi {
     const loaded = await this.loadTurn(input)
     // An approved call may be an MCP ability's, so the persona's servers connect before promptFor runs it.
     await syncPersonaTools(loaded.agent)
-    const prompt = await this.promptFor(loaded.session, input)
+    const { prompt, images = [] } = await this.promptFor(loaded.agent, loaded.session, input)
 
     const turnEvents: AgentEvent[] = []
-    for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null, input.images)) {
-      turnEvents.push(event)
-      yield event
+    const allImages = [...(input.images ?? []), ...images]
+    let saved = false
+    try {
+      for await (const event of run(loaded.agent, prompt, loaded.session, this.opts.owner ?? null, allImages)) {
+        turnEvents.push(event)
+        yield event
+      }
+      const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
+      saved = true
+      return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
+    } finally {
+      // A new session that was never saved leaves no images behind (a saved one's go when it's deleted).
+      if (!saved && !loaded.sessionId && loaded.session.id)
+        await this.opts.store
+          .images(loaded.session.id)
+          .clear()
+          .catch(error => warn("An unsaved session's images couldn't be removed", { error }))
     }
-
-    const sessionId = await persistTurn(this.opts, loaded, input, turnEvents)
-    return responseFromEvents(sessionId, loaded.session, turnEvents, input.includeThinking === true)
   }
 }

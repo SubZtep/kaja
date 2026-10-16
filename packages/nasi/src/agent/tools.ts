@@ -1,13 +1,17 @@
 import { LOCAL_OWNER } from "@kaja/schema/store"
 import type { ChatCompletionFunctionTool, ChatCompletionTool } from "openai/resources/chat/completions"
 import { z } from "zod"
+import type { SessionImages } from "../store/images"
 import type { NasiStore } from "../store/types"
+import { altFrom, type PromptImage } from "./images"
 
 /** Identifies who's talking to a {@link Tool}'s `execute`, and which persona is active — `owner` is `null` for a terminal session, `"telegram:<id>"` for a Telegram user; `personaId` mirrors {@link Agent.personaId}. Supplied by {@link run}, never by the model. */
 export type ToolContext = {
   owner: string | null
   personaId?: string
   store?: NasiStore
+  /** The session's stored images, for a tool that reads them back by link (view_image). */
+  images?: SessionImages
   /** Records a model call the tool made itself (the summarize tool's), so the session's usage counts it. */
   onModelCall?: (usage: ModelCallUsage) => void
 }
@@ -23,11 +27,12 @@ export const LOCAL_OWNER_CTX: ToolContext = { owner: LOCAL_OWNER }
  * screenshot. Images can't travel in the `role: "tool"` message itself (the
  * OpenAI API restricts tool message content to text), so {@link run} sends
  * `text` as the tool response and follows up with a separate `role: "user"`
- * message carrying each image, so the model actually sees it.
+ * message carrying each image, so the model actually sees it. `images` are the
+ * bytes as the tool got them: run() normalises and stores them.
  */
 export type ToolResult = {
   text: string
-  images?: { path: string; mimeType: string }[]
+  images?: { data: Uint8Array; mimeType: string }[]
   /**
    * A remote image to show next to the tool's result in the timeline —
    * display-only, e.g. a search result thumbnail. Unlike {@link images},
@@ -160,33 +165,35 @@ export function toolName(t: Tool): string {
   return t.definition.function.name
 }
 
+/** What an approved call returned: its text, and its images labelled by it, for the host to pass to `run()` with it. */
+export type ApprovedToolResult = { text: string; images: PromptImage[] }
+
 /**
- * Runs a tool call the human approved after a `confirm_tool` pause, returning the text to feed
- * back as its result. Hosts call this with their own tool list; a missing tool, bad arguments or
- * a failure come back as text so the model can react, and `onStatus` hears which way it went.
+ * Runs a tool call the human approved after a `confirm_tool` pause, returning what to feed back as its result.
+ * Hosts call this with their own tool list; a missing tool, bad arguments or a failure come back as text so the model
+ * can react, and `onStatus` hears which way it went.
  */
 export async function runApprovedTool(
   tools: Tool[],
   name: string,
   argumentsJson: string,
   onStatus?: (status: "ok" | "error") => void
-): Promise<string> {
-  const target = tools.find(t => toolName(t) === name)
-  if (!target) {
+): Promise<ApprovedToolResult> {
+  const failed = (text: string) => {
     onStatus?.("error")
-    return `Error: unknown tool "${name}"`
+    return { text, images: [] }
   }
+  const target = tools.find(t => toolName(t) === name)
+  if (!target) return failed(`Error: unknown tool "${name}"`)
   try {
     const checked = checkToolArgs(target, JSON.parse(argumentsJson || "{}"))
-    if (!checked.ok) {
-      onStatus?.("error")
-      return `Error: ${checked.error}`
-    }
+    if (!checked.ok) return failed(`Error: ${checked.error}`)
     const result = await target.execute(checked.args)
     onStatus?.("ok")
-    return typeof result === "string" ? result : result.text
+    if (typeof result === "string") return { text: result, images: [] }
+    const alt = altFrom(result.text, `an image from ${name}`)
+    return { text: result.text, images: (result.images ?? []).map(image => ({ data: image.data, alt })) }
   } catch (error) {
-    onStatus?.("error")
-    return `Error: ${error instanceof Error ? error.message : String(error)}`
+    return failed(`Error: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

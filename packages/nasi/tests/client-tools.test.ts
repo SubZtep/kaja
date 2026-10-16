@@ -1,10 +1,11 @@
-import { expect, test } from "bun:test"
-import { answerClientCalls, CLIENT_GONE } from "../src/abilities/client"
+import { expect, spyOn, test } from "bun:test"
+import { answerClientCalls, CLIENT_GONE, clientToolGroups } from "../src/abilities/client"
 import type { AbilityStore } from "../src/abilities/types"
-import type { Session } from "../src/agent/agent"
+import { Agent, type Session } from "../src/agent/agent"
 import { Nasi, type NasiOpenOptions } from "../src/nasi"
-import { createMemoryStore } from "../src/store"
+import { createMemoryStore, memoryObjects } from "../src/store"
 import { mcpAbility } from "./fixtures/abilities"
+import { TINY_PNG_BASE64 } from "./fixtures/images"
 
 type SentMessage = { role: string; content?: unknown; tool_call_id?: string }
 type Sent = { messages: SentMessage[]; tools?: { function: { name: string } }[] }
@@ -53,7 +54,8 @@ function open(script: Parameters<typeof fakeClient>[0], sent: Sent[], extra?: Pa
 
 test("a round's client calls pause the turn together, and their results resume it", async () => {
   const sent: Sent[] = []
-  const store = createMemoryStore()
+  const objects = memoryObjects()
+  const store = createMemoryStore({ objects })
   const script = [
     { content: null, tool_calls: [call("c1", "read_file", { path: "/a" }), call("c2", "read_file", { path: "/b" })] },
     { content: "Both read." }
@@ -69,12 +71,14 @@ test("a round's client calls pause the turn together, and their results resume i
     ]
   })
 
-  // A later turn opens its own instance, as the API does.
+  // A later turn opens its own instance, as the API does. The results' images are sent from what was just stored,
+  // never fetched back from the store
+  const get = spyOn(objects, "get")
   const second = await (await open(script.slice(1), sent, { store })).turnBuffered({
     session: first.session,
     toolResults: [
       { id: "c1", text: "alpha" },
-      { id: "c2", text: "beta", images: [{ data: "cG5n", mimeType: "image/png" }] }
+      { id: "c2", text: "beta", images: [{ data: TINY_PNG_BASE64, mimeType: "image/png" }] }
     ]
   })
   expect(second.status).toBe("completed")
@@ -84,7 +88,9 @@ test("a round's client calls pause the turn together, and their results resume i
     ["c1", "alpha"],
     ["c2", "beta"]
   ])
-  expect(JSON.stringify(resumed.at(-1))).toContain("data:image/png;base64,cG5n")
+  expect(JSON.stringify(resumed.at(-1))).toContain(`data:image/png;base64,${TINY_PNG_BASE64}`)
+  expect(get.mock.calls.filter(([key]) => !key.endsWith(".json"))).toEqual([])
+  get.mockRestore()
 })
 
 test("a message instead of results answers the waiting calls as gone, then goes on", async () => {
@@ -147,9 +153,9 @@ test("the cloud's copy of an ability the client declares is left out, and load_s
   await nasi.close()
 })
 
-test("each answered call's status goes into telemetry as the client reports it; an unanswered one is skipped", () => {
+test("each answered call's status goes into telemetry as the client reports it; an unanswered one is skipped", async () => {
   const session: Session = { messages: [], pendingClientCalls: ["a", "b", "c", "d"] }
-  answerClientCalls(session, [
+  await answerClientCalls(new Agent({ model: "m", tools: [] }), session, [
     { id: "a", text: "fine" },
     { id: "b", text: "Error: no such file", status: "error" },
     { id: "c", text: "User declined this request.", status: "declined" }
@@ -160,4 +166,15 @@ test("each answered call's status goes into telemetry as the client reports it; 
     c: { status: "declined", approval: "declined" },
     d: { status: "skipped" }
   })
+})
+
+test("a computer's view_image runs a file there, and an image of the conversation (by link) here", () => {
+  const [group] = clientToolGroups({
+    tools: [{ name: "view_image", description: "View an image", parameters: { type: "object", properties: {} } }],
+    skills: []
+  })
+  const stub = group!.tools[0]!
+  const runsThere = stub.runsOnClient as (args: Record<string, unknown>) => boolean
+  expect(runsThere({ path: "shot.png" })).toBe(true)
+  expect(runsThere({ path: "kaja-image:0123456789abcdef" })).toBe(false)
 })

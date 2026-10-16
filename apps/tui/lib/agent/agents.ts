@@ -4,6 +4,7 @@ export {
   type AgentEvent,
   applyPersona,
   applyPersonaToMessages,
+  applyVisionPin,
   askUserTool,
   buildSystemPrompt,
   createSession,

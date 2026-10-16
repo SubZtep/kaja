@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { faker } from "@faker-js/faker"
 import { app } from "../../src/app"
 import { setNasiChatResolver } from "../../src/features/nasi/chat"
+import { noisyPng } from "../fixtures/images"
 import { signUpAndSignIn } from "./helpers"
 
 type Sent = {
@@ -78,7 +79,7 @@ describe("a terminal's client tools", () => {
     expect(sent[0]!.tools?.map(t => t.function.name)).toContain("read_file")
 
     // Over the 1 MB other routes allow: screenshots come back in these.
-    const image = Buffer.alloc(1_200_000, 7).toString("base64")
+    const image = noisyPng(640, 640).toString("base64")
     const second = await turn("/nasi/turn", {
       session: paused.session,
       clientTools: [readFile],

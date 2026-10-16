@@ -5,7 +5,7 @@ import { file, write } from "bun"
 import { getConfigPath, invalidateConfigCache, readConfigLoose } from "../config/config"
 import { log } from "../logger"
 import { getPaths } from "../paths"
-import { createSqliteStore } from "../store/sqlite"
+import { createSqliteStore, imagesRoot } from "../store/sqlite"
 
 export function getDefaultMemoryDbPath() {
   return join(getPaths().data, "memory.sqlite")
@@ -42,6 +42,11 @@ export async function getStore(): Promise<NasiStore> {
 
 export function peekStore(): NasiStore | undefined {
   return cached?.store
+}
+
+/** Where a stored image's object (an `AgentEvent`'s `tool_image` `key`) is on disk, once the store is open. */
+export function storedImagePath(key: string): string | undefined {
+  return cached && join(imagesRoot(cached.path), key)
 }
 
 export function peekStorePath(): string | undefined {

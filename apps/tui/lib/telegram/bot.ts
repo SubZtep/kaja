@@ -38,6 +38,13 @@ function buildKeyboard(keyboard: InlineKeyboardLike | undefined) {
   return keyboard ? new InlineKeyboard(keyboard) : undefined
 }
 
+/** What grammy's sendPhoto takes: a tool's bytes, a file on this computer (a reply's Markdown image), or a URL it fetches. */
+function photoInput(photo: { data: Uint8Array } | { path: string } | { url: string }) {
+  if ("data" in photo) return new InputFile(photo.data)
+  if ("path" in photo) return new InputFile(photo.path)
+  return photo.url
+}
+
 /**
  * The only grammy-aware file: constructs the Bot, implements
  * lib/telegram-driver.ts's TelegramSender against bot.api, wires update
@@ -83,13 +90,18 @@ export function createTelegramBot(config: CreateTelegramBotConfig) {
         await bot.api.answerCallbackQuery(callbackQueryId, { text: opts?.text })
       },
       async sendPhoto(chatId, photo, opts) {
-        await withRateLimitRetry(() =>
-          bot.api.sendPhoto(
-            chatId,
-            "path" in photo ? new InputFile(photo.path) : photo.url,
-            opts?.caption ? { caption: opts.caption } : undefined
-          )
+        const input = photoInput(photo)
+        const message = await withRateLimitRetry(() =>
+          bot.api.sendPhoto(chatId, input, opts?.caption ? { caption: opts.caption } : undefined)
         )
+        return { messageId: message.message_id }
+      },
+      async editCaption(chatId, messageId, caption) {
+        try {
+          await withRateLimitRetry(() => bot.api.editMessageCaption(chatId, messageId, { caption }))
+        } catch (error) {
+          if (!isNotModifiedError(error)) throw error
+        }
       }
     }
   })

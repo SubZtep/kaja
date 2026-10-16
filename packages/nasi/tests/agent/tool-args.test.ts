@@ -89,7 +89,7 @@ test("valid arguments reach execute parsed, with unknown keys dropped", async ()
 
 test("an approved call is checked too", async () => {
   executed = []
-  expect(await runApprovedTool([countTool], "count_to", '{"n":0}')).toStartWith(
+  expect((await runApprovedTool([countTool], "count_to", '{"n":0}')).text).toStartWith(
     "Error: Invalid arguments for count_to:"
   )
   expect(executed).toEqual([])

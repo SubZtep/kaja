@@ -1,4 +1,11 @@
-import { compact, recordPausedCall, replyLanguageInstructionFor, runApprovedTool, samplingOf } from "@kaja/nasi"
+import {
+  compact,
+  type PromptImage,
+  recordPausedCall,
+  replyLanguageInstructionFor,
+  runApprovedTool,
+  samplingOf
+} from "@kaja/nasi"
 import type { CliResolvedModel } from "@kaja/schema/config"
 import { LOCAL_OWNER, type PersistedSession } from "@kaja/schema/store"
 import { commandArgument } from "@kaja/shared/telegram"
@@ -8,6 +15,7 @@ import {
   Agent,
   type AgentDelta,
   applyPersona,
+  applyVisionPin,
   createSession,
   type FinalizedAgentEvent,
   run,
@@ -15,7 +23,9 @@ import {
 } from "../lib/agent/agents"
 import { categorizeError, type ErrorCategory } from "../lib/agent/error-category"
 import { runShellCommand } from "../lib/agent/run-command"
+import { timelineEvent } from "../lib/agent/timeline"
 import { getLanguage, t } from "../lib/i18n"
+import { withDescription } from "../lib/image/rows"
 import { log } from "../lib/logger"
 import { peekStore } from "../lib/memory/store"
 import type { Persona } from "../lib/personas/personas"
@@ -31,7 +41,17 @@ export type TimelineEvent =
   | { type: "error"; text: string; category: ErrorCategory }
   /** A line from the app itself, e.g. that `/compact` found nothing to do. */
   | { type: "notice"; text: string }
-  | Exclude<FinalizedAgentEvent, { type: "usage" }>
+  /** A tool's image: `path` shows it, `alt` until `description` is in; `key` is what a saved timeline keeps. */
+  | {
+      type: "tool_image"
+      path: string
+      mimeType: string
+      ref?: string
+      alt?: string
+      description?: string
+      key?: string
+    }
+  | Exclude<FinalizedAgentEvent, { type: "usage" | "tool_image" | "image_described" }>
 
 /**
  * The message currently streaming in, accumulated from delta events. Cleared
@@ -106,6 +126,7 @@ export function useAgent(
         ? models.find(m => m.id === startingPersona.models!.chat && m.task === "chat")
         : undefined)
     if (startingModel) created.setModel(startingModel)
+    applyVisionPin(created, startingPersona)
     return created
   })
   const sessionRef = useRef<Session>(undefined)
@@ -204,8 +225,13 @@ export function useAgent(
   const handleFinalizedEvent = useCallback(
     (event: Exclude<FinalizedAgentEvent, { type: "usage" | "delta" }>) => {
       if (event.type === "persona_switch") applyPersonaSwitch(event.personaId)
+      if (event.type === "image_described") {
+        eventsRef.current = withDescription(eventsRef.current, event.ref, event.description)
+        setEvents(eventsRef.current)
+        return
+      }
       setPartial(null)
-      pushEvent(event)
+      pushEvent(timelineEvent(event))
     },
     [applyPersonaSwitch, pushEvent]
   )
@@ -235,7 +261,7 @@ export function useAgent(
   )
 
   const send = useCallback(
-    async (prompt: string, showUserEvent = true) => {
+    async (prompt: string, showUserEvent = true, images: PromptImage[] = []) => {
       const focus = showUserEvent ? commandArgument(prompt, "compact") : undefined
       if (focus !== undefined) return compactNow(prompt, focus)
       setPending(true)
@@ -268,7 +294,7 @@ export function useAgent(
         if (event.model) setResponseModel(event.model)
       }
       try {
-        for await (const event of run(agent, prompt, sessionRef.current!)) {
+        for await (const event of run(agent, prompt, sessionRef.current!, undefined, images)) {
           if (event.type === "delta") handleDelta(event)
           else if (event.type === "usage") handleUsage(event)
           else {
@@ -318,9 +344,9 @@ export function useAgent(
           ? await runApprovedTool(agent.tools, name, argumentsJson, s => {
               status = s
             })
-          : "User declined this request."
+          : { text: "User declined this request.", images: [] }
         recordPausedCall(sessionRef.current!, "tool_approval", approved ? { status, startedAt } : "declined")
-        await send(result, false)
+        await send(result.text, false, result.images)
       } finally {
         setRunningCommand(false)
       }

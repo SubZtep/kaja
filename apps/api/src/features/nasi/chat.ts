@@ -26,12 +26,22 @@ export type ChatResolver = () => Promise<{
   client: ReturnType<typeof createOpenAIClient>
   model: string
   contextWindow?: number
+  seesImages?: boolean
 }>
 
 let chatResolver: ChatResolver | undefined
 
 export function setNasiChatResolver(resolver: ChatResolver | undefined) {
   chatResolver = resolver
+}
+
+type DescriberResolver = () => Promise<{ client: ReturnType<typeof createOpenAIClient>; model: string } | undefined>
+
+let describerResolver: DescriberResolver | undefined
+
+/** Tests: the vision model turns describe images with, instead of the catalog's. */
+export function setNasiDescriberResolver(resolver: DescriberResolver | undefined) {
+  describerResolver = resolver
 }
 
 /** Reuses an existing session's model so it doesn't change mid-conversation; falls back to a fresh random pick if that model was since disabled/deleted (or there's no pinned model yet, i.e. a new session). */
@@ -77,7 +87,23 @@ async function defaultChatResolver(pinnedModel?: string) {
       fetch: modelFetch
     }),
     model: result.model.model,
-    contextWindow: window.tokens
+    contextWindow: window.tokens,
+    seesImages: result.model.images
+  }
+}
+
+/** A free, enabled `vision` model (the catalog's default is seeded), which describes arriving images; else undefined and they keep their alt text. */
+async function resolveDescriber() {
+  if (env.NASI_STUB_MODEL) return undefined
+  const result = await modelService.getRandomModelWithProvider("vision")
+  if (!result || !isPublicHttpUrl(result.provider.baseUrl)) return undefined
+  return {
+    client: createOpenAIClient({
+      baseURL: result.provider.baseUrl,
+      apiKey: result.provider.apiKey ?? "unused",
+      fetch: cloudModelFetch()
+    }),
+    model: result.model.model
   }
 }
 
@@ -168,9 +194,10 @@ export async function openNasiFor(opts: {
   /** What the user's terminal runs on their computer this turn, and their own personas (see {@link clientOf}). */
   client?: TurnClient
 }): Promise<Nasi> {
-  const [chat, summarizer] = await Promise.all([
+  const [chat, summarizer, describer] = await Promise.all([
     chatResolver ? chatResolver() : defaultChatResolver(opts.pinnedModel),
-    resolveSummarizer()
+    resolveSummarizer(),
+    describerResolver ? describerResolver() : resolveDescriber()
   ])
   const source = opts.abilities ?? { userId: opts.userId }
   // Every user's roster is the whole catalog, plus the terminal's own personas; each persona's `abilities` picks what a turn uses.
@@ -185,6 +212,7 @@ export async function openNasiFor(opts: {
     store: createPostgresStore(pool, opts.userId),
     chat,
     summarizer,
+    describer,
     personas,
     owner: opts.owner,
     egress: "userId" in source ? cloudEgress(source.userId, keyOf) : undefined,

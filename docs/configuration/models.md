@@ -43,13 +43,17 @@ The tasks:
 - `rerank`
 - `summarize`: writes the summary a long conversation is [compacted](/configuration/config#context) into,
   condenses oversized tool results and runs the `summarize` tool. The chat model does it when there's none.
+- `vision`: the first model listing it writes each arriving image's short description, in the background.
+  With none, an image keeps its alt text (what the tool said about it, say).
 
 Each `[models.<id>]` entry has:
 
 - `model`: the provider's own model name, sent in API requests;
 - `provider`: a key from `[providers.*]`;
 - `tasks`: what it can be used for. One model can serve several, like chat and summarize above;
-- `context_window`: optional, how many tokens the model takes in.
+- `context_window`: optional, how many tokens the model takes in;
+- `images`: optional, `false` for a text-only chat model. It then gets each recent image's description and
+  link instead of its pixels (it can still `view_image` the link), and waits for the descriptions to be written.
 
 The id is yours to choose. The wizard uses the last part of the model name, cleaned up (`qwen3.5:4b` becomes
 `qwen3-5-4b`, `accounts/fireworks/models/glm-5p3-flash` becomes `glm-5p3-flash`), and adds `-<provider>` when
@@ -88,10 +92,10 @@ the wizard also keeps the models it didn't pick, for pins and switching.
 
 | File | Providers | Tasks |
 | --- | --- | --- |
-| `models.ollama.toml` | Ollama | chat (`qwen3.5:4b`), embedding. Fully local |
-| `models.default.toml` | Fireworks, xAI, Speaches | chat, summarize, embedding, rerank, image-generation, tts, stt. What `kaja config fetch --offline` writes |
+| `models.ollama.toml` | Ollama | chat and vision (`qwen3.5:4b`), embedding. Fully local |
+| `models.default.toml` | Fireworks, xAI, Speaches | chat, vision, summarize, embedding, rerank, image-generation, tts, stt. What `kaja config fetch --offline` writes |
 | `models.llama.toml` | llama.cpp | chat against a local `llama-server` |
-| `models.xai.toml` | xAI | chat (`grok-4.3`), image-generation. One hosted key |
+| `models.xai.toml` | xAI | chat and vision (`grok-4.3`), image-generation. One hosted key |
 | `models.openrouter.toml` | OpenRouter | chat (`stealth/space-bunny-alpha`). One hosted key |
 
 ---

@@ -2,6 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
 import * as z from "zod"
+import { TINY_PNG_BASE64 } from "./images"
 
 function fixtureServer() {
   const server = new McpServer({ name: "http-fixture", version: "1.0.0" })
@@ -19,7 +20,7 @@ function fixtureServer() {
     () => ({
       content: [
         { type: "text", text: "a picture" },
-        { type: "image", data: Buffer.from("png").toString("base64"), mimeType: "image/png" }
+        { type: "image", data: TINY_PNG_BASE64, mimeType: "image/png" }
       ]
     })
   )

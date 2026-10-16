@@ -23,7 +23,8 @@
   model    = "accounts/fireworks/models/minimax-m3"
   provider = "fireworks"
   tasks    = [
-    "chat"
+    "chat",
+    "vision"
   ]
 
 

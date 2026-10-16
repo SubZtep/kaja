@@ -3,6 +3,7 @@ import type { CliResolvedModel } from "@kaja/schema/config"
 import type OpenAI from "openai"
 import { z } from "zod"
 import type { NasiStore } from "../store/types"
+import type { Describer } from "./describe"
 import { samplingOf } from "./persona"
 import { type Tool, tool } from "./tools"
 
@@ -49,6 +50,12 @@ export class Agent {
   contextWindow?: number
   /** Writes compaction summaries (the summarize task's model); defaults to this agent's own chat model. */
   summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+  /** Describes arriving images (the vision task's model, or the persona's `models.vision` pin); unset, an image keeps its alt text. */
+  describer?: Describer
+  /** The host's describer, which a persona without a `models.vision` pin goes back to. */
+  readonly defaultDescriber?: Describer
+  /** Whether the chat model takes images; unset, it does unless its {@link models} entry says `images = false`. See {@link seesImages}. */
+  chatSeesImages?: boolean
   /** Share of the context window (0-1) at which a round compacts the conversation first; defaults to 0.8. */
   compactAt?: number
   /** Whole-command patterns that run without asking (commands.toml); defaults to the built-in list. */
@@ -74,6 +81,8 @@ export class Agent {
     store?: NasiStore
     contextWindow?: number
     summarizer?: { client: OpenAI; model: string; contextWindow?: number }
+    describer?: Describer
+    chatSeesImages?: boolean
     compactAt?: number
     safeCommands?: RegExp[]
     yolo?: boolean
@@ -94,6 +103,9 @@ export class Agent {
     this.store = config.store
     this.contextWindow = config.contextWindow
     this.summarizer = config.summarizer
+    this.describer = config.describer
+    this.defaultDescriber = config.describer
+    this.chatSeesImages = config.chatSeesImages
     this.compactAt = config.compactAt
     this.safeCommands = config.safeCommands
     this.yolo = config.yolo
@@ -196,6 +208,15 @@ export function applyPersona(agent: Agent, persona: Persona) {
     const model = agent.models.find(m => m.id === persona.models!.chat)
     if (model) agent.setModel(model)
   }
+  applyVisionPin(agent, persona)
+}
+
+/** Points the agent's describer at the persona's `models.vision` pin, or back at the host's when it has none. */
+export function applyVisionPin(agent: Agent, persona: Persona | undefined) {
+  const id = persona?.models?.vision
+  const vision = id && agent.models.find(m => m.id === id && m.task === "vision")
+  agent.describer =
+    vision && agent.createClient ? { client: agent.createClient(vision), model: vision.model } : agent.defaultDescriber
 }
 
 /** What one model round cost, recorded beside the assistant message it produced; `at` is that message's row index (the system prompt not counted). */
@@ -216,9 +237,9 @@ export type CallStatus = "ok" | "error" | "declined" | "skipped"
 
 export type CallStat = { status?: CallStatus; approval?: "approved" | "declined"; durationMs?: number }
 
-/** What one model call besides the conversation's own rounds cost: a summary written for compaction, condensing or the summarize tool. */
+/** What one model call besides the conversation's own rounds cost: a summary written for compaction, condensing or the summarize tool, or an image's description. */
 export type ModelCallStat = {
-  kind: "compact" | "condense" | "summarize"
+  kind: "compact" | "condense" | "summarize" | "describe"
   /** The provider-reported model, else the requested one. */
   model: string
   promptTokens?: number
@@ -231,6 +252,8 @@ export type SessionTelemetry = { steps: StepStat[]; calls: Record<string, CallSt
 
 /** Conversation state threaded through repeated {@link run} calls. */
 export type Session = {
+  /** Its id from the start, so images can be stored under it before the first save (unset: a session built by hand, whose images stay inline). */
+  id?: string
   messages: import("openai/resources/chat/completions").ChatCompletionMessageParam[]
   telemetry?: SessionTelemetry
   pendingAskUserId?: string
@@ -247,8 +270,14 @@ export type Session = {
   toolSummaries?: Record<string, string>
 }
 
+/** Whether the agent's chat model is sent images, or only their labels: it is unless its models.toml entry says `images = false`. */
+export function seesImages(agent: Agent): boolean {
+  if (agent.chatSeesImages !== undefined) return agent.chatSeesImages
+  return !agent.models?.some(entry => entry.model === agent.model && entry.images === false)
+}
+
 export function createSession(): Session {
-  return { messages: [] }
+  return { id: Bun.randomUUIDv7(), messages: [] }
 }
 
 export type AgentDelta = {
@@ -262,7 +291,10 @@ export type AgentEvent =
   | { type: "reasoning"; text: string }
   | { type: "message"; content: string }
   | { type: "tool_call"; name: string; arguments: string }
-  | { type: "tool_image"; path: string; mimeType: string }
+  /** A tool's image, stored: `ref` is what its message holds (`kaja-image:<id>`, a data URL without a store), `key` the object hosts show it from, `alt` its text until a description replaces it. */
+  | { type: "tool_image"; ref: string; key?: string; mimeType: string; alt: string }
+  /** An image's description was written (in the background, after its `tool_image`); `ref` is the image's. */
+  | { type: "image_described"; ref: string; description: string }
   | { type: "display_image"; url: string; alt: string }
   | { type: "ask_user"; question: string; note?: string }
   | { type: "confirm_command"; command: string; description: string }

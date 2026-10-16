@@ -199,6 +199,13 @@ shortened. Only what the model is sent changes (`contextMessages()`).
   for its window is summarised in parts, then the parts together. Every request it makes (compacting,
   condensing, the `summarize` tool through `ToolContext.onModelCall`) goes into
   `Session.telemetry.modelCalls`, which the stores save as model call rows.
+- **Images.** Each image is normalised and stored as it arrives, and its message holds a label (`[Image
+  kaja-image:<id> (W×H): <text>]`) before the image part. The label's text starts as the source's alt text and
+  is replaced by `Agent.describer`'s (the `vision` task's model) short English description, written in the
+  background (`agent/describe.ts`) and kept beside the image as `<key>.json`. A chat model that can't see
+  (`seesImages`: its entry doesn't list `vision`) is sent the labels only, and its round waits for the
+  descriptions; every turn ends with them in (`run()`'s `finally`). Images from before the last two prompts
+  lose their pixels and keep their labels; `view_image` with a link brings the pixels back.
 - **Too long anyway.** When the provider rejects the prompt as too long, the known window is lowered below it
   (for this process, `lowerContextWindow()`), the session is compacted, and the round is retried once. A
   second failure surfaces as `ModelUnavailableError`, like any provider error.

@@ -64,6 +64,7 @@ export {
   type AgentEvent,
   ASK_USER_TOOL,
   applyPersona,
+  applyVisionPin,
   askUserTool,
   type CallStat,
   type CallStatus,
@@ -98,6 +99,7 @@ export {
 } from "./agent/compaction"
 export { categorizeError, type ErrorCategory, isImageRejection } from "./agent/error-category"
 export { ModelUnavailableError, NoModelError, NothingToApproveError, SessionNotFoundError } from "./agent/errors"
+export type { PromptImage } from "./agent/images"
 export { samplingOf } from "./agent/persona"
 export { activePersona, personaTools, syncPersonaTools } from "./agent/persona-tools"
 export { killTrackedProcesses, trackChild, trackProcess } from "./agent/processes"
@@ -123,6 +125,8 @@ export {
   tool,
   toolName
 } from "./agent/tools"
+export { ImageError, MAX_IMAGE_BYTES, MAX_IMAGE_EDGE, type NormalizedImage, normalizeImage } from "./images/normalize"
+export { dataUrlBytes, imageDataUrl, imageNote, withImageNote } from "./images/parts"
 export { connectMcpServer, type McpConnectOptions } from "./mcp/client"
 export {
   isInstalled,
@@ -158,32 +162,36 @@ export {
   UnsafeUrlError
 } from "./security/ssrf"
 export {
-  attachImages,
   type CallUpdate,
   type ConversationRows,
   clearTelemetry,
   createMemoryStore,
   type DatasetAnswer,
-  deleteImages,
-  detachImages,
+  folderObjects,
   forgetNotes,
   IMAGE_REF_PREFIX,
-  imageHash,
+  imageId,
   imageKey,
-  imageRefs,
+  imageRefId,
+  inlineImages,
   joinConversation,
-  loadImages,
   type MessageRow,
+  memoryObjects,
   type NasiStore,
   noteHeader,
+  type ObjectStore,
+  objectSessionImages,
   type PendingKind,
   requireStore,
+  resolveImageLinks,
+  type SessionImage,
+  type SessionImages,
   type SessionWrite,
   type StepRow,
-  type StoredImage,
-  saveImages,
+  sessionIdOf,
   sessionImagePrefix,
   splitConversation,
+  storeInlineImages,
   type ToolCallRow,
   userImagePrefix
 } from "./store"
@@ -196,7 +204,7 @@ export { forgetNoteTool, listNotesTool, recallMemoryTool, rememberNoteTool } fro
 export { readFileTool } from "./tools/builtin/read-file"
 export { rerankTool } from "./tools/builtin/rerank"
 export { summarizeTool } from "./tools/builtin/summarize"
-export { viewImageTool } from "./tools/builtin/view-image"
+export { viewImageTool, viewLinkedImageTool } from "./tools/builtin/view-image"
 export { getToolDeps, type ImageGenModel, type NasiToolDeps, type RerankModel, setToolDeps } from "./tools/deps"
 export {
   type CreateToolsOptions,

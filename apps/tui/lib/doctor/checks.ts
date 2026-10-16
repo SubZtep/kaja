@@ -3,7 +3,6 @@ import type { HttpToolAbility } from "@kaja/schema/abilities"
 import type { CliResolvedModel, McpServerEntry } from "@kaja/schema/config"
 import { t } from "../i18n"
 import { probeModel } from "../models/check"
-import { getPaths } from "../paths"
 
 /**
  * A credential's live test: it works, or why not.
@@ -56,7 +55,7 @@ export function checkAbilityKey(ability: HttpToolAbility, apiKey: string): Promi
 /** Connects to the server and lists its tools, then disconnects. */
 export async function checkMcpServer(server: McpServerEntry, opts?: McpConnectOptions): Promise<CheckResult> {
   try {
-    const { close } = await withTimeout(connectMcpServer(server, getPaths().temp, opts))
+    const { close } = await withTimeout(connectMcpServer(server, opts))
     await close()
     return OK
   } catch (error) {

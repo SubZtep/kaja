@@ -417,7 +417,7 @@ function eventBlurb(event: EventRow): string {
   if (event.type === "usage") return pick("model")
   if (event.type === "tool_approval") return pick("approved")
   if (event.type === "ask_user") return pick("question")
-  if (event.type === "tool_image") return pick("path")
+  if (event.type === "tool_image") return pick("key", "path")
   if (event.type === "display_image") return pick("alt")
   if (typeof data.content === "string") return data.content
   if (typeof data.text === "string") return data.text
@@ -500,7 +500,7 @@ function renderPayload(type: string, payload: Record<string, unknown>): string {
     case "tool_call":
       return joinBlocks([textBlock(payload.name), jsonBlock(payload.arguments)])
     case "tool_image":
-      return textBlock(payload.path)
+      return textBlock(payload.key ?? payload.path)
     case "display_image":
       return joinBlocks([textBlock(payload.alt), textBlock(payload.url)])
     case "ask_user":

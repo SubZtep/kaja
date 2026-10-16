@@ -58,6 +58,6 @@ test("resolver's model for the given ctx.personaId is used to generate and downl
   expect(capturedAuth as string | null).toBe("Bearer image-key")
   expect(result).toEqual({
     text: "Generated image: a red fox",
-    images: [{ path: expect.stringContaining(tempDir), mimeType: "image/png" }]
+    images: [{ data: expect.any(Uint8Array), mimeType: "image/png" }]
   })
 })
